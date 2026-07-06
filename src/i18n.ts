@@ -480,6 +480,7 @@ export const FR = {
     autoCard: 'L’auto',
     fil: 'Le fil du jour',
     today: 'Aujourd’hui',
+    routineNext: 'Prochaine routine',
     tomorrow: 'Demain',
     toFinish: 'À finir',
     todos: 'À faire',
@@ -489,6 +490,18 @@ export const FR = {
     seasonUpkeep: 'Cette saison',
     drawings: 'Dessins',
     photos: 'Photo du jour',
+  },
+  // Les compagnons de routine (Phase B) — des noms de créatures pour l’aria/titre du
+  // choix. Présence, jamais une récompense.
+  companions: {
+    fox: 'Renard',
+    owl: 'Hibou',
+    cat: 'Chat',
+    bunny: 'Lapin',
+    bear: 'Ourson',
+    turtle: 'Tortue',
+    star: 'Étoile',
+    cloud: 'Nuage',
   },
   // « Cette saison » — l’entretien récurrent groupé par saison courante.
   season: {
@@ -1499,6 +1512,15 @@ export const FR = {
     empty: 'Aucune carte',
     todLabel: 'Moment :',
     tod: { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', any: 'N’importe quand' },
+    // Calm aria for the per-card progress ring — deliberately no number (the ring
+    // shows position today, not a tally).
+    progressAria: 'Où on est rendu aujourd’hui',
+    // #C — the end-of-routine feeling + optional daily selfie (kept ~7 jours).
+    feelingPrompt: 'Comment ça a été ?',
+    feeling: { sun: 'Soleil', cloud: 'Nuage', rain: 'Pluie' },
+    selfieAdd: 'Prendre une photo',
+    selfieRemove: 'Retirer la photo',
+    finishedWith: (name: string, feeling: string) => `${name} a fini avec ${feeling}`,
     // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Enregistrer ta voix',
     clipRecorded: 'Clip enregistré',
@@ -1584,6 +1606,7 @@ export const FR = {
     addMember: 'Ajouter une personne',
     name: 'Nom',
     isChild: 'Enfant',
+    companion: 'Compagnon de routine',
     memberEmail: 'Courriel',
     memberPhone: 'Téléphone',
     memberBirthday: 'Anniversaire',
@@ -1946,6 +1969,7 @@ export const FR = {
     thisWeekProjects: 'Projets',
     thisWeekChores: 'Corvées',
     thisWeekRoutines: 'Routines',
+    thisWeekMoods: 'La semaine en émotions',
     thisWeekAheadEmpty: 'Rien de prévu cette semaine.',
     thisWeekBehindEmpty: 'La semaine commence — rien à montrer encore.',
     thisWeekYears: (n: number) => `${n} ans`,
@@ -2978,6 +3002,7 @@ export const EN: typeof FR = {
     autoCard: 'The car',
     fil: 'Day timeline',
     today: 'Today',
+    routineNext: 'Next routine',
     tomorrow: 'Tomorrow',
     toFinish: 'To finish',
     todos: 'To do',
@@ -2987,6 +3012,18 @@ export const EN: typeof FR = {
     seasonUpkeep: 'This season',
     drawings: 'Drawings',
     photos: 'Photo of the day',
+  },
+  // Routine companions (Phase B) — creature names for the picker's aria/title.
+  // Presence, never a reward.
+  companions: {
+    fox: 'Fox',
+    owl: 'Owl',
+    cat: 'Cat',
+    bunny: 'Bunny',
+    bear: 'Bear',
+    turtle: 'Turtle',
+    star: 'Star',
+    cloud: 'Cloud',
   },
   // « This season » — recurring upkeep grouped by the current season.
   season: {
@@ -3963,6 +4000,15 @@ export const EN: typeof FR = {
     empty: 'No cards',
     todLabel: 'Moment:',
     tod: { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', any: 'Anytime' },
+    // Calm aria for the per-card progress ring — deliberately no number (the ring
+    // shows position today, not a tally).
+    progressAria: 'Where things stand today',
+    // #C — the end-of-routine feeling + optional daily selfie (kept ~7 days).
+    feelingPrompt: 'How did it go?',
+    feeling: { sun: 'Sun', cloud: 'Cloud', rain: 'Rain' },
+    selfieAdd: 'Take a photo',
+    selfieRemove: 'Remove photo',
+    finishedWith: (name: string, feeling: string) => `${name} finished with ${feeling}`,
     // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Record your voice',
     clipRecorded: 'Clip recorded',
@@ -4048,6 +4094,7 @@ export const EN: typeof FR = {
     addMember: 'Add a person',
     name: 'Name',
     isChild: 'Child',
+    companion: 'Routine companion',
     memberEmail: 'Email',
     memberPhone: 'Phone',
     memberBirthday: 'Birthday',
@@ -4402,6 +4449,7 @@ export const EN: typeof FR = {
     thisWeekProjects: 'Projects',
     thisWeekChores: 'Chores',
     thisWeekRoutines: 'Routines',
+    thisWeekMoods: 'The week in feelings',
     thisWeekAheadEmpty: 'Nothing planned this week.',
     thisWeekBehindEmpty: 'The week’s just starting — nothing to show yet.',
     thisWeekYears: (n: number) => `${n} yrs`,

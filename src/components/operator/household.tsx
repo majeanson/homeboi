@@ -6,7 +6,7 @@ import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
-import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY, ROUTINES_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
 import { colourFor } from '../../lib/things'
 import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
@@ -15,6 +15,8 @@ import { AVATAR_MAX } from '../../lib/image'
 import { uploadMedia } from '../../lib/uploadMedia'
 import { Avatar } from '../Avatar'
 import { ColorPicker } from '../ColorPicker'
+import { Chip, ChipGroup } from '../Chip'
+import { COMPANIONS, COMPANION_EMOJI } from '../../lib/companions'
 import { EditField } from '../EditField'
 import { StatusMessage } from '../StatusMessage'
 import { Icon } from '../Icon'
@@ -266,6 +268,9 @@ function MemberCard({
   const [name, setName] = useState(member.display_name)
   const [isChild, setIsChild] = useState(!!member.is_child)
   const [color, setColor] = useState(member.colour)
+  // The member's routine companion (Phase B) — a calm creature that keeps them
+  // company in the player; '' = none. Picked here, alongside colour/child.
+  const [companion, setCompanion] = useState<string>(member.companion ?? '')
   const [busy, setBusy] = useState(false)
   const write = useWrite()
   const openSheet = useOpenPersonSheet()
@@ -291,11 +296,13 @@ function MemberCard({
     setBusy(true)
     await write('members', {
       method: 'PATCH',
-      body: { id: member.id, name: name.trim(), isChild, colour: color },
+      // companion: '' clears it server-side (companionOrNull → NULL).
+      body: { id: member.id, name: name.trim(), isChild, colour: color, companion },
       // CERCLE_KEY: a member is also a person in Le cercle (unifyCircle enriches
       // them; a delete mutates contact_links) — refresh the circle so a rename/
       // recolour/delete doesn't leave a stale name/colour or a dangling edge.
-      affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
+      // ROUTINES_KEY: the companion shows on the routine player, keyed off the member.
+      affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY],
     }).catch(() => {})
     setBusy(false)
     setEditing(false)
@@ -317,6 +324,7 @@ function MemberCard({
             setName(member.display_name)
             setIsChild(!!member.is_child)
             setColor(member.colour)
+            setCompanion(member.companion ?? '')
             setEditing(false)
           }}
           leading={
@@ -355,6 +363,24 @@ function MemberCard({
             </>
           }
         />
+        {/* The routine companion (Phase B) — a calm creature that keeps this person
+            company in the routine player. Tap the chosen one again to clear it. Its
+            pose follows the time of day, never their progress. */}
+        <div className="member-edit__companion">
+          <ChipGroup label={t.operator.companion}>
+            {COMPANIONS.map((c) => (
+              <Chip
+                key={c}
+                selected={companion === c}
+                onClick={() => setCompanion((prev) => (prev === c ? '' : c))}
+                ariaLabel={t.companions[c]}
+                title={t.companions[c]}
+              >
+                <span aria-hidden="true">{COMPANION_EMOJI[c]}</span>
+              </Chip>
+            ))}
+          </ChipGroup>
+        </div>
         {/* Everything else about this person — coordonnées, anniversaire, genre,
             notes, liens familiaux — lives in « Le cercle ». One tap finds (or, the
             first time, creates) their linked contact sheet and opens it. */}

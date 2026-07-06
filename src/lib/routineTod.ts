@@ -3,7 +3,7 @@
 // (surface the matching routine first). A CUE, not a gate: ordering only,
 // nothing hides (NFR-CALM — no nagging, no locks).
 import type { IconName } from '../components/Icon'
-import type { TimeOfDay } from './timeofday'
+import { timeOfDay, type TimeOfDay } from './timeofday'
 
 export type RoutineTod = 'morning' | 'afternoon' | 'evening'
 export const ROUTINE_TODS: RoutineTod[] = ['morning', 'afternoon', 'evening']
@@ -40,7 +40,17 @@ export function todRank(current: TimeOfDay, tod: string | null | undefined): num
   return RANK[current].indexOf(isRoutineTod(tod) ? tod : 'any')
 }
 
-// Parent-overview grouping: plain day order, anytime last.
-export function dayOrder(tod: string | null | undefined): number {
-  return isRoutineTod(tod) ? ROUTINE_TODS.indexOf(tod) : ROUTINE_TODS.length
+// The ONE "which routine fits right now" rule — the best-ranked routine that
+// actually has cards for the current moment (todRank leans toward what's coming).
+// Shared so the idle screensaver and the board's « Prochaine routine » card can't
+// drift apart. Generic over any routine-shaped row (needs timeOfDay + cards). A
+// cue, never a nag: returns undefined when nothing carded exists.
+export function pickMomentRoutine<T extends { timeOfDay: string | null; cards: { icon?: string }[] }>(
+  routines: T[],
+  now: number,
+): T | undefined {
+  const current = timeOfDay(now)
+  return [...routines]
+    .filter((r) => r.cards.length > 0)
+    .sort((x, y) => todRank(current, x.timeOfDay) - todRank(current, y.timeOfDay))[0]
 }

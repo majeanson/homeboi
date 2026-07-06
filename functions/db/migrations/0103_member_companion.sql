@@ -1,0 +1,16 @@
+-- Per-member "companion" creature (routine mascot feature). A child can pick a
+-- calm creature (fox / owl / cat / bunny / bear / turtle / star / cloud) that keeps
+-- them company DURING a routine run (RoutinePlayer) and naps on the idle screensaver
+-- (AmbientScreen). It is a PURE PREFERENCE — one closed-enum token per member, NULL =
+-- none — validated against a whitelist in the handler (never free text, so it can
+-- never carry a number/score).
+--
+-- Its on-screen state is bound to TIME-OF-DAY only (lib/companions companionMood over
+-- lib/timeofday): awake through the day, dozing at night. It NEVER grades a routine,
+-- frowns, rewards, reacts to whether steps got done, or counts anything — no progress
+-- is stored here, just a chosen glyph. So this is NOT a streak/points/badge engagement
+-- hook (calm-tenets.test.ts). Precedent for this justifying comment: 0040 / 0079.
+--
+-- Additive, nullable-by-default (every existing member reads exactly as before, no
+-- backfill), forward-only, filename-locked.
+ALTER TABLE members ADD COLUMN companion TEXT;

@@ -1,0 +1,25 @@
+-- One-tap end-of-routine FEELING + an optional daily SELFIE, per routine per day.
+-- When a child finishes a routine they can tap how it went (soleil / nuage / pluie)
+-- and, optionally, snap a quick selfie. A parent glances "Maya a fini avec un soleil".
+-- Both live on the routine_runs row (grain = routine_id + date), beside done_idx_json.
+--
+-- RETENTION: kept ~7 days as a gentle "week of moments" — a soft ribbon of this week's
+-- moods/selfies by FACE (same faces-not-counts rule as the chore ledger / this-week.ts).
+-- This is deliberately NOT a mood history / trend / graph / streak: there is NO count,
+-- NO aggregation, NO score. Rows older than ~a week have their selfie R2 blob freed and
+-- feeling_photo NULLed LAZILY on the next write (best-effort, bounded) so R2 stays finite
+-- — there is no cron in this app. this-week.ts reads ONLY done_idx_json for its counts and
+-- MUST NEVER aggregate these columns. So this is NOT a streak/points/badge hook
+-- (calm-tenets.test.ts): an ephemeral, self-emptying week of feelings. Precedent for this
+-- justifying comment + the per-day reset semantics: 0040 / 0079.
+--
+--   feeling:       a closed token ('sun' | 'cloud' | 'rain'), validated in the handler,
+--                  NULL = not tapped. A closed enum so it can never carry a number/score.
+--   feeling_photo: the R2 key for an optional selfie (media_key convention), NULL/'' = none.
+--                  A soft ref (no FK); freed on overwrite, clear, reset, routine delete, and
+--                  the lazy ~7-day prune — so nothing leaks.
+--
+-- Additive, nullable-by-default (every existing run reads exactly as before, no backfill),
+-- forward-only, filename-locked.
+ALTER TABLE routine_runs ADD COLUMN feeling TEXT;
+ALTER TABLE routine_runs ADD COLUMN feeling_photo TEXT;

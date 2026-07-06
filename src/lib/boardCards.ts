@@ -18,7 +18,7 @@ import { createDeviceStore } from './createDeviceStore'
 // The bunched Aujourd'hui+Demain is one card ('today'); « À finir » bundles leftovers +
 // à-faire; « À compléter » is the persistent checklist.
 export type BandCardId = 'notes' | 'heroes' | 'mots' | 'aRegler' | 'moments'
-export type GridCardId = 'autoCard' | 'fil' | 'today' | 'tomorrow' | 'toFinish' | 'todos' | 'upcoming' | 'voyage' | 'carnets' | 'seasonUpkeep' | 'drawings' | 'photos'
+export type GridCardId = 'autoCard' | 'fil' | 'today' | 'routineNext' | 'tomorrow' | 'toFinish' | 'todos' | 'upcoming' | 'voyage' | 'carnets' | 'seasonUpkeep' | 'drawings' | 'photos'
 export type BoardCardId = BandCardId | GridCardId
 
 export interface BoardCardPrefs {
@@ -37,7 +37,7 @@ const BAND_CARD_IDS: BandCardId[] = ['notes', 'heroes', 'mots', 'aRegler', 'mome
 // the day list → standing lists → upcoming → media. Everything visible. This is also the
 // canonical grid-id list (read() reconciles a saved layout against it, so a NEW card
 // added here auto-appears, visible, at the end for existing devices).
-const DEFAULT_GRID_ORDER: GridCardId[] = ['autoCard', 'fil', 'today', 'tomorrow', 'toFinish', 'todos', 'upcoming', 'voyage', 'carnets', 'seasonUpkeep', 'drawings', 'photos']
+const DEFAULT_GRID_ORDER: GridCardId[] = ['autoCard', 'fil', 'today', 'routineNext', 'tomorrow', 'toFinish', 'todos', 'upcoming', 'voyage', 'carnets', 'seasonUpkeep', 'drawings', 'photos']
 // Every known id (band + grid) — used to validate the persisted `hidden` set.
 const ALL_IDS: BoardCardId[] = [...BAND_CARD_IDS, ...DEFAULT_GRID_ORDER]
 
@@ -57,6 +57,7 @@ export const GRID_CARD_META: { id: GridCardId; icon: IconName }[] = [
   { id: 'autoCard', icon: 'car-bold' },
   { id: 'fil', icon: 'clock-bold' },
   { id: 'today', icon: 'sun-bold' },
+  { id: 'routineNext', icon: 'smiley-bold' },
   { id: 'tomorrow', icon: 'sun-horizon-bold' },
   { id: 'toFinish', icon: 'check-bold' },
   { id: 'todos', icon: 'check-bold' },

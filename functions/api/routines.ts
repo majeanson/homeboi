@@ -1,6 +1,6 @@
 import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, newId, nowSec } from '../_lib/ids'
+import { localDayStart, addLocalDays, newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
 import { isValidR2Key } from '../_lib/validate'
 
@@ -72,6 +72,12 @@ function sanitizeTimers(json: string | null | undefined): Record<number, TimerEn
 const todOrNull = (v: unknown): string | null =>
   v === 'morning' || v === 'afternoon' || v === 'evening' ? v : null
 
+// The end-of-routine feeling — a CLOSED token, so it can never carry a number/score
+// (calm). Anything else → null (not tapped / cleared).
+const FEELINGS = ['sun', 'cloud', 'rain']
+const feelingOrNull = (v: unknown): string | null =>
+  typeof v === 'string' && FEELINGS.includes(v) ? v : null
+
 // Per-card media key arrays kept PARALLEL to cards: side[i] is the R2 key for
 // card i, or '' when that card has no media. Two of them today — parent-voice
 // narration clips (feature #17 A, migration 0040) and card photos (feature #17 C,
@@ -92,7 +98,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const routines = await ctx.env.DB.prepare(
     `SELECT r.id, r.member_id, r.name, r.cards_json, r.cards_narration_json, r.cards_photo_json, r.time_of_day,
             m.display_name AS member_name,
-            m.colour AS color, m.avatar_kind AS avatar_kind, m.avatar_ref AS avatar_photo
+            m.colour AS color, m.avatar_kind AS avatar_kind, m.avatar_ref AS avatar_photo, m.companion AS companion
        FROM routines r LEFT JOIN members m ON m.id = r.member_id
       WHERE r.household_id = ? ORDER BY r.created_at`,
   )
@@ -109,18 +115,28 @@ export const onRequestGet = authed(async (ctx, actor) => {
       color: string | null
       avatar_kind: string | null
       avatar_photo: string | null
+      companion: string | null
     }>()
 
   // Today's runs in one query, keyed by routine.
   const runs = await ctx.env.DB.prepare(
-    `SELECT routine_id, done_idx_json, timers_json FROM routine_runs
+    `SELECT routine_id, done_idx_json, timers_json, feeling, feeling_photo FROM routine_runs
       WHERE date = ? AND routine_id IN (SELECT id FROM routines WHERE household_id = ?)`,
   )
     .bind(today, actor.householdId)
-    .all<{ routine_id: string; done_idx_json: string; timers_json: string | null }>()
+    .all<{
+      routine_id: string
+      done_idx_json: string
+      timers_json: string | null
+      feeling: string | null
+      feeling_photo: string | null
+    }>()
   const doneByRoutine = new Map(runs.results.map((r) => [r.routine_id, r.done_idx_json]))
   // Per-step countdown state so a started timer keeps real time across an app close.
   const timersByRoutine = new Map(runs.results.map((r) => [r.routine_id, r.timers_json]))
+  // Today's feeling + optional selfie, per routine (#C). A moment of TODAY only —
+  // older days' moods live in the ~7-day "week of moments" ribbon, not here.
+  const feelingByRoutine = new Map(runs.results.map((r) => [r.routine_id, r]))
 
   const out = routines.results.map((r) => {
     const cards = parseJsonArray<Card>(r.cards_json)
@@ -132,6 +148,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       avatarPhoto: r.avatar_kind === 'photo' ? r.avatar_photo : null,
       name: r.name,
       timeOfDay: todOrNull(r.time_of_day),
+      // The owning member's chosen routine companion ('fox'|… , null = none) — a
+      // calm creature the player + screensaver show; bound to time-of-day, never
+      // to progress (see lib/companions). Additive; older clients ignore it.
+      companion: r.companion,
       cards,
       // Parallel parent-voice clips, one R2 key per card ('' = none → TTS).
       cardsNarration: normalizeKeys(r.cards_narration_json, cards.length),
@@ -140,6 +160,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
       doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
       // Per-step countdown timers (card idx → {endsAt}|{left}); {} when none started.
       timers: sanitizeTimers(timersByRoutine.get(r.id)),
+      // Today's one-tap feeling ('sun'|'cloud'|'rain'|null) + optional selfie R2 key.
+      feeling: feelingOrNull(feelingByRoutine.get(r.id)?.feeling),
+      feelingPhoto: feelingByRoutine.get(r.id)?.feeling_photo || null,
     }
   })
   return ok({ routines: out, date: today })
@@ -205,6 +228,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // Persist one card's countdown timer (with cardIdx): {endsAt}|{left}, or null to
     // clear it. Survives leaving the app so the timer reads real elapsed on return.
     timer?: unknown
+    // #C — the end-of-routine feeling ('sun'|'cloud'|'rain'|null) + optional selfie R2
+    // key (isValidR2Key, or '' / invalid to clear). A cardIdx-less write on today's run.
+    feeling?: string | null
+    feelingPhoto?: string | null
   }>(ctx.request)
   if (!body?.routineId) return badRequest('routineId requis.')
 
@@ -217,6 +244,108 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .bind(body.routineId, actor.householdId)
     .first<{ cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
   if (!owns) return notFound('Routine introuvable.')
+
+  // #C — the end-of-routine FEELING + optional daily SELFIE. A cardIdx-less write
+  // carrying `feeling` and/or `feelingPhoto`; handled FIRST and fully isolated so it
+  // only ever touches today's run row (never the deck, never the ✓ progress). Kept
+  // ~7 days as a "week of moments", then the selfie blob is pruned (below).
+  if ('feeling' in body || 'feelingPhoto' in body) {
+    const today = localDayStart(new Date(Date.now()))
+    const existing = await ctx.env.DB.prepare(
+      'SELECT done_idx_json, feeling, feeling_photo FROM routine_runs WHERE routine_id = ? AND date = ?',
+    )
+      .bind(body.routineId, today)
+      .first<{ done_idx_json: string; feeling: string | null; feeling_photo: string | null }>()
+
+    // Resolve the columns this write touches. An absent key leaves that column as-is
+    // (on an insert it defaults to null). A selfie key that isn't a valid R2 token
+    // (incl. '') clears the selfie; a feeling outside the closed set clears it.
+    const sets: string[] = []
+    const binds: unknown[] = []
+    let freeOldPhoto: string | null = null
+    if ('feeling' in body) {
+      sets.push('feeling = ?')
+      binds.push(feelingOrNull(body.feeling))
+    }
+    if ('feelingPhoto' in body) {
+      const nextKey = isValidR2Key(body.feelingPhoto) ? (body.feelingPhoto as string) : null
+      sets.push('feeling_photo = ?')
+      binds.push(nextKey)
+      // Free a replaced/cleared selfie's blob (best-effort), or it leaks — same
+      // discipline as the card-photo cleanup below.
+      const oldKey = existing?.feeling_photo
+      if (oldKey && oldKey !== nextKey) freeOldPhoto = oldKey
+    }
+    const ts = nowSec()
+    if (existing) {
+      sets.push('updated_at = ?')
+      binds.push(ts)
+      binds.push(body.routineId, today)
+      await ctx.env.DB.prepare(`UPDATE routine_runs SET ${sets.join(', ')} WHERE routine_id = ? AND date = ?`)
+        .bind(...binds)
+        .run()
+    } else {
+      // No row yet → insert one with empty progress, carrying just what this write set.
+      await ctx.env.DB.prepare(
+        'INSERT INTO routine_runs (id, routine_id, date, done_idx_json, feeling, feeling_photo, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      )
+        .bind(
+          newId(),
+          body.routineId,
+          today,
+          '[]',
+          'feeling' in body ? feelingOrNull(body.feeling) : null,
+          'feelingPhoto' in body && isValidR2Key(body.feelingPhoto) ? (body.feelingPhoto as string) : null,
+          ts,
+        )
+        .run()
+    }
+    if (freeOldPhoto) await deleteR2Blob(ctx.env.PHOTOS, freeOldPhoto)
+    // Lazy prune (there is no cron): free the selfie blobs of this household's runs
+    // older than ~a week and NULL the key, so R2 stays finite while the ~7-day ribbon
+    // + this-week's done-tracking keep the recent rows they need. Bounded + best-effort
+    // so a toddler's tap never blocks. We only NULL feeling_photo (not delete the row):
+    // the done-history is tiny and other readers may still want it.
+    if (ctx.env.PHOTOS) {
+      const cutoff = addLocalDays(today, -8)
+      const stale = await ctx.env.DB.prepare(
+        `SELECT id, feeling_photo FROM routine_runs
+          WHERE date < ? AND feeling_photo IS NOT NULL
+            AND routine_id IN (SELECT id FROM routines WHERE household_id = ?)
+          LIMIT 50`,
+      )
+        .bind(cutoff, actor.householdId)
+        .all<{ id: string; feeling_photo: string }>()
+      for (const row of stale.results) {
+        await deleteR2Blob(ctx.env.PHOTOS, row.feeling_photo)
+        await ctx.env.DB.prepare('UPDATE routine_runs SET feeling_photo = NULL WHERE id = ?').bind(row.id).run()
+      }
+    }
+    return ok({ ok: true })
+  }
+
+  // "Recommencer" — wipe today's progress so the routine plays fresh again. We
+  // clear the row rather than write an empty array (no row = empty doneIdx, the
+  // same state a brand-new day starts in; the next ✓ re-INSERTs it). Checked BEFORE
+  // the cardIdx-less edit branch below — a reset carries neither cardIdx nor an edit
+  // field, so leaving it after that branch made it fall into the "nothing to edit"
+  // badRequest (Recommencer silently no-op'd server-side, resurrected on the next poll).
+  if (body.reset === true) {
+    const day = localDayStart(new Date(Date.now()))
+    // Free today's selfie blob before the row goes, or the reset orphans it (#C).
+    if (ctx.env.PHOTOS) {
+      const row = await ctx.env.DB.prepare(
+        'SELECT feeling_photo FROM routine_runs WHERE routine_id = ? AND date = ?',
+      )
+        .bind(body.routineId, day)
+        .first<{ feeling_photo: string | null }>()
+      if (row?.feeling_photo) await deleteR2Blob(ctx.env.PHOTOS, row.feeling_photo)
+    }
+    await ctx.env.DB.prepare('DELETE FROM routine_runs WHERE routine_id = ? AND date = ?')
+      .bind(body.routineId, day)
+      .run()
+    return ok({ doneIdx: [] })
+  }
 
   // Edit the routine itself (name / card deck / time-of-day cue) — a settings
   // act, not a toddler tap. Any of these fields present means "edit"; the same ＋
@@ -291,16 +420,6 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       for (const k of prevNarration) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
     }
     return ok({ ok: true })
-  }
-
-  // "Recommencer" — wipe today's progress so the routine plays fresh again. We
-  // clear the row rather than write an empty array (no row = empty doneIdx, the
-  // same state a brand-new day starts in; the next ✓ re-INSERTs it).
-  if (body.reset === true) {
-    await ctx.env.DB.prepare('DELETE FROM routine_runs WHERE routine_id = ? AND date = ?')
-      .bind(body.routineId, localDayStart(new Date(Date.now())))
-      .run()
-    return ok({ doneIdx: [] })
   }
 
   if (typeof body.cardIdx !== 'number') return badRequest('routineId + cardIdx requis.')
@@ -379,6 +498,13 @@ export const onRequestDelete = authed(async (ctx, actor) => {
       for (const key of normalizeKeys(owns.cards_narration_json, cards.length)) await deleteR2Blob(ctx.env.PHOTOS, key)
       for (const key of normalizeKeys(owns.cards_photo_json, cards.length)) await deleteR2Blob(ctx.env.PHOTOS, key)
     }
+    // Free any daily-selfie blobs this routine's runs hold before the rows go (#C).
+    const selfies = await ctx.env.DB.prepare(
+      'SELECT feeling_photo FROM routine_runs WHERE routine_id = ? AND feeling_photo IS NOT NULL',
+    )
+      .bind(body.id)
+      .all<{ feeling_photo: string }>()
+    for (const s of selfies.results) await deleteR2Blob(ctx.env.PHOTOS, s.feeling_photo)
   }
   // routine_runs.routine_id FK-references this routine, so D1 blocks the delete
   // until the daily runs are gone. Clear them first in one transaction. Runs are

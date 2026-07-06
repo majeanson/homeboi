@@ -754,6 +754,28 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Un compagnon de routine', en: 'A routine companion' },
+        detail: {
+          fr: 'Dans Réglages ▸ Membres, choisis une petite créature (renard, hibou, chat…) pour une personne. Elle lui tient compagnie pendant sa routine et fait un somme sur l’écran de veille. Touche celle qui est choisie pour l’enlever.',
+          en: 'In Settings ▸ Members, pick a small creature (fox, owl, cat…) for a person. It keeps them company during their routine and takes a nap on the screensaver. Tap the chosen one again to remove it.',
+        },
+        why: {
+          fr: 'Une présence amicale, jamais une récompense : le compagnon suit seulement l’heure du jour (il somnole le soir) — il ne juge pas la routine, ne compte rien, ne donne pas de points.',
+          en: 'A friendly presence, never a reward: the companion only follows the time of day (it dozes in the evening) — it never grades the routine, counts anything, or gives points.',
+        },
+      },
+      {
+        label: { fr: 'Regroupées par moment', en: 'Grouped by moment' },
+        detail: {
+          fr: 'L’aperçu des routines se regroupe par moment de la journée (matin, après-midi, dodo), et le moment actuel remonte en haut. Chaque carte montre un anneau du progrès d’aujourd’hui.',
+          en: 'The routines overview groups by moment of day (morning, afternoon, bedtime), and the current moment floats to the top. Each card shows a ring of today’s progress.',
+        },
+        why: {
+          fr: 'L’anneau se vide chaque nuit — c’est « où on est rendu aujourd’hui », jamais une série ni un score.',
+          en: 'The ring empties every night — it’s “where things stand today”, never a streak or a score.',
+        },
+      },
+      {
         label: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
         detail: {
           fr: 'Sur chaque carte (Réglages ▸ Routines), touche ⏱ pour donner une durée à l’étape — par exemple 2 minutes pour brosser les dents. Pendant la routine, l’étape montre un anneau : l’enfant touche pour le partir, et un petit son joue à la fin. Touche encore pour changer la durée; ça se retire en un toucher.',

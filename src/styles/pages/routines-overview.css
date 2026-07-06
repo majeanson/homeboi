@@ -12,6 +12,161 @@
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: 1rem;
 }
+/* Moment-of-day sections: the overview now reads like the day itself (matin →
+   après-midi → soir → n'importe quand), with the CURRENT moment floated to the top.
+   A quiet tinted band on the header, stronger for "maintenant". The header row reuses
+   the shared .section-header anatomy; the grid inside is the same .routines-grid. */
+.routines-moment {
+  margin-block: 1.25rem 0;
+}
+.routines-moment:first-of-type {
+  margin-top: 0.5rem;
+}
+.routines-moment .section-header {
+  margin-bottom: 0.75rem;
+  padding-left: 0.1rem;
+  border-left: 3px solid color-mix(in srgb, var(--moment-tint) 60%, transparent);
+  padding-left: 0.6rem;
+}
+/* The current moment reads a touch warmer, so the eye lands there first. */
+.routines-moment--now .section-header__title {
+  color: color-mix(in srgb, var(--moment-tint) 55%, var(--ink));
+}
+/* Today's progress ring + the step count sit together on the left of the foot. */
+.routine-card__count-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.routine-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+.routine-ring__track {
+  stroke: color-mix(in srgb, var(--tint) 22%, var(--card));
+}
+.routine-ring__fill {
+  stroke: color-mix(in srgb, var(--tint) 78%, #000 4%);
+  transition: stroke-dashoffset var(--dur-slow, 0.4s) var(--ease-soft, ease);
+}
+/* All steps done today — the ring settles to a soft filled check. Calm: a gentle
+   "on y est", never a trophy/streak. */
+.routine-ring--done .routine-ring__fill {
+  stroke: color-mix(in srgb, var(--tint) 88%, #000 6%);
+}
+/* The small ✓ overlaid dead-centre of the ring when the day's steps are all done. */
+.routine-ring > svg + svg {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: color-mix(in srgb, var(--tint) 88%, #000 6%);
+}
+/* The owning member's face; a soft ring appears once today's routine is underway. */
+.routine-card__face {
+  flex: none;
+  display: inline-flex;
+  border-radius: 50%;
+}
+.routine-card__face--active {
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px color-mix(in srgb, var(--tint) 55%, transparent);
+}
+
+/* ---- Board « Prochaine routine » glance card — the moment routine on the wall,
+   reusing the shared BoardCard header + the routine ring. ---------------------- */
+.routine-next-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border-radius: var(--radius-lg);
+  padding: 0.9rem 1rem 1rem;
+  background: color-mix(in srgb, var(--tint) 8%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--tint) 26%, var(--card));
+  box-shadow: var(--shadow-sm);
+}
+.routine-next-card__body {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.routine-next-card__face {
+  flex: none;
+  display: inline-flex;
+}
+.routine-next-card__title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+.routine-next-card__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+.routine-next-card__who {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.routine-next-card__run {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.85rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #fff;
+  background: color-mix(in srgb, var(--tint) 78%, #000 4%);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---- Routine companion (Phase B): a calm creature that keeps a child company in
+   the player + naps on the screensaver. Presence, never a reward — its only state
+   is the time of day (awake gently bobs; dozing softens). --------------------- */
+.companion {
+  display: inline-block;
+}
+.companion--awake {
+  animation: companion-bob 3.2s ease-in-out infinite;
+}
+.companion--dozing {
+  opacity: 0.7;
+}
+@keyframes companion-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .companion--awake {
+    animation: none;
+  }
+}
+/* In the routine player's top bar, opposite the exit — a fixed slot so the header
+   stays balanced whether or not a companion is set. */
+.tdl-companion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+}
+.ambient__companion {
+  margin-left: 0.45rem;
+}
+.member-edit__companion {
+  margin-top: 0.6rem;
+}
 .routine-card {
   position: relative;
   overflow: hidden;
@@ -129,6 +284,11 @@
 .routine-card__count {
   color: var(--ink-soft);
   font-size: var(--text-sm);
+}
+/* Today's feeling glyph on the card foot (#C) — a moment, beside the ring. */
+.routine-card__feeling {
+  font-size: 1.15rem;
+  line-height: 1;
 }
 /* The card foot: the quiet step count on the left, the ▶ "Faire" run action on the
    right — a routine can now be done from any surface, not only the toddler kiosk. */

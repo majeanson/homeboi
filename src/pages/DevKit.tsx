@@ -69,6 +69,9 @@ import { FeatureMap } from '../components/FeatureMap'
 import { SubTabs } from '../components/SubTabs'
 import { Cluster, Rail } from '../components/Layout'
 import { SectionHeader } from '../components/SectionHeader'
+import { RoutineRing } from '../components/RoutineRing'
+import { Companion } from '../components/Companion'
+import { COMPANIONS } from '../lib/companions'
 import { SectionAvatar } from '../components/SectionAvatar'
 import { HubHead } from '../components/HubHead'
 import { SceneHead } from '../components/SceneHead'
@@ -1628,6 +1631,52 @@ export function DevKit() {
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'RoutineRing',
+      file: 'components/RoutineRing.tsx',
+      kw: 'routine progress ring anneau progrès jour calm calme',
+      render: () => (
+        <>
+          <Demo label="untouched · partway · done (today's steps — no number, no streak)">
+            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+              <span style={{ '--tint': 'var(--berry-deep)' } as React.CSSProperties}>
+                <RoutineRing done={0} total={5} tint="var(--berry-deep)" label="Où on est rendu" />
+              </span>
+              <span style={{ '--tint': 'var(--marigold-deep)' } as React.CSSProperties}>
+                <RoutineRing done={2} total={5} tint="var(--marigold-deep)" label="Où on est rendu" />
+              </span>
+              <span style={{ '--tint': 'var(--sage)' } as React.CSSProperties}>
+                <RoutineRing done={5} total={5} tint="var(--sage)" label="Terminé aujourd'hui" />
+              </span>
+            </div>
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'Companion',
+      file: 'components/Companion.tsx',
+      kw: 'compagnon mascotte routine créature animal calme companion mascot',
+      render: () => (
+        <>
+          <Demo label="the calm creatures a member can pick (pose follows the daypart, never progress)">
+            <div style={{ display: 'flex', gap: '0.9rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              {COMPANIONS.map((c) => (
+                <Companion key={c} companion={c} size={40} />
+              ))}
+            </div>
+          </Demo>
+          <Demo label="awake (day) vs dozing (night) — forced by the `at` timestamp">
+            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+              <Companion companion="fox" size={44} at={new Date('2024-01-01T10:00:00').getTime()} />
+              <Companion companion="fox" size={44} at={new Date('2024-01-01T23:00:00').getTime()} />
+            </div>
           </Demo>
         </>
       ),

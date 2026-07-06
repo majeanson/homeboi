@@ -5,6 +5,12 @@ import { hexColor } from '../_lib/validate'
 import { deleteR2Blob } from '../_lib/r2'
 import { freeMemberMediaBlobs, memberRefStatements } from '../_lib/members'
 
+// The routine companion is a closed set of creature tokens (lib/companions mirrors
+// this) — a soft preference, never free text, so it can't carry a score.
+const COMPANIONS = ['fox', 'owl', 'cat', 'bunny', 'bear', 'turtle', 'star', 'cloud']
+const companionOrNull = (v: unknown): string | null =>
+  typeof v === 'string' && COMPANIONS.includes(v) ? v : null
+
 // Household members. Read is open to the kiosk (the board needs faces +
 // "pick your face" attribution); create/edit/delete is operator-only. `colour`
 // is the tint used for board colour-coding; a member may also carry a photo
@@ -31,6 +37,7 @@ interface MemberRow {
   birthday: string | null
   notes: string | null
   gender: string | null
+  companion: string | null
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
@@ -45,7 +52,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
     // `position AS sort_order` keeps the raw snake_case row shape the whole frontend
     // (and operator/types.ts) consumes byte-identical after the DB-3 column rename.
-    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, position AS sort_order, email, phone, birthday, notes, gender FROM members WHERE household_id = ? ORDER BY position, created_at',
+    'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child, position AS sort_order, email, phone, birthday, notes, gender, companion FROM members WHERE household_id = ? ORDER BY position, created_at',
   )
     .bind(actor.householdId)
     .all<MemberRow>()
@@ -103,6 +110,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     birthday?: string | null
     notes?: string | null
     gender?: string | null
+    companion?: string | null
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
   const member = await ctx.env.DB.prepare('SELECT avatar_kind, avatar_ref FROM members WHERE id = ? AND household_id = ?')
@@ -149,6 +157,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if ('gender' in body) {
     sets.push('gender = ?')
     binds.push(genderOrNull(body.gender))
+  }
+  if ('companion' in body) {
+    sets.push('companion = ?')
+    binds.push(companionOrNull(body.companion))
   }
   if (!sets.length) return ok({ ok: true })
   binds.push(body.id, actor.householdId)

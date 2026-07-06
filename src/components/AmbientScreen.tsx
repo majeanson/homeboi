@@ -5,8 +5,9 @@ import { api } from '../lib/api'
 import { BOARD_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { formatTime, formatDayLong, capitalize as cap } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
-import { timeOfDay } from '../lib/timeofday'
-import { todRank, TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
+import { pickMomentRoutine, TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
+import { Companion } from './Companion'
+import { isCompanion } from '../lib/companions'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { CATS } from '../lib/cats'
 import { PhotoMosaic } from './PhotoMosaic'
@@ -36,6 +37,7 @@ interface RoutineRow {
   timeOfDay: string | null
   color: string | null
   cards: { icon?: string }[]
+  companion?: string | null
 }
 
 
@@ -84,12 +86,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
     enabled: show && a.showNext,
   })
-  const current = timeOfDay(now)
-  const routine = a.showNext
-    ? [...(rdata?.routines ?? [])]
-        .filter((r) => r.cards.length > 0)
-        .sort((x, y) => todRank(current, x.timeOfDay) - todRank(current, y.timeOfDay))[0]
-    : undefined
+  const routine = a.showNext ? pickMomentRoutine(rdata?.routines ?? [], now) : undefined
 
   if (!show) return null
   // Wake without leaking the gesture into the app underneath: preventDefault on the
@@ -143,6 +140,13 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
           >
             <InlineIcon name={isRoutineTod(routine.timeOfDay) ? TOD_ICON[routine.timeOfDay] : 'baby-bold'} />{' '}
             {routine.name}
+            {/* The routine's companion naps here at rest — its pose follows the
+                daypart (dozing at night), pure decoration, never a counter. */}
+            {isCompanion(routine.companion) && (
+              <span className="ambient__companion">
+                <Companion companion={routine.companion} size={26} at={now} />
+              </span>
+            )}
           </div>
         )}
       </div>

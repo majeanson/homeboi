@@ -32,4 +32,7 @@ export interface OperatorMember extends Member {
   birthday: string | null
   notes: string | null
   gender: string | null
+  // The member's chosen routine companion creature ('fox'|… , null = none). A soft
+  // preference (Phase B); bound to time-of-day, never to progress.
+  companion: string | null
 }

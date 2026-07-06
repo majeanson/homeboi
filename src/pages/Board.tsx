@@ -11,6 +11,7 @@ import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
 import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
+import { RoutineNextCard } from '../components/board/RoutineNextCard'
 import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
 import { MotsCard } from '../components/mots/MotsCard'
@@ -1189,6 +1190,9 @@ export function Board() {
 
                 </Section>
               )
+              // « Prochaine routine » — the routine that fits the moment, so routines
+              // aren't siloed in their tab. Self-hides when no carded routine exists.
+              nodes.routineNext = <RoutineNextCard />
               // « Demain » — split out of the « Aujourd'hui » card into its OWN bento (it
               // used to be bunched in as a sub-group, which made the today tile by far the
               // tallest, busiest thing on the wall). Its own card keeps each glance to one
