@@ -1521,6 +1521,18 @@ export const FR = {
     selfieAdd: 'Prendre une photo',
     selfieRemove: 'Retirer la photo',
     finishedWith: (name: string, feeling: string) => `${name} a fini avec ${feeling}`,
+    // The companion buddy: tap it to hear a warm line (on-device). Tap-initiated,
+    // never a finish-cheer — presence + play, not a reward.
+    companionTap: 'Touche ton compagnon',
+    companionSays: ['Allô !', 'On continue !', 'T’es capable !', 'Je suis avec toi.', 'On y va !', 'Beau travail !'],
+    // The sticker wall (opt-in — visible only when « Mode calme » est désactivé).
+    stickerPrompt: 'Choisis ton autocollant',
+    stickerPick: 'Placer cet autocollant',
+    stickerPlaced: 'Ajouté au mur !',
+    stickerWallLink: 'Voir le mur',
+    stickerWallTitle: 'Mur d’autocollants',
+    stickerWallEmpty: 'Pas encore d’autocollants. Termine une routine pour en placer un.',
+    stickerWallHousehold: 'Maisonnée',
     // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Enregistrer ta voix',
     clipRecorded: 'Clip enregistré',
@@ -2435,7 +2447,7 @@ export const FR = {
     byStore: 'Par magasin',
     share: 'Partager',
   },
-  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ?', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiNone: 'Aucun emoji', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.' },
+  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', done: 'Terminé', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ?', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiNone: 'Aucun emoji', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.' },
   share: {
     title: 'Ajouter à Babillard',
     lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',
@@ -4009,6 +4021,18 @@ export const EN: typeof FR = {
     selfieAdd: 'Take a photo',
     selfieRemove: 'Remove photo',
     finishedWith: (name: string, feeling: string) => `${name} finished with ${feeling}`,
+    // The companion buddy: tap it to hear a warm line (on-device). Tap-initiated,
+    // never a finish-cheer — presence + play, not a reward.
+    companionTap: 'Tap your companion',
+    companionSays: ['Hi there!', 'Keep going!', 'You’ve got this!', 'I’m with you.', 'Let’s go!', 'Nice work!'],
+    // The sticker wall (opt-in — visible only when Calm mode is OFF).
+    stickerPrompt: 'Pick your sticker',
+    stickerPick: 'Place this sticker',
+    stickerPlaced: 'Added to the wall!',
+    stickerWallLink: 'See the wall',
+    stickerWallTitle: 'Sticker wall',
+    stickerWallEmpty: 'No stickers yet. Finish a routine to place one.',
+    stickerWallHousehold: 'Household',
     // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Record your voice',
     clipRecorded: 'Clip recorded',
@@ -4900,7 +4924,7 @@ export const EN: typeof FR = {
     byStore: 'By store',
     share: 'Share',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.' },
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',

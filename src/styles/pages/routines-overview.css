@@ -153,19 +153,81 @@
     animation: none;
   }
 }
-/* In the routine player's top bar, opposite the exit — a fixed slot so the header
-   stays balanced whether or not a companion is set. */
-.tdl-companion {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-}
 .ambient__companion {
   margin-left: 0.45rem;
 }
 .member-edit__companion {
   margin-top: 0.6rem;
+}
+
+/* ---- Sticker wall (OPT-IN, calm-mode-off): the Routines-tab entry + the scene grid.
+   A permanent per-child collection the household chose to enable. ---------------- */
+.routines-sticker-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  margin: 0.25rem 0 1rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+.sticker-wall {
+  padding: 1rem clamp(0.75rem, 4vw, 2rem) 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.sticker-wall__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.sticker-wall__who {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 1.1rem;
+}
+.sticker-wall__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
+  gap: 0.6rem;
+}
+.sticker-wall__cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md, 12px);
+  background: color-mix(in srgb, var(--ink) 5%, var(--card));
+  border: 1px solid var(--line);
+}
+.sticker-wall__glyph {
+  font-size: 1.9rem;
+  line-height: 1;
+}
+.sticker-wall__remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--danger, #c0392b);
+  color: #fff;
+  cursor: pointer;
 }
 .routine-card {
   position: relative;

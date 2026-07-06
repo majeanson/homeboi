@@ -90,6 +90,8 @@ const HomeProjectFormPage = lazy(() => import('./pages/HomeProjectFormPage').the
 const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
 // Run a routine on any surface (parent phone, kiosk) — the shared player as a scene.
 const RoutineRunPage = lazy(() => import('./pages/RoutineRunPage').then((m) => ({ default: m.RoutineRunPage })))
+// « Le mur d'autocollants » — the opt-in sticker collection (calm-mode-off only).
+const StickerWallPage = lazy(() => import('./pages/StickerWallPage').then((m) => ({ default: m.StickerWallPage })))
 // Dev-only component gallery (unlinked). A live catalogue of the shared primitives
 // across the four presentation axes — see src/pages/DevKit.tsx.
 const DevKit = lazy(() => import('./pages/DevKit').then((m) => ({ default: m.DevKit })))
@@ -167,6 +169,8 @@ export function AppRoutes() {
         <Route path="/chore/new" element={<ChoreFormPage />} />
         <Route path="/home-project/new" element={<HomeProjectFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
+        {/* The opt-in sticker wall (static path — declared before /routine/:id). */}
+        <Route path="/routine/stickers" element={<StickerWallPage />} />
         <Route path="/routine/:id" element={<RoutineFormPage />} />
         {/* Run a routine standalone (the ▶ on the Routines tab / the peek action). */}
         <Route path="/routine/:id/run" element={<RoutineRunPage />} />

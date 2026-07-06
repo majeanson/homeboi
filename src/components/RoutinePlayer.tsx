@@ -9,7 +9,8 @@ import { tintInk, wash } from '../lib/colors'
 import { imgUrl } from '../lib/image'
 import { writeWith } from '../lib/write'
 import { useOptimisticMutation } from '../lib/optimistic'
-import { ROUTINES_KEY } from '../lib/queryKeys'
+import { ROUTINES_KEY, STICKERS_KEY } from '../lib/queryKeys'
+import { STICKERS } from '../lib/stickers'
 import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
@@ -40,6 +41,7 @@ interface PlayerCard {
 }
 export interface PlayerRoutine {
   id: string
+  memberId?: string | null
   memberName: string | null
   color: string | null
   name: string
@@ -219,6 +221,28 @@ export function RoutinePlayer({
     const text = routine.cards[idx].narration ?? routine.cards[idx].label
     playNarration(routine.cardsNarration?.[idx], text, speak)
   }
+  // Tap the companion → it says a warm line on-device. A tiny wiggle plays via the
+  // is-talking class. Tap-initiated (not a finish-triggered cheer), so it stays calm.
+  const [buddyTalking, setBuddyTalking] = useState(false)
+  function sayCompanion() {
+    const lines = t.routines.companionSays
+    speak(lines[Math.floor(Math.random() * lines.length)])
+    setBuddyTalking(true)
+    window.setTimeout(() => setBuddyTalking(false), 600)
+  }
+
+  // Sticker wall (OPT-IN — only when calm mode is OFF). On finishing, the child places
+  // ONE sticker on their wall; local `awarded` state then shows it done (one per finish,
+  // no farming). Kept out of the default calm experience entirely by the !calm gate.
+  const [awarded, setAwarded] = useState<string | null>(null)
+  function placeSticker(sticker: string) {
+    setAwarded(sticker)
+    writeWith(qc, 'routine-stickers', {
+      method: 'POST',
+      body: { memberId: routine.memberId ?? undefined, sticker, routineId: routine.id },
+      affectedKeys: [STICKERS_KEY],
+    }).catch(() => setAwarded(null))
+  }
   function startStep(idx: number) {
     setStartAt(nowSec())
     setRunning(true)
@@ -277,16 +301,23 @@ export function RoutinePlayer({
             <Icon name="arrow-right-bold" size={20} style={{ transform: 'rotate(180deg)' }} />
           </Link>
           <div className="tdl-name">{routine.memberName ? `${routine.memberName} · ${routine.name}` : routine.name}</div>
-          {/* The member's companion keeps them company through the run — present,
-              never grading. Bound to time-of-day only (dozes at night). */}
-          {isCompanion(routine.companion) ? (
-            <span className="tdl-companion">
-              <Companion companion={routine.companion} size={30} />
-            </span>
-          ) : (
-            <div style={{ width: 44 }} />
-          )}
+          <div style={{ width: 44 }} />
         </div>
+
+        {/* The companion buddy — a larger, present creature that keeps the child
+            company through the run. Tap it to hear a warm line (on-device speech,
+            like tapping any card). It's TAP-initiated + daypart-bound (dozes at
+            night): presence + play, never a grade — it doesn't cheer at a finish. */}
+        {isCompanion(routine.companion) && (
+          <button
+            type="button"
+            className={'tdl-buddy' + (buddyTalking ? ' is-talking' : '')}
+            onClick={sayCompanion}
+            aria-label={t.routines.companionTap}
+          >
+            <Companion companion={routine.companion} size={72} />
+          </button>
+        )}
 
         <div className="tdl-stage">
           {showAllDone ? (
@@ -377,6 +408,36 @@ export function RoutinePlayer({
                         />
                       </label>
                     ))}
+                </div>
+              )}
+              {/* The sticker wall (OPT-IN — only when « Mode calme » is OFF): pick a
+                  sticker to place on the wall. Hidden by default; a guest can't write. */}
+              {!calm && !ro && (
+                <div className="tdl-sticker">
+                  {awarded ? (
+                    <div className="tdl-sticker__done">
+                      <span className="tdl-sticker__got" aria-hidden="true">{awarded}</span>
+                      <span>{t.routines.stickerPlaced}</span>
+                      <Link to="/routine/stickers" className="tdl-sticker__wall">{t.routines.stickerWallLink}</Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="tdl-sticker__prompt">{t.routines.stickerPrompt}</div>
+                      <div className="tdl-sticker__grid">
+                        {STICKERS.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            className="tdl-sticker__opt"
+                            aria-label={t.routines.stickerPick}
+                            onClick={() => placeSticker(s)}
+                          >
+                            <span aria-hidden="true">{s}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               {/* A gentle, deliberate "do it again" — not a streak hook, just the

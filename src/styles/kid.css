@@ -312,6 +312,45 @@
   font-weight: 700;
   color: var(--ink-soft);
 }
+/* The companion buddy — a present, tappable creature that keeps the child company
+   through the run, anchored in a bottom corner of the stage. Tap → it speaks + does a
+   quick wiggle (.is-talking). Bigger than the old corner glyph; the base bob/dozing
+   comes from .companion (routines-overview.css). */
+.tdl-buddy {
+  position: absolute;
+  right: clamp(10px, 3vw, 26px);
+  bottom: clamp(10px, 3vh, 28px);
+  z-index: 2;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.18));
+}
+.tdl-buddy:active {
+  transform: scale(0.92);
+}
+.tdl-buddy.is-talking .companion {
+  animation: buddy-wiggle 0.55s var(--ease-soft, ease);
+}
+@keyframes buddy-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-9deg) scale(1.08);
+  }
+  60% {
+    transform: rotate(7deg) scale(1.08);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tdl-buddy.is-talking .companion {
+    animation: none;
+  }
+}
 /* #C — the end-of-routine feeling check-in + optional daily selfie. Calm: three big
    soft taps, optional, skippable; a moment of today, never a score. */
 .tdl-feeling {
@@ -376,6 +415,61 @@
 .tdl-selfie__add.is-busy {
   opacity: 0.6;
   pointer-events: none;
+}
+/* The sticker picker on the finish recap (OPT-IN — calm mode OFF only). Pick one to
+   place on the wall; then it shows the placed state + a link to the wall. */
+.tdl-sticker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.tdl-sticker__prompt {
+  font-family: var(--font-hand);
+  font-size: 1.35rem;
+  color: var(--ink-soft);
+}
+.tdl-sticker__grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 22rem;
+}
+.tdl-sticker__opt {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-sticker__opt:active {
+  transform: scale(0.9);
+}
+.tdl-sticker__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-hand);
+  font-size: 1.3rem;
+}
+.tdl-sticker__got {
+  font-size: 2.6rem;
+  line-height: 1;
+  animation: buddy-wiggle 0.55s var(--ease-soft, ease);
+}
+.tdl-sticker__wall {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-soft);
 }
 /* "Recommencer" — a soft, deliberate replay on the end of a routine. A quiet
    text+icon button (not a loud reward CTA): the calm STOP stays calm, this is

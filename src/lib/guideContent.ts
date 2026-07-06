@@ -756,12 +756,23 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Un compagnon de routine', en: 'A routine companion' },
         detail: {
-          fr: 'Dans Réglages ▸ Membres, choisis une petite créature (renard, hibou, chat…) pour une personne. Elle lui tient compagnie pendant sa routine et fait un somme sur l’écran de veille. Touche celle qui est choisie pour l’enlever.',
-          en: 'In Settings ▸ Members, pick a small creature (fox, owl, cat…) for a person. It keeps them company during their routine and takes a nap on the screensaver. Tap the chosen one again to remove it.',
+          fr: 'Dans Réglages ▸ Membres, choisis une petite créature (renard, hibou, chat…) pour une personne. Elle lui tient compagnie pendant sa routine (touche-la pour l’entendre te parler) et fait un somme sur l’écran de veille. Touche celle qui est choisie pour l’enlever.',
+          en: 'In Settings ▸ Members, pick a small creature (fox, owl, cat…) for a person. It keeps them company during their routine (tap it to hear it talk) and takes a nap on the screensaver. Tap the chosen one again to remove it.',
         },
         why: {
-          fr: 'Une présence amicale, jamais une récompense : le compagnon suit seulement l’heure du jour (il somnole le soir) — il ne juge pas la routine, ne compte rien, ne donne pas de points.',
-          en: 'A friendly presence, never a reward: the companion only follows the time of day (it dozes in the evening) — it never grades the routine, counts anything, or gives points.',
+          fr: 'Une présence amicale, jamais une récompense : le compagnon suit seulement l’heure du jour (il somnole le soir) et ne parle que si on le touche — il ne juge pas la routine, ne compte rien, ne donne pas de points.',
+          en: 'A friendly presence, never a reward: the companion only follows the time of day (it dozes in the evening) and only speaks when tapped — it never grades the routine, counts anything, or gives points.',
+        },
+      },
+      {
+        label: { fr: 'Le mur d’autocollants (optionnel)', en: 'The sticker wall (optional)' },
+        detail: {
+          fr: 'Si tu désactives le « Mode calme » (Réglages ▸ Affichage), un mur d’autocollants apparaît : en finissant une routine, l’enfant place un autocollant sur sa collection, qui se remplit avec le temps. Par défaut, en mode calme, il n’existe pas.',
+          en: 'If you turn OFF “Calm mode” (Settings ▸ Display), a sticker wall appears: on finishing a routine, the child places a sticker on their collection, which fills up over time. By default, in calm mode, it doesn’t exist.',
+        },
+        why: {
+          fr: 'C’est une récompense volontaire : Babillard est calme et sans récompenses par défaut, mais une famille qui VEUT un carnet d’autocollants peut l’activer. Il reste par enfant, sans classement ni « t’es en retard ».',
+          en: 'It’s an opt-in reward: Babillard is calm and reward-free by default, but a family that WANTS a sticker book can enable it. It stays per-child, with no ranking and no “you’re behind”.',
         },
       },
       {

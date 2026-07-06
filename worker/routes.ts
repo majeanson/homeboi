@@ -81,6 +81,7 @@ import * as reserve from '../functions/api/reserve'
 import * as routineAudio from '../functions/api/routine-audio'
 import * as routineCardPhoto from '../functions/api/routine-card-photo'
 import * as routineSelfie from '../functions/api/routine-selfie'
+import * as routineStickers from '../functions/api/routine-stickers'
 import * as routines from '../functions/api/routines'
 import * as car from '../functions/api/car'
 import * as schedule from '../functions/api/schedule'
@@ -207,6 +208,7 @@ const TABLE: Record<string, RouteMod> = {
   'routine-audio': routineAudio,
   'routine-card-photo': routineCardPhoto,
   'routine-selfie': routineSelfie,
+  'routine-stickers': routineStickers,
   routines,
   car,
   schedule,

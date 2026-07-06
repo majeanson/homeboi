@@ -10,6 +10,9 @@ export const BOARD_KEY = ['board']
 // sites agree on one key — invalidating MONTH_KEY prefix-matches every windowed read.
 export const MONTH_KEY = ['month']
 export const ROUTINES_KEY = ['routines']
+// The routine sticker wall (opt-in, calm-mode-off). Cross-page: the finish-picker in
+// RoutinePlayer writes it, the StickerWall scene + Routines-tab entry read it.
+export const STICKERS_KEY = ['routine-stickers']
 // The kept-drawing collection (« Mes dessins », #14). Cross-page: the gallery page,
 // the board paint badge, and lib/drawingGallery all key off it.
 export const DRAWINGS_KEY = ['drawings']

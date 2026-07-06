@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { EmptyState } from '../components/EmptyState'
 import { useAudience } from '../lib/audience'
+import { useCalm } from '../lib/calm'
 import { useAuth } from '../lib/auth'
 import { EntityShareModal } from '../components/EntityShareModal'
 import { useEntityDetail } from '../components/detail/DetailProvider'
@@ -72,6 +73,7 @@ const MOMENT_ORDER: MomentBucket[] = ['morning', 'afternoon', 'evening', 'any']
 function RoutinesParent() {
   const t = useT()
   const { lang } = useLang()
+  const { calm } = useCalm()
   const navigate = useNavigate()
   // Tap a routine to peek it (child, steps) with "Ouvrir la routine" to edit —
   // the same shared entity-detail sheet the board uses.
@@ -280,6 +282,14 @@ function RoutinesParent() {
       />
 
       <SectionIntro card="routines" />
+
+      {/* The opt-in sticker wall entry — only when « Mode calme » is OFF (the calm
+          default hides the whole reward feature). A calm household never sees it. */}
+      {!calm && routines.length > 0 && (
+        <button type="button" className="routines-sticker-link" onClick={() => navigate('/routine/stickers')}>
+          <InlineIcon name="sparkle-bold" /> {t.routines.stickerWallTitle}
+        </button>
+      )}
 
       {help.hint && routines.length > 0 && <HelpHint />}
       {help.bubble}

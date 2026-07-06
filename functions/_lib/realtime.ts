@@ -144,6 +144,8 @@ const PATH_KEYS: Record<string, string[][]> = {
   members: [['members'], ['board'], ['cercle'], ['a-regler']],
   // Kid routines render on the board and the routines tab.
   routines: [['routines'], ['board']],
+  // The routine sticker wall (opt-in) — placing/removing a sticker refreshes the wall.
+  'routine-stickers': [['routine-stickers']],
   // À compléter (todos): the board glance + day page read ['todos']; the board's own
   // poll re-reads too. Prefix-invalidating ['todos'] also refreshes day-scoped
   // queries (['todos', <day>]). ['month'] too — dated todos show on the calendar.
