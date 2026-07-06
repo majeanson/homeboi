@@ -410,36 +410,6 @@ export function RoutinePlayer({
                     ))}
                 </div>
               )}
-              {/* The sticker wall (OPT-IN — only when « Mode calme » is OFF): pick a
-                  sticker to place on the wall. Hidden by default; a guest can't write. */}
-              {!calm && !ro && (
-                <div className="tdl-sticker">
-                  {awarded ? (
-                    <div className="tdl-sticker__done">
-                      <span className="tdl-sticker__got" aria-hidden="true">{awarded}</span>
-                      <span>{t.routines.stickerPlaced}</span>
-                      <Link to="/routine/stickers" className="tdl-sticker__wall">{t.routines.stickerWallLink}</Link>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="tdl-sticker__prompt">{t.routines.stickerPrompt}</div>
-                      <div className="tdl-sticker__grid">
-                        {STICKERS.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            className="tdl-sticker__opt"
-                            aria-label={t.routines.stickerPick}
-                            onClick={() => placeSticker(s)}
-                          >
-                            <span aria-hidden="true">{s}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
               {/* A gentle, deliberate "do it again" — not a streak hook, just the
                   choice the calm STOP leaves open. A guest can't commit progress. */}
               {!ro && (
@@ -544,6 +514,37 @@ export function RoutinePlayer({
                   </button>
                 ))}
 
+              {/* The sticker reward (OPT-IN — this branch only renders on completion
+                  when « Mode calme » is OFF): pick a sticker to place on the wall. A
+                  guest can't write. Calm ON never reaches here (it shows the recap). */}
+              {!ro && allDone && (
+                <div className="tdl-sticker">
+                  {awarded ? (
+                    <div className="tdl-sticker__done">
+                      <span className="tdl-sticker__got" aria-hidden="true">{awarded}</span>
+                      <span>{t.routines.stickerPlaced}</span>
+                      <Link to="/routine/stickers" className="tdl-sticker__wall">{t.routines.stickerWallLink}</Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="tdl-sticker__prompt">{t.routines.stickerPrompt}</div>
+                      <div className="tdl-sticker__grid">
+                        {STICKERS.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            className="tdl-sticker__opt"
+                            aria-label={t.routines.stickerPick}
+                            onClick={() => placeSticker(s)}
+                          >
+                            <span aria-hidden="true">{s}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               {/* Calm OFF never shows the recap, so the routine "ends" on its last
                   card with every step ✓. Offer the same deliberate restart here so a
                   redo doesn't dead-end on a re-tappable last step. */}
