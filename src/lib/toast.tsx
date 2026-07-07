@@ -97,6 +97,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   // quiet "Récents" opener, parking over the UI — now it auto-clears.
   const [visible, setVisible] = useState(false)
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // One-time reassurance (A-6, bmad/08): the undo promise is invisible until you
+  // dare, so the very FIRST undoable action on this device carries one extra line
+  // ("tout se défait"). Per-device localStorage flag; storage broken → no hint,
+  // never a crash. It rides the first toast's lifetime, then never shows again.
+  const [hintEligible, setHintEligible] = useState(() => {
+    try {
+      return localStorage.getItem('babillard-undo-hint-seen') !== '1'
+    } catch {
+      return false
+    }
+  })
+  const hintMarked = useRef(false)
 
   const apply = useCallback((producer: (cur: UndoEntry[]) => UndoEntry[]) => {
     const next = producer(entriesRef.current)
@@ -122,6 +134,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       dismissTimer.current = null
       setVisible(false)
       setExpanded(false)
+      setHintEligible(false) // the first-toast hint retires with its bar
     }, TOAST_DISMISS_MS)
   }, [])
 
@@ -163,6 +176,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setHistory((h) => [...h, { id: entry.id, message: entry.message, at: Date.now() }].slice(-MAX_RECENTS))
       // Show the bar and (re)start the 15 s auto-dismiss for this fresh action.
       showBar()
+      // First undoable action ever on this device → the hint is now being shown;
+      // persist that so it stays a one-time courtesy (write-once via the ref).
+      if (!hintMarked.current) {
+        hintMarked.current = true
+        try {
+          localStorage.setItem('babillard-undo-hint-seen', '1')
+        } catch {
+          /* private mode / storage full — the hint just repeats next session */
+        }
+      }
     },
     [clearTimer, showBar],
   )
@@ -266,7 +289,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           bar just stops parking over the UI / mobile nav. */}
       {visible && (newest || history.length > 0) && (
         <div
-          className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}`}
+          className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}${hintEligible && newest && !expanded ? ' undo-toast--first' : ''}`}
           data-surface={surface}
           role="status"
         >
@@ -331,6 +354,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button type="button" className="undo-toast__btn" onClick={() => undo(newest.id)}>
                 {t.undo.action}
               </button>
+              {hintEligible && <span className="undo-toast__hint">{t.undo.firstHint}</span>}
             </>
           ) : (
             // No write is pending, but the session log isn't empty — keep a quiet

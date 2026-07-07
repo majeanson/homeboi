@@ -31,6 +31,7 @@ import { CercleGroupsSection } from '../components/operator/cercle'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { AiSection } from '../components/operator/ai'
 import { BuildInfoSection } from '../components/operator/buildInfo'
+import { HealthSection } from '../components/operator/healthCard'
 import { MicSelfTest } from '../components/operator/micTest'
 import { DiscoverSection, ComprendrePanel, resolveGuideCard } from '../components/operator/guide'
 import { SECTION_TINT, THEME_ALIAS, cardHomeTab, type SectionKey } from '../lib/guideContent'
@@ -308,13 +309,15 @@ export function Operator() {
       { key: 'ai', label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
       { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
       { key: 'calm', label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
-      // « Version & diagnostics » — build info + mic self-test + (when AI is on)
-      // the error log, grouped as one pill.
+      // « Version & diagnostics » — service health (which optional pieces are wired,
+      // and what quietly hides without them) + build info + mic self-test + (when
+      // AI is on) the error log, grouped as one pill.
       {
         key: 'system',
         label: t.operator.sysTabTitle,
         node: (
           <>
+            <HealthSection />
             <BuildInfoSection />
             <MicSelfTest help={operatorHelp} />
             {aiEnabled && <AiErrorLogSection help={operatorHelp} />}

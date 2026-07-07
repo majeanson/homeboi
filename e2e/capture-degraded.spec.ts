@@ -73,7 +73,7 @@ test('an AI-off capture degrades to the type picker (tiles shown directly, not b
   // disclosure is absent (picking a type is required work here, not the optional tweak).
   // Scope the tiles to the capture form: the board ＋ sheet's mode chooser reuses
   // .cat-pick (with the same labels) outside the form.
-  await expect(page.locator('.capture__routed')).toHaveText('IA hors ligne : choisis le type.')
+  await expect(page.locator('.capture__routed')).toHaveText('L’IA ne répond pas — choisis le type toi-même.')
   await expect(page.locator('.capture__correct')).toHaveCount(0)
   await expect(page.locator('.sheet form .cat-pick', { hasText: 'Souper' })).toBeVisible()
   await expect(page.locator('.sheet form .cat-pick', { hasText: 'Rendez-vous' })).toBeVisible()

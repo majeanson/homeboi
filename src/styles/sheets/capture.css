@@ -84,6 +84,19 @@ body.is-recording .add-fab {
 .undo-toast--log:focus-within {
   opacity: 1;
 }
+/* First-ever undoable action on this device (A-6, bmad/08): the pill grows a
+   second, quieter line promising everything can be undone — once, then never
+   again (localStorage flag). Wrap so the hint sits under the action row. */
+.undo-toast--first {
+  flex-wrap: wrap;
+  border-radius: 18px;
+}
+.undo-toast__hint {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  opacity: 0.75;
+  padding-top: 2px;
+}
 /* Expanded: a rounded card holding the stack of rows + a collapse control. */
 .undo-toast--stack {
   flex-direction: column;

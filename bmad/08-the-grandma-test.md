@@ -280,9 +280,16 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
 
 ## The approved plan (triaged 2026-07-07)
 
-**Wave 1 — words & fear** *(all [S], no schema, no risk)*
-A-3 plain-words pass · A-7 human error copy · A-6 undo promise (improve
-what exists) · B-15 empty-state contract · E-34 diagnostics health card.
+**Wave 1 — words & fear** *(all [S], no schema, no risk)* — **✅ SHIPPED
+2026-07-07.** A-3 plain-words pass + A-7 human error copy (one i18n sweep:
+capture degraded, board offline banner, login/save/fridge errors, uploads
+« Envoi… », privacyBody, cercle blobHint, aiOff tag) · A-6 undo promise (the
+« Récents » viewer already existed — added the one-time first-undo hint,
+`babillard-undo-hint-seen`) · B-15 empty-state contract (written into
+COMPONENTS.md row 1; taught the worst offenders: search, à-compléter,
+businesses, carnet choses/entretien) · E-34 health card (« État des
+services » in Système ▸ diagnostics; /api/health now also reports
+`photos` + `realtime`).
 
 **Wave 2 — daily speed**
 C-18 tap-budget audit + pinned e2e spec *(OQ-2 answered: meal plan, liste,

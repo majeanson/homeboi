@@ -34,5 +34,13 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     cloudOcr: !!ctx.env.MISTRAL_API_KEY,
     invite: !!ctx.env.LOGIN_PASSWORD,
     sessionSecret: !!ctx.env.SESSION_SECRET && ctx.env.SESSION_SECRET.length >= 32,
+    // Presence facts for the two bindings the SPA otherwise only discovers by
+    // failing (R2 upload → 503, realtime WS → connect error). The Réglages
+    // diagnostics health card reads these to explain degraded features BEFORE
+    // anyone hits the failure path. REALTIME_HUB is a Worker-only binding kept
+    // off the Functions Env type on purpose (see _lib/realtime.ts) — feature-
+    // detected structurally here for the same reason.
+    photos: !!ctx.env.PHOTOS,
+    realtime: !!(ctx.env as { REALTIME_HUB?: unknown }).REALTIME_HUB,
   })
 }
