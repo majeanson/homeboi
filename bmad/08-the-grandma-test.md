@@ -9,7 +9,8 @@
 > **TRIAGED with Marc, 2026-07-07 — every idea carries a verdict:**
 > **✅ Garde** (approved) · **⏸ Plus tard** (kept, not scheduled) ·
 > **❌ Rejeté** (struck — text kept for the record, do not build).
-> Marc's notes are quoted inline. Tally: **30 garde · 3 plus tard · 14 rejetés.**
+> Marc's notes are quoted inline. Tally: **29 garde · 4 plus tard · 14 rejetés**
+> (D-26 Le pont moved to plus tard on Marc's OQ-3 answer, second pass same day).
 >
 > Effort legend unchanged: **[S]** small / **[M]** medium / **[L]** large ·
 > **⚠** calm-tenet tension · **✦** out-of-the-box · **◐** partially exists.
@@ -67,10 +68,14 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
    structural: *a control ships with its help entry or it doesn't ship.*
 5. ✅ **Guided tours — reshaped by Marc** [M] ◐ — original pitch was
    per-persona variants (guest/kiosk/simple). **Marc: « adapt the tour
-   automatically but only for power users in some way. »** Direction to
-   design: the tour adapts itself from context/usage rather than fixed persona
-   scripts, and the adaptive machinery targets power users — first-contact
-   users keep one simple default tour. Needs a small design pass before build.
+   automatically but only for power users in some way. »** **Power user
+   defined (OQ-5, answered): the ones who edit the most and use the full
+   functionality — no guest, no kid, no small-subset surface.** So: the
+   adaptive tour targets the operator (and full-parent mobile users) and
+   draws on what they actually edit — e.g. surfacing tour steps for shipped
+   features their editing pattern shows they haven't touched (kin to C-18's
+   DB-derived frequency + B-11's isUnused probes). Guests/kiosk/toddler keep
+   nothing or one static simple tour. Needs a small design pass before build.
    *(reuse: `TourOverlay`, `data-tour`, `lib/tour.tsx`.)*
 6. ✅ **Fear-free by proof: the visible undo promise** [S] ◐ — **Marc: « we
    already have some of it but we could improve it. »** We have undo
@@ -126,13 +131,20 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
 
 ## C · Be faster — the tap budget & perceived speed
 
-18. ✅ **The tap-budget audit (then a test that pins it)** [M] ✦ — enumerate
-    the ten daily actions (add list item; check item; mark chore done; see
-    supper; plan supper; start a routine; leave a note; add an event; check
-    today; dismiss a note) and count taps-from-board for each. Set budgets
-    (most ≤2). Then encode them as e2e specs — `e2e/tap-budget.spec.ts`
-    asserts the click count so a future redesign can't silently make daily
-    life slower. **Open input: OQ-2 — Marc's real top-ten actions.**
+18. ✅ **The tap-budget audit (then a test that pins it)** [M] ✦ — **Marc's
+    top areas (OQ-2, answered):** meal plan · liste · flyers · board ·
+    calendar · trip (voyage) · car (l'auto) · routines · kid mode — "and
+    maybe more I'm missing." Convert each area into its 1–2 most frequent
+    *actions* (plan a supper; add/check a list item; browse a flyer deal;
+    glance the board; add an event; open the trip; check the car; start a
+    routine; enter kid mode), count taps-from-board, set budgets (most ≤2),
+    and pin them in `e2e/tap-budget.spec.ts`. **Marc's second idea, adopted
+    as the method:** derive the *true* top actions from the DB itself —
+    entity write recency/frequency per table (meals, list items, events,
+    trips…) tells us what this household actually does daily. A one-off
+    operator-side audit query (or a tiny Diagnostics read-out), never a
+    user-facing metric — same data-derived, calm-safe philosophy as B-11's
+    `isUnused(data)` probes, pointed at frequency instead of absence.
 19. ❌ ~~**Long-press ＋ → straight to the mic**~~ [S] — *rejeté.*
 20. ✅ **Frequents-first comboboxes** [S] — `EntityCombobox` ranks by recency/
     frequency of *this household's* picks (a tiny local counter, not a synced
@@ -160,15 +172,16 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
 
 ## D · Hand-in-hand — the missing 20% of shipped features
 
-26. ✅ **« Le pont » — one home for the extended family** [M] ◐ ✦ — postbox
-    (write to the house), intake (fill your card), share links (see a slice) —
-    separate doors for the *same person*. Unify: one guest landing per person
-    that composes what their token allows — today's highlights, drop a note,
-    see shared photos, their intake card. The share-modes capability model
-    (per-kind allowlists) already supports it; this is a front-door refactor.
-    Grandma gets ONE bookmark. *(reuse: guestScope allowlists, postbox,
-    intake, SharePage.)* **Open input: OQ-3 — which relatives, which weekly
-    action.**
+26. ⏸ **« Le pont » — one home for the extended family** [M] ◐ ✦ —
+    **deferred by Marc (OQ-3): plus tard.** Postbox (write to the house),
+    intake (fill your card), share links (see a slice) — separate doors for
+    the *same person*. Unify: one guest landing per person that composes what
+    their token allows — today's highlights, drop a note, see shared photos,
+    their intake card. The share-modes capability model (per-kind allowlists)
+    already supports it; this is a front-door refactor. Grandma gets ONE
+    bookmark. *(reuse: guestScope allowlists, postbox, intake, SharePage.)*
+    When revived, pick the 2–3 real relatives and build their door first;
+    E-38 (per-guest locale) rides along.
 27. ❌ ~~**« Acheter cette recette »**~~ [M] ◐ — *rejeté.* (The recipe/plan →
     pantry-low → list diff-and-seed.)
 28. ❌ ~~**Mots + drawings + TTS converge**~~ [S] ◐ — *rejeté.* (Drawn mots a
@@ -251,10 +264,11 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
 
 ## The three moves — revised after triage
 
-1. **Symmetry: the post-reader joins the pre-reader — as a guest.** A-1 + A-2 +
-   D-26 survived intact; F-45 (her own kiosk) did not. The thesis stands at
-   household scale: the toddler machinery is the accessibility layer for the
-   other end of life, delivered through the Simple lens and one bookmark.
+1. **Symmetry: the post-reader joins the pre-reader — as a guest.** A-1 + A-2
+   survived intact; D-26 (her one bookmark) is deferred, and F-45 (her own
+   kiosk) is dead. The thesis stands at household scale: the toddler machinery
+   is the accessibility layer for the other end of life, delivered through the
+   Simple lens on this household's surfaces first.
 2. **Legibility is the next feature — confirmed.** The comprehension slate
    (A-3/4/6/7/8/10, B-11/14/15, D-33) passed almost whole; the *artifacts*
    (video, printed manual, lens chips) were cut. Marc wants the app to explain
@@ -271,8 +285,10 @@ A-3 plain-words pass · A-7 human error copy · A-6 undo promise (improve
 what exists) · B-15 empty-state contract · E-34 diagnostics health card.
 
 **Wave 2 — daily speed**
-C-18 tap-budget audit + pinned e2e spec *(needs OQ-2 input)* · C-20
-frequents-first comboboxes · C-24 prefetch-on-press.
+C-18 tap-budget audit + pinned e2e spec *(OQ-2 answered: meal plan, liste,
+flyers, board, calendar, voyage, l'auto, routines, kid mode — confirm/extend
+via the DB-frequency audit)* · C-20 frequents-first comboboxes · C-24
+prefetch-on-press.
 
 **Wave 3 — discoverability**
 A-4 help-mode rollout everywhere · A-5 adaptive tour for power users *(design
@@ -281,8 +297,8 @@ points + guide-in-search (absorbs B-12) · A-8 demo sandbox · A-9 icon labels
 (soft: long-press/help-mode only) · A-10 contrast & type floor.
 
 **Wave 4 — the grandma arc**
-A-1 « Simple » audience lens → A-2 tap-to-hear everywhere → D-26 Le pont
-*(needs OQ-3 input)*.
+A-1 « Simple » audience lens → A-2 tap-to-hear everywhere. *(D-26 Le pont
+deferred to the plus-tard shelf per OQ-3.)*
 
 **Ambient & platform (continuous, order-free)**
 D-30 cast×ambient · D-31 carnets upkeep cadence · F-47 hourly breath (kiosk +
@@ -290,8 +306,9 @@ mobile, behind settings) · E-35 takeout · E-36 nightly backup · E-37 burn-in
 care · E-41 temp-id chain fix · E-39 UNIFORMIZING reds (BE-1 first) · E-40
 a11y pass · C-23 offline-aware code-splitting (measure first).
 
-**Plus tard shelf:** C-25 rush-hour diet · D-32 share-view print styles ·
-E-38 per-guest locale (revisit with D-26).
+**Plus tard shelf:** C-25 rush-hour diet · D-26 Le pont (deferred per OQ-3;
+revive by picking the 2–3 real relatives first) · D-32 share-view print
+styles · E-38 per-guest locale (rides along with D-26).
 
 **Rejected (do not build, do not re-propose):** B-13 fridge manual · B-16
 video embed · B-17 lens chips · C-19 long-press mic · C-21 PWA shortcuts ·
@@ -308,17 +325,19 @@ mode · F-45 grandma-kiosk constellation · F-46 scribble-to-list.
 - [ ] Hears something read aloud (A-2)
 - [ ] Never once saw jargon, an error code, or a dead end (A-7, E-34)
 
-## Open questions for Marc
+## Open questions — all answered except OQ-4
 
 - ~~**OQ-1** guest vs. second kitchen~~ — **answered by triage:** grandma is a
-  guest (F-45 rejected; A-1 + D-26 kept). The Simple lens serves this
-  household's tablet; Le pont serves her from her own phone/browser.
-- **OQ-2** Which ten actions are YOUR real daily top-ten? C-18's tap budget
-  should be measured against your household's true habits, not my guess.
-- **OQ-3** Le pont (D-26): who are the actual 2–3 relatives who'd use it this
-  year, and what's the ONE thing each would do weekly? Build their door first.
-- **OQ-4** How much of Wave 1 do you want done autonomously vs. reviewed
-  idea-by-idea? (Wave 1 is all no-risk copy/UI polish.)
-- **OQ-5** (narrowed) A-5's « adaptive tour for power users » — what does
-  "power user" mean to you here: the operator vs. kiosk users, or someone
-  who's used a feature N times? One sentence from you shapes the design pass.
+  guest (F-45 rejected). The Simple lens serves this household's surfaces
+  first; Le pont (deferred) would later serve her from her own phone.
+- ~~**OQ-2** the real daily top-ten~~ — **answered:** meal plan, liste,
+  flyers, board, calendar, trip, car, routines, kid mode ("maybe more") —
+  plus Marc's method upgrade: derive/confirm the list from DB entity
+  write-frequency. Folded into C-18.
+- ~~**OQ-3** Le pont's real users~~ — **answered: defer Le pont.** Moved to
+  the plus-tard shelf; revive by naming the 2–3 real relatives first.
+- **OQ-4** (still open) How much of Wave 1 do you want done autonomously vs.
+  reviewed idea-by-idea? (Wave 1 is all no-risk copy/UI polish.)
+- ~~**OQ-5** define "power user" for the adaptive tour~~ — **answered: the
+  ones who edit the most and use the full functionality — no guest, no kid,
+  no small-subset surface.** Folded into A-5.
