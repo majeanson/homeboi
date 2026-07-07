@@ -283,6 +283,23 @@ export function sharedNoteToTripNote(n: SharedTripNote): TripNote {
   }
 }
 
+// Reorder one itinerary day's entries: move index `from` → `to` (indices in the
+// day's DISPLAYED order) and return the { id, position } PATCHes that pin the new
+// order — every row gets its index as position, but rows already stored at that
+// position are skipped (fewer writes; a fresh day is all position 0, so the first
+// drag renumbers the lot). Pure so the drag handler stays a two-liner (unit-tested).
+export function reorderPatches(
+  dayNotes: Pick<TripNote, 'id' | 'position'>[],
+  from: number,
+  to: number,
+): { id: string; position: number }[] {
+  if (from === to || from < 0 || to < 0 || from >= dayNotes.length || to >= dayNotes.length) return []
+  const next = [...dayNotes]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  return next.flatMap((n, i) => (n.position === i ? [] : [{ id: n.id, position: i }]))
+}
+
 // The inclusive list of local-midnight day starts a trip spans (for the itinerary
 // tab + the calendar band). Empty when either bound is missing. Capped so a typo'd
 // range can't blow up the UI. Reuses addLocalDays (DST-safe) from the day helpers.

@@ -89,6 +89,11 @@
   max-width: min(100%, 260px);
   border-radius: var(--radius-sm);
 }
+/* A PDF attachment (CarnetDocs single-key list row) inside a trip-note card. */
+.trip-note__doc {
+  margin-top: 8px;
+  display: block;
+}
 
 /* — the composer block (text + the shared memo controls) — */
 .trip-note-add {
@@ -122,6 +127,21 @@
 /* — Itinéraire tab — */
 .voyage-itin__day {
   margin-bottom: 18px;
+}
+/* A reorderable itinerary row: the ⠿ grip (DragPill) beside the note card. The
+   card's own bottom margin moves to the row so the grip stays centred on the
+   visible card; .is-dragging/.dnd-over come from the shared dnd styles. */
+.voyage-itin__row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-md);
+}
+.voyage-itin__row .trip-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
 }
 .voyage-itin__date {
   color: var(--ink-faint);

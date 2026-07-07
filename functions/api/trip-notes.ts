@@ -16,7 +16,7 @@ import type { Ctx } from '../_lib/env'
 //
 //   GET    /api/trip-notes?tripId=<id>  -> that trip's notes, newest first
 //   POST   /api/trip-notes              -> { tripId, category?, label?, text?, member_id?, date?, media_kind?, media_key?, scene_key? }
-//   PATCH  /api/trip-notes              -> { id, text?, label?, category?, date?, media_key?, scene_key? }
+//   PATCH  /api/trip-notes              -> { id, text?, label?, category?, date?, position?, media_key?, scene_key? }
 //   DELETE /api/trip-notes              -> { id } (soft; frees media)
 
 interface TripNoteRow {
@@ -125,6 +125,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     label?: string
     category?: string
     date?: number | null
+    position?: number
     media_key?: string
     scene_key?: string
   }>(ctx.request)
@@ -148,6 +149,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (typeof body?.label === 'string') set('label', body.label.trim().slice(0, 200) || null)
   if (typeof body?.category === 'string') set('category', cat(body.category))
   if ('date' in (body ?? {})) set('date', num(body?.date))
+  // Itinerary reorder: the client renumbers a day's rows 0..n-1 (one PATCH per moved
+  // row); the GET's `ORDER BY … position, created_at DESC` then pins the new order.
+  if (typeof body?.position === 'number' && Number.isFinite(body.position))
+    set('position', Math.max(0, Math.trunc(body.position)))
   // Re-draw: swap a drawing's media + scene, free the superseded blobs.
   const newMediaKey = body?.media_key?.trim()
   if (newMediaKey) {

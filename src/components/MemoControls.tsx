@@ -42,6 +42,7 @@ export function MemoControls({
   extraBody,
   onStaged,
   withPhoto = false,
+  docUpload,
   recordLabel,
   photoLabel,
   drawDraftId = 'memo',
@@ -60,6 +61,13 @@ export function MemoControls({
   onStaged?: (memo: StagedMemo) => void
   /** STAGE mode: also show a direct photo-attach button (a guest photo message). */
   withPhoto?: boolean
+  /** POST mode: REPLACE the draw-over-photo button with a direct "attach a
+   *  document" picker (image OR PDF — a boarding pass is a file you have, not a
+   *  photo you draw over; the « Voyage » composers use this). Each file uploads
+   *  via `mediaEndpoint` (a PDF as-is, no resize) and POSTs a media_kind 'image'
+   *  note with the file name as its label; `body` merges over `extraBody`
+   *  (e.g. { category: 'document' } so it also shows under the Documents tab). */
+  docUpload?: { label: string; body?: Record<string, unknown> }
   /** Label override for the record button (default t.memo.record). */
   recordLabel?: string
   /** Label for the photo button when `withPhoto` (default t.memo.drawPhoto). */
@@ -82,6 +90,7 @@ export function MemoControls({
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const photoRef = useRef<HTMLInputElement>(null)
+  const docRef = useRef<HTMLInputElement>(null)
 
   // While recording, flag the body so the shell can drop the ＋ FAB: it floats
   // bottom-right OVER the Record/Stop + Draw/Photo row (esp. on a phone, where the
@@ -130,6 +139,42 @@ export function MemoControls({
     const file = e.currentTarget.files?.[0]
     e.currentTarget.value = ''
     if (file) await capture('image', file)
+  }
+
+  // Direct document attach (docUpload, POST mode): image or PDF, several at once —
+  // the VoyageDocuments flow, riding this composer's endpoint/extraBody so the file
+  // lands in the right slot (a dated itinerary day, a member scope…). A PDF uploads
+  // as-is (no image resize); the file NAME becomes the note's label so the row stays
+  // legible. R2 unbound → hide, like every other media control here.
+  async function onDocFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    // Snapshot the FileList BEFORE resetting the input — clearing `value` empties
+    // the live list, so iterating it afterwards would see zero files.
+    const files = Array.from(e.currentTarget.files ?? [])
+    e.currentTarget.value = ''
+    if (!docUpload || files.length === 0) return
+    setBusy(true)
+    try {
+      for (const file of files) {
+        try {
+          const key = await uploadMedia(mediaEndpoint, file, { resize: file.type !== 'application/pdf' })
+          await api(endpoint, {
+            method: 'POST',
+            body: { media_kind: 'image', media_key: key, label: file.name, text: '', ...extraBody, ...docUpload.body },
+          })
+        } catch (err) {
+          if (err instanceof MediaUnavailableError || isStatus(err, 503)) {
+            setHidden(true)
+            break
+          }
+          if (!(err instanceof ApiError)) throw err
+          /* skip this file, keep going */
+        }
+      }
+      qc.invalidateQueries({ queryKey: affectedKey })
+      onDone()
+    } finally {
+      setBusy(false)
+    }
   }
 
   function stopStream() {
@@ -202,6 +247,23 @@ export function MemoControls({
               <Icon name="camera-bold" size={18} /> {photoLabel ?? t.memo.drawPhoto}
             </button>
             <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => void onPhotoFile(e)} />
+          </>
+        ) : !staging && docUpload ? (
+          // POST mode + docUpload: a direct "attach a document" picker (image/PDF)
+          // in place of draw-over-a-photo — trips attach files, they don't doodle
+          // on boarding passes.
+          <>
+            <button type="button" className="btn" onClick={() => docRef.current?.click()} disabled={busy || recording}>
+              <Icon name="file-text-bold" size={18} /> {docUpload.label}
+            </button>
+            <input
+              ref={docRef}
+              type="file"
+              accept="image/*,application/pdf"
+              multiple
+              hidden
+              onChange={(e) => void onDocFiles(e)}
+            />
           </>
         ) : !staging ? (
           // POST mode: draw-over-a-photo (#14b), plus keep/make-routine on the pad.

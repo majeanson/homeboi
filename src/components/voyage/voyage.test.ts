@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tripDays, tripCategoryIcon, TRIP_CATEGORIES, sharedNoteToTripNote, type SharedTripNote } from './voyage'
+import { tripDays, tripCategoryIcon, TRIP_CATEGORIES, sharedNoteToTripNote, reorderPatches, type SharedTripNote } from './voyage'
 import { localDayStart, addLocalDays } from '../../lib/localDay'
 
 // tripDays drives the Itinéraire tab (one section per day) AND the calendar band
@@ -87,6 +87,51 @@ describe('sharedNoteToTripNote', () => {
     expect(drawing.media_kind).toBe('drawing')
     expect(drawing.media_key).toBe('st_abc.png')
     expect(drawing.scene_key).toBe('ss_abc.json')
+  })
+})
+
+// reorderPatches drives the itinerary drag: it must renumber the day 0..n-1 in the
+// new order, skip rows already stored at their index (fewer writes), and no-op on a
+// bad move so a stray drop never writes anything.
+describe('reorderPatches', () => {
+  const note = (id: string, position: number) => ({ id, position })
+
+  it('moves an entry down and renumbers the day (fresh day: all stored 0)', () => {
+    // Displayed A,B,C (all position 0 — the pre-reorder state). Move A → last.
+    const out = reorderPatches([note('A', 0), note('B', 0), note('C', 0)], 0, 2)
+    // New order B,C,A. B keeps stored 0 (skipped); C→1, A→2.
+    expect(out).toEqual([
+      { id: 'C', position: 1 },
+      { id: 'A', position: 2 },
+    ])
+  })
+
+  it('moves an entry up in an already-numbered day', () => {
+    const out = reorderPatches([note('A', 0), note('B', 1), note('C', 2)], 2, 0)
+    // New order C,A,B — every row shifts.
+    expect(out).toEqual([
+      { id: 'C', position: 0 },
+      { id: 'A', position: 1 },
+      { id: 'B', position: 2 },
+    ])
+  })
+
+  it('produces a fully deterministic order (each surviving index unique)', () => {
+    const day = [note('A', 0), note('B', 1), note('C', 2), note('D', 3)]
+    const out = reorderPatches(day, 1, 2)
+    // Only B and C swap; A and D stay put (skipped).
+    expect(out).toEqual([
+      { id: 'C', position: 1 },
+      { id: 'B', position: 2 },
+    ])
+  })
+
+  it('is empty for a same-spot drop or an out-of-range index', () => {
+    const day = [note('A', 0), note('B', 1)]
+    expect(reorderPatches(day, 1, 1)).toEqual([])
+    expect(reorderPatches(day, -1, 0)).toEqual([])
+    expect(reorderPatches(day, 0, 2)).toEqual([])
+    expect(reorderPatches([], 0, 0)).toEqual([])
   })
 })
 

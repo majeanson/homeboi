@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { imgUrl } from '../../lib/image'
+import { isPdfKey } from '../../lib/carnets'
 import { ZoomableImg } from '../ZoomableImg'
+import { CarnetDocs } from '../cercle/CarnetDocs'
 import { RowActions } from '../RowActions'
 import { EditField } from '../EditField'
 import { InlineIcon } from '../Icon'
@@ -58,9 +60,17 @@ export function TripNoteCard({
         {src && note.media_kind === 'audio' && (
           <audio className="trip-note__audio" controls preload="none" src={src} aria-label={t.voyage.voiceMemo} />
         )}
-        {src && (note.media_kind === 'drawing' || note.media_kind === 'image') && (
-          <ZoomableImg src={src} alt={note.label ?? ''} className="trip-note__img" />
-        )}
+        {src &&
+          (note.media_kind === 'drawing' || note.media_kind === 'image') &&
+          // A document attached in a composer can be a PDF (stored as 'image', the
+          // key self-describes — trip-doc-media's extFromType): render the CarnetDocs
+          // tile + inline read sheet instead of a broken <img>. The head already
+          // shows the file name (the note's label).
+          (isPdfKey(note.media_key!) ? (
+            <CarnetDocs keys={[note.media_key!]} variant="list" className="trip-note__doc" />
+          ) : (
+            <ZoomableImg src={src} alt={note.label ?? ''} className="trip-note__img" />
+          ))}
       </div>
       {(onDelete || onSave) && (
         <RowActions

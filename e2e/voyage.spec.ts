@@ -28,6 +28,10 @@ const TRIP = {
 }
 const TRIP_NOTES = [
   { id: 'tn1', trip_id: 'trip1', category: 'general', label: null, text: 'Passeports dans le sac à dos', media_kind: null, media_key: null, scene_key: null, member_id: null, date: null, position: 0, created_at: BASE, updated_at: null },
+  // Two DATED entries on day 1, so the itinerary renders a reorderable day (the ⠿
+  // grips only show when a day holds 2+ entries).
+  { id: 'tn2', trip_id: 'trip1', category: 'activity', label: null, text: 'Musée des sciences', media_kind: null, media_key: null, scene_key: null, member_id: null, date: BASE, position: 0, created_at: BASE + 100, updated_at: null },
+  { id: 'tn3', trip_id: 'trip1', category: 'activity', label: null, text: 'Souper au vieux port', media_kind: null, media_key: null, scene_key: null, member_id: null, date: BASE, position: 0, created_at: BASE + 50, updated_at: null },
 ]
 const PACKING = [
   { id: 'pk1', trip_id: 'trip1', member_id: null, text: 'Crème solaire', packed_at: null, position: 0, created_at: BASE },
@@ -106,6 +110,62 @@ test('checking a packing item removes it from the open list', async ({ page }) =
   await expect(row).toBeVisible()
   await page.getByRole('button', { name: 'Marquer comme emballé' }).first().click()
   await expect(row).toHaveCount(0)
+})
+
+test('dragging an itinerary entry within its day PATCHes its position', async ({ page }) => {
+  await stubVoyage(page)
+  await page.goto('/voyage/trip1') // itinéraire is the default sub-tab
+  const day1 = page.locator('[data-jour="1"]')
+  const rows = day1.locator('.voyage-itin__row')
+  await expect(rows).toHaveCount(2)
+
+  // Hold-to-drag (DND_HOLD_MS = 400): press the FIRST row's grip, rest past the
+  // hold, then glide onto the second row and release — the drop renumbers the day.
+  const grip = rows.first().locator('.dnd-grip')
+  const target = await rows.nth(1).boundingBox()
+  const from = await grip.boundingBox()
+  await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2)
+  await page.mouse.down()
+  await page.waitForTimeout(600)
+  const patch = page.waitForRequest(
+    (r) => isApi('PATCH', 'trip-notes')(r) && typeof r.postDataJSON()?.position === 'number',
+    { timeout: 20_000 },
+  )
+  await page.mouse.move(target!.x + target!.width / 2, target!.y + target!.height / 2, { steps: 8 })
+  await page.mouse.up()
+  const req = await patch
+  // Moving the top entry below the other: the displaced entry pins position 1.
+  expect(req.postDataJSON()).toMatchObject({ position: 1 })
+})
+
+test('attaching a PDF from a day composer uploads then posts a document note on that day', async ({ page }) => {
+  await stubVoyage(page)
+  await page.route('**/api/trip-doc-media**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key: 'tn_e2e.pdf', kind: 'image' }) }),
+  )
+  await page.goto('/voyage/trip1')
+  const day1 = page.locator('[data-jour="1"]')
+  await expect(day1.getByRole('button', { name: 'Ajouter un document' })).toBeVisible()
+
+  const post = page.waitForRequest(
+    (r) => isApi('POST', 'trip-notes')(r) && r.postDataJSON()?.media_key === 'tn_e2e.pdf',
+    { timeout: 20_000 },
+  )
+  // The picker input is hidden — hand it the file directly (same gesture the button opens).
+  await day1.locator('input[type="file"][accept*="pdf"]').setInputFiles({
+    name: 'billet-avion.pdf',
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4 e2e'),
+  })
+  const req = await post
+  // category 'document' (shows under Documents too), pinned to day 1, named after the file.
+  expect(req.postDataJSON()).toMatchObject({
+    category: 'document',
+    media_kind: 'image',
+    media_key: 'tn_e2e.pdf',
+    label: 'billet-avion.pdf',
+    date: BASE,
+  })
 })
 
 test('adding an info note (after picking a category) posts to trip-notes', async ({ page }) => {

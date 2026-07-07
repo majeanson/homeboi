@@ -52,13 +52,25 @@ export function TripNoteAdd({
         onSubmit={submit}
         submitLabel={t.common.add}
         submitLeadingIcon="plus-bold"
+        submitVariant="primary"
         voice={voice}
         placeholder={placeholder ?? t.voyage.addInfo}
         ariaLabel={placeholder ?? t.voyage.addInfo}
       />
-      {/* Voice memo / drawing / photo — the shared fridge-note controls, writing a
-          media trip_note instead of a board note (endpoint + extraBody override). */}
-      <MemoControls endpoint={voyageApi.notesEndpoint} affectedKey={affectedKey} extraBody={extraBody} onDone={() => {}} />
+      {/* Voice memo / drawing / document — the shared fridge-note controls, writing a
+          media trip_note instead of a board note (endpoint + extraBody override).
+          Blobs upload to the TRIP media endpoint (trip-doc-media / shared-trip-media),
+          and docUpload swaps the draw-over-photo button for a direct image/PDF attach:
+          category 'document' overrides the slot's category so the file ALSO shows
+          under the Documents tab (offline-warmable), while date/member scope stick. */}
+      <MemoControls
+        endpoint={voyageApi.notesEndpoint}
+        mediaEndpoint={voyageApi.mediaEndpoint}
+        affectedKey={affectedKey}
+        extraBody={extraBody}
+        docUpload={{ label: t.voyage.addDocument, body: { category: 'document' } }}
+        onDone={() => {}}
+      />
     </div>
   )
 }

@@ -5,11 +5,14 @@ import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { useConfirm } from '../../lib/confirm'
 import { formatDayLong, capitalize as cap } from '../../lib/format'
+import { isGuest } from '../../lib/device'
+import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { DragPill } from '../DragPill'
 import { EmptyState } from '../EmptyState'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { TripNoteAdd } from './TripNoteAdd'
 import { TripNoteCard } from './TripNoteCard'
-import { tripDays, useVoyageApi, type Trip, type TripNote } from './voyage'
+import { reorderPatches, tripDays, useVoyageApi, type Trip, type TripNote } from './voyage'
 
 // « Voyage » → Itinéraire — the day-by-day plan. One section per day the trip spans
 // (start_at..end_at inclusive); each shows that day's entries and a composer that
@@ -34,6 +37,28 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   const affectedKey = voyageApi.notesKey(trip.id)
   const days = tripDays(trip.start_at, trip.end_at)
   const memberName = (id: string | null) => (id ? faces.find((f) => f.id === id)?.name ?? '' : '')
+
+  // Reorder within a day — the shared hold-to-drag (usePointerDnd + DragPill grip,
+  // same gesture as La liste / the aisle order). ONE dnd instance serves every day
+  // section, so zone ids are day-scoped ("«day»:«index»"); canDrop pins a drag to
+  // its own day (moving an entry to ANOTHER day stays a deliberate edit, not a
+  // slip of the finger). A drop renumbers the day's rows 0..n-1 via one position
+  // PATCH per moved row (reorderPatches, pure) — the GET's ORDER BY picks it up.
+  const dayOf = (zone: string) => zone.slice(0, zone.lastIndexOf(':'))
+  const dnd = usePointerDnd({
+    onDrop: (fromId, toZone) => {
+      if (dayOf(fromId) !== dayOf(toZone)) return
+      const d = Number(dayOf(fromId))
+      const from = Number(fromId.slice(fromId.lastIndexOf(':') + 1))
+      const to = Number(toZone.slice(toZone.lastIndexOf(':') + 1))
+      const dayNotes = notes.filter((n) => n.date === d)
+      for (const patch of reorderPatches(dayNotes, from, to))
+        void write(voyageApi.notesEndpoint, { method: 'PATCH', body: patch, affectedKeys: [affectedKey] }).catch(() => {})
+    },
+    canDrop: (id, zone) => dayOf(id) === dayOf(zone),
+    holdMs: DND_HOLD_MS,
+  })
+  const canReorder = !isGuest()
 
   // Deep-link from a calendar day / day-page itinerary row: `?jour=N` (1-based
   // day-of-trip) scrolls that day's section into view, so tapping "Musée, 14h" on
@@ -113,19 +138,30 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
               <span className="voyage-itin__date mono">{cap(formatDayLong(d, lang))}</span>
               <span className="ln" />
             </div>
-            {dayNotes.map((n) => (
-              <TripNoteCard
+            {dayNotes.map((n, j) => (
+              <DragPill
                 key={n.id}
-                note={n}
-                who={memberName(n.member_id)}
-                onSave={(text) => save(n, text)}
-                onDelete={() => del(n)}
-              />
+                dnd={dnd}
+                index={j}
+                zone={`${d}:${j}`}
+                label={n.label || n.text || t.voyage.dayN(i + 1)}
+                as="div"
+                className="voyage-itin__row"
+                showGrip={canReorder && dayNotes.length > 1}
+              >
+                <TripNoteCard
+                  note={n}
+                  who={memberName(n.member_id)}
+                  onSave={(text) => save(n, text)}
+                  onDelete={() => del(n)}
+                />
+              </DragPill>
             ))}
             <TripNoteAdd tripId={trip.id} category="activity" date={d} memberId={who} placeholder={t.voyage.addDayPlan} />
           </section>
         )
       })}
+      <DragGhost ghost={dnd.ghost} />
     </div>
   )
 }

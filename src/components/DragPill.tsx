@@ -19,6 +19,10 @@ interface DragPillProps {
   dnd: Dnd
   /** This pill's position — both the drop zone id and the dnd.start id. */
   index: number
+  /** Override the zone/drag id (default String(index)). Needed when SEVERAL
+   *  reorderable lists share one page + dnd instance (e.g. the itinerary's
+   *  day sections use "«day»:«index»") — bare indexes would collide across lists. */
+  zone?: string
   /** Text shown in the floating drag ghost (the pill's label). */
   label: string
   /** Element to render — 'span' for an inline chip, 'li' for a list row. Default 'li'. */
@@ -36,6 +40,7 @@ interface DragPillProps {
 export function DragPill({
   dnd,
   index,
+  zone,
   label,
   as,
   className,
@@ -46,7 +51,7 @@ export function DragPill({
 }: DragPillProps) {
   const t = useT()
   const Tag = (as ?? 'li') as ElementType
-  const id = String(index)
+  const id = zone ?? String(index)
   const zoneClass =
     (className ?? '') +
     (dnd.activeId === id ? ' is-dragging' : '') +
