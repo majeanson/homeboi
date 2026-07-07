@@ -34,6 +34,9 @@ import {
 // only). The nav also carries the Parent/Enfant switch — flip to preview what
 // the toddler sees on any tab, flip back the same way. Nothing floats over the
 // page except the single ＋ (parent view only).
+// Order = the canonical importance order, mirrored by the themed Réglages tabs
+// (pages/Operator SECTIONS) and the guide taxonomy (CONCEPT_THEMES): board →
+// kitchen → liste → cercle → routines → settings.
 const TABS: {
   to: string
   key: 'today' | 'kitchen' | 'routines' | 'list' | 'cercle' | 'operator'
@@ -42,9 +45,9 @@ const TABS: {
 }[] = [
   { to: '/board', key: 'today', icon: 'sun-bold', color: '#D9842A' }, // marigold
   { to: '/kitchen', key: 'kitchen', icon: 'carrot-bold', color: '#C2563A' }, // terracotta
-  { to: '/routines', key: 'routines', icon: 'smiley-bold', color: '#95527A' }, // berry
-  { to: '/cercle', key: 'cercle', icon: 'users-three-bold', color: '#2A8F85' }, // turquoise (matches CATS.cercle.deep + the page header)
   { to: '/liste', key: 'list', icon: 'sparkle-bold', color: '#5891AC' }, // sky
+  { to: '/cercle', key: 'cercle', icon: 'users-three-bold', color: '#2A8F85' }, // turquoise (matches CATS.cercle.deep + the page header)
+  { to: '/routines', key: 'routines', icon: 'smiley-bold', color: '#95527A' }, // berry
   { to: '/settings', key: 'operator', icon: 'gear-six-bold', color: '#6B8A52' }, // sage
 ]
 
