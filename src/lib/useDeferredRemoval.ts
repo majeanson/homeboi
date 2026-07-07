@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useUndoToast } from './toast'
+import { onOutboxChange, outboxCount } from './outbox'
 
 // The ONE bulletproof "calm delete / clear" for a LIVE-POLLED list — codified from
 // the pattern La liste and À cocher already used, so every list shares one
@@ -68,6 +69,27 @@ function unhideIds(scope: string, ids: string[]): void {
   emit()
 }
 
+// Keep `ids` hidden until the offline outbox has fully drained (every queued write
+// replayed on reconnect), then refetch + un-hide. On a poor/no connection a deferred
+// delete is QUEUED, not yet on the server — un-hiding right away lets the next poll
+// (or the stale offline frame) flash the row back, the exact "delete it and it comes
+// back" glitch on a weak signal. Holding the un-hide until the write has actually
+// synced keeps a deleted row gone. Idempotent + self-unsubscribing.
+function unhideWhenSynced(scope: string, ids: string[], refetch: () => Promise<unknown>): void {
+  let done = false
+  const finish = () => {
+    if (done) return
+    done = true
+    off()
+    void refetch()
+      .catch(() => {})
+      .then(() => unhideIds(scope, ids))
+  }
+  const off = onOutboxChange(() => void outboxCount().then((n) => n === 0 && finish()))
+  // It may already be drained (a replay beat us here) — check once now.
+  void outboxCount().then((n) => n === 0 && finish())
+}
+
 // One displayed list (pass its query key); call `remove` for both single-row
 // deletes and batch "clear checked", filter the rows with `visible`. Every list
 // keying off the same resource head shares the pending set, so a delete on one
@@ -90,12 +112,20 @@ export function useDeferredRemoval(queryKey: QueryKey) {
       onUndo: () => unhideIds(scope, ids),
       onCommit: async () => {
         await commit()
-        // Await a refetch of EVERY mounted surface in this scope (the prefix [scope]
-        // matches both the board glance ['todos'] and any day page ['todos', <day>])
-        // before un-hiding — otherwise the surface that didn't issue the delete could
-        // flash the row back for a frame, between un-hide and its own refetch landing.
-        await qc.refetchQueries({ queryKey: [scope], type: 'active' }).catch(() => {})
-        unhideIds(scope, ids)
+        // Refetch EVERY mounted surface in this scope (the prefix [scope] matches both
+        // the board glance ['todos'] and any day page ['todos', <day>]).
+        const refetch = () => qc.refetchQueries({ queryKey: [scope], type: 'active' })
+        // On a poor/no connection `commit` QUEUED the write to the offline outbox
+        // instead of reaching the server, so a refetch can't reflect the deletion yet —
+        // un-hiding now would flash the row back on the next poll. If anything is still
+        // queued, hold the un-hide until the outbox drains and re-confirm. Online (empty
+        // outbox) we un-hide immediately after the refetch, exactly as before.
+        if ((await outboxCount()) > 0) {
+          unhideWhenSynced(scope, ids, refetch)
+        } else {
+          await refetch().catch(() => {})
+          unhideIds(scope, ids)
+        }
       },
     })
   }
