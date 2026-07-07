@@ -114,7 +114,7 @@ export function PriceMatchPage() {
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
           <EmptyState>
             {t.shop.noPostal}{' '}
-            <Link to="/settings?tab=shopping" className="btn btn--ghost mono">
+            <Link to="/settings?tab=liste" className="btn btn--ghost mono">
               {t.shop.setPostal}
             </Link>
           </EmptyState>

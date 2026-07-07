@@ -83,40 +83,10 @@ export type GuideEntry = {
   resetOnboarding?: boolean
 }
 
-export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] = [
-  {
-    id: 'start',
-    label: { fr: 'Pour commencer', en: 'To get started' },
-    blurb: {
-      fr: 'Nouveau sur Babillard ? Commence ici : l’ensemble en quelques lignes, et le bouton pour rejouer la visite guidée.',
-      en: 'New to Babillard? Start here: the whole thing in a few lines, and the button to replay the guided tour.',
-    },
-  },
-  {
-    id: 'sections',
-    label: { fr: 'Les six sections', en: 'The six sections' },
-    blurb: {
-      fr: 'Les six onglets en bas (ou à gauche sur la tablette). Chacun montre la même information de famille sous un angle différent.',
-      en: 'The six tabs at the bottom (or down the left on the tablet). Each shows the same household info from a different angle.',
-    },
-  },
-  {
-    id: 'concepts',
-    label: { fr: 'Les concepts clés', en: 'Key concepts' },
-    blurb: {
-      fr: 'Les quelques idées qui reviennent partout dans l’app. Les comprendre une fois, c’est comprendre le reste.',
-      en: 'The few ideas that show up everywhere in the app. Understand these once and the rest follows.',
-    },
-  },
-  {
-    id: 'settings',
-    label: { fr: 'Les réglages, onglet par onglet', en: 'Settings, tab by tab' },
-    blurb: {
-      fr: 'Une carte par onglet de Réglages, dans le même ordre que la barre — la maisonnée, l’accès, l’agenda, les corvées, la cuisine, le magasinage, le babillard, l’IA. Le poste de pilotage du parent.',
-      en: 'One card per Settings tab, in the same order as the bar — the household, access, agenda, chores, kitchen, shopping, board, AI. The parent’s control panel.',
-    },
-  },
-]
+// (The old GUIDE_GROUPS table-of-contents is gone: the manual no longer renders
+// as one grouped page. Each themed Réglages tab shows its own slice via
+// ComprendrePanel — keyed off `group` + CONCEPT_THEMES/cardHomeTab below — and
+// Découvrir carries the global search + the start card.)
 
 // ── The feature map: ONE themed taxonomy of "everything Babillard does" ──────
 // The concepts group is large (~24 cards); shown flat it reads as a wall. These
@@ -1723,9 +1693,8 @@ export const GUIDE: GuideEntry[] = [
         },
       },
     ],
-    // The "À compléter" templates now live under Réglages ▸ Corvées & routines; this
-    // tab id powers the "go there" link from the main Guide into that tab.
-    tab: 'chores',
+    // The "À compléter" templates live under Réglages ▸ Routines ▸ À compléter.
+    route: '/settings?tab=routines&sub=todos',
   },
   {
     id: 'activities',
@@ -1786,7 +1755,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'home-projects',
     icon: 'broom-bold',
     group: 'concepts',
-    route: '/settings?tab=chores',
+    route: '/settings?tab=routines&sub=chores',
     title: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
     what: {
       fr: 'Sous les corvées, deux listes pour les plus gros sujets de la maison : les Projets (rénover, budgéter — « nouvelle cuisine ») et l’Entretien qui revient (filtre, gouttières, vérifier les arbres). Une corvée, c’est aujourd’hui; un projet, c’est l’horizon.',
@@ -1817,9 +1786,6 @@ export const GUIDE: GuideEntry[] = [
         },
       },
     ],
-    // Powers a "go there" link from the main Guide to Réglages ▸ Corvées & routines
-    // (where the Projets / Entretien sub-tabs live).
-    tab: 'chores',
   },
   {
     id: 'voyage',
@@ -2178,7 +2144,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'cast-tv',
     icon: 'link-bold',
     group: 'concepts',
-    route: '/settings?tab=devices',
+    route: '/settings?tab=settings&sub=tablets',
     title: { fr: 'Le babillard au salon (téléviseur)', en: 'The board in the living room (TV)' },
     what: {
       fr: 'Affiche le babillard en lecture seule sur la télé du salon — un écran d’appoint calme, sans toucher à ton compte. Tu le mets en place une fois dans Réglages ▸ Partage ▸ « Au salon ».',
@@ -3165,7 +3131,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-household',
     icon: 'users-three-bold',
     group: 'settings',
-    tab: 'household',
+    route: '/settings?tab=cercle&sub=members',
     title: { fr: 'La maisonnée', en: 'The household' },
     what: {
       fr: 'Qui fait partie de la famille, et le cercle autour d’elle. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
@@ -3233,7 +3199,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-agenda',
     icon: 'calendar-dots-bold',
     group: 'settings',
-    tab: 'agenda',
+    route: '/settings?tab=board&sub=events',
     title: { fr: 'Agenda & auto', en: 'Agenda & car' },
     what: {
       fr: 'Les rendez-vous et événements de la famille, plus l’auto partagée et les horaires de travail. Ce qui s’affiche dans « Aujourd’hui / À venir » sur le babillard.',
@@ -3297,7 +3263,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-chores',
     icon: 'broom-bold',
     group: 'settings',
-    tab: 'chores',
+    route: '/settings?tab=routines&sub=chores',
     title: { fr: 'Corvées & routines', en: 'Chores & routines' },
     what: {
       fr: 'Les tâches de la maison et leur horaire, les routines en images des enfants, et les listes « À compléter ». Les corvées tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
@@ -3393,7 +3359,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-shopping',
     icon: 'shopping-bag-bold',
     group: 'settings',
-    tab: 'shopping',
+    route: '/settings?tab=liste&sub=shop',
     title: { fr: 'Magasinage', en: 'Shopping' },
     what: {
       fr: 'Tout ce qui alimente la liste et les rabais : ton code postal, les magasins à garder, l’ordre des allées, l’historique d’achats, et le suivi fantôme opt-in.',
@@ -3479,7 +3445,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-recipes',
     icon: 'tag-bold',
     group: 'settings',
-    tab: 'recipes',
+    route: '/settings?tab=kitchen&sub=tags',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
       fr: 'Les réglages de cuisine : les étiquettes de recettes, la couleur des cuillères et tasses, la couleur et l’affichage de chaque repas, et la réserve.',
@@ -3561,7 +3527,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-devices',
     icon: 'device-tablet-bold',
     group: 'settings',
-    tab: 'devices',
+    route: '/settings?tab=settings&sub=tablets',
     title: { fr: 'Accès & appareils', en: 'Access & devices' },
     what: {
       fr: 'Les tablettes jumelées et les liens de partage temporaires (gardienne, accueil, famille). C’est ici que tu donnes — ou reprends — l’accès au babillard.',
@@ -3639,7 +3605,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-ai',
     icon: 'sparkle-bold',
     group: 'settings',
-    tab: 'ai',
+    route: '/settings?tab=settings&sub=ai',
     title: { fr: 'IA & système', en: 'AI & system' },
     what: {
       fr: '« Cette semaine » par visages, le bilan IA sur demande, l’interrupteur marche/arrêt de l’IA, et les outils de mise au point (journal d’entretien, mode veille).',
@@ -3729,7 +3695,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-display',
     icon: 'paint-brush-bold',
     group: 'settings',
-    tab: 'display',
+    route: '/settings?tab=settings&sub=display',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
       fr: 'L’apparence de cet appareil et du babillard : thème jour/nuit, langue, vue parent/enfant, accessibilité, disposition des cartes, mode veille, voix de lecture, photos de famille et mode calme.',

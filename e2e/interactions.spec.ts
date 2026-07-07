@@ -108,11 +108,10 @@ test.describe('navigation', () => {
   })
 
   test('the audience switch enters the kid view as a one-way door', async ({ page }) => {
-    // Entering the toddler lens lives in Réglages ▸ Affichage now (the nav's
-    // one-tap peek is gone). Parent → Enfant from the Display tab's switch.
-    await APP('/settings')(page)
+    // Entering the toddler lens lives in Réglages ▸ Système ▸ Affichage now (the
+    // nav's one-tap peek is gone). Parent → Enfant from the display sub's switch.
+    await APP('/settings?tab=settings&sub=display')(page)
     await settle(page, '.operator__tabs')
-    await page.getByRole('tab', { name: 'Le babillard' }).click()
     // The Affichage tab now has several .audience-switch groups (contrast,
     // text-scale, view, tutorial); scope to the parent/kid/guest "view" group and
     // click its "Enfant" option rather than a global .nth(1).
@@ -185,11 +184,11 @@ test.describe('settings tabs', () => {
     // (role=tab) row, so an unscoped getByRole('tab') would also count the sub-tabs.
     const tabs = page.locator('.operator__tabs').getByRole('tab')
     const n = await tabs.count()
-    // 9 task-oriented tabs (down from 21 thin ones): Guide (first/default), La
-    // maisonnée, Accès & appareils, Agenda & auto, Corvées & routines, La cuisine,
-    // Magasinage, Le babillard, IA & système. Each merged tab stacks its old
-    // sections as sub-sections (so every section is still reachable).
-    expect(n).toBe(9)
+    // Découvrir (first/default) + the six themed tabs, one per hub section in the
+    // canonical order: Le babillard, La cuisine, La liste, Le cercle, Routines,
+    // Système. Each themed tab stacks its sections as sub-sections behind its
+    // « Régler » lens (so every section is still reachable).
+    expect(n).toBe(7)
     for (let i = 0; i < n; i++) {
       await tabs.nth(i).click()
       await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true')
@@ -202,10 +201,10 @@ test.describe('settings tabs', () => {
 
 test.describe('toggles', () => {
   async function openDisplay(page: Page) {
-    await APP('/settings')(page)
+    // Theme/language/audience are device-wide: Système ▸ Affichage now — deep-link
+    // straight to that sub so only the display panel renders.
+    await APP('/settings?tab=settings&sub=display')(page)
     await settle(page, '.operator__tabs')
-    // By name, not index — adding a settings tab must not shift these tests.
-    await page.getByRole('tab', { name: 'Le babillard' }).click()
   }
 
   test('theme toggle flips the persisted theme', async ({ page }) => {
@@ -286,7 +285,8 @@ test.describe('settings forms', () => {
   })
 
   test('add a household member', async ({ page }) => {
-    await page.getByRole('tab', { name: 'La maisonnée' }).click()
+    // Members live under Le cercle now (its first sub, « La maisonnée »).
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Le cercle' }).click()
     // The member-add box is now the shared EditField (form.edit-field), no longer a
     // hand-rolled operator__inline-form.
     const form = page.locator('.operator__panel form.edit-field')
@@ -295,7 +295,8 @@ test.describe('settings forms', () => {
   })
 
   test('add an event', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Agenda & auto' }).click()
+    // Events live under Le babillard now (its first sub — the board IS the agenda).
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Le babillard' }).click()
     // Adding now opens the full-screen event scene (the panel's inline form is
     // EDIT-only): "Ajouter un rendez-vous" navigates to /event/new with the same
     // EventForm — a scene, not a sheet, so its fields ride above the keyboard.
@@ -310,11 +311,11 @@ test.describe('settings forms', () => {
   })
 
   test('add a chore', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Corvées' }).click()
+    // Chores are the « Corvées » sub of the Routines themed tab now.
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Routines', exact: true }).click()
+    await page.locator('.subtabs').getByRole('tab', { name: 'Corvées', exact: true }).click()
     // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
     // edit/remove only).
-    // .first(): the « Corvées & routines » tab stacks chores + routines + todos, each
-    // with its own .operator__add — the chore one is first.
     await page.locator('.operator__add').first().click()
     await page.waitForURL(/\/chore\/new/)
     const form = page.locator('.scene .operator__chore-form')
@@ -336,7 +337,8 @@ test.describe('settings forms', () => {
   })
 
   test('save the shopping postal code', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Magasinage' }).click()
+    // Shopping config lives under La liste now (its first sub, « Magasinage »).
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'La liste', exact: true }).click()
     // The postal form is the shared EditField (form.edit-field) now.
     const form = page.locator('.operator__panel form.edit-field')
     await form.locator('input.input').first().fill('H2X 1Y4')
@@ -393,7 +395,8 @@ test.describe('settings forms', () => {
   })
 
   test('claim a tablet with a 6-digit code', async ({ page }) => {
-    await page.getByRole('tab', { name: 'Accès & appareils' }).click()
+    // Pairing lives under Système now (its first sub, « Tablettes jumelées »).
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Système' }).click()
     const form = page.locator('.operator__claim form')
     await form.locator('input.input').first().fill('123456')
     await expectApi(page, 'POST', 'pair/claim', () => form.locator('button[type="submit"]').click())
@@ -1066,11 +1069,10 @@ test.describe('recurring chores on the board', () => {
   })
 
   test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
+    // The legacy ?tab=chores deep-link folds to Routines ▸ Corvées directly (its
+    // panel opens on the Corvées SubTab), so no tab click is needed.
     await APP('/settings?tab=chores')(page)
     await settle(page, '.operator__tabs')
-    // Scope to the settings tab strip: « Projets & Entretien » added a Corvées SubTab
-    // inside the panel, so an unscoped tab-name lookup is now ambiguous.
-    await page.locator('.operator__tabs').getByRole('tab', { name: 'Corvées' }).click()
     // The "Céduler"-only expander is gone — a chore row is now a ListRow whose
     // RowActions ✏️ ("Modifier la corvée") expands the SAME full ChoreForm (one
     // editor) with the RecurPicker. The .operator__chore-row class only appears on

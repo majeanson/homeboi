@@ -28,8 +28,9 @@ test('the contextual ? deep-links into the matching Guide card', async ({ page }
   const dot = page.locator('.avatar--help').first()
   await expect(dot).toBeVisible()
   await dot.click()
-  // The card param is consumed (replaced) once read, leaving a clean URL.
-  await expect(page).toHaveURL(/\/settings\?tab=guide$/)
+  // The ?card= deep-link homes onto the card's THEMED Réglages tab (Comprendre
+  // lens); the card param is consumed (replaced), pinning tab+lens in the URL.
+  await expect(page).toHaveURL(/\/settings\?tab=kitchen&lens=comprendre$/)
   // The Kitchen card is the one opened + highlighted, scrolled into view.
   const target = page.locator('.guide__card.is-target')
   await expect(target).toBeVisible()

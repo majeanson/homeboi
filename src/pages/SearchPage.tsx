@@ -83,7 +83,7 @@ function relatedFor(kind: AnswerKind, t: ReturnType<typeof useT>): { to: string;
     cercle: { to: '/cercle', label: t.nav.cercle, icon: 'users-three-bold' as IconName },
     settings: { to: '/settings', label: t.nav.operator, icon: 'gear-six-bold' as IconName },
   }
-  const guide = { to: '/settings?tab=guide', label: t.search.guide, icon: 'book-open-bold' as IconName }
+  const guide = { to: '/settings?tab=decouvrir', label: t.search.guide, icon: 'book-open-bold' as IconName }
   const map: Record<AnswerKind, { to: string; label: string; icon: IconName }[]> = {
     meal: [S.kitchen, S.liste],
     event: [S.board],
@@ -566,7 +566,7 @@ export function SearchPage() {
                 {res!.projects.items.map((p) => (
                   <Link
                     key={p.id}
-                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=chores'}
+                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=routines&sub=chores'}
                     className="search__row"
                   >
                     <span className="search__pic" aria-hidden="true" style={{ color: p.color ?? undefined }}>

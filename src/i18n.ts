@@ -1657,15 +1657,16 @@ export const FR = {
     colorLabel: 'Couleur',
     sections: 'Sections',
     jumpAria: 'Sections de cet onglet',
-    // Group labels that segment the section strip into calm clusters (findability).
-    secMaisonnee: 'La maisonnée',
-    secAccess: 'Accès & appareils',
-    secAgenda: 'Agenda & auto',
-    secTasks: 'Corvées & routines',
+    // The themed Réglages tabs (one per hub section, same wording as the nav —
+    // board/liste/cercle/routines reuse t.nav.* directly) + the Découvrir entry
+    // tab and the per-tab « Comprendre / Régler » lens toggle.
+    secDiscover: 'Découvrir',
     secKitchen: 'La cuisine',
-    secShopping: 'Magasinage',
     secBoard: 'Le babillard',
-    secSystem: 'IA & système',
+    secSystem: 'Système',
+    lensLearn: 'Comprendre',
+    lensSet: 'Régler',
+    lensAria: 'Comprendre ou régler',
     kioskNotice:
       'Tablette jumelée : tu peux ajuster la plupart des réglages ici. La maisonnée et le jumelage des tablettes demandent le compte opérateur (connexion sur un téléphone).',
     kioskSignIn: 'Se connecter comme opérateur',
@@ -4159,14 +4160,13 @@ export const EN: typeof FR = {
     sections: 'Sections',
     jumpAria: 'Sections in this tab',
     // Group labels that segment the section strip into calm clusters (findability).
-    secMaisonnee: 'Household',
-    secAccess: 'Access & devices',
-    secAgenda: 'Calendar & car',
-    secTasks: 'Chores & routines',
+    secDiscover: 'Discover',
     secKitchen: 'Kitchen',
-    secShopping: 'Shopping',
     secBoard: 'The board',
-    secSystem: 'AI & system',
+    secSystem: 'System',
+    lensLearn: 'Understand',
+    lensSet: 'Adjust',
+    lensAria: 'Understand or adjust',
     kioskNotice:
       'Paired tablet: you can change most settings here. Members and tablet pairing need the operator account (sign in on a phone).',
     kioskSignIn: 'Sign in as operator',

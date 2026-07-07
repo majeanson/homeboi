@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -32,7 +32,9 @@ import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { AiSection } from '../components/operator/ai'
 import { BuildInfoSection } from '../components/operator/buildInfo'
 import { MicSelfTest } from '../components/operator/micTest'
-import { GuideSection } from '../components/operator/guide'
+import { DiscoverSection, ComprendrePanel, resolveGuideCard } from '../components/operator/guide'
+import { SECTION_TINT, THEME_ALIAS, cardHomeTab, type SectionKey } from '../lib/guideContent'
+import { InlineIcon, type IconName } from '../components/Icon'
 import { SubTabs } from '../components/SubTabs'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
@@ -45,41 +47,56 @@ import type { Member, Device, Chore, Routine, EventRow } from '../components/ope
 // (see lib/tabParam). The sections themselves live in src/components/operator/* —
 // this page is just the shell: auth gate, queries, tab state, and the
 // invalidation fan-out the sections call after a write.
-// Réglages is now 9 task-oriented tabs (down from 21 thin ones): related sections
-// stack as sub-sections under one tab, grouped by the mindset you're in when you
-// change them. Order here = the sidebar order. The `id` is the tab's stable deep-link
-// key (?tab=<id>); the 12 retired ids live on as aliases (TAB_ALIAS) so every old
-// /settings?tab=… link still lands on the right tab.
-const SECTIONS = [
-  { id: 'guide', key: 'guide' as const },
-  { id: 'household', key: 'secMaisonnee' as const }, // members + cercle
-  { id: 'devices', key: 'secAccess' as const }, //     tablets + guest links (operator-only)
-  { id: 'agenda', key: 'secAgenda' as const }, //      events + car/schedule
-  { id: 'chores', key: 'secTasks' as const }, //       chores + routines + à-compléter
-  { id: 'recipes', key: 'secKitchen' as const }, //    recipes + measure pills + meals + réserve
-  { id: 'shopping', key: 'secShopping' as const }, //  list config + aisles + stores + history + ghost
-  { id: 'display', key: 'secBoard' as const }, //      display + layout + ambient + photos
-  { id: 'ai', key: 'secSystem' as const }, //          la semaine (glance+recap) + AI + voix + calme + diagnostics
+// Réglages is « Découvrir » + SIX THEMED TABS — one per hub section, in the
+// canonical importance order, each wearing its section's colour (SECTION_TINT)
+// and icon (the hub nav's). A themed tab has two lenses (?lens=): « Comprendre »
+// (that theme's slice of the guide — ComprendrePanel) and « Régler » (its
+// settings sub-sections, the default). The tab `id` IS the SectionKey, so the
+// taxonomy, the tints and the ?card= homing all share one id space; every
+// retired id lives on in LEGACY_TAB so old /settings?tab=… links still land.
+const SECTIONS: { id: string; icon: IconName }[] = [
+  { id: 'decouvrir', icon: 'book-open-bold' }, // search-all + feature map + première fois
+  { id: 'board', icon: 'sun-bold' }, //           events + layout + la semaine
+  { id: 'kitchen', icon: 'carrot-bold' }, //      tags + pastilles + mesures + repas + réserve
+  { id: 'liste', icon: 'sparkle-bold' }, //       liste + allées + magasins + historique + ghost
+  { id: 'cercle', icon: 'users-three-bold' }, //  membres + groupes + autos + horaires
+  { id: 'routines', icon: 'smiley-bold' }, //     routines + corvées + à-compléter
+  { id: 'settings', icon: 'gear-six-bold' }, //   Système: appareils + invités + affichage + veille + photos + IA + voix + calme + diagnostics
 ]
 
-// Retired tab id → the tab (and the within-tab sub-section) that now hosts it, so
-// a deep link to an old section (/settings?tab=routines) still opens the right tab
-// AND selects the right sub-tab (Corvées ▸ Routines). The valid-tab set passed to
-// useTabParam includes these keys; the folding below maps an alias to its host tab,
-// and its `sub` becomes the sub-tab fallback when the URL carries no explicit ?sub.
-const TAB_ALIAS: Record<string, { tab: string; sub: string }> = {
-  cercle: { tab: 'household', sub: 'cercle' },
-  guest: { tab: 'devices', sub: 'guest' },
-  auto: { tab: 'agenda', sub: 'cars' },
-  routines: { tab: 'chores', sub: 'routines' },
-  todos: { tab: 'chores', sub: 'todos' },
-  meals: { tab: 'recipes', sub: 'meals' },
-  reserve: { tab: 'recipes', sub: 'reserve' },
-  ghost: { tab: 'shopping', sub: 'ghost' },
-  calm: { tab: 'ai', sub: 'calm' },
-  photos: { tab: 'display', sub: 'photos' },
-  week: { tab: 'ai', sub: 'thisweek' },
-  'ai-log': { tab: 'ai', sub: 'system' },
+// Every retired tab id → the themed tab (and sub-section) that hosts it now, so
+// ANY old /settings?tab=… link still lands right. `bySub` handles the three old
+// tabs whose sub-sections split across themes (agenda, display, ai): the raw
+// ?sub= picks the real target; sub keys themselves never changed, so a ?sub that
+// stays within the base tab passes through useTabParam's valid-set untouched.
+const LEGACY_TAB: Record<string, { tab: string; sub?: string; bySub?: Record<string, { tab: string; sub: string }> }> = {
+  guide: { tab: 'decouvrir' },
+  household: { tab: 'cercle', sub: 'members' },
+  devices: { tab: 'settings', sub: 'tablets' },
+  agenda: {
+    tab: 'board',
+    sub: 'events',
+    bySub: { cars: { tab: 'cercle', sub: 'cars' }, schedule: { tab: 'cercle', sub: 'schedule' } },
+  },
+  chores: { tab: 'routines', sub: 'chores' },
+  recipes: { tab: 'kitchen', sub: 'tags' },
+  shopping: { tab: 'liste', sub: 'shop' },
+  display: { tab: 'settings', sub: 'display', bySub: { layout: { tab: 'board', sub: 'layout' } } },
+  ai: { tab: 'settings', sub: 'ai', bySub: { thisweek: { tab: 'board', sub: 'thisweek' } } },
+  // The previously-retired ids, re-pointed at their themed homes:
+  guest: { tab: 'settings', sub: 'guest' },
+  auto: { tab: 'cercle', sub: 'cars' },
+  todos: { tab: 'routines', sub: 'todos' },
+  meals: { tab: 'kitchen', sub: 'meals' },
+  reserve: { tab: 'kitchen', sub: 'reserve' },
+  ghost: { tab: 'liste', sub: 'ghost' },
+  calm: { tab: 'settings', sub: 'calm' },
+  photos: { tab: 'settings', sub: 'photos' },
+  week: { tab: 'board', sub: 'thisweek' },
+  'ai-log': { tab: 'settings', sub: 'system' },
+  // 'cercle' and 'routines' graduated from alias to REAL tab ids: ?tab=routines
+  // lands on the routines tab (its namesake sub is first), ?tab=cercle on the
+  // cercle tab (members first — the old alias meant the groups sub; same theme).
 }
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
@@ -139,25 +156,58 @@ export function Operator() {
   // Which settings tab is open, held in the URL (?tab=<id>). A deep link selects
   // the matching tab (/settings?tab=routines) and the choice survives a refresh
   // or a return from elsewhere — unlike the old read-only hash. See tabParam.
-  // A kiosk can't admin members or pair devices — drop those two tabs and keep
-  // them out of the valid tab set so a deep link can't land on them. "Still
-  // loading" counts as full access so an operator's deep link (?tab=household)
-  // survives the auth round-trip instead of snapping to the default tab.
+  // "Still loading" counts as full access so an operator's deep link to a gated
+  // sub-section survives the auth round-trip instead of snapping to the default.
+  // A kiosk can't admin members, pair devices, or issue guest links — those are
+  // SUB-sections now (under Le cercle and Système) and drop per-sub below; every
+  // themed tab itself stays visible, and the server keeps those writes
+  // operator-only regardless.
   const fullAccess = signedIn || loading
-  // Guest issuance is operator-only (the server's guest/start is 'operator'
-  // scope), so a kiosk never sees that tab either — same as Membres + Tablettes.
-  // A kiosk can't admin members or pair devices/issue guest links. Those live in two
-  // operator-only tabs now — « La maisonnée » (id 'household': members + cercle) and
-  // « Accès & appareils » (id 'devices': tablets + guest) — both dropped wholesale for
-  // a kiosk and kept out of the valid set so a deep link can't bypass the gate.
-  const sections = fullAccess ? SECTIONS : SECTIONS.filter((s) => s.id !== 'household' && s.id !== 'devices')
-  const sectionIds = sections.map((s) => s.id)
-  // The valid set also accepts every retired alias id, so an old deep link parses;
-  // resolveTab folds an alias to its host (and a host that's hidden on this device —
-  // e.g. ?tab=guest on a kiosk — back to the default tab).
-  const [rawTab, setTab] = useTabParam('tab', sectionIds[0], [...sectionIds, ...Object.keys(TAB_ALIAS)])
-  const aliased = TAB_ALIAS[rawTab]?.tab ?? rawTab
-  const tab = sectionIds.includes(aliased) ? aliased : sectionIds[0]
+  const sectionIds = SECTIONS.map((s) => s.id)
+  // Tab labels: the themed tabs reuse the very words the hub nav uses (t.nav.*
+  // where one exists), so "the orange tab in the app" and "the orange tab in
+  // Réglages" always read identically; Système is the sage machine-room.
+  const sectionLabel: Record<string, string> = {
+    decouvrir: t.operator.secDiscover,
+    board: t.operator.secBoard,
+    kitchen: t.operator.secKitchen,
+    liste: t.nav.list,
+    cercle: t.nav.cercle,
+    routines: t.nav.routines,
+    settings: t.operator.secSystem,
+  }
+  const [params, setParams] = useSearchParams()
+  // The valid set also accepts every retired id, so an old deep link parses;
+  // LEGACY_TAB folds it (sub-aware for the three split tabs) to the themed host.
+  const [rawTab, setTab] = useTabParam('tab', sectionIds[0], [...sectionIds, ...Object.keys(LEGACY_TAB)])
+  const rawSub = params.get('sub')
+  const legacy = LEGACY_TAB[rawTab]
+  const legacyTarget = legacy ? (rawSub ? legacy.bySub?.[rawSub] : undefined) ?? { tab: legacy.tab, sub: legacy.sub } : null
+  let tab = legacyTarget ? legacyTarget.tab : rawTab
+  if (!sectionIds.includes(tab)) tab = sectionIds[0]
+  // ?card= homing: a guide-card deep-link (HelpDot / HelpBubble / EmptyState /
+  // richText token / end-of-tour / search result) forces the card's home tab and
+  // the Comprendre lens; ComprendrePanel then consumes the param and pins
+  // tab+lens into the URL (see useGuideCardTarget), so the view stays put.
+  const cardParam = params.get('card')
+  const cardHome = cardParam ? cardHomeTab(resolveGuideCard(cardParam, null).id ?? '') : null
+  if (cardHome && sectionIds.includes(cardHome)) tab = cardHome
+  // « Comprendre / Régler » — the per-theme lens, default Régler (stored as no
+  // param: Réglages is first a doing surface). Découvrir has no lens.
+  const [lensParam, setLens] = useTabParam('lens', 'regler', ['comprendre', 'regler'])
+  const lens = cardHome && cardHome !== 'decouvrir' ? 'comprendre' : lensParam
+  // Legacy ?theme= links (the old Guide jump-grid tiles): open that theme's tab
+  // on its Comprendre lens; old 5-bucket keys resolve through THEME_ALIAS.
+  useEffect(() => {
+    const theme = params.get('theme')
+    if (!theme) return
+    const home = THEME_ALIAS[theme] ?? theme
+    const next = new URLSearchParams(params)
+    next.delete('theme')
+    next.set('tab', SECTIONS.some((s) => s.id === home) ? home : 'decouvrir')
+    if (home !== 'decouvrir') next.set('lens', 'comprendre')
+    setParams(next, { replace: true })
+  }, [params, setParams])
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
       reserveLocations: t.operator.reserveTitle,
@@ -189,62 +239,18 @@ export function Operator() {
     return labels[k] ?? k
   }, tab)
 
-  // Each Réglages tab holds its sub-sections in a SubTabs pill row ("one job at a
-  // time") instead of stacking every panel in one long scroll — so a tab shows ONE
-  // section at a time (the .subtabs family La cuisine + Le cercle already use). The
-  // `key` is the ?sub= deep-link id (also the TAB_ALIAS sub targets); the `label`
-  // reuses each section's own title key so the pill matches the heading it opens.
-  // ai's error log is conditional on AI being on. The Guide tab is a single body, so
-  // it isn't listed here (rendered directly below).
+  // Each themed tab's « Régler » lens holds its sub-sections in a SubTabs pill
+  // row ("one job at a time") instead of stacking every panel in one long scroll.
+  // The `key` is the ?sub= deep-link id (also the LEGACY_TAB sub targets) — sub
+  // keys are UNCHANGED from the old 9-tab layout, so old ?sub= links survive; the
+  // `label` reuses each section's own title key so the pill matches the heading
+  // it opens. Sections are homed on the theme they configure: the board tab owns
+  // what the board SHOWS (agenda, layout, la semaine), Système owns the
+  // device/household-wide machinery (access, display, veille, IA, diagnostics).
   const subSections: Record<string, { key: string; label: string; node: ReactNode }[]> = {
-    household: [
-      { key: 'members', label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
-      { key: 'cercle', label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
-    ],
-    devices: [
-      {
-        key: 'tablets',
-        label: t.operator.devices,
-        node: (
-          <>
-            <ClaimTablet onClaimed={load} />
-            <DevicesSection devices={devices} onChange={load} />
-          </>
-        ),
-      },
-      { key: 'guest', label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
-    ],
-    agenda: [
+    board: [
       { key: 'events', label: t.operator.events, node: <EventsSection events={events} members={members} onChange={load} /> },
-      { key: 'cars', label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
-      { key: 'schedule', label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
-    ],
-    chores: [
-      { key: 'chores', label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
-      { key: 'routines', label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
-      { key: 'todos', label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
-    ],
-    recipes: [
-      { key: 'tags', label: t.operator.tagsTitle, node: <RecipeTagsSection help={operatorHelp} /> },
-      { key: 'pills', label: t.operator.pillsTitle, node: <RecipePillsSection help={operatorHelp} /> },
-      { key: 'measure', label: t.operator.measureColorsTitle, node: <MeasureColorsSection help={operatorHelp} /> },
-      { key: 'meals', label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
-      { key: 'reserve', label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
-    ],
-    shopping: [
-      { key: 'shop', label: t.operator.shopping, node: <ShopSection help={operatorHelp} /> },
-      { key: 'aisles', label: t.operator.aisleOrder, node: <AisleOrderSection /> },
-      { key: 'stores', label: t.operator.storeFilter, node: <StoreFilterSection help={operatorHelp} /> },
-      { key: 'history', label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
-      { key: 'ghost', label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
-    ],
-    display: [
-      { key: 'display', label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
       { key: 'layout', label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
-      { key: 'ambient', label: t.operator.ambientTitle, node: <AmbientSettingsSection help={operatorHelp} /> },
-      { key: 'photos', label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
-    ],
-    ai: [
       // « La semaine » — the calm week glance + the AI weekly recap, one pill.
       {
         key: 'thisweek',
@@ -256,12 +262,54 @@ export function Operator() {
           </>
         ),
       },
+    ],
+    kitchen: [
+      { key: 'tags', label: t.operator.tagsTitle, node: <RecipeTagsSection help={operatorHelp} /> },
+      { key: 'pills', label: t.operator.pillsTitle, node: <RecipePillsSection help={operatorHelp} /> },
+      { key: 'measure', label: t.operator.measureColorsTitle, node: <MeasureColorsSection help={operatorHelp} /> },
+      { key: 'meals', label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
+      { key: 'reserve', label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
+    ],
+    liste: [
+      { key: 'shop', label: t.operator.shopping, node: <ShopSection help={operatorHelp} /> },
+      { key: 'aisles', label: t.operator.aisleOrder, node: <AisleOrderSection /> },
+      { key: 'stores', label: t.operator.storeFilter, node: <StoreFilterSection help={operatorHelp} /> },
+      { key: 'history', label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
+      { key: 'ghost', label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
+    ],
+    cercle: [
+      { key: 'members', label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
+      { key: 'cercle', label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
+      // L'auto + per-member hours live in Le cercle's world (getting-around, teal).
+      { key: 'cars', label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
+      { key: 'schedule', label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
+    ],
+    routines: [
+      // The namesake sub leads (also keeps legacy ?tab=routines landing here).
+      { key: 'routines', label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
+      { key: 'chores', label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
+      { key: 'todos', label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
+    ],
+    settings: [
+      {
+        key: 'tablets',
+        label: t.operator.devices,
+        node: (
+          <>
+            <ClaimTablet onClaimed={load} />
+            <DevicesSection devices={devices} onChange={load} />
+          </>
+        ),
+      },
+      { key: 'guest', label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
+      { key: 'display', label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
+      { key: 'ambient', label: t.operator.ambientTitle, node: <AmbientSettingsSection help={operatorHelp} /> },
+      { key: 'photos', label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
       { key: 'ai', label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
-      // Read-aloud voice + calm mode — system-wide behaviours, moved here from « Le babillard ».
       { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
       { key: 'calm', label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
-      // « Version & diagnostics » — build info + mic self-test + (when AI is on) the
-      // error log, grouped as one pill. (The « Mode inactif » idle-debug tool was removed.)
+      // « Version & diagnostics » — build info + mic self-test + (when AI is on)
+      // the error log, grouped as one pill.
       {
         key: 'system',
         label: t.operator.sysTabTitle,
@@ -276,15 +324,20 @@ export function Operator() {
     ],
   }
 
+  // Kiosk gating, per-sub: member/group admin, tablet pairing and guest links are
+  // operator-only — dropped from the pill row AND the valid ?sub set, so a deep
+  // link folds to the tab's first visible sub instead of bypassing the gate.
+  const gatedSubs: Record<string, string[]> = fullAccess ? {} : { cercle: ['members', 'cercle'], settings: ['tablets', 'guest'] }
+
   // The current tab's sub-sections + which one is open, held in the URL (?sub=<key>)
   // so a sub-tab survives a refresh / return-from-scene and composes with ?tab=. The
-  // sub fallback comes from a retired-tab alias when the URL used one and named no
-  // explicit ?sub (so /settings?tab=routines opens Corvées ▸ Routines), else the tab's
+  // sub fallback comes from a retired-tab fold when the URL used one and named no
+  // explicit ?sub (so /settings?tab=chores opens Routines ▸ Corvées), else the tab's
   // first sub. useTabParam folds an out-of-set ?sub (e.g. left over from another tab)
   // to that fallback, so switching tabs always lands on a valid sub.
-  const subs = subSections[tab] ?? null
+  const subs = subSections[tab] ? subSections[tab].filter((s) => !gatedSubs[tab]?.includes(s.key)) : null
   const subKeys = subs ? subs.map((s) => s.key) : []
-  const aliasSub = TAB_ALIAS[rawTab]?.sub
+  const aliasSub = legacyTarget?.sub
   const subFallback = aliasSub && subKeys.includes(aliasSub) ? aliasSub : subKeys[0] ?? ''
   const [sub, setSub] = useTabParam('sub', subFallback, subKeys)
   const activeSub = subs?.find((s) => s.key === sub) ?? subs?.[0]
@@ -351,10 +404,10 @@ export function Operator() {
       {!signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>}
 
       {/* Settings navigation: a sticky vertical sidebar on a wide screen (kiosk/
-          desktop, its own scroll region), and a wrapping row of chips on a phone.
-          Now just 9 task-oriented tabs (was 21), so no group headers needed — each
-          tab is its own role="tab". Deep links resolve through TAB_ALIAS, so every
-          old ?tab=<id> still lands on its host tab. */}
+          desktop, its own scroll region), a one-line scroll row on a phone.
+          Découvrir + the six themed tabs, each wearing its section's colour
+          (SECTION_TINT as --tab-ink/--tab-wash) and hub-nav icon. Deep links
+          resolve through LEGACY_TAB, so every old ?tab=<id> still lands. */}
       <div className="operator__body">
         <nav
           className="operator__tabs mono"
@@ -376,40 +429,65 @@ export function Operator() {
             document.getElementById(`op-tab-${id}`)?.focus()
           }}
         >
-          {sections.map((s) => (
-            <button
-              key={s.id}
-              id={`op-tab-${s.id}`}
-              type="button"
-              role="tab"
-              aria-selected={tab === s.id}
-              aria-controls="operator-panel"
-              tabIndex={tab === s.id ? 0 : -1}
-              className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
-              onClick={() => setTab(s.id)}
-            >
-              {t.operator[s.key]}
-            </button>
-          ))}
+          {SECTIONS.map((s) => {
+            const tint = s.id in SECTION_TINT ? SECTION_TINT[s.id as SectionKey] : undefined
+            return (
+              <button
+                key={s.id}
+                id={`op-tab-${s.id}`}
+                type="button"
+                role="tab"
+                aria-selected={tab === s.id}
+                aria-controls="operator-panel"
+                tabIndex={tab === s.id ? 0 : -1}
+                className={`operator__tab${tab === s.id ? ' is-active' : ''}`}
+                style={tint ? ({ '--tab-ink': tint.ink, '--tab-wash': tint.wash } as CSSProperties) : undefined}
+                onClick={() => setTab(s.id)}
+              >
+                <InlineIcon name={s.icon} size={15} color={tint?.ink} />
+                {sectionLabel[s.id]}
+              </button>
+            )
+          })}
         </nav>
 
         <div className="operator__panel" role="tabpanel" id="operator-panel" aria-labelledby={`op-tab-${tab}`} tabIndex={0}>
-          {/* The Guide is one long body of its own; every other tab shows its
-              sub-sections one at a time behind a SubTabs pill row, so a tab is never
-              a 5–7 section scroll. The active sub-section's node renders below. */}
-          {tab === 'guide' ? (
-            <GuideSection />
-          ) : subs ? (
+          {/* Découvrir is one body of its own (search-all + feature map). A themed
+              tab leads with its « Comprendre / Régler » lens toggle: Comprendre =
+              that theme's slice of the guide, Régler = its settings sub-sections
+              one at a time behind a SubTabs pill row — both in the section's hue. */}
+          {tab === 'decouvrir' ? (
+            <DiscoverSection />
+          ) : (
             <>
               <SubTabs
-                options={subs.map((s) => ({ key: s.key, label: s.label }))}
-                value={activeSub?.key ?? subs[0].key}
-                onSelect={setSub}
-                ariaLabel={t.operator.jumpAria}
+                size="mini"
+                className="operator__lens"
+                options={[
+                  { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
+                  { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
+                ]}
+                value={lens}
+                onSelect={setLens}
+                ariaLabel={t.operator.lensAria}
+                tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
               />
-              {activeSub?.node}
+              {lens === 'comprendre' ? (
+                <ComprendrePanel section={tab as SectionKey} />
+              ) : subs ? (
+                <>
+                  <SubTabs
+                    options={subs.map((s) => ({ key: s.key, label: s.label }))}
+                    value={activeSub?.key ?? subs[0].key}
+                    onSelect={setSub}
+                    ariaLabel={t.operator.jumpAria}
+                    tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
+                  />
+                  {activeSub?.node}
+                </>
+              ) : null}
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </main>

@@ -587,3 +587,18 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+
+/* Themed Réglages tabs: each themed tab carries its section colour inline as
+   --tab-ink/--tab-wash (SECTION_TINT, set in pages/Operator). Every tab gets an
+   icon + gap; the active fill becomes the section's wash with its deep ink —
+   same wash+ink idiom as the guide cards, readable day & night. Découvrir sets
+   no vars, so it falls back to the plain accent fill above. */
+.operator__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.operator__tab.is-active {
+  background: var(--tab-wash, var(--accent));
+  color: var(--tab-ink, var(--on-primary));
+}

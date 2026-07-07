@@ -23,7 +23,7 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
   // The first friction is the headline; with a SINGLE friction, tap goes straight to
   // its one-tap fix; with several, to « Cette semaine » for the full list.
   const first = frictionRow(signals[0], t)
-  const to = signals.length === 1 ? signals[0].href : '/settings?tab=week'
+  const to = signals.length === 1 ? signals[0].href : '/settings?tab=board&sub=thisweek'
   const aria = `${t.aRegler.title} (${signals.length})`
 
   // Card: a hero-style tile (marigold = a warm heads-up), label + the lead friction as

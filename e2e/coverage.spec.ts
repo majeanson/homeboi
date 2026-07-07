@@ -172,7 +172,7 @@ test('scene-add-routine', async ({ page }) => {
 // scene from the agenda tab's "Ajouter un rendez-vous" button, where the form lives.
 test('settings-recur-weekly', async ({ page }) => {
   await boot(page, '/settings')
-  await page.getByRole('tab', { name: 'Agenda & auto' }).click() // agenda
+  await page.locator('.operator__tabs').getByRole('tab', { name: 'Le babillard' }).click() // events sub is first
   await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // → /event/new scene
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')

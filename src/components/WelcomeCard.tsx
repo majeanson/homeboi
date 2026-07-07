@@ -58,10 +58,10 @@ export function resetWelcome(): void {
   }
 }
 
-const STEPS: { id: 'members' | 'meals' | 'pair'; tab: string; icon: IconName }[] = [
-  { id: 'members', tab: 'household', icon: 'users-three-bold' },
-  { id: 'meals', tab: 'meals', icon: 'fork-knife-bold' },
-  { id: 'pair', tab: 'devices', icon: 'device-tablet-bold' },
+const STEPS: { id: 'members' | 'meals' | 'pair'; to: string; icon: IconName }[] = [
+  { id: 'members', to: '/settings?tab=cercle&sub=members', icon: 'users-three-bold' },
+  { id: 'meals', to: '/settings?tab=kitchen&sub=meals', icon: 'fork-knife-bold' },
+  { id: 'pair', to: '/settings?tab=settings&sub=tablets', icon: 'device-tablet-bold' },
 ]
 
 export function WelcomeCard({ members }: { members: { id: string }[] }) {
@@ -131,7 +131,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
           const done = isDone(s.id)
           return (
             <li key={s.id} className={'welcome-card__step' + (done ? ' is-done' : '')}>
-              <Link to={`/settings?tab=${s.tab}`}>
+              <Link to={s.to}>
                 <span className="welcome-card__step-ic">
                   <Icon name={done ? 'check-bold' : s.icon} size={18} />
                 </span>

@@ -33,9 +33,10 @@ test('the first-visit card explains the section and deep-links into the Guide', 
   const intro = page.locator('.section-intro')
   await expect(intro).toBeVisible()
   await expect(intro).toContainText('cuisine')
-  // "En savoir plus" jumps into the matching Guide card (same path as HelpDot).
+  // "En savoir plus" jumps into the matching Guide card (same path as HelpDot):
+  // the card's themed Réglages tab, Comprendre lens, card param consumed.
   await intro.locator('.section-intro__more').click()
-  await expect(page).toHaveURL(/\/settings\?tab=guide$/)
+  await expect(page).toHaveURL(/\/settings\?tab=kitchen&lens=comprendre$/)
   const target = page.locator('.guide__card.is-target')
   await expect(target).toBeVisible()
   await expect(target).toContainText('cuisine')

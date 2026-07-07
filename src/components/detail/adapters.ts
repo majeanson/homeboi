@@ -520,7 +520,7 @@ export function buildMemberPerson(
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
   // "Relier à quelqu'un" — open the connector with this member as side A.
   if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
-  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=household' })
+  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=cercle&sub=members' })
   return {
     kind: 'contact',
     title: p.name,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES, THEME_ALIAS, SECTION_TINT, type SectionKey } from '../../lib/guideContent'
+import { GUIDE, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, cardHomeTab, type SectionKey } from '../../lib/guideContent'
 import { renderRich, stripTokens, highlight as highlightText } from '../../lib/richText'
 import { fold } from '../../lib/normalize'
 import { useTour } from '../../lib/tour'
@@ -137,79 +137,16 @@ export function GuideCard({
   )
 }
 
-// The "concepts" cards read best clustered by theme rather than in the order
-// they were authored (the file grows concept-by-concept, so it drifts toward
-// append-order). Display order: the everyday basics first, then board/device
-// concepts, then the kitchen/recipe cluster, then the shopping/deals cluster.
-// This keeps related cards adjacent (recipes↔cook mode, deals↔flyers) without
-// moving the bilingual prose blocks around in guideContent.ts. The "sections"
-// group keeps its file order, which already matches the six tabs.
-// NOTE: a new concept not listed here falls to the end (file order preserved) —
-// add its id below to place it in the right cluster.
-const CONCEPT_ORDER = [
-  'capture',
-  'surface',
-  'audience',
-  'calm',
-  'undo',
-  'offline',
-  'reminders',
-  'pairing',
-  'account',
-  'recipes',
-  'cookmode',
-  'leftovers',
-  'reserve',
-  'deals',
-  'flyers',
-  'cashier',
-  'ghost',
-]
-const conceptRank = (id: string) => {
-  const i = CONCEPT_ORDER.indexOf(id)
-  return i === -1 ? CONCEPT_ORDER.length : i
-}
-
-// The concepts group is the biggest (~24 cards) — rendered as themed sub-clusters
-// (CONCEPT_THEMES, the shared taxonomy in guideContent) instead of a flat wall.
-const conceptThemeOf = (id: string) => CONCEPT_THEMES.find((th) => th.ids.includes(id))?.key
-
 // The section colour (SECTION_TINT ink) a card should wear, so every card in the
 // Guide reads in the hue of the section it documents — "proper mapping", one
 // source (SECTION_TINT, itself mirroring the nav). A section card's id IS a
-// SectionKey (board/kitchen/…); a concept card inherits its theme's section; a
-// settings card is Réglages' sage. Start (overview) cards keep the default accent.
+// SectionKey (board/kitchen/…); a concept card inherits its bucket's section; a
+// set-* card wears the themed tab it homes on (cardHomeTab). Start (overview)
+// cards keep the default accent.
 const sectionTintFor = (e: GuideEntry): string | undefined => {
-  if (e.group === 'sections' && e.id in SECTION_TINT) return SECTION_TINT[e.id as SectionKey].ink
-  if (e.group === 'settings') return SECTION_TINT.settings.ink
-  if (e.group === 'concepts') {
-    const th = CONCEPT_THEMES.find((t) => t.ids.includes(e.id))
-    if (th) return SECTION_TINT[th.section].ink
-  }
-  return undefined
-}
-// The order a concept sits at *within* its theme bucket.
-const themeInnerRank = (id: string) => {
-  const th = CONCEPT_THEMES.find((t) => t.ids.includes(id))
-  return th ? th.ids.indexOf(id) : 0
-}
-
-// The "settings" group mirrors the Réglages sidebar, so the manual reads in the same
-// order as the app's tabs (household → devices → agenda → chores → recipes → shopping
-// → display → ai). One consolidated card per host tab; this is the display order.
-const SETTINGS_ORDER = [
-  'set-household',
-  'set-devices',
-  'set-agenda',
-  'set-chores',
-  'set-recipes',
-  'set-shopping',
-  'set-display',
-  'set-ai',
-]
-const settingsRank = (id: string) => {
-  const i = SETTINGS_ORDER.indexOf(id)
-  return i === -1 ? SETTINGS_ORDER.length : i
+  if (e.group === 'start') return undefined
+  const home = cardHomeTab(e.id)
+  return home in SECTION_TINT ? SECTION_TINT[home as SectionKey].ink : undefined
 }
 
 // The Réglages restructure folded 15 thin settings cards into 8 consolidated ones,
@@ -229,61 +166,28 @@ const SETTINGS_CARD_ALIAS: Record<string, { id: string; base: number }> = {
   'set-ailog': { id: 'set-ai', base: 4 },
 }
 const parseGuidePoint = (p: string | null) => (p != null && p !== '' ? Number(p) : null)
-// Resolve a (?card, ?point) deep-link through the alias map above.
-const resolveGuideCard = (card: string | null, point: number | null): { id: string | null; point: number | null } => {
+// Resolve a (?card, ?point) deep-link through the alias map above. Exported for
+// pages/Operator, which homes a ?card= deep-link onto the themed tab that hosts
+// the card (cardHomeTab) before this panel consumes it.
+export const resolveGuideCard = (card: string | null, point: number | null): { id: string | null; point: number | null } => {
   if (!card) return { id: null, point }
   const alias = SETTINGS_CARD_ALIAS[card]
   if (alias) return { id: alias.id, point: alias.base + (point ?? 0) }
   return { id: card, point }
 }
 
-// Open a collapsed <details> jump target (a group/theme block) before scrolling to
-// it, so a feature-map tile / ?theme deep-link reveals the block instead of landing
-// on a closed summary. A no-op target id is ignored.
-function openAndScrollTo(id: string) {
-  const el = document.getElementById(id)
-  if (!el) return
-  if (el instanceof HTMLDetailsElement) el.open = true
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
-// Réglages ▸ Guide — the whole how-it-works manual in one place. Each concept is
-// a collapsible card (native <details>, so it stays accessible and calm), and
-// inside it every point is *itself* a collapsible: a clickable title that opens
-// to reveal the one-sentence detail. Icons reuse the app's shared Phosphor-bold
-// set (components/Icon), so the manual shows the very same glyphs as the live UI.
-// A search box matches across titles, the one-line "what", and every point
-// (label + detail + why) in the current language — accent-insensitive (fold),
-// ranked so a TITLE hit lands first, with every match <mark>ed in the results.
-// Content lives in lib/guideContent.ts; this is the view.
-export function GuideSection() {
-  const t = useT()
-  const { lang } = useLang()
-  const { start } = useTour()
-  const nav = useNavigate()
-  // Re-show the first-run welcome checklist: clear its record, then land on the
-  // board where it remounts and reads the cleared state.
-  const resetOnboarding = () => {
-    resetWelcome()
-    nav('/board')
-  }
-  const [query, setQuery] = useState('')
+// The (?card, ?point) deep-link wiring shared by ComprendrePanel and Découvrir:
+// resolve the target card through SETTINGS_CARD_ALIAS, mirror it into local state,
+// CONSUME the params (replace) so a refresh/back doesn't re-force it, then open
+// every <details> ancestor and scroll the card into view. `pinTab` (a themed tab
+// id) is written into the URL alongside the consumption: Operator only *derives*
+// the forced tab/lens while ?card= is present, so without the pin the view would
+// snap back to the raw ?tab= the moment the param is consumed.
+function useGuideCardTarget(pinTab?: string) {
   const [params, setParams] = useSearchParams()
-
-  // A section's help icon elsewhere links here as ?card=<id> (see SectionAvatar,
-  // and HelpDot for section-level dots). Open that
-  // card and scroll to it. We mirror the id into local state and CONSUME the
-  // param (replace) so a refresh/back doesn't re-force it and the parent can
-  // collapse it again. The effect (not initial state) is the real driver — it
-  // also handles the case where the Guide tab is already mounted.
-  // ?card / ?point are resolved through SETTINGS_CARD_ALIAS so a deep-link to an old
-  // (pre-consolidation) settings card still lands on the consolidated one + right point.
   const [openId, setOpenId] = useState<string | null>(
     () => resolveGuideCard(params.get('card'), parseGuidePoint(params.get('point'))).id,
   )
-  // A contextual "?" can also target a sub-POINT within the card (?point=<index>) —
-  // the HelpBubble's "→ Voir le guide" link does this. We open + highlight + scroll
-  // to that point, not just the card.
   const [targetPoint, setTargetPoint] = useState<number | null>(
     () => resolveGuideCard(params.get('card'), parseGuidePoint(params.get('point'))).point,
   )
@@ -297,14 +201,17 @@ export function GuideSection() {
     const next = new URLSearchParams(params)
     next.delete('card')
     next.delete('point')
+    if (pinTab) {
+      next.set('tab', pinTab)
+      next.set('lens', 'comprendre')
+    }
     setParams(next, { replace: true })
-  }, [params, setParams])
+  }, [params, setParams, pinTab])
   useEffect(() => {
     if (openId && targetRef.current) {
-      // The manual now lands as a table of contents — its groups/themes are
-      // collapsed <details>. A deep-linked card lives inside one, so open every
-      // <details> ancestor (the theme + its group) before scrolling, or the target
-      // would be display:none and the scroll would land on empty space.
+      // A deep-linked card may sit inside collapsed <details>; open every ancestor
+      // before scrolling, or the target would be display:none and the scroll would
+      // land on empty space.
       let node: HTMLElement | null = targetRef.current
       while (node) {
         if (node instanceof HTMLDetailsElement) node.open = true
@@ -313,18 +220,97 @@ export function GuideSection() {
       targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [openId])
-  // A feature-map tile elsewhere (the Board WelcomeCard) deep-links to a whole
-  // THEME via ?theme=<key>; scroll to that block and consume the param. Old
-  // 5-bucket keys ('everyday', 'kitchen-shop', …) resolve to the section-keyed
-  // bucket that absorbed them (THEME_ALIAS).
-  useEffect(() => {
-    const theme = params.get('theme')
-    if (!theme) return
-    openAndScrollTo(`guide-th-${THEME_ALIAS[theme] ?? theme}`)
+  return { openId, targetPoint, targetRef }
+}
+
+// The « Comprendre » lens of one themed Réglages tab: everything the Guide knows
+// about that section, in the section's colour — the section's lead card (open on
+// arrival, hosts the section-tour replay), its "the Réglages reference" set-*
+// card(s), then the concept cards of its CONCEPT_THEMES bucket. This is where the
+// old collapsed « Les réglages, onglet par onglet » group lives now: on the tab
+// itself, not buried in a table of contents. Card ids + point indices are
+// untouched, so every HelpBubble/addHelp/operatorHelp deep-link keeps landing on
+// the exact card and sub-point (Operator homes ?card= onto this tab first).
+export function ComprendrePanel({ section }: { section: SectionKey }) {
+  const t = useT()
+  const { start } = useTour()
+  const nav = useNavigate()
+  const resetOnboarding = () => {
+    resetWelcome()
+    nav('/board')
+  }
+  const { openId, targetPoint, targetRef } = useGuideCardTarget(section)
+  const tint = SECTION_TINT[section].ink
+  const bucket = CONCEPT_THEMES.find((th) => th.key === section)
+  const lead = GUIDE.filter((e) => e.group === 'sections' && e.id === section)
+  const setCards = GUIDE.filter((e) => e.group === 'settings' && cardHomeTab(e.id) === section)
+  const concepts = bucket
+    ? GUIDE.filter((e) => e.group === 'concepts' && bucket.ids.includes(e.id)).sort(
+        (a, b) => bucket.ids.indexOf(a.id) - bucket.ids.indexOf(b.id),
+      )
+    : []
+  const renderCard = (e: GuideEntry, alwaysOpen = false) => (
+    <GuideCard
+      key={e.id}
+      entry={e}
+      cardRef={e.id === openId ? targetRef : undefined}
+      isTarget={e.id === openId}
+      targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
+      open={alwaysOpen || e.id === openId}
+      tint={tint}
+      onReplayTour={start}
+      onResetOnboarding={resetOnboarding}
+    />
+  )
+  return (
+    <OperatorSection title={t.operator.lensLearn} className="guide">
+      <div className="guide__cards">
+        {/* The section's own card leads, open — "what this section is" before any
+            knob. The set-* card and the concepts stay collapsed (calm). */}
+        {lead.map((e) => renderCard(e, true))}
+        {setCards.map((e) => renderCard(e))}
+        {concepts.map((e) => renderCard(e))}
+      </div>
+    </OperatorSection>
+  )
+}
+
+// Réglages ▸ Découvrir — the global entry: a search box over the WHOLE manual, the
+// colored feature-map jump-grid (opens each themed tab's Comprendre lens), the
+// « Première fois » overview card (tour replay + re-show the welcome checklist),
+// and the sample-data controls. Each themed tab now hosts its own slice of the
+// manual (ComprendrePanel); this tab is where you look when you don't yet know
+// which theme you need. Search matches across titles, the one-line "what", and
+// every point (label + detail + why) in the current language — accent-insensitive
+// (fold), ranked so a TITLE hit lands first, with every match <mark>ed.
+// Content lives in lib/guideContent.ts; this is the view.
+export function DiscoverSection() {
+  const t = useT()
+  const { lang } = useLang()
+  const { start } = useTour()
+  const nav = useNavigate()
+  // Re-show the first-run welcome checklist: clear its record, then land on the
+  // board where it remounts and reads the cleared state.
+  const resetOnboarding = () => {
+    resetWelcome()
+    nav('/board')
+  }
+  const [query, setQuery] = useState('')
+  const [params, setParams] = useSearchParams()
+
+  // ?card= deep-links whose card homes on Découvrir (the start card) — plus the
+  // search-result cards rendered here — reuse the shared open/scroll wiring. No
+  // pin: the raw ?tab= already resolves to this tab.
+  const { openId, targetPoint, targetRef } = useGuideCardTarget()
+
+  // A feature-map tile opens that theme's Réglages tab on its Comprendre lens
+  // (one URL write — two useTabParam setters in a row would race each other).
+  const openTheme = (key: string) => {
     const next = new URLSearchParams(params)
-    next.delete('theme')
+    next.set('tab', key)
+    next.set('lens', 'comprendre')
     setParams(next, { replace: true })
-  }, [params, setParams])
+  }
 
   const q = query.trim()
   const needle = fold(q)
@@ -358,8 +344,9 @@ export function GuideSection() {
   // blurb wrapped around it.
   const startEntries = GUIDE.filter((e) => e.group === 'start')
 
-  // One card renderer reused everywhere (lead, groups, concept sub-themes) so the
-  // open/target/deep-link wiring stays identical no matter where the card sits.
+  // One card renderer for the search results, so the open/target/deep-link wiring
+  // stays identical no matter where the card sits. Each result wears its home
+  // section's colour (sectionTintFor).
   const renderCard = (e: GuideEntry) => (
     <GuideCard
       key={e.id}
@@ -375,9 +362,6 @@ export function GuideSection() {
       onResetOnboarding={resetOnboarding}
     />
   )
-  // Scroll a feature-map tile's target block into view (anchored by id below). The
-  // groups/themes are collapsed <details> at rest, so open the target before scrolling.
-  const jumpTo = (key: string) => openAndScrollTo(`guide-th-${key}`)
 
   return (
     <OperatorSection title={t.operator.guideTitle} className="guide">
@@ -391,12 +375,13 @@ export function GuideSection() {
       />
 
       {/* The feature map: every theme the app covers, at a glance. Hidden while
-          searching (the results below are the answer then). Jump-scrolls to a
-          theme block. Same shared taxonomy the Board WelcomeCard + DevKit use. */}
+          searching (the results below are the answer then). A tile opens that
+          theme's Réglages tab on its Comprendre lens. Same shared taxonomy the
+          Board WelcomeCard + DevKit use. */}
       {!q && (
         <>
           <h3 className="guide__group-title">{t.operator.guideMap}</h3>
-          <FeatureMap onSelect={jumpTo} label={t.operator.guideMap} />
+          <FeatureMap onSelect={openTheme} label={t.operator.guideMap} />
         </>
       )}
 
@@ -432,89 +417,6 @@ export function GuideSection() {
           ))}
         </div>
       )}
-
-      {/* The real groups — six sections, the cross-cutting concepts, then the
-          per-tab "settings" cards. Each group is a collapsed <details> (a table of
-          contents), so the landing is a scannable list of headers, not a wall of
-          cards. The per-tab "settings" cards are the manual for each Réglages tab; a
-          contextual "?" deep-link into one (?card=set-display&point=…) resolves,
-          opens its group + the card, and highlights here (see the openId effect,
-          which opens every <details> ancestor). Each settings card keeps its "go
-          there" link into the live tab. */}
-      {!ranked && GUIDE_GROUPS.filter((g) => g.id !== 'start').map((group) => {
-        const entries = GUIDE.filter((e) => e.group === group.id)
-        if (entries.length === 0) return null
-
-        // The concepts group is big — render it as themed sub-sections (one block
-        // per CONCEPT_THEME) instead of a flat wall, so the manual reads as a map.
-        // Each block is a feature-map jump target (guide-th-<theme.key>).
-        if (group.id === 'concepts') {
-          const themed = CONCEPT_THEMES.map((th) => ({
-            th,
-            cards: entries
-              .filter((e) => conceptThemeOf(e.id) === th.key)
-              .sort((a, b) => themeInnerRank(a.id) - themeInnerRank(b.id)),
-          })).filter((b) => b.cards.length > 0)
-          // Concepts not assigned to any theme — keep them visible at the end.
-          const rest = entries
-            .filter((e) => !conceptThemeOf(e.id))
-            .sort((a, b) => conceptRank(a.id) - conceptRank(b.id))
-          return (
-            <div key={group.id} className="guide__group">
-              <h3 className="guide__group-title">{group.label[lang]}</h3>
-              {themed.map(({ th, cards }) => (
-                // Collapsed by default — a theme is a table-of-contents row you open,
-                // not a wall of cards poured out at once (a feature-map tile / deep-link
-                // opens it via openAndScrollTo). <details>, so it stays accessible + calm.
-                <details
-                  key={th.key}
-                  id={`guide-th-${th.key}`}
-                  className="guide__theme"
-                  // The theme wears its section's colour: a left accent spine + a
-                  // coloured heading glyph, so « Cuisine & épicerie » reads as La
-                  // cuisine's terracotta, etc. (SECTION_TINT — one shared mapping).
-                  style={
-                    {
-                      '--theme-ink': SECTION_TINT[th.section].ink,
-                      '--theme-wash': SECTION_TINT[th.section].wash,
-                    } as CSSProperties
-                  }
-                >
-                  <summary className="guide__theme-title">
-                    <span className="guide__group-caret" aria-hidden="true">
-                      <Icon name="caret-down-bold" size={16} />
-                    </span>
-                    <Icon name={th.icon} size={18} color={SECTION_TINT[th.section].ink} />
-                    {th.label[lang]}
-                  </summary>
-                  <div className="guide__cards">{cards.map(renderCard)}</div>
-                </details>
-              ))}
-              {rest.length > 0 && <div className="guide__cards">{rest.map(renderCard)}</div>}
-            </div>
-          )
-        }
-
-        // sections keeps its file order (already matches the six tabs); settings is
-        // sorted to mirror the Réglages sidebar (SETTINGS_ORDER).
-        const ordered =
-          group.id === 'settings' ? [...entries].sort((a, b) => settingsRank(a.id) - settingsRank(b.id)) : entries
-        // Collapsed by default so the Guide lands as a table of contents, not the whole
-        // manual poured out. A feature-map tile / deep-link opens it (openAndScrollTo).
-        return (
-          // `guide-group-` prefix (not `guide-th-`): the concepts bucket keyed
-          // 'settings' owns the guide-th-settings anchor — don't collide with it.
-          <details key={group.id} id={`guide-group-${group.id}`} className="guide__group">
-            <summary className="guide__group-title">
-              <span className="guide__group-caret" aria-hidden="true">
-                <Icon name="caret-down-bold" size={16} />
-              </span>
-              {group.label[lang]}
-            </summary>
-            <div className="guide__cards">{ordered.map(renderCard)}</div>
-          </details>
-        )
-      })}
 
       {/* Manage the first-run demo data (onboarding Phase 1): clear the examples or
           load them onto an empty household. Mirrors the board banner. Kept at the

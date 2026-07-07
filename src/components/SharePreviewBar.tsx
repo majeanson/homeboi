@@ -22,7 +22,7 @@ export function SharePreviewBar() {
       <span className="share-preview__note mono">
         <InlineIcon name="magnifying-glass-bold" /> {t.shareMode.previewNote}
       </span>
-      <button type="button" className="btn btn--sm" onClick={() => navigate('/settings?tab=guest')}>
+      <button type="button" className="btn btn--sm" onClick={() => navigate('/settings?tab=settings&sub=guest')}>
         <InlineIcon name="x-bold" /> {t.shareMode.closePreview}
       </button>
     </div>
