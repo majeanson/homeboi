@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useRef, type CSSProperties, type ReactNode } from 'react'
 import { InlineIcon, type IconName } from './Icon'
 
 // SubTabs — the app-wide segmented "one job at a time" sub-tab control (the
@@ -30,6 +30,7 @@ export function SubTabs<K extends string>({
   tour,
   size,
   className,
+  tint,
 }: {
   options: ReadonlyArray<SubTabOption<K>>
   value: K
@@ -48,6 +49,10 @@ export function SubTabs<K extends string>({
   size?: 'mini'
   // Extra class on the `.subtabs` group (e.g. `deal-tabs`, `flyer-tabs`).
   className?: string
+  // A section colour (e.g. SECTION_TINT[...].ink) applied as a local `--accent`
+  // override on the row, so the active pill + focus ring wear that section's hue
+  // (the themed Réglages tabs). Undefined keeps the ambient surface accent.
+  tint?: string
 }) {
   const group =
     'subtabs' + (size === 'mini' ? ' subtabs--mini' : '') + (className ? ' ' + className : '')
@@ -74,7 +79,10 @@ export function SubTabs<K extends string>({
   }
 
   return (
-    <div className={'subtabs-row' + (armed ? ' help-armed' : '')}>
+    <div
+      className={'subtabs-row' + (armed ? ' help-armed' : '')}
+      style={tint ? ({ '--accent': tint } as CSSProperties) : undefined}
+    >
       <div
         ref={tablistRef}
         className={group}

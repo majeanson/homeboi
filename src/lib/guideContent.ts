@@ -130,41 +130,71 @@ export const GUIDE_GROUPS: { id: GuideEntry['group']; label: Bi; blurb: Bi }[] =
 // closed for home-projects/cast-tv). New concept card ⇒ add its id to a theme here.
 // `section` = which of the six hub tabs this theme belongs to; the Guide colours
 // the theme's block + its feature-map tile with that section's SECTION_TINT.
-export type ConceptTheme = { key: string; icon: IconName; label: Bi; ids: string[]; route: string; section: SectionKey }
+// One bucket per hub section — the theme's `key` IS the SectionKey, so the
+// taxonomy, SECTION_TINT, the feature-map tiles and the Réglages themed tabs
+// (pages/Operator) all share one id space. Canonical order = importance order
+// (mirrors the hub nav): board → kitchen → liste → cercle → routines → settings.
+export type ConceptTheme = { key: SectionKey; icon: IconName; label: Bi; ids: string[]; route: string; section: SectionKey }
 export const CONCEPT_THEMES: ConceptTheme[] = [
   {
-    key: 'everyday',
-    icon: 'plus-bold',
-    label: { fr: 'Au quotidien', en: 'Everyday' },
+    key: 'board',
+    icon: 'sun-bold',
+    label: { fr: 'Le babillard', en: 'The board' },
     route: '/board',
     section: 'board',
     ids: [
       'capture',
       'type-or-choose',
       'mots',
-      'favorites',
-      'todos',
       'activities',
       'home-projects',
       'reminders',
       'moment',
       'drawings',
       'undo',
+      'a-regler',
+      'share-target',
     ],
   },
   {
-    key: 'kitchen-shop',
+    key: 'kitchen',
     icon: 'carrot-bold',
-    label: { fr: 'Cuisine & épicerie', en: 'Kitchen & groceries' },
+    label: { fr: 'La cuisine', en: 'The kitchen' },
     route: '/kitchen',
     section: 'kitchen',
-    ids: ['recipes', 'cookmode', 'leftovers', 'reserve', 'deals', 'flyers', 'cashier', 'ghost'],
+    ids: ['recipes', 'cookmode', 'leftovers', 'reserve', 'favorites'],
   },
   {
-    key: 'devices',
-    icon: 'device-tablet-bold',
-    label: { fr: 'Appareils & affichage', en: 'Devices & display' },
-    route: '/settings?tab=devices',
+    key: 'liste',
+    icon: 'sparkle-bold',
+    label: { fr: 'La liste', en: 'The list' },
+    route: '/liste',
+    // deals / flyers / cashier / ghost ride the list-and-store world — sky.
+    section: 'liste',
+    ids: ['deals', 'flyers', 'cashier', 'ghost'],
+  },
+  {
+    key: 'cercle',
+    icon: 'users-three-bold',
+    label: { fr: 'Le cercle', en: 'The circle' },
+    route: '/cercle',
+    // voyage / auto / carnets all live in Le cercle's world — wear its turquoise.
+    section: 'cercle',
+    ids: ['voyage', 'auto', 'carnets'],
+  },
+  {
+    key: 'routines',
+    icon: 'smiley-bold',
+    label: { fr: 'Routines', en: 'Routines' },
+    route: '/routines',
+    section: 'routines',
+    ids: ['todos'],
+  },
+  {
+    key: 'settings',
+    icon: 'gear-six-bold',
+    label: { fr: 'Système', en: 'System' },
+    route: '/settings',
     section: 'settings',
     ids: [
       'surface',
@@ -177,47 +207,73 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
       'cast-tv',
       'offline',
       'account',
+      'ai',
+      'calm',
     ],
-  },
-  {
-    key: 'getting-around',
-    icon: 'key-bold',
-    label: { fr: 'Se déplacer', en: 'Getting around' },
-    route: '/voiture',
-    // voyage / auto / carnets all live in Le cercle's world — wear its turquoise.
-    section: 'cercle',
-    ids: ['voyage', 'auto', 'carnets'],
-  },
-  {
-    key: 'ai-calm',
-    icon: 'sparkle-bold',
-    label: { fr: 'Intelligence & calme', en: 'AI & calm' },
-    route: '/settings?tab=ai',
-    section: 'settings',
-    ids: ['ai', 'a-regler', 'calm'],
   },
 ]
 
-// The jump-grid tiles: the six sections + each concept theme + settings, in the
-// order they appear in the Guide. Each `key` matches a scroll anchor the Guide
-// renders (guide-th-<key>: 'sections' | <theme.key> | 'settings').
-// `route` = where the tile opens in the LIVE app. The Guide's own map still
-// scrolls to the theme block (in-Guide); the Board WelcomeCard + the landing use
-// `route` to send you into the feature (alive now that a fresh account is seeded).
+// The jump-grid tiles: one per hub section, in the canonical order — derived 1:1
+// from CONCEPT_THEMES so the map and the buckets can never drift. `route` = where
+// the tile opens in the LIVE app (Board WelcomeCard + landing navigate); the
+// Découvrir tab instead opens the themed Réglages tab (?tab=<key>&lens=comprendre).
 // `section` drives the tile's SECTION_TINT (icon + hover), so each tile reads in
-// its section's colour. The six-sections tile leads with the board's marigold
-// (the glance entry); the settings tile wears Réglages' sage.
+// its section's colour.
 export type FeatureMapTile = { key: string; icon: IconName; label: Bi; route: string; section: SectionKey }
-export const FEATURE_MAP_TILES: FeatureMapTile[] = [
-  { key: 'sections', icon: 'sun-bold', label: { fr: 'Les six sections', en: 'The six sections' }, route: '/board', section: 'board' },
-  ...CONCEPT_THEMES.map((th) => ({ key: th.key, icon: th.icon, label: th.label, route: th.route, section: th.section })),
-  { key: 'settings', icon: 'gear-six-bold', label: { fr: 'Réglages', en: 'Settings' }, route: '/settings', section: 'settings' },
-]
+export const FEATURE_MAP_TILES: FeatureMapTile[] = CONCEPT_THEMES.map((th) => ({
+  key: th.key,
+  icon: th.icon,
+  label: th.label,
+  route: th.route,
+  section: th.section,
+}))
 
 // Resolve a feature-map tile key → its live route (for callers that navigate
 // instead of scrolling the Guide). Falls back to the board for an unknown key.
 export function featureMapRoute(key: string): string {
   return FEATURE_MAP_TILES.find((t) => t.key === key)?.route ?? '/board'
+}
+
+// ── Legacy theme keys ────────────────────────────────────────────────────────
+// The taxonomy used to be 5 descriptive buckets ('everyday', 'kitchen-shop', …)
+// plus two synthetic jump-grid tiles ('sections', 'settings'). Old ?theme= links
+// (bookmarks — no in-code producers remain) resolve through this map to the
+// section-keyed bucket that absorbed them.
+export const THEME_ALIAS: Record<string, string> = {
+  everyday: 'board',
+  'kitchen-shop': 'kitchen',
+  devices: 'settings',
+  'getting-around': 'cercle',
+  'ai-calm': 'settings',
+  sections: 'decouvrir',
+}
+
+// Which of the 8 consolidated `set-*` cards ("the Réglages reference") lives on
+// which THEMED Réglages tab — i.e. where a ?card=set-… deep-link should land now
+// that the settings manual renders inside each theme's Comprendre lens instead of
+// one collapsed group. Keys are post-SETTINGS_CARD_ALIAS ids (guide.tsx resolves
+// retired card ids first).
+const SET_CARD_HOME: Record<string, string> = {
+  'set-household': 'cercle',
+  'set-devices': 'settings',
+  'set-agenda': 'board',
+  'set-chores': 'routines',
+  'set-recipes': 'kitchen',
+  'set-shopping': 'liste',
+  'set-display': 'settings',
+  'set-ai': 'settings',
+}
+
+// The Réglages tab a (already alias-resolved) guide card calls home: a section
+// card homes on its own themed tab, a concept on its bucket's tab, a set-* card
+// per SET_CARD_HOME, and the start/overview card on Découvrir. Operator uses this
+// to turn any ?card= deep-link into "open that theme, Comprendre lens".
+export function cardHomeTab(id: string): string {
+  const e = GUIDE.find((g) => g.id === id)
+  if (!e || e.group === 'start') return 'decouvrir'
+  if (e.group === 'sections') return e.id
+  if (e.group === 'concepts') return CONCEPT_THEMES.find((th) => th.ids.includes(id))?.key ?? 'decouvrir'
+  return SET_CARD_HOME[e.id] ?? 'settings'
 }
 
 export const GUIDE: GuideEntry[] = [
@@ -1962,7 +2018,9 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
-    id: 'share',
+    // NOT the outbound « Partager » link card (id 'share') — this is the PWA
+    // share-target (#13): other apps sharing INTO Babillard.
+    id: 'share-target',
     icon: 'device-tablet-bold',
     group: 'concepts',
     title: { fr: 'Partager vers Babillard', en: 'Share to Babillard' },

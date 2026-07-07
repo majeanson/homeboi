@@ -1331,6 +1331,19 @@ export function DevKit() {
               ariaLabel="Démo sous-onglets mini"
             />
           </Demo>
+          <Demo label="tint — active pill wears a section colour (themed Réglages tabs)">
+            <SubTabs
+              tint="var(--terracotta-deep)"
+              options={[
+                { key: 'meals', label: 'Repas', icon: 'fork-knife-bold' },
+                { key: 'pantry', label: 'Garde-manger', icon: 'carrot-bold' },
+                { key: 'recipes', label: 'Recettes', icon: 'book-open-bold' },
+              ]}
+              value={subtab}
+              onSelect={setSubtab}
+              ariaLabel="Démo sous-onglets teintés"
+            />
+          </Demo>
         </>
       ),
     },

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, type SectionKey } from '../../lib/guideContent'
+import { GUIDE, GUIDE_GROUPS, type GuideEntry, CONCEPT_THEMES, THEME_ALIAS, SECTION_TINT, type SectionKey } from '../../lib/guideContent'
 import { renderRich, stripTokens, highlight as highlightText } from '../../lib/richText'
 import { fold } from '../../lib/normalize'
 import { useTour } from '../../lib/tour'
@@ -314,11 +314,13 @@ export function GuideSection() {
     }
   }, [openId])
   // A feature-map tile elsewhere (the Board WelcomeCard) deep-links to a whole
-  // THEME via ?theme=<key>; scroll to that block and consume the param.
+  // THEME via ?theme=<key>; scroll to that block and consume the param. Old
+  // 5-bucket keys ('everyday', 'kitchen-shop', …) resolve to the section-keyed
+  // bucket that absorbed them (THEME_ALIAS).
   useEffect(() => {
     const theme = params.get('theme')
     if (!theme) return
-    openAndScrollTo(`guide-th-${theme}`)
+    openAndScrollTo(`guide-th-${THEME_ALIAS[theme] ?? theme}`)
     const next = new URLSearchParams(params)
     next.delete('theme')
     setParams(next, { replace: true })
@@ -494,14 +496,15 @@ export function GuideSection() {
         }
 
         // sections keeps its file order (already matches the six tabs); settings is
-        // sorted to mirror the Réglages sidebar (SETTINGS_ORDER). Both are feature-map
-        // jump targets (guide-th-sections / guide-th-settings).
+        // sorted to mirror the Réglages sidebar (SETTINGS_ORDER).
         const ordered =
           group.id === 'settings' ? [...entries].sort((a, b) => settingsRank(a.id) - settingsRank(b.id)) : entries
         // Collapsed by default so the Guide lands as a table of contents, not the whole
         // manual poured out. A feature-map tile / deep-link opens it (openAndScrollTo).
         return (
-          <details key={group.id} id={`guide-th-${group.id}`} className="guide__group">
+          // `guide-group-` prefix (not `guide-th-`): the concepts bucket keyed
+          // 'settings' owns the guide-th-settings anchor — don't collide with it.
+          <details key={group.id} id={`guide-group-${group.id}`} className="guide__group">
             <summary className="guide__group-title">
               <span className="guide__group-caret" aria-hidden="true">
                 <Icon name="caret-down-bold" size={16} />
