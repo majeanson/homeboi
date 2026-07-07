@@ -145,6 +145,28 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     operator-side audit query (or a tiny Diagnostics read-out), never a
     user-facing metric — same data-derived, calm-safe philosophy as B-11's
     `isUnused(data)` probes, pointed at frequency instead of absence.
+
+    **The audit, ready to run** (read-only; against the remote D1 when you
+    want prod truth). List the tables, then count rows created in the last
+    30 days per candidate table — the ranking IS the household's real
+    top-10:
+
+    ```bash
+    npx wrangler d1 execute <db-name-from-wrangler.toml> --remote \
+      --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    # then, adapting table/timestamp names to what step 1 shows:
+    npx wrangler d1 execute <db> --remote --command "
+      SELECT 'meals' AS t, COUNT(*) AS n30 FROM meals    WHERE created_at > strftime('%s','now') - 2592000
+      UNION ALL SELECT 'events',  COUNT(*) FROM events   WHERE created_at > strftime('%s','now') - 2592000
+      UNION ALL SELECT 'tasks',   COUNT(*) FROM tasks    WHERE created_at > strftime('%s','now') - 2592000
+      UNION ALL SELECT 'todos',   COUNT(*) FROM todos    WHERE created_at > strftime('%s','now') - 2592000
+      UNION ALL SELECT 'notes',   COUNT(*) FROM notes    WHERE created_at > strftime('%s','now') - 2592000
+      ORDER BY n30 DESC"
+    ```
+
+    Extend the UNION with the list-items, trips, rides, recipes and mots
+    tables once step 1 confirms their names. If the ranking disagrees with
+    the guessed top-10, adjust the spec's flows — the DB wins.
 19. ❌ ~~**Long-press ＋ → straight to the mic**~~ [S] — *rejeté.*
 20. ✅ **Frequents-first comboboxes** [S] — `EntityCombobox` ranks by recency/
     frequency of *this household's* picks (a tiny local counter, not a synced
@@ -291,11 +313,17 @@ businesses, carnet choses/entretien) · E-34 health card (« État des
 services » in Système ▸ diagnostics; /api/health now also reports
 `photos` + `realtime`).
 
-**Wave 2 — daily speed**
-C-18 tap-budget audit + pinned e2e spec *(OQ-2 answered: meal plan, liste,
-flyers, board, calendar, voyage, l'auto, routines, kid mode — confirm/extend
-via the DB-frequency audit)* · C-20 frequents-first comboboxes · C-24
-prefetch-on-press.
+**Wave 2 — daily speed** — **✅ SHIPPED 2026-07-07.**
+C-18 `e2e/tap-budget.spec.ts` pins the measured budgets: supper tonight **0**
+· who has the car **0** · check a list item **2** · add a list item **2** ·
+browse flyers **2** (the honest front door is La liste's « Circulaires »
+shortcut, not La cuisine) · see the meal week **1** · add a rendez-vous **3**
+· run a routine **2** (the card's direct ▶ « Faire ») · open the next trip
+**1**. Kid mode deliberately unbudgeted (one-way door is slow by design).
+The DB-frequency audit is documented above, ready to run. · C-20
+frequents-first comboboxes (`lib/frequents.ts` + `frequentsKey` on
+EntityCombobox; wired: meals in DayEditor/MealPool, « Avec » in EventForm) ·
+C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 
 **Wave 3 — discoverability**
 A-4 help-mode rollout everywhere · A-5 adaptive tour for power users *(design

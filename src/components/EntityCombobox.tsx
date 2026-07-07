@@ -1,6 +1,7 @@
 import { useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { fold } from '../lib/normalize'
+import { bumpFrequent, frequentScores } from '../lib/frequents'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
 import { Icon, InlineIcon, type IconName } from './Icon'
@@ -75,6 +76,12 @@ export interface EntityComboboxProps<T> {
    *  already shown elsewhere (e.g. tag chips) and the list is just a "did you mean
    *  this existing one?" guard against near-duplicates. */
   typeaheadOnly?: boolean
+  /** Frequents-first (C-20, bmad/08): a scope name ('meal', 'event-who'…) turns on
+   *  per-device pick-ranking — often-picked options rise to the top of the RESTING
+   *  list (no typed filter), each group block reordered within itself so headings
+   *  stay honest. Typing keeps the caller's order untouched. Opt-in per call site
+   *  so unrelated domains never share a counter; option ids must be stable. */
+  frequentsKey?: string
   className?: string
   /** Hide the whole control. Defaults to the read-only guest session. */
   readOnly?: boolean
@@ -102,6 +109,7 @@ export function EntityCombobox<T>({
   maxLength,
   listHeader,
   typeaheadOnly,
+  frequentsKey,
   className,
   readOnly,
 }: EntityComboboxProps<T>) {
@@ -113,14 +121,42 @@ export function EntityCombobox<T>({
   // After the hooks (rules-of-hooks): a guest never sees an add/edit control.
   const hidden = readOnly ?? isGuest()
 
-  // Filter on the typed value; keep the caller's order (recipes arrive ranked).
+  // Frequents-first (C-20): with a frequentsKey, the RESTING list leads with what
+  // this device actually picks. Each contiguous group block is reordered within
+  // itself (stable sort, unscored options keep their relative order), so group
+  // headings stay contiguous and the caller's block order is untouched.
+  const ranked = useMemo(() => {
+    if (!frequentsKey || options.length < 2) return options
+    const scores = frequentScores(frequentsKey)
+    if (Object.keys(scores).length === 0) return options
+    const out: ComboOption<T>[] = []
+    let block: { opt: ComboOption<T>; i: number }[] = []
+    let group: string | undefined
+    const flush = () => {
+      block.sort((a, b) => (scores[b.opt.id] ?? 0) - (scores[a.opt.id] ?? 0) || a.i - b.i)
+      out.push(...block.map((b) => b.opt))
+      block = []
+    }
+    options.forEach((opt, i) => {
+      if (opt.group !== group) {
+        flush()
+        group = opt.group
+      }
+      block.push({ opt, i })
+    })
+    flush()
+    return out
+  }, [options, frequentsKey])
+
+  // Filter on the typed value; keep the caller's order (recipes arrive ranked) —
+  // frequents only shape the resting list, never the search results.
   const shown = useMemo(() => {
     const needle = fold(value.trim())
-    if (!needle) return options
+    if (!needle) return ranked
     return options.filter(
       (o) => fold(o.label).includes(needle) || (o.keywords ?? []).some((k) => fold(k).includes(needle)),
     )
-  }, [options, value])
+  }, [options, ranked, value])
 
   const commit = () => {
     if (!onSubmit || disabled || busy) return
@@ -131,6 +167,7 @@ export function EntityCombobox<T>({
   const pick = (opt: ComboOption<T>) => {
     setOpen(false)
     setActive(-1)
+    if (frequentsKey) bumpFrequent(frequentsKey, opt.id)
     onPick(opt)
   }
 

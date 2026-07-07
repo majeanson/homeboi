@@ -295,6 +295,7 @@ export function EventForm({
             ...contacts.map((c): ComboOption<WhoPick> => ({ id: c.id, label: fullName(c), data: { kind: 'contact' }, icon: 'users-three-bold' })),
             ...businesses.map((b): ComboOption<WhoPick> => ({ id: b.id, label: b.name, data: { kind: 'business' }, icon: 'storefront-bold' })),
           ]}
+          frequentsKey="event-who"
           onPick={(opt) => {
             setMemberId(null)
             if (opt.data?.kind === 'business') {

@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
+import { api } from '../lib/api'
+import { BOARD_KEY, CERCLE_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { MEALS_KEY } from './kitchen/types'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
@@ -51,6 +54,18 @@ const TABS: {
   { to: '/settings', key: 'operator', icon: 'gear-six-bold', color: '#6B8A52' }, // sage
 ]
 
+// C-24 (bmad/08): warm the tab you're ABOUT to open. Each entry mirrors that
+// page's own primary read — the key AND endpoint must match the page's useQuery
+// pair exactly, or the prefetch warms a cache nobody reads. Réglages is
+// deliberately absent (not a glance surface; it loads its own slices).
+const TAB_PREFETCH: Record<string, { key: string[]; path: string }> = {
+  '/board': { key: BOARD_KEY, path: 'board' },
+  '/liste': { key: BOARD_KEY, path: 'board' }, // La liste rides the board payload
+  '/kitchen': { key: MEALS_KEY, path: 'meals' },
+  '/cercle': { key: CERCLE_KEY, path: 'cercle' },
+  '/routines': { key: ROUTINES_KEY, path: 'routines' },
+}
+
 export function HubLayout() {
   const t = useT()
   const { audience, locked, guestPreview } = useAudience()
@@ -74,6 +89,18 @@ export function HubLayout() {
       return false
     }
   })
+  // C-24: prefetch a tab's primary query on press-start/hover (see TAB_PREFETCH).
+  // 30 s staleTime: within it the prefetch is a pure cache-hit no-op, so hovering
+  // back and forth never spams the Worker; past it, one background refetch warms
+  // the pane. Fire-and-forget — prefetchQuery never throws to the UI.
+  const warmTab = useCallback(
+    (to: string) => {
+      const p = TAB_PREFETCH[to]
+      if (!p) return
+      void qc.prefetchQuery({ queryKey: p.key, queryFn: () => api(p.path), staleTime: 30_000 })
+    },
+    [qc],
+  )
   const toggleNav = useCallback(() => {
     setNavCollapsed((c) => {
       const next = !c
@@ -344,6 +371,13 @@ export function HubLayout() {
             key={tab.to}
             to={tab.to}
             className={({ isActive }) => `hubnav__btn${isActive ? ' is-active' : ''}`}
+            // Perceived speed (C-24): start fetching the tab's primary data the
+            // moment the press/hover BEGINS, so by route-mount the cache is warm
+            // and the pane lands full. staleTime keeps it a no-op when the live
+            // poll already owns fresh data; prefetchQuery swallows errors, and
+            // polling/realtime stay in charge of correctness as always.
+            onPointerDown={() => warmTab(tab.to)}
+            onMouseEnter={() => warmTab(tab.to)}
           >
             {({ isActive }) => (
               <>

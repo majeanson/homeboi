@@ -144,6 +144,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
           placeholder={options.length > 0 ? t.combo.typeOrPick : labels.addPlaceholder}
           ariaLabel={labels.addAria}
           noMatchLabel={noMatchLabel}
+          frequentsKey="meal"
           busy={busy}
           className="kitchen__ideas-combo"
         />

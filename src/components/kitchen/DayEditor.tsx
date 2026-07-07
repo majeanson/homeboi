@@ -212,6 +212,7 @@ export function DayEditor({
                 onSubmit={(v) => saveSlot(date, slot, v)}
                 submitLabel={t.kitchen.setMeal}
                 noMatchLabel={t.combo.noMatch}
+                frequentsKey="meal"
                 onCancel={() => {
                   setEditSlot(null)
                   setSlotText('')
@@ -317,6 +318,7 @@ export function DayEditor({
                 submitLabel={staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                 busy={staplesBusy}
                 noMatchLabel={t.combo.noMatch}
+                frequentsKey="meal"
                 onCancel={() => {
                   setEditDate(null)
                   setMealText('')
