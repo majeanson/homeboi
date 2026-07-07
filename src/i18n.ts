@@ -230,7 +230,9 @@ export const FR = {
     aisleHint: 'Range cet article dans la bonne allée — gardé pour la prochaine fois.',
     aisleAuto: 'Automatique',
     // Voice add (continuous): hint while listening + why nothing landed on error.
-    voiceHint: 'Nomme tes articles un à un — touche 🎤 pour arrêter.',
+    // Saying items with « et » between them helps the recognizer separate + spell
+    // them (a flowing phrase, not isolated words) — e.g. « lait et patate et guimauve ».
+    voiceHint: 'Dis-les avec « et » — ex. « lait et patate et guimauve ». Touche 🎤 pour arrêter.',
     voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
     // iOS ne laisse pas la page redemander — il faut passer par les réglages.
     voiceDeniedIos: 'Micro bloqué. Ouvre Réglages → Safari → Microphone pour réautoriser.',
@@ -2780,7 +2782,8 @@ export const EN: typeof FR = {
     aisleHint: 'Put this item in the right aisle — kept for next time.',
     aisleAuto: 'Automatic',
     // Voice add (continuous): hint while listening + why nothing landed on error.
-    voiceHint: 'Name your items one at a time — tap 🎤 to stop.',
+    // Saying items with "and" between them helps the recognizer separate + spell them.
+    voiceHint: 'Say them with "and" — e.g. "milk and potato and marshmallow". Tap 🎤 to stop.',
     voiceDenied: 'Mic blocked. Allow the microphone in your browser.',
     // iOS won't let the page re-prompt — recovery has to go through Settings.
     voiceDeniedIos: 'Mic blocked. Open Settings → Safari → Microphone to allow it again.',

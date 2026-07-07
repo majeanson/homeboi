@@ -27,6 +27,21 @@ import { pickItems, realText, type WhisperSegment } from '../_lib/whisperItems'
 // the model. A whole-list clip is longer than a single word, hence the generous bound.
 const MAX_BYTES = 16 * 1024 * 1024
 
+// A DOMAIN-VOCABULARY primer (Whisper's `initial_prompt`) so short everyday nouns
+// spell as the real word, not the phonetic mush the model reaches for without context
+// ("tomate"→"tomat", "patate"→"patat", "guimauve"→"guimove"). Québécois register on
+// the FR side (œufs/yogourt) to match the app. Deliberately a BARE comma word-list,
+// NOT a framing sentence: the old primer opened with "Liste d'épicerie en français
+// québécois :" and Whisper echoed that clause verbatim onto the list. A word-list has
+// no sentence to echo, and the confidence gate (whisperItems: no_speech_prob /
+// compression_ratio) + `vad_filter` + one context-rich clip make a silence-echo
+// unlikely in the first place. Keep it to ~30 common items — long enough to anchor
+// spelling, short enough not to bias the decoder toward words that weren't said.
+const PRIMER: Record<'fr' | 'en', string> = {
+  fr: 'lait, œufs, pain, beurre, fromage, yogourt, crème, poulet, bœuf, porc, jambon, saumon, pommes, bananes, tomates, patates, oignons, carottes, laitue, concombre, brocoli, riz, pâtes, farine, sucre, sel, café, thé, jus, biscuits, céréales, guimauves',
+  en: 'milk, eggs, bread, butter, cheese, yogurt, cream, chicken, beef, pork, ham, salmon, apples, bananas, tomatoes, potatoes, onions, carrots, lettuce, cucumber, broccoli, rice, pasta, flour, sugar, salt, coffee, tea, juice, cookies, cereal, marshmallows',
+}
+
 // ArrayBuffer → base64 for the turbo model's `audio` field. Chunked so a multi-KB
 // clip never blows String.fromCharCode's argument limit (same trick as auth.ts's
 // base64url, minus the url-safe swap — the model wants standard base64).
@@ -54,15 +69,16 @@ export const onRequestPost = authed(
     let items: string[] = []
     try {
       // AI is guaranteed present here by authed({ requiresAi: true }); assert it so TS
-      // narrows. `vad_filter` trims silence (fewer hallucinations); no `initial_prompt`
-      // — the whole-utterance clip gives Whisper the context the primer used to fake,
-      // and priming it was itself what got echoed onto the list. `condition_on_previous_
+      // narrows. `vad_filter` trims silence (fewer hallucinations); `initial_prompt` is
+      // the domain-vocabulary primer (see PRIMER) so groceries spell right — a BARE word
+      // list, not the framing sentence the old primer echoed. `condition_on_previous_
       // text: false` keeps a self-contained clip from drifting on imaginary prior text.
       const res = (await ctx.env.AI!.run('@cf/openai/whisper-large-v3-turbo', {
         audio: toBase64(new Uint8Array(buf)),
         task: 'transcribe',
         language: lang,
         vad_filter: true,
+        initial_prompt: PRIMER[lang],
         condition_on_previous_text: false,
       })) as { text?: string; segments?: WhisperSegment[] }
       const segments = res?.segments
