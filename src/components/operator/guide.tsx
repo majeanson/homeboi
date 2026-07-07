@@ -17,7 +17,7 @@ import { EmptyState } from '../EmptyState'
 // collapsible. Presentational — the Guide tab (below) drives search/deep-link
 // state. (`showGoTo` can be turned off to render a card without its "go there"
 // link when it already sits on the surface it would point to.)
-export function GuideCard({
+function GuideCard({
   entry,
   open,
   isTarget,

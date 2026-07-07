@@ -35,13 +35,14 @@ Before implementing ANY change, do this first — it's faster than the rework it
 
 1. **Read how the section already works.** Open the page/section you're touching and
    the components it renders. Match its existing structure, naming, and idioms rather
-   than inventing a parallel one. The five hub tabs are `src/pages/{Board,Kitchen,
-   Routines,Liste,Settings}.tsx`; settings bodies live in `src/components/operator/*`;
-   kitchen sub-tabs in `src/components/kitchen/*`. Grep the feature name first.
+   than inventing a parallel one. The hub tabs are `src/pages/{Board,Kitchen,Liste,
+   Cercle,Routines,Operator}.tsx` (Operator = Réglages); settings bodies live in
+   `src/components/operator/*`; kitchen sub-tabs in `src/components/kitchen/*`. Grep
+   the feature name first.
 2. **Look for the primitive that already exists.** Check **`COMPONENTS.md`** (the
    living inventory + uniformization backlog) and open **`/dev/kit`**
-   (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Affichage) — it renders every
-   shared component live across theme/surface/audience/locale. If a primitive fits,
+   (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Système ▸ Affichage) — it renders
+   every shared component live across theme/surface/audience/locale. If a primitive fits,
    use it; if it _almost_ fits, **extend the primitive**, don't fork a copy.
 3. **Check the lib helper / convention** that governs the behaviour (table below).
    Cross-cutting behaviour (writes, query keys, surface/audience, detail peek, calm,
@@ -335,15 +336,20 @@ appear as code identifiers, route names, or `bmad/` requirement tags.
 | **Guest**        | A time-boxed **babysitter** session booted `?guest=<token>` — read-only, no settings/writes; operator issues it from Réglages. |
 | **Actor**        | Resolved request identity — operator, kiosk, **or guest** — that handlers act on.                              |
 
-### Sections / themed tabs (the five hub routes)
+### Sections / themed tabs (the hub routes, canonical importance order)
+
+The nav order below is THE canonical order — the hub nav (`HubLayout` TABS), the
+themed Réglages tabs (`Operator` SECTIONS) and the guide taxonomy (`CONCEPT_THEMES`)
+all follow it, and each section owns one colour (`SECTION_TINT`).
 
 | Tab          | Route       | French name  | What it is                                                                                   |
 | ------------ | ----------- | ------------ | -------------------------------------------------------------------------------------------- |
 | **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, chores, upcoming.         |
 | **Kitchen**  | `/kitchen`  | La cuisine   | Garde-manger: 7-day supper plan, recipes, "running low," meal suggestions, deals/flyers.     |
-| **Routines** | `/routines` | Routines     | Kid picture-card routines, read aloud on-device (absorbed the old `/kid` view).              |
 | **Liste**    | `/liste`    | La liste     | The single active shared list (see below).                                                   |
-| **Réglages** | `/settings` | Réglages     | Operator hub: members, devices, chores/rotation, routines, display, shopping. Operator-only. |
+| **Cercle**   | `/cercle`   | Le cercle    | Family & contacts directory: people, pets, groups, businesses, links/tree.                   |
+| **Routines** | `/routines` | Routines     | Kid picture-card routines, read aloud on-device (absorbed the old `/kid` view).              |
+| **Réglages** | `/settings` | Réglages     | Operator hub, rebuilt as **Découvrir + six colour-themed tabs** (one per hub section, same order/colours as the nav). Each themed tab has a **« Comprendre / Régler »** lens toggle: Comprendre = that theme's slice of the in-app guide (`ComprendrePanel`), Régler = its settings sub-sections (`?tab=<SectionKey>&lens=&sub=`; old ids fold via `LEGACY_TAB`). The sage « Système » tab holds device/household-wide machinery (pairing, guests, display, veille, photos, IA, voix, calme, diagnostics). Operator-only; a kiosk sees all tabs but the member-admin/pairing/guest subs drop (per-sub gating). |
 
 ### Domain concepts (carry specific meaning here — see project memory)
 

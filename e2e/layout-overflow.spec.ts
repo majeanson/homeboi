@@ -46,6 +46,9 @@ const TABS: Tab[] = [
   { name: 'cercle', path: '/cercle', audiences: ['parent', 'toddler'], en: true },
   { name: 'liste', path: '/liste', audiences: ['parent', 'toddler'], en: false },
   { name: 'settings', path: '/settings', audiences: ['parent'], en: true },
+  // The Système themed tab carries the widest pill rows in Réglages (a 9-sub
+  // SubTabs row + the lens toggle) — the likeliest place a settings row overflows.
+  { name: 'settings-systeme', path: '/settings?tab=settings', audiences: ['parent'], en: true },
 ]
 
 async function settle(page: Page) {

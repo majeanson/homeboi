@@ -311,8 +311,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'Top-right of every section, the coloured disc (the sun, the carrot, etc.) carries a small “?”: tap it to open that section’s help, right here in the Guide.',
         },
         why: {
-          fr: 'Une seule cible calme au lieu d’un bouton d’aide en plus — et elle disparaît quand tu connais l’app (Réglages ▸ Affichage).',
-          en: 'One calm target instead of an extra help button — and it disappears once you know the app (Settings ▸ Display).',
+          fr: 'Une seule cible calme au lieu d’un bouton d’aide en plus — et elle disparaît quand tu connais l’app (Réglages ▸ Système ▸ Affichage).',
+          en: 'One calm target instead of an extra help button — and it disappears once you know the app (Settings ▸ System ▸ Display).',
         },
       },
       {
@@ -368,8 +368,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le fil du jour', en: 'The day’s timeline' },
         detail: {
-          fr: 'Les rendez-vous, trajets et heures de travail d’aujourd’hui placés dans l’ordre de l’heure, avec un repère « Maintenant » entre ce qui est passé (estompé) et ce qui s’en vient, et des plages « Libre » dans les grands trous. Les corvées et ce qui n’a pas d’heure se rangent sous « À tout moment ». Plus deux choses sont éloignées, plus l’espace entre elles est grand — la forme de la journée se lit d’un coup d’œil. Touche une ligne pour sa fiche. Tu peux le cacher ou le réordonner dans [[card:set-display|Réglages ▸ Affichage ▸ Disposition]]; en mode tout-petit, c’est la séquence « Notre journée » (matin → dodo).',
-          en: 'Today’s appointments, rides and work hours placed in time order, with a “Now” marker between what’s past (dimmed) and what’s coming, and “Free” stretches in the big gaps. Chores and anything without a time sit under “Anytime”. The farther apart two things are, the more space between them — so the shape of the day reads at a glance. Tap a row for its card. Hide or reorder it in [[card:set-display|Settings ▸ Display ▸ Layout]]; in toddler mode it’s the “Our day” sequence (morning → bedtime).',
+          fr: 'Les rendez-vous, trajets et heures de travail d’aujourd’hui placés dans l’ordre de l’heure, avec un repère « Maintenant » entre ce qui est passé (estompé) et ce qui s’en vient, et des plages « Libre » dans les grands trous. Les corvées et ce qui n’a pas d’heure se rangent sous « À tout moment ». Plus deux choses sont éloignées, plus l’espace entre elles est grand — la forme de la journée se lit d’un coup d’œil. Touche une ligne pour sa fiche. Tu peux le cacher ou le réordonner dans [[card:set-display|Réglages ▸ Le babillard ▸ Disposition]]; en mode tout-petit, c’est la séquence « Notre journée » (matin → dodo).',
+          en: 'Today’s appointments, rides and work hours placed in time order, with a “Now” marker between what’s past (dimmed) and what’s coming, and “Free” stretches in the big gaps. Chores and anything without a time sit under “Anytime”. The farther apart two things are, the more space between them — so the shape of the day reads at a glance. Tap a row for its card. Hide or reorder it in [[card:set-display|Settings ▸ The board ▸ Layout]]; in toddler mode it’s the “Our day” sequence (morning → bedtime).',
         },
         why: {
           fr: 'Voir *quand* la journée se remplit, pas seulement *quoi* — sans lire chaque heure.',
@@ -445,8 +445,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Personnaliser le babillard', en: 'Customize the board' },
         detail: {
-          fr: 'Réglages ▸ Affichage ▸ « Disposition du babillard » : choisis quelles cartes afficher (Le fil du jour, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre que tu veux. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
-          en: 'Settings ▸ Display ▸ “Board layout”: choose which cards to show (The day’s timeline, The car, To do, Coming up, Drawings…) and drag them into the order you want. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
+          fr: 'Réglages ▸ Le babillard ▸ « Disposition du babillard » : choisis quelles cartes afficher (Le fil du jour, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre que tu veux. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
+          en: 'Settings ▸ The board ▸ “Board layout”: choose which cards to show (The day’s timeline, The car, To do, Coming up, Drawings…) and drag them into the order you want. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
         },
         why: {
           fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette murale glanceable, ton téléphone plus court.',
@@ -522,8 +522,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Une ambiance qui suit le moment', en: 'An ambience that follows the moment' },
         detail: {
-          fr: 'Quand l’« Ambiance vivante » est activée (Réglages ▸ Affichage), le babillard suit doucement le moment : la teinte du fond glisse selon l’heure et la saison (un peu de neige l’hiver), et la carte qui compte à cette heure-ci se met en valeur en douceur — la journée le matin, le souper en fin d’après-midi, demain le soir. Les jours sans rien de prévu, une carte « Tout est calme » le dit gentiment. Rien à toucher, rien qui clignote; tout est désactivable.',
-          en: 'When “Living ambience” is on (Settings ▸ Display), the board gently follows the moment: the background tint drifts with the hour and the season (a little snow in winter), and the card that matters right now lifts softly — the day in the morning, supper in the late afternoon, tomorrow in the evening. On an empty day, a calm “All calm” card says so. Nothing to tap, nothing flashing; all of it can be turned off.',
+          fr: 'Quand l’« Ambiance vivante » est activée (Réglages ▸ Système ▸ Affichage), le babillard suit doucement le moment : la teinte du fond glisse selon l’heure et la saison (un peu de neige l’hiver), et la carte qui compte à cette heure-ci se met en valeur en douceur — la journée le matin, le souper en fin d’après-midi, demain le soir. Les jours sans rien de prévu, une carte « Tout est calme » le dit gentiment. Rien à toucher, rien qui clignote; tout est désactivable.',
+          en: 'When “Living ambience” is on (Settings ▸ System ▸ Display), the board gently follows the moment: the background tint drifts with the hour and the season (a little snow in winter), and the card that matters right now lifts softly — the day in the morning, supper in the late afternoon, tomorrow in the evening. On an empty day, a calm “All calm” card says so. Nothing to tap, nothing flashing; all of it can be turned off.',
         },
         why: {
           fr: 'Pour que le mur se sente vivant et te guide sans jamais te presser.',
@@ -652,8 +652,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Lecture à voix haute dans la bonne langue', en: 'Read aloud in the right language' },
         detail: {
-          fr: 'Trois réglages, du plus large au plus précis. (1) Réglages ▸ Affichage ▸ Voix ▸ « Langue de lecture » : Auto suit l’application, ou force tout en Français/Anglais. (2) Une recette gardée dans l’autre langue ? Sa fiche a son propre « Lecture à voix haute » qui la lit toujours dans SA langue — même dans une maison en français, ses étapes et son nom (jusque sur la grille bambin) sont dits avec une voix anglaise. (3) Sous « Voix », choisis la voix précise pour CHAQUE langue (Français / Anglais) et teste-la. Il faut qu’une voix de cette langue soit installée sur l’appareil; sinon, un message t’indique où l’ajouter. Note iPad/iPhone : le navigateur n’a souvent accès qu’aux voix « par défaut » — une voix « Améliorée » du système peut ne pas être disponible ici.',
-          en: 'Three controls, broad to precise. (1) Settings ▸ Display ▸ Voice ▸ “Reading language”: Auto follows the app, or force everything to French/English. (2) A recipe kept in the other language? Its card has its own “Read aloud” that always reads it in ITS language — even in a French household, its steps and name (right down to the toddler grid) are said with an English voice. (3) Under “Voice”, pick the exact voice for EACH language (French / English) and test it. The device needs a voice for that language installed; if not, a message points you where to add one. iPad/iPhone note: the browser often only has the “default” voices — a system “Enhanced” voice may not be available here.',
+          fr: 'Trois réglages, du plus large au plus précis. (1) Réglages ▸ Système ▸ Voix ▸ « Langue de lecture » : Auto suit l’application, ou force tout en Français/Anglais. (2) Une recette gardée dans l’autre langue ? Sa fiche a son propre « Lecture à voix haute » qui la lit toujours dans SA langue — même dans une maison en français, ses étapes et son nom (jusque sur la grille bambin) sont dits avec une voix anglaise. (3) Sous « Voix », choisis la voix précise pour CHAQUE langue (Français / Anglais) et teste-la. Il faut qu’une voix de cette langue soit installée sur l’appareil; sinon, un message t’indique où l’ajouter. Note iPad/iPhone : le navigateur n’a souvent accès qu’aux voix « par défaut » — une voix « Améliorée » du système peut ne pas être disponible ici.',
+          en: 'Three controls, broad to precise. (1) Settings ▸ System ▸ Voice ▸ “Reading language”: Auto follows the app, or force everything to French/English. (2) A recipe kept in the other language? Its card has its own “Read aloud” that always reads it in ITS language — even in a French household, its steps and name (right down to the toddler grid) are said with an English voice. (3) Under “Voice”, pick the exact voice for EACH language (French / English) and test it. The device needs a voice for that language installed; if not, a message points you where to add one. iPad/iPhone note: the browser often only has the “default” voices — a system “Enhanced” voice may not be available here.',
         },
         why: {
           fr: 'Pour qu’un tout-petit qui écoute entende les mots bien prononcés, peu importe la langue — et que tu puisses choisir la meilleure voix disponible pour chacune.',
@@ -793,8 +793,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le mur d’autocollants (optionnel)', en: 'The sticker wall (optional)' },
         detail: {
-          fr: 'Si tu désactives le « Mode calme » (Réglages ▸ Affichage), un mur d’autocollants apparaît : en finissant une routine, l’enfant place un autocollant sur sa collection, qui se remplit avec le temps. Par défaut, en mode calme, il n’existe pas.',
-          en: 'If you turn OFF “Calm mode” (Settings ▸ Display), a sticker wall appears: on finishing a routine, the child places a sticker on their collection, which fills up over time. By default, in calm mode, it doesn’t exist.',
+          fr: 'Si tu désactives le « Mode calme » (Réglages ▸ Système), un mur d’autocollants apparaît : en finissant une routine, l’enfant place un autocollant sur sa collection, qui se remplit avec le temps. Par défaut, en mode calme, il n’existe pas.',
+          en: 'If you turn OFF “Calm mode” (Settings ▸ System), a sticker wall appears: on finishing a routine, the child places a sticker on their collection, which fills up over time. By default, in calm mode, it doesn’t exist.',
         },
         why: {
           fr: 'C’est une récompense volontaire : Babillard est calme et sans récompenses par défaut, mais une famille qui VEUT un carnet d’autocollants peut l’activer. Il reste par enfant, sans classement ni « t’es en retard ».',
@@ -1054,8 +1054,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Les animaux de la maisonnée', en: 'Your household pets' },
         detail: {
-          fr: 'Ajoute tes animaux comme des fiches dans Le cercle (tuile ＋ « Ajouter un animal », ou Réglages ▸ La maisonnée) : espèce, race, anniversaire, numéro de micropuce, horaire des repas, consignes pour la gardienne, un petit suivi du poids, et le vétérinaire — choisi parmi tes Business. Choisis aussi le ou les propriétaires : un membre de la maisonnée → l’animal apparaît dans la carte Maisonnée, avec la famille; un ami → l’animal le suit dans le Social. Pas de propriétaire = à la maisonnée. Un animal peut faire partie d’une famille, mais n’entre jamais dans les liens parent/enfant (ton chien ne deviendra pas grand-père).',
-          en: 'Add your pets as cards in the circle (the ＋ “Add a pet” tile, or Settings ▸ Household): species, breed, birthday, microchip number, feeding schedule, sitter instructions, a small weight log, and the vet — picked from your Businesses. Also pick the owner(s): a household member → the pet shows in the Maisonnée card with the family; a friend → the pet follows them into Social. No owner = the household’s. A pet can belong to a family, but never enters the parent/child links (your dog won’t become a grandparent).',
+          fr: 'Ajoute tes animaux comme des fiches dans Le cercle (tuile ＋ « Ajouter un animal », ou Réglages ▸ Le cercle ▸ La maisonnée) : espèce, race, anniversaire, numéro de micropuce, horaire des repas, consignes pour la gardienne, un petit suivi du poids, et le vétérinaire — choisi parmi tes Business. Choisis aussi le ou les propriétaires : un membre de la maisonnée → l’animal apparaît dans la carte Maisonnée, avec la famille; un ami → l’animal le suit dans le Social. Pas de propriétaire = à la maisonnée. Un animal peut faire partie d’une famille, mais n’entre jamais dans les liens parent/enfant (ton chien ne deviendra pas grand-père).',
+          en: 'Add your pets as cards in the circle (the ＋ “Add a pet” tile, or Settings ▸ The circle ▸ Household): species, breed, birthday, microchip number, feeding schedule, sitter instructions, a small weight log, and the vet — picked from your Businesses. Also pick the owner(s): a household member → the pet shows in the Maisonnée card with the family; a friend → the pet follows them into Social. No owner = the household’s. A pet can belong to a family, but never enters the parent/child links (your dog won’t become a grandparent).',
         },
         why: {
           fr: 'Tes animaux avec ta famille, celui d’un ami avec lui — et tout ce qu’une gardienne ou le vét doit savoir au même endroit.',
@@ -1765,7 +1765,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Projets', en: 'Plans' },
         detail: {
-          fr: 'Les grands projets de la maison, avec un budget visé optionnel et des notes (devis, à déléguer). Sans date, ils restent au calme dans Réglages ▸ Corvées ▸ Projets — rien sur le babillard.',
+          fr: 'Les grands projets de la maison, avec un budget visé optionnel et des notes (devis, à déléguer). Sans date, ils restent au calme dans Réglages ▸ Routines ▸ Corvées ▸ Projets — rien sur le babillard.',
           en: 'The bigger home projects, with an optional target budget and notes (quotes, to delegate). With no date they rest quietly in Settings ▸ Chores ▸ Plans — nothing on the board.',
         },
         why: { fr: 'Un endroit pour « un jour », sans que ça crie chaque matin.', en: 'A home for “someday”, without it shouting every morning.' },
@@ -1881,7 +1881,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Cette saison', en: 'This season' },
         detail: {
-          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard et un aperçu dans Réglages ▸ Corvées ▸ Entretien montrent ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
+          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard et un aperçu dans Réglages ▸ Routines ▸ Corvées ▸ Entretien montrent ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
           en: 'Recurring upkeep groups by season: a “This winter / This spring…” card on the board and a glance in Settings ▸ Chores ▸ Upkeep show what’s coming before the season turns — caulk the windows, clear the gutters, change the filter.',
         },
       },
@@ -1914,7 +1914,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'À ton goût', en: 'Your way' },
         detail: {
-          fr: 'Dans Réglages ▸ Affichage ▸ Mode veille, choisis le délai et ce qui s’affiche (horloge, date, photos, dessins, à venir).',
+          fr: 'Dans Réglages ▸ Système ▸ Mode veille, choisis le délai et ce qui s’affiche (horloge, date, photos, dessins, à venir).',
           en: 'In Settings ▸ Display ▸ Idle mode, pick the delay and what shows (clock, date, photos, drawings, next up).',
         },
         why: {
@@ -2493,7 +2493,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Code postal', en: 'Postal code' },
         detail: {
-          fr: 'Mets ton code postal dans Réglages ▸ Magasinage.',
+          fr: 'Mets ton code postal dans Réglages ▸ La liste ▸ Magasinage.',
           en: 'Set your postal code in Settings ▸ Shopping.',
         },
         why: {
@@ -2634,7 +2634,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Couleurs de tes ustensiles', en: 'Your own tool colours' },
         detail: {
-          fr: 'Dans Réglages ▸ Affichage, donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles et tous les ronds des recettes suivent, partout.',
+          fr: 'Dans Réglages ▸ La cuisine, donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles et tous les ronds des recettes suivent, partout.',
           en: 'In Settings ▸ Display, give each spoon and cup the colour of your real tools. Every recipe pill and circle follows, everywhere.',
         },
         why: {
@@ -3070,7 +3070,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Plusieurs gestes, et un journal « Récents »', en: 'Several actions, and a “Recents” log' },
         detail: {
-          fr: 'Plusieurs annulations peuvent attendre en même temps : le bandeau montre la plus récente et un « Récents (N) » dessus ouvre la liste des derniers gestes — touche « Annuler » sur n’importe lequel encore dans sa fenêtre. Le bandeau reste ensuite comme petit bouton « Récents », même une fois les gestes validés, et la même liste vit dans Réglages ▸ Affichage. Rien n’est gardé après un rechargement.',
+          fr: 'Plusieurs annulations peuvent attendre en même temps : le bandeau montre la plus récente et un « Récents (N) » dessus ouvre la liste des derniers gestes — touche « Annuler » sur n’importe lequel encore dans sa fenêtre. Le bandeau reste ensuite comme petit bouton « Récents », même une fois les gestes validés, et la même liste vit dans Réglages ▸ Système ▸ Affichage. Rien n’est gardé après un rechargement.',
           en: 'Several undos can wait at once: the toast shows the most recent and a “Recents (N)” on it opens the list of the latest actions — tap “Undo” on any still in its window. The toast then lingers as a small “Recents” button, even after the actions commit, and the same list lives in Settings ▸ Display. Nothing is kept after a reload.',
         },
         why: {

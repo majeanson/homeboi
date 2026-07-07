@@ -7,7 +7,11 @@ import { mockApi, seedState } from './mocks'
 
 const PHONE = { width: 390, height: 844 }
 const SECTIONS = [
-  'household', 'agenda', 'chores', 'routines', 'shopping',
+  // The themed tabs (one per hub section, canonical order) + Découvrir.
+  'decouvrir', 'board', 'kitchen', 'liste', 'cercle', 'routines', 'settings',
+  // Legacy ids, kept as alias regressions: each must still render a panel
+  // (LEGACY_TAB folds them onto the themed tabs — see settings-aliases.spec).
+  'household', 'agenda', 'chores', 'shopping',
   'recipes', 'ghost', 'devices', 'photos', 'week', 'display', 'calm', 'ai',
 ]
 
