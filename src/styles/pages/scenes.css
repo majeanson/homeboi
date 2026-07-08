@@ -414,6 +414,10 @@
   gap: 0.4rem;
   color: var(--ink-soft);
   font-size: var(--text-md);
+  /* The busy line carries a free-text ride label — wrap an unbreakable one
+     (same guard as __ride-title/__who below) instead of pushing the board wide. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .auto-card__status .avatar {
   flex: none;

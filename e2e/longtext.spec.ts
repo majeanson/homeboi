@@ -22,10 +22,31 @@ const FORMATS = [
 
 async function noHOverflow(page: Page): Promise<string> {
   return page.evaluate(() => {
+    // On failure, NAME the widest offender: an overflow here has twice been
+    // CI-only (Linux system-font metrics — ui-monospace runs wider than on
+    // Windows/macOS), so the log must be actionable without reproducing locally.
+    const brief = (el: Element) => {
+      const cls = (el as HTMLElement).className
+      const c = typeof cls === 'string' && cls.trim() ? '.' + cls.trim().split(/\s+/).slice(0, 3).join('.') : ''
+      return el.tagName.toLowerCase() + c
+    }
+    const widest = (root: Element): string => {
+      const limit = root.getBoundingClientRect().right
+      let worst: Element | null = null
+      let over = 1
+      for (const el of Array.from(root.querySelectorAll('*'))) {
+        const d = el.getBoundingClientRect().right - limit
+        if (d > over) {
+          over = d
+          worst = el
+        }
+      }
+      return worst ? ` (${brief(worst)} +${Math.round(over)}px)` : ''
+    }
     const doc = document.documentElement
     const body = document.querySelector('.hub__body')
-    if (doc.scrollWidth > doc.clientWidth + 1) return 'doc-overflow'
-    if (body && body.scrollWidth > body.clientWidth + 1) return 'body-overflow'
+    if (doc.scrollWidth > doc.clientWidth + 1) return 'doc-overflow' + widest(doc)
+    if (body && body.scrollWidth > body.clientWidth + 1) return 'body-overflow' + widest(body)
     return 'ok'
   })
 }

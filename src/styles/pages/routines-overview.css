@@ -108,10 +108,15 @@
   font-weight: 700;
   font-size: 1.05rem;
   line-height: 1.1;
+  /* A long unbreakable routine/member name must wrap, not push the board wide.
+     The who-line renders in ui-monospace (a SYSTEM font — wider on Linux/CI than
+     on Windows), so without this the overflow only shows on CI (lt phone: board). */
+  overflow-wrap: anywhere;
 }
 .routine-next-card__who {
   color: var(--ink-soft);
   font-size: var(--text-sm);
+  overflow-wrap: anywhere;
 }
 .routine-next-card__run {
   align-self: flex-start;

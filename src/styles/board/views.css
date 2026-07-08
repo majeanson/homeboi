@@ -254,6 +254,9 @@
 }
 .board-actions .btn {
   font-size: 0.9rem;
+  /* The cook CTA carries the meal's own name (a .mono system font, wider on
+     Linux/CI) — an unbreakable long title must wrap inside the pill. */
+  overflow-wrap: anywhere;
 }
 .board-action--cook b {
   font-weight: 700;
