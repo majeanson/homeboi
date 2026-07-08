@@ -65,8 +65,9 @@ export const ADD_HELP = {
     },
   },
   routine: {
-    card: 'set-routines',
-    point: 0,
+    // Was 'set-routines' — an id that never existed in GUIDE, so the deep-link
+    // was a dead end (the exact orphan class helpRegistry.test.ts now blocks).
+    card: 'routines',
     body: { fr: 'Crée une routine d’images pour un enfant (matin, dodo…).', en: 'Build a picture routine for a child (morning, bedtime…).' },
   },
   'plan-today': {

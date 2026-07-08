@@ -77,16 +77,18 @@ export const OPERATOR_HELP = {
     },
   },
   calm: {
-    card: 'set-calm',
-    point: 0,
+    // Was 'set-calm' — never a GUIDE id; the real card is 'calm', and its
+    // « Mode calme (option) » sub-point (index 1) is exactly this toggle.
+    card: 'calm',
+    point: 1,
     body: {
       fr: `Adoucit le « refaire » de la routine d'enfant. Les garanties calme (pas de points, pas de notifications) restent verrouillées quoi qu'il arrive.`,
       en: `Softens the kid routine's redo prompt. The calm guarantees (no points, no notifications) stay locked regardless.`,
     },
   },
   mealSlots: {
-    card: 'set-meals',
-    point: 0,
+    // Was 'set-meals' — never a GUIDE id (orphan caught by helpRegistry.test.ts).
+    card: 'kitchen',
     body: {
       fr: `La couleur de chaque repas de la journée et lesquels tu veux voir sur le babillard et dans La cuisine.`,
       en: `Each meal's colour and which ones you want to show on the board and in the kitchen.`,
@@ -133,8 +135,8 @@ export const OPERATOR_HELP = {
     },
   },
   ghost: {
-    card: 'set-ghost',
-    point: 0,
+    // Was 'set-ghost' — the real card is 'ghost' (orphan caught by helpRegistry.test.ts).
+    card: 'ghost',
     body: {
       fr: `Configure le suivi opt-in : choisis quoi suivre, à quelle fréquence, et mets des articles en sourdine ou retire-les.`,
       en: `Configure opt-in tracking: choose what to track, how often, and mute or remove items.`,
@@ -149,16 +151,17 @@ export const OPERATOR_HELP = {
     },
   },
   recap: {
-    card: 'set-recap',
-    point: 0,
+    // Was 'set-recap' — never a GUIDE id; the AI card covers the on-demand recap.
+    card: 'ai',
     body: {
       fr: `Un bilan calme de la semaine écrit par l'IA sur demande. Un bouton, jamais un fil automatique. Se cache si l'IA n'est pas branchée.`,
       en: `A calm weekly reflection written by AI on demand. A button, never an automatic feed. Hides itself if AI is offline.`,
     },
   },
   photos: {
-    card: 'set-photos',
-    point: 0,
+    // Was 'set-photos' — the screensaver card's « Mur de souvenirs » point IS this.
+    card: 'screensaver',
+    point: 1,
     body: {
       fr: `Les photos de famille qui dérivent doucement sur le babillard en mode veille. Redimensionnées à l'envoi, plafonnées côté serveur.`,
       en: `The family photos that gently drift across the board during idle mode. Resized on upload, capped server-side.`,
@@ -173,24 +176,24 @@ export const OPERATOR_HELP = {
     },
   },
   aiTest: {
-    card: 'set-ailog',
-    point: 1,
+    // Was 'set-ailog' — never a GUIDE id; the AI card is the home for diagnostics.
+    card: 'ai',
     body: {
       fr: `Vérifie en direct si les modèles IA (texte et vision) répondent — utile avant de signaler un problème de capture ou de suggestions.`,
       en: `Live-checks whether the AI models (text and vision) respond — useful before reporting a capture or suggestion issue.`,
     },
   },
   aiLog: {
-    card: 'set-ailog',
-    point: 1,
+    // Was 'set-ailog' — same fix as aiTest above.
+    card: 'ai',
     body: {
       fr: `Le journal de maintenance : ce qui a brisé et quand. Efface-le une fois lu — pas un compteur, juste un carnet d'entretien.`,
       en: `The maintenance log: what broke and when. Clear it once read — not a counter, just a maintenance log.`,
     },
   },
   guest: {
-    card: 'set-guest',
-    point: 0,
+    // Was 'set-guest' — never a GUIDE id; 'share-access' is the guest-links card.
+    card: 'share-access',
     body: {
       fr: `Un lien temporaire en lecture seule pour la gardienne. Elle voit le babillard et les routines sans rien pouvoir changer. Le lien expire tout seul.`,
       en: `A temporary read-only link for the babysitter. She sees the board and routines without changing anything. The link expires on its own.`,

@@ -678,12 +678,20 @@ tours (`guideWhat`), `SectionIntro`, and `FeatureMap` all reuse. Two real gaps r
   the "? target renders nothing" orphan class at the surface level. `HelpMode<K = string>` uses **method-syntax** so a
   narrow `HelpMode<keys>` stays assignable to a child's loose `help?: HelpMode` prop — threading unaffected, zero churn
   at the ~20 thread sites. (`data-tour` anchors are still untyped strings — a separate, smaller follow-up.)
+- [x] ✅ **CARD-orphan check DONE 2026-07-08.** The key half was compile-safe but every entry's `card` (a GUIDE id)
+  was still a bare string — and `src/lib/helpRegistry.test.ts` (new) immediately caught **9 SHIPPED dead deep-links**:
+  `ADD_HELP.routine → 'set-routines'` and `OPERATOR_HELP` calm/mealSlots/ghost/recap/photos/aiTest/aiLog/guest all
+  pointing at `set-*` ids that never existed in GUIDE (→ « Voir le guide » landed nowhere). All remapped to real
+  cards ('routines', 'calm' pt 1, 'kitchen', 'ghost', 'ai' ×3, 'screensaver' pt 1, 'share-access'). The test walks
+  the 7 registries + static TOURS + WHATS_NEW: card exists, `point` in range, GUIDE ids unique — the whole
+  dead-link class now fails `npm test`. (Discovery probes had their own guard already, discovery.test.ts.)
 - [ ] **Drift:** `ADD_HELP`/`CERCLE_HELP` carry their **own** one-liners separate from `GUIDE.what`, so they can
   diverge. Low priority: have help bubbles pull the summary from the guide entry (like tours already do via
   `guideWhat`). The big "one FeatureExplainer registry feeding guide+help+tour+intro" is **deferred** — high churn,
   the copy already exists; only worth it at the next onboarding refresh.
-- [ ] **Adoption template:** only AddSheet + Cercle wire help-mode; Board/Kitchen/Routines/Liste haven't. Add a short
-  "how to add section help" scaffold doc so adoption is uniform (no new registry shape needed).
+- [~] **Adoption template — stale finding (verified 2026-07-08):** Board/Kitchen/Liste/Routines/Operator all wire
+  help-mode now (BOARD_HELP/KITCHEN_TAB_HELP/LISTE_HELP/ROUTINES_HELP/OPERATOR_HELP registries exist and are used).
+  Adoption happened organically; no scaffold doc needed.
 
 ### P2-10 🟢 Add-system: capture spine is well-generalized; two small folds
 The ＋ capture spine (`SECTION_MODES`/`NAV_TARGET`/`MODE_DRESS`/`FORM_ROUTES`, one `<AddSheet>` mounted in
