@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange } from './year'
+import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange, ageAt, groupByYear } from './year'
 
 // D-16 (bmad/09) — the derived-year layer. The moving feasts are the risky
 // part: computus (Easter), the nth-weekday rules (Travail, Action de grâce,
@@ -60,6 +60,33 @@ describe('day + range lookups', () => {
     const dec = holidaysInRange(day(2026, 12, 20), 20) // Dec 20 2026 → Jan 8 2027
     expect(dec.map((x) => x.holiday.id)).toEqual(['veille-de-noel', 'noel', 'veille-jour-de-lan', 'jour-de-lan'])
     expect(dec.every((x, i, xs) => i === 0 || xs[i - 1].at <= x.at)).toBe(true)
+  })
+
+  it('groupByYear labels years only once a second year exists', () => {
+    const sec = (y: number, m: number, d: number) => Math.floor(new Date(y, m - 1, d).getTime() / 1000)
+    const rows = [
+      { id: 'a', at: sec(2026, 5, 1) },
+      { id: 'b', at: sec(2026, 2, 1) },
+    ]
+    // One year → a single calm unlabelled group (no heading noise).
+    expect(groupByYear(rows, (r) => r.at)).toEqual([[null, rows]])
+    // A second year appears → newest year first, each labelled.
+    const more = [...rows, { id: 'c', at: sec(2025, 12, 25) }]
+    const groups = groupByYear(more, (r) => r.at)
+    expect(groups.map(([y]) => y)).toEqual([2026, 2025])
+    expect(groups[1][1].map((r) => r.id)).toEqual(['c'])
+    expect(groupByYear([], (r: { at: number }) => r.at)).toEqual([])
+  })
+
+  it('ageAt gives full years only when the birth YEAR is known', () => {
+    const at = Math.floor(new Date(2026, 6, 8).getTime() / 1000) // 2026-07-08
+    expect(ageAt('2022-03-15', at)).toBe(4)
+    expect(ageAt('2022-09-01', at)).toBe(3) // birthday not reached yet this year
+    expect(ageAt('2022-07-08', at)).toBe(4) // birthday IS today
+    expect(ageAt('03-15', at)).toBeNull() // year-less → never guess
+    expect(ageAt('--03-15', at)).toBeNull()
+    expect(ageAt(null, at)).toBeNull()
+    expect(ageAt('2030-01-01', at)).toBeNull() // born "in the future" → nonsense, null
   })
 
   it('every holiday resolves to a real calendar date in every year (no drift)', () => {

@@ -368,6 +368,8 @@ export const FR = {
     keep: 'Garder',
     galleryTitle: 'Mes dessins',
     galleryEmpty: 'Aucun dessin gardé pour l’instant. Touche ＋ pour en faire un!',
+    // B-11 (bmad/09) — l'âge de l'enfant au moment du dessin (« Léa · 3 ans »).
+    ageN: (n: number) => (n === 1 ? '1 an' : `${n} ans`),
     galleryDelete: 'Supprimer ce dessin pour de bon?',
     galleryLink: 'La galerie',
     // #14 — convert a drawing both ways (gallery ↔ fridge note), keeping a copy so
@@ -2972,6 +2974,8 @@ export const EN: typeof FR = {
     keep: 'Keep',
     galleryTitle: 'My drawings',
     galleryEmpty: 'No saved drawings yet. Tap ＋ to make one!',
+    // B-11 (bmad/09) — the child's age at drawing time ("Léa · age 3").
+    ageN: (n: number) => `age ${n}`,
     galleryDelete: 'Delete this drawing for good?',
     galleryLink: 'The gallery',
     pinToFridge: 'Pin to the board',

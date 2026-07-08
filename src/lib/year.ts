@@ -117,6 +117,40 @@ export function holidaysInRange(fromDaySec: number, days: number): { holiday: Ho
   return out.sort((a, b) => a.at - b.at)
 }
 
+// B-11 (bmad/09): group rows by the LOCAL calendar year of their timestamp,
+// newest year first — but a collection living inside ONE year returns a single
+// null-labelled group, so a young gallery stays one calm unlabelled grid.
+export function groupByYear<T>(rows: readonly T[], at: (x: T) => number): [number | null, T[]][] {
+  const by = new Map<number, T[]>()
+  for (const x of rows) {
+    const y = new Date(at(x) * 1000).getFullYear()
+    const g = by.get(y)
+    if (g) g.push(x)
+    else by.set(y, [x])
+  }
+  const groups = [...by.entries()].sort((a, b) => b[0] - a[0])
+  if (groups.length <= 1) return rows.length ? [[null, [...rows]]] : []
+  return groups
+}
+
+// B-11 (bmad/09): age (in full years) at a given moment, when the birth YEAR
+// is known. Accepts the members.birthday string: 'YYYY-MM-DD' gives an age;
+// a year-less 'MM-DD' / '--MM-DD' (or anything else) gives null — we never
+// guess an age. Used by the drawings gallery (« Léa · 3 ans »).
+export function ageAt(birthday: string | null | undefined, atSec: number): number | null {
+  if (!birthday) return null
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthday)
+  if (!m) return null
+  const y = Number(m[1])
+  const mo = Number(m[2])
+  const d = Number(m[3])
+  if (y < 1900) return null
+  const at = new Date(atSec * 1000)
+  let age = at.getFullYear() - y
+  if (at.getMonth() + 1 < mo || (at.getMonth() + 1 === mo && at.getDate() < d)) age--
+  return age >= 0 && age < 130 ? age : null
+}
+
 // Per-DEVICE opt-out (OQ-4: announce all by default; a household that doesn't
 // want the lines flips one toggle in Réglages ▸ Affichage ▸ Agenda). A display
 // preference, so per-device like the board-card layout — no schema.

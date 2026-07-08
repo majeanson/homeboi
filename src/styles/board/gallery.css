@@ -84,6 +84,15 @@
   color: var(--paper);
   background: var(--berry-deep, var(--accent, #4a8a5a));
 }
+/* B-11 (bmad/09): the album reads by YEAR once a second year exists — a quiet
+   mono heading between the year grids. A single-year gallery shows none. */
+.drawgallery__year {
+  margin: 1.1rem 0 0.5rem;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
 /* Credit line under each kept drawing: who drew it + when. Calm — a quiet caption,
    never counts. Wraps gracefully on a narrow tile. */
 .drawgallery__meta {

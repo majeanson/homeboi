@@ -116,9 +116,15 @@ idle** — never louder than that.
     cercle, trips taken, drawings kept, first/lasts. STRICTLY faces + moments,
     zero tallies (« 47 soupers cuisinés » is REJECTED by construction).
     Renders once, on demand, maybe around jour de l'An.
-11. ✅ **Drawings & mots, by year** [S] ◐ — *garde (2026-07-08)* — the gallery already keeps drawings;
-    group by year with the child's age at the time (« Léa, 4 ans »). Same for
-    kept mots. Pure grouping, no new rows.
+11. ✅ **Drawings & mots, by year** [S] ◐ — *garde (2026-07-08)* —
+    **SHIPPED same day (drawings half):** « Mes dessins » now reads as the
+    family album — grouped by YEAR once a second year exists (a young gallery
+    stays one calm unlabelled grid; `groupByYear` in lib/year.ts), and each
+    drawing credits the child's AGE at the time when the birth year is known
+    (« Léa · 3 ans » — `ageAt` over members.birthday, never guessed from a
+    year-less date). Pure regrouping, no new rows; both helpers unit-tested.
+    **Mots half n/a for now:** mots are transient board messages with no
+    archive surface — revisit only if a kept-mots gallery ever exists.
 12. ✅ **Trip albums** [S] ◐ — *garde (2026-07-08)* — a finished voyage already holds notes/photos/
     itinerary; a read-only « album » view of a past trip (today it's just the
     same editor, colder). One template over existing data.
