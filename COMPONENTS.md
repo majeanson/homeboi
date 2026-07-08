@@ -181,7 +181,14 @@ B-8 bmad/09 — Réglages ▸ Le cercle ▸ Cette année: the house's read-only 
 a cold-path client union of care_log + chores-ledger (year `?since`) + finished
 trips + kept drawings, grouped by `groupByMonth` (lib/year); newest month open,
 older months folded in `Disclosure`s, rows reuse the `.ledger` CSS family — names,
-faces and dates, never counts). #11 collections is now an "Aa vs Collections"
+faces and dates, never counts; a finished-trip row links to its album),
+`voyage/VoyageAlbum` (« L'album du voyage », B-12 bmad/09 — a FINISHED trip
+(`end_at` before today) opens `/voyage/:id` as a read-only paper keepsake:
+photo grid (non-PDF image/drawing notes via `ZoomableImg`), day-by-day +
+kept notes through `TripNoteCard` with no handlers (= no RowActions), who-was-
+there faces; the `.voyage-album` CSS family mirrors `.recipe-original`; the
+editor stays one SceneHead `action` toggle away, and a `?vue=`/`?jour=` deep
+link still lands in the editor). #11 collections is now an "Aa vs Collections"
 view toggle inside the recipe book (`RecipesTab`): "Aa" = flat alphabetical list,
 "Collections" = grouped-by-tag sections; "Quoi cuisiner?" is a pill filter — both
 flat in `RecipesTab`, no sub-tabs. `buildCollections` (in `CollectionPicker.tsx`,

@@ -1920,6 +1920,17 @@ export const GUIDE: GuideEntry[] = [
         },
         why: { fr: 'Un voyage à plusieurs familles se planifie à un seul endroit, sans se renvoyer des captures d’écran.', en: 'A multi-family trip gets planned in one place, without trading screenshots back and forth.' },
       },
+      {
+        label: { fr: 'Après : l’album du voyage', en: 'After: the trip album' },
+        detail: {
+          fr: 'Un voyage terminé se rouvre en album, pas en outil : les photos qu’il a ramassées, le jour par jour tel qu’il s’est passé, les notes gardées, et qui y était. Rien à créer — c’est le même carnet, relu en souvenir. Un voyage terminé se retrouve aussi dans « La maison cette année » (Réglages ▸ Le cercle) — touche-le pour rouvrir l’album. Besoin de corriger ? « Modifier » ramène l’éditeur.',
+          en: 'A finished trip reopens as an album, not a tool: the photos it gathered, the day-by-day as it happened, the kept notes, and who was there. Nothing to create — it’s the same notebook, reread as a keepsake. A finished trip also shows in “The home this year” (Settings ▸ The circle) — tap it to reopen the album. Need to fix something? “Edit” brings the editor back.',
+        },
+        why: {
+          fr: 'Rouvrir un vieux voyage devrait ressembler à ouvrir un album — pas à retomber dans la liste de bagages.',
+          en: 'Reopening an old trip should feel like opening an album — not falling back into the packing list.',
+        },
+      },
     ],
   },
   {

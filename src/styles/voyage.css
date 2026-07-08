@@ -256,3 +256,70 @@
   color: var(--ink-soft);
   white-space: nowrap;
 }
+
+/* — B-12 (bmad/09): « L'album du voyage » — a finished trip re-read as a calm
+   paper keepsake. Same paper language as .recipe-original (serif, cream sheet,
+   none of the editor chrome); photos in a simple rounded grid. */
+.voyage-album {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: color-mix(in srgb, var(--surface) 88%, #f4ecd9);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem 1.4rem;
+}
+.voyage-album__tag {
+  margin: 0 0 0.6rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.voyage-album__title {
+  margin: 0 0 0.3rem;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.voyage-album__meta {
+  margin: 0.2rem 0 0;
+  color: var(--ink-soft);
+  font-size: var(--text-md);
+}
+.voyage-album__faces {
+  margin-top: 0.7rem;
+  align-items: center;
+}
+.voyage-album__facelabel {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+.voyage-album__face {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.voyage-album__h {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.25rem;
+}
+.voyage-album__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.5rem;
+}
+.voyage-album__grid .voyage-album__ph {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  margin: 0;
+  max-width: none;
+}
+/* Notes inside the album lose the card chrome — lines in a scrapbook, not rows
+   in a tool (TripNoteCard renders read-only here: no RowActions). */
+.voyage-album .trip-note {
+  background: transparent;
+  border: 0;
+  padding: 6px 0;
+  margin-bottom: 2px;
+}

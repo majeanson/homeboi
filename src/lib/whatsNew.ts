@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'trip-album',
+    text: {
+      fr: 'Nouveau : un voyage terminé se rouvre en album — photos, jour par jour, notes gardées. « Modifier » ramène l’éditeur.',
+      en: 'New: a finished trip reopens as an album — photos, day by day, kept notes. “Edit” brings the editor back.',
+    },
+    card: 'voyage',
+  },
+  {
     id: 'house-diary',
     text: {
       fr: 'Nouveau : « La maison cette année » — le journal calme de l’année (soins, corvées, voyages, dessins), dans Réglages ▸ Le cercle.',

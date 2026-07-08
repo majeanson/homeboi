@@ -230,6 +230,13 @@
 .ledger__chore {
   font-weight: 500;
 }
+/* A diary row that re-opens somewhere (a finished trip → its album, B-12):
+   a quiet dotted underline, never a loud link colour. */
+a.ledger__chore--link {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
 .ledger__helpers {
   display: flex;
   flex-wrap: wrap;

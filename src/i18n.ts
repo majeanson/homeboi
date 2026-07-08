@@ -624,6 +624,13 @@ export const FR = {
     legendTrips: 'Voyages',
     // capture / discovery
     captureTile: 'Voyage',
+    // « L'album du voyage » (B-12, bmad/09) — a finished trip re-read as a keepsake.
+    albumTag: 'L’album du voyage',
+    albumBack: 'L’album',
+    albumWho: 'On y était',
+    albumPhotos: 'Les photos',
+    albumNotes: 'Les notes gardées',
+    albumEmpty: 'Rien n’a été noté pendant ce voyage — il vit dans vos têtes.',
   },
   // « Les carnets » — les choses dont on prend soin (maison, auto… et le chauffe-eau
   // à l’intérieur d’une maison), chacune avec son carnet d’entretien.
@@ -3225,6 +3232,12 @@ export const EN: typeof FR = {
     startsToday: 'Today',
     legendTrips: 'Trips',
     captureTile: 'Trip',
+    albumTag: 'The trip album',
+    albumBack: 'The album',
+    albumWho: 'We were there',
+    albumPhotos: 'The photos',
+    albumNotes: 'The kept notes',
+    albumEmpty: 'Nothing was noted during this trip — it lives in your heads.',
   },
   carnets: {
     title: 'The carnets',

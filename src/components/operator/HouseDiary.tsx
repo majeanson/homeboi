@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
@@ -58,6 +59,8 @@ interface Entry {
   title: string
   sub: string
   faces: Face[]
+  // A destination the entry re-opens as (a finished trip → its album scene).
+  to?: string
 }
 
 // Cold-path read options: cache and sit still — the diary is an album you open,
@@ -153,6 +156,8 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
       title: `🧳 ${tr.title}`,
       sub: tr.destination ?? '',
       faces: tr.members.map((id) => memberById.get(id)).filter((m): m is OperatorMember => !!m).map((m) => face(m)),
+      // A finished trip re-opens as its album (B-12) — the diary is its doorway.
+      to: `/voyage/${tr.id}`,
     })
   }
   // Kept drawings — credited like the gallery (« Léa · 3 ans » when the birth
@@ -187,7 +192,13 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
         <li key={e.key} className="ledger__row">
           <span className="ledger__spine" style={{ background: e.spine }} aria-hidden="true" />
           <div className="ledger__body">
-            <span className="ledger__chore">{e.title}</span>
+            {e.to ? (
+              <Link to={e.to} className="ledger__chore ledger__chore--link">
+                {e.title}
+              </Link>
+            ) : (
+              <span className="ledger__chore">{e.title}</span>
+            )}
             <span className="ledger__name">
               {dayLabel(e.at)}
               {e.sub ? ` · ${e.sub}` : ''}

@@ -300,6 +300,16 @@ export function reorderPatches(
   return next.flatMap((n, i) => (n.position === i ? [] : [{ id: n.id, position: i }]))
 }
 
+// A compact "12 juin – 18 juin" / "12 juin" range — the scene subtitle and the
+// album meta line read the same words.
+import { formatDayLong, capitalize as cap } from '../../lib/format'
+export function tripDateLabel(trip: Trip, lang: 'fr' | 'en'): string {
+  if (trip.start_at == null) return ''
+  const a = cap(formatDayLong(trip.start_at, lang))
+  if (trip.end_at == null || trip.end_at === trip.start_at) return a
+  return `${a} – ${cap(formatDayLong(trip.end_at, lang))}`
+}
+
 // The inclusive list of local-midnight day starts a trip spans (for the itinerary
 // tab + the calendar band). Empty when either bound is missing. Capped so a typo'd
 // range can't blow up the UI. Reuses addLocalDays (DST-safe) from the day helpers.

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
@@ -7,8 +7,8 @@ import { useT, useLang } from '../i18n'
 import { live } from '../lib/query'
 import { imgUrl } from '../lib/image'
 import { isGuest } from '../lib/device'
-import { formatDayLong, capitalize as cap } from '../lib/format'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
+import { todayLocalDay } from '../lib/localDay'
 import { useTabParam } from '../lib/tabParam'
 import { MEMBERS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY, SHARED_TRIPS_KEY } from '../lib/queryKeys'
 import { useConfirm } from '../lib/confirm'
@@ -20,7 +20,8 @@ import { Chip, ChipGroup } from '../components/Chip'
 import { Icon } from '../components/Icon'
 import type { MemberFace } from '../components/MemberSwitcher'
 import { DetailProvider } from '../components/detail/DetailProvider'
-import { useTrips, useTripNotes, useTripPacking, VOYAGE_ICON, type Trip } from '../components/voyage/voyage'
+import { useTrips, useTripNotes, useTripPacking, tripDateLabel, VOYAGE_ICON, type Trip } from '../components/voyage/voyage'
+import { VoyageAlbum } from '../components/voyage/VoyageAlbum'
 import { VoyageInfos } from '../components/voyage/VoyageInfos'
 import { VoyageItinerary } from '../components/voyage/VoyageItinerary'
 import { PackingList } from '../components/voyage/PackingList'
@@ -66,6 +67,11 @@ function VoyageInner() {
   // URL is ever reached via the :id route.)
   const isNew = !id || id === 'new'
   const [editing, setEditing] = useState(false)
+  // B-12 (bmad/09): a FINISHED trip opens as its ALBUM (read-only keepsake), the
+  // editor one SceneHead toggle away. An explicit ?vue=/?jour= deep link (a
+  // calendar day tap) still lands in the editor view it names.
+  const [params] = useSearchParams()
+  const [showEditor, setShowEditor] = useState(() => params.has('vue') || params.has('jour'))
 
   const tripsQ = useTrips()
   const trip = useMemo(() => tripsQ.data?.trips.find((x) => x.id === id), [tripsQ.data, id])
@@ -109,6 +115,11 @@ function VoyageInner() {
   const notes = notesQ.data?.notes ?? []
   const packing = packingQ.data?.items ?? []
 
+  // Finished = the (inclusive) last day is before today, by the local-midnight day
+  // convention every trip date uses. No stored flag — derived, like everything year-scale.
+  const finished = trip.end_at != null && trip.end_at < todayLocalDay()
+  const album = finished && !showEditor
+
   // « Partager en direct » — promote this private trip into the cross-household shared
   // store (« Voyage partagé »). A MOVE, not a copy: the private trip soft-deletes and
   // its blobs re-key to the share, so the confirm copy spells out that it's not undoable
@@ -142,45 +153,58 @@ function VoyageInner() {
         card="voyage"
         onClose={close}
         closeLabel={t.common.close}
+        action={
+          // Album ⇄ editor, the recipe « Original » toggle pattern — only a
+          // finished trip earns it (an upcoming trip is just the editor).
+          finished ? (
+            <button
+              type="button"
+              className="btn btn--ghost mono"
+              onClick={() => setShowEditor((v) => !v)}
+              aria-pressed={!album}
+            >
+              <Icon name={album ? 'pencil-simple-bold' : 'book-open-bold'} size={15} />{' '}
+              {album ? t.common.edit : t.voyage.albumBack}
+            </button>
+          ) : undefined
+        }
       />
       <div className="scene__body">
-        <SubTabs
-          ariaLabel={t.voyage.sections}
-          value={vue}
-          onSelect={setVue}
-          options={[
-            { key: 'itineraire', label: t.voyage.tabItinerary, icon: 'calendar-dots-bold' },
-            { key: 'infos', label: t.voyage.tabInfos, icon: 'push-pin-bold' },
-            { key: 'bagages', label: t.voyage.tabPacking, icon: 'shopping-bag-bold' },
-            { key: 'documents', label: t.voyage.tabDocuments, icon: 'file-text-bold' },
-          ]}
-        />
-        {vue === 'itineraire' && <VoyageItinerary trip={trip} notes={notes} faces={tripFaces} />}
-        {vue === 'infos' && <VoyageInfos trip={trip} notes={notes} faces={tripFaces} />}
-        {vue === 'bagages' && <PackingList trip={trip} items={packing} faces={tripFaces} />}
-        {vue === 'documents' && <VoyageDocuments trip={trip} notes={notes} />}
+        {album ? (
+          <VoyageAlbum trip={trip} notes={notes} members={membersQ.data?.members ?? []} />
+        ) : (
+          <>
+            <SubTabs
+              ariaLabel={t.voyage.sections}
+              value={vue}
+              onSelect={setVue}
+              options={[
+                { key: 'itineraire', label: t.voyage.tabItinerary, icon: 'calendar-dots-bold' },
+                { key: 'infos', label: t.voyage.tabInfos, icon: 'push-pin-bold' },
+                { key: 'bagages', label: t.voyage.tabPacking, icon: 'shopping-bag-bold' },
+                { key: 'documents', label: t.voyage.tabDocuments, icon: 'file-text-bold' },
+              ]}
+            />
+            {vue === 'itineraire' && <VoyageItinerary trip={trip} notes={notes} faces={tripFaces} />}
+            {vue === 'infos' && <VoyageInfos trip={trip} notes={notes} faces={tripFaces} />}
+            {vue === 'bagages' && <PackingList trip={trip} items={packing} faces={tripFaces} />}
+            {vue === 'documents' && <VoyageDocuments trip={trip} notes={notes} />}
 
-        {!isGuest() && (
-          <div className="voyage__foot voyage-share__foot">
-            <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(true)}>
-              <Icon name="pencil-simple-bold" size={15} /> {t.voyage.editTrip}
-            </button>
-            <button type="button" className="btn btn--ghost mono" onClick={() => void shareLive()}>
-              <Icon name="users-three-bold" size={15} /> {t.sharedVoyage.shareLive}
-            </button>
-          </div>
+            {!isGuest() && (
+              <div className="voyage__foot voyage-share__foot">
+                <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(true)}>
+                  <Icon name="pencil-simple-bold" size={15} /> {t.voyage.editTrip}
+                </button>
+                <button type="button" className="btn btn--ghost mono" onClick={() => void shareLive()}>
+                  <Icon name="users-three-bold" size={15} /> {t.sharedVoyage.shareLive}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   )
-}
-
-// A compact "12 juin – 18 juin" / "12 juin" range for the subtitle.
-function tripDateLabel(trip: Trip, lang: 'fr' | 'en'): string {
-  if (trip.start_at == null) return ''
-  const a = cap(formatDayLong(trip.start_at, lang))
-  if (trip.end_at == null || trip.end_at === trip.start_at) return a
-  return `${a} – ${cap(formatDayLong(trip.end_at, lang))}`
 }
 
 // The create (no trip) / edit (trip given) form: name, destination, date range, who's

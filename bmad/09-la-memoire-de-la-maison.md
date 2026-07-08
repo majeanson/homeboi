@@ -171,6 +171,16 @@ idle** — never louder than that.
 12. ✅ **Trip albums** [S] ◐ — _garde (2026-07-08)_ — a finished voyage already holds notes/photos/
     itinerary; a read-only « album » view of a past trip (today it's just the
     same editor, colder). One template over existing data.
+    **SHIPPED same day:** `VoyageAlbum` — a finished trip (`end_at` before
+    today, derived, no stored flag) opens `/voyage/:id` as its ALBUM: paper
+    keepsake in the recipe-« Original » language (`.voyage-album` mirrors
+    `.recipe-original`), photo grid of every non-PDF image/drawing note
+    (`ZoomableImg`), day-by-day + kept notes via read-only `TripNoteCard`
+    (no handlers → no RowActions), « On y était » faces. The editor stays one
+    SceneHead `action` toggle away (« Modifier » ⇄ « L'album »); a `?vue=`/
+    `?jour=` deep link (calendar day tap) still lands in the editor. The B-8
+    diary's finished-trip rows link here — the diary is the album's doorway.
+    PDFs/documents stay editor-side (logistics, not memory).
 
 ## C · Traditions (the year's own vocabulary)
 
