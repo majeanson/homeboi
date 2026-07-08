@@ -692,14 +692,14 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Les quatre repas', en: 'All four meals' },
+        label: { fr: 'Tous les repas', en: 'All the meals' },
         detail: {
-          fr: 'Pas juste le souper : déjeuner, dîner, souper et collation ont chacun leur case.',
-          en: 'Not just supper: breakfast, lunch, supper and snack each have their own slot.',
+          fr: 'Pas juste le souper : déjeuner, dîner, collation, souper et dessert ont chacun leur case.',
+          en: 'Not just supper: breakfast, lunch, snack, supper and dessert each have their own slot.',
         },
         why: {
-          fr: 'Pour planifier aussi les lunchs et les collations à l’avance, pas seulement le repas du soir.',
-          en: 'So you can plan lunchboxes and snacks ahead too, not only the evening meal.',
+          fr: 'Pour planifier aussi les lunchs, les collations et les desserts à l’avance, pas seulement le repas du soir.',
+          en: 'So you can plan lunchboxes, snacks and desserts ahead too, not only the evening meal.',
         },
       },
       {
@@ -3634,8 +3634,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Une couleur par repas', en: 'A colour per meal' },
         detail: {
-          fr: 'Touche une pastille pour donner sa couleur à un repas (déjeuner, dîner, souper, collation). « Couleur par défaut » la remet comme avant.',
-          en: 'Tap a dot to give a meal (breakfast, lunch, supper, snack) its colour. “Default colour” puts it back as it was.',
+          fr: 'Touche une pastille pour donner sa couleur à un repas (déjeuner, dîner, collation, souper, dessert). « Couleur par défaut » la remet comme avant.',
+          en: 'Tap a dot to give a meal (breakfast, lunch, snack, supper, dessert) its colour. “Default colour” puts it back as it was.',
         },
         why: {
           fr: 'La couleur suit le repas PARTOUT — babillard, calendrier du mois, cuisine — alors un coup d’œil dit « ça, c’est le souper ».',

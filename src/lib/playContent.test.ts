@@ -56,6 +56,7 @@ describe('bucketDay', () => {
     { slot: 'lunch', title: 'Soupe' },
     { slot: 'snack', title: 'Biscuit' },
     { slot: 'supper', title: 'Pâtes' },
+    { slot: 'dessert', title: 'Gâteau' },
   ]
   const events = [
     { title: 'Fête', start_at: at(0), all_day: 1 },
@@ -65,10 +66,10 @@ describe('bucketDay', () => {
   ]
   const [matin, midi, soir, dodo] = bucketDay(meals, events)
 
-  it('buckets meals by slot (breakfast→matin, lunch+snack→midi, supper→soir)', () => {
+  it('buckets meals by slot (breakfast→matin, lunch+snack→midi, supper+dessert→soir)', () => {
     expect(matin.mealTitles).toEqual(['Œufs'])
     expect(midi.mealTitles).toEqual(['Soupe', 'Biscuit'])
-    expect(soir.mealTitles).toEqual(['Pâtes'])
+    expect(soir.mealTitles).toEqual(['Pâtes', 'Gâteau'])
     expect(dodo.mealTitles).toEqual([])
   })
   it('buckets events by local hour, with all-day events in the morning', () => {

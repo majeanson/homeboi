@@ -79,7 +79,7 @@ async function applyCleanup(env: Env, hh: string, undo: Cleanup[]): Promise<void
 
 // The valid meal slots — the router's proposed slot is checked against these
 // before it reaches the row (mirrors functions/api/meals.ts).
-const MEAL_SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack'])
+const MEAL_SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
 
 async function routeIntent(
   env: Env,

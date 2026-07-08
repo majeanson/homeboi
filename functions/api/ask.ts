@@ -18,8 +18,8 @@ const DAY = 86400
 
 // Meal slot → a short localized label for the AI context.
 const SLOT: Record<Lang, Record<string, string>> = {
-  fr: { breakfast: 'déjeuner', lunch: 'dîner', supper: 'souper', snack: 'collation' },
-  en: { breakfast: 'breakfast', lunch: 'lunch', supper: 'supper', snack: 'snack' },
+  fr: { breakfast: 'déjeuner', lunch: 'dîner', supper: 'souper', snack: 'collation', dessert: 'dessert' },
+  en: { breakfast: 'breakfast', lunch: 'lunch', supper: 'supper', snack: 'snack', dessert: 'dessert' },
 }
 
 function fmtDay(unixSec: number, lang: Lang): string {

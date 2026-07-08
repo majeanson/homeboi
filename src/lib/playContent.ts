@@ -201,7 +201,8 @@ export function bucketDay(
     dodo: { key: 'dodo', mealTitles: [], eventTitles: [] },
   }
   for (const m of meals) {
-    const k: DayPartKey = m.slot === 'breakfast' ? 'matin' : m.slot === 'supper' ? 'soir' : 'midi' // lunch + snack → midi
+    const k: DayPartKey =
+      m.slot === 'breakfast' ? 'matin' : m.slot === 'supper' || m.slot === 'dessert' ? 'soir' : 'midi' // lunch + snack → midi
     part[k].mealTitles.push(m.title)
   }
   for (const e of events) {

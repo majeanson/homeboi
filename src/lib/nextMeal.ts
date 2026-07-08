@@ -21,12 +21,15 @@ export interface CookChoice {
 
 // Which slot you're most likely about to cook, by local hour. Boundaries chosen
 // so "Cuisiner" lands on the next meal you'd actually prepare, not the one that
-// just passed: <10h déjeuner · <14h dîner · <16h collation · else souper.
+// just passed: <10h déjeuner · <14h dîner · <16h collation · <20h souper ·
+// else dessert (pickNextMeal's last-planned fallback still lands on the souper
+// when no dessert is planned).
 export function currentSlotRank(hour: number): number {
   if (hour < 10) return SLOT_RANK.breakfast
   if (hour < 14) return SLOT_RANK.lunch
   if (hour < 16) return SLOT_RANK.snack
-  return SLOT_RANK.supper
+  if (hour < 20) return SLOT_RANK.supper
+  return SLOT_RANK.dessert
 }
 
 // The next meal to prepare among a day's planned meals: the first (in time order)

@@ -436,10 +436,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Today's meals, ordered through the day (déjeuner → collation) so the board
   // reads top-to-bottom like a menu. Supper stays the headline hero above; the
   // client lists the rest here so nothing planned for the day is hidden.
-  // Time-of-day order: déjeuner → dîner → collation → souper (matches SLOT_RANK
-  // in src/lib/mealSlots.ts). Stable sort, so the SQL position order holds within
-  // a slot that has several meals.
-  const SLOT_ORDER: Record<string, number> = { breakfast: 0, lunch: 1, snack: 2, supper: 3 }
+  // Time-of-day order: déjeuner → dîner → collation → souper → dessert (matches
+  // SLOT_RANK in src/lib/mealSlots.ts). Stable sort, so the SQL position order
+  // holds within a slot that has several meals.
+  const SLOT_ORDER: Record<string, number> = { breakfast: 0, lunch: 1, snack: 2, supper: 3, dessert: 4 }
   type DayMeal = { id: string; slot: string; title: string; cook_member_id: string | null; position?: number; is_leftover?: number }
   const bySlot = (rows: unknown) => (rows as DayMeal[]).sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
   const todayMeals = bySlot(todayMealsRes.results)

@@ -14,17 +14,19 @@ const meal = (slot: string, over: Partial<MealRow> = {}): MealRow => ({
 })
 
 describe('currentSlotRank — the slot you are about to cook, by hour', () => {
-  it('maps the day onto déjeuner → dîner → collation → souper', () => {
+  it('maps the day onto déjeuner → dîner → collation → souper → dessert', () => {
     expect(currentSlotRank(8)).toBe(SLOT_RANK.breakfast)
     expect(currentSlotRank(12)).toBe(SLOT_RANK.lunch)
     expect(currentSlotRank(15)).toBe(SLOT_RANK.snack)
     expect(currentSlotRank(19)).toBe(SLOT_RANK.supper)
+    expect(currentSlotRank(21)).toBe(SLOT_RANK.dessert)
   })
 
   it('treats the boundaries as the start of the NEXT slot', () => {
     expect(currentSlotRank(10)).toBe(SLOT_RANK.lunch) // 10h is no longer déjeuner
     expect(currentSlotRank(14)).toBe(SLOT_RANK.snack)
     expect(currentSlotRank(16)).toBe(SLOT_RANK.supper)
+    expect(currentSlotRank(20)).toBe(SLOT_RANK.dessert)
   })
 })
 
@@ -44,6 +46,10 @@ describe('pickNextMeal — the next planned meal to prepare', () => {
   it('falls back to the last planned meal once the day is behind us', () => {
     // 21h, after every slot — still offer the souper rather than nothing.
     expect(pickNextMeal(day, 21)?.slot).toBe('supper')
+  })
+
+  it('offers the dessert in the late evening when one is planned', () => {
+    expect(pickNextMeal([...day, meal('dessert')], 21)?.slot).toBe('dessert')
   })
 
   it('is undefined when nothing is planned', () => {

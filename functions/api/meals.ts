@@ -8,21 +8,22 @@ import { ingredientName } from '../_lib/ingredient'
 // Tuesday (UTC, getUTCDay: Tue=2): each block spans its Tuesday through Tuesday+9
 // (10 inclusive days). Past days within the block drop off, so the visible window
 // is today..blockEnd — it shrinks 10 → 4 across the week, then snaps back to 10
-// each Tuesday (Monday-midnight reset). A day has four slots — déjeuner / dîner /
-// souper / collation (breakfast/lunch/supper/snack); the client groups per day.
+// each Tuesday (Monday-midnight reset). A day has five slots — déjeuner / dîner /
+// souper / collation / dessert (breakfast/lunch/supper/snack/dessert); the client
+// groups per day.
 // A slot can hold SEVERAL meals (migration 0033): each is a row, ordered by
 // `position` within the slot. `supper` stays primary (board headline, kid
 // suggestions, shop-the-week). Setting a meal optionally pushes "missing" staples
 // to the shared list (the meal -> grocery flow); the staples list is sent by the
 // client since the prototype has no recipe DB.
-const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack'])
+const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
 const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? v : 'supper')
 
-// Display/sort order is by TIME of day: déjeuner, dîner, collation, souper. Keep
-// in sync with SLOT_RANK in src/lib/mealSlots.ts. Used by every meal read so the
-// list never reshuffles between the kitchen grid, the board and the month.
+// Display/sort order is by TIME of day: déjeuner, dîner, collation, souper,
+// dessert. Keep in sync with SLOT_RANK in src/lib/mealSlots.ts. Used by every meal
+// read so the list never reshuffles between the kitchen grid, the board and the month.
 const SLOT_CASE =
-  "CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 ELSE 9 END"
+  "CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 WHEN 'dessert' THEN 4 ELSE 9 END"
 const MEAL_ORDER = `${SLOT_CASE}, position, created_at, id`
 
 const DAY = 86400
@@ -78,7 +79,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     toDate?: number
     // clear (slot optional → clear the whole day)
     date?: number
-    slot?: string // breakfast | lunch | supper | snack (default supper)
+    slot?: string // breakfast | lunch | supper | snack | dessert (default supper)
     // add / suggest
     title?: string
     cookMemberId?: string

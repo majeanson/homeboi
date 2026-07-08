@@ -849,7 +849,7 @@ export const FR = {
     tabMeals: 'Repas',
     tabPantry: 'Garde-manger',
     tabRecipes: 'Recettes',
-    slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation' },
+    slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation', dessert: 'Dessert' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Ajouter à la cuisine',
     cook: 'Cuisiner',
@@ -1933,7 +1933,7 @@ export const FR = {
     mealsTab: 'Repas',
     mealColors: 'Couleurs des repas',
     mealColorsHint:
-      'Donne une couleur à chaque repas (déjeuner, dîner, collation, souper). Elle paraît partout où ce repas apparaît — babillard, calendrier, cuisine.',
+      'Donne une couleur à chaque repas (déjeuner, dîner, collation, souper, dessert). Elle paraît partout où ce repas apparaît — babillard, calendrier, cuisine.',
     mealColorReset: 'Couleur par défaut',
     mealShow: 'Repas affichés',
     mealShowHint:
@@ -3461,7 +3461,7 @@ export const EN: typeof FR = {
     tabMeals: 'Meals',
     tabPantry: 'Pantry',
     tabRecipes: 'Recipes',
-    slots: { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack' },
+    slots: { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack', dessert: 'Dessert' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Add to the kitchen',
     cook: 'Cook',
@@ -4525,7 +4525,7 @@ export const EN: typeof FR = {
     mealsTab: 'Meals',
     mealColors: 'Meal colours',
     mealColorsHint:
-      'Give each meal a colour (breakfast, lunch, snack, supper). It shows everywhere that meal appears — the board, the calendar, the kitchen.',
+      'Give each meal a colour (breakfast, lunch, snack, supper, dessert). It shows everywhere that meal appears — the board, the calendar, the kitchen.',
     mealColorReset: 'Default colour',
     mealShow: 'Shown meals',
     mealShowHint:

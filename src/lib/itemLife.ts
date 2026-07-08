@@ -33,6 +33,8 @@ export function isPastSec(anchorSec: number | null | undefined, nowMs: number): 
 // end-of-window minute-of-day (déjeuner is done by ~10:30, etc.). SOUPER is deliberately
 // absent: it's the evening HEADLINE — the standing answer to "what's for supper tonight" —
 // so it keeps full emphasis all evening and never strikes (the hero is never line-crossed).
+// DESSERT is absent too: it follows the souper, so it stays live all evening and rolls
+// off at midnight like the hero.
 export const SLOT_PAST_MIN: Partial<Record<string, number>> = {
   breakfast: 10 * 60 + 30,
   lunch: 14 * 60,

@@ -6,7 +6,7 @@ import type { Env } from './env'
 // Validation lives here so both the read path and the PATCH share one definition
 // of "a valid slot / a valid colour".
 
-const SLOTS = ['breakfast', 'lunch', 'supper', 'snack'] as const
+const SLOTS = ['breakfast', 'lunch', 'supper', 'snack', 'dessert'] as const
 type Slot = (typeof SLOTS)[number]
 const isSlot = (v: unknown): v is Slot => typeof v === 'string' && (SLOTS as readonly string[]).includes(v)
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)

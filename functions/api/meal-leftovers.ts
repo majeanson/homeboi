@@ -8,7 +8,7 @@ import { localDayStart, newId, nowSec } from '../_lib/ids'
 // touch the shopping list (you already have the food). Planning one onto a day
 // CONSUMES it: it becomes a real meals row tagged is_leftover (see action 'plan')
 // — you eat leftovers once, so unlike meal_ideas the pool row is removed.
-const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack'])
+const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
 const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? v : 'supper')
 
 export const onRequestGet = authed(async (ctx, actor) => {
