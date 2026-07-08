@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'hourly-breath',
+    text: {
+      fr: 'Nouveau : le souffle de l’heure — au sommet de l’heure, l’horloge de veille respire une fois. Sans son, sans pastille.',
+      en: 'New: the hourly breath — at the top of the hour, the idle clock breathes once. No sound, no badge.',
+    },
+    card: 'screensaver',
+  },
+  {
     id: 'simple-lens',
     text: {
       fr: 'Nouveau : la vue « Simple » — grands boutons, gros texte, et garde le doigt sur une ligne pour l’entendre. Parfait pour une visite ou un grand-parent.',

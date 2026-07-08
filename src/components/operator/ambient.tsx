@@ -58,6 +58,20 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
             <Toggle on={a.showNext} icon="calendar-dots-bold" label={t.operator.ambientNext} onClick={() => set({ showNext: !a.showNext })} />
           </div>
 
+          {/* F-47 (bmad/08): the hourly breath — at the top of the hour the idle
+              clock breathes once (a slow 2 s scale). No sound, no badge — the
+              house's heartbeat. Every surface; reduced-motion drops it. */}
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.ambientBreath}</span>
+            <Toggle
+              on={a.hourlyBreath}
+              icon="heart-bold"
+              label={a.hourlyBreath ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+              onClick={() => set({ hourlyBreath: !a.hourlyBreath })}
+            />
+          </div>
+          <p className="operator__hint mono">{t.operator.ambientBreathHint}</p>
+
           <button type="button" className="btn btn--ghost" onClick={() => forceIdle('screensaver')}>
             <Icon name="play-bold" size={16} /> {t.operator.ambientPreview}
           </button>

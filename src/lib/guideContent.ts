@@ -1979,6 +1979,28 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Le souffle de l’heure', en: 'The hourly breath' },
+        detail: {
+          fr: 'Au sommet de l’heure, l’horloge de veille respire une fois — un lent battement de 2 secondes, sans son, sans pastille. Le battement de cœur de la maison. Ça se désactive dans Mode veille, et ça respecte le réglage « réduire les animations » de l’appareil.',
+          en: 'At the top of the hour, the idle clock breathes once — one slow 2-second beat, no sound, no badge. The house’s heartbeat. Turn it off in Idle mode; it honours the device’s “reduce motion” setting.',
+        },
+        why: {
+          fr: 'Une présence douce qui marque le temps sans jamais réclamer ton attention — le contraire d’une notification.',
+          en: 'A soft presence that marks time without ever demanding attention — the opposite of a notification.',
+        },
+      },
+      {
+        label: { fr: 'Prendre soin de l’écran', en: 'Caring for the panel' },
+        detail: {
+          fr: 'L’horloge de veille se déplace d’elle-même de quelques pixels chaque minute (invisible à l’œil) pour qu’une tablette allumée en permanence ne « marque » pas son écran, et le voile s’assombrit la nuit. De ton côté : baisse la luminosité de la tablette vers 30–50 % et, si elle l’offre, programme une plage nuit — l’écran durera des années.',
+          en: 'The idle clock shifts itself a few pixels every minute (invisible to the eye) so an always-on tablet never burns its screen, and the veil deepens at night. On your side: set the tablet’s brightness around 30–50% and, if it offers one, schedule a night window — the panel will last for years.',
+        },
+        why: {
+          fr: 'Un meuble ne devrait pas se cicatriser.',
+          en: 'Furniture shouldn’t scar.',
+        },
+      },
+      {
         label: { fr: 'Retour à Maisonnée', en: 'Back to Household' },
         detail: {
           fr: 'Sur un kiosque, après un moment sans usage, le visage choisi revient à « Maisonnée » (un petit avertissement avant). Réglable, ou désactivable.',

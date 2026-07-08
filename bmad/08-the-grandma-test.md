@@ -210,10 +210,11 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     pre-reader can tap-to-hear.)
 29. ❌ ~~**Voyage × the rest of the house**~~ [S each] ◐ — *rejeté.* (Trip
     weather, l'auto as trip vehicle, « on est partis » pause.)
-30. ✅ **Cast × ambient** [S] ◐ — `/cast` shows the read-only board; let it
-    also run the `AmbientScreen` rotation (clock/photos/next-up) so the
-    living-room TV becomes the photo frame + glance surface when idle. The
-    receiver and the screensaver both exist; join them.
+30. ✅ **Cast × ambient** [S] ◐ — **SHIPPED (was already done — audit stale):**
+    `/cast` offers « Le babillard » vs « Ambiance » — the Ambience choice renders
+    `AmbientScreen` full-time (`CastPage.tsx`), and the Guide's cast card
+    documents it. The hourly breath + burn-in drift (F-47/E-37) ride along on
+    the TV automatically since they live inside AmbientScreen.
 31. ✅ **Carnets × upkeep cadence** [M] ◐ — carnets made home/auto/things into
     cared-for members (07); 06-A1's long-interval cadence (furnace filter,
     smoke batteries, tire swap) is its natural completion: a recurrence on a
@@ -240,10 +241,14 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
 36. ✅ **Backup beyond takeout** [M] — a nightly R2 dump (cron trigger, one
     JSON per household) as cheap insurance against the scariest failure mode:
     a migration bug eating the only real household.
-37. ✅ **Burn-in & battery care for the always-on panel** [S] — pixel-shift
-    the ambient clock a few px per minute, deepen the night dim, and document
-    a recommended tablet brightness/schedule in the Guide. Furniture
-    shouldn't scar.
+37. ✅ **Burn-in & battery care for the always-on panel** [S] — **SHIPPED
+    2026-07-07:** the ambient clock/date/next block now pixel-drifts ±4 px
+    through a 5×5 grid, one step per minute (~25-min loop; eased under
+    no-preference, instant jump under reduced-motion — the protection holds
+    either way; `AmbientScreen.tsx` + ambient.css). The deepened night veil
+    already existed (deliberate, kept). Guide: « Prendre soin de l'écran »
+    point on the screensaver card documents the drift + a recommended 30–50%
+    brightness / night schedule.
 38. ⏸ **Per-guest locale** [S] — *plus tard.* Guest links carry an optional
     `lang` so a unilingual relative sees *her* views (postbox, Le pont) in her
     language while the house stays québécois. Revisit when Le pont (D-26)
@@ -277,10 +282,14 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     chip on la liste.)
 47. ✅ **A soft hourly presence — kiosk AND mobile** [S] ⚠ ✦ — **Marc:
     « garde, and add for mobile too while at it (still behind settings). »**
-    At the top of the hour the ambient clock breathes once (a slow 2s scale).
-    No sound, no badge, no content — the house's heartbeat, the
-    anti-notification. Ships behind the veille settings on every surface;
-    `prefers-reduced-motion` turns it off.
+    **SHIPPED 2026-07-07:** at the top of the hour the ambient clock breathes
+    once (a slow 2 s scale, `ambient-breath` keyframes; the 10 s tick catches
+    the first ~20 s of minute :00). No sound, no badge, no content. New
+    `hourlyBreath` pref in `lib/ambient` (default ON) + « Le souffle de
+    l'heure » toggle in Réglages ▸ Mode veille; `prefers-reduced-motion`
+    drops it entirely. Every surface — the idle timer already arms on kiosk
+    AND mobile, and `/cast`'s Ambience screen inherits it. Guide point +
+    whatsNew entry (`hourly-breath`).
 
 ---
 
@@ -441,10 +450,13 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 *(D-26 Le pont deferred to the plus-tard shelf per OQ-3.)*
 
 **Ambient & platform (continuous, order-free)**
-D-30 cast×ambient · D-31 carnets upkeep cadence · F-47 hourly breath (kiosk +
-mobile, behind settings) · E-35 takeout · E-36 nightly backup · E-37 burn-in
-care · E-41 temp-id chain fix · E-39 UNIFORMIZING reds (BE-1 first) · E-40
-a11y pass · C-23 offline-aware code-splitting (measure first).
+~~D-30 cast×ambient~~ ✅ (was already shipped) · D-31 carnets upkeep cadence ·
+~~F-47 hourly breath~~ ✅ 2026-07-07 · E-35 takeout · E-36 nightly backup ·
+~~E-37 burn-in care~~ ✅ 2026-07-07 · E-41 temp-id chain fix ·
+~~E-39 UNIFORMIZING reds~~ ✅ (audit shows BE-1/BE-2/FE-1/FE-2/LIB-2 + Phases
+0–2 all landed — the "reds" note was stale; what remains in UNIFORMIZING.md is
+Phase 3/4 opportunistic work) · E-40 a11y pass · C-23 offline-aware
+code-splitting (measure first).
 
 **Plus tard shelf:** C-25 rush-hour diet · D-26 Le pont (deferred per OQ-3;
 revive by picking the 2–3 real relatives first) · D-32 share-view print

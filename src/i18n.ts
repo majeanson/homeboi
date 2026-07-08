@@ -2059,6 +2059,9 @@ export const FR = {
     ambientReturnHome: 'Revenir à Maisonnée',
     ambientReturnAfter: 'Délai avant le retour',
     ambientPreview: 'Aperçu maintenant',
+    // F-47 — le souffle de l'heure (l'anti-notification).
+    ambientBreath: 'Le souffle de l’heure',
+    ambientBreathHint: 'Au sommet de l’heure, l’horloge de veille respire une fois — sans son, sans pastille. Le battement de cœur de la maison.',
     ambientOnWord: 'Activé',
     ambientOffWord: 'Désactivé',
     ambientMinutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),
@@ -4592,6 +4595,9 @@ export const EN: typeof FR = {
     ambientReturnHome: 'Return to Household',
     ambientReturnAfter: 'Idle before return',
     ambientPreview: 'Preview now',
+    // F-47 — the hourly breath (the anti-notification).
+    ambientBreath: 'The hourly breath',
+    ambientBreathHint: 'At the top of the hour, the idle clock breathes once — no sound, no badge. The house’s heartbeat.',
     ambientOnWord: 'On',
     ambientOffWord: 'Off',
     ambientMinutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),

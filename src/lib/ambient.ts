@@ -19,6 +19,10 @@ export interface AmbientSettings {
   showPhotos: boolean // the slow PhotoFrame slideshow as the backdrop
   showDrawings: boolean // #49: fold saved kids' drawings into the photo mosaic
   showNext: boolean // a quiet "next up" line (tonight's supper + today's next event)
+  // F-47 (bmad/08): at the top of the hour the idle clock breathes once — a slow
+  // 2 s scale, no sound, no badge. The house's heartbeat, the anti-notification.
+  // Every surface (kiosk, mobile, cast); prefers-reduced-motion turns it off.
+  hourlyBreath: boolean
   returnHome: boolean // drift the picked face back to Maisonnée when idle
   returnHomeMin: number // minutes idle before that drift
 }
@@ -31,6 +35,7 @@ const AMBIENT_DEFAULTS: AmbientSettings = {
   showPhotos: true,
   showDrawings: true,
   showNext: true,
+  hourlyBreath: true,
   returnHome: true,
   returnHomeMin: 3,
 }

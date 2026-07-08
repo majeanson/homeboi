@@ -91,6 +91,15 @@
   padding: 1.5rem;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.55);
 }
+/* E-37 burn-in care: AmbientScreen drifts this block ±4 px through a 5×5 grid,
+   one step per minute (inline transform), so the static glyphs never park on the
+   same pixels for hours. The ease makes each step a glide; without motion
+   preference the step still happens (the protection), just as an instant jump. */
+@media (prefers-reduced-motion: no-preference) {
+  .ambient__center {
+    transition: transform 2s ease;
+  }
+}
 .ambient__clock {
   font-family: var(--display);
   font-weight: 500;
@@ -98,6 +107,24 @@
   font-size: clamp(4rem, 18vw, 13rem);
   line-height: 1;
   letter-spacing: -0.01em;
+}
+/* F-47 (bmad/08): the hourly breath — at the top of the hour the idle clock
+   scales up ~3% and settles back over 2 s, once. No sound, no badge, no colour:
+   the house's heartbeat, the anti-notification. Opt-out in Réglages ▸ Mode
+   veille; prefers-reduced-motion drops it entirely. */
+@media (prefers-reduced-motion: no-preference) {
+  .ambient__clock.is-breath {
+    animation: ambient-breath 2s ease-in-out 1;
+  }
+  @keyframes ambient-breath {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.03);
+    }
+  }
 }
 .ambient__date {
   font-family: var(--display);
