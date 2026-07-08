@@ -73,8 +73,9 @@
    side effect by every lazy page that renders cercle/.cf content (Cercle*,
    FamilyImportPage, IntakeForm, Postbox, SharedVoyageJoinPage, DevKit). */
 /* #34 / #35 — typed share-link scenes (handoff / welcome). Uniquely-named
-   .handoff__/.welcome__ classes, position immaterial. */
-@import './styles/handoff.css';
+   .handoff__/.welcome__ classes, position immaterial. B-11 (bmad/10): moved OUT
+   of the eager shell — imported instead as a side effect by HandoffPage,
+   WelcomePage and FamilyWindowPage. */
 /* Family-info intake form + operator review — uniquely-named .intake__/.intake-review
    classes, position immaterial. */
 @import './styles/intake.css';

@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — handoff.css moved out of the eager shell (uniquely-named
+// .handoff__/.welcome__ classes); load it whenever this page renders instead.
+import '../styles/handoff.css'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api, isStatus } from '../lib/api'

@@ -2,6 +2,8 @@
 // its lone .handoff__pin-img rule (the « En cas de pépin » pin photo), unmoved to
 // avoid churning an unrelated file for one class.
 import '../styles/carnets.css'
+// handoff.css moved out of the eager shell too (uniquely-named .handoff__ classes).
+import '../styles/handoff.css'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api, isStatus } from '../lib/api'
