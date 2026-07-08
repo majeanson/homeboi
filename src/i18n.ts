@@ -447,6 +447,9 @@ export const FR = {
     offline: 'Hors ligne — voici la dernière version reçue',
     allDay: 'Toute la journée',
     birthday: 'Anniversaire',
+    // A-2 (bmad/09) — les fêtes dérivées: the calm announce tag on a fête line.
+    holidayTag: 'Fête',
+    holidayOff: 'Congé férié',
     welcomeHint: 'Le babillard est prêt — il manque juste ta famille.',
     welcomeCta: 'Ajouter les personnes',
     idleSoon: 'Retour à la maisonnée dans un instant…',
@@ -2058,6 +2061,9 @@ export const FR = {
     ambientNext: 'À venir',
     ambientReturnHome: 'Revenir à Maisonnée',
     ambientReturnAfter: 'Délai avant le retour',
+    // A-2 (bmad/09) — les fêtes dérivées au calendrier.
+    fetesLabel: 'Les fêtes au calendrier',
+    fetesHint: 'Les fêtes du Québec et du Canada s’annoncent d’elles-mêmes sur le babillard (Saint-Jean, Action de grâce, Noël…). Juste une ligne calme — rien à gérer, rien à créer.',
     // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Diagnostics).
     takeoutTitle: 'Emporter mes données',
     takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',
@@ -3038,6 +3044,9 @@ export const EN: typeof FR = {
     offline: 'Offline — showing the last version received',
     allDay: 'All day',
     birthday: 'Birthday',
+    // A-2 (bmad/09) — derived holidays: the calm announce tag on a fête line.
+    holidayTag: 'Holiday',
+    holidayOff: 'Stat holiday',
     welcomeHint: 'The board is ready — it just needs your family.',
     welcomeCta: 'Add the people',
     idleSoon: 'Back to the household view in a moment…',
@@ -4598,6 +4607,9 @@ export const EN: typeof FR = {
     ambientNext: 'Next up',
     ambientReturnHome: 'Return to Household',
     ambientReturnAfter: 'Idle before return',
+    // A-2 (bmad/09) — the derived calendar holidays.
+    fetesLabel: 'Holidays on the calendar',
+    fetesHint: 'Québec and Canada holidays announce themselves on the board (Saint-Jean, Thanksgiving, Christmas…). Just a calm line — nothing to manage, nothing to create.',
     // E-35 — "Take my data" (Settings ▸ System ▸ Diagnostics).
     takeoutTitle: 'Take my data',
     takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',

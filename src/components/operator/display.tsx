@@ -34,6 +34,7 @@ import {
 import { computeDayPart } from '../../lib/timeofday'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
 import { useTapToHear, setTapToHear } from '../../lib/tapToHear'
+import { useHolidaysEnabled, setHolidaysEnabled } from '../../lib/year'
 import { IngredientLine } from '../IngredientLine'
 import { InlineIcon } from '../Icon'
 import { Toggle } from '../Toggle'
@@ -67,6 +68,9 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // Read live from the localStorage store so the board reacts without a reload.
   const apod = useApodEnabled()
   const canvas = useCanvasEnabled()
+  // A-2 (bmad/09): the derived fêtes QC/CA announce lines — all on by default,
+  // this device can opt out (lib/year).
+  const fetes = useHolidaysEnabled()
   // Per-device Screen Wake Lock (HubLayout holds it): keep a wall tablet lit on the
   // board. Read live so the toggle engages/releases the lock without a reload.
   const keepAwake = useKeepAwake()
@@ -168,6 +172,20 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               onClick={() => setCanvasEnabled(!canvas)}
             />
             <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
+          </div>
+        )}
+        {/* A-2 (bmad/09): the derived QC/CA fêtes announce lines on the board —
+            all on by default (zero-impact), this device can opt out. */}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.fetesLabel}</span>
+            <Toggle
+              on={fetes}
+              icon="calendar-dots-bold"
+              label={fetes ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+              onClick={() => setHolidaysEnabled(!fetes)}
+            />
+            <p className="operator__seg-hint mono">{t.operator.fetesHint}</p>
           </div>
         )}
         {!ro && (

@@ -58,6 +58,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
+import { holidaysOnDay, holidaysInRange, useHolidaysEnabled, type Holiday } from '../lib/year'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
 import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
 
@@ -293,11 +294,39 @@ export function Board() {
   // even on someone else's turn (the `who` line still says whose turn it is).
   const mineChore = (c: ChoreInstance) =>
     !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
-  const todayEvents = (data?.today ?? []).filter(mineEvent)
+  // A-2 (bmad/09): les fêtes QC/CA — DERIVED on-device (lib/year, the D-16
+  // layer; no rows, no fetch) and merged into the same event arrays every lens
+  // reads (parent, toddler, simple, fil). Calm zero-impact announce lines:
+  // all-day, nobody's, never editable — the emoji is the picture. All shown by
+  // default; per-device opt-out in Réglages ▸ Affichage (Marc's OQ-4 verdict).
+  const fetesOn = useHolidaysEnabled()
+  const holidayRow = (h: Holiday, at: number): EventRow => ({
+    id: `fete-${h.id}-${at}`,
+    title: h.label[lang],
+    start_at: at,
+    all_day: 1,
+    member_id: null,
+    holiday: true,
+    ferie: h.kind === 'ferie',
+    emoji: h.emoji,
+  })
+  const dayNow = todayLocalDay()
+  const todayEvents = [
+    ...(fetesOn ? holidaysOnDay(dayNow).map((h) => holidayRow(h, dayNow)) : []),
+    ...(data?.today ?? []).filter(mineEvent),
+  ]
   const todayChores = (data?.choresToday ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
   const todayTodos = (data?.todos ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
-  const tomorrowEvents = (data?.tomorrow ?? []).filter(mineEvent)
-  const upcomingEvents = (data?.upcoming ?? []).filter(mineEvent)
+  const tomorrowEvents = [
+    ...(fetesOn ? holidaysOnDay(addLocalDays(dayNow, 1)).map((h) => holidayRow(h, addLocalDays(dayNow, 1))) : []),
+    ...(data?.tomorrow ?? []).filter(mineEvent),
+  ]
+  // « À venir »: the next stretch of fêtes (10 days past demain) rides sorted
+  // among the real events — same window feel as the server's upcoming bucket.
+  const upcomingEvents = [
+    ...(fetesOn ? holidaysInRange(addLocalDays(dayNow, 2), 10).map((x) => holidayRow(x.holiday, x.at)) : []),
+    ...(data?.upcoming ?? []).filter(mineEvent),
+  ].sort((a, b) => a.start_at - b.start_at)
   const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
   // "Projets & Entretien" (home_projects) dated occurrences — family-wide (no
   // rotation), so not personal-focus filtered. Minus any just checked (held undo).
@@ -375,10 +404,11 @@ export function Board() {
     rows.map((e) => ({
       key: e.id,
       // Draw the event's own picture (school/swim/birthday…) so a pre-reader can
-      // tell things apart; fall back to a pin when nothing matches.
-      icon: pictoFor(e.title, '📌'),
+      // tell things apart; a derived fête brings its own emoji (⚜️ 🎃 🎄);
+      // fall back to a pin when nothing matches.
+      icon: e.emoji ?? pictoFor(e.title, '📌'),
       label: e.title,
-      sub: e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
+      sub: e.holiday ? (e.ferie ? t.board.holidayOff : t.board.holidayTag) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
       narration: e.title,
       color: memberColor(e.member_id) ?? undefined,
     }))
@@ -606,7 +636,11 @@ export function Board() {
   // crosses out on the SAME clock as a rendez-vous (souper is the headline → never past).
   const isSlotPast = (slot: string) => mealSlotPast(slot, nowMs)
   const eventWhen = (e: EventRow) =>
-    e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang)
+    e.holiday
+      ? e.ferie
+        ? t.board.holidayOff
+        : t.board.holidayTag
+      : e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang)
   // À venir hint: append "· dans X jours" (demain / aujourd'hui) when an upcoming
   // item is within 3 days, so a glance sees how close it is, not just the date.
   // Beyond 3 days the date alone is calm enough; past/today items get nothing here.
@@ -614,7 +648,12 @@ export function Board() {
     const d = daysUntilLocal(at)
     return d >= 0 && d < 3 ? `${when} · ${t.cercle.inDaysN(d)}` : when
   }
-  const eventAct = (e: EventRow) => (
+  const eventAct = (e: EventRow) =>
+    e.holiday ? (
+      // A fête (derived, lib/year) is an ANNOUNCEMENT, not a thing to manage —
+      // a static row, no peek, its emoji as the picture.
+      <Act key={e.id} cat="event" emoji={e.emoji} title={e.title} when={eventWhen(e)} />
+    ) : (
     <Act
       key={e.id}
       cat={e.birthday ? 'birthday' : 'event'}
@@ -630,7 +669,7 @@ export function Board() {
       past={isPastSec(e.all_day ? null : e.start_at, nowMs)}
       onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
     />
-  )
+    )
   // A L'auto work/job window on « Le fil du jour » — a static info row (no peek; work
   // windows are derived, not editable here): the time span, who, and a 🚗 when this
   // window holds the shared car. Tinted by the block colour (member colour falls back).
@@ -1320,7 +1359,17 @@ export function Board() {
               // « À venir » — upcoming events/chores (null when none).
               nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
                 <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)" help={help} helpKey="upcoming">
-              {upcomingEvents.map((e) => (
+              {upcomingEvents.map((e) =>
+                e.holiday ? (
+                  // A coming fête — static announce line with its date (no peek).
+                  <Act
+                    key={e.id}
+                    cat="event"
+                    emoji={e.emoji}
+                    title={e.title}
+                    when={withRel(formatDayMaybeYear(e.start_at, lang), e.start_at)}
+                  />
+                ) : (
                 <Act
                   key={e.id}
                   cat={e.birthday ? 'birthday' : 'event'}
@@ -1332,7 +1381,8 @@ export function Board() {
                   soon={e.soon}
                   onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
                 />
-              ))}
+                ),
+              )}
               {/* Recurring chores coming up later this week, with their day. */}
               {upcomingChores.map((c) => choreAct(c, true))}
               {/* Projets & Entretien coming up this week, with their day. */}

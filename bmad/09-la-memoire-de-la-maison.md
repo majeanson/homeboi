@@ -60,11 +60,22 @@ idle** — never louder than that.
    points — birthdays (derived, already exist), yearly-recur events, carnet
    upkeep cadences, school-year bounds, trips. Not a planner — a horizon.
    *(reuse: MonthView machinery, `_lib/birthdays`, home-projects `nextAt`.)*
-2. **Les fêtes québécoises, dérivées** [S] — statutory + cultural FR-CA dates
-   (jour de l'An, St-Jean, Action de grâce, Noël, Pâques…) DERIVED like
-   birthdays (no rows, a pure function with the moving-feast math). Board
-   shows them as all-day items; the year view anchors on them. Opt-out per
-   household. *(pattern: `_lib/birthdays` — derive, never insert.)*
+2. ✅ **Les fêtes québécoises, dérivées** [S] — **SHIPPED 2026-07-08 (the
+   first 09 item, per OQ-4's shape: announce all, zero impact, settings
+   opt-out).** `src/lib/year.ts` (the D-16 module's first resident): 17
+   curated QC/CA dates — fériés (jour de l'An, Vendredi saint, lundi de
+   Pâques, Patriotes, St-Jean, Canada, Travail, Action de grâce, Noël) +
+   fêtes culturelles (Valentin, Pâques, Mères, Pères, Halloween, Souvenir,
+   les deux veilles) — each a pure `date(year)` fn (Gregorian computus for
+   Pâques, nth-weekday + Monday-before-May-25 rules), 9 unit tests against
+   known civil dates. Derived CLIENT-side (holidays need no household data):
+   zero API, zero schema, works offline. Board merges them into the same
+   event arrays every lens reads (parent Act rows, toddler tiles, Simple
+   board, le fil) as static announce lines — all-day, nobody's, no peek, the
+   emoji is the picture, tagged « Fête » / « Congé férié ». Per-device
+   opt-out toggle in Réglages ▸ Système ▸ Affichage (`babillard-fetes`,
+   default ON). Guide point on the board card + whatsNew. *(MonthView cells
+   deliberately later — own data path.)*
 3. **La rentrée & the school year** [M] — a household's school-year bounds
    (first/last day, relâche) as ONE settings card; the board's « Demain »
    knows a school morning from a vacation morning, the rush-hour diet (C-25,
@@ -112,11 +123,11 @@ idle** — never louder than that.
 
 ## C · Traditions (the year's own vocabulary)
 
-13. **Une tradition** [M] ✦ — a first-class *tradition*: a yearly event that
-    ACCUMULATES its own memory (photos/notes attach to the tradition, not the
-    year's instance). « La cabane à sucre » shows this year's date AND last
-    year's photo. Modelled as a yearly-recur event + a media junction — small
-    schema, big soul. ⚠ guard: the tradition never scores attendance.
+13. ⏸ **Une tradition** [M] ✦ — *plus tard (Marc, 2026-07-08 — « no
+    traditions for now »; the one new table stays unbuilt).* A first-class
+    *tradition*: a yearly event that ACCUMULATES its own memory (photos/notes
+    attach to the tradition, not the year's instance). Modelled as a
+    yearly-recur event + a media junction. ⚠ guard: never scores attendance.
 14. **First-snow / first-BBQ moments** [S] ✦ — a handful of derived,
     weather-triggered "moments" (first snow of the season, first 20° day) the
     board may mark with ONE line + picto, toddler-hearable. Weather data
@@ -129,12 +140,12 @@ idle** — never louder than that.
 
 ## D · Mechanics (the derived-year layer)
 
-16. **`lib/year.ts` — one derivation module** [S] — like `_lib/birthdays`:
-    given the household's rows, derive the year's fixed points (fêtes,
-    birthdays, cadences, school bounds, traditions) in ONE tested place that
-    the board, the year view and Moments all read. No new tables for derived
-    things — the 08/07 rule (« DERIVED via _lib/birthdays, NO event rows »)
-    generalized.
+16. ◐ **`lib/year.ts` — one derivation module** [S] — **STARTED 2026-07-08**
+    (shipped with A-2): the module exists with the fêtes derivation (easter
+    computus, nth-weekday, holidaysOnDay/holidaysInRange, unit-tested) + the
+    per-device pref. Future year-ahead items (rentrée bounds, season
+    turnover, l'année view) add their derivations HERE — one tested place,
+    no new tables for derived things (the 08/07 rule generalized).
 17. **`created_at` is the memory index** [S] — every memory idea above reads
     EXISTING timestamps (photos, notes, drawings, meals, care_log, trips).
     Write the rule down: memory features derive from created_at/date columns;
@@ -160,13 +171,15 @@ idle** — never louder than that.
 
 ## Open questions for Marc
 
-- ~~**OQ-1 — Which direction first?**~~ — **answered (2026-07-08): one of
-  each per wave** — pair a forward item with a backward item so both
-  directions grow together.
-- **OQ-2 — Traditions (C-13):** worth its small schema, or is a yearly event
-  + the photo features already enough? (It's the one idea here that adds a
-  table.)
+- ~~**OQ-1 — Which direction first?**~~ — **answered (2026-07-08, refined):
+  any logical order that PARALLELIZES well** — no direction pairing required;
+  pick units that ship independently.
+- ~~**OQ-2 — Traditions (C-13)**~~ — **answered (2026-07-08): no traditions
+  for now** — C-13 moves to ⏸ plus tard (no new table).
 - ~~**OQ-3 — The idle frame as album (B-7):**~~ — **answered (2026-07-08):
   rejected outright.** No time bias on the mosaic; B-7 struck above.
-- **OQ-4 — Fêtes list (A-2):** which holidays does this household actually
-  mark? (Seed list needs your real ones, not a bank calendar.)
+- ~~**OQ-4 — Fêtes list (A-2)**~~ — **answered (2026-07-08): propose the
+  relevant Québec/Canada dates with an opt-in/out in settings — or simply
+  announce them all with no impact.** Build shape: derive the full QC/CA set,
+  announce all by default as zero-impact calm lines, with a settings toggle
+  to opt out (per-fête curation can come later if wanted).

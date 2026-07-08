@@ -341,6 +341,10 @@ export const GUIDE: GuideEntry[] = [
       en: 'The household glance screen: the time, today’s agenda, tonight’s supper, the chores and what’s to do, gathered on one wall — so everyone sees the day at a glance, without asking or touching a thing.',
     },
     points: [
+      // ⚠ Help registries deep-link into this card BY POINT INDEX (e.g.
+      // ADD_HELP 'avant-de-partir' → point 5) — append new points at the END,
+      // never insert at the front (helpRegistry.test.ts checks range, not
+      // meaning, so a shift would silently mis-point every bubble).
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
@@ -544,6 +548,17 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Apprendre les noms, les couleurs et l’ordre de la journée en jouant — calme, sans récompense ni dépendance (les principes du calme tiennent même au jeu).',
           en: 'Learning names, colours and the shape of the day through play — calm, with no rewards or hooks (the calm tenets hold even at play).',
+        },
+      },
+      {
+        label: { fr: 'Les fêtes s’annoncent d’elles-mêmes', en: 'Holidays announce themselves' },
+        detail: {
+          fr: 'Les fêtes du Québec et du Canada (Saint-Jean, Action de grâce, Noël, Pâques…) apparaissent d’elles-mêmes dans Aujourd’hui, Demain et À venir — une ligne calme avec son petit dessin, rien à créer, rien à gérer. Ça se désactive dans Réglages ▸ Système ▸ Affichage.',
+          en: 'Québec and Canada holidays (Saint-Jean, Thanksgiving, Christmas, Easter…) appear on their own in Today, Tomorrow and Upcoming — one calm line with its little picture, nothing to create, nothing to manage. Turn it off in Settings ▸ System ▸ Display.',
+        },
+        why: {
+          fr: 'Le calendrier de la maison connaît déjà son année — personne n’a à taper « Noël ».',
+          en: 'The house calendar already knows its year — nobody has to type “Christmas”.',
         },
       },
     ],

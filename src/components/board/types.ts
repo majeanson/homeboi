@@ -21,6 +21,12 @@ export interface EventRow {
   birthday?: boolean // a DERIVED birthday occurrence (from a person's birthday), not a stored event
   age?: number | null // the age turned, when the birth year is known
   gift_ideas?: string | null // #20: gift notes shown in the birthday's detail peek
+  // A-2 (bmad/09): a DERIVED fête QC/CA (lib/year) — client-side only, never a
+  // stored row. Announce line: all-day, nobody's, not editable. `ferie` = a
+  // stat/day-off; `emoji` is its picture (⚜️ 🎃 🎄…).
+  holiday?: boolean
+  ferie?: boolean
+  emoji?: string
 }
 interface ListRow {
   id: string

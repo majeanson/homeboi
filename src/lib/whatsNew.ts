@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'fetes',
+    text: {
+      fr: 'Nouveau : les fêtes du Québec et du Canada s’annoncent d’elles-mêmes sur le babillard — rien à créer.',
+      en: 'New: Québec and Canada holidays announce themselves on the board — nothing to create.',
+    },
+    card: 'board',
+  },
+  {
     id: 'takeout',
     text: {
       fr: 'Nouveau : « Emporter mes données » — tout ce que garde Babillard, en un fichier, dans Réglages ▸ Système. Et une copie de secours se fait chaque nuit.',
