@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange, ageAt, groupByYear } from './year'
+import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange, ageAt, groupByYear, groupByMonth } from './year'
 
 // D-16 (bmad/09) — the derived-year layer. The moving feasts are the risky
 // part: computus (Easter), the nth-weekday rules (Travail, Action de grâce,
@@ -76,6 +76,21 @@ describe('day + range lookups', () => {
     expect(groups.map(([y]) => y)).toEqual([2026, 2025])
     expect(groups[1][1].map((r) => r.id)).toEqual(['c'])
     expect(groupByYear([], (r: { at: number }) => r.at)).toEqual([])
+  })
+
+  it('groupByMonth buckets by local month, newest first, keyed by first-of-month', () => {
+    const sec = (y: number, m: number, d: number) => Math.floor(new Date(y, m - 1, d).getTime() / 1000)
+    const rows = [
+      { id: 'a', at: sec(2026, 7, 8) },
+      { id: 'b', at: sec(2026, 7, 1) },
+      { id: 'c', at: sec(2026, 5, 30) },
+      { id: 'd', at: sec(2025, 12, 31) }, // year boundary stays its own month
+    ]
+    const groups = groupByMonth(rows, (r) => r.at)
+    expect(groups.map(([k]) => k)).toEqual([sec(2026, 7, 1), sec(2026, 5, 1), sec(2025, 12, 1)])
+    // Input order is preserved inside a month (caller pre-sorts the merged list).
+    expect(groups[0][1].map((r) => r.id)).toEqual(['a', 'b'])
+    expect(groupByMonth([], (r: { at: number }) => r.at)).toEqual([])
   })
 
   it('ageAt gives full years only when the birth YEAR is known', () => {

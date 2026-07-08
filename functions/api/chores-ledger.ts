@@ -24,10 +24,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const sinceParam = Number(url.searchParams.get('since'))
   const today = localDayStart(new Date(Date.now()))
   const defaultSince = addLocalDays(today, -30)
-  // Floor at 90 days back so a tiny `?since` can't widen this into a full-history
-  // scan; this is a calm glance, not an archive (task_participants is small + indexed
-  // anyway, but bound the worst case).
-  const floorSince = addLocalDays(today, -90)
+  // Floor at ~a year back so a tiny `?since` can't widen this into a full-history
+  // scan. A year (not the old 90 days) because the house diary (B-8, bmad/09) reads
+  // « la maison cette année » through this same endpoint; existing callers keep the
+  // 30-day default (task_participants is small + indexed anyway — bound the worst case).
+  const floorSince = addLocalDays(today, -366)
   const since =
     Number.isFinite(sinceParam) && sinceParam > 0
       ? Math.max(floorSince, Math.floor(sinceParam))

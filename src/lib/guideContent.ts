@@ -1104,6 +1104,19 @@ export const GUIDE: GuideEntry[] = [
           en: 'No one you grouped stays disconnected — the family fills itself in without drawing every link by hand.',
         },
       },
+      // ⚠ APPEND-ONLY: help entries (operatorHelp houseDiary) deep-link points
+      // BY INDEX — this diary point is 16; add new points BELOW, never above.
+      {
+        label: { fr: 'La maison cette année', en: 'The home this year' },
+        detail: {
+          fr: 'Dans Réglages ▸ Le cercle ▸ Cette année, la maison relit son année, mois par mois : les soins notés aux carnets, les corvées faites, les voyages terminés, les dessins gardés. Le mois courant se lit d’un coup; les mois passés se déplient un à un. Des noms, des visages et des dates — jamais des comptes, jamais un fil. Et rien à tenir : ça s’écrit tout seul, au fil des gestes.',
+          en: 'In Settings ▸ The circle ▸ This year, the home rereads its year, month by month: the care noted in the carnets, the chores done, the trips taken, the drawings kept. The current month reads at a glance; past months unfold one at a time. Names, faces and dates — never counts, never a feed. And nothing to maintain: it writes itself as life happens.',
+        },
+        why: {
+          fr: 'Ouvrir l’album de l’année comme on feuillette un carnet — pas une notification, pas un palmarès.',
+          en: 'Open the year’s album like leafing through a notebook — not a notification, not a leaderboard.',
+        },
+      },
     ],
   },
   {

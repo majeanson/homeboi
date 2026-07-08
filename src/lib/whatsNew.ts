@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'house-diary',
+    text: {
+      fr: 'Nouveau : « La maison cette année » — le journal calme de l’année (soins, corvées, voyages, dessins), dans Réglages ▸ Le cercle.',
+      en: 'New: “The home this year” — the year’s calm journal (care, chores, trips, drawings), in Settings ▸ The circle.',
+    },
+    card: 'cercle',
+  },
+  {
     id: 'countdown',
     text: {
       fr: 'Nouveau : « Le décompte » — le babillard propose de compter les dodos jusqu’à la prochaine fête ou le prochain anniversaire.',

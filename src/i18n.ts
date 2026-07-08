@@ -1681,6 +1681,13 @@ export const FR = {
     ledgerDoneBy: 'Fait par',
     ledgerHelpedBy: 'Aidé par',
     ledgerHelperChild: 'Un coup de main',
+    // « La maison cette année » (B-8, bmad/09) — the house's diary read view.
+    diaryTab: 'Cette année',
+    diaryTitle: 'La maison cette année',
+    diaryHint:
+      'Ce que la maison a vécu, mois par mois — les soins notés, les corvées faites, les voyages terminés, les dessins gardés. Des noms et des dates, jamais des comptes.',
+    diaryEmpty: 'L’année s’écrira ici, un moment à la fois.',
+    diaryDrawing: 'Un dessin gardé',
     editRoutine: 'Modifier la routine',
     deleteRoutine: 'Supprimer la routine',
     noRoutines: 'Aucune routine pour l’instant.',
@@ -4253,6 +4260,12 @@ export const EN: typeof FR = {
     ledgerDoneBy: 'Done by',
     ledgerHelpedBy: 'Helped by',
     ledgerHelperChild: 'A helping hand',
+    diaryTab: 'This year',
+    diaryTitle: 'The home this year',
+    diaryHint:
+      'What the home lived through, month by month — the care noted, the chores done, the trips taken, the drawings kept. Names and dates, never counts.',
+    diaryEmpty: 'The year will write itself here, one moment at a time.',
+    diaryDrawing: 'A kept drawing',
     editRoutine: 'Edit routine',
     deleteRoutine: 'Delete routine',
     noRoutines: 'No routines yet.',

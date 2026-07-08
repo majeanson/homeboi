@@ -139,6 +139,17 @@ idle** — never louder than that.
    give it ONE quiet chronological read (Réglages ▸ or a carnet tab):
    « la maison cette année ». Names and dates, never counts (chore-ledger
    rule). *(reuse: care*log, task_participants, trips archive.)*
+   **SHIPPED same day:** `HouseDiarySection` under **Réglages ▸ Le cercle ▸
+   « Cette année »** (`?sub=annee`) — a cold-path CLIENT union (D-18: no new
+   endpoint, no poll; the one backend touch widened chores-ledger's `?since`
+   floor 90→366 days, defaults untouched) of care_log (household-wide read),
+   chores-ledger (year window, its own cache row), finished trips (`end_at`
+   before today; 403 fails soft on a kiosk since trips are operator-scoped)
+   and kept drawings (credited « Léa · 3 ans » via `ageAt`, the B-11 voice).
+   Grouped by `groupByMonth` (new in lib/year, unit-tested): newest month
+   open, older months folded in count-less `Disclosure`s; rows reuse the
+   `.ledger` CSS family (spine + title + day · context + faces). Guide point
+   appended to the cercle card (16) + operatorHelp `houseDiary` + whatsNew.
 9. ⏸ **Menu memory** [M] ✦ — _plus tard (2026-07-08 — not selected this wave)_ — when planning a week that contains a fête or a
    season boundary, « Suggérer » may add a line: « L'an passé à Noël : tourtière,
    ragoût » (from meals history, which already exists). One line inside the

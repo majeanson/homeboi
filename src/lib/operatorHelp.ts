@@ -223,6 +223,16 @@ export const OPERATOR_HELP = {
       en: `The upkeep that comes back: filter, gutters, trees. With a date it shows on the board.`,
     },
   },
+  houseDiary: {
+    // « La maison cette année » (B-8, bmad/09) — points at the cercle card's
+    // appended diary point (16; guide points are APPEND-ONLY, indexed).
+    card: 'cercle',
+    point: 16,
+    body: {
+      fr: `Le journal calme de l'année : les soins notés aux carnets, les corvées faites, les voyages terminés, les dessins gardés — mois par mois. Des noms et des dates, jamais des comptes. Rien à tenir : ça s'écrit tout seul.`,
+      en: `The year's calm journal: the care noted in the carnets, the chores done, the trips taken, the drawings kept — month by month. Names and dates, never counts. Nothing to maintain: it writes itself.`,
+    },
+  },
   cercleGroups: {
     card: 'cercle',
     point: 6,

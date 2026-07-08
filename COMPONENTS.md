@@ -176,7 +176,12 @@ directory, isolated from the people graph; fetches `BUSINESSES_KEY`, rows + an e
 `Modal`(`BusinessForm`) + detail peek via `buildBusiness`; **add** is the ＋ FAB's job
 now — page-level on `/cercle`, no in-tab button; an event can link one, see `EventForm`),
 `ProfilePicker`, `TourOverlay`, `DealsBrowser`, `FlyerViewer`, `ChoreLedger`
-(read-only fairness glance, #18). #11 collections is now an "Aa vs Collections"
+(read-only fairness glance, #18), `operator/HouseDiary` (« La maison cette année »,
+B-8 bmad/09 — Réglages ▸ Le cercle ▸ Cette année: the house's read-only year diary,
+a cold-path client union of care_log + chores-ledger (year `?since`) + finished
+trips + kept drawings, grouped by `groupByMonth` (lib/year); newest month open,
+older months folded in `Disclosure`s, rows reuse the `.ledger` CSS family — names,
+faces and dates, never counts). #11 collections is now an "Aa vs Collections"
 view toggle inside the recipe book (`RecipesTab`): "Aa" = flat alphabetical list,
 "Collections" = grouped-by-tag sections; "Quoi cuisiner?" is a pill filter — both
 flat in `RecipesTab`, no sub-tabs. `buildCollections` (in `CollectionPicker.tsx`,

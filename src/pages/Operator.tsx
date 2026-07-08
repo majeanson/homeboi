@@ -28,6 +28,7 @@ import { CarsSection } from '../components/operator/cars'
 import { ScheduleSection } from '../components/operator/schedule'
 import { TodoTemplatesSection } from '../components/operator/todos'
 import { CercleGroupsSection } from '../components/operator/cercle'
+import { HouseDiarySection } from '../components/operator/HouseDiary'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
 import { AiSection } from '../components/operator/ai'
 import { BuildInfoSection } from '../components/operator/buildInfo'
@@ -237,6 +238,7 @@ export function Operator() {
       guest: t.guest.title,
       choreLedger: t.operator.ledgerTitle,
       cercleGroups: t.operator.cercleGroupsTitle,
+      houseDiary: t.operator.diaryTitle,
     }
     return labels[k] ?? k
   }, tab)
@@ -285,6 +287,8 @@ export function Operator() {
       // L'auto + per-member hours live in Le cercle's world (getting-around, teal).
       { key: 'cars', label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
       { key: 'schedule', label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
+      // « La maison cette année » (B-8, bmad/09) — the house's diary, a read view.
+      { key: 'annee', label: t.operator.diaryTab, node: <HouseDiarySection help={operatorHelp} /> },
     ],
     routines: [
       // The namesake sub leads (also keeps legacy ?tab=routines landing here).

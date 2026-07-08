@@ -24,7 +24,7 @@ const DAY = 86400
 // a collapsed « Déjà passé » disclosure vs the REAL clock, so a spec asserting on a
 // timed item (a breakfast meal, the Garderie event) is otherwise time-of-day-flaky.
 // Frozen at BASE (04:00 local), every "today" item reads as upcoming-and-live.
-export const BASE = 1_749_369_600 // 2026-06-08T08:00:00Z
+export const BASE = 1_749_369_600 // 2025-06-08T08:00:00Z (a fixed PAST anchor, ~a year back)
 // Local midnight (America/Toronto, the household TZ) of BASE's day. The meal week
 // + month grids bucket meals at LOCAL midnight (src/lib/localDay addLocalDays), so
 // the fixture's meal `date`s must be local-midnight-aligned or they fall off the

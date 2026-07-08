@@ -265,6 +265,22 @@ export function groupByYear<T>(rows: readonly T[], at: (x: T) => number): [numbe
   return groups
 }
 
+// B-8 (bmad/09): group rows by the LOCAL calendar month of their timestamp,
+// newest month first. The key is the first-of-month local midnight (unix sec)
+// so the caller formats the heading itself (« juillet 2026 »). Rows keep their
+// input order inside a month — sort the merged list before grouping.
+export function groupByMonth<T>(rows: readonly T[], at: (x: T) => number): [number, T[]][] {
+  const by = new Map<number, T[]>()
+  for (const x of rows) {
+    const d = new Date(at(x) * 1000)
+    const key = new Date(d.getFullYear(), d.getMonth(), 1).getTime() / 1000
+    const g = by.get(key)
+    if (g) g.push(x)
+    else by.set(key, [x])
+  }
+  return [...by.entries()].sort((a, b) => b[0] - a[0])
+}
+
 // B-11 (bmad/09): age (in full years) at a given moment, when the birth YEAR
 // is known. Accepts the members.birthday string: 'YYYY-MM-DD' gives an age;
 // a year-less 'MM-DD' / '--MM-DD' (or anything else) gives null — we never
