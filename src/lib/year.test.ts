@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange, ageAt, groupByYear, groupByMonth } from './year'
+import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange, ageAt, groupByYear, groupByMonth, yearPoints } from './year'
 
 // D-16 (bmad/09) — the derived-year layer. The moving feasts are the risky
 // part: computus (Easter), the nth-weekday rules (Travail, Action de grâce,
@@ -76,6 +76,31 @@ describe('day + range lookups', () => {
     expect(groups.map(([y]) => y)).toEqual([2026, 2025])
     expect(groups[1][1].map((r) => r.id)).toEqual(['c'])
     expect(groupByYear([], (r: { at: number }) => r.at)).toEqual([])
+  })
+
+  it('yearPoints merges household fixed points + derived fêtes, sorted by day', () => {
+    const sec = (y: number, m: number, d: number) => Math.floor(new Date(y, m - 1, d).getTime() / 1000)
+    const from = sec(2026, 7, 1)
+    const to = sec(2027, 7, 1)
+    const pts = yearPoints(
+      {
+        birthdays: [{ id: 'b1', name: 'Léa', day: sec(2026, 9, 4), age: 4, memberId: 'm3' }],
+        events: [{ id: 'e1', title: 'Anniversaire de mariage', day: sec(2026, 8, 15) }],
+        upkeep: [{ id: 'u1', kind: 'upkeep', title: 'Pneus d’hiver', color: null, day: sec(2026, 10, 15) }],
+        life: [{ carnetId: 'c1', name: 'Chauffe-eau', color: null, day: sec(2027, 3, 2) }],
+      },
+      { lang: 'fr', holidays: true, from, to },
+    )
+    // Sorted ascending, fêtes present (Canada Day excluded — before the window? no:
+    // July 1 IS the window start), and every household point included once.
+    expect(pts.every((p, i, xs) => i === 0 || xs[i - 1].day <= p.day)).toBe(true)
+    expect(pts.find((p) => p.kind === 'fete' && p.label === 'Fête du Canada')?.day).toBe(sec(2026, 7, 1))
+    expect(pts.find((p) => p.kind === 'fete' && p.label === 'Noël')?.day).toBe(sec(2026, 12, 25))
+    expect(pts.filter((p) => p.kind === 'birthday')).toHaveLength(1)
+    expect(pts.find((p) => p.kind === 'life')?.label).toBe('Chauffe-eau')
+    // Holidays off → only the household's own points remain.
+    const noFetes = yearPoints({ birthdays: [], events: [], upkeep: [], life: [] }, { lang: 'fr', holidays: false, from, to })
+    expect(noFetes).toEqual([])
   })
 
   it('groupByMonth buckets by local month, newest first, keyed by first-of-month', () => {

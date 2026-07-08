@@ -265,6 +265,45 @@ export function groupByYear<T>(rows: readonly T[], at: (x: T) => number): [numbe
   return groups
 }
 
+// A-1 (bmad/09): « L'année » — the year's fixed points, merged. The server
+// (/api/year) supplies what needs household data (derived birthdays,
+// yearly-recurring events, upkeep cadences, the long-jeu replacement days,
+// trips); the fêtes derive HERE (client-side, zero household data, honouring
+// the per-device opt-out). One sorted list the year view's grid and month
+// sections both read.
+export type YearPointKind = 'fete' | 'birthday' | 'event' | 'upkeep' | 'life'
+export interface YearPoint {
+  day: number // local-midnight unix sec
+  kind: YearPointKind
+  label: string
+  emoji?: string
+  color?: string | null
+  age?: number | null // birthdays: the age they turn that day (null = year unknown)
+}
+export interface YearData {
+  birthdays: { id: string; name: string; day: number; age: number | null; memberId: string | null }[]
+  events: { id: string; title: string; day: number }[]
+  upkeep: { id: string; kind: string; title: string; color: string | null; day: number }[]
+  life: { carnetId: string; name: string; color: string | null; day: number }[]
+  trips: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: true }[]
+}
+export function yearPoints(
+  data: Pick<YearData, 'birthdays' | 'events' | 'upkeep' | 'life'>,
+  opts: { lang: 'fr' | 'en'; holidays: boolean; from: number; to: number },
+): YearPoint[] {
+  const pts: YearPoint[] = []
+  if (opts.holidays) {
+    for (const h of holidaysInRange(opts.from, Math.round((opts.to - opts.from) / 86400))) {
+      pts.push({ day: h.at, kind: 'fete', label: h.holiday.label[opts.lang], emoji: h.holiday.emoji })
+    }
+  }
+  for (const b of data.birthdays) pts.push({ day: b.day, kind: 'birthday', label: b.name, emoji: '🎂', age: b.age })
+  for (const e of data.events) pts.push({ day: e.day, kind: 'event', label: e.title })
+  for (const u of data.upkeep) pts.push({ day: u.day, kind: 'upkeep', label: u.title, color: u.color })
+  for (const l of data.life) pts.push({ day: l.day, kind: 'life', label: l.name, color: l.color })
+  return pts.sort((a, b) => a.day - b.day)
+}
+
 // B-8 (bmad/09): group rows by the LOCAL calendar month of their timestamp,
 // newest month first. The key is the first-of-month local midnight (unix sec)
 // so the caller formats the heading itself (« juillet 2026 »). Rows keep their

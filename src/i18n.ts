@@ -499,9 +499,25 @@ export const FR = {
     label: 'Vue du babillard',
     bento: 'Grille',
     month: 'Mois',
+    annee: 'L’année',
     // « Prochainement » — the next still-to-come timed thing today, surfaced as a calm
     // lead at the top of the Grille day (the one glance the retired « Maintenant » gave).
     nextUp: 'Prochainement',
+  },
+  // « L'année » (A-1, bmad/09) — the year-horizon glance: twelve mini-months of
+  // fixed points + the same points read as month sections.
+  yearView: {
+    openMonth: (m: string) => `Ouvrir ${m} dans la vue Mois`,
+    legendLabel: 'Légende de l’année',
+    legend: {
+      fete: 'Fêtes',
+      birthday: 'Anniversaires',
+      trip: 'Voyages',
+      event: 'Rendez-vous annuels',
+      upkeep: 'Entretien',
+      life: 'Le long jeu',
+    },
+    empty: 'L’horizon est libre — les fêtes s’annonceront toutes seules.',
   },
   // Card names for « Disposition du babillard » (Réglages ▸ Affichage) — show/hide +
   // reorder the Grille cards per device.
@@ -3122,7 +3138,21 @@ export const EN: typeof FR = {
     label: 'Board view',
     bento: 'Grid',
     month: 'Month',
+    annee: 'The year',
     nextUp: 'Up next',
+  },
+  yearView: {
+    openMonth: (m: string) => `Open ${m} in the Month view`,
+    legendLabel: 'Year legend',
+    legend: {
+      fete: 'Holidays',
+      birthday: 'Birthdays',
+      trip: 'Trips',
+      event: 'Yearly events',
+      upkeep: 'Upkeep',
+      life: 'The long game',
+    },
+    empty: 'The horizon is clear — the holidays will announce themselves.',
   },
   // Card names for the board-layout panel (Settings ▸ Display).
   boardCard: {

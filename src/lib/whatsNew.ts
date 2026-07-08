@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'annee-view',
+    text: {
+      fr: 'Nouveau : « L’année » — une troisième vue du babillard : douze petits mois avec les repères de l’année (fêtes, anniversaires, voyages, entretien).',
+      en: 'New: “The year” — a third board view: twelve small months with the year’s fixed points (holidays, birthdays, trips, upkeep).',
+    },
+    card: 'board',
+  },
+  {
     id: 'trip-album',
     text: {
       fr: 'Nouveau : un voyage terminé se rouvre en album — photos, jour par jour, notes gardées. « Modifier » ramène l’éditeur.',

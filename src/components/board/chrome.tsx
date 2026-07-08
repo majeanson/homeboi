@@ -6,8 +6,9 @@ import { Icon, type IconName } from '../Icon'
 import { MemberSwitcher as FaceSwitcher } from '../MemberSwitcher'
 import { type Dict, type Member } from './types'
 
-// A tiny segmented control in the board header — a clean binary: « Grille » (today)
-// ⟷ « Mois » (the calendar). The per-person split is the face picker beside it, the
+// A tiny segmented control in the board header — three zoom levels on the same
+// household: « Grille » (today) · « Mois » (the calendar) · « L'année » (the
+// horizon of fixed points). The per-person split is the face picker beside it, the
 // windowed recap is the « Moments » button — neither is a layout here. Calm and
 // small; the choice is remembered per device.
 export function BoardViewToggle({
@@ -24,13 +25,14 @@ export function BoardViewToggle({
   // instead of switching to it. Returns the onClick to use. Omit for normal use. The
   // key param is the two BOARD_HELP keys this toggle owns (a subset of the board's
   // help keys), so the surface's narrowed `help.pick` stays contravariantly assignable.
-  pick?: (key: 'view-bento' | 'view-month', run: () => void) => () => void
+  pick?: (key: 'view-bento' | 'view-month' | 'view-annee', run: () => void) => () => void
   // When help mode is armed, highlight the options as "tap me to learn".
   armed?: boolean
 }) {
-  const opts: { v: BoardView; k: 'view-bento' | 'view-month'; icon: IconName; label: string }[] = [
+  const opts: { v: BoardView; k: 'view-bento' | 'view-month' | 'view-annee'; icon: IconName; label: string }[] = [
     { v: 'bento', k: 'view-bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
     { v: 'month', k: 'view-month', icon: 'calendar-dots-bold', label: t.boardView.month },
+    { v: 'annee', k: 'view-annee', icon: 'sun-horizon-bold', label: t.boardView.annee },
   ]
   return (
     <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label} data-tour="board-views">

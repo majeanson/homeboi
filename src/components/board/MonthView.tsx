@@ -104,11 +104,15 @@ export function MonthView({
   lang,
   t,
   todayDay,
+  initialOffset = 0,
 }: {
   members: Member[]
   lang: Lang
   t: Dict
   todayDay: number
+  // Land on a month other than the current one (the year view's month tap
+  // drills in here). Read once at mount; the arrows own it after.
+  initialOffset?: number
 }) {
   const nav = useNavigate()
   const write = useWrite()
@@ -125,7 +129,7 @@ export function MonthView({
   const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
   // Which month is shown, as an offset (in months) from the real current one.
   // Selected day drives the detail panel; it opens on today.
-  const [offset, setOffset] = useState(0)
+  const [offset, setOffset] = useState(initialOffset)
   const [selected, setSelected] = useState(todayDay)
   // « Voir ce moment » → the Moments scene for that day, ADAPTED for the special cases:
   // today opens its nicer « Ce soir » framing, tomorrow opens « Demain », any other

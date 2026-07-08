@@ -62,6 +62,22 @@ idle** — never louder than that.
    points — birthdays (derived, already exist), yearly-recur events, carnet
    upkeep cadences, school-year bounds, trips. Not a planner — a horizon.
    _(reuse: MonthView machinery, `_lib/birthdays`, home-projects `nextAt`.)_
+   **SHIPPED same day:** `YearView` as the toggle's third option (`'annee'`,
+   sun-horizon icon; `lib/boardview` widened, legacy values still fold to
+   Grille). A ROLLING year from the first of this month: twelve mini-months
+   (`monthGrid` ×12) painting the fixed points as colour dots (fête gold ·
+   birthday pink · trip teal · event blue · upkeep sage · long-jeu slate) +
+   a legend + the same points read as month sections (this month open, the
+   rest folded in count-less Disclosures — the B-8 pattern). Data path per
+   D-16/18: ONE new cold read **`/api/year?from&to`** (never polled, 400-day
+   cap) reusing `_lib/birthdays` + `_lib/recur` (**yearly-freq events only**
+   — a weekly practice is a week rhythm, not a year point) + `_lib/carnetLife`
+   (replacement days UNfiltered by lead — a horizon shows the whole year) +
+   the month read's trip pair; the fêtes stay client-derived in `lib/year`
+   (`yearPoints()` merger, unit-tested; honours the `babillard-fetes`
+   opt-out). Tap a mini-month → Mois at that offset (`MonthView
+   initialOffset`, transient, not persisted). School-year bounds wait on A-3
+   (plus tard). Guide « Changer la vue » rewritten to the trio + whatsNew.
 2. ✅ **Les fêtes québécoises, dérivées** [S] — **SHIPPED 2026-07-08 (the
    first 09 item, per OQ-4's shape: announce all, zero impact, settings
    opt-out).** `src/lib/year.ts` (the D-16 module's first resident): 17

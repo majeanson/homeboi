@@ -432,12 +432,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Deux vues : la Grille (toute la journée d’un coup d’œil) et le Mois (la vue d’ensemble; touche une journée pour la planifier). Le visage choisi à côté du sélecteur filtre l’une comme l’autre — Maisonnée montre tout le monde, un visage ne montre que ses affaires à lui. Le bouton « Moments » ouvre un moment choisi (ce soir, demain, une date, la semaine) avec sa liste à cocher.',
-          en: 'Two views: the Grid (the whole day at a glance) and the Month (the big picture; tap a day to plan it). The face you pick beside the selector filters both — Household shows everyone, a face shows just their things. The “Moments” button opens a chosen moment (tonight, tomorrow, a date, the week) with its check-off list.',
+          fr: 'Trois zooms sur la même maison : la Grille (toute la journée d’un coup d’œil), le Mois (la vue d’ensemble; touche une journée pour la planifier) et L’année (l’horizon : douze petits mois qui ne montrent que les repères de l’année — fêtes, anniversaires, voyages, entretien, le long jeu; touche un mois pour l’ouvrir dans Mois). Le visage choisi à côté du sélecteur filtre la Grille et le Mois — Maisonnée montre tout le monde, un visage ne montre que ses affaires à lui. Le bouton « Moments » ouvre un moment choisi (ce soir, demain, une date, la semaine) avec sa liste à cocher.',
+          en: 'Three zooms on the same home: the Grid (the whole day at a glance), the Month (the big picture; tap a day to plan it) and The year (the horizon: twelve small months showing only the year’s fixed points — holidays, birthdays, trips, upkeep, the long game; tap a month to open it in Month). The face you pick beside the selector filters the Grid and the Month — Household shows everyone, a face shows just their things. The “Moments” button opens a chosen moment (tonight, tomorrow, a date, the week) with its check-off list.',
         },
         why: {
-          fr: 'Deux vues claires plutôt que cinq qui se ressemblent; le visage et « Moments » couvrent le reste sans encombrer.',
-          en: 'Two clear views instead of five that blur together; the face picker and “Moments” cover the rest without clutter.',
+          fr: 'Trois altitudes claires — le jour, le mois, l’année — plutôt que cinq vues qui se ressemblent; le visage et « Moments » couvrent le reste sans encombrer.',
+          en: 'Three clear altitudes — the day, the month, the year — instead of five views that blur together; the face picker and “Moments” cover the rest without clutter.',
         },
       },
       {

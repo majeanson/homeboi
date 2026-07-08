@@ -19,6 +19,14 @@ export const BOARD_HELP = {
       en: 'The month: the big picture; tap a day to plan it.',
     },
   },
+  'view-annee': {
+    card: 'board',
+    point: 5,
+    body: {
+      fr: 'L’année : l’horizon — fêtes, anniversaires, voyages, entretien. Touche un mois pour l’ouvrir.',
+      en: 'The year: the horizon — holidays, birthdays, trips, upkeep. Tap a month to open it.',
+    },
+  },
   // The « À faire » card holds two kinds of to-do, distinguished in place: loose one-off
   // tasks (often dictated) up top, and reusable checklists (« À compléter ») below.
   todos: {

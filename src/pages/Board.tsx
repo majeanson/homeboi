@@ -52,6 +52,7 @@ import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { MonthView } from '../components/board/MonthView'
+import { YearView } from '../components/board/YearView'
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { SimpleBoard } from '../components/board/SimpleBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
@@ -143,7 +144,7 @@ export function Board() {
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
   const help = useHelpMode(BOARD_HELP, (k) => {
-    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'month']
+    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'month' | 'annee']
     const titles: Record<string, string> = {
       todos: t.board.todos,
       today: t.board.today,
@@ -178,7 +179,12 @@ export function Board() {
   // out of the rendered reminder at once so the live poll can't resurrect them
   // before the delete commits (same guard as pendingDone).
   const [pendingLeftover, setPendingLeftover] = useState<Set<string>>(new Set())
+  // « L'année » → « Mois » drill-down: a tapped mini-month lands the Mois view on
+  // that month. Transient navigation — the toggle resets it and it isn't saved,
+  // so a reload still opens the device's chosen view.
+  const [monthJump, setMonthJump] = useState(0)
   function changeView(v: BoardView) {
+    setMonthJump(0)
     setView(v)
     saveBoardView(v)
   }
@@ -1039,7 +1045,7 @@ export function Board() {
           every view — read-only on the wall, edited in the kitchen. Skipped in the
           Calendar (Mois) view: its day panel already shows today's note below, so
           this top copy would just repeat it. */}
-      {view !== 'month' && data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
+      {view === 'bento' && data?.dayNote && <DayNote note={data.dayNote} members={data.members} />}
 
       {/* (Upcoming birthdays are NOT a separate strip here — they already ride in the
           « À venir » card below as dated rows, so a second « Anniversaires à venir »
@@ -1052,7 +1058,19 @@ export function Board() {
       {!data ? (
         <p className="loading mono">{t.common.loading}</p>
       ) : view === 'month' ? (
-        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} initialOffset={monthJump} />
+      ) : view === 'annee' ? (
+        <YearView
+          lang={lang}
+          t={t}
+          todayDay={todayDay}
+          onOpenMonth={(i) => {
+            // Drill into Mois at that month WITHOUT persisting the view — the
+            // année stays this device's chosen glance across reloads.
+            setMonthJump(i)
+            setView('month')
+          }}
+        />
       ) : (
         <>
           {/* The "today" zone heroes — tonight's supper + the weather/photo card — ride
