@@ -512,7 +512,9 @@ export function Liste() {
           title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}
         >
-          <InlineIcon name="plus-bold" /> {t.list.quickAddShort}
+          {/* ⚡ not ＋: this is the FAST add (restock past items), distinct from
+              the primary Add button right above it. */}
+          <InlineIcon name="lightning-bold" /> {t.list.quickAddShort}
         </button>
       </div>
       {help.bubbleFor('flyer')}
@@ -544,7 +546,8 @@ export function Liste() {
           {/* In Mon ordre, seed the hand order from the aisle walk (then tweak). */}
           {!byAisle && !isGuest() && (
             <button type="button" className="btn btn--ghost btn--sm list-sortbar__apply" onClick={sortByAisleNow}>
-              <InlineIcon name="storefront-bold" /> {t.list.sortApply}
+              <InlineIcon name="storefront-bold" />
+              <span className="list-sortbar__apply-label">{t.list.sortApply}</span>
             </button>
           )}
         </div>

@@ -227,6 +227,15 @@
   flex: 1 1 0;
   min-width: 0; /* let the label ellipsis-truncate rather than overflow the half */
 }
+/* On a phone, the one prominent cashier action ("Montrer à la caisse") spans the
+   full width — an easy thumb target at the bottom of the list. Wider screens
+   keep it at its natural width. Scoped to the non-split bar so the 50/50
+   shortcut pair above keeps its halves. */
+@media (max-width: 520px) {
+  .list-actions:not(.list-actions--split) .btn {
+    flex: 1 1 100%;
+  }
+}
 .deal__actions {
   display: flex;
   gap: 8px;
