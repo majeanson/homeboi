@@ -11,17 +11,12 @@
 // attribute. To make a one-off coachmark, a single-step Tour is enough — the
 // engine (lib/tour.tsx) and overlay (components/tour/TourOverlay.tsx) are generic.
 import type { IconName } from '../components/Icon'
-import { GUIDE, type Bi } from './guideContent'
+import { GUIDE, guideWhat, type Bi } from './guideContent'
 
-// The one-line `what` of a Guide card, reused verbatim as a coachmark body so a
-// step and its full reference share ONE source for that sentence (no parallel
-// prose to drift). Throws on a bad id — caught at module load, so a typo can't
-// ship a blank step.
-function guideWhat(id: string): Bi {
-  const card = GUIDE.find((e) => e.id === id)
-  if (!card) throw new Error(`tourContent: no Guide card "${id}"`)
-  return card.what
-}
+// guideWhat (the one-line `what` of a Guide card, reused verbatim as a coachmark
+// body so a step and its full reference share ONE source for that sentence) now
+// lives in lib/guideContent — P2-9/C-15 promoted it so lib/addHelp and
+// lib/cercleHelp's `helpFromGuide` share the exact same lookup + failure class.
 
 // The "what the ＋ adds here" enumeration from a section's Guide card ("Le bouton
 // ＋ ici" point), reused verbatim as the section tour's add-step body — so the tour

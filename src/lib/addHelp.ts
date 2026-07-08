@@ -4,6 +4,14 @@
 // that opens the matching GUIDE card (/settings?tab=guide&card=<id>, the same target
 // as HelpDot). Keyed by AddSheet mode OR kitchen-week action key; the title comes
 // from the tile's own label. Calm: help is opt-in (tutorial mode), never modal-blocking.
+//
+// P2-9/C-15: an entry whose `body` merely restated a GUIDE card's `what`/point
+// sources it via `helpFromGuide` instead (one prose to drift, not two) — see
+// capture/ride/plan-today/plan-tomorrow/reserve below. A bespoke `body` stays
+// hand-written where the bubble explains the TILE/CONTROL rather than the guide's
+// concept prose (most entries — the two rarely say the same thing).
+import { helpFromGuide } from './guideContent'
+
 export interface AddHelp {
   body: { fr: string; en: string }
   card: string // a GUIDE entry id (lib/guideContent.ts)
@@ -13,11 +21,7 @@ export interface AddHelp {
 export const ADD_HELP = {
   capture: {
     card: 'capture',
-    point: 0,
-    body: {
-      fr: 'Écris ou dis une note ; l’app devine si c’est un rendez-vous, une corvée, un article, un repas ou une note.',
-      en: 'Type or say a note; the app guesses if it’s an event, chore, item, meal or note.',
-    },
+    body: helpFromGuide('capture'),
   },
   event: {
     card: 'set-agenda',
@@ -51,10 +55,7 @@ export const ADD_HELP = {
   ride: {
     card: 'auto',
     point: 4,
-    body: {
-      fr: 'Ajoute un trajet : qui conduit (un membre prend l’auto, ou quelqu’un du cercle en covoiturage) et qui embarque.',
-      en: 'Add a ride: who drives (a member takes the car, or someone from the circle carpools) and who rides along.',
-    },
+    body: helpFromGuide('auto', 4),
   },
   departure: {
     card: 'board',
@@ -73,15 +74,14 @@ export const ADD_HELP = {
   'plan-today': {
     card: 'capture',
     point: 1,
-    body: {
-      fr: 'Ouvre aujourd’hui pour tout planifier d’un coup : repas, rendez-vous, corvées, note.',
-      en: 'Open today to plan it all at once: meals, events, chores, a note.',
-    },
+    body: helpFromGuide('capture', 1),
   },
   'plan-tomorrow': {
+    // Same guide point as 'plan-today' — it already covers BOTH shortcuts in one
+    // sentence, so both tiles share the identical helpFromGuide text on purpose.
     card: 'capture',
     point: 1,
-    body: { fr: 'Ouvre demain pour tout planifier d’un coup.', en: 'Open tomorrow to plan it all at once.' },
+    body: helpFromGuide('capture', 1),
   },
   cook: {
     card: 'cookmode',
@@ -111,7 +111,7 @@ export const ADD_HELP = {
   reserve: {
     card: 'reserve',
     point: 0,
-    body: { fr: 'Ajoute un article à La réserve (congélateur, fond de garde-manger).', en: 'Add an item to The stash (freezer, back of the pantry).' },
+    body: helpFromGuide('reserve', 0),
   },
   'list-item': {
     // The list has no dedicated "add a line" point — opening the liste card top

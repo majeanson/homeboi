@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
 // Capture each Settings section (the CRUD strips behind the section nav) — they
@@ -37,4 +37,18 @@ SECTIONS.forEach((id) => {
     // add-staple, household = member list + form) and were being cut off.
     await page.screenshot({ path: `e2e/screenshots/settings-${id}-phone.png`, fullPage: true })
   })
+})
+
+// C-15 — La cuisine's pill row is exactly THREE now (Apparence stacks the three
+// old colour subs under one pill); the pre-fold names must be gone. Scoped to
+// `.subtabs:not(.subtabs--mini)` since the Comprendre/Régler lens toggle is
+// ALSO a `.subtabs` (the `mini` variant) sitting right above the sub-section row.
+test('kitchen pill row is Apparence · meal colours · reserve (three, not five)', async ({ page }) => {
+  await boot(page, 'kitchen')
+  const pills = page.locator('.subtabs:not(.subtabs--mini)').getByRole('tab')
+  await expect(pills).toHaveCount(3)
+  await expect(pills.nth(0)).toHaveText('Apparence')
+  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Étiquettes de recettes' })).toHaveCount(0)
+  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Pastilles de recettes' })).toHaveCount(0)
+  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Couleurs des mesures' })).toHaveCount(0)
 })

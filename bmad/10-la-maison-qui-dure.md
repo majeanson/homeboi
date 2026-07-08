@@ -236,8 +236,8 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     vide-frigo keeps its identity as a chip, per its own memory. A-1's
     rejection stands — the drawer serves the ＋/grid entry points that
     already exist, it does not become a week-filler.)_
-15. ✅ **Trois pinceaux, un pot** [S] — _garde (2026-07-08, including the
-    standing rule)_ — La cuisine's Réglages has three separate
+15. ✅ **Trois pinceaux, un pot** [S] — **SHIPPED** (2026-07-08) — _garde
+    (2026-07-08, including the standing rule)_ — La cuisine's Réglages has three separate
     colour-tinkering sub-sections (Étiquettes, Pastilles, Couleurs de
     mesure) among its five — fold into one « Apparence » sub. And fold the
     P2-9 drift while there: `ADD_HELP`/`CERCLE_HELP` one-liners that restate

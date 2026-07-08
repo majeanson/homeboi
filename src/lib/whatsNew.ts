@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'kitchen-apparence',
+    text: {
+      fr: 'Réglages ▸ La cuisine : les étiquettes, pastilles et couleurs de mesure se retrouvent dans une seule section « Apparence ».',
+      en: 'Settings ▸ Kitchen: tags, pills and measure colours now live under one “Appearance” section.',
+    },
+    card: 'set-recipes',
+  },
+  {
     id: 'joindre-rail',
     text: {
       fr: 'Nouveau : « Joindre » — sur mobile, une rangée en haut du cercle pour appeler ou écrire d’un doigt, les plus utiles en premier.',

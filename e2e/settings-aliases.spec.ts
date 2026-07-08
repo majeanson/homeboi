@@ -83,6 +83,23 @@ test('?tab=ai&sub=calm lands on Système with the calm sub', async ({ page }) =>
   await expect(page.locator('.subtabs').getByRole('tab', { name: 'Mode calme' })).toHaveAttribute('aria-selected', 'true')
 })
 
+// C-15 — kitchen's three retired colour subs (tags/pills/measure) all fold onto
+// the ONE « Apparence » sub via LEGACY_SUB, and the old ?tab=recipes alias (which
+// used to target sub=tags) now lands there too. Nothing 404s.
+for (const oldSub of ['tags', 'pills', 'measure']) {
+  test(`?tab=kitchen&sub=${oldSub} lands on Apparence`, async ({ page }) => {
+    await boot(page, `/settings?tab=kitchen&sub=${oldSub}`)
+    await expectTab(page, 'kitchen')
+    await expect(page.locator('.subtabs').getByRole('tab', { name: 'Apparence' })).toHaveAttribute('aria-selected', 'true')
+  })
+}
+
+test('?tab=recipes (legacy) lands on La cuisine ▸ Apparence', async ({ page }) => {
+  await boot(page, '/settings?tab=recipes')
+  await expectTab(page, 'kitchen')
+  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Apparence' })).toHaveAttribute('aria-selected', 'true')
+})
+
 // ?card= guide links home onto the card's themed tab, Comprendre lens, and the
 // card opens highlighted (the param is consumed, pinning tab+lens in the URL).
 test('?tab=guide&card=kitchen homes onto La cuisine in Comprendre', async ({ page }) => {

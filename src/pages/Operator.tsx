@@ -60,7 +60,7 @@ import type { Member, Device, Chore, Routine, EventRow } from '../components/ope
 const SECTIONS: { id: string; icon: IconName }[] = [
   { id: 'decouvrir', icon: 'book-open-bold' }, // search-all + feature map + première fois
   { id: 'board', icon: 'sun-bold' }, //           events + layout + la semaine
-  { id: 'kitchen', icon: 'carrot-bold' }, //      tags + pastilles + mesures + repas + réserve
+  { id: 'kitchen', icon: 'carrot-bold' }, //      apparence (tags+pastilles+mesures) + repas + réserve
   { id: 'liste', icon: 'sparkle-bold' }, //       liste + allées + magasins + historique + ghost
   { id: 'cercle', icon: 'users-three-bold' }, //  membres + groupes + autos + horaires
   { id: 'routines', icon: 'smiley-bold' }, //     routines + corvées + à-compléter
@@ -82,7 +82,7 @@ const LEGACY_TAB: Record<string, { tab: string; sub?: string; bySub?: Record<str
     bySub: { cars: { tab: 'cercle', sub: 'cars' }, schedule: { tab: 'cercle', sub: 'schedule' } },
   },
   chores: { tab: 'routines', sub: 'chores' },
-  recipes: { tab: 'kitchen', sub: 'tags' },
+  recipes: { tab: 'kitchen', sub: 'apparence' },
   shopping: { tab: 'liste', sub: 'shop' },
   display: { tab: 'settings', sub: 'display', bySub: { layout: { tab: 'board', sub: 'layout' } } },
   ai: { tab: 'settings', sub: 'ai', bySub: { thisweek: { tab: 'board', sub: 'thisweek' } } },
@@ -101,6 +101,17 @@ const LEGACY_TAB: Record<string, { tab: string; sub?: string; bySub?: Record<str
   // lands on the routines tab (its namesake sub is first), ?tab=cercle on the
   // cercle tab (members first — the old alias meant the groups sub; same theme).
 }
+
+// C-15 — retired ?sub= ids WITHIN a still-current tab (unlike LEGACY_TAB, whose
+// keys are retired TAB ids). Kitchen's three colour subs (tags/pills/measure)
+// folded into one « Apparence » sub; each old sub id resolves here regardless of
+// which one a link named (order-independent — a Set would do, this stays
+// self-documenting per source sub). Consulted only as a fallback for the
+// current tab's sub picker; a still-valid ?sub takes priority.
+const LEGACY_SUB: Record<string, Record<string, string>> = {
+  kitchen: { tags: 'apparence', pills: 'apparence', measure: 'apparence' },
+}
+
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
 // which gets in to change most settings but NOT member admin or device pairing
@@ -268,9 +279,21 @@ export function Operator() {
       },
     ],
     kitchen: [
-      { key: 'tags', label: t.operator.tagsTitle, node: <RecipeTagsSection help={operatorHelp} /> },
-      { key: 'pills', label: t.operator.pillsTitle, node: <RecipePillsSection help={operatorHelp} /> },
-      { key: 'measure', label: t.operator.measureColorsTitle, node: <MeasureColorsSection help={operatorHelp} /> },
+      // C-15 — étiquettes + pastilles + couleurs de mesure were three separate
+      // colour-tinkering pills; folded into ONE « Apparence » sub (stacked
+      // bodies under one pill, the board▸thisweek / settings▸system precedent —
+      // no nested SubTabs). Listed first so it's the useTabParam fallback.
+      {
+        key: 'apparence',
+        label: t.operator.kitchenLookTitle,
+        node: (
+          <>
+            <RecipeTagsSection help={operatorHelp} />
+            <RecipePillsSection help={operatorHelp} />
+            <MeasureColorsSection help={operatorHelp} />
+          </>
+        ),
+      },
       { key: 'meals', label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
       { key: 'reserve', label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
     ],
@@ -347,7 +370,16 @@ export function Operator() {
   const subs = subSections[tab] ? subSections[tab].filter((s) => !gatedSubs[tab]?.includes(s.key)) : null
   const subKeys = subs ? subs.map((s) => s.key) : []
   const aliasSub = legacyTarget?.sub
-  const subFallback = aliasSub && subKeys.includes(aliasSub) ? aliasSub : subKeys[0] ?? ''
+  // A retired within-tab sub (e.g. /settings?tab=kitchen&sub=tags) folds via
+  // LEGACY_SUB before falling to the tab's first sub — checked ahead of the
+  // LEGACY_TAB alias since it's the more specific match (same tab, old sub).
+  const legacySub = rawSub ? LEGACY_SUB[tab]?.[rawSub] : undefined
+  const subFallback =
+    legacySub && subKeys.includes(legacySub)
+      ? legacySub
+      : aliasSub && subKeys.includes(aliasSub)
+        ? aliasSub
+        : (subKeys[0] ?? '')
   const [sub, setSub] = useTabParam('sub', subFallback, subKeys)
   const activeSub = subs?.find((s) => s.key === sub) ?? subs?.[0]
 

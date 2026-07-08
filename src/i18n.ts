@@ -1738,6 +1738,10 @@ export const FR = {
     secKitchen: 'La cuisine',
     secBoard: 'Le babillard',
     secSystem: 'Système',
+    // C-15 — kitchen's three colour subs (étiquettes/pastilles/mesures) folded
+    // into ONE « Apparence » sub (standing rule: a new setting merges into an
+    // existing sub, never a new pill).
+    kitchenLookTitle: 'Apparence',
     lensLearn: 'Comprendre',
     lensSet: 'Régler',
     lensAria: 'Comprendre ou régler',
@@ -4343,6 +4347,10 @@ export const EN: typeof FR = {
     secKitchen: 'Kitchen',
     secBoard: 'The board',
     secSystem: 'System',
+    // C-15 — kitchen's three colour subs (tags/pills/measures) folded into ONE
+    // « Appearance » sub (standing rule: a new setting merges into an existing
+    // sub, never a new pill).
+    kitchenLookTitle: 'Appearance',
     lensLearn: 'Understand',
     lensSet: 'Adjust',
     lensAria: 'Understand or adjust',

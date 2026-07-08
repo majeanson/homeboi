@@ -1,3 +1,4 @@
+import { helpFromGuide } from './guideContent'
 import type { HelpEntry } from './helpMode'
 
 // In-place help for « Le cercle »'s controls (the list's "?" help mode). Tapping the
@@ -5,6 +6,11 @@ import type { HelpEntry } from './helpMode'
 // "→ Voir le guide" link into the existing `cercle` GUIDE card (point = the sub-point
 // to open). Keyed by control id; the title comes from the control's own label
 // (labelFn in Cercle.tsx). Same engine as Kitchen's KITCHEN_TAB_HELP. FR-CA first.
+//
+// P2-9/C-15: most bodies below are genuinely CONTROL-specific (they explain the
+// one button/tile, not the section) and stay hand-written on purpose — the guide
+// card's `cercle` points cover different ground. `globalSearch` is the one entry
+// that merely restated the `search` card's one-liner, so it sources it instead.
 export const CERCLE_HELP = {
   // Primary Social / Famille split (guide point 9).
   family: { card: 'cercle', point: 9, body: { fr: 'Ta Maisonnée, tes familles et leurs notes partagées.', en: 'Your Household, your families and their shared notes.' } },
@@ -35,11 +41,5 @@ export const CERCLE_HELP = {
   others: { card: 'cercle', point: 1, body: { fr: 'Les personnes qui ne sont dans aucun groupe ni famille.', en: 'People who aren’t in any group or family.' } },
   // The HEADER magnifier — global search (distinct from `search` above, which is
   // the cercle's own person-search field). A-9 soft icon label.
-  globalSearch: {
-    card: 'search',
-    body: {
-      fr: 'La loupe du haut : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
-      en: 'The top magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',
-    },
-  },
+  globalSearch: { card: 'search', body: helpFromGuide('search') },
 } satisfies Record<string, HelpEntry>

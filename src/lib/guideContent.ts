@@ -3619,7 +3619,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-recipes',
     icon: 'tag-bold',
     group: 'settings',
-    route: '/settings?tab=kitchen&sub=tags',
+    route: '/settings?tab=kitchen&sub=apparence',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
       fr: 'Les réglages de cuisine : les étiquettes de recettes, la couleur des cuillères et tasses, la couleur et l’affichage de chaque repas, et la réserve.',
@@ -4078,3 +4078,33 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
 ]
+
+// ── Single-source help text (P2-9 / C-15) ───────────────────────────────────
+// A help-mode registry entry (ADD_HELP/CERCLE_HELP/…) that merely restates a
+// GUIDE card's `what` or one of its points' `detail` used to type that sentence
+// out a SECOND time — the exact prose-drift class this closes. Reach for
+// `helpFromGuide` instead of hand-typing `body` whenever the bubble should say
+// the same thing the guide already says; keep a bespoke `body` only for a
+// bubble that's genuinely contextual (explains the CONTROL, not the concept).
+// Both throw at module load on a bad id/point — same failure class as the
+// dead-`what`-typo bug: a typo can't ship a blank/broken help bubble.
+
+// The one-line `what` of a Guide card, reused verbatim (originally lib/tourContent's
+// private helper, promoted here so helpFromGuide and the tours share one lookup).
+export function guideWhat(id: string): Bi {
+  const card = GUIDE.find((e) => e.id === id)
+  if (!card) throw new Error(`guideContent: no Guide card "${id}"`)
+  return card.what
+}
+
+// A help-registry `body`: the card's `what` (no `point`), or a specific point's
+// `detail` (0-based index into that card's `points`) when the bubble should
+// explain one control rather than the whole concept.
+export function helpFromGuide(card: string, point?: number): Bi {
+  if (point == null) return guideWhat(card)
+  const entry = GUIDE.find((e) => e.id === card)
+  if (!entry) throw new Error(`guideContent: no Guide card "${card}"`)
+  const p = entry.points[point]
+  if (!p) throw new Error(`guideContent: card "${card}" has no point ${point} (${entry.points.length} points)`)
+  return p.detail
+}

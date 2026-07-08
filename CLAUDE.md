@@ -421,6 +421,12 @@ reason it ships unnoticed is that `#root`, `.hub__body`, and `.sheet` all set
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
 - **No horizontal overflow** — any row of controls uses `Cluster`/`Rail`, not a
   hand-rolled flex row (standing rule). See [Horizontal overflow](#horizontal-overflow).
+- **A new Réglages setting merges into an existing sub, never a new pill**
+  (standing rule, C-15). Réglages already counts 30-ish subs; find the themed
+  tab + sub that already owns the concept (e.g. any kitchen colour/appearance
+  setting → `kitchen ▸ apparence`, stacked `OperatorSection` bodies under one
+  pill, the board▸thisweek / settings▸system precedent) and stack your section's
+  body there instead of widening the pill row.
 - **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
   only gate, fix forward if it goes red (standing rule). If a branch ever is used,
   delete it (local + remote) after it merges.
