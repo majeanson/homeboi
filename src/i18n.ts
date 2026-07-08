@@ -1707,6 +1707,10 @@ export const FR = {
       entretienTitle: 'Entretien',
       addProjet: 'Ajouter un projet',
       addEntretien: 'Ajouter un entretien',
+      // A-4 (bmad/09) — les rituels de saison offerts (pneus, gouttières, abris).
+      seedsTitle: 'Idées de saison',
+      seedsHint: 'Les grands rituels d’ici, prêts à ajouter — un toucher les met dans l’Entretien, comme n’importe quelle tâche. Le ✕ les cache pour de bon.',
+      seedDismiss: 'Cacher cette idée',
       editProjet: 'Modifier le projet',
       deleteProjet: 'Supprimer le projet',
       editEntretien: 'Modifier l’entretien',
@@ -4263,6 +4267,10 @@ export const EN: typeof FR = {
       entretienTitle: 'Maintenance',
       addProjet: 'Add a plan',
       addEntretien: 'Add maintenance',
+      // A-4 (bmad/09) — the offered season rituals (tires, gutters, shelter).
+      seedsTitle: 'Season ideas',
+      seedsHint: 'The big local rituals, ready to add — one tap puts them in Maintenance like any task. The ✕ hides them for good.',
+      seedDismiss: 'Hide this idea',
       editProjet: 'Edit plan',
       deleteProjet: 'Delete plan',
       editEntretien: 'Edit maintenance',

@@ -3,6 +3,15 @@
    immaterial. Leans on the shared .cercle-row / .sec-label / .btn families; only
    the carnet-specific bits live here. Mobile- and tablet-first. */
 
+/* — « Idées de saison » (A-4, bmad/09): the offered FR-CA ritual seeds — a
+   short stack of accept-chip + dismiss rows above the Entretien list. — */
+.season-seeds {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.2rem 0 0.8rem;
+}
+
 /* — « Cette saison » glance (Réglages ▸ Corvées ▸ Entretien) — */
 .season-glance {
   margin-bottom: 0.6rem;

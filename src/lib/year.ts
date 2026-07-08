@@ -117,6 +117,90 @@ export function holidaysInRange(fromDaySec: number, days: number): { holiday: Ho
   return out.sort((a, b) => a.at - b.at)
 }
 
+// A-4 (bmad/09): the FR-CA season-turnover ritual SEEDS. Not a system — a
+// short curated list the Entretien section OFFERS when the household hasn't
+// written its own version. Accepting one creates a NORMAL home_projects row
+// (kind 'upkeep', this recurrence, this carnet link) through the normal
+// endpoint — Marc's constraint: it must ride the existing Corvées/Projets
+// machinery, never sit beside it. `match` keywords (folded) hide a seed once
+// any upkeep row already covers it; a per-device dismiss hides it forever.
+// Week-scale leads (A-6): a seasonal ritual is worth a « Bientôt » weeks out,
+// not hours.
+export interface SeasonSeed {
+  id: string
+  emoji: string
+  title: { fr: string; en: string }
+  // Which carnet the row should attach to when the household has one.
+  carnetKind: 'auto' | 'home' | null
+  // Folded keywords — an existing upkeep row containing any of these means the
+  // household already has its own version, so the seed stays quiet.
+  match: string[]
+  anchor: { month: number; day: number }
+  recur: { freq: 'monthly' | 'yearly'; interval: number }
+  leadWeeks: number
+}
+
+export const SEASON_SEEDS: SeasonSeed[] = [
+  {
+    id: 'pneus',
+    emoji: '🛞',
+    title: { fr: 'Poser les pneus d’hiver / d’été', en: 'Swap winter / summer tires' },
+    carnetKind: 'auto',
+    match: ['pneu', 'tire'],
+    anchor: { month: 10, day: 15 }, // mid-Oct; the 6-month cadence lands the swap-back mid-Apr
+    recur: { freq: 'monthly', interval: 6 },
+    leadWeeks: 3,
+  },
+  {
+    id: 'gouttieres',
+    emoji: '🍂',
+    title: { fr: 'Nettoyer les gouttières', en: 'Clean the gutters' },
+    carnetKind: 'home',
+    match: ['gouttiere', 'gutter'],
+    anchor: { month: 11, day: 1 },
+    recur: { freq: 'yearly', interval: 1 },
+    leadWeeks: 2,
+  },
+  {
+    id: 'abris',
+    emoji: '🏠',
+    title: { fr: 'Abri d’auto & rangements d’hiver', en: 'Car shelter & winter storage' },
+    carnetKind: 'home',
+    match: ['abri', 'shelter'],
+    anchor: { month: 11, day: 15 },
+    recur: { freq: 'yearly', interval: 1 },
+    leadWeeks: 2,
+  },
+]
+
+// The NEXT local-midnight occurrence of a month/day anchor from `nowMs` — the
+// `at` a seed's home_projects row anchors its recurrence on.
+export function nextAnchorSec(anchor: { month: number; day: number }, nowMs: number = Date.now()): number {
+  const now = new Date(nowMs)
+  const thisYear = new Date(now.getFullYear(), anchor.month - 1, anchor.day)
+  const d = thisYear.getTime() >= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+    ? thisYear
+    : new Date(now.getFullYear() + 1, anchor.month - 1, anchor.day)
+  return Math.floor(d.getTime() / 1000)
+}
+
+// Seeds this device dismissed with ✕ — hidden forever here (a proposal
+// declined must not repeat; the household can still write its own row).
+const hiddenSeeds = createDeviceStore<string[]>('babillard-season-seeds-hidden', [], {
+  read: (raw) => {
+    try {
+      const v = raw ? (JSON.parse(raw) as unknown) : []
+      return Array.isArray(v) ? (v as string[]) : []
+    } catch {
+      return []
+    }
+  },
+})
+export const useHiddenSeeds = hiddenSeeds.use
+export function hideSeed(id: string): void {
+  hiddenSeeds.set([...new Set([...hiddenSeeds.get(), id])])
+}
+
 // B-11 (bmad/09): group rows by the LOCAL calendar year of their timestamp,
 // newest year first — but a collection living inside ONE year returns a single
 // null-labelled group, so a young gallery stays one calm unlabelled grid.

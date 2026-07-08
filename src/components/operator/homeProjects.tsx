@@ -8,6 +8,10 @@ import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
 import { HOME_PROJECTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { recurLabel } from '../../lib/recurLabel'
+import { fold } from '../../lib/normalize'
+import { useCarnets } from '../../lib/carnets'
+import { SEASON_SEEDS, nextAnchorSec, useHiddenSeeds, hideSeed, type SeasonSeed } from '../../lib/year'
+import { Cluster } from '../Layout'
 import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
 import { formatDayMaybeYear } from '../../lib/format'
 import { formatMoney } from '../../lib/money'
@@ -63,6 +67,7 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
 // delete; hidden writes for a read-only guest.
 function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: HelpMode }) {
   const t = useT()
+  const { lang } = useLang()
   const ro = isGuest()
   const [adding, setAdding] = useState(false)
   const projectsQ = useQuery({
@@ -72,6 +77,37 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
   const undoableRemove = useUndoableRemove()
   const write = useWrite()
   const rows = (projectsQ.data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === kind)
+  // A-4 (bmad/09): the FR-CA season-ritual SEEDS (lib/year). Offered here —
+  // inside the normal Entretien section — and accepting one just POSTs a
+  // normal upkeep row (recurrence + week-scale lead + carnet link), so it
+  // rides the whole existing machinery: board occurrences, ledger, the
+  // carnet's cadence line. A seed hides once ANY row already covers it
+  // (keyword match) or once this device dismissed it with ✕.
+  const hidden = useHiddenSeeds()
+  const { data: carnetsData } = useCarnets({ live: false })
+  const seeds =
+    kind === 'upkeep' && !ro
+      ? SEASON_SEEDS.filter(
+          (seed) =>
+            !hidden.includes(seed.id) &&
+            !rows.some((p) => seed.match.some((k) => fold(p.title).includes(k))),
+        )
+      : []
+  function addSeed(seed: SeasonSeed) {
+    const carnet = seed.carnetKind ? (carnetsData?.carnets ?? []).find((x) => x.kind === seed.carnetKind) : undefined
+    void write('home-projects', {
+      method: 'POST',
+      body: {
+        kind: 'upkeep',
+        title: seed.title[lang],
+        at: nextAnchorSec(seed.anchor),
+        recur: seed.recur,
+        leadSeconds: seed.leadWeeks * 7 * 86_400, // A-6: annual rituals get week-scale « Bientôt »
+        carnetId: carnet?.id ?? null,
+      },
+      affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']],
+    })
+  }
   // « Cette saison » — for Entretien only, a calm glance of the upkeep due before the
   // season turns over (derived from the server's nextAt). Read-only; the full editable
   // list stays below. Same lens as the board card, so the two never drift.
@@ -106,6 +142,29 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
               <li key={p.id} className="season-glance__item">{p.title}</li>
             ))}
           </ul>
+        </div>
+      )}
+      {seeds.length > 0 && (
+        <div className="season-seeds">
+          <p className="operator__seg-label mono">{t.operator.home.seedsTitle}</p>
+          <p className="operator__hint mono">{t.operator.home.seedsHint}</p>
+          {seeds.map((seed) => (
+            <Cluster key={seed.id}>
+              <button type="button" className="btn btn--sm" onClick={() => addSeed(seed)}>
+                <InlineIcon name="plus-bold" size={14} /> <span aria-hidden="true">{seed.emoji}</span>{' '}
+                {seed.title[lang]} · {recurLabel(JSON.stringify(seed.recur), t)}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => hideSeed(seed.id)}
+                aria-label={t.operator.home.seedDismiss}
+                title={t.operator.home.seedDismiss}
+              >
+                <InlineIcon name="x-bold" size={14} />
+              </button>
+            </Cluster>
+          ))}
         </div>
       )}
       {rows.length === 0 && !adding ? (

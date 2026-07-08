@@ -57,7 +57,7 @@ idle** — never louder than that.
 
 ## A · The year ahead (planning forward)
 
-1. ✅ **« L'année » view** [M] ◐ — *garde (2026-07-08)* — the calendar's third glance beside Grille and
+1. ✅ **« L'année » view** [M] ◐ — _garde (2026-07-08)_ — the calendar's third glance beside Grille and
    Mois: twelve small months (or four seasons) with only the ANNUAL fixed
    points — birthdays (derived, already exist), yearly-recur events, carnet
    upkeep cadences, school-year bounds, trips. Not a planner — a horizon.
@@ -78,19 +78,37 @@ idle** — never louder than that.
    opt-out toggle in Réglages ▸ Système ▸ Affichage (`babillard-fetes`,
    default ON). Guide point on the board card + whatsNew. _(MonthView cells
    deliberately later — own data path.)_
-3. ⏸ **La rentrée & the school year** [M] — *plus tard (2026-07-08 — not selected this wave)* — a household's school-year bounds
+3. ⏸ **La rentrée & the school year** [M] — _plus tard (2026-07-08 — not selected this wave)_ — a household's school-year bounds
    (first/last day, relâche) as ONE settings card; the board's « Demain »
    knows a school morning from a vacation morning, the rush-hour diet (C-25,
    plus-tard) gets its real calendar. No sync/import — typed once a year.
-4. ✅ **Season turnover rituals** [S] ◐ — *garde (2026-07-08)* — SeasonUpkeepCard already surfaces
+4. ✅ **Season turnover rituals** [S] ◐ — _garde (2026-07-08)_ — SeasonUpkeepCard already surfaces
    upkeep « cette saison »; complete it with the two big FR-CA rituals as
    suggested carnet cadences on first setup: pneus d'hiver (l'auto) and
    abris/piscine/gouttières (la maison). A seed list, not a new system.
-5. ✅ **Countdown tiles, generalized** [S] ◐ — *garde (2026-07-08, with A-6)* — the birthday countdown exists in
+   **Marc's build constraint (2026-07-08): must integrate with the EXISTING
+   Routines & Corvées & Projets machinery** — accepting a seed creates a
+   normal `home_projects` row (kind 'upkeep', yearly/6-month recur, carnet
+   link when the carnet exists) through the normal endpoint, so it surfaces
+   on the board / ledger / carnet cadence line like any hand-made upkeep.
+   Never a parallel system. **SHIPPED same day to that shape:**
+   `SEASON_SEEDS` in lib/year.ts (pneus 🛞 aux 6 mois mi-oct · gouttières 🍂
+   annuel · abri d'auto 🏠 annuel, each with folded `match` keywords + a
+   week-scale lead — the A-6 principle) + « Idées de saison » rows in
+   Réglages ▸ Corvées ▸ Entretien: one tap POSTs the normal upkeep row
+   (next-anchor `at`, recurrence, `lead_seconds` in weeks, carnet_id when a
+   matching auto/home carnet exists); a seed hides once any existing row
+   covers its keywords, and ✕ dismisses per device forever.
+5. ✅ **Countdown tiles, generalized** [S] ◐ — _garde (2026-07-08, with A-6)_ — the birthday countdown exists in
    « Jouer » (toddler). Let a parent pin ONE countdown to the board (trip
    departure, Noël, la rentrée) — a single calm tile, never a stack of
    deadlines. _(reuse: jouer countdown math; boardCards for placement.)_
-6. ✅ **« Préparer » windows on annual events** [S] ◐ — *garde (2026-07-08, with A-5)* — lead_seconds already
+   **Marc's design (2026-07-08): SUGGESTION-driven** — the house PROPOSES the
+   next natural countdown (next major fête from lib/year, next trip
+   departure, next birthday), the parent accepts with one tap; when the day
+   arrives and passes, the tile suggests the next one. Always exactly ONE
+   countdown; the suggestion is an offer, never auto-pinned.
+6. ✅ **« Préparer » windows on annual events** [S] ◐ — _garde (2026-07-08, with A-5)_ — lead_seconds already
    gives « Bientôt »; for annual items the useful lead is WEEKS (gift for a
    birthday, tires before the first snow). Default yearly recurrences to a
    longer lead + copy that says why (« dans 3 semaines — le temps d'y
@@ -102,21 +120,21 @@ idle** — never louder than that.
    2026-07-08 — OQ-3: keep the mosaic purely random/recent, no time bias at
    all)._ ~~Bias the ambient photo mosaic toward photos taken the same week
    in past years.~~ Do not re-propose; the mosaic stays un-curated.
-8. ✅ **The house's diary (read view)** [S] ◐ — *garde (2026-07-08)* — care*log + chore ledger +
+8. ✅ **The house's diary (read view)** [S] ◐ — _garde (2026-07-08)_ — care*log + chore ledger +
    finished trips + kept drawings already form an append-only house history;
    give it ONE quiet chronological read (Réglages ▸ or a carnet tab):
    « la maison cette année ». Names and dates, never counts (chore-ledger
    rule). *(reuse: care*log, task_participants, trips archive.)*
-9. ⏸ **Menu memory** [M] ✦ — *plus tard (2026-07-08 — not selected this wave)* — when planning a week that contains a fête or a
+9. ⏸ **Menu memory** [M] ✦ — _plus tard (2026-07-08 — not selected this wave)_ — when planning a week that contains a fête or a
    season boundary, « Suggérer » may add a line: « L'an passé à Noël : tourtière,
    ragoût » (from meals history, which already exists). One line inside the
    existing suggest flow — never a standalone "memories" surface.
-10. ⏸ **« Cette année ensemble »** [M] ⚠ — *plus tard (Marc, 2026-07-08)* — the year-scale sibling of « Cette
+10. ⏸ **« Cette année ensemble »** [M] ⚠ — _plus tard (Marc, 2026-07-08)_ — the year-scale sibling of « Cette
     semaine » (this-week-together): the year read by FACE — who came into the
     cercle, trips taken, drawings kept, first/lasts. STRICTLY faces + moments,
     zero tallies (« 47 soupers cuisinés » is REJECTED by construction).
     Renders once, on demand, maybe around jour de l'An.
-11. ✅ **Drawings & mots, by year** [S] ◐ — *garde (2026-07-08)* —
+11. ✅ **Drawings & mots, by year** [S] ◐ — _garde (2026-07-08)_ —
     **SHIPPED same day (drawings half):** « Mes dessins » now reads as the
     family album — grouped by YEAR once a second year exists (a young gallery
     stays one calm unlabelled grid; `groupByYear` in lib/year.ts), and each
@@ -125,7 +143,7 @@ idle** — never louder than that.
     year-less date). Pure regrouping, no new rows; both helpers unit-tested.
     **Mots half n/a for now:** mots are transient board messages with no
     archive surface — revisit only if a kept-mots gallery ever exists.
-12. ✅ **Trip albums** [S] ◐ — *garde (2026-07-08)* — a finished voyage already holds notes/photos/
+12. ✅ **Trip albums** [S] ◐ — _garde (2026-07-08)_ — a finished voyage already holds notes/photos/
     itinerary; a read-only « album » view of a past trip (today it's just the
     same editor, colder). One template over existing data.
 
@@ -136,12 +154,12 @@ idle** — never louder than that.
     _tradition_: a yearly event that ACCUMULATES its own memory (photos/notes
     attach to the tradition, not the year's instance). Modelled as a
     yearly-recur event + a media junction. ⚠ guard: never scores attendance.
-14. ❌ ~~**First-snow / first-BBQ moments**~~ [S] ✦ — *rejeté (Marc, 2026-07-08 — the weather card already says it's snowing). Do not re-propose.* — a handful of derived,
+14. ❌ ~~**First-snow / first-BBQ moments**~~ [S] ✦ — _rejeté (Marc, 2026-07-08 — the weather card already says it's snowing). Do not re-propose._ — a handful of derived,
     weather-triggered "moments" (first snow of the season, first 20° day) the
     board may mark with ONE line + picto, toddler-hearable. Weather data
     already polls; this is a derivation, not a feature system. Opt-out.
-15. ❓ **The birthday arc, completed** [S] ◐ — *NOT YET TRIAGED (missed in the
-    2026-07-08 pass — ask Marc next round)* — birthdays are derived, gift_ideas
+15. ❓ **The birthday arc, completed** [S] ◐ — _NOT YET TRIAGED (missed in the
+    2026-07-08 pass — ask Marc next round)_ — birthdays are derived, gift_ideas
     exist on the peek; complete the loop: after the day passes, the peek
     quietly offers « garder une photo de la fête ? » linking a photo to the
     person (their carnet-like memory). No nag — a one-time affordance in the
