@@ -53,6 +53,7 @@ import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { MonthView } from '../components/board/MonthView'
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
+import { SimpleBoard } from '../components/board/SimpleBoard'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
@@ -381,6 +382,15 @@ export function Board() {
       narration: e.title,
       color: memberColor(e.member_id) ?? undefined,
     }))
+
+  // « Simple » lens (bmad/08 A-1) — the post-reader/grandma board: four giant
+  // calm zones (Aujourd'hui · Souper · La liste · Notes) off the SAME data. The
+  // other tabs inherit the parent views; only the board gets this bespoke glance.
+  if (audience === 'simple') {
+    const tod = timeOfDay(nowMs)
+    const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
+    return <SimpleBoard data={data} todayEvents={todayEvents} greet={greet} />
+  }
 
   if (audience === 'toddler') {
     const tod = timeOfDay(nowMs)

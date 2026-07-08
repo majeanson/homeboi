@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'simple-lens',
+    text: {
+      fr: 'Nouveau : la vue « Simple » — grands boutons, gros texte, et garde le doigt sur une ligne pour l’entendre. Parfait pour une visite ou un grand-parent.',
+      en: 'New: the “Simple” view — big buttons, large text, and hold a finger on a line to hear it. Perfect for a visitor or a grandparent.',
+    },
+    card: 'audience',
+  },
+  {
     id: 'search-partout',
     text: {
       fr: 'Nouveau : la loupe en haut de chaque section cherche partout — même dans le guide.',

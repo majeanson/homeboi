@@ -82,13 +82,17 @@ export const FR = {
   audience: {
     parent: 'Parent',
     kid: 'Enfant',
+    // bmad/08 A-1 — the post-reader « Simple » lens (grandma): big, calm, spoken.
+    simple: 'Simple',
     guest: 'Invité',
     guestPreviewHint: 'Aperçu invité : lecture seule. Choisis « Parent » pour revenir.',
+    simpleHint: 'Vue simple : grands boutons, gros texte, à voix haute. Pour une visite ou un grand-parent. Choisis « Parent » pour revenir.',
     kidView: 'Vue enfant',
     parentView: 'Vue parent',
     editInSettings: 'Modifier dans les réglages',
     exitHold: 'Garde le doigt appuyé pour sortir…',
     exitTitle: 'Sortir du mode enfant',
+    exitTitleSimple: 'Sortir du mode simple',
     exitPrompt: 'Pour un adulte : combien font',
     exitAnswer: 'Réponse',
     exitConfirm: 'Sortir',
@@ -425,6 +429,8 @@ export const FR = {
     cookLeftover: 'Des restes ce soir — rien à cuisiner',
     list: 'La liste',
     listEmpty: 'Liste vide. Rien à acheter.',
+    // The « Simple » board's fourth zone heading (the fridge notes, inline).
+    notes: 'Notes',
     chores: 'Les corvées',
     choresEmpty: 'Aucune corvée.',
     todos: 'À faire',
@@ -1816,6 +1822,9 @@ export const FR = {
     voiceAuto: 'Automatique (meilleure voix)',
     voiceTest: 'Tester la voix',
     voiceSpeedLabel: 'Vitesse',
+    // Tap-to-hear (bmad/08 A-2) — the long-press-to-speak pref, per appareil.
+    tapToHearLabel: 'Toucher pour entendre',
+    tapToHearHint: 'En vue Enfant ou Simple : garde le doigt une demi-seconde sur une ligne pour l’entendre à voix haute.',
     voiceNone: 'Aucune voix « Français (Canada) » n’est installée sur cet appareil. Ajoute-en une dans les réglages du système pour entendre la lecture.',
     voiceNoneLang: 'Aucune voix pour cette langue sur cet appareil. Ajoute-en une dans les réglages du système (Accessibilité ▸ Contenu énoncé). Sur iPad/iPhone, le navigateur n’a souvent accès qu’aux voix « par défaut » — une voix « Améliorée » peut ne pas être disponible ici.',
     tutorialTitle: 'Aide contextuelle',
@@ -2673,13 +2682,17 @@ export const EN: typeof FR = {
   audience: {
     parent: 'Parent',
     kid: 'Kid',
+    // bmad/08 A-1 — the post-reader « Simple » lens (grandma): big, calm, spoken.
+    simple: 'Simple',
     guest: 'Guest',
     guestPreviewHint: 'Guest preview: read-only. Pick “Parent” to switch back.',
+    simpleHint: 'Simple view: big buttons, large text, read aloud. For a visit or a grandparent. Pick “Parent” to switch back.',
     kidView: 'Kid view',
     parentView: 'Parent view',
     editInSettings: 'Edit in settings',
     exitHold: 'Keep holding to exit…',
     exitTitle: 'Exit kid mode',
+    exitTitleSimple: 'Exit simple mode',
     exitPrompt: 'For a grown-up: what is',
     exitAnswer: 'Answer',
     exitConfirm: 'Exit',
@@ -3000,6 +3013,8 @@ export const EN: typeof FR = {
     cookLeftover: 'Leftovers tonight — no cooking needed',
     list: 'The list',
     listEmpty: 'List empty. Nothing to buy.',
+    // The "Simple" board's fourth zone heading (the fridge notes, inline).
+    notes: 'Notes',
     chores: 'Chores',
     choresEmpty: 'No chores.',
     todos: 'To do',
@@ -4344,6 +4359,9 @@ export const EN: typeof FR = {
     voiceAuto: 'Automatic (best voice)',
     voiceTest: 'Test the voice',
     voiceSpeedLabel: 'Speed',
+    // Tap-to-hear (bmad/08 A-2) — the long-press-to-speak pref, per device.
+    tapToHearLabel: 'Touch to hear',
+    tapToHearHint: 'In the Kid or Simple view: hold a finger half a second on a line to hear it read aloud.',
     voiceNone: 'No “Français (Canada)” voice is installed on this device. Add one in the system settings to hear read-aloud.',
     voiceNoneLang: 'No voice for this language on this device. Add one in the system settings (Accessibility ▸ Spoken Content). On iPad/iPhone the browser often only has the “default” voices — an “Enhanced” voice may not be available here.',
     tutorialTitle: 'Contextual help',

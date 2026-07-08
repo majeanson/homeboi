@@ -33,6 +33,7 @@ import {
 } from '../../lib/accessibility'
 import { computeDayPart } from '../../lib/timeofday'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
+import { useTapToHear, setTapToHear } from '../../lib/tapToHear'
 import { IngredientLine } from '../IngredientLine'
 import { InlineIcon } from '../Icon'
 import { Toggle } from '../Toggle'
@@ -262,7 +263,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           <div
             className="audience-switch mono"
             role="group"
-            aria-label={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.guest}
+            aria-label={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.simple + ' / ' + t.audience.guest}
           >
             <button
               type="button"
@@ -286,6 +287,18 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             >
               <InlineIcon name="baby-bold" /> {t.audience.kid}
             </button>
+            {/* bmad/08 A-1 — the post-reader « Simple » lens (grandma). */}
+            <button
+              type="button"
+              className={`audience-switch__opt${audience === 'simple' && !guestPreview ? ' is-active' : ''}`}
+              onClick={() => {
+                setGuestPreview(false)
+                setAudience('simple')
+              }}
+              aria-pressed={audience === 'simple' && !guestPreview}
+            >
+              <InlineIcon name="hand-heart-bold" /> {t.audience.simple}
+            </button>
             <button
               type="button"
               className={`audience-switch__opt${guestPreview ? ' is-active' : ''}`}
@@ -296,6 +309,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             </button>
           </div>
           {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
+          {audience === 'simple' && !guestPreview && <p className="operator__seg-hint mono">{t.audience.simpleHint}</p>}
         </div>
         {!ro && (
           <div className="operator__seg">
@@ -347,6 +361,9 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
+  // Tap-to-hear (bmad/08 A-2): the per-device long-press-to-speak pref for the
+  // toddler/simple lenses (lib/tapToHear). Default ON.
+  const tapToHear = useTapToHear()
   // The GLOBAL read-aloud language — applies to ALL narration everywhere (#TTS).
   const readLang = useReadLang()
   // Which language's VOICE we're configuring. A French app can read recipes in
@@ -437,6 +454,19 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
               }}
             />
           </label>
+
+          {/* Tap-to-hear (A-2): in the Enfant / Simple lenses, holding a finger
+              ~½ s on any row reads it aloud. Per-device, opt-out here. */}
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.tapToHearLabel}</span>
+            <Toggle
+              on={tapToHear}
+              icon="speaker-high-bold"
+              label={tapToHear ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+              onClick={() => setTapToHear(!tapToHear)}
+            />
+          </div>
+          <p className="operator__hint mono">{t.operator.tapToHearHint}</p>
 
           {/* Test in the SELECTED voice language, with a phrase in that language —
               so a French app testing the English voice hears English (the point). */}

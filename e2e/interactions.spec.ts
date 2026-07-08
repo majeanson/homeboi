@@ -146,6 +146,36 @@ test.describe('navigation', () => {
     await expect(page.locator('.kid-exit-switch')).toBeVisible()
   })
 
+  test('a locked simple kiosk (?simple=1) mirrors the kid lock, and a 3s hold alone exits (no math)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await page.goto('/board?simple=1')
+    await settle(page, '.hub')
+    // The simple lens is up: the four-zone grandma board, no audience switch,
+    // no settings tab, no ＋ FAB — same restrictions as the kid lock.
+    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'simple')
+    await expect(page.locator('.today-simple')).toBeVisible()
+    await expect(page.locator('.hubnav a[href="/settings"]')).toHaveCount(0)
+    await expect(page.locator('.add-fab')).toHaveCount(0)
+    // /settings redirects away while locked, exactly like ?kid=1.
+    await page.addInitScript(() => localStorage.setItem('babillard-simple-lock', '1'))
+    await page.goto('/settings')
+    await expect(page).toHaveURL(/\/board$/)
+
+    // The gated exit: a sustained ~3s hold on the footer switch. A capable
+    // post-reader adult holds deliberately — so NO math challenge follows
+    // (KidExitGate requireMath={false}); the hold itself unlocks back to parent.
+    const sw = page.locator('.kid-exit-switch')
+    await expect(sw).toBeVisible()
+    const box = await sw.boundingBox()
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(3300)
+    await page.mouse.up()
+    await expect(page.locator('.kid-exit-modal')).toHaveCount(0)
+    await expect(page.locator('.hub')).toHaveAttribute('data-audience', 'parent')
+  })
+
   test('the gated exit switch leaves the toddler lens after a 3s hold + correct math', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)

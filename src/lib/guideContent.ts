@@ -2279,12 +2279,34 @@ export const GUIDE: GuideEntry[] = [
     id: 'audience',
     icon: 'smiley-bold',
     group: 'concepts',
-    title: { fr: 'Vue parent ou vue enfant (l’« audience »)', en: 'Parent or kid view (the “audience”)' },
+    title: { fr: 'Vue parent, enfant ou simple (l’« audience »)', en: 'Parent, kid or simple view (the “audience”)' },
     what: {
-      fr: 'La même information, montrée pour un parent ou pour un tout-petit pré-lecteur. Chaque section sait s’afficher des deux façons.',
-      en: 'The same information, shown for a parent or for a pre-reader toddler. Each section knows how to show both ways.',
+      fr: 'La même information, montrée pour un parent, pour un tout-petit pré-lecteur ou en version « Simple » (grands boutons, gros texte). Chaque section sait s’afficher de toutes ces façons.',
+      en: 'The same information, shown for a parent, for a pre-reader toddler, or as a “Simple” view (big buttons, large text). Each section knows how to show every way.',
     },
     points: [
+      {
+        label: { fr: 'La vue « Simple » (grand-parent, visite)', en: 'The “Simple” view (grandparent, visitor)' },
+        detail: {
+          fr: 'Dans Réglages ▸ Système ▸ Affichage, choisis « Simple » : tout devient plus gros, le babillard se résume à quatre grandes zones (Aujourd’hui, Souper, La liste, Notes), et les autres onglets restent complets — vrais mots, tout fonctionne. Démarre la tablette avec « ?simple=1 » pour la verrouiller sur cette vue; pour sortir, garde le doigt ~3 s sur l’interrupteur du bas (pas d’addition — c’est pensé pour un adulte).',
+          en: 'In Settings ▸ System ▸ Display, pick “Simple”: everything gets bigger, the board becomes four large zones (Today, Supper, The list, Notes), and the other tabs stay complete — real words, everything works. Boot the tablet with “?simple=1” to lock it on this view; to leave, hold the bottom switch ~3 s (no sum — it’s made for an adult).',
+        },
+        why: {
+          fr: 'Pour tendre l’appareil à un grand-parent ou une visite qui lit très bien mais veut calme, gros et parlé.',
+          en: 'So you can hand the device to a grandparent or a visitor who reads fine but wants calm, big and spoken.',
+        },
+      },
+      {
+        label: { fr: 'Toucher pour entendre', en: 'Touch to hear' },
+        detail: {
+          fr: 'En vue Enfant ou Simple, garde le doigt une demi-seconde sur une ligne (une activité, un article de la liste, une note, une tuile) pour l’entendre à voix haute — sans rien déclencher. Ça se désactive dans Réglages ▸ Système ▸ Affichage ▸ Voix.',
+          en: 'In the Kid or Simple view, hold a finger half a second on a line (an activity, a list item, a note, a tile) to hear it read aloud — without triggering anything. Turn it off in Settings ▸ System ▸ Display ▸ Voice.',
+        },
+        why: {
+          fr: 'Entendre sans agir : on peut se faire lire n’importe quoi sans peur d’appuyer « pour vrai ».',
+          en: 'Hear without acting: anything can be read to you with no fear of pressing “for real”.',
+        },
+      },
       {
         label: { fr: 'Passer en vue enfant', en: 'Switch to kid view' },
         detail: {

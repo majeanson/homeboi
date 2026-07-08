@@ -31,6 +31,29 @@
   justify-content: flex-start;
   gap: 1.5rem;
 }
+
+/* --- Aujourd'hui (simple / grandma, bmad/08 A-1): four calm zones -------- */
+/* Reuses the toddler's .bigtile cut-paper cards as ONE-tap door <Link>s; the
+   1.4× type ride comes from the root data-lens='simple' (core.css). */
+.today-simple {
+  justify-content: flex-start;
+  gap: 1.75rem;
+}
+.today-simple__greet {
+  font-size: 1.7rem;
+  font-weight: 650;
+  margin: 0;
+}
+.today-simple__tiles {
+  /* Three doors: side-by-side on a tablet, a single calm column on a phone. */
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+}
+.today-simple .bigtile {
+  /* .bigtile is a <button> style; these doors are <Link>s — undo anchor dress. */
+  text-decoration: none;
+  color: inherit;
+  min-height: 11rem;
+}
 .today-kid__greet {
   font-size: 1.6rem;
   font-weight: 650;
