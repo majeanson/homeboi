@@ -142,3 +142,9 @@ Affichage ▸ « Diffuser au salon »**. Two ways it reaches the TV:
   deploy on this binding, so confirm with `npx wrangler deploy --dry-run` first.
   WS auth: operators ride the same-origin session cookie; kiosk/guest devices pass
   their token as `?t=<token>` (the browser WebSocket API can't set headers).
+  **B-11 (bmad/10) closed the "why is realtime off?" sub-task as already answered:**
+  it isn't off — live in prod since `d1d9b67` (2026-06-17), and poll gears already
+  relax on connect (`perf(realtime): back off polling when the realtime socket is
+  open`). No runtime env var — the rebuild-flag kill-switch above (re-comment the
+  wrangler binding + flip `REALTIME_ENABLED`) is intentionally the only lever.
+  Coverage: `e2e/realtime.spec.ts` (WS invalidate + SW offline precache).
