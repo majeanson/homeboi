@@ -1,8 +1,8 @@
 # 09 · La mémoire de la maison — the house that remembers its year
 
-> Fourth ideas doc. `05` asked *what else could it do?*, `06` asked *what could
-> it reach?*, `07` gave the house cared-for members, `08` asked *can anyone
-> understand it in five seconds?* This one asks a question about TIME:
+> Fourth ideas doc. `05` asked _what else could it do?_, `06` asked _what could
+> it reach?_, `07` gave the house cared-for members, `08` asked _can anyone
+> understand it in five seconds?_ This one asks a question about TIME:
 >
 > **The board answers "today" perfectly — clock, souper, la liste, les
 > corvées. But who answers October? And who remembers last October?**
@@ -15,11 +15,13 @@
 > drifts by daypart. This doc pulls those threads into one question: **what
 > does a calm memory look like?**
 >
-> **STATUS: DRAFT — Marc is reading; full triage to come.** First verdicts
-> (2026-07-08): **B-7 idle-frame memory bias ❌ REJETÉ** (OQ-3: no time bias
-> on the mosaic at all) · **OQ-1 answered: one forward + one backward item per
-> wave** once ideas are approved. Verdict legend (same as 08):
-> **✅ Garde** · **⏸ Plus tard** · **❌ Rejeté**.
+> **STATUS: TRIAGED with Marc, 2026-07-08.** Tally: **6 garde** (A-1 année ·
+> A-4 rituels · A-5+6 countdown+leads · B-8 diary · B-11 drawings-by-year ·
+> B-12 trip albums; A-2 fêtes already shipped) · **4 plus tard** (A-3 rentrée ·
+> B-9 menu memory · B-10 année ensemble · C-13 traditions) · **2 rejetés**
+> (B-7 idle photo bias · C-14 first-snow moments). Build order: any that
+> parallelizes well (OQ-1); D-17/18 adopted as design rules. Verdict legend
+> (same as 08): **✅ Garde** · **⏸ Plus tard** · **❌ Rejeté**.
 > Effort: **[S]** small / **[M]** medium / **[L]** large ·
 > **⚠** calm-tenet tension · **✦** out-of-the-box · **◐** partially exists.
 
@@ -31,8 +33,8 @@ Two directions from today, both calm:
 
 - **Forward — the year ahead.** The house should never be surprised by its own
   rhythm. La rentrée, the tire swap, the furnace filter, tante Lucie's
-  birthday, the cabane à sucre — the year's fixed points surface *gently, in
-  season*, never as a wall of future obligations.
+  birthday, the cabane à sucre — the year's fixed points surface _gently, in
+  season_, never as a wall of future obligations.
 - **Backward — the year behind.** The house quietly accumulates real memory:
   photos, drawings, notes, care-log entries, cooked meals, finished trips.
   Today that memory is write-only — nothing ever resurfaces. A calm memory
@@ -46,20 +48,20 @@ idle** — never louder than that.
 
 **The acceptance bar:**
 
-> *In February, a parent glances at the board and the house already knows
+> _In February, a parent glances at the board and the house already knows
 > what February means here. In December, planning the réveillon, one tap shows
 > what we cooked and who came last December — and it feels like opening a
-> family album, not a notification.*
+> family album, not a notification._
 
 ---
 
 ## A · The year ahead (planning forward)
 
-1. **« L'année » view** [M] ◐ — the calendar's third glance beside Grille and
+1. ✅ **« L'année » view** [M] ◐ — *garde (2026-07-08)* — the calendar's third glance beside Grille and
    Mois: twelve small months (or four seasons) with only the ANNUAL fixed
    points — birthdays (derived, already exist), yearly-recur events, carnet
    upkeep cadences, school-year bounds, trips. Not a planner — a horizon.
-   *(reuse: MonthView machinery, `_lib/birthdays`, home-projects `nextAt`.)*
+   _(reuse: MonthView machinery, `_lib/birthdays`, home-projects `nextAt`.)_
 2. ✅ **Les fêtes québécoises, dérivées** [S] — **SHIPPED 2026-07-08 (the
    first 09 item, per OQ-4's shape: announce all, zero impact, settings
    opt-out).** `src/lib/year.ts` (the D-16 module's first resident): 17
@@ -74,21 +76,21 @@ idle** — never louder than that.
    board, le fil) as static announce lines — all-day, nobody's, no peek, the
    emoji is the picture, tagged « Fête » / « Congé férié ». Per-device
    opt-out toggle in Réglages ▸ Système ▸ Affichage (`babillard-fetes`,
-   default ON). Guide point on the board card + whatsNew. *(MonthView cells
-   deliberately later — own data path.)*
-3. **La rentrée & the school year** [M] — a household's school-year bounds
+   default ON). Guide point on the board card + whatsNew. _(MonthView cells
+   deliberately later — own data path.)_
+3. ⏸ **La rentrée & the school year** [M] — *plus tard (2026-07-08 — not selected this wave)* — a household's school-year bounds
    (first/last day, relâche) as ONE settings card; the board's « Demain »
    knows a school morning from a vacation morning, the rush-hour diet (C-25,
    plus-tard) gets its real calendar. No sync/import — typed once a year.
-4. **Season turnover rituals** [S] ◐ — SeasonUpkeepCard already surfaces
+4. ✅ **Season turnover rituals** [S] ◐ — *garde (2026-07-08)* — SeasonUpkeepCard already surfaces
    upkeep « cette saison »; complete it with the two big FR-CA rituals as
    suggested carnet cadences on first setup: pneus d'hiver (l'auto) and
    abris/piscine/gouttières (la maison). A seed list, not a new system.
-5. **Countdown tiles, generalized** [S] ◐ — the birthday countdown exists in
+5. ✅ **Countdown tiles, generalized** [S] ◐ — *garde (2026-07-08, with A-6)* — the birthday countdown exists in
    « Jouer » (toddler). Let a parent pin ONE countdown to the board (trip
    departure, Noël, la rentrée) — a single calm tile, never a stack of
-   deadlines. *(reuse: jouer countdown math; boardCards for placement.)*
-6. **« Préparer » windows on annual events** [S] ◐ — lead_seconds already
+   deadlines. _(reuse: jouer countdown math; boardCards for placement.)_
+6. ✅ **« Préparer » windows on annual events** [S] ◐ — *garde (2026-07-08, with A-5)* — lead_seconds already
    gives « Bientôt »; for annual items the useful lead is WEEKS (gift for a
    birthday, tires before the first snow). Default yearly recurrences to a
    longer lead + copy that says why (« dans 3 semaines — le temps d'y
@@ -96,43 +98,44 @@ idle** — never louder than that.
 
 ## B · The year behind (memory resurfacing)
 
-7. ❌ ~~**« Il y a un an » on the idle frame**~~ [S] ⚠ ✦ — *rejeté (Marc,
+7. ❌ ~~**« Il y a un an » on the idle frame**~~ [S] ⚠ ✦ — _rejeté (Marc,
    2026-07-08 — OQ-3: keep the mosaic purely random/recent, no time bias at
-   all).* ~~Bias the ambient photo mosaic toward photos taken the same week
+   all)._ ~~Bias the ambient photo mosaic toward photos taken the same week
    in past years.~~ Do not re-propose; the mosaic stays un-curated.
-8. **The house's diary (read view)** [S] ◐ — care_log + chore ledger +
+8. ✅ **The house's diary (read view)** [S] ◐ — *garde (2026-07-08)* — care*log + chore ledger +
    finished trips + kept drawings already form an append-only house history;
    give it ONE quiet chronological read (Réglages ▸ or a carnet tab):
    « la maison cette année ». Names and dates, never counts (chore-ledger
-   rule). *(reuse: care_log, task_participants, trips archive.)*
-9. **Menu memory** [M] ✦ — when planning a week that contains a fête or a
+   rule). *(reuse: care*log, task_participants, trips archive.)*
+9. ⏸ **Menu memory** [M] ✦ — *plus tard (2026-07-08 — not selected this wave)* — when planning a week that contains a fête or a
    season boundary, « Suggérer » may add a line: « L'an passé à Noël : tourtière,
    ragoût » (from meals history, which already exists). One line inside the
    existing suggest flow — never a standalone "memories" surface.
-10. **« Cette année ensemble »** [M] ⚠ — the year-scale sibling of « Cette
+10. ⏸ **« Cette année ensemble »** [M] ⚠ — *plus tard (Marc, 2026-07-08)* — the year-scale sibling of « Cette
     semaine » (this-week-together): the year read by FACE — who came into the
     cercle, trips taken, drawings kept, first/lasts. STRICTLY faces + moments,
     zero tallies (« 47 soupers cuisinés » is REJECTED by construction).
     Renders once, on demand, maybe around jour de l'An.
-11. **Drawings & mots, by year** [S] ◐ — the gallery already keeps drawings;
+11. ✅ **Drawings & mots, by year** [S] ◐ — *garde (2026-07-08)* — the gallery already keeps drawings;
     group by year with the child's age at the time (« Léa, 4 ans »). Same for
     kept mots. Pure grouping, no new rows.
-12. **Trip albums** [S] ◐ — a finished voyage already holds notes/photos/
+12. ✅ **Trip albums** [S] ◐ — *garde (2026-07-08)* — a finished voyage already holds notes/photos/
     itinerary; a read-only « album » view of a past trip (today it's just the
     same editor, colder). One template over existing data.
 
 ## C · Traditions (the year's own vocabulary)
 
-13. ⏸ **Une tradition** [M] ✦ — *plus tard (Marc, 2026-07-08 — « no
-    traditions for now »; the one new table stays unbuilt).* A first-class
-    *tradition*: a yearly event that ACCUMULATES its own memory (photos/notes
+13. ⏸ **Une tradition** [M] ✦ — _plus tard (Marc, 2026-07-08 — « no
+    traditions for now »; the one new table stays unbuilt)._ A first-class
+    _tradition_: a yearly event that ACCUMULATES its own memory (photos/notes
     attach to the tradition, not the year's instance). Modelled as a
     yearly-recur event + a media junction. ⚠ guard: never scores attendance.
-14. **First-snow / first-BBQ moments** [S] ✦ — a handful of derived,
+14. ❌ ~~**First-snow / first-BBQ moments**~~ [S] ✦ — *rejeté (Marc, 2026-07-08 — the weather card already says it's snowing). Do not re-propose.* — a handful of derived,
     weather-triggered "moments" (first snow of the season, first 20° day) the
     board may mark with ONE line + picto, toddler-hearable. Weather data
     already polls; this is a derivation, not a feature system. Opt-out.
-15. **The birthday arc, completed** [S] ◐ — birthdays are derived, gift_ideas
+15. ❓ **The birthday arc, completed** [S] ◐ — *NOT YET TRIAGED (missed in the
+    2026-07-08 pass — ask Marc next round)* — birthdays are derived, gift_ideas
     exist on the peek; complete the loop: after the day passes, the peek
     quietly offers « garder une photo de la fête ? » linking a photo to the
     person (their carnet-like memory). No nag — a one-time affordance in the
