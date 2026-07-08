@@ -11,6 +11,7 @@ import { useConfirm } from '../lib/confirm'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { CARNETS_KEY, CARE_LOG_KEY, HOME_PROJECTS_KEY, HOME_PINS_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { formatDay } from '../lib/format'
+import { recurLabel } from '../lib/recurLabel'
 import { formatMoney } from '../lib/money'
 import { imgUrl } from '../lib/image'
 import { faint } from '../lib/colors'
@@ -378,14 +379,28 @@ export function CercleCarnetPage() {
               {entretien.length === 0 && !addingCare ? (
                 <EmptyState>{c.noEntretien}</EmptyState>
               ) : (
-                entretien.map((p) => (
-                  <div key={p.id} className="cercle-row">
-                    <span className="cercle-row__main">
-                      <span className="cercle-row__name">{p.title}</span>
-                      {p.at != null && <span className="cercle-row__sub mono">{formatDay(p.at, lang)}</span>}
-                    </span>
-                  </div>
-                ))
+                entretien.map((p) => {
+                  // D-31 (bmad/08): the calm cadence line — the NEXT occurrence
+                  // (server-derived nextAt; a recurring row's raw anchor `at` is
+                  // last cycle's date, misleading) + the cadence itself ("tous les
+                  // 3 mois"), so the carnet answers "when do I care for this next?"
+                  const next = p.nextAt ?? p.at
+                  const cadence = recurLabel(p.recur_json, t)
+                  return (
+                    <div key={p.id} className="cercle-row">
+                      <span className="cercle-row__main">
+                        <span className="cercle-row__name">{p.title}</span>
+                        {(next != null || !!cadence) && (
+                          <span className="cercle-row__sub mono">
+                            {next != null ? formatDay(next, lang) : ''}
+                            {next != null && cadence ? ' · ' : ''}
+                            {cadence}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )
+                })
               )}
               {!ro && (addingCare ? (
                 <HomeProjectForm kind="upkeep" carnetId={carnet.id} onSaved={() => setAddingCare(false)} onCancel={() => setAddingCare(false)} />

@@ -221,12 +221,18 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     `AmbientScreen` full-time (`CastPage.tsx`), and the Guide's cast card
     documents it. The hourly breath + burn-in drift (F-47/E-37) ride along on
     the TV automatically since they live inside AmbientScreen.
-31. ✅ **Carnets × upkeep cadence** [M] ◐ — carnets made home/auto/things into
-    cared-for members (07); 06-A1's long-interval cadence (furnace filter,
-    smoke batteries, tire swap) is its natural completion: a recurrence on a
-    carnet that surfaces as one calm « bientôt » line. The derived-date layer
-    06 called the highest-leverage primitive — build it *on carnets* rather
-    than as its own system.
+31. ✅ **Carnets × upkeep cadence** [M] ◐ — **SHIPPED 2026-07-07 (audit: ~95%
+    already existed).** The stack was built by construction: `home_projects`
+    kind `'upkeep'` carries `recur_json` (monthly/yearly + interval — « filtre
+    aux 3 mois » works via RecurPicker in `HomeProjectForm`), `lead_seconds`
+    (« Bientôt »), and `carnet_id` (mig 0082); the server derives `nextAt`
+    (`_lib/recur.expandRange`); occurrences surface on the board
+    (homeToday/homeUpcoming, checkable, carnet emoji) + SeasonUpkeepCard; the
+    carnet page lists its entretien + adds one pinned to the carnet. **The
+    one missing piece, now fixed:** the carnet page's entretien row showed
+    the raw recurrence ANCHOR `at` (last cycle's date — misleading); it now
+    shows the calm cadence line — `nextAt` + `recurLabel` (« 12 oct. · tous
+    les 3 mois ») — so the carnet answers "when do I care for this next?".
 32. ⏸ **Print stylesheets for every share view** [S] ◐ — *plus tard.*
     (Babysitter sheet, intake card, recipe, week plan get `@media print`.)
 33. ✅ **Search, findable** [S] ◐ — give SearchPage a permanent, obvious home
@@ -473,7 +479,9 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 *(D-26 Le pont deferred to the plus-tard shelf per OQ-3.)*
 
 **Ambient & platform (continuous, order-free)**
-~~D-30 cast×ambient~~ ✅ (was already shipped) · D-31 carnets upkeep cadence ·
+~~D-30 cast×ambient~~ ✅ (was already shipped) ·
+~~D-31 carnets upkeep cadence~~ ✅ 2026-07-07 (was ~95% built; carnet rows now
+show nextAt + cadence, not the raw anchor) ·
 ~~F-47 hourly breath~~ ✅ 2026-07-07 · ~~E-35 takeout~~ ✅ 2026-07-07 ·
 ~~E-36 nightly backup~~ ✅ 2026-07-07 ·
 ~~E-37 burn-in care~~ ✅ 2026-07-07 · ~~E-41 temp-id chain fix~~ ✅ 2026-07-07 ·
