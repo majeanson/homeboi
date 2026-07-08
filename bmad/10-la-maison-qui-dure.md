@@ -145,13 +145,19 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
    small « En attente » list under Réglages ▸ Système ▸ diagnostics with
    retry/cancel; (d) an aging cap on 5xx loops. _(reuse: outbox.ts,
    OfflineBanner, toast, the diagnostics sub.)_
-9. ✅ **Idempotence dès le premier geste** [S] — _garde (2026-07-08)_ — the
-   server-side idempotency ledger only engages on outbox **replay** (fresh
-   key per enqueue); a normal online create sends no key, so a double-tap on
-   flaky wifi (response lost, user re-taps) can double-apply. Send an
-   `Idempotency-Key` on every mutating call from `api()`/`useWrite`, not
-   just replays. The server already does the rest. _(reuse:
-   `_lib/idempotency.ts` unchanged.)_
+9. ✅ **Idempotence dès le premier geste** [S] — **SHIPPED 2026-07-08** — the
+   server-side idempotency ledger only engaged on outbox **replay** (fresh
+   key per enqueue); a normal online create sent no key, so a double-tap on
+   flaky wifi (response lost, user re-taps) could double-apply. `writeWith`
+   (`src/lib/write.ts`) now hoists ONE key above the online attempt and
+   reuses that SAME key whether it lands online or gets queued after a
+   transport failure — a lost-response re-tap and a later replay both dedup
+   against the ledger instead of double-applying. `api()`'s guest read-only
+   backstop, which used to key off "an idempotencyKey is present" to
+   recognize a replay, now tests an explicit `replay` flag instead (key
+   presence alone no longer implies replay). Scope stays `writeWith` only —
+   direct `api()` writes stay keyless on purpose (no retry loop → nothing to
+   dedup). _(reuse: `_lib/idempotency.ts` unchanged server-side.)_
 10. ⏸ **La sauvegarde qu'on peut voir (et emporter)** [M] ◐ — _plus tard
     (2026-07-08 — parked whole, including the [S] status-line half; restore
     per OQ-3 is agreed as a user-facing [L] in a future doc)_ — E-36's

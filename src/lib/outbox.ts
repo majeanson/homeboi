@@ -12,7 +12,10 @@ const STORE = 'q'
 
 export interface OutboxEntry {
   id: string // queue entry id (FIFO by createdAt)
-  key: string // idempotency key sent on replay
+  // Idempotency key sent on replay — B-9 (bmad/10): the SAME key writeWith already
+  // tried on its (failed) online attempt, not a fresh one minted here, so a replay
+  // after a lost response dedups against that attempt instead of double-applying.
+  key: string
   path: string
   method: string
   body?: unknown
@@ -144,7 +147,7 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i]
       try {
-        const res = await api(e.path, { method: e.method, body: e.body, idempotencyKey: e.key })
+        const res = await api(e.path, { method: e.method, body: e.body, idempotencyKey: e.key, replay: true })
         await remove(e.id)
         e.affectedKeys.forEach((k) => touched.add(JSON.stringify(k)))
         // E-41: this create stood in for a tmp row — patch the real id into every

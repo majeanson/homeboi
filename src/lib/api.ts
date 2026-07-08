@@ -44,10 +44,14 @@ function readProfile(): string | null {
   }
 }
 
-// `idempotencyKey` is set only by the offline outbox when REPLAYING a queued
-// write — the server (authed → withIdempotency) dedups on it so a replay never
-// double-applies. Online calls omit it and run straight through.
-type Options = { method?: string; body?: unknown; idempotencyKey?: string }
+// `idempotencyKey` (B-9, bmad/10): every mutating `writeWith` call carries one now
+// — the online attempt AND a queued/replayed write reuse the SAME key (hoisted in
+// write.ts), so the server (authed → withIdempotency) dedups a double-tap/replay
+// regardless of which leg it lands on. `replay` marks specifically an
+// offline-outbox REPLAY (see the guest backstop below) — a direct `api()` caller
+// may now set `idempotencyKey` too (a one-liner, per the item's scope note) without
+// that alone granting the guest bypass.
+type Options = { method?: string; body?: unknown; idempotencyKey?: string; replay?: boolean }
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const method = opts.method ?? 'GET'
@@ -59,9 +63,12 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   // but direct api() callers (media upload, ghost toggle, contact-photo edits)
   // skip that path. So refuse every mutating method here — the single network
   // chokepoint — mirroring the server's own 403 so callers handle it identically.
-  // Exception: an offline-outbox REPLAY (idempotencyKey set) is an operator write
+  // Exception: an offline-outbox REPLAY (`replay: true`) is an operator write
   // authored before preview; it was never guest-authored (writeWith blocks that at
-  // enqueue), so replaying it is correct, not a guest mutation.
+  // enqueue), so replaying it is correct, not a guest mutation. This tests the
+  // explicit `replay` flag, NOT idempotencyKey presence — since B-9 (bmad/10) a
+  // normal online write from `writeWith` carries a key too, so key-presence alone
+  // no longer means "this is a replay" and can't be trusted as the bypass signal.
   // Exception: the family-info intake submit — the ONE write an 'intake' link is
   // meant to make. The server still verifies the token IS an intake guest before
   // it writes (functions/api/guest/intake-submit.ts), so this only lets the call
@@ -70,7 +77,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   if (
     method !== 'GET' &&
     method !== 'HEAD' &&
-    !opts.idempotencyKey &&
+    !opts.replay &&
     cleanPath !== 'guest/intake-submit' &&
     cleanPath !== 'guest/intake-media' &&
     isGuest()
@@ -110,7 +117,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     if (csrf) headers['X-CSRF-Token'] = csrf
   }
 
-  // Replay dedup key (offline outbox only) — see Options.idempotencyKey.
+  // Dedup key — see Options.idempotencyKey (B-9: sent on the online attempt too now).
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
 
   const res = await fetch(`/api/${path.replace(/^\/+/, '')}`, {

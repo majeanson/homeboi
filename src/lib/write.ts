@@ -81,8 +81,19 @@ export async function writeWith<T = unknown>(
 
   spec.optimistic?.(qc)
 
+  // B-9 (bmad/10): ONE idempotency key per write attempt, hoisted above the online
+  // try so it covers BOTH legs. Before this, only a REPLAY carried a key (a fresh
+  // one, minted at enqueue time) — a normal online POST sent none. That left a
+  // hole: wifi drops the RESPONSE (not the request) after the server already
+  // applied the write, the catch below sees a transport failure and queues the
+  // write with a brand-new key, and the eventual replay double-applies it. Sending
+  // this same key on the online attempt closes it — if the server already has it
+  // (it did apply, we just didn't hear back), the ledger in `_lib/idempotency.ts`
+  // answers the replay with the ORIGINAL result instead of re-running the write.
+  const key = uuid()
+
   const queue = async (): Promise<WriteResult<T>> => {
-    await enqueue({ id: uuid(), key: uuid(), path, method, body: spec.body, affectedKeys, createdAt: Date.now(), tmpId: spec.tmpId })
+    await enqueue({ id: uuid(), key, path, method, body: spec.body, affectedKeys, createdAt: Date.now(), tmpId: spec.tmpId })
     return { data: null, queued: true }
   }
 
@@ -96,12 +107,14 @@ export async function writeWith<T = unknown>(
   }
 
   try {
-    const data = await api<T>(path, { method, body: spec.body })
+    const data = await api<T>(path, { method, body: spec.body, idempotencyKey: key })
     return { data, queued: false }
   } catch (err) {
     // A network/transport failure rejects with a non-ApiError (TypeError) — queue
-    // it. An ApiError means the server answered (4xx/5xx): a real error, surface
-    // it (the optimistic change is corrected by the invalidate below).
+    // it, under the SAME key the failed attempt already carried (not a fresh one —
+    // see the B-9 note above). An ApiError means the server answered (4xx/5xx): a
+    // real error, surface it (the optimistic change is corrected by the invalidate
+    // below).
     if (err instanceof ApiError) throw err
     return await queue()
   } finally {

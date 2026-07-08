@@ -46,12 +46,21 @@ describe('api() read-only guest backstop', () => {
     expect(fetchMock()).toHaveBeenCalledOnce()
   })
 
-  it('still allows an offline-outbox replay (idempotencyKey) for a guest', async () => {
+  it('still allows an offline-outbox replay (replay: true) for a guest', async () => {
     // A replay is an operator write authored before preview — writeWith never
     // queues a guest write, so replaying one is correct, not a guest mutation.
     localStorage.setItem('babillard-guest-preview', '1')
-    await api('thing', { method: 'POST', body: {}, idempotencyKey: 'k1' })
+    await api('thing', { method: 'POST', body: {}, idempotencyKey: 'k1', replay: true })
     expect(fetchMock()).toHaveBeenCalledOnce()
+  })
+
+  it('B-9: idempotencyKey ALONE (no replay flag) does NOT bypass the guest backstop', async () => {
+    // Since B-9 a normal online writeWith call also carries an idempotencyKey, so
+    // key-presence can no longer be trusted as "this is a replay" — only the
+    // explicit `replay` flag may bypass the guest read-only chokepoint.
+    localStorage.setItem('babillard-guest-preview', '1')
+    await expect(api('thing', { method: 'POST', body: {}, idempotencyKey: 'k1' })).rejects.toMatchObject({ status: 403 })
+    expect(fetchMock()).not.toHaveBeenCalled()
   })
 
   it('lets a normal operator write through', async () => {

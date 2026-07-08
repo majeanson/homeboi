@@ -3,8 +3,11 @@ import type { Env } from './env'
 // Server side of the offline write queue (NFR-OFFLINE-1). The client's outbox
 // stamps every queued write with a unique Idempotency-Key and REPLAYS it on
 // reconnect; this dedups the replay so a write never double-applies. authed()
-// routes mutating requests that carry the key through here. Online writes don't
-// send a key, so they never touch this table. See 0039_idempotency.sql.
+// routes mutating requests that carry the key through here. Since B-9 (bmad/10)
+// a normal ONLINE write from `writeWith` sends this same key too (hoisted before
+// the online attempt) — so if the response is lost after the write actually
+// applied, a later re-tap/replay under the same key answers from this ledger
+// instead of re-running the write. See 0039_idempotency.sql.
 const PRUNE_AFTER = 7 * 24 * 60 * 60 * 1000 // ms — keep the ledger short-lived
 
 export async function withIdempotency(

@@ -78,9 +78,11 @@ export function authed(
       if (opts?.requiresAi && !(await aiUsable(ctx.env, actor))) {
         return serviceUnavailable('IA indisponible.')
       }
-      // Offline-queue dedup: a replayed write carries an Idempotency-Key, so the
-      // same queued action never double-applies. Online writes send no key and
-      // run straight through. GET/HEAD are never queued. See idempotency.ts.
+      // Idempotency dedup: every mutating writeWith call carries an Idempotency-Key
+      // now (B-9, bmad/10) — the online attempt and a queued/replayed write reuse
+      // the SAME key, so a lost-response double-tap or an outbox replay never
+      // double-applies regardless of which leg lands. GET/HEAD are never queued
+      // and carry no key. See idempotency.ts.
       const idemKey = ctx.request.headers.get('Idempotency-Key')
       const res =
         idemKey && method !== 'GET' && method !== 'HEAD'
