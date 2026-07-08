@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — voyage.css moved out of the eager shell (position-immaterial
+// scene classes); load it whenever this page renders instead.
+import '../styles/voyage.css'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { ApiError, isUnauthorized } from '../lib/api'

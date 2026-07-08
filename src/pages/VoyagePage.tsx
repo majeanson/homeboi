@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — voyage.css moved out of the eager shell (position-immaterial
+// scene classes); load it whenever this page renders instead.
+import '../styles/voyage.css'
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'

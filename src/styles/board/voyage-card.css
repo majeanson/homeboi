@@ -1,0 +1,46 @@
+/* — « Prochain voyage » board glance card — split out of styles/voyage.css (B-11,
+   bmad/10): the REST of that file is position-immaterial and lazy-loads with the
+   voyage pages, but components/board/VoyageCard renders eagerly on the Board, so
+   its rules stay in the eager shell. Kept here, in the board/* import block,
+   rather than folded into another board slice. */
+/* The « Partagé » tag on a board card row — a small inline pill after the name. */
+.voyage-card__shared {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Voyage wears Le cercle's turquoise: trips live in the cercle's world (guideContent).
+   A calm identity like the tinted bento tiles — a teal header disc + rule, never a loud
+   wash — so « Prochain voyage » reads as a coloured peer of the other board cards. */
+.voyage-card {
+  --sec-tint: var(--teal);
+}
+.voyage-card .sec-label .ln {
+  background: color-mix(in srgb, var(--sec-tint) 32%, var(--line));
+}
+.voyage-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.voyage-card__open {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  padding: 4px 2px;
+}
+.voyage-card__name {
+  color: var(--ink);
+  font-weight: 600;
+}
+.voyage-card__when {
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}

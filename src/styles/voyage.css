@@ -1,6 +1,10 @@
-/* « Voyage » — the trip notebook scene + its board card. Calm and card-light, reusing
-   the app tokens (--surface, --line, --ink, --radius-*). The sub-tab bodies sit under
-   the shared .subtabs row; rows reuse .sec-label, .kitchen__pantry, .edit-field. */
+/* « Voyage » — the trip notebook scene. Calm and card-light, reusing the app tokens
+   (--surface, --line, --ink, --radius-*). The sub-tab bodies sit under the shared
+   .subtabs row; rows reuse .sec-label, .kitchen__pantry, .edit-field.
+   B-11 (bmad/10): moved OUT of the eager shell — imported as a side effect by
+   VoyagePage, SharedVoyagePage and DevKit. The board glance card (.voyage-card*)
+   stayed eager — see styles/board/voyage-card.css — since components/board/
+   VoyageCard renders on the eager Board. */
 
 /* — the create / edit form — */
 .voyage-form {
@@ -214,49 +218,6 @@
   align-items: center;
   margin-top: 12px;
 }
-/* The « Partagé » tag on a board card row — a small inline pill after the name. */
-.voyage-card__shared {
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-/* — the board « Prochain voyage » card — */
-/* Voyage wears Le cercle's turquoise: trips live in the cercle's world (guideContent).
-   A calm identity like the tinted bento tiles — a teal header disc + rule, never a loud
-   wash — so « Prochain voyage » reads as a coloured peer of the other board cards. */
-.voyage-card {
-  --sec-tint: var(--teal);
-}
-.voyage-card .sec-label .ln {
-  background: color-mix(in srgb, var(--sec-tint) 32%, var(--line));
-}
-.voyage-card__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.voyage-card__open {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  text-decoration: none;
-  color: inherit;
-  padding: 4px 2px;
-}
-.voyage-card__name {
-  color: var(--ink);
-  font-weight: 600;
-}
-.voyage-card__when {
-  font-size: var(--text-xs);
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-
 /* — B-12 (bmad/09): « L'album du voyage » — a finished trip re-read as a calm
    paper keepsake. Same paper language as .recipe-original (serif, cream sheet,
    none of the editor chrome); photos in a simple rounded grid. */

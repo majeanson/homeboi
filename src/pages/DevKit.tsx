@@ -1,6 +1,8 @@
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
 import '../styles/cercle.css'
+// voyage.css — DevKit renders TripNoteCard/SharedPackingList/VoyageShareModal specimens.
+import '../styles/voyage.css'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
