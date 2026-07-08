@@ -45,6 +45,9 @@
 @import './styles/board/drawpad.css';
 @import './styles/board/gallery.css';
 @import './styles/board/month.css';
+/* « Les carnets » board glance card only (B-11, bmad/10) — the rest of
+   styles/carnets.css moved out of the eager shell; see that file's header. */
+@import './styles/board/carnets-card.css';
 /* Ambient screensaver — after the board/* slices + photos.css so `.ambient .photo-frame` wins. */
 @import './styles/ambient.css';
 @import './styles/profile.css';
@@ -76,8 +79,9 @@
    scoped under .cast, position immaterial. */
 @import './styles/cast.css';
 /* « Les carnets » (cared-for things) — uniquely-named .carnet-/.carnets- classes,
-   position immaterial. */
-@import './styles/carnets.css';
+   position immaterial. B-11 (bmad/10): the SubTab/scene bulk moved OUT of the eager
+   shell — imported instead as a side effect by Cercle.tsx, CercleCarnetPage and
+   HandoffPage. The board glance card alone stayed eager (board/carnets-card.css). */
 /* « Voyage » — the trip notebook scene (Itinéraire/Infos/Bagages/Documents) + cards. */
 @import './styles/voyage.css';
 /* « Partager » — the public /partage share page + read-only shared-recipe render. */

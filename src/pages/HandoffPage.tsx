@@ -1,3 +1,7 @@
+// B-11 (bmad/10) — carnets.css moved out of the eager shell; this page only needs
+// its lone .handoff__pin-img rule (the « En cas de pépin » pin photo), unmoved to
+// avoid churning an unrelated file for one class.
+import '../styles/carnets.css'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api, isStatus } from '../lib/api'

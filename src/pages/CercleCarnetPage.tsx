@@ -1,6 +1,8 @@
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
 import '../styles/cercle.css'
+// carnets.css's SubTab/scene bulk (this page IS the carnet scene).
+import '../styles/carnets.css'
 import { useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Navigate, useParams, useNavigate, useSearchParams } from 'react-router-dom'

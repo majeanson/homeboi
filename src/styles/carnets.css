@@ -1,7 +1,12 @@
-/* « Les carnets » — the cared-for-things SubTab, the carnet scene, and the board
-   glance. Uniquely-named .carnet-/.carnets- classes, so cascade position is
-   immaterial. Leans on the shared .cercle-row / .sec-label / .btn families; only
-   the carnet-specific bits live here. Mobile- and tablet-first. */
+/* « Les carnets » — the cared-for-things SubTab + the carnet scene. Uniquely-named
+   .carnet-/.carnets- classes, so cascade position is immaterial. Leans on the
+   shared .cercle-row / .sec-label / .btn families; only the carnet-specific bits
+   live here. Mobile- and tablet-first.
+   B-11 (bmad/10): moved OUT of the eager shell — imported as a side effect by the
+   lazy pages that render carnet content (Cercle.tsx's « Les carnets » SubTab,
+   CercleCarnetPage, HandoffPage for the sitter pin photo). The board GLANCE card
+   (.carnets-card__*) stayed eager — see styles/board/carnets-card.css — since
+   components/board/CarnetsCard renders on the eager Board. */
 
 /* — « Idées de saison » (A-4, bmad/09): the offered FR-CA ritual seeds — a
    short stack of accept-chip + dismiss rows above the Entretien list. — */
@@ -412,32 +417,6 @@
 .carnet-docsheet__open {
   margin-top: 0.6rem;
   flex: 0 0 auto; /* always visible — never shrinks or scrolls away */
-}
-
-/* — Board glance card — */
-.carnets-card__list {
-  list-style: none;
-  margin: 0.2rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-.carnets-card__open {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.4rem 0.2rem;
-  text-decoration: none;
-  color: inherit;
-}
-.carnets-card__name {
-  font-weight: 600;
-}
-.carnets-card__when {
-  opacity: 0.7;
-  flex: 0 0 auto;
 }
 
 /* — Sitter handoff: « En cas de pépin » pin photo — */
