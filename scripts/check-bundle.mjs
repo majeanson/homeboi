@@ -20,7 +20,9 @@
 // across deploys instead of re-downloading inside a renamed entry file. All three
 // (index-, react-vendor-, i18n-) still load EAGERLY (main.tsx's static import
 // chain), so they're budgeted individually AND as a combined eager total — the
-// real boot cost a slow tablet pays before first paint.
+// real boot cost a slow tablet pays before first paint. `i18n.en-*.js` (the EN
+// dict) is a SEPARATE lazy chunk — src/i18n.ts dynamic-import()s it only when
+// lang==='en' — so it's checked as an ordinary lazy chunk below, not eager.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -28,14 +30,14 @@ const DIST = 'dist'
 const ASSETS = join(DIST, 'assets')
 
 const KB = 1024
-const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: DrawPad ~52 KB)
+const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: i18n.en ~81 KB)
 const EAGER_CHUNKS = [
   // name pattern → its own budget (all three load before first paint)
   { re: /^index-/, cap: 320 * KB, label: 'eager entry' }, // today ~251 KB
-  { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~224 KB
-  { re: /^i18n-/, cap: 220 * KB, label: 'eager i18n' }, // today ~181 KB (FR+EN — next commit lazy-loads EN, ~90 KB)
+  { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~223 KB
+  { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' }, // today ~101 KB
 ]
-const EAGER_TOTAL_BUDGET = 720 * KB // combined index + react-vendor + i18n (today ~656 KB)
+const EAGER_TOTAL_BUDGET = 620 * KB // combined index + react-vendor + i18n (today ~575 KB)
 const ONLINE_ONLY = [
   // chunk-name pattern → its own generous cap (it's lazy AND un-precached)
   { re: /^heic2any-/, cap: 1600 * KB },

@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { recurOf, recurLabel } from './recurLabel'
-import { FR, EN } from '../i18n'
+import { FR } from '../i18n'
+// B-11 (bmad/10) — EN lives in its own lazy module now; a plain static import here
+// (test-only, never bundled into the app) is fine.
+import { EN } from '../i18n.en'
 
 describe('recurOf', () => {
   it('parses a stored weekly rule', () => {
