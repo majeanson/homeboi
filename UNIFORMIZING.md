@@ -642,8 +642,11 @@ palette change means hunting multiple files.
 ### P2-7 🟢 (med value / low risk, **Phase 1 only**) `SEARCHABLE_INDEX` — the searchable-entity contract
 `/search` matches ~13 kinds client-side via `fold()`, but each kind's indexed fields are chosen ad-hoc inline in
 `SearchPage`. Risk: a new feature silently ships **unsearchable** because nobody added a fold-check.
-- [ ] **Phase 1 (do):** extract `SEARCHABLE_INDEX: Record<Kind, (e)=>string>` so adding a kind = one entry; document
-  "searchable = has an index entry." Low-risk refactor.
+- [x] ✅ **Phase 1 DONE 2026-07-08.** `src/lib/searchIndex.ts` — `SEARCH_INDEX` holds the 16 kinds' typed
+  `primary`/`secondary` extractors (+ `drawingFields(memberName)` factory for the author-name match); the rule is
+  in the module header: **searchable = has a SEARCH_INDEX entry**. SearchPage's `pick()` now takes a
+  `SearchFields<T>` entry (ranking/CAP/rendering unchanged); the GUIDE matcher stays bespoke on purpose (per-point
+  deep-links + token stripping). typecheck + 1010 tests + search e2e (4 specs) green.
 - [ ] ❌ **Phase 2 (reject for now):** server-side search index, guide-moved-to-DB, ingredient index. Over-engineering
   at ~15–30 households; client-side warm-cache search is a *feature* (offline). Revisit only if a household's set
   gets large enough to lag per-keystroke.

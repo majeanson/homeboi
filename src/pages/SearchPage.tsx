@@ -5,6 +5,7 @@ import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
+import { SEARCH_INDEX, drawingFields, type SearchFields, type PantryRow } from '../lib/searchIndex'
 import { CATS } from '../lib/cats'
 import { colourFor } from '../lib/things'
 import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, CARE_LOG_KEY, HOME_PINS_KEY, DRAWINGS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
@@ -14,7 +15,7 @@ import { type Member } from '../lib/members'
 import { imgUrl } from '../lib/image'
 import { type Contact, type Pet } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
-import { firstLine, plainText } from '../lib/noteMarkdown'
+import { firstLine } from '../lib/noteMarkdown'
 import { type Business, BUSINESS_COLOUR } from '../lib/businesses'
 import { type Routine, type HomeProject } from '../components/operator/types'
 import { type TodosData } from '../lib/todos'
@@ -216,26 +217,20 @@ export function SearchPage() {
       if (p.includes(needle)) return 1
       return fold(secondary).includes(needle) ? 2 : -1
     }
-    const pick = <T,>(xs: T[], primary: (x: T) => string, secondary: (x: T) => string = () => '') => {
+    // WHICH fields make each kind findable lives in lib/searchIndex (P2-7 — the
+    // one contract: searchable = has a SEARCH_INDEX entry). This only ranks+caps.
+    const pick = <T,>(xs: T[], fields: SearchFields<T>) => {
       const hits: { x: T; r: number }[] = []
       for (const x of xs) {
-        const r = rankOf(primary(x), secondary(x))
+        const r = rankOf(fields.primary(x), fields.secondary?.(x) ?? '')
         if (r !== -1) hits.push({ x, r })
       }
       hits.sort((a, b) => a.r - b.r) // stable: ties keep source order
       return { items: hits.slice(0, CAP).map((h) => h.x), best: hits.length ? hits[0].r : 99 }
     }
 
-    const recipes = pick(
-      recipesData,
-      (r) => r.title,
-      (r) => `${(r.ingredients ?? []).join(' ')} ${(r.tags ?? []).join(' ')}`,
-    )
-    const people = pick(
-      contacts,
-      (c) => `${c.firstName} ${c.lastName} ${c.nickname ?? ''}`,
-      (c) => (c.tags ?? []).join(' '),
-    )
+    const recipes = pick(recipesData, SEARCH_INDEX.recipe)
+    const people = pick(contacts, SEARCH_INDEX.person)
     // Events come across three board buckets; one event can sit in more than one —
     // dedupe by id before matching.
     const seen = new Set<string>()
@@ -244,78 +239,31 @@ export function SearchPage() {
       seen.add(e.id)
       return true
     })
-    const events = pick(allEvents, (e) => e.title)
-    const listItems = pick(board?.list ?? [], (li) => li.text)
-    const notes = pick(
-      familyNotes,
-      (n) => n.title,
-      (n) => plainText(n.text),
-    )
-    // Le cercle animals — match on name/species/breed + the care free-text.
-    const petHits = pick(
-      pets,
-      (p) => p.name,
-      (p) => `${p.species ?? ''} ${p.breed ?? ''} ${p.notes ?? ''}`,
-    )
-    // Services / commerces (vet, plumber…) — name + category + contact details.
-    const bizHits = pick(
-      businesses,
-      (b) => b.name,
-      (b) => `${b.category ?? ''} ${b.phone ?? ''} ${b.address ?? ''} ${b.notes ?? ''}`,
-    )
-    // Kid routines — the routine name plus every card label.
-    const routineHits = pick(
-      routines,
-      (r) => r.name,
-      (r) => (r.cards ?? []).map((c) => c.label).join(' '),
-    )
-    // À compléter — open todos by title.
-    const todoHits = pick(todos, (td) => td.title)
+    const events = pick(allEvents, SEARCH_INDEX.event)
+    const listItems = pick(board?.list ?? [], SEARCH_INDEX.listItem)
+    const notes = pick(familyNotes, SEARCH_INDEX.familyNote)
+    const petHits = pick(pets, SEARCH_INDEX.pet)
+    const bizHits = pick(businesses, SEARCH_INDEX.business)
+    const routineHits = pick(routines, SEARCH_INDEX.routine)
+    const todoHits = pick(todos, SEARCH_INDEX.todo)
     // Garde-manger + La réserve — one merged ranked pool, tagged so the row can
     // label which list it's from while linking to the same Pantry tab.
     const pantryHits = pick(
       [
-        ...low.map((l) => ({ id: l.id, item: l.item, reserve: false })),
-        ...reserve.map((r) => ({ id: r.id, item: r.item, reserve: true })),
+        ...low.map((l): PantryRow => ({ id: l.id, item: l.item, reserve: false })),
+        ...reserve.map((r): PantryRow => ({ id: r.id, item: r.item, reserve: true })),
       ],
-      (x) => x.item,
+      SEARCH_INDEX.pantry,
     )
-    // « L'auto » — the household car name(s).
-    const carHits = pick(cars, (c) => c.name)
+    const carHits = pick(cars, SEARCH_INDEX.car)
     // The board's fridge memos — text notes only (media-only notes carry no text).
-    // A memo has no NAME, so its body counts as a secondary hit: things actually
-    // named what you typed rank above a memo that merely says it.
-    const fridgeNotes = pick(
-      boardNotes.filter((n) => n.text),
-      () => '',
-      (n) => n.text!,
-    )
-    // « Les carnets » + home projects — name/title + notes.
-    const carnetHits = pick(
-      carnets,
-      (x) => x.name,
-      (x) => x.notes ?? '',
-    )
-    const projectHits = pick(
-      homeProjects,
-      (p) => p.title,
-      (p) => p.notes ?? '',
-    )
-    // A carnet's service history — the entry title + its free-text note.
-    const careHits = pick(
-      careLog,
-      (e) => e.title,
-      (e) => e.note ?? '',
-    )
-    // « En cas de pépin » map pins — the label + its detail (where the valve is, how
-    // the thermostat works…).
-    const pinHits = pick(
-      homePins,
-      (p) => p.label,
-      (p) => p.detail ?? '',
-    )
+    const fridgeNotes = pick(boardNotes.filter((n) => n.text), SEARCH_INDEX.fridgeNote)
+    const carnetHits = pick(carnets, SEARCH_INDEX.carnet)
+    const projectHits = pick(homeProjects, SEARCH_INDEX.homeProject)
+    const careHits = pick(careLog, SEARCH_INDEX.careLog)
+    const pinHits = pick(homePins, SEARCH_INDEX.homePin)
     // Kept drawings — no text of their own, so match the author's name.
-    const drawingHits = pick(drawings, (d) => (d.member_id ? memberName.get(d.member_id) ?? '' : ''))
+    const drawingHits = pick(drawings, drawingFields(memberName))
     // The Guide / in-app help. Match a card on its title + one-liner + every
     // sub-point (label, detail, why) in the active language, tokens stripped to
     // the words a reader sees. A title/summary hit links to the whole card; when
