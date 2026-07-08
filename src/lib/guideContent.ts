@@ -1821,8 +1821,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Où le voir', en: 'Where to see it' },
         detail: {
-          fr: 'Une petite carte « À régler » apparaît sur le babillard quand il y a quelque chose à régler (sur ton téléphone, pas sur la tablette murale). La liste complète, avec un raccourci pour chaque correction, vit dans Réglages ▸ « Cette semaine ».',
-          en: 'A small “To sort” card shows on the board when there’s something to sort (on your phone, not the wall tablet). The full list, with a one-tap fix for each, lives in Settings ▸ “This week”.',
+          fr: 'Une petite carte « À régler » apparaît sur le babillard quand il y a quelque chose à régler. La liste complète, avec un raccourci pour chaque correction, vit dans Réglages ▸ « Cette semaine ».',
+          en: 'A small “To sort” card shows on the board when there’s something to sort. The full list, with a one-tap fix for each, lives in Settings ▸ “This week”.',
         },
         why: { fr: 'La charge mentale invisible devient une courte liste qu’on règle.', en: 'The invisible mental load becomes a short list you can clear.' },
       },

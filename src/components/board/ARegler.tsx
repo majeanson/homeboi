@@ -9,8 +9,10 @@ import { Icon } from '../Icon'
 // full list). Renders NOTHING when there's nothing to sort — a calm, finite card that
 // empties and stays empty (NFR-CALM), never a nagging badge.
 //
-// Parent-mobile only (gated by the caller): the fixes are operator writes, so a
-// locked kiosk / toddler / guest never sees it (and the endpoint is operator-only).
+// Parent audience only (gated by the caller): a locked kiosk / toddler / read-only
+// guest never sees it. A parent DOES see it on the kiosk — the fixes it links to are
+// navigations (/kitchen/day, /liste, /cercle, /settings), not writes the wall tablet
+// can't do; the endpoint itself short-circuits to an empty scan for a guest actor.
 //
 // Two looks: `chip` (a compact one-liner — used inline, e.g. « Cette semaine ») and
 // `card` (a hero-style tile that sits in the board status band beside « Moments »,

@@ -11,7 +11,11 @@ import { isSectionHeading } from '../_lib/recipeSections'
 // connects facts the tabs hold separately (a ride with no driver, an empty supper, a
 // birthday with no gift idea) and surfaces only what needs sorting.
 //
-// Operator-only (the fixes need write privilege; a kiosk/guest never sees it).
+// Parent-audience only, but the underlying reads are ordinary household reads — a
+// kiosk parent lens is allowed to see the scan (the fixes it links to are all
+// navigations, not writes: /kitchen/day, /liste, /cercle, /settings — none gated).
+// A guest short-circuits to an empty scan below: the friction list is a parent's
+// mental-load surface, not something to hand a babysitter.
 // READ-ONLY + DERIVED — reads existing tables, adds NO table/column, and returns NO
 // count/rank/score (NFR-CALM): an empty list just means « tout est sous contrôle ».
 // We return STRUCTURED signals (kind + the entity data + a fix href); the frontend
@@ -38,6 +42,10 @@ const norm = (s: string) => s.trim().toLowerCase()
 const TODAY_SUPPER_CUTOFF_H = 18
 
 export const onRequestGet = authed(async (ctx, actor) => {
+  // A sitter never gets the friction scan — it's a parent's mental-load surface, not
+  // a to-do handed to a guest. Short-circuit BEFORE any query (cheap + explicit).
+  if (actor.scope === 'guest') return ok({ signals: [] })
+
   const hh = actor.householdId
   const now = nowSec()
   const today = localDayStart(new Date(now * 1000))
@@ -146,4 +154,4 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Soonest first, then cap — calm: a short list, never a backlog.
   signals.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
   return ok({ signals: signals.slice(0, CAP) })
-}, 'operator')
+})

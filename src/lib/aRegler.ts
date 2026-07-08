@@ -22,8 +22,10 @@ export interface Friction {
 // A slow poll like the weather chip — it's a calm background scan, not render-critical.
 const FIVE_MIN = 5 * 60 * 1000
 
-// `enabled` gates the fetch to where it belongs (operator, non-kiosk, non-toddler) —
-// the endpoint is operator-only, so a kiosk/guest would just 401.
+// `enabled` gates the fetch to where it belongs: parent audience, not a read-only
+// guest (a locked kiosk is toddler audience, so it's excluded already). The endpoint
+// itself is a plain household read (kiosk-token OK); it short-circuits a guest actor
+// to an empty scan rather than 401ing, since a guest's GET is otherwise allowed.
 export function useARegler(enabled: boolean) {
   return useQuery({
     queryKey: A_REGLER_KEY,

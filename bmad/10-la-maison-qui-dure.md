@@ -100,7 +100,15 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
    card is gated `surface === 'mobile'` — disabled on the kiosk, the one
    always-glanced surface a household shares. Surface it on the kiosk parent
    lens (read-only listing if kiosk write-scope is the blocker). _(reuse:
-   ARegler as-is; it's one gate.)_
+   ARegler as-is; it's one gate.)_ **SHIPPED same day to that shape:** the
+   blocker was real (`functions/api/a-regler.ts` was `authed(…, 'operator')`,
+   so a kiosk token 403'd) — dropped to plain `authed(...)` with an in-handler
+   guest short-circuit (`return ok({ signals: [] })`, before any query, so a
+   sitter never gets the friction scan); `Board.tsx`'s gate is now
+   `enabled={audience === 'parent' && !ro}` (a locked kiosk is toddler audience
+   → still hidden). The card's fixes were already all navigations a kiosk can
+   do (`/kitchen/day`, `/liste`, `/cercle`, `/settings?tab=board&sub=thisweek`)
+   — no write-scope workaround needed.
 5. ⏸ **Les visages s'allument sur la liste** [S] ◐ — _plus tard (2026-07-08
    — not selected this wave)_ — per-item face discs exist on la liste, but
    neither the inline add nor the ＋ sheet passes the picked face

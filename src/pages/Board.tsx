@@ -944,7 +944,7 @@ export function Board() {
           there's nothing for the picked face). Guests never see another face's mots. */}
       {!ro && isCardVisible(boardCards, 'mots') && <MotsCard />}
       {isCardVisible(boardCards, 'aRegler') && (
-        <ARegler enabled={surface === 'mobile' && audience === 'parent' && !ro} variant="card" />
+        <ARegler enabled={audience === 'parent' && !ro} variant="card" />
       )}
       {isCardVisible(boardCards, 'moments') && <MomentPeek />}
     </div>

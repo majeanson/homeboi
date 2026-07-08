@@ -106,6 +106,53 @@ test.describe('board layout customization', () => {
   })
 })
 
+// ────────────────────── « À régler » kiosk visibility ───────────────────
+// A-4 of bmad/10: the card used to be gated `surface === 'mobile'`, hiding it on the
+// one always-glanced surface a household shares. It's now `audience === 'parent' &&
+// !ro` — visible on a kiosk under the parent lens, still hidden for toddler/guest.
+
+const A_REGLER_SIGNAL = [{ kind: 'birthday', key: 'b1', label: 'Léa', at: BASE + 86400, href: '/cercle' }]
+
+async function stubARegler(page: Page) {
+  // Registered AFTER mockApi so this wins over the default empty-signals fixture.
+  await page.route('**/api/a-regler**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ signals: A_REGLER_SIGNAL }) }),
+  )
+}
+
+test.describe('« À régler » kiosk visibility', () => {
+  test('the card renders on a kiosk under the parent lens (no longer mobile-only)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await stubARegler(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
+    await page.goto('/board')
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    await expect(page.locator('.now-card--regler')).toBeVisible()
+  })
+
+  test('hidden under the toddler lens, even on a kiosk with frictions pending', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await stubARegler(page)
+    await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: 'kiosk' })
+    await page.goto('/board')
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    await expect(page.locator('.now-card--regler')).toHaveCount(0)
+  })
+
+  test('hidden for a read-only guest, even on a kiosk with frictions pending', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await stubARegler(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
+    await page.addInitScript(() => localStorage.setItem('babillard-guest-preview', '1'))
+    await page.goto('/board')
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    await expect(page.locator('.now-card--regler')).toHaveCount(0)
+  })
+})
+
 // ───────────────────────────── face lens ───────────────────────────────
 
 test('picking a face re-renders the board, hiding another member’s items', async ({ page }) => {

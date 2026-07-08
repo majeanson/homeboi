@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'a-regler-kiosk',
+    text: {
+      fr: 'Nouveau : « À régler » apparaît maintenant aussi sur la tablette murale, pas seulement sur ton téléphone.',
+      en: 'New: “To sort” now shows on the wall tablet too, not just your phone.',
+    },
+    card: 'a-regler',
+  },
+  {
     id: 'annee-view',
     text: {
       fr: 'Nouveau : « L’année » — une troisième vue du babillard : douze petits mois avec les repères de l’année (fêtes, anniversaires, voyages, entretien).',
