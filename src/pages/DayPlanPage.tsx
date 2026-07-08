@@ -20,12 +20,11 @@ import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
 import { Fil } from '../components/board/Fil'
-import { Disclosure } from '../components/Disclosure'
 import { EditField } from '../components/EditField'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
 import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
 import { buildMeal } from '../components/detail/adapters'
-import { isMealSlot, SIDE_SLOTS } from '../lib/mealSlots'
+import { isMealSlot } from '../lib/mealSlots'
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
@@ -420,7 +419,6 @@ function DayPlanInner() {
   const suppers = mealsFor(date, 'supper')
   const dayNote = noteFor(date)
   const title = capitalize(formatDayLong(date, lang))
-  const dayMealCount = SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length)
 
   // « Le fil du jour » — the day read as a SHAPE (a soft time axis + a « maintenant »
   // marker), reusing the board's ribbon. Same threshold as the board: only when the
@@ -589,10 +587,50 @@ function DayPlanInner() {
           )
         })}
 
-        {/* The day itself leads — its agenda (schedule + chores + to-dos), with meals
-            demoted below. Add + edit are inline (the shared EventForm/ChoreForm, date
-            pre-filled). Editing a recurring row edits the whole series. */}
+        {/* The day's sections, in glance order: À compléter → Les repas → the agenda
+            (fil + rendez-vous + corvées). Add + edit are inline (the shared
+            EventForm/ChoreForm, date pre-filled). Editing a recurring row edits the
+            whole series. */}
         <section className="day-plan__sections">
+          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
+              with inline add/edit, check-in-place and one-tap departure templates. */}
+          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
+
+          {/* Les repas — the meal planner, always visible (it used to sit at the
+              bottom in a collapsed disclosure). The note is rendered as the day's
+              headline above, so DayEditor hides its own copy. */}
+          <div className="sec-label">
+            <b>{t.kitchen.mealsHeading}</b>
+            <span className="ln" />
+          </div>
+          <DayEditor
+            date={date}
+            recipes={recipes}
+            lowItems={lowItems}
+            listItems={listItems}
+            suppers={suppers}
+            mealsFor={mealsFor}
+            note={dayNote}
+            recipeFor={recipeForMeal}
+            memberName={memberName}
+            onOpenRecipe={(r, m) =>
+              detail.open(
+                buildMeal(m, { t, lang, members: [], tagColors }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
+              )
+            }
+            mealErr={mealErr}
+            plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
+            picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
+            leftovers={{
+              pool: leftoversQ.data?.leftovers ?? [],
+              plan: planLeftoverOnDay,
+            }}
+            slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
+            noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
+            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
+            hideNote
+          />
+
           {/* « Le fil du jour » — the day's shape as a time ribbon, the hero on a busy
               day (≥2 timed events). When on, it OWNS the timed events (the Rendez-vous
               bucket below then lists only the all-day rows). */}
@@ -693,10 +731,6 @@ function DayPlanInner() {
               </button>
             ))}
 
-          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
-              with inline add/edit, check-in-place and one-tap departure templates. */}
-          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
-
           {/* Projets & Entretien landing on this day — read-only (managed in
               Réglages ▸ Corvées); shown only when there's something, to keep the
               day page calm. */}
@@ -713,49 +747,6 @@ function DayPlanInner() {
           )}
         </section>
 
-        {/* Les repas — the meal planner, demoted below the day. It OPENS itself when
-            the day already has meals planned (you came to see/adjust them), and stays
-            collapsed on an empty day so the agenda still leads. The note is rendered as
-            the day's headline above, so DayEditor hides its own copy.
-            `key` on the load state: Disclosure latches `defaultOpen` at mount, so on a
-            cold load (empty cache) it would mount collapsed before meals arrive and
-            never open. Re-mounting once when the meals query resolves lets the correct
-            default apply; `meals.data` only goes falsy→truthy once, so no later churn. */}
-        <Disclosure
-          key={meals.data ? 'meals-loaded' : 'meals-loading'}
-          label={t.kitchen.mealsHeading}
-          count={dayMealCount}
-          defaultOpen={dayMealCount > 0}
-          className="day-plan__meals"
-        >
-          <DayEditor
-            date={date}
-            recipes={recipes}
-            lowItems={lowItems}
-            listItems={listItems}
-            suppers={suppers}
-            mealsFor={mealsFor}
-            note={dayNote}
-            recipeFor={recipeForMeal}
-            memberName={memberName}
-            onOpenRecipe={(r, m) =>
-              detail.open(
-                buildMeal(m, { t, lang, members: [], tagColors }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
-              )
-            }
-            mealErr={mealErr}
-            plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-            picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
-            leftovers={{
-              pool: leftoversQ.data?.leftovers ?? [],
-              plan: planLeftoverOnDay,
-            }}
-            slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
-            noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
-            hideNote
-          />
-        </Disclosure>
         {sharingEvent && (
           <EntityShareModal
             open

@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
-import { mockApi, seedState, ensureMealsOpen, type Audience, type Lang } from './mocks'
+import { mockApi, seedState, type Audience, type Lang } from './mocks'
 
 // Interaction coverage: navigation, tabs, toggles, forms, and clicks across
 // every surface. Complements screenshots.spec.ts (which only shoots static
@@ -629,8 +629,6 @@ test.describe('kitchen', () => {
     // default so "Mettre" just saves the meal (one less step).
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
-    // The meal planner lives in « Les repas » at the bottom now — ensure it's open.
-    await ensureMealsOpen(sheet)
     await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
     // The supper title editor is an EntityCombobox (reuses .edit-field styling but
     // is NOT a form — Enter commits the free text → beginSetMeal).
@@ -651,8 +649,6 @@ test.describe('kitchen', () => {
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
-    // The meal planner lives in « Les repas » at the bottom now — ensure it's open.
-    await ensureMealsOpen(sheet)
     // The day editor exposes the chronological side slots: déjeuner / dîner /
     // collation, each with its own "＋ Ajouter" (the per-slot editing the grid
     // delegates here). (NOTE: the seeded "Crêpes" meal can't be asserted — the

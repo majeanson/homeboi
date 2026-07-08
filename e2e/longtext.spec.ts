@@ -1,5 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, ensureMealsOpen, type Surface } from './mocks'
+import { mockApi, seedState, type Surface } from './mocks'
 
 // Screenshot-review loop, iteration 5: LONG-TEXT stress. Every text field carries
 // a long phrase + an unbreakable long word (mockApi({ longText: true })). Catches
@@ -162,9 +162,6 @@ for (const w of [360, 390]) {
     await page.goto('/kitchen')
     await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
-    // The meal planner lives in « Les repas » at the bottom now — ensure it's open to
-    // screenshot the slot rows with their long titles.
-    await ensureMealsOpen(page)
     await page.locator('.scene .day-mng__sec').first().waitFor({ state: 'visible', timeout: 15_000 })
     await page.waitForTimeout(400)
     await page.screenshot({ path: `e2e/screenshots/lt-day-editor${sfx}.png`, fullPage: false })

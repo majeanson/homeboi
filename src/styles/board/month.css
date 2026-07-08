@@ -265,12 +265,7 @@
 .day-plan__note {
   margin-bottom: 10px;
 }
-/* Day page: the meal planner, demoted below the agenda in a collapsed disclosure. A
-   touch of top margin sets it apart from the sections above. */
-.day-plan__meals {
-  margin-top: 14px;
-}
-/* Day page: the events/chores agenda sections below the meal planner. */
+/* Day page: the day's sections (à compléter, meals, agenda) below the note. */
 .day-plan__sections {
   margin-top: 18px;
   display: flex;

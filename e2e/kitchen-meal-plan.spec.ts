@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, ensureMealsOpen } from './mocks'
+import { mockApi, seedState } from './mocks'
 
 // La cuisine meal-planning UX: the ＋ "Planifier un repas" is a day picker that
 // opens that day's editor SCENE (/kitchen/day/:date — one editor, two entry
@@ -39,9 +39,7 @@ test('＋ Planifier un repas → day picker → opens that day’s editor scene'
   // The day's full editor is a full-screen .scene route now (was a bottom sheet),
   // so the URL carries the day and the scene holds the day sections.
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+/)
-  // The meal planner sits in a « Les repas » disclosure at the bottom now (the day's
-  // agenda leads). It auto-opens when the day has meals; ensure it's open regardless.
-  await ensureMealsOpen(page)
+  // The meal planner is always visible now (a « Les repas » section, no disclosure).
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 })
 
@@ -53,8 +51,6 @@ test('day editor lists slots chronologically (note is the headline)', async ({ p
   // icon-only now, named "Gérer · <date>") → navigates to the day scene.
   await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+/)
-  // Slots live inside the « Les repas » disclosure — ensure it's open first.
-  await ensureMealsOpen(page)
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()
