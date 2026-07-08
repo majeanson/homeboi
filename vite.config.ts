@@ -29,7 +29,11 @@ const PUBLIC_SHELL = [
 // precached (a kiosk rebooting offline must open every lazy route) — the
 // load-bearing constraint scripts/check-bundle.mjs enforces BOTH sides of in CI.
 // Keep this list in sync with ONLINE_ONLY in that script.
-const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/]
+// B-11 (bmad/10): DevKit (/dev/kit) joins the list — a dev-only component
+// gallery, never a kiosk surface; accept no offline /dev/kit rather than tax
+// every install with its specimen chrome. guideContent stays precached — it's
+// the real offline-facing surface (the in-app Guide).
+const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/, /^assets\/DevKit-/]
 
 // Build-time service worker: emit /sw.js with the REAL hashed asset list baked
 // in, so a freshly-installed kiosk precaches the whole shell and reboots fine

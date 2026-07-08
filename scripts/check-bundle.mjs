@@ -41,6 +41,9 @@ const EAGER_TOTAL_BUDGET = 620 * KB // combined index + react-vendor + i18n (tod
 const ONLINE_ONLY = [
   // chunk-name pattern → its own generous cap (it's lazy AND un-precached)
   { re: /^heic2any-/, cap: 1600 * KB },
+  // B-11 (bmad/10) — /dev/kit is a dev-only component gallery, never a kiosk
+  // surface; accept no offline gallery rather than tax every install.
+  { re: /^DevKit-/, cap: 90 * KB },
 ]
 
 const sw = readFileSync(join(DIST, 'sw.js'), 'utf8')
