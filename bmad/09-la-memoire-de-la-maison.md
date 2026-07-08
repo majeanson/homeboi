@@ -15,13 +15,16 @@
 > drifts by daypart. This doc pulls those threads into one question: **what
 > does a calm memory look like?**
 >
-> **STATUS: TRIAGED with Marc, 2026-07-08.** Tally: **6 garde** (A-1 année ·
-> A-4 rituels · A-5+6 countdown+leads · B-8 diary · B-11 drawings-by-year ·
-> B-12 trip albums; A-2 fêtes already shipped) · **4 plus tard** (A-3 rentrée ·
-> B-9 menu memory · B-10 année ensemble · C-13 traditions) · **2 rejetés**
-> (B-7 idle photo bias · C-14 first-snow moments). Build order: any that
-> parallelizes well (OQ-1); D-17/18 adopted as design rules. Verdict legend
-> (same as 08): **✅ Garde** · **⏸ Plus tard** · **❌ Rejeté**.
+> **STATUS: CLOSED, 2026-07-08 (« good for now » — Marc).** All 6 garde items
+> SHIPPED same day (A-1 année · A-2 fêtes · A-4 rituels · A-5+6
+> countdown+leads · B-8 diary · B-11 drawings-by-year · B-12 trip albums) ·
+> **4 plus tard** (A-3 rentrée · B-9 menu memory · B-10 année ensemble ·
+> C-13 traditions — a future doc may re-open them) · **3 rejetés** (B-7 idle
+> photo bias · C-14 first-snow moments · C-15 birthday-photo loop, closed
+> with the doc). The small follow-ups noted inline (trips as countdown
+> candidates, A-6 generic form-default) are closed too — re-propose only if
+> a future need pulls them. D-17/18 stay adopted as standing design rules.
+> Verdict legend (same as 08): **✅ Garde** · **⏸ Plus tard** · **❌ Rejeté**.
 > Effort: **[S]** small / **[M]** medium / **[L]** large ·
 > **⚠** calm-tenet tension · **✦** out-of-the-box · **◐** partially exists.
 
@@ -209,12 +212,13 @@ initialOffset`, transient, not persisted). School-year bounds wait on A-3
     weather-triggered "moments" (first snow of the season, first 20° day) the
     board may mark with ONE line + picto, toddler-hearable. Weather data
     already polls; this is a derivation, not a feature system. Opt-out.
-15. ❓ **The birthday arc, completed** [S] ◐ — _NOT YET TRIAGED (missed in the
-    2026-07-08 pass — ask Marc next round)_ — birthdays are derived, gift_ideas
+15. ❌ ~~**The birthday arc, completed**~~ [S] ◐ — _rejeté (Marc, 2026-07-08 —
+    closed with the doc, « good for now »). Do not re-propose unless a future
+    doc re-opens the memory thread._ — ~~birthdays are derived, gift_ideas
     exist on the peek; complete the loop: after the day passes, the peek
     quietly offers « garder une photo de la fête ? » linking a photo to the
     person (their carnet-like memory). No nag — a one-time affordance in the
-    detail peek.
+    detail peek.~~
 
 ## D · Mechanics (the derived-year layer)
 
