@@ -15,7 +15,10 @@
 > drifts by daypart. This doc pulls those threads into one question: **what
 > does a calm memory look like?**
 >
-> **STATUS: DRAFT — awaiting triage with Marc.** Verdict legend (same as 08):
+> **STATUS: DRAFT — Marc is reading; full triage to come.** First verdicts
+> (2026-07-08): **B-7 idle-frame memory bias ❌ REJETÉ** (OQ-3: no time bias
+> on the mosaic at all) · **OQ-1 answered: one forward + one backward item per
+> wave** once ideas are approved. Verdict legend (same as 08):
 > **✅ Garde** · **⏸ Plus tard** · **❌ Rejeté**.
 > Effort: **[S]** small / **[M]** medium / **[L]** large ·
 > **⚠** calm-tenet tension · **✦** out-of-the-box · **◐** partially exists.
@@ -82,11 +85,10 @@ idle** — never louder than that.
 
 ## B · The year behind (memory resurfacing)
 
-7. **« Il y a un an » on the idle frame** [S] ⚠ ✦ — the ambient photo mosaic
-   already drifts through household photos; BIAS it gently toward photos taken
-   the same week in past years (EXIF/created_at only — no ML, no faces).
-   Opt-in toggle in Mode veille. The wall becomes the family album exactly
-   when nobody's using the tablet. No caption, no prompt — just the photo.
+7. ❌ ~~**« Il y a un an » on the idle frame**~~ [S] ⚠ ✦ — *rejeté (Marc,
+   2026-07-08 — OQ-3: keep the mosaic purely random/recent, no time bias at
+   all).* ~~Bias the ambient photo mosaic toward photos taken the same week
+   in past years.~~ Do not re-propose; the mosaic stays un-curated.
 8. **The house's diary (read view)** [S] ◐ — care_log + chore ledger +
    finished trips + kept drawings already form an append-only house history;
    give it ONE quiet chronological read (Réglages ▸ or a carnet tab):
@@ -158,15 +160,13 @@ idle** — never louder than that.
 
 ## Open questions for Marc
 
-- **OQ-1 — Which direction first?** Forward (A: the year ahead — planning
-  value now) or backward (B: memory — soul value, needs data to exist)? The
-  house has ~1 real household with months of data; memory features get better
-  as data accumulates, which argues A first, B as it ripens.
+- ~~**OQ-1 — Which direction first?**~~ — **answered (2026-07-08): one of
+  each per wave** — pair a forward item with a backward item so both
+  directions grow together.
 - **OQ-2 — Traditions (C-13):** worth its small schema, or is a yearly event
   + the photo features already enough? (It's the one idea here that adds a
   table.)
-- **OQ-3 — The idle frame as album (B-7):** comfortable with same-week-in-past
-  photo bias on by default, or opt-in only? (It's the most "the app noticed
-  something" feature in the doc — calm hinges on it feeling like furniture.)
+- ~~**OQ-3 — The idle frame as album (B-7):**~~ — **answered (2026-07-08):
+  rejected outright.** No time bias on the mosaic; B-7 struck above.
 - **OQ-4 — Fêtes list (A-2):** which holidays does this household actually
   mark? (Seed list needs your real ones, not a bank calendar.)
