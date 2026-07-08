@@ -394,17 +394,20 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
   construction: only shows when signed in, sample data cleared, and EVERY
   probe positively answered (an empty array, never a failed read). Dismiss
   is forever (`babillard-didyouknow-seen`).
-- **A-5 adaptive tour — SAFE CORE shipped**: `buildDiscoveryTour()` assembles
+- **A-5 adaptive tour — FULLY SHIPPED** (safe core 2026-07-07; auto-offer
+  2026-07-08 after Marc settled the design): `buildDiscoveryTour()` assembles
   a runtime Tour from the same probes (intro + ≤6 card-linked stops, each
   handing off to its Guide card); `lib/tour.tsx` gained `startTour(tour)` for
   unregistered tours; the « Faire le tour (N trouvailles) » button rides the
-  saviez-vous card when ≥2 features sleep. **Deferred (design open):** the
-  power-user AUTO-offer. Questions to settle with Marc before building:
-  (1) the power-user signal — DB write-frequency (the C-18 audit, server-side)
-  vs a local proxy (outbox volume / frequents.ts counters); (2) cadence — at
-  most once a month? only after N sessions?; (3) where it surfaces (a quiet
-  Découvrir badge vs a one-time coachmark). Never guest/kid/locked-kiosk;
-  manual entry ships now, auto-offer waits for those answers.
+  saviez-vous card when ≥2 features sleep. **Auto-offer (Marc's verdicts:
+  local proxy · quiet badge · ≤1/month):** `lib/tourOffer.ts` — the
+  power-user signal is a per-device write counter bumped by `writeWith()`
+  (≥30 writes; a local heuristic, never displayed, never sent anywhere);
+  eligibility also requires ≥2 features provably sleeping **from the query
+  cache alone** (no fetch is ever fired for a dot) + parent audience + not
+  guest/kiosk/locked + a 30-day cooldown. Surfaces as `.hubnav__whisper` —
+  a tiny sage dot on the Réglages tab (no count, no red, aria-hidden);
+  opening Découvrir stamps the offer (taken or not) so it rests a month.
 - **B-14 « Quoi de neuf »** — `lib/whatsNew.ts` (hand-maintained, newest
   first, 3 seed entries) + `WhatsNewLine` in Découvrir: ONE line, newest
   undismissed, dismiss-forever per device. Discipline note in COMPONENTS.md:
@@ -423,10 +426,10 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
   `showcase` guest token, and the marketing page's new « Essayer la démo » CTA
   boots it through the normal `?guest=` door (existing watermark banner).
   Réglages side: `SampleDataControls` gained the one-tap « Repartir les
-  exemples à neuf » (clear+reseed). **Deferred (design open):** a WRITABLE
-  public sandbox — needs throwaway operator sessions or a new writable guest
-  scope (`route.ts` blocks guest writes centrally); revisit only if the
-  read-only demo proves insufficient as the sales demo.
+  exemples à neuf » (clear+reseed). **CLOSED 2026-07-08 — Marc: the read-only
+  demo suffices.** The writable public sandbox is not built and not planned
+  (zero abuse surface, zero upkeep; writing comes with signup). Revive only
+  if the read-only demo demonstrably fails as the sales demo.
 - **A-9 icon labels (soft only)** — audit found every icon-only button already
   carries `aria-label`; the gaps were hover labels and the un-explained header
   loupe. Shipped: `title` (= aria-label) on SceneHead ✕, RowActions ✏/🗑, the
@@ -510,9 +513,12 @@ reduced-motion, 8 hit-target families to 44px) ·
 precache + `check:bundle` CI guard enforcing precache-completeness + budgets).
 
 **→ Every approved item of bmad/08 is now shipped** (waves 1–4 + the whole
-ambient/platform continuous set). Left open on purpose: the plus-tard shelf,
-the rejected list (never re-propose), and two ask-Marc follow-ups (A-5
-adaptive-tour auto-offer design · A-8 writable-demo decision).
+ambient/platform continuous set), **and the two ask-Marc follow-ups are
+settled (2026-07-08): A-5 auto-offer BUILT (local write-counter signal ·
+whisper-dot on Réglages · ≤1/month) · A-8 CLOSED (read-only demo suffices,
+writable sandbox not planned).** Left open on purpose: the plus-tard shelf
+and the rejected list (never re-propose). Next streams per Marc:
+UNIFORMIZING Phase 3/4 opportunistic + a fresh bmad/09 product pass.
 
 **Plus tard shelf:** C-25 rush-hour diet · D-26 Le pont (deferred per OQ-3;
 revive by picking the 2–3 real relatives first) · D-32 share-view print

@@ -95,6 +95,19 @@
     transform var(--dur-fast) var(--ease-soft),
     box-shadow var(--dur-fast);
 }
+/* A-5 whisper-dot (lib/tourOffer): the discovery tour's quiet auto-offer on the
+   Réglages tab — a tiny sage dot, no count, no red, decorative (aria-hidden).
+   Calm: it whispers "something sleeps in Découvrir", it never demands. */
+.hubnav__whisper {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  min-width: 0;
+  border-radius: 50%;
+  background: var(--sage, #6b8a52);
+  margin-left: auto;
+}
+
 /* Keep the label on one line and let it shrink within the button (never spill
    past the right padding). The fluid font above means it won't actually
    ellipsize at real sizes — this is just a belt-and-suspenders guard. */
@@ -246,6 +259,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+/* The bottom bar stacks icon-over-label — pin the whisper-dot to the tab's top
+   corner instead of letting it push the column layout. */
+.hub[data-surface='mobile'] .hubnav__btn {
+  position: relative;
+}
+.hub[data-surface='mobile'] .hubnav__whisper {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  margin-left: 0;
 }
 .hub[data-surface='mobile'] .hubnav__btn.is-active {
   background: var(--accent);

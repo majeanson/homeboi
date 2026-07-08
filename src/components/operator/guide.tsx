@@ -10,6 +10,7 @@ import { OperatorSection } from './OperatorSection'
 import { FeatureMap } from '../FeatureMap'
 import { SampleDataControls } from './sampleData'
 import { DidYouKnowCard, WhatsNewLine } from './discover'
+import { markTourOffered } from '../../lib/tourOffer'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 import { scrollBehavior } from '../../lib/motion'
@@ -291,6 +292,11 @@ export function DiscoverSection() {
   const { lang } = useLang()
   const { start } = useTour()
   const nav = useNavigate()
+  // A-5 auto-offer: seeing Découvrir stamps the offer, so the quiet Réglages-tab
+  // whisper-dot (lib/tourOffer, HubLayout) rests for a month — taken or not.
+  useEffect(() => {
+    markTourOffered()
+  }, [])
   // Re-show the first-run welcome checklist: clear its record, then land on the
   // board where it remounts and reads the cleared state.
   const resetOnboarding = () => {

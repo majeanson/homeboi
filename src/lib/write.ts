@@ -3,6 +3,7 @@ import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react
 import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
 import { isGuest } from './device'
+import { bumpWriteCount } from './tourOffer'
 import { A_REGLER_KEY } from './queryKeys'
 
 // « À régler » (the board heads-up card, functions/api/a-regler) is a cross-domain
@@ -72,6 +73,11 @@ export async function writeWith<T = unknown>(
   // look like a delete went through). The UI also hides mutating controls for a
   // guest; this is the structural backstop for any control that slips through.
   if (isGuest()) return { data: null as T, queued: false }
+
+  // A-5 (bmad/08): the per-device power-user proxy — count real write attempts
+  // so the discovery tour can quietly offer itself to heavy editors. A local
+  // heuristic only; never displayed, never sent anywhere (see lib/tourOffer).
+  bumpWriteCount()
 
   spec.optimistic?.(qc)
 

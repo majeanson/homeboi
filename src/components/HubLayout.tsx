@@ -10,6 +10,7 @@ import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
 import { useTapToHearListener } from '../lib/tapToHear'
+import { useTourOfferDot } from '../lib/tourOffer'
 import { useAmbient } from '../lib/ambient'
 import { useKeepAwake } from '../lib/keepAwake'
 import { useWakeLock } from '../lib/useWakeLock'
@@ -81,6 +82,10 @@ export function HubLayout() {
   // Shell-level so every tab gets it without per-row wiring; defensively scoped
   // off drags, the exit gate, form fields, modals and scrolling (lib/tapToHear).
   useTapToHearListener()
+  // A-5 (bmad/08): the discovery tour's quiet auto-offer — a whisper-dot on the
+  // Réglages tab for a heavy editor when the cache already knows features sleep.
+  // No count, no red, at most once a month; Découvrir stamps it (lib/tourOffer).
+  const tourDot = useTourOfferDot()
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()
@@ -398,6 +403,9 @@ export function HubLayout() {
               <>
                 <Icon name={tab.icon} size={22} color={isActive ? 'var(--accent-ink)' : tab.color} />
                 <span>{t.nav[tab.key]}</span>
+                {/* A-5 whisper-dot: something sleeps in Découvrir. Decorative —
+                    the tab keeps its plain section name (no urgency semantics). */}
+                {tab.to === '/settings' && tourDot && <span className="hubnav__whisper" aria-hidden="true" />}
               </>
             )}
           </NavLink>
