@@ -561,6 +561,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'The house calendar already knows its year — nobody has to type “Christmas”.',
         },
       },
+      {
+        label: { fr: 'Le décompte', en: 'The countdown' },
+        detail: {
+          fr: 'Le babillard propose de compter les dodos jusqu’à la prochaine belle affaire — une fête qui s’en vient, un anniversaire. Touche « Oui ! » et une tuile calme fait le décompte; le jour venu, elle célèbre, puis la maison propose le prochain. Toujours UN seul décompte; « Passer » refuse sans insister. La carte se cache dans « Disposition du babillard » comme les autres.',
+          en: 'The board offers to count the sleeps until the next good thing — a coming holiday, a birthday. Tap “Yes!” and a calm tile counts down; on the day it celebrates, then the house offers the next one. Always ONE countdown; “Skip” declines without nagging. The card hides in “Board layout” like any other.',
+        },
+        why: {
+          fr: 'Compter les dodos ensemble, sans que personne n’ait à y penser — la maison propose, la famille choisit.',
+          en: 'Counting the sleeps together with nobody having to set it up — the house offers, the family chooses.',
+        },
+      },
     ],
   },
   {

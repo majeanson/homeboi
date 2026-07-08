@@ -243,6 +243,35 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* « Le décompte » (A-5, bmad/09) — the one suggestion-driven countdown card:
+   the pinned tile reads big and joyful (emoji + name + « dans N dodos »); the
+   suggestion state is a quiet ask + Oui/Passer. */
+.countdown-card__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0 0.4rem;
+  text-align: center;
+}
+.countdown-card__emoji {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.countdown-card__what {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+}
+.countdown-card__n {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.countdown-card__ask {
+  margin: 0.2rem 0 0.6rem;
+}
+
 /* Quick actions under « Prochainement » — cook the next planned meal · « Avant de
    partir » (the pre-departure glance). Reused from the retired « Maintenant » view as
    calm pills (the shared .btn--ghost look); they wrap on a phone. */

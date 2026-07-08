@@ -108,6 +108,20 @@ idle** — never louder than that.
    departure, next birthday), the parent accepts with one tap; when the day
    arrives and passes, the tile suggests the next one. Always exactly ONE
    countdown; the suggestion is an offer, never auto-pinned.
+   **SHIPPED same day to that design:** `CountdownCard` (grid card
+   'countdown' in lib/boardCards — show/hide + reorder like every card).
+   Candidates = upcoming derived birthdays (🎂, from the board's own rows) +
+   the next MAJOR fête long-range (Noël offerable in July —
+   `nextMajorFete`, set: noel/jour-de-l'an/pâques/st-jean/halloween).
+   Offer: « Compter les dodos jusqu'à X ? » Oui !/Passer (a skip hides THAT
+   candidate until its date passes — next year may offer anew); pinned tile:
+   emoji + name + « dans N dodos », « C'est aujourd'hui ! 🎉 » on the day,
+   self-clears after and the next offer appears. Per-device stores
+   (`babillard-countdown`, `-countdown-skip`); guests see a pinned tile,
+   never the offer. Guide point + whatsNew. *(Trips as candidates: later,
+   when the card can peek the trips cache. A-6's generic form-default —
+   yearly recurrences pre-selecting a weeks-long lead — remains a small
+   follow-up; the seeds + suggested countdowns already carry week leads.)*
 6. ✅ **« Préparer » windows on annual events** [S] ◐ — _garde (2026-07-08, with A-5)_ — lead_seconds already
    gives « Bientôt »; for annual items the useful lead is WEEKS (gift for a
    birthday, tires before the first snow). Default yearly recurrences to a

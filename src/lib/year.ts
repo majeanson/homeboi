@@ -184,6 +184,54 @@ export function nextAnchorSec(anchor: { month: number; day: number }, nowMs: num
   return Math.floor(d.getTime() / 1000)
 }
 
+// A-5+6 (bmad/09, Marc's design): « Le décompte » — the ONE board countdown,
+// SUGGESTION-driven. The house proposes the next natural thing to count the
+// dodos toward (the next major fête below, or an upcoming birthday the board
+// already derives); the parent accepts with one tap; when the day passes, the
+// tile clears itself and the next suggestion appears. Always exactly one —
+// never a stack of deadlines; a suggestion is an offer, never auto-pinned.
+const COUNTDOWN_FETES = new Set(['noel', 'jour-de-lan', 'paques', 'st-jean', 'halloween'])
+export function nextMajorFete(fromDaySec: number): { holiday: Holiday; at: number } | null {
+  return holidaysInRange(fromDaySec, 400).find((x) => COUNTDOWN_FETES.has(x.holiday.id)) ?? null
+}
+
+export interface Countdown {
+  id: string
+  label: string
+  emoji: string
+  at: number // local-midnight unix sec of the day
+}
+
+const pinnedCountdown = createDeviceStore<Countdown | null>('babillard-countdown', null, {
+  read: (raw) => {
+    try {
+      const v = raw ? (JSON.parse(raw) as Countdown) : null
+      return v && typeof v.at === 'number' && typeof v.label === 'string' ? v : null
+    } catch {
+      return null
+    }
+  },
+})
+export const useCountdown = pinnedCountdown.use
+export const setCountdown = pinnedCountdown.set
+
+// Suggestions this device waved off — each hidden until ITS date passes, so a
+// declined « Noël ? » doesn't repeat all December but next year's may offer anew.
+const skippedCountdowns = createDeviceStore<Record<string, number>>('babillard-countdown-skip', {}, {
+  read: (raw) => {
+    try {
+      const v = raw ? (JSON.parse(raw) as unknown) : {}
+      return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, number>) : {}
+    } catch {
+      return {}
+    }
+  },
+})
+export const useSkippedCountdowns = skippedCountdowns.use
+export function skipCountdown(id: string, at: number): void {
+  skippedCountdowns.set({ ...skippedCountdowns.get(), [id]: at })
+}
+
 // Seeds this device dismissed with ✕ — hidden forever here (a proposal
 // declined must not repeat; the household can still write its own row).
 const hiddenSeeds = createDeviceStore<string[]>('babillard-season-seeds-hidden', [], {

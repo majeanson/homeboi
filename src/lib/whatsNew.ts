@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'countdown',
+    text: {
+      fr: 'Nouveau : « Le décompte » — le babillard propose de compter les dodos jusqu’à la prochaine fête ou le prochain anniversaire.',
+      en: 'New: “The countdown” — the board offers to count the sleeps until the next holiday or birthday.',
+    },
+    card: 'board',
+  },
+  {
     id: 'fetes',
     text: {
       fr: 'Nouveau : les fêtes du Québec et du Canada s’annoncent d’elles-mêmes sur le babillard — rien à créer.',

@@ -486,6 +486,15 @@ export const FR = {
     apodReadLess: 'Lire moins',
     apodHear: 'Écouter',
   },
+  // A-5 (bmad/09) — « Le décompte », the one suggestion-driven countdown card.
+  countdown: {
+    title: 'Le décompte',
+    suggest: (label: string) => `Compter les dodos jusqu'à ${label} ?`,
+    yes: 'Oui !',
+    skip: 'Passer',
+    stop: 'Arrêter ce décompte',
+    dodosN: (n: number) => (n === 0 ? 'C’est aujourd’hui ! 🎉' : n === 1 ? 'dans 1 dodo' : `dans ${n} dodos`),
+  },
   boardView: {
     label: 'Vue du babillard',
     bento: 'Grille',
@@ -507,6 +516,7 @@ export const FR = {
     today: 'Aujourd’hui',
     routineNext: 'Prochaine routine',
     tomorrow: 'Demain',
+    countdown: 'Le décompte',
     toFinish: 'À finir',
     todos: 'À faire',
     upcoming: 'À venir',
@@ -3085,6 +3095,15 @@ export const EN: typeof FR = {
     apodReadLess: 'Read less',
     apodHear: 'Listen',
   },
+  // A-5 (bmad/09) — the one suggestion-driven countdown card.
+  countdown: {
+    title: 'The countdown',
+    suggest: (label: string) => `Count the sleeps until ${label}?`,
+    yes: 'Yes!',
+    skip: 'Skip',
+    stop: 'Stop this countdown',
+    dodosN: (n: number) => (n === 0 ? 'It’s today! 🎉' : n === 1 ? 'in 1 sleep' : `in ${n} sleeps`),
+  },
   boardView: {
     label: 'Board view',
     bento: 'Grid',
@@ -3103,6 +3122,7 @@ export const EN: typeof FR = {
     today: 'Today',
     routineNext: 'Next routine',
     tomorrow: 'Tomorrow',
+    countdown: 'The countdown',
     toFinish: 'To finish',
     todos: 'To do',
     upcoming: 'Coming up',

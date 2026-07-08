@@ -54,6 +54,7 @@ import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { MonthView } from '../components/board/MonthView'
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { SimpleBoard } from '../components/board/SimpleBoard'
+import { CountdownCard } from '../components/board/CountdownCard'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
@@ -1390,6 +1391,8 @@ export function Board() {
                 </Section>
               ) : null
               // « Prochain voyage » — the next upcoming trip; hides itself when none.
+              // « Le décompte » (A-5, bmad/09) — one suggestion-driven countdown; self-hides.
+              nodes.countdown = <CountdownCard upcoming={upcomingEvents} />
               nodes.voyage = <VoyageCard />
               // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
               nodes.carnets = <CarnetsCard />
