@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'joindre-rail',
+    text: {
+      fr: 'Nouveau : « Joindre » — sur mobile, une rangée en haut du cercle pour appeler ou écrire d’un doigt, les plus utiles en premier.',
+      en: 'New: “Reach out” — on mobile, a row at the top of the circle to call or email in one tap, the most useful ones first.',
+    },
+    card: 'cercle',
+  },
+  {
     id: 'stale-stamp',
     text: {
       fr: 'Nouveau : si le wifi ment (borne captive, panne du serveur) et que rien ne se rafraîchit, une petite ligne « Données de … » l’indique — même « en ligne ».',
@@ -35,14 +43,6 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       en: 'New: “To sort” now shows on the wall tablet too, not just your phone.',
     },
     card: 'a-regler',
-  },
-  {
-    id: 'joindre-rail',
-    text: {
-      fr: 'Nouveau : « Joindre » — sur mobile, une rangée en haut du cercle pour appeler ou écrire d’un doigt, les plus utiles en premier.',
-      en: 'New: “Reach out” — on mobile, a row at the top of the circle to call or email in one tap, the most useful ones first.',
-    },
-    card: 'cercle',
   },
   {
     id: 'annee-view',

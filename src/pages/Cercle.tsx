@@ -248,10 +248,19 @@ function CercleParent() {
   }, [unified])
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
+  // A member absorbed a hard-linked contact (unifyCircle) keeps `kind: 'member'` with
+  // `p.id` = the MEMBER's id, so `contactsById` (keyed by contact id) never matches —
+  // this second map (contact.memberId → contact) is how that member's `tags` (e.g.
+  // `urgence`) still reach the rail's cold-start ranking.
+  const contactByMemberId = useMemo(
+    () => new Map(contacts.filter((c) => c.memberId).map((c) => [c.memberId as string, c])),
+    [contacts],
+  )
 
   // « Joindre » (A-6): the whole circle, cast to the rail's minimal shape — a
   // contact's `tags` (the `urgence` cold-start signal) come along, members/pets
-  // carry none. Businesses feed the rail separately (see JoindreRail below).
+  // carry none unless a linked contact supplied them. Businesses feed the rail
+  // separately (see JoindreRail below).
   const joindrePeople: JoindreCandidate[] = useMemo(
     () =>
       people.map((p) => ({
@@ -264,9 +273,14 @@ function CercleParent() {
         avatarKind: p.avatarKind,
         avatarRef: p.avatarRef,
         colour: p.colour,
-        tags: p.kind === 'contact' ? contactsById.get(p.id)?.tags : undefined,
+        tags:
+          p.kind === 'contact'
+            ? contactsById.get(p.id)?.tags
+            : p.kind === 'member'
+              ? contactByMemberId.get(p.id)?.tags
+              : undefined,
       })),
-    [people, contactsById],
+    [people, contactsById, contactByMemberId],
   )
 
   // The Maisonnée IS your one family: every household member — AND the household's
