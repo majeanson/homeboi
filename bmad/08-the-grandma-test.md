@@ -176,13 +176,19 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
 22. ❌ ~~**NFC / QR waypoints in the house**~~ [M] ✦ — *rejeté.* (Deep-link
     stickers: fridge → /liste, washer → laundry routine.)
 23. ✅ **Route-level code-splitting — offline-aware** [M] — **Marc: « yes but
-    consider offline in all this. »** Measure first (`web-perf` pass on a
-    throttled profile), split the heavy scenes (recipes, voyage, « Notre
-    monde », DrawPad), add a bundle-size check to CI. **The offline
-    constraint is load-bearing:** the SW precaches the built shell — every
-    lazy chunk must still land in the precache manifest (`vite.config.ts`
-    `swSource`) so a kiosk that reboots offline can still open a lazy route.
-    Code-splitting must never punch a hole in NFR-OFFLINE-1.
+    consider offline in all this. »** **SHIPPED 2026-07-07 — measured first:**
+    the ~40 routes were ALREADY split (recipes/voyage/Notre monde/DrawPad all
+    lazy; entry ~407 KB, largest lazy chunk Icon ~251 KB) — the real finding
+    was **heic2any (1.3 MB wasm HEIC decoder) precached on every kiosk install
+    for an ONLINE-ONLY action** (photo upload; Blob writes never queue). It's
+    now excluded from the sw.js precache (`ONLINE_ONLY_CHUNKS` in
+    vite.config.ts) and runtime-caches on first online use. **The CI check:**
+    `scripts/check-bundle.mjs` (`npm run check:bundle`, wired into ci.yml
+    after build) enforces BOTH sides of the load-bearing constraint — every
+    lazy chunk MUST be in the precache (offline kiosk opens every lazy route,
+    NFR-OFFLINE-1) except the online-only allowlist which must NOT be — plus
+    size budgets (entry ≤ 500 KB, lazy ≤ 320 KB). `npm run e2e:sw` re-verified
+    the offline shell reboot after the precache change.
 24. ✅ **Optimistic navigation warmth** [S] — on tab hover/press-start,
     prefetch that tab's primary query (TanStack `prefetchQuery`) so the pane
     lands full. The cache-first architecture makes this nearly free; it
@@ -473,8 +479,9 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 ~~E-37 burn-in care~~ ✅ 2026-07-07 · ~~E-41 temp-id chain fix~~ ✅ 2026-07-07 ·
 ~~E-39 UNIFORMIZING reds~~ ✅ (audit shows BE-1/BE-2/FE-1/FE-2/LIB-2 + Phases
 0–2 all landed — the "reds" note was stale; what remains in UNIFORMIZING.md is
-Phase 3/4 opportunistic work) · E-40 a11y pass · C-23 offline-aware
-code-splitting (measure first).
+Phase 3/4 opportunistic work) · E-40 a11y pass ·
+~~C-23 offline-aware code-splitting~~ ✅ 2026-07-07 (heic2any out of the
+precache + `check:bundle` CI guard enforcing precache-completeness + budgets).
 
 **Plus tard shelf:** C-25 rush-hour diet · D-26 Le pont (deferred per OQ-3;
 revive by picking the 2–3 real relatives first) · D-32 share-view print

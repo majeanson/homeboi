@@ -12,6 +12,7 @@
     "precf:dev": "npm run db:sync:local",
     "cf:dev": "wrangler dev",
     "typecheck": "tsc -b --noEmit",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "knip": "knip",
     "test": "vitest run",
     "test:watch": "vitest",

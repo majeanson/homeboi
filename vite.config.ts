@@ -20,6 +20,17 @@ const PUBLIC_SHELL = [
   '/icons/apple-touch-icon.png',
 ]
 
+// C-23 (bmad/08): chunks deliberately EXCLUDED from the kiosk precache because
+// their feature is ONLINE-ONLY — an offline reboot can never need them, and
+// precaching them taxes every install. heic2any is the ~1.3 MB wasm HEIC
+// decoder used only while UPLOADING an iPhone photo (Blob writes never queue —
+// OFFLINE.md); it still loads on first use online and the SW's cache-first
+// asset handler runtime-caches it then. Every OTHER lazy chunk MUST stay
+// precached (a kiosk rebooting offline must open every lazy route) — the
+// load-bearing constraint scripts/check-bundle.mjs enforces BOTH sides of in CI.
+// Keep this list in sync with ONLINE_ONLY in that script.
+const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/]
+
 // Build-time service worker: emit /sw.js with the REAL hashed asset list baked
 // in, so a freshly-installed kiosk precaches the whole shell and reboots fine
 // offline (NFR-OFFLINE-1). Hand-rolled and dependency-free on purpose — the
@@ -32,6 +43,7 @@ function serviceWorker(): Plugin {
     generateBundle(_opts, bundle) {
       const assets = Object.keys(bundle)
         .filter((f) => !f.endsWith('.map') && f !== 'index.html')
+        .filter((f) => !ONLINE_ONLY_CHUNKS.some((re) => re.test(f)))
         .map((f) => '/' + f)
       const precache = [...PUBLIC_SHELL, ...assets]
       // djb2 over the precache list → a stable per-build cache version, so a

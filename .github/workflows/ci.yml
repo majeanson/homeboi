@@ -34,6 +34,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # C-23 (bmad/08): size budgets + the load-bearing offline check — every lazy
+      # chunk must be in the sw.js precache (a kiosk rebooting offline must open
+      # every lazy route), EXCEPT the online-only allowlist (the HEIC upload
+      # decoder), which must NOT be. See scripts/check-bundle.mjs.
+      - run: npm run check:bundle
 
   deploy:
     name: Deploy to Cloudflare
