@@ -409,6 +409,15 @@
   font-size: 115%;
 }
 
+/* « Simple » post-reader lens (bmad/08 A-1): the whole rem tree scales ~1.4× from
+   this one root knob (same mechanism as data-text-scale), so the giant-tile board,
+   the parent views simple inherits, and every label grow together. Set on <html>
+   by src/main.tsx + theme-bootstrap.js when the audience is `simple`. Wins over the
+   large-text bump when both are on (source order — this rule sits after it). */
+:root[data-lens='simple'] {
+  font-size: 140%;
+}
+
 * {
   box-sizing: border-box;
 }

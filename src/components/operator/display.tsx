@@ -262,7 +262,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           <div
             className="audience-switch mono"
             role="group"
-            aria-label={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.guest}
+            aria-label={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.simple + ' / ' + t.audience.guest}
           >
             <button
               type="button"
@@ -286,6 +286,18 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             >
               <InlineIcon name="baby-bold" /> {t.audience.kid}
             </button>
+            {/* bmad/08 A-1 — the post-reader « Simple » lens (grandma). */}
+            <button
+              type="button"
+              className={`audience-switch__opt${audience === 'simple' && !guestPreview ? ' is-active' : ''}`}
+              onClick={() => {
+                setGuestPreview(false)
+                setAudience('simple')
+              }}
+              aria-pressed={audience === 'simple' && !guestPreview}
+            >
+              <InlineIcon name="hand-heart-bold" /> {t.audience.simple}
+            </button>
             <button
               type="button"
               className={`audience-switch__opt${guestPreview ? ' is-active' : ''}`}
@@ -296,6 +308,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             </button>
           </div>
           {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
+          {audience === 'simple' && !guestPreview && <p className="operator__seg-hint mono">{t.audience.simpleHint}</p>}
         </div>
         {!ro && (
           <div className="operator__seg">

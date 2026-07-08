@@ -265,6 +265,13 @@ export function HubLayout() {
   ])
 
   const toddler = audience === 'toddler'
+  const simple = audience === 'simple'
+  // Both simplified lenses (pre-reader toddler + post-reader simple) drop Réglages,
+  // the ＋ FAB and the collapsible rail, and get an exit gate — the difference is
+  // only the math challenge (a child needs it, a grandma doesn't). `restricted`
+  // captures "not the full parent chrome"; branch on `toddler`/`simple` where they
+  // genuinely differ (the board view swap, the exit-gate math).
+  const restricted = toddler || simple
   // `guest` = read-only session (hides every mutating control + the ＋ FAB, shows
   // the banner): a link babysitter OR the operator's settings preview.
   // `guestLocked` = the LINK guest only — that one is also barred from Réglages
@@ -282,10 +289,10 @@ export function HubLayout() {
   if (guestLocked && guestKind === 'sitter') return <Navigate to="/handoff" replace />
   if (guestLocked && guestKind === 'welcome') return <Navigate to="/welcome" replace />
   if (guestLocked && guestKind === 'family') return <Navigate to="/family" replace />
-  // The toddler lens has no business in Réglages — not on a locked kiosk, and
-  // not in an unlocked parent preview either (a kid mustn't reach settings via a
-  // stray /settings URL). Only the parent view (and the guest PREVIEW) open Réglages.
-  if ((locked || toddler || guestLocked) && isSettings) return <Navigate to="/board" replace />
+  // The simplified lenses have no business in Réglages — not on a locked kiosk, and
+  // not in an unlocked parent preview either (a kid/grandma mustn't reach settings
+  // via a stray /settings URL). Only the parent view (and the guest PREVIEW) open it.
+  if ((locked || restricted || guestLocked) && isSettings) return <Navigate to="/board" replace />
 
   if (pairingLost) {
     return (
@@ -325,17 +332,19 @@ export function HubLayout() {
   // settings. The floating ＋ FAB rides bottom-right on every parent tab —
   // including the mobile board (no separate in-page add button there).
   // A guest can't write — drop the ＋ entirely (every capture/add 403s anyway).
-  const showAdd = !locked && !isSettings && !toddler && !guest
-  // Réglages hides from the nav whenever the toddler lens is up: on a locked
-  // kiosk a three-year-old must not reach settings/billing (PRD C5), and the same
-  // holds for an unlocked preview — the kid view is a one-way door, so Réglages
-  // only ever returns by relaunching back into the parent view (?kid=0).
-  const tabs = locked || toddler || guestLocked ? TABS.filter((tab) => tab.to !== '/settings') : TABS
+  // The simplified lenses drop it too: a toddler doesn't capture, and a simple-lens
+  // grandma adds via the inline field on the full list she inherits, not the ＋.
+  const showAdd = !locked && !isSettings && !restricted && !guest
+  // Réglages hides from the nav whenever a simplified lens is up: on a locked
+  // kiosk a three-year-old (or a visiting grandma) must not reach settings/billing
+  // (PRD C5), and the same holds for an unlocked preview — the lens is a one-way
+  // door, so Réglages only ever returns by relaunching into parent (?kid=0/?simple=0).
+  const tabs = locked || restricted || guestLocked ? TABS.filter((tab) => tab.to !== '/settings') : TABS
   // The collapse only applies on the kiosk left rail; mobile's bottom bar stays.
-  // Never in the toddler lens — a pre-reader mustn't be able to hide their own
-  // navigation (or the KidExitGate that lives in the rail), so the section column
+  // Never in a simplified lens — the viewer mustn't be able to hide their own
+  // navigation (or the exit gate that lives in the rail), so the section column
   // is non-collapsible there even if a parent left it collapsed before flipping.
-  const canCollapse = surface === 'kiosk' && !toddler
+  const canCollapse = surface === 'kiosk' && !restricted
   const railCollapsed = canCollapse && navCollapsed
 
   return (
@@ -392,10 +401,11 @@ export function HubLayout() {
             switch there), not in the nav — a parent flips to Enfant from settings.
             Coming back OUT is still a deliberate adult act via KidExitGate below. */}
 
-        {/* The way back OUT of the toddler lens: a visible footer switch behind a
-            parental gate (3s hold + a math challenge), so the one-way door still
-            holds for the child but an adult can leave without an address bar. */}
-        {toddler && <KidExitGate />}
+        {/* The way back OUT of a simplified lens: a visible footer switch behind an
+            exit gate. Toddler needs the full parental gate (3s hold + a math
+            challenge a pre-reader can't clear); the simple/grandma lens is a capable
+            adult, so a 3s hold alone lets her out (no condescending arithmetic). */}
+        {restricted && <KidExitGate requireMath={toddler} />}
 
         {/* "Tuck the rail away" caret — lives at the BOTTOM of the kiosk column
             (pushed down by margin-top:auto) so it sits out of the way under the

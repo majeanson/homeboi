@@ -4,20 +4,22 @@ import { useAudience } from '../lib/audience'
 import { Modal } from './Modal'
 import { Icon } from './Icon'
 
-// The adult escape hatch from the toddler lens, built as a PARENTAL GATE so the
-// one-way-door property still holds for the child (see audience.ts, and the
-// "kid view one-way door" project note). A toddler-locked kiosk relaunched with
-// ?kid=1 has no address bar in an installed PWA, so there was no way out at all.
+// The adult escape hatch from a SIMPLIFIED lens (toddler or simple), so the
+// one-way-door property holds while an adult can still leave (see audience.ts and
+// the "kid view one-way door" project note). A locked kiosk relaunched with
+// ?kid=1 / ?simple=1 has no address bar in an installed PWA, so there was no way
+// out at all.
 //
 // It lives as a visible switch in the hub footer/nav (rendered by HubLayout
-// inside .hubnav), but is gated by two challenges neither of which a pre-reader
-// clears:
-//   1. A SUSTAINED long-press (~3s) on the switch. Toddlers tap and drag; they
-//      rarely hold one spot that long. A fill bar gives the adult feedback.
-//   2. A simple arithmetic challenge (a + b). A pre-reader can't solve it; an
-//      adult answers in a second. Nothing to set up, nothing to remember, no
-//      stored secret — calm by design.
-// Clearing both calls unlock(), which drops the lock and the parent lens back.
+// inside .hubnav). The gate:
+//   1. A SUSTAINED long-press (~3s) on the switch — for BOTH lenses. Toddlers tap
+//      and drag; they rarely hold one spot that long. A fill bar gives feedback.
+//   2. THEN, for the TODDLER lens only (`requireMath`), a simple arithmetic
+//      challenge (a + b): a pre-reader can't solve it, an adult answers in a
+//      second. The SIMPLE lens is a capable post-reader adult (bmad/08 A-1), so
+//      the hold alone lets her out — no condescending math. Nothing stored, no
+//      secret — calm by design.
+// Clearing the gate calls unlock(), which drops the lock and the parent lens back.
 //
 // Touch note: on a real tablet a 3s press would otherwise trigger the OS
 // long-press callout / text selection (→ pointercancel) or be cancelled by tiny
@@ -32,9 +34,11 @@ function newSum() {
   return { a: 2 + Math.floor(Math.random() * 7), b: 2 + Math.floor(Math.random() * 7) }
 }
 
-export function KidExitGate() {
+export function KidExitGate({ requireMath = true }: { requireMath?: boolean }) {
   const t = useT()
   const { unlock } = useAudience()
+  // requireMath=false is the simple/grandma lens; label it as such.
+  const exitTitle = requireMath ? t.audience.exitTitle : t.audience.exitTitleSimple
   const [holding, setHolding] = useState(false)
   const [gateOpen, setGateOpen] = useState(false)
   const [sum, setSum] = useState(newSum)
@@ -57,6 +61,13 @@ export function KidExitGate() {
     setHolding(true)
     timer.current = setTimeout(() => {
       setHolding(false)
+      // Toddler: the hold only ARMS the math gate (a pre-reader can't clear it).
+      // Simple/grandma (requireMath=false): the hold IS the confirmation — a
+      // capable adult held 3s deliberately, so drop straight back to parent.
+      if (!requireMath) {
+        unlock()
+        return
+      }
       setSum(newSum())
       setAnswer('')
       setWrong(false)
@@ -93,7 +104,7 @@ export function KidExitGate() {
       <button
         type="button"
         className={`hubnav__btn kid-exit-switch${holding ? ' is-holding' : ''}`}
-        aria-label={t.audience.exitTitle}
+        aria-label={exitTitle}
         title={t.audience.exitHold}
         onPointerDown={startHold}
         onPointerUp={cancelHold}
@@ -104,7 +115,7 @@ export function KidExitGate() {
             Icon set (the emoji rendered as a dark full-colour box that read as a
             broken tab in the mobile bottom nav). Sized to match the section tabs. */}
         <Icon name="door-bold" size={22} color="var(--ink-faint)" />
-        <span className="kid-exit-switch__label">{t.audience.exitTitle}</span>
+        <span className="kid-exit-switch__label">{exitTitle}</span>
         <span className="kid-exit-switch__fill" aria-hidden="true" />
       </button>
 

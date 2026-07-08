@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react'
+import { StrictMode, useEffect, useState } from 'react'
 // createRoot, not hydrateRoot — there's no prerender to match in the prototype,
 // and even with one we'd render fresh over it (portal convention).
 import { createRoot } from 'react-dom/client'
@@ -119,24 +119,46 @@ function Root() {
       return false
     }
   })
+  // `?simple=1` is the SIMPLE-lens kiosk boot lock (bmad/08 A-1) — the post-reader
+  // "grandma" counterpart of ?kid=1: forces the simple view, latches `locked`, and
+  // pins the kiosk surface. Same persist/exit contract; kid wins if both are set.
+  const [simpleLocked, setSimpleLocked] = useState<boolean>(() => {
+    try {
+      const simple = new URLSearchParams(window.location.search).get('simple')
+      if (simple === '1') {
+        localStorage.setItem('babillard-simple-lock', '1')
+        return true
+      }
+      if (simple === '0') {
+        localStorage.removeItem('babillard-simple-lock')
+        return false
+      }
+      return localStorage.getItem('babillard-simple-lock') === '1'
+    } catch {
+      return false
+    }
+  })
+  // EITHER lock pins the audience + hides Réglages + forces the kiosk surface.
+  const locked = kidLocked || simpleLocked
 
-  // Lock wins; else the last manual choice; else parent.
+  // Lock wins (kid → toddler, simple → simple); else the last manual choice; else parent.
   const [audience, setAudienceState] = useState<Audience>(() => {
     if (kidLocked) return 'toddler'
+    if (simpleLocked) return 'simple'
     try {
       const saved = localStorage.getItem('babillard-audience')
-      if (saved === 'parent' || saved === 'toddler') return saved
+      if (saved === 'parent' || saved === 'toddler' || saved === 'simple') return saved
     } catch {
       /* noop */
     }
     return 'parent'
   })
   function setAudience(a: Audience) {
-    // A locked kiosk (?kid=1) is pinned to the toddler lens — refuse ANY audience
-    // change at the source, so the lock holds even if a stray code path (or a
-    // future caller) tries to flip it. The only way out stays the deliberate
-    // adult act of relaunching with ?kid=0 (handled at init above). PRD C5.
-    if (kidLocked) return
+    // A locked kiosk (?kid=1 / ?simple=1) is pinned — refuse ANY audience change
+    // at the source, so the lock holds even if a stray code path (or a future
+    // caller) tries to flip it. The only way out stays the deliberate adult act of
+    // relaunching with ?kid=0 / ?simple=0 (handled at init above). PRD C5.
+    if (locked) return
     setAudienceState(a)
     try {
       localStorage.setItem('babillard-audience', a)
@@ -145,19 +167,20 @@ function Root() {
     }
   }
 
-  // The adult escape hatch, used by the parental gate in HubLayout. Clears the
-  // ?kid=1 latch and drops back to the parent lens — the in-app equivalent of
-  // relaunching with ?kid=0, for an installed PWA that has no address bar.
-  // setAudience() refuses while kidLocked, so we clear the lock first then set
-  // the audience through the raw setter.
+  // The adult escape hatch, used by the exit gate in HubLayout. Clears BOTH latches
+  // and drops back to the parent lens — the in-app equivalent of relaunching with
+  // ?kid=0 / ?simple=0, for an installed PWA that has no address bar. setAudience()
+  // refuses while locked, so we clear the locks first then set through the raw setter.
   function unlock() {
     try {
       localStorage.removeItem('babillard-kid-lock')
+      localStorage.removeItem('babillard-simple-lock')
       localStorage.setItem('babillard-audience', 'parent')
     } catch {
       /* noop */
     }
     setKidLocked(false)
+    setSimpleLocked(false)
     setAudienceState('parent')
   }
 
@@ -169,7 +192,7 @@ function Root() {
   function setGuestPreview(on: boolean) {
     persistGuestPreview(on)
     setGuestPreviewState(on)
-    if (on && !kidLocked) {
+    if (on && !locked) {
       setAudienceState('parent')
       try {
         localStorage.setItem('babillard-audience', 'parent')
@@ -191,7 +214,7 @@ function Root() {
         localStorage.setItem('babillard-surface', qs)
         return { surface: qs, surfaceChosen: true }
       }
-      if (kidLocked) {
+      if (locked) {
         localStorage.setItem('babillard-surface', 'kiosk')
         return { surface: 'kiosk', surfaceChosen: true }
       }
@@ -266,10 +289,22 @@ function Root() {
     }
   }
 
+  // The « Simple » lens scales the whole rem-based type tree ~1.4× (bmad/08 A-1).
+  // Mirror the data-text-scale / data-theme trick: one attribute on <html> that a
+  // single core.css rule keys off, so the bump reaches every surface (including
+  // the parent views simple inherits on the sub-tabs) without per-component work.
+  // theme-bootstrap.js sets it pre-paint for a ?simple=1 reboot; this keeps it in
+  // sync as the lens flips at runtime.
+  useEffect(() => {
+    const root = document.documentElement
+    if (audience === 'simple') root.setAttribute('data-lens', 'simple')
+    else root.removeAttribute('data-lens')
+  }, [audience])
+
   return (
     <QueryClientProvider client={queryClient}>
       <LangContext.Provider value={{ lang, setLang }}>
-        <AudienceContext.Provider value={{ audience, setAudience, locked: kidLocked, unlock, guestPreview, setGuestPreview }}>
+        <AudienceContext.Provider value={{ audience, setAudience, locked, unlock, guestPreview, setGuestPreview }}>
           <SurfaceContext.Provider value={{ surface, setSurface, chosen: surfaceChosen }}>
           <ProfileContext.Provider value={{ memberId: profile, setMemberId: setProfile }}>
           <CalmContext.Provider value={{ calm, setCalm }}>

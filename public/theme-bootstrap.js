@@ -76,4 +76,18 @@
   } catch (e) {
     /* no a11y profile — base presentation shows */
   }
+  // « Simple » lens type bump (bmad/08 A-1): set data-lens='simple' before first
+  // paint so a ?simple=1 kiosk reboots big, no flash. The lock latch OR the URL
+  // param OR the saved audience all mean simple (kept in sync with src/main.tsx).
+  try {
+    var simpleParam = new URLSearchParams(window.location.search).get('simple')
+    var isSimple =
+      simpleParam === '1' ||
+      (simpleParam !== '0' &&
+        (localStorage.getItem('babillard-simple-lock') === '1' ||
+          localStorage.getItem('babillard-audience') === 'simple'))
+    if (isSimple) document.documentElement.setAttribute('data-lens', 'simple')
+  } catch (e) {
+    /* no simple lens — base type shows */
+  }
 })()
