@@ -261,10 +261,14 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     the sheets, `aria-label` on every icon control, `prefers-reduced-motion`
     honored by the tour/ambient/view transitions, 44px hit-target sweep in
     *parent* view (toddler targets are already huge).
-41. ✅ **The offline temp-id chain** [S] ◐ — OFFLINE.md's known limitation
-    (add-then-edit the same row offline drops the edit on replay). Rare, but
-    it's the only known way the outbox silently loses intent. A queued-op
-    rewrite pass (map `tmp-…` → real id when the create replays) closes it.
+41. ✅ **The offline temp-id chain** [S] ◐ — **SHIPPED 2026-07-07:** a queued
+    create now carries its optimistic `tmpId` (`WriteSpec.tmpId` → OutboxEntry,
+    threaded via `useCreateWithUndo` from the two tmp-row sites: Liste add,
+    todos add). On replay, `extractCreatedId` pulls the real id from the
+    response and `rewriteTmpId` patches every later queued op still targeting
+    the tmp id (path + body, persisted mid-replay). Pure helpers unit-tested
+    (`src/lib/outbox.test.ts`); OFFLINE.md limitation updated with the one
+    residual edge (acting in the create-landed→refetch window).
 42. ❌ ~~**Kiosk recovery drill**~~ [S] — *rejeté.* (The « tablet is acting
     weird » Guide one-pager.)
 
@@ -452,7 +456,7 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 **Ambient & platform (continuous, order-free)**
 ~~D-30 cast×ambient~~ ✅ (was already shipped) · D-31 carnets upkeep cadence ·
 ~~F-47 hourly breath~~ ✅ 2026-07-07 · E-35 takeout · E-36 nightly backup ·
-~~E-37 burn-in care~~ ✅ 2026-07-07 · E-41 temp-id chain fix ·
+~~E-37 burn-in care~~ ✅ 2026-07-07 · ~~E-41 temp-id chain fix~~ ✅ 2026-07-07 ·
 ~~E-39 UNIFORMIZING reds~~ ✅ (audit shows BE-1/BE-2/FE-1/FE-2/LIB-2 + Phases
 0–2 all landed — the "reds" note was stale; what remains in UNIFORMIZING.md is
 Phase 3/4 opportunistic work) · E-40 a11y pass · C-23 offline-aware

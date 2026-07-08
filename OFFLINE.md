@@ -95,10 +95,18 @@ wrapper). These need a live server round-trip, so queueing them adds no value.
 
 ## Known limitations
 
-- **Temp-id chains:** if you add a row offline and then act on it (e.g. check it)
-  before reconnecting, the follow-up op targets the `tmp-…` id and is dropped on
-  replay (the create gets a real server id). Adding then editing the same item
-  while offline is the only case; it self-heals on the next poll.
+- **Temp-id chains — FIXED (bmad/08 E-41, 2026-07-07):** adding a row offline and
+  then acting on it (check/edit/delete) before reconnecting used to drop the
+  follow-up on replay (it targeted the `tmp-…` id). Now a queued create carries its
+  `tmpId` (`WriteSpec.tmpId`, threaded from the tmp-row call sites — Liste add,
+  todos add); when the create replays, the outbox extracts the real id from the
+  response (`extractCreatedId` — top-level `{id}` or one nested level) and rewrites
+  every later queued op that still references the tmp id (path + body,
+  `rewriteTmpId`), persisting the rewrite so a mid-replay interruption keeps it.
+  *Residual edge:* acting on the tmp row in the moment BETWEEN its create landing
+  and the invalidate refetch swapping the row still targets a stale id — one poll
+  self-heals, as before. A new tmp-row create site must pass `tmpId` to keep its
+  chain safe.
 - **Brief flicker on reconnect:** the live poll and the outbox replay both fire on
   reconnect; an optimistically-added row can blink out and back as the real one
   lands. Self-corrects within one poll.
@@ -109,6 +117,8 @@ wrapper). These need a live server round-trip, so queueing them adds no value.
 
 - `functions/_lib/idempotency.test.ts` — replay dedup, non-2xx stays retryable,
   per-household scoping.
+- `src/lib/outbox.test.ts` — the E-41 temp-id chain helpers (`extractCreatedId`
+  response shapes; `rewriteTmpId` body/array/path rewrites, identity on no-match).
 - **e2e** (`npm run e2e`): `offline-outbox.spec.ts` — a `/liste` write made offline
   queues (offline-bar pending count, nothing on the wire) then replays on the `online`
   event; `capture-offline.spec.ts` — an offline capture surfaces a failure and keeps the

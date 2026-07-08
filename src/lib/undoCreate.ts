@@ -26,6 +26,9 @@ export interface CreateWithUndoOpts {
   affectedKeys: QueryKey[]
   /** Optimistic cache write applied immediately (offline creates write a temp row). */
   optimistic?: (qc: QueryClient) => void
+  /** The optimistic temp row's id (E-41) — lets the outbox rewrite later queued ops
+   *  from the tmp id to the real one once the create replays. */
+  tmpId?: string
   /** Undo toast copy (e.g. t.undo.added(title)). */
   message: string
   /** The compensating DELETE target — defaults to `endpoint` / `affectedKeys`. */
@@ -46,6 +49,7 @@ export function useCreateWithUndo() {
         body: opts.body,
         affectedKeys: opts.affectedKeys,
         optimistic: opts.optimistic,
+        tmpId: opts.tmpId,
       }).catch(() => null)
       const id = createdId(res)
       if (id || opts.toastWhenQueued)

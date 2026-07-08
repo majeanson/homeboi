@@ -18,6 +18,11 @@ export interface OutboxEntry {
   body?: unknown
   affectedKeys: QueryKey[] // invalidated once the write lands (after replay)
   createdAt: number
+  // E-41 (temp-id chain): the optimistic `tmp-…` row id this CREATE stood in for.
+  // When the create replays and the server answers with the real id, every later
+  // queued op that still targets the tmp id is rewritten to the real one — so
+  // "add offline, then check/edit/delete it offline" no longer drops the follow-up.
+  tmpId?: string
 }
 
 function idb(): Promise<IDBDatabase | null> {
@@ -94,6 +99,37 @@ export async function clearOutbox(): Promise<void> {
   notify()
 }
 
+// E-41 helpers — pure + exported for unit tests.
+// The created row's server id, from the create endpoint's response. Every create
+// here answers `{ id }` at the top level (list, todos); tolerate one level of
+// nesting (`{ item: { id } }`) for future endpoints. Null → no rewrite (status quo).
+export function extractCreatedId(res: unknown): string | null {
+  if (!res || typeof res !== 'object') return null
+  const o = res as Record<string, unknown>
+  if (typeof o.id === 'string') return o.id
+  for (const v of Object.values(o)) {
+    if (v && typeof v === 'object' && typeof (v as { id?: unknown }).id === 'string')
+      return (v as { id: string }).id
+  }
+  return null
+}
+
+// Substitute the tmp id for the real one wherever a queued op references it — the
+// path (`list/tmp-…`) or anywhere in the body (`{id: 'tmp-…'}`, ids arrays). Tmp
+// ids are `tmp-[a-z0-9-]+` (no JSON-special characters), so a string-level replace
+// on the serialized body is exact. Untouched entries are returned as-is.
+export function rewriteTmpId(e: OutboxEntry, tmpId: string, realId: string): OutboxEntry {
+  const inPath = e.path.includes(tmpId)
+  const bodyStr = e.body === undefined ? '' : JSON.stringify(e.body)
+  const inBody = bodyStr.includes(tmpId)
+  if (!inPath && !inBody) return e
+  return {
+    ...e,
+    path: inPath ? e.path.split(tmpId).join(realId) : e.path,
+    body: inBody ? (JSON.parse(bodyStr.split(tmpId).join(realId)) as unknown) : e.body,
+  }
+}
+
 // Replay the queue in FIFO order. Stops (keeping order) on a transient failure so
 // it can resume next trigger; drops an entry the server rejects as moot (4xx — the
 // row's gone/forbidden/conflicting), since the live poll will reconcile the cache.
@@ -104,11 +140,26 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
   replaying = true
   const touched = new Set<string>()
   try {
-    for (const e of await allEntries()) {
+    const entries = await allEntries()
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i]
       try {
-        await api(e.path, { method: e.method, body: e.body, idempotencyKey: e.key })
+        const res = await api(e.path, { method: e.method, body: e.body, idempotencyKey: e.key })
         await remove(e.id)
         e.affectedKeys.forEach((k) => touched.add(JSON.stringify(k)))
+        // E-41: this create stood in for a tmp row — patch the real id into every
+        // later queued op still aimed at the tmp one (path or body), and persist
+        // the rewrite so a mid-replay interruption doesn't lose it.
+        const realId = e.tmpId ? extractCreatedId(res) : null
+        if (e.tmpId && realId) {
+          for (let j = i + 1; j < entries.length; j++) {
+            const rewritten = rewriteTmpId(entries[j], e.tmpId, realId)
+            if (rewritten !== entries[j]) {
+              entries[j] = rewritten
+              await tx('readwrite', (s) => s.put(rewritten))
+            }
+          }
+        }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           // Device/session revoked — these will never succeed. Let the auth-lost

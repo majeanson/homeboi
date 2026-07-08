@@ -319,6 +319,9 @@ export function Liste() {
         qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
           b ? { ...b, list: [...b.list, { id: tmpId, text, source: 'manual', checked_at: null }] } : b,
         ),
+      // E-41: if this add queues, later queued ops on the tmp row (check it, clear
+      // it) get rewritten to the real id when the create replays.
+      tmpId,
       message: t.undo.added(text),
       undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
     })

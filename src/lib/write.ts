@@ -47,6 +47,11 @@ export interface WriteSpec {
   // Optimistic cache mutation applied immediately. Offline creates should write a
   // temp row (e.g. id `tmp-${something}`); invalidate reconciles it after replay.
   optimistic?: (qc: QueryClient) => void
+  // The optimistic temp row's id, when this CREATE wrote one (E-41). If the write
+  // ends up queued, the outbox uses it to rewrite later queued ops that target the
+  // tmp id once the create replays and the real id is known — so "add offline,
+  // then act on it offline" no longer drops the follow-up.
+  tmpId?: string
 }
 
 export type WriteResult<T> = { data: T; queued: false } | { data: null; queued: true }
@@ -71,7 +76,7 @@ export async function writeWith<T = unknown>(
   spec.optimistic?.(qc)
 
   const queue = async (): Promise<WriteResult<T>> => {
-    await enqueue({ id: uuid(), key: uuid(), path, method, body: spec.body, affectedKeys, createdAt: Date.now() })
+    await enqueue({ id: uuid(), key: uuid(), path, method, body: spec.body, affectedKeys, createdAt: Date.now(), tmpId: spec.tmpId })
     return { data: null, queued: true }
   }
 

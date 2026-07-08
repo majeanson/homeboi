@@ -137,6 +137,9 @@ export function TodoSection({
         qc.setQueryData<TodosData>(key, insert)
         if (scope != null && scope === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
       },
+      // E-41: a queued follow-up (toggle done) on the tmp row gets rewritten to the
+      // real id when this create replays.
+      tmpId,
       message: t.todos.added(value),
     })
   }
