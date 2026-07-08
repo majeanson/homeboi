@@ -76,7 +76,7 @@ idle** — never louder than that.
    the month read's trip pair; the fêtes stay client-derived in `lib/year`
    (`yearPoints()` merger, unit-tested; honours the `babillard-fetes`
    opt-out). Tap a mini-month → Mois at that offset (`MonthView
-   initialOffset`, transient, not persisted). School-year bounds wait on A-3
+initialOffset`, transient, not persisted). School-year bounds wait on A-3
    (plus tard). Guide « Changer la vue » rewritten to the trio + whatsNew.
 2. ✅ **Les fêtes québécoises, dérivées** [S] — **SHIPPED 2026-07-08 (the
    first 09 item, per OQ-4's shape: announce all, zero impact, settings
@@ -134,10 +134,10 @@ idle** — never louder than that.
    emoji + name + « dans N dodos », « C'est aujourd'hui ! 🎉 » on the day,
    self-clears after and the next offer appears. Per-device stores
    (`babillard-countdown`, `-countdown-skip`); guests see a pinned tile,
-   never the offer. Guide point + whatsNew. *(Trips as candidates: later,
+   never the offer. Guide point + whatsNew. _(Trips as candidates: later,
    when the card can peek the trips cache. A-6's generic form-default —
    yearly recurrences pre-selecting a weeks-long lead — remains a small
-   follow-up; the seeds + suggested countdowns already carry week leads.)*
+   follow-up; the seeds + suggested countdowns already carry week leads.)_
 6. ✅ **« Préparer » windows on annual events** [S] ◐ — _garde (2026-07-08, with A-5)_ — lead_seconds already
    gives « Bientôt »; for annual items the useful lead is WEEKS (gift for a
    birthday, tires before the first snow). Default yearly recurrences to a
