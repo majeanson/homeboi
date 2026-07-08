@@ -63,8 +63,9 @@
    position is immaterial, but after today.css so .act__checkbtn overrides button. */
 @import './styles/detail.css';
 /* Le cercle (people directory) — uniquely-named .cercle-/.cf- classes, position
-   immaterial; kept with the late additions. */
-@import './styles/cercle.css';
+   immaterial. B-11 (bmad/10): moved OUT of the eager shell — imported instead as a
+   side effect by every lazy page that renders cercle/.cf content (Cercle*,
+   FamilyImportPage, IntakeForm, Postbox, SharedVoyageJoinPage, DevKit). */
 /* #34 / #35 — typed share-link scenes (handoff / welcome). Uniquely-named
    .handoff__/.welcome__ classes, position immaterial. */
 @import './styles/handoff.css';

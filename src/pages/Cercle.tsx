@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
+// .cercle-*/.cf-* classes); load it whenever this page renders instead.
+import '../styles/cercle.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
