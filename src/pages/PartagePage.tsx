@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — partage.css moved out of the eager shell (standalone public
+// page, no hub chrome); load it whenever this page renders instead.
+import '../styles/partage.css'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
