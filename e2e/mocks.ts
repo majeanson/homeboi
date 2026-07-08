@@ -768,7 +768,7 @@ export async function mockApi(
 }
 
 export type Theme = 'day' | 'night'
-export type Audience = 'parent' | 'toddler'
+export type Audience = 'parent' | 'toddler' | 'simple'
 export type Lang = 'fr' | 'en'
 export type Surface = 'kiosk' | 'mobile'
 

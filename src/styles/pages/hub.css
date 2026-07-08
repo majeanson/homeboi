@@ -270,6 +270,22 @@
     }
   }
 }
+/* Tap-to-hear (bmad/08 A-2): in a simplified lens a ~500 ms hold on a content
+   row speaks it (lib/tapToHear). Suppress the OS text-selection / touch callout
+   on those rows so it can't race the hold — same trick as the exit switch. */
+[data-audience='toddler'] .act,
+[data-audience='toddler'] .listrow,
+[data-audience='toddler'] .note-card,
+[data-audience='simple'] .act,
+[data-audience='simple'] .listrow,
+[data-audience='simple'] .note-card,
+[data-audience='simple'] .bigtile,
+[data-audience='simple'] .today-hero {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* Sayable: plain kid-surface text turned into a tap-to-hear button without
    changing how it looks (NFR-KID-2 — any word is hearable). */
 .sayable {

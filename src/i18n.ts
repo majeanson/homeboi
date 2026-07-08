@@ -429,6 +429,8 @@ export const FR = {
     cookLeftover: 'Des restes ce soir — rien à cuisiner',
     list: 'La liste',
     listEmpty: 'Liste vide. Rien à acheter.',
+    // The « Simple » board's fourth zone heading (the fridge notes, inline).
+    notes: 'Notes',
     chores: 'Les corvées',
     choresEmpty: 'Aucune corvée.',
     todos: 'À faire',
@@ -1820,6 +1822,9 @@ export const FR = {
     voiceAuto: 'Automatique (meilleure voix)',
     voiceTest: 'Tester la voix',
     voiceSpeedLabel: 'Vitesse',
+    // Tap-to-hear (bmad/08 A-2) — the long-press-to-speak pref, per appareil.
+    tapToHearLabel: 'Toucher pour entendre',
+    tapToHearHint: 'En vue Enfant ou Simple : garde le doigt une demi-seconde sur une ligne pour l’entendre à voix haute.',
     voiceNone: 'Aucune voix « Français (Canada) » n’est installée sur cet appareil. Ajoute-en une dans les réglages du système pour entendre la lecture.',
     voiceNoneLang: 'Aucune voix pour cette langue sur cet appareil. Ajoute-en une dans les réglages du système (Accessibilité ▸ Contenu énoncé). Sur iPad/iPhone, le navigateur n’a souvent accès qu’aux voix « par défaut » — une voix « Améliorée » peut ne pas être disponible ici.',
     tutorialTitle: 'Aide contextuelle',
@@ -3008,6 +3013,8 @@ export const EN: typeof FR = {
     cookLeftover: 'Leftovers tonight — no cooking needed',
     list: 'The list',
     listEmpty: 'List empty. Nothing to buy.',
+    // The "Simple" board's fourth zone heading (the fridge notes, inline).
+    notes: 'Notes',
     chores: 'Chores',
     choresEmpty: 'No chores.',
     todos: 'To do',
@@ -4352,6 +4359,9 @@ export const EN: typeof FR = {
     voiceAuto: 'Automatic (best voice)',
     voiceTest: 'Test the voice',
     voiceSpeedLabel: 'Speed',
+    // Tap-to-hear (bmad/08 A-2) — the long-press-to-speak pref, per device.
+    tapToHearLabel: 'Touch to hear',
+    tapToHearHint: 'In the Kid or Simple view: hold a finger half a second on a line to hear it read aloud.',
     voiceNone: 'No “Français (Canada)” voice is installed on this device. Add one in the system settings to hear read-aloud.',
     voiceNoneLang: 'No voice for this language on this device. Add one in the system settings (Accessibility ▸ Spoken Content). On iPad/iPhone the browser often only has the “default” voices — an “Enhanced” voice may not be available here.',
     tutorialTitle: 'Contextual help',

@@ -396,36 +396,47 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
   setup-step) raised to `var(--text-xs)`. Off-token literals in page CSS stay
   for the UNIFORMIZING type sweep.
 
-**Wave 4 — the grandma arc** — **🚧 IN PROGRESS (branch `wave4-grandma-arc`).**
+**Wave 4 — the grandma arc** — **✅ SHIPPED 2026-07-07 (merged to `main`).**
 
-- **A-1 « Simple » audience lens — AXIS LANDED, board pending.** Shipped on the
-  branch: `Audience` widened to `parent | toddler | simple` (`lib/audience.ts`);
-  the `?simple=1` boot latch + `babillard-simple-lock` mirror `?kid=1`
-  (`main.tsx`), `locked = kidLocked || simpleLocked`; `unlock()` clears both;
-  the ~1.4× type bump is a root `data-lens='simple'` attribute (core.css rule +
-  `main.tsx` effect + `theme-bootstrap.js` pre-paint, same mechanism as
-  `data-text-scale`); HubLayout gained `simple`/`restricted` so the simple lens
-  hides Réglages + the ＋ FAB + the collapsible rail and gets an **exit gate**
-  (`KidExitGate requireMath={false}` — a 3s hold, NO math: a capable adult, not
-  a pre-reader); the Réglages audience switch gained a 4th **Simple** button
+- **A-1 « Simple » audience lens — ✅ SHIPPED.** The axis: `Audience` widened to
+  `parent | toddler | simple` (`lib/audience.ts`); the `?simple=1` boot latch +
+  `babillard-simple-lock` mirror `?kid=1` (`main.tsx`), `locked = kidLocked ||
+  simpleLocked`; `unlock()` clears both; the ~1.4× type bump is a root
+  `data-lens='simple'` attribute (core.css rule + `main.tsx` effect +
+  `theme-bootstrap.js` pre-paint, same mechanism as `data-text-scale`);
+  HubLayout gained `simple`/`restricted` so the simple lens hides Réglages + the
+  ＋ FAB + the collapsible rail and gets an **exit gate** (`KidExitGate
+  requireMath={false}` — a 3s hold, NO math: a capable adult, not a pre-reader);
+  the Réglages audience switch gained a 4th **Simple** button
   (`operator/display.tsx`). Simple **inherits the PARENT views** on every tab
   (real words, full capability — she reads fine), just bigger + calmer.
-  **REMAINING (next session):** the bespoke **four-giant-tile Simple board**
-  (Aujourd'hui · Souper · La liste · Notes) — today `audience==='simple'` falls
-  through to the parent board at 1.4×, which is coherent but not yet the calm
-  four-tile glance. Build a `SimpleBoard` (reuse `.bigtiles`/`.bigtile` +
-  `Sayable`, `useBoardData` fields: `today`/`tonight`/`list`/`notes`), branch it
-  in `Board.tsx` before the toddler branch. Widen the duplicate e2e `Audience`
-  type (`e2e/mocks.ts`) + add a `?simple=1` lock spec mirroring the kid-lock one.
-- **A-2 tap-to-hear everywhere — NOT STARTED.** Design settled (survey done):
-  a shell-level long-press listener in HubLayout on `[data-speak]` (or a
-  content-selector set), active only in toddler/simple + a new voice pref;
-  ~500ms hold → `useSpeak()` reads the label; defensively scoped against
-  `usePointerDnd` (`data-dnd-zone` + window pointer-capture), scrolling
-  (`.hub__body`, abort on move >8px, never preventDefault single-finger),
-  `KidExitGate` (own pointer capture), and open modals/`TourOverlay`. Add a
-  `lib/tapToHear` `useSyncExternalStore` pref (default on) + a toggle in
-  `VoiceSection`. `speak.ts` needs no change (`speak(text, langOverride?)`).
+  The board: **`SimpleBoard`** (`components/board/SimpleBoard.tsx`) — four calm
+  zones off the same `useBoardData`: three one-tap `.bigtile` door-Links
+  (Aujourd'hui → `/moment?scope=tonight`, Souper → `/kitchen`, La liste →
+  `/liste`), each answering its question right on the tile (next thing today,
+  tonight's supper, the first few list items by NAME — never a count), + the
+  fridge Notes inline as the fourth zone. Branched in `Board.tsx` before the
+  toddler branch; tiles wear their hub section's nav colour and carry
+  `data-speak`. e2e: `Audience` widened in `e2e/mocks.ts`; a `?simple=1` lock
+  spec in `e2e/interactions.spec.ts` mirrors the kid-lock one (no settings, no
+  FAB, `/settings` bounces, 3s hold exits with NO math) — passing.
+- **A-2 tap-to-hear everywhere — ✅ SHIPPED.** `lib/tapToHear.ts`: ONE
+  shell-level ~500 ms long-press listener (mounted by HubLayout) on
+  `[data-speak], .act, .listrow, .note-card, .bigtile, .today-hero, .sayable` →
+  `useSpeak()`; active only in toddler/simple + a per-device pref
+  (`babillard-tap-to-hear`, default ON, `createDeviceStore`), toggled in
+  Réglages ▸ Système ▸ Affichage ▸ **Voix** (« Toucher pour entendre »).
+  Defensively scoped as surveyed: skips `[data-dnd-zone]`, `.kid-exit-switch`,
+  form fields, open modal/tour; aborts on >8 px travel (passive listeners,
+  scroll stays native); suppresses the OS context menu on targets and swallows
+  the ONE post-hold click so hearing never also acts. A hub.css rule drops the
+  OS text-selection callout on those rows in the simplified lenses. Guide:
+  the `audience` card grew « Vue simple » + « Toucher pour entendre » points;
+  `whatsNew` entry `simple-lens`; COMPONENTS.md rows for both.
+  **Known limit (fine for v1):** the listener lives in HubLayout, so
+  full-screen scenes OUTSIDE the hub shell (`/moment`, cook mode) don't
+  long-press-speak — their surfaces already have their own read-aloud
+  affordances.
 
 *(D-26 Le pont deferred to the plus-tard shelf per OQ-3.)*
 

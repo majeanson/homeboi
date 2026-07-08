@@ -9,6 +9,7 @@ import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
+import { useTapToHearListener } from '../lib/tapToHear'
 import { useAmbient } from '../lib/ambient'
 import { useKeepAwake } from '../lib/keepAwake'
 import { useWakeLock } from '../lib/useWakeLock'
@@ -75,6 +76,11 @@ export function HubLayout() {
   // allumé »), default ON; releases the lock the moment it's turned off. The lock
   // only holds while the tab is visible, so a backgrounded phone still sleeps normally.
   useWakeLock(useKeepAwake())
+  // Tap-to-hear everywhere (bmad/08 A-2): in the toddler/simple lenses (+ the
+  // per-device voice pref), a ~500 ms hold on any content row reads it aloud.
+  // Shell-level so every tab gets it without per-row wiring; defensively scoped
+  // off drags, the exit gate, form fields, modals and scrolling (lib/tapToHear).
+  useTapToHearListener()
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()
