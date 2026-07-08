@@ -38,6 +38,8 @@ import { SharedPackingList } from '../components/voyage/SharedPackingList'
 import { VoyageShareModal } from '../components/voyage/VoyageShareModal'
 import type { SharedTrip, SharedPackingItem } from '../components/voyage/voyage'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
+import { JoindreRail } from '../components/cercle/JoindreRail'
+import type { JoindreCandidate } from '../lib/joindre'
 import { personKey } from '../lib/cercle'
 import { SeekGame } from '../components/jouer/SeekGame'
 import { buildSeekDecks } from '../lib/playContent'
@@ -204,6 +206,17 @@ const DEMO_WORLD: World = {
     { aId: 'household', bId: 'group:amis', viaKeys: [personKey('member', 'm2')] },
   ],
 }
+
+// « Joindre » (A-6) specimen: a small mixed eligible set — a household member, an
+// urgence-tagged contact, an email-only contact, plus a business (fed separately).
+const DEMO_JOINDRE_PEOPLE: JoindreCandidate[] = [
+  { key: 'member:m1', kind: 'member', name: 'Maman', firstName: 'Maman', phone: '514-555-0101', email: null, avatarKind: 'color', avatarRef: null, colour: '#B06A93' },
+  { key: 'contact:c1', kind: 'contact', name: 'Mamie', firstName: 'Mamie', phone: '450-555-0201', email: null, avatarKind: null, avatarRef: null, colour: '#C45E86', tags: ['urgence'] },
+  { key: 'contact:c2', kind: 'contact', name: 'Sophie', firstName: 'Sophie', phone: null, email: 'sophie@exemple.ca', avatarKind: null, avatarRef: null, colour: '#C45E86' },
+]
+const DEMO_JOINDRE_BUSINESSES = [
+  { id: 'b1', name: 'Vétérinaire Nord', phone: '514-555-0301', email: null, colour: null },
+]
 
 // Stand-in household members for the CercleNotes specimen (the face row).
 const DEMO_MEMBERS: Member[] = [
@@ -1102,6 +1115,20 @@ export function DevKit() {
           <div style={{ height: '60vh' }}>
             <CercleConstellation world={DEMO_WORLD} byKey={DEMO_WORLD_BYKEY} />
           </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Cercle',
+      name: 'JoindreRail',
+      file: 'components/cercle/JoindreRail.tsx',
+      kw: 'cercle joindre reach out phone book quick dial tel mailto call appeler rail frequents urgence mobile',
+      render: () => (
+        // « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile: only
+        // renders when `useSurface()` is 'mobile' (flip the toolbar surface toggle
+        // above to 'mobile' to see it) and hides for a guest / under 2 eligible.
+        <Demo label="Quick-dial rail atop Le cercle (mobile surface only)">
+          <JoindreRail people={DEMO_JOINDRE_PEOPLE} businesses={DEMO_JOINDRE_BUSINESSES} />
         </Demo>
       ),
     },

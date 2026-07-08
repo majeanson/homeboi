@@ -37,6 +37,14 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     card: 'a-regler',
   },
   {
+    id: 'joindre-rail',
+    text: {
+      fr: 'Nouveau : « Joindre » — sur mobile, une rangée en haut du cercle pour appeler ou écrire d’un doigt, les plus utiles en premier.',
+      en: 'New: “Reach out” — on mobile, a row at the top of the circle to call or email in one tap, the most useful ones first.',
+    },
+    card: 'cercle',
+  },
+  {
     id: 'annee-view',
     text: {
       fr: 'Nouveau : « L’année » — une troisième vue du babillard : douze petits mois avec les repères de l’année (fêtes, anniversaires, voyages, entretien).',

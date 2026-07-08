@@ -1280,6 +1280,8 @@ export const FR = {
       sayBridge: (via: string, a: string, b: string) => `${via} relie ${a} et ${b}.`,
     },
     view: { list: 'Liste', links: 'Liens', tree: 'Arbre', monde: 'Monde' },
+    // « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile.
+    joindreTitle: 'Joindre',
     memberBadge: 'Maisonnée',
     // The "voir le cercle selon une personne" focus row (reuses MemberSwitcher).
     focusLabel: 'Voir selon une personne',
@@ -3897,6 +3899,8 @@ export const EN: typeof FR = {
       sayBridge: (via: string, a: string, b: string) => `${via} connects ${a} and ${b}.`,
     },
     view: { list: 'List', links: 'Links', tree: 'Tree', monde: 'World' },
+    // « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile.
+    joindreTitle: 'Reach out',
     memberBadge: 'Household',
     focusLabel: 'See from a person',
     focusBy: (name: string) => `Links seen from ${name}`,

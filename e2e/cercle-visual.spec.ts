@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
 
 // Visual sweep for « Le cercle » — NOT covered by screenshots.spec.ts (which has no
@@ -52,6 +52,55 @@ for (const state of STATES) {
       })
     }
   }
+}
+
+// « Joindre » (A-6) — the quick-dial rail: present on mobile (the seeded mock has
+// several members/contacts with a phone — well above the ≥2 eligible floor), with
+// real tel: hrefs on its tiles; absent on the kiosk wall (a shared surface never
+// dials out on its own).
+test('joindre rail — present on mobile with tel: hrefs', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  await page.goto('/cercle')
+  await settle(page, '.joindre')
+  const items = page.locator('.joindre a.joindre__item')
+  await expect(items.first()).toBeVisible()
+  expect(await items.count()).toBeGreaterThanOrEqual(2)
+  const hrefs = await items.evaluateAll((els) => els.map((el) => el.getAttribute('href')))
+  expect(hrefs.every((h) => h?.startsWith('tel:') || h?.startsWith('mailto:'))).toBe(true)
+  expect(hrefs.some((h) => h?.startsWith('tel:'))).toBe(true)
+})
+
+test('joindre rail — absent on the kiosk wall', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
+  await page.goto('/cercle')
+  await settle(page, '.cercle-group')
+  await expect(page.locator('.joindre')).toHaveCount(0)
+})
+
+// Regression guard: the rail is a Rail (its own inner strip scrolls sideways on
+// overflow, per CLAUDE.md Horizontal overflow) but its OUTER wrapper must still sit
+// fully inside the viewport at the tightest phone widths — it must never be the
+// thing that forces the whole page to pan. Checked at both 360 and 390 (Le cercle
+// itself stays exempt from the app-wide guard for its pan/zoom trees; the rail is
+// not one of those, so it gets its own hard assertion here).
+for (const width of [360, 390]) {
+  test(`joindre rail never bleeds off the right edge @phone-${width}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+    await page.goto('/cercle')
+    await settle(page, '.joindre')
+    await expect(page.locator('.joindre')).toBeVisible()
+    const bleed = await page.evaluate(() => {
+      const rail = document.querySelector('.joindre') as HTMLElement
+      return rail.getBoundingClientRect().right - document.documentElement.clientWidth
+    })
+    expect(bleed, 'joindre rail bleeds off the right edge').toBeLessThanOrEqual(1)
+  })
 }
 
 // Toddler « Qui est-ce ? » faces grid — its own audience/layout, day + night phone.

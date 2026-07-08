@@ -2243,3 +2243,55 @@
   height: 10px;
   accent-color: var(--accent, #2a8f85);
 }
+
+/* « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile (JoindreRail.tsx).
+   A Rail (never a hand-rolled row — see CLAUDE.md Horizontal overflow) of tap-to-
+   call/write pills: avatar/storefront disc, first name, a phone-or-envelope glyph. */
+.joindre {
+  margin-bottom: var(--space-3, 12px);
+}
+.joindre__title {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  margin: 0 0 var(--space-2, 8px);
+}
+.joindre__rail {
+  padding-bottom: 0.2rem;
+}
+.joindre__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 4.4rem;
+  padding: 0.5rem 0.3rem;
+  border-radius: var(--radius-md);
+  color: inherit;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.joindre__item:hover {
+  background: var(--surface);
+}
+.joindre__biz {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--teal-wash);
+  color: var(--teal-deep);
+}
+.joindre__name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}

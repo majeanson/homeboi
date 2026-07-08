@@ -116,13 +116,19 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
    server honours `X-Profile` here; wire whichever end is dropping it.
    _(reuse: the discs, MemberSwitcher's picked profile, X-Profile already
    sent by api().)_
-6. ✅ **« Joindre » — the phone book up front** [S] ◐ — _garde (2026-07-08)_
+6. ✅ **« Joindre » — the phone book up front** [S] ◐ — **SHIPPED 2026-07-08**
    — "call the dentist" is a 3-tap hunt across Famille/Social/Business
    sub-tabs; tel:/mailto links render only deep in a card. Put one
    **Joindre** rail at the top of Le cercle on mobile: frequent/recent faces
    + businesses, tap-to-call. The genealogy depth (Arbre, Liens, Monde)
    stays exactly where it is — this just puts the everyday job first.
-   _(reuse: the C-20 frequents ranking, Avatar, Rail, existing tel: links.)_
+   `src/lib/joindre.ts` (`rankJoindre` — eligible = phone or email; urgence-
+   tagged → members-with-phone → businesses → others cold start, then the
+   existing per-device `frequentScores('joindre')`) + `JoindreRail.tsx`
+   (mobile-only, ≥2 eligible, hidden for a guest) mounted atop `Cercle.tsx`;
+   the existing directory + Business tel:/mailto: quick-links now feed the
+   same ranking. _(reuse: the C-20 frequents store (`lib/frequents.ts`,
+   already shipped), Avatar, Rail, existing tel: links.)_
 
 ## B · La confiance (the house never lies, never loses)
 

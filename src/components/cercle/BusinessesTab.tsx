@@ -6,6 +6,10 @@ import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
+// « Joindre » (A-6): a real tel:/mailto: reach-out here feeds the rail's ranking
+// too — so the quick-dial rail warms up from actual use, not just its own taps.
+import { bumpFrequent } from '../../lib/frequents'
+import { JOINDRE_SCOPE } from '../../lib/joindre'
 import { imgUrl } from '../../lib/image'
 import { faint, tintInk } from '../../lib/colors'
 import { BUSINESSES_KEY } from '../../lib/queryKeys'
@@ -121,12 +125,24 @@ export function BusinessesTab({
                 </span>
               </button>
               {b.phone && (
-                <a className="cercle-row__quick" href={`tel:${b.phone}`} aria-label={t.cercle.call} title={t.cercle.call}>
+                <a
+                  className="cercle-row__quick"
+                  href={`tel:${b.phone}`}
+                  aria-label={t.cercle.call}
+                  title={t.cercle.call}
+                  onClick={() => bumpFrequent(JOINDRE_SCOPE, `business:${b.id}`)}
+                >
                   <InlineIcon name="phone-bold" size={16} />
                 </a>
               )}
               {b.email && (
-                <a className="cercle-row__quick" href={`mailto:${b.email}`} aria-label={t.cercle.write} title={t.cercle.write}>
+                <a
+                  className="cercle-row__quick"
+                  href={`mailto:${b.email}`}
+                  aria-label={t.cercle.write}
+                  title={t.cercle.write}
+                  onClick={() => bumpFrequent(JOINDRE_SCOPE, `business:${b.id}`)}
+                >
                   <InlineIcon name="envelope-bold" size={16} />
                 </a>
               )}

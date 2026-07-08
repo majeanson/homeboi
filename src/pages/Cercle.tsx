@@ -15,6 +15,10 @@ import { useRecordUndo } from '../lib/toast'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { isGuest } from '../lib/device'
 import { useOpenPersonSheet } from '../lib/personSheet'
+import { bumpFrequent } from '../lib/frequents'
+import { JOINDRE_SCOPE, type JoindreCandidate } from '../lib/joindre'
+import { type Business } from '../lib/businesses'
+import { JoindreRail } from '../components/cercle/JoindreRail'
 import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY, MEMBERS_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { Loading, LoadError, PairPrompt } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
@@ -217,10 +221,13 @@ function CercleParent() {
   const rawLinks = useMemo(() => data?.links ?? [], [data])
   const rawGroups = useMemo(() => data?.groups ?? [], [data])
   const pets = useMemo(() => data?.pets ?? [], [data])
-  // Businesses, only to resolve a pet's vet name in its detail peek (the vet IS a
-  // Business). Shares BUSINESSES_KEY so it's already warm if the Business tab was open.
-  const { data: bizData } = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: { id: string; name: string }[] }>('businesses'), ...live })
-  const bizById = useMemo(() => new Map((bizData?.businesses ?? []).map((b) => [b.id, b.name])), [bizData])
+  // Businesses — resolves a pet's vet name in its detail peek (the vet IS a Business)
+  // AND feeds the « Joindre » rail below (needs phone/email too, hence the full
+  // Business shape, not just id/name). Shares BUSINESSES_KEY so it's already warm if
+  // the Business tab was open.
+  const { data: bizData } = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses'), ...live })
+  const businesses = useMemo(() => bizData?.businesses ?? [], [bizData])
+  const bizById = useMemo(() => new Map(businesses.map((b) => [b.id, b.name])), [businesses])
   // Collapse each member + its hard-linked contact into ONE person (and remap that
   // contact's links/groups onto the member) so nobody shows up twice. Pets join as
   // their own PersonKind 'pet' (never absorbed).
@@ -241,6 +248,26 @@ function CercleParent() {
   }, [unified])
   const byKey = useMemo(() => new Map(people.map((p) => [p.key, p])), [people])
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts])
+
+  // « Joindre » (A-6): the whole circle, cast to the rail's minimal shape — a
+  // contact's `tags` (the `urgence` cold-start signal) come along, members/pets
+  // carry none. Businesses feed the rail separately (see JoindreRail below).
+  const joindrePeople: JoindreCandidate[] = useMemo(
+    () =>
+      people.map((p) => ({
+        key: p.key,
+        kind: p.kind,
+        name: p.name,
+        firstName: p.firstName,
+        phone: p.phone,
+        email: p.email,
+        avatarKind: p.avatarKind,
+        avatarRef: p.avatarRef,
+        colour: p.colour,
+        tags: p.kind === 'contact' ? contactsById.get(p.id)?.tags : undefined,
+      })),
+    [people, contactsById],
+  )
 
   // The Maisonnée IS your one family: every household member — AND the household's
   // own animals — in a single card titled with the household name from Réglages
@@ -541,14 +568,28 @@ function CercleParent() {
             {sub && <span className="cercle-row__sub mono">{sub}</span>}
           </span>
         </button>
-        {/* Quick reach — call / write without opening the peek (only when known). */}
+        {/* Quick reach — call / write without opening the peek (only when known).
+            Bumps the « Joindre » (A-6) frequents so a real reach-out here feeds the
+            rail's ranking before the rail itself is ever used. */}
         {p.phone && (
-          <a className="cercle-row__quick" href={`tel:${p.phone}`} aria-label={t.cercle.call} title={t.cercle.call}>
+          <a
+            className="cercle-row__quick"
+            href={`tel:${p.phone}`}
+            aria-label={t.cercle.call}
+            title={t.cercle.call}
+            onClick={() => bumpFrequent(JOINDRE_SCOPE, p.key)}
+          >
             <InlineIcon name="phone-bold" size={16} />
           </a>
         )}
         {p.email && (
-          <a className="cercle-row__quick" href={`mailto:${p.email}`} aria-label={t.cercle.write} title={t.cercle.write}>
+          <a
+            className="cercle-row__quick"
+            href={`mailto:${p.email}`}
+            aria-label={t.cercle.write}
+            title={t.cercle.write}
+            onClick={() => bumpFrequent(JOINDRE_SCOPE, p.key)}
+          >
             <InlineIcon name="envelope-bold" size={16} />
           </a>
         )}
@@ -640,6 +681,10 @@ function CercleParent() {
         searchPick={(run) => help.pick('globalSearch', run)}
       />
       {help.bubbleFor('globalSearch')}
+
+      {/* « Joindre » (A-6) — the quick-dial rail, mobile only, self-hides under 2
+          eligible reach-outs (a read-only guest never sees it either). */}
+      <JoindreRail people={joindrePeople} businesses={businesses} />
 
       {/* The connector — a modal so it's prominent from any entry point (the ＋
           chooser, a person's peek, a family group header). */}

@@ -966,6 +966,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: '« Joindre », en haut sur mobile', en: '“Reach out”, up top on mobile' },
+        detail: {
+          fr: 'Sur ton téléphone, une petite rangée « Joindre » attend en haut du cercle : les visages et les commerces qu’on appelle le plus souvent, un doigt suffit. Elle apprend de tes appels et courriels — plus tu joins quelqu’un, plus il monte — et avant ça, elle met de l’avant tes contacts marqués « urgence », les membres de ta maisonnée, puis tes commerces. Rien sur la tablette murale (elle est partagée) ni pour une gardienne.',
+          en: 'On your phone, a small “Reach out” row waits at the top of the circle: the faces and businesses you call most, one tap away. It learns from your calls and emails — reach someone more, they rise higher — and before that, it leads with your “urgence”-tagged contacts, your household members, then your businesses. Nothing on the wall tablet (it’s shared) or for a babysitter.',
+        },
+        why: {
+          fr: '« Appeler le dentiste » ne devrait pas être une chasse à trois onglets.',
+          en: '“Call the dentist” shouldn’t be a hunt across three tabs.',
+        },
+      },
+      {
         label: { fr: 'Des liens entre les gens', en: 'Links between people' },
         detail: {
           fr: 'Dis « X est le parent de Y » dans une phrase à compléter : le lien inverse s’ajoute tout seul (Y devient l’enfant de X), et les familles se regroupent d’elles-mêmes. Mieux : les liens se propagent. Marque deux personnes comme frère et sœur, puis relie un seul grand-parent (ou un parent) à l’une d’elles — l’autre l’obtient aussi. Les grands-parents, oncles/tantes et cousins se déduisent tout seuls. Pas besoin de relier chaque paire ni de tout accrocher à une seule personne. Tes propres membres de la maisonnée comptent comme des personnes — relie-les depuis Réglages ▸ Membres. Les amis aussi : « Meilleur·e ami·e » marque la personne principale d’un membre — ton ami d’enfance relié à toi en « meilleur ami » peut aussi être relié à ta blonde en « ami », et chaque point de vue (la loupe « vu par ») le lit comme il faut.',
