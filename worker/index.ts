@@ -20,6 +20,7 @@ import { resolveTvCode } from '../functions/_lib/tvLink'
 import { readLiveShare } from '../functions/_lib/shareStore'
 import { shareOgMeta } from '../functions/_lib/shareOg'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
+import { dumpHousehold } from '../functions/_lib/takeout'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
 // must be exported from the entry module named in wrangler.toml). SCAFFOLD (#20).
@@ -326,5 +327,35 @@ export default {
       console.error(`[${request.method} /${path}]`, err)
       return serverError()
     }
+  },
+
+  // Nightly backup (bmad/08 E-36): the cheap insurance against the scariest
+  // failure mode — a migration bug eating the only real household. The cron
+  // (wrangler.toml [triggers]) dumps every household to R2 as one JSON
+  // (`backup/<householdId>/<date>.json`, same dump as /api/takeout) and keeps
+  // the newest 14. R2 unset → a no-op (the binding is optional everywhere).
+  // JSON only: the media blobs already live in this same bucket.
+  async scheduled(_controller, env, ctx): Promise<void> {
+    const bucket = env.PHOTOS
+    if (!bucket) return
+    const KEEP = 14
+    const run = async () => {
+      const hh = await env.DB.prepare('SELECT id FROM households').all<{ id: string }>()
+      const date = new Date().toISOString().slice(0, 10)
+      for (const { id } of hh.results ?? []) {
+        try {
+          const dump = await dumpHousehold(env, id)
+          await bucket.put(`backup/${id}/${date}.json`, JSON.stringify(dump))
+          // Prune beyond the newest KEEP (keys are date-named → lexicographic = chronological).
+          const listed = await bucket.list({ prefix: `backup/${id}/` })
+          const keys = listed.objects.map((o) => o.key).sort()
+          for (const k of keys.slice(0, Math.max(0, keys.length - KEEP))) await bucket.delete(k)
+        } catch (err) {
+          // One household's failure must not skip the others' backups.
+          console.error(`[backup ${id}]`, err)
+        }
+      }
+    }
+    ctx.waitUntil(run())
   },
 } satisfies ExportedHandler<WorkerEnv>

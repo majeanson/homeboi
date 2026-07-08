@@ -66,6 +66,14 @@ bucket_name = "babillard-photos"
 APP_NAME = "Babillard"
 DEFAULT_LANG = "fr"
 
+# --- Nightly backup (bmad/08 E-36) --------------------------------------------
+# 07:10 UTC ≈ 2-3 AM Eastern: the Worker's `scheduled` handler dumps every
+# household to R2 (backup/<householdId>/<date>.json, newest 14 kept) — cheap
+# insurance against a migration bug eating the only real household. R2 unset →
+# the handler no-ops (optional binding, like everything else).
+[triggers]
+crons = ["10 7 * * *"]
+
 # --- Durable Objects: realtime fan-out (SCAFFOLD, #20) ------------------------
 # RealtimeHub is a per-household WebSocket hub: clients connect to /api/live and
 # the server pushes {type:'invalidate', keys:[...]} so an awake board refreshes

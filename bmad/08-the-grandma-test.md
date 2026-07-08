@@ -234,13 +234,26 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     one line on what's hidden because of it (« IA non configurée → la capture
     devient un choix manuel »). Turns mystery-missing-features into a
     checklist.
-35. ✅ **Data takeout** [S] — one button, one JSON (+ R2 media manifest). A
-    Loi 25 gesture, a trust signal, and incidentally your own backup story.
-    Matters more as real family data (photos, mots, medical-ish notes)
-    accumulates.
-36. ✅ **Backup beyond takeout** [M] — a nightly R2 dump (cron trigger, one
-    JSON per household) as cheap insurance against the scariest failure mode:
-    a migration bug eating the only real household.
+35. ✅ **Data takeout** [S] — **SHIPPED 2026-07-07:** `GET /api/takeout`
+    (operator-only, content-disposition download) over the shared
+    `dumpHousehold()` (`functions/_lib/takeout.ts`): a GENERIC sqlite_master
+    scan exports every table with a `household_id` (new migrations ride along
+    automatically) + a junction map (task_participants, routine_runs,
+    contact_group_members) + custom scoping for shared_trips
+    (owner/participant); auth/token tables (operators, devices, guests,
+    shares, pairing…) are deliberately EXCLUDED so a leaked export never leaks
+    a credential; unscopable tables land in `skipped`, never silently. Media =
+    a manifest of R2 keys (media_key/scene_key + recipe images), not blobs.
+    Button: Réglages ▸ Système ▸ Diagnostics « Emporter mes données »
+    (operator-only UI, online-only); Guide point on the `calm` card (« Tes
+    données t'appartiennent ») + whatsNew.
+36. ✅ **Backup beyond takeout** [M] — **SHIPPED 2026-07-07:** a Worker
+    `scheduled` handler (worker/index.ts) + cron `10 7 * * *` (wrangler.toml
+    [triggers], ~2-3 AM Eastern) dumps every household via the SAME
+    `dumpHousehold()` to R2 (`backup/<householdId>/<date>.json`), keeps the
+    newest 14, one household's failure never skips the others. R2 unset →
+    no-op (optional binding). JSON only — the media blobs already live in
+    that same bucket.
 37. ✅ **Burn-in & battery care for the always-on panel** [S] — **SHIPPED
     2026-07-07:** the ambient clock/date/next block now pixel-drifts ±4 px
     through a 5×5 grid, one step per minute (~25-min loop; eased under
@@ -455,7 +468,8 @@ C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 
 **Ambient & platform (continuous, order-free)**
 ~~D-30 cast×ambient~~ ✅ (was already shipped) · D-31 carnets upkeep cadence ·
-~~F-47 hourly breath~~ ✅ 2026-07-07 · E-35 takeout · E-36 nightly backup ·
+~~F-47 hourly breath~~ ✅ 2026-07-07 · ~~E-35 takeout~~ ✅ 2026-07-07 ·
+~~E-36 nightly backup~~ ✅ 2026-07-07 ·
 ~~E-37 burn-in care~~ ✅ 2026-07-07 · ~~E-41 temp-id chain fix~~ ✅ 2026-07-07 ·
 ~~E-39 UNIFORMIZING reds~~ ✅ (audit shows BE-1/BE-2/FE-1/FE-2/LIB-2 + Phases
 0–2 all landed — the "reds" note was stale; what remains in UNIFORMIZING.md is

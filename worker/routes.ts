@@ -90,6 +90,7 @@ import * as seed from '../functions/api/seed'
 import * as carDay from '../functions/api/car-day'
 import * as suggestMeal from '../functions/api/suggest-meal'
 import * as thisWeek from '../functions/api/this-week'
+import * as takeout from '../functions/api/takeout'
 import * as todos from '../functions/api/todos'
 import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
@@ -218,6 +219,7 @@ const TABLE: Record<string, RouteMod> = {
   'car-day': carDay,
   'suggest-meal': suggestMeal,
   'this-week': thisWeek,
+  takeout,
   todos,
   'todo-templates': todoTemplates,
   transcribe,

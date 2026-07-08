@@ -2058,6 +2058,10 @@ export const FR = {
     ambientNext: 'À venir',
     ambientReturnHome: 'Revenir à Maisonnée',
     ambientReturnAfter: 'Délai avant le retour',
+    // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Diagnostics).
+    takeoutTitle: 'Emporter mes données',
+    takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',
+    takeoutBtn: 'Télécharger mes données (JSON)',
     ambientPreview: 'Aperçu maintenant',
     // F-47 — le souffle de l'heure (l'anti-notification).
     ambientBreath: 'Le souffle de l’heure',
@@ -4594,6 +4598,10 @@ export const EN: typeof FR = {
     ambientNext: 'Next up',
     ambientReturnHome: 'Return to Household',
     ambientReturnAfter: 'Idle before return',
+    // E-35 — "Take my data" (Settings ▸ System ▸ Diagnostics).
+    takeoutTitle: 'Take my data',
+    takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',
+    takeoutBtn: 'Download my data (JSON)',
     ambientPreview: 'Preview now',
     // F-47 — the hourly breath (the anti-notification).
     ambientBreath: 'The hourly breath',

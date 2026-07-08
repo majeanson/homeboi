@@ -2418,6 +2418,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'It can’t be switched back on by accident — the calm can’t drift.',
         },
       },
+      {
+        label: { fr: 'Tes données t’appartiennent', en: 'Your data is yours' },
+        detail: {
+          fr: 'Dans Réglages ▸ Système ▸ Diagnostics, « Emporter mes données » télécharge tout ce que Babillard garde pour ta maisonnée en un seul fichier JSON. Une copie de secours se fait aussi chaque nuit, automatiquement.',
+          en: 'In Settings ▸ System ▸ Diagnostics, “Take my data” downloads everything Babillard keeps for your household as one JSON file. A backup copy is also made automatically every night.',
+        },
+        why: {
+          fr: 'La confiance, c’est pouvoir partir — ou juste garder sa propre copie.',
+          en: 'Trust means being able to leave — or just keep your own copy.',
+        },
+      },
     ],
   },
   {

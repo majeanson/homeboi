@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'takeout',
+    text: {
+      fr: 'Nouveau : « Emporter mes données » — tout ce que garde Babillard, en un fichier, dans Réglages ▸ Système. Et une copie de secours se fait chaque nuit.',
+      en: 'New: “Take my data” — everything Babillard keeps, in one file, in Settings ▸ System. And a backup copy is made every night.',
+    },
+    card: 'calm',
+  },
+  {
     id: 'hourly-breath',
     text: {
       fr: 'Nouveau : le souffle de l’heure — au sommet de l’heure, l’horloge de veille respire une fois. Sans son, sans pastille.',
