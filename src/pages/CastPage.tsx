@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — cast.css moved out of the eager shell (uniquely-scoped .cast
+// classes); load it whenever this page renders instead.
+import '../styles/cast.css'
 import { useEffect, useRef } from 'react'
 import { Board } from './Board'
 import { AmbientScreen } from '../components/AmbientScreen'
