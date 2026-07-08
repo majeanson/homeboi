@@ -39,6 +39,7 @@ import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { Sheet } from './Sheet'
 import { Cluster } from './Layout'
 import { Disclosure } from './Disclosure'
+import { scrollBehavior } from '../lib/motion'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
 // section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
@@ -294,7 +295,7 @@ export function AddSheet({
         const p = panel.getBoundingClientRect()
         const s = sheet.getBoundingClientRect()
         if (p.top < s.top || p.bottom > s.bottom) {
-          sheet.scrollTo({ top: sheet.scrollTop + (p.top - s.top) - 12, behavior: 'smooth' })
+          sheet.scrollTo({ top: sheet.scrollTop + (p.top - s.top) - 12, behavior: scrollBehavior() })
         }
       }
       panel.focus({ preventScroll: true })

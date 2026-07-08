@@ -13,6 +13,7 @@ import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { TripNoteAdd } from './TripNoteAdd'
 import { TripNoteCard } from './TripNoteCard'
 import { reorderPatches, tripDays, useVoyageApi, type Trip, type TripNote } from './voyage'
+import { scrollBehavior } from '../../lib/motion'
 
 // « Voyage » → Itinéraire — the day-by-day plan. One section per day the trip spans
 // (start_at..end_at inclusive); each shows that day's entries and a composer that
@@ -69,7 +70,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   useEffect(() => {
     if (!jour || jour < 1) return
     const el = rootRef.current?.querySelector<HTMLElement>(`[data-jour="${jour}"]`)
-    el?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    el?.scrollIntoView({ block: 'start', behavior: scrollBehavior() })
   }, [jour, days.length])
 
   if (days.length === 0) {

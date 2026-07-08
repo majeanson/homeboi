@@ -51,13 +51,14 @@
 .bento .edit-field__box {
   flex-basis: 100%;
 }
-/* The inline clear ✕ / icon submit / trash — a quiet 40px icon button, mirroring
-   the row-actions affordance so the whole app shares one look. */
+/* The inline clear ✕ / icon submit / trash — a quiet icon button, mirroring
+   the row-actions affordance so the whole app shares one look. Sized to the
+   shared 44px touch target (E-40 a11y pass). */
 .edit-field__icon-btn {
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: var(--touch-target);
+  height: var(--touch-target);
   flex: none;
   padding: 0;
   border: 0;
@@ -86,8 +87,8 @@
 /* The mic, dropped inside the box: strip its button chrome so it reads as a field
    affordance (like the clear ✕), keeping only the listening pulse. */
 .edit-field__box .capture__voice {
-  min-height: 40px;
-  width: 40px;
+  min-height: var(--touch-target);
+  width: var(--touch-target);
   padding: 0;
   border: 0;
   background: transparent;
@@ -102,8 +103,11 @@
 .edit-field__mini {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 24px;
+  /* E-40: full touch-target WIDTH; height stays compact because the ↑/↓ pair
+     stacks inside one row — two 44px-tall steppers would double every reorder
+     row. 44×30 with the 2px gap keeps the pair distinguishable under a thumb. */
+  width: var(--touch-target);
+  height: 30px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--card);

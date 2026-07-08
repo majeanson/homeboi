@@ -500,8 +500,9 @@
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--ink-soft);
-  width: 2.4rem;
-  height: 2.4rem;
+  /* E-40: the timer remove ✕ meets the shared 44px touch target. */
+  width: var(--touch-target);
+  height: var(--touch-target);
   border-radius: var(--radius-pill);
   cursor: pointer;
 }

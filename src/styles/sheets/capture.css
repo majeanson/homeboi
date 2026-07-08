@@ -485,6 +485,13 @@ body.is-recording .add-fab {
 .sheet.show {
   transform: translateY(0);
 }
+/* E-40: the bottom sheet's viewport-height slide is significant motion — appear
+   in place when the device asks for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    transition: none;
+  }
+}
 
 /* Fast-path capture hoisted above the board chooser (AddSheet captureAtTop): the
    quick-note box sits first, then a hairline separates it from the override tiles

@@ -12,6 +12,7 @@ import { SampleDataControls } from './sampleData'
 import { DidYouKnowCard, WhatsNewLine } from './discover'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
+import { scrollBehavior } from '../../lib/motion'
 
 // One documentation card (native <details>, so it stays accessible and calm):
 // an icon, a title, the one-line "what", then every point as its own nested
@@ -61,7 +62,7 @@ function GuideCard({
   // the card-level scroll in GuideSection, so the point wins the final position.
   useEffect(() => {
     if (targetPoint != null && pointRef.current) {
-      pointRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      pointRef.current.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
     }
   }, [targetPoint])
   return (
@@ -218,7 +219,7 @@ function useGuideCardTarget(pinTab?: string) {
         if (node instanceof HTMLDetailsElement) node.open = true
         node = node.parentElement
       }
-      targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      targetRef.current.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
     }
   }, [openId])
   return { openId, targetPoint, targetRef }

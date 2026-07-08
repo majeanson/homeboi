@@ -43,6 +43,7 @@ import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { KITCHEN_TAB_HELP } from '../lib/kitchenTabHelp'
+import { scrollBehavior } from '../lib/motion'
 
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
@@ -251,7 +252,7 @@ export function Kitchen() {
   const [scrollTick, setScrollTick] = useState(0)
   const requestScroll = () => setScrollTick((n) => n + 1)
   useEffect(() => {
-    if (scrollTick) resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (scrollTick) resultsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
   }, [scrollTick])
 
   // The week's three actions (shop the week / AI ideas / ideas from the book) now

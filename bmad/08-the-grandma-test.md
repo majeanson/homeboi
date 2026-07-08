@@ -282,10 +282,26 @@ second-kitchen deployment (F-45 rejected). She visits; she doesn't get a kiosk.
     debt backlog on the calendar: **BE-1 unscoped DELETEs first (correctness)**,
     then FE-1 hand-rolled tabs, FE-2 recipe overlays, LIB-2 inline query keys.
     Comprehension work (A/B above) goes faster on uniform primitives.
-40. ✅ **Accessibility beyond contrast** [M] — one pass: focus order through
-    the sheets, `aria-label` on every icon control, `prefers-reduced-motion`
-    honored by the tour/ambient/view transitions, 44px hit-target sweep in
-    *parent* view (toddler targets are already huge).
+40. ✅ **Accessibility beyond contrast** [M] — **SHIPPED 2026-07-07 (full
+    audit + fixes).** Audit verdicts: **icon labels CLEAN** (every production
+    icon-only button carries aria-label/title — RowActions, Modal ✕,
+    HeartButton, VoiceButton, Act, all role=button divs; only 2 dev-only
+    DevKit demos lacked one, fixed). **Focus CLEAN** — every overlay routes
+    through `useModal` (Esc, focus-trap, restore-to-opener, scroll-lock):
+    all Modal + Sheet consumers + 10 direct users verified.
+    **Reduced-motion gaps FIXED:** the bottom sheet's viewport-height slide
+    (capture.css) now `transition: none` under reduce; 9 imperative
+    `scrollIntoView/scrollTo smooth` sites (FlyerViewer ×2, guide ×2,
+    Kitchen, AddSheet, BusinessesTab, CercleNotes, VoyageItinerary,
+    viewportVars) now use the new `lib/motion.ts scrollBehavior()` (reads the
+    preference live per call). Tour/ambient/snow/pips were already gated.
+    **44px hit targets FIXED:** edit-field ✕/submit/mic 40→44, reorder
+    steppers 30→44 wide (height stays 30 — the ↑/↓ pair stacks in one row,
+    documented), hearts ❤ min-44 (icon unchanged), recipe-scale +/− 35→44,
+    meal-slot chips 35→44, note-editor format 37→44, cook timer ✕ 38→44,
+    sheet close ✕ 40→44. Left as documented-deliberate: kitchen `.chip` 40px,
+    `.list-row__toggle` 42px. All 74 overflow-guard e2e specs re-run green
+    with the grown targets.
 41. ✅ **The offline temp-id chain** [S] ◐ — **SHIPPED 2026-07-07:** a queued
     create now carries its optimistic `tmpId` (`WriteSpec.tmpId` → OutboxEntry,
     threaded via `useCreateWithUndo` from the two tmp-row sites: Liste add,
@@ -487,9 +503,16 @@ show nextAt + cadence, not the raw anchor) ·
 ~~E-37 burn-in care~~ ✅ 2026-07-07 · ~~E-41 temp-id chain fix~~ ✅ 2026-07-07 ·
 ~~E-39 UNIFORMIZING reds~~ ✅ (audit shows BE-1/BE-2/FE-1/FE-2/LIB-2 + Phases
 0–2 all landed — the "reds" note was stale; what remains in UNIFORMIZING.md is
-Phase 3/4 opportunistic work) · E-40 a11y pass ·
+Phase 3/4 opportunistic work) · ~~E-40 a11y pass~~ ✅ 2026-07-07 (audit: labels
++ focus already clean; fixed sheet-slide + 9 smooth-scrolls under
+reduced-motion, 8 hit-target families to 44px) ·
 ~~C-23 offline-aware code-splitting~~ ✅ 2026-07-07 (heic2any out of the
 precache + `check:bundle` CI guard enforcing precache-completeness + budgets).
+
+**→ Every approved item of bmad/08 is now shipped** (waves 1–4 + the whole
+ambient/platform continuous set). Left open on purpose: the plus-tard shelf,
+the rejected list (never re-propose), and two ask-Marc follow-ups (A-5
+adaptive-tour auto-offer design · A-8 writable-demo decision).
 
 **Plus tard shelf:** C-25 rush-hour diet · D-26 Le pont (deferred per OQ-3;
 revive by picking the 2–3 real relatives first) · D-32 share-view print

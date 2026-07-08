@@ -1996,8 +1996,9 @@
   flex: none;
   display: inline-grid;
   place-items: center;
-  min-width: 2.3rem;
-  height: 2.3rem;
+  /* E-40: format buttons meet the shared 44px touch target. */
+  min-width: var(--touch-target);
+  height: var(--touch-target);
   padding: 0 0.4rem;
   border: 1px solid var(--line);
   border-radius: 9px;

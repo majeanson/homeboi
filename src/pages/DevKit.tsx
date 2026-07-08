@@ -1640,7 +1640,7 @@ export function DevKit() {
       render: () => (
         <>
           <Demo label="emoji + subtitle + action">
-            <SectionHeader emoji="🍳" title="Déjeuner" subtitle="Matin" action={<button className="btn btn--sm"><Icon name="plus-bold" size={16} /></button>} />
+            <SectionHeader emoji="🍳" title="Déjeuner" subtitle="Matin" action={<button className="btn btn--sm" aria-label="Ajouter"><Icon name="plus-bold" size={16} /></button>} />
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
@@ -2225,7 +2225,7 @@ export function DevKit() {
       kw: 'réglages section panneau surface operator',
       render: () => (
         <Demo label="Réglages panel shell">
-          <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<button className="btn btn--sm"><Icon name="plus-bold" size={16} /></button>}>
+          <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<button className="btn btn--sm" aria-label="Ajouter"><Icon name="plus-bold" size={16} /></button>}>
             <p className="mono" style={{ color: 'var(--ink-faint)' }}>…contenu du panneau…</p>
           </OperatorSection>
         </Demo>

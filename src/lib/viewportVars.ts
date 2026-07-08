@@ -1,3 +1,4 @@
+import { scrollBehavior } from './motion'
 // Track the visual viewport into CSS custom properties, so fixed overlays
 // (centered modals, bottom sheets) can stay inside the VISIBLE area when the
 // on-screen keyboard is up. iOS Safari overlays the keyboard without resizing
@@ -88,7 +89,7 @@ export function trackVisualViewport(): void {
   const pinFocused = () => {
     pinTimers.forEach(clearTimeout)
     pinTimers = []
-    pinOnce('smooth')
+    pinOnce(scrollBehavior())
     for (const ms of [120, 280, 480]) pinTimers.push(setTimeout(() => pinOnce('auto'), ms))
   }
 

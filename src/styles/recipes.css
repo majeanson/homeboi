@@ -386,8 +386,9 @@
   margin: 0.1rem 0 0.7rem;
 }
 .recipe-scale__btn {
-  width: 2.2rem;
-  height: 2.2rem;
+  /* E-40: the servings +/− stepper meets the shared 44px touch target. */
+  width: var(--touch-target);
+  height: var(--touch-target);
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   background: var(--card);
@@ -893,6 +894,10 @@
   cursor: pointer;
   padding: 0.2rem;
   line-height: 0;
+  /* E-40: the ❤ toggle meets the 44px touch target without visually growing —
+     the icon stays 18px, the tappable box around it doesn't. */
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
 }
 .hearts__btn.is-mine {
   color: #c2563a;

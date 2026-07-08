@@ -11,6 +11,7 @@ import { type Deal, type FlyerSummary } from '../lib/deals'
 import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
 import { warmImageCache } from '../lib/cacheWarm'
+import { scrollBehavior } from '../lib/motion'
 
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
@@ -276,7 +277,7 @@ export function FlyerViewer({
   // when flipping between the grid and the map, so "find it" lands on the item).
   useEffect(() => {
     if (state === 'ok' && selectedRef.current) {
-      selectedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      selectedRef.current.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
     }
   }, [state, selectedIdx, view])
 
@@ -435,7 +436,7 @@ export function FlyerViewer({
           type="button"
           className="flyer-dir mono"
           aria-live="polite"
-          onClick={() => selectedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          onClick={() => selectedRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })}
           title={t.shop.viewFlyer}
         >
           <InlineIcon name="map-pin-bold" /> {t.shop.page} {directions.page} · {t.shop.position.col} {directions.col} ·{' '}

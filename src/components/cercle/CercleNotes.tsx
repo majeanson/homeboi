@@ -23,6 +23,7 @@ import { ZoomableImg } from '../ZoomableImg'
 import { NoteEditor } from './NoteEditor'
 import { plainText, renderNoteBody, toggleCheckAt } from '../../lib/noteMarkdown'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { scrollBehavior } from '../../lib/motion'
 
 // « Le cercle » → Famille → "Notes & recommandations". iOS-Notes-style notes scoped to
 // ONE household member (the "Moi" list) or the whole Maisonnée (family-wide). A picked
@@ -120,7 +121,7 @@ export function CercleNotes({
     setFace(n.member_id) // null → Maisonnée (family-wide); a member → their list
     setExpandedId(n.id)
     setFlashId(n.id)
-    requestAnimationFrame(() => noteRefs.current[n.id]?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    requestAnimationFrame(() => noteRefs.current[n.id]?.scrollIntoView({ block: 'center', behavior: scrollBehavior() }))
     onFocused?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusId, all])

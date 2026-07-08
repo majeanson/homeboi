@@ -17,6 +17,7 @@ import { EmptyState } from '../EmptyState'
 import { Modal } from '../Modal'
 import { BusinessForm } from './BusinessForm'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { scrollBehavior } from '../../lib/motion'
 
 // « Le cercle » → Business tab: the household's services / vendors directory (vet,
 // hospital, plumber, business cards…). DELIBERATELY isolated from the people graph —
@@ -74,7 +75,7 @@ export function BusinessesTab({
     if (!b) return // not loaded yet (or gone) — wait for the next poll
     openPeek(b)
     setFlashId(focusId)
-    requestAnimationFrame(() => rowRefs.current[focusId]?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    requestAnimationFrame(() => rowRefs.current[focusId]?.scrollIntoView({ block: 'center', behavior: scrollBehavior() }))
     onFocused?.()
     // openPeek/onFocused are stable enough for this one-shot; re-run only on a new id.
     // eslint-disable-next-line react-hooks/exhaustive-deps
