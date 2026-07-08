@@ -77,8 +77,9 @@
    of the eager shell — imported instead as a side effect by HandoffPage,
    WelcomePage and FamilyWindowPage. */
 /* Family-info intake form + operator review — uniquely-named .intake__/.intake-review
-   classes, position immaterial. */
-@import './styles/intake.css';
+   classes, position immaterial. B-11 (bmad/10): moved OUT of the eager shell —
+   imported instead as a side effect by IntakeForm, Postbox, FamilyImportPage and
+   operator/IntakeReview. */
 /* « Diffuser au salon » — the read-only TV/cast board surface (/cast). Uniquely
    scoped under .cast, position immaterial. B-11 (bmad/10): moved OUT of the eager
    shell — imported instead as a side effect by CastPage (its only consumer). */

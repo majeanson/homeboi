@@ -1,6 +1,8 @@
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
 import '../styles/cercle.css'
+// intake.css — this IS the intake form (.intake__* classes).
+import '../styles/intake.css'
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'

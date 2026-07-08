@@ -1,3 +1,6 @@
+// B-11 (bmad/10) — intake.css moved out of the eager shell (uniquely-named
+// .intake-review__ classes); load it whenever this operator section renders.
+import '../../styles/intake.css'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
