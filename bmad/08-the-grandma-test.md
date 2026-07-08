@@ -325,11 +325,76 @@ frequents-first comboboxes (`lib/frequents.ts` + `frequentsKey` on
 EntityCombobox; wired: meals in DayEditor/MealPool, « Avec » in EventForm) ·
 C-24 prefetch-on-press (HubLayout `TAB_PREFETCH`).
 
-**Wave 3 — discoverability**
-A-4 help-mode rollout everywhere · A-5 adaptive tour for power users *(design
-pass first)* · B-11 le saviez-vous · B-14 quoi de neuf · D-33 search entry
-points + guide-in-search (absorbs B-12) · A-8 demo sandbox · A-9 icon labels
-(soft: long-press/help-mode only) · A-10 contrast & type floor.
+**Wave 3 — discoverability** — **✅ SHIPPED 2026-07-07.**
+
+- **A-4 help mode everywhere — was ALREADY DONE** (the ◐ above was stale): all
+  7 registries exist and are wired (`ADD_HELP`/`CERCLE_HELP`/`BOARD_HELP`/
+  `KITCHEN_TAB_HELP`/`LISTE_HELP`/`OPERATOR_HELP`/`ROUTINES_HELP`), and P2-9's
+  orphan check shipped 2026-06-26 as a compile-time guard (`useHelpMode<K>` +
+  `satisfies` → an unregistered key fails `tsc`). Wave 3 added one entry per
+  hub registry: the header loupe (see A-9/D-33 below).
+- **B-11 « Le saviez-vous ? »** — `lib/discovery.ts` (`DISCOVERY_PROBES`: 7
+  data-absence probes → GUIDE cards: voyage/mots/drawings/favorites/carnets/
+  auto/todos; `pickDaily` day-rotation; unit-tested) + `DidYouKnowCard` in
+  Découvrir (`operator/discover.tsx`, SectionIntro look). Conservative by
+  construction: only shows when signed in, sample data cleared, and EVERY
+  probe positively answered (an empty array, never a failed read). Dismiss
+  is forever (`babillard-didyouknow-seen`).
+- **A-5 adaptive tour — SAFE CORE shipped**: `buildDiscoveryTour()` assembles
+  a runtime Tour from the same probes (intro + ≤6 card-linked stops, each
+  handing off to its Guide card); `lib/tour.tsx` gained `startTour(tour)` for
+  unregistered tours; the « Faire le tour (N trouvailles) » button rides the
+  saviez-vous card when ≥2 features sleep. **Deferred (design open):** the
+  power-user AUTO-offer. Questions to settle with Marc before building:
+  (1) the power-user signal — DB write-frequency (the C-18 audit, server-side)
+  vs a local proxy (outbox volume / frequents.ts counters); (2) cadence — at
+  most once a month? only after N sessions?; (3) where it surfaces (a quiet
+  Découvrir badge vs a one-time coachmark). Never guest/kid/locked-kiosk;
+  manual entry ships now, auto-offer waits for those answers.
+- **B-14 « Quoi de neuf »** — `lib/whatsNew.ts` (hand-maintained, newest
+  first, 3 seed entries) + `WhatsNewLine` in Découvrir: ONE line, newest
+  undismissed, dismiss-forever per device. Discipline note in COMPONENTS.md:
+  a user-visible feature PR adds one line at the top.
+- **D-33 search findable — mostly ALREADY THERE** (stale ◐ again): the loupe
+  already sat in every hub-tab header (HubHead, parent-only) and guide entries
+  were already in the SearchPage index. Wave 3 closed the real gaps: the
+  documented `/search?q=…` deep-link now actually works (input seeds from the
+  URL + mirrors back, replace-state), and search got its own GUIDE card
+  (`search`, board bucket) — so search is findable *in the manual and in
+  itself*. (B-12 absorbed, as planned.)
+- **A-8 demo sandbox « Essaie sans peur »** — public `POST /api/demo`
+  (CSRF-exempt like signup): lazily creates the singleton demo household
+  (sentinel operator `demo@babillard.invalid`, unguessable password), keeps it
+  seeded (reseeds when >24 h stale so dates stay alive), mints a 4 h READ-ONLY
+  `showcase` guest token, and the marketing page's new « Essayer la démo » CTA
+  boots it through the normal `?guest=` door (existing watermark banner).
+  Réglages side: `SampleDataControls` gained the one-tap « Repartir les
+  exemples à neuf » (clear+reseed). **Deferred (design open):** a WRITABLE
+  public sandbox — needs throwaway operator sessions or a new writable guest
+  scope (`route.ts` blocks guest writes centrally); revisit only if the
+  read-only demo proves insufficient as the sales demo.
+- **A-9 icon labels (soft only)** — audit found every icon-only button already
+  carries `aria-label`; the gaps were hover labels and the un-explained header
+  loupe. Shipped: `title` (= aria-label) on SceneHead ✕, RowActions ✏/🗑, the
+  ＋ FAB, the board profile chip, the nav-reopen caret, the kitchen day pencil;
+  and the loupe is now help-mode pickable on all five hub tabs (HubHead
+  `searchPick` + a `search`/`globalSearch` entry per registry). No visible
+  words added anywhere. (No long-press primitive exists in the codebase; the
+  title+help-mode route covers the soft ask — a hold-to-reveal label hook
+  remains a possible later refinement.)
+- **A-10 contrast & type floor** — measured every `-deep`-on-wash pair across
+  day/night/twilight/deep-twilight: ALL six failed 4.5:1 in day, twilight
+  failed even the 3:1 glyph bar. Fixed in tokens (`core.css`): a new
+  **`--*-ink` section-text tier** (six colours × four themes, ≥4.5:1 on wash,
+  annotated with ratios) which `SECTION_TINT.ink` now resolves to; `-deep`
+  stays the glyph tier with per-theme nudges past 3:1 (day marigold/sky,
+  night berry, all six in twilight, terracotta/berry in deep-twilight);
+  `--ink-faint` darkened to clear 4.5:1 on every daypart paper (dusk was
+  4.18); an `@media (prefers-contrast: more)` bump mirroring the
+  `data-contrast='high'` profile when no explicit in-app choice was made; and
+  the type floor — the sub-`--text-xs` literals (0.72/0.74rem tag/eyebrow/
+  setup-step) raised to `var(--text-xs)`. Off-token literals in page CSS stay
+  for the UNIFORMIZING type sweep.
 
 **Wave 4 — the grandma arc**
 A-1 « Simple » audience lens → A-2 tap-to-hear everywhere. *(D-26 Le pont

@@ -32,15 +32,19 @@ export type Bi = { fr: string; en: string }
 // terracotta, « Se déplacer » is Le cercle's turquoise, …) rather than a flat
 // marigold. Both values are theme-aware CSS vars so they follow day↔night; `ink`
 // tints a glyph / accent, `wash` a pale fill. Keep in sync with HubLayout `TABS`.
+// `ink` resolves to the `--*-ink` TEXT tier (bmad/08 A-10): SECTION_TINT.ink also
+// lands on real text (the active Réglages tab label, guide accents), so it must
+// clear 4.5:1 on its wash in every theme — the brighter `--*-deep` tier stays for
+// glyph-only literals (3:1 bar).
 export type SectionKey = 'board' | 'kitchen' | 'routines' | 'cercle' | 'liste' | 'settings'
 export type Tint = { ink: string; wash: string }
 export const SECTION_TINT: Record<SectionKey, Tint> = {
-  board: { ink: 'var(--marigold-deep)', wash: 'var(--marigold-wash)' }, // Le babillard
-  kitchen: { ink: 'var(--terracotta-deep)', wash: 'var(--terracotta-wash)' }, // La cuisine
-  routines: { ink: 'var(--berry-deep)', wash: 'var(--berry-wash)' }, // Routines
-  cercle: { ink: 'var(--teal-deep)', wash: 'var(--teal-wash)' }, // Le cercle
-  liste: { ink: 'var(--sky-deep)', wash: 'var(--sky-wash)' }, // La liste
-  settings: { ink: 'var(--sage-deep)', wash: 'var(--sage-wash)' }, // Réglages
+  board: { ink: 'var(--marigold-ink)', wash: 'var(--marigold-wash)' }, // Le babillard
+  kitchen: { ink: 'var(--terracotta-ink)', wash: 'var(--terracotta-wash)' }, // La cuisine
+  routines: { ink: 'var(--berry-ink)', wash: 'var(--berry-wash)' }, // Routines
+  cercle: { ink: 'var(--teal-ink)', wash: 'var(--teal-wash)' }, // Le cercle
+  liste: { ink: 'var(--sky-ink)', wash: 'var(--sky-wash)' }, // La liste
+  settings: { ink: 'var(--sage-ink)', wash: 'var(--sage-wash)' }, // Réglages
 }
 
 type GuidePoint = {
@@ -115,6 +119,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     ids: [
       'capture',
       'type-or-choose',
+      'search',
       'mots',
       'activities',
       'home-projects',
@@ -1488,6 +1493,46 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Les collections restent nettes — pas de « végé » ET « végétarien » qui se séparent en deux.',
           en: 'Collections stay tidy — no “végé” AND “vegetarian” splitting in two.',
+        },
+      },
+    ],
+  },
+  {
+    // D-33 — search finally has its own card: it joins the Guide, the themed map
+    // AND (because the Guide feeds the global search index) search itself.
+    id: 'search',
+    icon: 'magnifying-glass-bold',
+    group: 'concepts',
+    route: '/search',
+    title: { fr: 'Chercher partout', en: 'Search everywhere' },
+    what: {
+      fr: 'Une seule recherche pour toute la maisonnée : recettes, personnes, listes, rendez-vous, routines, carnets… et le guide lui-même.',
+      en: 'One search for the whole household: recipes, people, lists, appointments, routines, carnets… and the guide itself.',
+    },
+    points: [
+      {
+        label: { fr: 'La loupe, en haut de chaque section', en: 'The magnifier, atop every section' },
+        detail: {
+          fr: 'Touche la loupe dans l’en-tête (babillard, cuisine, liste, routines, cercle) et écris quelques lettres — sans accents, ça marche aussi. Les meilleurs résultats montent en premier.',
+          en: 'Tap the magnifier in the header (board, kitchen, list, routines, circle) and type a few letters — accents optional. Best matches rise first.',
+        },
+        why: {
+          fr: 'Peu importe où tu es, la réponse est à deux taps — pas besoin de savoir dans quelle section elle vit.',
+          en: 'Wherever you are, the answer is two taps away — no need to know which section it lives in.',
+        },
+      },
+      {
+        label: { fr: 'Ça trouve aussi le mode d’emploi', en: 'It finds the manual too' },
+        detail: {
+          fr: 'Écris « comment inviter grand-maman » ou « circulaires » : les cartes du guide qui en parlent sortent avec le reste, et un tap ouvre l’explication.',
+          en: 'Type “how to invite grandma” or “flyers”: the guide cards that cover it surface with the rest, and one tap opens the explanation.',
+        },
+      },
+      {
+        label: { fr: 'Un lien direct', en: 'A direct link' },
+        detail: {
+          fr: 'La page vit à /search et accepte ?q=… — un signet « /search?q=lait » ouvre la recherche déjà remplie.',
+          en: 'The page lives at /search and accepts ?q=… — a “/search?q=milk” bookmark opens the search pre-filled.',
         },
       },
     ],

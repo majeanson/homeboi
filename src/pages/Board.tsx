@@ -147,6 +147,7 @@ export function Board() {
       fil: t.board.fil,
       toFinish: t.board.toFinish,
       upcoming: t.board.upcoming,
+      search: t.search.title,
     }
     return titles[k] ?? k
   })
@@ -911,6 +912,7 @@ export function Board() {
         iconColor="var(--marigold-deep)"
         background="var(--marigold-wash)"
         card="board"
+        searchPick={(run) => help.pick('search', run)}
       />
 
       {/* Board controls: today's date + who's at this phone + which of the four
@@ -925,6 +927,7 @@ export function Board() {
             className="profile-chip"
             onClick={() => setProfileOpen(true)}
             aria-label={t.profile.who}
+            title={t.profile.who}
           >
             {me ? (
               (() => {

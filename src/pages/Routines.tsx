@@ -84,7 +84,7 @@ function RoutinesParent() {
   // Contextual "?" help mode (shared hook): arm it in the header, then tap a
   // routine to learn what tapping does + the moment badge, in place. The overview
   // is one flat grid, so its single help target is the card itself.
-  const help = useHelpMode(ROUTINES_HELP, () => t.nav.routines)
+  const help = useHelpMode(ROUTINES_HELP, (k) => (k === 'search' ? t.search.title : t.nav.routines))
   const { data, error } = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
@@ -279,6 +279,7 @@ function RoutinesParent() {
             <HelpToggle active={help.active} onToggle={help.toggle} />
           ) : undefined
         }
+        searchPick={(run) => help.pick('search', run)}
       />
 
       <SectionIntro card="routines" />

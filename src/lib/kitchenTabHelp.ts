@@ -94,4 +94,12 @@ export const KITCHEN_TAB_HELP = {
       en: '“Aa” lists your recipes alphabetically; “Collections” groups them by tag (Soups, Desserts…). It only re-arranges, it doesn’t filter.',
     },
   },
+  // The header magnifier (A-9 soft icon label).
+  search: {
+    card: 'search',
+    body: {
+      fr: 'La loupe : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
+      en: 'The magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',
+    },
+  },
 } satisfies Record<string, HelpEntry>

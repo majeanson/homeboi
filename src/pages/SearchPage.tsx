@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useIsFetching } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
@@ -106,7 +106,18 @@ export function SearchPage() {
   const { enabled: aiEnabled } = useAi()
   const close = useSceneClose('/board')
   useEscapeKey(close)
-  const [q, setQ] = useState('')
+  // The documented /search?q=… deep-link (D-33): seed the box from the URL and
+  // mirror typing back (replace, so Back still leaves the scene in one step).
+  // A bookmark / help-card link lands pre-filled; a refresh keeps the query.
+  const [params, setParams] = useSearchParams()
+  const [q, setQ] = useState(() => params.get('q') ?? '')
+  const setQuery = (v: string) => {
+    setQ(v)
+    const next = new URLSearchParams(params)
+    if (v) next.set('q', v)
+    else next.delete('q')
+    setParams(next, { replace: true })
+  }
   // #12 — AI ask state. `answer` holds the prose + its domain (drives the card
   // look); `aiOff` latches the degraded path so the button hides once we know the
   // assistant is unbound; `askErr` is a soft "couldn't answer" with section links.
@@ -380,7 +391,7 @@ export function SearchPage() {
         <input
           className="input search__input"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && aiEnabled) void ask()
           }}

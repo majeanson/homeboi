@@ -361,7 +361,7 @@ export function HubLayout() {
       {/* Reclaim the rail's width: a parent can tuck the section column away on a
           kiosk so the agenda/list gets the whole wall. A small caret re-opens it. */}
       {railCollapsed && (
-        <button type="button" className="hubnav-reopen" onClick={toggleNav} aria-label={t.nav.showMenu}>
+        <button type="button" className="hubnav-reopen" onClick={toggleNav} aria-label={t.nav.showMenu} title={t.nav.showMenu}>
           <Icon name="caret-right-bold" size={20} />
         </button>
       )}
@@ -453,6 +453,17 @@ export function HubLayout() {
           // low-stock form on the kitchen Garde-manger tab while actually opening
           // the kitchen chooser — an aria/behaviour mismatch, now removed.)
           aria-label={
+            section === 'kitchen'
+              ? t.kitchen.addTitle
+              : section === 'routines'
+                ? t.nav.routines
+                : section === 'cercle'
+                  ? t.cercle.addTitle
+                  : section === 'liste'
+                    ? t.list.addTitle
+                    : t.common.add
+          }
+          title={
             section === 'kitchen'
               ? t.kitchen.addTitle
               : section === 'routines'

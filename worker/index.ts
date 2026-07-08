@@ -34,7 +34,9 @@ type WorkerEnv = Env & { ASSETS: Fetcher; REALTIME_HUB?: DurableObjectNamespace 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // Mirror functions/_middleware.ts: these state-changing endpoints have no cookie
 // yet (pairing) or issue it (login), so they're exempt from the CSRF gate.
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'pair/start', 'pair/poll'])
+// 'demo' mints the public read-only showcase token for « Essaie sans peur »
+// (bmad/08 A-8) — a first-time visitor has no cookie yet, exactly like signup.
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'pair/start', 'pair/poll', 'demo'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',

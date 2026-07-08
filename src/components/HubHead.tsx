@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { SectionAvatar } from './SectionAvatar'
@@ -21,6 +21,7 @@ export function HubHead({
   background,
   card,
   action,
+  searchPick,
 }: {
   title: ReactNode
   subtitle?: ReactNode
@@ -32,9 +33,16 @@ export function HubHead({
   // Optional trailing control in the header cluster (sits before the identity
   // disc so the disc keeps its far-right corner anchor). E.g. a <HelpToggle/>.
   action?: ReactNode
+  // Help-mode wiring for the search magnifier (A-9 soft icon labels): pass the
+  // tab's `(run) => help.pick('search', run)` and, while the « ? » is armed, a
+  // tap EXPLAINS the loupe instead of leaving the page. Unarmed it navigates as
+  // ever (pick passes the run through). Rendered as a <button> then, since the
+  // tap may not navigate.
+  searchPick?: (run: () => void) => () => void
 }) {
   const t = useT()
   const { audience } = useAudience()
+  const nav = useNavigate()
   return (
     <div className="app-head">
       <div className="app-head__main">
@@ -46,11 +54,22 @@ export function HubHead({
       <div className="app-head__actions">
         {/* #30 — global search, reachable from every hub tab. Parent-only (a toddler
             has nothing to search for). */}
-        {audience === 'parent' && (
-          <Link to="/search" className="app-head__search" aria-label={t.search.title} title={t.search.title}>
-            <Icon name="magnifying-glass-bold" size={20} />
-          </Link>
-        )}
+        {audience === 'parent' &&
+          (searchPick ? (
+            <button
+              type="button"
+              className="app-head__search"
+              aria-label={t.search.title}
+              title={t.search.title}
+              onClick={searchPick(() => nav('/search'))}
+            >
+              <Icon name="magnifying-glass-bold" size={20} />
+            </button>
+          ) : (
+            <Link to="/search" className="app-head__search" aria-label={t.search.title} title={t.search.title}>
+              <Icon name="magnifying-glass-bold" size={20} />
+            </Link>
+          ))}
         {action}
         <SectionAvatar icon={icon} iconColor={iconColor} background={background} card={card} />
       </div>

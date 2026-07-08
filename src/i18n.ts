@@ -113,6 +113,10 @@ export const FR = {
     ctaStart: 'Commencer',
     ctaReturning: 'J’ai déjà un compte',
     ctaSignup: 'Créer ma maisonnée',
+    // « Essaie sans peur » (bmad/08 A-8) — the read-only public demo.
+    ctaDemo: 'Essayer la démo',
+    demoOpening: 'On ouvre la démo…',
+    demoError: 'La démo n’est pas disponible pour le moment — réessaie tantôt.',
     login: 'Se connecter',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.
     whatHeading: 'Ça sert à quoi ?',
@@ -165,6 +169,14 @@ export const FR = {
     present: 'Données d’exemple présentes.',
     absent: 'Aucune donnée d’exemple.',
     manageTitle: 'Données d’exemple',
+    reset: 'Repartir les exemples à neuf',
+    resetting: 'On repart à neuf…',
+  },
+  // Découvrir's calm discovery cards (bmad/08 B-11 + B-14).
+  discover: {
+    didYouKnow: 'Le saviez-vous ?',
+    whatsNew: 'Quoi de neuf',
+    tourStart: (n: number) => `Faire le tour (${n} trouvailles)`,
   },
   setup: {
     title: 'On installe ça comment ?',
@@ -2692,6 +2704,10 @@ export const EN: typeof FR = {
     ctaStart: 'Get started',
     ctaReturning: 'I already have an account',
     ctaSignup: 'Create my household',
+    // « Essaie sans peur » (bmad/08 A-8) — the read-only public demo.
+    ctaDemo: 'Try the demo',
+    demoOpening: 'Opening the demo…',
+    demoError: 'The demo isn’t available right now — try again in a bit.',
     login: 'Log in',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.
     whatHeading: 'What’s it for?',
@@ -2744,6 +2760,14 @@ export const EN: typeof FR = {
     present: 'Sample data present.',
     absent: 'No sample data.',
     manageTitle: 'Sample data',
+    reset: 'Reset the examples',
+    resetting: 'Resetting…',
+  },
+  // Découvrir's calm discovery cards (bmad/08 B-11 + B-14).
+  discover: {
+    didYouKnow: 'Did you know?',
+    whatsNew: 'What’s new',
+    tourStart: (n: number) => `Take the tour (${n} finds)`,
   },
   setup: {
     title: 'How are we setting this up?',

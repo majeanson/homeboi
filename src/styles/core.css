@@ -31,17 +31,25 @@
   --ink-soft: #6b6258;
   /* Faint tier — hints + `.act .when` time labels. Darkened from #a99e8e (~2.6:1 on the
      cream --card, an always-on AA fail) to clear 4.5:1 for small text, keeping the warm
-     taupe identity (AUJOURDHUI §5 P2, base-day contrast). */
-  --ink-faint: #7a7060;
+     taupe identity (AUJOURDHUI §5 P2, base-day contrast). Darkened again #7a7060 →
+     #6e6455 (bmad/08 A-10): the daypart papers shift warmer than --card, and the old
+     value slid to 4.18:1 on the dusk --paper — this one clears 4.5:1 on every daypart
+     paper AND paper-deep, worst case 4.6:1. */
+  --ink-faint: #6e6455;
 
   --marigold: #f2a03d;
-  --marigold-deep: #d9842a;
+  /* Deep tier — glyphs/accents on their wash (identity discs, feature tiles). Bar:
+     3:1 non-text contrast (WCAG 1.4.11) on the matching wash — marigold and sky were
+     the two day-side fails (2.37:1 / 2.80:1) and are darkened just past the bar
+     (bmad/08 A-10). Text NEVER uses a -deep on a wash: that's what the -ink tier
+     below is for (4.5:1). */
+  --marigold-deep: #be7424; /* 3.02:1 on --marigold-wash (was #d9842a, 2.37:1) */
   --terracotta: #e0724e;
   --terracotta-deep: #c2563a;
   --sage: #88a36f;
   --sage-deep: #6b8a52;
   --sky: #7bb0c9;
-  --sky-deep: #5891ac;
+  --sky-deep: #548aa4; /* 3.06:1 on --sky-wash (was #5891ac, 2.80:1) */
   --berry: #b06a93;
   --berry-deep: #95527a;
   --teal: #34b3a6; /* turquoise — Le cercle's accent */
@@ -54,6 +62,19 @@
   --sky-wash: #d8eaf1;
   --berry-wash: #efdce8;
   --teal-wash: #d4ece9;
+
+  /* ---- Section INK tier (bmad/08 A-10 — the text-safe section colours) ----
+     One per hub section, tuned per THEME to ≥4.5:1 (WCAG AA small text) on that
+     section's wash — and, day-side, also ≥5:1 on --paper/--card. This is what
+     SECTION_TINT.ink resolves to, so anywhere a section colour lands on TEXT
+     (the active Réglages tab label, a guide link) it reads AA by construction.
+     The brighter -deep tier above stays for pure glyphs (3:1 bar). */
+  --marigold-ink: #945a1d; /* 4.61:1 on wash */
+  --terracotta-ink: #a24830; /* 4.52:1 */
+  --sage-ink: #566f42; /* 4.53:1 */
+  --sky-ink: #426d82; /* 4.53:1 */
+  --berry-ink: #8f4f75; /* 4.54:1 */
+  --teal-ink: #22736a; /* 4.55:1 */
 
   /* ---- Babillard-compat semantic aliases (map onto Pip) ---- */
   --paper-2: var(--paper-deep);
@@ -155,6 +176,18 @@
   --berry-wash: #321f2c;
   --teal-wash: #1d2e2c;
 
+  /* Berry was the one night-side glyph-on-wash fail (2.75:1) — lifted past 3:1. */
+  --berry-deep: #9a5a81; /* 3.04:1 on night --berry-wash */
+
+  /* Section ink tier on the dark washes: the BASE inks (not the deeps) already
+     read bright-on-dark; berry alone needed a lift. All ≥4.5:1 on their wash. */
+  --marigold-ink: #f2a03d; /* 6.16:1 */
+  --terracotta-ink: #e0724e; /* 4.53:1 */
+  --sage-ink: #88a36f; /* 4.90:1 */
+  --sky-ink: #7bb0c9; /* 6.07:1 */
+  --berry-ink: #b8789d; /* 4.54:1 */
+  --teal-ink: #34b3a6; /* 5.51:1 */
+
   --accent-ink: #1b1712;
   --on-primary: #1b1712;
 }
@@ -188,6 +221,24 @@
   --sky-wash: #364a55;
   --berry-wash: #4d3346;
   --teal-wash: #31504b;
+
+  /* Twilight's mid-tone washes defeated every day-side -deep glyph (all six under
+     the 3:1 non-text bar — worst 2.01:1). Lift each just past 3:1 on its wash
+     (bmad/08 A-10). */
+  --marigold-deep: #db8830; /* 3.06:1 */
+  --terracotta-deep: #d07c66; /* 3.03:1 */
+  --sage-deep: #859e70; /* 3.04:1 */
+  --sky-deep: #669bb3; /* 3.04:1 */
+  --berry-deep: #ab7695; /* 3.07:1 */
+  --teal-deep: #54a59d; /* 3.04:1 */
+
+  /* Section ink tier (text on wash) — lightened past 4.5:1 on the twilight washes. */
+  --marigold-ink: #f4b05d; /* 4.54:1 */
+  --terracotta-ink: #eba38b; /* 4.55:1 */
+  --sage-ink: #abbe99; /* 4.51:1 */
+  --sky-ink: #8fbcd1; /* 4.53:1 */
+  --berry-ink: #c897b4; /* 4.55:1 */
+  --teal-ink: #6fc9c0; /* 4.53:1 */
 }
 
 :root[data-theme='deep-twilight'] {
@@ -206,6 +257,18 @@
   --sky-wash: #28363f;
   --berry-wash: #392636;
   --teal-wash: #243a37;
+
+  /* Terracotta + berry glyphs missed the 3:1 non-text bar on these washes. */
+  --terracotta-deep: #c55e44; /* 3.03:1 */
+  --berry-deep: #9f6387; /* 3.06:1 */
+
+  /* Section ink tier (text on wash) — ≥4.5:1 on the deep-twilight washes. */
+  --marigold-ink: #f2a03d; /* 5.34:1 */
+  --terracotta-ink: #e3805f; /* 4.51:1 */
+  --sage-ink: #8fa877; /* 4.55:1 */
+  --sky-ink: #7bb0c9; /* 5.26:1 */
+  --berry-ink: #bd83a5; /* 4.62:1 */
+  --teal-ink: #34b3a6; /* 4.69:1 */
 
   --accent-ink: #221c12;
   --on-primary: #221c12;
@@ -313,6 +376,29 @@
   --ink-faint: #9b917e;
   --line: #4f463a;
   --line-strong: #6a5f4f;
+}
+
+/* OS-level contrast preference (bmad/08 A-10): someone who asked their DEVICE for
+   more contrast gets the same "sharper Pip" bump without finding the Réglages
+   toggle. Only when no explicit in-app choice was made (no data-contrast
+   attribute) — the app toggle, once touched, wins either way. Same token values
+   as the blocks above; keep the two in sync. */
+@media (prefers-contrast: more) {
+  :root:not([data-contrast]):not([data-theme='night']) {
+    --card: #fffdf7;
+    --ink: #16120c;
+    --ink-soft: #4a4339;
+    --ink-faint: #756b5d;
+    --line: #d2bd96;
+    --line-strong: #b59a6b;
+  }
+  :root:not([data-contrast])[data-theme='night'] {
+    --ink: #fdfaf0;
+    --ink-soft: #cfc6b2;
+    --ink-faint: #9b917e;
+    --line: #4f463a;
+    --line-strong: #6a5f4f;
+  }
 }
 
 /* Larger text: the root font-size is unset (browser default ~16px), so most of
@@ -597,7 +683,8 @@ textarea.input {
 }
 .tag {
   font-family: var(--mono);
-  font-size: 0.72rem;
+  /* Type floor (bmad/08 A-10): nothing readable below --text-xs (~12.5px). */
+  font-size: var(--text-xs);
   padding: 0.15rem 0.55rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
@@ -627,7 +714,7 @@ textarea.input {
   color: var(--ink-soft);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.74rem;
+  font-size: var(--text-xs); /* type floor (A-10) — was 0.74rem */
   margin: 0 0 0.5rem;
 }
 .error {
@@ -904,7 +991,7 @@ textarea.input {
    a soft tint of it, so the order (configure your device first, tablet second)
    reads before the title does. */
 .setup__choice-step {
-  font-size: 0.72rem;
+  font-size: var(--text-xs); /* type floor (A-10) — was 0.72rem */
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;

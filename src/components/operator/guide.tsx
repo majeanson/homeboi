@@ -9,6 +9,7 @@ import { resetWelcome } from '../WelcomeCard'
 import { OperatorSection } from './OperatorSection'
 import { FeatureMap } from '../FeatureMap'
 import { SampleDataControls } from './sampleData'
+import { DidYouKnowCard, WhatsNewLine } from './discover'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 
@@ -373,6 +374,17 @@ export function DiscoverSection() {
         onChange={(e) => setQuery(e.target.value)}
         aria-label={t.operator.guideSearch}
       />
+
+      {/* The two calm discovery cards (bmad/08 B-14 + B-11): one « Quoi de
+          neuf » line from the hand-maintained changelog, and ONE « Le
+          saviez-vous ? » card for a feature this household provably never
+          touched. Both dismiss forever; both hide while searching. */}
+      {!q && (
+        <>
+          <WhatsNewLine />
+          <DidYouKnowCard />
+        </>
+      )}
 
       {/* The feature map: every theme the app covers, at a glance. Hidden while
           searching (the results below are the answer then). A tile opens that

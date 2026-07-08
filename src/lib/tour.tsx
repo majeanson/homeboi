@@ -45,6 +45,11 @@ type TourValue = {
   stepIndex: number
   isActive: boolean
   start: (id: string) => void
+  // Run a Tour VALUE that isn't in the static TOURS list — the adaptive
+  // « tour des trouvailles » (lib/discovery buildDiscoveryTour) assembles its
+  // steps at runtime from this household's data, so it can't be registered
+  // ahead of time. Same overlay, same seen-marking; only the lookup differs.
+  startTour: (tour: Tour) => void
   next: () => void
   prev: () => void
   end: (reason: EndReason) => void
@@ -55,6 +60,7 @@ const TourContext = createContext<TourValue>({
   stepIndex: 0,
   isActive: false,
   start: () => {},
+  startTour: () => {},
   next: () => {},
   prev: () => {},
   end: () => {},
@@ -79,10 +85,8 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setStepIndex(0)
   }, [])
 
-  const start = useCallback(
-    (id: string) => {
-      const tour = TOURS.find((tr) => tr.id === id)
-      if (!tour) return
+  const startTour = useCallback(
+    (tour: Tour) => {
       // Land on the tour's home route first, so step anchors exist (and a replay
       // launched from Réglages still works — it pulls the user back to the board).
       if (tour.startRoute) nav(tour.startRoute)
@@ -90,6 +94,15 @@ export function TourProvider({ children }: { children: ReactNode }) {
       setStepIndex(0)
     },
     [nav],
+  )
+
+  const start = useCallback(
+    (id: string) => {
+      const tour = TOURS.find((tr) => tr.id === id)
+      if (!tour) return
+      startTour(tour)
+    },
+    [startTour],
   )
 
   const next = useCallback(() => {
@@ -130,6 +143,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     stepIndex,
     isActive: activeTour != null,
     start,
+    startTour,
     next,
     prev,
     end,

@@ -54,6 +54,7 @@ export function SceneHead({
           className="btn btn--ghost mono"
           onClick={onClose}
           aria-label={closeLabel ?? t.common.close}
+          title={closeLabel ?? t.common.close}
         >
           <Icon name="x-bold" size={18} />
         </button>

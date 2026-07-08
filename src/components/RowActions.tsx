@@ -35,7 +35,13 @@ export function RowActions({
   return (
     <span className={'row-actions' + (className ? ` ${className}` : '')}>
       {onEdit && (
-        <button type="button" className="row-actions__btn" onClick={onEdit} aria-label={editLabel ?? t.common.edit}>
+        <button
+          type="button"
+          className="row-actions__btn"
+          onClick={onEdit}
+          aria-label={editLabel ?? t.common.edit}
+          title={editLabel ?? t.common.edit}
+        >
           <Icon name="pencil-simple-bold" size={size} />
         </button>
       )}
@@ -45,6 +51,7 @@ export function RowActions({
           className="row-actions__btn row-actions__btn--danger"
           onClick={onDelete}
           aria-label={deleteLabel ?? t.common.delete}
+          title={deleteLabel ?? t.common.delete}
         >
           <Icon name="trash-bold" size={size} />
         </button>

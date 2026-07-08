@@ -277,7 +277,9 @@ export function Liste() {
   // it does in place instead of running it. La liste is one flat list, so its help
   // targets are these buttons, not section headings.
   const helpLabel = (k: string) =>
-    ({ flyer: t.shop.browse, quick: t.list.quickAdd, clear: t.list.clearChecked, cashier: t.shop.present })[k] ?? k
+    ({ flyer: t.shop.browse, quick: t.list.quickAdd, clear: t.list.clearChecked, cashier: t.shop.present, search: t.search.title })[
+      k
+    ] ?? k
   const help = useHelpMode(LISTE_HELP, helpLabel)
   const [addText, setAddText] = useState('')
   const [adding, setAdding] = useState(false)
@@ -453,7 +455,9 @@ export function Liste() {
         // The in-place help "?" tucks into the header cluster (beside search +
         // avatar) rather than stranding on its own row above a flat list.
         action={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
+        searchPick={(run) => help.pick('search', run)}
       />
+      {help.bubbleFor('search')}
 
       <SectionIntro card="liste" />
 

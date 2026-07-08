@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { Icon, type IconName } from '../components/Icon'
 import { useT } from '../i18n'
+import { api } from '../lib/api'
 
 // The marketing front door — shown to first-time visitors only (the `/` smart
 // entry in router.tsx redirects a returning kiosk/phone straight to its home).
@@ -38,6 +40,25 @@ const PROMISES = ['promise1', 'promise2', 'promise3', 'promise4'] as const
 
 export function Home() {
   const t = useT()
+  // « Essaie sans peur » (bmad/08 A-8): POST /api/demo mints a short-lived
+  // READ-ONLY showcase token into the always-seeded demo household, then boots
+  // the app through the normal `?guest=` door (full reload so the guest latch in
+  // main.tsx runs before the first api() call). Zero fear, zero setup — the same
+  // watermarked read-only hub a babysitter link opens.
+  const [demoBusy, setDemoBusy] = useState(false)
+  const [demoErr, setDemoErr] = useState(false)
+  const tryDemo = async () => {
+    if (demoBusy) return
+    setDemoBusy(true)
+    setDemoErr(false)
+    try {
+      const r = await api<{ guestToken: string }>('demo', { method: 'POST' })
+      window.location.assign(`/board?guest=${encodeURIComponent(r.guestToken)}`)
+    } catch {
+      setDemoErr(true)
+      setDemoBusy(false)
+    }
+  }
   return (
     <div className="page">
       {/* Explicit top-right "Log in" (the conventional spot) for a returning
@@ -69,7 +90,13 @@ export function Home() {
             <Link to="/setup" className="btn btn--ghost">
               {t.home.ctaReturning}
             </Link>
+            {/* Try before signing up: a real, seeded household in read-only —
+                the door for the curious AND the sales demo (bmad/08 A-8). */}
+            <button type="button" className="btn btn--ghost" onClick={tryDemo} disabled={demoBusy}>
+              {demoBusy ? t.home.demoOpening : t.home.ctaDemo}
+            </button>
           </div>
+          {demoErr && <p className="home__privacy">{t.home.demoError}</p>}
         </section>
 
         {/* Everything it does — themed feature cards (same taxonomy as the Guide),

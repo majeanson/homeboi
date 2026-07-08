@@ -28,6 +28,8 @@ const CSRF_EXEMPT = new Set<string>([
   'api/auth/signup',
   'api/pair/start',
   'api/pair/poll',
+  // The public demo mint (« Essaie sans peur », bmad/08 A-8) — no cookie yet.
+  'api/demo',
 ])
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])

@@ -40,4 +40,13 @@ export const LISTE_HELP = {
       en: 'Switch to cashier mode: a grid of your items on deal. Tap the one being scanned to show its price proof.',
     },
   },
+  // The HEADER magnifier — global search, distinct from `flyer` (the in-list
+  // flyer loupe) above. A-9 soft icon label.
+  search: {
+    card: 'search',
+    body: {
+      fr: 'La loupe du haut : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
+      en: 'The top magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',
+    },
+  },
 } satisfies Record<string, HelpEntry>

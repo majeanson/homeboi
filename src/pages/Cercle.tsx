@@ -177,6 +177,7 @@ function CercleParent() {
       editGroup: t.cercle.editGroup,
       deleteGroup: t.cercle.deleteGroup,
       others: t.cercle.others,
+      globalSearch: t.search.title,
     })[k] ?? k
   const help = useHelpMode(CERCLE_HELP, helpLabel)
 
@@ -630,7 +631,15 @@ function CercleParent() {
 
   return (
     <main className={'today-feed cercle' + (help.active ? ' help-armed' : '')}>
-      <HubHead title={t.nav.cercle} icon="users-three-bold" iconColor={ACCENT} background="var(--teal-wash)" card="cercle" />
+      <HubHead
+        title={t.nav.cercle}
+        icon="users-three-bold"
+        iconColor={ACCENT}
+        background="var(--teal-wash)"
+        card="cercle"
+        searchPick={(run) => help.pick('globalSearch', run)}
+      />
+      {help.bubbleFor('globalSearch')}
 
       {/* The connector — a modal so it's prominent from any entry point (the ＋
           chooser, a person's peek, a family group header). */}

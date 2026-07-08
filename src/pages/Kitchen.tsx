@@ -126,6 +126,7 @@ export function Kitchen() {
       reserve: t.kitchen.reserve,
       recipesBook: t.recipes.title,
       collections: t.recipes.collectionsTitle,
+      search: t.search.title,
     })[k] ?? k
   const tabHelp = useHelpMode(KITCHEN_TAB_HELP, tabHelpLabel)
   // The recipe a planned meal points at (exact recipe_id link first, else a loose
@@ -389,7 +390,9 @@ export function Kitchen() {
           iconColor="var(--terracotta-deep)"
           background="var(--terracotta-wash)"
           card="kitchen"
+          searchPick={(run) => tabHelp.pick('search', run)}
         />
+        {tabHelp.bubbleFor('search')}
 
         <SectionIntro card="kitchen" />
 
@@ -663,6 +666,7 @@ export function Kitchen() {
                       className="kitchen__day-manage"
                       onClick={() => nav(`/kitchen/day/${date}`)}
                       aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                      title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                     >
                       <Icon name="pencil-simple-bold" size={16} />
                     </button>

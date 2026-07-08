@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Cluster } from '../Layout'
 import { useT } from '../../i18n'
 import { useOnline } from '../../lib/online'
 import { useConfirm } from '../../lib/confirm'
@@ -47,14 +48,35 @@ export function SampleDataControls() {
     }
   }
 
+  // « Essaie sans peur » one-tap reset (bmad/08 A-8): put the demo family back
+  // to its pristine state — clear the is_sample rows, reseed with today's dates.
+  // Touches ONLY demo rows (both calls are is_sample-scoped), so no confirm-with-
+  // danger ceremony: it's the fear-free "start the sandbox over" button.
+  const reset = async () => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await api('seed', { method: 'DELETE' })
+      await api('seed', { method: 'POST' })
+      await qc.invalidateQueries()
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="guide__sample">
       <h3 className="guide__group-title">{t.sample.manageTitle}</h3>
       <p className="guide__sample-line">{count > 0 ? t.sample.present : t.sample.absent}</p>
       {count > 0 ? (
-        <button type="button" className="btn btn--danger btn--sm" onClick={clear} disabled={busy || !online}>
-          {busy ? t.sample.clearing : t.sample.clear}
-        </button>
+        <Cluster>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={reset} disabled={busy || !online}>
+            {busy ? t.sample.resetting : t.sample.reset}
+          </button>
+          <button type="button" className="btn btn--danger btn--sm" onClick={clear} disabled={busy || !online}>
+            {busy ? t.sample.clearing : t.sample.clear}
+          </button>
+        </Cluster>
       ) : (
         <button type="button" className="btn btn--ghost btn--sm" onClick={load} disabled={busy || !online}>
           {t.sample.load}

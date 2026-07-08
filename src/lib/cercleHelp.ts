@@ -33,4 +33,13 @@ export const CERCLE_HELP = {
   editGroup: { card: 'cercle', point: 6, body: { fr: 'Renomme le groupe, ou change son type et sa couleur.', en: 'Rename the group, or change its kind and colour.' } },
   deleteGroup: { card: 'cercle', point: 6, body: { fr: 'Supprime le groupe ; les personnes restent dans le cercle.', en: 'Delete the group; the people stay in the circle.' } },
   others: { card: 'cercle', point: 1, body: { fr: 'Les personnes qui ne sont dans aucun groupe ni famille.', en: 'People who aren’t in any group or family.' } },
+  // The HEADER magnifier — global search (distinct from `search` above, which is
+  // the cercle's own person-search field). A-9 soft icon label.
+  globalSearch: {
+    card: 'search',
+    body: {
+      fr: 'La loupe du haut : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
+      en: 'The top magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',
+    },
+  },
 } satisfies Record<string, HelpEntry>

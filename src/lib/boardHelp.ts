@@ -58,4 +58,13 @@ export const BOARD_HELP = {
       en: 'Coming up: what’s ahead this week, with “in X days” when it’s close.',
     },
   },
+  // The header magnifier (A-9 soft icon label — the icon stays wordless; armed
+  // help explains it in place instead of navigating away).
+  search: {
+    card: 'search',
+    body: {
+      fr: 'La loupe : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
+      en: 'The magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',
+    },
+  },
 } satisfies Record<string, HelpEntry>
