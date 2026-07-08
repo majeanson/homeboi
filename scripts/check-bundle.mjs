@@ -14,6 +14,13 @@
 //
 // Budgets are ~15-25% above today's real sizes — headroom for normal growth,
 // tight enough that "oops, the whole guide landed in the shell" fails loudly.
+//
+// B-11 (bmad/10) — `vite.config.ts` manualChunks pulls react/-dom/-router-dom and
+// i18n.ts (the FR dict) out of index-*.js into their own named chunks so they cache
+// across deploys instead of re-downloading inside a renamed entry file. All three
+// (index-, react-vendor-, i18n-) still load EAGERLY (main.tsx's static import
+// chain), so they're budgeted individually AND as a combined eager total — the
+// real boot cost a slow tablet pays before first paint.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -21,8 +28,14 @@ const DIST = 'dist'
 const ASSETS = join(DIST, 'assets')
 
 const KB = 1024
-const ENTRY_BUDGET = 500 * KB // index-*.js — the eager shell (today ~407 KB)
-const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: Icon ~251 KB)
+const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: DrawPad ~52 KB)
+const EAGER_CHUNKS = [
+  // name pattern → its own budget (all three load before first paint)
+  { re: /^index-/, cap: 320 * KB, label: 'eager entry' }, // today ~251 KB
+  { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~224 KB
+  { re: /^i18n-/, cap: 220 * KB, label: 'eager i18n' }, // today ~181 KB (FR+EN — next commit lazy-loads EN, ~90 KB)
+]
+const EAGER_TOTAL_BUDGET = 720 * KB // combined index + react-vendor + i18n (today ~656 KB)
 const ONLINE_ONLY = [
   // chunk-name pattern → its own generous cap (it's lazy AND un-precached)
   { re: /^heic2any-/, cap: 1600 * KB },
@@ -31,6 +44,7 @@ const ONLINE_ONLY = [
 const sw = readFileSync(join(DIST, 'sw.js'), 'utf8')
 const failures = []
 let total = 0
+let eagerTotal = 0
 
 for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
   const size = statSync(join(ASSETS, f)).size
@@ -46,12 +60,20 @@ for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
   }
   if (!precached)
     failures.push(`${f} is missing from the sw.js precache — a kiosk rebooting offline cannot open its route (NFR-OFFLINE-1)`)
-  const budget = /^index-/.test(f) ? ENTRY_BUDGET : CHUNK_BUDGET
-  if (size > budget)
-    failures.push(`${f} exceeds its budget: ${kb} KB > ${Math.round(budget / KB)} KB (${/^index-/.test(f) ? 'eager entry' : 'lazy chunk'})`)
+  const eager = EAGER_CHUNKS.find((e) => e.re.test(f))
+  if (eager) {
+    eagerTotal += size
+    if (size > eager.cap) failures.push(`${f} exceeds its budget: ${kb} KB > ${Math.round(eager.cap / KB)} KB (${eager.label})`)
+    continue
+  }
+  if (size > CHUNK_BUDGET)
+    failures.push(`${f} exceeds its budget: ${kb} KB > ${Math.round(CHUNK_BUDGET / KB)} KB (lazy chunk)`)
 }
 
-console.log(`bundle: ${Math.round(total / KB)} KB of JS across dist/assets; sw.js precache checked.`)
+if (eagerTotal > EAGER_TOTAL_BUDGET)
+  failures.push(`combined eager JS (index + react-vendor + i18n) is ${Math.round(eagerTotal / KB)} KB > ${Math.round(EAGER_TOTAL_BUDGET / KB)} KB budget`)
+
+console.log(`bundle: ${Math.round(total / KB)} KB of JS across dist/assets (${Math.round(eagerTotal / KB)} KB eager); sw.js precache checked.`)
 if (failures.length) {
   for (const f of failures) console.error(`✗ ${f}`)
   process.exit(1)

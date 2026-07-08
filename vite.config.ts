@@ -189,6 +189,26 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   plugins: [react(), serviceWorker()],
+  build: {
+    rollupOptions: {
+      output: {
+        // B-11 (bmad/10) — pull the framework + i18n out of the eager entry into
+        // their own named chunks: react/-dom/-router-dom rarely change build to
+        // build so they cache across deploys instead of re-downloading inside a
+        // renamed index-*.js every time app code changes; i18n.ts (the FR dict —
+        // EN lazy-loads separately, see src/i18n.ts) is sizeable and cache-worthy
+        // on its own. Everything else keeps Rollup's default automatic chunking.
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (/[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) return 'react-vendor'
+            return undefined
+          }
+          if (id.endsWith('/src/i18n.ts')) return 'i18n'
+          return undefined
+        },
+      },
+    },
+  },
   server: {
     // Pre-transform the lazy route modules at dev-server start. The app code-splits
     // ~40 pages via React.lazy; the FIRST hit on each cold-compiles in Vite, and
