@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isStaleAt } from './online'
+import { evaluateFreshness, isStaleAt, type LiveQuerySnapshot } from './online'
 
 // bmad/10 B-7 — "La ligne de vérité." isStaleAt is the pure boundary math behind
 // the online-but-stale banner: threshold = max(3 × gearMs, 90_000). Exhaustive on
@@ -104,5 +104,107 @@ describe('isStaleAt', () => {
       expect(isStaleAt(NOW - 90_000, NOW, 0, false)).toBe(false)
       expect(isStaleAt(NOW - 90_001, NOW, 0, false)).toBe(true)
     })
+  })
+})
+
+// bmad/10 B-7 review — a hung fetch (api() has no client-side timeout, so a true
+// black-hole connection never settles success or error) must not suppress the
+// stale flag forever. evaluateFreshness bounds the suppression per query to
+// SUPPRESS_WINDOW_MS instead of the whole fetch lifetime.
+describe('evaluateFreshness', () => {
+  const NOW = 1_000_000_000
+  const WINDOW = 20_000
+
+  function q(over: Partial<LiveQuerySnapshot>): LiveQuerySnapshot {
+    return {
+      queryHash: 'q',
+      live: true,
+      succeeded: false,
+      dataUpdatedAt: 0,
+      fetching: false,
+      fetchFailureCount: 0,
+      ...over,
+    }
+  }
+
+  it('non-live queries never contribute newest or suppression', () => {
+    const map = new Map<string, number>()
+    const { newestMs, anyFirstRetryInFlight } = evaluateFreshness(
+      [q({ live: false, succeeded: true, dataUpdatedAt: NOW, fetching: true })],
+      NOW,
+      map,
+      WINDOW,
+    )
+    expect(newestMs).toBe(0)
+    expect(anyFirstRetryInFlight).toBe(false)
+  })
+
+  it('a fetch just starting suppresses immediately', () => {
+    const map = new Map<string, number>()
+    const { anyFirstRetryInFlight } = evaluateFreshness([q({ fetching: true })], NOW, map, WINDOW)
+    expect(anyFirstRetryInFlight).toBe(true)
+    expect(map.get('q')).toBe(NOW)
+  })
+
+  it('a fetch still in flight but past the suppress window stops suppressing', () => {
+    const map = new Map<string, number>([['q', NOW - WINDOW - 1]])
+    const { anyFirstRetryInFlight } = evaluateFreshness([q({ fetching: true })], NOW, map, WINDOW)
+    expect(anyFirstRetryInFlight).toBe(false)
+  })
+
+  it('exactly at the window boundary still suppresses (inclusive)', () => {
+    const map = new Map<string, number>([['q', NOW - WINDOW]])
+    const { anyFirstRetryInFlight } = evaluateFreshness([q({ fetching: true })], NOW, map, WINDOW)
+    expect(anyFirstRetryInFlight).toBe(true)
+  })
+
+  it('the hung-fetch scenario: one query never settles, others are old — stale still surfaces once the window elapses', () => {
+    const map = new Map<string, number>([['hung', NOW - WINDOW - 1]])
+    const hoursOld = NOW - 3 * 60 * 60 * 1000
+    const { newestMs, anyFirstRetryInFlight } = evaluateFreshness(
+      [
+        q({ queryHash: 'hung', fetching: true, fetchFailureCount: 0 }),
+        q({ queryHash: 'other', succeeded: true, dataUpdatedAt: hoursOld }),
+      ],
+      NOW,
+      map,
+      WINDOW,
+    )
+    expect(newestMs).toBe(hoursOld)
+    expect(anyFirstRetryInFlight).toBe(false)
+    // Feeding that into isStaleAt now correctly reports stale instead of being
+    // masked forever by the hung query.
+    expect(isStaleAt(newestMs, NOW, 10_000, anyFirstRetryInFlight)).toBe(true)
+  })
+
+  it('a query that stopped fetching is forgotten, so a later fetch gets a fresh window', () => {
+    const map = new Map<string, number>([['q', NOW - WINDOW - 1]])
+    evaluateFreshness([q({ fetching: false })], NOW, map, WINDOW)
+    expect(map.has('q')).toBe(false)
+    // Next tick, a brand-new fetch on the same query starts its own window.
+    const { anyFirstRetryInFlight } = evaluateFreshness([q({ fetching: true })], NOW + 1, map, WINDOW)
+    expect(anyFirstRetryInFlight).toBe(true)
+    expect(map.get('q')).toBe(NOW + 1)
+  })
+
+  it('a failed first attempt (fetchFailureCount > 0) never suppresses, matching pre-existing isStaleAt behaviour', () => {
+    const map = new Map<string, number>()
+    const { anyFirstRetryInFlight } = evaluateFreshness([q({ fetching: true, fetchFailureCount: 1 })], NOW, map, WINDOW)
+    expect(anyFirstRetryInFlight).toBe(false)
+  })
+
+  it('newestMs picks the max across multiple succeeded live queries', () => {
+    const map = new Map<string, number>()
+    const { newestMs } = evaluateFreshness(
+      [
+        q({ queryHash: 'a', succeeded: true, dataUpdatedAt: NOW - 5000 }),
+        q({ queryHash: 'b', succeeded: true, dataUpdatedAt: NOW - 1000 }),
+        q({ queryHash: 'c', succeeded: true, dataUpdatedAt: NOW - 9000 }),
+      ],
+      NOW,
+      map,
+      WINDOW,
+    )
+    expect(newestMs).toBe(NOW - 1000)
   })
 })
