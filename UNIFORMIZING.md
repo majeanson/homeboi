@@ -18,17 +18,26 @@
 
 ---
 
-## ⭐ Start here — highest value, lowest risk
+## ⭐ Status — the backlog is EXECUTED (updated 2026-07-08)
 
-These are the items with the best ratio of consistency-gain to regression-risk. Do them first.
+**Every item in Parts I and II is now ✅ done, [~] verdict-closed (reviewed and
+deliberately kept/skipped), or explicitly deferred with a reason.** The original
+"start here" list (FE-1/FE-2/LIB-2/BE-2/CSS-1/I18N-1 + the conventions doc) all
+shipped in the 2026-06-26 waves; the 2026-07-08 pass closed the last two
+(P2-9's card-orphan test — which caught 9 shipped dead deep-links — and P2-7's
+`SEARCH_INDEX` contract) and verified the remaining "open" findings stale.
 
-1. **[🔴 FE-1] Migrate hand-rolled `.subtabs` to `<SubTabs>`** (5 sites) — see [FE-1](#fe-1).
-2. **[🔴 FE-2] Migrate the three recipe overlays onto `<Modal>`** — see [FE-2](#fe-2).
-3. **[🔴 LIB-2] Pull inline query keys into `lib/queryKeys.ts`** (esp. `['members']` ×11, `['board']` inline) — see [LIB-2](#lib-2).
-4. **[🟡 BE-2] Extract the duplicated `keyish` R2-key validator into `_lib/validate.ts`** — see [BE-2](#be-2).
-5. **[🟡 CSS-1] Replace hardcoded `999px` radius and `#fff`/`#000` with tokens** — mechanical, theme-correctness win — see [CSS-1](#css-1).
-6. **[🟡 I18N-1] Consolidate duplicated button labels into `common.*`** — see [I18N-1](#i18n-1).
-7. **Write a "Schema Conventions" block** (CLAUDE.md or a doc) capturing the DB naming rules below, so new migrations stop adding drift — see [DB conventions](#db-conventions-forward-rules).
+**What deliberately remains (deferred-with-verdict, NOT a to-do list):**
+- P2-10's optional `ADD_HANDLERS` map — only if touching those forms.
+- P2-9's help-copy drift (bubbles pulling `GUIDE.what`) — next onboarding refresh.
+- CSS-2's `.cercle-share*` → `.share-*` rename — next CSS pass.
+- CSS-5's `--text-*` size-scale sweep — own pass, low value.
+- DB-1's parallel-array media junction — opportunistic, when in that code.
+- DB-6 `household_preferences` split — rule-only until a 5th pref column.
+
+**⚠ For the next auditor:** several findings here went stale between audits
+(FE adoption, LIB-4, D-30/E-39 in bmad/08 too) — **always verify a finding in
+code before building**; this file records verdicts, the code is the truth.
 
 ---
 
@@ -501,13 +510,13 @@ Same string defined in many domain namespaces — change-one-forget-the-other ri
 > are larger than Part I's edits. Bias: prefer *forward conventions + small shared helpers* over big rewrites;
 > several agent proposals are explicitly **rejected as over-abstraction** below.
 
-## ⭐ Part II start-here (best value/risk)
+## ⭐ Part II start-here — ALL FIVE EXECUTED (see the status block at the top)
 
-1. **[P2-1] `createDeviceStore(key, default)` factory** — ~10 copy-pasted `useSyncExternalStore` localStorage stores. Pure boilerplate removal, low risk. **Do first.**
-2. **[P2-2] `<BoardCard>` shell + a shared `DerivedOccurrence` shape** — every board glance card hand-rolls the same `.card`/`.sec-label` shell; birthday/work/carnet-life each return a different derived shape. Structural, low risk.
-3. **[P2-3] `useItemList(key, endpoint)` behavioural hook** — ~9 household "small list" features re-wire the same add/check/clear/undo/deferred-removal logic.
-4. **[P2-4] `staged_media` table + shared sweep** — `intake_media` + `postbox_media` are byte-for-byte isomorphic (table + cleanup). One table, one sweep.
-5. **[P2-9] Help/explainer build-time orphan check** — the memory records real shipped ORPHAN bugs (a "?" target with no entry renders nothing). A typed registry that fails `tsc` kills the bug class cheaply.
+1. ✅ **[P2-1] `createDeviceStore`** — shipped (`lib/createDeviceStore.ts`; every device pref rides it).
+2. ✅ **[P2-2] `<BoardCard>` shell** — shipped with DB-4 (mig 0090; `components/board/BoardCard.tsx`).
+3. ✅ **[P2-3] `useItemList`** — re-scoped on evidence: the real twin was MealIdeas/Leftovers → `<MealPool>`; the monolith was over-merge (verdict inline below).
+4. ✅ **[P2-4] `staged_media`** — shipped (the `staged_media` table + shared sweep exist in migrations).
+5. ✅ **[P2-9] help orphan checks** — BOTH halves: generic `useHelpMode<K>` (keys fail tsc) + `helpRegistry.test.ts` (card/point refs fail `npm test`; caught 9 shipped dead links 2026-07-08).
 
 ---
 
