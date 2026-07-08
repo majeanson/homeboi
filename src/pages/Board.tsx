@@ -968,6 +968,7 @@ export function Board() {
         iconColor="var(--marigold-deep)"
         background="var(--marigold-wash)"
         card="board"
+        action={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
         searchPick={(run) => help.pick('search', run)}
       />
 
@@ -1002,7 +1003,8 @@ export function Board() {
           </button>
         )}
         <BoardViewToggle view={view} onChange={changeView} t={t} pick={help.pick} armed={help.active} />
-        {help.available && <HelpToggle active={help.active} onToggle={help.toggle} />}
+        {/* The help "?" lives in the HubHead action slot (like La liste), NOT here:
+            appended to this row it wrapped to a stranded second line on mobile. */}
       </div>
       {help.hint && <HelpHint />}
       {help.bubble}
