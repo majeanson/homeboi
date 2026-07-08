@@ -3067,6 +3067,19 @@ export const GUIDE: GuideEntry[] = [
           en: 'So you can dictate items by voice instead of typing them one by one.',
         },
       },
+      {
+        // bmad/10 B-7 — « La ligne de vérité » : appended at the END on purpose
+        // (point indices are load-bearing elsewhere in guideContent).
+        label: { fr: 'Même « en ligne », le mur le dit s’il n’a rien reçu', en: 'Even “online”, the wall says so if nothing’s landed' },
+        detail: {
+          fr: 'Une borne wifi captive ou une panne du serveur peut laisser l’appareil « en ligne » sans que rien ne se rafraîchisse. Si les données affichées n’ont pas été renouvelées depuis un bon moment, une petite ligne calme « Données de … » apparaît — même sans le bandeau « Hors ligne ».',
+          en: 'A captive wifi portal or a server outage can leave the device reading “online” while nothing actually refreshes. If what’s on screen hasn’t updated in a good while, a small calm “Data from …” line appears — even without the “Offline” banner.',
+        },
+        why: {
+          fr: 'Pour que le mur ne mente jamais par silence — une donnée figée se voit, elle ne se devine pas.',
+          en: 'So the wall never lies by omission — stale data is visible, not something you have to guess at.',
+        },
+      },
     ],
   },
 

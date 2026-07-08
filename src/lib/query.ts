@@ -69,8 +69,10 @@ const isAwake = () => Date.now() - lastActivityAt < IDLE_AFTER_MS
 
 // The cadence for a live query right now, off both axes (push and awake). Read by
 // `live.refetchInterval` on every tick, so flipping either axis takes effect at the
-// next tick with no re-subscription.
-const liveInterval = () =>
+// next tick with no re-subscription. Exported (bmad/10 B-7) so the staleness stamp
+// (lib/online.ts) can size its "how long is too long" threshold off the SAME gear —
+// a change to the poll cadence here automatically retunes the stale threshold too.
+export const liveInterval = () =>
   isRealtimeConnected()
     ? isAwake()
       ? RT_ACTIVE_POLL_MS

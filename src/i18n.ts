@@ -78,7 +78,16 @@ export const FR = {
     mealLow: (meal: string, item: string) => `${meal} : il manque ${item}`,
     birthday: (who: string) => `${who} — fête bientôt, aucune idée de cadeau`,
   },
-  offline: { banner: 'Hors ligne', since: 'Données du', live: 'De nouveau en ligne', pending: 'en attente', unavailable: 'Indisponible hors-ligne' },
+  offline: {
+    banner: 'Hors ligne',
+    since: 'Données du',
+    // bmad/10 B-7 — shown when navigator.onLine lies (captive portal/Worker outage):
+    // the board is still "online" but nothing has refreshed in a while.
+    stale: 'Données de',
+    live: 'De nouveau en ligne',
+    pending: 'en attente',
+    unavailable: 'Indisponible hors-ligne',
+  },
   audience: {
     parent: 'Parent',
     kid: 'Enfant',
@@ -2737,7 +2746,14 @@ export const EN: typeof FR = {
     mealLow: (meal: string, item: string) => `${meal}: out of ${item}`,
     birthday: (who: string) => `${who} — birthday soon, no gift idea`,
   },
-  offline: { banner: 'Offline', since: 'Data from', live: 'Back online', pending: 'pending', unavailable: 'Unavailable offline' },
+  offline: {
+    banner: 'Offline',
+    since: 'Data from',
+    stale: 'Data from',
+    live: 'Back online',
+    pending: 'pending',
+    unavailable: 'Unavailable offline',
+  },
   audience: {
     parent: 'Parent',
     kid: 'Kid',

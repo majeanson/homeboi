@@ -126,13 +126,29 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
 
 ## B · La confiance (the house never lies, never loses)
 
-7. ✅ **La ligne de vérité** [S] — _garde (2026-07-08)_ — the OfflineBanner
-   renders only when `navigator.onLine` is false. A captive portal, a dead
-   uplink, or a Worker outage shows a silently stale board with no signal at
-   all. Show the same quiet « données de 7 h 12 » stamp whenever the newest
-   successful fetch is older than a few poll cycles — regardless of what the
-   wifi icon claims. One line, never an alarm. _(reuse: OfflineBanner + the
-   `dataUpdatedAt` it already reads.)_
+7. ✅ **La ligne de vérité** [S] — **SHIPPED 2026-07-08 (same shape as
+   planned: OfflineBanner's second, independent condition).** `lib/query.ts`
+   exports `liveInterval` (the existing awake/asleep × realtime gear picker,
+   unchanged logic — just made readable elsewhere). `lib/online.ts` adds the
+   pure `isStaleAt(newestMs, nowMs, gearMs, anyFirstRetryInFlight)` (threshold
+   `max(3 × gearMs, 90_000)` — floors the two fast gears at 90 s, trips the
+   idle gear at 6 min so a healthy idling kiosk never trips it) + the
+   `useDataFreshness()` hook (aggregates `max(dataUpdatedAt)` over queries
+   tagged `meta.live === true`, re-checked on a 5 s timer + on every query-cache
+   change; suppresses the flag while a live query's FIRST fetch attempt is
+   in-flight — `fetchStatus 'fetching' && fetchFailureCount === 0` — killing the
+   resume-from-background flash with no debounce timer). `OfflineBanner`'s
+   second condition (`online && stale`) renders the same `.offline-bar` with a
+   cooler `--stale` tint (`--sky` instead of the true-offline `--marigold`), a
+   clock icon instead of the wifi glyph, and « Données de HH:MM » (`offline.stale`,
+   FR+EN) — no pending count needed since nothing failed to send. True-offline
+   still wins. Exhaustive `online.test.ts` vitest table (every real poll gear ×
+   boundary, the 90 s floor, the 6-min idle trip point, first-fetch suppression,
+   no-data-yet, degenerate gear) + `e2e/data-staleness.spec.ts` (real TanStack
+   Query state under `page.clock.install()`/`fastForward` proves the wiring
+   fires, not just the pure math). Guide `offline` card gains a point (appended
+   at the end); whatsNew `stale-stamp`. _(reuse: OfflineBanner + the
+   `dataUpdatedAt` it already reads — extended, not forked.)_
 8. ⏸ **La file d'attente, visible** [M] — _plus tard (2026-07-08 — parked
    whole, including the minimal silent-loss half)_ — today the outbox is a
    count, shown only while offline. Meanwhile: a queued write that 400s is

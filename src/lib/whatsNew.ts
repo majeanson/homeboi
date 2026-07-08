@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'stale-stamp',
+    text: {
+      fr: 'Nouveau : si le wifi ment (borne captive, panne du serveur) et que rien ne se rafraîchit, une petite ligne « Données de … » l’indique — même « en ligne ».',
+      en: 'New: if the wifi lies (captive portal, server outage) and nothing refreshes, a small “Data from …” line says so — even while “online”.',
+    },
+    card: 'offline',
+  },
+  {
     id: 'a-regler-kiosk',
     text: {
       fr: 'Nouveau : « À régler » apparaît maintenant aussi sur la tablette murale, pas seulement sur ton téléphone.',

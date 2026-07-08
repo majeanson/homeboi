@@ -2322,7 +2322,7 @@ export function DevKit() {
       file: 'components/OfflineBanner.tsx',
       kw: 'hors ligne offline réseau outbox cache',
       render: () => (
-        <Demo label="Barre « Hors ligne » — visible UNIQUEMENT quand l'appareil est vraiment hors ligne (DevTools ▸ Network ▸ Offline). Porte l'estampille « Données du… » + le nombre d'écritures en attente.">
+        <Demo label="Barre « Hors ligne » — visible UNIQUEMENT quand l'appareil est vraiment hors ligne (DevTools ▸ Network ▸ Offline). Porte l'estampille « Données du… » + le nombre d'écritures en attente. Deuxième condition indépendante (bmad/10 B-7) : « en ligne » mais rien ne se rafraîchit depuis un moment (borne captive, panne du serveur) → la même barre, teinte plus calme (--stale), « Données de… » sans compte en attente.">
           <OfflineBanner />
         </Demo>
       ),

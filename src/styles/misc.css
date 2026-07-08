@@ -548,6 +548,13 @@
   font-weight: 600;
   opacity: 0.85;
 }
+/* bmad/10 B-7 — the "online but stale" variant (data quietly stopped refreshing
+   while navigator.onLine still reads true). Deliberately a calmer, cooler tint
+   than the amber true-offline bar: this is a quiet stamp, never an alarm. */
+.offline-bar--stale {
+  background: var(--sky-wash);
+  border-color: var(--sky);
+}
 
 /* App-level error boundary fallback (components/ErrorBoundary). A calm, centered
    recovery card shown when a render throw would otherwise blank the whole app.
