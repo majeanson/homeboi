@@ -71,6 +71,10 @@ describe('keysForPath', () => {
     expect(keysForPath('routines')).toEqual([['routines'], ['board']])
   })
 
+  it('maps habits to habits + board + month (a day mark re-derives calendar occurrences)', () => {
+    expect(keysForPath('habits')).toEqual([['habits'], ['board'], ['month']])
+  })
+
   it('maps À compléter todos to todos + board + month, templates to their own key', () => {
     expect(keysForPath('todos')).toEqual([['todos'], ['board'], ['month']])
     expect(keysForPath('todo-templates')).toEqual([['todo-templates']])

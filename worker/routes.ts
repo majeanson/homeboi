@@ -44,6 +44,7 @@ import * as guestLinks from '../functions/api/guest-links'
 import * as guestWindow from '../functions/api/guest/window'
 import * as guestWhoami from '../functions/api/guest/whoami'
 import * as guestIntakeSubmit from '../functions/api/guest/intake-submit'
+import * as habits from '../functions/api/habits'
 import * as guestIntakeMedia from '../functions/api/guest/intake-media'
 import * as guestPostboxSubmit from '../functions/api/guest/postbox-submit'
 import * as guestPostboxMedia from '../functions/api/guest/postbox-media'
@@ -177,6 +178,7 @@ const TABLE: Record<string, RouteMod> = {
   'guest/intake-media': guestIntakeMedia,
   'guest/postbox-submit': guestPostboxSubmit,
   'guest/postbox-media': guestPostboxMedia,
+  habits,
   health,
   intake,
   postbox,

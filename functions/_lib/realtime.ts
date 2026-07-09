@@ -123,6 +123,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   'day-notes': [['day-notes'], ['board']],
   // Board-only sticky notes.
   notes: [['board']],
+  // « Mes habitudes » — a habit edit or a day mark refreshes the check-in scene +
+  // its board card (['habits']) and the calendar (habit occurrences are derived
+  // on /api/month, birthdays-style, so a mark re-renders the month grid).
+  habits: [['habits'], ['board'], ['month']],
   // « Laisse un mot » — a member-to-member mot rides its own inbox card AND the per-face
   // dot on the board's face row, so nudge both ['mots'] and the board.
   mots: [['mots'], ['board']],

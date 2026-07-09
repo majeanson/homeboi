@@ -60,6 +60,10 @@ export const FAMILY_NOTES_KEY = ['family-notes']
 // AND the per-face presence dot on the board's face row, so the key is shared — leaving /
 // opening / keeping a mot invalidates it and both surfaces refresh at once.
 export const MOTS_KEY = ['mots']
+// « Mes habitudes » (/api/habits): the habits + their per-day history. Read by the
+// daily check-in scene, the board card, the shell-level check-in/reminder trigger,
+// AND the management form — shared so a tap in the scene refreshes every surface.
+export const HABITS_KEY = ['habits']
 // Le cercle → Business: the services/vendors directory (vet, plumber…). Read on the
 // cercle Business tab AND by the EventForm "Avec" picker (a rendez-vous can link a
 // business), so the key is shared — adding a business there refreshes the picker.
