@@ -358,7 +358,7 @@ export function Board() {
   if (audience === 'simple') {
     const tod = timeOfDay(nowMs)
     const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
-    return <SimpleBoard data={data} todayEvents={todayEvents} greet={greet} />
+    return <SimpleBoard data={data} model={model} greet={greet} />
   }
 
   if (audience === 'toddler') {

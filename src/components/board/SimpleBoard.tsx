@@ -6,8 +6,8 @@ import { Notes } from './Notes'
 import { formatTime } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { useMealPrefs } from '../../lib/mealPrefs'
-import { useNow } from '../../lib/itemLife'
-import type { BoardData, EventRow } from './types'
+import type { BoardModel } from '../../lib/boardModel'
+import type { BoardData } from './types'
 
 // « Simple » board (bmad/08 A-1) — the post-reader/grandma glance: FOUR calm
 // zones instead of the parent's bento. Three giant door-tiles (Aujourd'hui →
@@ -21,19 +21,21 @@ import type { BoardData, EventRow } from './types'
 // the clean summary for the tap-to-hear long-press (A-2).
 export function SimpleBoard({
   data,
-  todayEvents,
+  model,
   greet,
 }: {
   data: BoardData | undefined
-  // Already face-lens filtered by Board (same rows the parent board shows).
-  todayEvents: EventRow[]
+  // The ONE board view-model (C-12, lib/boardModel) — nextUp/today events/tonight's
+  // supper are model-owned; this lens no longer re-derives them on its own clock.
+  model: BoardModel
   greet: string
 }) {
   const t = useT()
   const { lang } = useLang()
+  // Lens-side only: whether the supper tile appears at all is a per-device card
+  // decision (Réglages ▸ Repas), not model-owned — the model already gates
+  // `meals.tonight` by this same visibility.
   const mealPrefs = useMealPrefs()
-  // The shared minute clock, so "next up" rolls forward on a left-open tablet.
-  const nowSec = Math.floor(useNow() / 1000)
 
   if (!data) {
     return (
@@ -43,16 +45,14 @@ export function SimpleBoard({
     )
   }
 
-  // Next still-to-come timed event today (same 30-min grace as the parent's
-  // « Prochainement »), else an all-day thing, else a calm "nothing planned".
-  const next = todayEvents
-    .filter((e) => !e.all_day && e.start_at >= nowSec - 1800)
-    .sort((a, b) => a.start_at - b.start_at)[0]
-  const allDay = todayEvents.find((e) => !!e.all_day)
+  // Next still-to-come timed event today (model's nextUp — same 30-min grace),
+  // else an all-day thing, else a calm "nothing planned".
+  const next = model.nextUp
+  const allDay = model.today.events.find((e) => !!e.all_day)
   const todaySub = next ? `${formatTime(next.start_at, lang)} · ${next.title}` : allDay ? allDay.title : t.monthView.empty
-  // Tonight's supper headline, honouring the household's slot visibility —
-  // souper toggled off drops the whole tile, same as the parent hero.
-  const tonight = mealPrefs.isVisible('supper') ? data.tonight : null
+  // Tonight's supper headline — already gated by the household's slot
+  // visibility inside the model (souper toggled off → null, same as before).
+  const tonight = model.meals.tonight
   // The list glances its first few items by NAME (never a count — a name is
   // what a glance actually wants, and calm never scores the list).
   const items = data.list
