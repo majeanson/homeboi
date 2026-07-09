@@ -1,0 +1,205 @@
+/* « Mes habitudes » — the daily check-in scene (« Le point du jour »).
+   Uniquely-named .habitudes__ / .habit-row / .habit-history classes, so cascade
+   position is immaterial. B-11: NOT in the eager shell — imported as a side
+   effect by HabitudesPage (its only consumer).
+
+   Tone rule: nothing here is ever red or loud. A limit gone over reads « C'est
+   noté » in the muted ink, an avoid slip is a soft wash — the surface records,
+   it never scolds. */
+
+.habitudes__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.habitudes__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.habitudes__item {
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- One habit ------------------------------------------------------------ */
+/* Bigger than a board <Act> row on purpose: a full-screen, thumb-first surface
+   on a wall tablet. The colour spine echoes the Act anatomy. */
+.habit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  border-left: 5px solid var(--habit-tint, var(--ink-soft));
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+.habit-row--settled {
+  opacity: 0.72;
+}
+
+.habit-row--done {
+  border-left-color: var(--sage-deep);
+}
+
+/* Over a soft ceiling: a quiet terracotta hint on the spine only — never a red
+   row, never a warning icon. The copy already says « C'est noté ». */
+.habit-row--over {
+  border-left-color: var(--warn);
+}
+
+.habit-row__body {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.habit-row__body:disabled {
+  cursor: default;
+}
+
+.habit-row__ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--radius-md);
+  background: var(--habit-tint, var(--line));
+  font-size: 1.4rem;
+  line-height: 1;
+  /* The emoji sits on a wash of its own tint, like the Act icon tile. */
+  filter: saturate(0.9);
+}
+
+.habit-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.habit-row__title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.habit-row__sub {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.habit-row__check {
+  flex: none;
+  color: var(--sage-deep);
+}
+
+/* The control row wraps (it's a <Cluster>): a phone drops « Aucune aujourd'hui »
+   to a second line instead of bleeding off the right edge. */
+.habit-row__actions {
+  gap: 0.5rem;
+}
+
+.habit-row__do.is-on,
+.habit-row__held.is-on {
+  background: var(--sage-wash);
+  border-color: var(--sage-deep);
+  color: var(--sage-ink);
+}
+
+.habit-row__plus {
+  min-width: 6.5rem;
+}
+
+.habit-row__minus {
+  padding-inline: 0.7rem;
+}
+
+/* A slip is offered as plainly as « Tenu » — same size, no shame styling. */
+.habit-row__slip {
+  color: var(--ink-soft);
+}
+
+/* --- A habit's own history ------------------------------------------------ */
+/* Seven dots for this week + one gentle derived line. Never a chain, never a
+   rank, never a grade. An untouched day is blank, not a miss. */
+.habit-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem 0.9rem;
+  margin: -0.2rem 0 0;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+.habit-history__week {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.habit-history__dot {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: 0.2rem;
+  min-height: 2.2rem;
+  border-radius: var(--radius-md);
+  background: var(--bg, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  color: var(--ink-soft);
+}
+
+.habit-history__dot.is-done {
+  background: var(--sage-wash);
+  box-shadow: inset 0 0 0 1.5px var(--sage-deep);
+  color: var(--sage-ink);
+}
+
+/* Engaged but not met — a soft presence, deliberately not a failure colour. */
+.habit-history__dot.is-marked {
+  background: var(--accent-soft);
+}
+
+.habit-history__dot.is-future {
+  opacity: 0.45;
+}
+
+.habit-history__dot.is-today {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.habit-history__letter {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.habit-history__line {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* Toddler lens + narrow phones: give the taps more room, stack the controls. */
+@media (max-width: 26rem) {
+  .habit-row__plus {
+    flex: 1;
+  }
+}

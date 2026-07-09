@@ -90,6 +90,39 @@ export const FR = {
     emptyList: 'Cette liste est vide.',
     noEvents: 'Rien de prévu aujourd’hui.',
   },
+  // « Mes habitudes » — le point du jour. Ton doux : on note, on ne sermonne jamais.
+  // Pas de série, pas de points, pas de classement (aucune comparaison entre membres).
+  habits: {
+    title: 'Mes habitudes',
+    checkin: 'Le point du jour',
+    whoseDay: 'La journée de qui ?',
+    manage: 'Gérer mes habitudes',
+    emptyFace: 'Aucune habitude pour l’instant. Ajoutes-en une quand ça te dit.',
+    emptyHousehold: 'Aucune habitude de la maisonnée. Choisis une personne, ou ajoutes-en une.',
+    allSettled: 'Tout est réglé pour aujourd’hui.',
+    alreadySettled: 'Déjà réglé',
+    // do
+    markDone: 'C’est fait',
+    doneToday: 'Fait aujourd’hui',
+    // count / limit
+    plusOne: 'Encore un',
+    minusOne: 'En enlever un',
+    noneToday: 'Aucune aujourd’hui',
+    ofTarget: (v: number, target: number, unit: string) => `${v} sur ${target}${unit ? ' ' + unit : ''}`,
+    ofCeiling: (v: number, target: number, unit: string) => `${v} de ${target}${unit ? ' ' + unit : ''}`,
+    noted: 'C’est noté.',
+    // avoid
+    held: 'Tenu',
+    slip: 'Petit écart',
+    slipped: 'Un petit écart — ça arrive.',
+    avoidHint: 'Tenu aujourd’hui ?',
+    // cadence
+    remainingWeek: (n: number) => (n === 1 ? 'Encore une fois cette semaine' : `Encore ${n} fois cette semaine`),
+    // history (doux : ce qui s'est passé, jamais une note)
+    thisWeek: 'Cette semaine',
+    weekDone: (n: number) => (n === 1 ? '1 jour cette semaine' : `${n} jours cette semaine`),
+    monthDone: (n: number) => (n === 1 ? '1 jour ce mois-ci' : `${n} jours ce mois-ci`),
+  },
   // « À régler » — le coup d'œil transversal : les quelques frictions à régler.
   aRegler: {
     title: 'À régler',
@@ -1056,6 +1089,7 @@ export const FR = {
     noMatch: 'Aucune recette ne correspond.',
     clearFilters: 'Tout afficher',
     add: 'Ajouter une recette',
+    open: 'Ouvrir la recette',
     new: 'Nouvelle recette',
     edit: 'Modifier la recette',
     titlePlaceholder: 'Nom de la recette',

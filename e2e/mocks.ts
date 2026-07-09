@@ -159,6 +159,23 @@ const ROUTINE_CARDS = [
   { icon: '🎒', label: 'Sac à dos' },
 ]
 
+// « Mes habitudes » — one habit of each kind, plus a week-quota one. `due_days`
+// are LOCAL midnights around MMID, so a spec freezing the clock to BASE sees them
+// all due today. `days: []` = nothing marked yet (the check-in scene's start
+// state). A household habit (member_id null) and two of Maman's (m1) exercise the
+// private-ish face filter.
+const HABITS = {
+  today: MMID,
+  days: [] as unknown[],
+  habits: [
+    { id: 'hb1', member_id: null, title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [540], position: 0, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb2', member_id: 'm1', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', target: 8, unit: 'verres', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 1, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb3', member_id: 'm1', title: 'Cigarettes', icon: '🚬', colour: '#C87941', kind: 'limit', target: 5, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 2, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb4', member_id: null, title: 'Pas de chocolat', icon: '🍫', colour: '#B06A93', kind: 'avoid', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 3, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb5', member_id: null, title: 'Sortie à vélo', icon: '🚲', colour: '#F2A03D', kind: 'do', target: null, unit: '', cadence: 'week', recur: null, week_times: 2, reminders: [], position: 4, archived: false, due_days: [] },
+  ],
+}
+
 // One object that satisfies BOTH the parent RoutineRow (name/memberName/cards)
 // and the toddler Routine (color/avatarPhoto/cards[].icon/doneIdx).
 const ROUTINES = {
@@ -475,6 +492,7 @@ const ROUTES: Record<string, unknown> = {
     colors: { rapide: '#88a36f' },
   },
   routines: ROUTINES,
+  habits: HABITS,
   members: { members: MEMBERS },
   'pair/devices': DEVICES,
   chores: CHORES,
@@ -631,6 +649,10 @@ export async function mockApi(
   // « Pas pressé »: a presentation flag written from the item edit scene. Tracked
   // so the board refetch keeps the row faded instead of reverting it.
   const noRushItems = new Set<string>()
+  // « Mes habitudes » day marks, keyed `${habitId}:${day}` — the server upserts an
+  // ABSOLUTE per-day value on (habit_id, day), so the mock does the same and the
+  // check-in refetch confirms the tap instead of reverting it.
+  const habitDays = new Map<string, { habit_id: string; day: number; value: number; slips: number; member_id: null; note: string }>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -682,6 +704,25 @@ export async function mockApi(
           else if (body.id && body.checked === false) checkedItems.delete(body.id)
           if (body.id && body.non_urgent === true) noRushItems.add(body.id)
           else if (body.id && body.non_urgent === false) noRushItems.delete(body.id)
+        } catch {
+          /* no body */
+        }
+      }
+      // A habit check-in tap: absolute upsert on (habit, day), like functions/api/habits.
+      if (method === 'PATCH' && path === 'habits') {
+        try {
+          const body = JSON.parse(route.request().postData() || '{}')
+          if (body.id && body.mark) {
+            const { day, value, slips } = body.mark
+            habitDays.set(`${body.id}:${day}`, {
+              habit_id: body.id,
+              day,
+              value: value ?? 0,
+              slips: slips ?? 0,
+              member_id: null,
+              note: '',
+            })
+          }
         } catch {
           /* no body */
         }
@@ -778,6 +819,13 @@ export async function mockApi(
           .map((i) => (noRushItems.has(i.id) ? { ...i, non_urgent: 1 } : i)),
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
+      return
+    }
+
+    // The check-in read serves this session's day marks, so a tap survives the
+    // refetch that follows it (the same trick as the board's list checks above).
+    if (path === 'habits' && habitDays.size) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ ...HABITS, days: [...habitDays.values()] }) })
       return
     }
 
