@@ -131,3 +131,25 @@ test('?theme=kitchen-shop opens La cuisine in Comprendre', async ({ page }) => {
   await expect(page).toHaveURL(/tab=kitchen&lens=comprendre/)
   await expectTab(page, 'kitchen')
 })
+
+// The 55→32 agglomeration: a card retired INTO another (cookmode → recipes,
+// GUIDE_CARD_ALIAS base 7) keeps its old deep-link working — ?card=cookmode&point=1
+// must land on the recipes card with alias-shifted point 8 opened + highlighted.
+test('a merged concept card id (+point) still lands on its host card', async ({ page }) => {
+  await boot(page, '/settings?tab=guide&card=cookmode&point=1')
+  await expect(page).toHaveURL(/tab=kitchen&lens=comprendre/)
+  await expectTab(page, 'kitchen')
+  await expect(page.locator('.guide__card.is-target')).toBeVisible()
+  await expect(page.locator('.guide__point.is-target')).toBeVisible()
+})
+
+// ?focus= — a guide « Régler » link names ONE section card inside a stacked sub
+// (kitchen ▸ Apparence stacks tags + pastilles + mesures): the anchored card is
+// on screen and the param is consumed (one replace write, no re-trigger on back).
+test('?focus=measureColors lands inside kitchen ▸ Apparence on the exact card', async ({ page }) => {
+  await boot(page, '/settings?tab=kitchen&sub=apparence&focus=measureColors')
+  await expectTab(page, 'kitchen')
+  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Apparence' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('#op-measureColors')).toBeVisible()
+  await expect(page).not.toHaveURL(/focus=/)
+})

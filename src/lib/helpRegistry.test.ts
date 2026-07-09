@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { GUIDE } from './guideContent'
+import { GUIDE, GUIDE_CARD_ALIAS } from './guideContent'
 import { ADD_HELP } from './addHelp'
 import { BOARD_HELP } from './boardHelp'
 import { CERCLE_HELP } from './cercleHelp'
@@ -74,5 +74,17 @@ describe('help/guide integrity (P2-9)', () => {
 
   it('GUIDE ids are unique (the maps above assume it)', () => {
     expect(guideById.size, 'duplicate GUIDE entry ids').toBe(GUIDE.length)
+  })
+
+  it('no registry names an alias key — in-code refs stay PRECISE', () => {
+    // GUIDE_CARD_ALIAS exists for old URLs and [[card:]] tokens only. A registry
+    // entry left on a retired id would still *land* (the alias resolves it) but
+    // loses its exact sub-point and quietly outsources meaning to an offset
+    // table — every in-code ref must name the live host card + point itself.
+    for (const [name, reg] of Object.entries(REGISTRIES)) {
+      for (const [key, entry] of Object.entries(reg)) {
+        expect(GUIDE_CARD_ALIAS[entry.card], `${name}.${key} → "${entry.card}" is a retired alias; point at "${GUIDE_CARD_ALIAS[entry.card]?.id}" with the precise point instead`).toBeUndefined()
+      }
+    }
   })
 })
