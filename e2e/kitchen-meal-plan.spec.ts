@@ -56,8 +56,11 @@ test('day editor lists slots chronologically (note is the headline)', async ({ p
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()
   const order = heads.map((h) => h.trim())
   // The note is the day's HEADLINE at the top now, no longer a slot section — the
-  // planner lists only the four meal slots, chronologically.
-  expect(order).toEqual(['Déjeuner', 'Dîner', 'Collation', 'Souper'])
+  // planner lists the five meal slots. `dessert` is a SIDE_SLOTS entry (breakfast /
+  // lunch / snack / dessert, in SLOT_TIME_ORDER) rendered before the always-last,
+  // always-prominent souper section (DayEditor.tsx / mealSlots.ts) — so it's not
+  // strictly time-chronological, it's "sides, then the hero meal."
+  expect(order).toEqual(['Déjeuner', 'Dîner', 'Collation', 'Dessert', 'Souper'])
 
   // The add affordance shares the slot's header line (not a row of its own).
   await expect(page.locator('.day-mng__sec-head-row .kitchen__slot-add').first()).toBeVisible()

@@ -66,6 +66,14 @@ async function stubVoyage(page: Page, opts: { newTripId?: string; trips?: unknow
 
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
+  // Freeze the clock to the mock epoch (board-customize.spec.ts pattern). TRIP.end_at
+  // is BASE + 5 days — VoyagePage derives `finished` from the REAL wall clock
+  // (todayLocalDay() → Date.now()), so as real time drifts further past the fixed
+  // BASE anchor, TRIP silently crosses into "finished" and the scene renders the
+  // read-only album instead of the editor/sub-tabs these tests exercise. Freezing
+  // keeps the fixture's "today" pinned to BASE, matching the trip's intended
+  // upcoming/active state regardless of when the suite actually runs.
+  await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
 })
