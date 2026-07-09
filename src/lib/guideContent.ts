@@ -456,8 +456,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Personnaliser le babillard', en: 'Customize the board' },
         detail: {
-          fr: 'Réglages ▸ Le babillard ▸ « Disposition du babillard » : choisis quelles cartes afficher (Le fil du jour, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre que tu veux. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
-          en: 'Settings ▸ The board ▸ “Board layout”: choose which cards to show (The day’s timeline, The car, To do, Coming up, Drawings…) and drag them into the order you want. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
+          fr: 'Garde le doigt sur une carte du babillard : elles se mettent à frémir, comme les applis d’un téléphone. Glisse la poignée ⠿ pour la déplacer — même du bandeau du haut vers les cartes du bas —, touche le chiffre pour changer sa largeur (1, 2, 3 colonnes ou pleine largeur), ou ✕ pour la retirer. « Terminé » quand c’est beau. Tout se retrouve aussi dans Réglages ▸ Le babillard ▸ « Disposition du babillard », avec le clavier. C’est propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
+          en: 'Press and hold a card on the board: they start to wobble, like apps on a phone. Drag the ⠿ handle to move it — even from the top band down into the cards below — tap the number to change its width (1, 2, 3 columns or full width), or ✕ to remove it. “Done” when it looks right. Everything is also in Settings ▸ The board ▸ “Board layout”, reachable by keyboard. It’s specific to THIS device — the wall tablet and your phone each keep their own layout.',
         },
         why: {
           fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette murale glanceable, ton téléphone plus court.',
@@ -609,6 +609,19 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Le bac est déjà su de la maison (l’horaire de la corvée) — juste une ligne de plus au bon moment, jamais une notification.',
           en: 'The house already knows the schedule (the chore) — just one more line at the right moment, never a notification.',
+        },
+      },
+      {
+        // The empty-card tri-state — appended at the END (guide points are APPEND-ONLY,
+        // indexed: operatorHelp/boardHelp/addHelp deep-link to them by number).
+        label: { fr: 'Une carte vide : la garder ou non', en: 'An empty card: keep it or not' },
+        detail: {
+          fr: 'Chaque carte choisit ce qu’elle fait quand elle n’a rien à dire. « Si non vide » (le réglage habituel) : elle s’efface d’elle-même et laisse la place aux autres. « Toujours » : elle garde sa place, avec une ligne tranquille — pratique pour une carte que tu veux retrouver au même endroit sur le mur. « Jamais » : elle ne vient pas du tout, et l’appareil ne va même pas chercher ses données.',
+          en: 'Each card decides what it does when it has nothing to say. “If not empty” (the usual setting): it quietly steps aside and lets the others take the room. “Always”: it holds its place with a calm line — handy for a card you want to find in the same spot on the wall every time. “Never”: it doesn’t come at all, and the device doesn’t even fetch its data.',
+        },
+        why: {
+          fr: 'Un mur qui se vide tout seul reste calme; mais une carte qui bouge chaque jour se cherche du regard. À toi de choisir, carte par carte.',
+          en: 'A wall that empties itself stays calm; but a card that moves every day is a card you have to hunt for. Your call, card by card.',
         },
       },
     ],

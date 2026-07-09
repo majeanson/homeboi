@@ -8,10 +8,13 @@ import { type HelpEntry } from './helpMode'
 export const OPERATOR_HELP = {
   boardLayout: {
     card: 'board',
-    point: 5,
+    // 10 = « Personnaliser le babillard ». This said `5`, which is « Tout chercher » —
+    // a stale index from before some points were inserted mid-array (they're append-only
+    // for exactly this reason; see guideContent.ts's 'board' card).
+    point: 10,
     body: {
-      fr: `Choisis quelles cartes du babillard afficher et dans quel ordre — propre à CET appareil (la tablette murale et ton téléphone gardent chacun leur disposition). Glisse la poignée pour réordonner, touche pour cacher ou montrer une carte.`,
-      en: `Choose which board cards show and in what order — specific to THIS device (the wall tablet and your phone keep their own layout). Drag the handle to reorder, tap to hide or show a card.`,
+      fr: `Choisis quelles cartes du babillard afficher, leur largeur et leur ordre — propre à CET appareil (la tablette murale et ton téléphone gardent chacun leur disposition). Glisse une poignée pour réordonner, ou même pour déplacer une carte d'un groupe à l'autre. Tu peux aussi garder le doigt sur une carte du babillard pour la réorganiser sur place.`,
+      en: `Choose which board cards show, how wide they are, and in what order — specific to THIS device (the wall tablet and your phone keep their own layout). Drag a handle to reorder, or even to move a card from one group to the other. You can also press and hold a card on the board to rearrange it in place.`,
     },
   },
   ai: {

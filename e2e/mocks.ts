@@ -881,10 +881,25 @@ export interface AppState {
   // The parent board layout (bento = Grille | month = Mois | annee = L'année).
   // Defaults to bento.
   boardView?: 'bento' | 'month' | 'annee'
-  // Per-device Grille card layout (« Disposition du babillard », lib/boardCards) —
-  // show/hide + order. Lets a spec exercise a custom layout without hand-injecting the
-  // localStorage key. Unset → the default order, all visible.
-  cardPrefs?: { order?: string[]; hidden?: string[] }
+  // Per-device board card layout (« Disposition du babillard », lib/boardCards). Lets a
+  // spec exercise a custom layout without hand-injecting the localStorage key.
+  // Unset → the canonical zones/order, everything at its default size and mode.
+  //
+  // BOTH persisted shapes are accepted, on purpose:
+  //   • v2 `{band, grid, size, mode}` — what the app writes today.
+  //   • v1 `{order, hidden}` — what every ALREADY-SHIPPED device still has in its
+  //     localStorage. Seeding it here is the e2e guard on `reconcile`'s migration: a
+  //     silent failure would reset a household's wall tablet on upgrade.
+  cardPrefs?: {
+    band?: string[]
+    grid?: string[]
+    size?: Record<string, number | 'full'>
+    mode?: Record<string, 'always' | 'auto' | 'never'>
+    /** @deprecated v1 — kept so the migration stays covered. */
+    order?: string[]
+    /** @deprecated v1 — kept so the migration stays covered. */
+    hidden?: string[]
+  }
   // Pretend this device holds a (possibly revoked) device token — pairs with
   // mockApi({ unauthorized: true }) to exercise the pairing-lost recovery.
   paired?: boolean

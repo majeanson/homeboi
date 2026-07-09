@@ -132,6 +132,38 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.wg-slot[data-card="upcoming"]')).toHaveAttribute('style', /--wg-span-cols: ?2/)
   })
 
+  // Every already-shipped wall tablet carries the v1 `{order, hidden}` shape under the
+  // SAME localStorage key. If `reconcile` ever stops reading it, a household silently
+  // loses its layout on upgrade — the failure no test would otherwise notice.
+  test('a device carrying the OLD v1 layout keeps it after the upgrade', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'babillard-card-prefs',
+        JSON.stringify({ order: ['upcoming', 'today'], hidden: ['todos', 'moments'] }),
+      ),
+    )
+
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+    // v1 `hidden` → v2 `never`: neither card is mounted at all.
+    await expect(page.locator('.wg-slot[data-card="todos"]')).toHaveCount(0)
+    await expect(page.locator('.wg-slot[data-card="moments"]')).toHaveCount(0)
+    // …and its chosen order survived (« À venir » was pulled ahead of « Aujourd'hui »).
+    const order = await page.locator('.board-grid > .wg-slot').evaluateAll((els) =>
+      els.map((e) => (e as HTMLElement).dataset.card),
+    )
+    expect(order.indexOf('upcoming')).toBeLessThan(order.indexOf('today'))
+    // The band it never stored is reconstructed, canonically.
+    await expect(page.locator('.board-band > .wg-slot[data-card="heroes"]')).toHaveCount(1)
+
+    // The panel reads the migrated value, not the raw one.
+    await openLayout(page)
+    await expect(rowFor(page, 'Moments').locator('.board-layout__toggle')).toContainText('Jamais')
+  })
+
   test('« Réorganiser sur le babillard » opens the board’s own editor', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)

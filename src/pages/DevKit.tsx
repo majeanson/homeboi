@@ -23,6 +23,9 @@ import { RowActions } from '../components/RowActions'
 import { DragPill } from '../components/DragPill'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
+import { WidgetGrid } from '../components/board/WidgetGrid'
+import { CardSlot } from '../components/board/CardSlot'
+import { cardSize, useBoardCards, type BoardCardId } from '../lib/boardCards'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
 import { MemberSwitcher } from '../components/MemberSwitcher'
@@ -587,6 +590,9 @@ export function DevKit() {
     canDrop: (from, to) => from !== to,
   })
   const icons = Object.keys(PIP_ICONS) as IconName[]
+  // The WidgetGrid specimen renders THIS device's real card sizes, so the gallery shows
+  // whatever the wall is actually set to (lib/boardCards).
+  const devPrefs = useBoardCards()
 
   const toggleChip = (k: string) => setChipOn((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))
 
@@ -598,6 +604,40 @@ export function DevKit() {
       file: 'components/operator/boardLayout.tsx',
       kw: 'board cards show hide reorder disposition babillard layout per-device',
       render: () => <BoardLayoutSection />,
+    },
+    {
+      cat: 'Fondations',
+      name: 'WidgetGrid · CardSlot',
+      file: 'components/board/WidgetGrid.tsx',
+      kw: 'board grid masonry widget span row size colonnes babillard disposition carte slot',
+      render: () => (
+        <>
+          <Demo label="the board's layout engine — CSS Grid over an 8px row ruler, spans measured per card">
+            {/* Sizes come from THIS device's real prefs (lib/boardCards), so the demo shows
+                whatever the wall is actually set to. `editing` is off: no writes from here. */}
+            <WidgetGrid zone="grid" maxCols={3}>
+              {(['today', 'upcoming', 'autoCard'] as BoardCardId[]).map((id, i) => (
+                <CardSlot key={id} id={id} zone="grid" index={i}>
+                  <div className="bento">
+                    <b>{id}</b>
+                    <p className="mono" style={{ color: 'var(--ink-soft)', margin: '.4rem 0 0' }}>
+                      span {String(cardSize(devPrefs, id))}
+                    </p>
+                  </div>
+                </CardSlot>
+              ))}
+            </WidgetGrid>
+          </Demo>
+          <Demo label="why the span formula has a gap term">
+            <p className="mono" style={{ color: 'var(--ink-soft)', margin: 0 }}>
+              A card spanning N rows also covers the N−1 gaps between them, so span ={' '}
+              ceil((h + gap) / (row + gap)). Drop the gap term and tall cards clip their last line.
+              The edit chrome (⠿ grip, ✕, size chip) only appears when a WidgetGrid is `editing` —
+              hold a card on /board to see it.
+            </p>
+          </Demo>
+        </>
+      ),
     },
     // ── Inputs ──────────────────────────────────────────────────────────
     {
