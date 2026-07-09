@@ -6,13 +6,6 @@
 // (mirrors MAX_PICKS in functions/api/empty-fridge.ts). Keep the two in sync.
 export const MAX_FRIDGE_PICKS = 3
 
-// The « Vide-frigo » tile only earns a place when AI is reachable AND there's
-// actually something to use up (use-soon or réserve). No perishables → nothing to
-// rescue → no dead button (calm).
-export function canEmptyFridge(aiEnabled: boolean, soonCount: number, reserveCount: number): boolean {
-  return aiEnabled && soonCount + reserveCount > 0
-}
-
 // Toggle a dish name in the picked set, refusing a NEW pick once `max` is reached
 // (un-ticking an already-picked one always works). Returns a fresh Set so React
 // state updates cleanly.

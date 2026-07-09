@@ -50,7 +50,8 @@ export function EmptyFridgeSheet({
   const [savingTitle, setSavingTitle] = useState<string | null>(null)
 
   // Step 1 — names that use up what's about to spoil. `avoid` carries the batch just
-  // shown so a re-ask returns DIFFERENT dishes. 503 → AI is off (tile usually hidden).
+  // shown so a re-ask returns DIFFERENT dishes. 503 → AI is off (the footer button
+  // that opens this sheet is unconditional — degrade in-sheet, not by hiding it).
   async function fetchIdeas(avoid: string[] = []) {
     setLoading(true)
     setError(null)

@@ -1,14 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canEmptyFridge, togglePick, MAX_FRIDGE_PICKS } from './emptyFridge'
-
-describe('canEmptyFridge', () => {
-  it('needs AI on AND at least one thing to use up', () => {
-    expect(canEmptyFridge(true, 2, 0)).toBe(true)
-    expect(canEmptyFridge(true, 0, 1)).toBe(true) // réserve alone is enough
-    expect(canEmptyFridge(true, 0, 0)).toBe(false) // nothing to rescue
-    expect(canEmptyFridge(false, 5, 5)).toBe(false) // AI off → no tile
-  })
-})
+import { togglePick, MAX_FRIDGE_PICKS } from './emptyFridge'
 
 describe('togglePick', () => {
   it('adds and removes a title', () => {

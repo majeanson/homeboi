@@ -762,8 +762,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Vide-frigo AI', en: 'AI empty-fridge' },
         detail: {
-          fr: 'Quand tu as marqué des aliments « à utiliser bientôt » (ou rangé des trucs dans La réserve), le ＋ de la cuisine offre « Vide-frigo ». L’IA te propose une dizaine d’idées de plats qui passent au travers de ce qui va se perdre; coche-en jusqu’à trois, et elle te rédige une vraie recette pour chacune. Garde celle que tu veux dans ton livre (étiquetée « Vide-frigo ») ou lance-la direct en mode cuisson.',
-          en: 'Once you’ve flagged foods “use soon” (or stashed things in The réserve), the kitchen ＋ offers “Empty the fridge”. The AI proposes about ten dish ideas that get through what’s about to spoil; tick up to three and it writes a real recipe for each. Keep the one you want in your book (tagged “Empty-fridge”) or jump straight into cook mode.',
+          fr: 'Quand tu as marqué des aliments « à utiliser bientôt » (ou rangé des trucs dans La réserve), ouvre le tiroir d’idées-repas et prends « Vide-frigo » au bas du tiroir. L’IA te propose une dizaine d’idées de plats qui passent au travers de ce qui va se perdre; coche-en jusqu’à trois, et elle te rédige une vraie recette pour chacune. Garde celle que tu veux dans ton livre (étiquetée « Vide-frigo ») ou lance-la direct en mode cuisson.',
+          en: 'Once you’ve flagged foods “use soon” (or stashed things in The réserve), open the meal-ideas drawer and take “Empty the fridge” at the bottom. The AI proposes about ten dish ideas that get through what’s about to spoil; tick up to three and it writes a real recipe for each. Keep the one you want in your book (tagged “Empty-fridge”) or jump straight into cook mode.',
         },
         why: {
           fr: 'Inventer un souper à partir de ce qui traîne — pas juste piger dans tes recettes — c’est ce qui sauve vraiment les restes, sans gaspillage et sans aller à l’épicerie. Tu décides : on ne rédige la recette complète que pour ce que tu choisis (moins d’IA, un choix plus calme).',

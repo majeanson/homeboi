@@ -94,7 +94,11 @@ export function IdeasDrawer({
     if (open) setChip(initialChip)
   }, [open, initialChip])
 
-  const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
+  const { data: membersData } = useQuery({
+    queryKey: MEMBERS_KEY,
+    queryFn: () => api<{ members: Member[] }>('members'),
+    enabled: open,
+  })
   const members = membersData?.members ?? []
   const memberById = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
 
