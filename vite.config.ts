@@ -205,9 +205,23 @@ export default defineConfig({
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
             if (/[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) return 'react-vendor'
+            if (/[\\/]perfect-freehand[\\/]/.test(id)) return 'drawpad'
             return undefined
           }
           if (id.endsWith('/src/i18n.ts')) return 'i18n'
+          // fix(ci): the family draw pad (#14, ~50 KB incl. perfect-freehand) is
+          // reachable from BOTH the eager board (Notes/MemoControls' "Note rapide"
+          // composer) and several lazy-only pages (CardDeckEditor, RoutineFormPage,
+          // NoteEditor, DrawEditChoice, DrawingGalleryPage). Rollup's default
+          // automatic chunking is supposed to factor a module shared across
+          // multiple entry chunks into its own shared chunk rather than duplicating
+          // or inlining it — but that heuristic is graph-sensitive and quietly
+          // flipped after an unrelated refactor (C-13, bmad/10) landed DrawPad
+          // inside index-*.js instead, pushing combined eager JS 15 KB over the CI
+          // budget (run 28991809068) even though nothing about DrawPad's own
+          // reachability changed. Pin it explicitly rather than depend on Rollup's
+          // default heuristic staying stable across unrelated edits.
+          if (/[\\/]src[\\/](components[\\/]DrawPad\.tsx|lib[\\/](drawViewport|traceFont)\.ts)$/.test(id)) return 'drawpad'
           return undefined
         },
       },

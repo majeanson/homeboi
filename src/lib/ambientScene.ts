@@ -1,19 +1,22 @@
-import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from './api'
-import { BOARD_KEY, ROUTINES_KEY } from './queryKeys'
-import { useAmbient } from './ambient'
-import { pickMomentRoutine } from './routineTod'
-
 // « Un seul moteur ambiant » (C-13, bmad/10) — the screensaver (AmbientScreen), the
 // cast ambient scene (which already reuses AmbientScreen), and the board's own
 // « Prochainement » ribbon are all renderings of "what's next" over the SAME
 // underlying event list, but used to carry their own clock ticker + next-up
 // selector + breath/drift math. This module is the one seam: the pure selectors
-// (`pickNextEventToday`, `breathAt`, `burnInDrift`) plus the `useAmbientScene` hook
-// that AmbientScreen consumes for both the screensaver and the cast face. Board's
-// own « Prochainement » (src/lib/boardModel.ts) calls `pickNextEventToday` with the
-// `BOARD_NEXTUP` preset instead of re-deriving the same filter/sort inline.
+// (`pickNextEventToday`, `breathAt`, `burnInDrift`). Board's own « Prochainement »
+// (src/lib/boardModel.ts) calls `pickNextEventToday` with the `BOARD_NEXTUP` preset
+// instead of re-deriving the same filter/sort inline.
+//
+// fix(ci): kept DELIBERATELY free of React/React-Query/hook imports — the
+// `useAmbientScene` hook that consumes these selectors for AmbientScreen lives in
+// the sibling `./useAmbientScene.ts` instead. boardModel.ts (eager, part of the
+// Board bundle) only needs the pure functions below; if the hook's react-query/
+// api/ambient/routineTod dependency chain lived in THIS file, importing
+// `pickNextEventToday` from boardModel would drag that whole graph into the eager
+// entry chunk too (Rollup's default chunking bundles a module's full import graph
+// wherever it's reachable from) — that's what pushed combined eager JS 15 KB over
+// the CI budget in run 28991809068. Keep the split: pure selectors here, hook in
+// the sibling file.
 
 export interface AmbientEvent {
   id: string
@@ -93,60 +96,4 @@ export function burnInDrift(nowMs: number): { x: number; y: number } {
   const d = new Date(nowMs)
   const drift = d.getHours() * 60 + d.getMinutes()
   return { x: ((drift % 5) - 2) * 2, y: ((Math.floor(drift / 5) % 5) - 2) * 2 }
-}
-
-export interface AmbientScene {
-  now: number
-  nowSec: number
-  next: AmbientEvent | null
-  meal: AmbientMeal | undefined
-  routine: AmbientRoutine | undefined
-  breath: boolean
-  drift: { x: number; y: number }
-}
-
-// The one ambient-scene provider (C-13): AmbientScreen calls this for its clock +
-// next-up event + tonight's meal + the routine of the moment + breath/drift — a
-// single seam the screensaver AND the cast ambient face both ride, instead of each
-// carrying its own ticker/selector. `active` = the screen is actually showing
-// (AmbientScreen's `show` prop, or `true` for the permanent cast face); the 10 s
-// tick is gated on it and re-seeds `now` the instant the screen activates, so a
-// screensaver that's been hidden for hours never flashes a stale clock on wake.
-export function useAmbientScene(active: boolean): AmbientScene {
-  const a = useAmbient()
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    if (!active) return
-    setNow(Date.now())
-    const id = setInterval(() => setNow(Date.now()), 10_000)
-    return () => clearInterval(id)
-  }, [active])
-  const nowSec = Math.floor(now / 1000)
-
-  // Next event + tonight's meal ride the already-cached /api/board frame the board
-  // itself polls — no extra load on a fresh kiosk. Deliberately NOT the shared
-  // `live` query options (lib/query): an idle screensaver must not join the
-  // realtime-poll pool (free-tier request budget) — it's fine to catch up on wake.
-  const { data } = useQuery({
-    queryKey: BOARD_KEY,
-    queryFn: () => api<{ today: AmbientEvent[]; tonight: AmbientMeal | null }>('board'),
-    enabled: active && a.showNext,
-  })
-  const next = a.showNext ? pickNextEventToday(data?.today ?? [], nowSec, SAVER_NEXTUP) : null
-  const meal = a.showNext ? data?.tonight ?? undefined : undefined
-
-  // The routine that fits the moment — its own query (only while the screen is up,
-  // so the board poll stays lean), the same ROUTINES_KEY cache the Routines tab
-  // fills. A cue, never a nag — it just surfaces, it doesn't blink or count.
-  const { data: rdata } = useQuery({
-    queryKey: ROUTINES_KEY,
-    queryFn: () => api<{ routines: AmbientRoutine[] }>('routines'),
-    enabled: active && a.showNext,
-  })
-  const routine = a.showNext ? pickMomentRoutine(rdata?.routines ?? [], now) : undefined
-
-  const breath = a.hourlyBreath && breathAt(now)
-  const drift = burnInDrift(now)
-
-  return { now, nowSec, next, meal: meal ?? undefined, routine, breath, drift }
 }

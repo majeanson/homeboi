@@ -1,7 +1,7 @@
 import { useLang, useT } from '../i18n'
 import { formatTime, formatDayLong, capitalize as cap } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
-import { useAmbientScene } from '../lib/ambientScene'
+import { useAmbientScene } from '../lib/useAmbientScene'
 import { TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
 import { Companion } from './Companion'
 import { isCompanion } from '../lib/companions'
