@@ -18,7 +18,9 @@ type Surface = {
 const SURFACES: Surface[] = [
   { name: 'home', path: '/', audiences: ['parent'], ready: '.home__title' },
   { name: 'setup', path: '/setup', audiences: ['parent'], ready: '.setup__choices' },
-  { name: 'board', path: '/board', audiences: ['parent', 'toddler'], ready: '.hub' },
+  // C-12: baseline all three board lenses — parent, toddler, AND simple (the
+  // post-reader/grandma glance, SimpleBoard.tsx) — before the view-model refactor.
+  { name: 'board', path: '/board', audiences: ['parent', 'toddler', 'simple'], ready: '.hub' },
   { name: 'kitchen', path: '/kitchen', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'routines', path: '/routines', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'cercle', path: '/cercle', audiences: ['parent', 'toddler'], ready: '.hub' },
