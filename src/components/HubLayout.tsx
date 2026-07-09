@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Navigate, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -24,7 +24,8 @@ import { AddSheet } from './AddSheet'
 import { DetailProvider } from './detail/DetailProvider'
 import { KidExitGate } from './KidExitGate'
 import { OfflineBanner } from './OfflineBanner'
-import { AddSheetContext, SECTION_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
+import { AddSheetContext, SECTION_MODES, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { useAuth } from '../lib/auth'
 import {
   KitchenActionsContext,
   NO_KITCHEN_ACTIONS,
@@ -90,6 +91,11 @@ export function HubLayout() {
   const loc = useLocation()
   const nav = useNavigate()
   const qc = useQueryClient()
+  const [params, setParams] = useSearchParams()
+  // For the ?plus= deep-link only: an operator-grade mode needs a session or its
+  // FormScene bounces. "Still loading" counts as signed in so an operator's link
+  // survives the auth round-trip (the Operator-page fullAccess precedent).
+  const { signedIn, loading: authLoading } = useAuth()
   const [addOpen, setAddOpen] = useState(false)
   // Kiosk-only: collapse the left section rail to reclaim its width for the body
   // (a parent who wants the whole wall for the agenda/list). Persisted so the
@@ -132,6 +138,22 @@ export function HubLayout() {
   // hidden) opens a single-form sheet — open('chore', ['chore']) — instead of the
   // section's whole chooser. null = use the current section's modes.
   const [addModes, setAddModes] = useState<AddSheetMode[] | null>(null)
+  // ONE opener for the ＋ sheet — the AddSheetContext value and the ?plus=
+  // deep-link effect below share it. The operator forms are full-screen scenes,
+  // so those modes navigate instead of opening the sheet.
+  const openAdd = useCallback(
+    (mode?: AddSheetMode, modes?: AddSheetMode[]) => {
+      const route = mode ? FORM_ROUTES[mode] : undefined
+      if (route) {
+        nav(route)
+        return
+      }
+      setAddMode(mode ?? null)
+      setAddModes(modes ?? null)
+      setAddOpen(true)
+    },
+    [nav],
+  )
   // The Kitchen page registers its three week actions here so the ＋ Add sheet
   // (rendered below, a sibling of the routed page) can offer them as tiles. The
   // live handlers ride in a ref — always fresh, never a dependency — while only
@@ -289,6 +311,39 @@ export function HubLayout() {
   // mode. Either way the server independently 403s every guest write.
   const guest = isGuestLocked() || guestPreview
   const guestLocked = isGuestLocked()
+  // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
+  // settings. The floating ＋ FAB rides bottom-right on every parent tab —
+  // including the mobile board (no separate in-page add button there).
+  // A guest can't write — drop the ＋ entirely (every capture/add 403s anyway).
+  // The simplified lenses drop it too: a toddler doesn't capture, and a simple-lens
+  // grandma adds via the inline field on the full list she inherits, not the ＋.
+  // Computed BEFORE the early returns so the ?plus= effect below can gate on it.
+  const showAdd = !locked && !isSettings && !restricted && !guest
+  // ?plus= — a guide « Essayer » link can open the ＋ sheet from a URL: '1' opens
+  // the current section's chooser, a mode name jumps to that tile
+  // (/board?plus=mot). Consumed first in ONE functional replace write (so
+  // back/refresh never re-opens), then ignored wherever the FAB itself is hidden
+  // (toddler lock, guest, Réglages). An operator-grade mode falls back to the
+  // plain chooser when the device isn't signed in — its FormScene would bounce.
+  useEffect(() => {
+    const plus = params.get('plus')
+    if (!plus) return
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('plus')
+        return next
+      },
+      { replace: true },
+    )
+    if (!showAdd) return
+    const mode = plus !== '1' && (ADD_MODES as readonly string[]).includes(plus) ? (plus as AddSheetMode) : undefined
+    if (mode && OPERATOR_MODES.has(mode) && !(signedIn || authLoading)) {
+      openAdd()
+      return
+    }
+    openAdd(mode)
+  }, [params, setParams, showAdd, signedIn, authLoading, openAdd])
   // A CURATED share link (sitter / welcome) has no business in the hub — its data
   // 403s server-side anyway. Bounce it to its own standalone scene. showcase stays
   // (it IS the read-only hub); a settings-preview guest isn't a link guest, so it's
@@ -337,13 +392,6 @@ export function HubLayout() {
     )
   }
 
-  // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
-  // settings. The floating ＋ FAB rides bottom-right on every parent tab —
-  // including the mobile board (no separate in-page add button there).
-  // A guest can't write — drop the ＋ entirely (every capture/add 403s anyway).
-  // The simplified lenses drop it too: a toddler doesn't capture, and a simple-lens
-  // grandma adds via the inline field on the full list she inherits, not the ＋.
-  const showAdd = !locked && !isSettings && !restricted && !guest
   // Réglages hides from the nav whenever a simplified lens is up: on a locked
   // kiosk a three-year-old (or a visiting grandma) must not reach settings/billing
   // (PRD C5), and the same holds for an unlocked preview — the lens is a one-way
@@ -357,22 +405,7 @@ export function HubLayout() {
   const railCollapsed = canCollapse && navCollapsed
 
   return (
-    <AddSheetContext.Provider
-      value={{
-        open: (mode, modes) => {
-          // The operator forms are full-screen scenes now — navigate instead of
-          // opening the sheet (the Réglages add buttons reach them this way).
-          const route = mode ? FORM_ROUTES[mode] : undefined
-          if (route) {
-            nav(route)
-            return
-          }
-          setAddMode(mode ?? null)
-          setAddModes(modes ?? null)
-          setAddOpen(true)
-        },
-      }}
-    >
+    <AddSheetContext.Provider value={{ open: openAdd }}>
     <KitchenActionsContext.Provider value={kitchenCtx}>
     <DetailProvider>
     <div className="page hub" data-audience={audience} data-surface={surface} data-nav-collapsed={railCollapsed || undefined} data-fab={showAdd || undefined}>

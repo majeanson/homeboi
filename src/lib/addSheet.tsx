@@ -165,6 +165,49 @@ export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   habit: '/habitude/new',
 }
 
+// Every mode, as a runtime list — what validates a ?plus=<mode> deep-link
+// (HubLayout) and what guideLinks.test.ts checks guide links against. The
+// `satisfies` keeps it complete: adding a mode to the union without listing it
+// here (or vice versa) fails tsc.
+const ALL_MODES = {
+  note: 1,
+  event: 1,
+  ride: 1,
+  activity: 1,
+  chore: 1,
+  'chores-pick': 1,
+  todo: 1,
+  routine: 1,
+  'routine-pick': 1,
+  'plan-today': 1,
+  'plan-tomorrow': 1,
+  departure: 1,
+  'list-item': 1,
+  'quick-add': 1,
+  flyer: 1,
+  'auto-pick': 1,
+  share: 1,
+  recipe: 1,
+  book: 1,
+  meal: 1,
+  leftovers: 1,
+  pantry: 1,
+  reserve: 1,
+  cook: 1,
+  person: 1,
+  family: 1,
+  connect: 1,
+  group: 1,
+  business: 1,
+  pet: 1,
+  carnet: 1,
+  'family-import': 1,
+  voyage: 1,
+  mot: 1,
+  habit: 1,
+} as const satisfies Record<AddSheetMode, 1>
+export const ADD_MODES = Object.keys(ALL_MODES) as readonly AddSheetMode[]
+
 export const AddSheetContext = createContext<{ open: (mode?: AddSheetMode, modes?: AddSheetMode[]) => void }>({
   open: () => {},
 })
