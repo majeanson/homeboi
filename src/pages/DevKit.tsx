@@ -616,8 +616,8 @@ export function DevKit() {
             {/* Sizes come from THIS device's real prefs (lib/boardCards), so the demo shows
                 whatever the wall is actually set to. `editing` is off: no writes from here. */}
             <WidgetGrid zone="grid" maxCols={3}>
-              {(['today', 'upcoming', 'autoCard'] as BoardCardId[]).map((id, i) => (
-                <CardSlot key={id} id={id} zone="grid" index={i}>
+              {(['today', 'upcoming', 'autoCard'] as BoardCardId[]).map((id) => (
+                <CardSlot key={id} id={id} zone="grid">
                   <div className="bento">
                     <b>{id}</b>
                     <p className="mono" style={{ color: 'var(--ink-soft)', margin: '.4rem 0 0' }}>

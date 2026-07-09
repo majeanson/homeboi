@@ -247,8 +247,15 @@ export const resetCardPrefs = store.reset
 export const cardMode = (prefs: BoardCardPrefs, id: BoardCardId): CardMode =>
   prefs.mode[id] ?? META.get(id)?.mode ?? 'auto'
 
-export const cardSize = (prefs: BoardCardPrefs, id: BoardCardId): CardSize =>
-  prefs.size[id] ?? META.get(id)?.size ?? 1
+/**
+ * A card's width. `fallback` overrides the CANONICAL default while leaving an explicit
+ * choice alone — which is the whole point on a phone: its grid has two columns so a card
+ * *can* be a half, but a card nobody has sized stays full width (a 150px column can't
+ * hold « Aujourd'hui »'s rows). The presence of `prefs.size[id]` is exactly "the user
+ * chose this", so it always wins.
+ */
+export const cardSize = (prefs: BoardCardPrefs, id: BoardCardId, fallback?: CardSize): CardSize =>
+  prefs.size[id] ?? fallback ?? META.get(id)?.size ?? 1
 
 /** Which zone currently holds this card (canonical default if it somehow holds none). */
 export const cardZone = (prefs: BoardCardPrefs, id: BoardCardId): CardZone =>
@@ -267,51 +274,67 @@ export const isCardVisible = (prefs: BoardCardPrefs, id: BoardCardId): boolean =
   cardMode(prefs, id) !== 'never'
 
 // ── drop-zone keys ───────────────────────────────────────────────────────────────────
-// A drag has to say WHERE a card lands, and "where" is a zone plus an index — so the two
-// travel together in one string, `"grid:3"` / `"band:end"` (the itinerary's `"{day}:{i}"`
-// precedent). This is what lets a single drag session serve both zones: parsing the drop
-// key tells you the card changed group. `'end'` appends, which is the only way to move a
-// card back into a group you emptied. Shared by the board's editor and the Réglages list.
+// A drag has to say WHERE a card lands, so the target travels with the zone in one string:
+// `"grid:today"` = "into the grid, before « Aujourd'hui »"; `"band:end"` = "append to the
+// band" (the only way to move a card back into a group you emptied). One drag session can
+// therefore serve both zones — parsing the key tells you the card changed group. Shared by
+// the board's editor and the Réglages list.
+//
+// It names the target CARD, never its index. Two bugs died with the index:
+//   • an index is read against the VISIBLE cards, while `moveCard` splices into the full
+//     array — a single `never` card above the target silently skewed every drop;
+//   • "insert at index i" means one thing dragging up and another dragging down, because
+//     removing the dragged card first shifts everything after it left by one. Dropping
+//     "before this card" is the same instruction in both directions.
 
 /** Build the `data-dnd-zone` key a slot (or a zone's tail target) advertises. */
-export const zoneKey = (zone: CardZone, index: number | 'end'): string => `${zone}:${index}`
+export const zoneKey = (zone: CardZone, before: BoardCardId | 'end'): string => `${zone}:${before}`
 
 /** Parse a drop-zone key. Returns null for anything that isn't one of ours. */
-export function parseZoneKey(key: string): { zone: CardZone; index: number | 'end' } | null {
-  const [z, i] = key.split(':')
+export function parseZoneKey(key: string): { zone: CardZone; before: BoardCardId | 'end' } | null {
+  const [z, b] = key.split(':')
   if (z !== 'band' && z !== 'grid') return null
-  if (i === 'end') return { zone: z, index: 'end' }
-  const n = Number(i)
-  return Number.isInteger(n) && n >= 0 ? { zone: z, index: n } : null
+  if (b === 'end') return { zone: z, before: 'end' }
+  return b && isId(b) ? { zone: z, before: b } : null
 }
 
 /** A size in actual columns, clamped to what the viewport gives us. `'full'` → all of them. */
 export const clampSize = (size: CardSize, cols: number): number =>
   size === 'full' ? Math.max(1, cols) : Math.max(1, Math.min(size, cols))
 
-/** The next size in the cycle — what the on-board size chip advances to. */
-export function nextSize(size: CardSize): CardSize {
+/**
+ * The next size in the cycle — what the on-board size chip advances to.
+ *
+ * Pass the grid's live column count to cycle only through sizes that LOOK different
+ * there. On a two-column phone, 2 / 3 / full all clamp to the same full width, so the
+ * chip would sit dead for two taps out of four; it toggles half ↔ full instead.
+ */
+export function nextSize(size: CardSize, cols?: number): CardSize {
+  if (cols != null && cols <= 2) return size === 1 ? 'full' : 1
   const i = CARD_SIZES.indexOf(size)
   return CARD_SIZES[(i + 1) % CARD_SIZES.length]!
 }
 
 /**
- * Move `id` to `toIndex` within `toZone` (pure). Handles the cross-zone case: the card is
- * removed from wherever it was first, so the insert index is always read against the
- * already-spliced target array. Out-of-range indexes clamp to the ends.
+ * Move `id` into `toZone`, immediately BEFORE the card `before` — or to the end when
+ * `before` is `'end'` (or names a card that isn't there). Pure.
+ *
+ * "Before this card" rather than "at this index" is what makes a downward drag behave:
+ * the dragged card is removed first, which shifts every later index left by one, so an
+ * index means different things depending on the drag direction. A neighbour doesn't move.
  */
 export function moveCard(
   prefs: BoardCardPrefs,
   id: BoardCardId,
   toZone: CardZone,
-  toIndex: number,
+  before: BoardCardId | 'end',
 ): BoardCardPrefs {
-  if (!META.has(id)) return prefs
+  if (!META.has(id) || id === before) return prefs
   const band = prefs.band.filter((x) => x !== id)
   const grid = prefs.grid.filter((x) => x !== id)
   const next: BoardCardPrefs = { ...prefs, band, grid }
   const target = next[toZone]
-  const at = Math.max(0, Math.min(toIndex, target.length))
-  target.splice(at, 0, id)
+  const at = before === 'end' ? -1 : target.indexOf(before)
+  target.splice(at < 0 ? target.length : at, 0, id)
   return next
 }

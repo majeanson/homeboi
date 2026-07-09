@@ -130,20 +130,42 @@ test.describe('board edit mode', () => {
     expect(await zoneOf(page, 'moments')).toBe('grid')
   })
 
-  test('reordering inside the masonry persists', async ({ page }) => {
+  const order = (page: Page) =>
+    page.locator('.board-grid > .wg-slot').evaluateAll((els) =>
+      els.map((e) => (e as HTMLElement).dataset.card),
+    )
+
+  test('reordering UP inside the masonry persists', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await open(page)
     await hold(page, 'today')
 
-    const order = () =>
-      page.locator('.board-grid > .wg-slot').evaluateAll((els) =>
-        els.map((e) => (e as HTMLElement).dataset.card),
-      )
-    const before = await order()
+    const before = await order(page)
     await dragOnto(page, 'today', 'autoCard')
-    const after = await order()
+    const after = await order(page)
     expect(after).not.toEqual(before)
     expect(after.indexOf('today')).toBeLessThan(before.indexOf('today'))
+    // It lands exactly where it was dropped: immediately before that card.
+    expect(after[after.indexOf('autoCard') - 1]).toBe('today')
+  })
+
+  test('reordering DOWN lands on the drop target, not one slot past it', async ({ page }) => {
+    // The index-based drop overshot downward drags: removing the dragged card first shifts
+    // every later index left by one, so the card sailed past its target (often to the end).
+    await page.setViewportSize({ width: 1280, height: 1200 })
+    await open(page)
+    await hold(page, 'autoCard')
+
+    const before = await order(page)
+    const target = before[2]!
+    await dragOnto(page, 'autoCard', target)
+
+    const after = await order(page)
+    expect(after.indexOf('autoCard')).toBeGreaterThan(before.indexOf('autoCard'))
+    // Immediately BEFORE the card it was dropped on — not after it, not at the end.
+    expect(after[after.indexOf(target) - 1]).toBe('autoCard')
+    expect(after.at(-1)).toBe(before.at(-1))
+    expect([...after].sort()).toEqual([...before].sort()) // nothing lost or duplicated
   })
 
   // Edit mode hangs ✕ / ⠿ / size badges OUTSIDE each card's box (top:-8px, left/right:-8px).
@@ -168,11 +190,62 @@ test.describe('board edit mode', () => {
       return [...new Set(out)]
     })
     expect(bad, `overflowing: ${bad.join(' | ')}`).toEqual([])
-    // And every card is a single column here — a size-3 widget must clamp, not overflow.
+    // A phone grid has TWO columns (so a card CAN be halved), but a card nobody sized
+    // still spans both — the default phone board is unchanged.
     const spans = await page.locator('.board-grid > .wg-slot').evaluateAll((els) =>
       els.map((e) => (e as HTMLElement).style.getPropertyValue('--wg-span-cols')),
     )
-    expect([...new Set(spans)]).toEqual(['1'])
+    expect([...new Set(spans)]).toEqual(['2'])
+  })
+
+  test('on a phone the size chip splits a card in two, and back', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 })
+    await open(page)
+    await hold(page, 'today')
+    const slot = page.locator('.wg-slot[data-card="today"]')
+    const chip = slot.locator('.wg-slot__size')
+
+    // Un-sized on a phone reads « Max »: the chip shows what the grid will RENDER, so the
+    // first tap does something visible instead of jumping to a 2 that clamps back to full.
+    await expect(chip).toHaveText('Max')
+    const full = (await slot.boundingBox())!.width
+
+    await chip.click()
+    await expect(chip).toHaveText('1')
+    await expect(slot).toHaveAttribute('style', /--wg-span-cols: ?1/)
+    const half = (await slot.boundingBox())!.width
+    expect(half).toBeLessThan(full * 0.6)
+
+    // 2 and 3 clamp to the same width here, so the chip toggles half ↔ full instead of
+    // sitting dead for two taps.
+    await chip.click()
+    await expect(chip).toHaveText('Max')
+    expect((await slot.boundingBox())!.width).toBeCloseTo(full, 0)
+  })
+
+  test('two half cards sit side by side on a phone', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 })
+    await open(page)
+    await hold(page, 'today')
+
+    // The two cards that actually neighbour each other in the rendered flow — `nth(1)`
+    // would be whatever the seed happens to put second, collapsed cards included.
+    const visible = await page.locator('.board-grid > .wg-slot:not([hidden])').evaluateAll((els) =>
+      els.map((e) => (e as HTMLElement).dataset.card!),
+    )
+    const i = visible.indexOf('today')
+    const other = visible[i + 1]!
+
+    for (const card of ['today', other]) {
+      await page.locator(`.wg-slot[data-card="${card}"] .wg-slot__size`).click()
+      await expect(page.locator(`.wg-slot[data-card="${card}"]`)).toHaveAttribute('style', /--wg-span-cols: ?1/)
+    }
+
+    const a = (await page.locator('.wg-slot[data-card="today"]').boundingBox())!
+    const b = (await page.locator(`.wg-slot[data-card="${other}"]`).boundingBox())!
+    // Same row, different columns — the whole point of giving a phone two of them.
+    expect(Math.abs(a.y - b.y), `${other} did not share a row with today`).toBeLessThan(4)
+    expect(b.x).toBeGreaterThan(a.x + a.width - 4)
   })
 
   // The two devices that must never edit: a read-only guest (the babysitter), and a cast

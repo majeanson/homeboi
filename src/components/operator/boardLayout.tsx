@@ -55,11 +55,11 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
     onDrop: (fromKey, toKey) => {
       const from = parseZoneKey(fromKey)
       const to = parseZoneKey(toKey)
-      if (!from || !to || from.index === 'end') return
-      const id = prefs[from.zone][from.index]
-      if (!id) return
-      const at = to.index === 'end' ? prefs[to.zone].length : to.index
-      setCardPrefs(moveCard(prefs, id, to.zone, at))
+      if (!from || !to || from.before === 'end') return
+      // Drop keys name the CARD, not its row index: a row index would be read against the
+      // rendered list while `moveCard` splices the stored one, and it would mean different
+      // things dragging up vs down. `from.before` is the dragged card itself.
+      setCardPrefs(moveCard(prefs, from.before, to.zone, to.before))
     },
     canDrop: (fromKey, toKey) => fromKey !== toKey,
     holdMs: DND_HOLD_MS,
@@ -117,7 +117,7 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
               key={id}
               dnd={dnd}
               index={i}
-              zone={zoneKey(zone, i)}
+              zone={zoneKey(zone, id)}
               label={t.boardCard[id]}
               className={'board-layout__row' + (cardMode(prefs, id) === 'never' ? ' is-hidden' : '')}
               showGrip={!ro}

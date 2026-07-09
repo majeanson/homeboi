@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { colsFor, rowSpan, WG_COL_MIN, WG_GAP, WG_ROW } from './widgetGrid'
+import { colsFor, colWidth, isNarrow, rowSpan, WG_COL_MIN, WG_GAP, WG_PHONE_COL_MIN, WG_ROW } from './widgetGrid'
 
 /** The height a slot actually gets when it claims `n` rows: it swallows the n-1 gaps. */
 const usableHeight = (n: number) => n * WG_ROW + (n - 1) * WG_GAP
@@ -36,16 +36,56 @@ describe('rowSpan', () => {
   })
 })
 
-describe('colsFor', () => {
-  it('gives one column to a phone', () => {
-    expect(colsFor(360, 4)).toBe(1)
-    expect(colsFor(300, 4)).toBe(1)
+describe('colsFor — the phone rule', () => {
+  it('gives a phone TWO columns, so "small" can mean half', () => {
+    // One column would clamp every size to 1: the size chip could never split a card.
+    expect(colsFor(360, 4)).toBe(2)
+    expect(colsFor(390, 4)).toBe(2)
+    expect(colsFor(430, 4)).toBe(2)
   })
 
-  it('adds a column only once another full one FITS, gap included', () => {
-    // Two columns need 2*300 + 16 = 616px. One pixel short must stay at one.
-    expect(colsFor(2 * WG_COL_MIN + WG_GAP - 1, 4)).toBe(1)
-    expect(colsFor(2 * WG_COL_MIN + WG_GAP, 4)).toBe(2)
+  it('falls back to one column when two halves genuinely cannot fit', () => {
+    expect(colsFor(2 * WG_PHONE_COL_MIN + WG_GAP - 1, 4)).toBe(1)
+    expect(colsFor(2 * WG_PHONE_COL_MIN + WG_GAP, 4)).toBe(2)
+  })
+
+  it('still honours the zone cap on a phone', () => {
+    expect(colsFor(390, 1)).toBe(1)
+  })
+
+  it('the column count only ever grows with width — no cliff at any threshold', () => {
+    // A threshold-based phone rule put one here: 599px got two columns, 600px got one.
+    let prev = 0
+    for (let w = 200; w <= 1600; w += 1) {
+      const cols = colsFor(w, 4)
+      expect(cols, `cols shrank at ${w}px`).toBeGreaterThanOrEqual(prev)
+      prev = cols
+    }
+  })
+
+  it('flags a phone as narrow, and a tablet as not', () => {
+    // Narrow = the columns are tighter than a comfortable card, so an un-sized card
+    // renders full width there. Derived from measured width, never from `surface`.
+    expect(isNarrow(360, colsFor(360, 4))).toBe(true) // two ~172px columns
+    expect(isNarrow(834, colsFor(834, 4))).toBe(false) // two ~409px columns
+    expect(isNarrow(1280, colsFor(1280, 4))).toBe(false)
+    expect(isNarrow(360, 1)).toBe(false) // one column is never "narrow"
+  })
+
+  it('colWidth pays for the gaps between the columns', () => {
+    expect(colWidth(360, 2)).toBe((360 - WG_GAP) / 2)
+    expect(colWidth(1000, 1)).toBe(1000)
+    expect(colWidth(100, 0)).toBe(0)
+  })
+})
+
+describe('colsFor — wider grids', () => {
+  it('adds a column only once another COMFORTABLE one fits, gap included', () => {
+    // Beyond the guaranteed two, a column must be worth WG_COL_MIN. Three of them need
+    // 3*300 + 2*16 = 932px; one pixel short stays at two.
+    const three = 3 * WG_COL_MIN + 2 * WG_GAP
+    expect(colsFor(three - 1, 4)).toBe(2)
+    expect(colsFor(three, 4)).toBe(3)
   })
 
   it('never exceeds the zone cap — the band is a glance strip', () => {

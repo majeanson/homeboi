@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { zoneKey, type CardZone } from '../../lib/boardCards'
-import { colsFor } from '../../lib/widgetGrid'
+import { colsFor, isNarrow } from '../../lib/widgetGrid'
 
 // The board's widget-space layout engine. ONE component, used once per zone (the pinned
 // band, then the masonry) — which is what makes "drag a card from the band into the grid"
@@ -51,6 +51,9 @@ export interface WidgetGridCtx {
   zone: CardZone
   /** Live column count — the clamp every card's size is measured against. */
   cols: number
+  /** Phone-shaped (by MEASURED width, never by `surface`). Its two columns exist so a
+   *  card can opt into a half; an un-sized card still renders full width. */
+  narrow: boolean
   /** Edit mode is armed on this grid (long-press, or ?edit=1). */
   editing: boolean
   /** The ONE drag session, shared by both zones — which is what lets a card be dragged
@@ -97,16 +100,21 @@ export function WidgetGrid({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [cols, setCols] = useState(1)
+  const [narrow, setNarrow] = useState(false)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
     let raf = 0
-    const read = (width: number) =>
-      setCols((prev) => {
-        const next = colsFor(width, maxCols, colMin)
-        return prev === next ? prev : next // bail when unchanged — no re-render storm
+    const read = (width: number) => {
+      const cols = colsFor(width, maxCols, colMin)
+      // Both setters bail when unchanged — no re-render storm from a resize burst.
+      setCols((prev) => (prev === cols ? prev : cols))
+      setNarrow((prev) => {
+        const next = isNarrow(width, cols)
+        return prev === next ? prev : next
       })
+    }
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width ?? 0
       // Coalesce a burst of observations into one write per frame.
@@ -121,7 +129,7 @@ export function WidgetGrid({
     }
   }, [maxCols, colMin])
 
-  const ctx = useMemo(() => ({ zone, cols, editing, dnd }), [zone, cols, editing, dnd])
+  const ctx = useMemo(() => ({ zone, cols, narrow, editing, dnd }), [zone, cols, narrow, editing, dnd])
 
   return (
     <Ctx.Provider value={ctx}>

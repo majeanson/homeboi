@@ -58,14 +58,11 @@ import { useWidgetGrid } from './WidgetGrid'
 export function CardSlot({
   id,
   zone,
-  index,
   empty,
   children,
 }: {
   id: BoardCardId
   zone: CardZone
-  /** Position within the zone — half of this slot's drop-zone key (`"{zone}:{index}"`). */
-  index: number
   /** Lens-computed emptiness. Omit to let the card report its own. */
   empty?: boolean
   children: ReactNode
@@ -90,7 +87,11 @@ export function CardSlot({
   const placeholder = mode === 'always' && isEmpty
   const meta = cardMeta(id)
   const cols = grid?.cols ?? 1
-  const span = clampSize(cardSize(prefs, id), cols)
+  // On a phone the grid has two columns so a card CAN be a half — but one nobody sized
+  // stays full width (a 150px column can't hold « Aujourd'hui »'s rows), so the default
+  // board is unchanged. An explicit choice always wins over this fallback.
+  const size = cardSize(prefs, id, grid?.narrow ? 'full' : undefined)
+  const span = clampSize(size, cols)
 
   useEffect(() => {
     const el = innerRef.current
@@ -122,7 +123,8 @@ export function CardSlot({
 
   const editing = !!grid?.editing
   const dnd = grid?.dnd ?? null
-  const key = zoneKey(zone, index)
+  // "Drop here" means "insert before THIS card" — never "at index N". See `zoneKey`.
+  const key = zoneKey(zone, id)
   const label = t.boardCard[id]
 
   // A MOUSE may grab the card body: it never scrolls by dragging, so there's no gesture
@@ -137,7 +139,11 @@ export function CardSlot({
   }
 
   const hide = () => setCardPrefs({ mode: { ...prefs.mode, [id]: 'never' } })
-  const resize = () => setCardPrefs({ size: { ...prefs.size, [id]: nextSize(cardSize(prefs, id)) } })
+  // Cycle from the EFFECTIVE size, not the stored one: on a phone an un-sized card reads
+  // « Max », so the first tap takes it to 1 (a half) — which is what the eye expects.
+  // Cycling from the stored default (1) would instead jump it to 2, and 2 clamps back to
+  // full on two columns: the chip would appear to do nothing.
+  const resize = () => setCardPrefs({ size: { ...prefs.size, [id]: nextSize(size, cols) } })
 
   return (
     <section
@@ -191,8 +197,9 @@ export function CardSlot({
           >
             <InlineIcon name="x-bold" size={14} />
           </button>
-          {/* The size chip cycles 1 → 2 → 3 → full. It shows the STORED size, not the
-              clamped one, so a phone doesn't lie about what the wall will do. */}
+          {/* The size chip cycles 1 → 2 → 3 → full, showing the size this grid will
+              actually render (so on a phone it reads « Max » before you touch it, and
+              « 1 » once the card is a half). */}
           <button
             type="button"
             className="wg-slot__ctl wg-slot__size"
@@ -200,7 +207,7 @@ export function CardSlot({
             aria-label={t.board.editResize(label)}
             title={t.board.editResize(label)}
           >
-            {cardSize(prefs, id) === 'full' ? t.board.editSizeFull : cardSize(prefs, id)}
+            {size === 'full' ? t.board.editSizeFull : size}
           </button>
         </>
       )}

@@ -177,11 +177,37 @@ describe('clampSize', () => {
 })
 
 describe('nextSize', () => {
-  it('cycles 1 → 2 → 3 → full → 1', () => {
+  it('cycles 1 → 2 → 3 → full → 1 on a wide grid', () => {
     expect(nextSize(1)).toBe(2)
     expect(nextSize(2)).toBe(3)
     expect(nextSize(3)).toBe('full')
     expect(nextSize('full')).toBe(1)
+    expect(nextSize(1, 4)).toBe(2)
+  })
+
+  it('toggles half ↔ full on a two-column phone', () => {
+    // 2 / 3 / full all clamp to the same width there, so cycling through them would
+    // leave the chip looking dead for two taps out of four.
+    expect(nextSize('full', 2)).toBe(1)
+    expect(nextSize(1, 2)).toBe('full')
+    expect(nextSize(3, 2)).toBe(1)
+    expect(nextSize(1, 1)).toBe('full')
+  })
+})
+
+describe('cardSize fallback', () => {
+  it('an un-sized card takes the fallback (a phone renders it full width)', () => {
+    expect(cardSize(fresh(), 'today')).toBe(1) // canonical default
+    expect(cardSize(fresh(), 'today', 'full')).toBe('full')
+  })
+
+  it('but an EXPLICIT choice always wins over the fallback', () => {
+    const p = reconcile({ size: { today: 1 } })
+    expect(cardSize(p, 'today', 'full')).toBe(1)
+  })
+
+  it('the fallback never overrides a card already full by default', () => {
+    expect(cardSize(fresh(), 'autoCard', 'full')).toBe('full')
   })
 })
 
@@ -195,15 +221,39 @@ describe('moveCard', () => {
     mode: {},
   })
 
-  it('reorders within a zone', () => {
-    const next = moveCard(literal(['today', 'upcoming', 'photos']), 'photos', 'grid', 0)
+  it('drags a card UP, landing before the card it was dropped on', () => {
+    const next = moveCard(literal(['today', 'upcoming', 'photos']), 'photos', 'grid', 'today')
     expect(next.grid).toEqual(['photos', 'today', 'upcoming'])
+  })
+
+  it('drags a card DOWN, landing before the card it was dropped on', () => {
+    // The bug this contract kills: with an INDEX, removing the dragged card first shifts
+    // every later index left by one, so a downward drop overshot by a slot — dropping
+    // « Aujourd'hui » on « Photo du jour » sent it past, to the end.
+    const next = moveCard(literal(['today', 'upcoming', 'photos']), 'today', 'grid', 'photos')
+    expect(next.grid).toEqual(['upcoming', 'today', 'photos'])
+    expect(next.grid.filter((x) => x === 'today')).toHaveLength(1)
+  })
+
+  it('is symmetric: up then down returns the original order', () => {
+    const start = literal(['today', 'upcoming', 'photos'])
+    const up = moveCard(start, 'photos', 'grid', 'upcoming')
+    expect(up.grid).toEqual(['today', 'photos', 'upcoming'])
+    const back = moveCard(up, 'photos', 'grid', 'end')
+    expect(back.grid).toEqual(start.grid)
+  })
+
+  it('a hidden card between source and target cannot skew the drop', () => {
+    // `visibleCards` drops `never` cards, so a rendered index would disagree with the
+    // stored array. Naming the target card makes that impossible.
+    const p: BoardCardPrefs = { ...literal(['today', 'upcoming', 'photos']), mode: { upcoming: 'never' } }
+    expect(moveCard(p, 'today', 'grid', 'photos').grid).toEqual(['upcoming', 'today', 'photos'])
   })
 
   it('moves a card across zones — the band/grid split is now just placement', () => {
     const p = fresh()
     expect(cardZone(p, 'moments')).toBe('band')
-    const next = moveCard(p, 'moments', 'grid', 0)
+    const next = moveCard(p, 'moments', 'grid', p.grid[0]!)
     expect(cardZone(next, 'moments')).toBe('grid')
     expect(next.band).not.toContain('moments')
     expect(next.grid[0]).toBe('moments')
@@ -211,34 +261,30 @@ describe('moveCard', () => {
 
   it('drags a grid card up into the band', () => {
     const p = fresh()
-    const next = moveCard(p, 'todos', 'band', 1)
-    expect(next.band[1]).toBe('todos')
+    const next = moveCard(p, 'todos', 'band', 'heroes')
+    expect(next.band[next.band.indexOf('heroes') - 1]).toBe('todos')
     expect(next.grid).not.toContain('todos')
   })
 
-  it('removes before inserting, so a same-zone move lands where you dropped it', () => {
-    // The classic off-by-one: index 2 is read AFTER 'today' is pulled out, so the card
-    // ends up third, not second. Removing first is what makes a cross-zone drop work.
-    const next = moveCard(literal(['today', 'upcoming', 'photos']), 'today', 'grid', 2)
-    expect(next.grid).toEqual(['upcoming', 'photos', 'today'])
-    expect(next.grid.filter((x) => x === 'today')).toHaveLength(1)
+  it('appends on `end` — the only way back into a group you emptied', () => {
+    const next = moveCard(fresh(), 'photos', 'band', 'end')
+    expect(next.band.at(-1)).toBe('photos')
+    expect(next.grid).not.toContain('photos')
   })
 
-  it('clamps an out-of-range index instead of leaving a hole', () => {
-    const p = fresh()
-    const next = moveCard(p, 'photos', 'grid', 999)
-    expect(next.grid.at(-1)).toBe('photos')
-    const first = moveCard(p, 'photos', 'grid', -5)
-    expect(first.grid[0]).toBe('photos')
+  it('appends when the target card is not in that zone', () => {
+    const next = moveCard(literal(['today', 'photos']), 'today', 'grid', 'carnets')
+    expect(next.grid).toEqual(['photos', 'today'])
   })
 
   it('never duplicates or loses a card', () => {
-    const next = moveCard(fresh(), 'heroes', 'grid', 3)
+    const next = moveCard(fresh(), 'heroes', 'grid', 'today')
     expect([...next.band, ...next.grid].sort()).toEqual([...ALL].sort())
   })
 
-  it('ignores an unknown id', () => {
+  it('ignores an unknown id, and a card dropped on itself', () => {
     const p = fresh()
-    expect(moveCard(p, 'nope' as BoardCardId, 'band', 0)).toBe(p)
+    expect(moveCard(p, 'nope' as BoardCardId, 'band', 'notes')).toBe(p)
+    expect(moveCard(p, 'notes', 'band', 'notes')).toBe(p)
   })
 })

@@ -404,10 +404,10 @@ export function Board() {
     onDrop: (cardId, dropKey) => {
       const target = parseZoneKey(dropKey)
       if (!target || !cardMeta(cardId as BoardCardId)) return
-      const zone = target.zone
-      // A drop on the grid's trailing space appends; a drop on a slot inserts at it.
-      const at = target.index === 'end' ? boardCards[zone].length : target.index
-      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, zone, at))
+      // A drop on a slot inserts BEFORE that card; a drop on the grid's trailing space
+      // appends. Never an index — dragging DOWN would land one slot too far, because
+      // removing the dragged card first shifts every later index left by one.
+      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, target.zone, target.before))
     },
   })
 
@@ -962,8 +962,8 @@ export function Board() {
               band.mots = ro ? null : <MotsCard />
               band.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
               band.moments = <MomentPeek />
-              return visibleCards(boardCards, 'band').map((id, i) => (
-                <CardSlot key={id} id={id} zone="band" index={i} empty={slotEmpty(band[id])}>
+              return visibleCards(boardCards, 'band').map((id) => (
+                <CardSlot key={id} id={id} zone="band" empty={slotEmpty(band[id])}>
                   {band[id]}
                 </CardSlot>
               ))
@@ -1312,8 +1312,8 @@ export function Board() {
               // null has nothing to say TODAY (« Le fil » isn't eligible, « Demain » is
               // bare, the day is clear) — that's its emptiness, and the slot decides
               // whether to collapse it or hold its place with a placeholder.
-              return visibleCards(boardCards, 'grid').map((id, i) => (
-                <CardSlot key={id} id={id} zone="grid" index={i} empty={slotEmpty(nodes[id])}>
+              return visibleCards(boardCards, 'grid').map((id) => (
+                <CardSlot key={id} id={id} zone="grid" empty={slotEmpty(nodes[id])}>
                   {nodes[id]}
                 </CardSlot>
               ))

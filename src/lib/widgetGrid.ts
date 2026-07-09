@@ -30,16 +30,53 @@ export function rowSpan(height: number): number {
 }
 
 /**
- * How many columns of at least `WG_COL_MIN` fit in `width`, capped at `maxCols` and never
- * below 1. N columns need `N*COL_MIN + (N-1)*GAP` — hence the `+ GAP` on both sides.
+ * The narrowest a HALF card may get. Two of these + a gap must fit the grid on a 360px
+ * phone — which is NOT 360px wide: the wall's padding and the scrollbar leave ~301px, so
+ * a half is ~143px. Measured, not assumed; 150 here silently cost 360px phones their
+ * second column.
+ */
+export const WG_PHONE_COL_MIN = 132
+
+/** The width one column actually gets, once the gaps between them are paid for. */
+export const colWidth = (width: number, cols: number): number =>
+  cols <= 0 ? 0 : (width - (cols - 1) * WG_GAP) / cols
+
+/**
+ * Are this grid's columns narrower than a comfortable card?
+ *
+ * A phone's two columns are ~172px — fine for a card that opted into being a half, far
+ * too tight for « Aujourd'hui »'s rows. So a card nobody has sized renders FULL width
+ * here (see `CardSlot`); the columns exist only so a card *can* be halved.
+ *
+ * Derived from the MEASURED width, never from `surface === 'mobile'` — a wall tablet
+ * signed in as the operator reports `mobile`, and would otherwise be treated as a phone.
+ */
+export const isNarrow = (width: number, cols: number): boolean =>
+  Number.isFinite(width) && width > 0 && cols >= 2 && colWidth(width, cols) < WG_COL_MIN
+
+/**
+ * How many columns fit `width`, capped at `maxCols` and never below 1.
+ *
+ * Two rules, and the answer is the LARGER of them, which keeps the count monotonic in
+ * width (a threshold-based rule put a cliff at the boundary: 599px got two columns and
+ * 600px got one):
+ *
+ *  1. As many comfortable columns of `colMin` as fit. N of them need
+ *     `N*colMin + (N-1)*GAP` — hence the `+ GAP` on both sides.
+ *  2. **Always two, if two halves of `WG_PHONE_COL_MIN` physically fit.** Otherwise a
+ *     phone has `cols === 1`, every size clamps to 1, and the size chip can do nothing:
+ *     a card could only ever be full width. Two columns is what makes "small" mean
+ *     *half*, exactly as a phone home screen fits two small widgets side by side.
  *
  * Counted in JS rather than left to `repeat(auto-fill, minmax(...))` because a card's size
- * has to be clamped against the count: a size-3 widget on a one-column phone must render
+ * has to be clamped against the count: a size-3 widget on a narrow grid must render
  * span-1 rather than overflow the viewport.
  */
 export function colsFor(width: number, maxCols: number, colMin: number = WG_COL_MIN): number {
   if (!Number.isFinite(width) || width <= 0) return 1
+  const cap = Math.max(1, maxCols)
   const min = Number.isFinite(colMin) && colMin > 0 ? colMin : WG_COL_MIN
-  const fit = Math.floor((width + WG_GAP) / (min + WG_GAP))
-  return Math.max(1, Math.min(fit, Math.max(1, maxCols)))
+  const comfortable = Math.floor((width + WG_GAP) / (min + WG_GAP))
+  const halves = width >= 2 * WG_PHONE_COL_MIN + WG_GAP ? 2 : 1
+  return Math.max(1, Math.min(Math.max(comfortable, halves), cap))
 }
