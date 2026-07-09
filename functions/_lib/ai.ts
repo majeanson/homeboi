@@ -805,13 +805,13 @@ export async function answerQuestion(
     lang === 'en'
       ? `You answer a family member's question using ONLY the household data below. Be warm and concise — one or two sentences, no lists unless asked. If the answer isn't in the data, say plainly that you don't see it (never invent). The data is dated; use the weekdays/dates to resolve "Friday", "tomorrow", etc.
 Reply with ONLY valid JSON: {"answer": <your reply, in English>, "kind": <which kind of thing the question is about>}.
-"kind" is one of: "meal" (suppers / what's for supper), "event" (appointments, activities, birthdays), "list" (the grocery/shopping list), "chore" (chores, tasks), "recipe" (a saved recipe), "cercle" (a person / family), "note" (a fridge note), or "none" (anything else / you don't know).
+"kind" is one of: "meal" (suppers / what's for supper), "event" (appointments, activities, birthdays), "list" (the grocery/shopping list), "chore" (chores, tasks), "recipe" (a saved recipe), "cercle" (a person / family, a contact's phone or email, a service or business — vet, plumber, etc. — or an upkeep/maintenance next-due date from a carnet), "note" (a fridge note), or "none" (anything else / you don't know).
 
 DATA:
 ${context}`
       : `Tu réponds à la question d'un membre de la famille en utilisant UNIQUEMENT les données ci-dessous. Sois chaleureux et concis — une ou deux phrases, pas de liste sauf si on le demande. Si la réponse n'est pas dans les données, dis simplement que tu ne la vois pas (n'invente jamais). Les données sont datées ; sers-toi des jours/dates pour comprendre « vendredi », « demain », etc.
 Réponds UNIQUEMENT avec du JSON valide : {"answer": <ta réponse, en français québécois>, "kind": <le genre de chose dont parle la question>}.
-"kind" est un de : "meal" (soupers / qu'est-ce qu'on mange), "event" (rendez-vous, activités, anniversaires), "list" (la liste d'épicerie), "chore" (corvées, tâches), "recipe" (une recette enregistrée), "cercle" (une personne / la famille), "note" (un pense-bête sur le frigo), ou "none" (autre chose / tu ne sais pas).
+"kind" est un de : "meal" (soupers / qu'est-ce qu'on mange), "event" (rendez-vous, activités, anniversaires), "list" (la liste d'épicerie), "chore" (corvées, tâches), "recipe" (une recette enregistrée), "cercle" (une personne / la famille, le téléphone ou courriel d'un contact, un service ou commerce — vétérinaire, plombier, etc. — ou une prochaine date d'entretien d'un carnet), "note" (un pense-bête sur le frigo), ou "none" (autre chose / tu ne sais pas).
 
 DONNÉES :
 ${context}`
