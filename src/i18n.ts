@@ -2375,7 +2375,10 @@ export const FR = {
     guideHint: 'Tout le fonctionnement de Babillard, expliqué simplement, au même endroit.',
     guideSearch: 'Chercher dans le guide…',
     guideNone: 'Rien trouvé. Essaie un autre mot.',
-    guideGoTo: 'Aller à cet onglet',
+    // The guide-card action row: « Ouvrir » = the live feature, « Régler » reuses
+    // lensSet, « Essayer » = a point's own action link.
+    guideOpen: 'Ouvrir',
+    guideTry: 'Essayer',
     guideMap: 'Tout ce que Babillard fait',
     // « Voir dans l'app » — the shared Réglages-sub → live-surface backlink (SUB_GOTO).
     gotoFeature: 'Voir dans l’app',

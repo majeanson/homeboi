@@ -56,6 +56,11 @@ type GuidePoint = {
   // up in Settings") has no reason worth spelling out — don't write filler.
   detail: Bi
   why?: Bi
+  // Where THIS point's action lives — a « Essayer » link right under the
+  // explanation (e.g. « Des liens entre les gens » → /cercle?connect=1, a ＋
+  // tile → /board?plus=mot). Only when the point names ONE concrete action;
+  // guideLinks.test.ts validates every target.
+  route?: string
 }
 
 export type GuideEntry = {
@@ -67,16 +72,16 @@ export type GuideEntry = {
   title: Bi
   what: Bi
   points: GuidePoint[]
-  // For the "settings" group: the Réglages tab id this card documents, so the
-  // Guide can offer a direct "go there" link (/settings?tab=<tab>). Must match a
-  // SECTION id in pages/Operator.tsx.
-  tab?: string
-  // A full route path this card opens ("→ Ouvrir dans l'app") — generalizes `tab`
-  // to any hub tab or scene (e.g. '/board', '/voyage/new', '/drawings'), so a
-  // concept/section card can send you straight to the live feature, not just a
-  // Réglages tab. When both are set, `route` wins. The feature-discovery map's
-  // tiles reuse this same target via CONCEPT_THEMES.route.
+  // « Ouvrir » — the live feature this card documents (any hub tab or scene:
+  // '/board', '/voyage/new', '/drawings'…), so the Guide is a launcher, not just
+  // an explanation. The feature-discovery map's tiles reuse this same target via
+  // CONCEPT_THEMES.route.
   route?: string
+  // « Régler » — the exact Réglages spot for this card's knobs, always a
+  // /settings?tab=…[&sub=…][&focus=…] URL (focus = a section card inside a
+  // stacked sub, see lib/settingsNav). Distinct from `route` on purpose: a card
+  // can open the feature AND its settings.
+  settings?: string
   // An optional guided tour (lib/tourContent TOURS id) this card can replay. Given
   // → the card hosts a "replay" button that (re)starts that tour, so a tour is
   // permanently re-doable from the Guide, not just on first run. 'essentials' on the

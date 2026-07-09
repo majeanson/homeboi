@@ -12,6 +12,7 @@ import { SampleDataControls } from './sampleData'
 import { DidYouKnowCard, WhatsNewLine } from './discover'
 import { markTourOffered } from '../../lib/tourOffer'
 import { Icon } from '../Icon'
+import { Cluster } from '../Layout'
 import { EmptyState } from '../EmptyState'
 import { scrollBehavior } from '../../lib/motion'
 
@@ -105,35 +106,54 @@ function GuideCard({
               {/* The WHY, when the point earns one: a distinct, softer line so a
                   parent scans WHAT first, WHY second. */}
               {p.why && <p className="guide__point-why">{renderRich(p.why[lang], hl)}</p>}
+              {/* « Essayer » — the point's OWN action, when it names one concrete
+                  thing to do (a ＋ tile, a scene, a settings card): reading about
+                  it and doing it become one gesture. */}
+              {p.route && (
+                <Link className="guide__goto guide__goto--point" to={p.route}>
+                  <span>{t.operator.guideTry}</span>
+                  <Icon name="arrow-right-bold" size={16} />
+                </Link>
+              )}
             </details>
           )
         })}
-        {/* A direct "go there" link into the LIVE feature. `route` (any hub tab or
-            scene, e.g. /board, /voyage/new, /drawings) wins; else a Settings-tab
-            card falls back to /settings?tab=<id>. Off when the card is shown inline
-            on the tab it documents. So a concept card now opens the real feature,
-            not just its explanation — the Guide became a launcher too. */}
-        {showGoTo && (entry.route || entry.tab) && (
-          <Link className="guide__goto" to={entry.route ?? `/settings?tab=${entry.tab}`}>
-            <span>{t.operator.guideGoTo}</span>
-            <Icon name="arrow-right-bold" size={18} />
-          </Link>
-        )}
-        {/* Any card naming a tour hosts a replay button: it (re)starts that tour,
-            which navigates to its own start route. The essentials tour reads
-            "replay the guided tour"; a section tour reads "redo this section's tour". */}
-        {entry.tour && onReplayTour && (
-          <button type="button" className="guide__goto" onClick={() => onReplayTour(entry.tour!)}>
-            <Icon name="repeat-bold" size={18} />
-            <span>{entry.tour === 'essentials' ? t.operator.replayTour : t.operator.replaySectionTour}</span>
-          </button>
-        )}
-        {/* Re-show the Board first-run welcome checklist (it's dismiss-once). */}
-        {entry.resetOnboarding && onResetOnboarding && (
-          <button type="button" className="guide__goto" onClick={onResetOnboarding}>
-            <Icon name="sparkle-bold" size={18} />
-            <span>{t.operator.resetOnboarding}</span>
-          </button>
+        {/* The card's action row — one Cluster (wraps on a phone, never overflows):
+            « Ouvrir » = the live feature (`route`), « Régler » = its exact Réglages
+            spot (`settings`, ?tab=&sub=&focus=), plus the tour-replay / welcome-reset
+            buttons. Both links hide when the card is shown inline on the surface it
+            would point to (showGoTo). Every card became a launcher AND a dial. */}
+        {((showGoTo && (entry.route || entry.settings)) || (entry.tour && onReplayTour) || (entry.resetOnboarding && onResetOnboarding)) && (
+          <Cluster className="guide__actions">
+            {showGoTo && entry.route && (
+              <Link className="guide__goto" to={entry.route}>
+                <Icon name="arrow-right-bold" size={18} />
+                <span>{t.operator.guideOpen}</span>
+              </Link>
+            )}
+            {showGoTo && entry.settings && (
+              <Link className="guide__goto" to={entry.settings}>
+                <Icon name="gear-six-bold" size={18} />
+                <span>{t.operator.lensSet}</span>
+              </Link>
+            )}
+            {/* Any card naming a tour hosts a replay button: it (re)starts that tour,
+                which navigates to its own start route. The essentials tour reads
+                "replay the guided tour"; a section tour reads "redo this section's tour". */}
+            {entry.tour && onReplayTour && (
+              <button type="button" className="guide__goto" onClick={() => onReplayTour(entry.tour!)}>
+                <Icon name="repeat-bold" size={18} />
+                <span>{entry.tour === 'essentials' ? t.operator.replayTour : t.operator.replaySectionTour}</span>
+              </button>
+            )}
+            {/* Re-show the Board first-run welcome checklist (it's dismiss-once). */}
+            {entry.resetOnboarding && onResetOnboarding && (
+              <button type="button" className="guide__goto" onClick={onResetOnboarding}>
+                <Icon name="sparkle-bold" size={18} />
+                <span>{t.operator.resetOnboarding}</span>
+              </button>
+            )}
+          </Cluster>
         )}
       </div>
     </details>

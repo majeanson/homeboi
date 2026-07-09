@@ -295,7 +295,8 @@ details[open] > summary > .guide__group-caret {
   font-style: normal;
   color: var(--accent, var(--ink-soft));
 }
-/* A direct "go there" link on a Settings-tab card — jumps Réglages to that tab. */
+/* A guide action link/button: « Ouvrir » (the live feature), « Régler » (its
+   Réglages spot), a point's « Essayer », the tour-replay… — one family. */
 .guide__goto {
   display: inline-flex;
   align-items: center;
@@ -314,6 +315,22 @@ details[open] > summary > .guide__group-caret {
 .guide__goto:hover {
   border-color: var(--accent, var(--line-strong));
   background: color-mix(in srgb, var(--accent, var(--ink)) 8%, var(--paper));
+}
+/* A point's own « Essayer » link — smaller than the card-level links, right
+   under the explanation it acts on. */
+.guide__goto--point {
+  margin-top: 0.45rem;
+  margin-bottom: 0.55rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+}
+/* The card's action row (« Ouvrir » · « Régler » · tour replay …) — a Cluster,
+   so the links share one line and wrap on a narrow phone instead of clipping. */
+.guide__actions {
+  margin-top: 0.7rem;
+}
+.guide__actions .guide__goto {
+  margin-top: 0;
 }
 
 /* Search-hit highlight (lib/richText highlight()): a calm accent wash — not the
