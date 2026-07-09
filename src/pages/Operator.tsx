@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -42,6 +42,8 @@ import { SubTabs } from '../components/SubTabs'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
+import { SETTINGS_SUBS, SUB_GOTO, type SettingsTabId } from '../lib/settingsNav'
+import { scrollBehavior } from '../lib/motion'
 import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY, HEALTH_KEY } from '../lib/queryKeys'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
 
@@ -222,6 +224,37 @@ export function Operator() {
     if (home !== 'decouvrir') next.set('lens', 'comprendre')
     setParams(next, { replace: true })
   }, [params, setParams])
+  // ?focus= — a guide « Régler » link can name ONE section card inside a stacked
+  // sub (by its help key, e.g. measureColors in kitchen▸apparence): scroll to it
+  // with a brief accent ring, then consume the param (one functional setParams
+  // write — two setters in a row would race, see the openTheme note in guide.tsx).
+  // Polls a few beats: a conditional section (the AI log) can mount after its
+  // query answers, same late-anchor reasoning as TourOverlay.
+  useEffect(() => {
+    if (!params.get('focus')) return
+    const focus = params.get('focus')!
+    let tries = 0
+    const timer = window.setInterval(() => {
+      const el = document.getElementById(`op-${focus}`)
+      tries += 1
+      if (!el && tries < 12) return
+      window.clearInterval(timer)
+      if (el) {
+        el.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
+        el.classList.add('is-target')
+        window.setTimeout(() => el.classList.remove('is-target'), 1800)
+      }
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.delete('focus')
+          return next
+        },
+        { replace: true },
+      )
+    }, 120)
+    return () => window.clearInterval(timer)
+  }, [params, setParams])
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
       reserveLocations: t.operator.reserveTitle,
@@ -256,19 +289,21 @@ export function Operator() {
 
   // Each themed tab's « Régler » lens holds its sub-sections in a SubTabs pill
   // row ("one job at a time") instead of stacking every panel in one long scroll.
-  // The `key` is the ?sub= deep-link id (also the LEGACY_TAB sub targets) — sub
-  // keys are UNCHANGED from the old 9-tab layout, so old ?sub= links survive; the
-  // `label` reuses each section's own title key so the pill matches the heading
-  // it opens. Sections are homed on the theme they configure: the board tab owns
-  // what the board SHOWS (agenda, layout, la semaine), Système owns the
-  // device/household-wide machinery (access, display, veille, IA, diagnostics).
-  const subSections: Record<string, { key: string; label: string; node: ReactNode }[]> = {
-    board: [
+  // The sub ids AND their order come from SETTINGS_SUBS (lib/settingsNav) — the
+  // one taxonomy source the guide's « Régler » links and guideLinks.test.ts also
+  // read; this map only fills each id's label + panel, and the mapped type makes
+  // a missing/extra body a tsc error, not a blank pill. Sub keys are UNCHANGED
+  // from the old 9-tab layout, so old ?sub= links survive; the `label` reuses
+  // each section's own title key so the pill matches the heading it opens.
+  // Sections are homed on the theme they configure: the board tab owns what the
+  // board SHOWS (agenda, layout, la semaine), Système owns the device/
+  // household-wide machinery (access, display, veille, IA, diagnostics).
+  const subBodies: { [T in SettingsTabId]: Record<(typeof SETTINGS_SUBS)[T][number], { label: string; node: ReactNode }> } = {
+    board: {
       // D-17 « La rentrée »: SchoolYearSection stacks under the SAME 'events' pill
       // as EventsSection (C-15 standing rule — a new setting merges into an
       // existing sub, never adds a pill; same board▸thisweek precedent).
-      {
-        key: 'events',
+      events: {
         label: t.operator.events,
         node: (
           <>
@@ -277,10 +312,9 @@ export function Operator() {
           </>
         ),
       },
-      { key: 'layout', label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
+      layout: { label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
       // « La semaine » — the calm week glance + the AI weekly recap, one pill.
-      {
-        key: 'thisweek',
+      thisweek: {
         label: t.operator.weekTabTitle,
         node: (
           <>
@@ -289,14 +323,13 @@ export function Operator() {
           </>
         ),
       },
-    ],
-    kitchen: [
+    },
+    kitchen: {
       // C-15 — étiquettes + pastilles + couleurs de mesure were three separate
       // colour-tinkering pills; folded into ONE « Apparence » sub (stacked
       // bodies under one pill, the board▸thisweek / settings▸system precedent —
       // no nested SubTabs). Listed first so it's the useTabParam fallback.
-      {
-        key: 'apparence',
+      apparence: {
         label: t.operator.kitchenLookTitle,
         node: (
           <>
@@ -306,34 +339,33 @@ export function Operator() {
           </>
         ),
       },
-      { key: 'meals', label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
-      { key: 'reserve', label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
-    ],
-    liste: [
-      { key: 'shop', label: t.operator.shopping, node: <ShopSection help={operatorHelp} /> },
-      { key: 'aisles', label: t.operator.aisleOrder, node: <AisleOrderSection /> },
-      { key: 'stores', label: t.operator.storeFilter, node: <StoreFilterSection help={operatorHelp} /> },
-      { key: 'history', label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
-      { key: 'ghost', label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
-    ],
-    cercle: [
-      { key: 'members', label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
-      { key: 'cercle', label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
+      meals: { label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
+      reserve: { label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
+    },
+    liste: {
+      shop: { label: t.operator.shopping, node: <ShopSection help={operatorHelp} /> },
+      aisles: { label: t.operator.aisleOrder, node: <AisleOrderSection /> },
+      stores: { label: t.operator.storeFilter, node: <StoreFilterSection help={operatorHelp} /> },
+      history: { label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
+      ghost: { label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
+    },
+    cercle: {
+      members: { label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
+      cercle: { label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
       // L'auto + per-member hours live in Le cercle's world (getting-around, teal).
-      { key: 'cars', label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
-      { key: 'schedule', label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
+      cars: { label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
+      schedule: { label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
       // « La maison cette année » (B-8, bmad/09) — the house's diary, a read view.
-      { key: 'annee', label: t.operator.diaryTab, node: <HouseDiarySection help={operatorHelp} /> },
-    ],
-    routines: [
+      annee: { label: t.operator.diaryTab, node: <HouseDiarySection help={operatorHelp} /> },
+    },
+    routines: {
       // The namesake sub leads (also keeps legacy ?tab=routines landing here).
-      { key: 'routines', label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
-      { key: 'chores', label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
-      { key: 'todos', label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
-    ],
-    settings: [
-      {
-        key: 'tablets',
+      routines: { label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
+      chores: { label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
+      todos: { label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
+    },
+    settings: {
+      tablets: {
         label: t.operator.devices,
         node: (
           <>
@@ -342,12 +374,11 @@ export function Operator() {
           </>
         ),
       },
-      { key: 'guest', label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
-      { key: 'display', label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
+      guest: { label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
+      display: { label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
       // « Mode veille » — two stacked bodies under ONE pill (C-15): what the idle
       // screen does on its own, then when « Le point du jour » opens on its own.
-      {
-        key: 'ambient',
+      ambient: {
         label: t.operator.ambientTitle,
         node: (
           <>
@@ -356,15 +387,14 @@ export function Operator() {
           </>
         ),
       },
-      { key: 'photos', label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
-      { key: 'ai', label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
-      { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
-      { key: 'calm', label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
+      photos: { label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
+      ai: { label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
+      voice: { label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
+      calm: { label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
       // « Version & diagnostics » — service health (which optional pieces are wired,
       // and what quietly hides without them) + build info + « Emporter mes données »
       // (E-35) + mic self-test + (when AI is on) the error log, grouped as one pill.
-      {
-        key: 'system',
+      system: {
         label: t.operator.sysTabTitle,
         node: (
           <>
@@ -376,8 +406,14 @@ export function Operator() {
           </>
         ),
       },
-    ],
+    },
   }
+  const subSections: Record<string, { key: string; label: string; node: ReactNode }[]> = Object.fromEntries(
+    (Object.keys(subBodies) as SettingsTabId[]).map((tabId) => [
+      tabId,
+      SETTINGS_SUBS[tabId].map((k) => ({ key: k, ...(subBodies[tabId] as Record<string, { label: string; node: ReactNode }>)[k] })),
+    ]),
+  )
 
   // Kiosk gating, per-sub: member/group admin, tablet pairing and guest links are
   // operator-only — dropped from the pill row AND the valid ?sub set, so a deep
@@ -547,6 +583,15 @@ export function Operator() {
                     ariaLabel={t.operator.jumpAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
                   />
+                  {/* « Voir dans l'app » — the way back to the live surface this
+                      sub configures (SUB_GOTO, the board▸Disposition mirror
+                      generalized). Subs that are pure machinery have no entry. */}
+                  {activeSub && SUB_GOTO[`${tab}/${activeSub.key}`] && (
+                    <Link className="operator__goto mono" to={SUB_GOTO[`${tab}/${activeSub.key}`]}>
+                      <InlineIcon name="arrow-right-bold" size={14} />
+                      <span>{t.operator.gotoFeature}</span>
+                    </Link>
+                  )}
                   {activeSub?.node}
                 </>
               ) : null}

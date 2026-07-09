@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
@@ -28,8 +27,9 @@ import {
 //
 // This is the ACCESSIBLE MIRROR of the board's own long-press editor: same store, same
 // three knobs, but reachable by keyboard and legible to a screen reader, which a
-// press-and-drag gesture never will be. « Réorganiser sur le babillard » deep-links to
-// /board?edit=1 for anyone who'd rather do it in place.
+// press-and-drag gesture never will be. The shared « Voir dans l'app » row above the
+// section (SUB_GOTO → /board?edit=1) is the way over for anyone who'd rather do it
+// in place.
 //
 // Both groups are drag-reorderable and a card can be dragged BETWEEN them — the band used
 // to be a fixed, show/hide-only strip, and that asymmetry is gone. Drop-zone ids are
@@ -155,15 +155,13 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
       help={help}
       helpKey="boardLayout"
       action={
+        // The old « Réorganiser sur le babillard » link moved to the shared
+        // « Voir dans l'app » row (SUB_GOTO in lib/settingsNav) — one pattern
+        // for every sub, not a bespoke button here.
         !ro ? (
-          <Cluster>
-            <Link className="btn btn--ghost btn--sm" to="/board?edit=1">
-              {t.operator.boardLayoutCustomize}
-            </Link>
-            <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
-              {t.operator.boardLayoutReset}
-            </button>
-          </Cluster>
+          <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
+            {t.operator.boardLayoutReset}
+          </button>
         ) : undefined
       }
     >

@@ -68,6 +68,35 @@
   padding: 1.25rem;
   margin-bottom: 1.25rem;
 }
+/* The section card a guide « Régler » link (?focus=) landed on — a brief accent
+   ring so the eye finds the exact card inside a stacked sub (the guide-card
+   .is-target ring, on a settings surface). Transient: Operator removes the
+   class once the scroll settles. */
+.operator__section.is-target {
+  border-color: var(--accent, var(--marigold-deep));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 34%, transparent);
+}
+/* « Voir dans l'app » — the shared backlink from a Réglages sub to the live
+   surface it configures (SUB_GOTO in lib/settingsNav): one calm pill between
+   the sub row and its section card(s). */
+.operator__goto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0.9rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.operator__goto:hover {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--ink) 6%, var(--paper));
+}
 .operator__section h2 {
   font-size: 1rem;
   margin: 0 0 0.75rem;

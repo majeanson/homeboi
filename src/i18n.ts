@@ -2037,8 +2037,6 @@ export const FR = {
     boardLayout: 'Disposition du babillard',
     boardLayoutHint: 'Choisis quelles cartes afficher, leur largeur et leur ordre — propre à cet appareil. Glisse une poignée pour réordonner, ou même pour déplacer une carte d’un groupe à l’autre.',
     boardLayoutReset: 'Réinitialiser',
-    // Opens the board's own editor (/board?edit=1) — the same thing a long press does.
-    boardLayoutCustomize: 'Réorganiser sur le babillard',
     boardLayoutBand: 'Bandeau du haut',
     boardLayoutGrid: 'Cartes',
     // Drop target at the end of a group, so a card can be moved into an emptied one.
@@ -2379,6 +2377,8 @@ export const FR = {
     guideNone: 'Rien trouvé. Essaie un autre mot.',
     guideGoTo: 'Aller à cet onglet',
     guideMap: 'Tout ce que Babillard fait',
+    // « Voir dans l'app » — the shared Réglages-sub → live-surface backlink (SUB_GOTO).
+    gotoFeature: 'Voir dans l’app',
     replayTour: 'Rejouer la visite guidée',
     replaySectionTour: 'Refaire le tour de cette section',
     resetOnboarding: 'Revoir l’accueil',
