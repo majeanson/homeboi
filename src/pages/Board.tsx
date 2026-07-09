@@ -37,10 +37,10 @@ import { live } from '../lib/query'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
 import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
-import { useNow, isPastSec, mealSlotPast } from '../lib/itemLife'
+import { useNow, isPastSec } from '../lib/itemLife'
 import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
-import { SLOT_ICON_NAME, SLOT_RANK, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { Disclosure } from '../components/Disclosure'
 import { Fil } from '../components/board/Fil'
@@ -60,7 +60,8 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
-import { holidaysOnDay, holidaysInRange, useHolidaysEnabled, type Holiday } from '../lib/year'
+import { useHolidaysEnabled } from '../lib/year'
+import { useBoardModel } from '../lib/boardModel'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
 import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
 
@@ -254,11 +255,6 @@ export function Board() {
   const memberName = (id: string | null) => nameOf(data?.members ?? [], id)
   const memberColor = (id: string | null) => colorOf(data?.members ?? [], id)
   const slotLabel = (slot: string) => slotLabelFor(slot, t)
-  // Chronological within a day: déjeuner → dîner → collation → souper. The server
-  // returns todayMeals in position order (stable within a slot), so a stable sort
-  // by SLOT_RANK gives time order across slots while keeping intra-slot position.
-  const bySlotTime = (a: { slot: string }, b: { slot: string }) =>
-    SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot]
   // Per-slot meal colour + visibility (Réglages ▸ Repas). A meal's slot tints its
   // card here and everywhere it shows; a hidden slot drops off the glance.
   const mealPrefs = useMealPrefs()
@@ -269,18 +265,6 @@ export function Board() {
   // leftover has nothing to cook, so the CTA hides for it).
   const cook = useNextMeal()
   const nav = useNavigate()
-  // Today's meals beside the supper hero. Supper is already the "Ce soir" hero, so
-  // the day list shows the OTHER slots — together they cover the whole day's table.
-  // Hidden slots are filtered out so "I only care about souper" empties the row.
-  const otherMeals = (data?.todayMeals ?? []).filter((m) => m.slot !== 'supper' && mealPrefs.isVisible(m.slot)).sort(bySlotTime)
-  // Tomorrow's meals shown in Demain. Supper has its own line there, so list the
-  // rest — together they cover tomorrow's table for prep-ahead planning.
-  const otherTomorrowMeals = (data?.tomorrowMeals ?? []).filter((m) => m.slot !== 'supper' && mealPrefs.isVisible(m.slot)).sort(bySlotTime)
-  // Tonight's supper hero(es) — hidden entirely if souper is toggled off.
-  const tonightMeals = mealPrefs.isVisible('supper') ? data?.tonightMeals ?? [] : []
-  // Tomorrow's supper line, gated the same way.
-  const showTomorrowSupper = !!data?.tomorrowMeal && mealPrefs.isVisible('supper')
-
   // "La galerie" door, shown in the Grille view. It rides as a small trailing
   // chip inside the drawings strip (beside the photos on tablet, under them on
   // mobile) so it never claims its own row; when there are no drawings yet it
@@ -289,96 +273,54 @@ export function Board() {
     <Link to="/drawings" className="chip"><InlineIcon name="paint-brush-bold" /> {t.memo.galleryLink}</Link>
   )
 
-  // Personal focus: when a face is picked (mobile chip / kiosk switcher), the
-  // board narrows to THAT person's things plus shared "Maisonnée" items (no
-  // owner) — others' personal events/chores drop away. Meals are the family's
-  // table (always Maisonnée), so they're never filtered. Maisonnée (no pick) =
-  // everyone, the unfiltered board.
-  const focusing = !!profileId
-  const mineEvent = (e: EventRow) => !focusing || e.member_id === profileId || e.member_id === null
-  // A chore is "mine" when it's my turn, unassigned (Maisonnée), OR I'm anywhere
-  // in its rotation team — a shared chore stays visible + doable to every teammate
-  // even on someone else's turn (the `who` line still says whose turn it is).
-  const mineChore = (c: ChoreInstance) =>
-    !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
   // A-2 (bmad/09): les fêtes QC/CA — DERIVED on-device (lib/year, the D-16
   // layer; no rows, no fetch) and merged into the same event arrays every lens
   // reads (parent, toddler, simple, fil). Calm zero-impact announce lines:
   // all-day, nobody's, never editable — the emoji is the picture. All shown by
   // default; per-device opt-out in Réglages ▸ Affichage (Marc's OQ-4 verdict).
   const fetesOn = useHolidaysEnabled()
-  const holidayRow = (h: Holiday, at: number): EventRow => ({
-    id: `fete-${h.id}-${at}`,
-    title: h.label[lang],
-    start_at: at,
-    all_day: 1,
-    member_id: null,
-    holiday: true,
-    ferie: h.kind === 'ferie',
-    emoji: h.emoji,
+
+  // C-12 (bmad/10) — the ONE pure board view-model (lib/boardModel): merges
+  // fêtes, applies the face lens, filters pending-undo rows, gates meal slots
+  // by visibility, and derives nextUp/fil/dayClear/kidAllClear/hasTomorrow on
+  // its own shared clock. Every other input (mealPrefs, the picked face, the
+  // fêtes toggle…) is passed through AS-IS, never re-derived here.
+  const model = useBoardModel({
+    data,
+    lang,
+    profileId,
+    fetesOn,
+    mealPrefs,
+    pendingDone,
+    pendingLeftover,
+    hasWeather: !!weather,
+    hasTomorrowWx: !!tomorrowWx,
+    openTodosCount: openTodos.length,
+    tomorrowTodoCount,
   })
-  const dayNow = todayLocalDay()
-  const todayEvents = [
-    ...(fetesOn ? holidaysOnDay(dayNow).map((h) => holidayRow(h, dayNow)) : []),
-    ...(data?.today ?? []).filter(mineEvent),
-  ]
-  const todayChores = (data?.choresToday ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
-  const todayTodos = (data?.todos ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
-  const tomorrowEvents = [
-    ...(fetesOn ? holidaysOnDay(addLocalDays(dayNow, 1)).map((h) => holidayRow(h, addLocalDays(dayNow, 1))) : []),
-    ...(data?.tomorrow ?? []).filter(mineEvent),
-  ]
-  // « À venir »: the next stretch of fêtes (10 days past demain) rides sorted
-  // among the real events — same window feel as the server's upcoming bucket.
-  const upcomingEvents = [
-    ...(fetesOn ? holidaysInRange(addLocalDays(dayNow, 2), 10).map((x) => holidayRow(x.holiday, x.at)) : []),
-    ...(data?.upcoming ?? []).filter(mineEvent),
-  ].sort((a, b) => a.start_at - b.start_at)
-  const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
-  // "Projets & Entretien" (home_projects) dated occurrences — family-wide (no
-  // rotation), so not personal-focus filtered. Minus any just checked (held undo).
-  const todayHome = (data?.homeToday ?? []).filter((c) => !pendingDone.has(c.id))
-  const upcomingHome = data?.homeUpcoming ?? []
-  // Undated leftovers to finish — a calm "eat these first" nudge. Family-wide (not
-  // personal-focus filtered), minus any just marked Fini (held behind the undo).
-  const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
-  // « Prochainement » — the soonest still-to-come timed event today (after the face
-  // lens), surfaced as a calm headline at the top of the Grille day. This is the one
-  // genuinely useful thing the retired « Maintenant » view gave: a glanceable "next".
-  // A 30-min grace keeps an event that's happening right now in the headline.
-  const nowSecBoard = Math.floor(Date.now() / 1000)
-  const nextUpToday = [...todayEvents]
-    .filter((e) => !e.all_day && e.start_at >= nowSecBoard - 1800)
-    .sort((a, b) => a.start_at - b.start_at)[0]
-  // « Le fil du jour » — the day read as a SHAPE (a soft time axis + a « maintenant »
-  // marker): timed events + L'auto rides + work/job windows on the axis; chores + all-day
-  // events pool under « À tout moment ». A separate, optional card (lib/boardCards 'fil');
-  // it answers *when*, so when it's on screen the « Aujourd'hui » card drops the same
-  // events + chores (and the lone-next-up « Prochainement » headline) to avoid rendering
-  // them twice. Shown with ≥2 things to place on the axis (timed events + work windows).
-  const filTimed = todayEvents.filter((e) => !e.all_day)
-  const filUntimed = todayEvents.filter((e) => !!e.all_day)
-  // L'auto work/job windows landing today (data.work — derived schedule spans, real
-  // start/end times); filtered by the same face lens as events.
-  const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null
-  const filWork = (data?.work ?? []).filter(mineWork)
-  const filShown = isCardVisible(boardCards, 'fil') && filTimed.length + filWork.length >= 2
-  // A genuinely clear day for the PARENT board: nothing to attend or do today (events,
-  // chores, home work, meals, leftovers, to-dos, work windows all empty). Weather/notes/
-  // tomorrow don't count — this is "today's agenda is empty". Surfaces one calm "all-clear"
-  // hero so a light day reads as intentional, not broken (the toddler lens already has its
-  // own `kidAllClear`). NFR-CALM.
-  const dayClear =
-    !!data &&
-    todayEvents.length === 0 &&
-    todayChores.length === 0 &&
-    todayHome.length === 0 &&
-    otherMeals.length === 0 &&
-    tonightMeals.length === 0 &&
-    leftovers.length === 0 &&
-    todayTodos.length === 0 &&
-    openTodos.length === 0 &&
-    filWork.length === 0
+  // Aliases onto the model's output, kept under their old names so the JSX
+  // below reads them the same way it always did — the derivations themselves
+  // now live in ONE place (lib/boardModel), not re-implemented per lens.
+  const todayEvents = model.today.events
+  const todayChores = model.today.chores
+  const todayTodos = model.today.todos
+  const todayHome = model.today.home
+  const tomorrowEvents = model.tomorrow.events
+  const upcomingEvents = model.upcoming.events
+  const upcomingChores = model.upcoming.chores
+  const upcomingHome = model.upcoming.home
+  const leftovers = model.leftovers
+  const otherMeals = model.meals.otherToday
+  const otherTomorrowMeals = model.meals.otherTomorrow
+  const tonightMeals = model.meals.tonightAll
+  const showTomorrowSupper = !!model.meals.tomorrowSupper
+  const nextUpToday = model.nextUp
+  const filTimed = model.fil.timed
+  const filUntimed = model.fil.untimed
+  const filWork = model.fil.work
+  const filShown = isCardVisible(boardCards, 'fil') && model.fil.eligible
+  const dayClear = model.dayClear
+  const hasTomorrow = model.hasTomorrow
   // Time-aware emphasis (lib/momentFocus): the board gently leans toward what matters now —
   // the day ahead in the morning, the supper hero as dinner nears, « Demain » prep in the
   // evening. Folded under the ambient toggle (Réglages ▸ Affichage): ambient on → the board
@@ -386,16 +328,6 @@ export function Board() {
   const focus = isDaypartAuto() ? momentFocus(Date.now()) : null
   const filNow = focus === 'day' && filShown
   const todayNow = (focus === 'day' && !filShown) || focus === 'evening'
-  // « Demain » is bunched into the Aujourd'hui card — show it ONLY when tomorrow holds
-  // something (a forecast, a prep note, a meal, an event, or a pinned to-do), so an
-  // empty tomorrow never renders a bare "Rien de prévu" sub-group.
-  const hasTomorrow =
-    !!tomorrowWx ||
-    !!data?.tomorrowNote ||
-    showTomorrowSupper ||
-    otherTomorrowMeals.length > 0 ||
-    tomorrowEvents.length > 0 ||
-    tomorrowTodoCount > 0
 
   if (unauth) return <PairPrompt />
 
@@ -484,22 +416,10 @@ export function Board() {
     const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
     // Nothing planned anywhere today/tomorrow → the kid sections all collapse and
     // the board reads as a blank gap. Show one calm, tap-to-hear "all clear" line
-    // instead, so an empty day still feels intentional to a pre-reader.
-    const kidAllClear =
-      !!data &&
-      !(mealPrefs.isVisible('supper') && (data.tonight || data.tomorrowMeal)) &&
-      !weather &&
-      (data.notes?.length ?? 0) === 0 &&
-      !data.dayNote &&
-      otherMeals.length === 0 &&
-      leftovers.length === 0 &&
-      todayEvents.length === 0 &&
-      todayChores.length === 0 &&
-      todayTodos.length === 0 &&
-      openTodos.length === 0 &&
-      !data.tomorrowNote &&
-      tomorrowEvents.length === 0 &&
-      (data.tomorrowMeals?.length ?? 0) === 0
+    // instead, so an empty day still feels intentional to a pre-reader. Model-owned
+    // (lib/boardModel) — a DIFFERENT, wider check than the parent's dayClear (decided,
+    // bmad/10: weather/notes/tomorrow count here; see boardModel.ts).
+    const kidAllClear = model.kidAllClear
     return (
       <main className="kid__main today-kid">
         <BoardCanvas weatherBucket={weather?.bucket} />
@@ -639,9 +559,6 @@ export function Board() {
   // recipeFor lets a tapped meal show its recipe photo + ingredient glance.
   const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor, tagColors }
   const tomorrowDay = addLocalDays(todayDay, 1)
-  // Whether a meal slot's time has passed → the shared rule (lib/itemLife), so a meal
-  // crosses out on the SAME clock as a rendez-vous (souper is the headline → never past).
-  const isSlotPast = (slot: string) => mealSlotPast(slot, nowMs)
   const eventWhen = (e: EventRow) =>
     e.holiday
       ? e.ferie
@@ -1164,7 +1081,7 @@ export function Board() {
                   who={cookLine(m)}
                   color={mealPrefs.color(m.slot)}
                   mine={!!profileId && m.cook_member_id === profileId}
-                  past={isSlotPast(m.slot)}
+                  past={m.past}
                   onOpen={() =>
                     detail.open(buildMeal(m, detailCtx, {
                       color: mealPrefs.color(m.slot),
@@ -1183,8 +1100,8 @@ export function Board() {
               // are untimed → they never strike, so they always stay in the live list.
               const shownEvents = !filShown ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
               const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
-              const liveMeals = otherMeals.filter((m) => !isSlotPast(m.slot))
-              const pastMeals = otherMeals.filter((m) => isSlotPast(m.slot))
+              const liveMeals = otherMeals.filter((m) => !m.past)
+              const pastMeals = otherMeals.filter((m) => m.past)
               const liveEvents = shownEvents.filter((e) => !evtPast(e))
               const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
               nodes.today = (
