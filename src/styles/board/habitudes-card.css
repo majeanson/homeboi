@@ -38,17 +38,26 @@
   line-height: 1;
 }
 
+/* The sub is nowrap, so under pressure the title takes the whole squeeze — it must
+   ellipsize on one line, never break anywhere (« Boire de l'ea/u » letter-wrap). */
 .habitudes-card__title {
+  flex: 1 1 auto;
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .habitudes-card__sub {
+  flex: none;
+  max-width: 55%;
   margin-left: auto;
   padding-left: 0.5rem;
   font-size: 0.8rem;
   color: var(--ink-soft);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Presence only — the same boolean dot the face row uses for « un mot t'attend ». */
