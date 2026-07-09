@@ -42,7 +42,12 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
 // while the mic is open, or WHY nothing landed (denied / unsupported / silence)
 // so the mic is never a silent dead button. Single-shot fields (fill-the-input)
 // don't need it — the text appearing is feedback enough.
-export function VoiceStatus({ voice }: { voice: VoiceInput }) {
+//
+// `hint` overrides the "listening" line (default: the list-dictation copy, "say
+// them with and…") for a caller whose mic isn't collecting a list — e.g.
+// AskSheet's single-shot "I'm listening…" (E-22). The error copy stays shared
+// (denied/unsupported/no-speech reads the same everywhere).
+export function VoiceStatus({ voice, hint }: { voice: VoiceInput; hint?: string }) {
   const t = useT()
   // On iOS the only way back from a denial is Settings, so swap the recovery copy.
   const deniedMsg = isIos() ? t.list.voiceDeniedIos : t.list.voiceDenied
@@ -71,7 +76,7 @@ export function VoiceStatus({ voice }: { voice: VoiceInput }) {
   if (voice.listening) {
     return (
       <p className="list-add__voicemsg" role="status">
-        {t.list.voiceHint}
+        {hint ?? t.list.voiceHint}
       </p>
     )
   }

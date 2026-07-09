@@ -1,9 +1,17 @@
-import type { ReactNode } from 'react'
+import { lazy, Suspense, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
+import { useAi } from '../lib/ai'
+import { isGuest } from '../lib/device'
 import { SectionAvatar } from './SectionAvatar'
 import { Icon, type IconName } from './Icon'
+
+// E-22 — lazy: the mic is a rare tap, not a boot-path need, and HubHead is part
+// of the EAGER bundle (rendered by the eager Board page) — pulling AskSheet's
+// voice/speech/Modal chain into that chunk would tax every boot for a feature
+// most sessions never open (see check-bundle.mjs's eager-chunk budget).
+const AskSheet = lazy(() => import('./AskSheet').then((m) => ({ default: m.AskSheet })))
 
 // The shared header for the four themed hub tabs (Board/Kitchen/Routines/Liste):
 // a big title on the left, the section's identity disc top-right. The disc is
@@ -43,6 +51,13 @@ export function HubHead({
   const t = useT()
   const { audience } = useAudience()
   const nav = useNavigate()
+  const { enabled: aiEnabled } = useAi()
+  const [askOpen, setAskOpen] = useState(false)
+  // E-22: AI off (binding unset or the household switched it off) → the mic
+  // hides and the loupe alone remains — "degrades to the search box". A guest
+  // (read-only babysitter session) and the toddler lens never see it either
+  // (the same `audience === 'parent'` gate as the loupe below).
+  const showAsk = audience === 'parent' && aiEnabled && !isGuest()
   return (
     <div className="app-head">
       <div className="app-head__main">
@@ -52,6 +67,19 @@ export function HubHead({
         {subtitle != null && <span className="app-head__date mono">{subtitle}</span>}
       </div>
       <div className="app-head__actions">
+        {/* E-22 — « Demande à la maison » : hold the mic, ask a question over the
+            household's own data. Beside the loupe, same corner every tab. */}
+        {showAsk && (
+          <button
+            type="button"
+            className="app-head__search app-head__ask"
+            aria-label={t.ask.entry}
+            title={t.ask.entry}
+            onClick={() => setAskOpen(true)}
+          >
+            <Icon name="microphone-bold" size={20} />
+          </button>
+        )}
         {/* #30 — global search, reachable from every hub tab. Parent-only (a toddler
             has nothing to search for). */}
         {audience === 'parent' &&
@@ -73,6 +101,13 @@ export function HubHead({
         {action}
         <SectionAvatar icon={icon} iconColor={iconColor} background={background} card={card} />
       </div>
+      {/* Mounted ONLY while open — closing unmounts AskSheet, which kills a
+          still-listening mic (see AskSheet's own header comment). */}
+      {askOpen && (
+        <Suspense fallback={null}>
+          <AskSheet onClose={() => setAskOpen(false)} />
+        </Suspense>
+      )}
     </div>
   )
 }

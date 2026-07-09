@@ -754,3 +754,35 @@
   font-size: 1.3rem;
   color: var(--ink-soft);
 }
+
+/* ---- E-22 « Demande à la maison » (components/AskSheet) --------------------- */
+.ask-sheet__hint {
+  color: var(--ink-soft);
+  margin: 0 0 0.8rem;
+}
+.ask-sheet__mic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+/* A big tap-to-talk target (E-22) — the same shared VoiceButton, scaled up and
+   filled sage (the Système/IA tint) so it reads as THE action on this sheet,
+   not a small inline field affordance. */
+.ask-sheet__mic .capture__voice {
+  width: 5.5rem;
+  height: 5.5rem;
+  min-height: 5.5rem;
+  border-radius: 50%;
+  background: var(--sage-wash);
+  color: var(--sage-deep);
+  border: 2px solid var(--sage);
+}
+.ask-sheet__mic .capture__voice.is-listening {
+  background: var(--sage);
+  color: var(--on-primary);
+}
+.ask-sheet__replay {
+  margin-left: auto;
+}

@@ -51,6 +51,7 @@ import { personKey } from '../lib/cercle'
 import { SeekGame } from '../components/jouer/SeekGame'
 import { buildSeekDecks } from '../lib/playContent'
 import { ReviewChecklist } from '../components/ReviewChecklist'
+import { AskSheet } from '../components/AskSheet'
 import type { ContactGroup, Member, Person, PersonKind, World } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
@@ -558,6 +559,7 @@ export function DevKit() {
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [listPickOpen, setListPickOpen] = useState(false)
+  const [askSheetOpen, setAskSheetOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
   const [dragPills, setDragPills] = useState(['Rapide', 'Végé', 'Souper', 'Dessert'])
   // CardDeckEditor specimen: a 3-card deck + parallel clip/photo arrays (#17 A/C),
@@ -2177,6 +2179,22 @@ export function DevKit() {
                 Compris
               </button>
             </Modal>
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'AskSheet',
+      file: 'components/AskSheet.tsx',
+      kw: 'ask demande maison voice mic question ia ai speak parler micro E-22',
+      render: () => (
+        <Demo label="« Demande à la maison » (E-22) — mic tap-to-talk over /api/ask (needs the live API + AI binding)">
+          <div>
+            <button className="btn" onClick={() => setAskSheetOpen(true)}>
+              Ouvrir la demande
+            </button>
+            {askSheetOpen && <AskSheet onClose={() => setAskSheetOpen(false)} />}
           </div>
         </Demo>
       ),

@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'ask',
+    text: {
+      fr: 'Nouveau : touche le micro à côté de la loupe pour « Demander à la maison » — une question à voix haute sur tes soupers, rendez-vous, anniversaires, le cercle ou l’entretien.',
+      en: 'New: tap the mic beside the magnifier for “Ask the household” — a spoken question about your suppers, appointments, birthdays, circle or upkeep.',
+    },
+    card: 'ask',
+  },
+  {
     id: 'sortir-le-bac',
     text: {
       fr: 'Nouveau : coche « Annoncer la veille au soir » dans une corvée récurrente — le babillard le rappelle « Ce soir », le soir d’avant.',

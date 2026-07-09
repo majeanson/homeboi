@@ -439,17 +439,20 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
 
 ## E · ✦ Hors-piste
 
-22. ✅ ✦ **« Demande à la maison »** [M] ◐ — _garde (2026-07-08)_ — the
-    house knows when the dentist appointment is, what's planned Thursday,
-    whose birthday is next — but only navigation can answer. One pull-only
-    voice question on the kiosk (hold the mic: « c'est quand le rendez-vous
-    chez le dentiste ? ») → Workers AI answers over the household's own
-    data, speaks it, done. Strictly on-demand (AI is already per-ask),
-    degrades to the search box when AI is unset, never listens ambiently —
-    the mic opens under a finger, period. ◐: an `/api/ask` handler and D-33
-    search already exist as the retrieval spine. _(reuse:
-    VoiceButton/useVoiceInput, capture's transcribe path, search index,
-    TTS.)_
+22. ✅ ✦ **« Demande à la maison »** [M] — _garde (2026-07-08)_ — **SHIPPED
+    2026-07-09** — the house knows when the dentist appointment is, what's
+    planned Thursday, whose birthday is next — but only navigation could
+    answer. One pull-only voice question on the kiosk (hold the mic: « c'est
+    quand le rendez-vous chez le dentiste ? ») → Workers AI answers over the
+    household's own data, speaks it, done. Strictly on-demand (AI is already
+    per-ask), degrades to the search box when AI is unset, never listens
+    ambiently — the mic opens under a finger, period; closing the sheet
+    unmounts it, killing a still-listening mic. Retrieval snapshot broadened
+    past the original `/api/ask` scope to recurring events (`expandRange`),
+    derived birthdays, Le cercle contacts + businesses (a phone number), and
+    carnet next-dues (an upkeep date) — v1 scope decided during 10-plan.
+    _(reuse: VoiceButton/useVoiceInput, capture's transcribe path, search
+    index, TTS, the D-33 `/api/ask` retrieval spine.)_
 23. ⏸ ✦ **L'app grandit avec l'enfant** [M] — _plus tard (2026-07-08 — not
     selected this wave)_ — the toddler lens is pitched at a pre-reader, and
     children stop being pre-readers. Derive a reading stage from the

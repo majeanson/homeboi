@@ -59,6 +59,19 @@ export const FR = {
       none: 'Assistant',
     },
   },
+  // E-22 — « Demande à la maison » : the board-mic voice Q&A over the
+  // household's own data (AskSheet). Strictly on-demand — the mic opens under
+  // a finger, period; never listens ambiently.
+  ask: {
+    title: 'Demande à la maison',
+    hint: 'Tiens le micro et pose ta question — « c’est quand le rendez-vous chez le dentiste ? », « c’est quoi le numéro du vétérinaire ? »',
+    talk: 'Poser une question',
+    listening: 'Je t’écoute…',
+    placeholder: 'Ou écris ta question…',
+    ask: 'Demander',
+    replay: 'Réentendre',
+    entry: 'Demander à la maison',
+  },
   // #17 — departure mode (a leaving-the-house screen).
   departure: {
     title: 'Avant de partir',

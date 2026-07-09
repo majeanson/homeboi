@@ -99,6 +99,12 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* E-22 — the « Demande à la maison » mic, beside the loupe: same disc, sage
+   (the Système/IA tint) instead of marigold, so the two don't read as the same
+   action at a glance. */
+.app-head__ask {
+  background: var(--sage);
+}
 /* The contextual help "?" beside a section title (HelpDot). Quiet by default,
    a soft ring on hover/focus — discoverable without shouting (calm). Hidden in
    the toddler lens and in expert mode at the source (component returns null). */

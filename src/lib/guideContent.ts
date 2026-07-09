@@ -120,6 +120,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
       'capture',
       'type-or-choose',
       'search',
+      'ask',
       'mots',
       'activities',
       'home-projects',
@@ -1402,8 +1403,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Où l’IA aide', en: 'Where AI helps' },
         detail: {
-          fr: 'Cinq endroits, pas plus : la [[card:capture|capture]] (le ＋ devine si ta note est un événement, une tâche, un article…), l’import d’une [[card:recipes|recette]] (depuis une photo ou un collé-copié), le bilan de la semaine, les suggestions de souper, et « Demander à l’IA » dans la recherche. Partout ailleurs, aucune IA.',
-          en: 'Five spots, no more: [[card:capture|capture]] (the ＋ guesses whether your note is an event, a task, an item…), [[card:recipes|recipe]] import (from a photo or a paste), the weekly recap, supper suggestions, and “Ask the AI” in search. Everywhere else, no AI.',
+          fr: 'Six endroits, pas plus : la [[card:capture|capture]] (le ＋ devine si ta note est un événement, une tâche, un article…), l’import d’une [[card:recipes|recette]] (depuis une photo ou un collé-copié), le bilan de la semaine, les suggestions de souper, « Demander à l’IA » dans la recherche, et [[card:ask|« Demande à la maison »]] (le micro à voix haute). Partout ailleurs, aucune IA.',
+          en: 'Six spots, no more: [[card:capture|capture]] (the ＋ guesses whether your note is an event, a task, an item…), [[card:recipes|recipe]] import (from a photo or a paste), the weekly recap, supper suggestions, “Ask the AI” in search, and [[card:ask|“Ask the household”]] (the spoken mic). Everywhere else, no AI.',
         },
         why: {
           fr: 'Savoir exactement quand l’IA entre en jeu — et quand elle n’y est pas du tout.',
@@ -4156,6 +4157,62 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'C’est le piège du foyer à une auto : L’auto le voit pour toi au lieu de te laisser le découvrir à 17 h.',
           en: 'That’s the one-car household trap: The car spots it for you instead of letting you find out at 5 p.m.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'ask',
+    icon: 'microphone-bold',
+    group: 'concepts',
+    route: '/board',
+    title: { fr: 'Demande à la maison', en: 'Ask the household' },
+    what: {
+      fr: 'Une question à voix haute sur ce que la maison sait déjà — soupers, rendez-vous, anniversaires, un numéro de téléphone, un entretien à prévoir — répondue à voix haute, sur demande seulement.',
+      en: 'A spoken question about what the house already knows — suppers, appointments, birthdays, a phone number, upkeep coming due — answered out loud, on demand only.',
+    },
+    points: [
+      {
+        label: { fr: 'Tiens le micro et parle', en: 'Hold the mic and talk' },
+        detail: {
+          fr: 'Touche le micro à côté de la loupe (babillard, cuisine, liste, routines) et pose ta question : « c’est quand le rendez-vous chez le dentiste ? », « c’est quoi le numéro du vétérinaire ? », « quand est le prochain entretien du chauffe-eau ? ». Pas de micro ou tu préfères écrire ? Le champ texte fait exactement la même chose.',
+          en: 'Tap the mic beside the magnifier (board, kitchen, list, routines) and ask: “when’s the dentist appointment?”, “what’s the vet’s phone number?”, “when’s the water heater’s next service?”. No mic, or you’d rather type? The text field does exactly the same thing.',
+        },
+        why: {
+          fr: 'La maison connaît déjà la réponse — plus vite que d’ouvrir trois sections pour la trouver.',
+          en: 'The house already knows the answer — faster than opening three sections to find it.',
+        },
+      },
+      {
+        label: { fr: 'Répond à voix haute', en: 'Answers out loud' },
+        detail: {
+          fr: 'La réponse se lit à voix haute automatiquement, une seule fois ; touche [[icon:speaker-high-bold]] pour la réentendre.',
+          en: 'The answer reads itself out loud automatically, once; tap [[icon:speaker-high-bold]] to hear it again.',
+        },
+      },
+      {
+        label: { fr: 'Ce qu’elle regarde', en: 'What it looks at' },
+        detail: {
+          fr: 'Un instantané daté et borné : les soupers planifiés, les rendez-vous (incluant les récurrents), les anniversaires, la liste, les corvées, les notes du frigo, le cercle (personnes et commerces) et les prochains entretiens des carnets. Une seule question, une seule fois — jamais une écoute continue.',
+          en: 'A dated, bounded snapshot: planned suppers, appointments (including recurring ones), birthdays, the list, chores, fridge notes, the circle (people and businesses) and carnet upkeep coming due. One question, once — never a continuous listen.',
+        },
+      },
+      {
+        label: { fr: 'Strictement sur demande', en: 'Strictly on demand' },
+        detail: {
+          fr: 'Le micro ne s’ouvre que sous ton doigt — fermer la fenêtre l’éteint immédiatement, même en pleine écoute. Rien n’écoute en arrière-plan.',
+          en: 'The mic only opens under your finger — closing the sheet kills it immediately, even mid-listen. Nothing listens in the background.',
+        },
+        why: {
+          fr: 'Une maison calme, jamais un assistant qui traîne les oreilles ouvertes.',
+          en: 'A calm household, never an assistant with its ears left open.',
+        },
+      },
+      {
+        label: { fr: 'Si l’IA est coupée', en: 'If AI is off' },
+        detail: {
+          fr: 'Sans [[card:ai|IA]], le micro disparaît — seule la loupe reste, avec sa recherche habituelle (jamais l’IA).',
+          en: 'Without [[card:ai|AI]], the mic hides — only the magnifier remains, with its regular (never-AI) search.',
         },
       },
     ],

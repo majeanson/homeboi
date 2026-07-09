@@ -54,6 +54,19 @@ export const EN: typeof FR = {
       none: 'Assistant',
     },
   },
+  // E-22 — "Ask the household": the board-mic voice Q&A over the household's
+  // own data (AskSheet). Strictly on-demand — the mic opens under a finger,
+  // period; it never listens ambiently.
+  ask: {
+    title: 'Ask the household',
+    hint: 'Hold the mic and ask — “when’s the dentist appointment?”, “what’s the vet’s phone number?”',
+    talk: 'Ask a question',
+    listening: 'I’m listening…',
+    placeholder: 'Or type your question…',
+    ask: 'Ask',
+    replay: 'Play again',
+    entry: 'Ask the household',
+  },
   // #17 — departure mode (a leaving-the-house screen).
   departure: {
     title: 'Before you go',

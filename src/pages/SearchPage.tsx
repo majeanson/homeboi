@@ -33,6 +33,7 @@ import { EmptyState } from '../components/EmptyState'
 import { Avatar } from '../components/Avatar'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
+import { AskAnswerCard, type AnswerKind } from '../lib/askAnswer'
 
 // #30 — global search: ONE box across recipes, Le cercle people, events, and the
 // shared list. A full-screen scene (deep-linkable: /search?q=…) that reads the
@@ -57,46 +58,6 @@ const CAP = 8
 // A Guide / help hit: the card's own icon + title, a subtitle (the card's
 // one-liner, or the matched sub-point's label), and a deep-link into the Guide.
 type GuideHit = { id: string; icon: IconName; title: string; sub: string; to: string }
-
-// The AI answer's domain — mirrors AnswerKind in functions/_lib/ai.ts.
-type AnswerKind = 'meal' | 'event' | 'list' | 'chore' | 'recipe' | 'cercle' | 'note' | 'none'
-
-// The answer card's look per domain — reuses lib/cats inks/washes so an AI answer
-// reads in the SAME colour language as the board tiles it's about.
-const ASK_LOOK: Record<AnswerKind, { icon: IconName; color: string; wash: string }> = {
-  meal: { icon: CATS.meal.icon, color: CATS.meal.deep, wash: CATS.meal.wash },
-  event: { icon: CATS.event.icon, color: CATS.event.deep, wash: CATS.event.wash },
-  list: { icon: 'shopping-bag-bold', color: CATS.list.deep, wash: CATS.list.wash },
-  chore: { icon: CATS.chore.icon, color: CATS.chore.deep, wash: CATS.chore.wash },
-  recipe: { icon: 'book-open-bold', color: CATS.meal.deep, wash: CATS.meal.wash },
-  cercle: { icon: CATS.cercle.icon, color: CATS.cercle.deep, wash: CATS.cercle.wash },
-  note: { icon: 'push-pin-bold', color: CATS.list.deep, wash: CATS.list.wash },
-  none: { icon: 'sparkle-bold', color: CATS.list.deep, wash: CATS.list.wash },
-}
-
-// "Not what you wanted?" — where each kind of answer lives, drawn from our existing
-// hub sections + the Guide (Réglages ▸ Guide). Always ends with the Guide.
-function relatedFor(kind: AnswerKind, t: ReturnType<typeof useT>): { to: string; label: string; icon: IconName }[] {
-  const S = {
-    board: { to: '/board', label: t.nav.board, icon: 'calendar-blank-bold' as IconName },
-    kitchen: { to: '/kitchen', label: t.nav.kitchen, icon: 'fork-knife-bold' as IconName },
-    liste: { to: '/liste', label: t.nav.list, icon: 'shopping-bag-bold' as IconName },
-    cercle: { to: '/cercle', label: t.nav.cercle, icon: 'users-three-bold' as IconName },
-    settings: { to: '/settings', label: t.nav.operator, icon: 'gear-six-bold' as IconName },
-  }
-  const guide = { to: '/settings?tab=decouvrir', label: t.search.guide, icon: 'book-open-bold' as IconName }
-  const map: Record<AnswerKind, { to: string; label: string; icon: IconName }[]> = {
-    meal: [S.kitchen, S.liste],
-    event: [S.board],
-    list: [S.liste],
-    chore: [S.settings, S.board],
-    recipe: [S.kitchen],
-    cercle: [S.cercle],
-    note: [S.board],
-    none: [S.board, S.kitchen, S.liste],
-  }
-  return [...map[kind], guide]
-}
 
 export function SearchPage() {
   const t = useT()
@@ -356,46 +317,15 @@ export function SearchPage() {
           </button>
         )}
 
+        {/* #12 — the shared answer card (src/lib/askAnswer.tsx): AskSheet (E-22,
+            the board mic) renders the SAME card, so the two "ask" entry points
+            never drift into two answer looks. */}
         {(asking || answer || askErr || aiOff) && (
-          <div className="surface search__answer">
-            {asking ? (
-              <p className="search__asking mono">
-                <InlineIcon name="sparkle-bold" /> {t.search.asking}
-              </p>
-            ) : answer ? (
-              <>
-                <div className="search__answer-head">
-                  <span
-                    className="search__answer-icon"
-                    style={{ background: ASK_LOOK[answer.kind].wash, color: ASK_LOOK[answer.kind].color }}
-                    aria-hidden="true"
-                  >
-                    <Icon name={ASK_LOOK[answer.kind].icon} size={20} />
-                  </span>
-                  <span className="search__answer-kind mono">{t.search.kinds[answer.kind]}</span>
-                </div>
-                <p className="search__answer-text">{answer.text}</p>
-              </>
-            ) : aiOff ? (
-              <p className="search__asking mono">{t.search.askUnavailable}</p>
-            ) : (
-              <p className="search__asking mono">{t.search.askError}</p>
-            )}
-
-            {/* "Not what you wanted?" — related sections + the Guide. */}
-            {(answer || askErr) && (
-              <div className="search__related">
-                <span className="search__related-head mono">{t.search.notWhat}</span>
-                <div className="search__related-row">
-                  {relatedFor(answer?.kind ?? 'none', t).map((d) => (
-                    <Link key={d.to} to={d.to} className="search__related-chip">
-                      <InlineIcon name={d.icon} /> {d.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <AskAnswerCard
+            t={t}
+            status={asking ? 'asking' : answer ? 'answer' : aiOff ? 'off' : 'error'}
+            answer={answer ? { text: answer.text, kind: answer.kind } : null}
+          />
         )}
 
         {!needle ? (

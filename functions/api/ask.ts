@@ -1,45 +1,35 @@
 import { badRequest, ok, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { answerQuestion, resolveLang, type AiReport, type Lang } from '../_lib/ai'
+import { answerQuestion, resolveLang, type AiReport } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
 import { localDayStart } from '../_lib/ids'
+import { fetchBirthdayPeople } from '../_lib/birthdays'
+import { fetchCarnetLifeItems } from '../_lib/carnetLife'
+import {
+  buildAskPromptLines,
+  expandAskEvents,
+  birthdaysForPrompt,
+  carnetDuesForPrompt,
+  type AskEventRow,
+  type AskRecurEventRow,
+  type AskMealRow,
+  type AskContactRow,
+  type AskBusinessRow,
+} from '../_lib/askContext'
 
-// #12 — natural-language Q&A over the household's OWN data. The search box can ask
-// "qu'est-ce qu'on mange vendredi ?" / "what did I add this week?"; we gather a
-// compact, DATED snapshot (suppers, events, the list, chores, notes) and let
-// answerQuestion phrase a calm reply tagged with the domain it reasoned over (the
-// `kind`, which the UI turns into a category icon). One inference per ask — never
-// on a render loop. Read-only: this never writes (capture stays the write spine).
+// #12 / E-22 — natural-language Q&A over the household's OWN data. The search box
+// (and the board mic « Demande à la maison ») can ask "qu'est-ce qu'on mange
+// vendredi ?" / "quel est le numéro du vétérinaire ?"; we gather a compact, DATED
+// snapshot (suppers, events incl. recurring, birthdays, the list, chores, notes,
+// Le cercle contacts + businesses, carnet next-dues) and let answerQuestion phrase
+// a calm reply tagged with the domain it reasoned over (the `kind`, which the UI
+// turns into a category icon). One inference per ask — never on a render loop.
+// Read-only: this never writes (capture stays the write spine).
 //
-// Dates are formatted in the household timezone so the model can resolve "Friday",
-// "tomorrow", etc. — it mirrors the client's HOUSEHOLD_TZ (src/lib/localDay.ts).
-const HOUSEHOLD_TZ = 'America/Toronto'
+// The DB reads + row shapes live here; the pure formatting/expansion/caps live in
+// _lib/askContext.ts (independently unit-tested — formatting, recur expansion,
+// birthdays, contacts/carnets, caps, FR/EN).
 const DAY = 86400
-
-// Meal slot → a short localized label for the AI context.
-const SLOT: Record<Lang, Record<string, string>> = {
-  fr: { breakfast: 'déjeuner', lunch: 'dîner', supper: 'souper', snack: 'collation', dessert: 'dessert' },
-  en: { breakfast: 'breakfast', lunch: 'lunch', supper: 'supper', snack: 'snack', dessert: 'dessert' },
-}
-
-function fmtDay(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', {
-    timeZone: HOUSEHOLD_TZ,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date(unixSec * 1000))
-}
-function fmtDateTime(unixSec: number, allDay: number, lang: Lang): string {
-  const day = fmtDay(unixSec, lang)
-  if (allDay) return day
-  const time = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', {
-    timeZone: HOUSEHOLD_TZ,
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(unixSec * 1000))
-  return `${day} ${time}`
-}
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ question?: string }>(ctx.request)
@@ -47,27 +37,37 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!question) return badRequest('question required')
 
   // AI off (binding unset OR household switched it off) → tell the client up front
-  // so the search box hides "Ask", skipping the snapshot gathering below entirely.
+  // so the caller (search box / AskSheet) hides "Ask", skipping the snapshot
+  // gathering below entirely.
   if (!(await aiUsable(ctx.env, actor))) return ok({ answer: null, kind: 'none', degraded: true })
 
   const lang = resolveLang(ctx.env, ctx.request)
   const hh = actor.householdId
   const today = localDayStart(new Date(Date.now()))
+  // Events window: a bounded horizon (last week → next month) — wide enough for
+  // "what's this week" without unbounding the prompt. Birthdays get their OWN,
+  // wider window below (asked well ahead of the date, unlike an appointment).
+  const rangeStart = today - 7 * DAY
+  const rangeEnd = today + 30 * DAY
+  const birthdayRangeEnd = today + 365 * DAY
 
-  // A bounded window per category keeps the prompt small + the inference cheap.
-  // Recurring events are skipped (recur_json IS NULL) — they'd need expansion; a
-  // known v1 gap (the answer can still point you to the calendar).
-  const [events, meals, list, chores, notes] = await Promise.all([
-    ctx.env.DB.prepare(
-      'SELECT title, start_at, all_day FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 40',
-    )
-      .bind(hh, today - 7 * DAY, today + 30 * DAY)
-      .all<{ title: string; start_at: number; all_day: number }>(),
+  const [meals, oneOffEvents, recurEvents, list, chores, notes, birthdayPeople, contacts, businesses, carnetItems] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT title, date, slot, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date LIMIT 60',
     )
       .bind(hh, today - 2 * DAY, today + 14 * DAY)
-      .all<{ title: string; date: number; slot: string; is_leftover: number }>(),
+      .all<AskMealRow>(),
+    ctx.env.DB.prepare(
+      'SELECT title, start_at, all_day FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 60',
+    )
+      .bind(hh, rangeStart, rangeEnd)
+      .all<AskEventRow>(),
+    // Recurring series: one row per series, expanded in _lib/askContext (mirrors
+    // board.ts/year.ts — the ONLY DB-side change vs a one-off query is dropping the
+    // date filter, since a series' anchor can be arbitrarily old).
+    ctx.env.DB.prepare('SELECT title, start_at, all_day, recur_json FROM events WHERE household_id = ? AND recur_json IS NOT NULL')
+      .bind(hh)
+      .all<AskRecurEventRow>(),
     ctx.env.DB.prepare('SELECT text FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at LIMIT 60')
       .bind(hh)
       .all<{ text: string }>(),
@@ -79,30 +79,38 @@ export const onRequestPost = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ text: string }>(),
+    fetchBirthdayPeople(ctx.env.DB, hh),
+    // Le cercle contacts (v1 broadening, E-22): name + how to reach them.
+    ctx.env.DB.prepare(
+      'SELECT first_name, last_name, nickname, phone, email FROM contacts WHERE household_id = ? ORDER BY first_name LIMIT 30',
+    )
+      .bind(hh)
+      .all<AskContactRow>(),
+    // Services & vendors (vet, plumber…) — a business is NOT a cercle person, but
+    // is exactly what « le numéro du vétérinaire » needs.
+    ctx.env.DB.prepare(
+      'SELECT name, category, phone FROM businesses WHERE household_id = ? AND deleted_at IS NULL ORDER BY name LIMIT 30',
+    )
+      .bind(hh)
+      .all<AskBusinessRow>(),
+    fetchCarnetLifeItems(ctx.env.DB, hh),
   ])
 
-  const slotMap = SLOT[lang]
-  const lines: string[] = [(lang === 'fr' ? "Aujourd'hui : " : 'Today: ') + fmtDay(today, lang) + '.']
-  if (meals.results.length) {
-    lines.push('', lang === 'fr' ? 'Repas planifiés :' : 'Planned meals:')
-    for (const m of meals.results) {
-      const tag = m.is_leftover ? (lang === 'fr' ? ' [restant]' : ' [leftover]') : ''
-      lines.push(`- ${fmtDay(m.date, lang)} (${slotMap[m.slot] ?? m.slot}) : ${m.title}${tag}`)
-    }
-  }
-  if (events.results.length) {
-    lines.push('', lang === 'fr' ? 'Événements :' : 'Events:')
-    for (const e of events.results) lines.push(`- ${fmtDateTime(e.start_at, e.all_day, lang)} : ${e.title}`)
-  }
-  if (list.results.length) {
-    lines.push('', (lang === 'fr' ? "Liste d'épicerie : " : 'Grocery list: ') + list.results.map((r) => r.text).join(', '))
-  }
-  if (chores.results.length) {
-    lines.push('', (lang === 'fr' ? 'Corvées : ' : 'Chores: ') + chores.results.map((r) => r.title).join(', '))
-  }
-  if (notes.results.length) {
-    lines.push('', (lang === 'fr' ? 'Notes : ' : 'Notes: ') + notes.results.map((r) => r.text).join(' · '))
-  }
+  const lines = buildAskPromptLines(
+    {
+      today,
+      meals: meals.results,
+      events: expandAskEvents(oneOffEvents.results, recurEvents.results, rangeStart, rangeEnd),
+      birthdays: birthdaysForPrompt(birthdayPeople, rangeStart, birthdayRangeEnd),
+      list: list.results,
+      chores: chores.results,
+      notes: notes.results,
+      contacts: contacts.results,
+      businesses: businesses.results,
+      carnetDues: carnetDuesForPrompt(carnetItems, today),
+    },
+    lang,
+  )
 
   const report: AiReport = { error: null }
   const result = await answerQuestion(ctx.env, question, lines.join('\n'), lang, report)
