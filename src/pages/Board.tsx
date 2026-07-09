@@ -1003,7 +1003,15 @@ export function Board() {
                 // the warm marigold "today" family with « Aujourd'hui » below rather than
                 // asserting its own sky accent. Warm = today, cool sky = later (Demain / À
                 // venir), earthy = the task lists.
-                <Section label={t.board.fil} icon="clock-bold" tint="var(--marigold)" help={help} helpKey="fil" now={filNow}>
+                <Section
+                  label={t.board.fil}
+                  icon="clock-bold"
+                  tint="var(--marigold)"
+                  help={help}
+                  helpKey="fil"
+                  now={filNow}
+                  compactHint={String(filTimed.length + filWork.length + todayChores.length + filUntimed.length)}
+                >
                   <Fil
                     timed={[
                       ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
@@ -1056,8 +1064,19 @@ export function Board() {
               const pastMeals = otherMeals.filter((m) => m.past)
               const liveEvents = shownEvents.filter((e) => !evtPast(e))
               const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
+              // A quiet count for the compact lens — everything the card is about to
+              // list, already at hand from the arrays just above.
+              const todayCount = liveMeals.length + liveEvents.length + (filShown ? 0 : todayChores.length) + todayHome.length
               nodes.today = (
-                <Section label={t.board.today} icon="sun-bold" tint="var(--marigold)" help={help} helpKey="today" now={todayNow}>
+                <Section
+                  label={t.board.today}
+                  icon="sun-bold"
+                  tint="var(--marigold)"
+                  help={help}
+                  helpKey="today"
+                  now={todayNow}
+                  compactHint={todayCount > 0 ? String(todayCount) : undefined}
+                >
             {/* « Prochainement » — the next timed thing today as a calm tappable
                 headline above the full day list (the glance the « Maintenant » view
                 used to give). Renders nothing once today's timed events are behind us.
@@ -1146,7 +1165,20 @@ export function Board() {
               // with « À venir »), set apart from the warm marigold "today" family above.
               // Self-hides entirely when tomorrow holds nothing (the hasTomorrow gate).
               nodes.tomorrow = hasTomorrow ? (
-                <Section label={t.board.tomorrow} icon="sun-horizon-bold" tint="var(--sky)">
+                <Section
+                  label={t.board.tomorrow}
+                  icon="sun-horizon-bold"
+                  tint="var(--sky)"
+                  // A name when there's one obvious headline (tomorrow's supper, like
+                  // "Spaghetti"); otherwise a quiet count of what's coming.
+                  compactHint={
+                    showTomorrowSupper && data.tomorrowMeal
+                      ? data.tomorrowMeal.title
+                      : otherTomorrowMeals.length + tomorrowEvents.length > 0
+                        ? String(otherTomorrowMeals.length + tomorrowEvents.length)
+                        : undefined
+                  }
+                >
                   {/* D-17: the school/congé qualifier — silent almost every day BY
                       DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,
                       see lib/year.schoolDayKind), so it never becomes wallpaper. */}
@@ -1227,7 +1259,14 @@ export function Board() {
               // « À finir » — leftovers to eat first (loose one-off tasks moved into the
               // unified « À faire » card below). Hidden when there are no leftovers.
               nodes.toFinish = leftovers.length > 0 ? (
-                <Section label={t.board.toFinish} icon="arrow-counter-clockwise-bold" tint="var(--sage)" help={help} helpKey="toFinish">
+                <Section
+                  label={t.board.toFinish}
+                  icon="arrow-counter-clockwise-bold"
+                  tint="var(--sage)"
+                  help={help}
+                  helpKey="toFinish"
+                  compactHint={String(leftovers.length)}
+                >
                   {leftovers.map((l) => (
                     <Act
                       key={l.id}
@@ -1255,14 +1294,28 @@ export function Board() {
               // contradicted by an empty card that can only ever offer an add affordance —
               // a card that can't "stay empty". The ＋ FAB remains the add path on such days.
               nodes.todos = dayClear ? null : (
-                <Section label={t.board.todos} icon="check-bold" tint="var(--terracotta)" help={help} helpKey="todos">
+                <Section
+                  label={t.board.todos}
+                  icon="check-bold"
+                  tint="var(--terracotta)"
+                  help={help}
+                  helpKey="todos"
+                  compactHint={todayTodos.length > 0 ? String(todayTodos.length) : undefined}
+                >
                   {todayTodos.map(todoAct)}
                   <TodoSection title={t.todos.title} members={data.members} bento={false} />
                 </Section>
               )
               // « À venir » — upcoming events/chores (null when none).
               nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
-                <Section label={t.board.upcoming} icon="calendar-blank-bold" tint="var(--sky)" help={help} helpKey="upcoming">
+                <Section
+                  label={t.board.upcoming}
+                  icon="calendar-blank-bold"
+                  tint="var(--sky)"
+                  help={help}
+                  helpKey="upcoming"
+                  compactHint={String(upcomingEvents.length + upcomingChores.length + upcomingHome.length)}
+                >
               {upcomingEvents.map((e) =>
                 e.holiday ? (
                   // A coming fête — static announce line with its date (no peek).

@@ -115,6 +115,7 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
       ariaLabel={t.auto.title}
       icon="car-bold"
       label={carLabel}
+      compactHint={status}
     >
       <div className={`auto-card__status${busy ? ' auto-card__status--busy' : ''}`}>
         {holder && (

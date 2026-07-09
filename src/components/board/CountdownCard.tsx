@@ -69,7 +69,12 @@ export function CountdownCard({ upcoming }: { upcoming: EventRow[] }) {
   if (pinned && pinned.at >= todaySec) {
     const n = daysUntilLocal(pinned.at)
     return (
-      <BoardCard className="bento countdown-card" label={t.countdown.title} icon="hourglass-high-bold">
+      <BoardCard
+        className="bento countdown-card"
+        label={t.countdown.title}
+        icon="hourglass-high-bold"
+        compactHint={`${pinned.emoji} ${t.countdown.dodosN(n)}`}
+      >
         <div className="countdown-card__tile">
           <span className="countdown-card__emoji" aria-hidden="true">
             {pinned.emoji}
@@ -90,7 +95,12 @@ export function CountdownCard({ upcoming }: { upcoming: EventRow[] }) {
   if (!suggestion) return null
 
   return (
-    <BoardCard className="bento countdown-card" label={t.countdown.title} icon="hourglass-high-bold">
+    <BoardCard
+      className="bento countdown-card"
+      label={t.countdown.title}
+      icon="hourglass-high-bold"
+      compactHint={`${suggestion.emoji} ${suggestion.label}`}
+    >
       <p className="countdown-card__ask">
         <span aria-hidden="true">{suggestion.emoji}</span> {t.countdown.suggest(suggestion.label)}
       </p>

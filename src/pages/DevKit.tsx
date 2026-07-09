@@ -25,6 +25,7 @@ import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { WidgetGrid } from '../components/board/WidgetGrid'
 import { CardSlot } from '../components/board/CardSlot'
+import { CardLensProvider } from '../components/board/CardLens'
 import { cardSize, useBoardCards, type BoardCardId } from '../lib/boardCards'
 import { CheckRow } from '../components/CheckRow'
 import { ColorPicker } from '../components/ColorPicker'
@@ -1626,7 +1627,7 @@ export function DevKit() {
       cat: 'Rangées & actions',
       name: 'Act · Section',
       file: 'components/board/Act.tsx',
-      kw: 'activity card babillard event chore meal row',
+      kw: 'activity card babillard event chore meal row compact halve half-width tap-to-expand mini cardmini',
       render: () => (
         <>
           <Demo label="check rows in a Section">
@@ -1644,6 +1645,35 @@ export function DevKit() {
           <Demo label="tap-to-peek: whole row (onOpen) + split (onOpen + check)">
             <Act cat="event" title="Rendez-vous dentiste" when="14:00" who="Camille" onOpen={() => {}} />
             <Act cat="chore" title="Sortir les poubelles" who="Marc" onCheck={() => {}} onOpen={() => {}} />
+          </Demo>
+          {/* The compact lens (a card halved below ~220px, lib/widgetGrid.isCompact): icon
+              + title + at most one quiet line, never a squeezed full card. `CardLensProvider`
+              stands in for the real CardSlot measurement so the gallery can show it at any
+              width. See COMPONENTS.md · CardMini (BoardCard.tsx). */}
+          <Demo label="compact lens — a count hint, a name hint, and empty × compact (muted, no hint)">
+            <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '420px', flexWrap: 'wrap' }}>
+              <div style={{ width: '140px' }}>
+                <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
+                  <BoardSection label="Mots" icon="envelope-bold" compactHint="3">
+                    <Act cat="cercle" title="placeholder" />
+                  </BoardSection>
+                </CardLensProvider>
+              </div>
+              <div style={{ width: '140px' }}>
+                <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
+                  <BoardSection label="Aujourd’hui" icon="sun-bold" compactHint="Spaghetti">
+                    <Act cat="meal" title="placeholder" />
+                  </BoardSection>
+                </CardLensProvider>
+              </div>
+              <div style={{ width: '140px', opacity: 0.75 }}>
+                <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
+                  <BoardSection label="À venir" icon="calendar-blank-bold">
+                    <Act cat="event" title="placeholder" />
+                  </BoardSection>
+                </CardLensProvider>
+              </div>
+            </div>
           </Demo>
         </>
       ),

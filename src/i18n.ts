@@ -597,6 +597,10 @@ export const FR = {
     editDone: 'Terminé',
     editHide: (card: string) => `Retirer « ${card} » de cet écran`,
     editResize: (card: string) => `Changer la largeur de « ${card} »`,
+    // The compact lens (a half-width card shrunk to icon + title + a quiet line):
+    // the tile itself is the tap-to-expand button. Grows the card back to full width
+    // in place — never a navigation, never a persisted choice.
+    expandCard: (card: string) => `Agrandir « ${card} »`,
     // The size chip is a ~24px disc showing 1 / 2 / 3 — this is the "spans everything"
     // face. Kept to a couple of glyphs; the full phrasing lives in `editResize`'s label.
     editSizeFull: 'Max',

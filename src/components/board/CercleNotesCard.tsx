@@ -67,7 +67,12 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
   if (empty) return null
 
   return (
-    <Section label={t.boardCard.cercleNotes} icon="file-text-bold" tint="var(--teal-deep, #2a8f85)">
+    <Section
+      label={t.boardCard.cercleNotes}
+      icon="file-text-bold"
+      tint="var(--teal-deep, #2a8f85)"
+      compactHint={String(notes.length)}
+    >
       <NotesList
         notes={notes}
         faces={faces}

@@ -49,6 +49,9 @@ export function HabitudesCard() {
       icon="repeat-bold"
       label={fn.title}
       ariaLabel={fn.checkin}
+      // A household-wide count only — never which habits, never per-person (privacy +
+      // calm, same rule the card's own body follows).
+      compactHint={household.length > 0 ? String(household.length) : undefined}
     >
       <ul className="habitudes-card__list">
         {household.map((h) => (

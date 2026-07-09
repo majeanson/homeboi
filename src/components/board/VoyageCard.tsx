@@ -39,7 +39,9 @@ export function VoyageCard() {
   }
 
   return (
-    <BoardCard className="voyage-card" icon={VOYAGE_ICON} label={t.voyage.nextTrip}>
+    // The next trip's own title is the quiet hint — a name, like "Spaghetti" is for a
+    // meal card, trivially the first row already sorted to the top.
+    <BoardCard className="voyage-card" icon={VOYAGE_ICON} label={t.voyage.nextTrip} compactHint={rows[0]?.title}>
       <ul className="voyage-card__list">
         {rows.map((tr) => (
           <li key={tr.id} className="voyage-card__row">

@@ -4,7 +4,8 @@ import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 import { type HelpMode } from '../../lib/helpMode'
-import { SecLabel } from './BoardCard'
+import { SecLabel, CardMini } from './BoardCard'
+import { useCardLens } from './CardLens'
 
 // Pip section header: an optional category glyph + label + rule + a quiet count
 // (never a score). Each Section is a bento tile in the board grid. `icon` + `tint`
@@ -19,6 +20,11 @@ export function Section({
   help,
   helpKey,
   now,
+  // The compact lens (see `CardMini`, BoardCard.tsx): a quiet one-line hint, or a full
+  // override of the compact body. Both no-ops unless this Section is actually rendered
+  // compact (inside a halved `CardSlot`, below the measured-width threshold).
+  compactHint,
+  compact,
   children,
 }: {
   label: string
@@ -36,13 +42,26 @@ export function Section({
   // section be made explainable without forking a header.
   help?: HelpMode
   helpKey?: string
+  compactHint?: React.ReactNode
+  compact?: React.ReactNode
   children: React.ReactNode
 }) {
   const style = tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined
+  const lens = useCardLens()
+  const isMini = !!lens && lens.compact && !lens.expanded
   return (
-    <div className={'bento' + (tint ? ' bento--tinted' : '') + (now ? ' bento--now' : '')} style={style}>
-      <SecLabel label={label} count={count} icon={icon} help={help} helpKey={helpKey} />
-      {children}
+    <div
+      className={'bento' + (tint ? ' bento--tinted' : '') + (now ? ' bento--now' : '') + (isMini ? ' bento--compact' : '')}
+      style={style}
+    >
+      {isMini ? (
+        <CardMini label={label} icon={icon} hint={compactHint} body={compact} onExpand={lens!.expand} />
+      ) : (
+        <>
+          <SecLabel label={label} count={count} icon={icon} help={help} helpKey={helpKey} />
+          {children}
+        </>
+      )}
     </div>
   )
 }

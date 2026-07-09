@@ -54,6 +54,7 @@ export function RoutineNextCard() {
       style={{ '--tint': tint } as CSSProperties}
       icon={icon}
       label={t.boardCard.routineNext}
+      compactHint={routine.name}
     >
       <div className="routine-next-card__body">
         <span className="routine-next-card__face">

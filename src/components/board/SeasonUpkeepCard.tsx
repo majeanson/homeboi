@@ -27,7 +27,7 @@ export function SeasonUpkeepCard() {
   if (empty) return null
 
   return (
-    <BoardCard className="carnets-card" iconNode={SEASON_EMOJI[s]} label={t.season[s]}>
+    <BoardCard className="carnets-card" iconNode={SEASON_EMOJI[s]} label={t.season[s]} compactHint={String(items.length)}>
       <ul className="carnets-card__list">
         {items.map((p) =>
           p.carnet_id ? (

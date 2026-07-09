@@ -162,8 +162,12 @@ export function MotsCard() {
     />
   )
 
+  // A quiet count — the total mots on this card (waiting + seen + sent), trivially at
+  // hand for the compact lens (never a per-person tally, just "there are things here").
+  const total = waiting.length + seen.length + sent.length
+
   return (
-    <Section label={fn.cardTitle} icon="envelope-bold" tint={CATS.cercle.color}>
+    <Section label={fn.cardTitle} icon="envelope-bold" tint={CATS.cercle.color} compactHint={String(total)}>
       {waiting.map((m) => row(m))}
       {seen.length > 0 && (
         // Open by default when there are no waiting rows above it — otherwise the card is just

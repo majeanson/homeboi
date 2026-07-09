@@ -27,7 +27,12 @@ export function CarnetsCard() {
   if (empty) return null
 
   return (
-    <BoardCard className="carnets-card" icon="book-open-bold" label={c.title}>
+    <BoardCard
+      className="carnets-card"
+      icon="book-open-bold"
+      label={c.title}
+      compactHint={String(soon.length + warranties.length)}
+    >
       <ul className="carnets-card__list">
         {soon.map((s) => (
           <li key={s.carnetId} className="carnets-card__row">
