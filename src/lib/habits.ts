@@ -48,11 +48,14 @@ export interface HabitsPayload {
   today: number
 }
 
-export function useHabits() {
+// `live: false` shares the same cache off the poll cadence (the free-tier lever,
+// like useCarnets): the default-on board card must not add /api/habits to the
+// board's poll. Realtime nudges + the check-in scene's own live read keep it fresh.
+export function useHabits(opts?: { live?: boolean }) {
   return useQuery({
     queryKey: HABITS_KEY,
     queryFn: () => api<HabitsPayload>('habits'),
-    ...live,
+    ...(opts?.live === false ? { staleTime: 5 * 60_000 } : live),
   })
 }
 

@@ -493,6 +493,24 @@ const ROUTES: Record<string, unknown> = {
   },
   routines: ROUTINES,
   habits: HABITS,
+  // The calendar window (/api/month). Habits ride it as DERIVED occurrences (the
+  // birthdays pattern): a household one on MMID, and one of Maman's — so a spec can
+  // assert the private-ish filter applies on the grid too.
+  month: {
+    events: [],
+    meals: [],
+    chores: [],
+    dayNotes: [],
+    todos: [],
+    homeProjects: [],
+    trips: [],
+    tripPlans: [],
+    habits: [
+      { id: 'hb1#0', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID, done: false },
+      { id: 'hb1#1', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID - DAY, done: true },
+      { id: 'hb2#0', habit_id: 'hb2', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', member_id: 'm1', day: MMID, done: false },
+    ],
+  },
   members: { members: MEMBERS },
   'pair/devices': DEVICES,
   chores: CHORES,
@@ -816,7 +834,10 @@ export async function mockApi(
         list: BOARD.list
           .filter((i) => !clearedItems.has(i.id))
           .map((i) => (checkedItems.has(i.id) ? { ...i, checked_at: BASE } : i))
-          .map((i) => (noRushItems.has(i.id) ? { ...i, non_urgent: 1 } : i)),
+          .map((i) => (noRushItems.has(i.id) ? { ...i, non_urgent: 1 } : i))
+          // Flagging a line « pas pressé » settles it at the BOTTOM (the real server
+          // rewrites `position` on the flip) — a stable partition reproduces that.
+          .sort((a, b) => (noRushItems.has(a.id) ? 1 : 0) - (noRushItems.has(b.id) ? 1 : 0)),
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
       return

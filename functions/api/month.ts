@@ -28,7 +28,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bad/missing window → empty calendar rather than a 400; the view just shows
   // empty cells, mirroring how the board tolerates a thin frame.
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [], tripPlans: [] })
+    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [], tripPlans: [], habits: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
@@ -36,7 +36,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // meals query can sort by it, exactly like /api/meals and the board.
   const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, hh)).order)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -153,6 +153,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; date: number; colour: string }>(),
+    // « Mes habitudes » — live, unarchived only (a paused habit leaves the calendar
+    // but keeps its history).
+    ctx.env.DB.prepare(
+      'SELECT id, member_id, title, icon, colour, kind, target, cadence, recur_json, anchor_at FROM habits WHERE household_id = ? AND deleted_at IS NULL AND archived_at IS NULL',
+    )
+      .bind(hh)
+      .all<{ id: string; member_id: string | null; title: string; icon: string; colour: string | null; kind: string; target: number | null; cadence: string; recur_json: string | null; anchor_at: number }>(),
+    ctx.env.DB.prepare(
+      'SELECT habit_id, day, value, slips FROM habit_days WHERE day >= ? AND day < ? AND habit_id IN (SELECT id FROM habits WHERE household_id = ? AND deleted_at IS NULL)',
+    )
+      .bind(from, to, hh)
+      .all<{ habit_id: string; day: number; value: number; slips: number }>(),
   ])
 
   const inRange = (day: number) => day >= from && day < to
@@ -335,5 +347,42 @@ export const onRequestGet = authed(async (ctx, actor) => {
       tripPlans.push({ id: n.id, trip_id: n.trip_id, category: n.category, label: n.label, text: n.text, media_kind: n.media_kind, colour: n.colour, day, shared: true })
   }
 
-  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans })
+  // « Mes habitudes » — DERIVED occurrences, never stored as event rows (the
+  // birthdays pattern). Read-only on the calendar: the tap peeks the habit, marking
+  // still happens on « Le point du jour ».
+  //
+  // A SCHEDULED habit (cadence 'recur', a null rule meaning every day) emits one
+  // occurrence per due day, carrying whether that day was met. A WEEK-QUOTA habit has
+  // no fixed days by definition, so it emits ONLY the days it was actually done —
+  // honest history rather than fictional scheduling across the whole week.
+  //
+  // `member_id` rides along so the client can apply the same private-ish filter the
+  // check-in scene does (household habits + the picked face's own).
+  const habitDayBy = new Map(habitDaysRes.results.map((d) => [`${d.habit_id}:${d.day}`, d]))
+  const habitDone = (h: { kind: string; target: number | null }, d: { value: number; slips: number } | undefined): boolean => {
+    const value = d?.value ?? 0
+    if (h.kind === 'do') return value > 0
+    if (h.kind === 'count') return value >= (h.target ?? 1)
+    if (h.kind === 'limit') return value <= (h.target ?? 0)
+    return value > 0 && (d?.slips ?? 0) === 0 // avoid: held, and without a slip
+  }
+  const habits: { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }[] = []
+  for (const h of habitsRes.results) {
+    const cell = (day: number) => {
+      const d = habitDayBy.get(`${h.id}:${day}`)
+      // A day nobody marked reads as neutral, never as a miss — `done` is only ever
+      // "the intention was met", and the client dims future/untouched cells.
+      habits.push({ id: `${h.id}#${day}`, habit_id: h.id, title: h.title, icon: h.icon, colour: h.colour, kind: h.kind, member_id: h.member_id, day, done: habitDone(h, d) })
+    }
+    if (h.cadence === 'week') {
+      for (const d of habitDaysRes.results) {
+        if (d.habit_id === h.id && inRange(d.day) && habitDone(h, d)) cell(d.day)
+      }
+      continue
+    }
+    const rule = parseRecur(h.recur_json) ?? { freq: 'daily' as const }
+    for (const at of expandRange(h.anchor_at, rule, from, to)) cell(dayOf(at))
+  }
+
+  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits })
 })

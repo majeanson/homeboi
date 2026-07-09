@@ -101,6 +101,8 @@ export const FR = {
     emptyHousehold: 'Aucune habitude de la maisonnée. Choisis une personne, ou ajoutes-en une.',
     allSettled: 'Tout est réglé pour aujourd’hui.',
     alreadySettled: 'Déjà réglé',
+    // Le babillard : présence seulement, jamais l'état d'un autre membre.
+    yoursAwait: 'Tes habitudes t’attendent',
     // do
     markDone: 'C’est fait',
     doneToday: 'Fait aujourd’hui',
@@ -357,7 +359,8 @@ export const FR = {
     // belle aubaine passe. Un seul interrupteur, éteint par défaut — une commission
     // ordinaire n’a rien à régler. Pas une priorité, pas un rang.
     rushNone: 'Pas pressé',
-    rushHint: 'Se lit en gris pâle sur la liste : on le prend si une belle aubaine passe, sinon on l’oublie.',
+    rushHint:
+      'Se lit en gris pâle et descend au bas de la liste : on le prend si une belle aubaine passe, sinon on l’oublie. Tu peux le remonter à la main dans « Mon ordre ».',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     // Saying items with « et » between them helps the recognizer separate + spell
     // them (a flowing phrase, not isolated words) — e.g. « lait et patate et guimauve ».
@@ -662,6 +665,7 @@ export const FR = {
     fil: 'Le fil du jour',
     today: 'Aujourd’hui',
     routineNext: 'Prochaine routine',
+    habitudes: 'Mes habitudes',
     tomorrow: 'Demain',
     countdown: 'Le décompte',
     toFinish: 'À finir',

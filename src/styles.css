@@ -54,6 +54,9 @@
 /* The shared cercle-notes row list (NotesList) + the « Notes (cercle) » glance card —
    eager because the board renders it; the rest of cercle.css stays lazy (B-11). */
 @import './styles/board/cnote-list.css';
+/* « Mes habitudes » board glance card only — eager because the board renders it; the
+   check-in scene's own styles stay lazy in styles/habits.css (B-11). */
+@import './styles/board/habitudes-card.css';
 /* Ambient screensaver — after the board/* slices + photos.css so `.ambient .photo-frame` wins. */
 @import './styles/ambient.css';
 @import './styles/profile.css';

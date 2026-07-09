@@ -200,6 +200,55 @@ async function noOverflow(page: Page, sel: string) {
   expect(overflowing).toEqual([])
 }
 
+test.describe('the board card + the calendar', () => {
+  async function board(page: Page, boardView?: 'month') {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView })
+    await page.goto('/board')
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+  }
+
+  // The board's face picker is the header chip → a face sheet (not an inline row).
+  async function pickFace(page: Page, name: string) {
+    await page.locator('.profile-chip').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.profile-face', { hasText: name }).click()
+    await expect(page.locator('.sheet.show')).toHaveCount(0)
+  }
+
+  test('the board card names household habits and reduces a face’s own to a presence line', async ({ page }) => {
+    await board(page)
+    const card = page.locator('.habitudes-card')
+    await expect(card).toBeVisible()
+    await expect(card).toContainText('Marcher dehors')
+    // At rest the card shows no presence line (no face picked → no personal habits).
+    await expect(card.locator('.habitudes-card__mine')).toHaveCount(0)
+
+    // With Maman picked, her habits stay UNNAMED — presence only, never a count.
+    await pickFace(page, 'Maman')
+    await expect(card.locator('.habitudes-card__mine')).toContainText('Tes habitudes t’attendent')
+    await expect(card).not.toContainText('Boire de l’eau')
+    await expect(card).not.toContainText('Cigarettes')
+  })
+
+  test('the calendar shows habits as derived, read-only occurrences, filtered by face', async ({ page }) => {
+    await board(page, 'month')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+
+    // Today's day panel lists the household habit, read-only (no check affordance).
+    const panel = page.locator('.monthv__day')
+    await expect(panel).toContainText('Marcher dehors')
+    await expect(panel.locator('.act__checkbtn')).toHaveCount(0)
+    // Maman's habit is not shown to whoever is standing at the tablet.
+    await expect(panel).not.toContainText('Boire de l’eau')
+
+    await pickFace(page, 'Maman')
+    await expect(panel).toContainText('Boire de l’eau')
+  })
+})
+
 test('the check-in scene never bleeds off a narrow phone', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 780 })
   await checkin(page)

@@ -92,6 +92,7 @@ export const EN: typeof FR = {
     emptyHousehold: 'No household habits. Pick a person, or add one.',
     allSettled: 'Everything is settled for today.',
     alreadySettled: 'Already settled',
+    yoursAwait: 'Your habits are waiting',
     markDone: 'Done',
     doneToday: 'Done today',
     plusOne: 'One more',
@@ -329,7 +330,8 @@ export const EN: typeof FR = {
     // "No rush" (edit scene + row tag): an item we only pick up if a good deal is on.
     // One switch, off by default — an ordinary errand has nothing to set. Not a rank.
     rushNone: 'No rush',
-    rushHint: 'Reads in pale grey on the list: we grab it if a good deal comes up, otherwise we let it go.',
+    rushHint:
+      'Reads in pale grey and sinks to the bottom of the list: we grab it if a good deal comes up, otherwise we let it go. You can drag it back up in “My order”.',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     // Saying items with "and" between them helps the recognizer separate + spell them.
     voiceHint: 'Say them with "and" — e.g. "milk and potato and marshmallow". Tap 🎤 to stop.',
@@ -613,6 +615,7 @@ export const EN: typeof FR = {
     fil: 'Day timeline',
     today: 'Today',
     routineNext: 'Next routine',
+    habitudes: 'My habits',
     tomorrow: 'Tomorrow',
     countdown: 'The countdown',
     toFinish: 'To finish',

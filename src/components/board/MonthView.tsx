@@ -4,6 +4,7 @@ import { EmptyState } from '../EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { useProfile } from '../../lib/profile'
 import { useUndoToast } from '../../lib/toast'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type CarModel } from '../../lib/car'
@@ -45,9 +46,14 @@ interface MTrip { id: string; title: string; colour: string; start_at: number; e
 // A dated itinerary entry inside a trip — the plans the operator wrote for the day,
 // shown under the trip card on that exact day (not just the global trip band).
 interface MTripPlan { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[] }
+// « Mes habitudes » — a DERIVED occurrence, never a stored row (the birthdays
+// pattern). Read-only here: the tap goes to « Le point du jour », where marking
+// lives. A scheduled habit emits every due day; a week-quota one only the days it
+// was actually done (no fictional scheduling). `done` = the intention was met.
+interface MHabit { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }
+export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[]; habits?: MHabit[] }
 
-interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[] }
+interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[]; habits: MHabit[] }
 // One day's slice of a trip band: the trip + whether this cell is its first/last
 // visible day (rounded ends + the title shows on the start).
 interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number; shared?: boolean }
@@ -61,11 +67,12 @@ interface TripSpan { id: string; title: string; colour: string; isStart: boolean
 // reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
 // a square and it carries which meal. Colour still carries who (events) / slot
 // (meals) / chore tint.
-type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work'
+type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work' | 'habit'
 interface Dot {
   color: string
   kind: DotKind
   slot?: MealSlot // set for meals → which slot icon to draw
+  done?: boolean // habits: the day's intention was met (a filled ring, else hollow)
 }
 
 // The markers a cell shows: one per dated thing, ordered the same way the detail
@@ -91,6 +98,9 @@ function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs):
   // À compléter todos → a check icon tinted with the member colour (drawn like the
   // meal slot icons), so they read apart from the filled chore/event dots.
   for (const td of b.todos) out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo' })
+  // « Mes habitudes » — a ring, hollow until the day's intention was met. Its own
+  // shape so a habit never reads as a chore you owe someone.
+  for (const h of b.habits) out.push({ color: h.colour ?? CATS.routine.color, kind: 'habit', done: h.done })
   b.notes.forEach(() => out.push({ color: CATS.list.color, kind: 'note' }))
   return out
 }
@@ -115,6 +125,9 @@ export function MonthView({
   initialOffset?: number
 }) {
   const nav = useNavigate()
+  // The picked face — the calendar applies the same private-ish habit filter the
+  // check-in scene does (see the day buckets below).
+  const { memberId: face } = useProfile()
   const write = useWrite()
   const undo = useUndoToast()
   const qc = useQueryClient()
@@ -176,7 +189,7 @@ export function MonthView({
     const at = (d: number) => {
       let b = m.get(d)
       if (!b) {
-        b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [] }
+        b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [] }
         m.set(d, b)
       }
       return b
@@ -186,9 +199,14 @@ export function MonthView({
     for (const c of data?.chores ?? []) at(c.day).chores.push(c)
     for (const td of data?.todos ?? []) at(td.day).todos.push(td)
     for (const h of data?.homeProjects ?? []) at(h.day).home.push(h)
+    // Private-ish, exactly as « Le point du jour » filters: the picked face sees the
+    // household's habits plus their own; « Maisonnée » sees only the household's. A
+    // member's habits never surface on the calendar for whoever is standing there.
+    for (const h of data?.habits ?? [])
+      if (h.member_id === null || h.member_id === face) at(h.day).habits.push(h)
     for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
     return m
-  }, [data])
+  }, [data, face])
 
   // Trip bands by day: each trip paints a strip across every visible day it covers,
   // rounded on its first/last day. Clamped to [from, to) so a trip running past the
@@ -256,7 +274,7 @@ export function MonthView({
   // The dated itinerary entries for the selected day, grouped under their trip below.
   const selTripPlans = (data?.tripPlans ?? []).filter((p) => p.day === selected)
   const selCount =
-    (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0) +
+    (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.habits.length + sel.notes.length : 0) +
     selTrips.length +
     selTripPlans.length
   const atToday = offset === 0 && selected === todayDay
@@ -333,6 +351,12 @@ export function MonthView({
                       // A derived « L'auto » work window → a clock, tinted by the member.
                       <span key={i} className="monthv__dot-icon">
                         <Icon name="clock-bold" size={12} color={dot.color} />
+                      </span>
+                    ) : dot.kind === 'habit' ? (
+                      // A derived habit → the repeat glyph in the habit's own tint,
+                      // softened while the day is still open (never a red "missed").
+                      <span key={i} className="monthv__dot-icon" style={{ opacity: dot.done ? 1 : 0.45 }}>
+                        <Icon name="repeat-bold" size={12} color={dot.color} />
                       </span>
                     ) : (
                       <span
@@ -562,6 +586,20 @@ export function MonthView({
                 color={colorOf(members, td.member_id) ?? undefined}
                 onCheck={() => markTodoDone(td)}
                 onOpen={() => nav(momentHref(selected))}
+              />
+            ))}
+            {/* « Mes habitudes » landing on this day — read-only here (derived, like a
+                birthday); the tap goes to « Le point du jour », where marking lives. */}
+            {(sel?.habits ?? []).map((h) => (
+              <Act
+                key={h.id}
+                cat="routine"
+                icon="repeat-bold"
+                title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
+                who={h.done ? t.habits.doneToday : undefined}
+                done={h.done}
+                color={h.colour ?? undefined}
+                onOpen={() => nav('/board/habitudes')}
               />
             ))}
             {(sel?.notes ?? []).map((n) => (
