@@ -185,7 +185,20 @@ export default {
 
     // Everything that isn't an API call is the SPA. The assets binding serves a
     // real file when one matches, else index.html (SPA fallback) for client routes.
-    if (!path.startsWith('api/')) return env.ASSETS.fetch(request)
+    if (!path.startsWith('api/')) {
+      const res = await env.ASSETS.fetch(request)
+
+      // …but /assets/* is the hashed build output, never a client route, so the
+      // SPA fallback is WRONG there: a stale shell asking for a previous build's
+      // chunk would get 200 + index.html instead of a 404, and a browser (or our
+      // service worker's cache-first asset handler) would happily store HTML under
+      // a .js URL — after which the entry module never parses and the app boots
+      // blank forever. A missing chunk must fail as a missing chunk.
+      if (path.startsWith('assets/') && res.headers.get('content-type')?.includes('text/html')) {
+        return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain' } })
+      }
+      return res
+    }
 
     const apiPath = path.slice('api/'.length)
 

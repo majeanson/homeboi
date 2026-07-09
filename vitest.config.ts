@@ -8,7 +8,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
-    include: ['{src,functions}/**/*.test.ts'],
+    include: ['{src,functions,worker}/**/*.test.ts'],
     // Vitest defaults to ~one fork per core. On a 16-core box that's 16 happy-dom
     // forks, whose aggregate peak intermittently exceeds 16 GB → OOM mid-run. Cap
     // the LOCAL pool to bound peak memory; the suite is fast (~3 s of test work),

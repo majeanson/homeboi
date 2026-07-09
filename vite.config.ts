@@ -35,6 +35,13 @@ const PUBLIC_SHELL = [
 // the real offline-facing surface (the in-app Guide).
 const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/, /^assets\/DevKit-/]
 
+// Caching-policy version, folded into the cache name (see serviceWorker()). Bump
+// on ANY change to swSource's caching rules so the new SW evicts caches written
+// under the old rules — the asset-list hash alone can't, since a policy-only fix
+// leaves the asset list (and therefore the cache name) identical.
+//   v2 — never cache/serve the SPA-fallback HTML under a subresource URL.
+const SW_POLICY = 'v2-no-html-under-asset-url'
+
 // Build-time service worker: emit /sw.js with the REAL hashed asset list baked
 // in, so a freshly-installed kiosk precaches the whole shell and reboots fine
 // offline (NFR-OFFLINE-1). Hand-rolled and dependency-free on purpose — the
@@ -50,10 +57,14 @@ function serviceWorker(): Plugin {
         .filter((f) => !ONLINE_ONLY_CHUNKS.some((re) => re.test(f)))
         .map((f) => '/' + f)
       const precache = [...PUBLIC_SHELL, ...assets]
-      // djb2 over the precache list → a stable per-build cache version, so a
-      // redeploy installs fresh and activate() drops the old cache.
+      // djb2 over the precache list AND the caching-policy version → a stable
+      // per-build cache version, so a redeploy installs fresh and activate()
+      // drops the old cache. SW_POLICY is folded in because a policy fix that
+      // leaves the asset list untouched would otherwise hash to the SAME cache
+      // name — and so never evict the caches the old policy corrupted. Bump it
+      // whenever swSource's caching rules change.
       let h = 5381
-      for (const c of precache.join('|')) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0
+      for (const c of [SW_POLICY, ...precache].join('|')) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0
       this.emitFile({ type: 'asset', fileName: 'sw.js', source: swSource(h.toString(36), precache) })
     },
   }
@@ -177,9 +188,28 @@ self.addEventListener('fetch', (e) => {
 
   // Static assets (hashed → immutable): cache-first, populate on miss. A failed
   // fetch falls back to cache, else a 504 — never let respondWith reject.
+  //
+  // THE TRAP: the origin serves the SPA with not_found_handling =
+  // "single-page-application", so a request for a hashed asset that no longer
+  // exists (a previous build's chunk, asked for by a stale shell) does NOT 404 —
+  // it answers 200 text/html with index.html. res.ok is therefore TRUE, and
+  // caching that writes HTML under a .js URL. Because this handler is cache-first
+  // that entry then wins forever: the entry module parses as HTML, React never
+  // mounts, and the app boots to a blank page on every reload, online or off.
+  // So: a subresource that comes back as HTML means "this build is gone", never
+  // "here is your script". Refuse to cache it, fail the request cleanly, and drop
+  // the cached shell that pointed at it so the next navigation must hit the
+  // network for fresh HTML (which references chunks that do exist).
+  const wantsHtml = req.mode === 'navigate' || req.destination === 'document'
+
   e.respondWith(
     caches.match(req).then((hit) =>
       hit ?? fetch(req).then((res) => {
+        const isHtml = (res.headers.get('content-type') || '').includes('text/html')
+        if (isHtml && !wantsHtml) {
+          caches.open(CACHE).then((c) => c.delete('/')).catch(() => {})
+          return new Response('', { status: 504, statusText: 'Stale asset' })
+        }
         if (res.ok) {
           const copy = res.clone()
           caches.open(CACHE).then((c) => c.put(req, copy))
