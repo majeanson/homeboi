@@ -97,6 +97,12 @@ add it to `COMPONENTS.md`, and (if user-facing) document it in the in-app Guide
 (`lib/guideContent.ts`). A new primitive that isn't in the gallery is invisible to
 the next session and will get re-invented.
 
+**When a feature needs explaining (guide card/point, "?" help hint, tour step,
+Réglages deep-link):** read **`DISCOVERY.md`** first — it maps the whole
+comprehension ↔ action system (guide taxonomy, help registries, the
+`?tab/sub/lens/card/point/focus/plus` URL grammar, the alias drill) and carries
+the add-a-feature checklist. Merge into an existing card before creating one.
+
 ---
 
 ## Commands
@@ -378,6 +384,7 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 | **Favorites (hearts)**       | Per-member ❤ on a recipe (#21, `recipe_loves`, migration 0044; `HeartButton`/`useLoves`); a planned meal carries its linked recipe's hearts. **Calm: shows WHICH faces loved it, never a count/rank** (chore-ledger rule). The add/remove toggle only shows when a face is picked — as **Maisonnée** hearts are read-only. Biases `suggest-meal` (loved recipes lead "favs"). |
 | **Realtime**                 | Per-household `RealtimeHub` Durable Object nudges open boards via `/api/live` WS to refresh on another device's write; **polling stays the fallback**.          |
 | **Idle / ambient**           | What a **kiosk** does at rest, both opt-out-able + tunable in **Réglages ▸ Affichage ▸ Mode veille** (`lib/ambient.ts`, `useSyncExternalStore`): (1) the **screensaver** (`AmbientScreen`) fades to a full-screen clock/date/photo-frame/next-up after `idleMin`; tap to wake. (2) the **return-home drift** clears the picked face back to "Maisonnée" after `returnHomeMin` (heads-up chip 30 s before). Both live shell-level in `HubLayout` (one idle effect, resets on any pointer/key; arms on **every** surface — mobile included, since a wall tablet is often signed in as the operator and thus `surface=mobile` — and is governed purely by the per-behaviour opt-out toggles). Test without waiting via **Réglages ▸ Debug** (`lib/idleDebug.ts` + `operator/idleDebug.tsx`): shrink the window to seconds, or force the screensaver/warn/drift. |
+| **Discovery (comprendre ↔ agir)** | The one guide/help/tour ↔ feature/settings mapping: ~32 guide cards (merge-first ceiling), each a launcher (« Ouvrir »/« Régler »/« Essayer ») as well as an explanation; "?" hints + tours deep-link back via `?card=&point=`; `?focus=` lands on a stacked settings card, `?plus=` opens the ＋ sheet; `SUB_GOTO` links a Réglages sub to its live surface. **See `DISCOVERY.md`** — taxonomy, URL grammar, invariants, checklists. |
 
 ### Requirement tags
 
