@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { BigTiles, Sayable, type Tile } from '../components/BigTiles'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { WelcomeCard } from '../components/WelcomeCard'
@@ -27,27 +26,24 @@ import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { ProfilePicker } from '../components/ProfilePicker'
 import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
-import { useSpeak } from '../lib/speak'
 import { timeOfDay } from '../lib/timeofday'
 import { isDaypartAuto } from '../lib/theme'
 import { momentFocus } from '../lib/momentFocus'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
-import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
+import { weatherIcon, weatherTint, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
 import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { useNow, isPastSec } from '../lib/itemLife'
-import { pictoFor } from '../lib/picto'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { Disclosure } from '../components/Disclosure'
 import { Fil } from '../components/board/Fil'
-import { DayTimeline } from '../components/jouer/DayTimeline'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { BoardCanvas } from '../components/board/BoardCanvas'
-import { WonderBand, WonderFrame, useWonder } from '../components/board/ApodFrame'
+import { WonderBand, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
@@ -55,6 +51,7 @@ import { MonthView } from '../components/board/MonthView'
 import { YearView } from '../components/board/YearView'
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { SimpleBoard } from '../components/board/SimpleBoard'
+import { ToddlerBoard } from '../components/board/ToddlerBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
@@ -130,7 +127,6 @@ export function Board() {
   // Pick-your-face: who's on this phone — greets them + marks their day.
   const { memberId: profileId, setMemberId } = useProfile()
   const [profileOpen, setProfileOpen] = useState(false)
-  const speak = useSpeak()
   // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
   // + smart actions. Parent audience only; the toddler lens stays hear-first below.
   const detail = useEntityDetail()
@@ -217,7 +213,6 @@ export function Board() {
   const weather = wx?.weather ?? null
   const tomorrowWx = wx?.tomorrow ?? null
   const wxHours = wx?.hours ?? null
-  const tip = weatherTip(weather)
   // The daily-wonder picture (Bing / Wikipedia / NASA…) — used as the BACKDROP of
   // the weather card so the glance is a beautiful photo with the temperature read
   // clearly on top. Keeps its own last-good-frame + shuffle (lib ApodFrame).
@@ -335,23 +330,6 @@ export function Board() {
   // lenses). Null on a shared kiosk with nobody picked.
   const me = data?.members.find((m) => m.id === profileId) ?? null
 
-  // Toddler lens on the SAME board data as the parent — same content, kid UI:
-  // big read-aloud tiles, picture-first, member colour says whose thing it is.
-  // Heroes (meals + weather) sit on top; then Today / Demain / chores / list /
-  // photos, mirroring the parent board so nothing is missing for a pre-reader.
-  const eventTiles = (rows: EventRow[]): Tile[] =>
-    rows.map((e) => ({
-      key: e.id,
-      // Draw the event's own picture (school/swim/birthday…) so a pre-reader can
-      // tell things apart; a derived fête brings its own emoji (⚜️ 🎃 🎄);
-      // fall back to a pin when nothing matches.
-      icon: e.emoji ?? pictoFor(e.title, '📌'),
-      label: e.title,
-      sub: e.holiday ? (e.ferie ? t.board.holidayOff : t.board.holidayTag) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
-      narration: e.title,
-      color: memberColor(e.member_id) ?? undefined,
-    }))
-
   // « Simple » lens (bmad/08 A-1) — the post-reader/grandma board: four giant
   // calm zones (Aujourd'hui · Souper · La liste · Notes) off the SAME data. The
   // other tabs inherit the parent views; only the board gets this bespoke glance.
@@ -361,195 +339,14 @@ export function Board() {
     return <SimpleBoard data={data} model={model} greet={greet} />
   }
 
+  // Toddler lens (`ToddlerBoard.tsx`, C-12 6/6, bmad/10) — same board data as
+  // the parent, kid UI. This is the ONLY code a locked kiosk (`?kid=1`, the
+  // kid one-way door) ever runs, so its data hook (`useBoardModel` above) sits
+  // ABOVE this early return — hook-order law.
   if (audience === 'toddler') {
     const tod = timeOfDay(nowMs)
-
-    const mealHero = (meal: MealRow | null, key: 'tonight' | 'tomorrow') =>
-      meal ? (
-        <button
-          type="button"
-          className="today-hero today-hero--meal"
-          onClick={() => speak(`${t.board[key]}: ${meal.title}`)}
-          aria-label={`${t.board[key]}: ${meal.title}`}
-        >
-          <span className="today-hero__icon" aria-hidden="true">{pictoFor(meal.title, '🍽')}</span>
-          <span className="today-hero__label">{meal.title}</span>
-          {/* A picture hint beside the word, so "tonight vs tomorrow" doesn't
-              hang on reading alone (NFR-KID-2 soft-reading). */}
-          <span className="today-hero__sub mono">
-            <InlineIcon
-              name={key === 'tonight' ? 'moon-stars-bold' : 'sun-horizon-bold'}
-              size={14}
-              color={key === 'tonight' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
-            />{' '}
-            {t.board[key]}
-          </span>
-        </button>
-      ) : null
-
-    // Tapping the weather also SPEAKS the dressing tip ("mets un manteau") —
-    // that's the actionable part for a pre-schooler getting ready. Audio only:
-    // the picture + temperature stay the calm visual.
-    const weatherHero = weather ? (
-      <button
-        type="button"
-        className="today-hero today-hero--weather"
-        onClick={() =>
-          speak(`${t.weather[weather.bucket]}, ${weather.tempC}°.${tip ? ` ${t.weather.tip[tip]}` : ''}`)
-        }
-        aria-label={`${t.weather[weather.bucket]} ${weather.tempC}°`}
-      >
-        <span className="today-hero__icon" aria-hidden="true"><Icon name={weatherIcon(weather)} size={56} color={weatherTint(weather)} /></span>
-        <span className="today-hero__label">{weather.tempC}°</span>
-        <span className="today-hero__sub mono">{t.weather[weather.bucket]}</span>
-      </button>
-    ) : null
-
-    const kidSection = (label: string, tiles: Tile[]) =>
-      tiles.length > 0 ? (
-        <section className="today-kid__section">
-          <Sayable className="today-kid__h" text={label} />
-          <BigTiles tiles={tiles} />
-        </section>
-      ) : null
-
     const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
-    // Nothing planned anywhere today/tomorrow → the kid sections all collapse and
-    // the board reads as a blank gap. Show one calm, tap-to-hear "all clear" line
-    // instead, so an empty day still feels intentional to a pre-reader. Model-owned
-    // (lib/boardModel) — a DIFFERENT, wider check than the parent's dayClear (decided,
-    // bmad/10: weather/notes/tomorrow count here; see boardModel.ts).
-    const kidAllClear = model.kidAllClear
-    return (
-      <main className="kid__main today-kid">
-        <BoardCanvas weatherBucket={weather?.bucket} />
-        {/* Greet the picked child by name — same personal touch the parent
-            board gets. Generic when nobody's picked (shared wall). Tap to hear. */}
-        <Sayable className="today-kid__greet" text={greet} />
-        {!data ? (
-          <p className="loading mono">{t.common.loading}</p>
-        ) : (
-          <>
-            <div className="today-kid__heroes">
-              {/* Supper heroes follow the same show/hide as the parent board. */}
-              {mealPrefs.isVisible('supper') && mealHero(data.tonight, 'tonight')}
-              {mealPrefs.isVisible('supper') && mealHero(data.tomorrowMeal, 'tomorrow')}
-              {weatherHero}
-            </div>
-            <Notes notes={data.notes ?? []} members={data.members} toddler />
-            {/* A big, friendly door into "Mes dessins" — the kid's own drawing
-                collection (draw new ones with handwriting lines / tracing / colour-in
-                / stickers, and see everything they've kept). */}
-            <div className="today-kid__doors">
-              <Link to="/drawings" className="today-kid__draw">
-                <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
-                <span>{t.memo.galleryTitle}</span>
-              </Link>
-              {/* A big, friendly door into « Jouer » — the toddler play space (find-it,
-                  the day timeline, the birthday countdown). All hear-first, no score. */}
-              <Link to="/jouer" className="today-kid__draw today-kid__play">
-                <span className="today-kid__draw-icn" aria-hidden="true">🎲</span>
-                <span>{t.play.door}</span>
-              </Link>
-            </div>
-            {/* « Le fil du jour », toddler lens — the hear-first day SEQUENCE (matin →
-                midi → soir → dodo) the play space uses, so a pre-reader gets the same
-                "shape of the day" the parent ribbon gives. Honours the per-device 'fil'
-                toggle (Réglages ▸ Affichage ▸ Disposition). */}
-            {isCardVisible(boardCards, 'fil') && (
-              <section className="today-kid__section">
-                <Sayable className="today-kid__h" text={t.board.fil} />
-                <DayTimeline />
-              </section>
-            )}
-            {data.dayNote && <DayNote note={data.dayNote} members={data.members} toddler />}
-            {/* Every meal planned for today, read-aloud — supper rides up in the
-                heroes, so this lists the rest of the day's table. */}
-            {kidSection(
-              t.board.meals,
-              otherMeals.map((m) => ({
-                key: m.id,
-                icon: pictoFor(m.title, '🍽'),
-                label: m.title,
-                sub: slotLabel(m.slot),
-                narration: `${slotLabel(m.slot)}: ${m.title}`,
-                color: memberColor(m.cook_member_id) ?? undefined,
-              })),
-            )}
-            {/* Restants à finir — read-aloud reminder to eat leftovers first. A
-                pre-reader just sees/hears them; finishing one is a parent action. */}
-            {kidSection(
-              t.kitchen.leftoversBoard,
-              leftovers.map((l) => ({
-                key: l.id,
-                icon: pictoFor(l.title, '🍽'),
-                label: l.title,
-                sub: t.kitchen.leftoversTag,
-                narration: l.title,
-              })),
-            )}
-            {kidSection(t.board.today, eventTiles(todayEvents))}
-            {/* Chores due today, as read-aloud tiles — whose turn rides in the sub. */}
-            {kidSection(
-              t.board.chores,
-              todayChores.map((c) => ({
-                key: c.id,
-                icon: pictoFor(c.title, '🧹'),
-                label: c.title,
-                sub: c.who ?? undefined,
-                narration: c.who ? `${c.title}. ${c.who}` : c.title,
-                color: c.color ?? undefined,
-              })),
-            )}
-            {/* « À faire » — read aloud too. Mirrors the parent board's ONE to-do card:
-                the loose one-off tasks AND the checklists (« À compléter ») in a single
-                section, so a pre-reader sees everything left to do in one place. */}
-            {kidSection(t.board.todos, [
-              ...todayTodos.map((c) => ({
-                key: c.id,
-                icon: pictoFor(c.title, '✅'),
-                label: c.title,
-                sub: c.who ?? undefined,
-                narration: c.title,
-                color: c.color ?? undefined,
-              })),
-              ...openTodos.map((td) => ({
-                key: td.id,
-                icon: pictoFor(td.title, '✅'),
-                label: td.title,
-                narration: td.title,
-                color: memberColor(td.member_id) ?? undefined,
-              })),
-            ])}
-            {data.tomorrowNote && (
-              <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />
-            )}
-            {/* « Demain » follows the SAME parent meal rules (model.meals.otherTomorrow +
-                tomorrowSupper, both mealPrefs-gated) — a hidden slot no longer leaks here
-                and the souper (already the hero above) no longer repeats (bmad/10 C-12,
-                decided bug-fix). kidAllClear above stays on the raw data — a DIFFERENT,
-                deliberately wider "truly nothing" check (bmad/10 decided). */}
-            {kidSection(t.board.tomorrow, [
-              ...eventTiles(tomorrowEvents),
-              ...otherTomorrowMeals.map((m) => ({
-                key: m.id,
-                icon: pictoFor(m.title, '🍽'),
-                label: m.title,
-                sub: slotLabel(m.slot),
-                narration: `${slotLabel(m.slot)}: ${m.title}`,
-                color: memberColor(m.cook_member_id) ?? undefined,
-              })),
-            ])}
-            {kidAllClear && (
-              <Sayable className="today-kid__clear" text={`🌤️ ${t.board.kidAllClear}`} />
-            )}
-            <PhotoFrame />
-            {/* « Photo du jour » — a big tap-to-hear tile in the toddler lens. */}
-            <WonderFrame />
-          </>
-        )}
-      </main>
-    )
+    return <ToddlerBoard data={data} model={model} greet={greet} weather={weather} openTodos={openTodos} />
   }
 
   // Parent board, Pip "Today" layout: a handwritten tag + greeting, an "Up next"

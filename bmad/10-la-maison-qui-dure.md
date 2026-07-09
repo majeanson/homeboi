@@ -221,15 +221,28 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
 
 ## C · Cohérence & élagage (pruning is a deliverable)
 
-12. ✅ **Un seul modèle du babillard, trois lentilles** [M] — _garde
-    (2026-07-08)_ — parent, toddler and Simple boards are three hand-synced
-    renderers of the same data: `dayClear`, `kidAllClear` (~12 mirrored
-    conditions), and per-lens meal-visibility logic must be kept in
-    agreement by discipline. Extract ONE board view-model (what exists
-    today, what's empty, what's next) that all three lenses render.
-    Invisible to users; removes the class of "the kid board disagrees with
-    the parent board" bugs and makes every future card one change instead of
-    three. _(reuse: pure refactor inside Board.tsx + SimpleBoard.)_
+12. ✅ **Un seul modèle du babillard, trois lentilles** [M] — **SHIPPED
+    2026-07-08** — _garde (2026-07-08)_ — parent, toddler and Simple boards
+    were three hand-synced renderers of the same data: `dayClear`,
+    `kidAllClear` (~12 mirrored conditions), and per-lens meal-visibility
+    logic had to be kept in agreement by discipline. Landed as 6 reviewable
+    commits: (1) a `'simple'` screenshot baseline before the refactor; (2)
+    `src/lib/boardModel.ts` — pure `buildBoardModel(input)` + thin
+    `useBoardModel()` + `NEXT_UP_GRACE_SEC` (was `1800` spelled twice), zero
+    callers yet, with `boardModel.test.ts` locking the emptiness/meal/face/
+    fête/nextUp/midnight-DST cases; (3) wired `Board.tsx` parent + toddler
+    onto the model, hook sitting ABOVE the early returns (hook-order law —
+    the toddler branch is the only code a locked kiosk runs); (4)
+    `SimpleBoard` consumes `{ model, greet }` instead of re-deriving nextUp/
+    today/tonight on its own clock; (5) aligned the toddler « Demain » to
+    `model.meals.otherTomorrow` + `tomorrowSupper` — the decided bug-fix (a
+    hidden slot no longer leaks, the souper hero no longer repeats); (6)
+    extracted `src/components/board/ToddlerBoard.tsx` out of `Board.tsx` (a
+    pure move — `Board.tsx` now just branches `audience === 'toddler'` and
+    hands the model + weather + openTodos down). Invisible to users; removes
+    the class of "the kid board disagrees with the parent board" bugs and
+    makes every future card one change instead of three. _(reuse: pure
+    refactor inside Board.tsx + SimpleBoard.)_
 13. ✅ **Un seul moteur ambiant** [M] ◐ — _garde (2026-07-08)_ — the
     screensaver (AmbientScreen), the cast ambient scene, and the board's
     all-clear wonder-photo hero are three renderings of "the house at
