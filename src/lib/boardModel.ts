@@ -1,6 +1,6 @@
 import { isPastSec, mealSlotPast, useNow } from './itemLife'
 import { localDayStart, addLocalDays } from './localDay'
-import { holidaysOnDay, holidaysInRange, type Holiday } from './year'
+import { holidaysOnDay, holidaysInRange, schoolDayKind, type Holiday, type SchoolYear } from './year'
 import { SLOT_RANK, type MealSlot } from './mealSlots'
 import { pickNextEventToday, BOARD_NEXTUP } from './ambientScene'
 import type { MealPrefs } from './mealPrefs'
@@ -66,6 +66,9 @@ export interface BoardModelInput {
   fetesOn: boolean
   // lib/mealPrefs.useMealPrefs() — pass the ONE instance through, don't re-derive.
   mealPrefs: MealPrefs
+  // D-17: the household's school-year bounds (lib/year useSchoolYear()), null =
+  // never configured. Passed through, not re-fetched — same rule as mealPrefs.
+  schoolYear?: SchoolYear | null
   // Chores/todos/home rows whose "done" write is DEFERRED behind the undo toast —
   // filtered out at once so a live poll can't resurrect them mid-undo.
   pendingDone?: Set<string>
@@ -126,6 +129,10 @@ export interface BoardModel {
   kidAllClear: boolean
   // « Demain » only earns its own section/card when tomorrow holds something.
   hasTomorrow: boolean
+  // D-17: tomorrow's school qualifier (🎒 school / 🏖️ congé) — null MOST days on
+  // purpose (silent except rentrée/dernier jour/relâche edges/in-term fériés, so
+  // summer never becomes wallpaper). Every lens renders the SAME value.
+  tomorrowSchoolKind: 'school' | 'conge' | null
 }
 
 const holidayRow = (h: Holiday, at: number, lang: Lang): EventRow => ({
@@ -147,6 +154,7 @@ const bySlotTime = (a: { slot: string }, b: { slot: string }) =>
 
 export function buildBoardModel(input: BoardModelInput): BoardModel {
   const { data, nowMs, lang, profileId, fetesOn, mealPrefs, hasWeather, hasTomorrowWx, openTodosCount, tomorrowTodoCount } = input
+  const schoolYear = input.schoolYear ?? null
   const pendingDone = input.pendingDone ?? new Set<string>()
   const pendingLeftover = input.pendingLeftover ?? new Set<string>()
   const nowSec = Math.floor(nowMs / 1000)
@@ -255,13 +263,19 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     tomorrowEvents.length === 0 &&
     (data?.tomorrowMeals?.length ?? 0) === 0
 
+  // D-17: silent (null) on almost every day BY DESIGN — see schoolDayKind. When it
+  // DOES fire it's always worth a "Demain" card of its own (a relâche starting
+  // tomorrow with nothing else on the calendar is still worth flagging).
+  const tomorrowSchoolKind = schoolDayKind(tomorrowDay, schoolYear, fetesOn)
+
   const hasTomorrow =
     hasTomorrowWx ||
     !!data?.tomorrowNote ||
     !!tomorrowSupper ||
     otherTomorrow.length > 0 ||
     tomorrowEvents.length > 0 ||
-    tomorrowTodoCount > 0
+    tomorrowTodoCount > 0 ||
+    tomorrowSchoolKind !== null
 
   return {
     today: { events: todayEvents, chores: todayChores, todos: todayTodos, home: todayHome, work: filWork },
@@ -274,6 +288,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     dayClear,
     kidAllClear,
     hasTomorrow,
+    tomorrowSchoolKind,
   }
 }
 

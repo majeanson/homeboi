@@ -583,6 +583,19 @@ export const GUIDE: GuideEntry[] = [
           en: 'Answers “what changed since this morning?” with no lingering badge or count — just a glance, on request.',
         },
       },
+      {
+        // D-17 (bmad/10) « La rentrée » — appended at the END (guide points are
+        // APPEND-ONLY, indexed; operatorHelp 'schoolYear' points at index 21).
+        label: { fr: 'La rentrée', en: 'Back to school' },
+        detail: {
+          fr: 'Réglages ▸ Le babillard ▸ Rendez-vous : donne une fois la rentrée, le dernier jour et les relâches. « Demain » sur le babillard sait alors dire 🎒 « École demain » ou 🏖️ « Congé demain » — mais seulement à la rentrée, au dernier jour, aux abords d’une relâche ou d’un férié en pleine année scolaire, jamais un jour ordinaire ni tout l’été. L’année scolaire s’ajoute aussi aux repères de [[card:board|L’année]].',
+          en: 'Settings ▸ The board ▸ Events: give the first day, the last day, and any breaks once. « Tomorrow » on the board can then say 🎒 “School tomorrow” or 🏖️ “Day off tomorrow” — but only at the start, the last day, around a break, or an in-term holiday, never on an ordinary day or all summer. The school year also joins the fixed points in [[card:board|The year]].',
+        },
+        why: {
+          fr: 'Une seule saisie par année — pas un calendrier à refaire, pas un rappel qui parle tous les jours pour rien.',
+          en: 'One entry per year — no calendar to rebuild, no reminder chattering every single day for nothing.',
+        },
+      },
     ],
   },
   {

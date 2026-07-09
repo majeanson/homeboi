@@ -330,13 +330,28 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
 ## D · La portée (reach, without ever getting louder)
 
 17. ✅ ↻ **La rentrée** [M] ◐ — _garde, rentrée half only (Marc, 2026-07-08:
-    « Rentrée only » — the 08-C-25 rush-hour diet half STAYS ⏸ parked)_ —
-    re-opens 09-A-3: the household types its school-year bounds once a year
-    (first/last day, relâche — ONE settings card, no imports); the board's
+    « Rentrée only » — the 08-C-25 rush-hour diet half STAYS ⏸ parked)_ — **SHIPPED
+    2026-07-08** — re-opens 09-A-3: the household types its school-year bounds once
+    a year (first/last day, relâche — ONE settings card, no imports); the board's
     « Demain » knows a school morning from a vacation morning; the year view
     (09 A-1) gets its school-year bounds for free. The rush-hour
-    content-diet remains parked as 08-C-25 for a future doc. _(reuse:
-    lib/year.ts as the home (09 D-16), the board card machinery.)_
+    content-diet remains parked as 08-C-25 for a future doc. Migration
+    `0106_household_preferences` — the DB-6 rule fires at last (a generic
+    `(household_id, key)` JSON store, `functions/_lib/householdPrefs.ts`
+    `getPref`/`setPref`/`clearPref`), holding key `schoolYear`
+    (`functions/_lib/schoolYear.ts` validates + rides `/api/household`, no new
+    endpoint). `lib/year.ts` gains `SchoolYear`/`SchoolBreak` + `schoolDayKind`
+    (DECIDED: silent except rentrée/dernier jour/relâche edges/in-term fériés — a
+    normal Tuesday or all of summer never wallpapers) + `useSchoolYear()` +
+    `yearPoints()`'s new `'ecole'` kind. `lib/boardModel.ts` computes
+    `tomorrowSchoolKind` ONCE (model-side); all three lenses render the same 🎒/🏖️
+    qualifier (`Board.tsx`, toddler as a `Sayable` in `ToddlerBoard.tsx`, plain text
+    in `SimpleBoard.tsx`) — `hasTomorrow` ORs it in, so a bare relâche start still
+    earns the « Demain » card. `SchoolYearSection` (`operator/agenda.tsx`) stacks
+    under the SAME `events` pill as `EventsSection` (C-15 rule: no new pill).
+    `YearView.tsx` gets an `ecole` dot + legend entry, same client-derived pattern
+    as the fêtes. _(reuse: lib/year.ts as the home (09 D-16), the board card
+    machinery.)_
 18. ✅ ↻ **« Le pont », version minimale — des proches durables** [M] ◐ —
     _garde (2026-07-08 — Marc: nobody concrete yet, **build the mechanism
     generically**; the 08 revive condition is waived in favour of a generic

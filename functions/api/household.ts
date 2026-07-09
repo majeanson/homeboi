@@ -16,6 +16,7 @@ import {
 import { householdAiEnabled } from '../_lib/aiPref'
 import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
+import { householdSchoolYear, setHouseholdSchoolYear, clearHouseholdSchoolYear, cleanSchoolYear } from '../_lib/schoolYear'
 
 // Household-level settings that aren't members/devices/chores: the postal code
 // used by the flyer/deal lookups (set once, used every trip), the allowlist of
@@ -49,6 +50,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const aisleOverrides = await householdAisleOverrides(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
+  const schoolYear = await householdSchoolYear(ctx.env, actor.householdId)
   return ok({
     name,
     postal,
@@ -62,6 +64,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     aisleOrder,
     aisleOverrides,
     aiEnabled,
+    schoolYear,
     ...shareInfo,
   })
 })
@@ -84,6 +87,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     wifiPassword?: string | null
     houseRules?: string | null
     binDay?: string | null
+    schoolYear?: unknown // { firstDay, lastDay, breaks: [{from,to,label?}] } | null (null clears)
   }>(ctx.request)
 
   // Household name: trimmed + capped at 60 (like signup). Blank is ignored — the
@@ -241,6 +245,20 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
   }
 
+  // School-year bounds (migration 0106, D-17): { firstDay, lastDay, breaks } | null
+  // (null clears — the household went back to "not configured", the client falls
+  // back to silence everywhere). A malformed/unordered payload 400s instead of
+  // storing a half-valid year the board would misread all school year.
+  if (body && 'schoolYear' in body) {
+    if (body.schoolYear == null) {
+      await clearHouseholdSchoolYear(ctx.env, actor.householdId)
+    } else {
+      const cleaned = cleanSchoolYear(body.schoolYear)
+      if (!cleaned) return badRequest('Année scolaire invalide (dates manquantes ou mal ordonnées).')
+      await setHouseholdSchoolYear(ctx.env, actor.householdId, cleaned)
+    }
+  }
+
   const name = await householdName(ctx.env, actor.householdId)
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
@@ -253,6 +271,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const aisleOverrides = await householdAisleOverrides(ctx.env, actor.householdId)
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
+  const schoolYear = await householdSchoolYear(ctx.env, actor.householdId)
   return ok({
     name,
     postal,
@@ -266,6 +285,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     aisleOrder,
     aisleOverrides,
     aiEnabled,
+    schoolYear,
     ...shareInfo,
   })
 })

@@ -31,6 +31,13 @@
   font-size: var(--text-md);
   color: var(--ink-soft);
 }
+/* D-17 « La rentrée » — the school/congé qualifier line, same quiet treatment as
+   the weather chip above it. Silent most days by design (lib/year.schoolDayKind). */
+.tomorrow-school {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-md);
+  color: var(--ink-soft);
+}
 
 /* The little segmented view switch (bento · next · lanes). */
 .boardview {

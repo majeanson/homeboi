@@ -1,4 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
 import { createDeviceStore } from './createDeviceStore'
+import { api } from './api'
+import { HOUSEHOLD_KEY } from './queryKeys'
+import { addLocalDays, localDayOfWeek } from './localDay'
 
 // D-16 (bmad/09) — the derived-year layer, starting with A-2 « les fêtes
 // québécoises et canadiennes ». Same design law as `_lib/birthdays`: annual
@@ -115,6 +119,88 @@ export function holidaysInRange(fromDaySec: number, days: number): { holiday: Ho
     }
   }
   return out.sort((a, b) => a.at - b.at)
+}
+
+// D-17 (bmad/10) — « La rentrée ». The household types its school-year bounds ONCE
+// a year (first/last day, relâche windows) so the board's « Demain » knows a school
+// morning from a vacation morning, and the year view gets the same bounds for free
+// (yearPoints below). Rides /api/household (functions/_lib/schoolYear.ts); dates are
+// LOCAL-midnight unix seconds, the same day-key convention every other dated thing
+// here uses, so they compare directly with no timezone math on this side either.
+export interface SchoolBreak {
+  from: number // local-midnight unix s, inclusive
+  to: number // local-midnight unix s, inclusive
+  label?: string
+}
+export interface SchoolYear {
+  firstDay: number // la rentrée
+  lastDay: number // le dernier jour
+  breaks: SchoolBreak[]
+}
+
+const isSchoolWeekday = (daySec: number) => {
+  const dow = localDayOfWeek(new Date(daySec * 1000))
+  return dow !== 0 && dow !== 6
+}
+const breakContaining = (daySec: number, sy: SchoolYear): SchoolBreak | undefined =>
+  sy.breaks.find((b) => daySec >= b.from && daySec <= b.to)
+
+// Whether `daySec` is worth announcing on the board as a school day (🎒) or a day
+// off (🏖️) — DECIDED (bmad/10): silent (null) except at the interesting EDGES —
+// rentrée, dernier jour, a relâche's start/return, and an in-term férié — so a
+// normal Tuesday in October, or the whole summer, stays wallpaper-free instead of
+// repeating the same backpack every single morning.
+//   - null on weekends, always (even a rentrée/dernier jour never lands there).
+//   - null when `sy` is unset, or `daySec` falls outside [firstDay, lastDay]
+//     (summer stays silent, not "🏖️ every day").
+//   - null on an ordinary in-term school day that isn't itself an edge.
+export function schoolDayKind(daySec: number, sy: SchoolYear | null | undefined, holidaysOn: boolean): 'school' | 'conge' | null {
+  if (!sy) return null
+  if (!isSchoolWeekday(daySec)) return null
+
+  const inTerm = daySec >= sy.firstDay && daySec <= sy.lastDay
+  if (!inTerm) return null
+
+  // Rentrée / dernier jour — the two term-boundary edges, always worth naming.
+  if (daySec === sy.firstDay) return 'school'
+  if (daySec === sy.lastDay) return 'school'
+
+  // A relâche STARTING today — checked BEFORE the onBreak gate below, since
+  // `breakContaining` already considers `daySec === b.from` "on the break" (it's
+  // inclusive of `from`), which would otherwise short-circuit this exact edge.
+  for (const b of sy.breaks) {
+    if (daySec === b.from) return 'conge'
+  }
+
+  // Deep inside a break (not the start day, handled above) — silent, not wallpaper.
+  if (breakContaining(daySec, sy)) return null
+
+  // Returning FROM a break: walk back over any weekend to the previous school
+  // weekday — if THAT day was inside a break, `daySec` is the first day back.
+  let probe = addLocalDays(daySec, -1)
+  let guard = 0
+  while (!isSchoolWeekday(probe) && guard < 7) {
+    probe = addLocalDays(probe, -1)
+    guard++
+  }
+  if (breakContaining(probe, sy)) return 'school'
+
+  // In-term férié: a stat holiday landing on what would otherwise be a school day.
+  if (holidaysOn && holidaysOnDay(daySec).some((h) => h.kind === 'ferie')) return 'conge'
+
+  return null
+}
+
+// The household settings' school-year bounds, resolved (null = never configured).
+// Rides the same HOUSEHOLD_KEY cache as every other household setting — a save in
+// Réglages ▸ Le babillard invalidates it, so the board/year view re-read live.
+export function useSchoolYear(): SchoolYear | null {
+  const { data } = useQuery({
+    queryKey: HOUSEHOLD_KEY,
+    queryFn: () => api<{ schoolYear?: SchoolYear | null }>('household'),
+    staleTime: 5 * 60_000,
+  })
+  return data?.schoolYear ?? null
 }
 
 // A-4 (bmad/09): the FR-CA season-turnover ritual SEEDS. Not a system — a
@@ -271,7 +357,7 @@ export function groupByYear<T>(rows: readonly T[], at: (x: T) => number): [numbe
 // trips); the fêtes derive HERE (client-side, zero household data, honouring
 // the per-device opt-out). One sorted list the year view's grid and month
 // sections both read.
-export type YearPointKind = 'fete' | 'birthday' | 'event' | 'upkeep' | 'life'
+export type YearPointKind = 'fete' | 'birthday' | 'event' | 'upkeep' | 'life' | 'ecole'
 export interface YearPoint {
   day: number // local-midnight unix sec
   kind: YearPointKind
@@ -287,14 +373,38 @@ export interface YearData {
   life: { carnetId: string; name: string; color: string | null; day: number }[]
   trips: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: true }[]
 }
+// D-17: the school-year bounds' own bilingual labels — inline like the fêtes
+// (Holiday.label above), so this pure lib file stays independent of the i18n
+// dictionary. Only the term-boundary edges earn a point here (rentrée, dernier
+// jour, each relâche's start) — mid-break/mid-term days stay unplotted, same
+// "silent except edges" rule schoolDayKind follows for the board.
+const SCHOOL_LABEL = {
+  rentree: { fr: 'Rentrée scolaire', en: 'Back to school' },
+  dernierJour: { fr: 'Dernier jour d’école', en: 'Last day of school' },
+  relache: { fr: 'Relâche', en: 'Break' },
+}
 export function yearPoints(
   data: Pick<YearData, 'birthdays' | 'events' | 'upkeep' | 'life'>,
-  opts: { lang: 'fr' | 'en'; holidays: boolean; from: number; to: number },
+  opts: { lang: 'fr' | 'en'; holidays: boolean; from: number; to: number; schoolYear?: SchoolYear | null },
 ): YearPoint[] {
   const pts: YearPoint[] = []
   if (opts.holidays) {
     for (const h of holidaysInRange(opts.from, Math.round((opts.to - opts.from) / 86400))) {
       pts.push({ day: h.at, kind: 'fete', label: h.holiday.label[opts.lang], emoji: h.holiday.emoji })
+    }
+  }
+  const sy = opts.schoolYear
+  if (sy) {
+    if (sy.firstDay >= opts.from && sy.firstDay < opts.to) {
+      pts.push({ day: sy.firstDay, kind: 'ecole', label: SCHOOL_LABEL.rentree[opts.lang], emoji: '🎒' })
+    }
+    if (sy.lastDay >= opts.from && sy.lastDay < opts.to) {
+      pts.push({ day: sy.lastDay, kind: 'ecole', label: SCHOOL_LABEL.dernierJour[opts.lang], emoji: '🎉' })
+    }
+    for (const b of sy.breaks) {
+      if (b.from >= opts.from && b.from < opts.to) {
+        pts.push({ day: b.from, kind: 'ecole', label: b.label || SCHOOL_LABEL.relache[opts.lang], emoji: '🏖️' })
+      }
     }
   }
   for (const b of data.birthdays) pts.push({ day: b.day, kind: 'birthday', label: b.name, emoji: '🎂', age: b.age })

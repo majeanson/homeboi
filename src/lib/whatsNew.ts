@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'rentree',
+    text: {
+      fr: 'Nouveau : « La rentrée » — donne une fois la rentrée, le dernier jour et les relâches dans Réglages ▸ Le babillard, et « Demain » sait dire école ou congé.',
+      en: 'New: “Back to school” — give the first day, last day and breaks once in Settings ▸ The board, and “Tomorrow” can say school or day off.',
+    },
+    card: 'board',
+  },
+  {
     id: 'since-morning',
     text: {
       fr: 'Nouveau : touche la salutation du babillard pour voir « Depuis ce matin » — ce que la maisonnée a ajouté aujourd’hui, par visage.',

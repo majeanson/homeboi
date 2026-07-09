@@ -58,7 +58,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
-import { useHolidaysEnabled } from '../lib/year'
+import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useBoardModel } from '../lib/boardModel'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
 import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
@@ -277,6 +277,9 @@ export function Board() {
   // all-day, nobody's, never editable — the emoji is the picture. All shown by
   // default; per-device opt-out in Réglages ▸ Affichage (Marc's OQ-4 verdict).
   const fetesOn = useHolidaysEnabled()
+  // D-17: the household's school-year bounds (Réglages ▸ Le babillard) — read
+  // once here and passed through the model, so all three lenses agree.
+  const schoolYear = useSchoolYear()
 
   // C-12 (bmad/10) — the ONE pure board view-model (lib/boardModel): merges
   // fêtes, applies the face lens, filters pending-undo rows, gates meal slots
@@ -289,6 +292,7 @@ export function Board() {
     profileId,
     fetesOn,
     mealPrefs,
+    schoolYear,
     pendingDone,
     pendingLeftover,
     hasWeather: !!weather,
@@ -1009,6 +1013,16 @@ export function Board() {
               // Self-hides entirely when tomorrow holds nothing (the hasTomorrow gate).
               nodes.tomorrow = hasTomorrow ? (
                 <Section label={t.board.tomorrow} icon="sun-horizon-bold" tint="var(--sky)">
+                  {/* D-17: the school/congé qualifier — silent almost every day BY
+                      DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,
+                      see lib/year.schoolDayKind), so it never becomes wallpaper. */}
+                  {model.tomorrowSchoolKind && (
+                    <p className="tomorrow-school mono">
+                      {model.tomorrowSchoolKind === 'school'
+                        ? `🎒 ${t.board.tomorrowSchool}`
+                        : `🏖️ ${t.board.tomorrowConge}`}
+                    </p>
+                  )}
                   {tomorrowWx && (
                     <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
                       <span aria-hidden="true" style={{ display: 'inline-flex' }}>

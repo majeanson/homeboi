@@ -233,6 +233,16 @@ export const OPERATOR_HELP = {
       en: `The year's calm journal: the care noted in the carnets, the chores done, the trips taken, the drawings kept — month by month. Names and dates, never counts. Nothing to maintain: it writes itself.`,
     },
   },
+  schoolYear: {
+    // D-17 (bmad/10) — points at the board card's appended point (guide points
+    // are APPEND-ONLY, indexed; see guideContent.ts's 'board' card).
+    card: 'board',
+    point: 21,
+    body: {
+      fr: `La rentrée, le dernier jour et les relâches — une fois par année. Le babillard sait alors dire « école demain » ou « congé demain » sans que ce soit affiché tous les jours.`,
+      en: `The first day, the last day, and any breaks — once a year. The board can then say "school tomorrow" or "day off tomorrow" without showing it every single day.`,
+    },
+  },
   cercleGroups: {
     card: 'cercle',
     point: 6,

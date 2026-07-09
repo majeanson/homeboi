@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
 import { localYMD, addLocalDays } from '../../lib/localDay'
-import { useHolidaysEnabled, yearPoints, groupByMonth, type YearData, type YearPointKind } from '../../lib/year'
+import { useHolidaysEnabled, useSchoolYear, yearPoints, groupByMonth, type YearData, type YearPointKind } from '../../lib/year'
 import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
 import { Cluster } from '../Layout'
@@ -25,9 +25,10 @@ const KIND_COLOR: Record<YearPointKind | 'trip', string> = {
   upkeep: '#88a36f', // sage — the chore/upkeep family colour
   life: '#6b7a8f', // slate — the long-jeu horizon
   trip: '#2a8f85', // teal — the voyage family colour
+  ecole: '#D9842A', // marigold — D-17, matches the board's tomorrow-school accent
 }
 
-const LEGEND: (YearPointKind | 'trip')[] = ['fete', 'birthday', 'trip', 'event', 'upkeep', 'life']
+const LEGEND: (YearPointKind | 'trip')[] = ['fete', 'birthday', 'trip', 'event', 'upkeep', 'life', 'ecole']
 
 // Page-local query key: the year read lives only here (queryKeys.ts is for
 // cross-page keys). Keyed on the window start so the year rolls at month turn.
@@ -50,6 +51,9 @@ export function YearView({
   const from = monthGrid(y0, m0).monthStart
   const to = monthGrid(y0, m0 + 12).monthStart
   const holidays = useHolidaysEnabled()
+  // D-17: the school-year bounds ride the SAME client-derived pattern as the
+  // fêtes (no /api/year import needed) — points added inside yearPoints().
+  const schoolYear = useSchoolYear()
 
   const { data, isLoading } = useQuery({
     queryKey: ['year', from],
@@ -58,8 +62,8 @@ export function YearView({
   })
 
   const points = useMemo(
-    () => (data ? yearPoints(data, { lang, holidays, from, to }) : []),
-    [data, lang, holidays, from, to],
+    () => (data ? yearPoints(data, { lang, holidays, from, to, schoolYear }) : []),
+    [data, lang, holidays, from, to, schoolYear],
   )
   const trips = data?.trips ?? []
 

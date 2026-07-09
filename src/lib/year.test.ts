@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { easter, HOLIDAYS, holidayDaySec, holidaysOnDay, holidaysInRange, ageAt, groupByYear, groupByMonth, yearPoints } from './year'
+import {
+  easter,
+  HOLIDAYS,
+  holidayDaySec,
+  holidaysOnDay,
+  holidaysInRange,
+  ageAt,
+  groupByYear,
+  groupByMonth,
+  yearPoints,
+  schoolDayKind,
+  type SchoolYear,
+} from './year'
+import { localDayStart, addLocalDays } from './localDay'
 
 // D-16 (bmad/09) — the derived-year layer. The moving feasts are the risky
 // part: computus (Easter), the nth-weekday rules (Travail, Action de grâce,
@@ -138,5 +151,82 @@ describe('day + range lookups', () => {
         expect(roundTrip.getDate(), `${h.id} ${y}`).toBe(d)
       }
     }
+  })
+})
+
+// D-17 (bmad/10) « La rentrée » — schoolDayKind is DECIDED to be silent (null)
+// except at the interesting edges (rentrée, dernier jour, relâche edges, in-term
+// fériés) so summer/weekends never become wallpaper. Every daySec here is
+// LOCAL-midnight America/Toronto (localDay.ts), matching how boardModel.ts feeds
+// it (tomorrowDay = addLocalDays(dayNow, 1)) — NOT the runtime-local `day()`
+// helper the fêtes tests above use.
+describe('schoolDayKind (D-17)', () => {
+  const TZ = 'America/Toronto'
+  const local = (iso: string) => localDayStart(new Date(iso), TZ)
+
+  // A school year spanning two DST changes (fall-back Nov 1 2026, spring-forward
+  // Mar 8 2026 already happened before this year starts) with ONE relâche the
+  // first week of March 2027 (no DST crossing there — March 2027's 2nd Sunday
+  // is the 14th) and a Thanksgiving (in-term férié) inside the fall term.
+  const sy: SchoolYear = {
+    firstDay: local('2026-08-31T12:00:00Z'), // Mon — la rentrée
+    lastDay: local('2027-06-25T12:00:00Z'), // Fri — le dernier jour
+    breaks: [{ from: local('2027-03-01T12:00:00Z'), to: local('2027-03-05T12:00:00Z'), label: 'Relâche' }],
+  }
+
+  it('is null on weekends, even inside the term', () => {
+    const sat = local('2026-09-12T12:00:00Z') // Sat, in term, ordinary week
+    expect(schoolDayKind(sat, sy, true)).toBeNull()
+  })
+
+  it('is null when the school year is unset', () => {
+    expect(schoolDayKind(local('2026-09-15T12:00:00Z'), null, true)).toBeNull()
+  })
+
+  it('flags rentrée and dernier jour as school days', () => {
+    expect(schoolDayKind(sy.firstDay, sy, true)).toBe('school')
+    expect(schoolDayKind(sy.lastDay, sy, true)).toBe('school')
+  })
+
+  it('is null before firstDay and after lastDay (summer stays silent, not "🏖️ every day")', () => {
+    expect(schoolDayKind(local('2026-08-10T12:00:00Z'), sy, true)).toBeNull() // before bounds
+    expect(schoolDayKind(local('2027-07-06T12:00:00Z'), sy, true)).toBeNull() // after bounds
+  })
+
+  it('is null (silent) on an ordinary in-term school day, not near any edge', () => {
+    // A plain Wednesday in November, far from any break/férié/bound — no reason
+    // for the board to speak (this is the "not wallpaper" guarantee).
+    expect(schoolDayKind(local('2026-11-04T12:00:00Z'), sy, true)).toBeNull()
+  })
+
+  it('flags a relâche STARTING as congé, stays silent deep inside it, and flags the return as school', () => {
+    expect(schoolDayKind(sy.breaks[0]!.from, sy, true)).toBe('conge') // Mon Mar 1 2027
+    const midBreak = addLocalDays(sy.breaks[0]!.from, 2, TZ) // Wed Mar 3 2027
+    expect(schoolDayKind(midBreak, sy, true)).toBeNull()
+    const backToSchool = addLocalDays(sy.breaks[0]!.to, 3, TZ) // Fri Mar 5 → Mon Mar 8 2027
+    expect(schoolDayKind(backToSchool, sy, true)).toBe('school')
+  })
+
+  it('flags an in-term férié as congé, but only when holidaysOn is true', () => {
+    // Action de grâce 2026 (2nd Monday of October) falls inside the fall term.
+    const thanksgiving = local('2026-10-12T12:00:00Z')
+    expect(holidaysOnDay(thanksgiving).map((h) => h.id)).toContain('action-de-grace')
+    expect(schoolDayKind(thanksgiving, sy, true)).toBe('conge')
+    expect(schoolDayKind(thanksgiving, sy, false)).toBeNull() // household opted out of fêtes
+  })
+
+  it('walks the DST spring-forward boundary correctly (23h day) when returning from a break', () => {
+    // A break ending the Friday right before the Mar 8 2026 DST changeover — the
+    // household returns to school the FOLLOWING Monday. addLocalDays must step the
+    // short 23h Sunday correctly for the walk-back to land on the right weekday.
+    const dstSy: SchoolYear = {
+      firstDay: local('2025-08-25T12:00:00Z'),
+      lastDay: local('2026-06-26T12:00:00Z'),
+      breaks: [{ from: local('2026-03-02T12:00:00Z'), to: local('2026-03-06T12:00:00Z') }], // Mon–Fri
+    }
+    const monAfterDst = local('2026-03-09T12:00:00Z') // Mon, after the Mar 8 DST Sunday
+    expect(schoolDayKind(monAfterDst, dstSy, true)).toBe('school')
+    // The DST Sunday itself is a weekend — silent regardless.
+    expect(schoolDayKind(local('2026-03-08T12:00:00Z'), dstSy, true)).toBeNull()
   })
 })

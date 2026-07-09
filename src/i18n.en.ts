@@ -463,6 +463,11 @@ export const EN: typeof FR = {
       storm: 'Wild out there — calm in here.',
     },
     tomorrowClear: 'Nothing planned for tomorrow.',
+    // D-17 « La rentrée » — the school/congé qualifier line, silent almost every
+    // day by design (lib/year.schoolDayKind): only the rentrée, last day, break
+    // edges and in-term holidays earn it.
+    tomorrowSchool: 'School tomorrow',
+    tomorrowConge: 'Day off tomorrow',
     laneClear: 'Free',
     kidAllClear: 'Nothing planned. Have a nice day!',
     shufflePhoto: 'Another photo',
@@ -498,6 +503,8 @@ export const EN: typeof FR = {
       event: 'Yearly events',
       upkeep: 'Upkeep',
       life: 'The long game',
+      // D-17 « La rentrée » — the school-year bounds (rentrée, last day, breaks).
+      ecole: 'School year',
     },
     empty: 'The horizon is clear — the holidays will announce themselves.',
   },
@@ -1983,6 +1990,19 @@ export const EN: typeof FR = {
     eventDateLabel: 'Date',
     eventTimeLabel: 'Time (optional)',
     noEvents: 'No upcoming events.',
+    // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
+    schoolYearTitle: 'School year',
+    schoolYearHint: 'The first day, the last day, and any breaks — once a year. The board can then say "school tomorrow" or "day off tomorrow", and the year view keeps the bounds too.',
+    schoolYearFirstDay: 'First day',
+    schoolYearLastDay: 'Last day',
+    schoolYearBreaksTitle: 'Breaks',
+    schoolYearBreakFrom: 'From',
+    schoolYearBreakTo: 'to',
+    schoolYearBreakLabel: 'Name (optional, e.g. "March break")',
+    schoolYearAddBreak: 'Add a break',
+    schoolYearRemoveBreak: 'Remove this break',
+    schoolYearClear: 'Clear the school year',
+    schoolYearBad: 'Invalid dates — check that the first day comes before the last day.',
     thisWeekTab: 'This week',
     thisWeekTitle: 'This week together',
     thisWeekHint: 'A calm look at the week — what’s coming, and what we did together. Faces, never scores.',

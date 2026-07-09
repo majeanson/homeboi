@@ -75,6 +75,14 @@ export function SimpleBoard({
     <main className="kid__main today-simple">
       {/* Same personal greeting as the other lenses; tap to hear it. */}
       <Sayable className="today-simple__greet" text={greet} />
+      {/* D-17: the school/congé qualifier — silent almost every day BY DESIGN
+          (see lib/year.schoolDayKind), plain readable text like the rest of the
+          Simple lens (a capable reader, unlike the toddler Sayable). */}
+      {model.tomorrowSchoolKind && (
+        <p className="today-simple__school mono">
+          {model.tomorrowSchoolKind === 'school' ? `🎒 ${t.board.tomorrowSchool}` : `🏖️ ${t.board.tomorrowConge}`}
+        </p>
+      )}
       <div className="bigtiles today-simple__tiles">
         {tiles.map((tile) => (
           <Link

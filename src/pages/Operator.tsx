@@ -15,7 +15,7 @@ import { AisleOrderSection } from '../components/operator/aisles'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { GuestSection } from '../components/operator/guest'
-import { EventsSection } from '../components/operator/agenda'
+import { EventsSection, SchoolYearSection } from '../components/operator/agenda'
 import { RoutinesSection } from '../components/operator/chores'
 import { ChoresTabPanel } from '../components/operator/homeProjects'
 import { PhotosSection, RecapSection } from '../components/operator/media'
@@ -264,7 +264,19 @@ export function Operator() {
   // device/household-wide machinery (access, display, veille, IA, diagnostics).
   const subSections: Record<string, { key: string; label: string; node: ReactNode }[]> = {
     board: [
-      { key: 'events', label: t.operator.events, node: <EventsSection events={events} members={members} onChange={load} /> },
+      // D-17 « La rentrée »: SchoolYearSection stacks under the SAME 'events' pill
+      // as EventsSection (C-15 standing rule — a new setting merges into an
+      // existing sub, never adds a pill; same board▸thisweek precedent).
+      {
+        key: 'events',
+        label: t.operator.events,
+        node: (
+          <>
+            <EventsSection events={events} members={members} onChange={load} />
+            <SchoolYearSection help={operatorHelp} />
+          </>
+        ),
+      },
       { key: 'layout', label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
       // « La semaine » — the calm week glance + the AI weekly recap, one pill.
       {

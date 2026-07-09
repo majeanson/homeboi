@@ -247,6 +247,19 @@ export function ToddlerBoard({
               and the souper (already the hero above) no longer repeats (bmad/10 C-12,
               decided bug-fix). kidAllClear above stays on the raw data — a DIFFERENT,
               deliberately wider "truly nothing" check (bmad/10 decided). */}
+          {/* D-17: the school/congé qualifier — silent almost every day BY DESIGN
+              (see lib/year.schoolDayKind); tap-to-hear, matching every other
+              toddler-lens line. */}
+          {model.tomorrowSchoolKind && (
+            <Sayable
+              className="today-kid__school"
+              text={
+                model.tomorrowSchoolKind === 'school'
+                  ? `🎒 ${t.board.tomorrowSchool}`
+                  : `🏖️ ${t.board.tomorrowConge}`
+              }
+            />
+          )}
           {kidSection(t.board.tomorrow, [
             ...eventTiles(tomorrowEvents),
             ...otherTomorrowMeals.map((m) => ({

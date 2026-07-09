@@ -44,6 +44,13 @@
   font-weight: 650;
   margin: 0;
 }
+/* D-17 « La rentrée » — the Simple-lens school/congé qualifier, plain readable
+   text (a capable reader, unlike the toddler Sayable). */
+.today-simple__school {
+  margin: -0.75rem 0 0;
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+}
 .today-simple__tiles {
   /* Three doors: side-by-side on a tablet, a single calm column on a phone. */
   grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
@@ -68,6 +75,14 @@
   color: var(--ink-soft);
   font-size: var(--text-lg);
   margin: 0 0 0.75rem;
+}
+/* D-17 « La rentrée » — the toddler-lens school/congé qualifier, a plain Sayable
+   line (not a whole kidSection) since it's silent most days by design. */
+.today-kid__school {
+  align-self: center;
+  font-size: var(--text-lg);
+  color: var(--ink-soft);
+  margin: -0.5rem 0 0;
 }
 .today-hero {
   display: flex;

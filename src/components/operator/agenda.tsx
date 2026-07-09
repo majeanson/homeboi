@@ -1,15 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { type HelpMode } from '../../lib/helpMode'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
 import { isGuest } from '../../lib/device'
+import { api } from '../../lib/api'
 import { formatDay, formatTime } from '../../lib/format'
+import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
+import { type SchoolYear, type SchoolBreak } from '../../lib/year'
 import { EventForm } from '../forms/EventForm'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { ListRow } from '../ListRow'
+import { StatusMessage } from '../StatusMessage'
+import { Cluster } from '../Layout'
 import { MONTH_KEY, EVENTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
@@ -119,6 +126,177 @@ export function EventsSection({
           <InlineIcon name="plus-bold" /> {t.operator.addEvent}
         </button>
       )}
+    </OperatorSection>
+  )
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+// LOCAL-midnight unix s ↔ a `<input type="date">` string, matching the browser's
+// own zone (the same "browser tz = household tz" assumption EventForm's date
+// field already makes — the kiosk lives in the house).
+const secToDateStr = (sec: number) => {
+  const d = new Date(sec * 1000)
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+const dateStrToSec = (s: string): number | null => {
+  if (!s) return null
+  const t = new Date(`${s}T00:00`).getTime()
+  return Number.isFinite(t) ? Math.floor(t / 1000) : null
+}
+
+interface BreakDraft {
+  key: string
+  from: string
+  to: string
+  label: string
+}
+let breakSeq = 0
+const newBreakKey = () => `sb${++breakSeq}`
+
+// « La rentrée » (D-17, bmad/10) — the school-year bounds, typed ONCE a year: the
+// board's « Demain » then knows a school morning from a vacation morning (see
+// lib/year.schoolDayKind), and the year view gets the same bounds for free
+// (lib/year.yearPoints). Appended to the SAME « Agenda » sub as EventsSection
+// (C-15 standing rule: a new setting merges into an existing sub, never adds a
+// pill). Persists on /api/household (functions/_lib/schoolYear.ts) — the server
+// re-validates too (dates ordered, breaks inside the term), so a malformed save
+// still surfaces the shared error banner instead of storing something the board
+// would misread all year.
+export function SchoolYearSection({ help }: { help?: HelpMode }) {
+  const t = useT()
+  const { lang } = useLang()
+  const write = useWrite()
+  const qc = useQueryClient()
+  const ro = isGuest()
+  const { data } = useQuery({
+    queryKey: HOUSEHOLD_KEY,
+    queryFn: () => api<{ schoolYear?: SchoolYear | null }>('household'),
+  })
+  const [firstDay, setFirstDay] = useState('')
+  const [lastDay, setLastDay] = useState('')
+  const [breaks, setBreaks] = useState<BreakDraft[]>([])
+  const [seeded, setSeeded] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
+
+  // Seed once from the server value — never re-clobber a mid-edit form on a
+  // background refetch (same "seed once" rule as household.tsx's name field).
+  useEffect(() => {
+    if (seeded || data === undefined) return
+    const sy = data.schoolYear
+    if (sy) {
+      setFirstDay(secToDateStr(sy.firstDay))
+      setLastDay(secToDateStr(sy.lastDay))
+      setBreaks(sy.breaks.map((b) => ({ key: newBreakKey(), from: secToDateStr(b.from), to: secToDateStr(b.to), label: b.label ?? '' })))
+    }
+    setSeeded(true)
+  }, [data, seeded])
+
+  const addBreak = () => setBreaks((bs) => [...bs, { key: newBreakKey(), from: '', to: '', label: '' }])
+  const removeBreak = (key: string) => setBreaks((bs) => bs.filter((b) => b.key !== key))
+  const updateBreak = (key: string, patch: Partial<BreakDraft>) =>
+    setBreaks((bs) => bs.map((b) => (b.key === key ? { ...b, ...patch } : b)))
+
+  async function save() {
+    const first = dateStrToSec(firstDay)
+    const last = dateStrToSec(lastDay)
+    if (first == null || last == null || first >= last) {
+      setStatus('bad')
+      return
+    }
+    const payload: SchoolYear = {
+      firstDay: first,
+      lastDay: last,
+      breaks: breaks.reduce<SchoolBreak[]>((acc, b) => {
+        const from = dateStrToSec(b.from)
+        const to = dateStrToSec(b.to)
+        if (from == null || to == null || from > to) return acc
+        acc.push(b.label.trim() ? { from, to, label: b.label.trim() } : { from, to })
+        return acc
+      }, []),
+    }
+    try {
+      await write('household', { method: 'PATCH', body: { schoolYear: payload }, affectedKeys: [HOUSEHOLD_KEY] })
+      setStatus('saved')
+    } catch {
+      setStatus('bad')
+    }
+  }
+
+  async function clear() {
+    setFirstDay('')
+    setLastDay('')
+    setBreaks([])
+    try {
+      await write('household', { method: 'PATCH', body: { schoolYear: null }, affectedKeys: [HOUSEHOLD_KEY] })
+      qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
+      setStatus('saved')
+    } catch {
+      setStatus('bad')
+    }
+  }
+
+  if (ro) {
+    // Read-only guest: a plain summary, no form.
+    const sy = data?.schoolYear
+    return (
+      <OperatorSection title={t.operator.schoolYearTitle} help={help} helpKey="schoolYear">
+        {sy ? (
+          <p className="mono">
+            {formatDay(sy.firstDay, lang)} → {formatDay(sy.lastDay, lang)}
+          </p>
+        ) : (
+          <EmptyState>{t.operator.schoolYearHint}</EmptyState>
+        )}
+      </OperatorSection>
+    )
+  }
+
+  return (
+    <OperatorSection title={t.operator.schoolYearTitle} hint={t.operator.schoolYearHint} help={help} helpKey="schoolYear">
+      <label className="recur__row mono">
+        <span>{t.operator.schoolYearFirstDay}</span>
+        <input className="input" type="date" value={firstDay} onChange={(e) => setFirstDay(e.target.value)} />
+      </label>
+      <label className="recur__row mono">
+        <span>{t.operator.schoolYearLastDay}</span>
+        <input className="input" type="date" value={lastDay} onChange={(e) => setLastDay(e.target.value)} />
+      </label>
+      <h3 className="operator__field-label">{t.operator.schoolYearBreaksTitle}</h3>
+      {breaks.map((b) => (
+        <Cluster key={b.key} className="operator__schoolbreak">
+          <label className="recur__row mono">
+            <span>{t.operator.schoolYearBreakFrom}</span>
+            <input className="input" type="date" value={b.from} onChange={(e) => updateBreak(b.key, { from: e.target.value })} />
+          </label>
+          <label className="recur__row mono">
+            <span>{t.operator.schoolYearBreakTo}</span>
+            <input className="input" type="date" value={b.to} onChange={(e) => updateBreak(b.key, { to: e.target.value })} />
+          </label>
+          <input
+            className="input"
+            value={b.label}
+            onChange={(e) => updateBreak(b.key, { label: e.target.value })}
+            placeholder={t.operator.schoolYearBreakLabel}
+            aria-label={t.operator.schoolYearBreakLabel}
+          />
+          <RowActions onDelete={() => removeBreak(b.key)} deleteLabel={t.operator.schoolYearRemoveBreak} />
+        </Cluster>
+      ))}
+      <Cluster>
+        <button type="button" className="btn btn--ghost" onClick={addBreak}>
+          <InlineIcon name="plus-bold" /> {t.operator.schoolYearAddBreak}
+        </button>
+        <button type="button" className="btn btn--primary" onClick={save} disabled={!firstDay || !lastDay}>
+          {t.common.save}
+        </button>
+        {(firstDay || lastDay || breaks.length > 0) && (
+          <button type="button" className="btn btn--ghost" onClick={clear}>
+            {t.operator.schoolYearClear}
+          </button>
+        )}
+      </Cluster>
+      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{t.operator.schoolYearBad}</StatusMessage>}
     </OperatorSection>
   )
 }
