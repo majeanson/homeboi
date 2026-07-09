@@ -117,11 +117,11 @@ export interface BoardCardMeta {
 // question.
 export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // ── the pinned band (fridge notes ride above the heroes) ──
-  // `notes` and `heroes` are not `halvable`: notes is a multi-card strip (not one
-  // summary), heroes is two glued hero tiles — neither compresses into "icon + title
-  // + one line" without hiding real content.
+  // `notes` is not `halvable`: a multi-card strip has no one-summary compact form.
+  // `heroes` IS halvable — its mini is a MEDIA tile (the wonder photo + the
+  // temperature, nothing else; DayHeroes.tsx), not the generic icon+title.
   { id: 'notes', icon: 'push-pin-bold', zone: 'band', size: 'full', mode: 'auto', halvable: false },
-  { id: 'heroes', icon: 'sun-bold', zone: 'band', size: 'full', mode: 'auto', halvable: false },
+  { id: 'heroes', icon: 'sun-bold', zone: 'band', size: 'full', mode: 'auto' },
   { id: 'mots', icon: 'envelope-bold', zone: 'band', size: 1, mode: 'auto' },
   { id: 'aRegler', icon: 'warning-bold', zone: 'band', size: 1, mode: 'auto' },
   { id: 'moments', icon: 'moon-stars-bold', zone: 'band', size: 1, mode: 'always' },
@@ -140,10 +140,11 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'voyage', icon: 'map-pin-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'carnets', icon: 'book-open-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'seasonUpkeep', icon: 'broom-bold', zone: 'grid', size: 1, mode: 'auto' },
-  // `drawings` and `photos` are not `halvable` for the same reason as `notes`: a
-  // gallery door and a full-bleed photo box don't have a "one quiet line" to show.
+  // `drawings` is not `halvable` for the same reason as `notes`: a gallery door has
+  // no one-summary compact form. `photos` IS halvable — its mini is a MEDIA tile
+  // (just the current photo; PhotoFrame.tsx).
   { id: 'drawings', icon: 'paint-brush-bold', zone: 'grid', size: 'full', mode: 'always', halvable: false },
-  { id: 'photos', icon: 'image-square-bold', zone: 'grid', size: 'full', mode: 'auto', halvable: false },
+  { id: 'photos', icon: 'image-square-bold', zone: 'grid', size: 'full', mode: 'auto' },
 ]
 
 const META = new Map<BoardCardId, BoardCardMeta>(BOARD_CARDS.map((c) => [c.id, c]))

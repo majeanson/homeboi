@@ -208,6 +208,15 @@
   opacity: 1;
   background: rgb(0 0 0 / 0.58);
 }
+/* The compact lens's way back (see widget-grid.css): once « Photo du jour » has grown
+   from its media mini to full width, a reduce chip rides top-LEFT — the ⟳ shuffle
+   already owns top-right. Only ever rendered while `lens.expanded`. */
+.photo-frame__reduce {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  left: 0.5rem;
+}
 
 /* Kid face-picker: a round photo where the initial would be. */
 .kid__face-photo {

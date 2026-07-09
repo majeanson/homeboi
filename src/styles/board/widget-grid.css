@@ -215,10 +215,19 @@
   justify-content: center;
   gap: 6px;
   width: 100%;
+  /* All minis land at ~the same height (the tallest natural tile: icon + a 2-line
+     title + hint) so a row of shrunk cards reads as one tidy shelf, not a ragged
+     skyline — media minis pin themselves to this same 8rem below. */
+  min-height: 8rem;
   padding: 1rem 0.6rem;
-  border: 0;
+  /* The mini KEEPS its card's persona: the same `--sec-tint` that colours the full
+     card's disc/rule/border (`.bento--tinted`'s 65% border mix, a barely-there wash)
+     — tintless cards fall back to today's neutral. The tint rides in from the
+     `.bento` wrapper (Section), the caller's className/style (BoardCard), or the
+     per-class mappings just below. */
+  border: 1px solid color-mix(in srgb, var(--sec-tint, var(--line)) 65%, var(--line));
   border-radius: var(--radius-lg);
-  background: var(--card);
+  background: color-mix(in srgb, var(--sec-tint, var(--card)) 8%, var(--card));
   box-shadow: var(--shadow-sm);
   color: inherit;
   font: inherit;
@@ -226,6 +235,17 @@
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+/* Bespoke cards whose palette does NOT arrive as `--sec-tint`: map their own token
+   onto it so the persona rules above apply unchanged. */
+.wg-slot .cardmini.auto-card {
+  --sec-tint: var(--car-tint);
+}
+.wg-slot .cardmini.now-card--regler {
+  --sec-tint: var(--marigold-deep);
+}
+.wg-slot .cardmini.now-card--moment {
+  --sec-tint: var(--berry-deep);
 }
 .wg-slot .cardmini:active {
   box-shadow: var(--shadow-press, var(--shadow-sm));
@@ -261,6 +281,9 @@
   font-weight: 700;
   font-size: 0.92rem;
   line-height: 1.25;
+  /* Persona, quietly: the title leans toward the card's tint the way `tintInk` does
+     for Act rows — ink-dominant so it stays legible on the wash. */
+  color: color-mix(in srgb, var(--sec-tint, var(--ink)) 38%, var(--ink));
 }
 .wg-slot .cardmini__hint {
   max-width: 100%;
@@ -277,6 +300,53 @@
   padding: 0;
   background: transparent;
   box-shadow: none;
+}
+/* A MEDIA mini — the picture IS the persona (« Photo du jour », the weather hero's
+   wonder backdrop): full-bleed image pinned to the shared 8rem shelf height, no
+   padding, at most one frosted chip on top (the temperature). Barebones on purpose:
+   everything else waits for the tap-to-grow. */
+.wg-slot .cardmini--media {
+  position: relative;
+  height: 8rem;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.wg-slot .cardmini__photo,
+.wg-slot .cardmini__wonder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-size: cover;
+  background-position: center;
+}
+/* Legibility scrim under the temp chip — same recipe as the hero's `.now-card__scrim`,
+   lighter (the mini has one chip to protect, not a whole forecast). */
+.wg-slot .cardmini__wonder::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgb(0 0 0 / 0.38), rgb(0 0 0 / 0.1) 55%, transparent);
+}
+.wg-slot .cardmini__temp {
+  position: absolute;
+  z-index: 1;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.32);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 /* ---- Compact lens: in-place growth (Phase 3) --------------------------------- */

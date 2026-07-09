@@ -122,14 +122,17 @@ describe('reconcile — validation', () => {
   })
 
   it('clamps away a stored half for a non-halvable card, falling back to its default', () => {
-    const p = reconcile({ size: { notes: 1, photos: 1, today: 1 } })
+    const p = reconcile({ size: { notes: 1, drawings: 1, today: 1 } })
     expect(cardSize(p, 'notes')).toBe('full') // notes' canonical default, not the stored 1
-    expect(cardSize(p, 'photos')).toBe('full')
+    expect(cardSize(p, 'drawings')).toBe('full')
     expect(cardSize(p, 'today')).toBe(1) // today IS halvable — its stored half survives
+    // The media-mini cards became halvable (their compact form is the picture itself):
+    expect(cardSize(reconcile({ size: { heroes: 1, photos: 1 } }), 'heroes')).toBe(1)
+    expect(cardSize(reconcile({ size: { heroes: 1, photos: 1 } }), 'photos')).toBe(1)
   })
 
   it('is idempotent even with a now-refused size in the input', () => {
-    const once = reconcile({ size: { heroes: 1 } })
+    const once = reconcile({ size: { drawings: 1 } })
     expect(reconcile(once)).toEqual(once)
   })
 })
@@ -228,16 +231,17 @@ describe('nextSize', () => {
 describe('halvable', () => {
   it('defaults every ordinary card to halvable', () => {
     for (const id of ALL) {
-      if (['notes', 'heroes', 'drawings', 'photos'].includes(id)) continue
+      if (['notes', 'drawings'].includes(id)) continue
       expect(isHalvable(id), `${id} should default halvable`).toBe(true)
     }
   })
 
-  it('refuses a half for the cards that cannot compress into one summary line', () => {
+  it('refuses a half only for the multi-item strips with no one-summary form', () => {
     expect(isHalvable('notes')).toBe(false)
-    expect(isHalvable('heroes')).toBe(false)
     expect(isHalvable('drawings')).toBe(false)
-    expect(isHalvable('photos')).toBe(false)
+    // heroes/photos compress into a MEDIA mini (the picture + at most the temp):
+    expect(isHalvable('heroes')).toBe(true)
+    expect(isHalvable('photos')).toBe(true)
   })
 })
 

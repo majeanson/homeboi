@@ -627,6 +627,17 @@
   top: 12px;
   right: 12px;
 }
+/* Same way back for the heroes PAIR (DayHeroes) — the chip anchors on the wrapper,
+   offset LEFT of the wx card's own ⟳ shuffle (top-right, 0.5rem + 2.25rem wide). */
+.board-heroes {
+  position: relative;
+}
+.board-heroes .board-heroes__reduce {
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 3.25rem;
+}
 /* The four windows as DIRECT tap targets — each deep-links to that scope of the
    recap scene. Frosted berry pills on the berry-wash card; the contextually-relevant
    one (tonight by day / tomorrow in the evening) is filled to suggest "look here now".

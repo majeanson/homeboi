@@ -7,6 +7,8 @@ import { type DayMealRow } from './types'
 import { type Wonder } from './ApodFrame'
 import { Icon, InlineIcon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
+import { useCardLens } from './CardLens'
+import { CardMini } from './BoardCard'
 
 // The board's two "today" hero cards, extracted so Grille AND « La journée » render
 // the SAME polished visuals instead of one re-rolling a thinner version: the « Ce
@@ -42,12 +44,58 @@ export function DayHeroes({
   heroSlot: MealSlot
 }) {
   const t = useT()
+  const lens = useCardLens()
   const tip = weatherTip(weather)
   const empty = suppers.length === 0 && !weather
   useReportEmpty(empty)
   if (empty) return null
+  // The compact lens (see CardLens.tsx): `null` outside a CardSlot. A halved heroes
+  // card is a MEDIA mini — the wonder picture with just the temperature riding on it,
+  // barebones by design (everything else waits for the tap-to-grow). No weather →
+  // the generic mini, with today's first supper as its quiet hint.
+  if (lens && lens.compact && !lens.expanded) {
+    return weather ? (
+      <CardMini
+        className="cardmini--media"
+        label={t.boardCard.heroes}
+        onExpand={lens.expand}
+        body={
+          <>
+            <span
+              className="cardmini__wonder"
+              style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: CATS.event.wash }}
+              aria-hidden="true"
+            />
+            <span className="cardmini__temp">
+              <Icon name={weatherIcon(weather)} size={16} /> {weather.tempC}°
+            </span>
+          </>
+        }
+      />
+    ) : (
+      <CardMini label={t.boardCard.heroes} icon="sun-bold" hint={suppers[0]?.title} onExpand={lens.expand} />
+    )
+  }
   return (
     <div className="board-heroes">
+      {/* The way back once grown to full width — mirrors `SecLabel`'s reduce chip for
+          the cards that use the shared header; the heroes pair has no `.sec-label`, so
+          it grows its own on the wrapper (offset left of the wx card's ⟳ shuffle). */}
+      {lens?.expanded && (
+        <button
+          type="button"
+          className="sec-label__reduce board-heroes__reduce"
+          onClick={(e) => {
+            e.stopPropagation()
+            lens.collapse()
+          }}
+          aria-expanded="true"
+          aria-label={t.board.collapseCard(t.boardCard.heroes)}
+          title={t.board.collapseCard(t.boardCard.heroes)}
+        >
+          <Icon name="caret-up-bold" size={14} />
+        </button>
+      )}
       {suppers.length > 0 && (
         // « Ce soir » — every supper planned today agglomerates into ONE hero card, a
         // tappable row each.
