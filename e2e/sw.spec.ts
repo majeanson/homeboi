@@ -44,7 +44,13 @@ test('the service worker precaches the shell and reboots offline', async ({ page
   await page.context().setOffline(true)
   await page.reload()
 
-  await expect(page.locator('.hub')).toBeVisible()
+  // page.reload() itself already gets this config's generous navigationTimeout
+  // (20s) for a loaded CI runner; the render that follows — mount, plus restoring
+  // the persisted TanStack Query cache from IndexedDB before first paint
+  // (src/lib/persist.ts, OFFLINE.md) — was left on Playwright's silent 5s default,
+  // the only wait in this spec not already sized for CI (every other wait here is
+  // an explicit 15–20s). Match that budget instead of the tool default.
+  await expect(page.locator('.hub')).toBeVisible({ timeout: 15_000 })
   // Still SW-controlled after the offline reboot (the shell came from cache, not a
   // live server round-trip).
   expect(await page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)

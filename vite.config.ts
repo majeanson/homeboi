@@ -122,7 +122,13 @@ self.addEventListener('fetch', (e) => {
 
   if (req.method !== 'GET') return
 
-  // Cross-origin: only the font CDNs, cached as they're fetched.
+  // Cross-origin: only the font CDNs, cached as they're fetched. The stylesheet
+  // is a render-blocking <link> in index.html (script execution after it in the
+  // head waits for it to settle), so — like every other handler below — a failed
+  // fetch MUST resolve to a real (if degraded) Response rather than leave the
+  // promise passed to respondWith() rejected: this was the one handler in the
+  // file without that fallback, an inconsistency that risks an unresolved
+  // blocking-stylesheet wait on a slow/offline reload instead of failing fast.
   if (url.origin !== location.origin) {
     if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
       e.respondWith(
@@ -131,7 +137,7 @@ self.addEventListener('fetch', (e) => {
             const copy = res.clone()
             caches.open(CACHE).then((c) => c.put(req, copy))
             return res
-          }),
+          }).catch(() => new Response('', { status: 504 })),
         ),
       )
     }
