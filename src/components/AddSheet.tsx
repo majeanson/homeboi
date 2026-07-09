@@ -21,7 +21,7 @@ import { useKitchenActions, noKitchenActions, type KitchenAction, type KitchenAc
 import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
-import { stageDeal, parseTerms, pickListFrom, type ListItem } from '../lib/picks'
+import { stageDeal, parseTerms, cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
@@ -414,6 +414,9 @@ export function AddSheet({
     enabled: open && wantsList,
   })
   const listItems = listBoard?.list ?? []
+  // Till-hidden stores: auto-pick still stages their deals (they ride the list
+  // line), but they don't count as a reason to open the cashier stepper.
+  const tillHidden = useTillHiddenStores()
   const [autoBusy, setAutoBusy] = useState(false)
   // The OS share sheet exists (mobile/PWA, not every desktop). Gate the share tile
   // on it so we never offer a dead button.
@@ -450,13 +453,13 @@ export function AddSheet({
         const r = await api<{ deals: Deal[] }>(qs)
         if (r.deals[0]) {
           await stageDeal(qc, item.text, r.deals[0])
-          any = true
+          if (!tillHidden.has(r.deals[0].merchant.trim().toLowerCase())) any = true
         }
       } catch {
         /* skip items with no deals / errors */
       }
     }
-    const hadPicks = pickListFrom(listItems).length > 0
+    const hadPicks = cashierPicksFrom(listItems, tillHidden).length > 0
     setAutoBusy(false)
     close()
     if (any || hadPicks) nav('/liste/cashier')

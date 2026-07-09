@@ -23,7 +23,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
 import { money } from '../lib/deals'
-import { pickListFrom, parseDeal } from '../lib/picks'
+import { cashierPicksFrom, useTillHiddenStores, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
@@ -317,6 +317,9 @@ export function Liste() {
   )
 
   const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
+  // Stores hidden at the till — read here (before the early returns) so the
+  // « Montrer à la caisse » count matches what the stepper will actually show.
+  const tillHidden = useTillHiddenStores()
 
   // Add a line to the list. `terms` (optional) carries flyer synonyms — the
   // quick-add panel passes them so a re-added item keeps its deal search.
@@ -422,9 +425,11 @@ export function Liste() {
   const memberById = new Map((board?.members ?? []).map((m) => [m.id, m]))
 
   // The cashier set = every list line carrying a staged deal (server state, in
-  // sync across devices, gone once the item is cleared). Deals get staged from the
-  // flyer browser (reached via the ＋ Add sheet → Circulaires).
-  const pickList = pickListFrom(list)
+  // sync across devices, gone once the item is cleared), minus till-hidden stores —
+  // the same filter the /liste/cashier stepper applies, so the button's count is
+  // the count the till will show. Deals get staged from the flyer browser (reached
+  // via the ＋ Add sheet → Circulaires).
+  const pickList = cashierPicksFrom(list, tillHidden)
 
   // The order the list is shown in. 'aisle' → grouped + sorted by the household's
   // aisle walk; classification reuses the row-picture keywords (aisleFor). A STABLE

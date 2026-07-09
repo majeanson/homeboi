@@ -3,11 +3,12 @@
 // via the board read and clears automatically when the item is checked off. These
 // helpers stage / unstage a deal and derive the cashier Pick[] from the list —
 // no per-device localStorage store anymore.
-import { type QueryClient } from '@tanstack/react-query'
+import { useQuery, type QueryClient } from '@tanstack/react-query'
+import { api } from './api'
 import { writeWith } from './write'
 import { type Deal, type Pick } from './deals'
 import { normKey } from './cookable'
-import { BOARD_KEY } from './queryKeys'
+import { BOARD_KEY, HOUSEHOLD_KEY } from './queryKeys'
 
 // A list row as it arrives in the ['board'] cache (deal_json = the staged deal).
 export interface ListItem {
@@ -50,6 +51,28 @@ export function pickListFrom(items: ListItem[]): Pick[] {
       return deal ? { itemId: i.id, itemText: i.text, deal } : null
     })
     .filter((p): p is Pick => p != null)
+}
+
+// Stores the household hid at the till (Réglages ▸ Magasinage ▸ store filter ▸
+// « À la caisse : Non », migration 0066) — e.g. the store you do your own shopping
+// at, where showing its own flyer to its own cashier is pointless. Rides the shared
+// HOUSEHOLD_KEY cache; stale is fine (background refetch). Empty set while
+// loading/unset. Hooks-rule note: call it unconditionally, before any early return.
+export function useTillHiddenStores(): Set<string> {
+  const { data } = useQuery({
+    queryKey: HOUSEHOLD_KEY,
+    queryFn: () => api<{ cashierExcludedStores?: string[] }>('household'),
+    staleTime: 5 * 60_000,
+  })
+  return new Set(data?.cashierExcludedStores ?? [])
+}
+
+// The cashier set AS THE TILL SHOWS IT: pickListFrom minus the till-hidden stores.
+// Every surface that counts, gates, or steps through the cashier picks — the
+// « Montrer à la caisse » button on La liste, the /liste/cashier stepper, the
+// AddSheet auto-stage hand-off — derives from THIS, so their counts never disagree.
+export function cashierPicksFrom(items: ListItem[], tillHidden: Set<string>): Pick[] {
+  return pickListFrom(items).filter((p) => !tillHidden.has(p.deal.merchant.trim().toLowerCase()))
 }
 
 // The id of an OPEN list item matching `name` (normalized), from the ['board']

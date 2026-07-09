@@ -8,7 +8,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
-import { pickListFrom, type ListItem } from '../lib/picks'
+import { cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
 import { useSceneClose } from '../lib/sceneNav'
 
 // /liste/cashier — the till-side stepper as a route (was a full-screen overlay
@@ -20,17 +20,11 @@ export function CashierPage() {
   const t = useT()
   const close = useSceneClose('/liste')
   const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
-  // Stores the household chose to hide at the till (Réglages ▸ Mes magasins ▸ "À la
-  // caisse: Non") — e.g. the store you do your own shopping at, where showing its own
-  // flyer to its own cashier is pointless. Filtered here so the count + stepper only
-  // ever see the kept picks. Cached, refetched in the background; stale is fine.
-  const { data: hh } = useQuery({
-    queryKey: ['household'],
-    queryFn: () => api<{ cashierExcludedStores: string[] }>('household'),
-    staleTime: 5 * 60_000,
-  })
-  const hidden = new Set(hh?.cashierExcludedStores ?? [])
-  const picks = pickListFrom(board?.list ?? []).filter((p) => !hidden.has(p.deal.merchant.trim().toLowerCase()))
+  // Stores the household chose to hide at the till (Réglages ▸ Magasinage ▸ "À la
+  // caisse: Non") — filtered via the SAME shared helpers as the « Montrer à la
+  // caisse » button on La liste, so the button's count and this stepper agree.
+  const tillHidden = useTillHiddenStores()
+  const picks = cashierPicksFrom(board?.list ?? [], tillHidden)
 
   // Did the till EVER have picks this session? Distinguishes "you cleared the last
   // deal → you're done, slip back to the list" from "cold deep-link that was never
