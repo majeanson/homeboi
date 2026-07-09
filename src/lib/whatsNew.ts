@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'kid-demain-fix',
+    text: {
+      fr: 'Corrigé : « Demain » sur l’écran des enfants suit maintenant les mêmes règles de repas que le babillard parent — plus de repas caché qui s’affiche, ni de souper compté deux fois.',
+      en: 'Fixed: “Tomorrow” on the kids’ screen now follows the same meal rules as the parent board — no more hidden meal leaking through, no more supper counted twice.',
+    },
+    card: 'board',
+  },
+  {
     id: 'kitchen-apparence',
     text: {
       fr: 'Réglages ▸ La cuisine : les étiquettes, pastilles et couleurs de mesure se retrouvent dans une seule section « Apparence ».',

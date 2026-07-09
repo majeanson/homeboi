@@ -219,6 +219,23 @@ describe('boardModel', () => {
       expect(hidden.meals.tonightAll).toEqual([])
       expect(hidden.meals.tomorrowSupper).toBeNull()
     })
+    // C-12 (5/6), bmad/10 decided bug-fix: the toddler « Demain » section reads
+    // otherTomorrow + tomorrowSupper off THIS model instead of raw data.tomorrowMeals,
+    // so a household-hidden slot no longer leaks and the souper (already its own hero
+    // line) no longer repeats in the list below it.
+    it('otherTomorrow excludes a hidden slot AND the souper, while tomorrowSupper carries the souper exactly once', () => {
+      const data = mkData({
+        tomorrowMeal: { id: 'tm-supper', title: 'Pizza', cook_member_id: null },
+        tomorrowMeals: [
+          meal({ id: 'tm-supper', slot: 'supper', title: 'Pizza' }),
+          meal({ id: 'tm-snack', slot: 'snack', title: 'Fruits' }),
+          meal({ id: 'tm-lunch', slot: 'lunch', title: 'Soupe' }),
+        ],
+      })
+      const model = buildBoardModel(baseInput({ data, mealPrefs: prefs(['snack']) }))
+      expect(model.meals.otherTomorrow.map((m) => m.id)).toEqual(['tm-lunch'])
+      expect(model.meals.tomorrowSupper?.id).toBe('tm-supper')
+    })
   })
 
   describe('face lens (personal focus), incl. team rotation', () => {

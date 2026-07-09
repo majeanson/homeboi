@@ -524,9 +524,14 @@ export function Board() {
             {data.tomorrowNote && (
               <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />
             )}
+            {/* « Demain » follows the SAME parent meal rules (model.meals.otherTomorrow +
+                tomorrowSupper, both mealPrefs-gated) — a hidden slot no longer leaks here
+                and the souper (already the hero above) no longer repeats (bmad/10 C-12,
+                decided bug-fix). kidAllClear above stays on the raw data — a DIFFERENT,
+                deliberately wider "truly nothing" check (bmad/10 decided). */}
             {kidSection(t.board.tomorrow, [
               ...eventTiles(tomorrowEvents),
-              ...(data.tomorrowMeals ?? []).map((m) => ({
+              ...otherTomorrowMeals.map((m) => ({
                 key: m.id,
                 icon: pictoFor(m.title, '🍽'),
                 label: m.title,
