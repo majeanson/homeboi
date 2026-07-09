@@ -8,7 +8,7 @@ import { useAi, useAiToggle } from '../lib/ai'
 import { isPaired } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
-import { AmbientSettingsSection } from '../components/operator/ambient'
+import { AmbientSettingsSection, HabitCheckinSection } from '../components/operator/ambient'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { AisleOrderSection } from '../components/operator/aisles'
@@ -344,7 +344,18 @@ export function Operator() {
       },
       { key: 'guest', label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
       { key: 'display', label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
-      { key: 'ambient', label: t.operator.ambientTitle, node: <AmbientSettingsSection help={operatorHelp} /> },
+      // « Mode veille » — two stacked bodies under ONE pill (C-15): what the idle
+      // screen does on its own, then when « Le point du jour » opens on its own.
+      {
+        key: 'ambient',
+        label: t.operator.ambientTitle,
+        node: (
+          <>
+            <AmbientSettingsSection help={operatorHelp} />
+            <HabitCheckinSection help={operatorHelp} />
+          </>
+        ),
+      },
       { key: 'photos', label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
       { key: 'ai', label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
       { key: 'voice', label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },

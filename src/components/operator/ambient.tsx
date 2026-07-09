@@ -4,6 +4,7 @@ import { OperatorSection } from './OperatorSection'
 import { Icon } from '../Icon'
 import { Toggle } from '../Toggle'
 import { useAmbient, setAmbient, type AmbientSettings } from '../../lib/ambient'
+import { useHabitCheckin, setHabitCheckin, replayHabitCheckin } from '../../lib/habitCheckin'
 import { forceIdle } from '../../lib/idleDebug'
 
 // Réglages ▸ Affichage ▸ "Mode veille" — tune what the kiosk does when idle: the
@@ -106,6 +107,51 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
         </div>
       )}
 
+    </OperatorSection>
+  )
+}
+
+// « Mes habitudes » — when « Le point du jour » opens BY ITSELF. It lives in this
+// sub (C-15: merge into the sub that already owns the concept) because that is
+// exactly what « Mode veille » is about: what this always-on screen does on its
+// own, unasked. Both behaviours are opt-out per device, like the screensaver.
+//
+// Neither is a notification: there is no push and no cron in this app. An open
+// screen simply notices the moment has come — a phone in a pocket stays quiet.
+export function HabitCheckinSection({ help }: { help?: HelpMode }) {
+  const t = useT()
+  const fn = t.operator
+  const c = useHabitCheckin()
+
+  return (
+    <OperatorSection title={fn.habitCheckinTitle} help={help} helpKey="habits">
+      <div className="operator__seg">
+        <span className="operator__seg-label mono">{fn.habitCheckinMorning}</span>
+        <Toggle
+          on={c.autoOpen}
+          icon="sun-horizon-bold"
+          label={c.autoOpen ? fn.ambientOnWord : fn.ambientOffWord}
+          onClick={() => setHabitCheckin({ autoOpen: !c.autoOpen })}
+        />
+      </div>
+      <p className="operator__hint mono">{fn.habitCheckinMorningHint}</p>
+
+      <div className="operator__seg">
+        <span className="operator__seg-label mono">{fn.habitCheckinReminders}</span>
+        <Toggle
+          on={c.reminders}
+          icon="clock-bold"
+          label={c.reminders ? fn.ambientOnWord : fn.ambientOffWord}
+          onClick={() => setHabitCheckin({ reminders: !c.reminders })}
+        />
+      </div>
+      <p className="operator__hint mono">{fn.habitCheckinRemindersHint}</p>
+
+      {/* Dev tooling (the idleDebug spirit): a morning open fires once per local
+          day, so it's otherwise unobservable until tomorrow. */}
+      <button type="button" className="btn btn--ghost" onClick={() => replayHabitCheckin()}>
+        <Icon name="arrow-counter-clockwise-bold" size={16} /> {fn.habitCheckinReplay}
+      </button>
     </OperatorSection>
   )
 }

@@ -8,6 +8,7 @@ import { MEALS_KEY } from './kitchen/types'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
+import { useHabitCheckinTrigger } from '../lib/habitCheckin'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
 import { useTapToHearListener } from '../lib/tapToHear'
 import { useTourOfferDot } from '../lib/tourOffer'
@@ -194,6 +195,12 @@ export function HubLayout() {
   // Debug (Réglages ▸ Debug): force the warn chip / the drift / the screensaver on
   // demand, and bump a tick so the timers below re-arm when the speed override changes.
   const [idleTick, setIdleTick] = useState(0)
+  // « Le point du jour » opens itself: once on the first app open of a new local day,
+  // and when a habit's reminder time comes due. Shell-level (not on the Board page) so
+  // a kiosk parked on /kitchen still gets its morning open. Read-time only — there is
+  // no push and no cron; `saver` lets a reminder land over the screensaver, which is
+  // the calmest surface there is.
+  useHabitCheckinTrigger(saver)
   useEffect(
     () =>
       onIdleDebug((kind) => {

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, MMID } from './mocks'
 
 // « Mes habitudes » ▸ « Le point du jour » — the daily check-in scene. Locks the
 // four kind-specific tap behaviours (do / count / limit / avoid), the private-ish
@@ -246,6 +246,86 @@ test.describe('the board card + the calendar', () => {
 
     await pickFace(page, 'Maman')
     await expect(panel).toContainText('Boire de l’eau')
+  })
+})
+
+// « Le point du jour » opening BY ITSELF. There is no push and no cron: the open
+// screen notices the moment has come. Both behaviours are per-device opt-outs.
+test.describe('the check-in opens by itself', () => {
+  // The fixture's habit hb1 carries a 09:00 reminder (minute 540). BASE is 04:00
+  // local, so a fresh boot is before it — the reminder must stay silent until then.
+  const at = (hhmm: string) => {
+    const [h, m] = hhmm.split(':').map(Number)
+    return new Date((MMID + h * 3600 + m * 60) * 1000)
+  }
+
+  const ARMED = { autoOpen: true, reminders: true, lastShownDay: 0, fired: { day: 0, minutes: [] } }
+
+  // `habitCheckin: true` leaves the trigger armed (seedState answers it for the day
+  // by default, so no OTHER spec is navigated off its page mid-test).
+  async function boot(page: Page, when: Date, checkin: Record<string, unknown> = ARMED) {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.install({ time: when })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, habitCheckin: true })
+    await page.addInitScript((c) => localStorage.setItem('babillard-habitudes-checkin', JSON.stringify(c)), checkin)
+    await page.goto('/board')
+  }
+
+  test('opens once on the first app open of a new local day, then not again', async ({ page }) => {
+    await boot(page, at('06:30'))
+    // The morning open lands on the scene without any tap.
+    await page.locator('.habitudes').waitFor({ state: 'visible', timeout: 15_000 })
+    expect(new URL(page.url()).pathname).toBe('/board/habitudes')
+
+    // Dismissing IS the answer for the day: going back to the board doesn't re-open it.
+    await page.locator('.scene__head .btn').click()
+    await page.locator('.hub').waitFor({ state: 'visible' })
+    await page.waitForTimeout(500)
+    expect(new URL(page.url()).pathname).toBe('/board')
+  })
+
+  test('stays shut when the day was already answered on this device', async ({ page }) => {
+    await boot(page, at('06:30'), { autoOpen: true, reminders: false, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.waitForTimeout(500)
+    expect(new URL(page.url()).pathname).toBe('/board')
+  })
+
+  test('stays shut when the device opted out of the morning open', async ({ page }) => {
+    await boot(page, at('06:30'), { autoOpen: false, reminders: false, lastShownDay: 0, fired: { day: 0, minutes: [] } })
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.waitForTimeout(500)
+    expect(new URL(page.url()).pathname).toBe('/board')
+  })
+
+  // The reminder path, with the morning open already answered so it can't be the
+  // thing that fires. hb1's reminder is at 09:00; we boot at 08:55 and roll forward.
+  test('a reminder time opens the scene from the board, once', async ({ page }) => {
+    await boot(page, at('08:55'), { autoOpen: false, reminders: true, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    expect(new URL(page.url()).pathname).toBe('/board')
+
+    // Cross 09:00 — the shared minute clock ticks and the scene opens itself.
+    await page.clock.fastForward('06:00')
+    await page.locator('.habitudes').waitFor({ state: 'visible', timeout: 15_000 })
+
+    // Close it: the same reminder minute must not fire a second time today.
+    await page.locator('.scene__head .btn').click()
+    await page.locator('.hub').waitFor({ state: 'visible' })
+    await page.clock.fastForward('05:00')
+    await page.waitForTimeout(500)
+    expect(new URL(page.url()).pathname).toBe('/board')
+  })
+
+  test('a reminder never interrupts a form, and stays silent once opted out', async ({ page }) => {
+    // On a scene (the habit form), a due reminder must not yank the page away.
+    await boot(page, at('08:55'), { autoOpen: false, reminders: true, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
+    await page.goto('/habitude/new')
+    await page.locator('.habit-form__kinds').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.clock.fastForward('06:00')
+    await page.waitForTimeout(500)
+    expect(new URL(page.url()).pathname).toBe('/habitude/new')
   })
 })
 

@@ -898,6 +898,11 @@ export interface AppState {
   // so every spec that clicks something would time out. Pre-mark it seen by
   // default; pass `tour: true` to leave it un-seeded and exercise the tour itself.
   tour?: boolean
+  // « Le point du jour » opens ITSELF on the first app open of a new local day (and
+  // at a habit's reminder times), which would navigate every board spec straight off
+  // /board. Answered-for-today by default — same idea as pre-seeding the tour as
+  // "seen". Pass `habitCheckin: true` to leave it armed and exercise the trigger.
+  habitCheckin?: boolean
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -932,6 +937,14 @@ export async function seedState(page: Page, s: AppState) {
       // (Several specs already seeded this by hand; doing it here covers them all.)
       if (!state.tour) {
         localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
+      }
+      // Same reasoning for « Le point du jour »: its morning open would navigate a
+      // board spec away before it could click anything. Off unless opted into.
+      if (!state.habitCheckin) {
+        localStorage.setItem(
+          'babillard-habitudes-checkin',
+          JSON.stringify({ autoOpen: false, reminders: false, lastShownDay: 0, fired: { day: 0, minutes: [] } }),
+        )
       }
     } catch {
       /* noop */

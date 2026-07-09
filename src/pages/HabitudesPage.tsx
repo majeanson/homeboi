@@ -137,7 +137,7 @@ export function HabitudesPage() {
 
   return (
     <div className="scene habitudes" aria-label={fn.checkin}>
-      <SceneHead title={fn.checkin} icon="repeat-bold" onClose={close} />
+      <SceneHead title={fn.checkin} icon="repeat-bold" card="habits" onClose={close} />
       <div className="scene__body habitudes__body">
         {/* Whose day is this? Picking here sets the device's face, like the board's
             « Aujourd'hui » row — so attribution and the private-ish filter agree. */}

@@ -2309,6 +2309,14 @@ export const FR = {
     ambientBreathHint: 'Au sommet de l’heure, l’horloge de veille respire une fois — sans son, sans pastille. Le battement de cœur de la maison.',
     ambientOnWord: 'Activé',
     ambientOffWord: 'Désactivé',
+    // « Mes habitudes » — quand « Le point du jour » s'ouvre de lui-même (C-15 :
+    // même pilule que Mode veille, c'est la même idée : ce que l'écran fait seul).
+    habitCheckinTitle: 'Le point du jour',
+    habitCheckinMorning: 'Ouvrir le matin',
+    habitCheckinMorningHint: 'À la première ouverture de la journée, si quelque chose t’attend. Une seule fois : le fermer, c’est ta réponse.',
+    habitCheckinReminders: 'Rappels d’habitudes',
+    habitCheckinRemindersHint: 'Aux heures que tu as choisies, sur l’écran allumé — jamais dans ta poche, jamais pendant une routine ou un formulaire.',
+    habitCheckinReplay: 'Rejouer l’ouverture du jour',
     ambientMinutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),
     ambientNote: 'L’économiseur n’apparaît que sur un kiosque. Touche l’écran pour le réveiller — rien n’est jamais perdu.',
     aiTestTitle: 'État de l’IA',

@@ -122,6 +122,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
       'search',
       'ask',
       'mots',
+      'habits',
       'activities',
       'home-projects',
       'reminders',
@@ -1234,8 +1235,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Pas pressé', en: 'No rush' },
         detail: {
-          fr: 'Touche le nom d’un article déjà sur la liste, puis active « Pas pressé ». La ligne se met en gris pâle, encadrée d’un pointillé — on la prend si une belle aubaine passe, sinon on l’oublie. Retouche l’interrupteur pour l’enlever.',
-          en: 'Tap the name of an item already on the list, then switch on “No rush”. The line goes pale grey with a dashed edge — we grab it if a good deal comes up, otherwise we let it go. Tap the switch again to undo it.',
+          fr: 'Touche le nom d’un article déjà sur la liste, puis active « Pas pressé ». La ligne se met en gris pâle, encadrée d’un pointillé, et descend au bas de la liste — on la prend si une belle aubaine passe, sinon on l’oublie. Les nouveaux articles et le tri « Par allée » la laissent en bas ; si tu la remontes toi-même dans « Mon ordre », elle y reste. Retouche l’interrupteur pour l’enlever.',
+          en: 'Tap the name of an item already on the list, then switch on “No rush”. The line goes pale grey with a dashed edge and sinks to the bottom — we grab it if a good deal comes up, otherwise we let it go. New items and the “By aisle” sort keep it down there; if you drag it back up in “My order”, it stays where you put it. Tap the switch again to undo it.',
         },
         why: {
           fr: 'Pour que l’œil saute d’un coup tout ce qui n’est pas une vraie commission. Un article ajouté presse toujours : rien à choisir, sauf ce cas rare. Ce n’est pas un rang ni une priorité.',
@@ -1715,6 +1716,62 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: '« Laisse un mot » reste entre les membres de la maisonnée. La boîte aux lettres, elle, reçoit les mots des proches de l’extérieur (voir « Partager un accès »).',
           en: '“Leave a note” stays between household members. The mailbox instead receives notes from relatives outside (see “Share access”).',
+        },
+      },
+    ],
+  },
+  {
+    id: 'habits',
+    icon: 'repeat-bold',
+    group: 'concepts',
+    route: '/board/habitudes',
+    title: { fr: 'Mes habitudes', en: 'My habits' },
+    what: {
+      fr: 'Les petits rythmes qu’on tient — marcher, boire de l’eau, deux sorties à vélo par semaine, fumer moins, éviter le chocolat. « Le point du jour » les rassemble en un écran, et un tap suffit.',
+      en: 'The little rhythms you keep — walking, drinking water, two bike rides a week, smoking less, avoiding chocolate. “Today’s check-in” gathers them on one screen, and one tap is enough.',
+    },
+    points: [
+      {
+        label: { fr: 'Quatre genres d’habitude', en: 'Four kinds of habit' },
+        detail: {
+          fr: '« Faire » (marcher) se coche. « Compter » monte vers un objectif (8 verres d’eau). « Limiter » se compte sous un maximum (5 cigarettes). « Éviter » se confirme : Tenu, ou un petit écart.',
+          en: '“Do” (walk) gets ticked. “Count” climbs toward a goal (8 glasses of water). “Limit” counts under a ceiling (5 cigarettes). “Avoid” gets confirmed: Held, or a small slip.',
+        },
+      },
+      {
+        label: { fr: 'Le rythme que tu veux', en: 'Whatever rhythm you want' },
+        detail: {
+          fr: 'Chaque jour, certains jours de la semaine, un jour sur trois — ou simplement « 2 fois par semaine », sans jour fixe : l’habitude attend jusqu’à ce que la semaine soit remplie.',
+          en: 'Every day, certain weekdays, every third day — or simply “2 times a week”, with no fixed day: the habit waits until the week is filled.',
+        },
+      },
+      {
+        label: { fr: 'Ça s’ouvre tout seul', en: 'It opens by itself' },
+        detail: {
+          fr: 'Le matin, à la première ouverture, si quelque chose t’attend. Et aux heures que tu choisis, sur l’écran allumé. Jamais de notification poussée : rien ne sonne dans ta poche.',
+          en: 'In the morning, on the first opening, if something is waiting. And at the times you choose, on the screen that’s on. Never a push notification: nothing buzzes in your pocket.',
+        },
+        why: {
+          fr: 'Un babillard qui rappelle, pas un téléphone qui harcèle. Tout se désactive dans Réglages ▸ Système ▸ Mode veille.',
+          en: 'A board that reminds, not a phone that nags. Everything can be turned off in Settings ▸ System ▸ Idle.',
+        },
+      },
+      {
+        label: { fr: 'Ni série, ni pointage', en: 'No streaks, no scoring' },
+        detail: {
+          fr: 'On voit la semaine et le mois — combien de jours, tout simplement. Jamais de « série en cours », jamais de points, jamais un membre comparé à un autre. Un écart, c’est noté, jamais reproché.',
+          en: 'You see the week and the month — how many days, plainly. Never a “current streak”, never points, never one member compared to another. A slip is noted, never scolded.',
+        },
+        why: {
+          fr: 'Une habitude tenue par culpabilité ne tient pas. Le babillard note ce qui s’est passé, un point c’est tout.',
+          en: 'A habit held out of guilt doesn’t hold. The board records what happened, and that’s all.',
+        },
+      },
+      {
+        label: { fr: 'À toi, ou à la maisonnée', en: 'Yours, or the household’s' },
+        detail: {
+          fr: 'Une habitude appartient à un visage ou à toute la maisonnée. Les tiennes ne s’affichent qu’une fois ton visage choisi — le babillard dit seulement « Tes habitudes t’attendent ».',
+          en: 'A habit belongs to one face or to the whole household. Yours only show once your face is picked — the board just says “Your habits are waiting”.',
         },
       },
     ],

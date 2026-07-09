@@ -45,6 +45,17 @@ export const OPERATOR_HELP = {
       en: `Everyone's recurring hours. Tick "takes the car" for the ones that tie up the vehicle — that's what tells The car when it's taken. An off week is adjusted in the car view.`,
     },
   },
+  // « Le point du jour » — quand l'écran ouvre le bilan d'habitudes de lui-même.
+  // Même pilule que « Mode veille » : c'est la même question, « qu'est-ce que
+  // l'écran fait sans qu'on lui demande ? ».
+  habits: {
+    card: 'habits',
+    point: 2,
+    body: {
+      fr: `Le matin à la première ouverture, et aux heures de rappel que tu as choisies — sur l'écran allumé seulement. Jamais de notification poussée.`,
+      en: `In the morning on the first opening, and at the reminder times you picked — on the screen that's on only. Never a push notification.`,
+    },
+  },
   ambient: {
     card: 'set-display',
     point: 5,
