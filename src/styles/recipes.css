@@ -628,6 +628,25 @@
   align-items: center;
   gap: 0.4rem;
 }
+/* A row whose picto links out (an idea → its recipe). Its own tight target so the
+   rest of the chip still opens the plan picker; it sits outside the chip because a
+   button can't nest an anchor. Mirrors `.combobox__open` on the dropdown rows. */
+.kitchen__idea-open {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+.kitchen__idea-open:hover,
+.kitchen__idea-open:focus-visible {
+  background: color-mix(in srgb, var(--berry-deep) 14%, transparent);
+}
+.kitchen__idea-open:active {
+  transform: translateY(1px);
+}
 .kitchen__idea-name {
   flex: 1;
   min-width: 0;

@@ -43,9 +43,12 @@ import { RowActions } from '../RowActions'
 //   👧 Proposé par      — `meal_ideas` rows a child suggested (`suggested_by` set);
 //                        the empty-day-tile "Léa propose 🍕" chip lands HERE
 //                        (never auto-plans — a glance chip never commits).
-// « Vide-frigo » keeps its OWN identity (not a source): a footer button that opens
-// the untouched EmptyFridgeSheet. This is deliberately NOT a week-planner (A-1 stays
-// rejected) — planning a day is still the one-row MealPlanPicker each idea reveals.
+// « Vide-frigo » keeps its OWN identity (not a source): a button that opens the
+// untouched EmptyFridgeSheet. It sits in the 🤖 IA tab's footer — it IS an AI ask, so
+// hanging it under every source (Favoris, Restants, 👧) read as a fifth, unrelated
+// action on tabs that never call the model. This is deliberately NOT a week-planner
+// (A-1 stays rejected) — planning a day is still the one-row MealPlanPicker each
+// idea reveals.
 //
 // This is the prop-driven BODY; the full-screen `.scene` shell that owns the queries
 // and the ?tab= source state is IdeasPage (/kitchen/idees). It used to be a bottom
@@ -226,6 +229,10 @@ export function IdeasDrawer({
           buildAddBody={(title, picked) => ({ title, recipeId: picked?.data.id ?? null, suggestedBy: profileId })}
           onPlan={planIdea}
           renderLead={(idea) => (idea.recipe_id ? <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" /> : null)}
+          // An idea born from a recipe: its 📖 picto opens that recipe (same tight
+          // icon-only link as the combobox row). Tapping the chip still plans it.
+          leadTo={(idea) => (idea.recipe_id ? `/kitchen/recipe/${idea.recipe_id}` : undefined)}
+          leadToLabel={t.recipes.open}
           week={week}
           helpKey="ideas"
           noMatchLabel={t.recipes.noMatch}
@@ -292,14 +299,21 @@ export function IdeasDrawer({
       )}
 
       {active === 'ai' && (
-        <AiChip
-          suggest={suggest}
-          keptAi={keptAi}
-          onKeep={keepAiIdea}
-          onPlan={planAiIdea}
-          week={week}
-          readOnly={ro}
-        />
+        <>
+          <AiChip
+            suggest={suggest}
+            keptAi={keptAi}
+            onKeep={keepAiIdea}
+            onPlan={planAiIdea}
+            week={week}
+            readOnly={ro}
+          />
+          <Cluster justify="end" className="ideas-drawer__footer">
+            <button type="button" className="btn btn--ghost mono" onClick={onOpenFridge}>
+              <InlineIcon name="cooking-pot-bold" /> {t.kitchen.fridge.tile}
+            </button>
+          </Cluster>
+        </>
       )}
 
       {active === 'kid' && (
@@ -312,12 +326,6 @@ export function IdeasDrawer({
           onDismiss={dismissKidIdea}
         />
       )}
-
-      <Cluster justify="end" className="ideas-drawer__footer">
-        <button type="button" className="btn btn--ghost mono" onClick={onOpenFridge}>
-          <InlineIcon name="cooking-pot-bold" /> {t.kitchen.fridge.tile}
-        </button>
-      </Cluster>
     </>
   )
 }

@@ -11,6 +11,7 @@ import { tintInk } from '../lib/colors'
 import { useT, useLang } from '../i18n'
 import { useAisleOrder, useAisleOverrides } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
+import { noRushStart, rushRank } from '../lib/listOrder'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
@@ -337,9 +338,14 @@ export function Liste() {
       body: terms && terms.length ? { text, search_terms: terms } : { text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
       optimistic: (qc) =>
-        qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
-          b ? { ...b, list: [...b.list, { id: tmpId, text, source: 'manual', checked_at: null }] } : b,
-        ),
+        qc.setQueryData<BoardListData>(BOARD_KEY, (b) => {
+          if (!b) return b
+          // A new line is an errand: it lands at the end of the errands, above any
+          // « pas pressé » block — the same slot the server settles it into.
+          const list = [...b.list]
+          list.splice(noRushStart(list), 0, { id: tmpId, text, source: 'manual', checked_at: null })
+          return { ...b, list }
+        }),
       // E-41: if this add queues, later queued ops on the tmp row (check it, clear
       // it) get rewritten to the real id when the create replays.
       tmpId,
@@ -434,19 +440,26 @@ export function Liste() {
   // The order the list is shown in. 'aisle' → grouped + sorted by the household's
   // aisle walk; classification reuses the row-picture keywords (aisleFor). A STABLE
   // sort, so items in the same aisle keep their hand/position order. 'mine' → the
-  // list as the cache holds it (the dragged order), unchanged.
+  // list as the cache holds it (the dragged order), unchanged — a « pas pressé » row
+  // dragged up there stays put, which is why only this branch skips the sort.
   const byAisle = sortMode === 'aisle'
   const ranks = aisleRanks(aislePrefs.order)
   // Classify with the per-item overrides applied (a corrected item beats the guess).
   const aisleOf = (text: string) => aisleFor(text, aisleOverrides)
-  const displayList = byAisle ? [...list].sort((a, b) => ranks[aisleOf(a.text)] - ranks[aisleOf(b.text)]) : list
+  // Every AUTOMATIC order keys on « pas pressé » first: the aubaine-only lines sink
+  // below the real errands, then the store walk orders each block.
+  const byAisleThenRush = (a: ListRow, b: ListRow) =>
+    rushRank(a) - rushRank(b) || ranks[aisleOf(a.text)] - ranks[aisleOf(b.text)]
+  const displayList = byAisle ? [...list].sort(byAisleThenRush) : list
+  // What an aisle header groups: the aisle WITHIN its block, so the header always
+  // restarts where the « pas pressé » lines begin instead of swallowing the boundary.
+  const groupOf = (i: ListRow) => `${rushRank(i)}:${aisleOf(i.text)}`
 
   // "Mon ordre" seed: write the list's positions to match the aisle walk right now,
   // so you START from aisle order and then hand-tweak from there — and it's kept
   // (persisted via the same reorder write). One tap; only meaningful in Mon ordre.
   function sortByAisleNow() {
-    const ids = [...list].sort((a, b) => ranks[aisleOf(a.text)] - ranks[aisleOf(b.text)]).map((i) => i.id)
-    reorderTo(ids)
+    reorderTo([...list].sort(byAisleThenRush).map((i) => i.id))
   }
 
   if (audience === 'toddler') {
@@ -592,7 +605,7 @@ export function Liste() {
             // visible without grouping.
             const ai = aisleOf(item.text)
             const aisleInfo = AISLE_BY_ID[ai]
-            const showHeader = byAisle && ai !== (index > 0 ? aisleOf(displayList[index - 1].text) : null)
+            const showHeader = byAisle && (index === 0 || groupOf(displayList[index - 1]) !== groupOf(item))
             return (
               <Fragment key={item.id}>
                 {showHeader && (

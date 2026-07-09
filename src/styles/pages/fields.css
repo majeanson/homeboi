@@ -277,6 +277,37 @@
 .combobox__row:active {
   transform: translateY(1px);
 }
+/* An option whose picto links out (a recipe → its page). The link is its own tight
+   target so the rest of the row still picks the option; it sits outside the row
+   button because a button can't nest inside a button. */
+.combobox__opt {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+.combobox__opt .combobox__row {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  padding-left: 0.35rem;
+}
+.combobox__open {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+.combobox__open:hover,
+.combobox__open:focus-visible {
+  background: color-mix(in srgb, currentcolor 14%, transparent);
+}
+.combobox__open:active {
+  transform: translateY(1px);
+}
 .combobox__row-title {
   min-width: 0;
   overflow: hidden;

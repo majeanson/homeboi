@@ -79,6 +79,48 @@ function termsJson(value: unknown): string | null {
   return terms.length ? JSON.stringify(terms) : null
 }
 
+// --- Where a « pas pressé » line sits (mirrors src/lib/listOrder.ts) -----------
+// A « pas pressé » line is only bought if an aubaine is on, so it settles at the
+// BOTTOM of the hand order: a new line lands ABOVE the flagged block, and flipping
+// the flag on drops that row to the end. Only the TRAILING run of flagged rows
+// counts — a flagged row a shopper dragged back up into the errands is a deliberate
+// choice ("Mon ordre" wins) and is never reclaimed.
+
+// The list in the exact order every read sorts it (hand order, then never-dragged).
+async function orderedRows(db: D1Database, householdId: string) {
+  const { results } = await db
+    .prepare('SELECT id, non_urgent FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id')
+    .bind(householdId)
+    .all<{ id: string; non_urgent: number | null }>()
+  return results
+}
+
+// The index where the trailing run of flagged rows begins (= rows.length when the
+// last row is an ordinary errand).
+function noRushStart(rows: { non_urgent: number | null }[]): number {
+  let i = rows.length
+  while (i > 0 && rows[i - 1].non_urgent) i--
+  return i
+}
+
+// Slot `id` where the « pas pressé » rule wants it and renumber position 0..n.
+// `where`: 'bottom' = the very end (a line just flagged); 'lastErrand' = just above
+// the trailing flagged block (a new line, or a line just un-flagged). A no-op when
+// the row already sits there — an ordinary household never has a flagged line, so
+// this costs one SELECT and writes nothing, leaving position NULL as before.
+async function settle(db: D1Database, householdId: string, id: string, where: 'bottom' | 'lastErrand') {
+  const rows = await orderedRows(db, householdId)
+  const rest = rows.filter((r) => r.id !== id)
+  const ids = rest.map((r) => r.id)
+  ids.splice(where === 'bottom' ? ids.length : noRushStart(rest), 0, id)
+  if (ids.every((x, i) => rows[i]?.id === x)) return
+  await db.batch(
+    ids.map((rowId, i) =>
+      db.prepare('UPDATE list_items SET position = ? WHERE id = ? AND household_id = ?').bind(i, rowId, householdId),
+    ),
+  )
+}
+
 export const onRequestPost = authed(async (ctx, actor) => {
   // `deal` optionally stages a flyer deal onto the new line (the cashier set lives
   // on the list now) — stored as JSON; absent for an ordinary grocery item.
@@ -96,6 +138,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   )
     .bind(id, actor.householdId, text, 'manual', profileMemberId(ctx.request), dealJson, searchTerms, nowSec())
     .run()
+  // A new line is a real errand: it lands at the end of the errands, ABOVE any
+  // « pas pressé » block rather than under it.
+  await settle(ctx.env.DB, actor.householdId, id, 'lastErrand')
   return ok({ id, text })
 })
 
@@ -221,6 +266,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare('UPDATE list_items SET non_urgent = ? WHERE id = ? AND household_id = ?')
       .bind(body.non_urgent ? 1 : null, body.id, actor.householdId)
       .run()
+    // Flagging it drops the row to the bottom (it's no longer an errand); un-flagging
+    // lifts it back to the end of the errands. Drag it wherever you like afterwards —
+    // "Mon ordre" is never overruled once set.
+    await settle(ctx.env.DB, actor.householdId, body.id, body.non_urgent ? 'bottom' : 'lastErrand')
   }
 
   // Checking is a MARK, not a buy: the item stays on the list (struck through) so

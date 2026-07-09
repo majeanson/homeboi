@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { fold } from '../lib/normalize'
 import { bumpFrequent, frequentScores } from '../lib/frequents'
@@ -36,6 +37,12 @@ export interface ComboOption<T = unknown> {
   /** Leading picto inside the row. */
   icon?: IconName
   iconColor?: string
+  /** Route for the picto: it leaves the row and becomes its own small icon-only
+   *  link to the entity's page (a recipe row → `/kitchen/recipe/:id`). Deliberately
+   *  a tight hit area so tapping anywhere else on the row still picks the option. */
+  iconTo?: string
+  /** Accessible label for that link. Defaults to the option's `label`. */
+  iconToLabel?: string
   /** Right-aligned badge (cookability "Prêt" / "il manque 2", a date…). */
   badge?: ReactNode
   /** Extra strings folded into the type-to-filter match (e.g. recipe ingredients). */
@@ -344,33 +351,52 @@ export function EntityCombobox<T>({
                 // A group heading prints once, when this option's group differs
                 // from the previous shown option's (caller keeps groups contiguous).
                 const heading = o.group && o.group !== shown[i - 1]?.group ? o.group : null
+                const row = (
+                  <button
+                    type="button"
+                    id={`${listId}-${o.id}`}
+                    role="option"
+                    aria-selected={i === active}
+                    className={'combobox__row' + (i === active ? ' is-active' : '')}
+                    onPointerEnter={() => setActive(i)}
+                    // Keep the input focused on press so the wrapper's onBlur
+                    // never fires (relatedTarget is null on touch / Safari when a
+                    // button isn't focused), which would unmount the menu before
+                    // this click lands — the pick would silently no-op.
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pick(o)}
+                  >
+                    <span className="combobox__row-title">
+                      {o.icon && !o.iconTo && (
+                        <>
+                          <InlineIcon name={o.icon} size={14} color={o.iconColor} />{' '}
+                        </>
+                      )}
+                      {o.label}
+                    </span>
+                    {o.badge}
+                  </button>
+                )
                 return (
                   <li key={o.id} role="presentation">
                     {heading && <p className="combobox__group mono">{heading}</p>}
-                    <button
-                      type="button"
-                      id={`${listId}-${o.id}`}
-                      role="option"
-                      aria-selected={i === active}
-                      className={'combobox__row' + (i === active ? ' is-active' : '')}
-                      onPointerEnter={() => setActive(i)}
-                      // Keep the input focused on press so the wrapper's onBlur
-                      // never fires (relatedTarget is null on touch / Safari when a
-                      // button isn't focused), which would unmount the menu before
-                      // this click lands — the pick would silently no-op.
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => pick(o)}
-                    >
-                      <span className="combobox__row-title">
-                        {o.icon && (
-                          <>
-                            <InlineIcon name={o.icon} size={14} color={o.iconColor} />{' '}
-                          </>
-                        )}
-                        {o.label}
-                      </span>
-                      {o.badge}
-                    </button>
+                    {o.icon && o.iconTo ? (
+                      <div className="combobox__opt" role="presentation">
+                        <Link
+                          to={o.iconTo}
+                          className="combobox__open"
+                          aria-label={o.iconToLabel ?? o.label}
+                          title={o.iconToLabel ?? o.label}
+                          onMouseDown={(e) => e.preventDefault()}
+                          style={o.iconColor ? { color: o.iconColor } : undefined}
+                        >
+                          <Icon name={o.icon} size={16} />
+                        </Link>
+                        {row}
+                      </div>
+                    ) : (
+                      row
+                    )}
                   </li>
                 )
               })}

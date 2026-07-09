@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import type { QueryKey } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
@@ -48,6 +49,8 @@ export function MealPool<T extends { id: string; title: string }, O>({
   buildAddBody,
   onPlan,
   renderLead,
+  leadTo,
+  leadToLabel,
   week,
   help,
   helpKey,
@@ -64,6 +67,12 @@ export function MealPool<T extends { id: string; title: string }, O>({
   buildAddBody: (title: string, picked: ComboOption<O> | null) => object
   onPlan: (item: T, date: number, slot: MealSlot) => void
   renderLead: (item: T) => ReactNode // the leading picto inside the chip (e.g. a recipe book glyph)
+  // Route for that picto, when the row points at a real entity (an idea linked to a
+  // recipe → its page). Same deal as the combobox's `iconTo`: the glyph leaves the
+  // chip and becomes its own tight icon-only link, so tapping anywhere else on the
+  // chip still opens the plan picker. Return undefined → the picto stays inert.
+  leadTo?: (item: T) => string | undefined
+  leadToLabel?: string
   week: { date: number; label: string }[]
   help?: HelpMode
   helpKey: string
@@ -167,7 +176,11 @@ export function MealPool<T extends { id: string; title: string }, O>({
         <EmptyState guide={guide}>{labels.empty}</EmptyState>
       ) : (
         <ul className="kitchen__ideas-list">
-          {visible.map((item) => (
+          {visible.map((item) => {
+            const lead = renderLead(item)
+            const to = lead ? leadTo?.(item) : undefined
+            const openLabel = leadToLabel ?? item.title
+            return (
             <li key={item.id} className="kitchen__idea">
               <div className="kitchen__idea-row">
                 {edit.editId === item.id && !ro ? (
@@ -185,9 +198,14 @@ export function MealPool<T extends { id: string; title: string }, O>({
                   />
                 ) : (
                   <>
+                    {to && (
+                      <Link to={to} className="kitchen__idea-open" aria-label={openLabel} title={openLabel}>
+                        {lead}
+                      </Link>
+                    )}
                     {ro ? (
                       <span className="chip kitchen__idea-name" aria-disabled="true">
-                        {renderLead(item)}
+                        {!to && lead}
                         {item.title}
                       </span>
                     ) : (
@@ -197,7 +215,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
                         onClick={() => toggle(item.id)}
                         aria-expanded={isOpen(item.id)}
                       >
-                        {renderLead(item)}
+                        {!to && lead}
                         {item.title}
                         <span className="kitchen__idea-caret" aria-hidden="true">
                           <Icon name="caret-down-bold" size={12} />
@@ -217,7 +235,8 @@ export function MealPool<T extends { id: string; title: string }, O>({
                 <MealPlanPicker slot={planSlot} onSlot={setPlanSlot} week={week} onPickDay={(date) => planOn(item, date, planSlot)} />
               )}
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </section>

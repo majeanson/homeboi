@@ -547,7 +547,10 @@ test.describe('add sheet', () => {
   // C-14 — the kitchen ＋ sheet's week-action tiles shrank to 2 (shop + « Idées »):
   // Vide-frigo now opens from the IdeasDrawer's own footer button, not a direct
   // ＋ tile. The tile navigates to the drawer's full-screen scene (/kitchen/idees).
-  test('the kitchen ＋ Idées tile opens the drawer, whose footer runs Vide-frigo', async ({ page }) => {
+  // The button lives in the 🤖 « IA » source's footer, not under every source: it IS an
+  // AI ask, and hanging it under Favoris / À écouler / 👧 read as a fifth, unrelated
+  // action on tabs that never call the model. So the spec picks that source first.
+  test('the kitchen ＋ Idées tile opens the drawer, whose IA footer runs Vide-frigo', async ({ page }) => {
     await APP('/kitchen')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
@@ -556,6 +559,8 @@ test.describe('add sheet', () => {
     const drawer = page.locator('.ideas-drawer.scene')
     await expect(drawer).toBeVisible()
     await expect(page).toHaveURL(/\/kitchen\/idees/)
+    // The drawer opens on « Idées »; Vide-frigo hangs off the 🤖 IA source.
+    await drawer.locator('.subtabs__opt', { hasText: 'IA' }).click()
     await drawer.getByRole('button', { name: 'Vide-frigo AI' }).click()
     // Step 1 — the sheet auto-loads a batch of dish names (checkable chips).
     const modal = page.locator('.kit-modal.fridge-modal')
@@ -981,11 +986,13 @@ test.describe('list', () => {
   // « Pas pressé »: an item we only buy on a good deal. ONE switch on the row's own
   // edit scene, off by default (an added item is always a real errand), written the
   // moment it's flipped. The row comes back to the list wearing its second class:
-  // a faded card + a NAMED tag, never colour alone.
-  test('flagging an item « pas pressé » fades its row and names it', async ({ page }) => {
+  // a faded card + a NAMED tag, never colour alone — and settled at the BOTTOM, out
+  // of the way of the real errands.
+  test('flagging an item « pas pressé » fades its row, names it, and sinks it', async ({ page }) => {
     const rows = openList(page)
     await expect(page.locator('.list-row--norush')).toHaveCount(0)
     // The name is its own tap target (the picture opens deals, the check ticks).
+    const flagged = await rows.nth(1).locator('.title').innerText()
     await rows.nth(1).locator('.list-row__name').click()
     const chip = page.getByRole('button', { name: 'Pas pressé' })
     // Off by default — the scene asks nothing of an ordinary grocery line.
@@ -993,9 +1000,11 @@ test.describe('list', () => {
     await expectApi(page, 'PATCH', 'list', () => chip.click())
     await expect(chip).toHaveAttribute('aria-pressed', 'true')
     await page.getByRole('button', { name: 'Fermer' }).click()
-    // Back on the list, the flag survives the board refetch — exactly one row.
+    // Back on the list, the flag survives the board refetch — exactly one row, and
+    // it's now the last one: an aubaine-only line never sits between two errands.
     await expect(page.locator('.list-row--norush')).toHaveCount(1)
-    await expect(rows.nth(1).locator('.list-row__norush')).toHaveText(/Pas pressé/)
+    await expect(rows.last().locator('.list-row__norush')).toHaveText(/Pas pressé/)
+    await expect(rows.last().locator('.title')).toHaveText(flagged)
   })
 
   // The same switch is the way back — a mis-tap costs one tap, not a delete + re-add.

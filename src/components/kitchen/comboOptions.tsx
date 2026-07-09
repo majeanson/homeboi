@@ -31,6 +31,10 @@ export function recipeOptions(
     group,
     icon: 'book-open-bold',
     iconColor: 'var(--berry-deep)',
+    // Tapping the picto opens the recipe instead of picking it — you can read the
+    // ingredients before committing the row. The rest of the row still picks.
+    iconTo: `/kitchen/recipe/${recipe.id}`,
+    iconToLabel: t.recipes.open,
     keywords: recipe.ingredients,
     badge: showBadge
       ? missing.length === 0
