@@ -1,5 +1,5 @@
 import { isPastSec, mealSlotPast, useNow } from './itemLife'
-import { localDayStart, addLocalDays } from './localDay'
+import { localDayStart, addLocalDays, localMinuteOfDay } from './localDay'
 import { holidaysOnDay, holidaysInRange, schoolDayKind, type Holiday, type SchoolYear } from './year'
 import { SLOT_RANK, type MealSlot } from './mealSlots'
 import { pickNextEventToday, BOARD_NEXTUP } from './ambientScene'
@@ -64,6 +64,9 @@ export interface BoardModelInput {
   // The picked face (mobile chip / kiosk switcher); null = Maisonnée (everyone).
   profileId: string | null
   fetesOn: boolean
+  // D-21: per-device opt-out (lib/choreAnnounce useChoreAnnounceEnabled()) for the
+  // "evening before" flagged-chore announce line — same wiring as fetesOn above.
+  binAnnounceOn: boolean
   // lib/mealPrefs.useMealPrefs() — pass the ONE instance through, don't re-derive.
   mealPrefs: MealPrefs
   // D-17: the household's school-year bounds (lib/year useSchoolYear()), null =
@@ -146,6 +149,22 @@ const holidayRow = (h: Holiday, at: number, lang: Lang): EventRow => ({
   emoji: h.emoji,
 })
 
+// D-21 (bmad/10) « Sortir le bac » — the fête-line's sibling: a flagged recurring
+// chore's own title, announced the EVENING before its next occurrence (« c'est le
+// soir du bac bleu »). Same announcing-only shape as a fête row (all-day, nobody's,
+// not editable) but a GENERIC `announce` tag (not `holiday: true`) so the lens
+// reads it as « Ce soir », never « Fête ». `dayNow` (not the occurrence day) is the
+// row's own `start_at` — the line lives on TODAY's list, since it's tonight that it
+// announces tomorrow's chore.
+const choreAnnounceRow = (c: ChoreInstance, dayNow: number): EventRow => ({
+  id: `announce-${c.id}-${dayNow}`,
+  title: c.title,
+  start_at: dayNow,
+  all_day: 1,
+  member_id: null,
+  announce: { tag: 'chore' },
+})
+
 // Chronological within a day: déjeuner → dîner → collation → souper → dessert
 // (SLOT_RANK). Meals arrive from the server in position order within a slot, so a
 // stable sort by rank alone gives time order across slots while keeping position.
@@ -153,7 +172,8 @@ const bySlotTime = (a: { slot: string }, b: { slot: string }) =>
   SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot]
 
 export function buildBoardModel(input: BoardModelInput): BoardModel {
-  const { data, nowMs, lang, profileId, fetesOn, mealPrefs, hasWeather, hasTomorrowWx, openTodosCount, tomorrowTodoCount } = input
+  const { data, nowMs, lang, profileId, fetesOn, binAnnounceOn, mealPrefs, hasWeather, hasTomorrowWx, openTodosCount, tomorrowTodoCount } =
+    input
   const schoolYear = input.schoolYear ?? null
   const pendingDone = input.pendingDone ?? new Set<string>()
   const pendingLeftover = input.pendingLeftover ?? new Set<string>()
@@ -175,12 +195,36 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
   const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null
 
+  // D-21: a flagged recurring chore's "evening before" announce — DERIVED off
+  // choresUpcoming's next occurrence, never a stored row (the fête pattern above).
+  // Window = the EVENING of the day before that occurrence, from 17:00 local
+  // through midnight — via `localMinuteOfDay` (Intl/tz-based, like every other
+  // day/time boundary here), NOT lib/timeofday's `timeOfDay` (that one reads the
+  // RUNTIME's own zone via raw `getHours()`, correct on a kiosk but wrong on a
+  // UTC CI runner — see localDay.ts's own comment on the same trap). The
+  // occurrence itself must land exactly on `tomorrowDay` (localDayStart/
+  // addLocalDays day math, never +86400). A chore due further out (e.g.
+  // mid-fortnight for a biweekly rotation) never matches, so the line only ever
+  // appears the ONE evening before its own turn. Self-terminating: past midnight
+  // `dayNow` rolls forward and the occurrence — now "today" — surfaces via
+  // choresToday instead, so the announce naturally disappears with no extra
+  // bookkeeping here.
+  const EVENING_START_MIN = 17 * 60 // 17:00 local — matches lib/timeofday's own 'evening' cutoff
+  const isEvening = localMinuteOfDay(new Date(nowMs)) >= EVENING_START_MIN
+  const choreAnnounces: EventRow[] =
+    binAnnounceOn && isEvening
+      ? (data?.choresUpcoming ?? [])
+          .filter((c) => c.announce_evening && localDayStart(new Date(c.at * 1000)) === tomorrowDay)
+          .map((c) => choreAnnounceRow(c, dayNow))
+      : []
+
   // Les fêtes QC/CA — DERIVED on-device (lib/year; no rows, no fetch) and merged
   // into the same event arrays every lens reads. Calm zero-impact announce lines:
   // all-day, nobody's, never editable. Computed unconditionally (even before
   // `data` has loaded) since they need no server payload at all.
   const todayEventsRaw: EventRow[] = [
     ...(fetesOn ? holidaysOnDay(dayNow).map((h) => holidayRow(h, dayNow, lang)) : []),
+    ...choreAnnounces,
     ...(data?.today ?? []).filter(mineEvent),
   ]
   const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)

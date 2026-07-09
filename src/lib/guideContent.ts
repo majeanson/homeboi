@@ -596,6 +596,19 @@ export const GUIDE: GuideEntry[] = [
           en: 'One entry per year — no calendar to rebuild, no reminder chattering every single day for nothing.',
         },
       },
+      {
+        // D-21 (bmad/10) « Sortir le bac » — appended at the END (guide points are
+        // APPEND-ONLY, indexed).
+        label: { fr: 'L’annonce du soir', en: 'The evening announce' },
+        detail: {
+          fr: 'Dans l’éditeur d’une corvée récurrente (Réglages ▸ Corvées, ou le ＋), coche « Annoncer la veille au soir ». Le babillard affiche alors une ligne calme « Ce soir » le soir d’avant — « c’est le soir du bac bleu » — sans rien créer d’autre. Opt-out par appareil dans [[card:set-display|Réglages ▸ Le babillard ▸ Affichage]].',
+          en: 'In a recurring chore’s editor (Settings ▸ Chores, or the ＋), check “Announce the evening before”. The board then shows a calm “Tonight” line the evening before — “it’s bin night” — nothing else created. Per-device opt-out in [[card:set-display|Settings ▸ The board ▸ Display]].',
+        },
+        why: {
+          fr: 'Le bac est déjà su de la maison (l’horaire de la corvée) — juste une ligne de plus au bon moment, jamais une notification.',
+          en: 'The house already knows the schedule (the chore) — just one more line at the right moment, never a notification.',
+        },
+      },
     ],
   },
   {

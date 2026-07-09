@@ -27,6 +27,11 @@ export interface EventRow {
   holiday?: boolean
   ferie?: boolean
   emoji?: string
+  // D-21 (bmad/10): a DERIVED "evening before" chore announce (src/lib/boardModel.ts)
+  // — same family as `holiday` (all-day, nobody's, not editable) but a GENERIC
+  // shape (not `holiday: true`) so it reads « Ce soir » rather than « Fête ».
+  // `tag` names which announce family this is (currently only 'chore').
+  announce?: { tag: string }
 }
 interface ListRow {
   id: string
@@ -105,6 +110,9 @@ export interface ChoreInstance {
   team?: string[]
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
   carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
+  // D-21: this recurring chore's "evening before" board announce is on (migration
+  // 0107) — only meaningful on `choresUpcoming` rows; boardModel.ts reads it there.
+  announce_evening?: boolean
 }
 export interface BoardData {
   syncedAt: number

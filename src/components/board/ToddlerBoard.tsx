@@ -78,7 +78,13 @@ export function ToddlerBoard({
       // fall back to a pin when nothing matches.
       icon: e.emoji ?? pictoFor(e.title, '📌'),
       label: e.title,
-      sub: e.holiday ? (e.ferie ? t.board.holidayOff : t.board.holidayTag) : e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
+      // D-21: the flagged-chore evening announce reads « Ce soir » here too — a
+      // Sayable tile, same tap-to-hear as every other kid tile (no bespoke wiring).
+      sub: e.announce
+        ? t.board.binTonight
+        : e.holiday
+        ? e.ferie ? t.board.holidayOff : t.board.holidayTag
+        : e.all_day ? t.board.allDay : formatTime(e.start_at, lang),
       narration: e.title,
       color: memberColor(e.member_id) ?? undefined,
     }))

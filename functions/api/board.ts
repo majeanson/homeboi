@@ -140,7 +140,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, rotation_json, current_idx, last_done_at, colour AS color, recur_json, recur_start, lead_seconds, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
+      'SELECT id, title, rotation_json, current_idx, last_done_at, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
     )
       .bind(hh)
       .all(),
@@ -310,6 +310,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // turn — they can still do it; `who`/`who_id` say whose turn it currently is.
     team: string[]
     carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
+    // D-21: this recurring chore's "evening before" board announce is on. Read by
+    // src/lib/boardModel.ts against choresUpcoming's `at` to synthesize the
+    // announce line the night before — see migration 0107.
+    announce_evening?: boolean
   }
   const memberName = (id: string | null) =>
     (id && (members.results as { id: string; display_name: string }[]).find((m) => m.id === id)?.display_name) || null
@@ -323,6 +327,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     recur_json: string | null
     recur_start: number | null
     lead_seconds: number | null
+    announce_evening: number | null
     created_at: number
   }
   // The rotation as member ids — the whole team sharing the chore. Empty when
@@ -361,6 +366,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       who: whoseTurn(c),
       who_id: whoseTurnId(c),
       team: teamIds(c),
+      announce_evening: c.announce_evening === 1,
     })
     if (!r) {
       // No schedule → a to-do. Show it until it's marked done.

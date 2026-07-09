@@ -35,6 +35,7 @@ import { computeDayPart } from '../../lib/timeofday'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
 import { useTapToHear, setTapToHear } from '../../lib/tapToHear'
 import { useHolidaysEnabled, setHolidaysEnabled } from '../../lib/year'
+import { useChoreAnnounceEnabled, setChoreAnnounceEnabled } from '../../lib/choreAnnounce'
 import { IngredientLine } from '../IngredientLine'
 import { InlineIcon } from '../Icon'
 import { Toggle } from '../Toggle'
@@ -71,6 +72,9 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // A-2 (bmad/09): the derived fêtes QC/CA announce lines — all on by default,
   // this device can opt out (lib/year).
   const fetes = useHolidaysEnabled()
+  // D-21 (bmad/10): the flagged-chore "evening before" announce line — same
+  // per-device opt-out pattern (lib/choreAnnounce).
+  const binAnnounce = useChoreAnnounceEnabled()
   // Per-device Screen Wake Lock (HubLayout holds it): keep a wall tablet lit on the
   // board. Read live so the toggle engages/releases the lock without a reload.
   const keepAwake = useKeepAwake()
@@ -186,6 +190,21 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               onClick={() => setHolidaysEnabled(!fetes)}
             />
             <p className="operator__seg-hint mono">{t.operator.fetesHint}</p>
+          </div>
+        )}
+        {/* D-21 (bmad/10) « Sortir le bac »: a flagged recurring chore's own
+            "evening before" announce line — all on by default, this device can
+            opt out (lib/choreAnnounce), same shape as the fêtes toggle above. */}
+        {!ro && (
+          <div className="operator__seg">
+            <span className="operator__seg-label mono">{t.operator.binAnnounceLabel}</span>
+            <Toggle
+              on={binAnnounce}
+              icon="hand-heart-bold"
+              label={binAnnounce ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+              onClick={() => setChoreAnnounceEnabled(!binAnnounce)}
+            />
+            <p className="operator__seg-hint mono">{t.operator.binAnnounceHint}</p>
           </div>
         )}
         {!ro && (

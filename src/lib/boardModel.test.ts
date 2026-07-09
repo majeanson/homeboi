@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildBoardModel, NEXT_UP_GRACE_SEC, type BoardModelInput } from './boardModel'
 import { MEAL_SLOTS, type MealSlot } from './mealSlots'
-import { localDayStart } from './localDay'
+import { localDayStart, addLocalDays } from './localDay'
 import type { MealPrefs } from './mealPrefs'
 import type { BoardData, EventRow, ChoreInstance, WorkRow, DayMealRow } from '../components/board/types'
 
@@ -56,6 +56,7 @@ function baseInput(overrides: Partial<BoardModelInput> = {}): BoardModelInput {
     lang: 'fr',
     profileId: null,
     fetesOn: false,
+    binAnnounceOn: true,
     mealPrefs: prefs(),
     hasWeather: false,
     hasTomorrowWx: false,
@@ -454,6 +455,78 @@ describe('boardModel', () => {
       expect(model.fil.work).toHaveLength(1)
       // 1 all-day (untimed, not counted) + 1 work (counted) = 1 < 2 → not eligible
       expect(model.fil.eligible).toBe(false)
+    })
+  })
+
+  describe('D-21 « Sortir le bac » — evening-before chore announce', () => {
+    // The announce is DERIVED (never a stored row, the fête pattern): a chore
+    // flagged `announce_evening` whose next occurrence (choresUpcoming's `at`)
+    // lands exactly on tomorrow's local midnight, surfaced only during the
+    // EVENING (17:00 local onward) of the day before. `tomorrowOf` computes that
+    // target the SAME way the model does (localDayStart/addLocalDays), so every
+    // case below stays correct regardless of the runner's own timezone.
+    const tomorrowOf = (nowMs: number) => addLocalDays(localDayStart(new Date(nowMs)), 1)
+    const bac = (overrides: Partial<ChoreInstance> = {}) =>
+      chore({ id: 'bac1', title: 'Sortir le bac bleu', announce_evening: true, ...overrides })
+    const hasAnnounce = (nowMs: number, choresUpcoming: ChoreInstance[], overrides: Partial<BoardModelInput> = {}) =>
+      buildBoardModel(baseInput({ nowMs, data: mkData({ choresUpcoming }), ...overrides })).today.events.some(
+        (e) => e.announce?.tag === 'chore',
+      )
+
+    // Jul 8 2026 is DST-edge-free (same anchor date as the top-of-file NOW), so
+    // these two instants differ ONLY by the evening-start boundary.
+    const EVENING_1700 = Date.UTC(2026, 6, 8, 21, 0, 0) // 17:00 EDT
+    const AFTERNOON_1659 = Date.UTC(2026, 6, 8, 20, 59, 0) // 16:59 EDT
+
+    it('is silent one minute before evening starts, present exactly at 17:00 local', () => {
+      const at = tomorrowOf(EVENING_1700) // same calendar day both instants
+      expect(hasAnnounce(AFTERNOON_1659, [bac({ at })])).toBe(false)
+      expect(hasAnnounce(EVENING_1700, [bac({ at })])).toBe(true)
+    })
+
+    it('carries a GENERIC `announce` tag (not `holiday`), all-day, nobody\'s', () => {
+      const at = tomorrowOf(EVENING_1700)
+      const model = buildBoardModel(baseInput({ nowMs: EVENING_1700, data: mkData({ choresUpcoming: [bac({ at })] }) }))
+      const row = model.today.events.find((e) => e.announce?.tag === 'chore')
+      expect(row).toMatchObject({ title: 'Sortir le bac bleu', all_day: 1, member_id: null })
+      expect(row?.holiday).toBeUndefined()
+    })
+
+    it('is silent when the occurrence is NOT tomorrow (e.g. the other week of a biweekly rotation)', () => {
+      const farOut = addLocalDays(tomorrowOf(EVENING_1700), 7)
+      expect(hasAnnounce(EVENING_1700, [bac({ at: farOut })])).toBe(false)
+    })
+
+    it('is silent for an UNFLAGGED chore due tomorrow, even in the evening', () => {
+      const at = tomorrowOf(EVENING_1700)
+      expect(hasAnnounce(EVENING_1700, [bac({ at, announce_evening: false })])).toBe(false)
+    })
+
+    it('is silent when this device opted out (binAnnounceOn: false)', () => {
+      const at = tomorrowOf(EVENING_1700)
+      expect(hasAnnounce(EVENING_1700, [bac({ at })], { binAnnounceOn: false })).toBe(false)
+    })
+
+    it('midnight rollover: present right before midnight, gone right after — the occurrence became "today"', () => {
+      const justBefore = Date.UTC(2026, 6, 9, 3, 59, 0) // Jul 8 23:59 EDT
+      const justAfter = Date.UTC(2026, 6, 9, 4, 1, 0) // Jul 9 00:01 EDT
+      const at = tomorrowOf(justBefore) // Jul 9 local midnight, fixed
+      expect(hasAnnounce(justBefore, [bac({ at })])).toBe(true)
+      // Same fixed `at`, but "tomorrow" has now rolled to Jul 10 — no longer a match
+      // (in real usage the server would have moved this row to choresToday by now).
+      expect(hasAnnounce(justAfter, [bac({ at })])).toBe(false)
+    })
+
+    it('DST transition (spring-forward, Mar 8 2026): still announces exactly the evening before', () => {
+      // 20:00 EDT on the transition day itself (clocks jumped 2:00→3:00 EST→EDT
+      // at 02:00 local, hours before this evening instant).
+      const eveningOfTransitionDay = Date.UTC(2026, 2, 9, 0, 0, 0) // Mar 8 20:00 EDT
+      const at = tomorrowOf(eveningOfTransitionDay) // Mar 9 local midnight
+      expect(hasAnnounce(eveningOfTransitionDay, [bac({ at })])).toBe(true)
+      // Two days out (Mar 10) must NOT announce, proving the day window stayed
+      // exact across the transition instead of drifting on the shortened (23 h) day.
+      const twoDaysOut = addLocalDays(at, 1)
+      expect(hasAnnounce(eveningOfTransitionDay, [bac({ at: twoDaysOut })])).toBe(false)
     })
   })
 })

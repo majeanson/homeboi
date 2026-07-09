@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'sortir-le-bac',
+    text: {
+      fr: 'Nouveau : coche « Annoncer la veille au soir » dans une corvée récurrente — le babillard le rappelle « Ce soir », le soir d’avant.',
+      en: 'New: check “Announce the evening before” on a recurring chore — the board reminds you “Tonight”, the evening before.',
+    },
+    card: 'board',
+  },
+  {
     id: 'ideas-drawer',
     text: {
       fr: 'Nouveau : un seul tiroir « Idées » — favoris, à écouler, IA, proposé par un enfant — à ouvrir depuis la grille ou le ＋.',

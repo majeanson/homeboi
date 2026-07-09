@@ -468,6 +468,9 @@ export const FR = {
     // A-2 (bmad/09) — les fêtes dérivées: the calm announce tag on a fête line.
     holidayTag: 'Fête',
     holidayOff: 'Congé férié',
+    // D-21 (bmad/10) « Sortir le bac » — the tag on a flagged recurring chore's
+    // "evening before" announce line. Reads « Ce soir » on purpose (not « Fête »).
+    binTonight: 'Ce soir',
     welcomeHint: 'Le babillard est prêt — il manque juste ta famille.',
     welcomeCta: 'Ajouter les personnes',
     idleSoon: 'Retour à la maisonnée dans un instant…',
@@ -1782,6 +1785,10 @@ export const FR = {
     tplStart: 'Modèle :',
     choreCommon: 'Courantes :',
     choreStart: 'À partir du',
+    // D-21 (bmad/10) « Sortir le bac » — opt-in per-chore evening announce (only
+    // meaningful with a schedule; sits right under LeadPicker in the same form).
+    announceEveningLabel: 'Annoncer la veille au soir',
+    announceEveningHint: 'Le babillard affichera une ligne calme le soir d’avant (« Ce soir » — pas une notification).',
     // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
     home: {
       subCorvees: 'Corvées',
@@ -2168,6 +2175,9 @@ export const FR = {
     // A-2 (bmad/09) — les fêtes dérivées au calendrier.
     fetesLabel: 'Les fêtes au calendrier',
     fetesHint: 'Les fêtes du Québec et du Canada s’annoncent d’elles-mêmes sur le babillard (Saint-Jean, Action de grâce, Noël…). Juste une ligne calme — rien à gérer, rien à créer.',
+    // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
+    binAnnounceLabel: 'L’annonce du soir (corvées)',
+    binAnnounceHint: 'Une corvée récurrente cochée « Annoncer la veille au soir » (dans son éditeur) s’annonce d’elle-même le soir d’avant — « c’est le soir du bac bleu ». Une ligne calme de plus — rien à gérer ici.',
     // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Diagnostics).
     takeoutTitle: 'Emporter mes données',
     takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',

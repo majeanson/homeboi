@@ -59,6 +59,7 @@ import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useBoardData, useTagColors } from '../lib/queryHooks'
 import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
+import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
 import { useBoardModel } from '../lib/boardModel'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
 import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
@@ -277,6 +278,9 @@ export function Board() {
   // all-day, nobody's, never editable — the emoji is the picture. All shown by
   // default; per-device opt-out in Réglages ▸ Affichage (Marc's OQ-4 verdict).
   const fetesOn = useHolidaysEnabled()
+  // D-21: per-device opt-out for the flagged-chore "evening before" announce
+  // line — same wiring as fetesOn above (lib/choreAnnounce).
+  const binAnnounceOn = useChoreAnnounceEnabled()
   // D-17: the household's school-year bounds (Réglages ▸ Le babillard) — read
   // once here and passed through the model, so all three lenses agree.
   const schoolYear = useSchoolYear()
@@ -291,6 +295,7 @@ export function Board() {
     lang,
     profileId,
     fetesOn,
+    binAnnounceOn,
     mealPrefs,
     schoolYear,
     pendingDone,
@@ -369,7 +374,11 @@ export function Board() {
   const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor, tagColors }
   const tomorrowDay = addLocalDays(todayDay, 1)
   const eventWhen = (e: EventRow) =>
-    e.holiday
+    // D-21: the flagged-chore evening announce reads « Ce soir », never « Fête »
+    // (a distinct EventRow shape from `holiday` on purpose — see boardModel.ts).
+    e.announce
+      ? t.board.binTonight
+      : e.holiday
       ? e.ferie
         ? t.board.holidayOff
         : t.board.holidayTag
@@ -386,6 +395,10 @@ export function Board() {
       // A fête (derived, lib/year) is an ANNOUNCEMENT, not a thing to manage —
       // a static row, no peek, its emoji as the picture.
       <Act key={e.id} cat="event" emoji={e.emoji} title={e.title} when={eventWhen(e)} />
+    ) : e.announce ? (
+      // D-21: the flagged-chore evening announce — same "announcement, not a
+      // thing to manage" shape as a fête, tinted with the chore category instead.
+      <Act key={e.id} cat="chore" title={e.title} when={eventWhen(e)} />
     ) : (
     <Act
       key={e.id}

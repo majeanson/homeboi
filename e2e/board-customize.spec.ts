@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, BOARD, MMID } from './mocks'
 
 // Board customization + lens coverage — the §6 e2e gaps from AUJOURDHUI.md that the
 // static screenshot frames never exercise: the « Disposition du babillard » toggle UI
@@ -171,4 +171,76 @@ test('picking a face re-renders the board, hiding another member’s items', asy
   // just not a plain Act row.)
   await expect(page.locator('.act', { hasText: 'Garderie' })).toHaveCount(0)
   await expect(page.getByText('Rappel: facture')).toBeVisible()
+})
+
+// ─────────── D-21 « Sortir le bac » — evening-before chore announce ─────────
+// The 86400-day-scale "evening before" line (src/lib/boardModel.ts + migration
+// 0107): a chore flagged `announce_evening` due TOMORROW shows a « Ce soir »
+// board line tonight. Needs an EVENING frozen clock (MMID + 19h local, distinct
+// from the other tests' 04:00-local BASE) since the model gates on timeOfDay.
+
+const DAY = 86400
+const EVENING = MMID + 19 * 3600 // 19:00 local — well inside the 'evening' window
+const FLAGGED_TITLE = 'Sortir le bac bleu'
+
+// choresUpcoming ChoreInstance whose next occurrence lands exactly on tomorrow's
+// local midnight — the model's own match condition.
+const flaggedChore = { id: 'bac1', title: FLAGGED_TITLE, color: '#88A36F', at: MMID + DAY, who: null, who_id: null, announce_evening: true }
+
+async function boardWithChoresUpcoming(page: Page, choresUpcoming: unknown[]) {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.setFixedTime(new Date(EVENING * 1000))
+  await mockApi(page)
+  // Registered AFTER mockApi so this wins over the default BOARD fixture.
+  await page.route('**/api/board**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...BOARD, choresUpcoming }) }),
+  )
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+}
+
+test.describe('« Sortir le bac » evening-before announce (D-21)', () => {
+  // The SAME chore also legitimately renders as an ordinary « À venir » nav row
+  // (a `<button class="act act--nav">`, tappable to its detail) — announce_evening
+  // doesn't remove it from there, it only ADDS the evening line. So scope every
+  // assertion to `div.act` (a static, non-interactive card — the announce/fête
+  // shape, see Act.tsx) rather than the bare `.act` class, which would also match
+  // that other, unrelated row.
+  const announceRow = (page: Page) => page.locator('div.act', { hasText: FLAGGED_TITLE })
+
+  test('a flagged chore due tomorrow announces itself tonight as « Ce soir »', async ({ page }) => {
+    await boardWithChoresUpcoming(page, [flaggedChore])
+    const row = announceRow(page)
+    await expect(row).toBeVisible()
+    await expect(row.locator('.when')).toHaveText('Ce soir')
+  })
+
+  test('an UNFLAGGED chore due tomorrow stays silent tonight', async ({ page }) => {
+    await boardWithChoresUpcoming(page, [{ ...flaggedChore, announce_evening: false }])
+    await expect(announceRow(page)).toHaveCount(0)
+  })
+
+  test('a flagged chore due tomorrow stays silent when this device opted out', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.setFixedTime(new Date(EVENING * 1000))
+    await mockApi(page)
+    await page.route('**/api/board**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...BOARD, choresUpcoming: [flaggedChore] }) }),
+    )
+    // Per-device opt-out (lib/choreAnnounce), same persisted-before-load pattern
+    // as the theme/audience seeds below.
+    await page.addInitScript(() => localStorage.setItem('babillard-bac', '0'))
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/board')
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    await expect(announceRow(page)).toHaveCount(0)
+  })
+
+  test('a flagged chore due further out (not tomorrow) stays silent tonight', async ({ page }) => {
+    // e.g. the OTHER week of a biweekly rotation — its next occurrence isn't
+    // tomorrow, so it must not announce even though the flag is on.
+    await boardWithChoresUpcoming(page, [{ ...flaggedChore, at: MMID + 8 * DAY }])
+    await expect(announceRow(page)).toHaveCount(0)
+  })
 })

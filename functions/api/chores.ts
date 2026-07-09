@@ -25,6 +25,12 @@ const leadSeconds = (v: unknown): number | null => {
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
 }
 
+// D-21 (bmad/10): opt-in "evening before" board announce for a recurring chore
+// (« c'est le soir du bac bleu ») — a single nullable 0/1, stored 1 or NULL
+// (never a bare 0, keeps the column's "unset" and "off" reading the same way
+// lead_seconds does above).
+const announceEvening = (v: unknown): number | null => (v ? 1 : null)
+
 // Chores with a round-robin rotation and an optional recurrence ("tous les
 // jeudis", see _lib/recur). The ONLY "credit" that exists is last_done_by +
 // whose-turn — no points, no streak (NFR-CALM-1). Marking done advances the
@@ -32,7 +38,7 @@ const leadSeconds = (v: unknown): number | null => {
 // Aujourd'hui / À venir; created_at is the recurrence anchor.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all()
@@ -47,13 +53,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
     recur?: unknown
     start?: unknown
     leadSeconds?: number | null
+    announceEvening?: boolean
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const color = hexColor(body?.color, '#88a36f')
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, lead_seconds, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, lead_seconds, announce_evening, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -64,6 +71,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       recurJson(body?.recur),
       recurStart(body?.start),
       leadSeconds(body?.leadSeconds),
+      announceEvening(body?.announceEvening),
       nowSec(),
     )
     .run()
@@ -90,6 +98,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     recur?: unknown
     start?: unknown
     leadSeconds?: number | null
+    announceEvening?: boolean
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -104,7 +113,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.rotation !== undefined ||
     body.color !== undefined ||
     body.recur !== undefined ||
-    body.leadSeconds !== undefined
+    body.leadSeconds !== undefined ||
+    body.announceEvening !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -133,6 +143,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (body.leadSeconds !== undefined) {
       sets.push('lead_seconds = ?')
       binds.push(leadSeconds(body.leadSeconds))
+    }
+    if (body.announceEvening !== undefined) {
+      sets.push('announce_evening = ?')
+      binds.push(announceEvening(body.announceEvening))
     }
     if (!sets.length) return ok({ ok: true })
     binds.push(body.id, actor.householdId)

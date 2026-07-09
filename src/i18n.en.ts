@@ -442,6 +442,9 @@ export const EN: typeof FR = {
     // A-2 (bmad/09) — derived holidays: the calm announce tag on a fête line.
     holidayTag: 'Holiday',
     holidayOff: 'Stat holiday',
+    // D-21 (bmad/10) « Sortir le bac » — the tag on a flagged recurring chore's
+    // "evening before" announce line. Reads "Tonight" on purpose (not "Holiday").
+    binTonight: 'Tonight',
     welcomeHint: 'The board is ready — it just needs your family.',
     welcomeCta: 'Add the people',
     idleSoon: 'Back to the household view in a moment…',
@@ -1707,6 +1710,10 @@ export const EN: typeof FR = {
     tplStart: 'Template:',
     choreCommon: 'Common:',
     choreStart: 'Starting',
+    // D-21 (bmad/10) « Sortir le bac » — opt-in per-chore evening announce (only
+    // meaningful with a schedule; sits right under LeadPicker in the same form).
+    announceEveningLabel: 'Announce the evening before',
+    announceEveningHint: 'The board will show a calm line the evening before ("Tonight" — not a notification).',
     // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
     home: {
       subCorvees: 'Chores',
@@ -2085,6 +2092,9 @@ export const EN: typeof FR = {
     // A-2 (bmad/09) — the derived calendar holidays.
     fetesLabel: 'Holidays on the calendar',
     fetesHint: 'Québec and Canada holidays announce themselves on the board (Saint-Jean, Thanksgiving, Christmas…). Just a calm line — nothing to manage, nothing to create.',
+    // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
+    binAnnounceLabel: 'The evening announce (chores)',
+    binAnnounceHint: 'A recurring chore checked "Announce the evening before" (in its own editor) announces itself the night before — "it’s bin night". One more calm line — nothing to manage here.',
     // E-35 — "Take my data" (Settings ▸ System ▸ Diagnostics).
     takeoutTitle: 'Take my data',
     takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',

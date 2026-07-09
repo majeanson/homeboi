@@ -1,0 +1,11 @@
+-- D-21 (bmad/10) « Sortir le bac » — revised scope (Marc, 2026-07-08): bin day
+-- rides the EXISTING chore/recurrence engine instead of a new bins table. One
+-- opt-in flag on a recurring chore: when set, the board also shows a calm
+-- "evening before" announce line on the night before its next occurrence (the
+-- fête-line sibling, see src/lib/boardModel.ts). NULL/0 = today's default, no
+-- announce. A single nullable INTEGER (0/1), not a new lead/flag column — the
+-- existing lead_seconds (0032) means something different ("Bientôt" highlight
+-- window") and can't double as this on/off switch.
+--
+-- Additive, forward-only, filename-locked.
+ALTER TABLE tasks ADD COLUMN announce_evening INTEGER;

@@ -425,13 +425,17 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     vet via the pet's carnet: seed-shaped recurring appointments per member,
     the 09-A-4 SEASON_SEEDS pattern.~~ Recurring appointments are typed by
     hand through the normal event flow.
-21. ✅ **« Sortir le bac »** [S] ◐ — _garde (2026-07-08)_ — bin day is
-    already stored (the sitter card shows it); the family never sees it. One
-    derived evening line on the board the night before (« c'est le soir du
-    bac bleu »), toddler-hearable, opt-out — mechanically a sibling of the
-    fêtes announce lines (09 A-2): derived, nobody's, zero new tables.
-    _(reuse: ShareInfoEditor's bin data, the A-2 announce-line pattern,
-    itemLife for the evening window.)_
+21. ✅ **« Sortir le bac »** [S] ◐ — _garde (2026-07-08)_ — **SHIPPED
+    2026-07-08 (revised scope per the 10-plan.md note)**: no new bins table —
+    rides the EXISTING Corvées recurrence engine instead. A per-chore
+    `announce_evening` flag (migration 0107; checkbox in the chore editor,
+    next to `RecurPicker`/`LeadPicker`) emits an evening-before board line the
+    night before its next occurrence (« c'est le soir du bac bleu »),
+    toddler-hearable, per-device opt-out (`babillard-bac`, Réglages ▸
+    Affichage) — mechanically a sibling of the fêtes announce lines (09 A-2):
+    a generic `EventRow.announce?:{tag}` (not `holiday:true`, reads « Ce soir
+    »), derived in `lib/boardModel.ts`, nobody's, zero new tables beyond the
+    one flag column.
 
 ## E · ✦ Hors-piste
 

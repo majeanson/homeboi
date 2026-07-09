@@ -32,6 +32,7 @@ export interface ChoreInit {
   recur_json?: string | null
   recur_start?: number | null
   lead_seconds?: number | null
+  announce_evening?: number | null
 }
 
 function parseRotation(json: string | null | undefined): string[] {
@@ -73,6 +74,9 @@ export function ChoreForm({
   // Calm "Bientôt" lead — only meaningful with a schedule (a no-schedule chore is a
   // standing to-do with no occurrence date to anchor against).
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
+  // D-21 (bmad/10) « Sortir le bac » — opt-in "evening before" board announce;
+  // only meaningful with a schedule, same reasoning as lead above.
+  const [announceEvening, setAnnounceEvening] = useState(!!value?.announce_evening)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
@@ -92,6 +96,7 @@ export function ChoreForm({
       recur,
       start: recur ? dateToAnchorSec(start) : null,
       leadSeconds: recur ? lead : null, // a standing (no-schedule) chore has no occurrence to remind about
+      announceEvening: recur ? announceEvening : false, // same reasoning: no schedule, no "evening before"
     }
     try {
       await write('chores', {
@@ -108,6 +113,7 @@ export function ChoreForm({
         setRecur(null)
         setStart(todayAnchorDate())
         setLead(null)
+        setAnnounceEvening(false)
       }
       onSaved()
     } catch {
@@ -155,6 +161,18 @@ export function ChoreForm({
             <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
           </label>
           <LeadPicker value={lead} onChange={setLead} />
+          {/* D-21 (bmad/10) « Sortir le bac » — opt-in "evening before" board
+              announce, the fête-line sibling (a single household display line,
+              never a push — NFR-CALM-1). */}
+          <label className="operator__check mono">
+            <input
+              type="checkbox"
+              checked={announceEvening}
+              onChange={(e) => setAnnounceEvening(e.target.checked)}
+            />
+            {t.operator.announceEveningLabel}
+          </label>
+          <p className="operator__seg-hint mono">{t.operator.announceEveningHint}</p>
         </>
       )}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
