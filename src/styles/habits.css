@@ -197,6 +197,148 @@
   color: var(--ink-soft);
 }
 
+/* The row's peek: its history plus the (quiet) edit affordance. Managing a habit
+   lives here rather than on the row itself — the check-in surface is for tapping. */
+.habitudes__peek {
+  display: flex;
+  flex-direction: column;
+}
+
+.habitudes__row-actions {
+  align-self: flex-end;
+  padding: 0 0.6rem 0.5rem;
+}
+
+.habitudes__manage {
+  align-self: flex-start;
+}
+
+/* --- The habit form ------------------------------------------------------- */
+.habit-form__icon {
+  width: 4.5rem;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+/* Four kind cards, each with its example. They wrap on a phone; on a wide screen
+   they sit two-up. Radios stay real radios (keyboard + screen reader). */
+.habit-form__kinds,
+.habit-form__cadence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.habit-form__kinds legend,
+.habit-form__cadence legend {
+  width: 100%;
+  padding: 0 0 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.habit-form__kind {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 10.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  cursor: pointer;
+}
+
+.habit-form__kind.is-on {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.habit-form__kind-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.habit-form__kind-name {
+  font-weight: 600;
+}
+
+.habit-form__kind-eg {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.habit-form__seg {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 9rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  cursor: pointer;
+}
+
+.habit-form__seg.is-on {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.habit-form__target {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.habit-form__manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1.5px solid var(--line);
+}
+
+.habit-form__delete {
+  color: var(--warn);
+}
+
+/* --- Reminder times ------------------------------------------------------- */
+.reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reminders__label {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.reminders__row {
+  gap: 0.4rem;
+}
+
+.reminders__time {
+  max-width: 9rem;
+}
+
+.reminders__add {
+  align-self: flex-start;
+}
+
+.reminders__hint {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
 /* Toddler lens + narrow phones: give the taps more room, stack the controls. */
 @media (max-width: 26rem) {
   .habit-row__plus {

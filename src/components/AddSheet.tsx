@@ -111,6 +111,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   // « Laisse un mot » — a little letter for a household face (the rose 'cercle' family
   // reads as "a personal message"); opens an in-sheet composer.
   mot: { cat: 'cercle', icon: 'envelope-bold' },
+  // « Mes habitudes » — a rhythm you keep (the repeat glyph); navigate-only to the
+  // habit form (kind + cadence + reminder times don't fit an in-sheet composer).
+  habit: { cat: 'chore', icon: 'repeat-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -682,6 +685,7 @@ export function AddSheet({
       'family-import': t.familyShare.importTitle,
       voyage: t.voyage.captureTile,
       mot: t.mots.tile,
+      habit: t.habits.add,
     }
     return labels[m]
   }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link, useNavigate } from 'react-router-dom'
 import '../styles/habits.css'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { isGuest } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { useWrite } from '../lib/write'
@@ -22,6 +24,7 @@ import {
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { Disclosure } from '../components/Disclosure'
+import { RowActions } from '../components/RowActions'
 import { MemberSwitcher, type MemberFace } from '../components/MemberSwitcher'
 import { HabitRow } from '../components/habits/HabitRow'
 import { HabitHistory } from '../components/habits/HabitHistory'
@@ -43,6 +46,8 @@ export function HabitudesPage() {
   useEscapeKey(close)
 
   const { memberId: face, setMemberId } = useProfile()
+  const { signedIn } = useAuth()
+  const nav = useNavigate()
   const write = useWrite()
   const ro = isGuest()
   const today = habitToday()
@@ -115,7 +120,18 @@ export function HabitudesPage() {
         onOpen={() => setOpenId((cur) => (cur === h.id ? null : h.id))}
         readOnly={ro}
       />
-      {openId === h.id && <HabitHistory habit={h} days={days} today={today} />}
+      {openId === h.id && (
+        <div className="habitudes__peek">
+          <HabitHistory habit={h} days={days} today={today} />
+          {/* Editing lives behind the row's own peek rather than on the row: the
+              check-in surface is for tapping, not for managing. */}
+          <RowActions
+            onEdit={() => nav(`/habitude/${h.id}/edit`)}
+            editLabel={fn.editOne(h.title)}
+            className="habitudes__row-actions"
+          />
+        </div>
+      )}
     </div>
   )
 
@@ -152,6 +168,14 @@ export function HabitudesPage() {
               </Disclosure>
             )}
           </>
+        )}
+
+        {/* Adding is operator-grade (the form is a FormScene), so a kiosk that
+            isn't signed in — and a guest — never sees the door. */}
+        {!ro && signedIn && (
+          <Link className="btn btn--ghost habitudes__manage" to="/habitude/new">
+            {fn.add}
+          </Link>
         )}
       </div>
     </div>

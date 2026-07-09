@@ -115,15 +115,79 @@ test.describe('Le point du jour', () => {
   })
 })
 
+test.describe('the habit form', () => {
+  test('creates a habit: the cadence segment swaps the schedule for a weekly quota', async ({ page }) => {
+    const posted: Record<string, unknown>[] = []
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await mockApi(page)
+    await page.route('**/api/habits', async (route) => {
+      if (route.request().method() === 'POST') {
+        posted.push(JSON.parse(route.request().postData() || '{}'))
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'new' }) })
+      }
+      return route.fallback()
+    })
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/habitude/new')
+
+    await page.getByLabel('L’habitude').fill('Sortie à vélo')
+    // « Selon un horaire » is the default and shows the shared RecurPicker.
+    await expect(page.locator('.recur')).toBeVisible()
+    // Switching to the weekly quota hides the schedule entirely (the two cadences
+    // are different shapes — a quota has no rule to expand).
+    await page.locator('.habit-form__seg', { hasText: 'X fois par semaine' }).click()
+    await expect(page.locator('.recur')).toHaveCount(0)
+    await page.getByLabel('Combien de fois').fill('3')
+
+    await page.getByRole('button', { name: 'Nouvelle habitude' }).click()
+    await expect.poll(() => posted.length).toBe(1)
+    expect(posted[0]).toMatchObject({ title: 'Sortie à vélo', cadence: 'week', weekTimes: 3, recur: null, kind: 'do' })
+  })
+
+  test('a counted habit asks for a target; an avoid habit does not', async ({ page }) => {
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/habitude/new')
+
+    await expect(page.locator('.habit-form__target')).toHaveCount(0)
+    await page.locator('.habit-form__kind', { hasText: 'Compter' }).click()
+    await expect(page.getByLabel('Objectif par jour')).toBeVisible()
+    // A ceiling relabels the same field rather than adding a second one.
+    await page.locator('.habit-form__kind', { hasText: 'Limiter' }).click()
+    await expect(page.getByLabel('Maximum par jour')).toBeVisible()
+    await page.locator('.habit-form__kind', { hasText: 'Éviter' }).click()
+    await expect(page.locator('.habit-form__target')).toHaveCount(0)
+  })
+
+  test('reminder times add, sort and remove — and say they never reach a pocket', async ({ page }) => {
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/habitude/new')
+
+    await expect(page.locator('.reminders__hint')).toContainText('jamais dans ta poche')
+    const add = page.getByRole('button', { name: 'Ajouter un rappel' })
+    await add.click()
+    await expect(page.locator('.reminders__time')).toHaveValue('09:00')
+    // Each next reminder lands an hour later, so repeated ＋ never collides.
+    await add.click()
+    await expect(page.locator('.reminders__time').nth(1)).toHaveValue('10:00')
+    // Typing an EARLIER time re-sorts, matching what the server normalizes to.
+    await page.locator('.reminders__time').nth(1).fill('07:30')
+    await expect(page.locator('.reminders__time').first()).toHaveValue('07:30')
+
+    await page.getByRole('button', { name: 'Enlever ce rappel' }).first().click()
+    await expect(page.locator('.reminders__time')).toHaveCount(1)
+    await expect(page.locator('.reminders__time')).toHaveValue('09:00')
+  })
+})
+
 // The standing no-horizontal-overflow rule: every visible descendant must stay
 // inside the scene's right edge at phone width (the container clips, so a
 // scrollWidth check would read 0 — measure per child, like add-sheet-overflow).
-test('the check-in scene never bleeds off a narrow phone', async ({ page }) => {
-  await page.setViewportSize({ width: 360, height: 780 })
-  await checkin(page)
-  await page.locator('.mswitch__opt', { hasText: 'Maman' }).click()
-
-  const scene = page.locator('.habitudes')
+async function noOverflow(page: Page, sel: string) {
+  const scene = page.locator(sel)
   const right = await scene.evaluate((el) => el.getBoundingClientRect().right)
   const overflowing = await scene.evaluate((el, edge) => {
     const bad: string[] = []
@@ -134,4 +198,24 @@ test('the check-in scene never bleeds off a narrow phone', async ({ page }) => {
     return bad
   }, right)
   expect(overflowing).toEqual([])
+}
+
+test('the check-in scene never bleeds off a narrow phone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await checkin(page)
+  await page.locator('.mswitch__opt', { hasText: 'Maman' }).click()
+  await noOverflow(page, '.habitudes')
+})
+
+test('the habit form never bleeds off a narrow phone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 })
+  await page.clock.setFixedTime(new Date(BASE * 1000))
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/habitude/new')
+  // Open every conditional block: counted target fields + a reminder row.
+  await page.locator('.habit-form__kind', { hasText: 'Compter' }).click()
+  await page.getByRole('button', { name: 'Ajouter un rappel' }).click()
+  await page.locator('.habit-form__seg', { hasText: 'X fois par semaine' }).click()
+  await noOverflow(page, '.scene')
 })

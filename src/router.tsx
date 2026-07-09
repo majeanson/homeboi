@@ -56,8 +56,10 @@ const RecipeBookPage = lazy(() => import('./pages/RecipeBookPage').then((m) => (
 const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })))
 // #17 — departure mode: a leaving-the-house checklist + today's events + weather.
 const DeparturePage = lazy(() => import('./pages/DeparturePage').then((m) => ({ default: m.DeparturePage })))
-// « Mes habitudes » — « Le point du jour », the daily habit check-in scene.
+// « Mes habitudes » — « Le point du jour », the daily habit check-in scene, and
+// the habit create/edit form (a tall form, so a scene rather than a sheet).
 const HabitudesPage = lazy(() => import('./pages/HabitudesPage').then((m) => ({ default: m.HabitudesPage })))
+const HabitFormPage = lazy(() => import('./pages/HabitFormPage').then((m) => ({ default: m.HabitFormPage })))
 // #34 / #35 — typed read-only share links land here (standalone, no hub chrome):
 // a babysitter "handoff" card and a visitor "welcome" card. See lib/auth GuestKind.
 const HandoffPage = lazy(() => import('./pages/HandoffPage').then((m) => ({ default: m.HandoffPage })))
@@ -188,6 +190,8 @@ export function AppRoutes() {
         <Route path="/board/departure" element={<DeparturePage />} />
         {/* « Mes habitudes » — the daily check-in, opened first thing on a new day. */}
         <Route path="/board/habitudes" element={<HabitudesPage />} />
+        <Route path="/habitude/new" element={<HabitFormPage />} />
+        <Route path="/habitude/:id/edit" element={<HabitFormPage />} />
         {/* #34 / #35 / #36 — typed share-link landings (sitter / visitor / family). */}
         <Route path="/handoff" element={<HandoffPage />} />
         <Route path="/welcome" element={<WelcomePage />} />
