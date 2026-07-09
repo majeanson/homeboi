@@ -10,7 +10,7 @@ import { type HelpEntry } from './helpMode'
 export const LISTE_HELP = {
   flyer: {
     card: 'liste',
-    point: 3,
+    point: 4,
     body: {
       fr: 'La loupe ouvre les circulaires de la semaine pour chercher un article en aubaine et l’envoyer sur ta liste.',
       en: 'The magnifier opens this week’s flyers to search an item on sale and send it to your list.',
@@ -18,7 +18,7 @@ export const LISTE_HELP = {
   },
   quick: {
     card: 'liste',
-    point: 0,
+    point: 3,
     body: {
       fr: 'Rouvre tes articles déjà achetés ou suggérés pour regarnir la liste en quelques taps, avec leurs synonymes d’aubaine.',
       en: 'Reopen your past or suggested items to restock the list in a few taps, carrying their flyer synonyms.',
@@ -26,15 +26,15 @@ export const LISTE_HELP = {
   },
   clear: {
     card: 'liste',
-    point: 1,
+    point: 2,
     body: {
       fr: 'Enlève d’un coup tout ce qui est coché (compté comme acheté), et garde le reste pour la prochaine fois. Un bandeau « Annuler » te couvre.',
       en: 'Removes everything checked at once (logged as bought) and keeps the rest for next time. An “Undo” toast has your back.',
     },
   },
   cashier: {
-    card: 'cashier',
-    point: 0,
+    card: 'deals',
+    point: 5,
     body: {
       fr: 'Passe en mode caisse : une grille de tes articles en aubaine. Touche celui que la caissière scanne pour montrer sa preuve de prix.',
       en: 'Switch to cashier mode: a grid of your items on deal. Tap the one being scanned to show its price proof.',
@@ -43,7 +43,8 @@ export const LISTE_HELP = {
   // The HEADER magnifier — global search, distinct from `flyer` (the in-list
   // flyer loupe) above. A-9 soft icon label.
   search: {
-    card: 'search',
+    card: 'board',
+    point: 4,
     body: {
       fr: 'La loupe du haut : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
       en: 'The top magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',

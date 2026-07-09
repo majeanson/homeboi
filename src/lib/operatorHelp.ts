@@ -8,10 +8,8 @@ import { type HelpEntry } from './helpMode'
 export const OPERATOR_HELP = {
   boardLayout: {
     card: 'board',
-    // 10 = « Personnaliser le babillard ». This said `5`, which is « Tout chercher » —
-    // a stale index from before some points were inserted mid-array (they're append-only
-    // for exactly this reason; see guideContent.ts's 'board' card).
-    point: 10,
+    // 9 = « Personnaliser le babillard » (post-agglomeration board card).
+    point: 9,
     body: {
       fr: `Choisis quelles cartes du babillard afficher, leur largeur et leur ordre — propre à CET appareil (la tablette murale et ton téléphone gardent chacun leur disposition). Glisse une poignée pour réordonner, ou même pour déplacer une carte d'un groupe à l'autre. Tu peux aussi garder le doigt sur une carte du babillard pour la réorganiser sur place.`,
       en: `Choose which board cards show, how wide they are, and in what order — specific to THIS device (the wall tablet and your phone keep their own layout). Drag a handle to reorder, or even to move a card from one group to the other. You can also press and hold a card on the board to rearrange it in place.`,
@@ -84,7 +82,7 @@ export const OPERATOR_HELP = {
   },
   measureColors: {
     card: 'recipes',
-    point: 6,
+    point: 4,
     body: {
       fr: `Donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles et les ronds de recettes suivent, partout.`,
       en: `Give each spoon and cup the colour of your real tools. Every recipe pill and scoop circle follows, everywhere.`,
@@ -110,7 +108,7 @@ export const OPERATOR_HELP = {
   },
   todoTemplates: {
     card: 'todos',
-    point: 1,
+    point: 2,
     body: {
       fr: `Des listes de départ prêtes à cocher — « Avant de partir », « Chez grand-papa ». Chaque titre et chaque étape sont éditables en place.`,
       en: `Starter checklists ready to tick — "Before leaving", "At grandpa's". Every title and step is editable in place.`,
@@ -118,7 +116,7 @@ export const OPERATOR_HELP = {
   },
   recipeTags: {
     card: 'set-recipes',
-    point: 1,
+    point: 0,
     body: {
       fr: `Toutes tes étiquettes de recettes dans une seule liste. Glisse ⠿ pour les réordonner — cet ordre décide aussi de l'ordre des collections. « Proposée » = offerte dans le formulaire mais pas encore sur une recette. Renomme ou retire une étiquette partout d'un coup, et donne-lui une couleur.`,
       en: `All your recipe tags in one list. Drag ⠿ to reorder — that order also sets your collections. "Suggested" = offered in the form but not on any recipe yet. Rename or remove a tag everywhere at once, and give it a colour.`,
@@ -182,8 +180,8 @@ export const OPERATOR_HELP = {
     },
   },
   micTest: {
-    card: 'offline',
-    point: 4,
+    card: 'settings',
+    point: 5,
     body: {
       fr: `Teste le micro sur cet appareil et génère un rapport de diagnostic à partager si la dictée ne fonctionne pas.`,
       en: `Tests the mic on this device and generates a diagnostic report to share if dictation isn't working.`,
@@ -222,36 +220,34 @@ export const OPERATOR_HELP = {
     },
   },
   homeProjets: {
-    card: 'home-projects',
-    point: 0,
+    card: 'set-chores',
+    point: 8,
     body: {
       fr: `Les grands projets : rénover, budgéter, planifier. Sans date, ils restent ici, au calme.`,
       en: `The bigger plans: renovate, budget, plan ahead. With no date they rest here, calmly.`,
     },
   },
   homeEntretien: {
-    card: 'home-projects',
-    point: 1,
+    card: 'set-chores',
+    point: 8,
     body: {
       fr: `L'entretien qui revient : filtre, gouttières, arbres. Avec une date, il s'affiche au babillard.`,
       en: `The upkeep that comes back: filter, gutters, trees. With a date it shows on the board.`,
     },
   },
   houseDiary: {
-    // « La maison cette année » (B-8, bmad/09) — points at the cercle card's
-    // appended diary point (16; guide points are APPEND-ONLY, indexed).
+    // « La maison cette année » — the cercle card's diary point (12).
     card: 'cercle',
-    point: 16,
+    point: 12,
     body: {
       fr: `Le journal calme de l'année : les soins notés aux carnets, les corvées faites, les voyages terminés, les dessins gardés — mois par mois. Des noms et des dates, jamais des comptes. Rien à tenir : ça s'écrit tout seul.`,
       en: `The year's calm journal: the care noted in the carnets, the chores done, the trips taken, the drawings kept — month by month. Names and dates, never counts. Nothing to maintain: it writes itself.`,
     },
   },
   schoolYear: {
-    // D-17 (bmad/10) — points at the board card's appended point (guide points
-    // are APPEND-ONLY, indexed; see guideContent.ts's 'board' card).
+    // « La rentrée » — the board card's school-year point (11).
     card: 'board',
-    point: 22,
+    point: 11,
     body: {
       fr: `La rentrée, le dernier jour et les relâches — une fois par année. Le babillard sait alors dire « école demain » ou « congé demain » sans que ce soit affiché tous les jours.`,
       en: `The first day, the last day, and any breaks — once a year. The board can then say "school tomorrow" or "day off tomorrow" without showing it every single day.`,
@@ -259,7 +255,7 @@ export const OPERATOR_HELP = {
   },
   cercleGroups: {
     card: 'cercle',
-    point: 6,
+    point: 8,
     body: {
       fr: `Tous tes groupes du cercle, même ceux que le répertoire cache (un groupe « famille » entièrement composé de la maisonnée). Supprime ici n'importe quel groupe — les personnes restent dans le cercle.`,
       en: `All your circle groups, even the ones the directory hides (a "family" group made up entirely of the household). Delete any group here — the people stay in the circle.`,

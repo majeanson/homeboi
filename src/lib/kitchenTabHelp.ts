@@ -14,7 +14,7 @@ export const KITCHEN_TAB_HELP = {
   // ── the sub-tab nav ──
   meals: {
     card: 'kitchen',
-    point: 0,
+    point: 1,
     body: {
       fr: 'Le plan de la semaine : un souper par jour, qui cuisine, et les idées.',
       en: 'The week’s plan: a supper a day, who cooks, and the ideas.',
@@ -22,7 +22,7 @@ export const KITCHEN_TAB_HELP = {
   },
   pantry: {
     card: 'kitchen',
-    point: 1,
+    point: 2,
     body: {
       fr: 'Ce qui manque et La réserve — des drapeaux « il en manque », jamais un inventaire.',
       en: 'What’s running low and The stash — “running low” flags, never an inventory.',
@@ -30,7 +30,7 @@ export const KITCHEN_TAB_HELP = {
   },
   recipes: {
     card: 'kitchen',
-    point: 3,
+    point: 4,
     body: {
       fr: 'Ton livre de recettes : ajoute, importe et feuillette tes recettes.',
       en: 'Your recipe book: add, import and browse your recipes.',
@@ -41,12 +41,12 @@ export const KITCHEN_TAB_HELP = {
   // restatement (P2-9): this opener and the IdeasDrawer explain the same concept.
   ideas: {
     card: 'kitchen',
-    point: 15,
-    body: helpFromGuide('kitchen', 15),
+    point: 9,
+    body: helpFromGuide('kitchen', 9),
   },
   leftovers: {
-    card: 'leftovers',
-    point: 0,
+    card: 'kitchen',
+    point: 8,
     body: {
       fr: 'Les restes à finir bientôt : un plat cuisiné dont il reste, pas encore fixé à un jour. Touches-en un pour le planifier ; jamais sur la liste d’épicerie.',
       en: 'Leftovers to finish soon: a cooked dish with extra, not pinned to a day yet. Tap one to plan it; never on the grocery list.',
@@ -55,7 +55,7 @@ export const KITCHEN_TAB_HELP = {
   // ── headings on the Garde-manger tab ──
   low: {
     card: 'kitchen',
-    point: 1,
+    point: 2,
     body: {
       fr: 'Marque un aliment « il en manque » ; coche-le pour l’envoyer sur la liste d’épicerie. Un simple drapeau, jamais un inventaire à compter.',
       en: 'Flag a food “running low”; check it to send it to the grocery list. Just a flag, never an inventory to count.',
@@ -63,7 +63,7 @@ export const KITCHEN_TAB_HELP = {
   },
   useSoon: {
     card: 'kitchen',
-    point: 11,
+    point: 8,
     body: {
       fr: 'Ce qui est à utiliser bientôt avant que ça se perde. Ça n’achète rien — ça nourrit plutôt l’idée « finis ce que tu as » de « Qu’est-ce qu’on mange ? ».',
       en: 'What to use up soon before it spoils. It buys nothing — it feeds the “use what you have” idea in “What’s for supper?” instead.',
@@ -80,7 +80,7 @@ export const KITCHEN_TAB_HELP = {
   // ── headings on the Recettes tab ──
   recipesBook: {
     card: 'recipes',
-    point: 12,
+    point: 6,
     body: {
       fr: 'Ton livre de recettes : cherche, filtre (Quoi cuisiner ?, Favoris…), et touche une recette pour l’ouvrir ou la planifier comme repas.',
       en: 'Your recipe book: search, filter (What can I cook?, Favorites…), and tap a recipe to open it or plan it as a meal.',
@@ -88,7 +88,7 @@ export const KITCHEN_TAB_HELP = {
   },
   collections: {
     card: 'kitchen',
-    point: 4,
+    point: 5,
     body: {
       fr: '« Aa » range tes recettes en ordre alphabétique ; « Collections » les regroupe par étiquette (Soupes, Desserts…). Ça réarrange seulement, ça ne filtre pas.',
       en: '“Aa” lists your recipes alphabetically; “Collections” groups them by tag (Soups, Desserts…). It only re-arranges, it doesn’t filter.',
@@ -96,7 +96,8 @@ export const KITCHEN_TAB_HELP = {
   },
   // The header magnifier (A-9 soft icon label).
   search: {
-    card: 'search',
+    card: 'board',
+    point: 4,
     body: {
       fr: 'La loupe : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
       en: 'The magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',

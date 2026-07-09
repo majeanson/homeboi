@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { GUIDE, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, cardHomeTab, type SectionKey } from '../../lib/guideContent'
+import { GUIDE, GUIDE_CARD_ALIAS, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, cardHomeTab, type SectionKey } from '../../lib/guideContent'
 import { renderRich, stripTokens, highlight as highlightText } from '../../lib/richText'
 import { fold } from '../../lib/normalize'
 import { useTour } from '../../lib/tour'
@@ -172,29 +172,15 @@ const sectionTintFor = (e: GuideEntry): string | undefined => {
   return home in SECTION_TINT ? SECTION_TINT[home as SectionKey].ink : undefined
 }
 
-// The Réglages restructure folded 15 thin settings cards into 8 consolidated ones,
-// but the contextual "?" deep-links in operatorHelp.ts / addHelp.ts still point at the
-// OLD card ids + point indices. This map redirects an old id to the card it merged
-// into, and shifts the point by the block's base offset, so every "→ Voir le guide"
-// still lands on the exact card AND sub-point. (Surviving cards kept their original
-// points at their original indices; merged points were appended after them.)
-const SETTINGS_CARD_ALIAS: Record<string, { id: string; base: number }> = {
-  'set-guest': { id: 'set-devices', base: 2 },
-  'set-routines': { id: 'set-chores', base: 4 },
-  'set-meals': { id: 'set-recipes', base: 3 },
-  'set-ghost': { id: 'set-shopping', base: 4 },
-  'set-photos': { id: 'set-display', base: 8 },
-  'set-calm': { id: 'set-display', base: 11 },
-  'set-recap': { id: 'set-ai', base: 0 },
-  'set-ailog': { id: 'set-ai', base: 4 },
-}
 const parseGuidePoint = (p: string | null) => (p != null && p !== '' ? Number(p) : null)
-// Resolve a (?card, ?point) deep-link through the alias map above. Exported for
+// Resolve a (?card, ?point) deep-link through GUIDE_CARD_ALIAS (lib/guideContent:
+// every retired card id → its host card + point offset), so a bookmarked link to
+// a merged card keeps landing on the exact card AND sub-point. Exported for
 // pages/Operator, which homes a ?card= deep-link onto the themed tab that hosts
 // the card (cardHomeTab) before this panel consumes it.
 export const resolveGuideCard = (card: string | null, point: number | null): { id: string | null; point: number | null } => {
   if (!card) return { id: null, point }
-  const alias = SETTINGS_CARD_ALIAS[card]
+  const alias = GUIDE_CARD_ALIAS[card]
   if (alias) return { id: alias.id, point: alias.base + (point ?? 0) }
   return { id: card, point }
 }

@@ -67,7 +67,7 @@ export const ADD_HELP = {
   },
   departure: {
     card: 'board',
-    point: 5,
+    point: 6,
     body: {
       fr: 'Ouvre l’écran « Avant de partir » : une liste à cocher, l’horaire du jour et la météo, le temps d’attraper tes clés.',
       en: 'Open the “Before you go” screen: a checklist, today’s schedule and the weather, while you grab your keys.',
@@ -79,10 +79,8 @@ export const ADD_HELP = {
     card: 'routines',
     body: { fr: 'Crée une routine d’images pour un enfant (matin, dodo…).', en: 'Build a picture routine for a child (morning, bedtime…).' },
   },
-  // Point 2 = « Des raccourcis selon la section » (it was point 1 until the capture
-  // card grew « Demander ou classer » + « Le ＋ reste pour ajouter » at the front,
-  // when the AI router moved to the header mic). Index shifts are silent — if you
-  // reorder that card's points, re-check every `point:` that targets it.
+  // Point 2 = « Des raccourcis selon la section ». Index shifts are silent — if
+  // you reorder that card's points, re-check every `point:` that targets it.
   'plan-today': {
     card: 'capture',
     point: 2,
@@ -96,8 +94,8 @@ export const ADD_HELP = {
     body: helpFromGuide('capture', 2),
   },
   cook: {
-    card: 'cookmode',
-    point: 0,
+    card: 'recipes',
+    point: 7,
     body: { fr: 'Passe en mode cuisson plein écran pour un repas prévu aujourd’hui.', en: 'Jump into full-screen cook mode for a meal planned today.' },
   },
   recipe: {
@@ -107,17 +105,17 @@ export const ADD_HELP = {
   },
   meal: {
     card: 'kitchen',
-    point: 0,
+    point: 1,
     body: { fr: 'Planifie un souper : choisis un jour et remplis-le.', en: 'Plan a supper: pick a day and fill it in.' },
   },
   leftovers: {
-    card: 'leftovers',
-    point: 0,
+    card: 'kitchen',
+    point: 8,
     body: { fr: 'Signale qu’un plat a des restes à finir bientôt.', en: 'Flag that a dish has leftovers to finish soon.' },
   },
   pantry: {
     card: 'kitchen',
-    point: 1,
+    point: 2,
     body: { fr: 'Marque un article « il en manque » — un drapeau, jamais un inventaire.', en: 'Mark an item “running low” — a flag, never an inventory.' },
   },
   reserve: {
@@ -133,12 +131,12 @@ export const ADD_HELP = {
   },
   'quick-add': {
     card: 'liste',
-    point: 2,
+    point: 3,
     body: { fr: 'Re-ajoute vite des articles déjà achetés.', en: 'Quickly re-add items you’ve bought before.' },
   },
   flyer: {
-    card: 'flyers',
-    point: 0,
+    card: 'deals',
+    point: 3,
     body: { fr: 'Feuillette les circulaires et envoie des aubaines sur ta liste.', en: 'Browse the flyers and send deals to your list.' },
   },
   share: {
@@ -150,12 +148,11 @@ export const ADD_HELP = {
   },
   'auto-pick': {
     card: 'liste',
-    point: 8,
+    point: 7,
     body: { fr: 'Trouve la meilleure aubaine pour chaque ligne, puis va à la caisse.', en: 'Find the best deal for each line, then head to the cashier.' },
   },
   shop: {
     card: 'kitchen',
-    point: 0,
     body: {
       fr: 'Compare le plan de la semaine au garde-manger et ajoute ce qui manque à la liste, d’un coup.',
       en: 'Compare the week’s plan to the pantry and add what’s missing to the list, in one go.',
@@ -167,33 +164,33 @@ export const ADD_HELP = {
   // guide (the appended drawer point) instead of a fifth hand-typed restatement.
   ideas: {
     card: 'kitchen',
-    point: 15,
-    body: helpFromGuide('kitchen', 15),
+    point: 9,
+    body: helpFromGuide('kitchen', 9),
   },
   // « Le cercle » ＋ chooser tiles.
   person: {
     card: 'cercle',
-    point: 1,
+    point: 2,
     body: { fr: 'Ajoute une personne au cercle : prénom, photo, fête, courriel, téléphone.', en: 'Add someone to the circle: name, photo, birthday, email, phone.' },
   },
   family: {
     card: 'cercle',
-    point: 3,
+    point: 4,
     body: { fr: 'Bâtis une famille d’un coup : place les visages et les liens se créent tout seuls.', en: 'Build a family in one pass: place the faces and the links create themselves.' },
   },
   connect: {
     card: 'cercle',
-    point: 4,
+    point: 5,
     body: { fr: 'Relie deux personnes (donc deux familles) d’un seul lien ; le reste se déduit.', en: 'Connect two people (so two families) with one link; the rest is inferred.' },
   },
   group: {
     card: 'cercle',
-    point: 6,
+    point: 8,
     body: { fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec sa couleur.', en: 'Create a named group (Tremblay family, Coworkers…) with its colour.' },
   },
   business: {
     card: 'cercle',
-    point: 10,
+    point: 11,
     body: { fr: 'Ajoute un commerce ou service (vét, plombier, garderie) : catégorie, téléphone, adresse, carte d’affaires.', en: 'Add a business or service (vet, plumber, daycare): category, phone, address, business card.' },
   },
   pet: {

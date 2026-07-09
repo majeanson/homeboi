@@ -34,7 +34,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       fr: 'Nouveau : touche le micro à côté de la loupe pour « Demander à la maison » — une question à voix haute sur tes soupers, rendez-vous, anniversaires, le cercle ou l’entretien.',
       en: 'New: tap the mic beside the magnifier for “Ask the household” — a spoken question about your suppers, appointments, birthdays, circle or upkeep.',
     },
-    card: 'ask',
+    card: 'capture',
   },
   {
     id: 'sortir-le-bac',
@@ -114,7 +114,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       fr: 'Nouveau : si le wifi ment (borne captive, panne du serveur) et que rien ne se rafraîchit, une petite ligne « Données de … » l’indique — même « en ligne ».',
       en: 'New: if the wifi lies (captive portal, server outage) and nothing refreshes, a small “Data from …” line says so — even while “online”.',
     },
-    card: 'offline',
+    card: 'settings',
   },
   {
     id: 'a-regler-kiosk',
@@ -122,7 +122,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       fr: 'Nouveau : « À régler » apparaît maintenant aussi sur la tablette murale, pas seulement sur ton téléphone.',
       en: 'New: “To sort” now shows on the wall tablet too, not just your phone.',
     },
-    card: 'a-regler',
+    card: 'capture',
   },
   {
     id: 'annee-view',
@@ -194,7 +194,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       fr: 'Nouveau : la loupe en haut de chaque section cherche partout — même dans le guide.',
       en: 'New: the magnifier atop every section searches everywhere — even the guide.',
     },
-    card: 'search',
+    card: 'board',
   },
   {
     id: 'favorites-hearts',
@@ -202,7 +202,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       fr: 'Nouveau : les cœurs — chaque visage peut marquer les recettes qu’il aime, et les suggestions en tiennent compte.',
       en: 'New: hearts — every face can mark the recipes they love, and suggestions take note.',
     },
-    card: 'favorites',
+    card: 'recipes',
   },
   {
     id: 'mots',

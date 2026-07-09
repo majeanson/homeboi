@@ -48,7 +48,7 @@ export function CashierPage() {
     return (
       <div className="scene">
         <SceneHead title={t.shop.cashierTitle} icon="receipt-bold" onClose={close} />
-        <EmptyState guide={{ card: 'cashier' }}>{t.shop.cashierEmpty}</EmptyState>
+        <EmptyState guide={{ card: 'deals', point: 5 }}>{t.shop.cashierEmpty}</EmptyState>
       </div>
     )
   }

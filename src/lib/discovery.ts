@@ -10,7 +10,7 @@
 // Pure module: the fetching hook lives with its only consumer
 // (components/operator/discover.tsx); everything here is testable without React.
 import { GUIDE, type GuideEntry } from './guideContent'
-import { CAR_KEY, CARNETS_KEY, DRAWINGS_KEY, LOVES_KEY, MOTS_KEY, TODOS_KEY, TRIPS_KEY } from './queryKeys'
+import { CAR_KEY, CARNETS_KEY, LOVES_KEY, MOTS_KEY, TODOS_KEY, TRIPS_KEY } from './queryKeys'
 import type { Tour } from './tourContent'
 
 // "Provably untouched" = the endpoint answered AND the rows are an empty array.
@@ -37,9 +37,10 @@ export type DiscoveryProbe = {
 // list-read; keep alphabetical-ish and SMALL — this is a whisper, not a catalog.
 export const DISCOVERY_PROBES: DiscoveryProbe[] = [
   { card: 'voyage', key: TRIPS_KEY, path: 'trips', unused: noRows('trips') },
+  // 'mots' hosts the merged notes+drawings card, so one probe covers both.
   { card: 'mots', key: MOTS_KEY, path: 'mots', unused: noRows('mots') },
-  { card: 'drawings', key: DRAWINGS_KEY, path: 'drawings', unused: noRows('drawings') },
-  { card: 'favorites', key: LOVES_KEY, path: 'recipe-loves', unused: noRows('loves') },
+  // Hearts folded into the recipes card; the loves read still decides "unused".
+  { card: 'recipes', key: LOVES_KEY, path: 'recipe-loves', unused: noRows('loves') },
   { card: 'carnets', key: CARNETS_KEY, path: 'carnets', unused: noRows('carnets') },
   { card: 'auto', key: CAR_KEY, path: 'car', unused: noRows('cars') },
   { card: 'todos', key: TODOS_KEY, path: 'todos', unused: noRows('todos') },

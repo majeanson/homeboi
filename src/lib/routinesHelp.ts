@@ -19,7 +19,8 @@ export const ROUTINES_HELP = {
   // The header magnifier (A-9 soft icon label — armed help explains the loupe
   // in place instead of leaving the page).
   search: {
-    card: 'search',
+    card: 'board',
+    point: 4,
     body: {
       fr: 'La loupe : une seule recherche pour tout — recettes, personnes, listes, rendez-vous… et le guide.',
       en: 'The magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',

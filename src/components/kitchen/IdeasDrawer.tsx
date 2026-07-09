@@ -236,7 +236,7 @@ export function IdeasDrawer({
           week={week}
           helpKey="ideas"
           noMatchLabel={t.recipes.noMatch}
-          guide={{ card: 'kitchen', point: 15 }}
+          guide={{ card: 'kitchen', point: 9 }}
           hideHeading
           labels={{
             heading: t.kitchen.ideas,
@@ -266,7 +266,7 @@ export function IdeasDrawer({
             renderLead={() => <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />}
             week={week}
             helpKey="leftovers"
-            guide={{ card: 'leftovers' }}
+            guide={{ card: 'kitchen', point: 8 }}
             hideHeading
             labels={{
               heading: t.kitchen.leftovers,
