@@ -42,6 +42,20 @@
   line-height: 1.05;
   letter-spacing: -0.01em;
 }
+/* A-3 « Depuis ce matin »: the board greeting doubles as the peek trigger for a
+   parent, non-guest device — reset the <button> chrome so it reads exactly like
+   the plain-text greeting it replaces (same truncation, no visible affordance
+   beyond the tap). */
+.greet__btn {
+  all: unset;
+  display: inline-block;
+  max-width: 100%;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
 /* Title row. min-width:0 lets the greeting truncate (the "?" now lives in the
    right-hand actions cluster, so this row only carries the title). */
 .app-head__titlerow {

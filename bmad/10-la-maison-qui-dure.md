@@ -99,7 +99,22 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
    doc's sharpest calm edge: it must never become a badge, a count, or a
    persistent feed — it exists only under the finger that asked. _(reuse:
    EntityDetailSheet, Avatar, the house-diary client-union pattern from 09
-   B-8.)_
+   B-8.)_ **SHIPPED 2026-07-08** (shape adjusted per plan: reuses **`Sheet`**,
+   not EntityDetailSheet — a many-row peek, not a one-entity card). New
+   `functions/api/today-changes.ts` (`authed()`, guest → `{entries:[]}`
+   before any query) unions six small `created_at >= localDayStart` selects
+   (`list_items.added_by`, `meals.suggested_by` — kid-suggested only,
+   `notes.member_id`/`author_label`, `day_notes.member_id`,
+   `drawings.member_id`, face-less `events`) capped 20/source; the pure
+   composer `src/lib/sinceMorning.ts` (`composeSinceMorning`, 17 vitest
+   cases) turns each row into a `{face,text,at}` line — Maisonnée/no member
+   → « Quelqu'un », a postbox `author_label` wins over a tinted member name,
+   sorted newest-first and capped to 20. `TodayChangesSheet.tsx` mounts the
+   query body ONLY while the sheet is open (`gcTime:0`) so closing it
+   unmounts the last observer and the cache is dropped instantly — no
+   residue, exactly the ⚠ guarantee. The board greeting (`Board.tsx`)
+   becomes a `<button>` for parent + non-guest only; a guest/toddler/simple
+   lens keeps the plain-text greeting.
 4. ✅ **« À régler » sur le mur** [S] ◐ — _garde (2026-07-08)_ — the nudge
    card is gated `surface === 'mobile'` — disabled on the kiosk, the one
    always-glanced surface a household shares. Surface it on the kiosk parent

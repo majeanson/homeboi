@@ -572,6 +572,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'Counting the sleeps together with nobody having to set it up — the house offers, the family chooses.',
         },
       },
+      {
+        label: { fr: 'Depuis ce matin', en: 'Since this morning' },
+        detail: {
+          fr: 'Touche la salutation en haut du babillard : un petit coup d’œil sur ce que la maisonnée a ajouté aujourd’hui, par visage — « Papa a ajouté du lait », « Léa a proposé une pizza ». Ferme-le et c’est reparti : rien n’est gardé, rien ne s’affiche tant que tu ne touches pas.',
+          en: 'Tap the greeting at the top of the board: a quick look at what the household has added today, by face — “Dad added milk”, “Léa suggested pizza”. Close it and it’s gone: nothing is kept, nothing shows unless you tap.',
+        },
+        why: {
+          fr: 'Répondre à « qu’est-ce qui a changé depuis ce matin ? » sans badge ni compteur qui traîne — juste un coup d’œil, à la demande.',
+          en: 'Answers “what changed since this morning?” with no lingering badge or count — just a glance, on request.',
+        },
+      },
     ],
   },
   {

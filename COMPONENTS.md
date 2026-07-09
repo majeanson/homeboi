@@ -186,6 +186,16 @@ a cold-path client union of care_log + chores-ledger (year `?since`) + finished
 trips + kept drawings, grouped by `groupByMonth` (lib/year); newest month open,
 older months folded in `Disclosure`s, rows reuse the `.ledger` CSS family — names,
 faces and dates, never counts; a finished-trip row links to its album),
+`board/TodayChangesSheet` (« Depuis ce matin », A-3 bmad/10 — tap the board
+greeting: a `Sheet` peek over `GET /api/today-changes`, six small
+`created_at`-bucketed selects (list_items/meals/notes/day_notes/drawings/events)
+unioned server-side; the pure composer `lib/sinceMorning.ts` turns each row into a
+`{face,text,at}` line (Maisonnée/no member → « Quelqu'un », a postbox
+`author_label` wins over a tinted member name) and reuses the chores-ledger
+`.ledger` row family + `Avatar`. Events render FACE-LESS on purpose (« Nouveau
+rendez-vous : … », decided A-3). ⚠ the doc's sharpest calm edge: the query body
+only mounts while the sheet is open and `gcTime:0` — zero cache, zero unread
+state once closed, never a feed, never a badge),
 `voyage/VoyageAlbum` (« L'album du voyage », B-12 bmad/09 — a FINISHED trip
 (`end_at` before today) opens `/voyage/:id` as a read-only paper keepsake:
 photo grid (non-PDF image/drawing notes via `ZoomableImg`), day-by-day +

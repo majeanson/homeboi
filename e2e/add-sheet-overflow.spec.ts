@@ -99,3 +99,20 @@ for (const width of [360, 390]) {
     }
   })
 }
+
+// « Depuis ce matin » (A-3) — a different sheet than the ＋ chooser above (opened
+// from the board greeting, not the FAB), so it gets its own pass through the same
+// per-element bounds check: a face + a sentence row family is exactly the shape
+// (a long meal/list-item text beside an avatar) that bleeds on a narrow phone.
+for (const width of [360, 390]) {
+  test(`« Depuis ce matin » sheet never overflows sideways @${width}`, async ({ page }) => {
+    await boot(page, width)
+    await page.goto('/board')
+    await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
+
+    await page.locator('.greet__btn').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await expect(page.locator('.ledger__row').first()).toBeVisible()
+    await assertClean(page, 'since-morning rows')
+  })
+}

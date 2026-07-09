@@ -53,6 +53,7 @@ import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type 
 import { SimpleBoard } from '../components/board/SimpleBoard'
 import { ToddlerBoard } from '../components/board/ToddlerBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
+import { TodayChangesSheet } from '../components/board/TodayChangesSheet'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
@@ -127,6 +128,8 @@ export function Board() {
   // Pick-your-face: who's on this phone — greets them + marks their day.
   const { memberId: profileId, setMemberId } = useProfile()
   const [profileOpen, setProfileOpen] = useState(false)
+  // « Depuis ce matin » (A-3) — the greeting doubles as a pull-only peek trigger.
+  const [sinceMorningOpen, setSinceMorningOpen] = useState(false)
   // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
   // + smart actions. Parent audience only; the toddler lens stays hear-first below.
   const detail = useEntityDetail()
@@ -680,9 +683,22 @@ export function Board() {
       {/* The greeting is plain text so it can truncate cleanly when space is
           tight (mobile). The picked face is NOT echoed here — the profile chip
           (mobile) / member switcher (kiosk) on the row below already shows it,
-          so repeating it crowded the header. Maisonnée (no face) → generic greet. */}
+          so repeating it crowded the header. Maisonnée (no face) → generic greet.
+          Parent + non-guest: the greeting doubles as the « Depuis ce matin » (A-3)
+          peek trigger — tap it for a cold, pull-only look at today's writes by
+          face. A guest never gets this (read-only, no attribution to peek at). */}
       <HubHead
-        title={me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
+        title={
+          !ro ? (
+            <button type="button" className="greet__btn" onClick={() => setSinceMorningOpen(true)}>
+              {me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
+            </button>
+          ) : me ? (
+            `${t.today[tod]}, ${greetName(me.display_name)}`
+          ) : (
+            t.today[tod]
+          )
+        }
         icon={TOD_ICON[tod]}
         iconColor="var(--marigold-deep)"
         background="var(--marigold-wash)"
@@ -1154,6 +1170,7 @@ export function Board() {
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
+      {!ro && <TodayChangesSheet open={sinceMorningOpen} onClose={() => setSinceMorningOpen(false)} />}
       {eventActions.node}
     </main>
   )

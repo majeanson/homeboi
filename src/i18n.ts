@@ -2263,6 +2263,21 @@ export const FR = {
     // tinted/attributed to that face — surface it so an impersonation is visible first.
     willTintAs: (name: string) => `Nom identique à ${name} — sera affiché comme ${name}.`,
   },
+  // « Depuis ce matin » (A-3, bmad/10) — tap the board greeting for a cold, pull-only
+  // peek at today's writes by face. Never a feed: no count, no badge, nothing kept
+  // once closed. See src/lib/sinceMorning.ts + TodayChangesSheet.tsx.
+  sinceMorning: {
+    title: 'Depuis ce matin',
+    empty: 'Rien de nouveau depuis ce matin.',
+    someone: 'Quelqu’un',
+    addedItem: (name: string, text: string) => `${name} a ajouté ${text}`,
+    suggestedMeal: (name: string, title: string) => `${name} a proposé ${title}`,
+    leftNoteWithText: (name: string, text: string) => `${name} a laissé un mot : « ${text} »`,
+    leftNote: (name: string) => `${name} a laissé un mot`,
+    dayNote: (name: string) => `${name} a écrit une note pour la journée`,
+    drawing: (name: string) => `${name} a fait un dessin`,
+    newEvent: (title: string) => `Nouveau rendez-vous : ${title}`,
+  },
   shareMode: {
     // Operator editor (Réglages) — the few facts a handoff/welcome link shows.
     editorTitle: 'Infos à partager',

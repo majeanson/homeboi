@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'since-morning',
+    text: {
+      fr: 'Nouveau : touche la salutation du babillard pour voir « Depuis ce matin » — ce que la maisonnée a ajouté aujourd’hui, par visage.',
+      en: 'New: tap the board greeting to see “Since this morning” — what the household added today, by face.',
+    },
+    card: 'board',
+  },
+  {
     id: 'capture-offline-queue',
     text: {
       fr: 'Nouveau : la capture (le ＋) tient parole hors ligne — ta note se garde et se classe toute seule à la reconnexion.',

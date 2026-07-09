@@ -2180,6 +2180,18 @@ export const EN: typeof FR = {
     someone: 'Someone',
     willTintAs: (name: string) => `Same name as ${name} — will be shown as ${name}.`,
   },
+  sinceMorning: {
+    title: 'Since this morning',
+    empty: 'Nothing new since this morning.',
+    someone: 'Someone',
+    addedItem: (name: string, text: string) => `${name} added ${text}`,
+    suggestedMeal: (name: string, title: string) => `${name} suggested ${title}`,
+    leftNoteWithText: (name: string, text: string) => `${name} left a note: "${text}"`,
+    leftNote: (name: string) => `${name} left a note`,
+    dayNote: (name: string) => `${name} wrote a note for the day`,
+    drawing: (name: string) => `${name} drew a picture`,
+    newEvent: (title: string) => `New event: ${title}`,
+  },
   shareMode: {
     // Operator editor (Réglages) — the few facts a handoff/welcome link shows.
     editorTitle: 'Info to share',

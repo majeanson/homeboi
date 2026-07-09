@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
 
 // Visual capture of the overlay surfaces (sheets / modals) that screenshots.spec
@@ -175,4 +175,33 @@ test('sheet-flyer', async ({ page }) => {
   await page.locator('.flyer-overlay').waitFor({ state: 'visible' })
   await page.waitForTimeout(400)
   await shoot(page, 'sheet-flyer-phone')
+})
+
+// « Depuis ce matin » (A-3) — the only sheet in this file with real assertions
+// rather than a screenshot: the ⚠ calm guarantee (no cache/unread state once
+// closed) is a DOM fact (the row list unmounts on close), not a pixel.
+test('sheet-since-morning: open -> rows -> close leaves no residue', async ({ page }) => {
+  await boot(page, '/board')
+  await page.locator('.greet__btn').click()
+  await expect(page.locator('.sheet.show')).toBeVisible()
+  // One row per today-changes mock entry (list_item, meal, face-less event).
+  await expect(page.locator('.ledger__row')).toHaveCount(3)
+  await expect(page.getByText('Papa a ajouté du lait')).toBeVisible()
+  await expect(page.getByText('Léa a proposé une pizza')).toBeVisible()
+  await expect(page.getByText('Nouveau rendez-vous : Dentiste')).toBeVisible()
+  await shoot(page, 'sheet-since-morning-phone')
+
+  // Close — the query body unmounts (gcTime:0), so the rows leave the DOM at once,
+  // not just slide off-screen behind the still-mounted `.sheet` shell. Every Sheet
+  // instance is always-mounted (AddSheet, EntityDetailSheet…), so scope to the one
+  // actually showing.
+  await page.locator('.sheet.show .sheet__close').click()
+  await expect(page.locator('.sheet.show')).toHaveCount(0)
+  await expect(page.locator('.ledger__row')).toHaveCount(0)
+
+  // Reopening re-fetches from cold (no stale "N new" carried over) — the same
+  // three rows come back, proving the close wasn't a silent data loss either.
+  await page.locator('.greet__btn').click()
+  await expect(page.locator('.sheet.show')).toBeVisible()
+  await expect(page.locator('.ledger__row')).toHaveCount(3)
 })

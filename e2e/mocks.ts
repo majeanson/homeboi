@@ -521,6 +521,18 @@ const ROUTES: Record<string, unknown> = {
       { id: 'dg2', member_id: 'm1', media_key: 'nm_g2', scene_key: null, created_at: BASE - DAY },
     ],
   },
+  // « Depuis ce matin » (A-3) — the board greeting's pull-only peek. Fields are
+  // camelCase (this is a bespoke composed shape, not a raw D1 row passthrough —
+  // see functions/api/today-changes.ts). One of each source, newest first, plus a
+  // face-less event (decided, A-3) so the peek's calm edge (no face claimed on a
+  // fact) is exercised too.
+  'today-changes': {
+    entries: [
+      { id: 'tc1', kind: 'list_item', at: BASE + 3 * 3600, text: 'du lait', memberId: 'm2', name: 'Papa', avatarKind: 'color', avatarRef: '#5891AC', colour: '#5891AC', authorLabel: null },
+      { id: 'tc2', kind: 'meal', at: BASE + 2 * 3600, text: 'une pizza', memberId: 'm3', name: 'Léa', avatarKind: 'color', avatarRef: '#88A36F', colour: '#88A36F', authorLabel: null },
+      { id: 'tc3', kind: 'event', at: BASE + 3600, text: 'Dentiste', memberId: null, name: null, avatarKind: null, avatarRef: null, colour: null, authorLabel: null },
+    ],
+  },
 }
 
 // A tiny placeholder image for any /api/img/<key> in the offline harness (avatars,
