@@ -624,6 +624,18 @@ export const GUIDE: GuideEntry[] = [
           en: 'A wall that empties itself stays calm; but a card that moves every day is a card you have to hunt for. Your call, card by card.',
         },
       },
+      {
+        // The compact lens — appended at the END (guide points are APPEND-ONLY, indexed).
+        label: { fr: 'Une petite carte, en version courte', en: 'A small card, in short form' },
+        detail: {
+          fr: 'Rétrécis une carte assez pour qu’elle tienne à demi-largeur sur un téléphone, et elle prend une vraie petite forme — son icône, son titre, tout au plus une ligne discrète — plutôt que de coincer tout son contenu dans un espace trop étroit. Touche-la : elle grandit sur place à sa pleine largeur, avec les autres cartes qui se replacent autour. Touche la petite flèche ⌃ en haut, ou l’en-tête, pour la reprendre à sa taille de poche. Une seule carte peut être grande à la fois.',
+          en: 'Shrink a card down to half-width on a phone and it takes on a genuinely small form — its icon, its title, at most one quiet line — instead of squeezing all its content into too little room. Tap it: it grows in place to its full width, with the other cards settling around it. Tap the small ⌃ arrow up top, or the header, to shrink it back to pocket size. Only one card stays big at a time.',
+        },
+        why: {
+          fr: 'Une carte à demi-largeur qui essaie encore de tout montrer devient illisible — mieux vaut une forme courte, avec le reste à une touche.',
+          en: 'A half-width card still trying to show everything turns unreadable — a short form is calmer, with the rest one tap away.',
+        },
+      },
     ],
   },
   {

@@ -1675,6 +1675,18 @@ export function DevKit() {
               </div>
             </div>
           </Demo>
+          {/* The way BACK: `expanded: true` is what a real tap-to-expand grows the card
+              into — SecLabel (BoardCard.tsx) reads it and grows the ⌃ reduce chip, and
+              the header itself becomes tappable too. Both call `lens.collapse()`. */}
+          <Demo label="expanded (grown in place) — the header's ⌃ reduce chip">
+            <div style={{ maxWidth: '280px' }}>
+              <CardLensProvider value={{ compact: true, expanded: true, expand: () => {}, collapse: () => {} }}>
+                <BoardSection label="Aujourd’hui" icon="sun-bold" compactHint="Spaghetti">
+                  <Act cat="meal" title="Préparer le repas · Spaghetti maison" when="Souper" onActivate={() => {}} />
+                </BoardSection>
+              </CardLensProvider>
+            </div>
+          </Demo>
         </>
       ),
     },
@@ -1682,7 +1694,7 @@ export function DevKit() {
       cat: 'Rangées & actions',
       name: 'BoardCard · SecLabel',
       file: 'components/board/BoardCard.tsx',
-      kw: 'board card sec-label header shell auto carnets season standalone band glance',
+      kw: 'board card sec-label header shell auto carnets season standalone band glance compact halve half-width tap-to-expand mini cardmini',
       // The shared standalone board-card shell (auto/carnets/season). Same `.sec-label`
       // header as Section, different wrapper (a navigating Link or a plain div). The
       // emoji disc shows the iconNode path (the « Cette saison » card uses it).
@@ -1701,6 +1713,32 @@ export function DevKit() {
                 <li className="carnets-card__row"><span className="carnets-card__name">Nettoyer les gouttières</span></li>
               </ul>
             </BoardCard>
+          </Demo>
+          {/* Same compact lens as Section (see Act · Section above) — BoardCard swaps its
+              `to`-navigating `<Link>` for a real `<button>` outright (never nested inside
+              the anchor) so the whole tile is one tap target. `CardLensProvider` stands in
+              for the real CardSlot measurement. See COMPONENTS.md · CardLens/CardMini. */}
+          <Demo label="compact — a count hint, then expanded (grown, the reduce chip)">
+            <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '420px', flexWrap: 'wrap' }}>
+              <div style={{ width: '140px' }}>
+                <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
+                  <BoardCard className="carnets-card" icon="book-open-bold" label="Les carnets" compactHint="2">
+                    <ul className="carnets-card__list">
+                      <li className="carnets-card__row"><span className="carnets-card__name">Toiture</span></li>
+                    </ul>
+                  </BoardCard>
+                </CardLensProvider>
+              </div>
+              <div style={{ width: '280px' }}>
+                <CardLensProvider value={{ compact: true, expanded: true, expand: () => {}, collapse: () => {} }}>
+                  <BoardCard className="carnets-card" icon="book-open-bold" label="Les carnets" compactHint="2">
+                    <ul className="carnets-card__list">
+                      <li className="carnets-card__row"><span className="carnets-card__name">Toiture</span><span className="carnets-card__when mono">2031</span></li>
+                    </ul>
+                  </BoardCard>
+                </CardLensProvider>
+              </div>
+            </div>
           </Demo>
         </>
       ),
