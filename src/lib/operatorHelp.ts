@@ -237,7 +237,7 @@ export const OPERATOR_HELP = {
     // D-17 (bmad/10) — points at the board card's appended point (guide points
     // are APPEND-ONLY, indexed; see guideContent.ts's 'board' card).
     card: 'board',
-    point: 21,
+    point: 22,
     body: {
       fr: `La rentrée, le dernier jour et les relâches — une fois par année. Le babillard sait alors dire « école demain » ou « congé demain » sans que ce soit affiché tous les jours.`,
       en: `The first day, the last day, and any breaks — once a year. The board can then say "school tomorrow" or "day off tomorrow" without showing it every single day.`,

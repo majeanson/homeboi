@@ -2002,6 +2002,7 @@ export const EN: typeof FR = {
     schoolYearAddBreak: 'Add a break',
     schoolYearRemoveBreak: 'Remove this break',
     schoolYearClear: 'Clear the school year',
+    schoolYearClearConfirm: 'Clear the first day, last day, and every typed break? This can’t be undone.',
     schoolYearBad: 'Invalid dates — check that the first day comes before the last day.',
     thisWeekTab: 'This week',
     thisWeekTitle: 'This week together',

@@ -5,6 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { useConfirm } from '../../lib/confirm'
 import { isGuest } from '../../lib/device'
 import { api } from '../../lib/api'
 import { formatDay, formatTime } from '../../lib/format'
@@ -167,6 +168,7 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
   const { lang } = useLang()
   const write = useWrite()
   const qc = useQueryClient()
+  const confirm = useConfirm()
   const ro = isGuest()
   const { data } = useQuery({
     queryKey: HOUSEHOLD_KEY,
@@ -222,7 +224,12 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
     }
   }
 
+  // Wipes the first/last day AND every typed relâche in one shot — no undo path,
+  // so (like household.tsx's member delete) it asks first via the in-app confirm
+  // dialog rather than the forgiving undo toast the lighter rows use.
   async function clear() {
+    const okay = await confirm({ message: t.operator.schoolYearClearConfirm, confirmLabel: t.operator.schoolYearClear, tone: 'danger' })
+    if (!okay) return
     setFirstDay('')
     setLastDay('')
     setBreaks([])

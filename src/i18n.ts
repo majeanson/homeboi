@@ -2079,6 +2079,7 @@ export const FR = {
     schoolYearAddBreak: 'Ajouter une relâche',
     schoolYearRemoveBreak: 'Retirer cette relâche',
     schoolYearClear: 'Effacer l’année scolaire',
+    schoolYearClearConfirm: 'Effacer la rentrée, le dernier jour et toutes les relâches tapées ? Rien ne se récupère.',
     schoolYearBad: 'Dates invalides — vérifie que la rentrée précède le dernier jour.',
     recapTitle: 'Bilan de la semaine',
     recapHint: 'Un reflet doux de la semaine — sur demande, jamais automatique.',
