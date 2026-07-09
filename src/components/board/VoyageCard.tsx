@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { daysUntilLocal, todayLocalDay } from '../../lib/localDay'
 import { useTrips, useSharedTrips, VOYAGE_ICON } from '../voyage/voyage'
 import { Chip } from '../Chip'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
 // The board « Prochain voyage » glance — the next upcoming (or in-progress) trip, the
@@ -27,7 +28,9 @@ export function VoyageCard() {
     .filter((tr) => tr.end_at != null && tr.start_at != null && tr.end_at >= today)
     .sort((a, b) => (a.start_at ?? 0) - (b.start_at ?? 0))
     .slice(0, 3)
-  if (rows.length === 0) return null
+  const empty = rows.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   const whenLabel = (start: number, end: number): string => {
     if (start <= today && end >= today) return t.voyage.ongoing

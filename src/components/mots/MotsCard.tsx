@@ -14,6 +14,7 @@ import { CATS } from '../../lib/cats'
 import { type IconName } from '../Icon'
 import { Act, Section } from '../board/Act'
 import { Disclosure } from '../Disclosure'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { Modal } from '../Modal'
 import { MotComposer } from './MotComposer'
 import { RescheduleBody } from './RescheduleBody'
@@ -60,7 +61,9 @@ export function MotsCard() {
     .sort((a, b) => Number(!!b.saved_at) - Number(!!a.saved_at))
   // « Ce que j'ai laissé » — the picked face's own outbox (incl. still-scheduled mots).
   const sent = removal.visible(sentMots(allMots, profileId))
-  if (waiting.length === 0 && seen.length === 0 && sent.length === 0) return null
+  const empty = waiting.length === 0 && seen.length === 0 && sent.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.display_name ?? null
   const sub = (m: Mot) =>

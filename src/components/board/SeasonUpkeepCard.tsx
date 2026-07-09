@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { HOME_PROJECTS_KEY } from '../../lib/queryKeys'
 import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
 import type { HomeProject } from '../operator/types'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
 // The board « Cette saison » glance — recurring upkeep (home_projects 'upkeep') whose
@@ -21,7 +22,9 @@ export function SeasonUpkeepCard() {
   })
   const s = currentSeason()
   const items = (data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === 'upkeep' && isThisSeason(p.nextAt))
-  if (items.length === 0) return null
+  const empty = items.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   return (
     <BoardCard className="carnets-card" iconNode={SEASON_EMOJI[s]} label={t.season[s]}>

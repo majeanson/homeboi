@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, Fragment, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -66,6 +66,8 @@ import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
 import { useBoardModel } from '../lib/boardModel'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
 import { useBoardCards, visibleCards, isCardVisible, type BoardCardId } from '../lib/boardCards'
+import { WidgetGrid } from '../components/board/WidgetGrid'
+import { CardSlot } from '../components/board/CardSlot'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -96,6 +98,12 @@ const greetName = (name: string) => {
   if (parts.length > 1) return parts.map((p) => p[0]!.toUpperCase()).join('')
   return name.slice(0, 9) + '…'
 }
+
+// Emptiness for a LENS-built card: the board already holds these rows, so a `null` node
+// means "nothing to show today" (« Le fil » isn't eligible, « Demain » is bare, the day is
+// clear). `undefined` instead defers to the card's own `useReportEmpty` — which is the
+// only thing a self-fetching card can do, since it learns it's empty after it fetches.
+const slotEmpty = (node: ReactNode): boolean | undefined => (node == null ? true : undefined)
 
 // A quiet running clock for the active board header (glanceability): a wall
 // tablet whose content is all time-relative ("ce soir", struck-through past
@@ -676,31 +684,29 @@ export function Board() {
             : weather?.bucket === 'cloud'
               ? clearMoods.cloud
               : clearMoods[tod] // 'clear' or no weather → drift by daypart
-  const statusBand = (
+  // A calm "all-clear" hero on a genuinely empty day — so a light day reads as
+  // intentional, not broken. NOT a card: it has no id, no show/hide, no placement —
+  // it's a property of the day. It used to share `.board-status` with Mots / À régler /
+  // Moments; those three are now ordinary cards in the band zone, so this keeps the
+  // strip to itself. NFR-CALM: a reassurance, never a prompt to fill the day.
+  // A wall kiosk gets roomier columns — its cards are read from across the room. This
+  // replaces the old `.hub[data-surface='kiosk'] .board-grid { columns: 340px }` override:
+  // the column count is computed in JS now, so the minimum has to travel there too.
+  const colMin = surface === 'kiosk' ? 340 : 300
+
+  const clearHero = dayClear ? (
     <div className="board-status">
-      {/* A calm "all-clear" hero on a genuinely empty day — so a light day reads as
-          intentional, not broken. Auto-hiding (no customization toggle), like the other
-          empty-aware strips. NFR-CALM: a reassurance, never a prompt to fill the day. */}
-      {dayClear && (
-        <div className="now-card now-card--clear">
-          <span className="blob" aria-hidden="true" />
-          <div className="label">{t.board.today}</div>
-          <div className="what">{t.board.allClearTitle}</div>
-          <div className="who">{clearSub}</div>
-          <span className="icn" aria-hidden="true">
-            <Icon name={clearIcon} size={38} color="var(--sage-deep)" />
-          </span>
-        </div>
-      )}
-      {/* « Laisse un mot » — the recipient's waiting mots (a heads-up that self-hides when
-          there's nothing for the picked face). Guests never see another face's mots. */}
-      {!ro && isCardVisible(boardCards, 'mots') && <MotsCard />}
-      {isCardVisible(boardCards, 'aRegler') && (
-        <ARegler enabled={audience === 'parent' && !ro} variant="card" />
-      )}
-      {isCardVisible(boardCards, 'moments') && <MomentPeek />}
+      <div className="now-card now-card--clear">
+        <span className="blob" aria-hidden="true" />
+        <div className="label">{t.board.today}</div>
+        <div className="what">{t.board.allClearTitle}</div>
+        <div className="who">{clearSub}</div>
+        <span className="icn" aria-hidden="true">
+          <Icon name={clearIcon} size={38} color="var(--sage-deep)" />
+        </span>
+      </div>
     </div>
-  )
+  ) : null
 
   return (
     <main className="board-wall">
@@ -800,11 +806,13 @@ export function Board() {
           auto-hides once the steps are done (or dismissed). */}
       {data && <WelcomeCard members={data.members} />}
 
-      {/* Fridge notes (text / voice / photo) ride above the day in both parent
-          views. DRAWINGS are split out to the Grille view only (below) — they
-          deserve room and shouldn't crowd the compact Mois calendar. Per-device
-          show/hide-able like the other band cards (« Disposition du babillard »). */}
-      {data && isCardVisible(boardCards, 'notes') && (
+      {/* Fridge notes (text / voice / photo) ride above the day in both parent views.
+          DRAWINGS are split out to the Grille view only (below) — they deserve room and
+          shouldn't crowd the compact Mois calendar.
+          In GRILLE the notes card lives in the band zone with its peers (so it can be
+          reordered, resized and dragged into the masonry). Mois / L'année have no band —
+          only this one card — so it renders plainly here, exactly as it always did. */}
+      {data && view !== 'bento' && isCardVisible(boardCards, 'notes') && (
         <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
       )}
 
@@ -840,36 +848,53 @@ export function Board() {
         />
       ) : (
         <>
-          {/* The "today" zone heroes — tonight's supper + the weather/photo card — ride
-              on top via DayHeroes (the polished glance cards). Tapping the supper opens
-              its recipe outright; a recipe-less one peeks with the leftover/remove plan
-              actions. The heads-up cards (À régler + Moments) sit DIRECTLY beneath them
-              via statusBand, matching their look. */}
-          {isCardVisible(boardCards, 'heroes') && (
-            <DayHeroes
-              suppers={tonightMeals}
-              supperColor={supperColor!}
-              onOpenMeal={(m) =>
-                openMeal(m, {
-                  color: supperColor,
-                  slotLabel: heroCardLabel(heroSlot, t),
-                  daySec: todayDay,
-                  onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                  onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
-                })
-              }
-              cookLine={cookLine}
-              weather={weather}
-              hours={wxHours}
-              wonder={dayClear && audience === 'parent' ? null : wonder}
-              onShuffleWonder={shuffleWonder}
-              supperNow={focus === 'supper'}
-              heroSlot={heroSlot}
-            />
-          )}
+          {/* THE BAND ZONE — the pinned glance strip. Fridge notes, the supper/weather
+              heroes, and the heads-up cards (Mots / À régler / Moments) are now ordinary
+              cards: each can be reordered, resized, hidden, or dragged down into the
+              masonry. It caps at 3 columns, which is what the old `.board-status` flex
+              row gave the three heads-up tiles. */}
+          <WidgetGrid zone="band" maxCols={3} colMin={colMin} className="board-band">
+            {(() => {
+              const band: Partial<Record<BoardCardId, ReactNode>> = {}
+              band.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
+              // Tapping the supper opens its recipe outright; a recipe-less one peeks
+              // with the leftover/remove plan actions.
+              band.heroes = (
+                <DayHeroes
+                  suppers={tonightMeals}
+                  supperColor={supperColor!}
+                  onOpenMeal={(m) =>
+                    openMeal(m, {
+                      color: supperColor,
+                      slotLabel: heroCardLabel(heroSlot, t),
+                      daySec: todayDay,
+                      onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+                      onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
+                    })
+                  }
+                  cookLine={cookLine}
+                  weather={weather}
+                  hours={wxHours}
+                  wonder={dayClear && audience === 'parent' ? null : wonder}
+                  onShuffleWonder={shuffleWonder}
+                  supperNow={focus === 'supper'}
+                  heroSlot={heroSlot}
+                />
+              )
+              // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
+              // nothing for the picked face). Guests never see another face's mots.
+              band.mots = ro ? null : <MotsCard />
+              band.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
+              band.moments = <MomentPeek />
+              return visibleCards(boardCards, 'band').map((id, i) => (
+                <CardSlot key={id} id={id} zone="band" index={i} empty={slotEmpty(band[id])}>
+                  {band[id]}
+                </CardSlot>
+              ))
+            })()}
+          </WidgetGrid>
 
-          {/* Heads-up cards (À régler + Moments) directly under the heroes. */}
-          {statusBand}
+          {clearHero}
 
           {/* On a genuinely clear day the daily-wonder photo RELOCATES from the
               weather backdrop to this calm focal element — same band, a bigger
@@ -883,10 +908,11 @@ export function Board() {
             </div>
           )}
 
-          <div className="board-grid">
+          <WidgetGrid zone="grid" maxCols={4} colMin={colMin} className="board-grid">
             {/* Data-driven card registry: each Grille card is keyed, then rendered in
                 the per-device order with hidden ones dropped (lib/boardCards, set in
-                Réglages ▸ Affichage). The card JSX is unchanged — just addressable. */}
+                Réglages ▸ Affichage or by long-pressing a card). The card JSX is
+                unchanged — just addressable. */}
             {(() => {
               const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
               // « L'auto » glance — the car's status today + today's rides. #28
@@ -1206,10 +1232,17 @@ export function Board() {
               nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
               // « Photo du jour » band (the wonder photo also backs the weather hero).
               nodes.photos = <PhotoFrame />
-              // Render the visible cards in this device's order.
-              return visibleCards(boardCards, 'grid').map((id) => <Fragment key={id}>{nodes[id]}</Fragment>)
+              // Render the visible cards in this device's order. A card whose node is
+              // null has nothing to say TODAY (« Le fil » isn't eligible, « Demain » is
+              // bare, the day is clear) — that's its emptiness, and the slot decides
+              // whether to collapse it or hold its place with a placeholder.
+              return visibleCards(boardCards, 'grid').map((id, i) => (
+                <CardSlot key={id} id={id} zone="grid" index={i} empty={slotEmpty(nodes[id])}>
+                  {nodes[id]}
+                </CardSlot>
+              ))
             })()}
-          </div>
+          </WidgetGrid>
         </>
       )}
 

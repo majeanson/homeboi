@@ -5,6 +5,7 @@ import { live } from '../../lib/query'
 import { PHOTOS_KEY } from '../../lib/queryKeys'
 import { imgUrl } from '../../lib/image'
 import { useT } from '../../i18n'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { ZoomableImg } from '../ZoomableImg'
 import { Icon } from '../Icon'
 
@@ -26,6 +27,7 @@ export function PhotoFrame() {
     const id = setInterval(() => setIdx((i) => (i + 1) % photos.length), 30000)
     return () => clearInterval(id)
   }, [photos.length])
+  useReportEmpty(!photos.length)
   if (!photos.length) return null
   const cur = idx % photos.length
   const p = photos[cur]

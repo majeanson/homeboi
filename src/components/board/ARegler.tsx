@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { useARegler, frictionRow } from '../../lib/aRegler'
 import { Icon } from '../Icon'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 
 // « À régler » — a quiet board card surfacing the cross-domain heads-up scan: a short
 // list of frictions worth sorting (a ride with no driver, an empty supper, a birthday
@@ -21,7 +22,10 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
   const t = useT()
   const { data } = useARegler(enabled)
   const signals = data?.signals ?? []
-  if (!enabled || signals.length === 0) return null
+  const empty = !enabled || signals.length === 0
+  // No-op for the inline `chip` variant, which renders outside a CardSlot.
+  useReportEmpty(empty)
+  if (empty) return null
   // The first friction is the headline; with a SINGLE friction, tap goes straight to
   // its one-tap fix; with several, to « Cette semaine » for the full list.
   const first = frictionRow(signals[0], t)

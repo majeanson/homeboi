@@ -56,12 +56,16 @@ export function WidgetGrid({
   /** Cap the columns. The band is a glance strip (3 across, like the flex row it replaces);
    *  the masonry breathes wider on a wall. */
   maxCols,
+  /** Narrowest a column may get. A wall kiosk wants roomier cards (they're read from
+   *  across the room), so it passes a bigger minimum and gets fewer, wider columns. */
+  colMin,
   editing = false,
   className,
   children,
 }: {
   zone: CardZone
   maxCols: number
+  colMin?: number
   editing?: boolean
   className?: string
   children: ReactNode
@@ -75,7 +79,7 @@ export function WidgetGrid({
     let raf = 0
     const read = (width: number) =>
       setCols((prev) => {
-        const next = colsFor(width, maxCols)
+        const next = colsFor(width, maxCols, colMin)
         return prev === next ? prev : next // bail when unchanged — no re-render storm
       })
     const ro = new ResizeObserver((entries) => {
@@ -90,7 +94,7 @@ export function WidgetGrid({
       cancelAnimationFrame(raf)
       ro.disconnect()
     }
-  }, [maxCols])
+  }, [maxCols, colMin])
 
   return (
     <Ctx.Provider value={{ zone, cols, editing }}>

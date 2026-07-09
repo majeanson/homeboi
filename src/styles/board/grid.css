@@ -74,26 +74,21 @@
 .hub[data-surface='mobile'] .board-idle--shell {
   bottom: 92px;
 }
-/* TRUE MASONRY via CSS multi-column, NOT a real grid. The day sections vary
-   wildly in height — Aujourd'hui is tall + unpredictable, Demain / Restants /
-   À venir are short — and a real grid row is as tall as its tallest tile, so a
-   short tile stranded a dead gap below it down to the tallest sibling's bottom.
-   Multi-column lets each later tile rise into the nearest gap instead. ~300px
-   columns: as many as the wall fits, one on a phone; column-fill: balance keeps
-   them roughly even. Source order is by importance (Aujourd'hui → Demain →
-   today's standing lists → À venir → photo). */
-.board-grid {
-  columns: 300px;
-  column-gap: 1rem;
-}
-/* Each tile is never split across a column break, and carries its own bottom
-   rhythm (multi-column has no grid `gap`). FLOW only — the card's own look lives
-   on `.bento` below, not here. */
-.board-grid > .bento,
-.board-grid > .photo-frame {
-  break-inside: avoid;
-  margin: 0 0 1rem;
-}
+/* The masonry itself is now a WidgetGrid (`.wg`, board/widget-grid.css): CSS Grid over a
+   fine 8px row ruler, with each card claiming `grid-row-end: span N` from its measured
+   height. `.board-grid` / `.board-band` are just the two zone hooks.
+
+   It used to be CSS multi-column (`columns: 300px`). That gave true masonry — a short
+   tile lets the next rise into the gap beneath it, which a plain grid can't do (a grid
+   row is as tall as its tallest cell) — but it offered exactly two widths, one column or
+   `column-span: all`, and it re-flowed cards between columns mid-drag. Row spans buy the
+   gap-filling back AND give real widget widths, in stable slots a drag can land in.
+   Consequently the old flow rules here are gone: `break-inside`, the per-tile bottom
+   margin (the grid `gap` owns rhythm now), and the three `column-span: all` cards
+   (L'auto, Dessins, Photo du jour) which are now simply `size: 'full'` in lib/boardCards.
+   Column COUNT is computed in JS, so the kiosk's roomier 340px minimum travels as the
+   `colMin` prop rather than a `columns:` override. */
+
 /* Each section is a calm bento tile. CHROME BELONGS TO THE CARD, never to whichever
    container happens to hold it. This used to be `.board-grid > .bento`, which meant a
    card only LOOKED like a card while it sat in the masonry: dropped into the status band
@@ -118,37 +113,18 @@
 .bento.bento--now {
   box-shadow: var(--shadow-md), inset 0 3px 0 0 color-mix(in srgb, var(--sec-tint, var(--marigold)) 55%, transparent);
 }
-/* The photo frame closes the board as a full-width band beneath the columns —
-   give it a breath of top margin so it sits apart from the bento tiles above. */
-.board-grid > .photo-frame {
-  column-span: all;
-  margin-top: 1.25rem;
-}
-/* « L'auto » rides inside the grid (just above the drawings/photos) as a full-width
-   band, so it reads as its own strip rather than squeezing into a column. */
-.board-grid > .auto-card {
-  column-span: all;
-  margin: 1rem 0 1rem;
-}
-/* The family-drawings strip is a full-width band like « L'auto » / the photos.
-   Span all columns so a tall drawing card is never flowed into — and split across
-   — a multi-column break (which clipped a drawing mid-image on the wall, leaving a
-   stray ✕). Its own flex grid then tiles the drawings cleanly within the band. */
-.board-grid > .notes--drawings {
-  column-span: all;
-  margin: 1rem 0;
-}
+/* « L'auto », the family-drawings strip and « Photo du jour » used to hard-code
+   `column-span: all` here. They are now `size: 'full'` cards (lib/boardCards) — the same
+   full-width band, but a preference the household can change rather than a CSS fact. The
+   drawings strip in particular NEEDED the span: a tall drawing flowed into a multi-column
+   break got clipped mid-image, leaving a stray ✕. A grid item can't be split across
+   columns at all, so that failure mode is gone by construction. */
 @media (max-width: 680px) {
   .board-wall {
     padding: 1rem 0.9rem 1.5rem;
   }
-  .board-grid {
-    column-gap: 0.75rem;
-  }
-  .board-grid > .bento,
-  .board-grid > .photo-frame {
-    margin-bottom: 0.75rem;
-  }
+  /* The grid `gap` is the one gutter now (see `--wg-gap`), so there is no column-gap to
+     tighten and no per-tile bottom margin to trim. A phone is one column anyway. */
 }
 
 /* Toddler heroes row (meals + weather) above the kid sections. */

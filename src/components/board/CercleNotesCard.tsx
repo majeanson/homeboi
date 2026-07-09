@@ -12,6 +12,7 @@ import type { Member } from '../../lib/members'
 import type { MemberFace } from '../MemberSwitcher'
 import { InlineIcon } from '../Icon'
 import { Section } from './Act'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { NotesList } from '../cercle/NotesList'
 import { NoteEditor } from '../cercle/NoteEditor'
 
@@ -61,7 +62,9 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
 
   // Nothing for this face → no card (calm, like Mots / Voyage / Carnets). Composing
   // lives in Le cercle, so an empty list has nothing to offer on the glance surface.
-  if (notes.length === 0) return null
+  const empty = notes.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   return (
     <Section label={t.boardCard.cercleNotes} icon="file-text-bold" tint="var(--teal-deep, #2a8f85)">

@@ -490,24 +490,16 @@
 }
 
 /* ── Wide-kiosk wall layout ───────────────────────────────────────────────────────
-   Full-bleed by request: the board fills the whole wall, no centred cap. Keep the
-   roomier 340px column width (cards read from across the room) but let the masonry
-   flow as many columns as the wall fits rather than capping at ~3/1180px. (The old
-   cap deliberately narrowed the wall to keep the glance from going "diffuse" on a
-   4K spread — AUJOURDHUI §5/§9. If that diffuse feel returns on a very large
-   display, restore a max-width here.) */
-.hub[data-surface='kiosk'] .board-grid {
-  column-width: 340px;
-  columns: 340px;
-}
-/* Intermediate tablet width (the 520–680px transition + just above): two calm columns
-   rather than one cramped or three squeezed (AUJOURDHUI §5 P2 untested widths). */
-@media (min-width: 600px) and (max-width: 900px) {
-  .board-grid {
-    columns: 2;
-    column-gap: 0.85rem;
-  }
-}
+   Full-bleed by request: the board fills the whole wall, no centred cap, flowing as many
+   columns as the wall fits. The roomier 340px column (cards read from across the room)
+   is no longer a `columns:` override here — the column COUNT is computed in JS now, so
+   the kiosk minimum travels as WidgetGrid's `colMin` prop from Board.tsx. (The old cap
+   deliberately narrowed the wall to keep the glance from going "diffuse" on a 4K spread
+   — AUJOURDHUI §5/§9. If that diffuse feel returns on a very large display, lower
+   `maxCols` or restore a max-width here.)
+
+   The intermediate tablet width (600–900px) used to be forced to `columns: 2`; the same
+   count now falls out of the arithmetic — at 900px, floor((900+16)/(300+16)) = 2. */
 
 /* ── « Living canvas » — ambient board backdrop (lib/canvas + lib/season) ──────────
    A faint, non-interactive layer behind the board that drifts with the season + weather

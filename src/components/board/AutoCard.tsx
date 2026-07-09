@@ -10,6 +10,7 @@ import { type Member } from '../../lib/members'
 import { MEMBERS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { Avatar } from '../Avatar'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 import { colourFor } from '../../lib/things'
 
@@ -51,7 +52,9 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   // Render whenever the household USES « L'auto » — a car configured, a work
   // schedule, or a ride on this day — even on an idle/free day, so the card always
   // answers "où est l'auto ?". Only a household that's set nothing up sees no card.
-  if (model.cars.length === 0 && !model.hasSchedule && rides.length === 0) return null
+  const empty = model.cars.length === 0 && !model.hasSchedule && rides.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   const hhmm = (at: number) => formatTime(at, lang)
   const carLabel = carName(primary?.id) ?? t.auto.car

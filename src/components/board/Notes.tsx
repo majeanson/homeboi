@@ -12,6 +12,7 @@ import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
 import { useKeepInGalleryToast, useKeepKeysInGalleryToast } from '../../lib/drawingGallery'
 import { useDrawEdit } from '../../lib/drawEdit'
 import { Icon, InlineIcon } from '../Icon'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { DrawPad } from '../DrawPad'
 import { DrawEditChoice } from '../DrawEditChoice'
 import { ZoomableImg } from '../ZoomableImg'
@@ -140,8 +141,11 @@ export function Notes({
 
   // Nothing to show and nothing being edited — render nothing. The trailing
   // `action` (the gallery door) keeps the section alive even with zero current
-  // drawings, since saved drawings live on in the gallery regardless.
-  if (!shown.length && !draw.editing && !creating && !action) return null
+  // drawings, since saved drawings live on in the gallery regardless — which is why
+  // the « Dessins » card never reports itself empty, and defaults to mode 'always'.
+  const empty = !shown.length && !draw.editing && !creating && !action
+  useReportEmpty(empty)
+  if (empty) return null
 
   // The strip's own quick-add: parent lens (drawings variant is never toddler) can
   // start a NEW drawing right here, not only from the ＋ "Note rapide" sheet. Hidden

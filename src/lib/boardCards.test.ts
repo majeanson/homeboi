@@ -87,6 +87,10 @@ describe('reconcile — v1 → v2 migration', () => {
     expect(cardMode(p, 'today')).toBe('always')
   })
 
+  it('a v1 device that hid `today` keeps it hidden, overriding the `always` default', () => {
+    expect(cardMode(reconcile({ order: [], hidden: ['today'] }), 'today')).toBe('never')
+  })
+
   it('is idempotent — migrating an already-migrated value changes nothing', () => {
     const once = reconcile(V1)
     expect(reconcile(once)).toEqual(once)
@@ -118,10 +122,14 @@ describe('reconcile — validation', () => {
 })
 
 describe('defaults reproduce the board we already ship', () => {
-  it('the four cards that never self-hid are `always`, the rest `auto`', () => {
+  it('the three cards that never self-hid are `always`, the rest `auto`', () => {
     const p = fresh()
     const always = ALL.filter((id) => cardMode(p, id) === 'always')
-    expect(always.sort()).toEqual(['drawings', 'moments', 'today', 'todos'])
+    expect(always.sort()).toEqual(['drawings', 'moments', 'today'])
+  })
+
+  it('« À faire » is auto — it hides on a clear day, not on an empty list', () => {
+    expect(cardMode(fresh(), 'todos')).toBe('auto')
   })
 
   it('the three former `column-span: all` cards, plus the band heroes, are full-width', () => {

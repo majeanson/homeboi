@@ -547,6 +547,7 @@ export const EN: typeof FR = {
     pastToday: 'Already done today',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
+    cardEmpty: 'Nothing right now.',
     allClearSub: 'Nothing planned today — enjoy it.',
     allClearMoods: {
       morning: 'The morning is yours.',

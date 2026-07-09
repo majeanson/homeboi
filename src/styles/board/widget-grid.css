@@ -51,3 +51,20 @@
 .wg-slot[hidden] {
   display: none;
 }
+
+/* The band zone: the pinned glance strip above the masonry. Inherits the same breath
+   the old `.board-status` flex row carried beneath it. `:empty` collapses the margin
+   too when every band card is hidden. */
+.board-band {
+  margin: 0 0 22px;
+}
+.board-band:empty {
+  display: none;
+}
+
+/* The placeholder a card shows when the device asked to keep it visible while empty
+   (mode `always`). It is a real `.bento`, so it inherits card chrome — quieter, since
+   it says nothing. */
+.wg-slot__placeholder {
+  opacity: 0.75;
+}

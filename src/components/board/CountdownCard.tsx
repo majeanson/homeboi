@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useLang, useT } from '../../i18n'
 import { BoardCard } from './BoardCard'
 import { Cluster } from '../Layout'
 import { InlineIcon } from '../Icon'
 import { isGuest } from '../../lib/device'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { daysUntilLocal, todayLocalDay } from '../../lib/localDay'
 import {
   nextMajorFete,
@@ -41,6 +42,30 @@ export function CountdownCard({ upcoming }: { upcoming: EventRow[] }) {
     if (pinned && pinned.at < todaySec) setCountdown(null)
   }, [pinned, todaySec])
 
+  // The soonest un-skipped candidate, if we'd be offering one. Hoisted above the pinned
+  // branch (and memoised) so the card can answer "am I empty?" with ONE value before any
+  // early return — a hook can't hide behind one. A guest is never offered a suggestion
+  // (they don't set the house's clock), so for them "no pin" means empty.
+  const suggestion = useMemo(() => {
+    if (ro) return undefined
+    const fete = nextMajorFete(todaySec)
+    const candidates: Countdown[] = [
+      ...upcoming
+        .filter((e) => e.birthday)
+        .map((e) => ({ id: `bday-${e.id}`, label: e.title, emoji: '🎂', at: e.start_at })),
+      ...(fete
+        ? [{ id: `fete-${fete.holiday.id}-${fete.at}`, label: fete.holiday.label[lang], emoji: fete.holiday.emoji, at: fete.at }]
+        : []),
+    ]
+      .filter((c) => c.at >= todaySec && skipped[c.id] !== c.at)
+      .sort((a, b) => a.at - b.at)
+    return candidates[0]
+  }, [ro, upcoming, skipped, todaySec, lang])
+
+  const hasPinned = !!pinned && pinned.at >= todaySec
+  useReportEmpty(!hasPinned && !suggestion)
+
+  // Spelled out rather than `if (hasPinned)` so TS narrows `pinned` to non-null below.
   if (pinned && pinned.at >= todaySec) {
     const n = daysUntilLocal(pinned.at)
     return (
@@ -61,20 +86,7 @@ export function CountdownCard({ upcoming }: { upcoming: EventRow[] }) {
     )
   }
 
-  // Nothing pinned → offer the soonest un-skipped candidate (or nothing at all).
-  if (ro) return null
-  const fete = nextMajorFete(todaySec)
-  const candidates: Countdown[] = [
-    ...upcoming
-      .filter((e) => e.birthday)
-      .map((e) => ({ id: `bday-${e.id}`, label: e.title, emoji: '🎂', at: e.start_at })),
-    ...(fete
-      ? [{ id: `fete-${fete.holiday.id}-${fete.at}`, label: fete.holiday.label[lang], emoji: fete.holiday.emoji, at: fete.at }]
-      : []),
-  ]
-    .filter((c) => c.at >= todaySec && skipped[c.id] !== c.at)
-    .sort((a, b) => a.at - b.at)
-  const suggestion = candidates[0]
+  // Nothing pinned → offer the soonest un-skipped candidate (computed above), or nothing.
   if (!suggestion) return null
 
   return (

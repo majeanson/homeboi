@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
 import { useCarnets, warrantyExpiries } from '../../lib/carnets'
 import { formatDay } from '../../lib/format'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
 // The board « Les carnets » glance — the « long jeu » heads-up a calendar can't give:
@@ -21,7 +22,9 @@ export function CarnetsCard() {
   // Warranties ending soon — DERIVED from the same carnets model (no rows), the other
   // heads-up a calendar can't give. See warrantyExpiries.
   const warranties = warrantyExpiries(data?.carnets ?? [], Math.floor(Date.now() / 1000))
-  if (soon.length === 0 && warranties.length === 0) return null
+  const empty = soon.length === 0 && warranties.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   return (
     <BoardCard className="carnets-card" icon="book-open-bold" label={c.title}>

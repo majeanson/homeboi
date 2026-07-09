@@ -588,6 +588,9 @@ export const FR = {
     pastToday: 'Déjà passé aujourd’hui',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'Tout est calme',
+    // Shown inside a card the device asked to keep visible even when it has nothing
+    // (« Toujours afficher », lib/boardCards mode 'always'). Calm: a statement, not a prompt.
+    cardEmpty: 'Rien pour l’instant.',
     allClearSub: 'Rien de prévu aujourd’hui — profitez-en.',
     // The all-clear reassurance drifts gently by daypart or notable weather — same
     // calm tone, never a prompt, never a count. Keyed by daypart + weather bucket.

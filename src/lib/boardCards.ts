@@ -96,10 +96,15 @@ export interface BoardCardMeta {
 // masonry keeps its importance order with « L'auto », « Dessins » and « Photo du jour »
 // as full-width strips (they were the three `column-span: all` cards).
 //
-// `mode: 'always'` marks the four cards that deliberately do NOT self-hide when empty:
-// « Moments » is a static launcher (never empty), « Dessins » keeps its gallery door
-// open, and « Aujourd'hui » / « À faire » stay to offer an add button. Everything else
-// already collapsed itself with `return null`, which is exactly `'auto'`.
+// `mode: 'always'` marks the three cards that deliberately do NOT self-hide: « Moments »
+// is a static launcher (never empty), « Dessins » keeps its gallery door open even with
+// zero drawings, and « Aujourd'hui » always holds the day. Everything else already
+// collapsed itself with `return null`, which is exactly `'auto'`.
+//
+// « À faire » is `auto` with a subtler emptiness than "no rows": it stays on a busy day
+// even with an empty list (to offer the add button) and disappears only on a genuinely
+// clear day — so its empty signal is `dayClear`, passed by the lens. Same knob, different
+// question.
 export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // ── the pinned band (fridge notes ride above the heroes) ──
   { id: 'notes', icon: 'push-pin-bold', zone: 'band', size: 'full', mode: 'auto' },
@@ -116,7 +121,7 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'tomorrow', icon: 'sun-horizon-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'countdown', icon: 'hourglass-high-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'toFinish', icon: 'check-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'todos', icon: 'check-bold', zone: 'grid', size: 1, mode: 'always' },
+  { id: 'todos', icon: 'check-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'upcoming', icon: 'calendar-blank-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'cercleNotes', icon: 'file-text-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'voyage', icon: 'map-pin-bold', zone: 'grid', size: 1, mode: 'auto' },

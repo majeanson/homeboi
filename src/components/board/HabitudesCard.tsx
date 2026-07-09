@@ -1,6 +1,7 @@
 import { useT } from '../../i18n'
 import { useProfile } from '../../lib/profile'
 import { useHabits, dueToday, habitStatusOn, habitToday, type Habit } from '../../lib/habits'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
 // The board's « Mes habitudes » glance — a door to « Le point du jour », not a
@@ -24,7 +25,11 @@ export function HabitudesCard() {
   const habits = data?.habits ?? []
   const days = data?.days ?? []
   const due = dueToday(habits, days, face, today)
-  if (due.length === 0) return null
+  // Tell the slot BEFORE returning null: a null render is indistinguishable from a card
+  // that is still loading, and the slot has to know which (lib/useReportEmpty).
+  const empty = due.length === 0
+  useReportEmpty(empty)
+  if (empty) return null
 
   const household = due.filter((h) => h.member_id === null)
   const hasMine = due.some((h) => h.member_id !== null)

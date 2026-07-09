@@ -37,8 +37,9 @@ export function rowSpan(height: number): number {
  * has to be clamped against the count: a size-3 widget on a one-column phone must render
  * span-1 rather than overflow the viewport.
  */
-export function colsFor(width: number, maxCols: number): number {
+export function colsFor(width: number, maxCols: number, colMin: number = WG_COL_MIN): number {
   if (!Number.isFinite(width) || width <= 0) return 1
-  const fit = Math.floor((width + WG_GAP) / (WG_COL_MIN + WG_GAP))
+  const min = Number.isFinite(colMin) && colMin > 0 ? colMin : WG_COL_MIN
+  const fit = Math.floor((width + WG_GAP) / (min + WG_GAP))
   return Math.max(1, Math.min(fit, Math.max(1, maxCols)))
 }

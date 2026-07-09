@@ -8,6 +8,7 @@ import { pickMomentRoutine, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/r
 import { Avatar } from '../Avatar'
 import { RoutineRing } from '../RoutineRing'
 import { InlineIcon } from '../Icon'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
 // A routine-shaped row from GET /api/routines — the same cache the Routines tab and
@@ -39,6 +40,7 @@ export function RoutineNextCard() {
     staleTime: 5 * 60_000,
   })
   const routine = pickMomentRoutine(data?.routines ?? [], Date.now())
+  useReportEmpty(!routine)
   if (!routine) return null
 
   const tint =

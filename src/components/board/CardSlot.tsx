@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useT } from '../../i18n'
 import { CardEmptyContext, type EmptyReporter } from '../../lib/useReportEmpty'
-import { clampSize, cardSize, cardMode, useBoardCards, type BoardCardId, type CardZone } from '../../lib/boardCards'
+import {
+  clampSize,
+  cardSize,
+  cardMode,
+  cardMeta,
+  useBoardCards,
+  type BoardCardId,
+  type CardZone,
+} from '../../lib/boardCards'
 import { rowSpan } from '../../lib/widgetGrid'
+import { EmptyState } from '../EmptyState'
+import { BoardCard } from './BoardCard'
 import { useWidgetGrid } from './WidgetGrid'
 
 // The slot a board card sits in: it owns PLACEMENT (row/column span), the drop target,
@@ -24,7 +35,10 @@ import { useWidgetGrid } from './WidgetGrid'
 //   • 'auto'   — collapse when empty. The card STAYS MOUNTED (`display:none`), because a
 //                self-fetching card can only discover it's empty after it has fetched —
 //                which is precisely what it used to do before returning `null`.
-//   • 'always' — hold its place and show its own empty state.
+//   • 'always' — hold its place. A card that reports empty renders nothing of its own, so
+//                the slot supplies a uniform placeholder (the shared `BoardCard` header +
+//                a calm empty line). That is why « Toujours afficher » works for every
+//                card without nine bespoke empty states.
 // Emptiness arrives through one of two channels, both resolved here:
 //   • the `empty` prop, when the lens already holds the rows (Board.tsx), or
 //   • `useReportEmpty` from inside the card, when only the card knows.
@@ -44,6 +58,7 @@ export function CardSlot({
   empty?: boolean
   children: ReactNode
 }) {
+  const t = useT()
   const prefs = useBoardCards()
   const grid = useWidgetGrid()
   const innerRef = useRef<HTMLDivElement>(null)
@@ -56,7 +71,12 @@ export function CardSlot({
   const report = useCallback<EmptyReporter>((v) => setReported((prev) => (prev === v ? prev : v)), [])
 
   const isEmpty = empty ?? reported
-  const collapsed = cardMode(prefs, id) === 'auto' && isEmpty
+  const mode = cardMode(prefs, id)
+  const collapsed = mode === 'auto' && isEmpty
+  // An `always` card that has nothing to draw still holds its place — the slot fills it
+  // rather than leaving an 8px stub where a card used to be.
+  const placeholder = mode === 'always' && isEmpty
+  const meta = cardMeta(id)
   const cols = grid?.cols ?? 1
   const span = clampSize(cardSize(prefs, id), cols)
 
@@ -102,6 +122,11 @@ export function CardSlot({
       <CardEmptyContext.Provider value={report}>
         <div className="wg-slot__inner" ref={innerRef}>
           {children}
+          {placeholder && meta && (
+            <BoardCard className="bento wg-slot__placeholder" label={t.boardCard[id]} icon={meta.icon}>
+              <EmptyState>{t.board.cardEmpty}</EmptyState>
+            </BoardCard>
+          )}
         </div>
       </CardEmptyContext.Provider>
     </section>

@@ -6,6 +6,7 @@ import { type Weather, type HourOutlook, weatherIcon, weatherTint, weatherTip } 
 import { type DayMealRow } from './types'
 import { type Wonder } from './ApodFrame'
 import { Icon, InlineIcon } from '../Icon'
+import { useReportEmpty } from '../../lib/useReportEmpty'
 
 // The board's two "today" hero cards, extracted so Grille AND « La journée » render
 // the SAME polished visuals instead of one re-rolling a thinner version: the « Ce
@@ -42,7 +43,9 @@ export function DayHeroes({
 }) {
   const t = useT()
   const tip = weatherTip(weather)
-  if (suppers.length === 0 && !weather) return null
+  const empty = suppers.length === 0 && !weather
+  useReportEmpty(empty)
+  if (empty) return null
   return (
     <div className="board-heroes">
       {suppers.length > 0 && (

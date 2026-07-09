@@ -57,32 +57,33 @@
   display: none !important;
 }
 
-/* Cast layout = a column MASONRY that fills the page. The board's grid is already
-   CSS multi-column; on a wide TV we widen the columns and — crucially — UN-SPAN the
-   three full-width bands (L'auto, the drawings strip, the photo) so they flow as
-   ordinary column items instead of tall full-width strips. Those strips (the family
-   photo most of all) were what made the board portrait-tall and forced the whole
-   thing to shrink. Flowing them into the columns fills the landscape and keeps the
-   board short enough to render at (or near) full size. Card order + visibility
-   (lib/boardCards) is untouched — multi-column just wraps the SAME source order. */
+/* Cast layout = a masonry that fills the page. The board's grid is a WidgetGrid (CSS Grid
+   + measured row spans); on a wide TV we want MORE, narrower columns and — crucially —
+   we UN-SPAN the full-width cards (L'auto, the drawings strip, the photo) so they sit as
+   ordinary one-column items instead of tall full-width strips. Those strips (the family
+   photo most of all) were what made the board portrait-tall and forced the whole thing to
+   shrink. Card order + visibility (lib/boardCards) is untouched.
+
+   Why these overrides WIN: WidgetGrid writes only the custom properties `--wg-cols` /
+   `--wg-span-cols` inline. The properties that READ them (`grid-template-columns`,
+   `grid-column-end`) are declared in a stylesheet, so a more specific stylesheet rule
+   here beats them without needing `!important` on the inline style. */
 .cast .board-grid {
   /* Narrower columns → MORE of them (≈4–5 on a TV instead of 3) → the board lays out
      wider and SHORTER, matching the 16:9 screen, so the fit-scale no longer has to
      shrink it (which was what pulled the width in and left the side letterbox). Tune
      this if the board is still too tall (lower = more columns) or feels cramped
-     (higher = fewer). column-width adapts the count to the TV's resolution on its own. */
-  column-width: 18rem;
-  column-gap: 0.8rem;
+     (higher = fewer). auto-fill adapts the count to the TV's resolution on its own. */
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  /* Do NOT retune `gap` here. Every card's row span is derived from `--wg-gap` in JS
+     (lib/widgetGrid `WG_GAP`); a smaller gutter shrinks each span's usable height below
+     the content it was measured to fit, and cards clip their last line. */
 }
-/* L'auto, the drawings strip, AND the photo all flow as COLUMN ITEMS (not tall
-   full-width bands) so nothing forces the board portrait-tall and triggers the shrink. */
-.cast .board-grid > .auto-card,
-.cast .board-grid > .notes--drawings,
-.cast .board-grid > .photo-frame {
-  column-span: none !important;
-  margin: 0 0 0.8rem !important;
+/* Every card is a one-column item here — nothing forces the board portrait-tall. */
+.cast .board-grid > .wg-slot {
+  grid-column-end: span 1;
 }
-.cast .board-grid > .notes--drawings img {
+.cast .board-grid .notes--drawings img {
   max-height: 30vh;
 }
 /* The family photo: a SQUARE-ish card filling its column (object-fit:cover crops to a
