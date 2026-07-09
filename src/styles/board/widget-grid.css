@@ -68,3 +68,130 @@
 .wg-slot__placeholder {
   opacity: 0.75;
 }
+
+/* ---- Edit mode: hold a card to rearrange the board -------------------------- */
+/* Armed by a long-press on any card (lib/useLongPress) or by /board?edit=1.
+   TOUCH drags from the ⠿ grip; a MOUSE may grab anywhere on the card. That split is not
+   cosmetic: a pointer drag can only beat the browser's scroll gesture if the element
+   under the finger sets `touch-action: none` (Chrome ignores `preventDefault` on
+   pointermove otherwise — see the note in lib/dnd). Putting that on the whole card would
+   make the board unscrollable the moment edit mode armed, trapping you on a long board.
+   So the grip owns it, exactly as `.dnd-grip` does everywhere else in the app. */
+.wg--editing .wg-slot {
+  position: relative;
+}
+/* Everything INSIDE the card goes inert: in edit mode a press means "move this card",
+   never "open this note". The press falls through to the slot, which starts the drag. */
+.wg--editing .wg-slot__inner {
+  pointer-events: none;
+  user-select: none;
+}
+.wg--editing .wg-slot.is-dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+/* Where the card will land. Also on the grid itself, for a drop into trailing space. */
+.wg--editing .wg-slot.dnd-over,
+.wg--editing.dnd-over {
+  outline: 2px dashed var(--marigold, currentColor);
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+}
+
+/* The ✕ / size controls. Positioned over the card's corners like a home-screen badge;
+   they keep their own pointer events (the slot skips a press that lands on `__ctl`). */
+.wg-slot__ctl {
+  position: absolute;
+  top: -8px;
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.wg-slot__hide {
+  left: -8px;
+}
+.wg-slot__size {
+  right: -8px;
+}
+/* The touch drag handle. `touch-action: none` lives HERE and nowhere else, so the board
+   still scrolls under a finger that isn't on a grip. */
+.wg-slot__grip {
+  left: 50%;
+  transform: translateX(-50%);
+  touch-action: none;
+  cursor: grab;
+  letter-spacing: 2px;
+}
+.wg--editing .wg-slot.is-dragging .wg-slot__grip {
+  cursor: grabbing;
+}
+/* A mouse can grab the card body itself — it never scrolls by dragging, so there is no
+   gesture to lose. */
+@media (hover: hover) and (pointer: fine) {
+  .wg--editing .wg-slot {
+    cursor: grab;
+  }
+}
+
+/* The home-screen jiggle. Decorative only — the ✕ badges already say "editable", so a
+   reduced-motion device loses nothing by sitting still (mirrors `buddy-wiggle`, kid.css).
+
+   It animates the card BODY, never the slot: the ✕ / size / grip badges are the slot's
+   own children, and a control that never stops moving is a control you have to chase
+   (Playwright's actionability check hangs on it, which is the machine noticing what a
+   finger would). The card wobbles; its handles hold still. */
+@media (prefers-reduced-motion: no-preference) {
+  .wg--editing .wg-slot:not(.is-dragging) .wg-slot__inner {
+    animation: wg-wiggle 0.34s var(--ease-soft, ease-in-out) infinite alternate;
+  }
+  /* Offset the phase so the whole board doesn't tick in lockstep like a metronome. */
+  .wg--editing .wg-slot:nth-child(even) .wg-slot__inner {
+    animation-delay: -0.17s;
+  }
+}
+@keyframes wg-wiggle {
+  from {
+    transform: rotate(-0.35deg);
+  }
+  to {
+    transform: rotate(0.35deg);
+  }
+}
+
+/* The edit bar: what this mode is, and the way out. */
+.board-edit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.board-edit__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.board-edit__text .mono {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}

@@ -591,6 +591,17 @@ export const FR = {
     // Shown inside a card the device asked to keep visible even when it has nothing
     // (« Toujours afficher », lib/boardCards mode 'always'). Calm: a statement, not a prompt.
     cardEmpty: 'Rien pour l’instant.',
+    // Edit mode: hold a card to rearrange the board, like an app on a phone's home screen.
+    editTitle: 'Réorganise ton babillard',
+    editHint: 'Glisse une carte pour la déplacer, ✕ pour la retirer, le chiffre pour la redimensionner.',
+    editDone: 'Terminé',
+    editHide: (card: string) => `Retirer « ${card} » de cet écran`,
+    editResize: (card: string) => `Changer la largeur de « ${card} »`,
+    // The size chip is a ~24px disc showing 1 / 2 / 3 — this is the "spans everything"
+    // face. Kept to a couple of glyphs; the full phrasing lives in `editResize`'s label.
+    editSizeFull: 'Max',
+    editHiddenN: (n: number) => (n === 1 ? '1 carte cachée' : `${n} cartes cachées`),
+    editRestore: 'Réglages ▸ Disposition',
     allClearSub: 'Rien de prévu aujourd’hui — profitez-en.',
     // The all-clear reassurance drifts gently by daypart or notable weather — same
     // calm tone, never a prompt, never a count. Keyed by daypart + weather bucket.

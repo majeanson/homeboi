@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
 import { useT } from '../../i18n'
 import { CardEmptyContext, type EmptyReporter } from '../../lib/useReportEmpty'
 import {
@@ -6,14 +14,17 @@ import {
   cardSize,
   cardMode,
   cardMeta,
+  nextSize,
+  setCardPrefs,
   useBoardCards,
   type BoardCardId,
   type CardZone,
 } from '../../lib/boardCards'
 import { rowSpan } from '../../lib/widgetGrid'
 import { EmptyState } from '../EmptyState'
+import { InlineIcon } from '../Icon'
 import { BoardCard } from './BoardCard'
-import { useWidgetGrid } from './WidgetGrid'
+import { useWidgetGrid, zoneKey } from './WidgetGrid'
 
 // The slot a board card sits in: it owns PLACEMENT (row/column span), the drop target,
 // and the empty gate. It owns NO visual chrome — each card still draws its own look
@@ -108,27 +119,90 @@ export function CardSlot({
     [rows, span],
   )
 
+  const editing = !!grid?.editing
+  const dnd = grid?.dnd ?? null
+  const key = zoneKey(zone, index)
+  const label = t.boardCard[id]
+
+  // A MOUSE may grab the card body: it never scrolls by dragging, so there's no gesture
+  // to lose. A FINGER must use the ⠿ grip, which is the only element carrying
+  // `touch-action: none` — putting that on the whole card would make the board
+  // unscrollable for as long as edit mode is armed. Same split `.dnd-grip` uses app-wide.
+  const grabBody = (e: ReactPointerEvent) => {
+    if (!editing || !dnd || e.pointerType !== 'mouse') return
+    // …except on the controls, which own their own taps.
+    if ((e.target as Element).closest('.wg-slot__ctl')) return
+    dnd.start(id, label, e)
+  }
+
+  const hide = () => setCardPrefs({ mode: { ...prefs.mode, [id]: 'never' } })
+  const resize = () => setCardPrefs({ size: { ...prefs.size, [id]: nextSize(cardSize(prefs, id)) } })
+
   return (
     <section
-      className="wg-slot"
+      className={
+        'wg-slot' +
+        (editing ? ' wg-slot--editing' : '') +
+        (dnd?.activeId === id ? ' is-dragging' : '') +
+        (dnd?.over === key ? ' dnd-over' : '')
+      }
       style={style}
       data-card={id}
       // Drop targets exist only while editing. Always-on would also opt every board card
       // out of tap-to-hear, which excludes `[data-dnd-zone]` by design.
-      data-dnd-zone={grid?.editing ? `${zone}:${index}` : undefined}
+      data-dnd-zone={editing ? key : undefined}
       data-empty={isEmpty ? '' : undefined}
       hidden={collapsed}
+      onPointerDown={grabBody}
     >
       <CardEmptyContext.Provider value={report}>
         <div className="wg-slot__inner" ref={innerRef}>
           {children}
           {placeholder && meta && (
-            <BoardCard className="bento wg-slot__placeholder" label={t.boardCard[id]} icon={meta.icon}>
+            <BoardCard className="bento wg-slot__placeholder" label={label} icon={meta.icon}>
               <EmptyState>{t.board.cardEmpty}</EmptyState>
             </BoardCard>
           )}
         </div>
       </CardEmptyContext.Provider>
+
+      {editing && (
+        <>
+          {/* The touch drag handle. `role="button"` + the drag label, mirroring DragPill. */}
+          <span
+            className="wg-slot__ctl wg-slot__grip"
+            data-dnd-grip=""
+            role="button"
+            aria-label={t.operator.dragHint}
+            title={t.operator.dragHint}
+            onPointerDown={(e) => dnd?.start(id, label, e)}
+          >
+            ⠿
+          </span>
+          {/* ✕ removes the card from THIS device's board (mode 'never'). It stays listed,
+              and restorable, in Réglages ▸ Le babillard ▸ Disposition. */}
+          <button
+            type="button"
+            className="wg-slot__ctl wg-slot__hide"
+            onClick={hide}
+            aria-label={t.board.editHide(label)}
+            title={t.board.editHide(label)}
+          >
+            <InlineIcon name="x-bold" size={14} />
+          </button>
+          {/* The size chip cycles 1 → 2 → 3 → full. It shows the STORED size, not the
+              clamped one, so a phone doesn't lie about what the wall will do. */}
+          <button
+            type="button"
+            className="wg-slot__ctl wg-slot__size"
+            onClick={resize}
+            aria-label={t.board.editResize(label)}
+            title={t.board.editResize(label)}
+          >
+            {cardSize(prefs, id) === 'full' ? t.board.editSizeFull : cardSize(prefs, id)}
+          </button>
+        </>
+      )}
     </section>
   )
 }

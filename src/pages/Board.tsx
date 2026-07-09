@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -65,9 +65,23 @@ import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
 import { useBoardModel } from '../lib/boardModel'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
-import { useBoardCards, visibleCards, isCardVisible, type BoardCardId } from '../lib/boardCards'
-import { WidgetGrid } from '../components/board/WidgetGrid'
+import {
+  useBoardCards,
+  visibleCards,
+  isCardVisible,
+  cardMeta,
+  cardMode,
+  moveCard,
+  setCardPrefs,
+  BOARD_CARDS,
+  type BoardCardId,
+} from '../lib/boardCards'
+import { WidgetGrid, parseZoneKey } from '../components/board/WidgetGrid'
 import { CardSlot } from '../components/board/CardSlot'
+import { usePointerDnd, DragGhost } from '../lib/dnd'
+import { useLongPress } from '../lib/useLongPress'
+import { useTabParam } from '../lib/tabParam'
+import { useEscapeKey } from '../lib/sceneNav'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -79,7 +93,8 @@ import { BOARD_KEY, TODOS_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
-import { isGuest } from '../lib/device'
+import { isGuest, isDisplay } from '../lib/device'
+import { Cluster } from '../components/Layout'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { BOARD_HELP } from '../lib/boardHelp'
 
@@ -694,6 +709,41 @@ export function Board() {
   // the column count is computed in JS now, so the minimum has to travel there too.
   const colMin = surface === 'kiosk' ? 340 : 300
 
+  // ── Edit mode: hold a card to rearrange the board ──────────────────────────────────
+  // Lives in the URL so Réglages ▸ Disposition can deep-link into it (/board?edit=1) and
+  // so a remount (a scene closing over the board) doesn't drop you out of it.
+  const [editParam, setEditParam] = useTabParam<'0' | '1'>('edit', '0', ['0', '1'])
+  // A guest can't write; a cast display (which renders this very Board) has no pointer;
+  // the toddler/simple lenses returned long before here.
+  const canEdit = !ro && !isDisplay()
+  const editing = canEdit && editParam === '1'
+  const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
+
+  useLongPress({
+    targets: '.wg-slot',
+    enabled: canEdit && !editing,
+    onLongPress: () => setEditParam('1'),
+  })
+  useEscapeKey(exitEdit, editing)
+
+  // ONE drag session across BOTH zones — that is what makes dragging a card out of the
+  // band and into the masonry a single gesture rather than two systems. `holdMs: 0`: the
+  // long-press that armed edit mode already established intent.
+  const cardDnd = usePointerDnd({
+    onDrop: (cardId, dropKey) => {
+      const target = parseZoneKey(dropKey)
+      if (!target || !cardMeta(cardId as BoardCardId)) return
+      const zone = target.zone
+      // A drop on the grid's trailing space appends; a drop on a slot inserts at it.
+      const at = target.index === 'end' ? boardCards[zone].length : target.index
+      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, zone, at))
+    },
+  })
+
+  // How many cards this device has removed — the edit bar points at where they live,
+  // since ✕ is otherwise a one-way door.
+  const hiddenCount = BOARD_CARDS.filter((c) => cardMode(boardCards, c.id) === 'never').length
+
   const clearHero = dayClear ? (
     <div className="board-status">
       <div className="now-card now-card--clear">
@@ -848,12 +898,33 @@ export function Board() {
         />
       ) : (
         <>
+          {/* The edit-mode bar. ✕ removes a card from THIS device only, so the way back is
+              Réglages ▸ Disposition — named here rather than left as a dead end. */}
+          {editing && (
+            <div className="board-edit" role="toolbar" aria-label={t.board.editTitle}>
+              <div className="board-edit__text">
+                <b>{t.board.editTitle}</b>
+                <span className="mono">{t.board.editHint}</span>
+              </div>
+              <Cluster>
+                {hiddenCount > 0 && (
+                  <Link className="btn btn--ghost btn--sm" to="/settings?tab=board&sub=layout">
+                    {t.board.editHiddenN(hiddenCount)} · {t.board.editRestore}
+                  </Link>
+                )}
+                <button type="button" className="btn btn--primary btn--sm" onClick={exitEdit}>
+                  {t.board.editDone}
+                </button>
+              </Cluster>
+            </div>
+          )}
+
           {/* THE BAND ZONE — the pinned glance strip. Fridge notes, the supper/weather
               heroes, and the heads-up cards (Mots / À régler / Moments) are now ordinary
               cards: each can be reordered, resized, hidden, or dragged down into the
               masonry. It caps at 3 columns, which is what the old `.board-status` flex
               row gave the three heads-up tiles. */}
-          <WidgetGrid zone="band" maxCols={3} colMin={colMin} className="board-band">
+          <WidgetGrid zone="band" maxCols={3} colMin={colMin} className="board-band" editing={editing} dnd={cardDnd}>
             {(() => {
               const band: Partial<Record<BoardCardId, ReactNode>> = {}
               band.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
@@ -908,7 +979,7 @@ export function Board() {
             </div>
           )}
 
-          <WidgetGrid zone="grid" maxCols={4} colMin={colMin} className="board-grid">
+          <WidgetGrid zone="grid" maxCols={4} colMin={colMin} className="board-grid" editing={editing} dnd={cardDnd}>
             {/* Data-driven card registry: each Grille card is keyed, then rendered in
                 the per-device order with hidden ones dropped (lib/boardCards, set in
                 Réglages ▸ Affichage or by long-pressing a card). The card JSX is
@@ -1249,6 +1320,9 @@ export function Board() {
       {/* « L'auto » glance is placed per-view: the Grille view renders it at the TOP
           of its grid (above « Aujourd'hui »); the Mois (calendar) view renders it
           inside its day panel (so it follows the selected date). #28 */}
+
+      {/* The label that trails the finger during a card drag (portalled to <body>). */}
+      <DragGhost ghost={cardDnd.ghost} />
 
       {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}

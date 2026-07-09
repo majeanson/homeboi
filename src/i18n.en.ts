@@ -548,6 +548,14 @@ export const EN: typeof FR = {
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     cardEmpty: 'Nothing right now.',
+    editTitle: 'Rearrange your board',
+    editHint: 'Drag a card to move it, ✕ to remove it, the number to resize it.',
+    editDone: 'Done',
+    editHide: (card: string) => `Remove “${card}” from this screen`,
+    editResize: (card: string) => `Change the width of “${card}”`,
+    editSizeFull: 'Max',
+    editHiddenN: (n: number) => (n === 1 ? '1 hidden card' : `${n} hidden cards`),
+    editRestore: 'Settings ▸ Layout',
     allClearSub: 'Nothing planned today — enjoy it.',
     allClearMoods: {
       morning: 'The morning is yours.',

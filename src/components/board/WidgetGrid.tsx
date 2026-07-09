@@ -1,4 +1,13 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react'
 import { type CardZone } from '../../lib/boardCards'
 import { colsFor } from '../../lib/widgetGrid'
 
@@ -44,6 +53,29 @@ export interface WidgetGridCtx {
   cols: number
   /** Edit mode is armed on this grid (long-press, or ?edit=1). */
   editing: boolean
+  /** The ONE drag session, shared by both zones — which is what lets a card be dragged
+   *  out of the band and into the masonry. Null outside edit mode. */
+  dnd: PointerDnd | null
+}
+
+/** The shape `usePointerDnd` returns (lib/dnd). Typed structurally to keep this file
+ *  from importing the hook just for its return type. */
+export interface PointerDnd {
+  start: (id: string, label: string, e: ReactPointerEvent) => void
+  activeId: string | null
+  over: string | null
+}
+
+/** The drop-zone key a slot (or a grid's trailing space) advertises. */
+export const zoneKey = (zone: CardZone, index: number | 'end'): string => `${zone}:${index}`
+
+/** Parse a drop-zone key back into a zone + insert index (`'end'` → append). */
+export function parseZoneKey(key: string): { zone: CardZone; index: number | 'end' } | null {
+  const [z, i] = key.split(':')
+  if (z !== 'band' && z !== 'grid') return null
+  if (i === 'end') return { zone: z, index: 'end' }
+  const n = Number(i)
+  return Number.isInteger(n) && n >= 0 ? { zone: z, index: n } : null
 }
 
 const Ctx = createContext<WidgetGridCtx | null>(null)
@@ -60,6 +92,7 @@ export function WidgetGrid({
    *  across the room), so it passes a bigger minimum and gets fewer, wider columns. */
   colMin,
   editing = false,
+  dnd = null,
   className,
   children,
 }: {
@@ -67,6 +100,7 @@ export function WidgetGrid({
   maxCols: number
   colMin?: number
   editing?: boolean
+  dnd?: PointerDnd | null
   className?: string
   children: ReactNode
 }) {
@@ -96,13 +130,26 @@ export function WidgetGrid({
     }
   }, [maxCols, colMin])
 
+  const ctx = useMemo(() => ({ zone, cols, editing, dnd }), [zone, cols, editing, dnd])
+
   return (
-    <Ctx.Provider value={{ zone, cols, editing }}>
+    <Ctx.Provider value={ctx}>
       <div
         ref={ref}
-        className={'wg' + (className ? ` ${className}` : '') + (editing ? ' wg--editing' : '')}
+        className={
+          'wg' +
+          (className ? ` ${className}` : '') +
+          (editing ? ' wg--editing' : '') +
+          (dnd?.over === zoneKey(zone, 'end') ? ' dnd-over' : '')
+        }
         style={{ ['--wg-cols' as string]: cols }}
         data-zone={zone}
+        // The grid's own trailing space is a drop target: releasing a card over the gap
+        // below the last slot appends it to this zone. A pointer over a SLOT resolves to
+        // the slot first (the hit-test walks up from the deepest element), so this only
+        // catches drops that land between or after cards — including the empty-zone case,
+        // which is how you drag the last card back INTO an emptied band.
+        data-dnd-zone={editing ? zoneKey(zone, 'end') : undefined}
       >
         {children}
       </div>
