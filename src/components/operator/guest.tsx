@@ -26,8 +26,11 @@ import { StatusMessage } from '../StatusMessage'
 import { QrCode } from '../QrCode'
 import { Chip } from '../Chip'
 import { SubTabs } from '../SubTabs'
+import { Cluster } from '../Layout'
 import { castSenderPossible, castToSalon } from '../../lib/cast'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { handoffGaps, type HandoffGap, type SitterWindowLike } from '../../lib/handoffGaps'
+import { guestWindowKey } from '../../lib/queryKeys'
 
 // Typed read-only share links. The operator picks a KIND (what the link can see)
 // and a duration, and gets a time-boxed token (?guest=<token>). The link lands on
@@ -129,6 +132,29 @@ type GuestLangChoice = 'household' | 'fr' | 'en'
 // before its TTL (§509). Shared key so minting a fresh link (generate) refreshes it.
 const GUEST_LINKS_KEY = ['guest-links']
 
+// D-19 (bmad/10) « La carte de la gardienne se complète » — the sitter card's own
+// gap-detector (src/lib/handoffGaps.ts) drives a quiet, per-gap deep link so the
+// operator can complete the missing section BEFORE the link goes out. It never
+// blocks minting — a link with gaps is still perfectly mintable, just emptier.
+// `null` means "scroll to the in-page ShareInfoEditor below" rather than navigate.
+const GAP_ROUTE: Record<HandoffGap, string | null> = {
+  emergency: '/cercle',
+  toKnow: '/settings?tab=cercle&sub=members',
+  bedtimeRoutines: '/routines',
+  wifiSsid: null,
+  pins: '/cercle?section=carnets',
+}
+const GAP_LABEL_KEY: Record<HandoffGap, 'missingEmergency' | 'missingToKnow' | 'missingBedtimeRoutines' | 'missingWifi' | 'missingPins'> = {
+  emergency: 'missingEmergency',
+  toKnow: 'missingToKnow',
+  bedtimeRoutines: 'missingBedtimeRoutines',
+  wifiSsid: 'missingWifi',
+  pins: 'missingPins',
+}
+// The « Infos à partager » editor lives further down this same section — the wifi
+// gap link scrolls to it instead of navigating (it's already on this page).
+const SHARE_INFO_EDITOR_ID = 'guest-share-info-editor'
+
 export function GuestSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const navigate = useNavigate()
@@ -166,15 +192,21 @@ export function GuestSection({ help }: { help?: HelpMode }) {
     pets: true,
     photo: true,
   })
+  // D-19 — for a 'sitter' link: opt-in « Joindre un parent ». Off by default; when
+  // on, `reachParentKey` (a member's Person.key, `member:<id>`) rides into the same
+  // signed `targetKey` slot intake uses.
+  const [reachParent, setReachParent] = useState(false)
+  const [reachParentKey, setReachParentKey] = useState<string | null>(null)
 
-  // People to choose a per-person intake link's recipient from — loaded only when
-  // the intake kind is picked. unifyCircle gives one node per person (member +
-  // hard-linked contact merged), and its .key is exactly the token's targetKey.
+  // People to choose a per-person link's recipient from — loaded for 'intake' (any
+  // person) and 'sitter' (D-19's reach-parent picker, members only, below). unifyCircle
+  // gives one node per person (member + hard-linked contact merged), and its .key is
+  // exactly the token's targetKey.
   const { data: cercleData } = useQuery({
     queryKey: CERCLE_KEY,
     queryFn: () =>
       api<{ contacts: Contact[]; members: Member[]; links: ContactLink[]; groups?: ContactGroupRaw[] }>('cercle'),
-    enabled: kind === 'intake',
+    enabled: kind === 'intake' || kind === 'sitter',
   })
   const people = useMemo<Person[]>(
     () =>
@@ -183,6 +215,19 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         : [],
     [cercleData],
   )
+  // D-19 — only household MEMBERS with a phone on file can be reached; a contact
+  // isn't "a parent" in the app's model.
+  const reachableParents = useMemo(() => people.filter((p) => p.kind === 'member' && p.phone), [people])
+
+  // D-19 — the sitter card's own preview payload (the operator-preview branch of the
+  // exact endpoint HandoffPage reads), so the gap notice reflects reality. Shares its
+  // cache with an actual « Aperçu » open of the same kind.
+  const { data: sitterPreview } = useQuery({
+    queryKey: guestWindowKey('sitter'),
+    queryFn: () => api<SitterWindowLike>('guest/window?kind=sitter'),
+    enabled: kind === 'sitter',
+  })
+  const sitterGaps = useMemo(() => (kind === 'sitter' ? handoffGaps(sitterPreview) : []), [kind, sitterPreview])
 
   function chooseKind(k: GuestKind) {
     setKind(k)
@@ -191,6 +236,17 @@ export function GuestSection({ help }: { help?: HelpMode }) {
     setTargetKey(null) // the recipient picker only applies to intake
     setTargetText('')
     setStandingLabel('')
+    setReachParent(false) // the reach-parent opt-in only applies to sitter
+    setReachParentKey(null)
+  }
+
+  function goToGap(g: HandoffGap) {
+    const route = GAP_ROUTE[g]
+    if (route) {
+      navigate(route)
+      return
+    }
+    document.getElementById(SHARE_INFO_EDITOR_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const standing = ttl === STANDING_SENTINEL
@@ -199,6 +255,12 @@ export function GuestSection({ help }: { help?: HelpMode }) {
     if (busy) return
     if (standing && !standingLabel.trim()) {
       setErr(t.guest.standingNameRequired)
+      return
+    }
+    // D-19 — the checkbox is a no-op without a picked target; require one rather than
+    // silently minting a plain sitter link the operator thought carried a number.
+    if (kind === 'sitter' && reachParent && !reachParentKey) {
+      setErr(t.guest.reachParentRequired)
       return
     }
     setBusy(true)
@@ -214,6 +276,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           ...(kind === 'intake'
             ? { ...(targetKey ? { targetKey } : {}), fields: encodeIntakeScope(scope) }
             : {}),
+          ...(kind === 'sitter' && reachParent && reachParentKey ? { targetKey: reachParentKey } : {}),
         },
       })
       const path = KINDS.find((k) => k.kind === kind)?.path ?? '/board'
@@ -286,6 +349,67 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           <StatusMessage tone="info" icon="warning-bold">
             {t.guest.kindShowcaseWarn}
           </StatusMessage>
+        )}
+
+        {/* D-19 — the sitter card is the strongest guest surface in the app, and it
+            fails exactly once: minted over missing data. Show what the card will
+            actually contain, with a per-gap deep link to go fill it — never blocking
+            the mint below. */}
+        {kind === 'sitter' && sitterGaps.length > 0 && (
+          <div className="operator__seg">
+            <StatusMessage tone="info" icon="warning-bold">
+              {t.guest.sitterMissingLabel} {sitterGaps.map((g) => t.guest[GAP_LABEL_KEY[g]]).join(', ')}
+            </StatusMessage>
+            <Cluster>
+              {sitterGaps.map((g) => (
+                <button key={g} type="button" className="btn btn--sm" onClick={() => goToGap(g)}>
+                  {t.guest[GAP_LABEL_KEY[g]]} — {t.guest.sitterMissingComplete}
+                </button>
+              ))}
+            </Cluster>
+            <p className="operator__hint mono">{t.guest.sitterMissingHint}</p>
+          </div>
+        )}
+
+        {/* D-19 — opt-in « Joindre un parent »: mid-evening plan changes get a
+            channel. Off by default; the picker only offers MEMBERS with a phone
+            on file (a contact isn't "a parent" in the app's model). */}
+        {kind === 'sitter' && (
+          <div className="operator__seg">
+            <label className="operator__check mono">
+              <input
+                type="checkbox"
+                checked={reachParent}
+                onChange={(e) => {
+                  setReachParent(e.target.checked)
+                  if (!e.target.checked) setReachParentKey(null)
+                  setLink(null)
+                }}
+                disabled={busy}
+              />
+              {t.guest.reachParentLabel}
+            </label>
+            {reachParent && (
+              <select
+                className="input"
+                value={reachParentKey ?? ''}
+                onChange={(e) => {
+                  setReachParentKey(e.target.value || null)
+                  setLink(null)
+                }}
+                disabled={busy}
+                aria-label={t.guest.reachParentLabel}
+              >
+                <option value="">{t.guest.reachParentPick}</option>
+                {reachableParents.map((p) => (
+                  <option key={p.key} value={p.key}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <p className="operator__hint mono">{t.guest.reachParentHint}</p>
+          </div>
         )}
 
         {/* Per-person intake: pick WHO the form is for, or leave blank for an open
@@ -446,7 +570,10 @@ export function GuestSection({ help }: { help?: HelpMode }) {
       <IntakeReview help={help} />
       <PostboxReview help={help} />
 
-      <ShareInfoEditor help={help} />
+      {/* D-19 — the wifi gap link (goToGap) scrolls here instead of navigating. */}
+      <div id={SHARE_INFO_EDITOR_ID}>
+        <ShareInfoEditor help={help} />
+      </div>
         </>
       )}
     </>

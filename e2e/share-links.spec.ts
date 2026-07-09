@@ -147,3 +147,157 @@ test.describe('guest link mint — durable (standing) links', () => {
     await expect.poll(() => revokes).toBeGreaterThan(0)
   })
 })
+
+// D-19 (bmad/10) « La carte de la gardienne se complète » — the sitter card's own
+// gap-detector (src/lib/handoffGaps.ts) drives a quiet, non-blocking notice at mint
+// time, plus the opt-in « Joindre un parent » target.
+test.describe('guest link mint — sitter card gaps + reach-parent (D-19)', () => {
+  test.beforeEach(async ({ page }) => {
+    // No links yet by default — ActiveLinksList hides itself until minted/overridden.
+    await page.route('**/api/guest-links', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ links: [] }) }),
+    )
+  })
+
+  test('an incomplete sitter card shows « Il manque » with per-gap deep links, and still mints', async ({ page }) => {
+    // Phone-width overflow guard (CLAUDE.md « Horizontal overflow ») for the new
+    // Cluster of gap chips + the reach-parent checkbox/picker row — the densest new
+    // UI this item adds.
+    await page.setViewportSize({ width: 360, height: 900 })
+    await page.route('**/api/guest/window**', (route) =>
+      route.fulfill(
+        json({
+          kind: 'sitter',
+          householdName: 'Maison Tremblay',
+          wifi: { ssid: 'BellFibe-1234', password: null },
+          houseRules: null,
+          binDay: null,
+          today: { events: [], meals: [] },
+          bedtimeRoutines: [],
+          toKnow: [],
+          emergency: [],
+          pins: [],
+          reachParent: null,
+        }),
+      ),
+    )
+    let mintBody: Record<string, unknown> | null = null
+    await page.route('**/api/guest/start', (route) => {
+      try {
+        mintBody = JSON.parse(route.request().postData() || '{}')
+      } catch {
+        /* no body */
+      }
+      return route.fulfill(
+        json({
+          guestToken: 'tok_e2e',
+          guestId: 'g_e2e',
+          kind: 'sitter',
+          standing: false,
+          label: null,
+          lang: null,
+          ttlSeconds: 43200,
+          expiresAt: 9_999_999_999,
+          targetKey: null,
+        }),
+      )
+    })
+
+    // 'sitter' is the default kind — the notice should already be visible.
+    await page.goto('/settings?tab=settings&sub=guest')
+    await expect(page.getByText('Il manque :')).toBeVisible()
+    // wifi.ssid is set above, so that gap is absent; the other four are present.
+    await expect(page.getByRole('button', { name: 'Contacts d’urgence — Compléter' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Allergies / à savoir — Compléter' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Routines du soir — Compléter' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'En cas de pépin — Compléter' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Wi-Fi — Compléter' })).toHaveCount(0)
+
+    // No horizontal overflow at 360px — the gap Cluster is the densest new row.
+    const overflow = await page.evaluate(() => {
+      const doc = document.documentElement
+      const body = document.querySelector('.hub__body')
+      if (doc.scrollWidth > doc.clientWidth + 1) return 'doc-overflow'
+      if (body && body.scrollWidth > body.clientWidth + 1) return 'body-overflow'
+      return 'ok'
+    })
+    expect(overflow).toBe('ok')
+
+    // The notice never blocks the mint itself.
+    await page.getByRole('button', { name: 'Générer le lien' }).click()
+    await expect(page.getByRole('textbox', { name: 'Partager un accès (lecture seule)' })).toBeVisible()
+    expect(mintBody).toMatchObject({ kind: 'sitter' })
+  })
+
+  test('a per-gap link navigates to complete that section', async ({ page }) => {
+    await page.route('**/api/guest/window**', (route) => route.fulfill(json({ kind: 'sitter', wifi: {} })))
+    await page.goto('/settings?tab=settings&sub=guest')
+    await expect(page.getByRole('button', { name: 'Contacts d’urgence — Compléter' })).toBeVisible()
+    await page.getByRole('button', { name: 'Contacts d’urgence — Compléter' }).click()
+    await expect(page).toHaveURL(/\/cercle/)
+  })
+
+  test('a complete sitter card shows no gaps notice', async ({ page }) => {
+    await page.route('**/api/guest/window**', (route) =>
+      route.fulfill(
+        json({
+          kind: 'sitter',
+          wifi: { ssid: 'BellFibe-1234' },
+          emergency: [{ name: 'Mamie', phone: '450-555-0201' }],
+          toKnow: [{ name: 'Léa', isChild: true, notes: 'Allergie' }],
+          bedtimeRoutines: [{ id: 'r1', name: 'Coucher', who: null, cards: [] }],
+          pins: [{ kind: 'shutoff', label: 'Eau', detail: null, mediaKey: null, home: 'Maison' }],
+          today: { events: [], meals: [] },
+          reachParent: null,
+        }),
+      ),
+    )
+    await page.goto('/settings?tab=settings&sub=guest')
+    await expect(page.getByText('Il manque :')).toHaveCount(0)
+  })
+
+  test('« Joindre un parent » is off by default; checking it and picking a member sends targetKey', async ({ page }) => {
+    await page.route('**/api/guest/window**', (route) => route.fulfill(json({ kind: 'sitter', wifi: {} })))
+    let mintBody: Record<string, unknown> | null = null
+    await page.route('**/api/guest/start', (route) => {
+      try {
+        mintBody = JSON.parse(route.request().postData() || '{}')
+      } catch {
+        /* no body */
+      }
+      return route.fulfill(
+        json({
+          guestToken: 'tok_e2e',
+          guestId: 'g_e2e',
+          kind: 'sitter',
+          standing: false,
+          label: null,
+          lang: null,
+          ttlSeconds: 43200,
+          expiresAt: 9_999_999_999,
+          targetKey: 'member:m1',
+        }),
+      )
+    })
+
+    await page.goto('/settings?tab=settings&sub=guest')
+    const checkbox = page.getByRole('checkbox', { name: 'Joindre un parent' })
+    const picker = page.getByRole('combobox', { name: 'Joindre un parent' })
+    await expect(picker).toHaveCount(0) // the select isn't shown until checked
+
+    // Unchecked mint — no targetKey at all.
+    await page.getByRole('button', { name: 'Générer le lien' }).click()
+    await expect(page.getByRole('textbox', { name: 'Partager un accès (lecture seule)' })).toBeVisible()
+    expect(mintBody).not.toBeNull()
+    expect((mintBody as unknown as Record<string, unknown>).targetKey).toBeUndefined()
+
+    // Check it — the picker appears, listing household members with a phone on file.
+    await checkbox.check()
+    await expect(picker).toBeVisible()
+    await picker.selectOption({ label: 'Maman' })
+
+    mintBody = null
+    await page.getByRole('button', { name: 'Générer le lien' }).click()
+    await expect.poll(() => mintBody).toMatchObject({ kind: 'sitter', targetKey: 'member:m1' })
+  })
+})

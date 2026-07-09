@@ -33,6 +33,9 @@ interface WindowData {
   toKnow?: { name: string; isChild: boolean; notes: string | null }[]
   emergency?: { name: string; phone: string | null }[]
   pins?: { kind: HomePinKind; label: string; detail: string | null; mediaKey: string | null; home: string }[]
+  // D-19 — the opt-in « Joindre un parent » target (an operator's own preview never
+  // carries one — there's no sender to attribute it to).
+  reachParent?: { name: string; phone: string } | null
 }
 
 export function HandoffPage() {
@@ -89,6 +92,25 @@ export function HandoffPage() {
           <GuestExpired />
         ) : (
           <>
+            {/* D-19 — « Joindre un parent », atop Urgence: an opt-in number for
+                mid-evening plan changes, distinct from the household's own emergency
+                contacts below. */}
+            {data?.reachParent && (
+              <section className="handoff__sec">
+                <h3 className="handoff__h mono">
+                  <InlineIcon name="phone-bold" /> {t.guest.reachParentTitle}
+                </h3>
+                <ul className="handoff__rows">
+                  <li className="handoff__row">
+                    <span className="handoff__row-name">{data.reachParent.name}</span>
+                    <a className="btn btn--ghost mono" href={`tel:${data.reachParent.phone}`}>
+                      <InlineIcon name="phone-bold" /> {data.reachParent.phone}
+                    </a>
+                  </li>
+                </ul>
+              </section>
+            )}
+
             {/* Emergency first — the thing you reach for in a hurry. */}
             {emergency.length > 0 && (
               <section className="handoff__sec">
@@ -250,7 +272,7 @@ export function HandoffPage() {
               </section>
             )}
 
-            {!isLoading && events.length === 0 && meals.length === 0 && routines.length === 0 && toKnow.length === 0 && emergency.length === 0 && allPins.length === 0 && !wifi?.ssid && !data?.houseRules && !data?.binDay && (
+            {!isLoading && !data?.reachParent && events.length === 0 && meals.length === 0 && routines.length === 0 && toKnow.length === 0 && emergency.length === 0 && allPins.length === 0 && !wifi?.ssid && !data?.houseRules && !data?.binDay && (
               <EmptyState>{t.shareMode.empty}</EmptyState>
             )}
           </>

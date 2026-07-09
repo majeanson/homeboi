@@ -2350,6 +2350,18 @@ export const GUIDE: GuideEntry[] = [
           en: 'A regular sitter or a grandma doesn’t need to ask for a fresh link every week — and knows their note was actually read.',
         },
       },
+      {
+        // D-19 (bmad/10) « La carte de la gardienne se complète ».
+        label: { fr: 'La carte gardienne te montre ses trous', en: 'The sitter card shows you its own gaps' },
+        detail: {
+          fr: 'En choisissant « Gardienne », un petit avis discret liste ce qui manque encore (contacts d’urgence, à savoir, routines du soir, wifi, en cas de pépin) — touche un élément pour aller le compléter. Ça n’empêche jamais de générer le lien : une section vide reste juste vide pour la gardienne. Tu peux aussi cocher « Joindre un parent » et choisir qui — la carte affiche alors son numéro tout en haut, pour un changement de plan en cours de soirée.',
+          en: 'When you pick “Sitter”, a small quiet notice lists what’s still missing (emergency contacts, things to know, bedtime routines, wifi, in case of trouble) — tap an item to go complete it. It never stops you from generating the link — an empty section just stays empty for the sitter. You can also tick “Reach a parent” and pick who — the card then shows their number right at the top, for a plan change mid-evening.',
+        },
+        why: {
+          fr: 'La carte gardienne est le lien le plus utilisé de l’appli — mieux vaut voir ses trous avant de l’envoyer que d’en entendre parler à 19 h.',
+          en: 'The sitter card is the most-used link in the app — better to see its gaps before sending it than to hear about them at 7 pm.',
+        },
+      },
     ],
   },
   {

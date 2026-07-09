@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'carte-gardienne',
+    text: {
+      fr: 'Nouveau : le lien « Gardienne » te montre maintenant ce qui manque encore avant de l’envoyer, et une case « Joindre un parent » optionnelle.',
+      en: 'New: the “Sitter” link now shows you what’s still missing before you send it, plus an optional “Reach a parent” checkbox.',
+    },
+    card: 'share-access',
+  },
+  {
     id: 'ask',
     text: {
       fr: 'Nouveau : touche le micro à côté de la loupe pour « Demander à la maison » — une question à voix haute sur tes soupers, rendez-vous, anniversaires, le cercle ou l’entretien.',

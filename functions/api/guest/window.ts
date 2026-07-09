@@ -207,7 +207,26 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .all<{ kind: string; label: string; detail: string | null; media_key: string | null; home: string }>()
   const pins = pinRows.results.map((p) => ({ kind: p.kind, label: p.label, detail: p.detail, mediaKey: p.media_key, home: p.home }))
 
-  return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency, pins })
+  // D-19 — « Joindre un parent »: an opt-in target the operator binds into the mint
+  // (guest/start.ts, `targetKey: 'member:<id>'`) — the SAME signed-slot mechanism
+  // intake uses for its per-person link, validated in-household right here rather
+  // than at mint time (mirrors intakeGreeting below). Absent, not a member, or the
+  // member has no phone on file → null; an operator's own preview never carries a
+  // token target, so it's always null there too (there's no sender to attribute it to).
+  let reachParent: { name: string; phone: string } | null = null
+  if (actor.scope === 'guest' && actor.guestTargetKey) {
+    const sep = actor.guestTargetKey.indexOf(':')
+    const k = sep > 0 ? actor.guestTargetKey.slice(0, sep) : ''
+    const id = sep > 0 ? actor.guestTargetKey.slice(sep + 1) : ''
+    if (k === 'member' && id) {
+      const r = await ctx.env.DB.prepare('SELECT display_name, phone FROM members WHERE id = ? AND household_id = ?')
+        .bind(id, hh)
+        .first<{ display_name: string; phone: string | null }>()
+      if (r?.phone) reachParent = { name: r.display_name, phone: r.phone }
+    }
+  }
+
+  return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency, pins, reachParent })
 })
 
 // The intake form greeting (the 'intake' GuestKind). Returns ONLY the household

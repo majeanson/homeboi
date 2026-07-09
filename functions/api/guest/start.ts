@@ -51,11 +51,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   const ttlSeconds = standing ? STANDING_TTL : clampShareTtl(kind, body?.ttlSeconds)
 
-  // A per-person intake link binds the addressed person into the SIGNED token so it
-  // can't be retargeted by editing the URL. Only meaningful for 'intake'; ignored
-  // for every other kind (a curated/showcase link has no target).
+  // A per-person link binds the addressed person into the SIGNED token so it can't
+  // be retargeted by editing the URL. Meaningful for 'intake' (who the form is for)
+  // and, since D-19, 'sitter' (the opt-in « Joindre un parent » — which member's
+  // phone the card shows); ignored for every other kind (showcase/welcome/family/
+  // postbox have no target). Validated in-household at READ time (guest/window.ts),
+  // not here — mirrors intake exactly (a bogus id just yields nothing back).
   const targetKey =
-    kind === 'intake' && typeof body?.targetKey === 'string' && body.targetKey ? body.targetKey : null
+    (kind === 'intake' || kind === 'sitter') && typeof body?.targetKey === 'string' && body.targetKey
+      ? body.targetKey
+      : null
 
   // Field scope: which optional sections the intake form asks for. Clamp to the
   // valid 4-bit range; anything out of range (or non-intake) → null = ask everything.

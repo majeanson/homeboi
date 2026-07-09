@@ -2300,6 +2300,22 @@ export const FR = {
       'Note : par défaut, l’accès s’éteint tout seul à la fin de la durée et ne peut pas être révoqué avant. Choisis « Durable » pour un lien nommé qui reste actif jusqu’à ce que tu le révoques.',
     banner: 'Accès invité — lecture seule. Tu peux regarder, mais pas modifier.',
     demoBadge: 'Démo — lecture seule',
+    // D-19 (bmad/10) « La carte de la gardienne se complète » — a quiet, non-blocking
+    // notice at mint time (kind === 'sitter') showing what the card will actually
+    // contain, plus the opt-in « Joindre un parent » target.
+    sitterMissingLabel: 'Il manque :',
+    sitterMissingHint: 'Le lien fonctionne quand même — ces sections seront simplement vides pour la gardienne.',
+    sitterMissingComplete: 'Compléter',
+    missingEmergency: 'Contacts d’urgence',
+    missingToKnow: 'Allergies / à savoir',
+    missingBedtimeRoutines: 'Routines du soir',
+    missingWifi: 'Wi-Fi',
+    missingPins: 'En cas de pépin',
+    reachParentLabel: 'Joindre un parent',
+    reachParentHint: 'Ajoute un numéro à appeler si le plan change en cours de soirée. Facultatif.',
+    reachParentPick: 'Choisir qui…',
+    reachParentRequired: 'Choisis qui la gardienne peut joindre, ou décoche « Joindre un parent ».',
+    reachParentTitle: 'Joindre un parent',
   },
   postbox: {
     // The relative-facing message drop (the 'postbox' share link).

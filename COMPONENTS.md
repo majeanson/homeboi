@@ -226,7 +226,20 @@ one), `guestRate.ts`'s flood cap scales 400 vs 40 for a standing token. Postbox
 reçu-✓: `guest/window.ts`'s postbox branch returns the guest's own last-accepted
 message (by `guest_id`) so `Postbox.tsx` shows one quiet line on the sender's next
 visit (+ the missing `isError → GuestExpired`, so a revoked durable link reads
-correctly instead of a stuck form)];
+correctly instead of a stuck form)]
+[D-19, bmad/10: « La carte de la gardienne se complète » — pure `lib/handoffGaps.ts`
+(`handoffGaps(data)`) reads the SAME operator-preview payload
+(`guest/window?kind=sitter`) `HandoffPage.tsx` renders and returns which of
+`emergency`/`toKnow`/`bedtimeRoutines`/`wifiSsid`/`pins` are empty; when
+`kind === 'sitter'`, `operator/guest.tsx` shows a quiet « Il manque : … » notice
+with a per-gap deep link (`/cercle`, `/settings?tab=cercle&sub=members`,
+`/routines`, scroll-to the in-page `ShareInfoEditor`, `/cercle?section=carnets`) —
+advisory only, it never blocks minting. Plus an opt-in « Joindre un parent »
+checkbox + member picker (members with a phone on file only) riding the SAME
+signed `target_key` slot intake uses (`targetKey: 'member:<id>'`, validated
+in-household at read time, not mint time — mirrors `intakeGreeting`);
+`guest/window.ts`'s sitter branch resolves it to `reachParent: {name, phone} |
+null`, rendered atop Urgence on `HandoffPage.tsx` as a `tel:` line];
 `operator/ambient.tsx` — the Réglages ▸ Affichage ▸ Mode veille settings, `lib/ambient.ts`;
 `operator/idleDebug.tsx` — the Réglages ▸ Debug idle tester: shrink the idle
 window to seconds or force the screensaver/warn/drift, via `lib/idleDebug.ts`; and

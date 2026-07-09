@@ -2216,6 +2216,22 @@ export const EN: typeof FR = {
       'Note: by default, access turns itself off at the end of its duration and can’t be revoked before then. Pick “Durable” for a named link that stays active until you revoke it.',
     banner: 'Guest access — read-only. You can look, but not change anything.',
     demoBadge: 'Demo — read-only',
+    // D-19 (bmad/10) “The sitter card completes itself” — a quiet, non-blocking
+    // notice at mint time (kind === 'sitter') showing what the card will actually
+    // contain, plus the opt-in “Reach a parent” target.
+    sitterMissingLabel: 'Missing:',
+    sitterMissingHint: 'The link still works — those sections will just be empty for the sitter.',
+    sitterMissingComplete: 'Complete',
+    missingEmergency: 'Emergency contacts',
+    missingToKnow: 'Allergies / things to know',
+    missingBedtimeRoutines: 'Bedtime routines',
+    missingWifi: 'Wifi',
+    missingPins: 'In case of trouble',
+    reachParentLabel: 'Reach a parent',
+    reachParentHint: 'Add a number to call if plans change mid-evening. Optional.',
+    reachParentPick: 'Choose who…',
+    reachParentRequired: 'Pick who the sitter can reach, or uncheck “Reach a parent”.',
+    reachParentTitle: 'Reach a parent',
   },
   postbox: {
     // The relative-facing message drop (the 'postbox' share link).

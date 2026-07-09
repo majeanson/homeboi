@@ -412,14 +412,26 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     _(reuse: guest-links table + guestScope allowlists, HandoffPage, Postbox,
     GuestExpired.)_
 19. ✅ **La carte de la gardienne se complète** [S] ◐ — _garde (2026-07-08)_
-    — the sitter card is the strongest guest surface in the app, and it
-    fails exactly once: when minted over missing data, the sitter's only
-    screen is a terminal empty state. At mint time, show the operator what
-    the card will actually contain (« il manque : contacts d'urgence,
-    allergies — compléter ? ») before the link goes out; and add one opt-in
-    « joindre un parent » line (the operator's number) so mid-evening plan
-    changes have a channel. _(reuse: HandoffPage sections know their own
-    emptiness; ShareInfoEditor; Aperçu already exists on share links.)_
+    — **SHIPPED 2026-07-09** — the sitter card is the strongest guest
+    surface in the app, and it fails exactly once: when minted over
+    missing data, the sitter's only screen is a terminal empty state. At
+    mint time, show the operator what the card will actually contain
+    (« il manque : contacts d'urgence, allergies — compléter ? ») before
+    the link goes out; and add one opt-in « joindre un parent » line (the
+    operator's number) so mid-evening plan changes have a channel. Pure
+    `src/lib/handoffGaps.ts` reads the SAME operator-preview payload
+    (`guest/window?kind=sitter`) `HandoffPage.tsx` renders, and
+    `operator/guest.tsx` shows the gaps as a quiet, per-gap deep-link
+    block (`/cercle`, `/settings?tab=cercle&sub=members`, `/routines`, the
+    in-page `ShareInfoEditor`, `/cercle?section=carnets`) — never blocking
+    the mint. « Joindre un parent » rides the same signed `target_key`
+    slot intake uses (`targetKey: 'member:<id>'`, validated in-household
+    at read time); `guest/window.ts`'s sitter branch resolves it to
+    `reachParent: {name, phone} | null`, rendered atop Urgence on
+    `HandoffPage.tsx` as a `tel:` line. No migration (`target_key` exists
+    since 0098). _(reuse: HandoffPage sections know their own emptiness;
+    ShareInfoEditor; Aperçu already exists on share links; intake's
+    target_key pattern.)_
 20. ❌ ~~**Les rendez-vous qui reviennent**~~ [S] ◐ — _rejeté (Marc,
     2026-07-08). Do not re-propose._ ~~Dentist every 6 months, coiffeur, the
     vet via the pet's carnet: seed-shaped recurring appointments per member,

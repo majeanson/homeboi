@@ -42,3 +42,50 @@ test('/welcome: a valid link shows content, never the expired state', async ({ p
   await expect(page.getByText('BellFibe-1234')).toBeVisible()
   await expect(page.locator('.guest-expired')).toHaveCount(0)
 })
+
+// D-19 (bmad/10) « La carte de la gardienne se complète » — the opt-in « Joindre un
+// parent » target renders ATOP the Urgence section as a tel: line, and is absent
+// when the operator never turned it on (reachParent: null).
+test('/handoff: « Joindre un parent » shows a tel: line atop Urgence when set', async ({ page }) => {
+  await mockApi(page)
+  await stubWindow(page, 200, {
+    kind: 'sitter',
+    householdName: 'Maison Tremblay',
+    wifi: { ssid: null, password: null },
+    houseRules: null,
+    binDay: null,
+    today: { events: [], meals: [] },
+    bedtimeRoutines: [],
+    toKnow: [],
+    emergency: [{ name: 'Mamie', phone: '450-555-0201' }],
+    pins: [],
+    reachParent: { name: 'Papa', phone: '514-555-0102' },
+  })
+  await seedState(page, { theme: 'day', lang: 'fr' })
+  await page.goto('/handoff')
+  await expect(page.getByText('Joindre un parent')).toBeVisible()
+  const call = page.getByRole('link', { name: /514-555-0102/ })
+  await expect(call).toBeVisible()
+  await expect(call).toHaveAttribute('href', 'tel:514-555-0102')
+})
+
+test('/handoff: no « Joindre un parent » line when the operator left it off', async ({ page }) => {
+  await mockApi(page)
+  await stubWindow(page, 200, {
+    kind: 'sitter',
+    householdName: 'Maison Tremblay',
+    wifi: { ssid: null, password: null },
+    houseRules: null,
+    binDay: null,
+    today: { events: [], meals: [] },
+    bedtimeRoutines: [],
+    toKnow: [],
+    emergency: [{ name: 'Mamie', phone: '450-555-0201' }],
+    pins: [],
+    reachParent: null,
+  })
+  await seedState(page, { theme: 'day', lang: 'fr' })
+  await page.goto('/handoff')
+  await expect(page.getByText('Mamie')).toBeVisible() // the card did load
+  await expect(page.getByText('Joindre un parent')).toHaveCount(0)
+})
