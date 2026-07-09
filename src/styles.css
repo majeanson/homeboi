@@ -57,6 +57,9 @@
 /* « Mes habitudes » board glance card only — eager because the board renders it; the
    check-in scene's own styles stay lazy in styles/habits.css (B-11). */
 @import './styles/board/habitudes-card.css';
+/* The board's widget-space layout engine (CSS Grid + measured row spans). After the
+   card slices so a card's own chrome is already declared when the grid places it. */
+@import './styles/board/widget-grid.css';
 /* Ambient screensaver — after the board/* slices + photos.css so `.ambient .photo-frame` wins. */
 @import './styles/ambient.css';
 @import './styles/profile.css';

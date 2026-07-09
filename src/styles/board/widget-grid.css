@@ -1,0 +1,53 @@
+/* ---- WidgetGrid: the board's widget-space layout engine --------------------- */
+/* Replaces the old `columns: 300px` multi-column masonry. See the long note in
+   components/board/WidgetGrid.tsx for WHY; the short version: multi-column gave
+   free gap-filling but only two widths (one column, or `column-span: all`) and it
+   re-flowed cards mid-drag. A fine 8px row ruler + a measured `grid-row-end: span N`
+   per card buys back the gap-filling AND gives real widget widths.
+
+   `--wg-row` and `--wg-gap` are LOAD-BEARING: WidgetGrid.tsx derives every row span
+   from them (`WG_ROW` / `WG_GAP`). Change one, change both, or every card's height
+   is quietly wrong. A card spanning N rows also covers the N-1 gaps between them —
+   that leftover gap after the item IS the gutter, which is why cards inside a slot
+   carry no bottom margin of their own. */
+.wg {
+  --wg-row: 8px;
+  --wg-gap: 16px;
+  display: grid;
+  grid-template-columns: repeat(var(--wg-cols, 1), minmax(0, 1fr));
+  grid-auto-rows: var(--wg-row);
+  /* `dense` backfills the hole a short card leaves. The trade: it can pull a later
+     card up into an earlier gap, so visual order may depart from stored order. That
+     is the price of masonry-with-spans — drop the keyword to get ragged bottoms back. */
+  grid-auto-flow: row dense;
+  gap: var(--wg-gap);
+  align-items: start;
+}
+
+/* The grid item. Owns placement only — never fill, radius or shadow: the card inside
+   draws its own look, so it survives being moved to another zone (see `.bento` in
+   board/grid.css). `min-width: 0` keeps a long unbreakable row (a note, a URL) from
+   forcing the column wider than its track — the recurring horizontal-overflow bug. */
+.wg-slot {
+  grid-row-end: span var(--wg-span-rows, 1);
+  grid-column-end: span var(--wg-span-cols, 1);
+  min-width: 0;
+}
+.wg-slot__inner {
+  min-width: 0;
+}
+
+/* Cards were written for a multi-column flow, where each tile carried its own bottom
+   rhythm (`margin: 0 0 1rem`) because multi-column has no `gap`. The grid owns that
+   rhythm now, so strip the card root's block margins — otherwise every gutter doubles
+   and a spanned card's measured height includes margin it won't actually use. */
+.wg-slot__inner > * {
+  margin-block: 0;
+}
+
+/* A card whose mode is `auto` and which reports itself empty collapses out of the
+   flow entirely — `hidden` removes it from grid placement, so no ghost row remains.
+   It stays MOUNTED (that is how a self-fetching card knows it is empty at all). */
+.wg-slot[hidden] {
+  display: none;
+}
