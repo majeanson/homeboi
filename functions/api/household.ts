@@ -2,7 +2,7 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, householdCashierExcludedStores, storeKey } from '../_lib/stores'
-import { householdMealSlotPrefs, cleanColors, cleanHidden } from '../_lib/mealSlots'
+import { householdMealSlotPrefs, cleanColors, cleanHidden, setHouseholdMealLayout } from '../_lib/mealSlots'
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
 import { householdReserveLocations, cleanReserveLocations } from '../_lib/reserveLocations'
 import { householdCars, cleanCars } from '../_lib/carPrefs'
@@ -58,6 +58,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     cashierExcludedStores,
     mealColors: meals.colors,
     mealHidden: meals.hidden,
+    mealOrder: meals.order,
+    mealHero: meals.hero,
+    mealHours: meals.hours,
     measureColors,
     reserveLocations,
     cars,
@@ -77,6 +80,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     cashierExcludedStores?: string[]
     mealColors?: Record<string, string>
     mealHidden?: string[]
+    mealOrder?: unknown // slot display order
+    mealHero?: unknown // the day's headline slot
+    mealHours?: unknown // { slot: startMinuteOfDay } — merged onto the stored map
     measureColors?: Record<string, string>
     reserveLocations?: unknown
     cars?: unknown
@@ -157,6 +163,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare('UPDATE households SET meal_slot_hidden = ?, updated_at = ? WHERE id = ?')
       .bind(hidden.length ? JSON.stringify(hidden) : null, nowSec(), actor.householdId)
       .run()
+  }
+
+  // The meal LAYOUT trio — display order, hero slot, per-slot start times. Rides
+  // household_preferences under key 'mealSlots' (not a `households` column, DB-6).
+  // Each is only touched when its key is present, so the reorder control, the hero
+  // picker and an hour field save independently; `mealHours` merges onto the stored
+  // map, so one changed hour never resets the other four.
+  if (body && ('mealOrder' in body || 'mealHero' in body || 'mealHours' in body)) {
+    const patch: { order?: unknown; hero?: unknown; hours?: unknown } = {}
+    if ('mealOrder' in body) patch.order = body.mealOrder
+    if ('mealHero' in body) patch.hero = body.mealHero
+    if ('mealHours' in body) patch.hours = body.mealHours
+    await setHouseholdMealLayout(ctx.env, actor.householdId, patch)
   }
 
   // Per-tool measure colours: a {swatchId: hex} map. Only valid pairs survive; an
@@ -279,6 +298,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     cashierExcludedStores,
     mealColors: meals.colors,
     mealHidden: meals.hidden,
+    mealOrder: meals.order,
+    mealHero: meals.hero,
+    mealHours: meals.hours,
     measureColors,
     reserveLocations,
     cars,

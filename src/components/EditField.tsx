@@ -44,6 +44,17 @@ export interface EditFieldProps {
   /** From useVoiceInput → mic inside the box + a VoiceStatus line below. */
   voice?: VoiceInput
   voiceLabel?: string
+  /** A quiet glyph INSIDE the box, left of the text (what `.sheet__field` used to
+   *  draw by hand). Decorative — the field's aria-label carries the meaning. */
+  leadingIcon?: IconName
+  /** Extra affordances INSIDE the box, after the mic — a peer of the clear ✕ and
+   *  the mic, not a row action. The attach 📎 (useMemoAttach) rides here. Style
+   *  them with `edit-field__icon-btn` so all three read as one field. */
+  boxActions?: ReactNode
+  /** Commit even when the text is empty — for a field whose payload can come from
+   *  somewhere else (an attached memo). The HOST must then reject a truly empty
+   *  submit; EditField only stops guarding on `value`. */
+  allowEmpty?: boolean
   placeholder?: string
   ariaLabel?: string
   autoFocus?: boolean
@@ -93,6 +104,9 @@ export function EditField({
   clearable = true,
   voice,
   voiceLabel,
+  leadingIcon,
+  boxActions,
+  allowEmpty = false,
   placeholder,
   ariaLabel,
   autoFocus,
@@ -119,7 +133,7 @@ export function EditField({
 
   const commit = () => {
     if (!onSubmit || disabled || busy) return
-    if (!value.trim()) return
+    if (!value.trim() && !allowEmpty) return
     onSubmit(value)
   }
 
@@ -148,8 +162,11 @@ export function EditField({
   // Scope on `.edit-field` (the root in BOTH modes), never `form`: in div mode
   // `closest('form')` resolves to the OUTER composite form, so a blur to any
   // sibling host field would wrongly suppress the commit.
+  // `allowEmpty` deliberately does NOT relax this: a blur is an ambient event, and
+  // auto-committing an empty field on focus-out would fire on every stray tap.
+  // Only an explicit Enter / submit press may commit an empty (attachment-only) value.
   const handleBlur = (e: React.FocusEvent) => {
-    if (!commitOnBlur) return
+    if (!commitOnBlur || !value.trim()) return
     const next = e.relatedTarget as Node | null
     if (next && e.currentTarget.closest('.edit-field')?.contains(next)) return
     commit()
@@ -161,7 +178,7 @@ export function EditField({
   }
 
   const showIconSubmit = !submitLabel && submitIcon != null && !!onSubmit
-  const submitDisabled = disabled || busy || !value.trim()
+  const submitDisabled = disabled || busy || (!value.trim() && !allowEmpty)
 
   if (hidden) return null
 
@@ -171,6 +188,11 @@ export function EditField({
       <div className="edit-field__row">
         {leading}
         <div className="edit-field__box">
+          {leadingIcon && (
+            <span className="edit-field__lead" aria-hidden="true">
+              <Icon name={leadingIcon} size={20} />
+            </span>
+          )}
           {multiline ? (
             <textarea
               ref={inputRef as React.Ref<HTMLTextAreaElement>}
@@ -211,6 +233,7 @@ export function EditField({
             </button>
           )}
           {voice && <VoiceButton voice={voice} label={voiceLabel ?? t.capture.voice} />}
+          {boxActions}
         </div>
 
         {submitLabel && (

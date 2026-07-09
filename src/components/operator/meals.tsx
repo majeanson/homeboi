@@ -1,34 +1,79 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useT } from '../../i18n'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
-import { SLOT_TIME_ORDER, SLOT_COLOR, SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
+import { BOARD_KEY, HOUSEHOLD_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { MEALS_KEY } from '../kitchen/types'
+import {
+  DEFAULT_HERO,
+  DEFAULT_SLOT_HOURS,
+  DEFAULT_SLOT_ORDER,
+  SLOT_COLOR,
+  SLOT_ICON_NAME,
+  formatSlotHour,
+  isMealSlot,
+  type MealSlot,
+} from '../../lib/mealSlots'
 import { wash } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
+import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { DragPill } from '../DragPill'
 import { ColorPicker } from '../ColorPicker'
-import { Icon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
 import type { HouseholdSettings } from '../../lib/mealPrefs'
 
-// Réglages ▸ Repas. Two household-level settings, shared by every device:
-//   • a COLOUR per meal (déjeuner / dîner / collation / souper) — it tints that
-//     meal everywhere it's shown (board cards, month dots, kitchen).
-//   • a SHOW/HIDE toggle per meal — drops a slot off the glance/plan ("I only
-//     care about souper"). You can still plan a hidden slot in La cuisine.
-// Both persist on /api/household; saving invalidates HOUSEHOLD_KEY so the meal
-// surfaces re-tint/re-filter live (they read the same key via useMealPrefs).
+// Réglages ▸ Repas. Five household-level settings for the meals of a day, shared by
+// every device and all saved on /api/household:
+//   • ORDER — drag the meals into the order YOUR day runs in. Respected everywhere a
+//     meal appears: the kitchen grid + day editor, the board's day list, the month,
+//     the slot pickers — and server-side, in the ORDER BY of every meal read.
+//   • HERO — which meal is the day's headline (« Ce soir » on the board, the kitchen
+//     day summary, « à régler »'s "rien de prévu"). The souper by default.
+//   • HOURS — when each meal is SERVED. This, NOT the drag order, is what « Prochain
+//     repas » (Cuisiner) walks, when the board strikes a meal through, and which part
+//     of the day it's narrated in: reordering the list never claims the dessert comes
+//     before the déjeuner on the clock.
+//   • COLOUR per meal — it tints that meal everywhere it's shown.
+//   • SHOW/HIDE per meal — drops a slot off the glance/plan ("I only care about
+//     souper"). You can still plan a hidden slot in La cuisine.
+// Saving invalidates HOUSEHOLD_KEY so every surface re-reads via useMealPrefs — plus
+// BOARD/MEALS/MONTH when the order or hero changed, because those payloads are sorted
+// and filtered server-side (see `save` below).
+
+// Filter a saved order to the known slots, appending any the server omitted — so the
+// editable list is always complete even against a stale cached payload.
+function normalize(saved: string[] | null | undefined): MealSlot[] {
+  const seen = new Set<MealSlot>()
+  const out: MealSlot[] = []
+  for (const s of saved ?? []) if (isMealSlot(s) && !seen.has(s)) (seen.add(s), out.push(s))
+  for (const s of DEFAULT_SLOT_ORDER) if (!seen.has(s)) out.push(s)
+  return out
+}
+
+// The hour field steps in 30-minute notches: enough control to say "our souper is at
+// 17 h 30", not so much that a wall tablet becomes a time-entry form.
+const STEP_MIN = 30
+const clampMin = (m: number) => Math.max(0, Math.min(24 * 60 - STEP_MIN, m))
+
 export function MealSlotsSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const { lang } = useLang()
   const write = useWrite()
   // Only OVERRIDES live here (a slot absent = its default colour).
   const [colors, setColors] = useState<Record<string, string>>({})
   const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const [order, setOrder] = useState<MealSlot[] | null>(null)
+  const [hero, setHero] = useState<MealSlot>(DEFAULT_HERO)
+  const [hours, setHours] = useState<Record<MealSlot, number>>(DEFAULT_SLOT_HOURS)
+  // Mirrors `hours` so `nudgeHour` can compound rapid taps (see below).
+  const hoursRef = useRef(hours)
+  hoursRef.current = hours
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
   // Read-only guest: the slot rows read as a coloured legend — no recolor / reset /
-  // show-hide controls.
+  // show-hide / reorder controls.
   const ro = isGuest()
 
   useEffect(() => {
@@ -36,24 +81,29 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
       .then((r) => {
         setColors(r.mealColors ?? {})
         setHidden(new Set(r.mealHidden ?? []))
+        setOrder(normalize(r.mealOrder))
+        if (isMealSlot(r.mealHero)) setHero(r.mealHero)
+        setHours({ ...DEFAULT_SLOT_HOURS, ...(r.mealHours as Partial<Record<MealSlot, number>>) })
       })
-      .catch(() => {})
+      .catch(() => setOrder([...DEFAULT_SLOT_ORDER]))
   }, [])
 
-  // One save path for both fields — PATCH sends the next state, then we refresh
-  // the shared household cache so the board/kitchen re-tint without a reload.
+  // One save path for every field — PATCH sends only what changed, then we refresh
+  // the shared household cache so the board/kitchen re-order/re-tint without a reload.
+  // useWrite so a change made offline queues + replays. A server 4xx still throws →
+  // 'bad'; a queued offline write resolves → 'saved' (it'll replay).
+  //
+  // ORDER and HERO also change what the SERVER returns — /api/board filters + sorts by
+  // them, /api/meals and /api/month sort by the order — so those caches must be
+  // invalidated too, not just HOUSEHOLD_KEY. Colours and visibility are client-side
+  // only, so they settle with the household cache alone.
   const save = useCallback(
-    async (nextColors: Record<string, string>, nextHidden: Set<string>) => {
+    async (patch: Record<string, unknown>) => {
       setStatus('idle')
+      const serverSorted = 'mealOrder' in patch || 'mealHero' in patch
+      const affectedKeys = serverSorted ? [HOUSEHOLD_KEY, BOARD_KEY, MEALS_KEY, MONTH_KEY] : [HOUSEHOLD_KEY]
       try {
-        // useWrite so a colour/hide change made offline queues + replays (and
-        // invalidates HOUSEHOLD_KEY so the board/kitchen re-tint). A server 4xx still
-        // throws → 'bad'; a queued offline write resolves → 'saved' (it'll replay).
-        await write('household', {
-          method: 'PATCH',
-          body: { mealColors: nextColors, mealHidden: [...nextHidden] },
-          affectedKeys: [HOUSEHOLD_KEY],
-        })
+        await write('household', { method: 'PATCH', body: patch, affectedKeys })
         setStatus('saved')
       } catch {
         setStatus('bad')
@@ -65,31 +115,95 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
   function pickColor(slot: MealSlot, c: string) {
     const next = { ...colors, [slot]: c }
     setColors(next)
-    save(next, hidden)
+    save({ mealColors: next })
   }
   function resetColor(slot: MealSlot) {
     const next = { ...colors }
     delete next[slot]
     setColors(next)
-    save(next, hidden)
+    save({ mealColors: next })
   }
   function toggleVisible(slot: MealSlot) {
     const next = new Set(hidden)
     if (next.has(slot)) next.delete(slot)
     else next.add(slot)
     setHidden(next)
-    save(colors, next)
+    save({ mealHidden: [...next] })
+  }
+  function pickHero(slot: MealSlot) {
+    setHero(slot)
+    save({ mealHero: slot })
+  }
+  function nudgeHour(slot: MealSlot, delta: number) {
+    // Base the step on the REF, not the render closure: two taps on ± landing in the
+    // same frame must compound, not both read the same pre-render value and lose one.
+    // (A functional `setHours` updater wouldn't help — we need the new value NOW, to
+    // PATCH it, and React doesn't promise the updater has run by the time we return.)
+    const base = hoursRef.current
+    const next = { ...base, [slot]: clampMin(base[slot] + delta) }
+    hoursRef.current = next
+    setHours(next)
+    // Send only the changed slot — the server merges onto the stored map.
+    save({ mealHours: { [slot]: next[slot] } })
+  }
+  // Resets the LAYOUT (order · hero · hours) only. Colours and hidden slots keep their
+  // own per-row reset affordances, so this button never silently undoes them.
+  function resetLayout() {
+    setOrder([...DEFAULT_SLOT_ORDER])
+    setHero(DEFAULT_HERO)
+    setHours({ ...DEFAULT_SLOT_HOURS })
+    save({ mealOrder: DEFAULT_SLOT_ORDER, mealHero: DEFAULT_HERO, mealHours: DEFAULT_SLOT_HOURS })
   }
 
+  // Reuse the shared pointer DnD (same grip + ghost as La liste's reorder and the
+  // aisle-order rows). A drop moves the dragged slot to the target index; we read the
+  // live order at drop time.
+  const dnd = usePointerDnd({
+    onDrop: (fromId, toZone) => {
+      const from = Number(fromId)
+      const to = Number(toZone)
+      if (!order || !Number.isInteger(from) || !Number.isInteger(to) || from === to) return
+      if (from < 0 || from >= order.length || to < 0 || to >= order.length) return
+      const next = [...order]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      setOrder(next)
+      save({ mealOrder: next })
+    },
+    holdMs: DND_HOLD_MS,
+  })
+
+  if (order === null) return <p className="loading mono">{t.common.loading}</p>
+
   return (
-    <OperatorSection title={t.operator.mealColors} help={help} helpKey="mealSlots">
+    <OperatorSection
+      title={t.operator.mealColors}
+      hint={t.operator.mealOrderHint}
+      help={help}
+      helpKey="mealSlots"
+      action={
+        !ro ? (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={resetLayout}>
+            <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.mealReset}
+          </button>
+        ) : undefined
+      }
+    >
       <ul className="operator__list meal-slots">
-        {SLOT_TIME_ORDER.map((slot) => {
+        {order.map((slot, i) => {
           const resolved = colors[slot] ?? SLOT_COLOR[slot]
           const shown = !hidden.has(slot)
           const overridden = slot in colors
+          const isHero = slot === hero
           return (
-            <li key={slot} className={'meal-slots__row' + (shown ? '' : ' is-off')}>
+            <DragPill
+              key={slot}
+              dnd={dnd}
+              index={i}
+              label={t.kitchen.slots[slot]}
+              className={'meal-slots__row' + (shown ? '' : ' is-off') + (isHero ? ' is-hero' : '')}
+              showGrip={!ro}
+            >
               <span className="meal-slots__name">
                 <span
                   className="meal-slots__chip"
@@ -100,6 +214,32 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
                 </span>
                 {t.kitchen.slots[slot]}
               </span>
+
+              {/* When the meal starts — "à partir de". Drives « Prochain repas ». */}
+              <span className="meal-slots__hour">
+                {!ro && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => nudgeHour(slot, -STEP_MIN)}
+                    aria-label={`${t.operator.mealHourEarlier} · ${t.kitchen.slots[slot]}`}
+                  >
+                    <InlineIcon name="minus-bold" />
+                  </button>
+                )}
+                <span className="mono meal-slots__hour-val">{formatSlotHour(hours[slot], lang)}</span>
+                {!ro && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm"
+                    onClick={() => nudgeHour(slot, STEP_MIN)}
+                    aria-label={`${t.operator.mealHourLater} · ${t.kitchen.slots[slot]}`}
+                  >
+                    <InlineIcon name="plus-bold" />
+                  </button>
+                )}
+              </span>
+
               {!ro && (
                 <div className="meal-slots__pick">
                   <ColorPicker value={resolved} onChange={(c) => pickColor(slot, c)} label={t.operator.mealColors} />
@@ -110,6 +250,22 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
                   )}
                 </div>
               )}
+
+              {/* The day's headline meal. A radio, not a toggle — exactly one wins. */}
+              {ro ? (
+                isHero ? <span className="mono meal-slots__hero-tag">{t.operator.mealHero}</span> : null
+              ) : (
+                <button
+                  type="button"
+                  className={'btn mono meal-slots__hero' + (isHero ? ' btn--primary' : ' btn--ghost')}
+                  onClick={() => pickHero(slot)}
+                  aria-pressed={isHero}
+                  title={t.operator.mealHeroHint}
+                >
+                  <InlineIcon name="star-fill" /> {t.operator.mealHero}
+                </button>
+              )}
+
               {ro ? (
                 <span className="mono meal-slots__toggle">
                   {shown ? t.operator.mealVisible : t.operator.mealHidden}
@@ -124,12 +280,16 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
                   {shown ? t.operator.mealVisible : t.operator.mealHidden}
                 </button>
               )}
-            </li>
+            </DragPill>
           )
         })}
       </ul>
+      {/* A hidden hero means no headline anywhere — say so rather than letting the
+          board quietly lose its « Ce soir ». */}
+      {hidden.has(hero) && <StatusMessage tone="info">{t.operator.mealHeroHidden}</StatusMessage>}
       {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
       {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      <DragGhost ghost={dnd.ghost} />
     </OperatorSection>
   )
 }

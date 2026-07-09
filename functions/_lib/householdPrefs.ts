@@ -10,6 +10,12 @@ import { nowSec } from './ids'
 // Callers own their own shape + validation (e.g. functions/_lib/schoolYear.ts) —
 // this module only knows "a household has a JSON blob under a key", nothing about
 // what's inside it.
+//
+// CAVEAT: the isolation is BETWEEN keys, not WITHIN one. A caller that read-modify-
+// writes several fields of one key's blob (as `mealSlots` does for order/hero/hours)
+// can still lose a field when two devices PATCH different fields concurrently: both
+// read the same `current`, and the later write wins wholesale. Acceptable for
+// operator settings; if a key ever needs field-level concurrency, split it.
 
 export async function getPref<T>(env: Env, householdId: string, key: string): Promise<T | null> {
   const row = await env.DB.prepare('SELECT value FROM household_preferences WHERE household_id = ? AND key = ?')

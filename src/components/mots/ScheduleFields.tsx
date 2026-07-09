@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { useT } from '../../i18n'
 
 // The « Plus tard » date+time picker, shared by the mot composer AND the sender-outbox
@@ -50,11 +51,17 @@ export function ScheduleFields({
   time,
   onDate,
   onTime,
+  extraPresets,
 }: {
   date: string
   time: string
   onDate: (v: string) => void
   onTime: (v: string) => void
+  /** Host-specific preset chips appended to the quick row — the mot composer's
+   *  « Me le rappeler » (demain matin, addressed to me), which needs a recipient
+   *  the reschedule sheet doesn't have. Keeps ONE row of presets, not a rival
+   *  top-level button that opened this very panel. */
+  extraPresets?: ReactNode
 }) {
   const fn = useT().mots
   const pick = (k: SchedulePreset) => {
@@ -70,6 +77,7 @@ export function ScheduleFields({
             {fn.preset[k]}
           </button>
         ))}
+        {extraPresets}
       </div>
       <div className="mot-composer__whenrow">
         <input

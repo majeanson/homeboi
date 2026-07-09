@@ -780,6 +780,18 @@
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
+/* « Demander » vs « Classer » — the segment that says which of the two things the
+   mic is about to do (ask a question, or file what you said). Sits above the hint. */
+.ask-sheet__modes {
+  margin-bottom: 0.7rem;
+}
+/* « Classer » — the capture spine, moved here from the ＋ sheet. Stacks its field,
+   the queued/failed lines and the degraded type-picker. */
+.capture-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
 /* A big tap-to-talk target (E-22) — the same shared VoiceButton, scaled up and
    filled sage (the Système/IA tint) so it reads as THE action on this sheet,
    not a small inline field affordance. */

@@ -3,7 +3,7 @@ import { mockApi, seedState } from './mocks'
 
 // Behavioural coverage for the capture AI-off DEGRADE + RE-ROUTE flow — the last
 // blind capture path. When AI is off/unavailable the server files the text as a
-// plain note and returns { degraded: true }; AddSheet then shows the 7 type tiles
+// plain note and returns { degraded: true }; CaptureForm then shows the 7 type tiles
 // DIRECTLY (picking a type is required work, not the optional "Corriger" tweak).
 // Tapping a tile re-POSTs /api/capture with forceType AND undo = the note's rows,
 // so the correction MOVES the capture instead of duplicating it.
@@ -49,12 +49,17 @@ test.beforeEach(async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr' })
 })
 
+// The capture spine moved off the ＋ sheet and onto the header mic
+// (« Parle à la maison » ▸ Classer), so the ＋ sheet's note tile can be a plain note.
 async function openCapture(page: Page, text: string) {
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.locator('.add-fab').click()
-  await expect(page.locator('.sheet.show')).toBeVisible()
-  await page.locator('.sheet__field input').fill(text)
+  await page.locator('.app-head__ask').click()
+  await expect(page.locator('.kit-modal.ask-sheet')).toBeVisible()
+  await page.locator('.ask-sheet__modes button', { hasText: 'Classer' }).click()
+  await page.locator('.capture-form input.edit-field__input').fill(text)
 }
+
+const submitCapture = (page: Page) => page.locator('.capture-form .edit-field__submit').click()
 
 test('an AI-off capture degrades to the type picker (tiles shown directly, not behind « Corriger »)', async ({ page }) => {
   await stubCapture(page)
@@ -66,19 +71,18 @@ test('an AI-off capture degrades to the type picker (tiles shown directly, not b
       (r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/capture',
       { timeout: 20_000 },
     ),
-    page.locator('.sheet form button[type="submit"]').first().click(),
+    submitCapture(page),
   ])
 
   // Degraded confirmation line + the re-file tiles are shown OUTRIGHT — the "Corriger"
   // disclosure is absent (picking a type is required work here, not the optional tweak).
-  // Scope the tiles to the capture form: the board ＋ sheet's mode chooser reuses
-  // .cat-pick (with the same labels) outside the form.
+  // Scope the tiles to the capture form — .cat-pick is also the ＋ sheet mode chooser.
   await expect(page.locator('.capture__routed')).toHaveText('L’IA ne répond pas — choisis le type toi-même.')
   await expect(page.locator('.capture__correct')).toHaveCount(0)
-  await expect(page.locator('.sheet form .cat-pick', { hasText: 'Souper' })).toBeVisible()
-  await expect(page.locator('.sheet form .cat-pick', { hasText: 'Rendez-vous' })).toBeVisible()
+  await expect(page.locator('.capture-form .cat-pick', { hasText: 'Souper' })).toBeVisible()
+  await expect(page.locator('.capture-form .cat-pick', { hasText: 'Rendez-vous' })).toBeVisible()
   // The typed text is KEPT on a degraded route (still needs re-filing).
-  await expect(page.locator('.sheet__field input')).toHaveValue('souper spaghetti jeudi')
+  await expect(page.locator('.capture-form input.edit-field__input')).toHaveValue('souper spaghetti jeudi')
 })
 
 test('picking a type re-routes with forceType and hands the note rows back as undo (moves, not duplicates)', async ({ page }) => {
@@ -86,8 +90,8 @@ test('picking a type re-routes with forceType and hands the note rows back as un
   await page.goto('/board')
   await openCapture(page, 'souper spaghetti jeudi')
 
-  await page.locator('.sheet form button[type="submit"]').first().click()
-  await expect(page.locator('.sheet form .cat-pick', { hasText: 'Souper' })).toBeVisible()
+  await submitCapture(page)
+  await expect(page.locator('.capture-form .cat-pick', { hasText: 'Souper' })).toBeVisible()
 
   // Tapping « Souper » re-POSTs capture with forceType:'meal' AND undo carrying the
   // degraded note's row — so the server drops the note as it files the meal.
@@ -104,10 +108,10 @@ test('picking a type re-routes with forceType and hands the note rows back as un
     })()
   await Promise.all([
     page.waitForRequest(isReroute, { timeout: 20_000 }),
-    page.locator('.sheet form .cat-pick', { hasText: 'Souper' }).click(),
+    page.locator('.capture-form .cat-pick', { hasText: 'Souper' }).click(),
   ])
 
   // The re-file cleared the box and the degraded picker is gone (real route now).
-  await expect(page.locator('.sheet__field input')).toHaveValue('')
+  await expect(page.locator('.capture-form input.edit-field__input')).toHaveValue('')
   await expect(page.locator('.capture__routed')).toHaveText('Ajouté : souper spaghetti jeudi')
 })

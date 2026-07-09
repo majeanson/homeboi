@@ -53,11 +53,16 @@ export function HubHead({
   const nav = useNavigate()
   const { enabled: aiEnabled } = useAi()
   const [askOpen, setAskOpen] = useState(false)
-  // E-22: AI off (binding unset or the household switched it off) → the mic
-  // hides and the loupe alone remains — "degrades to the search box". A guest
-  // (read-only babysitter session) and the toddler lens never see it either
-  // (the same `audience === 'parent'` gate as the loupe below).
-  const showAsk = audience === 'parent' && aiEnabled && !isGuest()
+  // « Parle à la maison » — the ONE voice surface: ask a question (read) or file a
+  // capture (write). A guest (read-only babysitter session) and the toddler lens
+  // never see it (the same `audience === 'parent'` gate as the loupe below).
+  //
+  // It no longer hides when AI is off. It used to — the sheet only asked questions,
+  // and an answer needs the model. But it now also carries « Classer », whose degraded
+  // path (pick the type yourself) is precisely what you need WITHOUT AI. Hiding the
+  // whole mic on `!aiEnabled` would take the capture spine offline with it; AskSheet
+  // instead drops the « Demander » segment and opens straight on « Classer ».
+  const showAsk = audience === 'parent' && !isGuest()
   return (
     <div className="app-head">
       <div className="app-head__main">
@@ -67,8 +72,9 @@ export function HubHead({
         {subtitle != null && <span className="app-head__date mono">{subtitle}</span>}
       </div>
       <div className="app-head__actions">
-        {/* E-22 — « Demande à la maison » : hold the mic, ask a question over the
-            household's own data. Beside the loupe, same corner every tab. */}
+        {/* E-22 — « Parle à la maison » : hold the mic, ask a question over the
+            household's own data or file what you just said. Beside the loupe, same
+            corner every tab. */}
         {showAsk && (
           <button
             type="button"
@@ -105,7 +111,7 @@ export function HubHead({
           still-listening mic (see AskSheet's own header comment). */}
       {askOpen && (
         <Suspense fallback={null}>
-          <AskSheet onClose={() => setAskOpen(false)} />
+          <AskSheet aiEnabled={aiEnabled} onClose={() => setAskOpen(false)} />
         </Suspense>
       )}
     </div>

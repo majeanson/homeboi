@@ -8,6 +8,7 @@ import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
 import { profileMemberId } from '../_lib/profile'
 import { resolveMemberByName } from '../_lib/members'
+import { householdMealLayout } from '../_lib/mealSlots'
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
 // intent-router classifies it; we route it to the right table. Every capture
@@ -78,8 +79,12 @@ async function applyCleanup(env: Env, hh: string, undo: Cleanup[]): Promise<void
 }
 
 // The valid meal slots — the router's proposed slot is checked against these
-// before it reaches the row (mirrors functions/api/meals.ts).
+// before it reaches the row (mirrors functions/api/meals.ts). An unrecognized slot
+// falls back to the household's HERO meal (Réglages ▸ Repas — the souper by
+// default): "tacos jeudi" with no stated meal means the meal the household leads with.
 const MEAL_SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
+const slotOr = (proposed: string | undefined, hero: string): string =>
+  proposed && MEAL_SLOTS.has(proposed) ? proposed : hero
 
 async function routeIntent(
   env: Env,
@@ -167,7 +172,7 @@ async function routeIntent(
       const date = localDayStart(new Date(startAt * 1000))
       const title = p.title || raw
       // Validate the slot the router proposed — never trust it blindly into the row.
-      const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
+      const slot = slotOr(p.slot, (await householdMealLayout(env, actor.householdId)).hero)
       const id = newId()
       // A named person is the cook ("souper tacos jeudi, Marc cuisine") — feeds the
       // board's "ce soir" cook row.
@@ -188,7 +193,7 @@ async function routeIntent(
       if (p.when) {
         const { startAt } = parseWhen(p.when, Date.now())
         const date = localDayStart(new Date(startAt * 1000))
-        const slot = p.slot && MEAL_SLOTS.has(p.slot) ? p.slot : 'supper'
+        const slot = slotOr(p.slot, (await householdMealLayout(env, actor.householdId)).hero)
         const id = newId()
         await env.DB.prepare(
           'INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, created_at, is_leftover) VALUES (?, ?, ?, ?, ?, ?, ?, 1)',

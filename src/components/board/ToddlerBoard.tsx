@@ -156,8 +156,8 @@ export function ToddlerBoard({
         <>
           <div className="today-kid__heroes">
             {/* Supper heroes follow the same show/hide as the parent board. */}
-            {mealPrefs.isVisible('supper') && mealHero(data.tonight, 'tonight')}
-            {mealPrefs.isVisible('supper') && mealHero(data.tomorrowMeal, 'tomorrow')}
+            {mealPrefs.isVisible(model.meals.hero) && mealHero(data.tonight, 'tonight')}
+            {mealPrefs.isVisible(model.meals.hero) && mealHero(data.tomorrowMeal, 'tomorrow')}
             {weatherHero}
           </div>
           <Notes notes={data.notes ?? []} members={data.members} toddler />

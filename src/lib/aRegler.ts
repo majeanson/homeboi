@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { A_REGLER_KEY } from './queryKeys'
+import { slotLabel } from './mealSlots'
 import type { Dict } from '../components/board/types'
 import type { IconName } from '../components/Icon'
 
@@ -43,10 +44,16 @@ export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: strin
     case 'ride':
       return { icon: 'car-bold', text: t.aRegler.ride(f.label) }
     case 'meal-empty':
-      // `sub` carries which day the empty supper is ('today' | 'tomorrow').
+      // `sub` carries which day the empty hero meal is ('today' | 'tomorrow'); `label`
+      // carries the hero SLOT, so a household whose headline is the dîner reads
+      // « Dîner demain à planifier », not « Souper … ». A pre-upgrade cached payload
+      // sent an empty label — fall back to the souper, which is what it meant.
       return {
         icon: 'cooking-pot-bold',
-        text: t.aRegler.mealEmpty(t.aRegler.dayWord[f.sub === 'today' ? 'today' : 'tomorrow']),
+        text: t.aRegler.mealEmpty(
+          slotLabel(f.label || 'supper', t),
+          t.aRegler.dayWord[f.sub === 'today' ? 'today' : 'tomorrow'],
+        ),
       }
     case 'meal-low':
       return { icon: 'carrot-bold', text: t.aRegler.mealLow(f.label, f.sub ?? '') }

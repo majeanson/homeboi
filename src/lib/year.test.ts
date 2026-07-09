@@ -116,6 +116,18 @@ describe('day + range lookups', () => {
     expect(noFetes).toEqual([])
   })
 
+  it('yearPoints survives an /api/year payload missing a bucket', () => {
+    const sec = (y: number, m: number, d: number) => Math.floor(new Date(y, m - 1, d).getTime() / 1000)
+    const from = sec(2026, 7, 1)
+    const to = sec(2027, 7, 1)
+    // An older Worker (or a truncated response) sends only some keys. This runs
+    // inside YearView's render: throwing here would take the whole board down
+    // through the ErrorBoundary, so a missing bucket must read as "no points".
+    const pts = yearPoints({ events: [{ id: 'e1', title: 'Dentiste', day: sec(2026, 8, 15) }] }, { lang: 'fr', holidays: false, from, to })
+    expect(pts.map((p) => p.label)).toEqual(['Dentiste'])
+    expect(yearPoints({}, { lang: 'fr', holidays: false, from, to })).toEqual([])
+  })
+
   it('groupByMonth buckets by local month, newest first, keyed by first-of-month', () => {
     const sec = (y: number, m: number, d: number) => Math.floor(new Date(y, m - 1, d).getTime() / 1000)
     const rows = [

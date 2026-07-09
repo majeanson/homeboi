@@ -621,6 +621,16 @@ button {
   font-size: var(--text-sm);
   box-shadow: none;
 }
+/* A full-width, roomy CTA — the one action a surface exists to commit (a bottom
+   sheet's "Ajouter", a lone "Nouvelle routine"). Opt IN per button. This used to
+   be an implicit context rule (`.sheet .btn`), which stretched EVERY button a
+   sheet happened to contain — including the mic inside a field box and the small
+   chips of a segmented row. A variant can't leak that way. */
+.btn--block {
+  width: 100%;
+  padding: 15px;
+  font-size: 1.05rem;
+}
 /* The destructive confirm button (in-app confirm dialog). Warn ink with white
    text — the one place delete is meant to read as a deliberate, weighty action,
    unlike the quiet recede of an inline row delete. */

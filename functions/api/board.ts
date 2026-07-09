@@ -5,6 +5,7 @@ import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
+import { householdMealLayout } from '../_lib/mealSlots'
 
 interface Ev {
   id: string
@@ -70,6 +71,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealTomorrow = tomorrow
   const mealDayAfter = dayAfter
 
+  // The household's meal layout (Réglages ▸ Repas): which slot is the day's HERO —
+  // « Ce soir », the souper by default — and the display order the day's other meals
+  // are listed in. Read before the batch so both can feed the queries below.
+  const mealLayout = await householdMealLayout(ctx.env, hh)
+  const heroSlot = mealLayout.hero
+
   const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes, scheduleRes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY position, created_at',
@@ -86,17 +93,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, tomorrow, dayAfter)
       .all(),
-    // First supper of today/tomorrow (the headline hero). ORDER BY position so
-    // "first" is deterministic now that a slot can hold several suppers.
+    // First hero meal of today/tomorrow (the headline). ORDER BY position so
+    // "first" is deterministic now that a slot can hold several meals.
     ctx.env.DB.prepare(
-      "SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1",
+      'SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
     )
-      .bind(hh, mealToday, mealTomorrow)
+      .bind(hh, heroSlot, mealToday, mealTomorrow)
       .all(),
     ctx.env.DB.prepare(
-      "SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = 'supper' AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1",
+      'SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
     )
-      .bind(hh, mealTomorrow, mealDayAfter)
+      .bind(hh, heroSlot, mealTomorrow, mealDayAfter)
       .all(),
     // EVERY meal planned for today (all slots, N per slot) — the board shows the
     // full day's table, not just tonight's supper hero. Ordered by time then
@@ -135,7 +142,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       // read — making the list visibly reshuffle on every refetch (e.g. right after
       // a check). The id tiebreaker pins them. Rows never dragged (position NULL)
       // sort after placed ones, so a new item still lands last until it's moved.
-      'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
+      'SELECT id, text, source, added_by, deal_json, search_terms, checked_at, non_urgent FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
     )
       .bind(hh)
       .all(),
@@ -439,19 +446,19 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   homeUpcoming.sort((a, b) => a.at - b.at)
 
-  // Today's meals, ordered through the day (déjeuner → collation) so the board
-  // reads top-to-bottom like a menu. Supper stays the headline hero above; the
-  // client lists the rest here so nothing planned for the day is hidden.
-  // Time-of-day order: déjeuner → dîner → collation → souper → dessert (matches
-  // SLOT_RANK in src/lib/mealSlots.ts). Stable sort, so the SQL position order
-  // holds within a slot that has several meals.
-  const SLOT_ORDER: Record<string, number> = { breakfast: 0, lunch: 1, snack: 2, supper: 3, dessert: 4 }
+  // Today's meals, in the household's slot order (Réglages ▸ Repas; déjeuner →
+  // dîner → collation → souper → dessert out of the box) so the board reads
+  // top-to-bottom like a menu. The hero meal stays the headline above; the client
+  // lists the rest here so nothing planned for the day is hidden. Stable sort, so
+  // the SQL position order holds within a slot that has several meals.
+  const slotRank = new Map(mealLayout.order.map((s, i) => [s as string, i]))
   type DayMeal = { id: string; slot: string; title: string; cook_member_id: string | null; position?: number; is_leftover?: number }
-  const bySlot = (rows: unknown) => (rows as DayMeal[]).sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
+  const bySlot = (rows: unknown) =>
+    (rows as DayMeal[]).sort((a, b) => (slotRank.get(a.slot) ?? 9) - (slotRank.get(b.slot) ?? 9))
   const todayMeals = bySlot(todayMealsRes.results)
   const tomorrowMeals = bySlot(tomorrowMealsRes.results)
-  // All of today's suppers — the board's "Ce soir" lists every one, not just the hero.
-  const tonightMeals = todayMeals.filter((m) => m.slot === 'supper')
+  // All of today's hero meals — the board's "Ce soir" lists every one, not just the first.
+  const tonightMeals = todayMeals.filter((m) => m.slot === heroSlot)
 
   // « L'auto » work windows landing TODAY (#28) — the recurring schedule surfaced on
   // the board agenda, derived (never event rows) like birthdays. Only today's: the
@@ -480,6 +487,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
     tonightMeals,
     tomorrowMeal: tomorrowMeal.results[0] ?? null,
     todayMeals,
+    // WHICH slot the three fields above were filtered by. The client must split the
+    // hero out of `todayMeals` with the SAME slot the server used, not with its own
+    // (possibly newer) household setting — otherwise, in the window between a hero
+    // change and the next board poll, the old hero's meal renders twice and the new
+    // hero's meal disappears. Ship the answer with the data.
+    heroSlot,
     dayNote: dayNoteRes.results[0] ?? null,
     tomorrowMeals,
     tomorrowNote: tomorrowNoteRes.results[0] ?? null,

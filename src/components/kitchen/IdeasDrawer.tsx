@@ -12,6 +12,7 @@ import { imgUrl } from '../../lib/image'
 import { useLoves } from '../../lib/loves'
 import { type Member } from '../../lib/members'
 import { type MealSlot } from '../../lib/mealSlots'
+import { useMealPrefs } from '../../lib/mealPrefs'
 import { MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
@@ -337,7 +338,10 @@ function RecipeRows({
   faces?: (key: string) => ReactNode
 }) {
   const { isOpen, toggle, close } = useSingleOpen()
-  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  const heroSlot = useMealPrefs().hero
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? heroSlot
   return (
     <ul className="kitchen__ideas-list">
       {rows.map((row) => (
@@ -443,7 +447,10 @@ function AiChip({
 }) {
   const t = useT()
   const { isOpen, toggle, close } = useSingleOpen()
-  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  const heroSlot = useMealPrefs().hero
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? heroSlot
   return (
     <div className="ideas-drawer__ai">
       <Cluster>
@@ -538,7 +545,10 @@ function KidChip({
 }) {
   const t = useT()
   const { isOpen, toggle, close } = useSingleOpen()
-  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  const heroSlot = useMealPrefs().hero
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? heroSlot
   if (ideas.length === 0) return <EmptyState>{t.kitchen.ideasDrawer.emptyKid}</EmptyState>
   return (
     <ul className="kitchen__ideas-list ideas-drawer__kid">

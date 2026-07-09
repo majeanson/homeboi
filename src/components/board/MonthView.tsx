@@ -14,7 +14,6 @@ import { localYMD, addLocalDays } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
-import { useTagColors } from '../../lib/queryHooks'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Act } from './Act'
@@ -22,7 +21,8 @@ import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
 import { useEntityDetail } from '../detail/DetailProvider'
-import { buildEvent, buildChore, buildMeal, type DetailCtx } from '../detail/adapters'
+import { buildEvent, buildChore, type DetailCtx } from '../detail/adapters'
+import { useOpenMeal } from '../detail/useOpenMeal'
 import { useEventPeekActions } from '../detail/EventPeekActions'
 import { colorOf, nameOf, type Dict, type Member } from './types'
 
@@ -122,7 +122,8 @@ export function MonthView({
   // bento board uses. The /api/month rows carry slightly different field names, so
   // each onOpen maps them onto the shared builders (components/detail/adapters).
   const detail = useEntityDetail()
-  const detailCtx: DetailCtx = { t, lang, members, recipeFor: useRecipeForMeal(), tagColors: useTagColors() }
+  const detailCtx: DetailCtx = { t, lang, members, recipeFor: useRecipeForMeal() }
+  const openMeal = useOpenMeal(detailCtx)
   // Modify / Delete / Share on an event peek (gating + modals owned by the hook).
   const eventActions = useEventPeekActions()
   // — chore `who` is a NAME on the month payload; recover its id for the face. —
@@ -376,7 +377,7 @@ export function MonthView({
         </span>
         <span className="monthv__legend-item">
           <span className="monthv__dot-icon">
-            <Icon name={SLOT_ICON_NAME.supper} size={12} color="var(--ink-soft)" />
+            <Icon name={SLOT_ICON_NAME[mealPrefs.hero]} size={12} color="var(--ink-soft)" />
           </span>{' '}
           {t.monthView.legendMeals}
         </span>
@@ -489,9 +490,7 @@ export function MonthView({
                 title={`${slotLabel(m.slot)} · ${m.title}`}
                 who={cookLine(m.cook_member_id)}
                 color={mealPrefs.color(m.slot)}
-                onOpen={() =>
-                  detail.open(buildMeal(m, detailCtx, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: selected }))
-                }
+                onOpen={() => openMeal(m, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: selected })}
               />
             ))}
             {(sel?.events ?? []).map((e) =>

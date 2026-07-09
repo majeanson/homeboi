@@ -116,7 +116,12 @@ test('closing the sheet unmounts it; reopening starts fresh (no stale question/a
   await expect(page.locator('.search__answer-text')).toHaveCount(0)
 })
 
-test('AI off hides the mic — the loupe alone remains (degrades to the search box)', async ({ page }) => {
+test('AI off keeps the mic but drops « Demander » — « Classer » alone, with its degraded picker', async ({ page }) => {
+  // The mic USED to hide entirely when AI was off (the sheet only asked questions, and
+  // an answer needs the model). It now also carries « Classer », the capture WRITE
+  // spine, whose degraded path — pick the type yourself — needs no model at all. Hiding
+  // the mic on !aiEnabled would take the write spine offline with it, so instead the
+  // sheet drops the « Demander » segment and opens straight on « Classer ».
   await page.route('**/api/health', async (route) => {
     await route.fulfill({
       status: 200,
@@ -127,8 +132,42 @@ test('AI off hides the mic — the loupe alone remains (degrades to the search b
   await page.goto('/board')
   await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
 
-  await expect(page.locator('.app-head__search')).toBeVisible()
-  await expect(page.locator('.app-head__ask')).toHaveCount(0)
+  // The mic reuses `.app-head__search` for its chrome, so scope the loupe assertion —
+  // with the mic now present (it used to hide here) a bare `.app-head__search` matches
+  // both and trips Playwright's strict mode.
+  await expect(page.locator('.app-head__search:not(.app-head__ask)')).toBeVisible()
+  await expect(page.locator('.app-head__ask')).toBeVisible()
+
+  await page.locator('.app-head__ask').click()
+  await expect(page.locator('.kit-modal.ask-sheet')).toBeVisible()
+  // One thing left to do → no segment (a one-option segmented control is noise),
+  // and the capture form is what's on screen. No question field, no answer card.
+  await expect(page.locator('.ask-sheet__modes')).toHaveCount(0)
+  await expect(page.locator('.capture-form')).toBeVisible()
+  await expect(page.locator('.ask-sheet__mic')).toHaveCount(0)
+})
+
+test('the mic offers both « Demander » and « Classer », and switching modes drops the answer', async ({ page }) => {
+  await mockAsk(page, () => ({ answer: 'Spaghetti jeudi.', kind: 'meal' }))
+  await openAsk(page)
+
+  // Demander is the default when AI is on: the big tap-to-talk mic + the typed fallback.
+  await expect(page.locator('.ask-sheet__mic')).toBeVisible()
+  await askTyped(page, 'on mange quoi jeudi ?')
+  await expect(page.locator('.search__answer-text')).toContainText('Spaghetti jeudi.')
+
+  // Switching to « Classer » swaps the surface to the capture spine and clears the
+  // answer — a reply still sitting under a label that now means "file this" is exactly
+  // the ambiguity the segment exists to remove.
+  await page.locator('.ask-sheet__modes button', { hasText: 'Classer' }).click()
+  await expect(page.locator('.capture-form')).toBeVisible()
+  await expect(page.locator('.search__answer-text')).toHaveCount(0)
+  await expect(page.locator('.ask-sheet__mic')).toHaveCount(0)
+
+  // …and back.
+  await page.locator('.ask-sheet__modes button', { hasText: 'Demander' }).click()
+  await expect(page.locator('.ask-sheet__mic')).toBeVisible()
+  await expect(page.locator('.capture-form')).toHaveCount(0)
 })
 
 // Phone-width overflow sweep (see CLAUDE.md "Horizontal overflow"): a per-element

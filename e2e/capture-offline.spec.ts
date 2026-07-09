@@ -28,23 +28,25 @@ test('an offline capture queues (queued confirmation, input cleared, pending cou
   })
 
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.locator('.add-fab').click()
-  await expect(page.locator('.sheet.show')).toBeVisible()
-  await page.locator('.sheet__field input').fill('Acheter du lait')
+  // The capture spine lives on the header mic now (« Parle à la maison » ▸ Classer).
+  await page.locator('.app-head__ask').click()
+  await expect(page.locator('.kit-modal.ask-sheet')).toBeVisible()
+  await page.locator('.ask-sheet__modes button', { hasText: 'Classer' }).click()
+  await page.locator('.capture-form input.edit-field__input').fill('Acheter du lait')
 
   // Go offline — the offline bar appearing confirms navigator.onLine now reads
   // false, exactly the signal writeWith checks to queue instead of send.
   await page.context().setOffline(true)
   await expect(page.locator('.offline-bar')).toBeVisible()
 
-  await page.locator('.sheet form button[type="submit"]').first().click()
+  await page.locator('.capture-form .edit-field__submit').click()
 
   // Queued to the outbox: a calm info line (not the error one), the input cleared
   // like a successful capture, and the offline bar's pending count at 1 — and
   // nothing was sent over the wire.
   await expect(page.locator('.status-msg--info', { hasText: 'Hors ligne' })).toBeVisible()
   await expect(page.locator('.status-msg--error')).toHaveCount(0)
-  await expect(page.locator('.sheet__field input')).toHaveValue('')
+  await expect(page.locator('.capture-form input.edit-field__input')).toHaveValue('')
   await expect(page.locator('.offline-bar__stamp', { hasText: '1 en attente' })).toBeVisible()
   expect(capturePosts.length).toBe(0)
 
@@ -72,15 +74,16 @@ test('the mic stays offline-disabled — only the typed capture path is queueabl
   await page.goto('/board')
 
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.locator('.add-fab').click()
-  await expect(page.locator('.sheet.show')).toBeVisible()
+  await page.locator('.app-head__ask').click()
+  await expect(page.locator('.kit-modal.ask-sheet')).toBeVisible()
+  await page.locator('.ask-sheet__modes button', { hasText: 'Classer' }).click()
 
   await page.context().setOffline(true)
   await expect(page.locator('.offline-bar')).toBeVisible()
 
   // VoiceButton (Web Speech needs a live connection) is still disabled offline —
   // A-2 only unblocked the typed path.
-  await expect(page.locator('.sheet__field .capture__voice')).toBeDisabled()
+  await expect(page.locator('.capture-form .capture__voice')).toBeDisabled()
 
   await page.context().setOffline(false)
 })

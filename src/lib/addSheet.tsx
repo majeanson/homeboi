@@ -9,7 +9,13 @@
 import { createContext, useContext } from 'react'
 
 export type AddSheetMode =
-  | 'capture'
+  // « Note rapide » — a plain fridge note: a line of text and/or ONE clipped memo
+  // (voice / drawing / photo) via the field's 📎. This tile used to be `capture`,
+  // the AI router — whose field mic (dictate → the AI files it) sat directly above
+  // « Mémo vocal » (record a clip → a note), two microphones meaning opposite
+  // things. The AI router now lives on the header mic (« Parle à la maison » ▸
+  // Classer, see AskSheet), leaving this tile to be exactly what it says.
+  | 'note'
   | 'event'
   // « L'auto » (#28) — a ride is an event that takes the car / carries passengers.
   // Navigate-only to /event/new?ride=1 (the event form with its Transport block
@@ -108,7 +114,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // creates + manages them), so offering "add a routine" from the board too was a
   // redundant second door. Add routines from Routines; the board ＋ stays the
   // glance-surface quick-adds that have no section of their own.
-  board: ['capture', 'event', 'chores-pick', 'todo', 'mot', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
+  board: ['note', 'event', 'chores-pick', 'todo', 'mot', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`

@@ -2,7 +2,7 @@ import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
-import { SIDE_SLOTS, SLOT_ICON_NAME } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { useMemo } from 'react'
 import { Icon, InlineIcon } from '../Icon'
@@ -56,6 +56,9 @@ export function DayEditor({
   note: DayNoteRow | undefined
   recipeFor: (m: MealRow) => Recipe | undefined
   memberName: (id: string | null | undefined) => string
+  // Fired only for a meal that RESOLVED a recipe — the page sends the tap straight to
+  // that recipe's view. MealRows' own row actions already own remove/move/rename/restants,
+  // so there is nothing a peek in between would add.
   onOpenRecipe: (r: Recipe, m: MealRow) => void
   // A meal save failed (offline / 503) — surface it inline so it never reads as saved.
   mealErr?: boolean
@@ -121,13 +124,18 @@ export function DayEditor({
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
   const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal } = actions
 
+  // The day's HERO slot (souper unless the household picked another in Réglages ▸
+  // Repas) — it gets the grocery-staples step; the rest are plain slot sections.
+  const hero = mealPrefs.hero
+  const sideSlots = mealPrefs.sideSlots
+
   // Cross-slot drag: drag a meal's grip onto another slot's section to move it
   // there (same day). Zones are keyed by slot name (the day is fixed — this page
   // is one day). A drop on a meal's own slot is rejected so it never shows a cue it
   // won't honour. Touch-friendly, so it works on the wall tablet.
   const slotOfMeal = (id: string): string | null => {
-    if (suppers.some((m) => m.id === id)) return 'supper'
-    for (const s of SIDE_SLOTS) if (mealsFor(date, s).some((m) => m.id === id)) return s
+    if (suppers.some((m) => m.id === id)) return hero
+    for (const s of sideSlots) if (mealsFor(date, s).some((m) => m.id === id)) return s
     return null
   }
   const mealDnd = usePointerDnd({
@@ -147,21 +155,16 @@ export function DayEditor({
     if (o.data.kind === 'recipe') planRecipe(d, slot, o.data.recipe)
     else leftovers.plan(d, slot, o.data.leftover)
   }
-  const dayMealCount = SIDE_SLOTS.reduce((n, s) => n + mealsFor(date, s).length, suppers.length)
+  const dayMealCount = sideSlots.reduce((n, s) => n + mealsFor(date, s).length, suppers.length)
   // Add-affordance label: "Ajouter un autre" when the slot already holds a meal,
   // plain "Ajouter" when it's empty (no redundant "＋ Déjeuner" beside the header).
   const addLabel = (count: number) => (count ? t.kitchen.addAnother : t.common.add)
 
   const supperEditing = editDate === date
-  const supperStaples = staplePrompt?.date === date && staplePrompt.slot === 'supper'
+  const supperStaples = staplePrompt?.date === date && staplePrompt.slot === hero
 
-  return (
-    <>
-      {mealErr && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-
-      {/* ── The lighter slots, in time order: déjeuner / dîner / collation.
-          The hero souper follows them so the day reads chronologically. ── */}
-      {SIDE_SLOTS.map((slot) => {
+  // A lighter slot's section — everything except the hero's grocery-staples step.
+  const renderSideSlot = (slot: (typeof sideSlots)[number]) => {
         const slotMeals = mealsFor(date, slot)
         const editing = editSlot?.date === date && editSlot.slot === slot
         return (
@@ -224,17 +227,19 @@ export function DayEditor({
             )}
           </section>
         )
-      })}
+  }
 
-      {/* ── Souper: the day's hero meal (its own grocery-staples step), shown
-          last in the chronological run. ── */}
+  // ── The hero meal (its own grocery-staples step). Rendered at its place in the
+  //    household's order, not pinned last. ──
+  const renderHeroSlot = () => (
       <section
-        data-dnd-zone="supper"
-        className={'day-mng__sec' + (mealDnd.over === 'supper' ? ' dnd-over' : '')}
+        key={hero}
+        data-dnd-zone={hero}
+        className={'day-mng__sec' + (mealDnd.over === hero ? ' dnd-over' : '')}
       >
         <div className="day-mng__sec-head-row">
           <p className="day-mng__sec-head mono">
-            <Icon name={SLOT_ICON_NAME.supper} size={16} color={mealPrefs.color('supper')} /> {t.kitchen.slots.supper}
+            <Icon name={SLOT_ICON_NAME[hero]} size={16} color={mealPrefs.color(hero)} /> {t.kitchen.slots[hero]}
           </p>
           {!supperEditing && !supperStaples && !ro && (
             <button
@@ -297,14 +302,14 @@ export function DayEditor({
               onRemove={clearMeal}
               onMove={moveMeal}
               onRename={renameMeal}
-              onClearAll={() => clearSlotMeals(date, 'supper')}
+              onClearAll={() => clearSlotMeals(date, hero)}
               onLeftover={announceLeftover}
               onDragStart={ro ? undefined : mealDnd.start}
               draggingId={mealDnd.activeId}
               dragLabel={t.kitchen.dragMeal}
             />
             {supperEditing && !ro && (
-              // Souper's box: type a free-text supper or pick a recipe / leftover.
+              // The hero's box: type a free-text meal or pick a recipe / leftover.
               // The dropdown leads with the "+ ingrédients" opt-in (off by default):
               // it governs BOTH a recipe pick (also fill the grocery list with its
               // ingredients) AND free text (→ AI staples). Default off → "Mettre"
@@ -313,8 +318,8 @@ export function DayEditor({
                 value={mealText}
                 onChange={setMealText}
                 options={mealOpts}
-                onPick={pickMeal(date, 'supper')}
-                onSubmit={() => beginSetMeal(date, 'supper', pickWithStaples)}
+                onPick={pickMeal(date, hero)}
+                onSubmit={() => beginSetMeal(date, hero, pickWithStaples)}
                 submitLabel={staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
                 busy={staplesBusy}
                 noMatchLabel={t.combo.noMatch}
@@ -324,7 +329,9 @@ export function DayEditor({
                   setMealText('')
                 }}
                 autoFocus
-                placeholder={t.kitchen.plan}
+                // Named after the HERO slot, like every side slot's field — the old
+                // fixed « Quoi pour souper ? » read wrong above a promoted dîner.
+                placeholder={t.kitchen.slots[hero]}
                 listHeader={
                   <button
                     type="button"
@@ -341,6 +348,16 @@ export function DayEditor({
           </>
         )}
       </section>
+  )
+
+  return (
+    <>
+      {mealErr && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
+
+      {/* ── Every slot, in the household's order (Réglages ▸ Repas). Out of the box
+          that's chronological — déjeuner / dîner / collation / souper / dessert —
+          with the hero souper reading last before the note. ── */}
+      {mealPrefs.order.map((slot) => (slot === hero ? renderHeroSlot() : renderSideSlot(slot)))}
 
       {/* ── The day's free-text note — last, after the meals. Suppressed when the
           host renders it elsewhere (the day-plan page lifts it to a headline). ── */}

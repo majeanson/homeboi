@@ -4,7 +4,7 @@ import { mockApi, seedState } from './mocks'
 // « La boîte aux lettres » (/courrier) — a relative's postbox share link: say who you
 // are, leave a message (text and/or ONE memo: voice / drawing / photo), staged to R2
 // then sent in one submit. Locks the guest submit flow (text-only + photo-staged)
-// as the regression net for the MemoControls staging-mode refactor (REVIEW-PASS theme 6).
+// as the regression net for the useMemoAttach staging model (REVIEW-PASS theme 6).
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -56,10 +56,13 @@ test('a photo is staged then sent with the message', async ({ page }) => {
   await page.goto('/courrier')
 
   await page.getByPlaceholder('Papi, Mamie, Tante Lou…').fill('Mamie')
+  // The Record / Draw / Photo trio lives behind the message field's 📎 now
+  // (useMemoAttach), so open it before the hidden file input exists.
+  await page.locator('.memo-attach__btn').click()
   const staged = page.waitForResponse((r) => r.url().includes('/api/guest/postbox-media') && r.request().method() === 'POST')
   await page.locator('.scene.intake input[type="file"]').setInputFiles({ name: 'p.png', mimeType: 'image/png', buffer: PNG })
   await staged
-  await expect(page.locator('.postbox__draft')).toBeVisible() // the staged memo preview
+  await expect(page.locator('.memo-attach__chip')).toBeVisible() // the staged memo preview
 
   await page.getByRole('button', { name: 'Envoyer' }).click()
   await expect(page.getByText('Merci !')).toBeVisible()

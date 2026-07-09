@@ -19,9 +19,17 @@ export interface AddHelp {
 }
 
 export const ADD_HELP = {
-  capture: {
+  // Bespoke rather than helpFromGuide('capture'): this tile is now a plain NOTE (a
+  // line + one clipped memo), while the guide's `capture` card is about the AI that
+  // files things — which moved to the header mic (« Parle à la maison » ▸ Classer).
+  // The bubble explains the tile; the « → Voir le guide » link still opens the card
+  // that tells you where the AI went.
+  note: {
     card: 'capture',
-    body: helpFromGuide('capture'),
+    body: {
+      fr: 'Écris une note pour le babillard. Le trombone y joint un mémo vocal, un dessin ou une photo — la note garde tes mots.',
+      en: 'Write a note for the board. The paperclip attaches a voice memo, a drawing or a photo — the note keeps your words.',
+    },
   },
   event: {
     card: 'set-agenda',
@@ -71,17 +79,21 @@ export const ADD_HELP = {
     card: 'routines',
     body: { fr: 'Crée une routine d’images pour un enfant (matin, dodo…).', en: 'Build a picture routine for a child (morning, bedtime…).' },
   },
+  // Point 2 = « Des raccourcis selon la section » (it was point 1 until the capture
+  // card grew « Demander ou classer » + « Le ＋ reste pour ajouter » at the front,
+  // when the AI router moved to the header mic). Index shifts are silent — if you
+  // reorder that card's points, re-check every `point:` that targets it.
   'plan-today': {
     card: 'capture',
-    point: 1,
-    body: helpFromGuide('capture', 1),
+    point: 2,
+    body: helpFromGuide('capture', 2),
   },
   'plan-tomorrow': {
     // Same guide point as 'plan-today' — it already covers BOTH shortcuts in one
     // sentence, so both tiles share the identical helpFromGuide text on purpose.
     card: 'capture',
-    point: 1,
-    body: helpFromGuide('capture', 1),
+    point: 2,
+    body: helpFromGuide('capture', 2),
   },
   cook: {
     card: 'cookmode',

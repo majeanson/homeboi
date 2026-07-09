@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Navigate, useLocation, useParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { RoutineForm, type RoutineInit } from '../components/forms/RoutineForm'
+import { EntityShareModal } from '../components/EntityShareModal'
 import type { RoutineSeed } from '../lib/drawingToRoutine'
 import { Loading } from '../components/Fallback'
 import { api } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { ROUTINES_KEY } from '../lib/queryKeys'
@@ -15,15 +18,19 @@ import { useT } from '../i18n'
 // full-screen scenes (the form was the worst sheet offender: name + member chips +
 // template + the whole picture-card deck, all shoved under the mobile keyboard).
 // The Routines ＋ picker is the entry to both (new, or pick a routine to modify);
-// Réglages + the board ＋ tile still create via /routine/new.
+// Réglages + the board ＋ tile still create via /routine/new. Tapping a routine CARD
+// runs it, so this scene is also where « Partager » lives (the routine-card peek that
+// used to host it is gone — see components/detail/adapters).
 export function RoutineFormPage() {
   const t = useT()
   const qc = useQueryClient()
   const write = useWrite()
   const confirm = useConfirm()
+  const { signedIn } = useAuth()
   const { id } = useParams()
   const location = useLocation()
   const editing = !!id
+  const [sharing, setSharing] = useState(false)
   // A drawing handed off from DrawPad seeds the first card's photo (#14 → #17 C).
   const seed = (location.state as { routineSeed?: RoutineSeed } | null)?.routineSeed ?? null
 
@@ -63,16 +70,28 @@ export function RoutineFormPage() {
             close()
           })
         return (
-          <RoutineForm
-            members={members}
-            value={routine}
-            seed={editing ? null : seed}
-            onSaved={() => {
-              qc.invalidateQueries({ queryKey: ROUTINES_KEY })
-              close()
-            }}
-            onDelete={onDelete || undefined}
-          />
+          <>
+            <RoutineForm
+              members={members}
+              value={routine}
+              seed={editing ? null : seed}
+              onSaved={() => {
+                qc.invalidateQueries({ queryKey: ROUTINES_KEY })
+                close()
+              }}
+              onDelete={onDelete || undefined}
+              // « Partager » — operator only (minting the link is a server write).
+              onShare={routine && signedIn ? () => setSharing(true) : undefined}
+            />
+            {routine && sharing && (
+              <EntityShareModal
+                open
+                onClose={() => setSharing(false)}
+                title={`${t.shareLink.action} · ${routine.name}`}
+                body={{ kind: 'routine', routineId: routine.id }}
+              />
+            )}
+          </>
         )
       }}
     </FormScene>

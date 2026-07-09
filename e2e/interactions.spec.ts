@@ -447,17 +447,33 @@ test.describe('add sheet', () => {
   // The single floating ＋ FAB is the add affordance everywhere — and it is
   // CONTEXTUAL: the board keeps the quick-capture chooser, the other sections
   // open their own actions (tested below).
-  test('quick-capture posts the typed note', async ({ page }) => {
+  test('the board ＋ note box posts a fridge note', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The board ＋ hoists the quick-capture box to the TOP of the sheet (fast path),
-    // so the note is one type-and-Add away — no "Note rapide" tile to pick first.
-    await page.locator('.sheet__field input').fill('Acheter du lait')
-    await expectApi(page, 'POST', 'capture', () =>
-      page.locator('.sheet form button[type="submit"]').click(),
+    // The board ＋ hoists the « Note rapide » box to the TOP of the sheet (fast path),
+    // so a note is one write-and-Add away — no tile to pick first. It POSTs /api/notes,
+    // NOT /api/capture: the AI router moved to the header mic (see capture-*.spec.ts).
+    await page.locator('.addsheet__lead input.edit-field__input').fill('Acheter du lait')
+    await expectApi(page, 'POST', 'notes', () =>
+      page.locator('.addsheet__lead .edit-field__submit').click(),
     )
+  })
+
+  test('the board ＋ note box carries a 📎 for a voice memo / drawing / photo', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    // The three memo actions are the field's own attach affordance now, not three
+    // full-width buttons beside it that discarded whatever you'd typed.
+    const attach = page.locator('.addsheet__lead .memo-attach__btn')
+    await expect(attach).toHaveAttribute('aria-expanded', 'false')
+    await attach.click()
+    await expect(page.locator('.memo-attach__picks')).toBeVisible()
+    await expect(page.locator('.memo-attach__picks button', { hasText: 'Mémo vocal' })).toBeVisible()
+    await expect(page.locator('.memo-attach__picks button', { hasText: 'Dessiner' })).toBeVisible()
   })
 
   test('the board ＋ event tile opens the full-screen event form', async ({ page }) => {
@@ -522,9 +538,9 @@ test.describe('add sheet', () => {
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.cat-pick', { hasText: 'La réserve' }).click()
-    await page.locator('.sheet__field input').fill('Sac de petits pois')
+    await page.locator('.addsheet__panel input.edit-field__input').fill('Sac de petits pois')
     await expectApi(page, 'POST', 'reserve', () =>
-      page.locator('.sheet form button[type="submit"]').click(),
+      page.locator('.addsheet__panel .edit-field__submit').click(),
     )
   })
 
@@ -620,9 +636,9 @@ test.describe('add sheet', () => {
     // navigate-only, best-prices runs an action) to reveal the form that POSTs to list.
     await page.locator('.cat-pick', { hasText: 'Ajouter à la liste' }).click()
     await expect(page.locator('.cat-pick', { hasText: 'Ajouter à la liste' })).toHaveAttribute('aria-pressed', 'true')
-    await page.locator('.sheet__field input').fill('Beurre')
+    await page.locator('.addsheet__panel input.edit-field__input').fill('Beurre')
     await expectApi(page, 'POST', 'list', () =>
-      page.locator('.sheet form button[type="submit"]').click(),
+      page.locator('.addsheet__panel .edit-field__submit').click(),
     )
   })
 
@@ -849,6 +865,32 @@ test.describe('recipes', () => {
   })
 })
 
+// ──────────────────────── tapping a planned meal ───────────────────────
+
+// The two halves of useOpenMeal (components/detail/useOpenMeal). A meal that resolves a
+// recipe navigates to it — pinned as a 1-tap budget in tap-budget.spec.ts. A free-text
+// meal has no page to jump to, so it still peeks, and the peek is where the plan actions
+// live. « Salade César » is the fixture's recipe-less supper; « Spaghetti maison » matches
+// recipe rc1 by title.
+test('a recipe-less meal still opens the peek, with its plan actions', async ({ page }) => {
+  await APP('/board')(page)
+  await settle(page, '.board-wall')
+  await page.locator('.now-card__meal').filter({ hasText: 'Salade César' }).first().click()
+
+  const sheet = page.locator('.detail-sheet')
+  await sheet.waitFor({ state: 'visible', timeout: 10_000 })
+  await expect(sheet.locator('.detail-sheet__title')).toHaveText('Salade César')
+  // It stayed put — a peek, not a navigation.
+  await expect(page).toHaveURL(/\/board$/)
+  // The actions a recipe view could never carry, because they belong to the PLAN.
+  const actions = sheet.locator('.detail-sheet__actions')
+  await expect(actions.getByText('Voir la journée', { exact: true })).toBeVisible()
+  await expect(actions.getByText('Retirer du plan', { exact: true })).toBeVisible()
+  // …and none of the "go to the recipe" buttons that used to make this a menu.
+  await expect(actions.getByText('Ouvrir la recette', { exact: true })).toHaveCount(0)
+  await expect(actions.getByText('Cuisiner', { exact: true })).toHaveCount(0)
+})
+
 // ──────────────────────── kid meal suggestion ──────────────────────────
 
 test('a kid recipe pick drops a dated idea into the meal-ideas pool', async ({ page }) => {
@@ -936,21 +978,37 @@ test.describe('list', () => {
     await expect(checkedRows(page)).toHaveCount(1)
   })
 
-  // « Pas pressé »: an item we only buy on a good deal. Flagged from the row's own
-  // edit scene, written the moment the chip is picked, and the row comes back to the
-  // list wearing its second class (faded card + a named tag, not colour alone).
+  // « Pas pressé »: an item we only buy on a good deal. ONE switch on the row's own
+  // edit scene, off by default (an added item is always a real errand), written the
+  // moment it's flipped. The row comes back to the list wearing its second class:
+  // a faded card + a NAMED tag, never colour alone.
   test('flagging an item « pas pressé » fades its row and names it', async ({ page }) => {
     const rows = openList(page)
     await expect(page.locator('.list-row--norush')).toHaveCount(0)
     // The name is its own tap target (the picture opens deals, the check ticks).
     await rows.nth(1).locator('.list-row__name').click()
     const chip = page.getByRole('button', { name: 'Pas pressé' })
-    await expect(chip).toBeVisible()
+    // Off by default — the scene asks nothing of an ordinary grocery line.
+    await expect(chip).toHaveAttribute('aria-pressed', 'false')
     await expectApi(page, 'PATCH', 'list', () => chip.click())
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
     await page.getByRole('button', { name: 'Fermer' }).click()
     // Back on the list, the flag survives the board refetch — exactly one row.
     await expect(page.locator('.list-row--norush')).toHaveCount(1)
     await expect(rows.nth(1).locator('.list-row__norush')).toHaveText(/Pas pressé/)
+  })
+
+  // The same switch is the way back — a mis-tap costs one tap, not a delete + re-add.
+  test('the « pas pressé » switch turns the flag back off', async ({ page }) => {
+    const rows = openList(page)
+    await rows.nth(1).locator('.list-row__name').click()
+    const chip = page.getByRole('button', { name: 'Pas pressé' })
+    await chip.click()
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
+    await expectApi(page, 'PATCH', 'list', () => chip.click())
+    await expect(chip).toHaveAttribute('aria-pressed', 'false')
+    await page.getByRole('button', { name: 'Fermer' }).click()
+    await expect(page.locator('.list-row--norush')).toHaveCount(0)
   })
 
   test('tapping a checked item again unchecks it', async ({ page }) => {

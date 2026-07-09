@@ -224,8 +224,11 @@
 .aisle-order__row--pinned {
   opacity: 0.5;
 }
-/* A small muted aisle tag under a list row's name (shown in Mon ordre). */
-.list-row__aisle {
+/* The small muted tags under a list row's name: its aisle (shown in Mon ordre) and
+   its « pas pressé » mark. Same quiet second line, so a row never grows two
+   competing sub-labels. */
+.list-row__aisle,
+.list-row__norush {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -234,6 +237,30 @@
   font-weight: 600;
   color: var(--ink-faint);
 }
+
+/* --- « Pas pressé » ------------------------------------------------------- */
+/* A line we only buy if a good deal is on. It reads as PENCILLED IN rather than
+   errand-bound: no card fill or shadow, a dashed edge, a faded picture. Every
+   flagged row looks identical, so the eye takes them in as one skippable set —
+   which is the whole point (they're not what you came to the store for).
+   NOT a rank, NOT a count (NFR-CALM-1): two ways a line can read, nothing more.
+   Loaded after today.css, so this ties-and-wins over the plain `.act` card. */
+.list-row--norush .list-row__main {
+  background: transparent;
+  box-shadow: none;
+  /* `.act` sets border: 0 + padding: 14px — trade a pixel of padding for the
+     border so a flagged row keeps the exact height of its neighbours. */
+  border: 1px dashed var(--line);
+  padding: 13px;
+}
+.list-row--norush .list-row__main .spine {
+  opacity: 0.3;
+}
+.list-row--norush .list-row__main .tile {
+  opacity: 0.55;
+}
+/* The name's own colour is set INLINE from CATS.list (which a stylesheet can't
+   outrank), so the softened title ink is applied in Liste.tsx, not here. */
 /* The shared aisle <select> (edit sheet, quick-add, detail peek). It's a plain
    .input; cap its width so it doesn't stretch edge-to-edge in roomy contexts. */
 .aisle-pick {

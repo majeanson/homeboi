@@ -17,11 +17,13 @@ import { EmptyState } from '../EmptyState'
 import { Act, Section } from './Act'
 import { TodoSection } from '../todos/TodoSection'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel } from '../../lib/mealSlots'
+import { useMealPrefs } from '../../lib/mealPrefs'
 import { MONTH_KEY } from '../../lib/queryKeys'
-import { useBoardData, useTagColors } from '../../lib/queryHooks'
+import { useBoardData } from '../../lib/queryHooks'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { useEntityDetail } from '../detail/DetailProvider'
-import { buildEvent, buildMeal, type DetailCtx } from '../detail/adapters'
+import { buildEvent, type DetailCtx } from '../detail/adapters'
+import { useOpenMeal } from '../detail/useOpenMeal'
 import { useEventPeekActions } from '../detail/EventPeekActions'
 import { isGuest } from '../../lib/device'
 import type { EventRow } from './types'
@@ -91,6 +93,8 @@ export function MomentsView({
   const t = useT()
   const { lang } = useLang()
   const nav = useNavigate()
+  // « Ce soir » trims the day to the HERO meal (Réglages ▸ Repas), not always the souper.
+  const heroSlot = useMealPrefs().hero
 
   const [params, setParams] = useSearchParams()
   const fromParam = params.get('scope')
@@ -144,11 +148,11 @@ export function MomentsView({
 
   // Tap a row → the shared entity-detail peek, exactly like the board's own rows.
   // The provider is HubLayout's for the in-board view and MomentScene's for the
-  // standalone /moment scene. recipeFor lights up a planned meal's recipe.
+  // standalone /moment scene. recipeFor sends a recipe-linked meal to its view.
   const detail = useEntityDetail()
   const recipeFor = useRecipeForMeal()
-  const tagColors = useTagColors()
-  const detailCtx: DetailCtx = { t, lang, members: formMembers, recipeFor, tagColors }
+  const detailCtx: DetailCtx = { t, lang, members: formMembers, recipeFor }
+  const openMeal = useOpenMeal(detailCtx)
   // Modify / Delete / Share on an event peek (gating + modals owned by the hook).
   const eventActions = useEventPeekActions()
 
@@ -175,12 +179,11 @@ export function MomentsView({
   const days: number[] = []
   for (let d = from; d < to; d = addLocalDays(d, 1)) days.push(d)
 
-  // Tapping a row opens the same entity-detail peek the board uses. Meals map
-  // straight onto buildMeal; an event is reshaped to the board EventRow buildEvent
-  // expects; a chore/home row only carries a resolved name here, so it gets a small
-  // inline model (title + day + whose turn + "open the day").
-  const openMeal = (m: MomentData['meals'][number]) =>
-    detail.open(buildMeal(m, detailCtx, { slotLabel: slotLabel(m.slot, t), daySec: m.day }))
+  // Tapping a row behaves exactly as it does on the board. A meal with a recipe goes
+  // straight to that recipe (useOpenMeal); an event is reshaped to the board EventRow
+  // buildEvent expects; a chore/home row only carries a resolved name here, so it gets
+  // a small inline model (title + day + whose turn + "open the day").
+  const openMealRow = (m: MomentData['meals'][number]) => openMeal(m, { slotLabel: slotLabel(m.slot, t), daySec: m.day })
   const openEvent = (e: MomentData['events'][number]) => {
     const row: EventRow = {
       id: e.id,
@@ -212,11 +215,11 @@ export function MomentsView({
   }
 
   // One day's agenda rows, in reading order: meals (by the month query's slot
-  // order), then events (by time), then chores + home upkeep. « Ce soir » trims
-  // the day to its evening tail — supper + still-to-come events.
+  // order — the household's), then events (by time), then chores + home upkeep.
+  // « Ce soir » trims the day to its evening tail — the hero meal + still-to-come events.
   function dayRows(d: number): React.ReactNode[] {
     const rows: React.ReactNode[] = []
-    for (const m of meals.filter((m) => m.day === d && (!isTonight || m.slot === 'supper'))) {
+    for (const m of meals.filter((m) => m.day === d && (!isTonight || m.slot === heroSlot))) {
       rows.push(
         <Act
           key={'m' + m.id}
@@ -225,7 +228,7 @@ export function MomentsView({
           title={m.title}
           when={slotLabel(m.slot, t)}
           who={memberName(m.cook_member_id)}
-          onOpen={() => openMeal(m)}
+          onOpen={() => openMealRow(m)}
         />,
       )
     }

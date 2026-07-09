@@ -23,6 +23,7 @@ export function FormFooter({
   cancelLabel,
   onDelete,
   deleteLabel,
+  extra,
   saveIcon = 'check-bold',
 }: {
   saveLabel: ReactNode
@@ -36,6 +37,10 @@ export function FormFooter({
   // Given → a separated destructive Delete on the left. Caller owns the confirm.
   onDelete?: () => void
   deleteLabel?: ReactNode
+  // A quiet non-destructive action that belongs to the THING, not to this edit — e.g.
+  // « Partager » on a routine. Sits with Delete in the left cluster so it never reads
+  // as a peer of Save. Give it a `.btn.btn--ghost.btn--sm`.
+  extra?: ReactNode
   // A leading glyph on Save (null to omit). Defaults to the check tick.
   saveIcon?: IconName | null
 }) {
@@ -52,6 +57,7 @@ export function FormFooter({
           <Icon name="trash-bold" size={16} /> {deleteLabel ?? t.common.delete}
         </button>
       )}
+      {extra}
       <div className="form-footer__main">
         {onCancel && (
           <button type="button" className="btn btn--ghost mono" onClick={onCancel} disabled={busy}>

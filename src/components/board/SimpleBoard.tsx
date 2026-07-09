@@ -6,6 +6,7 @@ import { Notes } from './Notes'
 import { formatTime } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { useMealPrefs } from '../../lib/mealPrefs'
+import { heroCardLabel } from '../../lib/mealSlots'
 import type { BoardModel } from '../../lib/boardModel'
 import type { BoardData } from './types'
 
@@ -65,8 +66,11 @@ export function SimpleBoard({
   // visually matches the tab it opens.
   const tiles = [
     { key: 'today', to: '/moment?scope=tonight', icon: '📅', tint: '#D9842A', label: t.board.today, sub: todaySub },
-    ...(mealPrefs.isVisible('supper')
-      ? [{ key: 'supper', to: '/kitchen', icon: pictoFor(tonight?.title ?? '', '🍽'), tint: '#C2563A', label: t.board.tonight, sub: tonight?.title ?? t.board.nothingTonight }]
+    // The hero slot as the model resolved it (from the board payload), so the tile and
+    // its meal always describe the same slot — and it's NAMED after that slot, so a
+    // household whose headline is the dîner doesn't read « Ce soir » above a lunch.
+    ...(mealPrefs.isVisible(model.meals.hero)
+      ? [{ key: 'supper', to: '/kitchen', icon: pictoFor(tonight?.title ?? '', '🍽'), tint: '#C2563A', label: heroCardLabel(model.meals.hero, t), sub: tonight?.title ?? t.board.nothingTonight }]
       : []),
     { key: 'list', to: '/liste', icon: '🛒', tint: '#5891AC', label: t.board.list, sub: listSub },
   ]

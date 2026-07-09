@@ -7,7 +7,7 @@ import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from '../../lib/routineTod'
 import { alignSide } from '../../lib/parallelArray'
-import { InlineIcon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
@@ -50,6 +50,7 @@ export function RoutineForm({
   onSaved,
   onCancel,
   onDelete,
+  onShare,
 }: {
   members: FormMember[]
   value?: RoutineInit | null
@@ -63,6 +64,10 @@ export function RoutineForm({
   // scene that edits it (no trip to Réglages ▸ Corvées). The owner handles the
   // confirm + write + navigation; the button just calls this when present.
   onDelete?: () => void
+  // Edit mode only, operator only: mint a public /partage link for this routine's deck.
+  // It lives here — on the routine's own scene — because tapping a routine card now RUNS
+  // it, the way tapping a recipe opens the recipe (where its own « Partager » sits).
+  onShare?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -262,6 +267,13 @@ export function RoutineForm({
         onCancel={onCancel}
         onDelete={editing && onDelete ? onDelete : undefined}
         deleteLabel={t.routines.delete}
+        extra={
+          editing && onShare ? (
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={onShare}>
+              <Icon name="arrow-up-right-bold" size={16} /> {t.shareLink.action}
+            </button>
+          ) : undefined
+        }
       />
     </form>
   )

@@ -8,9 +8,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { guestWindowKey } from '../lib/queryKeys'
-import { imgUrl } from '../lib/image'
-import { ZoomableImg } from '../components/ZoomableImg'
-import { MemoControls, type StagedMemo } from '../components/MemoControls'
+import { EditField } from '../components/EditField'
+import { useMemoAttach } from '../components/MemoAttach'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 import { GuestExpired } from '../components/GuestExpired'
 import { Icon, InlineIcon } from '../components/Icon'
@@ -22,9 +21,12 @@ import { StatusMessage } from '../components/StatusMessage'
 // drawing, or a photo. The submission is QUARANTINED server-side (migration 0085);
 // any media is staged in R2 and resolved at the operator's review, where accepting it
 // turns it into a board fridge note attributed to the sender. Phone-first, single
-// page, no account, no further access. Mirrors IntakeForm's shape; the Record/Draw/
-// Photo trio is the shared `MemoControls` in STAGE mode (`onStaged`), which hands back
-// the staged R2 key — this page holds it as ONE draft and sends it with the name.
+// page, no account, no further access. Mirrors IntakeForm's shape.
+//
+// This page was the ORIGINAL home of the staged-attachment model: upload the blob, hold
+// its R2 key as one draft, send it with the name in a single POST. `useMemoAttach` is
+// that model generalised — every composer now works this way, and this page just consumes
+// the shared hook instead of hand-wiring the draft, the preview and the remove button.
 
 interface GreetingData {
   kind: 'postbox'
@@ -51,12 +53,20 @@ export function Postbox() {
 
   const [senderName, setSenderName] = useState('')
   const [text, setText] = useState('')
-  // The one media attachment a message can carry (a message may be text-only too),
-  // handed back by MemoControls' STAGE mode.
-  const [draft, setDraft] = useState<StagedMemo | null>(null)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  // The one media attachment a message can carry (a message may be text-only too).
+  // A guest gets the DIRECT photo picker (there's no board pad to draw over) and no
+  // gallery/routine actions — that drawing is headed for the household, not a wall.
+  const memo = useMemoAttach({
+    mediaEndpoint: 'guest/postbox-media',
+    drawDraftId: 'postbox',
+    photoMode: 'direct',
+    gallery: false,
+    recordLabel: t.postbox.recordVoice,
+    photoLabel: t.postbox.addPhoto,
+  })
 
   async function submit() {
     if (busy) return
@@ -64,7 +74,7 @@ export function Postbox() {
       setErr(t.postbox.nameRequired)
       return
     }
-    if (!text.trim() && !draft) {
+    if (!text.trim() && !memo.draft) {
       setErr(t.postbox.emptyMessage)
       return
     }
@@ -73,13 +83,7 @@ export function Postbox() {
     try {
       await api('guest/postbox-submit', {
         method: 'POST',
-        body: {
-          senderName: senderName.trim(),
-          text: text.trim(),
-          media_kind: draft?.kind,
-          media_key: draft?.key,
-          scene_key: draft && draft.kind === 'drawing' ? draft.sceneKey : undefined,
-        },
+        body: { senderName: senderName.trim(), text: text.trim(), ...memo.body },
       })
       setDone(true)
     } catch (e) {
@@ -155,46 +159,24 @@ export function Postbox() {
         {/* 2 — the message: a written word and/or one memo (voice / drawing / photo). */}
         <section className="intake__sec">
           <h3 className="intake__h">{t.postbox.messageTitle}</h3>
-          <label className="cf__field">
-            <textarea
-              className="cf__input cf__textarea"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={3}
-              placeholder={t.postbox.messagePlaceholder}
-            />
-          </label>
-
-          {/* The attached memo preview + a way to remove it. */}
-          {draft && (
-            <div className="postbox__draft">
-              {draft.kind === 'audio' ? (
-                <button type="button" className="note-card__mediabtn" onClick={() => new Audio(imgUrl(draft.key)).play()}>
-                  <Icon name="play-bold" size={16} /> {t.postbox.voicePreview}
-                </button>
-              ) : (
-                <ZoomableImg className="postbox__draft-img" src={imgUrl(draft.key)} alt={t.postbox.attachment} />
-              )}
-              <button type="button" className="btn btn--sm btn--ghost" onClick={() => setDraft(null)} disabled={busy}>
-                <Icon name="trash-bold" size={15} /> {t.postbox.removeAttachment}
-              </button>
-            </div>
-          )}
-
-          {/* The shared Record / Draw / Photo trio in STAGE mode — hidden once a memo is
-              attached (one per message). `onStaged` hands back the R2 key we hold as the
-              draft; MemoControls hides itself if R2 is unbound (a written word still sends). */}
-          {!draft && (
-            <MemoControls
-              onDone={() => {}}
-              mediaEndpoint="guest/postbox-media"
-              onStaged={setDraft}
-              withPhoto
-              recordLabel={t.postbox.recordVoice}
-              photoLabel={t.postbox.addPhoto}
-              drawDraftId="postbox"
-            />
-          )}
+          {/* The message field carries its own 📎 (voice / drawing / photo). `readOnly={false}`
+              because EditField hides itself for a guest session by default — and a guest is
+              exactly who this page is for. No submit here: the page's own « Envoyer » below
+              sends the name + text + attachment as ONE post. */}
+          <EditField
+            value={text}
+            onChange={setText}
+            submitIcon={null}
+            multiline
+            readOnly={false}
+            voiceLabel={t.postbox.recordVoice}
+            placeholder={t.postbox.messagePlaceholder}
+            ariaLabel={t.postbox.messageTitle}
+            disabled={busy}
+            boxActions={memo.attachButton}
+          >
+            {memo.panel}
+          </EditField>
         </section>
 
         {err && <StatusMessage tone="error">{err}</StatusMessage>}

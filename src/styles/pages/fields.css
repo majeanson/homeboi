@@ -41,6 +41,10 @@
   background: transparent;
   border-radius: 0;
 }
+/* The glyph already provides the left inset — don't double it. */
+.edit-field__lead + .edit-field__input.input {
+  padding-left: 0.4rem;
+}
 .edit-field__input.input:focus {
   outline: none;
 }
@@ -80,6 +84,15 @@
 .edit-field__icon-btn--danger:focus-visible {
   color: var(--warn);
   background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+/* A quiet decorative glyph inside the box, left of the text (the ✎ / 🥕 / ❄ the
+   ＋ sheet's old hand-rolled `.sheet__field` drew). Never interactive. */
+.edit-field__lead {
+  display: grid;
+  place-items: center;
+  flex: none;
+  padding-left: 0.55rem;
+  color: var(--ink-faint);
 }
 .edit-field__submit {
   flex: none;
@@ -125,6 +138,82 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+/* ── useMemoAttach: « Joindre » (components/MemoAttach.tsx) ──────────────────
+   The 📎 lives INSIDE the field box as a peer of the clear ✕ and the mic; its
+   chips + the attached preview unfold underneath. Uniquely named, so cascade
+   position is immaterial. Replaced `.memo-row`, a hand-rolled flex row of
+   full-width buttons that sat beside the field. */
+.memo-attach {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.memo-attach:empty {
+  display: none;
+}
+/* Attached → the clip reads as "on", so the field shows at a glance that the note
+   carries more than its text. */
+.memo-attach__btn.is-on {
+  color: var(--accent);
+}
+.memo-attach__picks {
+  margin-top: 0.15rem;
+}
+/* Recording: the terracotta stop button + its pulsing dot (from the old memo-row). */
+.memo-attach__rec {
+  color: var(--terracotta-deep, #c2563a);
+}
+.memo-attach__dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: #c2563a;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+/* The staged memo. A chip, not a card — what you're composing is still the text. */
+.memo-attach__chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.25rem 0.25rem 0.25rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+}
+.memo-attach__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.memo-attach__thumb {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.memo-attach__play {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
 }
 
 /* ── EntityCombobox: the unified "search + pick + free-text" field. ──────────

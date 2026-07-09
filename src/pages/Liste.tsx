@@ -58,6 +58,7 @@ interface ListRow {
   deal_json?: string | null // a staged flyer deal for the cashier (JSON), if any
   search_terms?: string | null // extra flyer-search synonyms (JSON array), if any
   checked_at?: number | null // set = ticked (in the cart); the item stays on the list
+  non_urgent?: number | null // 1 = « pas pressé »: buy it only if a good deal is on
 }
 interface ListMember {
   id: string
@@ -79,6 +80,10 @@ const LIST_SORT_KEY = 'liste-sort'
 // check) until "Clear checked" removes it. Swiping the row LEFT deletes it
 // outright (Outlook-mobile style) — a plain remove, NOT logged as bought (that's
 // what the check + "Clear checked" is for).
+//
+// A « pas pressé » row (noRush) is drawn as one recognisable second class — pencilled
+// in rather than errand-bound — so the eye can skip the whole set of them when there's
+// no aubaine on. It behaves exactly like any other row otherwise.
 function ListItemRow({
   text,
   picto,
@@ -86,6 +91,7 @@ function ListItemRow({
   dealLabel,
   adder,
   checked,
+  noRush,
   toggleLabel,
   onImage,
   imageLabel,
@@ -105,6 +111,8 @@ function ListItemRow({
   dealLabel?: React.ReactNode
   adder?: ListMember | null
   checked?: boolean
+  // « Pas pressé »: only worth buying on a deal. Purely a presentation state.
+  noRush?: boolean
   toggleLabel: string
   onImage: () => void
   imageLabel: string
@@ -140,6 +148,7 @@ function ListItemRow({
   const dropEdge = overHere ? (fromIdx !== null && fromIdx < index ? 'bottom' : 'top') : null
   const zoneClass =
     'list-row' +
+    (noRush ? ' list-row--norush' : '') +
     (dnd?.activeId === zoneId ? ' is-dragging' : '') +
     (overHere ? ' dnd-over' : '')
   return (
@@ -192,9 +201,18 @@ function ListItemRow({
           )}
         </button>
         <button type="button" className="list-row__name act__text" onClick={onName} aria-label={nameLabel}>
-          <span className="title" style={{ color: tintInk(CATS.list.color) }}>
+          {/* The tint is inline (it comes from CATS), so a « pas pressé » row has to
+              soften it here — a stylesheet rule would lose to the inline colour. */}
+          <span className="title" style={{ color: noRush ? 'var(--ink-soft)' : tintInk(CATS.list.color) }}>
             {text}
           </span>
+          {/* The fade alone would leave the row's second class to be inferred from
+              contrast (and invisible to a screen reader) — name it on the row. */}
+          {noRush && (
+            <span className="list-row__norush">
+              <InlineIcon name="hourglass-high-bold" size={12} /> {t.list.rushNone}
+            </span>
+          )}
           {dealLabel}
           {aisleTag}
         </button>
@@ -609,6 +627,7 @@ export function Liste() {
                   }
                   adder={adder}
                   checked={checked}
+                  noRush={!!item.non_urgent}
                   toggleLabel={checked ? t.list.uncheck : t.list.check}
                   onImage={() => nav(`/liste/deals/${item.id}`)}
                   imageLabel={t.list.openFlyer}

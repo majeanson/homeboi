@@ -275,7 +275,5 @@
   flex: 1 1 0;
   min-width: 0;
 }
-/* « Me le rappeler » — the self-mot shortcut under the recipient picker. */
-.mot-composer__remind {
-  align-self: flex-start;
-}
+/* « Me le rappeler » is no longer a top-level button — it is a preset chip inside
+   « Plus tard » (ScheduleFields extraPresets), so it needs no rule of its own. */

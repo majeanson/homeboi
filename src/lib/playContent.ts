@@ -3,6 +3,7 @@
 // here scores, persists, or fails — these are toys, not games (NFR-CALM). Content
 // pictos are emoji (the board's convention for content, vs Phosphor for controls).
 import type { Lang } from '../i18n'
+import { DEFAULT_SLOT_HOURS, isMealSlot, type MealSlot } from './mealSlots'
 
 // ---- Cherche et trouve (find-it) -------------------------------------------
 
@@ -188,11 +189,19 @@ export interface DayPartData {
   eventTitles: string[]
 }
 
-// Bucket today's meals (by slot) and events (by local hour) into the four parts of a
-// day, in order. all-day events (incl. derived birthdays) lead the morning. Pure.
+// Which part of the day an hour belongs to — ONE rule, shared by meals and events, so
+// a meal never lands in a different tile than an event happening at the same hour.
+const partAtHour = (h: number): DayPartKey => (h < 11 ? 'matin' : h < 16 ? 'midi' : h < 21 ? 'soir' : 'dodo')
+
+// Bucket today's meals and events into the four parts of a day, in order. Both bucket
+// by local hour: an event by its start, a meal by its SLOT's start hour (Réglages ▸
+// Repas) — so a household that eats its souper at 20 h hears it in the evening tile,
+// not the afternoon one. all-day events (incl. derived birthdays) lead the morning.
+// `hours` defaults to the built-in slot start times. Pure.
 export function bucketDay(
   meals: { slot: string; title: string }[],
   events: { title: string; start_at: number; all_day: number }[],
+  hours: Record<MealSlot, number> = DEFAULT_SLOT_HOURS,
 ): DayPartData[] {
   const part: Record<DayPartKey, DayPartData> = {
     matin: { key: 'matin', mealTitles: [], eventTitles: [] },
@@ -201,13 +210,12 @@ export function bucketDay(
     dodo: { key: 'dodo', mealTitles: [], eventTitles: [] },
   }
   for (const m of meals) {
-    const k: DayPartKey =
-      m.slot === 'breakfast' ? 'matin' : m.slot === 'supper' || m.slot === 'dessert' ? 'soir' : 'midi' // lunch + snack → midi
+    // An unknown slot has no hour — park it at midi, as the old rule did.
+    const k: DayPartKey = isMealSlot(m.slot) ? partAtHour(Math.floor(hours[m.slot] / 60)) : 'midi'
     part[k].mealTitles.push(m.title)
   }
   for (const e of events) {
-    const h = e.all_day ? 0 : new Date(e.start_at * 1000).getHours()
-    const k: DayPartKey = e.all_day || h < 11 ? 'matin' : h < 16 ? 'midi' : h < 21 ? 'soir' : 'dodo'
+    const k: DayPartKey = e.all_day ? 'matin' : partAtHour(new Date(e.start_at * 1000).getHours())
     part[k].eventTitles.push(e.title)
   }
   return [part.matin, part.midi, part.soir, part.dodo]

@@ -137,7 +137,11 @@ const PATH_KEYS: Record<string, string[][]> = {
   // path, so include ['health'] — that's the cache useAi() reads, so flipping AI off
   // on one device nudges every other device (the wall kiosk) to hide AI affordances
   // at once instead of waiting for its next health poll.
-  household: [['household'], ['board'], ['health']],
+  // ['meals'] + ['month'] ride along because the household's meal ORDER + HERO
+  // (Réglages ▸ Repas) are applied SERVER-side: /api/meals and /api/month sort by the
+  // order, /api/board filters its headline by the hero. Reordering on the phone must
+  // re-sort the wall tablet's kitchen grid + calendar, not just re-tint them.
+  household: [['household'], ['board'], ['health'], ['meals'], ['month']],
   // Members appear on the board (faces), in Réglages, and as people in Le cercle
   // (their relationship edits re-derive the circle's families).
   // (a birthday edit also feeds the « À régler » gift-idea heads-up).

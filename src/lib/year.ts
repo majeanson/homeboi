@@ -383,8 +383,13 @@ const SCHOOL_LABEL = {
   dernierJour: { fr: 'Dernier jour d’école', en: 'Last day of school' },
   relache: { fr: 'Relâche', en: 'Break' },
 }
+// Each bucket is read defensively: this runs inside a render, so an /api/year
+// payload missing a key (an older Worker, a truncated response) would otherwise
+// throw "not iterable" and take the WHOLE board down through the ErrorBoundary.
+// A missing bucket means "no points of that kind" — the horizon degrades, the
+// board stays up.
 export function yearPoints(
-  data: Pick<YearData, 'birthdays' | 'events' | 'upkeep' | 'life'>,
+  data: Partial<Pick<YearData, 'birthdays' | 'events' | 'upkeep' | 'life'>>,
   opts: { lang: 'fr' | 'en'; holidays: boolean; from: number; to: number; schoolYear?: SchoolYear | null },
 ): YearPoint[] {
   const pts: YearPoint[] = []
@@ -407,10 +412,10 @@ export function yearPoints(
       }
     }
   }
-  for (const b of data.birthdays) pts.push({ day: b.day, kind: 'birthday', label: b.name, emoji: '🎂', age: b.age })
-  for (const e of data.events) pts.push({ day: e.day, kind: 'event', label: e.title })
-  for (const u of data.upkeep) pts.push({ day: u.day, kind: 'upkeep', label: u.title, color: u.color })
-  for (const l of data.life) pts.push({ day: l.day, kind: 'life', label: l.name, color: l.color })
+  for (const b of data.birthdays ?? []) pts.push({ day: b.day, kind: 'birthday', label: b.name, emoji: '🎂', age: b.age })
+  for (const e of data.events ?? []) pts.push({ day: e.day, kind: 'event', label: e.title })
+  for (const u of data.upkeep ?? []) pts.push({ day: u.day, kind: 'upkeep', label: u.title, color: u.color })
+  for (const l of data.life ?? []) pts.push({ day: l.day, kind: 'life', label: l.name, color: l.color })
   return pts.sort((a, b) => a.day - b.day)
 }
 

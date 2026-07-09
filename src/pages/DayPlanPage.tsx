@@ -22,14 +22,12 @@ import { Act } from '../components/board/Act'
 import { Fil } from '../components/board/Fil'
 import { EditField } from '../components/EditField'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
-import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
-import { buildMeal } from '../components/detail/adapters'
-import { isMealSlot } from '../lib/mealSlots'
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
 import { type Recipe } from '../lib/recipes'
-import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers, useTagColors } from '../lib/queryHooks'
+import { useMealPrefs } from '../lib/mealPrefs'
+import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
@@ -77,20 +75,14 @@ interface DayItemsData {
 // both navigate here. This page OWNS the editing state + handlers (lifted off the
 // Kitchen page, which is now a read-only glance); DayEditor renders them.
 //
-// Wrapped in its own DetailProvider (this scene lives OUTSIDE HubLayout, where the
-// app's provider sits) so a meal's recipe glyph opens the SAME peek the board uses
-// — photo + ingredient glance — instead of hard-navigating off the editor.
+// No DetailProvider: nothing on this page peeks any more. A meal that carries a recipe
+// navigates straight to that recipe's view, and MealRows already owns the per-row
+// remove / move / rename / restants actions.
 export function DayPlanPage() {
-  return (
-    <DetailProvider>
-      <DayPlanInner />
-    </DetailProvider>
-  )
-}
-
-function DayPlanInner() {
   const t = useT()
   const { lang } = useLang()
+  // The day's hero meal (Réglages ▸ Repas) — it owns the grocery-staples step.
+  const heroSlot = useMealPrefs().hero
   const qc = useQueryClient()
   const { memberId: profileId } = useProfile()
   const recordUndo = useRecordUndo()
@@ -98,8 +90,6 @@ function DayPlanInner() {
   const close = useSceneClose('/kitchen')
   const nav = useNavigate()
   useEscapeKey(close)
-  // Tap a meal's recipe glyph → peek its recipe (photo + glance), same as the board.
-  const detail = useEntityDetail()
 
   const { date: dateParam } = useParams()
   const date = Number(dateParam)
@@ -198,7 +188,6 @@ function DayPlanInner() {
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const recipeForMeal = useRecipeForMeal(recipes)
-  const tagColors = useTagColors()
   const memberName = (id: string | null | undefined) =>
     (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
 
@@ -359,7 +348,7 @@ function DayPlanInner() {
     setEditSlot(null)
     setMealText('')
     setSlotText('')
-    if (slot === 'supper' && pickWithStaples) {
+    if (slot === heroSlot && pickWithStaples) {
       chooseRecipeForMeal(d, slot, r)
       return
     }
@@ -416,7 +405,7 @@ function DayPlanInner() {
   // « Partager » a single event as a public /partage link (operator-only — a server write).
   const { signedIn } = useAuth()
   const [sharingEvent, setSharingEvent] = useState<{ id: string; title: string } | null>(null)
-  const suppers = mealsFor(date, 'supper')
+  const suppers = mealsFor(date, heroSlot)
   const dayNote = noteFor(date)
   const title = capitalize(formatDayLong(date, lang))
 
@@ -613,11 +602,7 @@ function DayPlanInner() {
             note={dayNote}
             recipeFor={recipeForMeal}
             memberName={memberName}
-            onOpenRecipe={(r, m) =>
-              detail.open(
-                buildMeal(m, { t, lang, members: [], tagColors }, { recipe: r, slotLabel: isMealSlot(m.slot) ? t.kitchen.slots[m.slot] : undefined }),
-              )
-            }
+            onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
             mealErr={mealErr}
             plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
             picker={{ pickWithStaples, setPickWithStaples, planRecipe }}

@@ -389,12 +389,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Toucher pour les détails', en: 'Tap for details' },
         detail: {
-          fr: 'Touche un élément du babillard — un rendez-vous, un repas, une corvée, le souper de ce soir — pour ouvrir une fiche : une image, la date, le texte utile et de qui il s’agit, avec un ou deux gestes rapides (Modifier, Marquer fait, Ouvrir la recette). Sur une corvée, le crochet à droite reste pour cocher; touche le reste de la ligne pour la fiche. La même fiche s’ouvre aussi sur une recette ou une routine.',
-          en: 'Tap an item on the board — an event, a meal, a chore, tonight’s supper — to open a card: a picture, the date, the relevant text and who it’s for, with a quick action or two (Edit, Mark done, Open recipe). On a chore the check on the right still ticks it off; tap the rest of the row for the card. The same card opens on a recipe or a routine too.',
+          fr: 'Touche une affaire pour l’ouvrir directement : le souper de ce soir ouvre sa recette, une routine se met à jouer, une recette s’ouvre en grand. Rien à traverser. Quand il n’y a pas de page derrière — un rendez-vous, une corvée, un mot — la fiche s’ouvre à la place : une image, la date, le texte utile, de qui il s’agit, et un ou deux gestes rapides (Modifier, Marquer fait). Sur une corvée, le crochet à droite reste pour cocher; touche le reste de la ligne pour la fiche.',
+          en: 'Tap a thing to open the thing: tonight’s supper opens its recipe, a routine starts playing, a recipe opens full-screen. Nothing to click through. When there’s no page behind it — an event, a chore, a note — the card opens instead: a picture, the date, the relevant text, who it’s for, and a quick action or two (Edit, Mark done). On a chore the check on the right still ticks it off; tap the rest of the row for the card.',
         },
         why: {
-          fr: 'Voir le détail d’une affaire sans quitter le coup d’œil.',
-          en: 'See the detail of a thing without leaving the glance.',
+          fr: 'Une touche mène à la chose elle-même, jamais à un menu à propos d’elle.',
+          en: 'One tap lands on the thing itself, never on a menu about it.',
         },
       },
       {
@@ -1232,6 +1232,17 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
+        label: { fr: 'Pas pressé', en: 'No rush' },
+        detail: {
+          fr: 'Touche le nom d’un article déjà sur la liste, puis active « Pas pressé ». La ligne se met en gris pâle, encadrée d’un pointillé — on la prend si une belle aubaine passe, sinon on l’oublie. Retouche l’interrupteur pour l’enlever.',
+          en: 'Tap the name of an item already on the list, then switch on “No rush”. The line goes pale grey with a dashed edge — we grab it if a good deal comes up, otherwise we let it go. Tap the switch again to undo it.',
+        },
+        why: {
+          fr: 'Pour que l’œil saute d’un coup tout ce qui n’est pas une vraie commission. Un article ajouté presse toujours : rien à choisir, sauf ce cas rare. Ce n’est pas un rang ni une priorité.',
+          en: 'So the eye skips everything that isn’t a real errand in one go. An added item is always an errand — nothing to choose, except in this rare case. It’s not a rank or a priority.',
+        },
+      },
+      {
         label: { fr: 'Ajout rapide', en: 'Quick add' },
         detail: {
           fr: 'Re-remplis une semaine en quelques touches à partir de ce que tu achètes souvent. En haut, le groupe [[icon:push-pin-bold]] « Toujours » garde tes essentiels permanents (lait, pain…) à un tap, peu importe la date. Une suggestion qui ne sert plus ? Glisse-la vers la gauche pour la retirer — avec un « Annuler » au cas où (comme sur La liste, sans passer par Réglages).',
@@ -1473,23 +1484,34 @@ export const GUIDE: GuideEntry[] = [
   },
   {
     id: 'capture',
-    icon: 'plus-bold',
+    icon: 'microphone-bold',
     group: 'concepts',
-    title: { fr: 'La capture (le bouton ＋)', en: 'Capture (the ＋ button)' },
+    title: { fr: 'Classer (le micro « Parle à la maison »)', en: 'Filing it (the “Talk to the household” mic)' },
     what: {
-      fr: 'Écris ou dis une note, et l’app devine quoi en faire : un rendez-vous, une corvée, un article de liste, un repas, un « il en manque », ou une note.',
-      en: 'Type or say a note, and the app guesses what it is: an event, a chore, a list item, a meal, a “running low”, or a note.',
+      fr: 'Touche le micro en haut de n’importe quel onglet, choisis « Classer », puis dis ou écris une phrase : l’app devine quoi en faire — un rendez-vous, une corvée, un article de liste, un repas, un « il en manque », ou une note.',
+      en: 'Tap the mic at the top of any tab, choose “File it”, then say or write a line: the app works out what it is — an event, a chore, a list item, a meal, a “running low”, or a note.',
     },
     points: [
       {
-        label: { fr: 'Un seul endroit', en: 'One place' },
+        label: { fr: 'Demander ou classer', en: 'Ask or file' },
         detail: {
-          fr: 'Le bouton ＋ s’adapte à la section où tu es (une recette dans la cuisine, un article sur la liste).',
-          en: 'The ＋ button adapts to the section you’re in (a recipe in the kitchen, an item on the list).',
+          fr: 'Le même micro fait deux choses, et tu choisis laquelle : « Demander » répond à une question sur la maisonnée, « Classer » range ce que tu viens de dire.',
+          en: 'The same mic does two things, and you pick which: “Ask” answers a question about the household, “File it” puts away what you just said.',
         },
         why: {
-          fr: 'Un seul geste à retenir, jamais à chercher où ajouter quelque chose.',
-          en: 'One gesture to remember, never hunting for where to add something.',
+          fr: 'Avant, le ＋ avait un micro qui dictait du texte et, juste en dessous, un bouton micro qui enregistrait un clip — deux micros, deux sens opposés. Maintenant l’onglet dit lequel tu tiens.',
+          en: 'The ＋ button used to hold a mic that dictated text and, right below it, a mic button that recorded a clip — two mics, opposite meanings. Now the segment tells you which one you’re holding.',
+        },
+      },
+      {
+        label: { fr: 'Le ＋ reste pour ajouter', en: 'The ＋ is still for adding' },
+        detail: {
+          fr: 'Le bouton ＋ s’adapte à la section où tu es (une recette dans la cuisine, un article sur la liste). Sa « Note rapide » écrit une note au babillard — avec un trombone 📎 pour y joindre un mémo vocal, un dessin ou une photo.',
+          en: 'The ＋ button adapts to the section you’re in (a recipe in the kitchen, an item on the list). Its “Quick note” writes a note to the board — with a 📎 to clip on a voice memo, a drawing or a photo.',
+        },
+        why: {
+          fr: 'Une note garde tes mots ET ce que tu y joins. Avant, enregistrer un mémo jetait le texte que tu venais d’écrire.',
+          en: 'A note keeps your words AND whatever you clip to it. Recording a memo used to throw away the text you had just typed.',
         },
       },
       {
@@ -1526,21 +1548,21 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Mémo vocal ou dessin', en: 'Voice memo or drawing' },
+        label: { fr: 'Joindre un mémo vocal, un dessin ou une photo', en: 'Clip on a voice memo, a drawing or a photo' },
         detail: {
-          fr: 'Au lieu d’écrire, laisse un mémo vocal ou dessine une petite note pour la maisonnée. Le dessin a un crayon (trait net et régulier, exactement de l’épaisseur montrée), un pot de peinture pour remplir une zone fermée d’un toucher (comme dans Paint), des collants (animaux, saisons, lettres…), un mode pixels et des mots à tamponner, un miroir rigolo, défaire/refaire (même « Effacer » se défait) et plein de couleurs. Le pot de peinture se glisse sous tes traits, donc tu peux dessiner par-dessus un remplissage et tes traits restent visibles. « Aplatir » fusionne tout en une seule image figée quand un dessin devient chargé. Et si tu fermes par accident un dessin en cours, il est récupéré à la réouverture. Et c’est éducatif : un modèle peut s’afficher dessous — lignes d’écriture, des lettres à tracer (majuscule + minuscule, « Aa Bb ») ou même un mot entier à tracer (un prénom de la maisonnée ou du cercle, une recette : « trace ton nom »), du quadrillé, ou une page à colorier (étoile, cœur, fleur, maison, chat, papillon, voiture, bateau…). Les lettres sont en trait simple, faciles à suivre. Tu peux aussi dessiner « Sur une photo » : choisis une photo, elle s’affiche en filigrane sous ta feuille et tu dessines par-dessus pour la suivre. Une glissière (avec des choix rapides Pâle / Doux / Net / Plein) règle à quel point la photo paraît — laisse-la visible pour décalquer, ou mets-la à zéro pour garder seulement ton dessin. Les dessins s’épinglent dans la vue Grille du babillard ; touche-en un pour continuer dessus (même les enfants), partage-le ou fais-en une carte de routine.',
-          en: 'Instead of typing, leave a voice memo or draw a little note for the household. Drawing has a pen (a crisp, even line, exactly the width shown), a paint bucket to flood-fill an enclosed area in one tap (like Paint), sticker packs (animals, seasons, letters…), a pixel mode and word stamps, a fun mirror, undo/redo (even “Clear” can be undone) and lots of colours. The paint bucket sits under your lines, so you can draw on top of a fill and your strokes stay visible. “Flatten” merges everything into one frozen image when a drawing gets busy. And if you close an in-progress drawing by accident, it’s recovered when you reopen. And it’s educational: a template can sit underneath — handwriting lines, letters to trace (capital + lowercase, “Aa Bb”) or even a whole word to trace (a name from the household or Le cercle, a recipe: “trace your name”), dot paper, or a colour-in page (star, heart, flower, house, cat, butterfly, car, boat…). Letters are single-line, easy to follow. You can also draw “Over a photo”: pick a photo, it shows as a faint watermark under your sheet and you draw on top to follow it. A slider (with quick Faint / Soft / Strong / Full presets) sets how much the photo shows — leave it visible to trace, or drop it to zero to keep just your drawing. Drawings pin to the board’s Grille view; tap one to keep drawing on it (kids too), share it, or turn it into a routine card.',
+          fr: 'Le trombone 📎, dans le champ de texte, joint un mémo vocal, un dessin ou une photo à la note que tu écris — la note garde tes mots ET ce que tu y joins (avant, enregistrer un mémo jetait le texte). Un mémo tout seul, sans un mot, est une note valide lui aussi. Le dessin a un crayon (trait net et régulier, exactement de l’épaisseur montrée), un pot de peinture pour remplir une zone fermée d’un toucher (comme dans Paint), des collants (animaux, saisons, lettres…), un mode pixels et des mots à tamponner, un miroir rigolo, défaire/refaire (même « Effacer » se défait) et plein de couleurs. Le pot de peinture se glisse sous tes traits, donc tu peux dessiner par-dessus un remplissage et tes traits restent visibles. « Aplatir » fusionne tout en une seule image figée quand un dessin devient chargé. Et si tu fermes par accident un dessin en cours, il est récupéré à la réouverture. Et c’est éducatif : un modèle peut s’afficher dessous — lignes d’écriture, des lettres à tracer (majuscule + minuscule, « Aa Bb ») ou même un mot entier à tracer (un prénom de la maisonnée ou du cercle, une recette : « trace ton nom »), du quadrillé, ou une page à colorier (étoile, cœur, fleur, maison, chat, papillon, voiture, bateau…). Les lettres sont en trait simple, faciles à suivre. Tu peux aussi dessiner « Sur une photo » : choisis une photo, elle s’affiche en filigrane sous ta feuille et tu dessines par-dessus pour la suivre. Une glissière (avec des choix rapides Pâle / Doux / Net / Plein) règle à quel point la photo paraît — laisse-la visible pour décalquer, ou mets-la à zéro pour garder seulement ton dessin. Les dessins s’épinglent dans la vue Grille du babillard ; touche-en un pour continuer dessus (même les enfants), partage-le ou fais-en une carte de routine.',
+          en: 'The 📎 inside the text field clips a voice memo, a drawing or a photo onto the note you are writing — the note keeps your words AND whatever you attach (recording a memo used to throw the text away). A memo on its own, with no words, is a valid note too. Drawing has a pen (a crisp, even line, exactly the width shown), a paint bucket to flood-fill an enclosed area in one tap (like Paint), sticker packs (animals, seasons, letters…), a pixel mode and word stamps, a fun mirror, undo/redo (even “Clear” can be undone) and lots of colours. The paint bucket sits under your lines, so you can draw on top of a fill and your strokes stay visible. “Flatten” merges everything into one frozen image when a drawing gets busy. And if you close an in-progress drawing by accident, it’s recovered when you reopen. And it’s educational: a template can sit underneath — handwriting lines, letters to trace (capital + lowercase, “Aa Bb”) or even a whole word to trace (a name from the household or Le cercle, a recipe: “trace your name”), dot paper, or a colour-in page (star, heart, flower, house, cat, butterfly, car, boat…). Letters are single-line, easy to follow. You can also draw “Over a photo”: pick a photo, it shows as a faint watermark under your sheet and you draw on top to follow it. A slider (with quick Faint / Soft / Strong / Full presets) sets how much the photo shows — leave it visible to trace, or drop it to zero to keep just your drawing. Drawings pin to the board’s Grille view; tap one to keep drawing on it (kids too), share it, or turn it into a routine card.',
         },
         why: {
-          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte. Et comme tout le monde peut continuer un dessin, ça devient un petit babillard à dessiner en famille. Les dessins gardés vivent dans « Mes dessins » (la galerie) — ouvre-la depuis la tuile du mode enfant ou le lien sous la vue Grille; un dessin gardé n’est pas effacé avec les notes.',
-          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text. And since anyone can add to a drawing, it becomes a little family doodle board. Kept drawings live in “My drawings” (the gallery) — open it from the kid-board tile or the link under the Grille view; a kept drawing isn’t cleared away with the notes.',
+          fr: 'Un mot doux, un dessin d’enfant ou un rappel parlé — plus chaleureux qu’un texte, et sans effacer ce que tu as écrit. Et comme tout le monde peut continuer un dessin, ça devient un petit babillard à dessiner en famille. Les dessins gardés vivent dans « Mes dessins » (la galerie) — ouvre-la depuis la tuile du mode enfant ou le lien sous la vue Grille; un dessin gardé n’est pas effacé avec les notes.',
+          en: 'A sweet word, a kid’s drawing or a spoken reminder — warmer than text, and it never erases what you wrote. And since anyone can add to a drawing, it becomes a little family doodle board. Kept drawings live in “My drawings” (the gallery) — open it from the kid-board tile or the link under the Grille view; a kept drawing isn’t cleared away with the notes.',
         },
       },
       {
         label: { fr: 'Laisse un mot', en: 'Leave a note' },
         detail: {
-          fr: 'Depuis le ＋, « Laisse un mot » écrit un petit message pour quelqu’un en particulier — choisis un visage (ou « Toute la Maisonnée »), puis écris, dicte, dessine ou prends une photo. Le mot attend tranquillement : il apparaît sur le babillard quand cette personne choisit son visage, et un petit point sur son visage (dans la rangée des visages) annonce qu’un mot l’attend — jamais un chiffre. En l’ouvrant, on l’entend ou on le lit, et il cesse de réclamer — et on peut y « Répondre » d’un mot en retour. Avec « Plus tard », on choisit le moment où il apparaîtra (un « bonne fête » le matin venu, un rappel juste avant de partir) — des choix rapides « Ce soir / Demain matin / Ce week-end » évitent de fouiller le calendrier. « Me le rappeler » se laisse un mot à soi-même pour plus tard : le rappel le plus calme qui soit, sans notification. Quand tu as choisi ton visage, « Ce que j’ai laissé » regroupe tes propres mots : tu vois s’ils ont été « Vu » ou sont « En attente », et un mot « Plus tard » pas encore paru peut être reprogrammé, envoyé tout de suite, ou annulé avant qu’il n’arrive. Un mot qu’on veut garder se met de côté avec « Garder » ; les mots déjà vus se replient sous « Déjà vus ». C’est interne à la maisonnée — différent de « La boîte aux lettres », qui sert aux proches de l’extérieur.',
-          en: 'From the ＋, “Leave a note” writes a little message for one person — pick a face (or “the whole Household”), then type, dictate, draw or snap a photo. The note waits quietly: it appears on the board when that person picks their face, and a small dot on their face (in the face row) signals a note is waiting — never a number. Opening it plays or reads it, and it stops prompting — and you can “Reply” with a note back. With “Later”, you pick when it appears (a “happy birthday” on the morning, a reminder right before they leave) — quick picks “Tonight / Tomorrow morning / This weekend” save digging through the calendar. “Remind me” leaves a note to yourself for later: the calmest possible reminder, no notification. Once you’ve picked your face, “What I left” gathers your own notes: you can see whether they’ve been “Seen” or are still “Waiting”, and a “Later” note that hasn’t appeared yet can be rescheduled, sent right away, or cancelled before it lands. A note worth keeping is set aside with “Keep”; already-seen notes fold under “Already seen”. It’s internal to the household — different from “The mailbox”, which is for relatives from outside.',
+          fr: 'Depuis le ＋, « Laisse un mot » écrit un petit message pour quelqu’un en particulier — choisis un visage (ou « Toute la Maisonnée »), puis écris ou dicte ta ligne — et joins-y un mémo vocal, un dessin ou une photo avec le trombone 📎 si tu veux. Le mot attend tranquillement : il apparaît sur le babillard quand cette personne choisit son visage, et un petit point sur son visage (dans la rangée des visages) annonce qu’un mot l’attend — jamais un chiffre. En l’ouvrant, on l’entend ou on le lit, et il cesse de réclamer — et on peut y « Répondre » d’un mot en retour. Avec « Plus tard », on choisit le moment où il apparaîtra (un « bonne fête » le matin venu, un rappel juste avant de partir) — des choix rapides « Ce soir / Demain matin / Ce week-end » évitent de fouiller le calendrier. Dans ces choix rapides, « Me le rappeler » se laisse un mot à soi-même pour demain matin : le rappel le plus calme qui soit, sans notification. Quand tu as choisi ton visage, « Ce que j’ai laissé » regroupe tes propres mots : tu vois s’ils ont été « Vu » ou sont « En attente », et un mot « Plus tard » pas encore paru peut être reprogrammé, envoyé tout de suite, ou annulé avant qu’il n’arrive. Un mot qu’on veut garder se met de côté avec « Garder » ; les mots déjà vus se replient sous « Déjà vus ». C’est interne à la maisonnée — différent de « La boîte aux lettres », qui sert aux proches de l’extérieur.',
+          en: 'From the ＋, “Leave a note” writes a little message for one person — pick a face (or “the whole Household”), then type or dictate your line — and clip on a voice memo, a drawing or a photo with the 📎 if you like. The note waits quietly: it appears on the board when that person picks their face, and a small dot on their face (in the face row) signals a note is waiting — never a number. Opening it plays or reads it, and it stops prompting — and you can “Reply” with a note back. With “Later”, you pick when it appears (a “happy birthday” on the morning, a reminder right before they leave) — quick picks “Tonight / Tomorrow morning / This weekend” save digging through the calendar. Among those quick picks, “Remind me” leaves a note to yourself for tomorrow morning: the calmest possible reminder, no notification. Once you’ve picked your face, “What I left” gathers your own notes: you can see whether they’ve been “Seen” or are still “Waiting”, and a “Later” note that hasn’t appeared yet can be rescheduled, sent right away, or cancelled before it lands. A note worth keeping is set aside with “Keep”; already-seen notes fold under “Already seen”. It’s internal to the household — different from “The mailbox”, which is for relatives from outside.',
         },
         why: {
           fr: 'Le frigo a toujours servi à se laisser des mots : « ton lunch est prêt », « bonne journée ». Ici le mot trouve la bonne personne sans déranger personne d’autre — pas de notification, pas de cloche, juste un mot qui attend.',

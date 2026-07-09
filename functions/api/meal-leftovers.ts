@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
+import { householdMealLayout } from '../_lib/mealSlots'
 
 // "Restants" (leftovers) — the UNDATED pool. A leftover dish you want to finish
 // but haven't pinned to a day yet; it surfaces as a calm "eat these first"
@@ -9,7 +10,9 @@ import { localDayStart, newId, nowSec } from '../_lib/ids'
 // CONSUMES it: it becomes a real meals row tagged is_leftover (see action 'plan')
 // — you eat leftovers once, so unlike meal_ideas the pool row is removed.
 const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
-const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? v : 'supper')
+// An unstated/unknown slot plans the leftover into the household's HERO meal
+// (Réglages ▸ Repas — the souper by default), never a hardcoded 'supper'.
+const asSlot = (v: unknown): string | null => (typeof v === 'string' && SLOTS.has(v) ? v : null)
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
@@ -45,7 +48,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       .bind(body.id, actor.householdId)
       .first<{ title: string; recipe_id: string | null }>()
     if (!row) return ok({ ok: true }) // gone already
-    const slot = slotOf(body.slot)
+    const slot = asSlot(body.slot) ?? (await householdMealLayout(ctx.env, actor.householdId)).hero
     const date = localDayStart(new Date(body.date * 1000))
     // Keep the new meal id so the client can offer a compensating undo (delete the
     // meal + re-insert the pool row) — planning consumes the pool entry.

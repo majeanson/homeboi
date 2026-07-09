@@ -15,6 +15,7 @@ import { PALETTE } from '../lib/colors'
 import { PIP_ICONS, type IconName } from '../lib/pipIcons'
 import { Icon, InlineIcon } from '../components/Icon'
 import { EditField } from '../components/EditField'
+import { useMemoAttach } from '../components/MemoAttach'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
@@ -560,6 +561,10 @@ export function DevKit() {
   const [listPickOpen, setListPickOpen] = useState(false)
   const [askSheetOpen, setAskSheetOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
+  // « Joindre » specimen — the hook must run at component top level (rules of hooks);
+  // its `attachButton` / `panel` are plain nodes the entry below renders.
+  const [memoText, setMemoText] = useState('')
+  const memoDemo = useMemoAttach({ drawDraftId: 'devkit' })
   const [dragPills, setDragPills] = useState(['Rapide', 'Végé', 'Souper', 'Dessert'])
   // CardDeckEditor specimen: a 3-card deck + parallel clip/photo arrays (#17 A/C),
   // kept length-locked to the deck by the editor itself (alignSide).
@@ -632,6 +637,18 @@ export function DevKit() {
               placeholder={voice.listening ? t.capture.listening : 'Parler ou écrire…'}
             />
           </Demo>
+          <Demo label="leadingIcon (a quiet glyph inside the box)">
+            <EditField
+              value={text1}
+              onChange={setText1}
+              onSubmit={() => setText1('')}
+              submitLabel={t.common.add}
+              submitLeadingIcon="plus-bold"
+              submitVariant="primary"
+              leadingIcon="carrot-bold"
+              placeholder="Il en manque…"
+            />
+          </Demo>
           <Demo label="trailing (a small action beside the submit — Liste's flyer magnifier)">
             <EditField
               value={text1}
@@ -666,6 +683,40 @@ export function DevKit() {
               />
             ))}
           </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'useMemoAttach',
+      file: 'components/MemoAttach.tsx',
+      kw: 'memo attach joindre trombone paperclip vocal audio dessin drawing photo pièce jointe',
+      render: () => (
+        <>
+          <Demo label="« Joindre » — the 📎 inside the box; chips unfold below, one memo per note">
+            <EditField
+              value={memoText}
+              onChange={setMemoText}
+              onSubmit={() => {
+                setMemoText('')
+                memoDemo.reset()
+              }}
+              submitLabel={t.common.add}
+              submitLeadingIcon="plus-bold"
+              submitVariant="primary"
+              placeholder="Écris une note…"
+              busy={memoDemo.busy}
+              allowEmpty={!!memoDemo.draft}
+              boxActions={memoDemo.attachButton}
+            >
+              {memoDemo.panel}
+            </EditField>
+          </Demo>
+          <p className="mono" style={{ opacity: 0.7 }}>
+            The audio clip wears <code>waveform-bold</code>, never the field's dictation mic — recording a memo and
+            speaking your text are different acts. Text + attachment go in ONE write (<code>memo.body</code> spreads
+            into the host's POST); R2 unbound hides the 📎 and the text-only path still works.
+          </p>
         </>
       ),
     },
@@ -2289,7 +2340,7 @@ export function DevKit() {
             <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} ariaLabel="Démo de feuille">
               <h3>Une feuille partagée</h3>
               <p>Glisse la poignée vers le bas, tape le fond, Esc ou le ✕ ferment. Scroll-lock + focus-trap + swipe via useModal/useSwipeToDismiss.</p>
-              <button className="btn btn--primary" onClick={() => setSheetOpen(false)}>
+              <button className="btn btn--primary btn--block" onClick={() => setSheetOpen(false)}>
                 Compris
               </button>
             </Sheet>

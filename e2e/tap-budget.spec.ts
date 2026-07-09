@@ -140,6 +140,19 @@ test('liste: browse the flyers/deals — 2 taps (tab + the Circulaires shortcut)
 
 // ------------------------------------------------------------------- kitchen
 
+test('supper: cook tonight’s meal — 1 tap (the board hero row opens its recipe)', async ({ page }) => {
+  await boot(page)
+  const { tap, count } = tapCounter()
+  // Tap the thing, get the thing. « Ce soir » resolves its recipe (by recipe_id, else
+  // by title — here the fixture's « Spaghetti maison » matches recipe rc1), so the row
+  // lands ON the recipe view. There used to be a peek in between offering « Ouvrir la
+  // recette » / « Cuisiner » — a menu about the recipe, costing a tap to get past.
+  await tap(page.locator('.now-card__meal').filter({ hasText: 'Spaghetti maison' }).first()) // 1
+  await expect(page).toHaveURL(/\/kitchen\/recipe\/rc1$/)
+  await expect(page.locator('.recipe-actions .btn--primary')).toBeVisible({ timeout: 10_000 }) // Cuisiner
+  assertBudget('supper: cook tonight’s meal', count(), 1)
+})
+
 test('kitchen: see the week — 1 tap (the hub tab; Repas is the default sub-tab)', async ({ page }) => {
   await boot(page)
   const { tap, count } = tapCounter()
@@ -188,6 +201,20 @@ test('routines: open a routine to run — 2 taps (tab + the card’s ▶ Faire)'
   await expect(page).toHaveURL(/\/routine\/[^/]+\/run$/)
   await expect(page.locator('.tdl')).toBeVisible({ timeout: 10_000 })
   assertBudget('routines: open a routine to run', count(), 2)
+})
+
+test('routines: tapping the CARD runs it too — no peek in between', async ({ page }) => {
+  await boot(page)
+  const { tap, count } = tapCounter()
+  await tap(page.locator('.hubnav a[href="/routines"]')) // 1 — the hub tab
+  await expect(page.locator('.routines-grid').first()).toBeVisible({ timeout: 15_000 })
+  // Tap the thing, get the thing. The card body used to open a peek whose buttons
+  // were « Faire la routine » / « Modifier » — a menu about the card, when the card
+  // already showed the face, the moment, every step picto and carried its own ▶/✎.
+  await tap(page.locator('.routine-card').first()) // 2 — the card body itself
+  await expect(page).toHaveURL(/\/routine\/[^/]+\/run$/)
+  await expect(page.locator('.detail-sheet.show')).toHaveCount(0)
+  assertBudget('routines: tap the card to run it', count(), 2)
 })
 
 // ------------------------------------------------------------------- voyage

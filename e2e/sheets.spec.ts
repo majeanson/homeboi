@@ -36,9 +36,9 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`sheet-add-capture${sfx}`, async ({ page }) => {
     await boot(page, '/board', theme)
     await page.locator('.add-fab').click()
-    // The board ＋ hoists the quick-capture box to the top of the sheet, so the
-    // capture input is visible immediately (no "Note rapide" tile to pick first).
-    await page.locator('.sheet__field input').waitFor({ state: 'visible' })
+    // The board ＋ hoists the « Note rapide » box to the top of the sheet, so the
+    // note input is visible immediately (no tile to pick first).
+    await page.locator('.addsheet__lead input.edit-field__input').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `sheet-add-capture-phone${sfx}`)
   })

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
 // no backend. Shapes mirror the page-level interfaces (Board.tsx, Kitchen.tsx,
@@ -314,6 +315,22 @@ const EVENTS = {
   ],
 }
 
+// « L'année » horizon (/api/year → YearView). Two constraints the other fixtures
+// don't have:
+//   • The view's window is [first of THIS month, +12 months) off the live clock and
+//     it isn't polled, so BASE (a year in the past) would fall outside it entirely.
+//   • Its mini-month dots are keyed by LOCAL-midnight day (lib/monthgrid), so a raw
+//     `now + n*86400` misses every grid cell by the clock's time-of-day and paints
+//     nothing. Step the same DST-safe way the grid does.
+const yearDay = (n: number): number => addLocalDays(localDayStart(new Date()), n)
+const YEAR = {
+  birthdays: [{ id: 'yb1', name: 'Léa', day: yearDay(12), age: 5, memberId: 'm3' }],
+  events: [{ id: 'ye1', title: 'Rendez-vous chez le dentiste', day: yearDay(40) }],
+  upkeep: [{ id: 'yu1', kind: 'upkeep', title: 'Pneus d’hiver', color: null, day: yearDay(120) }],
+  life: [{ carnetId: 'yc1', name: 'Chauffe-eau', color: null, day: yearDay(220) }],
+  trips: [{ id: 'yt1', title: 'Gaspésie', colour: '#2a8f85', start_at: yearDay(20), end_at: yearDay(27) }],
+}
+
 const DEVICES = {
   devices: [
     { id: 'd1', label: 'Tablette cuisine', last_seen_at: BASE - 600, created_at: BASE - 30 * DAY },
@@ -462,6 +479,7 @@ const ROUTES: Record<string, unknown> = {
   'pair/devices': DEVICES,
   chores: CHORES,
   events: EVENTS,
+  year: YEAR,
   health: { ai: true, aiAvailable: true },
   household: { name: 'Maison Tremblay', postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
   // « Le cercle » people graph (members + contacts + links + coloured groups).
@@ -610,6 +628,9 @@ export async function mockApi(
   // refetch confirms the optimistic UI rather than reverting it.
   const checkedItems = new Set<string>()
   const clearedItems = new Set<string>()
+  // « Pas pressé »: a presentation flag written from the item edit scene. Tracked
+  // so the board refetch keeps the row faded instead of reverting it.
+  const noRushItems = new Set<string>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -659,6 +680,8 @@ export async function mockApi(
             })
           } else if (body.id && body.checked === true) checkedItems.add(body.id)
           else if (body.id && body.checked === false) checkedItems.delete(body.id)
+          if (body.id && body.non_urgent === true) noRushItems.add(body.id)
+          else if (body.id && body.non_urgent === false) noRushItems.delete(body.id)
         } catch {
           /* no body */
         }
@@ -745,13 +768,14 @@ export async function mockApi(
     // Board read reflects this session's writes (cleared notes, list checks +
     // clears), so an optimistic UI's refetch confirms instead of reverting. A
     // checked row STAYS on the list with checked_at set; a cleared row is gone.
-    if (path === 'board' && (dismissedNotes.size || checkedItems.size || clearedItems.size)) {
+    if (path === 'board' && (dismissedNotes.size || checkedItems.size || clearedItems.size || noRushItems.size)) {
       const b = {
         ...BOARD,
         notes: BOARD.notes.filter((n) => !dismissedNotes.has(n.id)),
         list: BOARD.list
           .filter((i) => !clearedItems.has(i.id))
-          .map((i) => (checkedItems.has(i.id) ? { ...i, checked_at: BASE } : i)),
+          .map((i) => (checkedItems.has(i.id) ? { ...i, checked_at: BASE } : i))
+          .map((i) => (noRushItems.has(i.id) ? { ...i, non_urgent: 1 } : i)),
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
       return
@@ -785,8 +809,9 @@ export interface AppState {
   // The device role. When set, the `/` smart entry treats the device as "chosen"
   // and skips the marketing page. Leave undefined to exercise a first-time visitor.
   surface?: Surface
-  // The parent board layout (bento = Grille | month = Mois). Defaults to bento.
-  boardView?: 'bento' | 'month'
+  // The parent board layout (bento = Grille | month = Mois | annee = L'année).
+  // Defaults to bento.
+  boardView?: 'bento' | 'month' | 'annee'
   // Per-device Grille card layout (« Disposition du babillard », lib/boardCards) —
   // show/hide + order. Lets a spec exercise a custom layout without hand-injecting the
   // localStorage key. Unset → the default order, all visible.

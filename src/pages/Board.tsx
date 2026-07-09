@@ -37,7 +37,7 @@ import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { useNow, isPastSec } from '../lib/itemLife'
 import { imgUrl } from '../lib/image'
-import { SLOT_ICON_NAME, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, heroCardLabel, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { Disclosure } from '../components/Disclosure'
 import { Fil } from '../components/board/Fil'
@@ -55,9 +55,10 @@ import { ToddlerBoard } from '../components/board/ToddlerBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
 import { TodayChangesSheet } from '../components/board/TodayChangesSheet'
 import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildEvent, buildChore, buildLeftover, buildMeal, type DetailCtx } from '../components/detail/adapters'
+import { buildEvent, buildChore, buildLeftover, type DetailCtx } from '../components/detail/adapters'
+import { useOpenMeal } from '../components/detail/useOpenMeal'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { useBoardData, useTagColors } from '../lib/queryHooks'
+import { useBoardData } from '../lib/queryHooks'
 import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
 import { useBoardModel } from '../lib/boardModel'
@@ -78,9 +79,9 @@ import { isGuest } from '../lib/device'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { BOARD_HELP } from '../lib/boardHelp'
 
-// The meal-slot "past" thresholds + the shared past/now rule now live in lib/itemLife
-// (SLOT_PAST_MIN / mealSlotPast / isPastSec / useNow), so every timed board item — meals,
-// rendez-vous, work — crosses out by ONE rule on ONE clock.
+// The shared past/now rule lives in lib/itemLife (mealSlotPast / isPastSec / useNow), so
+// every timed board item — meals, rendez-vous, work — crosses out by ONE rule on ONE
+// clock. A meal's threshold comes from the household's serve hours (Réglages ▸ Repas).
 
 // Keep the greeting on one line beside the help dot + section icon: a long
 // display name collapses so "Bonne soirée, …" never wraps or overflows. A
@@ -134,9 +135,8 @@ export function Board() {
   // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
   // + smart actions. Parent audience only; the toddler lens stays hear-first below.
   const detail = useEntityDetail()
-  // Resolves a tapped meal → its saved recipe so the peek shows the photo + glance.
+  // Resolves a tapped meal → its saved recipe, so the tap can jump straight to it.
   const recipeFor = useRecipeForMeal()
-  const tagColors = useTagColors()
   // The board layout for this device (bento = Grille | month = Mois), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
   // Which Grille cards this device shows + their order (Réglages ▸ Affichage ▸
@@ -257,7 +257,7 @@ export function Board() {
   // Per-slot meal colour + visibility (Réglages ▸ Repas). A meal's slot tints its
   // card here and everywhere it shows; a hidden slot drops off the glance.
   const mealPrefs = useMealPrefs()
-  const supperColor = mealPrefs.color('supper')
+  // The day's HERO meal — the souper unless the household promoted another slot.
   // « Préparer le repas » — the next meal due that resolves to a recipe → its cook
   // mode (or the picker when it's free-text). Reused from the retired « Maintenant »
   // view: a quick action beside « Prochainement », never a dead end (a planned
@@ -305,6 +305,11 @@ export function Board() {
     openTodosCount: openTodos.length,
     tomorrowTodoCount,
   })
+  // The day's hero slot as the MODEL resolved it (off the board payload, not off the
+  // household setting directly) — so « Ce soir »'s icon, label, colour and its meals
+  // always describe the same slot, even in the poll right after the hero is changed.
+  const heroSlot = model.meals.hero
+  const supperColor = mealPrefs.color(heroSlot)
   // Aliases onto the model's output, kept under their old names so the JSX
   // below reads them the same way it always did — the derivations themselves
   // now live in ONE place (lib/boardModel), not re-implemented per lens.
@@ -332,9 +337,18 @@ export function Board() {
   // the day ahead in the morning, the supper hero as dinner nears, « Demain » prep in the
   // evening. Folded under the ambient toggle (Réglages ▸ Affichage): ambient on → the board
   // also leans by time; off → no emphasis. A soft accent, never a reshuffle.
-  const focus = isDaypartAuto() ? momentFocus(Date.now()) : null
+  const focus = isDaypartAuto() ? momentFocus(Date.now(), mealPrefs.hours[heroSlot]) : null
   const filNow = focus === 'day' && filShown
   const todayNow = (focus === 'day' && !filShown) || focus === 'evening'
+
+  // What the adapters (components/detail/adapters) need to resolve faces + copy.
+  // recipeFor lets a tapped meal jump straight to its recipe view (useOpenMeal).
+  // BOTH must sit ABOVE the early returns below: `useOpenMeal` is a hook, and the
+  // unauth / simple / toddler paths bail out before the rest of the render — calling
+  // it after them changes Board's hook count between renders (Rules of Hooks).
+  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor }
+  // A tapped meal → its recipe view when it has one, else the plan peek.
+  const openMeal = useOpenMeal(detailCtx)
 
   if (unauth) return <PairPrompt />
 
@@ -369,9 +383,6 @@ export function Board() {
   // local-day bucketing (lib/monthgrid + /api/month). UTC midnight flipped a day
   // ahead every evening (~8 PM Eastern), so "today" highlighted tomorrow's cell.
   const todayDay = todayLocalDay()
-  // What the adapters (components/detail/adapters) need to resolve faces + copy.
-  // recipeFor lets a tapped meal show its recipe photo + ingredient glance.
-  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor, tagColors }
   const tomorrowDay = addLocalDays(todayDay, 1)
   const eventWhen = (e: EventRow) =>
     // D-21: the flagged-chore evening announce reads « Ce soir », never « Fête »
@@ -466,7 +477,7 @@ export function Board() {
     const keys = [BOARD_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
-      body: { action: 'plan', id, date: todayDay, slot: 'supper' },
+      body: { action: 'plan', id, date: todayDay, slot: heroSlot },
       affectedKeys: keys,
     }).catch(() => null)
     const mealId = res && !res.queued ? res.data?.mealId : undefined
@@ -828,21 +839,22 @@ export function Board() {
       ) : (
         <>
           {/* The "today" zone heroes — tonight's supper + the weather/photo card — ride
-              on top via DayHeroes (the polished glance cards). The meal tap keeps
-              Grille's leftover/remove detail actions. The heads-up cards (À régler +
-              Moments) sit DIRECTLY beneath them via statusBand, matching their look. */}
+              on top via DayHeroes (the polished glance cards). Tapping the supper opens
+              its recipe outright; a recipe-less one peeks with the leftover/remove plan
+              actions. The heads-up cards (À régler + Moments) sit DIRECTLY beneath them
+              via statusBand, matching their look. */}
           {isCardVisible(boardCards, 'heroes') && (
             <DayHeroes
               suppers={tonightMeals}
               supperColor={supperColor!}
               onOpenMeal={(m) =>
-                detail.open(buildMeal(m, detailCtx, {
+                openMeal(m, {
                   color: supperColor,
-                  slotLabel: t.board.tonight,
+                  slotLabel: heroCardLabel(heroSlot, t),
                   daySec: todayDay,
                   onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                  onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? 'supper', todayDay),
-                }))
+                  onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
+                })
               }
               cookLine={cookLine}
               weather={weather}
@@ -850,6 +862,7 @@ export function Board() {
               wonder={dayClear && audience === 'parent' ? null : wonder}
               onShuffleWonder={shuffleWonder}
               supperNow={focus === 'supper'}
+              heroSlot={heroSlot}
             />
           )}
 
@@ -918,13 +931,13 @@ export function Board() {
                   mine={!!profileId && m.cook_member_id === profileId}
                   past={m.past}
                   onOpen={() =>
-                    detail.open(buildMeal(m, detailCtx, {
+                    openMeal(m, {
                       color: mealPrefs.color(m.slot),
                       slotLabel: slotLabel(m.slot),
                       daySec: todayDay,
                       onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
                       onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
-                    }))
+                    })
                   }
                 />
               )
@@ -1056,19 +1069,19 @@ export function Board() {
                   {showTomorrowSupper && data.tomorrowMeal && (
                     <Act
                       cat="meal"
-                      icon={SLOT_ICON_NAME.supper}
-                      when={slotLabel('supper')}
+                      icon={SLOT_ICON_NAME[heroSlot]}
+                      when={slotLabel(heroSlot)}
                       title={data.tomorrowMeal.title}
                       who={cookLine(data.tomorrowMeal)}
                       color={supperColor}
                       onOpen={() =>
-                        detail.open(buildMeal(data.tomorrowMeal!, detailCtx, {
+                        openMeal(data.tomorrowMeal!, {
                           color: supperColor,
-                          slotLabel: slotLabel('supper'),
+                          slotLabel: slotLabel(heroSlot),
                           daySec: tomorrowDay,
                           onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
-                          onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, 'supper', tomorrowDay),
-                        }))
+                          onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay),
+                        })
                       }
                     />
                   )}
@@ -1082,13 +1095,13 @@ export function Board() {
                       who={cookLine(m)}
                       color={mealPrefs.color(m.slot)}
                       onOpen={() =>
-                        detail.open(buildMeal(m, detailCtx, {
+                        openMeal(m, {
                           color: mealPrefs.color(m.slot),
                           slotLabel: slotLabel(m.slot),
                           daySec: tomorrowDay,
                           onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
                           onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
-                        }))
+                        })
                       }
                     />
                   ))}

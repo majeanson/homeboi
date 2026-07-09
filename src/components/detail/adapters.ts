@@ -12,7 +12,7 @@ import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
 import { KIND_EMOJI, type CarnetKind } from '../../lib/carnets'
 import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
-import { recipeImg, recipeTotalMin, tagColor, type Recipe } from '../../lib/recipes'
+import { type Recipe } from '../../lib/recipes'
 import { type Mot } from '../../lib/mots'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
@@ -21,25 +21,14 @@ import { nameOf, colorOf, type Dict, type Member, type EventRow, type ChoreInsta
 import type { DetailAction, DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
 
 // What every builder needs to resolve names/faces + locale + copy. `recipeFor`
-// (optional) lets buildMeal light up a planned meal's recipe — photo + ingredient
-// glance — without each callsite threading the recipe; pages set it from
-// useRecipeForMeal(). Absent → a meal peek still works, just without the photo.
+// (optional) resolves a planned meal → its saved recipe; pages set it from
+// useRecipeForMeal(). It's what useOpenMeal consults to decide whether a tapped
+// meal has a recipe VIEW to jump to, or only a peek to show.
 export interface DetailCtx {
   t: Dict
   lang: Lang
   members: Member[]
   recipeFor?: (m: { recipe_id?: string | null; title: string }) => Recipe | undefined
-  // Per-tag household colours (migration 0037, keyed lowercase tag → "#rrggbb"),
-  // from the RECIPE_TAGS_KEY query. Lets the recipe/meal peek tint its tag chips
-  // the SAME colour the recipe book + RecipeSheet use. Absent → plain chips.
-  tagColors?: Record<string, string>
-}
-
-// A recipe's tags → a chips block tinted with the household tag colours, matching
-// RecipeSheet/RecipesTab. Kept in the recipe's stored order (the order the cook
-// typed them) — same as RecipeSheet shows a single recipe's own tags.
-function tagChips(tags: string[], ctx: DetailCtx): DetailBlock {
-  return { kind: 'chips', chips: tags, tones: tags.map((tg) => tagColor(ctx.tagColors, tg)) }
 }
 
 // A face for the header, drawn by the shared <Avatar>. Null when no member.
@@ -48,11 +37,6 @@ function whoOf(members: Member[], id: string | null, role?: string): DetailWho |
   if (!m) return null
   return { role, name: m.display_name, colour: m.colour, avatarKind: m.avatar_kind ?? null, avatarRef: m.avatar_ref ?? null }
 }
-
-// Recipe section headings are inline "## Title" lines in the flat arrays — skip
-// them when previewing ingredients/steps (every iterator must, see CLAUDE.md).
-const isHeading = (line: string) => line.trim().startsWith('##')
-const preview = (lines: string[] | undefined, n: number) => (lines ?? []).filter((l) => !isHeading(l) && l.trim()).slice(0, n)
 
 // — Agenda event —
 export function buildEvent(
@@ -324,7 +308,7 @@ export function buildLeftover(
 
 // The fields a meal can carry across the board (DayMealRow) and the kitchen
 // (MealRow) — the builder reads whatever's present.
-interface MealLike {
+export interface MealLike {
   id: string
   title: string
   slot?: string
@@ -333,49 +317,28 @@ interface MealLike {
   is_leftover?: number
 }
 
-// — A planned meal. `recipe` (when the caller has it) lights up the photo, the
-// hearts and "Ouvrir la recette"; `color` is the slot colour (useMealPrefs);
-// `daySec` enables "Voir la journée" (the day planner).
-// `onLeftover` adds "Créer des restants" (save a leftover entry for this meal).
-// `onRemove` adds a danger "Retirer du plan" (delete the meal from the plan). —
-export function buildMeal(
-  m: MealLike,
-  ctx: DetailCtx,
-  opts?: {
-    recipe?: Recipe | null
-    color?: string
-    slotLabel?: string
-    daySec?: number
-    onLeftover?: () => void
-    onRemove?: () => void
-  },
-): DetailModel {
+export interface MealOpts {
+  color?: string
+  slotLabel?: string
+  daySec?: number
+  onLeftover?: () => void
+  onRemove?: () => void
+}
+
+// — A planned meal that has NO recipe behind it (a typed "Spaghettis", a leftover).
+// A meal that DOES resolve a recipe never reaches this builder: useOpenMeal sends the
+// tap straight to /kitchen/recipe/:id, where the photo, the tags, the ingredients, the
+// hearts and « Cuisiner » all already live. So this peek is what's left when there's
+// nowhere to jump — the plan-editing actions on a bare title.
+// `color` is the slot colour (useMealPrefs); `daySec` enables "Voir la journée" (the
+// day planner); `onLeftover` adds "Créer des restants"; `onRemove` the danger
+// "Retirer du plan". —
+export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailModel {
   const { t, members } = ctx
   const slot = m.slot
   const icon: IconName = slot && isMealSlot(slot) ? SLOT_ICON_NAME[slot] : CATS.meal.icon
-  // Resolve the linked recipe: an explicit one wins, else the ctx resolver
-  // (useRecipeForMeal) maps the meal → its saved recipe by link/title. With it the
-  // peek shows the food's real photo + a quick-glance of the ingredients.
-  const recipe = opts?.recipe ?? ctx.recipeFor?.(m) ?? null
-  const recipeId = recipe?.id ?? m.recipe_id ?? null
   const blocks: DetailBlock[] = m.is_leftover ? [{ kind: 'text', text: t.kitchen.leftoversTag }] : []
-  // Quick glance at what the meal IS (skip for a leftover — it has no recipe to
-  // preview): its tags then the first few ingredients, mirroring the recipe peek.
-  if (recipe && !m.is_leftover) {
-    if (recipe.tags?.length) blocks.push(tagChips(recipe.tags, ctx))
-    const ing = preview(recipe.ingredients, 6)
-    if (ing.length) blocks.push({ kind: 'list', label: t.detail.ingredients, items: ing })
-  }
-  const total = recipe ? recipeTotalMin(recipe) : 0
-  // Slot label + cook time read together as the sub-line ("Souper · 35 min").
-  const sub = [opts?.slotLabel, total ? `${total} min` : null].filter(Boolean).join(' · ') || undefined
   const actions: DetailModel['actions'] = []
-  if (recipeId)
-    actions.push({ key: 'recipe', label: t.detail.openRecipe, icon: 'book-open-bold', primary: true, href: `/kitchen/recipe/${recipeId}` })
-  // "Cuisiner" — jump straight into cook mode, but only when we have the resolved
-  // recipe (a bare recipe_id without the loaded row can't be cooked from here).
-  if (recipe)
-    actions.push({ key: 'cook', label: t.kitchen.cook, icon: 'cooking-pot-bold', href: `/kitchen/recipe/${recipe.id}/cook` })
   if (opts?.daySec) actions.push({ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.daySec}` })
   // "Créer des restants" — skip if the meal is already a replanned leftover
   if (opts?.onLeftover && !m.is_leftover)
@@ -386,11 +349,9 @@ export function buildMeal(
     kind: 'meal',
     title: m.title,
     icon,
-    photo: recipe ? recipeImg(recipe.image) : null,
     accent: opts?.color ?? CATS.meal.color,
-    whoLabel: sub,
+    whoLabel: opts?.slotLabel,
     who: whoOf(members, m.cook_member_id ?? null, t.detail.cook),
-    loveRecipeId: recipeId ?? undefined,
     blocks,
     actions,
   }
@@ -423,10 +384,17 @@ export function buildDay(
   }
 }
 
-// NOTE: the recipe-card browse peek (`buildRecipe`) was removed — tapping a recipe
-// now opens the full recipe view (/kitchen/recipe/:id) directly, where every action
-// it carried (Ajouter à la liste, En routine pour enfant, Partager) lives. The
-// planned-MEAL peek (buildMeal, above) is the only recipe-adjacent peek left.
+// NOTE — the "tap the thing, get the thing" rule. A peek that is really just a MENU
+// of "go to page X" is an inter-tap, and we delete it rather than ship it:
+//   · `buildRecipe` (the recipe-card browse peek) → tapping a recipe opens
+//     /kitchen/recipe/:id, where Cuisiner / Ajouter à la liste / Partager live.
+//   · `buildRoutine` (the routine-card peek) → tapping a routine card runs it
+//     (/routine/:id/run); the card itself already carries one-tap ✎ and ▶, and
+//     « Partager » moved onto the routine's own scene (/routine/:id).
+//   · a recipe-linked MEAL → useOpenMeal navigates to the recipe view too.
+// What's left below are peeks that are CONTENT, not menus: an event, a chore, a mot
+// (it plays the voice clip), a day, a contact — none of them has a page to jump to,
+// so the sheet IS the destination.
 
 // — A person in « Le cercle ». Informative peek: the face, the birthday (with a
 // calm countdown), notes, tags, and the relationship lines the caller resolved
@@ -533,56 +501,3 @@ export function buildMemberPerson(
   }
 }
 
-// A routine as the /routines list carries it (id, name, child, colour). The caller
-// passes the resolved time-of-day label + each step's emoji AND its R2 photo key
-// (feature #17 C) so the peek can show the real card pictures, not just the emojis.
-interface RoutineLike {
-  id: string
-  name: string
-  memberName?: string | null
-  color?: string | null
-  avatarPhoto?: string | null
-}
-
-// — A kid routine — informative: the child, the moment of day, the step count, and
-// the step pictos themselves. A card with a parent-set PHOTO shows the photo (the
-// same photo-wins rule the Routines grid + toddler run follow); otherwise its emoji.
-// So the peek shows exactly what the routine IS. "Modifier la routine" opens the
-// builder. —
-export function buildRoutine(
-  r: RoutineLike,
-  ctx: DetailCtx,
-  opts?: { todLabel?: string | null; steps?: { emoji?: string; photoKey?: string }[]; onShare?: () => void },
-): DetailModel {
-  const { t } = ctx
-  // Keep a step only when it has something to show (a photo or an emoji), then
-  // resolve each photo key to a real src — empty keys ('') fall back to the emoji.
-  const items = (opts?.steps ?? [])
-    .map((s) => ({ emoji: s.emoji || undefined, photo: s.photoKey ? imgUrl(s.photoKey) : undefined }))
-    .filter((s) => s.photo || s.emoji)
-  const sub = [opts?.todLabel, items.length ? t.routines.stepsN(items.length) : null].filter(Boolean).join(' · ')
-  return {
-    kind: 'routine',
-    title: r.name,
-    icon: CATS.routine.icon,
-    accent: r.color ?? CATS.routine.color,
-    whoLabel: sub || undefined,
-    who: r.memberName
-      ? { name: r.memberName, colour: r.color ?? null, avatarKind: r.avatarPhoto ? 'photo' : null, avatarRef: r.avatarPhoto ?? null }
-      : null,
-    blocks: items.length ? [{ kind: 'pictos', label: t.detail.steps, items }] : [],
-    // "Faire la routine" (the run player, now available on every surface) is the
-    // primary action when there are steps to run; editing drops to secondary. An
-    // empty shell (no steps) shows only "Modifier" — nothing to run into.
-    actions: [
-      ...(items.length
-        ? [
-            { key: 'run', label: t.detail.runRoutine, icon: 'play-bold' as const, primary: true, href: `/routine/${r.id}/run` },
-            { key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold' as const, href: `/routine/${r.id}` },
-          ]
-        : [{ key: 'open', label: t.detail.editRoutine, icon: 'pencil-simple-bold' as const, primary: true, href: `/routine/${r.id}` }]),
-      // « Partager » — a public link with the deck (icons/labels/photos), no narration.
-      ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, run: opts.onShare }] : []),
-    ],
-  }
-}

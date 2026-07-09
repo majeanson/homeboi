@@ -112,7 +112,15 @@ for (const width of [360, 390]) {
     await page.waitForTimeout(150)
     await assertClean(page, 'chooser grid, scrolled')
 
-    // State 2 — tap the "À compléter" (todo) tile to reveal the scope button row
+    // State 2 — open the « Note rapide » box's 📎, which unfolds a Cluster of three
+    // memo chips (Mémo vocal · Dessiner · Sur une photo). These were three full-width
+    // buttons; as a wrapped chip row they must still stay inside the sheet at 360px.
+    await page.locator('.addsheet__lead .memo-attach__btn').click()
+    await expect(page.locator('.memo-attach__picks')).toBeVisible()
+    await assertClean(page, 'note attach chip row')
+    await page.locator('.addsheet__lead .memo-attach__btn').click()
+
+    // State 3 — tap the "À compléter" (todo) tile to reveal the scope button row
     // (En tout temps / Aujourd'hui / Une date) — the row that used to bleed right.
     const todoTile = page.locator('.cat-pick[data-mode="todo"]')
     if (await todoTile.count()) {
@@ -120,10 +128,24 @@ for (const width of [360, 390]) {
       await expect(page.locator('.addsheet__scope')).toBeVisible()
       await assertClean(page, 'todo scope row')
 
-      // State 3 — pick "Une date", which reveals the full-width native date input.
+      // State 4 — pick "Une date", which reveals the full-width native date input.
       await page.locator('.addsheet__scope .btn').last().click()
       await expect(page.locator('.addsheet__scope-date')).toBeVisible()
       await assertClean(page, 'todo scope row + date picker')
+    }
+
+    // State 5 — « Laisse un mot »: a face row, the composer field with its 📎, and
+    // « Plus tard » unfolding four preset chips + a date/time pair. The densest row
+    // stack in this sheet, and the one whose « Me le rappeler » chip is new.
+    const motTile = page.locator('.cat-pick[data-mode="mot"]')
+    if (await motTile.count()) {
+      await motTile.click()
+      await expect(page.locator('.mot-composer')).toBeVisible()
+      await assertClean(page, 'mot composer')
+
+      await page.locator('.mot-composer__sched > .btn').click()
+      await expect(page.locator('.mot-composer__presets')).toBeVisible()
+      await assertClean(page, 'mot composer, « Plus tard » open')
     }
   })
 }

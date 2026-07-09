@@ -19,16 +19,13 @@ type DetailKind =
   | 'leftover'
   | 'note'
   | 'mot' // « Laisse un mot » — a member-to-member message (text / voice / drawing / photo)
-  | 'recipe'
-  | 'routine'
   | 'contact'
 
 // One block of body content. The sheet renders these top-to-bottom.
 export type DetailBlock =
   | { kind: 'text'; text: string; hand?: boolean } // a paragraph (hand = handwritten note look)
-  | { kind: 'chips'; label?: string; chips: string[]; tones?: (string | undefined)[] } // a tag/chip row; `tones[i]` = a per-chip household hex (recipe tag colours)
-  | { kind: 'pictos'; label?: string; items: { photo?: string; emoji?: string }[] } // step pictos: a card's photo (preferred) or its emoji — same rule the grid/kid run follow
-  | { kind: 'list'; label?: string; items: string[] } // a short bullet list (ingredients/steps preview)
+  | { kind: 'chips'; label?: string; chips: string[]; tones?: (string | undefined)[] } // a tag/chip row; `tones[i]` = a per-chip household hex
+  | { kind: 'list'; label?: string; items: string[] } // a short bullet list (a person's relationships, a day's meals)
   | { kind: 'image'; src: string; alt?: string } // a media image (note photo/drawing), tap-to-zoom
   | { kind: 'audio'; src: string } // a media audio memo (a <audio controls>)
   // Tappable chips that ADD/REMOVE membership inline (e.g. a person's named groups in
@@ -50,7 +47,7 @@ export interface DetailAction {
   key: string
   label: string
   icon?: IconName
-  primary?: boolean // the marigold filled CTA (e.g. "Ouvrir la recette")
+  primary?: boolean // the marigold filled CTA (e.g. "Modifier" on an event)
   tone?: 'danger' // a destructive action (e.g. "Effacer")
   run?: () => void
   href?: string
@@ -67,6 +64,5 @@ export interface DetailModel {
   whoLabel?: string // a quiet sub-line under the title (e.g. a meal slot)
   who?: DetailWho | null // a face chip
   blocks?: DetailBlock[]
-  loveRecipeId?: string // render the shared <HeartButton> for this recipe (#21)
   actions?: DetailAction[]
 }

@@ -90,8 +90,8 @@ export const OPERATOR_HELP = {
     // Was 'set-meals' — never a GUIDE id (orphan caught by helpRegistry.test.ts).
     card: 'kitchen',
     body: {
-      fr: `La couleur de chaque repas de la journée et lesquels tu veux voir sur le babillard et dans La cuisine.`,
-      en: `Each meal's colour and which ones you want to show on the board and in the kitchen.`,
+      fr: `L'ordre, la couleur et l'heure de chaque repas de la journée, et lesquels tu veux voir sur le babillard et dans La cuisine. Glisse-les dans l'ordre de ta journée : il est respecté partout. L'étoile marque le repas vedette — celui qui fait la manchette « Ce soir ». L'heure dit quand chaque repas est servi : c'est elle, pas l'ordre, qui décide du prochain repas à cuisiner.`,
+      en: `The order, colour and hour of each meal of the day, and which ones you want to show on the board and in the kitchen. Drag them into the order your day runs in: it's respected everywhere. The star marks the headline meal — the one the board leads with. The hour says when each meal is served: that, not the order, decides which meal to cook next.`,
     },
   },
   todoTemplates: {

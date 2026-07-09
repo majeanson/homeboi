@@ -12,8 +12,8 @@ export const ROUTINES_HELP = {
     card: 'routines',
     point: 0,
     body: {
-      fr: 'Touche une routine pour la voir en grand et la modifier : ses étapes, le visage de l’enfant et le moment de la journée (matin / après-midi / soir, la pastille en haut). Le ＋ en bas en crée une nouvelle. En vue enfant, ces mêmes routines se tapent et se lisent à voix haute.',
-      en: 'Tap a routine to see it large and edit it: its steps, the child’s face and the moment of day (morning / afternoon / evening, the badge up top). The ＋ at the bottom creates a new one. In kid view these same routines are tapped and read aloud.',
+      fr: 'Touche une routine pour la faire : ça ouvre le lecteur, étape par étape. La carte montre déjà tout — les étapes, le visage de l’enfant, le moment de la journée (matin / après-midi / soir, la pastille en haut). Le ✎ la modifie, le ＋ en bas en crée une nouvelle. En vue enfant, ces mêmes routines se tapent et se lisent à voix haute.',
+      en: 'Tap a routine to do it: the player opens, step by step. The card already shows everything — the steps, the child’s face, the moment of day (morning / afternoon / evening, the badge up top). The ✎ edits it, the ＋ at the bottom creates a new one. In kid view these same routines are tapped and read aloud.',
     },
   },
   // The header magnifier (A-9 soft icon label — armed help explains the loupe

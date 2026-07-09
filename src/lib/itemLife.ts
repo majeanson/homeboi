@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { localMinuteOfDay } from './localDay'
+import { DEFAULT_HERO, DEFAULT_SLOT_HOURS, SLOT_GRACE_MIN, clockOrder, isMealSlot, type MealSlot } from './mealSlots'
 
 // The board's item LIFECYCLE — one shared clock + the one "is this timed thing past?"
 // rule, so every surface crosses things out the same way at the same moment. Before this,
@@ -30,21 +31,28 @@ export function isPastSec(anchorSec: number | null | undefined, nowMs: number): 
   return anchorSec != null && anchorSec * 1000 < nowMs
 }
 
-// Meal slots carry no per-item time, only a slot, so their "past" anchor is a slot
-// end-of-window minute-of-day (déjeuner is done by ~10:30, etc.). SOUPER is deliberately
-// absent: it's the evening HEADLINE — the standing answer to "what's for supper tonight" —
-// so it keeps full emphasis all evening and never strikes (the hero is never line-crossed).
-// DESSERT is absent too: it follows the souper, so it stays live all evening and rolls
-// off at midnight like the hero.
-export const SLOT_PAST_MIN: Partial<Record<string, number>> = {
-  breakfast: 10 * 60 + 30,
-  lunch: 14 * 60,
-  snack: 17 * 60,
-}
-export function mealSlotPast(slot: string, nowMs: number): boolean {
-  const cut = SLOT_PAST_MIN[slot]
-  if (cut == null) return false
+// Meal slots carry no per-item time, only a slot — so their "past" anchor is derived
+// from the household's serve times (Réglages ▸ Repas, `hours`): a meal is crossed out
+// once its serve window has closed, i.e. exactly when it stops being the meal
+// « Cuisiner » would offer (mealSlots' shared SLOT_GRACE_MIN). This used to be a fixed
+// {breakfast: 10:30, lunch: 14:00, snack: 17:00} table, which silently lied the moment
+// a household moved an hour: a collation served at 18:00 struck through at 17:01.
+//
+// The HERO meal never strikes: it's the day's headline — the standing answer to "what's
+// for supper tonight" — so it keeps full emphasis all evening. Nor does any meal served
+// AFTER the hero (the dessert, by default): those follow it and stay live until they
+// roll off at local midnight with it.
+export function mealSlotPast(
+  slot: string,
+  nowMs: number,
+  hours: Record<MealSlot, number> = DEFAULT_SLOT_HOURS,
+  hero: MealSlot = DEFAULT_HERO,
+): boolean {
+  if (!isMealSlot(slot)) return false
+  const clock = clockOrder(hours)
+  // The hero and everything after it on the clock are never line-crossed.
+  if (clock.indexOf(slot) >= clock.indexOf(hero)) return false
   // Household-local wall-clock minute, not the runtime's own zone (localDay.ts) — a
   // CI runner (UTC) must strike the same slots a Toronto kiosk would at the same instant.
-  return localMinuteOfDay(new Date(nowMs)) > cut
+  return localMinuteOfDay(new Date(nowMs)) > hours[slot] + SLOT_GRACE_MIN
 }

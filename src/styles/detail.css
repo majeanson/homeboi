@@ -102,29 +102,6 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-/* Routine step pictos: a photo card (when the parent set one) or its emoji, sized
-   the same so the row reads as a filmstrip of the steps (feature #17 C). */
-.detail-sheet__picto {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: var(--surface-2);
-  font-size: 24px;
-  line-height: 1;
-  overflow: hidden;
-}
-.detail-sheet__picto--photo {
-  background: var(--card);
-}
-.detail-sheet__picto img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
 .detail-sheet__list {
   margin: 0;
   padding-left: 1.1rem;

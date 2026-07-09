@@ -78,10 +78,11 @@ for (const surface of SURFACES) {
   }
 }
 
-// The alternate board layout (kiosk wall): « Mois », the calendar. (« Grille » is the
-// default, covered by the main board frames; the per-person split is the face picker,
-// and « Moments » is its own scene — no longer separate board layouts.)
-for (const boardView of ['month'] as const) {
+// The alternate board layouts (kiosk wall): « Mois », the calendar, and « L'année »,
+// the twelve-mini-month horizon. (« Grille » is the default, covered by the main board
+// frames; the per-person split is the face picker, and « Moments » is its own scene —
+// no longer separate board layouts.)
+for (const boardView of ['month', 'annee'] as const) {
   test(`board-${boardView}-parent-day-wall`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await mockApi(page)
@@ -99,6 +100,34 @@ for (const boardView of ['month'] as const) {
     await page.screenshot({ path: `e2e/screenshots/board-${boardView}-parent-day-wall.png`, fullPage: true })
   })
 }
+
+// « L'année »'s mini-month day cells are EMPTY spans, so nothing about the DOM says
+// they're missing when they lose their height — the year renders as twelve bordered
+// but blank cards, and a full-page screenshot looks merely sparse. That's exactly how
+// a wall tablet shipped with a zero-height dot grid (older WebKit refuses to size an
+// auto grid row from an empty item's aspect-ratio). Measure the cells instead: they
+// must be visible, square-ish, and the whole six-week grid must have real height.
+test('year mini-months keep a square, non-collapsed dot grid', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk', boardView: 'annee' })
+  await page.goto('/board')
+  await page.waitForSelector('.yearv__mgrid')
+  const box = await page.evaluate(() => {
+    const grid = document.querySelector('.yearv__mgrid')!.getBoundingClientRect()
+    const cell = document.querySelector('.yearv__cell')!.getBoundingClientRect()
+    return { gridH: grid.height, w: cell.width, h: cell.height }
+  })
+  expect(box.gridH).toBeGreaterThan(60)
+  expect(box.w).toBeGreaterThan(6)
+  expect(box.h).toBeGreaterThan(6)
+  // Circles, not slivers or ellipses: the grid box owns the 7/6 ratio.
+  expect(Math.abs(box.w - box.h)).toBeLessThan(1.5)
+  // And the dots actually paint — a fixture whose days miss the local-midnight grid
+  // keys would render 42 grey cells and still pass every check above.
+  const tinted = await page.locator('.yearv__cell[style*="background"]').count()
+  expect(tinted).toBeGreaterThan(0)
+})
 
 // Per-device card layout (« Disposition du babillard »): a saved layout with a card
 // hidden + reordered renders cleanly — no crash, no overflow, and the hidden card is

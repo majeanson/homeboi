@@ -14,6 +14,7 @@ import { parseDeal, parseTerms, unstageDeal, type ListItem } from '../lib/picks'
 import { money } from '../lib/deals'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { AislePicker } from '../components/AislePicker'
+import { Chip, ChipGroup } from '../components/Chip'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // /liste/item/:itemId — edit one grocery line as a full-screen route (was a
@@ -89,6 +90,23 @@ export function ListEditPage() {
     close()
   }
 
+  // « Pas pressé » — buy it only if a good deal is on. Written the moment you pick
+  // (like the aisle picker beside it, not the Save button): it's a one-tap choice
+  // about how the row reads, and the optimistic patch restyles the line behind the
+  // scene right away. No-op when the item already sits on the picked side.
+  function setNoRush(noRush: boolean) {
+    if (!item || !!item.non_urgent === noRush) return
+    void write('list', {
+      method: 'PATCH',
+      body: { id: itemId, non_urgent: noRush },
+      affectedKeys: [BOARD_KEY],
+      optimistic: (cache) =>
+        cache.setQueryData<{ list: ListItem[] }>(BOARD_KEY, (b) =>
+          b ? { ...b, list: b.list.map((i) => (i.id === itemId ? { ...i, non_urgent: noRush ? 1 : null } : i)) } : b,
+        ),
+    }).catch(() => {})
+  }
+
   async function unlink() {
     setBusy(true)
     await unstageDeal(qc, itemId)
@@ -118,6 +136,15 @@ export function ListEditPage() {
               <span className="li-edit__label">{t.list.nameLabel}</span>
               <p className="li-edit__readonly">{item.text}</p>
             </div>
+            {/* A guest can't flip the flag, but should still read why the line
+                looks faded on the list. Only shown when it's actually set. */}
+            {!!item.non_urgent && (
+              <div className="li-edit__field">
+                <ChipGroup>
+                  <Chip icon="hourglass-high-bold">{t.list.rushNone}</Chip>
+                </ChipGroup>
+              </div>
+            )}
             {terms.length > 0 && (
               <div className="li-edit__field">
                 <span className="li-edit__label">{t.list.termsLabel}</span>
@@ -156,6 +183,22 @@ export function ListEditPage() {
             <span className="li-edit__label">{t.list.aisleLabel}</span>
             <span className="li-edit__hint">{t.list.aisleHint}</span>
             <AislePicker text={item.text} />
+          </div>
+
+          {/* A line is an actual errand by default — that needs no control. The only
+              thing worth a tap is the rare "actually, only if there's an aubaine",
+              so this is ONE toggle you switch on, not a choice you have to make. */}
+          <div className="li-edit__field">
+            <ChipGroup>
+              <Chip
+                selected={!!item.non_urgent}
+                onClick={() => setNoRush(!item.non_urgent)}
+                icon="hourglass-high-bold"
+              >
+                {t.list.rushNone}
+              </Chip>
+            </ChipGroup>
+            <span className="li-edit__hint">{t.list.rushHint}</span>
           </div>
 
           <div className="li-edit__field">

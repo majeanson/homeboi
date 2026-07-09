@@ -6,7 +6,6 @@ import { Icon } from '../Icon'
 import { Sheet } from '../Sheet'
 import { Avatar } from '../Avatar'
 import { ZoomableImg } from '../ZoomableImg'
-import { HeartButton } from '../HeartButton'
 import type { DetailAction, DetailBlock, DetailModel } from '../../lib/detail'
 
 // The generalized "entity detail" peek: one calm bottom sheet that renders any
@@ -83,7 +82,6 @@ function DetailBody({ model, onAction }: { model: DetailModel; onAction: (a: Det
               </span>
             </span>
           )}
-          {model.loveRecipeId && <HeartButton recipeId={model.loveRecipeId} />}
         </div>
       </div>
 
@@ -129,22 +127,6 @@ function Block({ block }: { block: DetailBlock }) {
                 </span>
               )
             })}
-          </span>
-        </div>
-      )
-    case 'pictos':
-      // A routine's step pictos: each card shows its parent-set photo when there is
-      // one, else its emoji — the SAME photo-wins rule the Routines grid + kid run
-      // use, so the peek never disagrees with them (feature #17 C).
-      return (
-        <div className="detail-sheet__chips">
-          {block.label && <span className="detail-sheet__blocklabel mono">{block.label}</span>}
-          <span className="detail-sheet__chiprow">
-            {block.items.map((it, i) => (
-              <span key={i} className={'detail-sheet__picto' + (it.photo ? ' detail-sheet__picto--photo' : '')}>
-                {it.photo ? <img src={it.photo} alt="" loading="lazy" /> : <span>{it.emoji || '○'}</span>}
-              </span>
-            ))}
           </span>
         </div>
       )

@@ -15,6 +15,7 @@ import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/reci
 import { groupSections, withoutHeadings } from '../lib/recipeSections'
 import { ingredientName } from '../lib/ingredient'
 import { type MealSlot } from '../lib/mealSlots'
+import { useMealPrefs } from '../lib/mealPrefs'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { Chip } from './Chip'
@@ -66,6 +67,7 @@ export function RecipeSheet({
   // shows only for the signed-in operator — not a guest, a kiosk device, or the toddler
   // lens. (The old plain-text Web-Share was client-only; the real link needs an account.)
   const { signedIn } = useAuth()
+  const mealPrefs = useMealPrefs()
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
@@ -76,7 +78,9 @@ export function RecipeSheet({
   // the many I have".
   const [listPrompt, setListPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
   const [planning, setPlanning] = useState(false)
-  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? mealPrefs.hero
   const [plannedDate, setPlannedDate] = useState<number | null>(null)
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)

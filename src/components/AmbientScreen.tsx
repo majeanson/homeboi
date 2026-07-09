@@ -68,7 +68,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
         {a.showClock && <div className={'ambient__clock' + (breath ? ' is-breath' : '')}>{formatTime(nowSec, lang)}</div>}
         {a.showDate && <div className="ambient__date">{cap(formatDayLong(nowSec, lang))}</div>}
         {meal && (
-          <div className="ambient__next" style={{ '--tint': mealPrefs.color('supper') } as CSSProperties}>
+          <div className="ambient__next" style={{ '--tint': mealPrefs.color(mealPrefs.hero) } as CSSProperties}>
             <InlineIcon name="fork-knife-bold" /> {meal.title}
           </div>
         )}

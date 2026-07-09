@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart, localDayOfWeek, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
+import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
 
 // Meal plan as a 10-day countdown. The planning block is re-anchored every
 // Tuesday (UTC, getUTCDay: Tue=2): each block spans its Tuesday through Tuesday+9
@@ -17,14 +18,16 @@ import { ingredientName } from '../_lib/ingredient'
 // to the shared list (the meal -> grocery flow); the staples list is sent by the
 // client since the prototype has no recipe DB.
 const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
-const slotOf = (v: unknown): string => (typeof v === 'string' && SLOTS.has(v) ? v : 'supper')
+// null = "not a slot we know". Callers decide what that means — an ADD falls back to
+// the household's hero meal, a CLEAR rejects. It must never silently become 'supper':
+// that would have a `clear` with a typo'd slot delete the day's souper instead, and it
+// would file an unstated meal under the souper for a household whose hero is the dîner.
+const asSlot = (v: unknown): string | null => (typeof v === 'string' && SLOTS.has(v) ? v : null)
 
-// Display/sort order is by TIME of day: déjeuner, dîner, collation, souper,
-// dessert. Keep in sync with SLOT_RANK in src/lib/mealSlots.ts. Used by every meal
-// read so the list never reshuffles between the kitchen grid, the board and the month.
-const SLOT_CASE =
-  "CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 WHEN 'dessert' THEN 4 ELSE 9 END"
-const MEAL_ORDER = `${SLOT_CASE}, position, created_at, id`
+// Display/sort order is the HOUSEHOLD's (Réglages ▸ Repas), built per-request by
+// `mealOrderSql` from the saved order — defaulting to time of day (déjeuner, dîner,
+// collation, souper, dessert). Every meal read sorts through it so the list never
+// reshuffles between the kitchen grid, the board and the month.
 
 const DAY = 86400
 // Days remaining in the active block, counting today. = 10 - (days since the
@@ -44,6 +47,7 @@ const RECENT_DAYS = 3
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
   const windowDays = windowDaysFor(today)
+  const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, actor.householdId)).order)
   const { results } = await ctx.env.DB.prepare(
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
   )
@@ -152,9 +156,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (body?.action === 'clear') {
     if (typeof body.date !== 'number') return badRequest('date requise.')
     const date = localDayStart(new Date(body.date * 1000))
-    const res = body.slot
+    // An unknown slot is rejected, never coerced — clearing "brunch" must not wipe the
+    // souper. Omitting `slot` entirely still means "clear the whole day".
+    const clearSlot = body.slot === undefined || body.slot === null ? null : asSlot(body.slot)
+    if (body.slot != null && !clearSlot) return badRequest('Repas inconnu.')
+    const res = clearSlot
       ? await ctx.env.DB.prepare('DELETE FROM meals WHERE household_id = ? AND date = ? AND slot = ?')
-          .bind(actor.householdId, date, slotOf(body.slot))
+          .bind(actor.householdId, date, clearSlot)
           .run()
       : await ctx.env.DB.prepare('DELETE FROM meals WHERE household_id = ? AND date = ?')
           .bind(actor.householdId, date)
@@ -168,7 +176,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   //    a tie is harmless — reads break ties on created_at,id, reorder renumbers).
   if (typeof body?.date !== 'number' || !body.title?.trim()) return badRequest('date + titre requis.')
   const title = body.title.trim()
-  const slot = slotOf(body.slot)
+  // An unstated slot files the meal under the household's HERO (Réglages ▸ Repas),
+  // which is the souper unless they promoted another meal.
+  const slot = asSlot(body.slot) ?? (await householdMealLayout(ctx.env, actor.householdId)).hero
   const date = localDayStart(new Date(body.date * 1000))
   const recipeId = body.recipeId?.trim() || null
   const ts = nowSec()

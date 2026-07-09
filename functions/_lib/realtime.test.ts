@@ -60,8 +60,11 @@ describe('keysForPath', () => {
     expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])
   })
 
-  it('maps household settings to household + board + health (meal-slot re-tint, AI toggle)', () => {
-    expect(keysForPath('household')).toEqual([['household'], ['board'], ['health']])
+  // meals + month ride along because the meal ORDER/HERO are applied server-side, so
+  // reordering on one device must re-sort another's kitchen grid + calendar, not just
+  // re-tint them.
+  it('maps household settings to household + board + health + meals + month', () => {
+    expect(keysForPath('household')).toEqual([['household'], ['board'], ['health'], ['meals'], ['month']])
   })
 
   it('maps routines to routines + board', () => {

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useT } from '../../i18n'
 import { useSpeak } from '../../lib/speak'
 import { useBoardData } from '../../lib/queryHooks'
+import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon } from '../Icon'
 import { bucketDay, type DayPartData, type DayPartKey } from '../../lib/playContent'
 
@@ -17,6 +18,9 @@ export function DayTimeline() {
   const speak = useSpeak()
   const p = t.play.day
   const { data } = useBoardData()
+  // A meal lands in the part of the day it's SERVED in (Réglages ▸ Repas) — a household
+  // that soupes at 20 h hears it in « soir », not « midi ».
+  const { hours } = useMealPrefs()
 
   const parts = useMemo(
     () =>
@@ -24,9 +28,10 @@ export function DayTimeline() {
         ? bucketDay(
             data.todayMeals.map((m) => ({ slot: m.slot, title: m.title })),
             data.today.map((e) => ({ title: e.title, start_at: e.start_at, all_day: e.all_day })),
+            hours,
           )
         : [],
-    [data],
+    [data, hours],
   )
 
   const label = (k: DayPartKey) => p.parts[k]

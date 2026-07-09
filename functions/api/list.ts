@@ -64,7 +64,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // id — a stable total order, so same-second rows (quick-add) keep a fixed slot
     // instead of reshuffling on each read. Mirror of the board read, which is the
     // list the Liste page actually renders.
-    'SELECT id, text, source, added_by, deal_json, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
+    'SELECT id, text, source, added_by, deal_json, search_terms, checked_at, non_urgent FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
   )
     .bind(actor.householdId)
     .all()
@@ -105,6 +105,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{
     id?: string
     checked?: boolean
+    non_urgent?: boolean
     deal?: unknown
     text?: string
     search_terms?: unknown
@@ -210,6 +211,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const dealJson = body.deal ? JSON.stringify(body.deal) : null
     await ctx.env.DB.prepare('UPDATE list_items SET deal_json = ? WHERE id = ? AND household_id = ?')
       .bind(dealJson, body.id, actor.householdId)
+      .run()
+  }
+
+  // « Pas pressé » (edit scene): this line is only worth buying if a good deal is
+  // on. A presentation flag — the row still checks off, clears and logs a buy like
+  // any other. Stored 1/null so an unflagged row stays NULL (the default).
+  if (typeof body.non_urgent === 'boolean') {
+    await ctx.env.DB.prepare('UPDATE list_items SET non_urgent = ? WHERE id = ? AND household_id = ?')
+      .bind(body.non_urgent ? 1 : null, body.id, actor.householdId)
       .run()
   }
 

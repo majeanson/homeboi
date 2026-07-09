@@ -1,7 +1,7 @@
 import { useT } from '../../i18n'
 import { wash, tintInk } from '../../lib/colors'
 import { CATS } from '../../lib/cats'
-import { SLOT_ICON_NAME } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME, heroCardLabel, type MealSlot } from '../../lib/mealSlots'
 import { type Weather, type HourOutlook, weatherIcon, weatherTint, weatherTip } from '../../lib/weather'
 import { type DayMealRow } from './types'
 import { type Wonder } from './ApodFrame'
@@ -22,6 +22,7 @@ export function DayHeroes({
   wonder,
   onShuffleWonder,
   supperNow,
+  heroSlot,
 }: {
   suppers: DayMealRow[]
   supperColor: string
@@ -33,6 +34,11 @@ export function DayHeroes({
   onShuffleWonder: () => void
   // Time-aware emphasis (lib/momentFocus): a gentle accent on « Ce soir » as dinner nears.
   supperNow?: boolean
+  /** The slot `suppers` belongs to, as the board model resolved it — its icon is drawn
+   *  from this, so a household whose headline is the dîner gets the fork, not the bowl.
+   *  Passed in rather than re-read from `useMealPrefs()`: the rows were filtered
+   *  server-side, and the two can disagree for one poll after a hero change. */
+  heroSlot: MealSlot
 }) {
   const t = useT()
   const tip = weatherTip(weather)
@@ -44,7 +50,7 @@ export function DayHeroes({
         // tappable row each.
         <div className={'now-card now-card--supper' + (supperNow ? ' now-card--now' : '')} style={{ background: wash(supperColor), color: tintInk(supperColor) }}>
           <div className="blob" style={{ background: supperColor }} />
-          <div className="label">{t.board.tonight}</div>
+          <div className="label">{heroCardLabel(heroSlot, t)}</div>
           <div className="now-card__meals">
             {suppers.map((m) => (
               <div
@@ -71,7 +77,7 @@ export function DayHeroes({
             ))}
           </div>
           <div className="icn">
-            <Icon name={SLOT_ICON_NAME.supper} size={40} color={supperColor} />
+            <Icon name={SLOT_ICON_NAME[heroSlot]} size={40} color={supperColor} />
           </div>
         </div>
       )}

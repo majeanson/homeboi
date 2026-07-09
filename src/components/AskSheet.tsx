@@ -4,30 +4,45 @@ import { api } from '../lib/api'
 import { useSpeak } from '../lib/speak'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { AskAnswerCard, speakableAnswer, type AnswerKind, type AskAnswerStatus } from '../lib/askAnswer'
+import { CaptureForm } from './CaptureForm'
+import { Cluster } from './Layout'
 import { EditField } from './EditField'
 import { Modal } from './Modal'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
 import { Icon } from './Icon'
 
-// E-22 — « Demande à la maison » : hold the mic, ask a question over the
-// household's own data (POST /api/ask — the same typed endpoint the search box
-// uses), get a calm spoken answer. STRICTLY on-demand: the mic opens under a
-// finger, period — never ambient, never a background listener.
+// E-22 — « Parle à la maison » : the ONE voice surface, reachable from every hub tab's
+// header. Two things you can say to the house, told apart by an explicit segment rather
+// than by guessing which you meant:
 //
-// Mounted ONLY while open (see the entry point in HubHead.tsx: `{open && <AskSheet
-// .../>}`, not an `open` prop that hides-but-keeps-mounted like Sheet/AddSheet) —
-// so closing the sheet UNMOUNTS this component, which fires useVoiceInput's own
-// unmount cleanup and kills a still-listening mic. "Under a finger only" has to
-// hold even if the user backgrounds the app mid-listen.
+//   • « Demander » (read)  — a question over the household's own data (POST /api/ask, the
+//     same typed endpoint the search box uses) → a calm spoken answer.
+//   • « Classer »  (write) — the capture spine (POST /api/capture): Workers AI files the
+//     line as an event / task / list item / pantry-low / meal / note.
 //
-// Renders the SAME answer card as the search box's "Ask the AI" (lib/askAnswer —
-// no drift), plus what's new here: a big tap-to-talk VoiceButton, a typed
-// EditField fallback (no mic support / prefers typing), and an auto-speak-once
-// of the answer with a 🔊 replay (the search box stays tap-to-hear-nothing; you
-// already see the text there).
-export function AskSheet({ onClose }: { onClose: () => void }) {
+// Classer used to live in the board's ＋ sheet, directly above the audio-memo buttons — a
+// field whose mic dictated text for the AI to file, stacked on a button whose mic recorded
+// a clip that REPLACED that text. Same microphone glyph, opposite meanings. Moving the
+// write spine here frees the ＋ sheet's note tile to be a plain note (with a 📎 for a memo),
+// and puts both AI mics on one surface where a segment says which one you're holding.
+//
+// The mic opens under a finger, period — never ambient, never a background listener.
+// Mounted ONLY while open (see HubHead: `{open && <AskSheet …/>}`, not an `open` prop that
+// hides-but-keeps-mounted like Sheet/AddSheet) — so closing UNMOUNTS this, which fires
+// useVoiceInput's own unmount cleanup and kills a still-listening mic. "Under a finger
+// only" has to hold even if the user backgrounds the app mid-listen.
+//
+// AI off (`aiEnabled` false — binding unset, or the household switched it off): there is no
+// answer to give, so « Demander » drops and the sheet is « Classer » alone. Capture's
+// degraded path (pick the type yourself) needs no model — which is exactly why the header
+// mic no longer hides on !aiEnabled the way it did when this sheet only asked questions.
+// Hiding it would now take the write spine offline with it.
+type AskMode = 'ask' | 'file'
+
+export function AskSheet({ aiEnabled = true, onClose }: { aiEnabled?: boolean; onClose: () => void }) {
   const t = useT()
   const speak = useSpeak()
+  const [mode, setMode] = useState<AskMode>(aiEnabled ? 'ask' : 'file')
   const [question, setQuestion] = useState('')
   const [status, setStatus] = useState<AskAnswerStatus | null>(null)
   const [answer, setAnswer] = useState<{ text: string; kind: AnswerKind } | null>(null)
@@ -72,45 +87,89 @@ export function AskSheet({ onClose }: { onClose: () => void }) {
     }
   }, [status, answer, speak])
 
+  // Leaving « Demander » stops a listening mic and clears the answer: the surface is
+  // about to mean "file this", and a question still being heard (or answered) under
+  // that label is exactly the ambiguity this segment exists to remove.
+  function pick(next: AskMode) {
+    if (next === mode) return
+    if (next === 'file') {
+      voice.stop()
+      setStatus(null)
+      setAnswer(null)
+    }
+    setMode(next)
+  }
+
   return (
     <Modal open onClose={onClose} title={t.ask.title} className="ask-sheet">
-      <p className="ask-sheet__hint mono">{t.ask.hint}</p>
+      {/* Which of the two things you're about to say. Hidden when AI is off — only
+          « Classer » remains, and a one-option segment is noise. */}
+      {aiEnabled && (
+        <Cluster fill className="ask-sheet__modes" role="group" aria-label={t.ask.title}>
+          <button
+            type="button"
+            className={'btn btn--sm' + (mode === 'ask' ? ' btn--primary' : '')}
+            aria-pressed={mode === 'ask'}
+            onClick={() => pick('ask')}
+          >
+            <Icon name="magnifying-glass-bold" size={16} /> {t.ask.modeAsk}
+          </button>
+          <button
+            type="button"
+            className={'btn btn--sm' + (mode === 'file' ? ' btn--primary' : '')}
+            aria-pressed={mode === 'file'}
+            onClick={() => pick('file')}
+          >
+            <Icon name="sparkle-bold" size={16} /> {t.ask.modeFile}
+          </button>
+        </Cluster>
+      )}
 
-      <div className="ask-sheet__mic">
-        <VoiceButton voice={voice} label={t.ask.talk} />
-        <VoiceStatus voice={voice} hint={t.ask.listening} />
-      </div>
+      <p className="ask-sheet__hint mono">{mode === 'ask' ? t.ask.hint : t.ask.fileHint}</p>
 
-      <EditField
-        value={question}
-        onChange={setQuestion}
-        onSubmit={ask}
-        placeholder={t.ask.placeholder}
-        submitLabel={t.ask.ask}
-        submitLeadingIcon="sparkle-bold"
-        busy={status === 'asking'}
-      />
+      {mode === 'ask' ? (
+        <>
+          <div className="ask-sheet__mic">
+            <VoiceButton voice={voice} label={t.ask.talk} />
+            <VoiceStatus voice={voice} hint={t.ask.listening} />
+          </div>
 
-      {status && (
-        <AskAnswerCard
-          t={t}
-          status={status}
-          answer={answer}
-          onRelatedClick={onClose}
-          replay={
-            status === 'answer' && answer ? (
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm ask-sheet__replay"
-                onClick={() => speak(speakableAnswer(answer.text))}
-                aria-label={t.ask.replay}
-                title={t.ask.replay}
-              >
-                <Icon name="speaker-high-bold" size={18} />
-              </button>
-            ) : undefined
-          }
-        />
+          <EditField
+            value={question}
+            onChange={setQuestion}
+            onSubmit={ask}
+            placeholder={t.ask.placeholder}
+            submitLabel={t.ask.ask}
+            submitLeadingIcon="sparkle-bold"
+            busy={status === 'asking'}
+          />
+
+          {status && (
+            <AskAnswerCard
+              t={t}
+              status={status}
+              answer={answer}
+              onRelatedClick={onClose}
+              replay={
+                status === 'answer' && answer ? (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--sm ask-sheet__replay"
+                    onClick={() => speak(speakableAnswer(answer.text))}
+                    aria-label={t.ask.replay}
+                    title={t.ask.replay}
+                  >
+                    <Icon name="speaker-high-bold" size={18} />
+                  </button>
+                ) : undefined
+              }
+            />
+          )}
+        </>
+      ) : (
+        // The capture spine, moved here whole: its own field + dictation mic, the
+        // offline queue, the degraded type-picker and the calm compensating undo.
+        <CaptureForm autoFocus />
       )}
     </Modal>
   )

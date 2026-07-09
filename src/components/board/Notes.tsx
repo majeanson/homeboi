@@ -61,9 +61,9 @@ export function Notes({
   // load props it resolves to. `draw.isNew` says copy/trace (→ a new note) vs modify.
   const draw = useDrawEdit<NoteRow>()
   // A brand-new drawing being created from this strip's quick-add (parallel to the
-  // ＋ "Note rapide" sheet's MemoControls) — opens a blank DrawPad and POSTs a note.
+  // ＋ « Note rapide » sheet's 📎) — opens a blank DrawPad and POSTs a note.
   const [creating, setCreating] = useState(false)
-  // R2 unbound (503 on save) → hide the quick-add draw button, like MemoControls.
+  // R2 unbound (503 on save) → hide the quick-add draw button, like useMemoAttach.
   const [drawHidden, setDrawHidden] = useState(false)
   // Read-only guest: clearing a note is a write. In the parent lens the card becomes
   // inert display text (no ✕, no tap). The toddler read-aloud stays (it's a read).
@@ -75,7 +75,7 @@ export function Notes({
 
   // Persist a drawing: upload the PNG + editable scene (#1), then either PATCH an
   // existing note in place (adding to it — re-tints to whoever drew, resurfaces it)
-  // or POST a brand-new fridge note (the quick-add path, mirroring MemoControls).
+  // or POST a brand-new fridge note (the quick-add path, mirroring useMemoAttach).
   // Media uploads can't be queued offline (the R2 blob must land), so this uses
   // api() directly; the board poll/realtime reconciles the card.
   async function saveDrawing(png: Blob, scene: string, note: NoteRow | null) {

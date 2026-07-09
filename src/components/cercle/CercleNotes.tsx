@@ -18,7 +18,8 @@ import { MemberSwitcher } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { EditField } from '../EditField'
 import { Modal } from '../Modal'
-import { MemoControls } from '../MemoControls'
+import { useMemoAttach } from '../MemoAttach'
+import { useVoiceInput } from '../../lib/useVoiceInput'
 import { ZoomableImg } from '../ZoomableImg'
 import { NoteEditor } from './NoteEditor'
 import { plainText, renderNoteBody, toggleCheckAt } from '../../lib/noteMarkdown'
@@ -35,8 +36,10 @@ import { scrollBehavior } from '../../lib/motion'
 // A note now has an optional TITLE and a rich Markdown BODY (#richnotes): "Nouvelle note"
 // and the row pencil open the full-screen NoteEditor (one editor, reused for add + edit)
 // with bold/italic/strike, headings, bullets/numbered/checklists, quote, and one optional
-// photo/drawing attachment. Quick media memos (audio/draw/photo) still ride MemoControls +
-// /api/note-media; an audio memo is renamed with a tiny dialog (its caption = the title).
+// photo/drawing attachment. The composer above the list is the SAME one-line field every
+// other surface uses (EditField + useMemoAttach): write a quick note and/or clip a voice
+// memo / drawing / photo onto it via the 📎, in ONE write. « Nouvelle note » stays as the
+// door to the rich editor. An audio memo is renamed with a tiny dialog (its caption = the title).
 export function CercleNotes({
   members,
   help,
@@ -137,6 +140,31 @@ export function CercleNotes({
     [face],
   )
 
+  // The quick one-line composer (the rich editor is « Nouvelle note », below it).
+  const [quick, setQuick] = useState('')
+  const [quickBusy, setQuickBusy] = useState(false)
+  const quickVoice = useVoiceInput(setQuick)
+  const memo = useMemoAttach({ drawDraftId: 'cercle-note' })
+
+  // ONE write: /api/family-notes takes title/text/media together, so a note that is
+  // just a drawing is as valid as one that is just a line.
+  async function submitQuick(v: string) {
+    const value = v.trim()
+    if ((!value && !memo.draft) || quickBusy) return
+    setQuickBusy(true)
+    try {
+      await write('family-notes', {
+        method: 'POST',
+        body: { text: value, ...memo.body, ...scopeBody(effScope) },
+        affectedKeys: [FAMILY_NOTES_KEY],
+      })
+      setQuick('')
+      memo.reset()
+    } finally {
+      setQuickBusy(false)
+    }
+  }
+
   const openNew = () => {
     setEditorNote(null)
     setEditorOpen(true)
@@ -209,14 +237,32 @@ export function CercleNotes({
         )
       })()}
 
-      {/* Composer — "Nouvelle note" opens the full editor (the new note's scope follows the
-          picked face above). Quick media memos sit below. Hidden for guests. */}
+      {/* Composer — one line to write, a 📎 to clip a voice memo / drawing / photo onto it,
+          and « Nouvelle note » for the full rich editor. The new note's scope follows the
+          picked face above. Hidden for guests. */}
       {!ro && (
         <div className="cercle-notes__composer card">
-          <button type="button" className="cercle-notes__new" onClick={openNew}>
-            <Icon name="plus-bold" size={18} /> {fn.newNote}
-          </button>
-          <MemoControls onDone={() => {}} endpoint="family-notes" affectedKey={FAMILY_NOTES_KEY} extraBody={scopeBody(effScope)} />
+          <EditField
+            value={quick}
+            onChange={setQuick}
+            onSubmit={submitQuick}
+            submitLabel={t.common.add}
+            submitLeadingIcon="plus-bold"
+            submitVariant="primary"
+            voice={quickVoice}
+            placeholder={quickVoice.listening ? t.capture.listening : fn.placeholder}
+            ariaLabel={fn.addHint}
+            busy={quickBusy || memo.busy}
+            allowEmpty={!!memo.draft}
+            boxActions={memo.attachButton}
+            secondaryActions={
+              <button type="button" className="cercle-notes__new" onClick={openNew}>
+                <Icon name="plus-bold" size={18} /> {fn.newNote}
+              </button>
+            }
+          >
+            {memo.panel}
+          </EditField>
         </div>
       )}
 

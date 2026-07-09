@@ -63,14 +63,19 @@ export const FR = {
   // household's own data (AskSheet). Strictly on-demand — the mic opens under
   // a finger, period; never listens ambiently.
   ask: {
-    title: 'Demande à la maison',
+    title: 'Parle à la maison',
     hint: 'Tiens le micro et pose ta question — « c’est quand le rendez-vous chez le dentiste ? », « c’est quoi le numéro du vétérinaire ? »',
     talk: 'Poser une question',
     listening: 'Je t’écoute…',
     placeholder: 'Ou écris ta question…',
     ask: 'Demander',
     replay: 'Réentendre',
-    entry: 'Demander à la maison',
+    entry: 'Parle à la maison',
+    // The two things you can say to the house: ask a question (read) or file
+    // something (write — the capture spine, moved here from the ＋ sheet).
+    modeAsk: 'Demander',
+    modeFile: 'Classer',
+    fileHint: 'Dis ou écris ce qu’il faut retenir — « souper spaghetti jeudi », « il manque du lait » — et la maison le classe à la bonne place.',
   },
   // #17 — departure mode (a leaving-the-house screen).
   departure: {
@@ -92,7 +97,7 @@ export const FR = {
     more: (n: number) => `+ ${n} autre${n > 1 ? 's' : ''}`,
     ride: (what: string) => `${what} — personne pour conduire`,
     dayWord: { today: 'd’aujourd’hui', tomorrow: 'de demain' },
-    mealEmpty: (when: string) => `Souper ${when} à planifier`,
+    mealEmpty: (meal: string, when: string) => `${meal} ${when} à planifier`,
     mealLow: (meal: string, item: string) => `${meal} : il manque ${item}`,
     birthday: (who: string) => `${who} — fête bientôt, aucune idée de cadeau`,
   },
@@ -274,6 +279,11 @@ export const FR = {
     aisleLabel: 'Allée',
     aisleHint: 'Range cet article dans la bonne allée — gardé pour la prochaine fois.',
     aisleAuto: 'Automatique',
+    // « Pas pressé » (edit scene + row tag): un article qu’on prend seulement si une
+    // belle aubaine passe. Un seul interrupteur, éteint par défaut — une commission
+    // ordinaire n’a rien à régler. Pas une priorité, pas un rang.
+    rushNone: 'Pas pressé',
+    rushHint: 'Se lit en gris pâle sur la liste : on le prend si une belle aubaine passe, sinon on l’oublie.',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     // Saying items with « et » between them helps the recognizer separate + spell
     // them (a flowing phrase, not isolated words) — e.g. « lait et patate et guimauve ».
@@ -311,6 +321,7 @@ export const FR = {
   },
   notes: {
     title: 'Notes',
+    addPlaceholder: 'Écris une note pour le babillard…',
     clear: 'Effacer',
     memo: 'Mémo vocal',
     drawing: 'Dessin',
@@ -322,6 +333,13 @@ export const FR = {
     record: 'Mémo vocal',
     stop: 'Arrêter',
     micDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
+    // The ONE attach affordance inside a field box (useMemoAttach). A mémo is
+    // joined TO what you wrote — it never replaces it.
+    attach: 'Joindre',
+    recording: 'Enregistrement…',
+    attached: { audio: 'Mémo vocal', drawing: 'Dessin', image: 'Photo' },
+    playAttached: 'Écouter le mémo',
+    remove: 'Retirer',
     draw: 'Dessiner',
     drawTitle: 'Dessiner une note',
     editTitle: 'Continuer le dessin',
@@ -453,7 +471,7 @@ export const FR = {
     meals: 'Repas du jour',
     dayNote: 'Note du jour',
     prepTomorrow: 'À préparer pour demain',
-    nothingTonight: 'Pas de souper prévu',
+    nothingTonight: 'Rien de prévu',
     cooks: 'aux fourneaux',
     cook: 'Préparer le repas',
     cookPlan: 'Choisir une recette',
@@ -2004,6 +2022,14 @@ export const FR = {
       'Choisis les repas à voir sur le babillard et la cuisine. Décoche ceux qui t’encombrent (ex. ne garder que le souper). Tu peux quand même les planifier dans La cuisine.',
     mealVisible: 'Affiché',
     mealHidden: 'Masqué',
+    mealOrderHint:
+      'Glisse les repas dans l’ordre de ta journée — il est respecté partout : la cuisine, le babillard, le calendrier. L’étoile marque le repas vedette (« Ce soir »). L’heure dit quand chaque repas commence : c’est elle, pas l’ordre, qui décide du prochain repas à cuisiner.',
+    mealReset: 'Ordre et heures par défaut',
+    mealHero: 'Vedette',
+    mealHeroHint: 'Le repas vedette de la journée — celui qui fait la manchette du babillard.',
+    mealHeroHidden: 'Le repas vedette est masqué : le babillard n’affichera pas de manchette « Ce soir ».',
+    mealHourEarlier: 'Plus tôt',
+    mealHourLater: 'Plus tard',
     todosTab: 'À compléter',
     reserveTab: 'Réserve',
     reserveTitle: 'Emplacements de la réserve',
@@ -2772,15 +2798,10 @@ export const FR = {
     markDone: 'Marquer fait',
     markEaten: 'Marquer mangé',
     deleteEvent: 'Supprimer ce rendez-vous ? Ceci le retire de partout.',
-    openRecipe: 'Ouvrir la recette',
     openDay: 'Voir la journée',
-    runRoutine: 'Faire la routine',
-    editRoutine: 'Modifier la routine',
     turn: 'Tour de',
     cook: 'Cuisine',
     team: 'Équipe',
-    ingredients: 'Ingrédients',
-    steps: 'Étapes',
     dayEmpty: 'Aucun repas planifié.',
     makeLeftover: 'Créer des restants',
     removeFromPlan: 'Retirer du plan',

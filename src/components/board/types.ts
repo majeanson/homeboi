@@ -121,10 +121,15 @@ export interface BoardData {
   today: EventRow[]
   tomorrow: EventRow[]
   upcoming: EventRow[]
-  tonight: MealRow | null // the first supper — the headline hero / toddler hero
-  tonightMeals: DayMealRow[] // ALL of today's suppers — "Ce soir" lists every one
+  tonight: MealRow | null // the first hero meal — the headline hero / toddler hero
+  tonightMeals: DayMealRow[] // ALL of today's hero meals — "Ce soir" lists every one
   tomorrowMeal: MealRow | null
   todayMeals: DayMealRow[]
+  // The slot `tonight`/`tonightMeals`/`tomorrowMeal` were filtered by, server-side
+  // (Réglages ▸ Repas; souper by default). Read this — not the client's own household
+  // setting — when splitting the hero out of `todayMeals`, so the two can't disagree
+  // while a hero change is still propagating. Absent on a cached pre-upgrade payload.
+  heroSlot?: string
   dayNote: DayNote | null
   tomorrowMeals: DayMealRow[]
   tomorrowNote: DayNote | null

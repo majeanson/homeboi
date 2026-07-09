@@ -36,7 +36,7 @@ import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildDay } from '../components/detail/adapters'
-import { SIDE_SLOTS, SLOT_ICON_NAME, SLOT_TIME_ORDER } from '../lib/mealSlots'
+import { SLOT_ICON_NAME } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
@@ -157,14 +157,16 @@ export function Kitchen() {
   const soon = useSoonQ.data?.soon ?? []
 
   // Build the countdown grid from weekStart (today) across the remaining days of
-  // the 10-day block. The SOUPER is the day's primary meal (the headline, the
-  // shop-the-week driver, the kid-suggestion target), so the grid + week shape
-  // stay keyed on it; the other slots ride alongside.
+  // the 10-day block. The HERO slot is the day's primary meal (the headline, the
+  // shop-the-week driver, the kid-suggestion target) — the souper unless the
+  // household picked another in Réglages ▸ Repas — so the grid + week shape stay
+  // keyed on it; the other slots ride alongside in the household's order.
   // weekDates steps by LOCAL calendar days (DST-safe) — see components/kitchen/week.ts,
   // shared with the Idées scene so the two never disagree about which days exist.
+  const heroSlot = mealPrefs.hero
   const week: WeekDay[] = weekDates(weekStart, windowDays).map((date) => ({
     date,
-    meal: days.find((d) => d.date === date && d.slot === 'supper'),
+    meal: days.find((d) => d.date === date && d.slot === heroSlot),
   }))
   // date+slot → its planned meals, in order (a slot holds several now). Server
   // already orders by position; this just filters the flat list.
@@ -180,19 +182,19 @@ export function Kitchen() {
   const boardMembers = boardQ.data?.members ?? []
   const openDayPeek = (date: number) => {
     const nameById = (id: string | null) => (id ? boardMembers.find((m) => m.id === id)?.display_name ?? null : null)
-    const dayMeals = SLOT_TIME_ORDER.filter((s) => mealPrefs.isVisible(s)).flatMap((s) =>
+    const dayMeals = mealPrefs.visibleSlots.flatMap((s) =>
       mealsFor(date, s).map((m) => ({ slot: t.kitchen.slots[s], title: m.title, cook: nameById(m.cook_member_id) })),
     )
     const rel = date === weekStart ? t.kitchen.todayShort : date === addLocalDays(weekStart, 1) ? t.kitchen.tomorrowShort : null
     const label = (rel ? `${rel} · ` : '') + formatDay(date, lang).replace(/^./, (c) => c.toUpperCase())
     detail.open(
-      buildDay({ t, lang, members: [] }, { label, accent: mealPrefs.color('supper'), meals: dayMeals, note: noteFor(date)?.text ?? null }),
+      buildDay({ t, lang, members: [] }, { label, accent: mealPrefs.color(mealPrefs.hero), meals: dayMeals, note: noteFor(date)?.text ?? null }),
     )
   }
 
-  // Drag a day's souper to another day — the calm week-grid gesture. Each day cell
-  // is a drop zone keyed by its date; the souper headline is the drag handle. A day
-  // can hold several suppers, so moving the headline moves them ALL to the target
+  // Drag a day's hero meal to another day — the calm week-grid gesture. Each day cell
+  // is a drop zone keyed by its date; the hero headline is the drag handle. A day
+  // can hold several hero meals, so moving the headline moves them ALL to the target
   // day (the intuitive "move this day's supper plan"). Touch-friendly, so it works
   // on the wall tablet, not just a mouse.
   const dayDnd = usePointerDnd({
@@ -200,7 +202,7 @@ export function Kitchen() {
       const from = Number(fromKey)
       const to = Number(toKey)
       if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return
-      for (const m of mealsFor(from, 'supper')) reschedule(qc, m.id, to, 'supper')
+      for (const m of mealsFor(from, heroSlot)) reschedule(qc, m.id, to, heroSlot)
     },
     canDrop: (fromKey, toKey) => fromKey !== toKey,
     // Press-and-hold to move a day's plan — a calm, deliberate gesture, not a flick.
@@ -400,9 +402,9 @@ export function Kitchen() {
               // Concise relative tag ("Auj."/"Dem.") so the tiny date badge never
               // overflows with "Aujourd'hui"/"Demain".
               const rel = isToday ? t.kitchen.todayShort : isTomorrow ? t.kitchen.tomorrowShort : null
-              const suppers = mealsFor(date, 'supper') // a day can hold several
-              const showSupper = mealPrefs.isVisible('supper') && suppers.length > 0
-              const supperColor = mealPrefs.color('supper')
+              const suppers = mealsFor(date, heroSlot) // a day can hold several
+              const showSupper = mealPrefs.isVisible(heroSlot) && suppers.length > 0
+              const supperColor = mealPrefs.color(heroSlot)
               const note = noteFor(date)
               // C-14 — an empty day with a matching kid-suggested idea (meal_ideas
               // `date` + `suggested_by`, migration 0107) surfaces a small "Léa
@@ -417,7 +419,8 @@ export function Kitchen() {
               // WRAPS at full card width — never clipped behind the Gérer cue, unlike
               // the old single ellipsized line. Hidden slots drop off. Full per-slot
               // editing still lives in the Gérer sheet.
-              const sideRows = SIDE_SLOTS.filter((s) => mealPrefs.isVisible(s))
+              const sideRows = mealPrefs.sideSlots
+                .filter((s) => mealPrefs.isVisible(s))
                 .map((s) => ({ slot: s, titles: mealsFor(date, s).map((m) => m.title).join(', ') }))
                 .filter((r) => r.titles)
               // Standardized drop cue (same as La liste): a precise insertion line on
@@ -491,9 +494,9 @@ export function Kitchen() {
                             {/* A drag grip so the calm headline reads as "movable" — drag
                                 it onto another day to reschedule the souper. */}
                             <span className="dnd-grip mono" aria-hidden="true">⠿</span>
-                            {/* The souper slot icon in its slot colour — the same icon +
+                            {/* The hero slot icon in its slot colour — the same icon +
                                 colour the chips and Réglages ▸ Repas use, not a bare dot. */}
-                            <Icon name={SLOT_ICON_NAME.supper} size={18} color={supperColor} />
+                            <Icon name={SLOT_ICON_NAME[heroSlot]} size={18} color={supperColor} />
                             <span className="kitchen__day-sum-titles">{suppers.map((m) => m.title).join(' · ')}</span>
                           </span>
                           {/* Flag a leftover souper on the calm glance, so "finish the

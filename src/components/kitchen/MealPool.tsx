@@ -5,6 +5,7 @@ import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { type MealSlot } from '../../lib/mealSlots'
+import { useMealPrefs } from '../../lib/mealPrefs'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { EmptyState } from '../EmptyState'
 import { MealPlanPicker } from './MealPlanPicker'
@@ -87,7 +88,11 @@ export function MealPool<T extends { id: string; title: string }, O>({
   const [text, setText] = useState('')
   // Tap a row to reveal its plan-onto-a-day picker — one open at a time.
   const { isOpen, toggle, close } = useSingleOpen()
-  const [planSlot, setPlanSlot] = useState<MealSlot>('supper')
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  // Can't seed useState with it: the household settings land after the first render.
+  const mealPrefs = useMealPrefs()
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? mealPrefs.hero
   const [busy, setBusy] = useState(false)
   const edit = useInlineEdit() // which row is renaming + its draft
 

@@ -598,16 +598,27 @@
   color: var(--ink-soft);
   text-transform: capitalize;
 }
+/* Six week-rows Sun→Sat. The grid BOX carries the ratio, not the cells: a cell is
+   an empty span, and an empty grid item's aspect-ratio-transferred height does not
+   feed auto row sizing on older WebKit (the wall tablet's Safari) — every row sized
+   to 0 and the mini-months rendered as empty bordered cards. Sizing the box (7 cols
+   × 6 rows ⇒ 7/6) and stretching the cells into explicit `1fr` rows never asks a
+   cell for its own height. `min-height` is the floor for a browser that ignores
+   aspect-ratio entirely; it never binds once the ratio resolves. Cf. .monthv__cell,
+   which survived the same bug only because it has a `min-height` and real content. */
 .yearv__mgrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  aspect-ratio: 7 / 6;
+  min-height: 6rem;
   gap: 3px;
 }
 .yearv__cell {
-  aspect-ratio: 1;
   border-radius: 50%;
   background: var(--line);
   min-width: 0;
+  min-height: 0;
 }
 .yearv__cell.is-out {
   background: transparent;

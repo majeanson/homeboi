@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { buildBoardModel, NEXT_UP_GRACE_SEC, type BoardModelInput } from './boardModel'
-import { MEAL_SLOTS, type MealSlot } from './mealSlots'
+import {
+  DEFAULT_HERO,
+  DEFAULT_SLOT_HOURS,
+  DEFAULT_SLOT_ORDER,
+  clockOrder,
+  rankFrom,
+  slotAtMinute,
+  type MealSlot,
+} from './mealSlots'
 import { localDayStart, addLocalDays } from './localDay'
 import type { MealPrefs } from './mealPrefs'
 import type { BoardData, EventRow, ChoreInstance, WorkRow, DayMealRow } from '../components/board/types'
@@ -11,12 +19,22 @@ import type { BoardData, EventRow, ChoreInstance, WorkRow, DayMealRow } from '..
 // `Date.now()` (the plan's binding gotcha): if it did, these would flake/fail.
 const NOW = Date.UTC(2026, 6, 8, 15, 0, 0) // Wed Jul 8 2026, 11:00 EDT — no DST edge, no fête
 
-function prefs(hidden: string[] = []): MealPrefs {
+// The household's meal settings as the board reads them (Réglages ▸ Repas). Defaults
+// to the built-in order + souper hero; `order`/`hero` let a test prove the board
+// follows a household that reordered its day or promoted another meal.
+function prefs(hidden: string[] = [], order: MealSlot[] = DEFAULT_SLOT_ORDER, hero: MealSlot = DEFAULT_HERO): MealPrefs {
   const h = new Set(hidden)
   return {
     color: () => undefined,
     isVisible: (slot) => !h.has(slot),
-    visibleSlots: MEAL_SLOTS.filter((s) => !h.has(s)) as MealSlot[],
+    order,
+    visibleSlots: order.filter((s) => !h.has(s)),
+    sideSlots: order.filter((s) => s !== hero),
+    hero,
+    rank: rankFrom(order),
+    hours: DEFAULT_SLOT_HOURS,
+    clock: clockOrder(DEFAULT_SLOT_HOURS),
+    slotAt: (minute) => slotAtMinute(DEFAULT_SLOT_HOURS, minute),
   }
 }
 
@@ -102,6 +120,40 @@ const meal = (overrides: Partial<DayMealRow> = {}): DayMealRow => ({
   title: 'Gruau',
   cook_member_id: null,
   ...overrides,
+})
+
+// The hero split must follow the SLOT THE SERVER FILTERED BY (`data.heroSlot`), not the
+// client's household setting. Réglages ▸ Repas invalidates the household cache the
+// instant the operator picks a new hero, but the board payload only catches up on its
+// next poll — and in that window the two disagree. Using the client's hero there would
+// render the OLD hero's meal twice (headline + "also planned") and drop the NEW hero's
+// meal entirely, since `tonight` is server-filtered but `todayMeals` is not.
+describe('hero split follows the payload, not the setting', () => {
+  const supper = meal({ id: 's1', slot: 'supper', title: 'Pâté chinois' })
+  const lunch = meal({ id: 'l1', slot: 'lunch', title: 'Sandwich' })
+  const data = mkData({
+    heroSlot: 'supper', // what the server used
+    tonight: { id: 's1', title: 'Pâté chinois', cook_member_id: null },
+    tonightMeals: [supper],
+    todayMeals: [lunch, supper],
+  })
+  // The operator just promoted the dîner: the client setting says 'lunch' already.
+  const model = buildBoardModel(baseInput({ data, mealPrefs: prefs([], DEFAULT_SLOT_ORDER, 'lunch') }))
+
+  it('exposes the payload’s hero, not the freshly-picked one', () => {
+    expect(model.meals.hero).toBe('supper')
+  })
+  it('never renders the payload’s hero meal twice', () => {
+    expect(model.meals.tonight?.id).toBe('s1')
+    expect(model.meals.otherToday.map((m) => m.id)).not.toContain('s1')
+  })
+  it('never drops a meal from the day', () => {
+    expect(model.meals.otherToday.map((m) => m.id)).toEqual(['l1'])
+  })
+  it('falls back to the household setting before any payload has landed', () => {
+    const loading = buildBoardModel(baseInput({ data: undefined, mealPrefs: prefs([], DEFAULT_SLOT_ORDER, 'lunch') }))
+    expect(loading.meals.hero).toBe('lunch')
+  })
 })
 
 describe('boardModel', () => {

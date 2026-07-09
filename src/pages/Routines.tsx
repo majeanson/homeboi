@@ -1,14 +1,9 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { useLang, useT } from '../i18n'
+import { useT } from '../i18n'
 import { EmptyState } from '../components/EmptyState'
 import { useAudience } from '../lib/audience'
 import { useCalm } from '../lib/calm'
-import { useAuth } from '../lib/auth'
-import { EntityShareModal } from '../components/EntityShareModal'
-import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildRoutine } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
@@ -72,15 +67,8 @@ const MOMENT_ORDER: MomentBucket[] = ['morning', 'afternoon', 'evening', 'any']
 
 function RoutinesParent() {
   const t = useT()
-  const { lang } = useLang()
   const { calm } = useCalm()
   const navigate = useNavigate()
-  // Tap a routine to peek it (child, steps) with "Ouvrir la routine" to edit —
-  // the same shared entity-detail sheet the board uses.
-  const detail = useEntityDetail()
-  // « Partager » a routine as a public /partage link (operator-only — a server write).
-  const { signedIn } = useAuth()
-  const [sharingRoutine, setSharingRoutine] = useState<{ id: string; name: string } | null>(null)
   // Contextual "?" help mode (shared hook): arm it in the header, then tap a
   // routine to learn what tapping does + the moment badge, in place. The overview
   // is one flat grid, so its single help target is the card itself.
@@ -115,27 +103,18 @@ function RoutinesParent() {
     const steps = r.cards.slice(0, 8)
     // The peek shows real info: the moment of day + every step picto (the same
     // emojis the toddler run uses) + the count — not just the name.
-    const todLabel = isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : null
-    // Hand the peek each step's emoji AND its photo key (parallel to cards),
-    // so a card with a parent-set picture shows the picture, not the emoji —
-    // the same rule this grid follows just above (feature #17 C).
-    const stepPictos = r.cards.map((c, i) => ({ emoji: c.icon, photoKey: r.cardsPhoto?.[i] }))
     // Today's progress (from the GET payload's per-routine doneIdx). A step can
     // appear in doneIdx beyond the current deck length after an edit, so clamp
     // the count to the deck so the ring never over-fills.
     const doneCount = Math.min((r.doneIdx ?? []).length, r.cards.length)
     const started = doneCount > 0
-    const openR = () =>
-      detail.open(
-        buildRoutine(r, { t, lang, members: [] }, {
-          todLabel,
-          steps: stepPictos,
-          // « Partager » — operator only (minting is a server write).
-          onShare: signedIn ? () => setSharingRoutine({ id: r.id, name: r.name }) : undefined,
-        }),
-      )
-    // In help mode, a tap EXPLAINS the card (one shared 'card' target) via
-    // the bubble at the top, instead of opening the peek.
+    // Tap the card, do the routine. There used to be a peek in between, but the card
+    // already SHOWS everything it held (the face, the moment, every step picto, the
+    // count) and its ▶/✎ buttons already did what its buttons offered — so it was a
+    // menu, not a destination. An empty shell has nothing to run into, so it opens the
+    // builder instead. « Partager » lives on that builder scene now.
+    const openR = () => navigate(r.cards.length ? `/routine/${r.id}/run` : `/routine/${r.id}`)
+    // In help mode, a tap EXPLAINS the card (one shared 'card' target) instead.
     const onCard = help.pick('card', openR)
     return (
       <div
@@ -341,14 +320,6 @@ function RoutinesParent() {
           picker (new routine + this list of existing ones, each tappable to edit),
           so the old "Modifier dans les réglages" link would just be a second door
           to the same place — removed. */}
-      {sharingRoutine && (
-        <EntityShareModal
-          open
-          onClose={() => setSharingRoutine(null)}
-          title={`${t.shareLink.action} · ${sharingRoutine.name}`}
-          body={{ kind: 'routine', routineId: sharingRoutine.id }}
-        />
-      )}
     </main>
   )
 }

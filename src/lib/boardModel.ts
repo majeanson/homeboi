@@ -1,8 +1,8 @@
 import { isPastSec, mealSlotPast, useNow } from './itemLife'
 import { localDayStart, addLocalDays, localMinuteOfDay } from './localDay'
 import { holidaysOnDay, holidaysInRange, schoolDayKind, type Holiday, type SchoolYear } from './year'
-import { SLOT_RANK, type MealSlot } from './mealSlots'
 import { pickNextEventToday, BOARD_NEXTUP } from './ambientScene'
+import { isMealSlot, type MealSlot } from './mealSlots'
 import type { MealPrefs } from './mealPrefs'
 import type { Lang } from '../i18n'
 import type { BoardData, EventRow, ChoreInstance, MealRow, DayMealRow, WorkRow } from '../components/board/types'
@@ -105,6 +105,10 @@ export interface BoardModel {
   }
   leftovers: BoardData['leftovers']
   meals: {
+    /** The slot the payload's hero fields were filtered by — render « Ce soir »'s
+     *  icon / label / colour off THIS, never off `useMealPrefs().hero` directly, so
+     *  the card and its data always describe the same meal. */
+    hero: MealSlot
     tonight: MealRow | null
     tonightAll: DayMealRow[]
     tomorrowSupper: MealRow | null
@@ -164,12 +168,6 @@ const choreAnnounceRow = (c: ChoreInstance, dayNow: number): EventRow => ({
   member_id: null,
   announce: { tag: 'chore' },
 })
-
-// Chronological within a day: déjeuner → dîner → collation → souper → dessert
-// (SLOT_RANK). Meals arrive from the server in position order within a slot, so a
-// stable sort by rank alone gives time order across slots while keeping position.
-const bySlotTime = (a: { slot: string }, b: { slot: string }) =>
-  SLOT_RANK[a.slot as MealSlot] - SLOT_RANK[b.slot as MealSlot]
 
 export function buildBoardModel(input: BoardModelInput): BoardModel {
   const { data, nowMs, lang, profileId, fetesOn, binAnnounceOn, mealPrefs, hasWeather, hasTomorrowWx, openTodosCount, tomorrowTodoCount } =
@@ -252,20 +250,35 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
   const filWork = (data?.work ?? []).filter(mineWork)
 
-  // Meals — the ONE definition of tonight/tomorrow-supper/other slots every lens
-  // reads, gated by the household's per-slot visibility (Réglages ▸ Repas). Hidden
-  // slots drop off the glance; a hidden souper drops the whole hero.
-  const tonight = mealPrefs.isVisible('supper') ? data?.tonight ?? null : null
-  const tonightAll = mealPrefs.isVisible('supper') ? data?.tonightMeals ?? [] : []
-  const tomorrowSupper = mealPrefs.isVisible('supper') ? data?.tomorrowMeal ?? null : null
-  const isSlotPast = (slot: string) => mealSlotPast(slot, nowMs)
+  // Meals — the ONE definition of tonight/tomorrow-hero/other slots every lens
+  // reads, gated by the household's per-slot visibility AND its hero pick
+  // (Réglages ▸ Repas). Hidden slots drop off the glance; a hidden hero drops the
+  // whole headline. `hero` is the souper out of the box, so the board's « Ce soir »
+  // is unchanged for a household that never touched the setting. The server already
+  // sorted these rows by the household's order — the stable re-sort here keeps that
+  // true after the visibility filter, and `position` order holds within a slot.
+  //
+  // The hero comes from the PAYLOAD (`data.heroSlot`), not from `mealPrefs`: `tonight`
+  // was filtered server-side, so splitting `todayMeals` with a client hero the server
+  // hasn't seen yet would, for the one poll after a hero change, render the old hero's
+  // meal twice and drop the new hero's meal entirely. Fall back to the setting only
+  // before the first payload lands (or on a cached pre-upgrade one).
+  const hero = isMealSlot(data?.heroSlot) ? data.heroSlot : mealPrefs.hero
+  const heroShown = mealPrefs.isVisible(hero)
+  const bySlotOrder = (a: { slot: string }, b: { slot: string }) => mealPrefs.rank(a.slot) - mealPrefs.rank(b.slot)
+  const tonight = heroShown ? data?.tonight ?? null : null
+  const tonightAll = heroShown ? data?.tonightMeals ?? [] : []
+  const tomorrowSupper = heroShown ? data?.tomorrowMeal ?? null : null
+  // Strike a meal through once its serve window closed — off the household's own hours,
+  // never a fixed table. The hero (and anything after it) never strikes.
+  const isSlotPast = (slot: string) => mealSlotPast(slot, nowMs, mealPrefs.hours, hero)
   const otherToday: ModelMeal[] = (data?.todayMeals ?? [])
-    .filter((m) => m.slot !== 'supper' && mealPrefs.isVisible(m.slot))
-    .sort(bySlotTime)
+    .filter((m) => m.slot !== hero && mealPrefs.isVisible(m.slot))
+    .sort(bySlotOrder)
     .map((m) => ({ ...m, past: isSlotPast(m.slot) }))
   const otherTomorrow: DayMealRow[] = (data?.tomorrowMeals ?? [])
-    .filter((m) => m.slot !== 'supper' && mealPrefs.isVisible(m.slot))
-    .sort(bySlotTime)
+    .filter((m) => m.slot !== hero && mealPrefs.isVisible(m.slot))
+    .sort(bySlotOrder)
 
   // « Prochainement » — the soonest still-to-come timed event today, after the
   // face lens + fête merge, on the SAME clock (nowSec, derived from input.nowMs —
@@ -326,7 +339,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     tomorrow: { events: tomorrowEvents },
     upcoming: { events: upcomingEvents, chores: upcomingChores, home: upcomingHome },
     leftovers,
-    meals: { tonight, tonightAll, tomorrowSupper, otherToday, otherTomorrow },
+    meals: { hero, tonight, tonightAll, tomorrowSupper, otherToday, otherTomorrow },
     nextUp,
     fil,
     dayClear,

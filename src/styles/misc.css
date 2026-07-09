@@ -360,8 +360,9 @@
   font-size: 0.85em;
 }
 
-/* Réglages ▸ Repas — one row per meal slot: its label + coloured icon chip, the
-   colour picker, and a show/hide toggle. Mirrors the store-filter row shape. */
+/* Réglages ▸ Repas — one draggable row per meal slot: the ⠿ grip, its label +
+   coloured icon chip, the serve-time stepper, the colour picker, the « Vedette »
+   pick and a show/hide toggle. Mirrors the aisle-order row (same DragPill + grip). */
 .meal-slots {
   gap: 0.25rem;
 }
@@ -375,6 +376,29 @@
 }
 .meal-slots__row.is-off {
   opacity: 0.55;
+}
+/* The day's headline meal — a quiet left rule, never a badge or a rank. */
+.meal-slots__row.is-hero {
+  box-shadow: inset 3px 0 0 0 var(--accent);
+  padding-left: 0.5rem;
+}
+/* "À partir de" — the ± stepper stays on ONE line (it's a sequence, not a set), but
+   the row around it still wraps on a narrow phone. */
+.meal-slots__hour {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.meal-slots__hour-val {
+  min-width: 4.5ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.meal-slots__hero,
+.meal-slots__hero-tag {
+  flex: 0 0 auto;
 }
 .meal-slots__name {
   display: flex;

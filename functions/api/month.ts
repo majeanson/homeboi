@@ -4,6 +4,7 @@ import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
+import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
 
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
@@ -31,6 +32,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
+  // The household's meal slot order (Réglages ▸ Repas) — read before the batch so the
+  // meals query can sort by it, exactly like /api/meals and the board.
+  const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, hh)).order)
+
   const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
@@ -49,7 +54,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // each side so an entry near the window edge still lands, then re-bucket by
     // local day below and clip back to [from, to).
     ctx.env.DB.prepare(
-      "SELECT id, slot, title, cook_member_id, date, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, CASE slot WHEN 'breakfast' THEN 0 WHEN 'lunch' THEN 1 WHEN 'snack' THEN 2 WHEN 'supper' THEN 3 WHEN 'dessert' THEN 4 ELSE 9 END, position, created_at, id",
+      `SELECT id, slot, title, cook_member_id, date, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; slot: string; title: string; cook_member_id: string | null; date: number; position: number; is_leftover: number }>(),

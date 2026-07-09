@@ -210,23 +210,6 @@
   background: var(--berry-deep, var(--accent, #4a8a5a));
 }
 
-/* --- The Record / Draw row under the Note rapide text capture (AddSheet) ------ */
-.memo-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.7rem;
-}
-.memo-row__rec {
-  color: var(--terracotta-deep, #c2563a);
-}
-.memo-row__dot {
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: #c2563a;
-  margin-right: 0.4rem;
-  vertical-align: middle;
-}
+/* The Record / Draw row that used to sit under the Note rapide capture is gone:
+   those actions are now the field's own 📎 (.memo-attach, styles/pages/fields.css). */
 

@@ -223,28 +223,10 @@
   font-size: 14px;
   margin: 0 0 16px;
 }
-.sheet__field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--card);
-  border-radius: var(--radius-md);
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
-  padding: 13px 16px;
-  margin-bottom: 14px;
-}
-.sheet__field input {
-  border: 0;
-  background: transparent;
-  font-family: var(--sans);
-  font-size: 16px;
-  color: var(--ink);
-  outline: none;
-  width: 100%;
-}
-.sheet__field input::placeholder {
-  color: var(--ink-faint);
-}
+/* .sheet__field is gone — the ＋ sheet's four hand-rolled "icon + input + mic +
+   full-width submit" forms (note/list/pantry/reserve) now use the shared EditField,
+   whose box already owns the border, the inline mic and the compact submit. Its leading
+   glyph lives on as EditField's `leadingIcon` prop (.edit-field__lead). */
 /* Four modes in a balanced 2×2 (was 3+1, which stranded the fourth on its own
    row) — and the wider cards are easier to tap. */
 /* The ＋ sheet's action tiles. auto-fill + a min track width makes the grid reflow
@@ -377,6 +359,12 @@
   flex: 1;
   justify-content: center;
 }
+/* « La réserve » — the storage-location select, above the add field (pick the shelf,
+   then say what goes on it). Was wedged between the field and its full-width submit. */
+.addsheet__reserve-loc {
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
 /* The meal planner's day + slot selects, side by side above the title field. */
 .sheet__row {
   display: flex;
@@ -387,9 +375,10 @@
   flex: 1;
   min-width: 0;
 }
-.sheet .btn {
-  width: 100%;
-  padding: 15px;
-  font-size: 1.05rem;
-}
+/* NOTE: there is deliberately no `.sheet .btn` rule here any more. It set
+   width:100%;padding:15px on every descendant button, which (same 0,2,0
+   specificity as `.edit-field__box .capture__voice`, but later in the @import
+   cascade) stretched the in-field mic to the full sheet width and squeezed the
+   input to nothing. A sheet's real CTA now opts in with `.btn--block` (core.css);
+   compact rows — Cluster segments, chips, field affordances — keep their own size. */
 
