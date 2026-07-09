@@ -615,6 +615,18 @@
   color: var(--ink-soft);
   letter-spacing: 0.02em;
 }
+/* The compact lens's way back (see widget-grid.css) for « À régler » / « Moments »:
+   neither uses the shared `.sec-label` header (they're hero tiles), so once grown to
+   the zone's full width they grow their own reduce chip — reusing `.sec-label__reduce`
+   for the shared button chrome, positioned like the corner `.icn` these cards already
+   anchor. Only ever rendered while `lens.expanded`, i.e. inside a `CardSlot`. */
+.now-card--regler .now-card__reduce,
+.now-card--moment .now-card__reduce {
+  position: absolute;
+  z-index: 1;
+  top: 12px;
+  right: 12px;
+}
 /* The four windows as DIRECT tap targets — each deep-links to that scope of the
    recap scene. Frosted berry pills on the berry-wash card; the contextually-relevant
    one (tonight by day / tomorrow in the evening) is filled to suggest "look here now".

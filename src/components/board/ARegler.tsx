@@ -3,6 +3,8 @@ import { useT } from '../../i18n'
 import { useARegler, frictionRow } from '../../lib/aRegler'
 import { Icon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
+import { useCardLens } from './CardLens'
+import { CardMini } from './BoardCard'
 
 // « À régler » — a quiet board card surfacing the cross-domain heads-up scan: a short
 // list of frictions worth sorting (a ride with no driver, an empty supper, a birthday
@@ -25,6 +27,9 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
   const empty = !enabled || signals.length === 0
   // No-op for the inline `chip` variant, which renders outside a CardSlot.
   useReportEmpty(empty)
+  // The compact lens (see CardLens.tsx): `null` for the `chip` variant (it renders
+  // outside a CardSlot) and for the `card` variant when it isn't rendered halved.
+  const lens = useCardLens()
   if (empty) return null
   // The first friction is the headline; with a SINGLE friction, tap goes straight to
   // its one-tap fix; with several, to « Cette semaine » for the full list.
@@ -35,6 +40,18 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
   // Card: a hero-style tile (marigold = a warm heads-up), label + the lead friction as
   // the headline + a « +N » when there are more, the friction's glyph bottom-right.
   if (variant === 'card') {
+    const isMini = !!lens && lens.compact && !lens.expanded
+    if (isMini) {
+      return (
+        <CardMini
+          className="now-card now-card--regler"
+          label={t.aRegler.title}
+          icon="warning-bold"
+          hint={first.text}
+          onExpand={lens.expand}
+        />
+      )
+    }
     return (
       <Link to={to} className="now-card now-card--regler" aria-label={aria}>
         <div className="blob" />
@@ -46,6 +63,25 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
         <div className="icn" aria-hidden="true">
           <Icon name={first.icon} size={34} />
         </div>
+        {/* The way back once grown to full width — mirrors `SecLabel`'s reduce chip
+            (BoardCard.tsx) for the cards that DO use that shared header; ARegler's
+            full form is a hero tile with no `.sec-label`, so it grows its own. */}
+        {lens?.expanded && (
+          <button
+            type="button"
+            className="sec-label__reduce now-card__reduce"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              lens.collapse()
+            }}
+            aria-expanded="true"
+            aria-label={t.board.collapseCard(t.aRegler.title)}
+            title={t.board.collapseCard(t.aRegler.title)}
+          >
+            <Icon name="caret-up-bold" size={14} />
+          </button>
+        )}
       </Link>
     )
   }
