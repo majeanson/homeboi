@@ -13,12 +13,11 @@ import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
-import { useAi } from '../lib/ai'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
-import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
+import { formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { ideasForDay } from '../lib/mealIdeas'
@@ -31,8 +30,8 @@ import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
-import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
-import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
+import { type IdeasChip } from '../components/kitchen/IdeasDrawer'
+import { weekDates } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
@@ -128,9 +127,6 @@ export function Kitchen() {
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
-  // La réserve item names — the secondary "also on hand" signal the vide-frigo flow
-  // folds in alongside use-soon (anti-waste).
-  const reserveItems = useMemo(() => (reserveQ.data?.reserve ?? []).map((r) => r.item), [reserveQ.data])
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
   // meal linked to it (recipe_id, migration 0024) was *served*. Built from the meals
   // the page already holds — the 10-day window (`days`) plus the recent-history
@@ -164,21 +160,12 @@ export function Kitchen() {
   // the 10-day block. The SOUPER is the day's primary meal (the headline, the
   // shop-the-week driver, the kid-suggestion target), so the grid + week shape
   // stay keyed on it; the other slots ride alongside.
-  const week: WeekDay[] = Array.from({ length: windowDays }, (_, i) => {
-    // Step by LOCAL calendar days, not fixed 86 400 s: meals are bucketed at local
-    // midnight (functions/_lib/ids localDayStart), and a local day is 23 h/25 h
-    // across a DST change — plain arithmetic would land those days at 23:00/01:00
-    // and `days.find` would miss them, showing/saving meals a cell off twice a year.
-    const date = addLocalDays(weekStart, i)
-    const meal = days.find((d) => d.date === date && d.slot === 'supper')
-    return { date, meal }
-  })
-  // The week as { date, label } pairs — what MealPlanPicker/IdeasDrawer's day
-  // chips need. Built once, reused by every planner (was inlined at each call site).
-  const weekLabeled = useMemo(
-    () => week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) })),
-    [week, lang],
-  )
+  // weekDates steps by LOCAL calendar days (DST-safe) — see components/kitchen/week.ts,
+  // shared with the Idées scene so the two never disagree about which days exist.
+  const week: WeekDay[] = weekDates(weekStart, windowDays).map((date) => ({
+    date,
+    meal: days.find((d) => d.date === date && d.slot === 'supper'),
+  }))
   // date+slot → its planned meals, in order (a slot holds several now). Server
   // already orders by position; this just filters the flat list.
   const mealsFor = (date: number, slot: string) => days.filter((d) => d.date === date && d.slot === slot)
@@ -225,10 +212,6 @@ export function Kitchen() {
   // taps a recipe then an empty day — a suggestion, not a decision).
   const ai = useAiWake()
   const { aiWaking } = ai
-  // Global AI on/off (binding present AND household hasn't switched it off). Folds
-  // into canAiSuggest so the AI-ideas tile / re-ask is hidden when AI is off — the
-  // reactive aiOff (a runtime 503) still disables it the same way.
-  const { enabled: aiEnabled } = useAi()
   const { kidSuggest } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
@@ -243,19 +226,12 @@ export function Kitchen() {
   // band into view (showing the ⏳ AI wake-up immediately, then the panel). See the
   // wrapped handlers passed to registerKitchen below.
   const resultsRef = useRef<HTMLDivElement>(null)
-  // « Vide-frigo » (#5) — its own two-step sheet (ideas → recipes), opened from the
-  // IdeasDrawer's footer button rather than dropping an inline card.
-  const [fridgeOpen, setFridgeOpen] = useState(false)
-  // The ONE « Idées » drawer (C-14) — reachable from the grid opener below AND the
-  // ＋ Add sheet's « Idées » tile. `ideasChip` picks which source chip it opens ON:
-  // the 👧 empty-day-tile chip jumps straight to 'kid' (a glance chip never commits
-  // a plan — it just opens the drawer there).
-  const [ideasOpen, setIdeasOpen] = useState(false)
-  const [ideasChip, setIdeasChip] = useState<IdeasChip>('ideas')
-  const openIdeas = (chip: IdeasChip = 'ideas') => {
-    setIdeasChip(chip)
-    setIdeasOpen(true)
-  }
+  // The ONE « Idées » drawer (C-14) is a full-screen scene now (/kitchen/idees) —
+  // reachable from the grid opener below AND the ＋ Add sheet's « Idées » tile. The
+  // source rides in ?tab=: the 👧 empty-day-tile chip deep-links straight to 'kid'
+  // (a glance chip never commits a plan — it just lands on that source).
+  const openIdeas = (chip: IdeasChip = 'ideas') =>
+    nav(chip === 'ideas' ? '/kitchen/idees' : `/kitchen/idees?tab=${chip}`)
   const [scrollTick, setScrollTick] = useState(0)
   const requestScroll = () => setScrollTick((n) => n + 1)
   useEffect(() => {
@@ -293,14 +269,14 @@ export function Kitchen() {
               beginShopWeek()
               requestScroll()
             },
-            // « Idées » just opens the drawer — it's a modal overlay, so no tab jump
-            // or scroll is needed (it reads the same from any sub-tab).
-            ideas: () => openIdeas('ideas'),
+            // « Idées » navigates to its own scene — no tab jump or scroll is needed
+            // (it takes the whole viewport, whichever sub-tab you fired it from).
+            ideas: () => nav('/kitchen/idees'),
           }
         : null,
       kitchenActionsActive ? { active: true, canShop: shoppableCount > 0 } : NO_KITCHEN_ACTIONS,
     )
-  }, [kitchenActionsActive, shoppableCount, beginShopWeek, setKitTab, registerKitchen])
+  }, [kitchenActionsActive, shoppableCount, beginShopWeek, setKitTab, registerKitchen, nav])
   // Clear the shell's kitchen actions once, when La cuisine unmounts — so leaving
   // for another tab never leaves stale tiles in the ＋ sheet.
   useEffect(() => () => registerKitchen(null, NO_KITCHEN_ACTIONS), [registerKitchen])
@@ -644,37 +620,9 @@ export function Kitchen() {
           />
         )}
       </main>
-      {/* C-14 — the ONE Idées drawer, reachable from the grid opener above and the
-          ＋ Add sheet's « Idées » tile (useKitchenActions). Its own footer button
-          opens « Vide-frigo », which keeps its untouched identity below. */}
-      <IdeasDrawer
-        open={ideasOpen}
-        onClose={() => setIdeasOpen(false)}
-        initialChip={ideasChip}
-        ideas={ideasQ.data?.ideas ?? []}
-        leftovers={leftoversQ.data?.leftovers ?? []}
-        recentMeals={meals.data?.recent ?? []}
-        recipes={recipes}
-        lowItems={lowItems}
-        listItems={listItems}
-        soonItems={soonItems}
-        week={weekLabeled}
-        profileId={profileId}
-        ai={ai}
-        aiEnabled={aiEnabled}
-        onOpenFridge={() => {
-          setIdeasOpen(false)
-          setFridgeOpen(true)
-        }}
-      />
-      {/* « Vide-frigo » (#5) — the two-step ideas→recipes sheet, opened from the
-          IdeasDrawer footer button (or, while help mode names it, the ＋ tile). */}
-      <EmptyFridgeSheet
-        open={fridgeOpen}
-        onClose={() => setFridgeOpen(false)}
-        soonItems={soonItems}
-        reserveItems={reserveItems}
-      />
+      {/* C-14 — the ONE Idées drawer + « Vide-frigo » live on the /kitchen/idees
+          scene now (IdeasPage), reached from the grid opener above and the ＋ Add
+          sheet's « Idées » tile (useKitchenActions). Nothing to render here. */}
     </>
   )
 }

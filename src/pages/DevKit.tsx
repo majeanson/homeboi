@@ -94,7 +94,7 @@ import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
-import { IdeasDrawer } from '../components/kitchen/IdeasDrawer'
+import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { HouseholdListSection } from '../components/operator/HouseholdListSection'
@@ -332,10 +332,12 @@ function FridgeSheetDemo() {
 }
 
 // « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, a small fixture per
-// source chip so every chip has something to show (⭐/🧊/🤖/👧 read empty with no
-// live API — the chrome is what the gallery shows, same rule as EmptyFridgeSheet).
+// source so every tab has something to show (⭐/🧊/🤖/👧 read empty with no live API
+// — the chrome is what the gallery shows, same rule as EmptyFridgeSheet). In the app
+// it's the body of the /kitchen/idees scene, which owns the ?tab= source; here a
+// plain useState stands in (DevKit's own URL params are its search + category).
 function IdeasDrawerDemo() {
-  const [open, setOpen] = useState(false)
+  const [chip, setChip] = useState<IdeasChip>('ideas')
   const ai = useAiWake()
   const now = todayLocalDay()
   const week = Array.from({ length: 5 }, (_, i) => ({ date: addLocalDays(now, i), label: `Jour ${i + 1}` }))
@@ -352,13 +354,10 @@ function IdeasDrawerDemo() {
     updatedAt: 0,
   }
   return (
-    <>
-      <button type="button" className="btn btn--primary" onClick={() => setOpen(true)}>
-        <Icon name="bowl-food-bold" size={18} /> Ouvrir le tiroir Idées
-      </button>
+    <div className="ideas-drawer">
       <IdeasDrawer
-        open={open}
-        onClose={() => setOpen(false)}
+        chip={chip}
+        onChip={setChip}
         ideas={[{ id: 'i1', title: 'Tacos', recipe_id: null, suggested_by: null, created_at: 0 }]}
         leftovers={[{ id: 'l1', title: 'Pâté chinois', created_at: 0 }]}
         recentMeals={[]}
@@ -372,7 +371,7 @@ function IdeasDrawerDemo() {
         aiEnabled={true}
         onOpenFridge={() => {}}
       />
-    </>
+    </div>
   )
 }
 
@@ -2211,12 +2210,12 @@ export function DevKit() {
       ),
     },
     {
-      cat: 'Overlays & chrome',
+      cat: 'Sections & pages',
       name: 'IdeasDrawer',
       file: 'components/kitchen/IdeasDrawer.tsx',
-      kw: 'idées repas tiroir drawer favoris à écouler ia proposé par idea pool leftovers restants favorites ai kid suggest c-14',
+      kw: 'idées repas tiroir drawer favoris à écouler ia proposé par idea pool leftovers restants favorites ai kid suggest c-14 scene subtabs',
       render: () => (
-        <Demo label="the ONE meal-idea drawer — Idées / ⭐ Favoris / 🧊 À écouler / 🤖 IA / 👧 Proposé par">
+        <Demo label="the ONE meal-idea drawer, body of the /kitchen/idees scene — Idées / ⭐ Favoris / 🧊 À écouler / 🤖 IA / 👧 Proposé par">
           <IdeasDrawerDemo />
         </Demo>
       ),

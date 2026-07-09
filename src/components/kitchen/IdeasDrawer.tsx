@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -20,9 +20,8 @@ import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, LEFTOVERS_K
 import { recipeOptions, mealOptions } from './comboOptions'
 import { MealPool } from './MealPool'
 import { MealPlanPicker } from './MealPlanPicker'
-import { Sheet } from '../Sheet'
-import { Rail, Cluster } from '../Layout'
-import { Chip } from '../Chip'
+import { SubTabs } from '../SubTabs'
+import { Cluster } from '../Layout'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon, type IconName } from '../Icon'
 import { EmptyState } from '../EmptyState'
@@ -30,8 +29,8 @@ import { RowActions } from '../RowActions'
 
 // « Un seul tiroir d'idées-repas » (C-14, bmad/10) — the ONE place every source of
 // "what's for supper" ideas lives, replacing four-plus scattered pools a family
-// learned one of and never found the rest (dormant machinery). A Rail of source
-// chips, ONE active at a time:
+// learned one of and never found the rest (dormant machinery). A SubTabs row of
+// sources, ONE active at a time:
 //   Idées (default)   — the kept, reusable pool (MEAL_IDEAS_KEY) — was MealIdeas.tsx.
 //   ⭐ Favoris          — recipes the household loved (useLoves) — shows WHICH faces
 //                        loved it, never a count (calm — the chore-ledger rule).
@@ -41,17 +40,25 @@ import { RowActions } from '../RowActions'
 //   🤖 IA               — a fresh `useMealSuggest` AI batch, as rows (hides when AI
 //                        is off — degrade, never crash).
 //   👧 Proposé par      — `meal_ideas` rows a child suggested (`suggested_by` set);
-//                        the empty-day-tile "Léa propose 🍕" chip opens the drawer
-//                        HERE (never auto-plans — a glance chip never commits).
-// « Vide-frigo » keeps its OWN identity (not a chip): a footer button that opens the
-// untouched EmptyFridgeSheet. This is deliberately NOT a week-planner (A-1 stays
+//                        the empty-day-tile "Léa propose 🍕" chip lands HERE
+//                        (never auto-plans — a glance chip never commits).
+// « Vide-frigo » keeps its OWN identity (not a source): a footer button that opens
+// the untouched EmptyFridgeSheet. This is deliberately NOT a week-planner (A-1 stays
 // rejected) — planning a day is still the one-row MealPlanPicker each idea reveals.
+//
+// This is the prop-driven BODY; the full-screen `.scene` shell that owns the queries
+// and the ?tab= source state is IdeasPage (/kitchen/idees). It used to be a bottom
+// Sheet, but a sheet is sized by its content: switching from an empty « Favoris » to
+// a full 🤖 batch grew it from the bottom edge, so the whole panel — tabs included —
+// jumped up and down under the thumb. A scene's header is pinned; only the body
+// scrolls. Same reason DayManageSheet became /kitchen/day/:date.
 export type IdeasChip = 'ideas' | 'favorites' | 'useSoon' | 'ai' | 'kid'
 
+export const IDEAS_CHIPS = ['ideas', 'favorites', 'useSoon', 'ai', 'kid'] as const
+
 export function IdeasDrawer({
-  open,
-  onClose,
-  initialChip = 'ideas',
+  chip,
+  onChip,
   ideas,
   leftovers,
   recentMeals,
@@ -65,11 +72,10 @@ export function IdeasDrawer({
   aiEnabled,
   onOpenFridge,
 }: {
-  open: boolean
-  onClose: () => void
-  // Which chip is active on open — the 👧 empty-day chip jumps straight to 'kid'
-  // (decided, C-14): a glance chip never commits a plan, it just opens here.
-  initialChip?: IdeasChip
+  // The active source, owned by the page (?tab=) so a return from a planning scene
+  // lands back on the same source — the 👧 empty-day chip deep-links to ?tab=kid.
+  chip: IdeasChip
+  onChip: (chip: IdeasChip) => void
   ideas: MealIdea[]
   leftovers: Leftover[]
   recentMeals: MealRow[]
@@ -87,17 +93,10 @@ export function IdeasDrawer({
   const write = useWrite()
   const recordUndo = useRecordUndo()
   const ro = isGuest()
-  const [chip, setChip] = useState<IdeasChip>(initialChip)
-  // Re-sync to the requested chip on each open (the 👧 chip tap always lands on
-  // 'kid', not wherever the drawer was left last time).
-  useEffect(() => {
-    if (open) setChip(initialChip)
-  }, [open, initialChip])
 
   const { data: membersData } = useQuery({
     queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: Member[] }>('members'),
-    enabled: open,
   })
   const members = membersData?.members ?? []
   const memberById = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
@@ -202,19 +201,21 @@ export function IdeasDrawer({
     ...(aiEnabled ? [{ key: 'ai' as const, icon: 'sparkle-bold' as const, label: t.kitchen.ideasDrawer.chipAi }] : []),
     { key: 'kid', icon: 'baby-bold', label: t.kitchen.ideasDrawer.chipKid },
   ]
+  // AI off (binding unset or the household switched it off) drops the 🤖 source, so
+  // a stale `?tab=ai` deep-link (or a mid-session AI outage) has no tab to select —
+  // fall back to the default rather than render an empty body under no active tab.
+  const active = CHIPS.some((c) => c.key === chip) ? chip : 'ideas'
 
   return (
-    <Sheet open={open} onClose={onClose} ariaLabel={t.kitchen.ideasDrawer.title} className="ideas-drawer">
-      <h3>{t.kitchen.ideasDrawer.title}</h3>
-      <Rail className="ideas-drawer__chips" aria-label={t.kitchen.ideasDrawer.title}>
-        {CHIPS.map((c) => (
-          <Chip key={c.key} selected={chip === c.key} onClick={() => setChip(c.key)} icon={c.icon}>
-            {c.label}
-          </Chip>
-        ))}
-      </Rail>
+    <>
+      <SubTabs<IdeasChip>
+        options={CHIPS.map((c) => ({ key: c.key, label: c.label, icon: c.icon }))}
+        value={active}
+        onSelect={onChip}
+        ariaLabel={t.kitchen.ideasDrawer.title}
+      />
 
-      {chip === 'ideas' && (
+      {active === 'ideas' && (
         <MealPool<MealIdea, Recipe>
           items={ideas}
           queryKey={MEAL_IDEAS_KEY}
@@ -240,11 +241,11 @@ export function IdeasDrawer({
         />
       )}
 
-      {chip === 'favorites' && (
+      {active === 'favorites' && (
         <FavoritesChip recipes={recipes} members={members} week={week} readOnly={ro} onPlan={planRecipe} />
       )}
 
-      {chip === 'useSoon' && (
+      {active === 'useSoon' && (
         <>
           <MealPool<Leftover, MealRow>
             items={leftovers}
@@ -289,7 +290,7 @@ export function IdeasDrawer({
         </>
       )}
 
-      {chip === 'ai' && (
+      {active === 'ai' && (
         <AiChip
           suggest={suggest}
           keptAi={keptAi}
@@ -300,7 +301,7 @@ export function IdeasDrawer({
         />
       )}
 
-      {chip === 'kid' && (
+      {active === 'kid' && (
         <KidChip
           ideas={kidVisible}
           memberById={memberById}
@@ -316,7 +317,7 @@ export function IdeasDrawer({
           <InlineIcon name="cooking-pot-bold" /> {t.kitchen.fridge.tile}
         </button>
       </Cluster>
-    </Sheet>
+    </>
   )
 }
 

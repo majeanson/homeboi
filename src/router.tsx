@@ -40,6 +40,7 @@ const PriceMatchPage = lazy(() => import('./pages/PriceMatchPage').then((m) => (
 const ListEditPage = lazy(() => import('./pages/ListEditPage').then((m) => ({ default: m.ListEditPage })))
 const QuickAddPage = lazy(() => import('./pages/QuickAddPage').then((m) => ({ default: m.QuickAddPage })))
 const DayPlanPage = lazy(() => import('./pages/DayPlanPage').then((m) => ({ default: m.DayPlanPage })))
+const IdeasPage = lazy(() => import('./pages/IdeasPage').then((m) => ({ default: m.IdeasPage })))
 // « Moments » — a read-only recap of a chosen time window (tonight / tomorrow / a
 // picked date / this week), with each day's « À compléter » handoff checklist inline.
 const MomentScene = lazy(() => import('./pages/MomentScene').then((m) => ({ default: m.MomentScene })))
@@ -141,6 +142,9 @@ export function AppRoutes() {
         {/* One day's full meal-planning editor — a scene (was the DayManageSheet
             bottom sheet, whose lower inputs stranded under the mobile keyboard). */}
         <Route path="/kitchen/day/:date" element={<DayPlanPage />} />
+        {/* C-14 — the ONE « Idées » drawer (?tab=<source>). A scene, not a sheet: a
+            content-height sheet jumped its own top edge on every source swap. */}
+        <Route path="/kitchen/idees" element={<IdeasPage />} />
         {/* #43 — cook several of today's dishes at once (shared timers). */}
         <Route path="/kitchen/cook/multi" element={<MultiCookPage />} />
         {/* #45 — the printable toddler recipe/activity book. */}

@@ -799,12 +799,16 @@
   flex: none;
 }
 
-/* C-14 — the ONE IdeasDrawer (components/kitchen/IdeasDrawer.tsx): a Sheet whose
-   body swaps per source chip (Idées / ⭐ / 🧊 / 🤖 / 👧). Rides `.rail`/`.cluster`
-   for its own rows (see lib/Layout) — only the drawer-specific spacing lives here. */
-.ideas-drawer__chips {
-  margin: 0.5rem 0 0.9rem;
-}
+/* C-14 — the ONE IdeasDrawer (components/kitchen/IdeasDrawer.tsx): the body of the
+   /kitchen/idees `.scene`, swapping per source sub-tab (Idées / ⭐ / 🧊 / 🤖 / 👧).
+   The scene pins the head and scrolls only `.scene__body`, so the tab row holds its
+   y as you move across sources — a content-height sheet grew from the bottom edge
+   and shoved the tabs up and down instead. Rides `.subtabs`/`.cluster` (SubTabs,
+   lib/Layout) — only the drawer-specific spacing lives here.
+   Five sources overflow a 360px phone: `.subtabs` is `overflow-x:auto`, so the row
+   scrolls sideways rather than clipping 👧 off (the sanctioned scroller, like Le
+   cercle's five sections). Never swap this for a bespoke flex row. The tab row takes
+   `.subtabs-row`'s own spacing — no override here. */
 .ideas-drawer__shortlist {
   margin-top: 1rem;
 }

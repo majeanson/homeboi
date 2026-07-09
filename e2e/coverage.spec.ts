@@ -217,12 +217,12 @@ test('settings-tag-rename', async ({ page }) => {
 
 // C-14 — the old "Avec mes recettes" AI/book/use-it-up suggestion band folded
 // into the ONE IdeasDrawer. The kitchen ＋ sheet's week actions shrank to shop +
-// « Idées »; opening the tile closes the sheet and opens the drawer behind it.
+// « Idées »; the tile navigates to the drawer's own full-screen scene.
 test('kitchen-ideas-drawer', async ({ page }) => {
   await boot(page, '/kitchen')
   await page.locator('.add-fab').click()
   await page.locator('.cat-pick', { hasText: 'Idées de repas' }).click()
-  await page.locator('.ideas-drawer.show').waitFor({ state: 'visible' })
+  await page.locator('.ideas-drawer.scene').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'kitchen-ideas-drawer-phone', false)
 })

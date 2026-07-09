@@ -30,10 +30,11 @@ async function boot(page: Page, width = 390) {
 // The largest amount (px) by which any VISIBLE descendant of `.sheet` runs past the
 // sheet's right edge. Sees through `overflow-x:hidden` (unlike scrollWidth), plus the
 // classic sheet-level sideways-pan number for good measure. <= 1 = clean (sub-pixel).
-// `selector` narrows WHICH sheet — several `.sheet`s stay always-mounted at once
-// (AddSheet + IdeasDrawer + …), so a page with more than one needs the OPEN one's
-// own modifier class (e.g. '.ideas-drawer.show'), not the bare '.sheet' (which
-// would grab whichever mounted first, not necessarily the one under test).
+// `selector` narrows WHICH sheet — several `.sheet`s stay always-mounted at once, so
+// a page with more than one needs the OPEN one's own modifier class, not the bare
+// '.sheet' (which would grab whichever mounted first, not the one under test). It
+// also aims the guard at a routed `.scene`'s scroll box (the Idées scene), whose
+// right edge is likewise the box content must not pass.
 async function worstRightBleed(
   page: Page,
   selector = '.sheet',
@@ -73,7 +74,11 @@ async function worstRightBleed(
   }, selector)
 }
 
-async function assertClean(page: Page, label: string, selector = '.sheet') {
+// `clip` — which cross-axis containment the box must declare. A `.sheet` explicitly
+// sets `overflow-x:hidden`. A `.scene__body` only sets `overflow-y:auto`, which CSS
+// computes to `overflow-x:auto` (the pair can't mix `visible` with a scroll value);
+// the pan assertion above is what actually proves the scene never scrolls sideways.
+async function assertClean(page: Page, label: string, selector = '.sheet', clip: 'hidden' | 'auto' = 'hidden') {
   const { bleed, pan, culprit } = await worstRightBleed(page, selector)
   expect(pan, `${label}: sheet pans sideways`).toBeLessThanOrEqual(1)
   expect(bleed, `${label}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)
@@ -82,7 +87,7 @@ async function assertClean(page: Page, label: string, selector = '.sheet') {
     const s = document.querySelector(sel) as HTMLElement | null
     return s ? getComputedStyle(s).overflowX : ''
   }, selector)
-  expect(overflowX, `${label}: sheet overflow-x`).toBe('hidden')
+  expect(overflowX, `${label}: sheet overflow-x`).toBe(clip)
 }
 
 // Checked at both phone widths — content is tightest at 360.
@@ -140,9 +145,11 @@ for (const width of [360, 390]) {
   })
 }
 
-// IdeasDrawer (C-14) — the Rail of source chips is exactly the "several pills in a
-// row" shape that bleeds; each chip's body (a MealPool add-combobox row, a
-// tap-to-reveal MealPlanPicker) is checked too.
+// IdeasDrawer (C-14) — now the body of the /kitchen/idees `.scene`. Its SubTabs row
+// of five sources is exactly the "several pills in a row" shape that bleeds; each
+// source's body (a MealPool add-combobox row, a tap-to-reveal MealPlanPicker) is
+// checked too. The guard targets `.scene__body`, the scene's scroll box.
+const IDEAS_BOX = '.ideas-drawer .scene__body'
 for (const width of [360, 390]) {
   test(`IdeasDrawer never overflows sideways @${width}`, async ({ page }) => {
     await boot(page, width)
@@ -150,19 +157,19 @@ for (const width of [360, 390]) {
     await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
     await page.locator('.kitchen__ideas-opener .btn--primary').click()
-    await expect(page.locator('.ideas-drawer.show')).toBeVisible()
-    await assertClean(page, 'ideas drawer, Idées chip', '.ideas-drawer.show')
+    await expect(page.locator(IDEAS_BOX)).toBeVisible()
+    await assertClean(page, 'ideas drawer, Idées tab', IDEAS_BOX, 'auto')
 
     // Reveal a row's plan picker (slot chips + day chips — the widest inner row).
     await page.locator('.ideas-drawer .kitchen__idea-name').first().click()
     await expect(page.locator('.meal-plan-pick')).toBeVisible()
-    await assertClean(page, 'ideas drawer, plan picker open', '.ideas-drawer.show')
+    await assertClean(page, 'ideas drawer, plan picker open', IDEAS_BOX, 'auto')
 
-    // Sweep every other source chip.
+    // Sweep every other source tab.
     for (const label of ['Favoris', 'À écouler', 'Proposé par']) {
-      await page.locator('.ideas-drawer__chips .chip', { hasText: label }).click()
+      await page.locator('.ideas-drawer .subtabs__opt', { hasText: label }).click()
       await page.waitForTimeout(150)
-      await assertClean(page, `ideas drawer, ${label} chip`, '.ideas-drawer.show')
+      await assertClean(page, `ideas drawer, ${label} tab`, IDEAS_BOX, 'auto')
     }
   })
 }

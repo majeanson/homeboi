@@ -530,15 +530,16 @@ test.describe('add sheet', () => {
 
   // C-14 — the kitchen ＋ sheet's week-action tiles shrank to 2 (shop + « Idées »):
   // Vide-frigo now opens from the IdeasDrawer's own footer button, not a direct
-  // ＋ tile.
+  // ＋ tile. The tile navigates to the drawer's full-screen scene (/kitchen/idees).
   test('the kitchen ＋ Idées tile opens the drawer, whose footer runs Vide-frigo', async ({ page }) => {
     await APP('/kitchen')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.cat-pick', { hasText: 'Idées de repas' }).click()
-    const drawer = page.locator('.ideas-drawer.show')
+    const drawer = page.locator('.ideas-drawer.scene')
     await expect(drawer).toBeVisible()
+    await expect(page).toHaveURL(/\/kitchen\/idees/)
     await drawer.getByRole('button', { name: 'Vide-frigo AI' }).click()
     // Step 1 — the sheet auto-loads a batch of dish names (checkable chips).
     const modal = page.locator('.kit-modal.fridge-modal')
@@ -557,9 +558,26 @@ test.describe('add sheet', () => {
     )
   })
 
+  // C-14 — the regression that made the drawer a scene: as a content-height bottom
+  // sheet it grew from the bottom edge, so swapping an empty « Favoris » for a full
+  // 🤖 IA batch shoved the tab row itself up and down under the thumb. A scene pins
+  // its head, so the tabs must hold their y across every source.
+  test('the Idées scene holds its tab row at one y across every source', async ({ page }) => {
+    await APP('/kitchen/idees')(page)
+    const tabs = page.locator('.ideas-drawer .subtabs')
+    await expect(tabs).toBeVisible()
+    const ys: Record<string, number> = {}
+    for (const label of ['Idées', 'Favoris', 'À écouler', 'IA', 'Proposé par']) {
+      await page.locator('.ideas-drawer .subtabs__opt', { hasText: label }).click()
+      await expect(page.locator('.ideas-drawer .subtabs__opt.is-on', { hasText: label })).toBeVisible()
+      ys[label] = (await tabs.boundingBox())!.y
+    }
+    expect([...new Set(Object.values(ys))], `tab row moved: ${JSON.stringify(ys)}`).toHaveLength(1)
+  })
+
   // C-14 — a child's suggestion (meal_ideas `date` + `suggested_by`) surfaces a
-  // small chip on the matching empty day tile; tapping it opens the drawer
-  // straight on 👧 « Proposé par » — never auto-plans.
+  // small chip on the matching empty day tile; tapping it deep-links to the drawer
+  // scene on 👧 « Proposé par » (?tab=kid) — never auto-plans.
   test('a kid-suggested idea chip on an empty day opens the drawer on 👧', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)
@@ -582,9 +600,10 @@ test.describe('add sheet', () => {
     const chip = page.locator('.kitchen__day-kidsuggest', { hasText: 'propose' })
     await expect(chip).toBeVisible()
     await chip.click()
-    const drawer = page.locator('.ideas-drawer.show')
+    const drawer = page.locator('.ideas-drawer.scene')
     await expect(drawer).toBeVisible()
-    await expect(drawer.locator('.chip.is-on', { hasText: 'Proposé par' })).toBeVisible()
+    await expect(page).toHaveURL(/\/kitchen\/idees\?tab=kid/)
+    await expect(drawer.locator('.subtabs__opt.is-on', { hasText: 'Proposé par' })).toBeVisible()
     await expect(drawer.getByText('Pizza maison')).toBeVisible()
   })
 
@@ -915,6 +934,23 @@ test.describe('list', () => {
     // A check is a mark, not a removal — the item STAYS, just struck through.
     await expect(rows).toHaveCount(4)
     await expect(checkedRows(page)).toHaveCount(1)
+  })
+
+  // « Pas pressé »: an item we only buy on a good deal. Flagged from the row's own
+  // edit scene, written the moment the chip is picked, and the row comes back to the
+  // list wearing its second class (faded card + a named tag, not colour alone).
+  test('flagging an item « pas pressé » fades its row and names it', async ({ page }) => {
+    const rows = openList(page)
+    await expect(page.locator('.list-row--norush')).toHaveCount(0)
+    // The name is its own tap target (the picture opens deals, the check ticks).
+    await rows.nth(1).locator('.list-row__name').click()
+    const chip = page.getByRole('button', { name: 'Pas pressé' })
+    await expect(chip).toBeVisible()
+    await expectApi(page, 'PATCH', 'list', () => chip.click())
+    await page.getByRole('button', { name: 'Fermer' }).click()
+    // Back on the list, the flag survives the board refetch — exactly one row.
+    await expect(page.locator('.list-row--norush')).toHaveCount(1)
+    await expect(rows.nth(1).locator('.list-row__norush')).toHaveText(/Pas pressé/)
   })
 
   test('tapping a checked item again unchecks it', async ({ page }) => {
