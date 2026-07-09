@@ -428,7 +428,7 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
 21. ✅ **« Sortir le bac »** [S] ◐ — _garde (2026-07-08)_ — **SHIPPED
     2026-07-08 (revised scope per the 10-plan.md note)**: no new bins table —
     rides the EXISTING Corvées recurrence engine instead. A per-chore
-    `announce_evening` flag (migration 0107; checkbox in the chore editor,
+    `announce_evening` flag (migration 0109; checkbox in the chore editor,
     next to `RecurPicker`/`LeadPicker`) emits an evening-before board line the
     night before its next occurrence (« c'est le soir du bac bleu »),
     toddler-hearable, per-device opt-out (`babillard-bac`, Réglages ▸

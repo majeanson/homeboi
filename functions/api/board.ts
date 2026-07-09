@@ -312,7 +312,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
     // D-21: this recurring chore's "evening before" board announce is on. Read by
     // src/lib/boardModel.ts against choresUpcoming's `at` to synthesize the
-    // announce line the night before — see migration 0107.
+    // announce line the night before — see migration 0109.
     announce_evening?: boolean
   }
   const memberName = (id: string | null) =>

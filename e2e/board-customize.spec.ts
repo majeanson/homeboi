@@ -175,7 +175,7 @@ test('picking a face re-renders the board, hiding another member’s items', asy
 
 // ─────────── D-21 « Sortir le bac » — evening-before chore announce ─────────
 // The 86400-day-scale "evening before" line (src/lib/boardModel.ts + migration
-// 0107): a chore flagged `announce_evening` due TOMORROW shows a « Ce soir »
+// 0109): a chore flagged `announce_evening` due TOMORROW shows a « Ce soir »
 // board line tonight. Needs an EVENING frozen clock (MMID + 19h local, distinct
 // from the other tests' 04:00-local BASE) since the model gates on timeOfDay.
 
