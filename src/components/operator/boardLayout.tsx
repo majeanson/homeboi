@@ -9,8 +9,9 @@ import {
   useBoardCards,
   setCardPrefs,
   resetCardPrefs,
-  BAND_CARD_META,
-  GRID_CARD_META,
+  cardMeta,
+  cardMode,
+  moveCard,
   type BoardCardId,
 } from '../../lib/boardCards'
 
@@ -31,18 +32,23 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
       const fromI = Number(from)
       const toI = Number(to)
       if (Number.isNaN(fromI) || Number.isNaN(toI) || fromI === toI) return
-      const order = [...prefs.order]
-      const [moved] = order.splice(fromI, 1)
-      order.splice(toI, 0, moved)
-      setCardPrefs({ order })
+      const id = prefs.grid[fromI]
+      if (!id) return
+      setCardPrefs(moveCard(prefs, id, 'grid', toI))
     },
     canDrop: (from, to) => from !== to,
     holdMs: DND_HOLD_MS,
   })
 
+  // Show/hide is the `never` end of the per-card mode. Turning a card back ON drops the
+  // override entirely, so it returns to its own default ('auto' for the cards that
+  // collapse when empty, 'always' for the four that hold their place) rather than being
+  // pinned to a mode the user never chose.
   const toggle = (id: BoardCardId) => {
-    const hidden = prefs.hidden.includes(id) ? prefs.hidden.filter((x) => x !== id) : [...prefs.hidden, id]
-    setCardPrefs({ hidden })
+    const mode = { ...prefs.mode }
+    if (cardMode(prefs, id) === 'never') delete mode[id]
+    else mode[id] = 'never'
+    setCardPrefs({ mode })
   }
 
   // The show/hide toggle button — identical for band + grid rows (only their wrapper
@@ -78,12 +84,14 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
           only: these keep their glance position on top, so no drag grip. */}
       <p className="board-layout__group mono">{t.operator.boardLayoutBand}</p>
       <ul className="board-layout">
-        {BAND_CARD_META.map(({ id, icon }) => {
-          const visible = !prefs.hidden.includes(id)
+        {prefs.band.map((id) => {
+          const meta = cardMeta(id)
+          if (!meta) return null
+          const visible = cardMode(prefs, id) !== 'never'
           return (
             <li key={id} className={'board-layout__row board-layout__row--fixed' + (visible ? '' : ' is-hidden')}>
               <span className="board-layout__name">
-                <InlineIcon name={icon} size={16} /> {t.boardCard[id]}
+                <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}
               </span>
               {!ro && toggleBtn(id, visible)}
             </li>
@@ -93,10 +101,10 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
       {/* The reorderable masonry cards below the band — show/hide AND drag-reorder. */}
       <p className="board-layout__group mono">{t.operator.boardLayoutGrid}</p>
       <ul className="board-layout">
-        {prefs.order.map((id, i) => {
-          const meta = GRID_CARD_META.find((m) => m.id === id)
+        {prefs.grid.map((id, i) => {
+          const meta = cardMeta(id)
           if (!meta) return null
-          const visible = !prefs.hidden.includes(id)
+          const visible = cardMode(prefs, id) !== 'never'
           return (
             <DragPill
               key={id}

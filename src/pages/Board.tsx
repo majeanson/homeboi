@@ -65,7 +65,7 @@ import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
 import { useBoardModel } from '../lib/boardModel'
 import { useCarnets, carnetEmoji } from '../lib/carnets'
-import { useBoardCards, visibleCardOrder, isCardVisible, type GridCardId } from '../lib/boardCards'
+import { useBoardCards, visibleCards, isCardVisible, type BoardCardId } from '../lib/boardCards'
 
 // The wall board. Polls the whole board in one read on an interval. ZERO AI on
 // this path. Tolerates wifi loss: a failed poll keeps the last good frame and
@@ -888,7 +888,7 @@ export function Board() {
                 the per-device order with hidden ones dropped (lib/boardCards, set in
                 Réglages ▸ Affichage). The card JSX is unchanged — just addressable. */}
             {(() => {
-              const nodes: Partial<Record<GridCardId, ReactNode>> = {}
+              const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
               // « L'auto » glance — the car's status today + today's rides. #28
               nodes.autoCard = <AutoCard />
               // « Le fil du jour » — the day's shape: timed events + L'auto rides + work
@@ -1207,7 +1207,7 @@ export function Board() {
               // « Photo du jour » band (the wonder photo also backs the weather hero).
               nodes.photos = <PhotoFrame />
               // Render the visible cards in this device's order.
-              return visibleCardOrder(boardCards).map((id) => <Fragment key={id}>{nodes[id]}</Fragment>)
+              return visibleCards(boardCards, 'grid').map((id) => <Fragment key={id}>{nodes[id]}</Fragment>)
             })()}
           </div>
         </>
