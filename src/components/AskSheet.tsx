@@ -3,7 +3,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useSpeak } from '../lib/speak'
 import { useVoiceInput } from '../lib/useVoiceInput'
-import { AskAnswerCard, type AnswerKind, type AskAnswerStatus } from '../lib/askAnswer'
+import { AskAnswerCard, speakableAnswer, type AnswerKind, type AskAnswerStatus } from '../lib/askAnswer'
 import { EditField } from './EditField'
 import { Modal } from './Modal'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
@@ -68,7 +68,7 @@ export function AskSheet({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (status === 'answer' && answer && !spokenRef.current) {
       spokenRef.current = true
-      speak(answer.text)
+      speak(speakableAnswer(answer.text))
     }
   }, [status, answer, speak])
 
@@ -102,7 +102,7 @@ export function AskSheet({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 className="btn btn--ghost btn--sm ask-sheet__replay"
-                onClick={() => speak(answer.text)}
+                onClick={() => speak(speakableAnswer(answer.text))}
                 aria-label={t.ask.replay}
                 title={t.ask.replay}
               >

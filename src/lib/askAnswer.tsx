@@ -53,6 +53,65 @@ export function relatedFor(kind: AnswerKind, t: ReturnType<typeof useT>): { to: 
 
 export type AskAnswerStatus = 'asking' | 'answer' | 'error' | 'off'
 
+// The model answers in one or two sentences, and puts an enumeration one item per
+// line prefixed with "- " (see answerQuestion's system prompt). Rendering that raw
+// into a <p> collapses every newline, which is how "où est la liste ?" came back as
+// an unreadable comma-wall. So parse the shape back out: runs of bullet lines become
+// a real <ul>, everything else stays a paragraph.
+const BULLET = /^\s*[-–—•*]\s+/
+
+type Block = { kind: 'p'; text: string } | { kind: 'ul'; items: string[] }
+
+export function answerBlocks(text: string): Block[] {
+  const blocks: Block[] = []
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    if (BULLET.test(trimmed)) {
+      const item = trimmed.replace(BULLET, '')
+      const last = blocks[blocks.length - 1]
+      if (last?.kind === 'ul') last.items.push(item)
+      else blocks.push({ kind: 'ul', items: [item] })
+    } else {
+      blocks.push({ kind: 'p', text: trimmed })
+    }
+  }
+  return blocks
+}
+
+// What read-aloud should hear: the bullet dashes are a visual affordance, not words
+// ("tiret, Lime, tiret, Citron"). Drop the markers and end each line so the voice
+// pauses between items — without doubling punctuation a line already carries.
+export function speakableAnswer(text: string): string {
+  return text
+    .split('\n')
+    .map((l) => l.trim().replace(BULLET, ''))
+    .filter(Boolean)
+    .map((l) => (/[.!?:;,…]$/.test(l) ? l : `${l}.`))
+    .join(' ')
+    .trim()
+}
+
+function AnswerBody({ text }: { text: string }) {
+  return (
+    <>
+      {answerBlocks(text).map((b, i) =>
+        b.kind === 'ul' ? (
+          <ul key={i} className="search__answer-list">
+            {b.items.map((item, j) => (
+              <li key={j}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={i} className="search__answer-text">
+            {b.text}
+          </p>
+        ),
+      )}
+    </>
+  )
+}
+
 // THE shared answer card. `replay` slots an optional control beside the domain
 // tag (AskSheet's 🔊 replay button); `onRelatedClick` fires when a "not what you
 // wanted?" chip is tapped (AskSheet closes itself so the sheet doesn't linger
@@ -90,7 +149,7 @@ export function AskAnswerCard({
             <span className="search__answer-kind mono">{t.search.kinds[answer.kind]}</span>
             {replay}
           </div>
-          <p className="search__answer-text">{answer.text}</p>
+          <AnswerBody text={answer.text} />
         </>
       ) : status === 'off' ? (
         <p className="search__asking mono">{t.search.askUnavailable}</p>

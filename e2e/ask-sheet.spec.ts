@@ -61,6 +61,22 @@ test('the mic entry point opens AskSheet; the typed path answers with the domain
   await expect(page.locator('.ask-sheet__replay')).toBeVisible()
 })
 
+// An enumerated answer ("what's on the list?") comes back as a lead sentence + one
+// item per "- " line. It must render as a real <ul>, not a comma-wall in one <p>:
+// dropping the newlines into a paragraph is what made the answer unreadable.
+test('an enumerated answer renders as a lead sentence + a real list', async ({ page }) => {
+  await mockAsk(page, () => ({
+    answer: 'La liste contient 3 articles :\n- Lime\n- Citron\n- Pain',
+    kind: 'list',
+  }))
+  await openAsk(page)
+
+  await askTyped(page, 'Qu’est-ce qu’il y a sur la liste ?')
+
+  await expect(page.locator('.search__answer-text')).toHaveText('La liste contient 3 articles :')
+  await expect(page.locator('.search__answer-list li')).toHaveText(['Lime', 'Citron', 'Pain'])
+})
+
 test('the honest "je ne sais pas" degrade shows the search-everywhere link', async ({ page }) => {
   await mockAsk(page, () => ({ answer: null, kind: 'none' }))
   await openAsk(page)

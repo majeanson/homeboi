@@ -132,6 +132,34 @@ function logAi(where: string, err: unknown): string {
   return msg
 }
 
+// The model sometimes DOUBLE-escapes non-ASCII inside its JSON string — it emits
+// `"La liste d'\\u00e9picerie"`, so a correct JSON.parse hands back the six literal
+// characters `é` instead of `é`. The escapes then reach the screen verbatim
+// ("la liste d'épicerie") and the read-aloud voice spells them out. Undo what
+// survived the parse: \uXXXX (incl. surrogate pairs), the standard short escapes,
+// and a trailing `\\` -> `\`. Order matters — resolve \uXXXX before collapsing
+// backslashes, and treat `\\u00e9` (an escaped backslash then a literal "u00e9")
+// as a real backslash, not a code point.
+export function decodeStrayEscapes(s: string): string {
+  return s.replace(/\\(u[0-9a-fA-F]{4}|\\|["'/]|[nrtbf])/g, (_, esc: string) => {
+    if (esc === '\\') return '\\'
+    if (esc[0] === 'u') return String.fromCharCode(parseInt(esc.slice(1), 16))
+    switch (esc) {
+      case 'n':
+        return '\n'
+      case 'r':
+        return '\r'
+      case 't':
+        return '\t'
+      case 'b':
+      case 'f':
+        return ''
+      default:
+        return esc // \" \' \/
+    }
+  })
+}
+
 function extractJson(raw: unknown): unknown {
   // Newer Workers AI models (e.g. llama-3.3-70b-fp8-fast) hand back `response`
   // ALREADY PARSED as an object/array when the model emitted valid JSON; the old
@@ -803,13 +831,15 @@ export async function answerQuestion(
   if (!env.AI) return null
   const system =
     lang === 'en'
-      ? `You answer a family member's question using ONLY the household data below. Be warm and concise — one or two sentences, no lists unless asked. If the answer isn't in the data, say plainly that you don't see it (never invent). The data is dated; use the weekdays/dates to resolve "Friday", "tomorrow", etc.
+      ? `You answer a family member's question using ONLY the household data below. Be warm and concise — one or two sentences. If the answer isn't in the data, say plainly that you don't see it (never invent). The data is dated; use the weekdays/dates to resolve "Friday", "tomorrow", etc.
+When the answer names several things, DON'T run them together in a sentence: write one short sentence, then put each thing on its own line starting with "- " (at most 10 lines, then "…"). Use "\\n" for the line breaks.
 Reply with ONLY valid JSON: {"answer": <your reply, in English>, "kind": <which kind of thing the question is about>}.
 "kind" is one of: "meal" (suppers / what's for supper), "event" (appointments, activities, birthdays), "list" (the grocery/shopping list), "chore" (chores, tasks), "recipe" (a saved recipe), "cercle" (a person / family, a contact's phone or email, a service or business — vet, plumber, etc. — or an upkeep/maintenance next-due date from a carnet), "note" (a fridge note), or "none" (anything else / you don't know).
 
 DATA:
 ${context}`
-      : `Tu réponds à la question d'un membre de la famille en utilisant UNIQUEMENT les données ci-dessous. Sois chaleureux et concis — une ou deux phrases, pas de liste sauf si on le demande. Si la réponse n'est pas dans les données, dis simplement que tu ne la vois pas (n'invente jamais). Les données sont datées ; sers-toi des jours/dates pour comprendre « vendredi », « demain », etc.
+      : `Tu réponds à la question d'un membre de la famille en utilisant UNIQUEMENT les données ci-dessous. Sois chaleureux et concis — une ou deux phrases. Si la réponse n'est pas dans les données, dis simplement que tu ne la vois pas (n'invente jamais). Les données sont datées ; sers-toi des jours/dates pour comprendre « vendredi », « demain », etc.
+Quand la réponse nomme plusieurs choses, NE les enfile PAS dans une phrase : écris une courte phrase, puis mets chaque chose sur sa propre ligne commençant par « - » (10 lignes au maximum, puis « … »). Utilise « \\n » pour les sauts de ligne.
 Réponds UNIQUEMENT avec du JSON valide : {"answer": <ta réponse, en français québécois>, "kind": <le genre de chose dont parle la question>}.
 "kind" est un de : "meal" (soupers / qu'est-ce qu'on mange), "event" (rendez-vous, activités, anniversaires), "list" (la liste d'épicerie), "chore" (corvées, tâches), "recipe" (une recette enregistrée), "cercle" (une personne / la famille, le téléphone ou courriel d'un contact, un service ou commerce — vétérinaire, plombier, etc. — ou une prochaine date d'entretien d'un carnet), "note" (un pense-bête sur le frigo), ou "none" (autre chose / tu ne sais pas).
 
@@ -821,10 +851,12 @@ ${context}`
         { role: 'system', content: system },
         { role: 'user', content: question.trim() },
       ],
-      max_tokens: 260,
+      // Roomier than a plain sentence needs: an enumerated answer spends tokens on
+      // line breaks, and a truncated JSON string parses to nothing at all.
+      max_tokens: 400,
     })) as { response?: unknown }
     const parsed = extractJson(res.response) as { answer?: unknown; kind?: unknown } | null
-    const answer = typeof parsed?.answer === 'string' ? parsed.answer.trim() : ''
+    const answer = typeof parsed?.answer === 'string' ? decodeStrayEscapes(parsed.answer).trim() : ''
     if (!answer) return null
     const kind = ANSWER_KINDS.has(parsed?.kind as AnswerKind) ? (parsed!.kind as AnswerKind) : 'none'
     return { answer, kind }

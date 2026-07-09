@@ -155,6 +155,19 @@
   margin: 0;
   line-height: 1.5;
 }
+/* An enumerated answer ("what's on the list?") comes back one item per line — a
+   real list, so a long answer is scannable instead of a comma-wall. */
+.search__answer-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.search__answer-list li::marker {
+  color: var(--ink-soft);
+}
 .search__related {
   display: flex;
   flex-direction: column;

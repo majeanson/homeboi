@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyCapture, suggestMeals, mealStaples, resolveLang, extractSizes } from './ai'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, mealStaples, resolveLang, extractSizes } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -145,5 +145,47 @@ describe('classifyCapture (response shape)', () => {
     const r = await classifyCapture(env, 'il reste de la lasagne')
     expect(r.type).toBe('leftover')
     expect(r.payload.title).toBe('lasagne')
+  })
+})
+// E-22 — the model DOUBLE-escapes non-ASCII inside its own JSON string, so a
+// correct JSON.parse hands back the literal characters `é` — which then reach
+// the screen verbatim and the read-aloud voice spells out. Decode what survived.
+describe('decodeStrayEscapes', () => {
+  it('resolves a unicode escape that survived JSON.parse', () => {
+    expect(decodeStrayEscapes(String.raw`La liste d'épicerie`)).toBe("La liste d'épicerie")
+  })
+  it('resolves the short escapes and leaves the rest of the text intact', () => {
+    expect(decodeStrayEscapes(String.raw`a\nb\tc`)).toBe('a\nb\tc')
+    expect(decodeStrayEscapes(String.raw`dit \"allo\"`)).toBe('dit "allo"')
+  })
+  it('joins a surrogate pair back into one code point', () => {
+    expect(decodeStrayEscapes(String.raw`🙂`)).toBe('🙂')
+  })
+  it('treats an escaped backslash as a backslash, not the start of a code point', () => {
+    expect(decodeStrayEscapes(String.raw`C:\\u00e9`)).toBe(String.raw`C:\u00e9`)
+  })
+  it('leaves a clean answer untouched', () => {
+    expect(decodeStrayEscapes('Le souper de vendredi, c’est du pâté chinois.')).toBe(
+      'Le souper de vendredi, c’est du pâté chinois.',
+    )
+  })
+})
+
+describe('answerQuestion', () => {
+  it('decodes stray escapes out of the answer the UI renders and speaks', async () => {
+    const env = mockAiEnv({ answer: String.raw`La liste d'épicerie contient du café.`, kind: 'list' })
+    const r = await answerQuestion(env, 'où est la liste ?', 'DATA')
+    expect(r?.answer).toBe("La liste d'épicerie contient du café.")
+    expect(r?.kind).toBe('list')
+  })
+  it('keeps the newlines an enumerated answer uses (so the UI can list them)', async () => {
+    const env = mockAiEnv({ answer: 'Il y a 2 articles :\n- Lime\n- Citron', kind: 'list' })
+    const r = await answerQuestion(env, 'quoi sur la liste ?', 'DATA')
+    expect(r?.answer).toBe('Il y a 2 articles :\n- Lime\n- Citron')
+  })
+  it('falls back to kind "none" on an unknown kind, and returns null without AI', async () => {
+    const env = mockAiEnv({ answer: 'Je ne le vois pas.', kind: 'weather' })
+    expect((await answerQuestion(env, 'q', 'DATA'))?.kind).toBe('none')
+    expect(await answerQuestion(noAiEnv, 'q', 'DATA')).toBeNull()
   })
 })
