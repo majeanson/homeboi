@@ -794,6 +794,418 @@ export function Board() {
     </div>
   ) : null
 
+  // ── ONE card registry for BOTH zones ──────────────────────────────────────────
+  // Built ONCE, before either WidgetGrid, so a card dragged across zones (« Moments »
+  // down into the masonry, « Photo du jour » up into the band) still finds its node.
+  // The two zones used to build SEPARATE maps inside their own children, and a
+  // cross-zone card looked itself up in the wrong one: `nodes[id]` came back
+  // undefined, `slotEmpty` read that as "empty", and the card vanished (or lingered
+  // as a bare « Rien pour l'instant » shell). Zone membership lives in the prefs
+  // arrays ALONE — every card must be renderable from either zone.
+  const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
+  if (data) {
+  nodes.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
+  // Tapping the supper opens its recipe outright; a recipe-less one peeks
+  // with the leftover/remove plan actions.
+  nodes.heroes = (
+    <DayHeroes
+      suppers={tonightMeals}
+      supperColor={supperColor!}
+      onOpenMeal={(m) =>
+        openMeal(m, {
+          color: supperColor,
+          slotLabel: heroCardLabel(heroSlot, t),
+          daySec: todayDay,
+          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
+        })
+      }
+      cookLine={cookLine}
+      weather={weather}
+      hours={wxHours}
+      wonder={dayClear && audience === 'parent' ? null : wonder}
+      onShuffleWonder={shuffleWonder}
+      supperNow={focus === 'supper'}
+      heroSlot={heroSlot}
+    />
+  )
+  // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
+  // nothing for the picked face). Guests never see another face's mots.
+  nodes.mots = ro ? null : <MotsCard />
+  nodes.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
+  nodes.moments = <MomentPeek />
+  // « L'auto » glance — the car's status today + today's rides. #28
+  nodes.autoCard = <AutoCard />
+  // « Le fil du jour » — the day's shape: timed events + L'auto rides + work
+  // windows on the axis; chores + all-day events pooled. Shown with ≥2 things
+  // to place; when on, the « Aujourd'hui » card below drops these same events +
+  // chores so nothing renders twice.
+  nodes.fil = filShown ? (
+    // Tint groups by meaning, not per-card novelty (NFR-CALM, fewer competing
+    // hues on the wall): « Le fil du jour » IS today's timeline, so it shares
+    // the warm marigold "today" family with « Aujourd'hui » below rather than
+    // asserting its own sky accent. Warm = today, cool sky = later (Demain / À
+    // venir), earthy = the task lists.
+    <Section
+      label={t.board.fil}
+      icon="clock-bold"
+      tint="var(--marigold)"
+      help={help}
+      helpKey="fil"
+      now={filNow}
+      compactHint={String(filTimed.length + filWork.length + todayChores.length + filUntimed.length)}
+    >
+      <Fil
+        timed={[
+          ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
+          ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
+        ]}
+        untimed={[
+          ...todayChores.map((c) => ({ id: c.id, node: choreAct(c) })),
+          ...filUntimed.map((e) => ({ id: e.id, node: eventAct(e) })),
+        ]}
+        anytimeLabel={t.board.anytime}
+        nowLabel={t.board.now}
+        freeLabel={t.board.free}
+        lang={lang}
+      />
+    </Section>
+  ) : null
+  // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
+  // One meal row (déjeuner/dîner/collation — souper is the « Ce soir » hero above),
+  // extracted so a past-slot meal can fold into « Déjà passé » with the same anatomy.
+  const mealAct = (m: (typeof otherMeals)[number]) => (
+    <Act
+      key={m.id}
+      cat="meal"
+      icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+      when={slotLabel(m.slot)}
+      title={m.title}
+      who={cookLine(m)}
+      color={mealPrefs.color(m.slot)}
+      mine={!!profileId && m.cook_member_id === profileId}
+      past={m.past}
+      onOpen={() =>
+        openMeal(m, {
+          color: mealPrefs.color(m.slot),
+          slotLabel: slotLabel(m.slot),
+          daySec: todayDay,
+          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
+        })
+      }
+    />
+  )
+  // Today's line-crossed items fold into a calm « Déjà passé aujourd'hui »
+  // Disclosure so the card stays on now + next (the lifecycle keeps them as a quiet
+  // record until midnight — see lib/itemLife). Only TIMED things fold: past-slot
+  // meals + timed events whose moment has gone. Chores/todos/home + all-day events
+  // are untimed → they never strike, so they always stay in the live list.
+  const shownEvents = !filShown ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
+  const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
+  const liveMeals = otherMeals.filter((m) => !m.past)
+  const pastMeals = otherMeals.filter((m) => m.past)
+  const liveEvents = shownEvents.filter((e) => !evtPast(e))
+  const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
+  // A quiet count for the compact lens — everything the card is about to
+  // list, already at hand from the arrays just above.
+  const todayCount = liveMeals.length + liveEvents.length + (filShown ? 0 : todayChores.length) + todayHome.length
+  nodes.today = (
+    <Section
+      label={t.board.today}
+      icon="sun-bold"
+      tint="var(--marigold)"
+      help={help}
+      helpKey="today"
+      now={todayNow}
+      compactHint={todayCount > 0 ? String(todayCount) : undefined}
+    >
+{/* « Prochainement » — the next timed thing today as a calm tappable
+    headline above the full day list (the glance the « Maintenant » view
+    used to give). Renders nothing once today's timed events are behind us.
+    Hidden when « Le fil du jour » is on screen — the ribbon shows the next-up in place. */}
+{!filShown && nextUpToday && (
+  <button
+    type="button"
+    className="board-nextup"
+    onClick={() => detail.open(buildEvent(nextUpToday, detailCtx, eventActions.optsFor(nextUpToday)))}
+    aria-label={`${t.boardView.nextUp} · ${formatTime(nextUpToday.start_at, lang)} · ${nextUpToday.title}`}
+  >
+    <span className="board-nextup__kicker mono">
+      <InlineIcon name="clock-bold" size={12} /> {t.boardView.nextUp}
+    </span>
+    <span className="board-nextup__when mono">{formatTime(nextUpToday.start_at, lang)}</span>
+    <span className="board-nextup__title">{nextUpToday.title}</span>
+  </button>
+)}
+{/* Quick actions, reused from the retired « Maintenant » view: jump straight
+    to cooking the next planned meal (hidden for a leftover — nothing to
+    cook) and a one-tap door to « Avant de partir » (the pre-departure
+    checklist + corvées + L'auto). Calm pills, not banners.
+    NFR-CALM: the whole row is suppressed on a genuinely clear day — an empty
+    agenda has nothing to cook and no reason to prompt "before you leave", so
+    the glance card stays a thing to READ, not an operate surface. The depart
+    pill was previously rendered unconditionally; it now rides the same gate. */}
+{!dayClear && (
+<div className="board-actions">
+  {cook.meal && !cook.meal.is_leftover && (
+    <button
+      type="button"
+      className="btn btn--ghost mono board-action--cook"
+      onClick={() => nav(cook.target ?? '/kitchen')}
+    >
+      <InlineIcon name="cooking-pot-bold" size={16} />
+      <span>{cook.target ? t.board.cook : t.board.cookPlan} · <b>{cook.meal.title}</b></span>
+    </button>
+  )}
+  <button
+    type="button"
+    className="btn btn--ghost mono board-action--depart"
+    onClick={() => nav('/board/departure')}
+  >
+    <InlineIcon name="key-bold" size={16} /> {t.departure.title}
+  </button>
+</div>
+)}
+{/* When « Le fil du jour » is on screen it carries today's events + chores, so
+    the day list shows only meals + home work here (no double render). The calm
+    "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
+{!dayClear && !filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
+  <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
+) : (
+  <>
+    {/* Today's still-to-come meals (déjeuner/dîner/collation) — supper is the
+        "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
+        Each carries its slot food icon so the slots read apart, like La cuisine. */}
+    {liveMeals.map(mealAct)}
+    {/* Events + chores move to « Le fil du jour » when it's shown (see filShown).
+        The next-up event is the « Prochainement » headline above, so it's already
+        dropped (evtPast/shownEvents). Timed events past their moment fold below. */}
+    {liveEvents.map(eventAct)}
+    {/* Recurring chores due today — tap to check off (advances the turn). Untimed,
+        so they never fold — they leave by being done, not by a passing minute. */}
+    {!filShown && todayChores.map((c) => choreAct(c))}
+    {/* Projets & Entretien due today — tap to check off (stamps done). */}
+    {todayHome.map((c) => homeAct(c))}
+    {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern). */}
+    {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
+  </>
+)}
+
+    </Section>
+  )
+  // « Prochaine routine » — the routine that fits the moment, so routines
+  // aren't siloed in their tab. Self-hides when no carded routine exists.
+  nodes.routineNext = <RoutineNextCard />
+  // « Mes habitudes » — a door to « Le point du jour ». Names the household
+  // habits; a picked face's own ones stay a presence line (private-ish).
+  // Self-hides when nothing is asking today.
+  nodes.habitudes = <HabitudesCard />
+  // « Demain » — split out of the « Aujourd'hui » card into its OWN bento (it
+  // used to be bunched in as a sub-group, which made the today tile by far the
+  // tallest, busiest thing on the wall). Its own card keeps each glance to one
+  // job and gives the masonry a cleaner unit. Cool sky tint = "later" (shared
+  // with « À venir »), set apart from the warm marigold "today" family above.
+  // Self-hides entirely when tomorrow holds nothing (the hasTomorrow gate).
+  nodes.tomorrow = hasTomorrow ? (
+    <Section
+      label={t.board.tomorrow}
+      icon="sun-horizon-bold"
+      tint="var(--sky)"
+      // A name when there's one obvious headline (tomorrow's supper, like
+      // "Spaghetti"); otherwise a quiet count of what's coming.
+      compactHint={
+        showTomorrowSupper && data.tomorrowMeal
+          ? data.tomorrowMeal.title
+          : otherTomorrowMeals.length + tomorrowEvents.length > 0
+            ? String(otherTomorrowMeals.length + tomorrowEvents.length)
+            : undefined
+      }
+    >
+      {/* D-17: the school/congé qualifier — silent almost every day BY
+          DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,
+          see lib/year.schoolDayKind), so it never becomes wallpaper. */}
+      {model.tomorrowSchoolKind && (
+        <p className="tomorrow-school mono">
+          {model.tomorrowSchoolKind === 'school'
+            ? `🎒 ${t.board.tomorrowSchool}`
+            : `🏖️ ${t.board.tomorrowConge}`}
+        </p>
+      )}
+      {tomorrowWx && (
+        <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
+          <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+            <Icon
+              name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+              size={17}
+              color={weatherTint({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
+            />
+          </span>{' '}
+          {tomorrowWx.highC}° / {tomorrowWx.lowC}°
+        </div>
+      )}
+      {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
+          tremper les haricots" — while there's still time to act on it. */}
+      {data.tomorrowNote && (
+        <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
+      )}
+      {showTomorrowSupper && data.tomorrowMeal && (
+        <Act
+          cat="meal"
+          icon={SLOT_ICON_NAME[heroSlot]}
+          when={slotLabel(heroSlot)}
+          title={data.tomorrowMeal.title}
+          who={cookLine(data.tomorrowMeal)}
+          color={supperColor}
+          onOpen={() =>
+            openMeal(data.tomorrowMeal!, {
+              color: supperColor,
+              slotLabel: slotLabel(heroSlot),
+              daySec: tomorrowDay,
+              onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
+              onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay),
+            })
+          }
+        />
+      )}
+      {otherTomorrowMeals.map((m) => (
+        <Act
+          key={m.id}
+          cat="meal"
+          icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+          when={slotLabel(m.slot)}
+          title={m.title}
+          who={cookLine(m)}
+          color={mealPrefs.color(m.slot)}
+          onOpen={() =>
+            openMeal(m, {
+              color: mealPrefs.color(m.slot),
+              slotLabel: slotLabel(m.slot),
+              daySec: tomorrowDay,
+              onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+              onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
+            })
+          }
+        />
+      ))}
+      {tomorrowEvents.map(eventAct)}
+      {/* À compléter pinned to tomorrow — its named sections collapse so a long
+          checklist stays a compact glance here; check/add stay functional. */}
+      <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
+    </Section>
+  ) : null
+  // « À finir » — leftovers + à-faire bunched (null when both empty).
+  // The two sub-headers ("Restants à finir" / "À faire") only earn their
+  // keep when BOTH groups show — they're dividers. With one group the
+  // section label "À finir" already heads it, so a lone subhead just
+  // stacks a second near-synonymous title (Marc's redundant-title note).
+  // « À finir » — leftovers to eat first (loose one-off tasks moved into the
+  // unified « À faire » card below). Hidden when there are no leftovers.
+  nodes.toFinish = leftovers.length > 0 ? (
+    <Section
+      label={t.board.toFinish}
+      icon="arrow-counter-clockwise-bold"
+      tint="var(--sage)"
+      help={help}
+      helpKey="toFinish"
+      compactHint={String(leftovers.length)}
+    >
+      {leftovers.map((l) => (
+        <Act
+          key={l.id}
+          cat="meal"
+          icon="arrow-counter-clockwise-bold"
+          when={t.kitchen.leftoversTag}
+          title={l.title}
+          onCheck={ro ? undefined : () => markLeftoverDone(l)}
+          onOpen={() => detail.open(buildLeftover(l, detailCtx, {
+            onDone: ro ? undefined : () => markLeftoverDone(l),
+            onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
+          }))}
+        />
+      ))}
+    </Section>
+  ) : null
+  // « À faire » — the ONE to-do surface (UI merge of the two old todo cards;
+  // backends unchanged). Loose one-off tasks (data.todos, often dictated) sit
+  // under the « À faire » header; the reusable checklists (« À compléter »,
+  // todos table + departure templates) ride below via the embedded TodoSection's
+  // own header — two clearly-labelled groups in one card. The help "?" on the
+  // title explains the distinction.
+  // NFR-CALM: suppressed on a genuinely clear day (dayClear already requires
+  // todayTodos + openTodos empty), so the reassuring all-clear hero isn't
+  // contradicted by an empty card that can only ever offer an add affordance —
+  // a card that can't "stay empty". The ＋ FAB remains the add path on such days.
+  nodes.todos = dayClear ? null : (
+    <Section
+      label={t.board.todos}
+      icon="check-bold"
+      tint="var(--terracotta)"
+      help={help}
+      helpKey="todos"
+      compactHint={todayTodos.length > 0 ? String(todayTodos.length) : undefined}
+    >
+      {todayTodos.map(todoAct)}
+      <TodoSection title={t.todos.title} members={data.members} bento={false} />
+    </Section>
+  )
+  // « À venir » — upcoming events/chores (null when none).
+  nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
+    <Section
+      label={t.board.upcoming}
+      icon="calendar-blank-bold"
+      tint="var(--sky)"
+      help={help}
+      helpKey="upcoming"
+      compactHint={String(upcomingEvents.length + upcomingChores.length + upcomingHome.length)}
+    >
+  {upcomingEvents.map((e) =>
+    e.holiday ? (
+      // A coming fête — static announce line with its date (no peek).
+      <Act
+        key={e.id}
+        cat="event"
+        emoji={e.emoji}
+        title={e.title}
+        when={withRel(formatDayMaybeYear(e.start_at, lang), e.start_at)}
+      />
+    ) : (
+    <Act
+      key={e.id}
+      cat={e.birthday ? 'birthday' : 'event'}
+      title={e.title}
+      // Upcoming rows show the DATE too (not just the time): an event
+      // days out otherwise read as a bare "12 h 00" with no day. Match
+      // the chore rows below — date · time, then withRel's "· dans X j".
+      when={withRel(`${formatDayMaybeYear(e.start_at, lang)} · ${eventWhen(e)}`, e.start_at)}
+      soon={e.soon}
+      onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
+    />
+    ),
+  )}
+  {/* Recurring chores coming up later this week, with their day. */}
+  {upcomingChores.map((c) => choreAct(c, true))}
+  {/* Projets & Entretien coming up this week, with their day. */}
+  {upcomingHome.map((c) => homeAct(c, true))}
+    </Section>
+  ) : null
+  // « Prochain voyage » — the next upcoming trip; hides itself when none.
+  // « Le décompte » (A-5, bmad/09) — one suggestion-driven countdown; self-hides.
+  nodes.countdown = <CountdownCard upcoming={upcomingEvents} />
+  // « Notes (cercle) » — the durable Le cercle notes, lensed by the picked
+  // face (their notes + Maisonnée); self-hides when that face has none.
+  nodes.cercleNotes = <CercleNotesCard members={data.members} />
+  nodes.voyage = <VoyageCard />
+  // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
+  nodes.carnets = <CarnetsCard />
+  // « Cette saison » — recurring upkeep due before the season turns; self-hides.
+  nodes.seasonUpkeep = <SeasonUpkeepCard />
+  // Family drawings strip (#14) — its own full-width band (CSS column-span).
+  nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
+  // « Photo du jour » band (the wonder photo also backs the weather hero).
+  nodes.photos = <PhotoFrame />
+
+  }
   return (
     <main className="board-wall">
       <BoardCanvas weatherBucket={weather?.bucket} />
@@ -974,44 +1386,11 @@ export function Board() {
             onExpand={expandCard}
             onCollapse={collapseCard}
           >
-            {(() => {
-              const band: Partial<Record<BoardCardId, ReactNode>> = {}
-              band.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
-              // Tapping the supper opens its recipe outright; a recipe-less one peeks
-              // with the leftover/remove plan actions.
-              band.heroes = (
-                <DayHeroes
-                  suppers={tonightMeals}
-                  supperColor={supperColor!}
-                  onOpenMeal={(m) =>
-                    openMeal(m, {
-                      color: supperColor,
-                      slotLabel: heroCardLabel(heroSlot, t),
-                      daySec: todayDay,
-                      onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                      onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
-                    })
-                  }
-                  cookLine={cookLine}
-                  weather={weather}
-                  hours={wxHours}
-                  wonder={dayClear && audience === 'parent' ? null : wonder}
-                  onShuffleWonder={shuffleWonder}
-                  supperNow={focus === 'supper'}
-                  heroSlot={heroSlot}
-                />
-              )
-              // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
-              // nothing for the picked face). Guests never see another face's mots.
-              band.mots = ro ? null : <MotsCard />
-              band.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
-              band.moments = <MomentPeek />
-              return visibleCards(boardCards, 'band').map((id) => (
-                <CardSlot key={id} id={id} zone="band" empty={slotEmpty(band[id])}>
-                  {band[id]}
-                </CardSlot>
-              ))
-            })()}
+            {visibleCards(boardCards, 'band').map((id) => (
+              <CardSlot key={id} id={id} zone="band" empty={slotEmpty(nodes[id])}>
+                {nodes[id]}
+              </CardSlot>
+            ))}
           </WidgetGrid>
 
           {clearHero}
@@ -1043,388 +1422,11 @@ export function Board() {
                 the per-device order with hidden ones dropped (lib/boardCards, set in
                 Réglages ▸ Affichage or by long-pressing a card). The card JSX is
                 unchanged — just addressable. */}
-            {(() => {
-              const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
-              // « L'auto » glance — the car's status today + today's rides. #28
-              nodes.autoCard = <AutoCard />
-              // « Le fil du jour » — the day's shape: timed events + L'auto rides + work
-              // windows on the axis; chores + all-day events pooled. Shown with ≥2 things
-              // to place; when on, the « Aujourd'hui » card below drops these same events +
-              // chores so nothing renders twice.
-              nodes.fil = filShown ? (
-                // Tint groups by meaning, not per-card novelty (NFR-CALM, fewer competing
-                // hues on the wall): « Le fil du jour » IS today's timeline, so it shares
-                // the warm marigold "today" family with « Aujourd'hui » below rather than
-                // asserting its own sky accent. Warm = today, cool sky = later (Demain / À
-                // venir), earthy = the task lists.
-                <Section
-                  label={t.board.fil}
-                  icon="clock-bold"
-                  tint="var(--marigold)"
-                  help={help}
-                  helpKey="fil"
-                  now={filNow}
-                  compactHint={String(filTimed.length + filWork.length + todayChores.length + filUntimed.length)}
-                >
-                  <Fil
-                    timed={[
-                      ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
-                      ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
-                    ]}
-                    untimed={[
-                      ...todayChores.map((c) => ({ id: c.id, node: choreAct(c) })),
-                      ...filUntimed.map((e) => ({ id: e.id, node: eventAct(e) })),
-                    ]}
-                    anytimeLabel={t.board.anytime}
-                    nowLabel={t.board.now}
-                    freeLabel={t.board.free}
-                    lang={lang}
-                  />
-                </Section>
-              ) : null
-              // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
-              // One meal row (déjeuner/dîner/collation — souper is the « Ce soir » hero above),
-              // extracted so a past-slot meal can fold into « Déjà passé » with the same anatomy.
-              const mealAct = (m: (typeof otherMeals)[number]) => (
-                <Act
-                  key={m.id}
-                  cat="meal"
-                  icon={SLOT_ICON_NAME[m.slot as MealSlot]}
-                  when={slotLabel(m.slot)}
-                  title={m.title}
-                  who={cookLine(m)}
-                  color={mealPrefs.color(m.slot)}
-                  mine={!!profileId && m.cook_member_id === profileId}
-                  past={m.past}
-                  onOpen={() =>
-                    openMeal(m, {
-                      color: mealPrefs.color(m.slot),
-                      slotLabel: slotLabel(m.slot),
-                      daySec: todayDay,
-                      onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                      onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
-                    })
-                  }
-                />
-              )
-              // Today's line-crossed items fold into a calm « Déjà passé aujourd'hui »
-              // Disclosure so the card stays on now + next (the lifecycle keeps them as a quiet
-              // record until midnight — see lib/itemLife). Only TIMED things fold: past-slot
-              // meals + timed events whose moment has gone. Chores/todos/home + all-day events
-              // are untimed → they never strike, so they always stay in the live list.
-              const shownEvents = !filShown ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
-              const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
-              const liveMeals = otherMeals.filter((m) => !m.past)
-              const pastMeals = otherMeals.filter((m) => m.past)
-              const liveEvents = shownEvents.filter((e) => !evtPast(e))
-              const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
-              // A quiet count for the compact lens — everything the card is about to
-              // list, already at hand from the arrays just above.
-              const todayCount = liveMeals.length + liveEvents.length + (filShown ? 0 : todayChores.length) + todayHome.length
-              nodes.today = (
-                <Section
-                  label={t.board.today}
-                  icon="sun-bold"
-                  tint="var(--marigold)"
-                  help={help}
-                  helpKey="today"
-                  now={todayNow}
-                  compactHint={todayCount > 0 ? String(todayCount) : undefined}
-                >
-            {/* « Prochainement » — the next timed thing today as a calm tappable
-                headline above the full day list (the glance the « Maintenant » view
-                used to give). Renders nothing once today's timed events are behind us.
-                Hidden when « Le fil du jour » is on screen — the ribbon shows the next-up in place. */}
-            {!filShown && nextUpToday && (
-              <button
-                type="button"
-                className="board-nextup"
-                onClick={() => detail.open(buildEvent(nextUpToday, detailCtx, eventActions.optsFor(nextUpToday)))}
-                aria-label={`${t.boardView.nextUp} · ${formatTime(nextUpToday.start_at, lang)} · ${nextUpToday.title}`}
-              >
-                <span className="board-nextup__kicker mono">
-                  <InlineIcon name="clock-bold" size={12} /> {t.boardView.nextUp}
-                </span>
-                <span className="board-nextup__when mono">{formatTime(nextUpToday.start_at, lang)}</span>
-                <span className="board-nextup__title">{nextUpToday.title}</span>
-              </button>
-            )}
-            {/* Quick actions, reused from the retired « Maintenant » view: jump straight
-                to cooking the next planned meal (hidden for a leftover — nothing to
-                cook) and a one-tap door to « Avant de partir » (the pre-departure
-                checklist + corvées + L'auto). Calm pills, not banners.
-                NFR-CALM: the whole row is suppressed on a genuinely clear day — an empty
-                agenda has nothing to cook and no reason to prompt "before you leave", so
-                the glance card stays a thing to READ, not an operate surface. The depart
-                pill was previously rendered unconditionally; it now rides the same gate. */}
-            {!dayClear && (
-            <div className="board-actions">
-              {cook.meal && !cook.meal.is_leftover && (
-                <button
-                  type="button"
-                  className="btn btn--ghost mono board-action--cook"
-                  onClick={() => nav(cook.target ?? '/kitchen')}
-                >
-                  <InlineIcon name="cooking-pot-bold" size={16} />
-                  <span>{cook.target ? t.board.cook : t.board.cookPlan} · <b>{cook.meal.title}</b></span>
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn btn--ghost mono board-action--depart"
-                onClick={() => nav('/board/departure')}
-              >
-                <InlineIcon name="key-bold" size={16} /> {t.departure.title}
-              </button>
-            </div>
-            )}
-            {/* When « Le fil du jour » is on screen it carries today's events + chores, so
-                the day list shows only meals + home work here (no double render). The calm
-                "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
-            {!dayClear && !filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
-              <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
-            ) : (
-              <>
-                {/* Today's still-to-come meals (déjeuner/dîner/collation) — supper is the
-                    "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
-                    Each carries its slot food icon so the slots read apart, like La cuisine. */}
-                {liveMeals.map(mealAct)}
-                {/* Events + chores move to « Le fil du jour » when it's shown (see filShown).
-                    The next-up event is the « Prochainement » headline above, so it's already
-                    dropped (evtPast/shownEvents). Timed events past their moment fold below. */}
-                {liveEvents.map(eventAct)}
-                {/* Recurring chores due today — tap to check off (advances the turn). Untimed,
-                    so they never fold — they leave by being done, not by a passing minute. */}
-                {!filShown && todayChores.map((c) => choreAct(c))}
-                {/* Projets & Entretien due today — tap to check off (stamps done). */}
-                {todayHome.map((c) => homeAct(c))}
-                {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern). */}
-                {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
-              </>
-            )}
-
-                </Section>
-              )
-              // « Prochaine routine » — the routine that fits the moment, so routines
-              // aren't siloed in their tab. Self-hides when no carded routine exists.
-              nodes.routineNext = <RoutineNextCard />
-              // « Mes habitudes » — a door to « Le point du jour ». Names the household
-              // habits; a picked face's own ones stay a presence line (private-ish).
-              // Self-hides when nothing is asking today.
-              nodes.habitudes = <HabitudesCard />
-              // « Demain » — split out of the « Aujourd'hui » card into its OWN bento (it
-              // used to be bunched in as a sub-group, which made the today tile by far the
-              // tallest, busiest thing on the wall). Its own card keeps each glance to one
-              // job and gives the masonry a cleaner unit. Cool sky tint = "later" (shared
-              // with « À venir »), set apart from the warm marigold "today" family above.
-              // Self-hides entirely when tomorrow holds nothing (the hasTomorrow gate).
-              nodes.tomorrow = hasTomorrow ? (
-                <Section
-                  label={t.board.tomorrow}
-                  icon="sun-horizon-bold"
-                  tint="var(--sky)"
-                  // A name when there's one obvious headline (tomorrow's supper, like
-                  // "Spaghetti"); otherwise a quiet count of what's coming.
-                  compactHint={
-                    showTomorrowSupper && data.tomorrowMeal
-                      ? data.tomorrowMeal.title
-                      : otherTomorrowMeals.length + tomorrowEvents.length > 0
-                        ? String(otherTomorrowMeals.length + tomorrowEvents.length)
-                        : undefined
-                  }
-                >
-                  {/* D-17: the school/congé qualifier — silent almost every day BY
-                      DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,
-                      see lib/year.schoolDayKind), so it never becomes wallpaper. */}
-                  {model.tomorrowSchoolKind && (
-                    <p className="tomorrow-school mono">
-                      {model.tomorrowSchoolKind === 'school'
-                        ? `🎒 ${t.board.tomorrowSchool}`
-                        : `🏖️ ${t.board.tomorrowConge}`}
-                    </p>
-                  )}
-                  {tomorrowWx && (
-                    <div className="tomorrow-wx mono" aria-label={`${t.weather[tomorrowWx.bucket]} ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°`}>
-                      <span aria-hidden="true" style={{ display: 'inline-flex' }}>
-                        <Icon
-                          name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
-                          size={17}
-                          color={weatherTint({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })}
-                        />
-                      </span>{' '}
-                      {tomorrowWx.highC}° / {tomorrowWx.lowC}°
-                    </div>
-                  )}
-                  {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
-                      tremper les haricots" — while there's still time to act on it. */}
-                  {data.tomorrowNote && (
-                    <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} />
-                  )}
-                  {showTomorrowSupper && data.tomorrowMeal && (
-                    <Act
-                      cat="meal"
-                      icon={SLOT_ICON_NAME[heroSlot]}
-                      when={slotLabel(heroSlot)}
-                      title={data.tomorrowMeal.title}
-                      who={cookLine(data.tomorrowMeal)}
-                      color={supperColor}
-                      onOpen={() =>
-                        openMeal(data.tomorrowMeal!, {
-                          color: supperColor,
-                          slotLabel: slotLabel(heroSlot),
-                          daySec: tomorrowDay,
-                          onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
-                          onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay),
-                        })
-                      }
-                    />
-                  )}
-                  {otherTomorrowMeals.map((m) => (
-                    <Act
-                      key={m.id}
-                      cat="meal"
-                      icon={SLOT_ICON_NAME[m.slot as MealSlot]}
-                      when={slotLabel(m.slot)}
-                      title={m.title}
-                      who={cookLine(m)}
-                      color={mealPrefs.color(m.slot)}
-                      onOpen={() =>
-                        openMeal(m, {
-                          color: mealPrefs.color(m.slot),
-                          slotLabel: slotLabel(m.slot),
-                          daySec: tomorrowDay,
-                          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
-                          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
-                        })
-                      }
-                    />
-                  ))}
-                  {tomorrowEvents.map(eventAct)}
-                  {/* À compléter pinned to tomorrow — its named sections collapse so a long
-                      checklist stays a compact glance here; check/add stay functional. */}
-                  <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
-                </Section>
-              ) : null
-              // « À finir » — leftovers + à-faire bunched (null when both empty).
-              // The two sub-headers ("Restants à finir" / "À faire") only earn their
-              // keep when BOTH groups show — they're dividers. With one group the
-              // section label "À finir" already heads it, so a lone subhead just
-              // stacks a second near-synonymous title (Marc's redundant-title note).
-              // « À finir » — leftovers to eat first (loose one-off tasks moved into the
-              // unified « À faire » card below). Hidden when there are no leftovers.
-              nodes.toFinish = leftovers.length > 0 ? (
-                <Section
-                  label={t.board.toFinish}
-                  icon="arrow-counter-clockwise-bold"
-                  tint="var(--sage)"
-                  help={help}
-                  helpKey="toFinish"
-                  compactHint={String(leftovers.length)}
-                >
-                  {leftovers.map((l) => (
-                    <Act
-                      key={l.id}
-                      cat="meal"
-                      icon="arrow-counter-clockwise-bold"
-                      when={t.kitchen.leftoversTag}
-                      title={l.title}
-                      onCheck={ro ? undefined : () => markLeftoverDone(l)}
-                      onOpen={() => detail.open(buildLeftover(l, detailCtx, {
-                        onDone: ro ? undefined : () => markLeftoverDone(l),
-                        onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
-                      }))}
-                    />
-                  ))}
-                </Section>
-              ) : null
-              // « À faire » — the ONE to-do surface (UI merge of the two old todo cards;
-              // backends unchanged). Loose one-off tasks (data.todos, often dictated) sit
-              // under the « À faire » header; the reusable checklists (« À compléter »,
-              // todos table + departure templates) ride below via the embedded TodoSection's
-              // own header — two clearly-labelled groups in one card. The help "?" on the
-              // title explains the distinction.
-              // NFR-CALM: suppressed on a genuinely clear day (dayClear already requires
-              // todayTodos + openTodos empty), so the reassuring all-clear hero isn't
-              // contradicted by an empty card that can only ever offer an add affordance —
-              // a card that can't "stay empty". The ＋ FAB remains the add path on such days.
-              nodes.todos = dayClear ? null : (
-                <Section
-                  label={t.board.todos}
-                  icon="check-bold"
-                  tint="var(--terracotta)"
-                  help={help}
-                  helpKey="todos"
-                  compactHint={todayTodos.length > 0 ? String(todayTodos.length) : undefined}
-                >
-                  {todayTodos.map(todoAct)}
-                  <TodoSection title={t.todos.title} members={data.members} bento={false} />
-                </Section>
-              )
-              // « À venir » — upcoming events/chores (null when none).
-              nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
-                <Section
-                  label={t.board.upcoming}
-                  icon="calendar-blank-bold"
-                  tint="var(--sky)"
-                  help={help}
-                  helpKey="upcoming"
-                  compactHint={String(upcomingEvents.length + upcomingChores.length + upcomingHome.length)}
-                >
-              {upcomingEvents.map((e) =>
-                e.holiday ? (
-                  // A coming fête — static announce line with its date (no peek).
-                  <Act
-                    key={e.id}
-                    cat="event"
-                    emoji={e.emoji}
-                    title={e.title}
-                    when={withRel(formatDayMaybeYear(e.start_at, lang), e.start_at)}
-                  />
-                ) : (
-                <Act
-                  key={e.id}
-                  cat={e.birthday ? 'birthday' : 'event'}
-                  title={e.title}
-                  // Upcoming rows show the DATE too (not just the time): an event
-                  // days out otherwise read as a bare "12 h 00" with no day. Match
-                  // the chore rows below — date · time, then withRel's "· dans X j".
-                  when={withRel(`${formatDayMaybeYear(e.start_at, lang)} · ${eventWhen(e)}`, e.start_at)}
-                  soon={e.soon}
-                  onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
-                />
-                ),
-              )}
-              {/* Recurring chores coming up later this week, with their day. */}
-              {upcomingChores.map((c) => choreAct(c, true))}
-              {/* Projets & Entretien coming up this week, with their day. */}
-              {upcomingHome.map((c) => homeAct(c, true))}
-                </Section>
-              ) : null
-              // « Prochain voyage » — the next upcoming trip; hides itself when none.
-              // « Le décompte » (A-5, bmad/09) — one suggestion-driven countdown; self-hides.
-              nodes.countdown = <CountdownCard upcoming={upcomingEvents} />
-              // « Notes (cercle) » — the durable Le cercle notes, lensed by the picked
-              // face (their notes + Maisonnée); self-hides when that face has none.
-              nodes.cercleNotes = <CercleNotesCard members={data.members} />
-              nodes.voyage = <VoyageCard />
-              // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
-              nodes.carnets = <CarnetsCard />
-              // « Cette saison » — recurring upkeep due before the season turns; self-hides.
-              nodes.seasonUpkeep = <SeasonUpkeepCard />
-              // Family drawings strip (#14) — its own full-width band (CSS column-span).
-              nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
-              // « Photo du jour » band (the wonder photo also backs the weather hero).
-              nodes.photos = <PhotoFrame />
-              // Render the visible cards in this device's order. A card whose node is
-              // null has nothing to say TODAY (« Le fil » isn't eligible, « Demain » is
-              // bare, the day is clear) — that's its emptiness, and the slot decides
-              // whether to collapse it or hold its place with a placeholder.
-              return visibleCards(boardCards, 'grid').map((id) => (
-                <CardSlot key={id} id={id} zone="grid" empty={slotEmpty(nodes[id])}>
-                  {nodes[id]}
-                </CardSlot>
-              ))
-            })()}
+            {visibleCards(boardCards, 'grid').map((id) => (
+              <CardSlot key={id} id={id} zone="grid" empty={slotEmpty(nodes[id])}>
+                {nodes[id]}
+              </CardSlot>
+            ))}
           </WidgetGrid>
         </>
       )}

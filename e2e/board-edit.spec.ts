@@ -275,3 +275,41 @@ test.describe('board edit mode', () => {
     })
   }
 })
+
+// A card DRAGGED ACROSS ZONES must keep rendering: the two zones used to build
+// separate node registries inside their own children, so a band card living in the
+// grid array (or vice versa) looked itself up in the wrong map — `undefined` read as
+// "empty", and the card either vanished (mode auto) or lingered as a bare
+// « Rien pour l'instant » shell. Board.tsx now builds ONE registry above both
+// WidgetGrids; this guards it. (Seeded directly rather than dragged — moveCard's own
+// cross-zone behaviour is unit-tested; what regressed was the RENDER.)
+test.describe('cross-zone cards keep rendering', () => {
+  test('« Moments » in the masonry and « Aujourd’hui » in the band both render real content', async ({ page }) => {
+    await mockApi(page)
+    await seedState(page, {
+      cardPrefs: {
+        band: ['notes', 'heroes', 'mots', 'aRegler', 'today'],
+        grid: [
+          'autoCard', 'fil', 'routineNext', 'habitudes', 'tomorrow', 'countdown', 'toFinish',
+          'todos', 'upcoming', 'cercleNotes', 'voyage', 'carnets', 'seasonUpkeep', 'drawings',
+          'photos', 'moments',
+        ],
+      },
+    })
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+
+    // « Moments » now lives in the GRID — and still renders its four window chips.
+    const moments = page.locator('.board-grid .wg-slot[data-card="moments"]')
+    await moments.scrollIntoViewIfNeeded()
+    await expect(moments.locator('.now-card--moment')).toBeVisible()
+    await expect(moments.getByRole('button', { name: 'Ce soir' })).toBeVisible()
+
+    // « Aujourd’hui » now lives in the BAND — full Section, not a placeholder.
+    const today = page.locator('.board-band .wg-slot[data-card="today"]')
+    await today.scrollIntoViewIfNeeded()
+    await expect(today.locator('.sec-label')).toContainText('Aujourd’hui')
+    await expect(today.locator('.wg-slot__placeholder')).toHaveCount(0)
+    await expect(moments.locator('.wg-slot__placeholder')).toHaveCount(0)
+  })
+})
