@@ -2025,12 +2025,23 @@ export const FR = {
     ocrCloudHint: 'Lecture nuage (Mistral) — bien meilleure sur les petits chiffres et fractions. La photo est envoyée au service pour être lue : gratuit pour l’essai, puis moins d’un sou par recette. N’affecte que cet appareil.',
     // « Disposition du babillard » — per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Disposition du babillard',
-    boardLayoutHint: 'Choisis quelles cartes afficher — propre à cet appareil. Le bandeau du haut garde sa place; glisse la poignée des cartes pour les réordonner.',
+    boardLayoutHint: 'Choisis quelles cartes afficher, leur largeur et leur ordre — propre à cet appareil. Glisse une poignée pour réordonner, ou même pour déplacer une carte d’un groupe à l’autre.',
     boardLayoutReset: 'Réinitialiser',
-    boardLayoutShown: 'Affichée',
-    boardLayoutHidden: 'Cachée',
-    boardLayoutBand: 'Bandeau du haut (position fixe)',
-    boardLayoutGrid: 'Cartes (glisse pour réordonner)',
+    // Opens the board's own editor (/board?edit=1) — the same thing a long press does.
+    boardLayoutCustomize: 'Réorganiser sur le babillard',
+    boardLayoutBand: 'Bandeau du haut',
+    boardLayoutGrid: 'Cartes',
+    // Drop target at the end of a group, so a card can be moved into an emptied one.
+    boardLayoutDropHere: 'Déposer ici',
+    // The per-card width. `boardLayoutSizeN` names it for a screen reader.
+    boardLayoutSize: (card: string) => `Largeur de « ${card} »`,
+    boardLayoutSizeN: (n: number) => (n === 1 ? '1 colonne' : `${n} colonnes`),
+    boardLayoutSizeFull: 'Pleine largeur',
+    // The tri-state: what an EMPTY card does. Cycles always → auto → never.
+    boardLayoutMode: (card: string) => `« ${card} » quand la carte est vide`,
+    boardLayoutModeAlways: 'Toujours',
+    boardLayoutModeAuto: 'Si non vide',
+    boardLayoutModeNever: 'Jamais',
     a11yTitle: 'Accessibilité',
     a11yHint:
       'Contraste renforcé et plus gros texte, pour mieux voir de loin ou de plus près. N’affecte que cet appareil.',

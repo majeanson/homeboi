@@ -373,14 +373,25 @@
   flex-direction: column;
   gap: 0.4rem;
 }
+/* A row now carries TWO controls (width + the empty-card tri-state) beside the name, so
+   it must wrap: on a phone the pair drops to its own line rather than squeezing the name
+   to zero width, where its inline content used to paint straight over the buttons. */
 .board-layout__row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
+  row-gap: 0.5rem;
   padding: 0.5rem 0.7rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--card);
+}
+/* Push the controls to the right of the name, and to a line of their own once the row
+   can no longer hold both. */
+.board-layout__row > .cluster {
+  margin-left: auto;
+  flex: none;
 }
 .board-layout__row.is-dragging {
   opacity: 0.5;
@@ -392,18 +403,23 @@
 .board-layout__row.is-hidden {
   opacity: 0.55;
 }
+/* `flex: 1 1 <basis>` and NOT `flex: 1` (basis 0): with a zero basis the name shrank to
+   nothing and its inline content overflowed on top of the controls. The basis keeps it
+   readable and lets the row wrap honestly instead. */
 .board-layout__name {
-  flex: 1;
+  flex: 1 1 7rem;
   min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   font-weight: 600;
 }
-.board-layout__toggle {
+.board-layout__toggle,
+.board-layout__size {
   flex: none;
 }
-/* Group heading separating the fixed top band from the reorderable grid cards. */
+/* Group heading naming each ZONE. Both are reorderable now, and a card can be dragged
+   from one to the other — the band stopped being a fixed, show/hide-only strip. */
 .board-layout__group {
   margin: 0.9rem 0 0;
   font-size: 0.72rem;
@@ -415,10 +431,20 @@
 .board-layout__group:first-of-type {
   margin-top: 0.4rem;
 }
-/* A fixed band row carries no drag grip — pad its left edge to line up with the
-   grid rows (whose grip occupies that space). */
-.board-layout__row--fixed {
-  padding-left: 0.85rem;
+/* The tail drop target of each group. It is the only way to move a card back into a
+   group you emptied, so it stays visible (quietly) rather than appearing mid-drag. */
+.board-layout__end {
+  margin-top: 0.35rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md, 12px);
+  color: var(--ink-faint);
+  font-size: 0.72rem;
+  text-align: center;
+}
+.board-layout__end.dnd-over {
+  border-color: var(--marigold, currentColor);
+  color: var(--ink-soft);
 }
 
 /* Read-aloud voice picker (Réglages ▸ Affichage). Stacked rows: voice select,

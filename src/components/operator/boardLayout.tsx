@@ -1,7 +1,9 @@
+import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { InlineIcon } from '../Icon'
+import { Cluster } from '../Layout'
 import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
@@ -11,59 +13,139 @@ import {
   resetCardPrefs,
   cardMeta,
   cardMode,
+  cardSize,
   moveCard,
+  nextSize,
+  parseZoneKey,
+  zoneKey,
   type BoardCardId,
+  type CardMode,
+  type CardZone,
 } from '../../lib/boardCards'
 
-// « Disposition du babillard » — per-device control over which Grille cards show and
-// in what order (lib/boardCards). A wall kiosk and a phone keep their own layout. Each
-// row is a DragPill (reorder via usePointerDnd, the shared touch DnD) with a show/hide
-// toggle. Reuses OperatorSection + DragPill + usePointerDnd — no new primitives. Calm:
-// it only hides/reorders cards already on the board, adds no surface.
+// « Disposition du babillard » — per-device control over which board cards show, how wide
+// they are, and in what order (lib/boardCards). A wall kiosk and a phone keep their own.
+//
+// This is the ACCESSIBLE MIRROR of the board's own long-press editor: same store, same
+// three knobs, but reachable by keyboard and legible to a screen reader, which a
+// press-and-drag gesture never will be. « Réorganiser sur le babillard » deep-links to
+// /board?edit=1 for anyone who'd rather do it in place.
+//
+// Both groups are drag-reorderable and a card can be dragged BETWEEN them — the band used
+// to be a fixed, show/hide-only strip, and that asymmetry is gone. Drop-zone ids are
+// namespaced `"{zone}:{index}"` (the itinerary's precedent) so one dnd session serves both
+// lists; each list ends in a "{zone}:end" target so a card can be moved into an emptied
+// group. Reuses OperatorSection + DragPill + usePointerDnd — no new primitives.
+//
+// Calm: it only places, sizes and hides cards that already exist. No counts, no ranks.
+
+const MODE_CYCLE: CardMode[] = ['always', 'auto', 'never']
+// Always shown / shown ~sometimes (only when it has something to say) / never. Drawn from
+// the existing Phosphor set (lib/pipIcons) — no new glyphs for a settings row.
+const MODE_ICON = { always: 'check-bold', auto: 'approximate-equals-bold', never: 'x-bold' } as const
+
 export function BoardLayoutSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const ro = isGuest()
   const prefs = useBoardCards()
 
-  // Reorder: move the dragged row (index `from`) to the drop row (index `to`), then
-  // persist the new order. Hold-to-drag so a tap/scroll on the handle never starts one.
+  // Both lists share ONE session; the zone travels in the drop-zone id. Hold-to-drag so a
+  // tap or a scroll-flick on the handle never starts a move.
   const dnd = usePointerDnd({
-    onDrop: (from, to) => {
-      const fromI = Number(from)
-      const toI = Number(to)
-      if (Number.isNaN(fromI) || Number.isNaN(toI) || fromI === toI) return
-      const id = prefs.grid[fromI]
+    onDrop: (fromKey, toKey) => {
+      const from = parseZoneKey(fromKey)
+      const to = parseZoneKey(toKey)
+      if (!from || !to || from.index === 'end') return
+      const id = prefs[from.zone][from.index]
       if (!id) return
-      setCardPrefs(moveCard(prefs, id, 'grid', toI))
+      const at = to.index === 'end' ? prefs[to.zone].length : to.index
+      setCardPrefs(moveCard(prefs, id, to.zone, at))
     },
-    canDrop: (from, to) => from !== to,
+    canDrop: (fromKey, toKey) => fromKey !== toKey,
     holdMs: DND_HOLD_MS,
   })
 
-  // Show/hide is the `never` end of the per-card mode. Turning a card back ON drops the
-  // override entirely, so it returns to its own default ('auto' for the cards that
-  // collapse when empty, 'always' for the four that hold their place) rather than being
-  // pinned to a mode the user never chose.
-  const toggle = (id: BoardCardId) => {
-    const mode = { ...prefs.mode }
-    if (cardMode(prefs, id) === 'never') delete mode[id]
-    else mode[id] = 'never'
-    setCardPrefs({ mode })
+  const setMode = (id: BoardCardId, mode: CardMode) => setCardPrefs({ mode: { ...prefs.mode, [id]: mode } })
+  const bumpSize = (id: BoardCardId) => setCardPrefs({ size: { ...prefs.size, [id]: nextSize(cardSize(prefs, id)) } })
+
+  // What an EMPTY card does, as one cycling control rather than two flags that can
+  // contradict each other. `never` is also the only mode that skips mounting the card.
+  const modeBtn = (id: BoardCardId) => {
+    const mode = cardMode(prefs, id)
+    const label =
+      mode === 'always'
+        ? t.operator.boardLayoutModeAlways
+        : mode === 'auto'
+          ? t.operator.boardLayoutModeAuto
+          : t.operator.boardLayoutModeNever
+    return (
+      <button
+        type="button"
+        className={`btn btn--sm${mode !== 'never' ? ' btn--primary' : ''} board-layout__toggle`}
+        onClick={() => setMode(id, MODE_CYCLE[(MODE_CYCLE.indexOf(mode) + 1) % MODE_CYCLE.length]!)}
+        aria-label={`${t.operator.boardLayoutMode(t.boardCard[id])} — ${label}`}
+      >
+        <InlineIcon name={MODE_ICON[mode]} size={15} /> {label}
+      </button>
+    )
   }
 
-  // The show/hide toggle button — identical for band + grid rows (only their wrapper
-  // differs: a plain <li> for the fixed band, a draggable DragPill for the grid).
-  const toggleBtn = (id: BoardCardId, visible: boolean) => (
-    <button
-      type="button"
-      className={`btn btn--sm${visible ? ' btn--primary' : ''} board-layout__toggle`}
-      onClick={() => toggle(id)}
-      aria-pressed={visible}
-      aria-label={`${t.boardCard[id]} — ${visible ? t.operator.boardLayoutShown : t.operator.boardLayoutHidden}`}
-    >
-      <InlineIcon name={visible ? 'check-bold' : 'x-bold'} size={15} />{' '}
-      {visible ? t.operator.boardLayoutShown : t.operator.boardLayoutHidden}
-    </button>
+  const sizeBtn = (id: BoardCardId) => {
+    const size = cardSize(prefs, id)
+    const label = size === 'full' ? t.operator.boardLayoutSizeFull : t.operator.boardLayoutSizeN(size)
+    return (
+      <button
+        type="button"
+        className="btn btn--ghost btn--sm board-layout__size"
+        onClick={() => bumpSize(id)}
+        aria-label={`${t.operator.boardLayoutSize(t.boardCard[id])} — ${label}`}
+      >
+        <InlineIcon name="square-bold" size={15} /> {size === 'full' ? t.board.editSizeFull : size}
+      </button>
+    )
+  }
+
+  const list = (zone: CardZone, title: string) => (
+    <>
+      <p className="board-layout__group mono">{title}</p>
+      <ul className="board-layout">
+        {prefs[zone].map((id, i) => {
+          const meta = cardMeta(id)
+          if (!meta) return null
+          return (
+            <DragPill
+              key={id}
+              dnd={dnd}
+              index={i}
+              zone={zoneKey(zone, i)}
+              label={t.boardCard[id]}
+              className={'board-layout__row' + (cardMode(prefs, id) === 'never' ? ' is-hidden' : '')}
+              showGrip={!ro}
+            >
+              <span className="board-layout__name">
+                <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}
+              </span>
+              {!ro && (
+                <Cluster>
+                  {sizeBtn(id)}
+                  {modeBtn(id)}
+                </Cluster>
+              )}
+            </DragPill>
+          )
+        })}
+        {/* The tail target: drop here to append, which is the only way to move a card
+            back into a group you emptied. */}
+        {!ro && (
+          <li
+            data-dnd-zone={zoneKey(zone, 'end')}
+            className={'board-layout__end mono' + (dnd.over === zoneKey(zone, 'end') ? ' dnd-over' : '')}
+          >
+            {t.operator.boardLayoutDropHere}
+          </li>
+        )}
+      </ul>
+    </>
   )
 
   return (
@@ -74,54 +156,19 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
       helpKey="boardLayout"
       action={
         !ro ? (
-          <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
-            {t.operator.boardLayoutReset}
-          </button>
+          <Cluster>
+            <Link className="btn btn--ghost btn--sm" to="/board?edit=1">
+              {t.operator.boardLayoutCustomize}
+            </Link>
+            <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
+              {t.operator.boardLayoutReset}
+            </button>
+          </Cluster>
         ) : undefined
       }
     >
-      {/* The fixed top band (« Ce soir »/météo, « À régler », « Moments ») — show/hide
-          only: these keep their glance position on top, so no drag grip. */}
-      <p className="board-layout__group mono">{t.operator.boardLayoutBand}</p>
-      <ul className="board-layout">
-        {prefs.band.map((id) => {
-          const meta = cardMeta(id)
-          if (!meta) return null
-          const visible = cardMode(prefs, id) !== 'never'
-          return (
-            <li key={id} className={'board-layout__row board-layout__row--fixed' + (visible ? '' : ' is-hidden')}>
-              <span className="board-layout__name">
-                <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}
-              </span>
-              {!ro && toggleBtn(id, visible)}
-            </li>
-          )
-        })}
-      </ul>
-      {/* The reorderable masonry cards below the band — show/hide AND drag-reorder. */}
-      <p className="board-layout__group mono">{t.operator.boardLayoutGrid}</p>
-      <ul className="board-layout">
-        {prefs.grid.map((id, i) => {
-          const meta = cardMeta(id)
-          if (!meta) return null
-          const visible = cardMode(prefs, id) !== 'never'
-          return (
-            <DragPill
-              key={id}
-              dnd={dnd}
-              index={i}
-              label={t.boardCard[id]}
-              className={'board-layout__row' + (visible ? '' : ' is-hidden')}
-              showGrip={!ro}
-            >
-              <span className="board-layout__name">
-                <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}
-              </span>
-              {!ro && toggleBtn(id, visible)}
-            </DragPill>
-          )
-        })}
-      </ul>
+      {list('band', t.operator.boardLayoutBand)}
+      {list('grid', t.operator.boardLayoutGrid)}
       <DragGhost ghost={dnd.ghost} />
     </OperatorSection>
   )

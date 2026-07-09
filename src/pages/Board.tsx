@@ -73,10 +73,11 @@ import {
   cardMode,
   moveCard,
   setCardPrefs,
+  parseZoneKey,
   BOARD_CARDS,
   type BoardCardId,
 } from '../lib/boardCards'
-import { WidgetGrid, parseZoneKey } from '../components/board/WidgetGrid'
+import { WidgetGrid } from '../components/board/WidgetGrid'
 import { CardSlot } from '../components/board/CardSlot'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { useLongPress } from '../lib/useLongPress'

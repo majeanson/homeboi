@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
-import { type CardZone } from '../../lib/boardCards'
+import { zoneKey, type CardZone } from '../../lib/boardCards'
 import { colsFor } from '../../lib/widgetGrid'
 
 // The board's widget-space layout engine. ONE component, used once per zone (the pinned
@@ -66,17 +66,8 @@ export interface PointerDnd {
   over: string | null
 }
 
-/** The drop-zone key a slot (or a grid's trailing space) advertises. */
-export const zoneKey = (zone: CardZone, index: number | 'end'): string => `${zone}:${index}`
-
-/** Parse a drop-zone key back into a zone + insert index (`'end'` → append). */
-export function parseZoneKey(key: string): { zone: CardZone; index: number | 'end' } | null {
-  const [z, i] = key.split(':')
-  if (z !== 'band' && z !== 'grid') return null
-  if (i === 'end') return { zone: z, index: 'end' }
-  const n = Number(i)
-  return Number.isInteger(n) && n >= 0 ? { zone: z, index: n } : null
-}
+// `zoneKey` / `parseZoneKey` live in lib/boardCards — the key format is a data concern,
+// and the Réglages list needs it too without importing a React component.
 
 const Ctx = createContext<WidgetGridCtx | null>(null)
 

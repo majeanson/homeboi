@@ -17,6 +17,7 @@ import {
   nextSize,
   setCardPrefs,
   useBoardCards,
+  zoneKey,
   type BoardCardId,
   type CardZone,
 } from '../../lib/boardCards'
@@ -24,7 +25,7 @@ import { rowSpan } from '../../lib/widgetGrid'
 import { EmptyState } from '../EmptyState'
 import { InlineIcon } from '../Icon'
 import { BoardCard } from './BoardCard'
-import { useWidgetGrid, zoneKey } from './WidgetGrid'
+import { useWidgetGrid } from './WidgetGrid'
 
 // The slot a board card sits in: it owns PLACEMENT (row/column span), the drop target,
 // and the empty gate. It owns NO visual chrome — each card still draws its own look

@@ -53,8 +53,19 @@ test.describe('board layout customization', () => {
     // deep-link to it (?tab=display&sub=layout) so the layout panel renders.
     await page.goto('/settings?tab=display&sub=layout')
     await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
-    // Two lists now (the fixed band + the reorderable grid) — wait for the first.
+    // Two zone lists (the band + the masonry) — wait for the first.
     await page.locator('.board-layout').first().waitFor({ state: 'visible' })
+  }
+
+  const rowFor = (page: Page, name: string) => page.locator('.board-layout__row', { hasText: name })
+  /** Click the tri-state until the card reads « Jamais » (always → auto → never). */
+  async function setNever(page: Page, name: string) {
+    const btn = rowFor(page, name).locator('.board-layout__toggle')
+    for (let i = 0; i < 3; i++) {
+      if ((await btn.textContent())?.includes('Jamais')) return
+      await btn.click()
+    }
+    await expect(btn).toContainText('Jamais')
   }
 
   test('hiding a card in Réglages removes it from the Grille; reset brings it back', async ({ page }) => {
@@ -62,12 +73,8 @@ test.describe('board layout customization', () => {
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     await openLayout(page)
-    // Toggle « À venir » off. The row's toggle button reads "Affiché" while shown.
-    const row = page.locator('.board-layout__row', { hasText: 'À venir' })
-    const toggle = row.locator('.board-layout__toggle')
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    await toggle.click()
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    // « À venir » defaults to « Si non vide » — one more click reaches « Jamais ».
+    await setNever(page, 'À venir')
 
     // The per-device pref is localStorage-backed, so a fresh board load honours it:
     // the « À venir » bento is gone (the fixture has upcoming items, so it WOULD show).
@@ -83,26 +90,56 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.bento .sec-label b', { hasText: /^À venir$/ })).toHaveCount(1)
   })
 
-  test('a fixed top-band card (Moments) is hide-able too — the settings are exhaustive', async ({ page }) => {
+  test('a band card (Moments) hides too — and now drags, like every other card', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
-    // The Moments hero is in the top band by default.
     await page.goto('/board')
     await page.locator('.hub').waitFor({ state: 'visible' })
     await expect(page.locator('.now-card--moment')).toBeVisible()
-    // Hide it from the band group (show/hide only — no drag grip on these rows).
+
     await openLayout(page)
-    // The band group lists every fixed card: Notes, Ce soir + météo, Mots, À régler,
-    // Moments (Mots — « Laisse un mot » — joined the band after this spec was written).
-    await expect(page.locator('.board-layout__row--fixed')).toHaveCount(5)
-    const row = page.locator('.board-layout__row--fixed', { hasText: 'Moments' })
-    await expect(row.locator('.dnd-grip')).toHaveCount(0) // band rows don't drag
-    await row.locator('.board-layout__toggle').click()
-    // Gone from the board; « À régler »/heroes are unaffected (independent toggles).
+    // The band lists its five cards, and every one of them carries a drag grip: band
+    // cards used to be show/hide-only, pinned in place. That asymmetry is gone.
+    const band = page.locator('.board-layout').first()
+    await expect(band.locator('.board-layout__row')).toHaveCount(5)
+    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(5)
+    // Each zone ends in a drop target, so a card can be moved into an emptied group.
+    await expect(page.locator('.board-layout__end')).toHaveCount(2)
+
+    // « Moments » is a static launcher — it defaults to « Toujours », so reaching
+    // « Jamais » takes two clicks, not one.
+    await setNever(page, 'Moments')
     await page.goto('/board')
     await page.locator('.hub').waitFor({ state: 'visible' })
     await expect(page.locator('.now-card--moment')).toHaveCount(0)
+  })
+
+  test('the width control resizes the card on the board', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await openLayout(page)
+    // « À venir » starts one column wide; one click takes it to two.
+    const size = rowFor(page, 'À venir').locator('.board-layout__size')
+    await expect(size).toContainText('1')
+    await size.click()
+    await expect(size).toContainText('2')
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+    await expect(page.locator('.wg-slot[data-card="upcoming"]')).toHaveAttribute('style', /--wg-span-cols: ?2/)
+  })
+
+  test('« Réorganiser sur le babillard » opens the board’s own editor', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await openLayout(page)
+    await page.getByRole('link', { name: 'Réorganiser sur le babillard' }).click()
+    await expect(page).toHaveURL(/\/board\?edit=1/)
+    await expect(page.locator('.board-edit')).toBeVisible()
   })
 })
 

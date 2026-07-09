@@ -266,6 +266,25 @@ export const visibleCards = (prefs: BoardCardPrefs, zone: CardZone): BoardCardId
 export const isCardVisible = (prefs: BoardCardPrefs, id: BoardCardId): boolean =>
   cardMode(prefs, id) !== 'never'
 
+// ── drop-zone keys ───────────────────────────────────────────────────────────────────
+// A drag has to say WHERE a card lands, and "where" is a zone plus an index — so the two
+// travel together in one string, `"grid:3"` / `"band:end"` (the itinerary's `"{day}:{i}"`
+// precedent). This is what lets a single drag session serve both zones: parsing the drop
+// key tells you the card changed group. `'end'` appends, which is the only way to move a
+// card back into a group you emptied. Shared by the board's editor and the Réglages list.
+
+/** Build the `data-dnd-zone` key a slot (or a zone's tail target) advertises. */
+export const zoneKey = (zone: CardZone, index: number | 'end'): string => `${zone}:${index}`
+
+/** Parse a drop-zone key. Returns null for anything that isn't one of ours. */
+export function parseZoneKey(key: string): { zone: CardZone; index: number | 'end' } | null {
+  const [z, i] = key.split(':')
+  if (z !== 'band' && z !== 'grid') return null
+  if (i === 'end') return { zone: z, index: 'end' }
+  const n = Number(i)
+  return Number.isInteger(n) && n >= 0 ? { zone: z, index: n } : null
+}
+
 /** A size in actual columns, clamped to what the viewport gives us. `'full'` → all of them. */
 export const clampSize = (size: CardSize, cols: number): number =>
   size === 'full' ? Math.max(1, cols) : Math.max(1, Math.min(size, cols))
