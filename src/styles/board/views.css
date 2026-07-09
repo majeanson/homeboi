@@ -234,20 +234,16 @@
   flex: 1 1 16rem;
   margin: 0;
 }
-/* « Mots » rides the status band as a .bento LIST card (not a hero .now-card). The card
-   CHROME (fill, radius, padding, shadow) normally comes from `.board-grid > .bento` — but here
-   the card lives in `.board-status`, so without this it rendered as a bare `bento--tinted`
-   OUTLINE (a hollow tinted rectangle) instead of a filled card. Mirror the grid tile's chrome
-   so it reads as a solid card like its peers; keep the flex width basis + top-align so a short
-   card sizes to its content instead of stretching to the tallest sibling. */
+/* « Mots » rides the status band as a .bento LIST card (not a hero .now-card). Only the
+   band's FLOW is set here — the width basis + top-align so a short card sizes to its
+   content instead of stretching to the tallest sibling. The card's chrome (fill, radius,
+   padding, shadow) now lives on `.bento` itself (board/grid.css), so it no longer has to
+   be re-declared per container; this block used to mirror it, and a card that moved
+   containers lost its look. */
 .board-status > .bento {
   flex: 1 1 16rem;
   align-self: flex-start;
   margin: 0;
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  padding: 0.9rem 1rem 1.1rem;
-  box-shadow: var(--shadow-sm);
 }
 
 /* « Le décompte » (A-5, bmad/09) — the one suggestion-driven countdown card:

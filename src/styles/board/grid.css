@@ -87,14 +87,25 @@
   column-gap: 1rem;
 }
 /* Each tile is never split across a column break, and carries its own bottom
-   rhythm (multi-column has no grid `gap`). */
+   rhythm (multi-column has no grid `gap`). FLOW only — the card's own look lives
+   on `.bento` below, not here. */
 .board-grid > .bento,
 .board-grid > .photo-frame {
   break-inside: avoid;
   margin: 0 0 1rem;
 }
-/* Each section is a calm bento tile. */
-.board-grid > .bento {
+/* Each section is a calm bento tile. CHROME BELONGS TO THE CARD, never to whichever
+   container happens to hold it. This used to be `.board-grid > .bento`, which meant a
+   card only LOOKED like a card while it sat in the masonry: dropped into the status band
+   it rendered as a hollow outline, so `.board-status > .bento` (views.css) re-declared
+   the same fill/radius/padding/shadow to paper over it. Two copies, one drifting.
+   With the chrome here, a card carries its look wherever it is placed — which is the
+   precondition for letting a card MOVE between board zones. Containers own flow
+   (`break-inside`, margins, spans); cards own chrome.
+   Corollary: `.bento` outside a board container is now a real card too — `MomentsView`
+   consequently renders its day groups with `SecLabel` (header) instead of `Section`
+   (card). */
+.bento {
   background: var(--card);
   border-radius: var(--radius-lg);
   padding: 0.9rem 1rem 1.1rem;
@@ -104,7 +115,7 @@
 /* Time-aware emphasis (lib/momentFocus): the card that matters at this hour gets a soft
    lift + a faint accent top-edge in its own category tint. No motion, no reshuffle — just
    a gentle "look here now". */
-.board-grid > .bento.bento--now {
+.bento.bento--now {
   box-shadow: var(--shadow-md), inset 0 3px 0 0 color-mix(in srgb, var(--sec-tint, var(--marigold)) 55%, transparent);
 }
 /* The photo frame closes the board as a full-width band beneath the columns —

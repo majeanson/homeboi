@@ -14,7 +14,8 @@ import { PairPrompt } from '../Fallback'
 import { Icon } from '../Icon'
 import { SubTabs } from '../SubTabs'
 import { EmptyState } from '../EmptyState'
-import { Act, Section } from './Act'
+import { Act } from './Act'
+import { SecLabel } from './BoardCard'
 import { TodoSection } from '../todos/TodoSection'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
@@ -347,7 +348,14 @@ export function MomentsView({
         <EmptyState tone="calm">{t.moment.empty}</EmptyState>
       ) : (
         shown.map((b) => (
-          <Section key={b.d} label={capitalize(formatDayLong(b.d, lang))}>
+          // A day GROUP, not a board card: this scene wants the shared header anatomy
+          // (`SecLabel`) without the `.bento` card chrome. It used to reach for `Section`
+          // — a bento tile — which only rendered chrome-less here because `.bento` had no
+          // standalone style, inheriting it from `.board-grid >`. Now that `.bento` owns
+          // its own chrome (so a card can move between board zones), taking `Section`
+          // here would wrap every day in a card. Header, not shell.
+          <div key={b.d} className="moments__day">
+            <SecLabel label={capitalize(formatDayLong(b.d, lang))} />
             {b.rows}
             {/* The day's quick-handoff checklist, inline (add a ready list, check
                 in place). Hidden on empty days only in the week recap. */}
@@ -356,7 +364,7 @@ export function MomentsView({
               {departureBtn(b.d)}
               {openDayBtn(b.d)}
             </div>
-          </Section>
+          </div>
         ))
       )}
       {eventActions.node}
