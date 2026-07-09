@@ -69,9 +69,11 @@ network stops the run to retry later; `401` clears the outbox via the auth-lost 
 Use `const write = useWrite()` and call
 `write(path, { method, body, affectedKeys, optimistic })` instead of `api()`.
 Idempotent writes (toggles, deletes-by-id, field sets) replay safely as-is; the
-idempotency key makes creates safe too. Genuinely online-only writes (AI capture,
-voice, photo upload, pairing, auth) are **not** queued — disable them offline with
-`useOnline()` and an `t.offline.unavailable` hint (see `VoiceButton`/`AddSheet`).
+idempotency key makes creates safe too. Genuinely online-only writes (voice,
+photo upload, pairing, auth) are **not** queued — disable them offline with
+`useOnline()` and an `t.offline.unavailable` hint (see `VoiceButton`). The typed
+**capture** (＋ button) is queued too (A-2, bmad/10, below) — only the routing
+happens later; a raw AI round-trip like `useAi()`'s meal-suggest stays online-only.
 
 ## Migration status
 
@@ -85,10 +87,16 @@ All data writes go through `useWrite()` / `writeWith()`:
   `RecipeSheet`, `lib/picks`.
 - **Operator settings:** members add/edit/delete, chore/routine/event delete,
   routine time-of-day, store-include toggle, list-history, réserve locations.
+- **Capture (A-2, bmad/10):** `AddSheet`'s quick-capture form (the ＋ button's typed
+  path). Offline/transport-failure enqueues the **raw text** to the same
+  `/api/capture` endpoint for replay — the AI routing + `parseWhen` still run
+  server-side, just later, once the device reconnects. `{queued:true}` clears the
+  box and shows a calm confirmation instead of the routed/undo UI (there's nothing
+  routed yet). `VoiceButton` (Web Speech needs a live connection) stays online-only.
 
 **Deliberately NOT queued — online-only** (disable via `useOnline()` + an
-`t.offline.unavailable` hint, or just left as direct `api()`): AI capture / voice
-/ recipe vision-import-draft / meal-staples / suggest / recap, photo + avatar +
+`t.offline.unavailable` hint, or just left as direct `api()`): voice capture / recipe
+vision-import-draft / meal-staples / suggest / recap, photo + avatar +
 recipe-image uploads (Blob bodies), pairing, auth, the **postal save** (reads the
 server-normalized value back), and **recipe-tags** (uses the `useOptimisticMutation`
 wrapper). These need a live server round-trip, so queueing them adds no value.
@@ -121,12 +129,14 @@ wrapper). These need a live server round-trip, so queueing them adds no value.
   response shapes; `rewriteTmpId` body/array/path rewrites, identity on no-match).
 - **e2e** (`npm run e2e`): `offline-outbox.spec.ts` — a `/liste` write made offline
   queues (offline-bar pending count, nothing on the wire) then replays on the `online`
-  event; `capture-offline.spec.ts` — an offline capture surfaces a failure and keeps the
-  typed text (the one write that can't queue, since it needs a live AI round-trip).
+  event; `capture-offline.spec.ts` — an offline capture shows the queued confirmation,
+  clears the box, bumps the pending count, sends nothing on the wire, then replays
+  with an `Idempotency-Key` header on reconnect.
 - **e2e** (`npm run e2e:sw`, own build+preview harness): `sw.spec.ts` — the service
   worker precaches the shell and reboots offline (the SW is a build artifact, so it needs
   the PROD bundle, not the dev server).
 - Manual: `npm run cf:dev`, DevTools → Network "Offline" → check an item / mark a
   chore done (optimistic + banner count) → reload offline (state persists) → go
   online (outbox replays, rows persist) → repeat an action offline twice (no
-  duplicate). Confirm the mic + capture bar read as disabled offline.
+  duplicate). Confirm the mic reads as disabled offline, and a typed capture shows
+  the queued confirmation instead of a failure.

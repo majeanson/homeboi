@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'capture-offline-queue',
+    text: {
+      fr: 'Nouveau : la capture (le ＋) tient parole hors ligne — ta note se garde et se classe toute seule à la reconnexion.',
+      en: 'New: capture (the ＋) keeps its word offline — your note is kept and files itself once you’re back online.',
+    },
+    card: 'capture',
+  },
+  {
     id: 'kid-demain-fix',
     text: {
       fr: 'Corrigé : « Demain » sur l’écran des enfants suit maintenant les mêmes règles de repas que le babillard parent — plus de repas caché qui s’affiche, ni de souper compté deux fois.',

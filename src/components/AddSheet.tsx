@@ -10,7 +10,6 @@ import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
 import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput } from '../lib/useVoiceInput'
-import { useOnline } from '../lib/online'
 import { VoiceButton } from './VoiceButton'
 import { StatusMessage } from './StatusMessage'
 import { formatWeekday, formatRelativeWeekday } from '../lib/format'
@@ -315,11 +314,15 @@ export function AddSheet({
   const [routed, setRouted] = useState<{ text: string; label: string; degraded: boolean; cleanup: Cleanup[] } | null>(
     null,
   )
-  // Capture needs a live round-trip (the AI type + reroute cleanup), so unlike the
-  // list/todo adds it can't queue offline. Surface a failure instead of swallowing it,
-  // so an offline/5xx capture isn't silently eaten (the one hole in "never lost").
+  // A-2 (bmad/10): capture used to need a live round-trip (the AI type + reroute
+  // cleanup) and refused to even try offline. Now it goes through the offline-aware
+  // `write()` — the raw text is enqueued to the SAME /api/capture endpoint and
+  // replayed on reconnect, so routing/parseWhen still happen server-side, just
+  // later. `captureQueued` confirms that calm hand-off; `captureErr` stays for a
+  // REAL server rejection (4xx/5xx) — a case `write()` still rethrows rather than
+  // queues, so a genuine failure isn't silently eaten.
   const [captureErr, setCaptureErr] = useState(false)
-  const online = useOnline()
+  const [captureQueued, setCaptureQueued] = useState(false)
 
   // — list item (Liste) — its own state + mic so a board draft never posts to
   // the grocery list by accident.
@@ -562,26 +565,32 @@ export function AddSheet({
     const value = (forceType ? routed?.text ?? text : text).trim()
     if (!value || busy) return
     setCaptureErr(false)
-    // Capture can't be queued (it needs the sync AI response), so if we're offline
-    // tell the user instead of silently no-op'ing — the typed text stays in the box.
-    if (!online) {
-      setCaptureErr(true)
-      return
-    }
+    setCaptureQueued(false)
     setBusy(true)
     const prevCleanup = forceType ? routed?.cleanup : undefined
     setRouted(null)
     try {
-      const res = await api<{ type: string; degraded: boolean; routed: { kind: string; label: string; cleanup?: Cleanup[] } }>(
+      // write() is offline-aware: online, this POSTs straight through (unchanged
+      // routing); offline/transport-failure, it enqueues the RAW TEXT to this same
+      // /api/capture for replay — the AI routing + parseWhen stay server-side, they
+      // just run later. affectedKeys covers both the immediate invalidate (online)
+      // and the post-replay one (offline), so the manual invalidate below is gone.
+      const res = await write<{ type: string; degraded: boolean; routed: { kind: string; label: string; cleanup?: Cleanup[] } }>(
         'capture',
-        { method: 'POST', body: { text: value, forceType, undo: prevCleanup } },
+        { method: 'POST', body: { text: value, forceType, undo: prevCleanup }, affectedKeys: CAPTURE_KEYS },
       )
-      const degraded = res.degraded && !forceType
-      const label = res.routed?.label ?? value
-      const cleanup = res.routed?.cleanup ?? []
+      if (res.queued) {
+        // Offline: no routed/undo UI (there's nothing routed yet) — just the calm
+        // "it's kept" confirmation, and clear the box like a successful capture.
+        setText('')
+        setCaptureQueued(true)
+        return
+      }
+      const degraded = res.data.degraded && !forceType
+      const label = res.data.routed?.label ?? value
+      const cleanup = res.data.routed?.cleanup ?? []
       setRouted({ text: value, label, degraded, cleanup })
       if (!degraded) setText('')
-      for (const key of CAPTURE_KEYS) qc.invalidateQueries({ queryKey: key })
       // Calm undo on every REAL route (not the degraded fallback note, which is
       // awaiting a re-route): the created row is live, so record a compensating
       // entry that deletes it. A re-route records a fresh entry for the new row;
@@ -591,7 +600,8 @@ export function AddSheet({
       }
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
-      // A real 4xx/5xx (not just offline): surface it so the tap isn't silently lost.
+      // A real 4xx/5xx (the server answered and said no): surface it so the tap
+      // isn't silently lost. write() does NOT queue this case (see write.ts).
       setCaptureErr(true)
     } finally {
       setBusy(false)
@@ -839,7 +849,8 @@ export function AddSheet({
           <VoiceButton voice={captureVoice} label={t.capture.voice} />
         </div>
 
-        {captureErr && <StatusMessage tone="error">{online ? t.capture.failed : t.capture.offline}</StatusMessage>}
+        {captureQueued && <StatusMessage tone="info">{t.capture.queued}</StatusMessage>}
+        {captureErr && <StatusMessage tone="error">{t.capture.failed}</StatusMessage>}
 
         {/* CHANGE 2 (IA revisit) — after a route, lead with just the calm
             confirmation line ("Ajouté : X"). Correction is a mis-route recovery, not

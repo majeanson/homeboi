@@ -228,8 +228,10 @@ export const FR = {
     pickType: 'C’était quoi ?',
     types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', note: 'Note' },
     degraded: 'L’IA ne répond pas — choisis le type toi-même.',
-    offline: 'Hors ligne — la capture a besoin d’une connexion. Ton texte est gardé, réessaie une fois en ligne.',
     failed: 'La capture n’a pas fonctionné. Ton texte est gardé, réessaie.',
+    // A-2 (bmad/10): offline (or a transport hiccup), the raw text is queued and
+    // replayed once reconnected — no round-trip, no lost tap.
+    queued: 'Hors ligne — c’est gardé. Ça sera classé à la reconnexion.',
     reroute: 'Non, plutôt…',
     // The quiet "correction" toggle after a successful route — hides the re-file
     // tiles behind one tap so the happy path stays just the confirmation line.

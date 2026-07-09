@@ -74,16 +74,20 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
    day → a one-line picker (ideas pool, favourites, « comme la semaine
    passée » from meals history). The day scene stays THE editor; this is
    only a faster hand.~~ The seven day-scenes stay the planning model.
-2. ✅ **La capture tient parole** [S] ◐ — _garde (2026-07-08)_ — AddSheet
-   capture is the ONE add-path with no outbox: offline or on any 4xx/5xx it
-   flips `captureErr` and the dictated text just sits in the box — while the
-   i18n copy already promises « Ton texte est gardé ». Make the promise
-   true: on failure, queue the raw text through the outbox (route it on
-   replay, or degrade to the manual type-picker that already exists for
-   AI-unset) so a parking-lot dictation is never lost. The parent's "never
-   lost" guarantee must not have an asterisk on its front door. _(reuse:
-   useWrite/outbox, the AI-unset type-picker fallback, existing
-   `capture.offline` copy.)_
+2. ✅ **La capture tient parole** [S] ◐ — **SHIPPED 2026-07-08** — AddSheet's
+   `submit()` no longer early-returns offline into `captureErr`: it now calls
+   `write('capture', …)` (offline-aware `useWrite`, hardened by B-9's one-key
+   hoist) with `{ text, forceType, undo }` as the body. Online, routing is
+   unchanged. Offline/transport-failure, the RAW TEXT is enqueued to the SAME
+   `/api/capture` endpoint and replayed on reconnect — AI routing +
+   `parseWhen` still run server-side, just later — so a parking-lot dictation
+   is never lost. `{queued:true}` clears the box and shows a calm
+   `capture.queued` confirmation (no routed/undo UI, nothing to undo yet); a
+   real 4xx/5xx still surfaces `captureErr` (`write()` doesn't queue a server
+   rejection). `VoiceButton` stays offline-disabled (Web Speech needs a live
+   connection) — only the typed path stopped being offline-blocked. _(reuse:
+   `useWrite`/outbox/B-9's idempotency key, `CAPTURE_KEYS` affectedKeys now
+   also covers the offline invalidate.)_
 3. ✅ **« Depuis ce matin »** [M] ⚠ ✦ — _garde (2026-07-08)_ — the question
    a two-parent household actually asks — _what changed since I last
    looked?_ — has no home: RecentsPanel is this-device-only and « Quoi de

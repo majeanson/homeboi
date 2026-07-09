@@ -1486,6 +1486,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'The fridge has always been where we leave each other notes: “your lunch is ready”, “have a good day”. Here the note finds the right person without disturbing anyone else — no notification, no chime, just a note that waits.',
         },
       },
+      {
+        label: { fr: 'Hors ligne', en: 'Offline' },
+        detail: {
+          fr: 'Sans connexion, la capture se garde quand même — un petit message le confirme, la boîte se vide. Elle se classe dès que l’appareil retrouve internet, sans rien retaper.',
+          en: 'With no connection, capture still gets kept — a small message confirms it, the box clears. It gets sorted the moment the device is back online, no retyping.',
+        },
+        why: {
+          fr: 'Le babillard tourne sur une tablette murale, pas toujours branchée au wifi — une note dictée un jeudi soir ne devrait jamais se perdre parce que le signal a flanché.',
+          en: 'The board runs on a wall tablet that isn’t always on wifi — a note jotted down on a Thursday evening should never be lost because the signal blipped.',
+        },
+      },
     ],
   },
   {

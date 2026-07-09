@@ -1,41 +1,86 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, type Audience, type Lang } from './mocks'
+import { test, expect, type Page, type Request } from '@playwright/test'
+import { mockApi, seedState } from './mocks'
 
-// Capture offline feedback — locks the fix for the "one hole in never-lost": capture
-// needs a live AI round-trip so it can't queue offline; it must TELL the user rather
-// than silently eating the tap. Here we go offline, submit a capture, and assert an
-// error line appears AND the typed text is kept.
+// A-2 (bmad/10) — « La capture tient parole ». Capture used to be the ONE add-path
+// with no outbox: offline (or any transport failure) flipped an error line and left
+// the dictated text sitting in the box, even though the copy already promised
+// « Ton texte est gardé ». Now `AddSheet.submit()` goes through the offline-aware
+// `useWrite()`: online, routing is unchanged; offline, the RAW TEXT is enqueued to
+// the SAME /api/capture endpoint and replayed on reconnect (routing + parseWhen stay
+// server-side, they just run later). This drives a real capture across an
+// offline→online transition and proves the promise now holds: nothing is sent while
+// offline, a calm confirmation replaces the error, and the eventual replay carries
+// the idempotency key B-9 hardened.
 
-const APP = (path: string, audience: Audience = 'parent', lang: Lang = 'fr') =>
-  async (page: Page) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await mockApi(page)
-    await seedState(page, { theme: 'day', audience, lang, calm: true })
-    await page.goto(path)
-  }
+const isCapturePost = (r: Request) =>
+  r.method() === 'POST' && new URL(r.url()).pathname === '/api/capture'
 
-async function settle(page: Page, ready: string) {
-  await page.locator(ready).first().waitFor({ state: 'visible', timeout: 15_000 })
-}
+test('an offline capture queues (queued confirmation, input cleared, pending count 1, nothing sent), then replays on reconnect with an Idempotency-Key', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/board')
 
-test('an offline capture surfaces a failure and keeps the typed text (never silently lost)', async ({ page }) => {
-  await APP('/board')(page)
-  await settle(page, '.hub')
+  // Count every POST /api/capture so we can prove it does NOT fire while offline.
+  const capturePosts: Request[] = []
+  page.on('request', (r) => {
+    if (isCapturePost(r)) capturePosts.push(r)
+  })
+
+  await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
   await page.locator('.add-fab').click()
   await expect(page.locator('.sheet.show')).toBeVisible()
   await page.locator('.sheet__field input').fill('Acheter du lait')
 
-  // Go offline. Wait for the offline bar — it rides the same useOnline() signal the
-  // capture guard reads, so its appearance means the guard now sees us as offline
-  // (otherwise a page.route mock would still fulfill the POST and it'd look "sent").
+  // Go offline — the offline bar appearing confirms navigator.onLine now reads
+  // false, exactly the signal writeWith checks to queue instead of send.
   await page.context().setOffline(true)
   await expect(page.locator('.offline-bar')).toBeVisible()
 
   await page.locator('.sheet form button[type="submit"]').first().click()
 
-  // An error line appears (role=alert) and the typed text is still in the box.
-  await expect(page.locator('.status-msg--error')).toBeVisible()
-  await expect(page.locator('.sheet__field input')).toHaveValue('Acheter du lait')
+  // Queued to the outbox: a calm info line (not the error one), the input cleared
+  // like a successful capture, and the offline bar's pending count at 1 — and
+  // nothing was sent over the wire.
+  await expect(page.locator('.status-msg--info', { hasText: 'Hors ligne' })).toBeVisible()
+  await expect(page.locator('.status-msg--error')).toHaveCount(0)
+  await expect(page.locator('.sheet__field input')).toHaveValue('')
+  await expect(page.locator('.offline-bar__stamp', { hasText: '1 en attente' })).toBeVisible()
+  expect(capturePosts.length).toBe(0)
+
+  // Reconnect → the 'online' event triggers startOutbox's replay → the held POST
+  // fires now, carrying its idempotency key. It never fired before this moment.
+  await Promise.all([
+    page.waitForRequest(isCapturePost, { timeout: 20_000 }),
+    page.context().setOffline(false),
+  ])
+  expect(capturePosts.length).toBe(1)
+  expect(capturePosts[0].headers()['idempotency-key']).toBeTruthy()
+
+  // The replayed body is the raw text — routing stayed server-side, just deferred.
+  const body = JSON.parse(capturePosts[0].postData() || '{}')
+  expect(body.text).toBe('Acheter du lait')
+
+  // And the outbox drains — the pending stamp clears once the write lands.
+  await expect(page.locator('.offline-bar__stamp', { hasText: 'en attente' })).toHaveCount(0)
+})
+
+test('the mic stays offline-disabled — only the typed capture path is queueable', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/board')
+
+  await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator('.add-fab').click()
+  await expect(page.locator('.sheet.show')).toBeVisible()
+
+  await page.context().setOffline(true)
+  await expect(page.locator('.offline-bar')).toBeVisible()
+
+  // VoiceButton (Web Speech needs a live connection) is still disabled offline —
+  // A-2 only unblocked the typed path.
+  await expect(page.locator('.sheet__field .capture__voice')).toBeDisabled()
 
   await page.context().setOffline(false)
 })
