@@ -382,6 +382,36 @@ carnet scene shows the aggregate of the carnet + its children's lifecycles on on
 (`.carnet-horizon`, sorted by projected year, no progress-bar/countdown). Deferred: month-calendar
 lifecycle injection, on-this-day memory, the detail-peek adapter.
 
+**« Mes habitudes »** (habit tracking + « Le point du jour », the daily check-in; mig 0112).
+Page-level / live-data, so catalogued not gallery-rendered. A habit is one row (`habits`)
+with an append-only per-day history (`habit_days`, `UNIQUE(habit_id, day)` at LOCAL midnight
+— the `routine_runs` pattern, but rows are KEPT: fuller history is the point). **Four kinds**
+in two shapes: GOAL-shaped `do`/`count` settle when reached; CONFIRMATION-shaped
+`limit`/`avoid` settle once TOUCHED (a "max 5 smokes" habit reads as done at zero, so a
+done-based filter would never surface it — see `isDaySettled`). **Cadence stays habit-local**:
+`recur` reuses the shared `_lib/recur` engine untouched, `week` adds "n fois par semaine" as a
+quota over completion history — a shape `occurrenceOn` cannot express. Marking sends
+**ABSOLUTE per-day values, never deltas**, so a replayed offline outbox write converges
+instead of double-counting. Surfaces: the scene `HabitudesPage` (`/board/habitudes` —
+`SceneHead` + `HabitRow` + `HabitHistory`; rows asking at open are PINNED so a row never
+jumps out from under a tapping finger), the form scene `HabitForm` (`/habitude/new|:id/edit`,
+reuses `RecurPicker` + a feature-local `ReminderTimesField`), the board glance
+`HabitudesCard` (board card `'habitudes'`; **non-polling** `useHabits({live:false})` so a
+default-on card never adds `/api/habits` to the board poll), and the **calendar** — habits are
+DERIVED occurrences on `/api/month` (like birthdays / L'auto work windows), read-only, tapping
+into the scene. **Privacy is soft** (the `mots` model): a member's habits show only once their
+face is picked; the board says « Tes habitudes t'attendent » behind a boolean dot, never a
+count and never another member's state. **It opens itself** (`lib/habitCheckin.ts`, mounted
+shell-level in `HubLayout`): once on the first app open of a new local day, and at a habit's
+reminder times (wall-clock minutes past local midnight, DST-safe, 30-min grace, once per day
+per device) — but ONLY from a calm surface (the board or over the screensaver), never
+mid-form or mid-routine. **Read-time only: no push, no cron.** Both behaviours are per-device
+opt-outs stacked into Réglages ▸ Système ▸ **Mode veille** (C-15, no new pill). **Calm**:
+progress is derived at read time, per habit — no `streak`/`points`/`badge` column can exist
+(the calm-tenets test scans for those substrings), and no member is ever ranked against
+another. A limit gone over reads « C'est noté » on a terracotta spine — never a red row.
+`HabitRow`/`HabitHistory`/`ReminderTimesField` stay feature-local (not shared primitives).
+
 ---
 
 ## CSS design system (condensed)
