@@ -76,6 +76,7 @@ import {
   parseZoneKey,
   BOARD_CARDS,
   type BoardCardId,
+  type BoardCardPrefs,
 } from '../lib/boardCards'
 import { WidgetGrid } from '../components/board/WidgetGrid'
 import { CardSlot } from '../components/board/CardSlot'
@@ -390,6 +391,23 @@ export function Board() {
   const canEdit = !ro && !isDisplay() && audience === 'parent'
   const editing = canEdit && editParam === '1'
   const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
+
+  // « Annuler » — edit mode is otherwise apply-as-you-go (every drag / ✕ / resize
+  // writes the device store immediately), so the only way out WITHOUT keeping the
+  // changes used to be force-quitting the app. Arming edit mode snapshots the layout
+  // as it was; Annuler writes that snapshot back and leaves. The ref pair keeps the
+  // arm-effect off the per-change render path (it must capture once per session, not
+  // re-capture after every tweak).
+  const editSnapshot = useRef<BoardCardPrefs | null>(null)
+  const prefsNow = useRef(boardCards)
+  prefsNow.current = boardCards
+  useEffect(() => {
+    if (editing) editSnapshot.current = prefsNow.current
+  }, [editing])
+  const revertEdit = useCallback(() => {
+    if (editSnapshot.current) setCardPrefs(editSnapshot.current)
+    exitEdit()
+  }, [exitEdit])
 
   useLongPress({
     targets: '.wg-slot',
@@ -930,6 +948,9 @@ export function Board() {
                     {t.board.editHiddenN(hiddenCount)} · {t.board.editRestore}
                   </Link>
                 )}
+                <button type="button" className="btn btn--ghost btn--sm" onClick={revertEdit}>
+                  {t.board.editRevert}
+                </button>
                 <button type="button" className="btn btn--primary btn--sm" onClick={exitEdit}>
                   {t.board.editDone}
                 </button>

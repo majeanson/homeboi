@@ -117,6 +117,7 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     route: '/board',
     section: 'board',
     ids: [
+      'board-widgets',
       'capture',
       'type-or-choose',
       'search',
@@ -3450,6 +3451,41 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'Un filet calme et réversible, accessible d’un coup d’œil — sans journal permanent ni compteurs.',
           en: 'A calm, reversible net you can glance at — with no permanent log or counters.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'board-widgets',
+    icon: 'stack-bold',
+    group: 'concepts',
+    route: '/board?edit=1',
+    title: { fr: 'Ton babillard, tes cartes', en: 'Your board, your cards' },
+    what: {
+      fr: 'Le babillard est un espace de cartes, comme l’écran d’accueil d’un téléphone : chaque carte se déplace, se redimensionne ou se retire — et chaque écran garde SA disposition (le frigo n’affiche pas la même chose que ton téléphone).',
+      en: 'The board is a card space, like a phone’s home screen: every card can be moved, resized or removed — and each screen keeps ITS layout (the fridge doesn’t show the same thing as your phone).',
+    },
+    points: [
+      {
+        label: { fr: 'Tiens une carte pour réorganiser', en: 'Hold a card to rearrange' },
+        detail: {
+          fr: 'Un appui long ouvre le mode édition : glisse une carte (même entre le bandeau du haut et la grille), ✕ pour la retirer de cet écran, le chiffre pour changer sa largeur. « Terminé » garde tout ; « Annuler les changements » remet la disposition comme avant. Réglages ▸ Babillard ▸ Disposition fait la même chose, en version boutons.',
+          en: 'A long press opens edit mode: drag a card (even between the top band and the grid), ✕ removes it from this screen, the number changes its width. “Done” keeps everything; “Undo the changes” puts the layout back the way it was. Settings ▸ Board ▸ Layout does the same with buttons.',
+        },
+        why: {
+          fr: 'Chaque foyer regarde son babillard autrement — la disposition appartient à l’écran, pas au compte.',
+          en: 'Every household reads its board differently — the layout belongs to the screen, not the account.',
+        },
+      },
+      {
+        label: { fr: 'Les petites cartes qui grandissent', en: 'Small cards that grow' },
+        detail: {
+          fr: 'Une demi-carte devient une vraie petite tuile — icône, titre, un indice discret — aux couleurs de sa carte ; « Photo du jour » et la météo gardent leur image avec juste la température. Touche la tuile et la carte grandit sur place, puis se replie par son en-tête.',
+          en: 'A half card becomes a genuine small tile — icon, title, one quiet hint — in its card’s colours; “Photo of the day” and the weather keep their picture with just the temperature. Tap the tile and the card grows in place, then folds back from its header.',
+        },
+        why: {
+          fr: 'Sur un téléphone, deux petites tuiles côte à côte donnent le coup d’œil sans écraser le texte.',
+          en: 'On a phone, two small tiles side by side give the glance without crushing the text.',
         },
       },
     ],

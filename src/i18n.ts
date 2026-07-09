@@ -595,6 +595,9 @@ export const FR = {
     editTitle: 'Réorganise ton babillard',
     editHint: 'Glisse une carte pour la déplacer, ✕ pour la retirer, le chiffre pour la redimensionner.',
     editDone: 'Terminé',
+    // The way out WITHOUT keeping anything: edit mode applies each change as you go,
+    // so Annuler restores the layout snapshotted when the mode armed, then leaves.
+    editRevert: 'Annuler les changements',
     editHide: (card: string) => `Retirer « ${card} » de cet écran`,
     editResize: (card: string) => `Changer la largeur de « ${card} »`,
     // The compact lens (a half-width card shrunk to icon + title + a quiet line):
