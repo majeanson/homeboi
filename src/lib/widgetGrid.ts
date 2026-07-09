@@ -80,3 +80,28 @@ export function colsFor(width: number, maxCols: number, colMin: number = WG_COL_
   const halves = width >= 2 * WG_PHONE_COL_MIN + WG_GAP ? 2 : 1
   return Math.max(1, Math.min(Math.max(comfortable, halves), cap))
 }
+
+/**
+ * Below this RENDERED width (px) a card reads as compact: icon + title + at most one
+ * quiet line, per the compact-lens design (see `CardLens` / `CardSlot`). Chosen so a
+ * genuine half card is compact — a phone's ~301px grid gives a span-1 card ~142px,
+ * well under — while a span-2 card on that same phone (~301px, i.e. the WHOLE grid)
+ * reads as its normal full form.
+ */
+export const WG_COMPACT_MAX = 220
+
+/**
+ * Is a card spanning `span` columns, in a grid whose columns are `colW` wide, compact?
+ *
+ * Rendered width = `span*colW + (span-1)*GAP` — the card's own columns plus the gaps
+ * BETWEEN them (not around them; the grid's outer gutter isn't the card's). Keys on
+ * this MEASURED width, never on `surface === 'mobile'` — a wall tablet signed in as
+ * the operator reports `mobile` and must not compact its cards, while a phone with a
+ * card explicitly sized to 3-of-4 columns must not either, if that happens to render
+ * wide.
+ */
+export function isCompact(colW: number, span: number): boolean {
+  if (!Number.isFinite(colW) || colW <= 0 || !Number.isFinite(span) || span <= 0) return false
+  const width = span * colW + (span - 1) * WG_GAP
+  return width < WG_COMPACT_MAX
+}

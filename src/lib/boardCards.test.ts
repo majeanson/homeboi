@@ -7,6 +7,7 @@ import {
   cardZone,
   clampSize,
   isCardVisible,
+  isHalvable,
   moveCard,
   nextSize,
   reconcile,
@@ -119,6 +120,18 @@ describe('reconcile — validation', () => {
     const p = reconcile({ band: 'nope' as unknown as BoardCardId[] })
     expect(p.band).toEqual(DEFAULT_CARD_PREFS.band)
   })
+
+  it('clamps away a stored half for a non-halvable card, falling back to its default', () => {
+    const p = reconcile({ size: { notes: 1, photos: 1, today: 1 } })
+    expect(cardSize(p, 'notes')).toBe('full') // notes' canonical default, not the stored 1
+    expect(cardSize(p, 'photos')).toBe('full')
+    expect(cardSize(p, 'today')).toBe(1) // today IS halvable — its stored half survives
+  })
+
+  it('is idempotent even with a now-refused size in the input', () => {
+    const once = reconcile({ size: { heroes: 1 } })
+    expect(reconcile(once)).toEqual(once)
+  })
 })
 
 describe('defaults reproduce the board we already ship', () => {
@@ -192,6 +205,39 @@ describe('nextSize', () => {
     expect(nextSize(1, 2)).toBe('full')
     expect(nextSize(3, 2)).toBe(1)
     expect(nextSize(1, 1)).toBe('full')
+  })
+
+  it('a non-halvable card never cycles through size 1, on a wide grid', () => {
+    expect(nextSize(2, 4, false)).toBe(3)
+    expect(nextSize(3, 4, false)).toBe('full')
+    expect(nextSize('full', 4, false)).toBe(2) // wraps past 1, straight to 2
+  })
+
+  it('a non-halvable card on a narrow (≤2-col) grid sticks at full — no half to toggle to', () => {
+    expect(nextSize('full', 2, false)).toBe('full')
+    expect(nextSize('full', 1, false)).toBe('full')
+  })
+
+  it('a stored half predating the flag still advances sensibly once non-halvable', () => {
+    // `size` itself can be the now-disallowed 1 (e.g. right after `halvable` flips)
+    // — the cycle should not throw, and should land on the first allowed size.
+    expect(nextSize(1, 4, false)).toBe(2)
+  })
+})
+
+describe('halvable', () => {
+  it('defaults every ordinary card to halvable', () => {
+    for (const id of ALL) {
+      if (['notes', 'heroes', 'drawings', 'photos'].includes(id)) continue
+      expect(isHalvable(id), `${id} should default halvable`).toBe(true)
+    }
+  })
+
+  it('refuses a half for the cards that cannot compress into one summary line', () => {
+    expect(isHalvable('notes')).toBe(false)
+    expect(isHalvable('heroes')).toBe(false)
+    expect(isHalvable('drawings')).toBe(false)
+    expect(isHalvable('photos')).toBe(false)
   })
 })
 

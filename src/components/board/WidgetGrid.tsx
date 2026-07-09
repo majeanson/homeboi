@@ -51,6 +51,10 @@ export interface WidgetGridCtx {
   zone: CardZone
   /** Live column count — the clamp every card's size is measured against. */
   cols: number
+  /** The grid's own measured pixel width — what `cols`/`narrow` were derived from.
+   *  A `CardSlot` reads this (with its own span) to compute `lib/widgetGrid.isCompact`
+   *  for the compact lens; nothing else should need it (prefer `cols`/`narrow`). */
+  width: number
   /** Phone-shaped (by MEASURED width, never by `surface`). Its two columns exist so a
    *  card can opt into a half; an un-sized card still renders full width. */
   narrow: boolean
@@ -101,6 +105,7 @@ export function WidgetGrid({
   const ref = useRef<HTMLDivElement>(null)
   const [cols, setCols] = useState(1)
   const [narrow, setNarrow] = useState(false)
+  const [width, setWidth] = useState(0)
 
   useEffect(() => {
     const el = ref.current
@@ -114,6 +119,7 @@ export function WidgetGrid({
         const next = isNarrow(width, cols)
         return prev === next ? prev : next
       })
+      setWidth((prev) => (prev === width ? prev : width))
     }
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width ?? 0
@@ -129,7 +135,10 @@ export function WidgetGrid({
     }
   }, [maxCols, colMin])
 
-  const ctx = useMemo(() => ({ zone, cols, narrow, editing, dnd }), [zone, cols, narrow, editing, dnd])
+  const ctx = useMemo(
+    () => ({ zone, cols, width, narrow, editing, dnd }),
+    [zone, cols, width, narrow, editing, dnd],
+  )
 
   return (
     <Ctx.Provider value={ctx}>

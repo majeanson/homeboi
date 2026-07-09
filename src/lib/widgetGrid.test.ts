@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest'
-import { colsFor, colWidth, isNarrow, rowSpan, WG_COL_MIN, WG_GAP, WG_PHONE_COL_MIN, WG_ROW } from './widgetGrid'
+import {
+  colsFor,
+  colWidth,
+  isCompact,
+  isNarrow,
+  rowSpan,
+  WG_COL_MIN,
+  WG_COMPACT_MAX,
+  WG_GAP,
+  WG_PHONE_COL_MIN,
+  WG_ROW,
+} from './widgetGrid'
 
 /** The height a slot actually gets when it claims `n` rows: it swallows the n-1 gaps. */
 const usableHeight = (n: number) => n * WG_ROW + (n - 1) * WG_GAP
@@ -102,5 +113,48 @@ describe('colsFor — wider grids', () => {
 
   it('a typical wall tablet gets a real masonry', () => {
     expect(colsFor(1280, 4)).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('isCompact', () => {
+  it('a span-1 card on a real phone grid (301px, 2 cols) IS compact', () => {
+    const cols = colsFor(301, 4)
+    expect(cols).toBe(2)
+    const colW = colWidth(301, cols)
+    expect(isCompact(colW, 1)).toBe(true)
+  })
+
+  it('a span-2 card on that same phone grid — the WHOLE grid — is NOT compact', () => {
+    const cols = colsFor(301, 4)
+    const colW = colWidth(301, cols)
+    expect(isCompact(colW, 2)).toBe(false)
+  })
+
+  it('a span-1 card on a 4-column kiosk (~288px columns) is NOT compact', () => {
+    const cols = colsFor(1280, 4)
+    const colW = colWidth(1280, cols)
+    expect(colW).toBeGreaterThan(220)
+    expect(isCompact(colW, 1)).toBe(false)
+  })
+
+  it('is exact at the WG_COMPACT_MAX boundary', () => {
+    // width = span*colW + (span-1)*GAP; for span 1, width === colW.
+    expect(isCompact(WG_COMPACT_MAX - 1, 1)).toBe(true)
+    expect(isCompact(WG_COMPACT_MAX, 1)).toBe(false)
+  })
+
+  it('a wider span needs a proportionally narrower column to stay compact', () => {
+    // span 2: 2*colW + GAP < MAX  =>  colW < (MAX-GAP)/2
+    const boundary = (WG_COMPACT_MAX - WG_GAP) / 2
+    expect(isCompact(boundary - 1, 2)).toBe(true)
+    expect(isCompact(boundary, 2)).toBe(false)
+  })
+
+  it('never returns true for nonsense input', () => {
+    expect(isCompact(0, 1)).toBe(false)
+    expect(isCompact(-50, 1)).toBe(false)
+    expect(isCompact(Number.NaN, 1)).toBe(false)
+    expect(isCompact(150, 0)).toBe(false)
+    expect(isCompact(150, -1)).toBe(false)
   })
 })

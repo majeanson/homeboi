@@ -83,6 +83,16 @@ export interface BoardCardMeta {
   zone: CardZone
   size: CardSize
   mode: CardMode
+  /**
+   * Can this card render a genuine compact (icon + title + one quiet line) form at
+   * span 1? Default `true` — omit the field for every ordinary card. Set `false` only
+   * for a card whose content doesn't compress into a summary without hiding real
+   * function: a media-only card with no header (`photos`), a multi-item strip rather
+   * than one summary (`notes`, `drawings`), or two glued hero tiles (`heroes`). The
+   * on-board size chip (`nextSize`) skips the half size for these, and `reconcile`
+   * clamps away a stored half that predates the flag.
+   */
+  halvable?: boolean
 }
 
 // THE canonical card list: identity, default placement, default size, default emptiness
@@ -107,8 +117,11 @@ export interface BoardCardMeta {
 // question.
 export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // ── the pinned band (fridge notes ride above the heroes) ──
-  { id: 'notes', icon: 'push-pin-bold', zone: 'band', size: 'full', mode: 'auto' },
-  { id: 'heroes', icon: 'sun-bold', zone: 'band', size: 'full', mode: 'auto' },
+  // `notes` and `heroes` are not `halvable`: notes is a multi-card strip (not one
+  // summary), heroes is two glued hero tiles — neither compresses into "icon + title
+  // + one line" without hiding real content.
+  { id: 'notes', icon: 'push-pin-bold', zone: 'band', size: 'full', mode: 'auto', halvable: false },
+  { id: 'heroes', icon: 'sun-bold', zone: 'band', size: 'full', mode: 'auto', halvable: false },
   { id: 'mots', icon: 'envelope-bold', zone: 'band', size: 1, mode: 'auto' },
   { id: 'aRegler', icon: 'warning-bold', zone: 'band', size: 1, mode: 'auto' },
   { id: 'moments', icon: 'moon-stars-bold', zone: 'band', size: 1, mode: 'always' },
@@ -127,8 +140,10 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'voyage', icon: 'map-pin-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'carnets', icon: 'book-open-bold', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'seasonUpkeep', icon: 'broom-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'drawings', icon: 'paint-brush-bold', zone: 'grid', size: 'full', mode: 'always' },
-  { id: 'photos', icon: 'image-square-bold', zone: 'grid', size: 'full', mode: 'auto' },
+  // `drawings` and `photos` are not `halvable` for the same reason as `notes`: a
+  // gallery door and a full-bleed photo box don't have a "one quiet line" to show.
+  { id: 'drawings', icon: 'paint-brush-bold', zone: 'grid', size: 'full', mode: 'always', halvable: false },
+  { id: 'photos', icon: 'image-square-bold', zone: 'grid', size: 'full', mode: 'auto', halvable: false },
 ]
 
 const META = new Map<BoardCardId, BoardCardMeta>(BOARD_CARDS.map((c) => [c.id, c]))
@@ -137,6 +152,9 @@ const canonicalZone = (zone: CardZone): BoardCardId[] =>
   BOARD_CARDS.filter((c) => c.zone === zone).map((c) => c.id)
 
 export const cardMeta = (id: BoardCardId): BoardCardMeta | undefined => META.get(id)
+
+/** Can this card render a genuine compact form? See `BoardCardMeta.halvable`. */
+export const isHalvable = (id: BoardCardId): boolean => META.get(id)?.halvable ?? true
 
 export const DEFAULT_CARD_PREFS: BoardCardPrefs = {
   band: canonicalZone('band'),
@@ -216,7 +234,14 @@ export function reconcile(saved: Partial<BoardCardPrefs> & PrefsV1): BoardCardPr
 
   const size: BoardCardPrefs['size'] = {}
   const rawSize = (saved.size ?? {}) as Record<string, unknown>
-  for (const [k, v] of Object.entries(rawSize)) if (isId(k) && isSize(v)) size[k] = v
+  for (const [k, v] of Object.entries(rawSize)) {
+    if (!isId(k) || !isSize(v)) continue
+    // A stored half predating the `halvable` flag (or a device that migrated from an
+    // older build) is clamped away here, so `cardSize` falls back to the card's
+    // canonical (non-half) default instead of persisting a size the card refuses.
+    if (v === 1 && !isHalvable(k)) continue
+    size[k] = v
+  }
 
   const mode: BoardCardPrefs['mode'] = {}
   const rawMode = (saved.mode ?? {}) as Record<string, unknown>
@@ -308,11 +333,24 @@ export const clampSize = (size: CardSize, cols: number): number =>
  * Pass the grid's live column count to cycle only through sizes that LOOK different
  * there. On a two-column phone, 2 / 3 / full all clamp to the same full width, so the
  * chip would sit dead for two taps out of four; it toggles half ↔ full instead.
+ *
+ * Pass `halvable: false` (see `BoardCardMeta.halvable`) for a card that can't render a
+ * genuine compact form — the cycle then skips size 1 entirely, so the chip can never
+ * offer a width the card refuses. On a two-column phone that collapses the toggle to a
+ * single, unchanging `'full'` (the only width left it can render there), which reads
+ * as "no chip" rather than a dead half.
  */
-export function nextSize(size: CardSize, cols?: number): CardSize {
-  if (cols != null && cols <= 2) return size === 1 ? 'full' : 1
-  const i = CARD_SIZES.indexOf(size)
-  return CARD_SIZES[(i + 1) % CARD_SIZES.length]!
+export function nextSize(size: CardSize, cols?: number, halvable = true): CardSize {
+  if (cols != null && cols <= 2) {
+    if (!halvable) return 'full'
+    return size === 1 ? 'full' : 1
+  }
+  const sizes = halvable ? CARD_SIZES : CARD_SIZES.filter((s) => s !== 1)
+  const i = sizes.indexOf(size)
+  // `size` may itself be the just-disallowed 1 (a stored pref predating `halvable`,
+  // or the flag having just changed); treat "not found" as "before the first" so the
+  // cycle still advances sensibly rather than throwing.
+  return sizes[i < 0 ? 0 : (i + 1) % sizes.length]!
 }
 
 /**

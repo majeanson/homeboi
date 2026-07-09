@@ -21,11 +21,16 @@ import {
   type BoardCardId,
   type CardZone,
 } from '../../lib/boardCards'
-import { rowSpan } from '../../lib/widgetGrid'
+import { colWidth, isCompact, rowSpan } from '../../lib/widgetGrid'
 import { EmptyState } from '../EmptyState'
 import { InlineIcon } from '../Icon'
 import { BoardCard } from './BoardCard'
+import { CardLensProvider, type CardLens } from './CardLens'
 import { useWidgetGrid } from './WidgetGrid'
+
+// A stable no-op pair so `expand`/`collapse` don't churn the lens value's identity
+// every render while Phase 1 leaves them unwired (see CardLens.tsx).
+const NOOP = () => {}
 
 // The slot a board card sits in: it owns PLACEMENT (row/column span), the drop target,
 // and the empty gate. It owns NO visual chrome — each card still draws its own look
@@ -93,6 +98,15 @@ export function CardSlot({
   const size = cardSize(prefs, id, grid?.narrow ? 'full' : undefined)
   const span = clampSize(size, cols)
 
+  // The compact lens (see CardLens.tsx): keys on the MEASURED rendered width (span ×
+  // the grid's measured column width), never on `size` alone or on `surface`. Phase 1
+  // only computes `compact` for real — nothing reads it yet, so this changes no pixel.
+  const compact = isCompact(colWidth(grid?.width ?? 0, cols), span)
+  const lens = useMemo<CardLens>(
+    () => ({ compact, expanded: false, expand: NOOP, collapse: NOOP }),
+    [compact],
+  )
+
   useEffect(() => {
     const el = innerRef.current
     // A collapsed slot is `display:none`: it measures 0 and would thrash the span back to
@@ -143,7 +157,8 @@ export function CardSlot({
   // « Max », so the first tap takes it to 1 (a half) — which is what the eye expects.
   // Cycling from the stored default (1) would instead jump it to 2, and 2 clamps back to
   // full on two columns: the chip would appear to do nothing.
-  const resize = () => setCardPrefs({ size: { ...prefs.size, [id]: nextSize(size, cols) } })
+  const resize = () =>
+    setCardPrefs({ size: { ...prefs.size, [id]: nextSize(size, cols, meta?.halvable ?? true) } })
 
   return (
     <section
@@ -163,14 +178,16 @@ export function CardSlot({
       onPointerDown={grabBody}
     >
       <CardEmptyContext.Provider value={report}>
-        <div className="wg-slot__inner" ref={innerRef}>
-          {children}
-          {placeholder && meta && (
-            <BoardCard className="bento wg-slot__placeholder" label={label} icon={meta.icon}>
-              <EmptyState>{t.board.cardEmpty}</EmptyState>
-            </BoardCard>
-          )}
-        </div>
+        <CardLensProvider value={lens}>
+          <div className="wg-slot__inner" ref={innerRef}>
+            {children}
+            {placeholder && meta && (
+              <BoardCard className="bento wg-slot__placeholder" label={label} icon={meta.icon}>
+                <EmptyState>{t.board.cardEmpty}</EmptyState>
+              </BoardCard>
+            )}
+          </div>
+        </CardLensProvider>
       </CardEmptyContext.Provider>
 
       {editing && (
