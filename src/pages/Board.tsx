@@ -376,6 +376,41 @@ export function Board() {
   // A tapped meal → its recipe view when it has one, else the plan peek.
   const openMeal = useOpenMeal(detailCtx)
 
+  // ── Edit mode: hold a card to rearrange the board ──────────────────────────────────
+  // ABOVE the lens early-returns, for the same Rules-of-Hooks reason spelled out above:
+  // the toddler/simple/unauth branches bail out below, and a hook placed after them makes
+  // Board's hook count depend on the lens.
+  //
+  // State lives in the URL so Réglages ▸ Disposition can deep-link into it (/board?edit=1)
+  // and so a remount (a scene closing over the board) doesn't drop you out of it.
+  const [editParam, setEditParam] = useTabParam<'0' | '1'>('edit', '0', ['0', '1'])
+  // Who may rearrange: not a read-only guest; not a cast display (which renders this very
+  // Board on a TV, with no pointer to hold); and only the parent lens — a toddler's press
+  // belongs to tap-to-hear, and the simple lens has no cards to drag.
+  const canEdit = !ro && !isDisplay() && audience === 'parent'
+  const editing = canEdit && editParam === '1'
+  const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
+
+  useLongPress({
+    targets: '.wg-slot',
+    enabled: canEdit && !editing,
+    onLongPress: () => setEditParam('1'),
+  })
+  useEscapeKey(exitEdit, editing)
+
+  // ONE drag session across BOTH zones — that is what makes dragging a card out of the
+  // band and into the masonry a single gesture rather than two systems.
+  const cardDnd = usePointerDnd({
+    onDrop: (cardId, dropKey) => {
+      const target = parseZoneKey(dropKey)
+      if (!target || !cardMeta(cardId as BoardCardId)) return
+      const zone = target.zone
+      // A drop on the grid's trailing space appends; a drop on a slot inserts at it.
+      const at = target.index === 'end' ? boardCards[zone].length : target.index
+      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, zone, at))
+    },
+  })
+
   if (unauth) return <PairPrompt />
 
   // The picked member on this device (greeting + "your day" emphasis, both
@@ -709,37 +744,6 @@ export function Board() {
   // replaces the old `.hub[data-surface='kiosk'] .board-grid { columns: 340px }` override:
   // the column count is computed in JS now, so the minimum has to travel there too.
   const colMin = surface === 'kiosk' ? 340 : 300
-
-  // ── Edit mode: hold a card to rearrange the board ──────────────────────────────────
-  // Lives in the URL so Réglages ▸ Disposition can deep-link into it (/board?edit=1) and
-  // so a remount (a scene closing over the board) doesn't drop you out of it.
-  const [editParam, setEditParam] = useTabParam<'0' | '1'>('edit', '0', ['0', '1'])
-  // A guest can't write; a cast display (which renders this very Board) has no pointer;
-  // the toddler/simple lenses returned long before here.
-  const canEdit = !ro && !isDisplay()
-  const editing = canEdit && editParam === '1'
-  const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
-
-  useLongPress({
-    targets: '.wg-slot',
-    enabled: canEdit && !editing,
-    onLongPress: () => setEditParam('1'),
-  })
-  useEscapeKey(exitEdit, editing)
-
-  // ONE drag session across BOTH zones — that is what makes dragging a card out of the
-  // band and into the masonry a single gesture rather than two systems. `holdMs: 0`: the
-  // long-press that armed edit mode already established intent.
-  const cardDnd = usePointerDnd({
-    onDrop: (cardId, dropKey) => {
-      const target = parseZoneKey(dropKey)
-      if (!target || !cardMeta(cardId as BoardCardId)) return
-      const zone = target.zone
-      // A drop on the grid's trailing space appends; a drop on a slot inserts at it.
-      const at = target.index === 'end' ? boardCards[zone].length : target.index
-      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, zone, at))
-    },
-  })
 
   // How many cards this device has removed — the edit bar points at where they live,
   // since ✕ is otherwise a one-way door.
