@@ -12,10 +12,12 @@ import { isValidR2Key } from '../_lib/validate'
 // board `notes` table: those are transient fridge memos on Aujourd'hui; these are
 // durable directory notes living under the Famille tab.
 //
-//   GET    /api/family-notes  -> all live household notes (both scopes), newest first
+//   GET    /api/family-notes  -> all live household notes (both scopes), manual order
+//                               first (position, migration 0111), newest first within
 //   POST   /api/family-notes  -> add { title?, text?, scope, member_id?, media_kind?, media_key?, scene_key? }
-//   PATCH  /api/family-notes  -> edit { id, title?, text?, scope?, member_id?, media_kind?, media_key?, scene_key? }
-//                               (title/body edit + re-scope Moi↔Maisonnée + add/replace/remove the photo|drawing)
+//   PATCH  /api/family-notes  -> edit { id, title?, text?, scope?, member_id?, position?, media_kind?, media_key?, scene_key? }
+//                               (title/body edit + re-scope Moi↔Maisonnée + drag-reorder
+//                                + add/replace/remove the photo|drawing)
 //   DELETE /api/family-notes  -> soft-clear one { id } (sets deleted_at; frees media)
 //
 // Scope is chosen on the composer (Moi / Maisonnée toggle) and sent EXPLICITLY, so
@@ -31,6 +33,7 @@ interface FamilyNoteRow {
   media_kind: string | null
   media_key: string | null
   scene_key: string | null
+  position: number
   created_at: number
   updated_at: number | null
 }
@@ -40,7 +43,7 @@ const TITLE_CAP = 120
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, member_id, author_member_id, title, text, media_kind, media_key, scene_key, created_at, updated_at FROM family_notes WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+    'SELECT id, member_id, author_member_id, title, text, media_kind, media_key, scene_key, position, created_at, updated_at FROM family_notes WHERE household_id = ? AND deleted_at IS NULL ORDER BY position, created_at DESC',
   )
     .bind(actor.householdId)
     .all<FamilyNoteRow>()
@@ -123,6 +126,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     text?: string
     scope?: string
     member_id?: string | null
+    position?: number
     media_kind?: string | null
     media_key?: string
     scene_key?: string
@@ -132,11 +136,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const hasTitle = typeof body?.title === 'string'
   const hasText = typeof body?.text === 'string'
   const hasScope = 'scope' in (body ?? {}) || 'member_id' in (body ?? {})
+  // Drag-reorder (migration 0111): the client renumbers the displayed list 0..n-1
+  // (one PATCH per moved row); GET's `ORDER BY position, created_at DESC` pins it.
+  const hasPosition = typeof body?.position === 'number' && Number.isFinite(body.position)
   const hasMediaField = 'media_kind' in (body ?? {})
   // Legacy re-draw: an older caller PATCHes { id, media_key } without media_kind to swap
   // a drawing's blob in place. Treat that as a media change keeping the existing kind.
   const legacyRedraw = !hasMediaField && !!body?.media_key?.trim()
-  if (!hasTitle && !hasText && !hasScope && !hasMediaField && !legacyRedraw) return badRequest('Rien à modifier.')
+  if (!hasTitle && !hasText && !hasScope && !hasPosition && !hasMediaField && !legacyRedraw) return badRequest('Rien à modifier.')
 
   // Re-scope resolution — mirrors POST: 'family' -> NULL, 'self' -> a validated member.
   let scopeMemberId: string | null = null
@@ -186,13 +193,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
 
   await ctx.env.DB.prepare(
-    'UPDATE family_notes SET title = COALESCE(?, title), text = COALESCE(?, text), member_id = CASE WHEN ? = 1 THEN ? ELSE member_id END, media_kind = ?, media_key = ?, scene_key = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE family_notes SET title = COALESCE(?, title), text = COALESCE(?, text), member_id = CASE WHEN ? = 1 THEN ? ELSE member_id END, position = COALESCE(?, position), media_kind = ?, media_key = ?, scene_key = ?, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       hasTitle ? body!.title!.trim().slice(0, TITLE_CAP) : null,
       hasText ? body!.text!.trim().slice(0, TEXT_CAP) : null,
       hasScope ? 1 : 0,
       scopeMemberId,
+      hasPosition ? Math.max(0, Math.trunc(body!.position!)) : null,
       mediaKind,
       mediaKey,
       sceneKey,

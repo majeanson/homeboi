@@ -9,7 +9,7 @@ import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope } from '../../lib/familyNotes'
-import type { Member } from '../../lib/cercle'
+import type { MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import {
   blockKindOf,
@@ -56,7 +56,7 @@ export function NoteEditor({
   note,
   scope,
   memberId,
-  members,
+  faces,
   onClose,
 }: {
   open: boolean
@@ -65,8 +65,10 @@ export function NoteEditor({
   /** Initial scope for a NEW note (follows the picked face); the "Pour qui" picker can change it. */
   scope: NoteScope
   memberId: string | null
-  /** Household faces for the "Pour qui" picker. */
-  members: Member[]
+  /** Household faces for the "Pour qui" picker — pre-resolved (photoUrl included), so
+   *  BOTH member shapes can host the editor (the cercle's camelCase Member and the
+   *  board's snake_case row map to the same MemberFace). */
+  faces: MemberFace[]
   onClose: () => void
 }) {
   const t = useT()
@@ -423,12 +425,7 @@ export function NoteEditor({
       <div className="note-editor__scope">
         <span className="note-editor__scopelabel mono">{fn.forWhom}</span>
         <FaceSelect
-          faces={members.map((m) => ({
-            id: m.id,
-            name: m.displayName,
-            colour: m.colour,
-            photoUrl: m.avatarKind === 'photo' && m.avatarRef ? imgUrl(m.avatarRef) : null,
-          }))}
+          faces={faces}
           value={forMember}
           onChange={setForMember}
           allLabel={fn.scopeFamily}

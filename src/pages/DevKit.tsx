@@ -405,12 +405,13 @@ function NoteEditorDemo() {
           media_kind: null,
           media_key: null,
           scene_key: null,
+          position: 0,
           created_at: 0,
           updated_at: null,
         }}
         scope="family"
         memberId={null}
-        members={[]}
+        faces={[]}
         onClose={() => setOpen(false)}
       />
     </>

@@ -553,6 +553,7 @@ export const EN: typeof FR = {
     toFinish: 'To finish',
     todos: 'To do',
     upcoming: 'Coming up',
+    cercleNotes: 'Notes (circle)',
     voyage: 'Next trip',
     carnets: 'The carnets',
     seasonUpkeep: 'This season',
@@ -1487,6 +1488,8 @@ export const EN: typeof FR = {
       photo: 'Photo',
       expand: 'Show the full note',
       collapse: 'Collapse note',
+      // The board card's quiet footer door into the full section.
+      seeAll: 'All notes',
       // #richnotes — full-screen rich editor (title + Markdown body + attachment).
       newNote: 'New note',
       untitled: 'Untitled note',

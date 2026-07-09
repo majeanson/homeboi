@@ -8,6 +8,7 @@ import { WelcomeCard } from '../components/WelcomeCard'
 import { SampleBanner } from '../components/SampleBanner'
 import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
+import { CercleNotesCard } from '../components/board/CercleNotesCard'
 import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { RoutineNextCard } from '../components/board/RoutineNextCard'
@@ -1188,6 +1189,9 @@ export function Board() {
               // « Prochain voyage » — the next upcoming trip; hides itself when none.
               // « Le décompte » (A-5, bmad/09) — one suggestion-driven countdown; self-hides.
               nodes.countdown = <CountdownCard upcoming={upcomingEvents} />
+              // « Notes (cercle) » — the durable Le cercle notes, lensed by the picked
+              // face (their notes + Maisonnée); self-hides when that face has none.
+              nodes.cercleNotes = <CercleNotesCard members={data.members} />
               nodes.voyage = <VoyageCard />
               // « Les carnets » — the long-jeu heads-up; hides itself when nothing's near.
               nodes.carnets = <CarnetsCard />

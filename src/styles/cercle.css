@@ -1301,167 +1301,11 @@
   color: var(--ink-soft);
   cursor: pointer;
 }
-/* One rounded card, hairline dividers between rows — the iOS grouped-list look. */
-.cnote-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md, 14px);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-.cnote {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  padding: 0.7rem 0.85rem;
-  border-bottom: 1px solid var(--line);
-}
-.cnote:last-child {
-  border-bottom: 0;
-}
-/* A gentle arrival fade for note rows — the same calm ambient-in the screensaver
-   uses, brought to this otherwise-static adult list. React keeps keyed rows mounted
-   across polls, so it only plays on first mount / on a freshly-added note, never on
-   a refresh. Opacity-only + gated. */
-@media (prefers-reduced-motion: no-preference) {
-  .cnote {
-    animation: ambient-in var(--dur-slow, 0.45s) var(--ease-out, ease) both;
-  }
-}
-/* An expanded note: its title may wrap, and the full body sits on its own row. */
-.cnote--expanded {
-  background: color-mix(in srgb, var(--note-tint) 6%, var(--card));
-}
-/* The author tint: a small leading dot (text/audio) or a framed thumbnail (visual). */
-.cnote__dot {
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--note-tint) 30%, var(--card));
-  color: var(--note-tint);
-}
-.cnote__thumb {
-  flex: none;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 10px;
-  object-fit: cover;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-/* The body — a stacked title + meta line; the whole block is the tap target. */
-.cnote__main {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.12rem;
-  text-align: left;
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-.cnote__main--static {
-  cursor: default;
-}
-/* Title + an expand caret on one line; the caret hints the row opens to read. */
-.cnote__titlerow {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-}
-.cnote__title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cnote__caret {
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  color: var(--ink-faint);
-}
-/* Open: let the title wrap to its full text instead of clipping to one line. */
-.cnote--expanded .cnote__title {
-  white-space: normal;
-}
-/* The full note body, revealed on expand — spans the row's full width, wraps, and
-   keeps the author's own line breaks (pre-wrap). */
-.cnote__full {
-  flex: 1 0 100%;
-  margin: 0.1rem 0 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  color: var(--ink);
-  font-size: var(--text-md);
-  line-height: 1.5;
-}
-.cnote__meta {
-  font-size: 0.8rem;
-  color: var(--ink-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* Which list the note belongs to — a quiet pill, tinted by the author colour. */
-.cnote__chip {
-  flex: none;
-  font-size: 0.66rem;
-  color: var(--ink-soft);
-  background: color-mix(in srgb, var(--note-tint) 16%, var(--card));
-  border: 1px solid color-mix(in srgb, var(--note-tint) 30%, var(--line));
-  padding: 0.1rem 0.5rem;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-}
-.cnote__actions {
-  flex: none;
-  display: inline-flex;
-  gap: 0.15rem;
-}
-.cnote__act {
-  display: inline-grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.cnote__act:hover,
-.cnote__act:focus-visible {
-  background: var(--surface);
-  color: var(--ink);
-}
-.cnote__act--del:hover,
-.cnote__act--del:focus-visible {
-  color: var(--terracotta-deep, #a8442b);
-}
-/* Phone: the scope chip would crowd the row — drop it (the face picker already says
-   whose list you're in) so the title + actions keep room. */
-@media (max-width: 30rem) {
-  .cnote__chip {
-    display: none;
-  }
-}
+/* The .cnote row family (list, rows, expand, actions) + the audio-memo rename
+   dialog moved to the EAGER shell — styles/board/cnote-list.css — because the
+   shared NotesList also renders on the board's « Notes (cercle) » glance card
+   (B-11: this file is lazy). The cercle-only chrome (search, composer, empty
+   state) stays here. */
 .cercle-notes__empty {
   color: var(--ink-soft);
   text-align: center;
@@ -1470,27 +1314,6 @@
   border-radius: var(--radius-md, 14px);
   background: var(--surface);
 }
-/* The full-width memo editor (the edit dialog): a roomy textarea that fills the
-   sheet so a long note is comfortable to read and edit, not a cramped one-liner. */
-.kit-modal.cnote-memo {
-  width: min(38rem, 94vw);
-}
-/* The textarea owns a full-width row of its own; the submit + cancel then wrap
-   onto a footer line below it (right-aligned) instead of stretching to the
-   textarea's full height beside it. */
-.cnote-memo .edit-field__box {
-  flex: 1 1 100%;
-  align-items: stretch;
-}
-.cnote-memo .edit-field__row {
-  justify-content: flex-end;
-}
-.cnote-memo .edit-field__input.input {
-  min-height: clamp(9rem, 45vh, 22rem);
-  resize: vertical;
-  line-height: 1.5;
-}
-
 /* --- The multi-card .vcf import picker (ContactForm Modal) -------------------- */
 /* PetForm — the weight log + vet chip. */
 .pet-form__vet {
@@ -2165,32 +1988,9 @@
   color: var(--danger, #c2563a);
 }
 
-/* A row a global-search hit deep-linked to (§892) — a brief "here it is" highlight so
-   the arrival reads even after the peek/expand. The class is dropped by a timer after
-   ~2.2s; this held state shows for reduced-motion, the pulse below for everyone else. */
-.cercle-row.is-focus,
-.cnote.is-focus {
-  outline: 2px solid var(--accent, #2a8f85);
-  outline-offset: 1px;
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--accent, #2a8f85) 12%, transparent);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .cercle-row.is-focus,
-  .cnote.is-focus {
-    animation: cercle-focus-pulse 1.8s var(--ease-out) 1;
-  }
-  @keyframes cercle-focus-pulse {
-    0% {
-      outline-color: var(--accent, #2a8f85);
-      background: color-mix(in srgb, var(--accent, #2a8f85) 22%, transparent);
-    }
-    100% {
-      outline-color: color-mix(in srgb, var(--accent, #2a8f85) 40%, transparent);
-      background: color-mix(in srgb, var(--accent, #2a8f85) 12%, transparent);
-    }
-  }
-}
+/* .cercle-row.is-focus / .cnote.is-focus (deep-link highlight, §892) moved to
+   the eager styles/board/cnote-list.css — the board renders NotesList rows, and
+   the keyframes must exist wherever a .cercle-row lands too. */
 
 /* « Partager une famille » (FamilyShareModal) + the recipient import preview
    (FamilyImportPage) style themselves via `.cercle-share`/`.cercle-share-preview*` —

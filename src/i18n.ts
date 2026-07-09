@@ -593,6 +593,7 @@ export const FR = {
     toFinish: 'À finir',
     todos: 'À faire',
     upcoming: 'À venir',
+    cercleNotes: 'Notes (cercle)',
     voyage: 'Prochain voyage',
     carnets: 'Les carnets',
     seasonUpkeep: 'Cette saison',
@@ -1562,6 +1563,8 @@ export const FR = {
       photo: 'Photo',
       expand: 'Voir la note au complet',
       collapse: 'Réduire la note',
+      // The board card's quiet footer door into the full section.
+      seeAll: 'Toutes les notes',
       // #richnotes — full-screen rich editor (title + Markdown body + attachment).
       newNote: 'Nouvelle note',
       untitled: 'Note sans titre',

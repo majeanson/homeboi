@@ -1,4 +1,4 @@
-import { type CSSProperties, type ElementType, type ReactNode } from 'react'
+import { type CSSProperties, type ElementType, type ReactNode, type Ref } from 'react'
 import { useT } from '../i18n'
 import { type usePointerDnd } from '../lib/dnd'
 
@@ -34,6 +34,9 @@ interface DragPillProps {
   style?: CSSProperties
   /** Render the grip handle. Pass false for a read-only guest. Default true. */
   showGrip?: boolean
+  /** Ref to the rendered zone element — for a caller that scrolls a row into view
+   *  (e.g. the notes list's deep-link focus). */
+  nodeRef?: Ref<HTMLElement>
   children?: ReactNode
 }
 
@@ -47,6 +50,7 @@ export function DragPill({
   gripClassName,
   style,
   showGrip = true,
+  nodeRef,
   children,
 }: DragPillProps) {
   const t = useT()
@@ -58,7 +62,7 @@ export function DragPill({
     (dnd.over === id ? ' dnd-over' : '')
 
   return (
-    <Tag data-dnd-zone={id} className={zoneClass} style={style}>
+    <Tag ref={nodeRef} data-dnd-zone={id} className={zoneClass} style={style}>
       {showGrip && (
         <span
           className={'dnd-grip' + (gripClassName ? ` ${gripClassName}` : '')}

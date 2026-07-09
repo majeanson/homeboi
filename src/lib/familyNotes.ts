@@ -13,6 +13,7 @@ export interface FamilyNote {
   media_kind: FamilyNoteMedia | null
   media_key: string | null
   scene_key: string | null
+  position: number // manual drag order (migration 0111); 0 = never reordered
   created_at: number
   updated_at: number | null
 }
@@ -25,4 +26,16 @@ export type NoteScope = 'self' | 'family'
 export function visibleNotes(notes: FamilyNote[], memberId: string | null): FamilyNote[] {
   if (!memberId) return notes.filter((n) => n.member_id === null)
   return notes.filter((n) => n.member_id === null || n.member_id === memberId)
+}
+
+// The ONE display order, mirroring the API's `ORDER BY position, created_at DESC`:
+// manual drag order first (migration 0111 — every never-reordered row sits at 0),
+// newest-first within a position tie. So an untouched list keeps the iOS-Notes
+// most-recent-first feel, and the first drag pins what you see. `?? 0` guards a
+// pre-0111 payload (the persisted offline cache restores old shapes) — a missing
+// position must read as 0, not poison the comparator with NaN.
+export function sortNotes(notes: FamilyNote[]): FamilyNote[] {
+  return notes
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || (b.updated_at ?? b.created_at) - (a.updated_at ?? a.created_at))
 }
