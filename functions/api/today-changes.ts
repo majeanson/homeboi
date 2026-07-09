@@ -93,7 +93,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
                 m.display_name AS name, m.avatar_kind, m.avatar_ref, m.colour
            FROM notes n
            LEFT JOIN members m ON m.id = n.member_id
-          WHERE n.household_id = ? AND n.created_at >= ?
+          WHERE n.household_id = ? AND n.created_at >= ? AND n.dismissed_at IS NULL
           ORDER BY n.created_at DESC LIMIT ?`,
       )
       .bind(hh, since, PER_SOURCE_LIMIT)
