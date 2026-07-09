@@ -2192,50 +2192,12 @@
   }
 }
 
-/* « Partager une famille » — the sender share sheet (FamilyShareModal) + the
-   recipient import preview (FamilyImportPage). Calm spacing over the shared .btn /
-   .input / .qrcode primitives; append-only (the @import order IS the cascade). */
-.cercle-share,
-.cercle-share-preview {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3, 12px);
-}
-.cercle-share__link {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2, 8px);
-  align-items: flex-start;
-}
-.cercle-share__link .input {
-  width: 100%;
-}
-/* Copy + « Partager via… » sit side by side under the link (the generic ShareModal). */
-.cercle-share__linkbtns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2, 8px);
-}
-.cercle-share__list {
-  margin-top: var(--space-4, 16px);
-}
-.cercle-share__title {
-  font-size: 0.95rem;
-  margin: 0 0 var(--space-2, 8px);
-}
-.cercle-share__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2, 8px);
-}
-.cercle-share-preview__from {
-  color: var(--muted, #6b7280);
-}
-.cercle-share-preview__label {
-  margin: 0;
-  font-size: 1.1rem;
-}
+/* « Partager une famille » (FamilyShareModal) + the recipient import preview
+   (FamilyImportPage) style themselves via `.cercle-share`/`.cercle-share-preview*` —
+   moved to styles/kit.css (B-11 revue, bmad/10) so the generic ShareModal they're
+   built on (src/components/ShareModal.tsx) stays styled from the eager Board
+   (EventPeekActions → EntityShareModal) and every other lazy consumer, instead of
+   riding this file out of the eager shell. */
 
 /* Family-import merge progress bar (FamilyImportPage) — full-width, accent-tinted. */
 .cercle-import__bar {

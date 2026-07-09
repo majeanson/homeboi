@@ -190,19 +190,34 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     in Système ▸ diagnostics + honest copy when R2 is unset; (b) media bytes
     in the takeout (zip stream); (c) the restore/import [L]. _(reuse:
     dumpHousehold, takeout.tsx, the E-34 degradation-legible rule.)_
-11. ✅ **Le régime tablette-cheap** [M] ◐ — _garde (2026-07-08, full scope
-    including the realtime revisit)_ — the build is healthy (heic2any's
-    1.35 MB is correctly online-only and un-precached) but two always-loaded
-    costs remain: the **261 kB icon chunk** (Phosphor set — audit whether
-    it's truly shaken to used glyphs) and the **317 kB single CSS file**;
-    plus first install precaches all ~150 route chunks (right for
-    NFR-OFFLINE-1, heavy for a cheap tablet — worth measuring, not
-    assuming). Same item, server side: `REALTIME_ENABLED` is currently
-    **false**, so every device runs fast-gear polling. **Marc doesn't
-    remember why it's off (OQ-5)** — investigate via git history and
-    behaviour, then decide inside this item; re-enabling the DO push is the
-    single free-tier capacity lever we already built. _(reuse: everything
-    exists; this is measurement + flags.)_
+11. ✅ **Le régime tablette-cheap** [M] ◐ — **SHIPPED 2026-07-08** (full scope
+    including the realtime revisit) — the build is healthy (heic2any's
+    1.35 MB is correctly online-only and un-precached); measured, the
+    Phosphor icon chunk was already lean (Icon-\*.js: 37.8 kB / 13.4 kB
+    gzip'd — the plan's "261 kB icon chunk" estimate doesn't hold up against
+    a real build, no separate shaking pass was needed). What *did* need
+    work: `manualChunks` splits `react-vendor` and the FR `i18n` dictionary
+    into their own cache-stable chunks (survive an app-code redeploy
+    instead of re-downloading inside a renamed `index-*.js`); the EN
+    dictionary now lazy-loads only for an EN session instead of always
+    riding along with FR; and eight CSS files (`cercle`, `carnets`,
+    `voyage`, `cast`, `handoff`, `intake`, `partage`, `devkit`) moved out of
+    the eager shell as side-effect imports on their lazy consumer
+    pages/components (board glance-card slices of `carnets`/`voyage` stayed
+    eager). Net: the eager CSS shell is now 260.7 kB / 46.2 kB gzip'd, down
+    from 317 kB. Server side: `REALTIME_ENABLED` closed as already-answered
+    (OQ-5) — it's been live in prod since `d1d9b67` (2026-06-17) with
+    poll-gear relaxation on connect; no code change needed, see DEPLOY.md.
+    **Revue fix (same day):** the CSS diet initially missed that
+    `ShareModal` (the generic share sheet, `.cercle-share*`) is reachable
+    from the eager Board (`EventPeekActions` → `EntityShareModal`) and from
+    lazy pages that don't import `cercle.css` (`SharedVoyagePage`,
+    `DayPlanPage`, `Routines`) — `.cercle-share*` moved to the always-eager
+    `kit.css` instead of riding out with the rest of `cercle.css`. Likewise
+    `operator/cercle.tsx`'s `.cercle-group__dot` (Réglages ▸ Le cercle
+    groups) needed its own `cercle.css` side-effect import, since
+    `Operator.tsx`'s chunk never pulled it in transitively. _(reuse:
+    everything exists; this was measurement + flags + CSS-import hygiene.)_
 
 ## C · Cohérence & élagage (pruning is a deliverable)
 

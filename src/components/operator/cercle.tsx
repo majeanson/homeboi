@@ -1,3 +1,7 @@
+// B-11 (bmad/10) revue — cercle.css moved out of the eager shell, but this
+// operator section renders `.cercle-group__dot` and Operator.tsx's own chunk
+// never pulls cercle.css in; load it as a side effect whenever this renders.
+import '../../styles/cercle.css'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
