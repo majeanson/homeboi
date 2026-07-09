@@ -75,6 +75,9 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; board wraps it to `useProfile`, Le cercle picks locally) |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
+| A press-and-hold gesture | **`useLongPress`** | `lib/useLongPress.ts` (aborts on travel, kills the context menu, swallows the trailing click) |
+| A board card's placement / width / drop target | **`WidgetGrid`** + **`CardSlot`** | `components/board/*` — one grid per zone (`band`, `grid`); sizes/zones/modes live in `lib/boardCards`. Never re-add `columns:` or `column-span` to the board |
+| "This card has nothing to show" | **`useReportEmpty`** | `lib/useReportEmpty.ts` — never a bare `return null`: the slot can't tell empty from loading, and mode `always` needs to know |
 | Upload a photo / audio / drawing blob to R2 | **`uploadMedia()`** / **`useMediaUpload()`** | `lib/uploadMedia.ts` (resize→POST→`{key}`, 503→`MediaUnavailableError`) |
 
 ### Cross-cutting conventions a new feature MUST respect
@@ -344,7 +347,7 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 
 | Tab          | Route       | French name  | What it is                                                                                   |
 | ------------ | ----------- | ------------ | -------------------------------------------------------------------------------------------- |
-| **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, chores, upcoming.         |
+| **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, chores, upcoming. A **widget space**: every card lives in a zone (`band` on top, `grid` = the masonry), with a width and an empty-card mode. Hold a card → edit mode (`?edit=1`); Réglages ▸ Disposition is its accessible mirror. |
 | **Kitchen**  | `/kitchen`  | La cuisine   | Garde-manger: 7-day supper plan, recipes, "running low," meal suggestions, deals/flyers.     |
 | **Liste**    | `/liste`    | La liste     | The single active shared list (see below).                                                   |
 | **Cercle**   | `/cercle`   | Le cercle    | Family & contacts directory: people, pets, groups, businesses, links/tree.                   |
