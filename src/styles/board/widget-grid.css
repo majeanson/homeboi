@@ -278,3 +278,60 @@
   background: transparent;
   box-shadow: none;
 }
+
+/* ---- Compact lens: in-place growth (Phase 3) --------------------------------- */
+/* Tapping a compact tile (or its header once grown — see below) tells `CardLens` to
+   grow/shrink the card; `CardSlot` answers by overriding the applied column span to
+   the zone's full `cols` (or back to the card's own chosen size). Single-open,
+   transient, never persisted — see Board.tsx's `expandedId`.
+
+   The way BACK: once a card is `expanded`, `SecLabel` (BoardCard.tsx) grows a small
+   ⌃ chip in its own header, and the header itself becomes tappable too — both call
+   the same `lens.collapse()`. */
+.wg-slot .sec-label--reducible {
+  cursor: pointer;
+}
+.wg-slot .sec-label__reduce {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.wg-slot .sec-label__reduce:active {
+  background: var(--line);
+}
+
+/* A one-shot, finite pop — never `infinite` (see the edit-wiggle note above): a quiet
+   fade + scale-in on whatever DOM just mounted. `.cardmini` remounts every time a card
+   settles into its compact form (first paint of a compact card, or right after a
+   collapse); `.is-expanded` is added ONLY on the render right after a compact card
+   grows to full (never on an ordinary wide card — see BoardCard.tsx/Act.tsx), so it
+   can't replay on an unrelated data refresh: the class string doesn't change between
+   re-renders while a card stays expanded, and CSS only (re)plays an `animation` when
+   the property's value actually changes on the element. */
+@media (prefers-reduced-motion: no-preference) {
+  .wg-slot .cardmini {
+    animation: wg-card-pop 0.18s var(--ease-soft, ease-out) both;
+  }
+  .wg-slot .is-expanded {
+    animation: wg-card-pop 0.22s var(--ease-soft, ease-out) both;
+  }
+}
+@keyframes wg-card-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

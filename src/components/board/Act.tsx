@@ -51,7 +51,15 @@ export function Section({
   const isMini = !!lens && lens.compact && !lens.expanded
   return (
     <div
-      className={'bento' + (tint ? ' bento--tinted' : '') + (now ? ' bento--now' : '') + (isMini ? ' bento--compact' : '')}
+      className={
+        'bento' +
+        (tint ? ' bento--tinted' : '') +
+        (now ? ' bento--now' : '') +
+        (isMini ? ' bento--compact' : '') +
+        // Only true on the render right after a compact→full growth — see the one-shot
+        // grow animation scoped to it in widget-grid.css.
+        (lens?.expanded ? ' is-expanded' : '')
+      }
       style={style}
     >
       {isMini ? (

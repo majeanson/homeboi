@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react'
-import { zoneKey, type CardZone } from '../../lib/boardCards'
+import { zoneKey, type BoardCardId, type CardZone } from '../../lib/boardCards'
 import { colsFor, isNarrow } from '../../lib/widgetGrid'
 
 // The board's widget-space layout engine. ONE component, used once per zone (the pinned
@@ -63,6 +63,15 @@ export interface WidgetGridCtx {
   /** The ONE drag session, shared by both zones — which is what lets a card be dragged
    *  out of the band and into the masonry. Null outside edit mode. */
   dnd: PointerDnd | null
+  /** The compact lens's expand state (Phase 3): which card, if any, is temporarily
+   *  grown to this zone's full width. Lifted to Board.tsx and threaded into BOTH zone
+   *  mounts (same trick as `dnd`) so single-open holds across the band AND the grid,
+   *  not just within one. Null when nothing is expanded. */
+  expandedId: BoardCardId | null
+  /** Grow `id` to full width; collapses whatever else was expanded (single-open). */
+  onExpand: (id: BoardCardId) => void
+  /** Shrink whatever is expanded back to its compact form. */
+  onCollapse: () => void
 }
 
 /** The shape `usePointerDnd` returns (lib/dnd). Typed structurally to keep this file
@@ -75,6 +84,12 @@ export interface PointerDnd {
 
 // `zoneKey` / `parseZoneKey` live in lib/boardCards — the key format is a data concern,
 // and the Réglages list needs it too without importing a React component.
+
+// Stable no-op defaults so a caller that doesn't care about expand (there is none
+// today — Board.tsx always passes real ones — but /dev/kit or a future standalone
+// use might) doesn't churn the context value's identity every render.
+const NOOP_EXPAND = () => {}
+const NOOP_COLLAPSE = () => {}
 
 const Ctx = createContext<WidgetGridCtx | null>(null)
 
@@ -91,6 +106,9 @@ export function WidgetGrid({
   colMin,
   editing = false,
   dnd = null,
+  expandedId = null,
+  onExpand = NOOP_EXPAND,
+  onCollapse = NOOP_COLLAPSE,
   className,
   children,
 }: {
@@ -99,6 +117,9 @@ export function WidgetGrid({
   colMin?: number
   editing?: boolean
   dnd?: PointerDnd | null
+  expandedId?: BoardCardId | null
+  onExpand?: (id: BoardCardId) => void
+  onCollapse?: () => void
   className?: string
   children: ReactNode
 }) {
@@ -136,8 +157,8 @@ export function WidgetGrid({
   }, [maxCols, colMin])
 
   const ctx = useMemo(
-    () => ({ zone, cols, width, narrow, editing, dnd }),
-    [zone, cols, width, narrow, editing, dnd],
+    () => ({ zone, cols, width, narrow, editing, dnd, expandedId, onExpand, onCollapse }),
+    [zone, cols, width, narrow, editing, dnd, expandedId, onExpand, onCollapse],
   )
 
   return (

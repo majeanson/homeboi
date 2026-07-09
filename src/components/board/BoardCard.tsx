@@ -18,6 +18,14 @@ import { useCardLens } from './CardLens'
 // in-place HelpBubble (rendered right below the header). Outside help mode it's a plain
 // title — identical DOM, no dead tab stops. The bubble is part of this fragment so the
 // whole "explainable header" contract lives in one place.
+//
+// Compact lens, Phase 3 — the way BACK: `SecLabel` reads `useCardLens()` itself (rather
+// than needing a prop threaded through every one of its ~15 callers) so that the moment
+// a card is `expanded`, its header grows a quiet reduce affordance for free: tapping
+// anywhere on the header — or the small ⌃ chip — shrinks the card back to its compact
+// form (`CardMini`). Inert everywhere else (`lens` is null outside a slot, or the card
+// was never expanded), so this changes nothing for the other ~10 callers that don't sit
+// inside a halved `CardSlot`.
 export function SecLabel({
   label,
   count,
@@ -34,17 +42,30 @@ export function SecLabel({
   helpKey?: string
 }) {
   const t = useT()
+  const lens = useCardLens()
   const helpable = !!help && !!helpKey && help.active
+  const reducible = !!lens?.expanded
   return (
     <>
-      <div className="sec-label">
+      <div
+        className={'sec-label' + (reducible ? ' sec-label--reducible' : '')}
+        onClick={reducible ? lens!.collapse : undefined}
+      >
         {(icon || iconNode) && (
           <span className="sec-label__ico" aria-hidden="true">
             {icon ? <Icon name={icon} size={16} /> : iconNode}
           </span>
         )}
         {helpable ? (
-          <button type="button" className="help-title" onClick={help!.pick(helpKey!, () => {})} title={t.help.learnMore}>
+          <button
+            type="button"
+            className="help-title"
+            onClick={(e) => {
+              e.stopPropagation()
+              help!.pick(helpKey!, () => {})()
+            }}
+            title={t.help.learnMore}
+          >
             <b>{label}</b>
           </button>
         ) : (
@@ -52,6 +73,21 @@ export function SecLabel({
         )}
         <span className="ln" />
         {count ? <span className="ct">{count}</span> : null}
+        {reducible && (
+          <button
+            type="button"
+            className="sec-label__reduce"
+            onClick={(e) => {
+              e.stopPropagation()
+              lens!.collapse()
+            }}
+            aria-expanded="true"
+            aria-label={t.board.collapseCard(label)}
+            title={t.board.collapseCard(label)}
+          >
+            <Icon name="caret-up-bold" size={14} />
+          </button>
+        )}
       </div>
       {help && helpKey ? help.bubbleFor(helpKey) : null}
     </>
@@ -181,15 +217,19 @@ export function BoardCard({
       {children}
     </>
   )
+  // `is-expanded` only ever applies on the render right after a compact→full growth
+  // (never on an ordinary wide card, since `lens` is null or `lens.expanded` is false
+  // there) — see the one-shot grow animation scoped to it in widget-grid.css.
+  const grownClass = className + (lens?.expanded ? ' is-expanded' : '')
   if (to) {
     return (
-      <Link to={to} className={className} style={style} aria-label={ariaLabel}>
+      <Link to={to} className={grownClass} style={style} aria-label={ariaLabel}>
         {inner}
       </Link>
     )
   }
   return (
-    <div className={className} style={style} aria-label={ariaLabel}>
+    <div className={grownClass} style={style} aria-label={ariaLabel}>
       {inner}
     </div>
   )

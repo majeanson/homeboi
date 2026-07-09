@@ -554,6 +554,7 @@ export const EN: typeof FR = {
     editHide: (card: string) => `Remove “${card}” from this screen`,
     editResize: (card: string) => `Change the width of “${card}”`,
     expandCard: (card: string) => `Expand “${card}”`,
+    collapseCard: (card: string) => `Collapse “${card}”`,
     editSizeFull: 'Max',
     editHiddenN: (n: number) => (n === 1 ? '1 hidden card' : `${n} hidden cards`),
     editRestore: 'Settings ▸ Layout',

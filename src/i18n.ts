@@ -601,6 +601,9 @@ export const FR = {
     // the tile itself is the tap-to-expand button. Grows the card back to full width
     // in place — never a navigation, never a persisted choice.
     expandCard: (card: string) => `Agrandir « ${card} »`,
+    // The way back: a small ⌃ chip in an expanded card's header, and the header itself
+    // is tappable too (Phase 3 — the compact lens's in-place growth).
+    collapseCard: (card: string) => `Réduire « ${card} »`,
     // The size chip is a ~24px disc showing 1 / 2 / 3 — this is the "spans everything"
     // face. Kept to a couple of glyphs; the full phrasing lives in `editResize`'s label.
     editSizeFull: 'Max',

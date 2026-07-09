@@ -28,10 +28,6 @@ import { BoardCard } from './BoardCard'
 import { CardLensProvider, type CardLens } from './CardLens'
 import { useWidgetGrid } from './WidgetGrid'
 
-// A stable no-op pair so `expand`/`collapse` don't churn the lens value's identity
-// every render while Phase 1 leaves them unwired (see CardLens.tsx).
-const NOOP = () => {}
-
 // The slot a board card sits in: it owns PLACEMENT (row/column span), the drop target,
 // and the empty gate. It owns NO visual chrome — each card still draws its own look
 // (`.bento`, `.now-card`, `.photo-frame`, `.notes`). That separation is the whole point:
@@ -96,15 +92,35 @@ export function CardSlot({
   // stays full width (a 150px column can't hold « Aujourd'hui »'s rows), so the default
   // board is unchanged. An explicit choice always wins over this fallback.
   const size = cardSize(prefs, id, grid?.narrow ? 'full' : undefined)
-  const span = clampSize(size, cols)
+  const sizedSpan = clampSize(size, cols)
 
-  // The compact lens (see CardLens.tsx): keys on the MEASURED rendered width (span ×
-  // the grid's measured column width), never on `size` alone or on `surface`. Phase 1
-  // only computes `compact` for real — nothing reads it yet, so this changes no pixel.
-  const compact = isCompact(colWidth(grid?.width ?? 0, cols), span)
+  // The compact lens (see CardLens.tsx): keys on the MEASURED rendered width the card
+  // occupies at its CHOSEN size (span × the grid's measured column width) — never on
+  // `size` alone, `surface`, or the temporarily-expanded span below (expanding a card
+  // must not make it read as "no longer compact", or it would lose its own way back).
+  const compact = isCompact(colWidth(grid?.width ?? 0, cols), sizedSpan)
+
+  const editing = !!grid?.editing
+  const onExpandGrid = grid?.onExpand
+  const onCollapseGrid = grid?.onCollapse
+  // Phase 3: tapping a compact tile grows THIS card to the zone's full column count, in
+  // place. `expandedId` is lifted to Board.tsx and threaded into BOTH zone mounts the
+  // same way `dnd` is, so single-open holds across the band AND the grid, not just
+  // within one. `.wg--editing .wg-slot__inner` already blocks the tap via CSS the
+  // instant edit mode arms; the `!editing` check here is the belt-and-suspenders JS
+  // guard the brief asks for (and covers a stray call from outside a pointer tap).
+  const expanded = grid?.expandedId === id
+  const span = expanded ? cols : sizedSpan
   const lens = useMemo<CardLens>(
-    () => ({ compact, expanded: false, expand: NOOP, collapse: NOOP }),
-    [compact],
+    () => ({
+      compact,
+      expanded,
+      expand: () => {
+        if (!editing) onExpandGrid?.(id)
+      },
+      collapse: () => onCollapseGrid?.(),
+    }),
+    [compact, expanded, editing, onExpandGrid, onCollapseGrid, id],
   )
 
   useEffect(() => {
@@ -135,7 +151,6 @@ export function CardSlot({
     [rows, span],
   )
 
-  const editing = !!grid?.editing
   const dnd = grid?.dnd ?? null
   // "Drop here" means "insert before THIS card" — never "at index N". See `zoneKey`.
   const key = zoneKey(zone, id)
@@ -174,6 +189,7 @@ export function CardSlot({
       // out of tap-to-hear, which excludes `[data-dnd-zone]` by design.
       data-dnd-zone={editing ? key : undefined}
       data-empty={isEmpty ? '' : undefined}
+      data-expanded={expanded ? '' : undefined}
       hidden={collapsed}
       onPointerDown={grabBody}
     >

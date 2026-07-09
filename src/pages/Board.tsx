@@ -411,6 +411,19 @@ export function Board() {
     },
   })
 
+  // ── Compact lens: in-place growth (Phase 3) ─────────────────────────────────────────
+  // ABOVE the lens early-returns for the same Rules-of-Hooks reason as the edit-mode
+  // block above. Single-open ACROSS BOTH zones — lifted here (not per-WidgetGrid state)
+  // and threaded into both mounts below, the same trick `cardDnd` uses for one drag
+  // session spanning the band and the masonry. Transient only: no localStorage, resets
+  // on reload, and collapses the instant edit mode arms (below).
+  const [expandedId, setExpandedId] = useState<BoardCardId | null>(null)
+  const expandCard = useCallback((id: BoardCardId) => setExpandedId(id), [])
+  const collapseCard = useCallback(() => setExpandedId(null), [])
+  useEffect(() => {
+    if (editing) setExpandedId(null)
+  }, [editing])
+
   if (unauth) return <PairPrompt />
 
   // The picked member on this device (greeting + "your day" emphasis, both
@@ -929,7 +942,17 @@ export function Board() {
               cards: each can be reordered, resized, hidden, or dragged down into the
               masonry. It caps at 3 columns, which is what the old `.board-status` flex
               row gave the three heads-up tiles. */}
-          <WidgetGrid zone="band" maxCols={3} colMin={colMin} className="board-band" editing={editing} dnd={cardDnd}>
+          <WidgetGrid
+            zone="band"
+            maxCols={3}
+            colMin={colMin}
+            className="board-band"
+            editing={editing}
+            dnd={cardDnd}
+            expandedId={expandedId}
+            onExpand={expandCard}
+            onCollapse={collapseCard}
+          >
             {(() => {
               const band: Partial<Record<BoardCardId, ReactNode>> = {}
               band.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
@@ -984,7 +1007,17 @@ export function Board() {
             </div>
           )}
 
-          <WidgetGrid zone="grid" maxCols={4} colMin={colMin} className="board-grid" editing={editing} dnd={cardDnd}>
+          <WidgetGrid
+            zone="grid"
+            maxCols={4}
+            colMin={colMin}
+            className="board-grid"
+            editing={editing}
+            dnd={cardDnd}
+            expandedId={expandedId}
+            onExpand={expandCard}
+            onCollapse={collapseCard}
+          >
             {/* Data-driven card registry: each Grille card is keyed, then rendered in
                 the per-device order with hidden ones dropped (lib/boardCards, set in
                 Réglages ▸ Affichage or by long-pressing a card). The card JSX is
