@@ -215,17 +215,16 @@ test('settings-tag-rename', async ({ page }) => {
 // The two banner/prompt states the meals tab grows after a tap — neither needs
 // AI or the network (both are pure client computations over the seeded data).
 
-// "Avec mes recettes" → a single book suggestion banner. The kitchen week's
-// actions moved into the ＋ Add sheet (lib/kitchenActions → AddSheet tiles), so
-// open the sheet first; tapping the tile closes it and the suggestion card
-// lands on the meals grid behind it.
-test('kitchen-suggestion', async ({ page }) => {
+// C-14 — the old "Avec mes recettes" AI/book/use-it-up suggestion band folded
+// into the ONE IdeasDrawer. The kitchen ＋ sheet's week actions shrank to shop +
+// « Idées »; opening the tile closes the sheet and opens the drawer behind it.
+test('kitchen-ideas-drawer', async ({ page }) => {
   await boot(page, '/kitchen')
   await page.locator('.add-fab').click()
-  await page.getByRole('button', { name: /Avec mes recettes/ }).click()
-  await page.locator('.kitchen__suggestion').waitFor({ state: 'visible' })
+  await page.locator('.cat-pick', { hasText: 'Idées de repas' }).click()
+  await page.locator('.ideas-drawer.show').waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
-  await shoot(page, 'kitchen-suggestion-phone', false)
+  await shoot(page, 'kitchen-ideas-drawer-phone', false)
 })
 
 // "Magasiner la semaine" → the staples-to-buy picker (starts all-unchecked; you

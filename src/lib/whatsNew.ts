@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'ideas-drawer',
+    text: {
+      fr: 'Nouveau : un seul tiroir « Idées » — favoris, à écouler, IA, proposé par un enfant — à ouvrir depuis la grille ou le ＋.',
+      en: 'New: one “Idées” drawer — favorites, use-it-up, AI, suggested by a child — open it from the grid or the ＋.',
+    },
+    card: 'kitchen',
+  },
+  {
     id: 'le-pont',
     text: {
       fr: 'Nouveau : un lien « Durable — jusqu’à révocation » pour un proche régulier (Mamie, une gardienne) — nommé, ne s’éteint jamais tout seul, et la « Boîte aux lettres » lui montre un reçu ✓ à son prochain passage.',

@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Icon, InlineIcon, type IconName } from '../components/Icon'
+import { Icon, InlineIcon } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
 import { SubTabs } from '../components/SubTabs'
 import { Chip } from '../components/Chip'
+import { Cluster } from '../components/Layout'
+import { Avatar } from '../components/Avatar'
 import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
-import { useWrite } from '../lib/write'
 import { useAi } from '../lib/ai'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
@@ -19,6 +20,8 @@ import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { formatWeekday, formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
+import { pictoFor } from '../lib/picto'
+import { ideasForDay } from '../lib/mealIdeas'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -27,12 +30,9 @@ import { RecipesTab } from '../components/kitchen/RecipesTab'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
-import { useMealSuggest, type MealSuggestion, type SuggestSource } from '../components/kitchen/useMealSuggest'
 import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
-import { MealIdeas } from '../components/kitchen/MealIdeas'
-import { Leftovers } from '../components/kitchen/Leftovers'
+import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
-import { canEmptyFridge } from '../lib/emptyFridge'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
@@ -49,22 +49,14 @@ import { scrollBehavior } from '../lib/motion'
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
 // gate for all), the week grid, and the layout; the FLOWS live as hooks beside
 // the tab components in src/components/kitchen/* (useMealPlanning = type/pick a
-// supper + the AI staples step, useRecipeShop = shop-the-week, useMealSuggest =
-// supper ideas, useAiWake = the shared cold-start/AI-off truth).
-
-// Each suggestion card wears the SAME glyph + colour as the ＋ Add-sheet tile that
-// produced it (AI = marigold sparkle, book = terracotta book, use-it-up = sage
-// carrot), so a result reads as "this is the answer to the button I just pressed".
-const SUGGEST_DRESS: Record<SuggestSource, { icon: IconName; color: string }> = {
-  ai: { icon: 'sparkle-bold', color: '#D9842A' },
-  book: { icon: 'book-open-bold', color: '#C2563A' },
-  useup: { icon: 'carrot-bold', color: '#6B8A52' },
-}
+// supper + the AI staples step, useRecipeShop = shop-the-week, useAiWake = the
+// shared cold-start/AI-off truth). C-14 folded every "what's for supper" idea
+// source (the old inline AI/book/use-it-up suggestion band + the MealIdeas/
+// Leftovers pools) into the ONE IdeasDrawer, opened from the grid or the ＋ sheet.
 
 export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
-  const write = useWrite()
   const { lang } = useLang()
   const { audience } = useAudience()
   const { memberId: profileId } = useProfile()
@@ -181,6 +173,12 @@ export function Kitchen() {
     const meal = days.find((d) => d.date === date && d.slot === 'supper')
     return { date, meal }
   })
+  // The week as { date, label } pairs — what MealPlanPicker/IdeasDrawer's day
+  // chips need. Built once, reused by every planner (was inlined at each call site).
+  const weekLabeled = useMemo(
+    () => week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) })),
+    [week, lang],
+  )
   // date+slot → its planned meals, in order (a slot holds several now). Server
   // already orders by position; this just filters the flat list.
   const mealsFor = (date: number, slot: string) => days.filter((d) => d.date === date && d.slot === slot)
@@ -234,32 +232,39 @@ export function Kitchen() {
   const { kidSuggest } = useMealPlanning(ai, profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
-  const suggest = useMealSuggest(recipes, ai, lowItems, listItems, soonItems)
   // How many shop items are currently ticked (the panel starts all-unchecked, so
   // this drives the "Ajouter (N)" label + disables the confirm until ≥1 is picked).
   const shopChecked = (shopPrompt ?? []).filter((o) => o.on).length
 
-  // The week-actions (shop / AI / book / use-it-up) run from the ＋ Add sheet, whose
-  // result lands HERE at the top of the Repas tab. If the page is scrolled down to
-  // the week grid, that landing is off-screen and the tap reads as "nothing
-  // happened". So every action bumps a tick that scrolls the results band into view
-  // (showing the ⏳ AI wake-up immediately, then the card). See the wrapped handlers
-  // passed to registerKitchen below.
+  // The week-actions (shop / ＋ Idées) run from the ＋ Add sheet, whose result lands
+  // HERE at the top of the Repas tab (shop) or opens the IdeasDrawer (idées). If the
+  // page is scrolled down to the week grid, an inline landing is off-screen and the
+  // tap reads as "nothing happened". So shop bumps a tick that scrolls the results
+  // band into view (showing the ⏳ AI wake-up immediately, then the panel). See the
+  // wrapped handlers passed to registerKitchen below.
   const resultsRef = useRef<HTMLDivElement>(null)
   // « Vide-frigo » (#5) — its own two-step sheet (ideas → recipes), opened from the
-  // ＋ tile rather than dropping an inline card like the other actions.
+  // IdeasDrawer's footer button rather than dropping an inline card.
   const [fridgeOpen, setFridgeOpen] = useState(false)
+  // The ONE « Idées » drawer (C-14) — reachable from the grid opener below AND the
+  // ＋ Add sheet's « Idées » tile. `ideasChip` picks which source chip it opens ON:
+  // the 👧 empty-day-tile chip jumps straight to 'kid' (a glance chip never commits
+  // a plan — it just opens the drawer there).
+  const [ideasOpen, setIdeasOpen] = useState(false)
+  const [ideasChip, setIdeasChip] = useState<IdeasChip>('ideas')
+  const openIdeas = (chip: IdeasChip = 'ideas') => {
+    setIdeasChip(chip)
+    setIdeasOpen(true)
+  }
   const [scrollTick, setScrollTick] = useState(0)
   const requestScroll = () => setScrollTick((n) => n + 1)
   useEffect(() => {
     if (scrollTick) resultsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
   }, [scrollTick])
 
-  // The week's three actions (shop the week / AI ideas / ideas from the book) now
-  // live inside the ＋ Add sheet, not as a floating rail. The sheet is rendered by
-  // HubLayout (a sibling of this page), so register the live handlers + their
-  // availability up to it. Only while the Repas tab is the parent view — that's
-  // where each action's result (the shop chips / the suggestion card) appears.
+  // The week's two actions (shop the week / ＋ Idées) live inside the ＋ Add sheet,
+  // not as a floating rail. The sheet is rendered by HubLayout (a sibling of this
+  // page), so register the live handlers + their availability up to it.
   const { register: registerKitchen } = useKitchenActions()
   // The ＋ week-actions are offered on EVERY parent kitchen sub-tab, not just Repas —
   // "all the section's actions, whatever sub-tab you're on". Their results still land
@@ -279,92 +284,26 @@ export function Kitchen() {
     registerKitchen(
       kitchenActionsActive
         ? {
-            // Wrap each flow so it ALSO (a) jumps to the Repas sub-tab — where the
-            // result renders, since the action can now fire from any sub-tab — and
-            // (b) scrolls that result into view (the sheet closes over the page and
-            // the answer otherwise lands above the fold). setKitTab is a no-op when
-            // Repas is already showing.
+            // Shop jumps to the Repas sub-tab (where its result renders) and scrolls
+            // it into view — the action can now fire from any sub-tab, and the sheet
+            // closing over the page would otherwise land the answer above the fold.
+            // setKitTab is a no-op when Repas is already showing.
             shop: () => {
               setKitTab('meals')
               beginShopWeek()
               requestScroll()
             },
-            ai: () => {
-              setKitTab('meals')
-              suggest.suggestAi()
-              requestScroll()
-            },
-            book: () => {
-              setKitTab('meals')
-              suggest.suggestFromRecipes()
-              requestScroll()
-            },
-            useup: () => {
-              setKitTab('meals')
-              suggest.suggestUseUp()
-              requestScroll()
-            },
-            // Vide-frigo opens its own sheet — no inline result to scroll to.
-            emptyFridge: () => setFridgeOpen(true),
+            // « Idées » just opens the drawer — it's a modal overlay, so no tab jump
+            // or scroll is needed (it reads the same from any sub-tab).
+            ideas: () => openIdeas('ideas'),
           }
         : null,
-      kitchenActionsActive
-        ? {
-            active: true,
-            canShop: shoppableCount > 0,
-            canAiSuggest: aiEnabled && !suggest.aiOff,
-            aiBusy: suggest.aiBusy,
-            hasRecipes: suggest.hasRecipes,
-            canUseUp: suggest.hasUseUp,
-            canEmptyFridge: canEmptyFridge(aiEnabled && !suggest.aiOff, soonItems.length, reserveItems.length),
-          }
-        : NO_KITCHEN_ACTIONS,
+      kitchenActionsActive ? { active: true, canShop: shoppableCount > 0 } : NO_KITCHEN_ACTIONS,
     )
-  }, [
-    kitchenActionsActive,
-    shoppableCount,
-    aiEnabled,
-    suggest.aiOff,
-    suggest.aiBusy,
-    suggest.hasRecipes,
-    suggest.hasUseUp,
-    soonItems.length,
-    reserveItems.length,
-    beginShopWeek,
-    suggest.suggestAi,
-    suggest.suggestFromRecipes,
-    suggest.suggestUseUp,
-    setKitTab,
-    registerKitchen,
-  ])
+  }, [kitchenActionsActive, shoppableCount, beginShopWeek, setKitTab, registerKitchen])
   // Clear the shell's kitchen actions once, when La cuisine unmounts — so leaving
   // for another tab never leaves stale tiles in the ＋ sheet.
   useEffect(() => () => registerKitchen(null, NO_KITCHEN_ACTIONS), [registerKitchen])
-
-  // Keep a suggestion (AI text, or a real recipe link) into the ideas pool. Takes
-  // the specific card now that several can be on screen at once.
-  // Which suggestions have been kept this session (by source:title) — so the button
-  // reads « Gardé ✓ » and a second tap can't insert the same idea twice.
-  const [keptIdeas, setKeptIdeas] = useState<Set<string>>(() => new Set())
-  const ideaKey = (s: MealSuggestion) => `${s.source}:${s.title}`
-  async function keepSuggestion(s: MealSuggestion) {
-    const key = ideaKey(s)
-    if (keptIdeas.has(key)) return // guard the double-tap → no duplicate meal-idea row
-    setKeptIdeas((prev) => new Set(prev).add(key))
-    // useWrite so keeping an idea offline queues + replays (matches MealPool.planIdea).
-    await write('meal-ideas', {
-      method: 'POST',
-      body: { title: s.title, recipeId: s.recipe?.id ?? null, suggestedBy: profileId },
-      affectedKeys: [MEAL_IDEAS_KEY],
-    }).catch(() => {
-      // Roll back the "kept" mark on failure so the user can retry.
-      setKeptIdeas((prev) => {
-        const n = new Set(prev)
-        n.delete(key)
-        return n
-      })
-    })
-  }
 
   if (unauth) return <PairPrompt />
 
@@ -421,91 +360,18 @@ export function Kitchen() {
 
         {kitTab === 'meals' && (
         <section>
-          {/* The week's three actions (shop the week / AI ideas / ideas from the
-              book) moved INTO the ＋ Add sheet as icon tiles (see useKitchenActions
-              above) — no more floating rail. Their results land in THIS band, which
-              every action scrolls into view (requestScroll) so a tap is never a
-              silent no-op when the page is scrolled down to the grid. Several cards
-              can stack — press AI then Book and you see both answers at once. */}
-          {/* ONE polite live region for the whole results band — the waking line and
-              each suggestion card used to each carry role="status", so several live
-              regions announced over one another. aria-live on the container (atomic
-              defaults false → only the newly-added line/card is read) keeps them from
-              colliding while still announcing each answer as it lands. */}
+          {/* « Magasiner la semaine » still lives in the ＋ Add sheet (see
+              useKitchenActions above); its result lands in THIS band, scrolled into
+              view (requestScroll) so a tap from another sub-tab is never a silent
+              no-op. Every other week action (AI ideas / book ideas / use-it-up /
+              vide-frigo) moved INTO the IdeasDrawer's source chips (C-14) — the ONE
+              polite live region below only ever announces the shop panel now. */}
           <div className="kitchen__results" ref={resultsRef} aria-live="polite">
             {aiWaking && (
               <p className="kitchen__ai-waking mono">
                 ⏳ {t.kitchen.aiWaking}
               </p>
             )}
-            {suggest.cards.map((s) => {
-              const dress = SUGGEST_DRESS[s.source]
-              return (
-                <div
-                  key={s.source}
-                  className="kitchen__suggestion"
-                  style={{ borderLeftColor: dress.color }}
-                >
-                  <span className="kitchen__suggestion-text">
-                    {/* The source glyph in its own colour — the card echoes the tile
-                        that produced it, so the answer is self-labelling. */}
-                    <InlineIcon name={dress.icon} size={18} color={dress.color} /> {s.title}
-                    {s.source === 'book' && (s.missing ?? 0) > 0 && (
-                      <span className="mono kitchen__suggestion-sub"> · {t.recipes.missingN(s.missing!)}</span>
-                    )}
-                    {s.source === 'useup' && (s.uses ?? 0) > 0 && (
-                      <span className="mono kitchen__suggestion-sub"> · {t.recipes.usesN(s.uses!)}</span>
-                    )}
-                  </span>
-                  <span className="kitchen__suggestion-actions">
-                    {/* Re-ask the SAME source right here — another idea without
-                        re-opening the ＋ Add sheet. AI re-asks step through its batch
-                        (1 call / 10), the recipe sources cycle their ranked list. */}
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono"
-                      onClick={() => suggest.again(s.source)}
-                      disabled={s.source === 'ai' && (suggest.aiBusy || suggest.aiOff)}
-                    >
-                      <InlineIcon name="repeat-bold" /> {t.kitchen.suggestMore}
-                    </button>
-                    {s.recipe && (
-                      <button
-                        type="button"
-                        className="btn btn--ghost mono"
-                        onClick={() => nav(`/kitchen/recipe/${s.recipe!.id}`)}
-                      >
-                        <InlineIcon name="book-open-bold" /> {t.kitchen.suggestOpen}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono"
-                      onClick={() => keepSuggestion(s)}
-                      disabled={keptIdeas.has(ideaKey(s))}
-                    >
-                      {keptIdeas.has(ideaKey(s)) ? (
-                        <>
-                          <InlineIcon name="check-bold" /> {t.kitchen.suggestKept}
-                        </>
-                      ) : (
-                        <>
-                          <InlineIcon name="plus-bold" /> {t.kitchen.suggestKeep}
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono kitchen__suggestion-dismiss"
-                      onClick={() => suggest.clear(s.source)}
-                      aria-label={t.common.close}
-                    >
-                      <Icon name="x-bold" size={16} />
-                    </button>
-                  </span>
-                </div>
-              )
-            })}
             {shopPrompt && (
               <div className="kitchen__staples kitchen__shop">
                 {shopPrompt.length === 0 ? (
@@ -562,6 +428,13 @@ export function Kitchen() {
               const showSupper = mealPrefs.isVisible('supper') && suppers.length > 0
               const supperColor = mealPrefs.color('supper')
               const note = noteFor(date)
+              // C-14 — an empty day with a matching kid-suggested idea (meal_ideas
+              // `date` + `suggested_by`, migration 0107) surfaces a small "Léa
+              // propose 🍕" chip instead of staying a bare "À planifier". Tapping it
+              // opens the IdeasDrawer on 👧 Proposé par — a glance chip never commits
+              // a plan on its own (decided).
+              const kidIdea = !showSupper ? ideasForDay(ideasQ.data?.ideas ?? [], date)[0] : undefined
+              const kidWho = kidIdea ? boardMembers.find((m) => m.id === kidIdea.suggested_by) : undefined
               // The lighter slots as their own colour-coded chips (déjeuner / dîner /
               // collation), reusing the per-slot meal colours + icons (mealSlots +
               // Réglages ▸ Repas). Each visible slot with meals becomes one chip that
@@ -693,6 +566,16 @@ export function Kitchen() {
                       <InlineIcon name="pencil-simple-bold" /> {note.text}
                     </span>
                   )}
+                  {kidIdea && (
+                    <button
+                      type="button"
+                      className="kitchen__day-kidsuggest mono"
+                      onClick={() => openIdeas('kid')}
+                    >
+                      <Avatar name={kidWho?.display_name} size={18} />
+                      {t.kitchen.kidProposes(kidWho?.display_name ?? '')} {pictoFor(kidIdea.title, '🍽')}
+                    </button>
+                  )}
                 </div>
               </li>
               )
@@ -704,25 +587,30 @@ export function Kitchen() {
               DayPlanPage) — a row's pencil and the ＋ "Planifier un repas" day
               picker both navigate there. No in-page sheet to render here. */}
 
-          <MealIdeas
-            ideas={ideasQ.data?.ideas ?? []}
-            recipes={recipes}
-            week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
-            lowItems={lowItems}
-            listItems={listItems}
-            profileId={profileId}
-            help={tabHelp}
-          />
-
-          {/* Restants — leftovers to finish. Quick-pick from the last few days' meals
-              (server-provided `recent`, non-leftover, deduped), or type one; tap to
-              plan onto a day. */}
-          <Leftovers
-            leftovers={leftoversQ.data?.leftovers ?? []}
-            recentMeals={meals.data?.recent ?? []}
-            week={week.map((w) => ({ date: w.date, label: formatWeekday(w.date, lang) }))}
-            help={tabHelp}
-          />
+          {/* C-14 — the ONE « Idées » drawer opener, reachable here AND from the ＋
+              Add sheet. Restants keeps a slim one-line hint beside it (decided) —
+              the full list lives inside the drawer's 🧊 « À écouler » chip. */}
+          <Cluster className="kitchen__ideas-opener">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={tabHelp.pick('ideas', () => openIdeas('ideas'))}
+            >
+              <InlineIcon name="bowl-food-bold" /> {t.kitchen.ideas}
+            </button>
+            {(leftoversQ.data?.leftovers?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                className="kitchen__restants-hint mono"
+                onClick={tabHelp.pick('leftovers', () => openIdeas('useSoon'))}
+              >
+                <InlineIcon name="arrow-counter-clockwise-bold" size={14} />{' '}
+                {t.kitchen.ideasDrawer.restantsHint(leftoversQ.data!.leftovers.length)}
+              </button>
+            )}
+          </Cluster>
+          {tabHelp.bubbleFor('ideas')}
+          {tabHelp.bubbleFor('leftovers')}
         </section>
         )}
 
@@ -756,7 +644,31 @@ export function Kitchen() {
           />
         )}
       </main>
-      {/* « Vide-frigo » (#5) — the two-step ideas→recipes sheet, opened from the ＋ tile. */}
+      {/* C-14 — the ONE Idées drawer, reachable from the grid opener above and the
+          ＋ Add sheet's « Idées » tile (useKitchenActions). Its own footer button
+          opens « Vide-frigo », which keeps its untouched identity below. */}
+      <IdeasDrawer
+        open={ideasOpen}
+        onClose={() => setIdeasOpen(false)}
+        initialChip={ideasChip}
+        ideas={ideasQ.data?.ideas ?? []}
+        leftovers={leftoversQ.data?.leftovers ?? []}
+        recentMeals={meals.data?.recent ?? []}
+        recipes={recipes}
+        lowItems={lowItems}
+        listItems={listItems}
+        soonItems={soonItems}
+        week={weekLabeled}
+        profileId={profileId}
+        ai={ai}
+        aiEnabled={aiEnabled}
+        onOpenFridge={() => {
+          setIdeasOpen(false)
+          setFridgeOpen(true)
+        }}
+      />
+      {/* « Vide-frigo » (#5) — the two-step ideas→recipes sheet, opened from the
+          IdeasDrawer footer button (or, while help mode names it, the ＋ tile). */}
       <EmptyFridgeSheet
         open={fridgeOpen}
         onClose={() => setFridgeOpen(false)}

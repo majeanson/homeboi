@@ -140,16 +140,7 @@ export function HubLayout() {
   const [kitchenFlags, setKitchenFlags] = useState<KitchenActionFlags>(NO_KITCHEN_ACTIONS)
   const registerKitchen = useCallback((handlers: KitchenHandlers | null, flags: KitchenActionFlags) => {
     kitchenHandlers.current = handlers
-    setKitchenFlags((prev) =>
-      prev.active === flags.active &&
-      prev.canShop === flags.canShop &&
-      prev.canAiSuggest === flags.canAiSuggest &&
-      prev.aiBusy === flags.aiBusy &&
-      prev.hasRecipes === flags.hasRecipes &&
-      prev.canUseUp === flags.canUseUp
-        ? prev
-        : flags,
-    )
+    setKitchenFlags((prev) => (prev.active === flags.active && prev.canShop === flags.canShop ? prev : flags))
   }, [])
   const runKitchen = useCallback((action: KitchenAction) => kitchenHandlers.current?.[action]?.(), [])
   const kitchenCtx = useMemo(

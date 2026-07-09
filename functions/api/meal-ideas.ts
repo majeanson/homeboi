@@ -10,7 +10,7 @@ import { newId, nowSec } from '../_lib/ids'
 // ideas are reusable, not consumed.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, recipe_id, suggested_by, created_at FROM meal_ideas WHERE household_id = ? ORDER BY created_at DESC',
+    'SELECT id, title, recipe_id, suggested_by, date, created_at FROM meal_ideas WHERE household_id = ? ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
     .all()
@@ -22,14 +22,26 @@ export const onRequestPost = authed(async (ctx, actor) => {
     title?: string
     recipeId?: string // optional: the saved recipe this idea points at
     suggestedBy?: string // optional: member id who added it
+    // Optional local-midnight day (functions/_lib/ids localDayStart) this idea is
+    // suggested FOR — a soft scope, not a plan (migration 0107 / C-14). The kid-
+    // suggest flow is the main writer; a plain pool idea leaves this null.
+    date?: number
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   await ctx.env.DB.prepare(
-    'INSERT INTO meal_ideas (id, household_id, title, recipe_id, suggested_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+    'INSERT INTO meal_ideas (id, household_id, title, recipe_id, suggested_by, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
   )
-    .bind(id, actor.householdId, title, body?.recipeId?.trim() || null, body?.suggestedBy ?? null, nowSec())
+    .bind(
+      id,
+      actor.householdId,
+      title,
+      body?.recipeId?.trim() || null,
+      body?.suggestedBy ?? null,
+      Number.isFinite(body?.date) ? (body!.date as number) : null,
+      nowSec(),
+    )
     .run()
   return ok({ id, title })
 })

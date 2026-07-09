@@ -528,12 +528,18 @@ test.describe('add sheet', () => {
     )
   })
 
-  test('the kitchen ＋ Vide-frigo tile runs the two-step ideas→recipes flow', async ({ page }) => {
+  // C-14 — the kitchen ＋ sheet's week-action tiles shrank to 2 (shop + « Idées »):
+  // Vide-frigo now opens from the IdeasDrawer's own footer button, not a direct
+  // ＋ tile.
+  test('the kitchen ＋ Idées tile opens the drawer, whose footer runs Vide-frigo', async ({ page }) => {
     await APP('/kitchen')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    await page.locator('.cat-pick', { hasText: 'Vide-frigo' }).click()
+    await page.locator('.cat-pick', { hasText: 'Idées de repas' }).click()
+    const drawer = page.locator('.ideas-drawer.show')
+    await expect(drawer).toBeVisible()
+    await drawer.getByRole('button', { name: 'Vide-frigo AI' }).click()
     // Step 1 — the sheet auto-loads a batch of dish names (checkable chips).
     const modal = page.locator('.kit-modal.fridge-modal')
     await expect(modal).toBeVisible()
@@ -549,6 +555,37 @@ test.describe('add sheet', () => {
     await expectApi(page, 'POST', 'recipes', () =>
       modal.getByRole('button', { name: 'Garder' }).click(),
     )
+  })
+
+  // C-14 — a child's suggestion (meal_ideas `date` + `suggested_by`) surfaces a
+  // small chip on the matching empty day tile; tapping it opens the drawer
+  // straight on 👧 « Proposé par » — never auto-plans.
+  test('a kid-suggested idea chip on an empty day opens the drawer on 👧', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    // Override AFTER mockApi so this route wins (mocks.ts's own catch-all is
+    // registered first — Playwright runs the LAST-registered matching handler).
+    await page.route('**/api/meal-ideas**', (r) => {
+      if (r.request().method() !== 'GET') return r.fulfill({ contentType: 'application/json', body: '{"ok":true}' })
+      r.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ideas: [
+            { id: 'kid1', title: 'Pizza maison', recipe_id: null, suggested_by: 'm3', date: 1_749_960_000, created_at: 0 },
+          ],
+        }),
+      })
+    })
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/kitchen')
+    await settle(page, '.hub')
+    const chip = page.locator('.kitchen__day-kidsuggest', { hasText: 'propose' })
+    await expect(chip).toBeVisible()
+    await chip.click()
+    const drawer = page.locator('.ideas-drawer.show')
+    await expect(drawer).toBeVisible()
+    await expect(drawer.locator('.chip.is-on', { hasText: 'Proposé par' })).toBeVisible()
+    await expect(drawer.getByText('Pizza maison')).toBeVisible()
   })
 
   test('the liste ＋ offers add-line / quick-add / flyer / best-prices, defaulting to the add form', async ({ page }) => {
@@ -807,9 +844,10 @@ test('a kid recipe pick drops a dated idea into the meal-ideas pool', async ({ p
   await recipe.click()
   await expect(page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })).toBeVisible()
   // Tapping a day (Mardi) no longer schedules the supper — a pre-reader shouldn't
-  // silently commit a real day. It drops an IDEA into "Idées de repas" with the day
-  // in parentheses ("<recipe> (Mardi)"), keeping the recipe link, for a parent to
-  // place later. Still gated by the confirming second tap (first arms + speaks).
+  // silently commit a real day. It drops an IDEA into "Idées de repas" (C-14: the
+  // real `date` column now, not the old "<recipe> (Mardi)" title-suffix hack),
+  // keeping the recipe link + the chosen day, for a parent to place later. Still
+  // gated by the confirming second tap (first arms + speaks).
   const mardi = page.locator('.kid-pick .bigtile', { hasText: 'Mardi' })
   await mardi.click()
   await expect(mardi).toHaveClass(/is-armed/)
@@ -817,7 +855,9 @@ test('a kid recipe pick drops a dated idea into the meal-ideas pool', async ({ p
     page.waitForRequest(isApi('POST', 'meal-ideas'), { timeout: 15_000 }),
     mardi.click(),
   ])
-  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ title: 'Spaghetti maison (Mardi)' })
+  const body = JSON.parse(req.postData() || '{}')
+  expect(body).toMatchObject({ title: 'Spaghetti maison', recipeId: 'rc1' })
+  expect(typeof body.date).toBe('number')
 })
 
 test('routines surface the current moment first (morning vs evening)', async ({ page }) => {

@@ -25,12 +25,17 @@ export interface Leftover {
 export type LeftoversData = { leftovers: Leftover[] }
 
 // One entry in the "general ideas" pool — a meal idea not yet pinned to a day.
-// Free text (title only) or a recipe shortcut (recipe_id set).
+// Free text (title only) or a recipe shortcut (recipe_id set). `date` (C-14,
+// migration 0107) is an optional local-midnight day this idea was SUGGESTED for —
+// a soft scope, not a plan: the idea stays reusable in the pool either way. Set by
+// the toddler kid-suggest flow so the empty day tile can surface a "Léa propose 🍕"
+// chip; a plain pool idea leaves it null/undefined.
 export interface MealIdea {
   id: string
   title: string
   recipe_id?: string | null
   suggested_by?: string | null
+  date?: number | null
   created_at: number
 }
 export type MealIdeasData = { ideas: MealIdea[] }

@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { useLang } from '../../i18n'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { formatWeekday } from '../../lib/format'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
@@ -23,7 +21,6 @@ export interface StaplePrompt {
 
 export function useMealPlanning(ai: AiWake, profileId: string | null) {
   const write = useWrite()
-  const { lang } = useLang()
   const [editDate, setEditDate] = useState<number | null>(null)
   const [mealText, setMealText] = useState('')
   // The meal -> grocery staple step (B3): after a title is entered, we offer the
@@ -113,16 +110,18 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
 
   // Toddler path: a child taps a recipe, then a day. This is an IDEA, not a plan —
   // a pre-reader shouldn't silently commit a real day's supper. So instead of
-  // scheduling it, we drop the pick into the "Idées de repas" pool with the chosen
-  // day noted in parentheses ("Muffin aux beignes (Mardi)"), keeping the recipe
-  // link, so a parent sees the wish and places it for real later. "suggested by"
-  // still records whose idea it was.
+  // scheduling it, we drop the pick into the "Idées de repas" pool, keeping the
+  // recipe link AND the chosen day (C-14 migration 0107 `date` column — a soft
+  // scope, not a plan), so a parent sees the wish and places it for real later.
+  // "suggestedBy" still records whose idea it was. The day used to be faked into
+  // the title ("Muffin aux beignes (Mardi)"); it's a real column now, which lets
+  // the IdeasDrawer's 👧 "Proposé par" chip surface it as a small chip on the
+  // matching empty day tile (see lib/mealIdeas ideasForDay) instead of a parsed
+  // string.
   async function kidSuggest(date: number, recipe: Recipe) {
-    const day = formatWeekday(date, lang)
-    const title = `${recipe.title} (${day.charAt(0).toUpperCase()}${day.slice(1)})`
     await write('meal-ideas', {
       method: 'POST',
-      body: { title, recipeId: recipe.id, suggestedBy: profileId },
+      body: { title: recipe.title, recipeId: recipe.id, suggestedBy: profileId, date },
       affectedKeys: [MEAL_IDEAS_KEY],
     }).catch(() => {})
   }

@@ -770,6 +770,29 @@ export const GUIDE: GuideEntry[] = [
           en: 'Inventing a supper from what’s lying around — not just pulling from your saved recipes — is what actually rescues the odds and ends, with no waste and no grocery run. You decide: a full recipe is only written for what you pick (less AI, a calmer choice).',
         },
       },
+      // ── C-14 (appended — indices above are load-bearing, never renumber) ──
+      {
+        label: { fr: 'Le tiroir « Idées »', en: 'The « Idées » drawer' },
+        detail: {
+          fr: 'Un seul tiroir réunit toutes les sources d’idées de repas, en chapitres qu’on touche un à la fois : Idées (ta réserve gardée) · ⭐ Favoris (ce que la maisonnée a aimé) · 🧊 À écouler (les restants à finir + ce qui utilise ce qui achève) · 🤖 IA (une volée d’idées fraîches) · 👧 Proposé par (les suggestions d’un enfant). Touche une idée pour la déposer sur un jour — elle reste dans sa source, prête à replanifier. Ouvre-le depuis la grille de la semaine ou le ＋ de la cuisine.',
+          en: 'One drawer gathers every source of meal ideas, as chapters you tap one at a time: Idées (your kept pool) · ⭐ Favorites (what the household loved) · 🧊 Use it up (leftovers to finish + what uses what’s running out) · 🤖 AI (a fresh batch) · 👧 Suggested by (a child’s picks). Tap an idea to drop it on a day — it stays in its source, ready to re-plan. Open it from the week grid or the kitchen ＋.',
+        },
+        why: {
+          fr: 'Avant, quatre ou cinq réserves d’idées vivaient chacune dans son coin — une famille en apprenait une et ne trouvait jamais les autres. Un seul tiroir, une seule habitude à retenir.',
+          en: 'Before, four or five idea pools each lived in their own corner — a family learned one and never found the rest. One drawer, one habit to remember.',
+        },
+      },
+      {
+        label: { fr: '« Léa propose »', en: '“Léa suggests”' },
+        detail: {
+          fr: 'Quand un enfant choisit une recette pour un jour vide (dans la cuisine bambin), ça ne planifie rien tout seul — c’est une IDÉE, gardée dans le tiroir. La case du jour vide affiche un petit visage et « Léa propose 🍕 » ; touche la puce et le tiroir s’ouvre direct sur 👧 Proposé par pour la placer pour de vrai.',
+          en: 'When a child picks a recipe for an empty day (in the toddler kitchen), nothing gets scheduled on its own — it’s an IDEA, kept in the drawer. The empty day’s tile shows a small face and “Léa suggests 🍕”; tap the chip and the drawer opens straight on 👧 Suggested by to place it for real.',
+        },
+        why: {
+          fr: 'Le geste de l’enfant devient visible tout de suite au lieu de disparaître dans une réserve qu’un parent ne pense pas à ouvrir — sans jamais lui laisser décider un vrai souper à sa place.',
+          en: 'The child’s tap becomes visible right away instead of vanishing into a pool a parent doesn’t think to open — without ever letting the pick commit a real supper on its own.',
+        },
+      },
     ],
   },
   {

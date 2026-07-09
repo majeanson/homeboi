@@ -93,6 +93,8 @@ import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
+import { IdeasDrawer } from '../components/kitchen/IdeasDrawer'
+import { useAiWake } from '../components/kitchen/useAiWake'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { HouseholdListSection } from '../components/operator/HouseholdListSection'
 import { DealCard } from '../components/DealCard'
@@ -323,6 +325,51 @@ function FridgeSheetDemo() {
         onClose={() => setOpen(false)}
         soonItems={['épinards', 'crème', 'champignons']}
         reserveItems={['pâte feuilletée']}
+      />
+    </>
+  )
+}
+
+// « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, a small fixture per
+// source chip so every chip has something to show (⭐/🧊/🤖/👧 read empty with no
+// live API — the chrome is what the gallery shows, same rule as EmptyFridgeSheet).
+function IdeasDrawerDemo() {
+  const [open, setOpen] = useState(false)
+  const ai = useAiWake()
+  const now = todayLocalDay()
+  const week = Array.from({ length: 5 }, (_, i) => ({ date: addLocalDays(now, i), label: `Jour ${i + 1}` }))
+  const recipe: Recipe = {
+    id: 'r1',
+    title: 'Spaghetti maison',
+    ingredients: [],
+    steps: [],
+    servings: null,
+    notes: null,
+    source: null,
+    image: null,
+    tags: [],
+    updatedAt: 0,
+  }
+  return (
+    <>
+      <button type="button" className="btn btn--primary" onClick={() => setOpen(true)}>
+        <Icon name="bowl-food-bold" size={18} /> Ouvrir le tiroir Idées
+      </button>
+      <IdeasDrawer
+        open={open}
+        onClose={() => setOpen(false)}
+        ideas={[{ id: 'i1', title: 'Tacos', recipe_id: null, suggested_by: null, created_at: 0 }]}
+        leftovers={[{ id: 'l1', title: 'Pâté chinois', created_at: 0 }]}
+        recentMeals={[]}
+        recipes={[recipe]}
+        lowItems={[]}
+        listItems={[]}
+        soonItems={['épinards']}
+        week={week}
+        profileId={null}
+        ai={ai}
+        aiEnabled={true}
+        onOpenFridge={() => {}}
       />
     </>
   )
@@ -2142,6 +2189,17 @@ export function DevKit() {
       render: () => (
         <Demo label="« Vide-frigo » (#5) — AI ideas from what's about to spoil → pick a few → full recipes (needs the live API)">
           <FridgeSheetDemo />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'IdeasDrawer',
+      file: 'components/kitchen/IdeasDrawer.tsx',
+      kw: 'idées repas tiroir drawer favoris à écouler ia proposé par idea pool leftovers restants favorites ai kid suggest c-14',
+      render: () => (
+        <Demo label="the ONE meal-idea drawer — Idées / ⭐ Favoris / 🧊 À écouler / 🤖 IA / 👧 Proposé par">
+          <IdeasDrawerDemo />
         </Demo>
       ),
     },

@@ -998,6 +998,21 @@ export const FR = {
     leftoversRecentToggle: 'Suggestions',
     removeLeftover: 'Retirer le reste',
     aiWaking: 'L’IA se réveille… la première fois est plus longue.',
+    // « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, its source
+    // chips, and the empty-day-tile kid-suggestion chip.
+    ideasDrawer: {
+      title: 'Idées',
+      chipUseSoon: 'À écouler',
+      chipAi: 'IA',
+      chipKid: 'Proposé par',
+      emptyFavorites: 'Pas encore de favoris.',
+      emptyAi: 'Touche pour demander des idées.',
+      emptyKid: 'Aucune suggestion d’un enfant pour l’instant.',
+      aiAsk: 'Demander des idées',
+      aiMore: 'Une autre volée',
+      restantsHint: (n: number) => (n === 1 ? '1 reste à finir' : `${n} restes à finir`),
+    },
+    kidProposes: (name: string) => `${name} propose`,
   },
   recipes: {
     title: 'Recettes',

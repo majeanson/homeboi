@@ -17,32 +17,13 @@
 .kitchen__shop {
   margin: 0;
 }
-.kitchen__suggestion {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  font-size: 1.15rem;
-  padding: 0.75rem 1rem;
-  border-left: 3px solid var(--accent);
-  background: var(--surface);
-}
-.kitchen__suggestion-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  min-width: 0;
-}
+/* (C-14 retired the old stacked-card `.kitchen__suggestion`/`-text`/`-actions`
+   band — the AI/book/use-it-up suggestions now live as rows inside IdeasDrawer.
+   `.kitchen__suggestion-sub` stays: IdeasDrawer's rows reuse it for the same
+   quiet "· detail" sub-label a suggestion card used to show.) */
 .kitchen__suggestion-sub {
   color: var(--ink-faint);
   font-size: 0.8rem;
-}
-.kitchen__suggestion-actions {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
 }
 .kitchen__week {
   list-style: none;
@@ -816,5 +797,68 @@
   height: 0.7rem;
   border-radius: 50%;
   flex: none;
+}
+
+/* C-14 — the ONE IdeasDrawer (components/kitchen/IdeasDrawer.tsx): a Sheet whose
+   body swaps per source chip (Idées / ⭐ / 🧊 / 🤖 / 👧). Rides `.rail`/`.cluster`
+   for its own rows (see lib/Layout) — only the drawer-specific spacing lives here. */
+.ideas-drawer__chips {
+  margin: 0.5rem 0 0.9rem;
+}
+.ideas-drawer__shortlist {
+  margin-top: 1rem;
+}
+.ideas-drawer__ai {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.ideas-drawer__footer {
+  margin-top: 1.2rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+/* The 👧 chip's per-row face sits before the name, like a ledger row. */
+.ideas-drawer__kid .kitchen__idea-row {
+  gap: 0.5rem;
+}
+
+/* The grid-level « Idées » opener + the slim Restants hint beside it (C-14 —
+   Restants keeps a one-line teaser here; its full list lives in the drawer's 🧊
+   chip). Cluster wraps them on a narrow phone instead of clipping. */
+.kitchen__ideas-opener {
+  margin-top: 1.4rem;
+  align-items: center;
+}
+.kitchen__restants-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: none;
+  background: none;
+  color: var(--ink-soft);
+  padding: 0.3rem 0.2rem;
+  cursor: pointer;
+}
+.kitchen__restants-hint:hover,
+.kitchen__restants-hint:focus-visible {
+  color: var(--ink);
+}
+/* A child's suggestion on an otherwise-empty day tile — a small face + « Léa
+   propose 🍕 », tapping opens the drawer on 👧 (never auto-plans). */
+.kitchen__day-kidsuggest {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0.15rem 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.kitchen__day-kidsuggest:hover,
+.kitchen__day-kidsuggest:focus-visible {
+  color: var(--ink);
 }
 

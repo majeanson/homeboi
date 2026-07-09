@@ -30,16 +30,39 @@ async function boot(page: Page, width = 390) {
 // The largest amount (px) by which any VISIBLE descendant of `.sheet` runs past the
 // sheet's right edge. Sees through `overflow-x:hidden` (unlike scrollWidth), plus the
 // classic sheet-level sideways-pan number for good measure. <= 1 = clean (sub-pixel).
-async function worstRightBleed(page: Page): Promise<{ bleed: number; pan: number; culprit: string }> {
-  return page.evaluate(() => {
-    const sheet = document.querySelector('.sheet') as HTMLElement | null
-    if (!sheet) return { bleed: -1, pan: -1, culprit: 'no .sheet' }
+// `selector` narrows WHICH sheet — several `.sheet`s stay always-mounted at once
+// (AddSheet + IdeasDrawer + …), so a page with more than one needs the OPEN one's
+// own modifier class (e.g. '.ideas-drawer.show'), not the bare '.sheet' (which
+// would grab whichever mounted first, not necessarily the one under test).
+async function worstRightBleed(
+  page: Page,
+  selector = '.sheet',
+): Promise<{ bleed: number; pan: number; culprit: string }> {
+  return page.evaluate((sel) => {
+    const sheet = document.querySelector(sel) as HTMLElement | null
+    if (!sheet) return { bleed: -1, pan: -1, culprit: `no ${sel}` }
     const edge = sheet.getBoundingClientRect().right
+    // A `.rail` (lib/Layout.tsx) is a SANCTIONED horizontal scroller — content
+    // wider than it legitimately extends past its own visible edge, scrollable,
+    // never clipped-and-lost the way an un-wrapped Cluster row would be. Skip any
+    // element whose nearest scrollable ancestor (up to the sheet) sets its own
+    // `overflow-x: auto`/`scroll` — its "bleed" past the SHEET edge is contained
+    // by that ancestor's own scrollbar, not a hidden clip bug.
+    const insideOwnScroller = (el: HTMLElement): boolean => {
+      let p = el.parentElement
+      while (p && p !== sheet) {
+        const ox = getComputedStyle(p).overflowX
+        if (ox === 'auto' || ox === 'scroll') return true
+        p = p.parentElement
+      }
+      return false
+    }
     let bleed = 0
     let culprit = ''
     for (const el of Array.from(sheet.querySelectorAll<HTMLElement>('*'))) {
       const r = el.getBoundingClientRect()
       if (r.width === 0 || r.height === 0) continue // hidden / collapsed — ignore
+      if (insideOwnScroller(el)) continue
       const over = r.right - edge
       if (over > bleed) {
         bleed = over
@@ -47,18 +70,18 @@ async function worstRightBleed(page: Page): Promise<{ bleed: number; pan: number
       }
     }
     return { bleed, pan: sheet.scrollWidth - sheet.clientWidth, culprit }
-  })
+  }, selector)
 }
 
-async function assertClean(page: Page, label: string) {
-  const { bleed, pan, culprit } = await worstRightBleed(page)
+async function assertClean(page: Page, label: string, selector = '.sheet') {
+  const { bleed, pan, culprit } = await worstRightBleed(page, selector)
   expect(pan, `${label}: sheet pans sideways`).toBeLessThanOrEqual(1)
   expect(bleed, `${label}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)
   // The sheet must explicitly clip the cross axis regardless.
-  const overflowX = await page.evaluate(() => {
-    const s = document.querySelector('.sheet') as HTMLElement | null
+  const overflowX = await page.evaluate((sel) => {
+    const s = document.querySelector(sel) as HTMLElement | null
     return s ? getComputedStyle(s).overflowX : ''
-  })
+  }, selector)
   expect(overflowX, `${label}: sheet overflow-x`).toBe('hidden')
 }
 
@@ -114,5 +137,32 @@ for (const width of [360, 390]) {
     await expect(page.locator('.sheet.show')).toBeVisible()
     await expect(page.locator('.ledger__row').first()).toBeVisible()
     await assertClean(page, 'since-morning rows')
+  })
+}
+
+// IdeasDrawer (C-14) — the Rail of source chips is exactly the "several pills in a
+// row" shape that bleeds; each chip's body (a MealPool add-combobox row, a
+// tap-to-reveal MealPlanPicker) is checked too.
+for (const width of [360, 390]) {
+  test(`IdeasDrawer never overflows sideways @${width}`, async ({ page }) => {
+    await boot(page, width)
+    await page.goto('/kitchen')
+    await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
+
+    await page.locator('.kitchen__ideas-opener .btn--primary').click()
+    await expect(page.locator('.ideas-drawer.show')).toBeVisible()
+    await assertClean(page, 'ideas drawer, Idées chip', '.ideas-drawer.show')
+
+    // Reveal a row's plan picker (slot chips + day chips — the widest inner row).
+    await page.locator('.ideas-drawer .kitchen__idea-name').first().click()
+    await expect(page.locator('.meal-plan-pick')).toBeVisible()
+    await assertClean(page, 'ideas drawer, plan picker open', '.ideas-drawer.show')
+
+    // Sweep every other source chip.
+    for (const label of ['Favoris', 'À écouler', 'Proposé par']) {
+      await page.locator('.ideas-drawer__chips .chip', { hasText: label }).click()
+      await page.waitForTimeout(150)
+      await assertClean(page, `ideas drawer, ${label} chip`, '.ideas-drawer.show')
+    }
   })
 }

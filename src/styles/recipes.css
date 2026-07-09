@@ -668,9 +668,6 @@
 .kitchen__idea-del:hover {
   color: var(--ink);
 }
-.kitchen__suggestion-keep {
-  margin-left: 0.5rem;
-}
 
 /* ---- Phones: give text editors a full line ------------------------------- *
    The kitchen/recipe inline editors are "text field + button" rows. On a narrow

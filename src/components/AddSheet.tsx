@@ -199,6 +199,11 @@ const CHORE_KINDS: { key: 'chore' | 'upkeep' | 'plan'; icon: IconName; to: strin
 // tile in the sheet render. `show`/`disabled`/`title` are pure functions of the live
 // flags (+ help mode + AI-enabled); the render loop wires run/help/close. The key
 // doubles as the run key AND the ADD_HELP help key (both already true inline).
+//
+// C-14 shrank this from 5 tiles to 2: « Magasiner » stays a distinct action (it
+// writes straight to the list, no chooser needed); AI ideas / book ideas / use-it-
+// up / vide-frigo folded into ONE « Idées » tile that opens the IdeasDrawer, whose
+// own source chips (⭐🧊🤖👧) replace what used to be four separate sheet tiles.
 type KitchenActionTile = {
   key: KitchenAction
   icon: IconName
@@ -211,14 +216,7 @@ type KitchenActionTile = {
 }
 const KITCHEN_ACTIONS: KitchenActionTile[] = [
   { key: 'shop', icon: 'shopping-bag-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.shopWeek, show: (f) => f.canShop },
-  // AI ideas — shown when AI is on (or in help mode so it can be explained); a runtime
-  // 503 / busy keeps it disabled with the "AI off" hint.
-  { key: 'ai', icon: 'sparkle-bold', iconColour: '#D9842A', wash: 'var(--marigold-wash)', label: (t) => t.kitchen.aiIdeas, show: (_f, help, ai) => ai || help, disabled: (f, help) => !help && (!f.canAiSuggest || f.aiBusy), title: (f, t) => (f.canAiSuggest ? undefined : t.kitchen.suggestAiOff) },
-  { key: 'book', icon: 'book-open-bold', iconColour: '#C2563A', wash: 'var(--terracotta-wash)', label: (t) => t.kitchen.bookIdeas, show: (f) => f.hasRecipes },
-  { key: 'useup', icon: 'carrot-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.useUpIdeas, show: (f) => f.canUseUp },
-  // « Vide-frigo » (#5) — invent a recipe from what's about to spoil; shown when AI can
-  // reach something to use up (or in help mode so it can be explained).
-  { key: 'emptyFridge', icon: 'cooking-pot-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.fridge.tile, show: (f, help) => f.canEmptyFridge || help },
+  { key: 'ideas', icon: 'bowl-food-bold', iconColour: '#D9842A', wash: 'var(--marigold-wash)', label: (t) => t.kitchen.ideas, show: () => true },
 ]
 
 export function AddSheet({

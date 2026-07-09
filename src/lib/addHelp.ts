@@ -149,28 +149,14 @@ export const ADD_HELP = {
       en: 'Compare the week’s plan to the pantry and add what’s missing to the list, in one go.',
     },
   },
-  ai: {
+  // C-14 folded the old ai/book/useup/emptyFridge tiles into ONE « Idées » tile
+  // that opens the IdeasDrawer — its own source chips (⭐🧊🤖👧) cover what those
+  // four separate bubbles used to explain, so ONE bubble now, sourced from the
+  // guide (the appended drawer point) instead of a fifth hand-typed restatement.
+  ideas: {
     card: 'kitchen',
-    point: 2,
-    body: { fr: 'Demande à l’IA une volée d’idées de soupers.', en: 'Ask the AI for a batch of supper ideas.' },
-  },
-  book: {
-    card: 'kitchen',
-    point: 3,
-    body: { fr: 'Pige des idées de repas dans ton propre livre de recettes.', en: 'Pull meal ideas from your own recipe book.' },
-  },
-  useup: {
-    card: 'kitchen',
-    point: 11,
-    body: { fr: 'Propose une recette qui finit ce que tu as marqué « à utiliser bientôt ».', en: 'Suggest a recipe that uses up what you flagged “use soon”.' },
-  },
-  emptyFridge: {
-    card: 'kitchen',
-    point: 13,
-    body: {
-      fr: 'Invente des recettes à partir de ce qui va bientôt se perdre : l’IA propose des idées, tu en coches quelques-unes, elle les rédige.',
-      en: 'Invent recipes from what’s about to spoil: the AI proposes ideas, you tick a few, it writes them up.',
-    },
+    point: 15,
+    body: helpFromGuide('kitchen', 15),
   },
   // « Le cercle » ＋ chooser tiles.
   person: {

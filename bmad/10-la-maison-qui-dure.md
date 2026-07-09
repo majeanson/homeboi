@@ -297,7 +297,8 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     boundaries, exact-value breath/drift pins, the 5×5 burn-in loop). e2e:
     `/cast?scene=ambient` added to `scenes.spec.ts`'s scene sweep; a
     `.ambient__next` assertion added to `idle-ambient.spec.ts`.
-14. ✅ **Un seul tiroir d'idées-repas** [M] ◐ — _garde (2026-07-08)_ —
+14. ✅ **Un seul tiroir d'idées-repas** [M] ◐ — **SHIPPED** (2026-07-09) —
+    _garde (2026-07-08)_ —
     "what's for supper" is answered by four+ pools (AI ideas, book ideas,
     vide-frigo, the kept-ideas pool, leftovers-to-plan, toddler
     suggestions): a family learns one and never finds the rest — dormant
@@ -309,7 +310,36 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     (today only the narration confirms it). _(reuse: MealPool as the body;
     vide-frigo keeps its identity as a chip, per its own memory. A-1's
     rejection stands — the drawer serves the ＋/grid entry points that
-    already exist, it does not become a week-filler.)_
+    already exist, it does not become a week-filler.)_ **Landed:** new
+    `components/kitchen/IdeasDrawer.tsx` — a `Sheet` + `Rail` of source
+    chips (Idées default · ⭐ Favoris via `useLoves()`, faces not counts ·
+    🧊 À écouler = the retired `Leftovers.tsx` pool (`MealPool`,
+    `hideHeading`) + a static `rankUseSoon` shortlist · 🤖 IA = a slimmed
+    `useMealSuggest` (AI-only now — the old book/use-up ranking cursors
+    were dropped as duplicate of the Recettes tab's own sort pills and the
+    🧊 shortlist) rendered as rows · 👧 Proposé par = kept-pool rows with
+    `suggested_by` set); a footer button opens the untouched
+    `EmptyFridgeSheet`. `useKitchenActions`' 5 tiles (shop/ai/book/useup/
+    emptyFridge) shrank to 2 (shop + « Idées »). Migration `0107` adds
+    `meal_ideas.date` (nullable local-midnight day, soft scope); `meal-ideas`
+    GET/POST carry it; `useMealPlanning.kidSuggest` now sends
+    `{title, recipeId, suggestedBy, date}` — the old "(Mardi)" title-suffix
+    hack is gone. An empty day tile with a matching dated+attributed idea
+    shows a small `Avatar` + « Léa propose 🍕 » (`lib/mealIdeas.ts`
+    `ideasForDay`, unit-tested); tapping it opens the drawer on 👧 (a glance
+    chip never commits a plan). `MealIdeas.tsx`/`Leftovers.tsx` deleted; the
+    inline AI/book/use-it-up suggestion-card band and its
+    `.kitchen__suggestion*` CSS retired from `Kitchen.tsx`. Guide gained two
+    appended `kitchen` points (drawer overview + « Léa propose »);
+    `ADD_HELP`/`KITCHEN_TAB_HELP`'s `ai`/`book`/`useup`/`emptyFridge`/`ideas`
+    entries now source `helpFromGuide('kitchen', 15)` instead of four
+    hand-typed restatements. `IdeasDrawer` in DevKit + COMPONENTS.md.
+    Tests: `mealIdeas.test.ts` (`ideasForDay`), `helpRegistry.test.ts`
+    green (re-keying), `calm-tenets` green; e2e `interactions.spec.ts`'s
+    kid-suggest test updated for the plain title + `date` body,
+    `coverage.spec.ts`'s `kitchen-suggestion` screenshot rewired to the
+    drawer, the ＋ Vide-frigo e2e flow rewired through the drawer's footer
+    button.
 15. ✅ **Trois pinceaux, un pot** [S] — **SHIPPED** (2026-07-08) — _garde
     (2026-07-08, including the standing rule)_ — La cuisine's Réglages has three separate
     colour-tinkering sub-sections (Étiquettes, Pastilles, Couleurs de

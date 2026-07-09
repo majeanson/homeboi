@@ -53,6 +53,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
   labels,
   noMatchLabel,
   guide,
+  hideHeading = false,
 }: {
   items: T[]
   queryKey: QueryKey
@@ -70,6 +71,11 @@ export function MealPool<T extends { id: string; title: string }, O>({
   // Optional first-run guide deep-link on the empty state (e.g. « À finir » → the
   // leftovers card). Undefined → a plain empty line (the add field above instructs).
   guide?: { card: string; point?: number }
+  // C-14 — the IdeasDrawer hosts several MealPool instances under its OWN chip
+  // heading (the active source chip already names the concept), so a second
+  // "Idées de repas" <h2> inside the sheet would be a redundant heading. Skip it
+  // there; every other caller keeps the default (a labelled section, same as before).
+  hideHeading?: boolean
 }) {
   const t = useT()
   const write = useWrite()
@@ -126,9 +132,11 @@ export function MealPool<T extends { id: string; title: string }, O>({
   const visible = removal.visible(items)
   return (
     <section className="kitchen__ideas">
-      <div className="kitchen__head">
-        <HelpTitle help={help} k={helpKey}>{labels.heading}</HelpTitle>
-      </div>
+      {!hideHeading && (
+        <div className="kitchen__head">
+          <HelpTitle help={help} k={helpKey}>{labels.heading}</HelpTitle>
+        </div>
+      )}
       {help?.bubbleFor(helpKey)}
 
       {!ro && (

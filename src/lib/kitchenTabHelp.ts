@@ -1,4 +1,5 @@
 import { type HelpEntry } from './helpMode'
+import { helpFromGuide } from './guideContent'
 
 // Help-mode copy for La cuisine — the SAME reusable "?" mode as the board view
 // toggle, but page-wide: arm it once at the sub-tab nav, then tap a tab OR any
@@ -36,13 +37,12 @@ export const KITCHEN_TAB_HELP = {
     },
   },
   // ── headings on the Repas tab ──
+  // C-14 — sourced from the guide's appended drawer point instead of a hand-typed
+  // restatement (P2-9): this opener and the IdeasDrawer explain the same concept.
   ideas: {
     card: 'kitchen',
-    point: 9,
-    body: {
-      fr: 'Une réserve d’idées de repas (texte libre ou recette) ; touches-en une pour la déposer sur un jour. Elle reste dans la réserve, prête à replanifier.',
-      en: 'A pool of meal ideas (free text or a recipe); tap one to drop it on a day. It stays in the pool, ready to re-plan.',
-    },
+    point: 15,
+    body: helpFromGuide('kitchen', 15),
   },
   leftovers: {
     card: 'leftovers',

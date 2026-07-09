@@ -1,0 +1,16 @@
+-- C-14 (bmad/10) — « Un seul tiroir d'idées-repas ». The 👧 « Proposé par » chip in
+-- the new IdeasDrawer surfaces a child's suggestion as a small chip on the matching
+-- EMPTY day tile ("Léa propose 🍕"), so a toddler's write finally has an on-screen
+-- consequence. That needs to know WHICH day the idea was suggested FOR — today the
+-- pool is undated (a suggestion only ever showed up in the "Idées de repas" list).
+--
+--   date: the local-midnight day-seconds (functions/_lib/ids localDayStart) the idea
+--         is scoped to, or NULL for a plain undated pool idea (the common case — most
+--         ideas are "someday", not "for Tuesday"). A SOFT scope, not a plan: placing
+--         the idea onto a real day still requires the existing plan-onto-a-day action
+--         (a `meals` row), and the idea stays in the pool either way (reusable). This
+--         replaces the old "<recipe> (Mardi)" title-suffix hack `useMealPlanning`
+--         `kidSuggest` used to fake a day association in plain text.
+--
+-- Additive, nullable, forward-only, filename-locked.
+ALTER TABLE meal_ideas ADD COLUMN date INTEGER;
