@@ -20,8 +20,11 @@ describe('itemLife', () => {
   })
 
   describe('mealSlotPast', () => {
-    // A fixed LOCAL wall-clock time via Date component constructor (tz-independent getHours).
-    const at = (h: number, m = 0) => new Date(2024, 0, 1, h, m).getTime()
+    // mealSlotPast reads the America/Toronto wall clock (localDay.ts), not the runner's
+    // own zone — so build each instant as UTC annotated with its known Toronto offset
+    // (EDT = UTC-4 in July; no DST edge) rather than a machine-local Date constructor,
+    // so this test is deterministic on any CI runner regardless of its timezone.
+    const at = (h: number, m = 0) => Date.UTC(2024, 6, 1, h + 4, m)
 
     it('strikes a slot once past its end-of-window minute', () => {
       expect(mealSlotPast('breakfast', at(11, 0))).toBe(true) // cut 10:30

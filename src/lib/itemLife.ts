@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { localMinuteOfDay } from './localDay'
 
 // The board's item LIFECYCLE — one shared clock + the one "is this timed thing past?"
 // rule, so every surface crosses things out the same way at the same moment. Before this,
@@ -43,6 +44,7 @@ export const SLOT_PAST_MIN: Partial<Record<string, number>> = {
 export function mealSlotPast(slot: string, nowMs: number): boolean {
   const cut = SLOT_PAST_MIN[slot]
   if (cut == null) return false
-  const d = new Date(nowMs)
-  return d.getHours() * 60 + d.getMinutes() > cut
+  // Household-local wall-clock minute, not the runtime's own zone (localDay.ts) — a
+  // CI runner (UTC) must strike the same slots a Toronto kiosk would at the same instant.
+  return localMinuteOfDay(new Date(nowMs)) > cut
 }

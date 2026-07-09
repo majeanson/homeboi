@@ -48,6 +48,17 @@ export function addLocalDays(daySec: number, n: number, tz = HOUSEHOLD_TZ): numb
   return localDayStart(noon, tz)
 }
 
+// Minutes since local midnight (in `tz`) for an instant `d` — the TZ-safe building
+// block for any "is it past N:MM household-local yet?" check (e.g. itemLife's meal-slot
+// cutoffs). `d.getHours()/getMinutes()` reads the RUNTIME's zone, not the household's —
+// correct on the kiosk (whose browser zone is the house) but wrong anywhere else (CI
+// runners are UTC), so this kind of check must go through Intl/`tz`, not the raw Date
+// accessors.
+export function localMinuteOfDay(d: Date, tz = HOUSEHOLD_TZ): number {
+  const w = wallParts(d, tz)
+  return w.h * 60 + w.mi
+}
+
 // Day-of-week (0 = Sunday) of the local day containing `d`. The month grid's
 // Sunday-start column must use the LOCAL weekday, not getUTCDay (which flips in
 // the evening, when local-midnight is already the next UTC day).
