@@ -7,17 +7,26 @@ import type { Env } from './env'
 // above any honest use: a relative fills one intake form (+ maybe a photo), a sender
 // drops a handful of messages. Distinct from the per-HOUSEHOLD MAX_PENDING queue cap.
 export const MAX_GUEST_USES = 40
+// D-18 (bmad/10) — a STANDING link (« Mamie », a weekly gardienne) is meant to be used
+// for years, not a single TTL window, so the flat 40-use cap would eventually lock out
+// an honest sender. 10x the room — still bounded, just scaled to "years of normal use"
+// instead of "one link's short life".
+export const MAX_GUEST_USES_STANDING = 400
 
 // Atomically charge ONE use against this token's `guests` row. Returns false when the
 // token is over its cap (the caller should 429). The UPDATE is the atomic gate — the
-// `use_count < cap` predicate means two concurrent charges can't both slip past the
-// limit. A token with NO row (a legacy pre-0098 link) is uncapped → true; it can't be
-// counted and expires within its short TTL. Revoked tokens never reach here (authed()
-// → resolveActor rejects them before the handler runs).
+// `use_count < cap` predicate (standing-aware via the inline CASE, so no extra read is
+// needed to pick the cap) means two concurrent charges can't both slip past the limit.
+// A token with NO row (a legacy pre-0098 link) is uncapped → true; it can't be counted
+// and expires within its short TTL. Revoked tokens never reach here (authed() →
+// resolveActor rejects them before the handler runs).
 export async function chargeGuestUse(env: Env, guestId: string | undefined): Promise<boolean> {
   if (!guestId) return true // not a guest actor (defensive) — nothing to charge
-  const res = await env.DB.prepare('UPDATE guests SET use_count = use_count + 1 WHERE id = ? AND use_count < ?')
-    .bind(guestId, MAX_GUEST_USES)
+  const res = await env.DB.prepare(
+    `UPDATE guests SET use_count = use_count + 1
+      WHERE id = ? AND use_count < CASE WHEN standing = 1 THEN ? ELSE ? END`,
+  )
+    .bind(guestId, MAX_GUEST_USES_STANDING, MAX_GUEST_USES)
     .run()
   if ((res.meta?.changes ?? 0) > 0) return true // charged, was under the cap
   // Zero rows changed: either there's no row (legacy → allow) or the row sat at its

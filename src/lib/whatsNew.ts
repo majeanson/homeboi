@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'le-pont',
+    text: {
+      fr: 'Nouveau : un lien « Durable — jusqu’à révocation » pour un proche régulier (Mamie, une gardienne) — nommé, ne s’éteint jamais tout seul, et la « Boîte aux lettres » lui montre un reçu ✓ à son prochain passage.',
+      en: 'New: a “Durable — until revoked” link for a regular relative (Grandma, a sitter) — named, never expires on its own, and “Postbox” shows them a received ✓ next time they visit.',
+    },
+    card: 'share-access',
+  },
+  {
     id: 'rentree',
     text: {
       fr: 'Nouveau : « La rentrée » — donne une fois la rentrée, le dernier jour et les relâches dans Réglages ▸ Le babillard, et « Demain » sait dire école ou congé.',

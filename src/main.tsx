@@ -50,7 +50,19 @@ try {
     // A new link may be a different share-mode than the last one cached — drop the
     // stale kind so useGuestKind re-asks whoami for THIS token.
     clearGuestKind()
+    // E-38 (bmad/10, rides D-18) — a guest link may carry its own locale (`&lang=`,
+    // minted by operator/guest.tsx). Read it straight into the SAME key Root() reads
+    // below, synchronously, before first paint — no flash, no server round-trip.
+    const guestLang = q.get('lang')
+    if (guestLang === 'fr' || guestLang === 'en') {
+      try {
+        localStorage.setItem('babillard-lang', guestLang)
+      } catch {
+        /* noop */
+      }
+    }
     q.delete('guest')
+    q.delete('lang')
     const rest = q.toString()
     window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : '') + window.location.hash)
   }

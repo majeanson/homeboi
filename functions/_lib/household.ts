@@ -37,6 +37,18 @@ export interface Actor {
   guestFields?: number | null
 }
 
+// D-18 (bmad/10) — the guest-row acceptance rule, factored out pure so it's unit-
+// testable without a DB. A legacy/short-TTL guest token has always been row-
+// optional: no row (pre-0098, or a best-effort insert that failed at mint) still
+// works until the token's own signed TTL. A STANDING token flips that: its signed
+// expiry is a 10-year backstop (auth.ts STANDING_TTL), so the row is the ONLY real
+// kill switch — a missing row must reject it (guest/start.ts's MANDATORY insert for
+// a standing mint is what keeps this from ever firing on an honestly-minted link).
+export function guestRowAcceptable(standing: boolean, row: { revoked_at: number | null } | null): boolean {
+  if (standing) return row != null && row.revoked_at == null
+  return row == null || row.revoked_at == null
+}
+
 // Exported so the realtime WS upgrade (worker/index.ts → /api/live) can resolve
 // the actor BEFORE hijacking the request, without routing through authed().
 export async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
@@ -78,18 +90,19 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
 
   // Guest LAST — checked only after operator + device fail, so a real operator
   // or kiosk is never downgraded to read-only. The household must still exist — a
-  // token for a deleted household resolves to nothing — AND the link must not be
-  // revoked (§509): LEFT JOIN the guests row keyed by this token id. `revoked` reads
-  // NULL when there's no row (a legacy pre-0098 token — still honoured until its
-  // signed TTL) or the row isn't revoked; a set revoked_at kills the token early.
+  // token for a deleted household resolves to nothing — AND the link must pass
+  // guestRowAcceptable (§509 + D-18 standing): LEFT JOIN the guests row keyed by
+  // this token id so we can tell "no row" from "row, not revoked" from "row,
+  // revoked" in one query — `gid` is NULL only when there's no matching row.
   const guest = await currentGuest(env, request)
   if (guest) {
     const row = await env.DB.prepare(
-      'SELECT h.id AS hid, g.revoked_at AS revoked FROM households h LEFT JOIN guests g ON g.id = ? WHERE h.id = ?',
+      'SELECT h.id AS hid, g.id AS gid, g.revoked_at AS revoked FROM households h LEFT JOIN guests g ON g.id = ? WHERE h.id = ?',
     )
       .bind(guest.guestId, guest.householdId)
-      .first<{ hid: string; revoked: number | null }>()
-    if (row && row.revoked == null)
+      .first<{ hid: string; gid: string | null; revoked: number | null }>()
+    const guestRow = row && row.gid != null ? { revoked_at: row.revoked } : null
+    if (row && guestRowAcceptable(guest.standing, guestRow))
       return {
         householdId: guest.householdId,
         scope: 'guest',

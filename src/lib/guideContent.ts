@@ -2268,12 +2268,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Lecture seule et minuté', en: 'Read-only and time-boxed' },
         detail: {
-          fr: 'Un lien ne peut rien modifier, et il expire de lui-même (de 30 minutes à une semaine selon le genre). Pas de « retrait » avant la fin — on garde les durées courtes.',
-          en: 'A link can change nothing, and it expires on its own (30 minutes to a week depending on the kind). No revoke-before-expiry — keep the durations short.',
+          fr: 'Un lien ne peut rien modifier, et par défaut il expire de lui-même (de 30 minutes à une semaine selon le genre) — sauf un lien « Durable », qui reste actif jusqu’à ce que tu le révoques (voir plus bas).',
+          en: 'A link can change nothing, and by default it expires on its own (30 minutes to a week depending on the kind) — except a “Durable” link, which stays active until you revoke it (see below).',
         },
         why: {
-          fr: 'Rien à révoquer ni à nettoyer : le temps fait le ménage.',
-          en: 'Nothing to revoke or clean up: time does the housekeeping.',
+          fr: 'Rien à révoquer ni à nettoyer pour un lien minuté : le temps fait le ménage.',
+          en: 'Nothing to revoke or clean up for a time-boxed link: time does the housekeeping.',
         },
       },
       {
@@ -2299,6 +2299,18 @@ export const GUIDE: GuideEntry[] = [
         why: {
           fr: 'La barrière est côté serveur, pas juste dans l’affichage.',
           en: 'The boundary is on the server, not just in the display.',
+        },
+      },
+      {
+        // D-18 (bmad/10) « Le pont » — a durable, named, revocable guest.
+        label: { fr: 'Un lien durable et nommé', en: 'A durable, named link' },
+        detail: {
+          fr: 'À la création, choisis « Durable — jusqu’à révocation » (n’importe quel genre de lien) pour un accès qui ne s’éteint jamais tout seul — utile pour Mamie ou une gardienne régulière. Donne-lui un nom (« Pour qui ? ») pour le reconnaître dans « Liens actifs », où « Révoquer » est la SEULE façon de le fermer. Tu peux aussi fixer sa langue, si le proche ne lit pas dans la langue de la maisonnée. Pour la « Boîte aux lettres », son prochain passage sur ce lien affiche un petit « reçu ✓ » discret dès que son dernier mot a été accepté.',
+          en: 'When you create it, pick “Durable — until revoked” (any kind of link) for access that never turns itself off on its own — handy for Grandma or a regular sitter. Give it a name (“For whom?”) so you can recognize it in “Active links”, where “Revoke” is the ONLY way to close it. You can also fix its language, if the relative doesn’t read the household’s language. For “Postbox”, their next visit on that link shows a small quiet “received ✓” once their last note has been accepted.',
+        },
+        why: {
+          fr: 'Une gardienne régulière ou une grand-maman n’a pas à redemander un lien chaque semaine — et sait que son mot a bien été lu.',
+          en: 'A regular sitter or a grandma doesn’t need to ask for a fresh link every week — and knows their note was actually read.',
         },
       },
     ],

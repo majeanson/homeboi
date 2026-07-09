@@ -60,11 +60,26 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // ---- postbox: « La boîte aux lettres » greeting ---------------------------
   // Just the household name, so the sender's scene can say "Laisse un mot à la
   // Maisonnée de …". A write surface, not a read one — no stored data returned.
+  //
+  // D-18 reçu-✓ (postbox only, decided): a GUEST actor's most recent ACCEPTED
+  // message (keyed by their own guestId — a durable link's return visitor) surfaces
+  // as a quiet "reçu ✓" line on their NEXT visit — pull, not push; rides this same
+  // fetch, no new poll, no unread state kept once read. An operator preview (no
+  // guestId) never sees a receipt — there's no sender to attribute it to.
   if (kind === 'postbox') {
     const nameRow = await ctx.env.DB.prepare('SELECT name FROM households WHERE id = ?')
       .bind(actor.householdId)
       .first<{ name: string }>()
-    return ok({ kind: 'postbox' as const, householdName: nameRow?.name ?? '' })
+    let receipt: { lastAcceptedAt: number; snippet: string } | null = null
+    if (actor.scope === 'guest' && actor.guestId) {
+      const r = await ctx.env.DB.prepare(
+        "SELECT text, reviewed_at FROM postbox_submissions WHERE guest_id = ? AND status = 'accepted' ORDER BY reviewed_at DESC LIMIT 1",
+      )
+        .bind(actor.guestId)
+        .first<{ text: string | null; reviewed_at: number }>()
+      if (r) receipt = { lastAcceptedAt: r.reviewed_at, snippet: (r.text ?? '').slice(0, 40) }
+    }
+    return ok({ kind: 'postbox' as const, householdName: nameRow?.name ?? '', receipt })
   }
 
   if (!kind || !CURATED.includes(kind)) {

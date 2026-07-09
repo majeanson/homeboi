@@ -65,3 +65,41 @@ test('a photo is staged then sent with the message', async ({ page }) => {
   await expect(page.getByText('Merci !')).toBeVisible()
   expect(submits[0]).toMatchObject({ senderName: 'Mamie', media_kind: 'image', media_key: 'pm_e2e' })
 })
+
+// D-18 reçu-✓ (bmad/10) — a returning sender (a durable/standing link, e.g. « Mamie »)
+// sees a quiet confirmation line the NEXT time she opens the same link, once her prior
+// message was accepted. Rides the same greeting fetch — no new poll, no unread state.
+test('a returning sender sees a quiet reçu-✓ line for their last accepted message', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/guest/window**', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        kind: 'postbox',
+        householdName: 'Maison Tremblay',
+        receipt: { lastAcceptedAt: 1_720_000_000, snippet: 'Bonne fête' },
+      }),
+    }),
+  )
+  await seedState(page, { theme: 'day', lang: 'fr' })
+  await page.goto('/courrier')
+
+  await expect(page.getByText('Reçu ✓', { exact: false })).toBeVisible()
+  await expect(page.getByText('Bonne fête', { exact: false })).toBeVisible()
+})
+
+// The missing case (D-18): a revoked STANDING durable link must read as "this link
+// no longer works", not a stuck/broken form — the same GuestExpired every other guest
+// scene (HandoffPage/WelcomePage/FamilyWindowPage) already shows on a 401/403.
+test('a revoked link shows the expired state, not the form', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/guest/window**', (r) =>
+    r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'Forbidden.' }) }),
+  )
+  await seedState(page, { theme: 'day', lang: 'fr' })
+  await page.goto('/courrier')
+
+  await expect(page.locator('.guest-expired')).toBeVisible()
+  await expect(page.getByPlaceholder('Papi, Mamie, Tante Lou…')).toHaveCount(0)
+})

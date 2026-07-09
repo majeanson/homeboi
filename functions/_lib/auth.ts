@@ -223,6 +223,15 @@ export function normalizeGuestKind(k: unknown): GuestKind {
   return KNOWN_KINDS.includes(k as GuestKind) ? (k as GuestKind) : 'showcase'
 }
 
+// D-18 (bmad/10) — a STANDING guest (« Mamie », a weekly gardienne) keeps a stateless
+// HMAC token but doesn't want a short TTL to force a fresh link every visit. Rather
+// than make the token itself unexpiring (a forgotten one would then live forever
+// even server-unaware of it), it carries a generous BACKSTOP expiry — 10 years — and
+// the REAL kill switch moves to the DB: household.ts's guestRowAcceptable requires
+// the `guests` row to exist and be unrevoked for a standing (`s:1`) token, where a
+// legacy/short-TTL token stays row-optional (unchanged). See migration 0107.
+export const STANDING_TTL = 60 * 60 * 24 * 365 * 10 // 10 years — a backstop, not the real bound
+
 export async function issueGuestToken(
   env: Env,
   guestId: string,
@@ -236,8 +245,13 @@ export async function issueGuestToken(
   // Only meaningful for 'intake': a bitmask of which optional sections the form asks
   // for (see _lib/intake.ts decodeIntakeScope). Absent ⇒ ask everything.
   fields?: number | null,
+  // D-18 — mint a STANDING link (any kind may be standing). The caller still passes
+  // `ttlSeconds`, but a standing mint should pass STANDING_TTL so the signed expiry
+  // matches the DB row's `expires_at` — kept as a parameter (not computed here) so a
+  // guest/start.ts test can assert both stay in lockstep.
+  standing?: boolean,
 ): Promise<string> {
-  const payload: { g: string; h: string; k: GuestKind; x: number; p?: string; f?: number } = {
+  const payload: { g: string; h: string; k: GuestKind; x: number; p?: string; f?: number; s?: number } = {
     g: guestId,
     h: householdId,
     k: kind,
@@ -245,6 +259,7 @@ export async function issueGuestToken(
   }
   if (targetKey) payload.p = targetKey
   if (typeof fields === 'number') payload.f = fields
+  if (standing) payload.s = 1
   return signToken(env, payload)
 }
 
@@ -256,8 +271,15 @@ export async function issueGuestToken(
 export async function verifyGuestToken(
   env: Env,
   token: string | null,
-): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null; fields: number | null } | null> {
-  const payload = await verifyToken<{ g?: string; h: string; k?: string; p?: string; f?: number }>(env, token)
+): Promise<{
+  guestId: string
+  householdId: string
+  kind: GuestKind
+  targetKey: string | null
+  fields: number | null
+  standing: boolean
+} | null> {
+  const payload = await verifyToken<{ g?: string; h: string; k?: string; p?: string; f?: number; s?: number }>(env, token)
   return payload && typeof payload.g === 'string'
     ? {
         guestId: payload.g,
@@ -265,6 +287,7 @@ export async function verifyGuestToken(
         kind: normalizeGuestKind(payload.k),
         targetKey: typeof payload.p === 'string' ? payload.p : null,
         fields: typeof payload.f === 'number' ? payload.f : null,
+        standing: payload.s === 1,
       }
     : null
 }
@@ -272,7 +295,14 @@ export async function verifyGuestToken(
 export async function currentGuest(
   env: Env,
   request: Request,
-): Promise<{ guestId: string; householdId: string; kind: GuestKind; targetKey: string | null; fields: number | null } | null> {
+): Promise<{
+  guestId: string
+  householdId: string
+  kind: GuestKind
+  targetKey: string | null
+  fields: number | null
+  standing: boolean
+} | null> {
   // Same header as the device token (see verifyGuestToken for how the two are
   // told apart). HMAC-only, no DB read — cheap enough to run on the dispatch path.
   return verifyGuestToken(env, request.headers.get(DEVICE_HEADER))

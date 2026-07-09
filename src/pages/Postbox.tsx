@@ -6,12 +6,13 @@ import '../styles/intake.css'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { api } from '../lib/api'
+import { api, isStatus } from '../lib/api'
 import { guestWindowKey } from '../lib/queryKeys'
 import { imgUrl } from '../lib/image'
 import { ZoomableImg } from '../components/ZoomableImg'
 import { MemoControls, type StagedMemo } from '../components/MemoControls'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
+import { GuestExpired } from '../components/GuestExpired'
 import { Icon, InlineIcon } from '../components/Icon'
 import { StatusMessage } from '../components/StatusMessage'
 
@@ -28,15 +29,24 @@ import { StatusMessage } from '../components/StatusMessage'
 interface GreetingData {
   kind: 'postbox'
   householdName: string
+  // D-18 reçu-✓ (bmad/10) — this link's most recent ACCEPTED message, so a return
+  // visitor (a durable/standing link — « Mamie ») sees a quiet confirmation next
+  // time she opens it. null when nothing's been accepted yet (or an operator preview).
+  receipt: { lastAcceptedAt: number; snippet: string } | null
 }
 
 export function Postbox() {
   const t = useT()
   const preview = useSharePreview()
 
-  const { data } = useQuery({
+  const { data, isError } = useQuery({
     queryKey: guestWindowKey(preview, 'postbox'),
     queryFn: () => api<GreetingData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+    // A revoked/expired link won't recover on retry — surface the expired state fast
+    // (mirrors HandoffPage/WelcomePage/FamilyWindowPage — the missing case here, so a
+    // revoked durable link reads as "this link no longer works" instead of a stuck
+    // spinner or a half-broken form).
+    retry: (count, err) => !isStatus(err, 401) && !isStatus(err, 403) && count < 2,
   })
 
   const [senderName, setSenderName] = useState('')
@@ -79,6 +89,18 @@ export function Postbox() {
     }
   }
 
+  // A revoked/expired link (401/403) reads as "this link no longer works" — the
+  // missing case that let a revoked STANDING durable link land on a broken form.
+  if (isError && !data) {
+    return (
+      <div className="scene intake" aria-label={t.postbox.title}>
+        <div className="scene__body intake__body">
+          <GuestExpired />
+        </div>
+      </div>
+    )
+  }
+
   if (done) {
     return (
       <div className="scene intake" aria-label={t.postbox.title}>
@@ -106,6 +128,14 @@ export function Postbox() {
       </header>
 
       <div className="scene__body intake__body">
+        {/* D-18 reçu-✓ — a quiet confirmation on the NEXT visit that a prior message
+            was accepted. Pull-only (rides this fetch), zero unread state — it just
+            reads whatever the last accepted message was, every time. */}
+        {data?.receipt && (
+          <StatusMessage tone="success" icon="check-bold">
+            {t.postbox.receivedAck(data.receipt.snippet)}
+          </StatusMessage>
+        )}
         <p className="intake__intro mono">{t.postbox.intro}</p>
 
         {/* 1 — who you are (required, so the family knows who wrote). */}

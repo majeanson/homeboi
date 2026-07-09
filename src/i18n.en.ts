@@ -2154,6 +2154,17 @@ export const EN: typeof FR = {
     ttl24h: '24 hours',
     ttl2d: '2 days',
     ttl7d: '7 days',
+    // D-18 (bmad/10) « Le pont » — a durable, named, revocable link (any kind).
+    ttlStanding: 'Durable — until revoked',
+    standingNameLabel: 'For whom?',
+    standingNamePlaceholder: 'Grandma, Rosalie the sitter…',
+    standingNameRequired: 'A name is required for a durable link.',
+    standingHint: 'This link never turns itself off. To close it, come back here and tap “Revoke” in “Active links”.',
+    noExpiry: 'Doesn’t expire',
+    revokeStandingConfirm: 'Revoke this durable link? It stops working right away, for good.',
+    // E-38 — per-guest locale, rides along with D-18.
+    guestLangLabel: 'Link language',
+    guestLangDefault: 'Same as the household',
     generate: 'Generate the link',
     generating: 'Creating…',
     linkReady: 'Link ready — share it. It opens a read-only session.',
@@ -2166,7 +2177,7 @@ export const EN: typeof FR = {
     revoked: 'Link revoked',
     linkExpiresPrefix: 'Expires',
     limitation:
-      'Note: access turns itself off when the time is up. It can’t be revoked before then — keep durations short.',
+      'Note: by default, access turns itself off at the end of its duration and can’t be revoked before then. Pick “Durable” for a named link that stays active until you revoke it.',
     banner: 'Guest access — read-only. You can look, but not change anything.',
     demoBadge: 'Demo — read-only',
   },
@@ -2200,6 +2211,13 @@ export const EN: typeof FR = {
     dismissConfirm: 'Dismiss this message? It will be removed without showing anything.',
     someone: 'Someone',
     willTintAs: (name: string) => `Same name as ${name} — will be shown as ${name}.`,
+    // D-18 reçu-✓ (bmad/10) — a quiet confirmation on the sender's NEXT visit that
+    // their last message was accepted. Pull-only, no unread state. `snippet` is empty
+    // for a media-only message (voice/drawing/photo, no written word).
+    receivedAck: (snippet: string) =>
+      snippet
+        ? `Received ✓ — your last note was shown on the board: “${snippet}…”`
+        : 'Received ✓ — your last note was shown on the board.',
   },
   sinceMorning: {
     title: 'Since this morning',

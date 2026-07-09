@@ -2235,6 +2235,18 @@ export const FR = {
     ttl24h: '24 heures',
     ttl2d: '2 jours',
     ttl7d: '7 jours',
+    // D-18 (bmad/10) « Le pont » — a durable, named, revocable link (any kind).
+    ttlStanding: 'Durable — jusqu’à révocation',
+    standingNameLabel: 'Pour qui ?',
+    standingNamePlaceholder: 'Mamie, Rosalie la gardienne…',
+    standingNameRequired: 'Un nom est requis pour un lien durable.',
+    standingHint:
+      'Ce lien ne s’éteint jamais tout seul. Pour le fermer, reviens ici et touche « Révoquer » dans « Liens actifs ».',
+    noExpiry: 'N’expire pas',
+    revokeStandingConfirm: 'Révoquer ce lien durable ? Il cessera de fonctionner tout de suite, pour de bon.',
+    // E-38 — per-guest locale, rides along with D-18.
+    guestLangLabel: 'Langue du lien',
+    guestLangDefault: 'Comme la maisonnée',
     generate: 'Générer le lien',
     generating: 'Création…',
     linkReady: 'Lien prêt — partage-le. Il ouvre un accès en lecture seule.',
@@ -2247,7 +2259,7 @@ export const FR = {
     revoked: 'Lien révoqué',
     linkExpiresPrefix: 'Expire',
     limitation:
-      'Note : l’accès s’éteint tout seul à la fin de la durée. Il ne peut pas être révoqué avant — garde les durées courtes.',
+      'Note : par défaut, l’accès s’éteint tout seul à la fin de la durée et ne peut pas être révoqué avant. Choisis « Durable » pour un lien nommé qui reste actif jusqu’à ce que tu le révoques.',
     banner: 'Accès invité — lecture seule. Tu peux regarder, mais pas modifier.',
     demoBadge: 'Démo — lecture seule',
   },
@@ -2283,6 +2295,13 @@ export const FR = {
     // The sender typed a name identical to a member's, so the accepted note will be
     // tinted/attributed to that face — surface it so an impersonation is visible first.
     willTintAs: (name: string) => `Nom identique à ${name} — sera affiché comme ${name}.`,
+    // D-18 reçu-✓ (bmad/10) — a quiet confirmation on the sender's NEXT visit that
+    // their last message was accepted. Pull-only, no unread state. `snippet` is empty
+    // for a media-only message (voice/drawing/photo, no written word).
+    receivedAck: (snippet: string) =>
+      snippet
+        ? `Reçu ✓ — ton dernier mot a été affiché sur le babillard : « ${snippet}… »`
+        : 'Reçu ✓ — ton dernier mot a été affiché sur le babillard.',
   },
   // « Depuis ce matin » (A-3, bmad/10) — tap the board greeting for a cold, pull-only
   // peek at today's writes by face. Never a feed: no count, no badge, nothing kept

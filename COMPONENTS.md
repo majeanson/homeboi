@@ -209,7 +209,22 @@ view toggle inside the recipe book (`RecipesTab`): "Aa" = flat alphabetical list
 flat in `RecipesTab`, no sub-tabs. `buildCollections` (in `CollectionPicker.tsx`,
 now just that helper) is still shared with the toddler `KidCollections` flow. The kitchen sub-tabs
 (`DayEditor`, `MealRows`, `PantryTab`, `ReserveSection`, …), and the `operator/*`
-section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19;
+section bodies (incl. `operator/guest.tsx` — the babysitter-access issuer, #19
+[D-18, bmad/10: « Le pont » — any GuestKind can ALSO be minted **standing**: pick
+« Durable — jusqu'à révocation » in the same duration `<select>` instead of a TTL,
+name it (required, `guests.label`), and its only stop is « Révoquer » in « Liens
+actifs » (danger-tone `useConfirm`, since no TTL is coming to close it; a
+« N'expire pas » `Chip` marks it there and on the just-minted link). E-38
+per-guest locale rides along — a language picker appends `&lang=` to the minted
+URL, read once at boot by `main.tsx`'s `?guest=` block. Server side:
+`guests.standing/label/lang` (migration 0107), `auth.ts` `STANDING_TTL` (10-year
+backstop) + the `s:1` token marker, `household.ts` `guestRowAcceptable` (pure —
+DB-requires the row for a standing token, row-optional for a legacy/short-TTL
+one), `guestRate.ts`'s flood cap scales 400 vs 40 for a standing token. Postbox
+reçu-✓: `guest/window.ts`'s postbox branch returns the guest's own last-accepted
+message (by `guest_id`) so `Postbox.tsx` shows one quiet line on the sender's next
+visit (+ the missing `isError → GuestExpired`, so a revoked durable link reads
+correctly instead of a stuck form)];
 `operator/ambient.tsx` — the Réglages ▸ Affichage ▸ Mode veille settings, `lib/ambient.ts`;
 `operator/idleDebug.tsx` — the Réglages ▸ Debug idle tester: shrink the idle
 window to seconds or force the screensaver/warn/drift, via `lib/idleDebug.ts`; and

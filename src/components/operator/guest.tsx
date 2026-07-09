@@ -115,6 +115,16 @@ const DEFAULT_TTL: Record<GuestKind, number> = {
   postbox: 7 * 24 * H,
 }
 
+// D-18 (bmad/10) — « Le pont »: a durable, named, revocable guest. Any kind may be
+// standing (decided) — modelled as one more option in the SAME duration <select> (a
+// sentinel value no real TTL takes; every real TTL is ≥30 min) rather than a second
+// control, so picking it is a one-tap "instead of a duration, pick never". Choosing
+// it reveals the required "Pour qui ?" name + the how-to-revoke hint below.
+const STANDING_SENTINEL = -1
+// E-38 per-guest locale, rides along: 'household' = no override (the default UI
+// language wins for that visitor); 'fr' | 'en' pins the link's own language.
+type GuestLangChoice = 'household' | 'fr' | 'en'
+
 // The operator's still-live share-links, so a leaked/over-shared one can be REVOKED
 // before its TTL (§509). Shared key so minting a fresh link (generate) refreshes it.
 const GUEST_LINKS_KEY = ['guest-links']
@@ -133,9 +143,14 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   // so the pre-selected option can't leak the whole household (REVIEW-PASS §518).
   const [kind, setKind] = useState<GuestKind>('sitter')
   const [ttl, setTtl] = useState(DEFAULT_TTL.sitter)
+  // D-18 — set when `ttl === STANDING_SENTINEL`; the required "Pour qui ?" name for
+  // a standing link (guests.label). E-38 — the per-link locale override.
+  const [standingLabel, setStandingLabel] = useState('')
+  const [guestLang, setGuestLang] = useState<GuestLangChoice>('household')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
+  const [linkStanding, setLinkStanding] = useState(false)
   const [copied, setCopied] = useState(false)
   // For an 'intake' link: the person it's pre-addressed to (null = an open link
   // anyone can fill). Bound into the signed token by the server.
@@ -171,14 +186,21 @@ export function GuestSection({ help }: { help?: HelpMode }) {
 
   function chooseKind(k: GuestKind) {
     setKind(k)
-    setTtl(DEFAULT_TTL[k]) // reset the duration to the kind's sensible default
+    setTtl(DEFAULT_TTL[k]) // reset the duration to the kind's sensible default (never standing)
     setLink(null) // a link minted for the old kind no longer matches the picker
     setTargetKey(null) // the recipient picker only applies to intake
     setTargetText('')
+    setStandingLabel('')
   }
+
+  const standing = ttl === STANDING_SENTINEL
 
   async function generate() {
     if (busy) return
+    if (standing && !standingLabel.trim()) {
+      setErr(t.guest.standingNameRequired)
+      return
+    }
     setBusy(true)
     setErr(null)
     setCopied(false)
@@ -186,15 +208,18 @@ export function GuestSection({ help }: { help?: HelpMode }) {
       const res = await api<{ guestToken: string }>('guest/start', {
         method: 'POST',
         body: {
-          ttlSeconds: ttl,
+          ...(standing ? { standing: true, label: standingLabel.trim() } : { ttlSeconds: ttl }),
           kind,
+          ...(guestLang !== 'household' ? { lang: guestLang } : {}),
           ...(kind === 'intake'
             ? { ...(targetKey ? { targetKey } : {}), fields: encodeIntakeScope(scope) }
             : {}),
         },
       })
       const path = KINDS.find((k) => k.kind === kind)?.path ?? '/board'
-      setLink(`${window.location.origin}${path}?guest=${encodeURIComponent(res.guestToken)}`)
+      const langParam = guestLang !== 'household' ? `&lang=${guestLang}` : ''
+      setLink(`${window.location.origin}${path}?guest=${encodeURIComponent(res.guestToken)}${langParam}`)
+      setLinkStanding(standing)
       // The freshly-minted link now has a guests row — refresh the active-links list.
       void qc.invalidateQueries({ queryKey: GUEST_LINKS_KEY })
     } catch (e) {
@@ -327,6 +352,40 @@ export function GuestSection({ help }: { help?: HelpMode }) {
                 {t.guest[o.key]}
               </option>
             ))}
+            {/* D-18 — a durable link, for any kind: doesn't expire, only revoke closes it. */}
+            <option value={STANDING_SENTINEL}>{t.guest.ttlStanding}</option>
+          </select>
+        </label>
+        <p className="operator__hint mono">{t.guest.limitation}</p>
+
+        {/* Standing: a required name identifies this link in « Liens actifs » — and
+            a prominent reminder of the ONE way to close it (since time no longer will). */}
+        {standing && (
+          <>
+            <label className="operator__seg">
+              <span className="operator__seg-label mono">{t.guest.standingNameLabel}</span>
+              <input
+                className="input"
+                value={standingLabel}
+                onChange={(e) => setStandingLabel(e.target.value)}
+                placeholder={t.guest.standingNamePlaceholder}
+                disabled={busy}
+                maxLength={60}
+              />
+            </label>
+            <StatusMessage tone="info" icon="warning-bold">
+              {t.guest.standingHint}
+            </StatusMessage>
+          </>
+        )}
+
+        {/* E-38 — per-guest locale: rides every kind, not just standing. */}
+        <label className="operator__seg">
+          <span className="operator__seg-label mono">{t.guest.guestLangLabel}</span>
+          <select className="input" value={guestLang} onChange={(e) => setGuestLang(e.target.value as GuestLangChoice)} disabled={busy}>
+            <option value="household">{t.guest.guestLangDefault}</option>
+            <option value="fr">FR</option>
+            <option value="en">EN</option>
           </select>
         </label>
 
@@ -354,7 +413,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
 
         {link && (
           <div className="operator__guest-link">
-            <p className="operator__hint mono">{t.guest.linkReady}</p>
+            <p className="operator__hint mono">
+              {t.guest.linkReady} {linkStanding && <Chip selected>{t.guest.noExpiry}</Chip>}
+            </p>
             <input className="input mono" readOnly value={link} onFocus={(e) => e.target.select()} aria-label={t.guest.title} />
             <div className="operator__inline-form">
               <button type="button" className="btn" onClick={copy}>
@@ -464,6 +525,8 @@ interface GuestLinkRow {
   id: string
   kind: GuestKind
   target_key: string | null
+  standing: number
+  label: string | null
   created_at: number
   expires_at: number
 }
@@ -472,6 +535,7 @@ function ActiveLinksList() {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
+  const confirm = useConfirm()
   const { data } = useQuery({ queryKey: GUEST_LINKS_KEY, queryFn: () => api<{ links: GuestLinkRow[] }>('guest-links') })
   const links = data?.links ?? []
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -479,7 +543,12 @@ function ActiveLinksList() {
   if (links.length === 0) return null
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const kindLabel = (k: GuestKind) => t.guest[KINDS.find((x) => x.kind === k)?.labelKey ?? 'kindShowcase']
-  async function revoke(id: string) {
+  async function revoke(id: string, standing: boolean) {
+    // D-18 — a standing link is the only kind whose SOLE stop is this button (no TTL
+    // is coming to close it), so a confirm gate matches every other danger-tone delete
+    // in this codebase; an ordinary time-boxed link keeps the old one-tap revoke.
+    if (standing && !(await confirm({ message: t.guest.revokeStandingConfirm, confirmLabel: t.guest.revoke, tone: 'danger' })))
+      return
     setBusyId(id)
     try {
       await api('guest-links', { method: 'POST', body: { revokeId: id } })
@@ -499,23 +568,32 @@ function ActiveLinksList() {
         {links.map((l) => (
           <li key={l.id} className="meal-slots__row">
             <span className="meal-slots__name">
-              <strong>{kindLabel(l.kind)}</strong>
+              <strong>
+                {kindLabel(l.kind)}
+                {l.label ? ` — ${l.label}` : ''}
+              </strong>
               <span className="mono meal-slots__label">
                 {' · '}
-                {t.guest.linkExpiresPrefix}{' '}
-                {new Date(l.expires_at * 1000).toLocaleString(loc, {
-                  day: 'numeric',
-                  month: 'short',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {l.standing ? (
+                  <Chip selected>{t.guest.noExpiry}</Chip>
+                ) : (
+                  <>
+                    {t.guest.linkExpiresPrefix}{' '}
+                    {new Date(l.expires_at * 1000).toLocaleString(loc, {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </>
+                )}
               </span>
             </span>
             <button
               type="button"
               className="btn btn--ghost mono"
               disabled={busyId === l.id}
-              onClick={() => revoke(l.id)}
+              onClick={() => void revoke(l.id, !!l.standing)}
             >
               <InlineIcon name="x-bold" /> {t.guest.revoke}
             </button>

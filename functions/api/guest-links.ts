@@ -12,7 +12,7 @@ import { nowSec } from '../_lib/ids'
 // exactly the set worth showing a "revoke" button next to. Expired ones are already dead.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, kind, target_key, created_at, expires_at
+    `SELECT id, kind, target_key, standing, label, created_at, expires_at
        FROM guests
       WHERE household_id = ? AND revoked_at IS NULL AND expires_at > ?
       ORDER BY created_at DESC`,

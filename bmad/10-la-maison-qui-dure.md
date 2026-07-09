@@ -355,17 +355,32 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
 18. ✅ ↻ **« Le pont », version minimale — des proches durables** [M] ◐ —
     _garde (2026-07-08 — Marc: nobody concrete yet, **build the mechanism
     generically**; the 08 revive condition is waived in favour of a generic
-    shape)_ — every relative-facing finding points at the same root: guest
-    links are **stateless and short** (sitter caps at 24 h — a weekly
-    babysitter needs a fresh link every time; grandma's postbox link
-    silently dies within 7 days after she bookmarked it), and a relative who
-    drops a word gets no sign it was ever received. The smallest useful
-    shape: a **named, standing, revocable** guest (« Mamie », « Rosalie la
-    gardienne ») whose link doesn't expire until revoked, whose landing
-    composes what her token allows, with one closing hint when the operator
-    accepts a postbox drop (« reçu ✓ » on her next visit — pull, not push).
-    E-38 per-guest locale rides along as designed. _(reuse: guest-links
-    table + guestScope allowlists, HandoffPage, Postbox, GuestExpired.)_
+    shape)_ — **SHIPPED 2026-07-09** — every relative-facing finding points at
+    the same root: guest links are **stateless and short** (sitter caps at
+    24 h — a weekly babysitter needs a fresh link every time; grandma's
+    postbox link silently dies within 7 days after she bookmarked it), and a
+    relative who drops a word gets no sign it was ever received. The
+    smallest useful shape: a **named, standing, revocable** guest (« Mamie »,
+    « Rosalie la gardienne ») whose link doesn't expire until revoked, whose
+    landing composes what her token allows, with one closing hint when the
+    operator accepts a postbox drop (« reçu ✓ » on her next visit — pull, not
+    push). E-38 per-guest locale rides along as designed. Any `GuestKind` may
+    be minted **standing** (`operator/guest.tsx`: a « Durable — jusqu'à
+    révocation » option in the same duration `<select>` + a required « Pour
+    qui ? » name → `guests.label`); the token stays a stateless HMAC (`s:1`
+    marker, `auth.ts` `STANDING_TTL` 10-year backstop) but is **DB-required**
+    — `household.ts`'s pure `guestRowAcceptable` makes `resolveActor` accept
+    a standing token ONLY when its `guests` row exists and isn't revoked
+    (legacy/short-TTL tokens stay row-optional, unchanged), and
+    `guest/start.ts`'s row insert for a standing mint is **mandatory** (500s
+    rather than hand out an unkillable link). `guestRate.ts`'s flood cap
+    scales 400 (standing) vs 40. Migration `0107_guests_standing`
+    (`standing`/`label`/`lang`). Reçu-✓ is postbox-only: `guest/window.ts`
+    returns the guest's own last-accepted message (by `guest_id`) and
+    `Postbox.tsx` shows one quiet line on the next visit + the missing
+    `isError → GuestExpired` (a revoked durable link now reads correctly).
+    _(reuse: guest-links table + guestScope allowlists, HandoffPage, Postbox,
+    GuestExpired.)_
 19. ✅ **La carte de la gardienne se complète** [S] ◐ — _garde (2026-07-08)_
     — the sitter card is the strongest guest surface in the app, and it
     fails exactly once: when minted over missing data, the sitter's only
