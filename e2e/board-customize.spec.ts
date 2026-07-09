@@ -164,12 +164,15 @@ test.describe('board layout customization', () => {
     await expect(rowFor(page, 'Moments').locator('.board-layout__toggle')).toContainText('Jamais')
   })
 
-  test('« Réorganiser sur le babillard » opens the board’s own editor', async ({ page }) => {
+  test('« Voir dans l’app » on the layout sub opens the board’s own editor', async ({ page }) => {
+    // The old per-section « Réorganiser sur le babillard » button became the
+    // shared « Voir dans l'app » backlink (SUB_GOTO in lib/settingsNav) — same
+    // destination, one pattern for every sub.
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     await openLayout(page)
-    await page.getByRole('link', { name: 'Réorganiser sur le babillard' }).click()
+    await page.locator('.operator__goto').click()
     await expect(page).toHaveURL(/\/board\?edit=1/)
     await expect(page.locator('.board-edit')).toBeVisible()
   })
