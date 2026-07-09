@@ -2,6 +2,7 @@ import { isPastSec, mealSlotPast, useNow } from './itemLife'
 import { localDayStart, addLocalDays } from './localDay'
 import { holidaysOnDay, holidaysInRange, type Holiday } from './year'
 import { SLOT_RANK, type MealSlot } from './mealSlots'
+import { pickNextEventToday, BOARD_NEXTUP } from './ambientScene'
 import type { MealPrefs } from './mealPrefs'
 import type { Lang } from '../i18n'
 import type { BoardData, EventRow, ChoreInstance, MealRow, DayMealRow, WorkRow } from '../components/board/types'
@@ -27,11 +28,20 @@ import type { BoardData, EventRow, ChoreInstance, MealRow, DayMealRow, WorkRow }
 // a second clock out of step with the board's `useNow()`; folded into one here).
 // Lens-side (NOT here) = JSX, pictos, greeting, speak, peek wiring, per-device card
 // visibility (`lib/boardCards`).
+//
+// `pickNextEventToday`/`BOARD_NEXTUP` (lib/ambientScene, C-13 bmad/10) are the one
+// shared "what's next" selector the screensaver/cast ambient scene also ride —
+// `pickNextEventToday` itself is a plain pure function (no React needed to call
+// it); `buildBoardModel` stays exhaustively unit-testable without a DOM.
 
 // The « Prochainement » / SimpleBoard "next up" grace window — an event that
 // started up to this many seconds ago still counts as "next" (it's happening
-// right now). Was the literal `1800` spelled twice (Board.tsx + SimpleBoard.tsx).
-export const NEXT_UP_GRACE_SEC = 1800
+// right now). Was the literal `1800` spelled twice (Board.tsx + SimpleBoard.tsx);
+// now DERIVED from lib/ambientScene's `BOARD_NEXTUP` preset (C-13, bmad/10) — the
+// one place `pickNextEventToday`'s board-flavoured grace window is defined — kept
+// exported here unchanged since 53 existing tests + callers already import it
+// from this module.
+export const NEXT_UP_GRACE_SEC = BOARD_NEXTUP.graceSec
 
 export interface ModelEvent extends EventRow {
   // Only meaningful for TODAY's timed events — an all-day/fête/future item is
@@ -207,10 +217,9 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
 
   // « Prochainement » — the soonest still-to-come timed event today, after the
   // face lens + fête merge, on the SAME clock (nowSec, derived from input.nowMs —
-  // not a second, independent Date.now() read).
-  const nextUp =
-    [...todayEvents].filter((e) => !e.all_day && e.start_at >= nowSec - NEXT_UP_GRACE_SEC).sort((a, b) => a.start_at - b.start_at)[0] ??
-    null
+  // not a second, independent Date.now() read). The selector itself is shared with
+  // the screensaver/cast ambient scene (C-13, bmad/10) — see lib/ambientScene.
+  const nextUp = pickNextEventToday(todayEvents, nowSec, BOARD_NEXTUP)
 
   // « Le fil du jour » partition — timed events + work windows on the axis;
   // chores + all-day events pool under « À tout moment ».

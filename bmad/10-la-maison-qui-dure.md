@@ -262,14 +262,41 @@ points, no badges, no push, no counts, no feeds. Nothing below adds one.
     the class of "the kid board disagrees with the parent board" bugs and
     makes every future card one change instead of three. _(reuse: pure
     refactor inside Board.tsx + SimpleBoard.)_
-13. ✅ **Un seul moteur ambiant** [M] ◐ — _garde (2026-07-08)_ — the
+13. ✅ **Un seul moteur ambiant** [M] ◐ — **SHIPPED 2026-07-08** — _garde
+    (2026-07-08)_ — the
     screensaver (AmbientScreen), the cast ambient scene, and the board's
     all-clear wonder-photo hero are three renderings of "the house at
     rest," each with its own next-up logic. Fold into one ambient-scene
     provider that all three consume. (09's B-7 verdict stands untouched: the
     mosaic stays un-curated — this unifies plumbing, never content.)
     _(reuse: lib/ambient.ts as the home; PhotoMosaic, CAST_SCENES,
-    WonderBand stay the faces.)_
+    WonderBand stay the faces.)_ **Landed as:** new pure
+    `src/lib/ambientScene.ts` — `pickNextEventToday(events, nowSec, opts)`
+    (generic over any event-shaped row) with the two decided presets kept
+    side by side, `SAVER_NEXTUP` (`{includeAllDay:true, graceSec:0}` — an
+    all-day fête still counts as "next" on the idle screen) and
+    `BOARD_NEXTUP` (`{includeAllDay:false, graceSec:1800}` — the live
+    board's timed-only 30-min grace); `breathAt(nowMs)`/`burnInDrift(nowMs)`
+    extracted byte-for-byte from the pre-refactor `AmbientScreen` (F-47/E-37,
+    locked by exact-value tests); `useAmbientScene(active)` — the one hook
+    replacing AmbientScreen's own clock ticker + `/api/board`+`/api/routines`
+    query pair + next/meal/routine selection, 10 s tick gated on `active`,
+    re-seeded on activation, deliberately NOT the shared `live` query
+    options (an idle screensaver must not join the realtime-poll pool on
+    free tier). `AmbientScreen.tsx` (covers both the kiosk screensaver AND
+    the cast ambient face, which already reused it) now just calls the hook
+    — render is unchanged. `boardModel.ts`'s inline « Prochainement »
+    selector now calls `pickNextEventToday(todayEvents, nowSec,
+    BOARD_NEXTUP)`; its public `NEXT_UP_GRACE_SEC` (53 existing tests pin it)
+    is DERIVED from `BOARD_NEXTUP.graceSec` rather than the reverse, so the
+    two modules stay import-acyclic (`boardModel.ts` → `ambientScene.ts`
+    only) while the `1800` stays a single literal. `dayClear`/`kidAllClear`
+    stayed put in `boardModel.ts` (never migrated). Zero behaviour change —
+    all 54 `boardModel.test.ts` cases pass unmodified; new
+    `ambientScene.test.ts` (14 cases: next-up presets' grace/all-day
+    boundaries, exact-value breath/drift pins, the 5×5 burn-in loop). e2e:
+    `/cast?scene=ambient` added to `scenes.spec.ts`'s scene sweep; a
+    `.ambient__next` assertion added to `idle-ambient.spec.ts`.
 14. ✅ **Un seul tiroir d'idées-repas** [M] ◐ — _garde (2026-07-08)_ —
     "what's for supper" is answered by four+ pools (AI ideas, book ideas,
     vide-frigo, the kept-ideas pool, leftovers-to-plan, toddler

@@ -27,6 +27,10 @@ test('forcing the idle timer shows the ambient screensaver', async ({ page }) =>
   await expect(saver).toBeVisible()
   // The full-screen clock is the calm centrepiece.
   await expect(saver.locator('.ambient__clock')).toBeVisible()
+  // C-13 (bmad/10): the "next up" line (tonight's supper, via useAmbientScene /
+  // lib/ambientScene) — the mocked board always has a `tonight` meal, so this
+  // is the ONE ambient engine seam actually reaching the screensaver's render.
+  await expect(saver.locator('.ambient__next').first()).toBeVisible()
 })
 
 test('tapping the screensaver wakes back to the board', async ({ page }) => {

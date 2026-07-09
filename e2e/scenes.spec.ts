@@ -35,6 +35,10 @@ const SCENES: Scene[] = [
   // (.cast pointer-events:none, no hub chrome → no FAB). Must render the mocked board
   // without crashing or overflowing at any size (it's shown full-screen on a TV).
   { name: 'cast', path: '/cast' },
+  // The cast "second screen" ambient face (C-13, bmad/10) — same <AmbientScreen/> the
+  // kiosk screensaver uses, permanently shown (no idle timer on a TV). Must render at
+  // every size without overflowing, same as the board scene above.
+  { name: 'cast-ambient', path: '/cast?scene=ambient' },
   { name: 'departure', path: '/board/departure' },
   { name: 'jouer', path: '/jouer', audience: 'toddler' },
   { name: 'search', path: '/search' },
@@ -62,10 +66,11 @@ for (const format of FORMATS) {
       await mockApi(page)
       await seedState(page, { theme: 'day', audience: scene.audience ?? 'parent', lang: 'fr', calm: true, surface: format.surface })
       await page.goto(scene.path)
-      // Scenes render standalone (no .hub); wait for the common scene shells. A scene
-      // that needs data it lacks may show its own empty state — still a valid layout
-      // to check — so don't hard-fail on a missing root, just settle.
-      await page.locator('.scene, .cook, main, .page').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
+      // Scenes render standalone (no .hub); wait for the common scene shells (`.ambient`
+      // is the cast/kiosk ambient face, C-13). A scene that needs data it lacks may show
+      // its own empty state — still a valid layout to check — so don't hard-fail on a
+      // missing root, just settle.
+      await page.locator('.scene, .cook, main, .page, .ambient').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
       await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
       await page.waitForTimeout(600)
       await page.screenshot({ path: `e2e/screenshots/scene-${scene.name}-${format.name}.png`, fullPage: true })

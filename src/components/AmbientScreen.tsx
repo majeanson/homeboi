@@ -1,11 +1,8 @@
-import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
-import { api } from '../lib/api'
-import { BOARD_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { formatTime, formatDayLong, capitalize as cap } from '../lib/format'
 import { useAmbient } from '../lib/ambient'
-import { pickMomentRoutine, TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
+import { useAmbientScene } from '../lib/ambientScene'
+import { TOD_ICON, TOD_TINT, isRoutineTod } from '../lib/routineTod'
 import { Companion } from './Companion'
 import { isCompanion } from '../lib/companions'
 import { useMealPrefs } from '../lib/mealPrefs'
@@ -21,86 +18,20 @@ import type { CSSProperties } from 'react'
 // Réglages ▸ Affichage). HubLayout owns the idle timer + the `show` flag and the
 // wake (any pointer/key reset hides it); this is just the calm full-screen face.
 // Renders nothing when hidden, so it's free while tucked away.
-interface BoardEvent {
-  id: string
-  title: string
-  start_at: number
-  all_day: number
-}
-interface BoardMeal {
-  id: string
-  title: string
-}
-interface RoutineRow {
-  id: string
-  name: string
-  timeOfDay: string | null
-  color: string | null
-  cards: { icon?: string }[]
-  companion?: string | null
-}
-
+//
+// « Un seul moteur ambiant » (C-13, bmad/10): the clock/next-up/meal/routine/
+// breath/drift are ALL supplied by `useAmbientScene` (lib/ambientScene) — the one
+// seam this component and the cast ambient face (which renders this same
+// component, see CastPage.tsx) both ride, instead of each carrying its own ticker
+// + next-up selector.
 
 export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => void }) {
   const a = useAmbient()
   const t = useT()
   const { lang } = useLang()
   const mealPrefs = useMealPrefs()
-
-  // A gentle minute clock — tick every 10 s so the displayed HH:MM is never stale
-  // by more than a few seconds, without a per-second re-render on the wall.
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    if (!show) return
-    setNow(Date.now())
-    const id = setInterval(() => setNow(Date.now()), 10_000)
-    return () => clearInterval(id)
-  }, [show])
-
-  // Next event still to come today, from the already-cached board frame (no extra
-  // load on a fresh kiosk — the board polls this anyway).
-  const { data } = useQuery({
-    queryKey: BOARD_KEY,
-    queryFn: () => api<{ today: BoardEvent[]; tonight: BoardMeal | null }>('board'),
-    enabled: show && a.showNext,
-  })
-  const nowSec = Math.floor(now / 1000)
-  const next =
-    a.showNext
-      ? [...(data?.today ?? [])]
-          .filter((e) => e.all_day === 1 || e.start_at >= nowSec)
-          .sort((x, y) => x.start_at - y.start_at)[0]
-      : undefined
-  // Tonight's supper rides on the same board frame — the most glanceable "what's
-  // next" on a wall at rest, alongside the next event. (#4: next up = meal + event.)
-  const meal = a.showNext ? data?.tonight ?? undefined : undefined
-
-  // #4 (last leg): the routine that fits the moment — morning routines at morning,
-  // bedtime in the evening — so a kid glancing at the wall sees what's coming. Its
-  // own query (only while the screensaver is up, so the board poll stays lean), the
-  // same ROUTINES_KEY cache the Routines tab fills. todRank orders by the current
-  // time-of-day; we take the best-ranked routine that actually has cards. Calm: a
-  // cue, never a nag — it just surfaces, it doesn't blink or count.
-  const { data: rdata } = useQuery({
-    queryKey: ROUTINES_KEY,
-    queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
-    enabled: show && a.showNext,
-  })
-  const routine = a.showNext ? pickMomentRoutine(rdata?.routines ?? [], now) : undefined
-
-  // F-47: the hourly breath — the top-of-the-hour tick (10 s granularity) lands
-  // inside the first ~20 s of minute :00, adding a class that plays the one slow
-  // 2 s scale (CSS animation, once; prefers-reduced-motion drops it entirely).
-  const d = new Date(now)
-  const breath = a.hourlyBreath && d.getMinutes() === 0 && d.getSeconds() < 20
-  // E-37 burn-in care: an always-on pixel drift for the always-on panel — the
-  // static clock/date/next block wanders a few px through a 5×5 grid, one step
-  // per minute (full loop ≈ 25 min), so no glyph parks on the same pixels for
-  // hours. Imperceptible (±4 px, eased in CSS); not a setting — it's furniture
-  // care, like the deepened night veil.
-  const drift = d.getHours() * 60 + d.getMinutes()
-  const driftX = ((drift % 5) - 2) * 2
-  const driftY = ((Math.floor(drift / 5) % 5) - 2) * 2
+  const { now, nowSec, next, meal, routine, breath, drift } = useAmbientScene(show)
+  const { x: driftX, y: driftY } = drift
 
   if (!show) return null
   // Wake without leaking the gesture into the app underneath: preventDefault on the
