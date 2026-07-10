@@ -450,6 +450,20 @@ progress is derived at read time, per habit — no `streak`/`points`/`badge` col
 another. A limit gone over reads « C'est noté » on a terracotta spine — never a red row.
 `HabitRow`/`HabitControls`/`HabitHistory`/`ReminderTimesField` stay feature-local (not shared primitives).
 
+**`DefiBlock`** (`components/habits/DefiBlock.tsx`) — « Le défi du jour »: the ONE
+day-long family-défi surface, mounted by both the board `HabitudesCard` and « Le point
+du jour » (`HabitudesPage`) so the two never drift. Draws a défi from the ~500-entry
+bilingual deck (`lib/defiDeck.ts`, offline-first `pigeDefi` with a recent-window
+exclude), re-rolls up to three times (« la troisième est la bonne »), commits it
+(`useCommitDefi`), then lets each picked FACE check it off (`useToggleDefiMark` →
+`.defi-block__mark`) with the marked faces shown as an overlapping `Avatar` cluster —
+**never a count** (the chore-ledger rule). Rides `habits` end-to-end: the défi is one
+standing `kind='defi'` household habit (hidden from every habit list by
+`visibleHabits`/`dueToday`/`month.ts`), today's text lives on its `habit_days.note`,
+per-face marks are `habit_marks` (mig 0115). A guest sees a committed défi read-only
+(can't pige). The toddler lens renders it as a hear-first `BigTile` in `ToddlerBoard`.
+Styles: the global `.defi-block` family in `styles/board/habitudes-card.css`.
+
 ---
 
 ## CSS design system (condensed)

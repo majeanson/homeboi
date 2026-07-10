@@ -13,7 +13,8 @@ import { weatherIcon, weatherTint, weatherTip, type Weather } from '../../lib/we
 import { useProfile } from '../../lib/profile'
 import { isGuest } from '../../lib/device'
 import { useMots, waitingMots, type Mot } from '../../lib/mots'
-import { useHabits, dueToday, habitReading, habitStatusOn, habitToday } from '../../lib/habits'
+import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi, faceTriedDefi, useToggleDefiMark } from '../../lib/habits'
+import { localizeDefi } from '../../lib/defiDeck'
 import type { BoardModel } from '../../lib/boardModel'
 import type { Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type EventRow, type MealRow } from './types'
@@ -128,6 +129,29 @@ export function ToddlerBoard({
       color: h.colour ?? memberColor(h.member_id) ?? undefined,
     }
   })
+
+  // « Le défi du jour » (D8) — the committed day-long family défi as ONE hear-first
+  // tile: tap to hear it, tap again to check it off for the picked face (« Je l'ai
+  // tenu ! »). Pre-readers don't draw the défi (a parent does, on the board card /
+  // scene); this lens only lets them hear it and mark it. No face picked (or a
+  // guest) → speak-only. Never a count (calm).
+  const committedDefi = todaysDefi(habitsData, habitsToday)
+  const toggleDefiMark = useToggleDefiMark()
+  const defiText = committedDefi ? localizeDefi(committedDefi.text, lang) : ''
+  const defiTried = committedDefi ? faceTriedDefi(habitsData?.marks, committedDefi.habit.id, habitsToday, face) : false
+  const defiTiles: Tile[] = committedDefi
+    ? [
+        {
+          key: 'defi',
+          icon: '🎯',
+          label: defiText,
+          narration: defiText,
+          done: defiTried,
+          onTap: face && !isGuest() ? () => toggleDefiMark(committedDefi.habit.id, habitsToday, !defiTried) : undefined,
+          confirmHint: t.habits.defi.tried,
+        },
+      ]
+    : []
 
   const eventTiles = (rows: EventRow[]): Tile[] =>
     rows.map((e) => ({
@@ -310,6 +334,7 @@ export function ToddlerBoard({
           {/* « Mes habitudes » — what today is still asking (« brosse tes dents »),
               read aloud. Same face filter + reading as the parent card; self-hides
               when nothing is due. A parent marks them in « Le point du jour ». */}
+          {defiTiles.length > 0 && kidSection(t.habits.defi.title, defiTiles)}
           {kidSection(t.habits.title, habitTiles)}
           {data.tomorrowNote && (
             <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />

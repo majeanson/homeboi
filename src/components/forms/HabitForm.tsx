@@ -37,7 +37,10 @@ import {
 //   • « Aux X heures »       — moments spaced through a waking window, which also
 //     become the habit's reminder times (so the hand-typed list steps aside).
 
-const KINDS: HabitKind[] = ['do', 'count', 'limit', 'avoid']
+// The four kinds the FORM offers — 'defi' is a system-created standing habit
+// (« Le défi du jour »), never authored here, so it's excluded (and its narrowed
+// tuple type keeps `fn.kind[k]` indexable, which the full HabitKind isn't).
+const KINDS = ['do', 'count', 'limit', 'avoid'] as const
 const CADENCES: HabitCadence[] = ['recur', 'week', 'day', 'hours']
 
 export function HabitForm({

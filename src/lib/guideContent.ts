@@ -1113,6 +1113,17 @@ export const GUIDE: GuideEntry[] = [
     },
     points: [
       {
+        label: { fr: 'Le défi du jour', en: 'Today’s challenge' },
+        detail: {
+          fr: 'Un petit défi qui dure toute la journée — « porte du jaune », « salue une nouvelle personne ». Le matin, on en pige un (jusqu’à trois fois : la troisième est la bonne), puis chacun le coche quand il l’a tenu. Les visages qui l’ont relevé s’allument sur le babillard.',
+          en: 'A little challenge that lasts all day — “wear something yellow”, “greet someone new”. In the morning you draw one (up to three times: the third is the keeper), then each person checks it off once they’ve done it. The faces who took it on light up on the board.',
+        },
+        why: {
+          fr: 'Une invitation, jamais un devoir : rien n’est compté, rien n’est classé, et un jour sans défi reste un jour tout à fait normal.',
+          en: 'An invitation, never a duty: nothing is counted, nothing is ranked, and a day with no challenge is a perfectly normal day.',
+        },
+      },
+      {
         label: { fr: 'Quatre genres d’habitude', en: 'Four kinds of habit' },
         detail: {
           fr: '« Faire » (marcher) se coche. « Compter » monte vers un objectif (8 verres d’eau). « Limiter » se compte sous un maximum (5 cigarettes). « Éviter » se confirme : Tenu, ou un petit écart.',

@@ -717,6 +717,13 @@ export async function mockApi(
   // (a plain field-edit PATCH, not a day mark), so the check-in refetch confirms
   // the resume instead of reverting to the fixture's static `archived: true`.
   const resumedHabits = new Set<string>()
+  // « Le défi du jour » (migration 0115): the committed défi text for today + the
+  // faces that checked it off. The défi is a standing kind='defi' habit; its text
+  // rides a habit_days.note and who-tried-it lives in `marks`. Null until a défi is
+  // drawn, so specs that never touch it see the fixture unchanged.
+  const DEFI_ID = 'defidaily'
+  let defiText: string | null = null
+  const defiMarks = new Set<string>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -792,6 +799,24 @@ export async function mockApi(
             if (body.archived) resumedHabits.delete(body.id)
             else resumedHabits.add(body.id)
           }
+          // « Le défi du jour » — a per-face check-in toggle. The acting face rides
+          // the X-Profile header (like the real server's profileMemberId).
+          if (body.defiMark) {
+            const face = route.request().headers()['x-profile']
+            if (face) {
+              if (body.defiMark.on) defiMarks.add(face)
+              else defiMarks.delete(face)
+            }
+          }
+        } catch {
+          /* no body */
+        }
+      }
+      // « Le défi du jour » — commit today's drawn/typed défi (POST { defi: {text} }).
+      if (method === 'POST' && path === 'habits') {
+        try {
+          const body = JSON.parse(route.request().postData() || '{}')
+          if (body.defi?.text) defiText = String(body.defi.text)
         } catch {
           /* no body */
         }
@@ -897,9 +922,23 @@ export async function mockApi(
     // The check-in read serves this session's day marks + any « Reprendre », so a
     // tap survives the refetch that follows it (the same trick as the board's list
     // checks above).
-    if (path === 'habits' && (habitDays.size || resumedHabits.size)) {
-      const habits = HABITS.habits.map((h) => (resumedHabits.has(h.id) ? { ...h, archived: false } : h))
-      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ ...HABITS, habits, days: [...habitDays.values()] }) })
+    if (path === 'habits' && (habitDays.size || resumedHabits.size || defiText || defiMarks.size)) {
+      const habits: Record<string, unknown>[] = HABITS.habits.map((h) => (resumedHabits.has(h.id) ? { ...h, archived: false } : h))
+      const days: Record<string, unknown>[] = [...habitDays.values()]
+      const marks: { habit_id: string; day: number; member_id: string }[] = []
+      // « Le défi du jour »: append the standing kind='defi' habit + today's text
+      // (a habit_days.note, value 1) + the faces that checked it off.
+      if (defiText) {
+        habits.push({
+          id: DEFI_ID, member_id: null, title: 'Le défi du jour', icon: '🎯', colour: null,
+          kind: 'defi', target: null, unit: '', cadence: 'recur', recur: null, week_times: null,
+          day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [],
+          position: 99, archived: false, due_days: [],
+        })
+        days.push({ habit_id: DEFI_ID, day: HABITS.today, value: 1, slips: 0, member_id: null, note: defiText })
+      }
+      for (const face of defiMarks) marks.push({ habit_id: DEFI_ID, day: HABITS.today, member_id: face })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ ...HABITS, habits, days, marks }) })
       return
     }
 

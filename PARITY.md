@@ -94,7 +94,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F3  | À compléter (todos)                     | todos, todo_templates (0046/0047)              | todos, todo-templates                     | todos/\*, TodoSection                                                     | TODOS, TODO_TEMPLATES |
 | F4  | Notes frigo (texte/audio/dessin/photo)  | notes (0018, media trio 0043/0055)             | notes, note-media                         | board/Notes, MemoControls, DrawPad                                        | BOARD                 |
 | F5  | Mots (« Laisse un mot »)                | mots (0094/0095)                               | mots                                      | MotsCard, mots/\*                                                         | MOTS                  |
-| F6  | Mes habitudes                           | habits, habit_days (0112)                      | habits                                    | HabitudesPage, HabitFormPage, habits/\*, HabitudesCard                    | HABITS                |
+| F6  | Mes habitudes (+ « Le défi du jour »)   | habits, habit_days (0112), habit_marks (0115)  | habits                                    | HabitudesPage, HabitFormPage, habits/\*, HabitudesCard, DefiBlock         | HABITS                |
 | F7  | Photos / cadre                          | photos (0006)                                  | photos                                    | operator/photos, AmbientScreen                                            | PHOTOS                |
 | F8  | Dessins (galerie)                       | drawings (0056)                                | drawings                                  | DrawingGalleryPage, DrawPad                                               | DRAWINGS              |
 | F9  | Capture (＋ / AddSheet / partage PWA)   | captures                                       | capture, ask, transcribe, a-regler        | AddSheet, AskSheet, CaptureForm, QuickAddPage, /share                     | A_REGLER              |
@@ -435,6 +435,25 @@ Footnotes (verdicts recorded so far):
     meal; recorded in that NOTE block in `adapters.ts`. No code behaviour change (a comment +
     the matrix verdict); typecheck + 1436 unit tests green. **D2 now carries zero ❌ — every
     peek cell is a ✅ or a written ➖.** [F6×D2]
+58. **« Le défi du jour » SHIPPED 2026-07-10** — a day-long family défi (« porte du jaune »,
+    « salue une nouvelle personne ») added to F6, front of `HabitudesCard` + « Le point du
+    jour » + the toddler board, via the shared **`DefiBlock`** (one surface, two mounts). It
+    **rides `habits` end-to-end** rather than a new feature: the défi is one standing
+    `kind='defi'` household habit (excluded from every habit list by `visibleHabits`/`dueToday`/
+    `month.ts`), today's text lives on its `habit_days.note`, and per-face check-ins are the
+    single new table **`habit_marks` (mig 0115)** — the `task_participants` shape. Deck of ~500
+    bilingual défis in `src/lib/defiDeck.ts` (offline-first pige with a recent-window exclude;
+    optional AI `suggest-defi` deferred). **Keeps F6 gap-free:** D1 commit/mark/un-mark
+    (`useCommitDefi`/`useToggleDefiMark`), D3 light un-mark (toggle), D4 `useWrite`, D5 the
+    existing `habits` `PATH_KEYS`, D6 already-indexed by title (footnote 51), **D8 a hear-first
+    toddler BigTile** (tap to hear, tap to check off), D12 **marks shown as faces, never a
+    count** (the chore-ledger rule; `member` deletion detaches via `habit_marks` cleanup in
+    `_lib/members`), D14 ➖ (no media — the optional « preuve en photo » deferred), D2 ➖ (shows
+    in place, no separate peek — as footnote 57). **The card no longer wraps everything in one
+    `<Link to>`** (a `<button>` inside `<Link>` is invalid) — the défi block keeps its buttons,
+    and only the habits list navigates (`.habitudes-card__open`), so footnote 57's peek verdict
+    stands. Calm test + 1446 unit tests + `e2e/defi.spec.ts` (3 tests) + habits/overflow sweeps
+    green. Guide: merged a point into the `habits` card (`lib/guideContent.ts`). [F6×D1/D8/D12]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

@@ -172,6 +172,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .bind(from, to, actor.householdId)
     .all<{ habit_id: string; day: number; value: number; slips: number; member_id: string | null; note: string }>()
 
+  // « Le défi du jour » per-face check-ins (migration 0115). Same window as `days`;
+  // a mark is one FACE that tried today's défi — never a count (the chore-ledger rule).
+  const marks = await ctx.env.DB.prepare(
+    `SELECT habit_id, day, member_id FROM habit_marks
+      WHERE day >= ? AND day < ?
+        AND habit_id IN (SELECT id FROM habits WHERE household_id = ? AND deleted_at IS NULL)
+      ORDER BY day`,
+  )
+    .bind(from, to, actor.householdId)
+    .all<{ habit_id: string; day: number; member_id: string | null }>()
+
   const habits = rows.results.map((h) => {
     // Scheduled habits get concrete due days over the window (birthdays-style
     // derive-on-read). Every other cadence has no fixed days by definition: a week
@@ -204,7 +215,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   })
 
-  return ok({ habits, days: days.results, today })
+  return ok({ habits, days: days.results, marks: marks.results, today })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
@@ -224,7 +235,58 @@ export const onRequestPost = authed(async (ctx, actor) => {
     windowEnd?: number
     reminders?: unknown
     memberId?: string | null
+    defi?: { text?: string; title?: string }
   }>(ctx.request)
+
+  // « Le défi du jour » — commit today's drawn/typed défi. The défi is one standing
+  // household habit (kind='defi', created lazily here, one per household); the chosen
+  // text lives on that habit's habit_days.note for today. Re-rolls never reach the
+  // server — only the accepted défi is written. See migration 0115.
+  if (body?.defi) {
+    const text = String(body.defi.text ?? '').trim().slice(0, NOTE_CAP)
+    if (!text) return badRequest('Défi requis.')
+    const today = localDayStart(new Date(Date.now()))
+
+    let habitId = (
+      await ctx.env.DB.prepare(
+        "SELECT id FROM habits WHERE household_id = ? AND kind = 'defi' AND deleted_at IS NULL LIMIT 1",
+      )
+        .bind(actor.householdId)
+        .first<{ id: string }>()
+    )?.id
+    if (!habitId) {
+      habitId = newId()
+      const pos = await ctx.env.DB.prepare(
+        'SELECT COALESCE(MAX(position), 0) + 1 AS p FROM habits WHERE household_id = ? AND deleted_at IS NULL',
+      )
+        .bind(actor.householdId)
+        .first<{ p: number }>()
+      // A daily 'recur' (null rule) so it's "today's thing" — but kind='defi' keeps it
+      // OUT of the check-in list, the board's due list and the calendar (all filter it):
+      // it renders only as the board's pinned défi. Title is a stored fallback; every
+      // surface shows the localized header + the day's text, never this string.
+      await ctx.env.DB.prepare(
+        `INSERT INTO habits (id, household_id, member_id, title, icon, colour, kind, target, unit,
+                             cadence, recur_json, week_times, day_times, every_hours, window_start, window_end,
+                             anchor_at, reminders_json, position, created_at)
+         VALUES (?, ?, NULL, ?, '🎯', NULL, 'defi', NULL, '', 'recur', NULL, NULL, NULL, NULL, NULL, NULL, ?, '[]', ?, ?)`,
+      )
+        .bind(habitId, actor.householdId, (body.defi.title ?? 'Le défi du jour').trim().slice(0, TITLE_CAP), nowSec(), pos?.p ?? 1, nowSec())
+        .run()
+    }
+
+    // Today's défi text rides the habit_days.note; value=1 marks "there is a défi
+    // today". member_id records who drew it (attribution, soft ref).
+    await ctx.env.DB.prepare(
+      `INSERT INTO habit_days (id, habit_id, day, value, slips, member_id, note, updated_at)
+       VALUES (?, ?, ?, 1, 0, ?, ?, ?)
+       ON CONFLICT(habit_id, day) DO UPDATE SET
+         value = 1, note = excluded.note, member_id = excluded.member_id, updated_at = excluded.updated_at`,
+    )
+      .bind(newId(), habitId, today, profileMemberId(ctx.request), text, nowSec())
+      .run()
+    return ok({ ok: true, id: habitId, day: today })
+  }
 
   const title = body?.title?.trim().slice(0, TITLE_CAP)
   if (!title) return badRequest('Titre requis.')
@@ -305,6 +367,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     memberId?: string | null
     archived?: boolean
     position?: number
+    defiMark?: { day?: number; on?: boolean }
   }>(ctx.request)
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
@@ -316,6 +379,31 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .first<{ id: string; kind: string; cadence: string }>()
   if (!habit) return notFound('Habitude introuvable.')
   const now = nowSec()
+
+  // --- « Le défi du jour » per-face check-in (« Je l'ai tenu ! ») -------------
+  // One mark per FACE per day (idempotent). Requires a picked face — a mark is
+  // always someone's, never the anonymous « Maisonnée ». See migration 0115.
+  if (body?.defiMark) {
+    const member = profileMemberId(ctx.request)
+    if (!member) return badRequest('Choisis un visage.')
+    const today = localDayStart(new Date(Date.now()))
+    const day = Math.round(Number(body.defiMark.day))
+    if (!Number.isFinite(day) || day > today) return badRequest('Jour hors fenêtre.')
+    if (body.defiMark.on) {
+      await ctx.env.DB.prepare(
+        `INSERT INTO habit_marks (id, habit_id, day, member_id, note, created_at)
+         VALUES (?, ?, ?, ?, '', ?)
+         ON CONFLICT(habit_id, day, member_id) DO NOTHING`,
+      )
+        .bind(newId(), id, day, member, now)
+        .run()
+    } else {
+      await ctx.env.DB.prepare('DELETE FROM habit_marks WHERE habit_id = ? AND day = ? AND member_id = ?')
+        .bind(id, day, member)
+        .run()
+    }
+    return ok({ ok: true })
+  }
 
   // --- The day mark (the check-in tap) ---------------------------------------
   if (body?.mark) {

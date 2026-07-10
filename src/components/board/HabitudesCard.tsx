@@ -1,20 +1,23 @@
+import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
+import { isGuest } from '../../lib/device'
 import { useProfile } from '../../lib/profile'
-import { useHabits, dueToday, habitReading, habitStatusOn, habitToday } from '../../lib/habits'
+import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi } from '../../lib/habits'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
+import { DefiBlock } from '../habits/DefiBlock'
 
-// The board's « Mes habitudes » glance — a door to « Le point du jour », and a
-// reading of what today is still asking. Each habit still due is named with the
-// same quiet line the check-in row uses (« 0 sur 2 verres »), so the card answers
-// at a glance instead of only promising that something waits.
+// The board's « Mes habitudes » glance — now fronted by « Le défi du jour » (the
+// day-long family défi anyone can try), with the habits still asking today below it.
+// Each habit is named with the same quiet line the check-in row uses (« 0 sur 2
+// verres »), so the card answers at a glance instead of only promising.
 //
 // Privacy is the face filter, not a blur: `dueToday` shows the maisonnée's habits
-// plus the PICKED face's own — never another member's. Standing at the tablet as
-// « Maisonnée » you see only household habits; picking your face shows yours, the
-// same set the check-in scene names. Never a count, never a rank.
+// plus the PICKED face's own — never another member's. Never a count, never a rank.
 //
-// Self-hides when nothing is asking today (calm: the day empties and stays empty).
+// Self-hides only when there is NOTHING to offer: no défi committed, no habit due,
+// and the device can't pige (a guest). An operator/kiosk always sees at least the
+// défi's « Pige un défi » invitation — the whole point of the card.
 export function HabitudesCard() {
   const t = useT()
   const fn = t.habits
@@ -27,40 +30,54 @@ export function HabitudesCard() {
   const habits = data?.habits ?? []
   const days = data?.days ?? []
   const due = dueToday(habits, days, face, today)
-  // Tell the slot BEFORE returning null: a null render is indistinguishable from a card
-  // that is still loading, and the slot has to know which (lib/useReportEmpty).
-  const empty = due.length === 0
+
+  // The défi surface shows for anyone who can pige (operator/kiosk) or whenever a
+  // défi is already committed today (a guest sees it read-only). Only when there is
+  // no défi AND nothing can pige AND no habit is due does the card fall away.
+  const defi = todaysDefi(data, today)
+  const canPige = !isGuest()
+  const empty = !defi && !canPige && due.length === 0
+  // Tell the slot BEFORE returning null (lib/useReportEmpty): a null render is
+  // indistinguishable from a card that is still loading.
   useReportEmpty(empty)
   if (empty) return null
 
   return (
     <BoardCard
-      to="/board/habitudes"
       className="habitudes-card"
       icon="repeat-bold"
       label={fn.title}
       ariaLabel={fn.checkin}
-      // Compact: name the habits still asking, exactly as the rows below do — the card's
-      // whole point is that it names what's left rather than promising it. Falls back to
-      // the count when there are more than a tile can hold. Never per-person, never a
-      // streak or a rank (calm).
+      // Compact: name the habits still asking, exactly as the rows below do. Never
+      // per-person, never a streak or a rank (calm). The défi is a full-lens feature.
       compactItems={due.map((h) => h.title)}
-      compactHint={String(due.length)}
+      compactHint={due.length ? String(due.length) : fn.defi.title}
     >
-      <ul className="habitudes-card__list">
-        {due.map((h) => {
-          const reading = habitReading(h, habitStatusOn(h, days, today), fn)
-          return (
-            <li key={h.id} className="habitudes-card__row">
-              <span className="habitudes-card__ico" aria-hidden="true">
-                {h.icon || '•'}
-              </span>
-              <span className="habitudes-card__title">{h.title}</span>
-              {reading && <span className="habitudes-card__sub mono">{reading}</span>}
-            </li>
-          )
-        })}
-      </ul>
+      {/* « Le défi du jour » — the shared défi surface (also mounted in « Le point
+          du jour »). Its own buttons are why this card no longer wraps everything in
+          a Link (a nested <button> inside <Link> is invalid). */}
+      <DefiBlock payload={data} today={today} />
+
+      {/* The habits still asking today. Wrapped in its own Link so tapping the list
+          still opens « Le point du jour » — the défi block above keeps its buttons. */}
+      {due.length > 0 && (
+        <Link to="/board/habitudes" className="habitudes-card__open" aria-label={fn.checkin}>
+          <ul className="habitudes-card__list">
+            {due.map((h) => {
+              const reading = habitReading(h, habitStatusOn(h, days, today), fn)
+              return (
+                <li key={h.id} className="habitudes-card__row">
+                  <span className="habitudes-card__ico" aria-hidden="true">
+                    {h.icon || '•'}
+                  </span>
+                  <span className="habitudes-card__title">{h.title}</span>
+                  {reading && <span className="habitudes-card__sub mono">{reading}</span>}
+                </li>
+              )
+            })}
+          </ul>
+        </Link>
+      )}
     </BoardCard>
   )
 }

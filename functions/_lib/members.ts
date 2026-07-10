@@ -63,6 +63,10 @@ export function memberRefStatements(env: Env, householdId: string, memberId: str
     P('UPDATE ai_errors SET profile = NULL WHERE profile = ? AND household_id = ?').bind(id, hh),
     // Who last marked a surviving household habit — attribution, not ownership.
     P('UPDATE habit_days SET member_id = NULL WHERE member_id = ? AND habit_id IN (SELECT id FROM habits WHERE household_id = ?)').bind(id, hh),
+    // « Le défi du jour » per-face marks ARE the departed member's identity (a mark
+    // is a face, never anonymous), so DELETE them — a NULL face would be a mark by
+    // nobody. The household défi habit itself survives (member_id NULL).
+    P('DELETE FROM habit_marks WHERE member_id = ? AND habit_id IN (SELECT id FROM habits WHERE household_id = ?)').bind(id, hh),
     // « Le cercle » edges + named-group memberships (polymorphic, no FK).
     P("DELETE FROM contact_links WHERE household_id = ? AND ((person_a_id = ? AND person_a_kind = 'member') OR (person_b_id = ? AND person_b_kind = 'member'))").bind(hh, id, id),
     P("DELETE FROM contact_group_members WHERE person_kind = 'member' AND person_id = ?").bind(id),

@@ -372,6 +372,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   const habits: { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }[] = []
   for (const h of habitsRes.results) {
+    // « Le défi du jour » is a standing habit but NOT a calendar rhythm — it's a
+    // single day-long invitation, not a recurring occurrence — so it never emits a
+    // month cell (else it would paint every day). It lives only on the board card.
+    if (h.kind === 'defi') continue
     const cell = (day: number) => {
       const d = habitDayBy.get(`${h.id}:${day}`)
       // A day nobody marked reads as neutral, never as a miss — `done` is only ever

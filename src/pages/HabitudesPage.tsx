@@ -30,6 +30,7 @@ import { Cluster } from '../components/Layout'
 import { MemberSwitcher, type MemberFace } from '../components/MemberSwitcher'
 import { HabitRow } from '../components/habits/HabitRow'
 import { HabitHistory } from '../components/habits/HabitHistory'
+import { DefiBlock } from '../components/habits/DefiBlock'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // « Le point du jour » — the daily check-in scene for « Mes habitudes ». A
@@ -143,6 +144,12 @@ export function HabitudesPage() {
             ariaLabel={fn.whoseDay}
           />
         )}
+
+        {/* « Le défi du jour » — the day-long family défi, drawn and checked off
+            here (the morning ritual: this scene auto-opens on a new local day) as
+            well as on the board card. Above the habits, and shown even when there
+            are none — a household with no habits can still have a défi. */}
+        <DefiBlock payload={data} today={today} />
 
         {mine.length === 0 ? (
           <EmptyState tone="calm">{face ? fn.emptyFace : fn.emptyHousehold}</EmptyState>

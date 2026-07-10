@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { FR } from '../i18n'
 import { api } from './api'
 import { live } from './query'
-import { HABITS_KEY, MONTH_KEY } from './queryKeys'
+import { HABITS_KEY, MONTH_KEY, BOARD_KEY } from './queryKeys'
 import { useWrite } from './write'
 import { useProfile } from './profile'
 import { addLocalDays, localDayOfWeek, localMinuteOfDay, todayLocalDay } from './localDay'
@@ -16,7 +16,11 @@ import { addLocalDays, localDayOfWeek, localMinuteOfDay, todayLocalDay } from '.
 // today", "how far along today", and "how many days this week/month" — never a
 // chain, a total across habits, or a comparison between members.
 
-export type HabitKind = 'do' | 'count' | 'limit' | 'avoid'
+// 'defi' is « Le défi du jour » — one standing household habit that carries the
+// day's family challenge. It never flows through the check-in/board/calendar habit
+// lists (every selector below filters it out); it renders only as the board's
+// pinned défi, with per-face marks (habit_marks, migration 0115).
+export type HabitKind = 'do' | 'count' | 'limit' | 'avoid' | 'defi'
 // Four rhythms, two families:
 //   • BY DAY   — 'recur' (a schedule of dates) | 'week' (n times per local week)
 //   • BY MOMENT (intra-day) — 'day' (n times a day) | 'hours' (every N hours in a window)
@@ -63,9 +67,19 @@ export interface HabitDay {
   note: string
 }
 
+// « Le défi du jour » — one face that tried today's shared défi (migration 0115).
+// A FACE, never a count: the card lights up whoever tapped, and that's the whole
+// record. `member_id` is who tried it (always set — a mark is never anonymous).
+export interface HabitMark {
+  habit_id: string
+  day: number // local midnight
+  member_id: string | null
+}
+
 export interface HabitsPayload {
   habits: Habit[]
   days: HabitDay[]
+  marks?: HabitMark[] // optional: pre-0115 payloads / mocks may omit it
   today: number
 }
 
@@ -178,6 +192,10 @@ export function isDayDone(habit: Habit, row: HabitDay | undefined): boolean {
       return value <= (habit.target ?? 0)
     case 'avoid':
       return value > 0 && (row?.slips ?? 0) === 0
+    // A défi is never "done" at the household-day level — its completion lives in
+    // per-face marks (habit_marks), not this row. Excluded from every done-list.
+    case 'defi':
+      return false
   }
 }
 
@@ -281,6 +299,9 @@ export function habitReading(habit: Habit, status: HabitStatus, fn: HabitStrings
       // a week quota says what the week still owes; a plain daily habit says nothing.
       if (status.goal > 1) return fn.ofTarget(status.value, status.goal, fn.timesUnit)
       return habit.cadence === 'week' && status.remainingWeek > 0 ? fn.remainingWeek(status.remainingWeek) : ''
+    // A défi carries its own text on its board card; it has no per-row reading here.
+    case 'defi':
+      return ''
   }
 }
 
@@ -291,7 +312,9 @@ export function visibleHabits(habits: Habit[], face: string | null): Habit[] {
   const base = face
     ? habits.filter((h) => h.member_id === null || h.member_id === face)
     : habits.filter((h) => h.member_id === null)
-  return base.filter((h) => !h.archived).sort((a, b) => a.position - b.position)
+  // 'defi' is never an ordinary habit row — it renders only as the board's pinned
+  // défi (see defiHabit), so every list built on visibleHabits skips it.
+  return base.filter((h) => !h.archived && h.kind !== 'defi').sort((a, b) => a.position - b.position)
 }
 
 // The calendar day panel's split (backfill from the calendar, task « n'importe
@@ -382,3 +405,95 @@ export const habitToday = () => todayLocalDay()
 
 // The current wall-clock minute past local midnight (the reminder matcher's input).
 export const nowMinute = (now: number = Date.now()) => localMinuteOfDay(new Date(now))
+
+// --- « Le défi du jour » ------------------------------------------------------
+// The whole feature rides `habits`: the défi is ONE standing household habit
+// (kind='defi'), today's chosen text lives on its habit_days.note, and who tried
+// it lives in `marks`. All count-free — a face is the record, never a tally.
+
+// The household's standing défi habit, if it exists yet (created lazily on the
+// first pige). There is at most one per household.
+export function defiHabit(habits: Habit[]): Habit | undefined {
+  return habits.find((h) => h.kind === 'defi')
+}
+
+// Today's committed défi text, or null if none drawn yet. The text is the day
+// row's note; value≥1 means a défi was committed (vs an empty backfilled row).
+export function todaysDefi(payload: HabitsPayload | undefined, day: number): { habit: Habit; text: string } | null {
+  const habit = defiHabit(payload?.habits ?? [])
+  if (!habit) return null
+  const row = dayRow(payload?.days ?? [], habit.id, day)
+  const text = row && row.value >= 1 ? row.note.trim() : ''
+  return text ? { habit, text } : null
+}
+
+// The member ids who marked today's défi « tenu » — faces to light up, never a
+// count. Deduped and order-stable.
+export function defiMarkFaces(marks: HabitMark[] | undefined, habitId: string, day: number): string[] {
+  const seen = new Set<string>()
+  for (const m of marks ?? []) {
+    if (m.habit_id === habitId && m.day === day && m.member_id) seen.add(m.member_id)
+  }
+  return [...seen]
+}
+
+// Whether the given face has already tried today's défi.
+export function faceTriedDefi(marks: HabitMark[] | undefined, habitId: string, day: number, face: string | null): boolean {
+  return !!face && defiMarkFaces(marks, habitId, day).includes(face)
+}
+
+// A normalized set of recently-drawn défi texts, so the pige can avoid repeating
+// what the household has seen lately (the suggest-meal `avoid` idea, client-side).
+export function recentDefiTexts(payload: HabitsPayload | undefined): Set<string> {
+  const habit = defiHabit(payload?.habits ?? [])
+  const out = new Set<string>()
+  if (!habit) return out
+  for (const d of payload?.days ?? []) {
+    if (d.habit_id === habit.id && d.note.trim()) out.add(d.note.trim().toLowerCase())
+  }
+  return out
+}
+
+// Commit today's drawn/typed défi (accept a pige, or write your own / an AI one).
+// The server find-or-creates the standing habit and upserts today's text; a first
+// commit has no habit to patch optimistically, so the card fills on the refetch.
+export function useCommitDefi() {
+  const write = useWrite()
+  return useCallback(
+    (text: string, title?: string) => {
+      const clean = text.trim()
+      if (!clean) return
+      void write('habits', {
+        method: 'POST',
+        body: { defi: { text: clean, title } },
+        affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY],
+      })
+    },
+    [write],
+  )
+}
+
+// A per-face « Je l'ai tenu ! » toggle on today's défi. Optimistic like
+// useMarkHabit: the tapped face lights up (or dims) at once, and a replayed
+// offline write converges (insert-or-ignore / delete server-side).
+export function useToggleDefiMark() {
+  const write = useWrite()
+  const { memberId: face } = useProfile()
+  return useCallback(
+    (habitId: string, day: number, on: boolean) => {
+      if (!face) return // a mark is always someone's — the UI gates this too
+      void write('habits', {
+        method: 'PATCH',
+        body: { id: habitId, defiMark: { day, on } },
+        affectedKeys: [HABITS_KEY, BOARD_KEY],
+        optimistic: (qc) =>
+          qc.setQueryData<HabitsPayload>(HABITS_KEY, (cur) => {
+            if (!cur) return cur
+            const rest = (cur.marks ?? []).filter((m) => !(m.habit_id === habitId && m.day === day && m.member_id === face))
+            return { ...cur, marks: on ? [...rest, { habit_id: habitId, day, member_id: face }] : rest }
+          }),
+      })
+    },
+    [write, face],
+  )
+}

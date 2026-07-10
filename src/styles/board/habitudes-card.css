@@ -60,3 +60,90 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* The whole-list link inside the card. The défi block keeps its own buttons, so
+   the card no longer wraps everything in one Link — only the habits list navigates
+   to « Le point du jour ». Reset it to plain card text. */
+.habitudes-card__open {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* « Le défi du jour » — the day-long family défi, fronted on the card and reused in
+   « Le point du jour ». A gentle tinted panel. Faces light up whoever tried it;
+   never a count, never a rank (NFR-CALM-1). Global class: also styles the scene. */
+.defi-block {
+  margin: 0.35rem 0 0.15rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: var(--radius-sm, 0.6rem);
+  background: color-mix(in srgb, var(--sec-tint, var(--sage-deep)) 10%, var(--card));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sec-tint, var(--sage-deep)) 22%, transparent);
+}
+
+.defi-block__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.defi-block__ico {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.defi-block__kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.defi-block__text {
+  margin: 0.3rem 0 0.5rem;
+  font-size: 1.02rem;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.defi-block__sub {
+  margin: 0.2rem 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.defi-block__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.defi-block__whoLabel {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* Overlapping face discs — a cluster, not a count. The card-coloured ring keeps
+   them legible where they overlap. */
+.defi-block__faces {
+  display: inline-flex;
+  align-items: center;
+}
+
+.defi-block__faces .avatar {
+  margin-left: -6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--card);
+}
+
+.defi-block__faces .avatar:first-child {
+  margin-left: 0;
+}
+
+.defi-block__hint {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
