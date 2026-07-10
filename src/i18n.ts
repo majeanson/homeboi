@@ -589,6 +589,8 @@ export const FR = {
     // Shown inside a card the device asked to keep visible even when it has nothing
     // (« Toujours afficher », lib/boardCards mode 'always'). Calm: a statement, not a prompt.
     cardEmpty: 'Rien pour l’instant.',
+    // The same statement, in the space a compact tile has for one quiet line.
+    cardEmptyMini: 'Rien',
     // Edit mode: hold a card to rearrange the board, like an app on a phone's home screen.
     editTitle: 'Réorganise ton babillard',
     editHint: 'Glisse une carte pour la déplacer, ✕ pour la retirer, le chiffre pour la redimensionner.',

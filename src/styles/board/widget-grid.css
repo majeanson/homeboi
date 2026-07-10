@@ -13,6 +13,11 @@
 .wg {
   --wg-row: 8px;
   --wg-gap: 16px;
+  /* The ONE height every compact tile takes. LOAD-BEARING with `WG_MINI_H` in
+     lib/widgetGrid (= WG_MINI_ROWS rows and the gaps between them: 7*8 + 6*16). A slot in
+     its compact form claims exactly `WG_MINI_ROWS` rows without measuring anything, so
+     this value and that constant must agree or every mini leaves (or overflows) a gap. */
+  --wg-mini-h: 152px;
   display: grid;
   grid-template-columns: repeat(var(--wg-cols, 1), minmax(0, 1fr));
   grid-auto-rows: var(--wg-row);
@@ -64,9 +69,15 @@
 
 /* The placeholder a card shows when the device asked to keep it visible while empty
    (mode `always`). It is a real `.bento`, so it inherits card chrome — quieter, since
-   it says nothing. */
+   it says nothing.
+
+   The card it stands in for returned null, so there is no `--sec-tint` coming from it:
+   adopt the slot's `--wg-tint` (published by `CardSlot` from `BOARD_CARDS[].tint`) as
+   this subtree's tint. An empty card is a card that keeps its colour and says it's
+   empty — not an anonymous grey box beside eleven coloured ones. */
 .wg-slot__placeholder {
-  opacity: 0.75;
+  --sec-tint: var(--wg-tint, var(--ink-faint));
+  opacity: 0.85;
 }
 
 /* ---- Edit mode: hold a card to rearrange the board -------------------------- */
@@ -215,19 +226,27 @@
   justify-content: center;
   gap: 6px;
   width: 100%;
-  /* All minis land at ~the same height (the tallest natural tile: icon + a 2-line
-     title + hint) so a row of shrunk cards reads as one tidy shelf, not a ragged
-     skyline — media minis pin themselves to this same 8rem below. */
-  min-height: 8rem;
+  /* FIXED, not `min-height`. Every mini is exactly one shelf tall, and `CardSlot` claims
+     exactly that many rows without measuring — which is what keeps two columns of tiles
+     in lockstep instead of drifting a row apart the moment one grows a second title line.
+     `box-sizing` is explicit because the height has to include the border: the slot's row
+     span is computed from this number, not from what the box happens to lay out to. */
+  box-sizing: border-box;
+  height: var(--wg-mini-h);
+  /* The height is a promise to the grid, so nothing may escape it — a title that wrapped
+     one line further than expected clips inside the tile rather than under the card below.
+     (The row/title clamps above mean this is a backstop, not the mechanism.) */
+  overflow: hidden;
   padding: 1rem 0.6rem;
   /* The mini KEEPS its card's persona: the same `--sec-tint` that colours the full
-     card's disc/rule/border (`.bento--tinted`'s 65% border mix, a barely-there wash)
-     — tintless cards fall back to today's neutral. The tint rides in from the
-     `.bento` wrapper (Section), the caller's className/style (BoardCard), or the
-     per-class mappings just below. */
-  border: 1px solid color-mix(in srgb, var(--sec-tint, var(--line)) 65%, var(--line));
+     card's disc/rule/border (`.bento--tinted`'s 65% border mix, a barely-there wash).
+     The tint rides in from the `.bento` wrapper (Section), the caller's className/style
+     (BoardCard), or the per-class mappings just below — and when the card named none,
+     from the slot's `--wg-tint` (`BOARD_CARDS[].tint`). Only a card outside a slot with
+     no tint anywhere falls back to neutral. */
+  border: 1px solid color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--line))) 65%, var(--line));
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--sec-tint, var(--card)) 8%, var(--card));
+  background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--card))) 8%, var(--card));
   box-shadow: var(--shadow-sm);
   color: inherit;
   font: inherit;
@@ -250,10 +269,14 @@
 .wg-slot .cardmini:active {
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }
-/* The empty « always »-mode placeholder already carries `.wg-slot__placeholder`
-   (opacity 0.75, board/grid.css) — a compact tile inside it reads muted for free,
-   with no `compactHint` passed, matching "empty × compact = icon + title, muted,
-   no hint" without a separate style. */
+/* The empty « always »-mode placeholder: same tinted tile as any other mini (its
+   `--sec-tint` comes from `--wg-tint`, see `.wg-slot__placeholder` above), but its edge
+   goes DASHED and it says « Rien » on its hint line. Colour answers "which card is this";
+   the dashed edge answers "and it holds nothing" — two different questions, which a grey
+   box conflated. */
+.wg-slot .cardmini.wg-slot__placeholder {
+  border-style: dashed;
+}
 .wg-slot .cardmini__ico {
   flex: none;
   display: inline-flex;
@@ -262,8 +285,8 @@
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 50%;
-  color: color-mix(in srgb, var(--sec-tint, var(--ink-soft)) 82%, var(--ink));
-  background: color-mix(in srgb, var(--sec-tint, var(--ink-faint)) 18%, var(--card));
+  color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-soft))) 82%, var(--ink));
+  background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-faint))) 18%, var(--card));
 }
 /* Never break mid-word (a hand-rolled `overflow-wrap: break-word` is exactly what
    turned "Spaghetti" into "Spaghet/ti" at 143px) — clamp to two lines and let a
@@ -283,7 +306,7 @@
   line-height: 1.25;
   /* Persona, quietly: the title leans toward the card's tint the way `tintInk` does
      for Act rows — ink-dominant so it stays legible on the wash. */
-  color: color-mix(in srgb, var(--sec-tint, var(--ink)) 38%, var(--ink));
+  color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink))) 38%, var(--ink));
 }
 .wg-slot .cardmini__hint {
   max-width: 100%;
@@ -293,22 +316,93 @@
   color: var(--ink-soft);
   font-size: 0.78rem;
 }
+
+/* ---- Compact lens, the LIST face: a mini that names what it holds --------------- */
+/* A tile whose rows fit (`WG_MINI_MAX_ITEMS`, lib/widgetGrid) spends its fixed height
+   ANSWERING instead of promising: a header line — the same tinted disc, one notch
+   smaller, beside the card's title — over one line per thing. « À finir » names the
+   restants; « À venir », the two events. Past that count it falls back to the centred
+   icon + title + a quiet number (`CardMini`), because naming three of nine things is a
+   worse answer than counting nine.
+
+   Calm: the rows are a READING, never a control. No checks, no counts, no ranks — the
+   tile is one tap target that grows the real card, exactly as the icon face is. */
+.wg-slot .cardmini--list {
+  align-items: stretch;
+  gap: 6px;
+  padding: 0.62rem 0.6rem;
+  text-align: left;
+}
+.wg-slot .cardmini--list .cardmini__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.wg-slot .cardmini--list .cardmini__ico {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+/* One line only in the list face — the rows below need the height more than a long card
+   title does, and every board card's title is short enough to survive an ellipsis. */
+.wg-slot .cardmini--list .cardmini__title {
+  -webkit-line-clamp: 1;
+  font-size: 0.84rem;
+}
+.wg-slot .cardmini__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wg-slot .cardmini__row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.wg-slot .cardmini__dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  /* One dot colour per CARD, not per row: the row's own category colour would turn a
+     142px tile into a paint chart. The card's tint already says which card this is. */
+  background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-faint))) 70%, var(--ink-faint));
+}
+/* Never break mid-word (same reason as the title): clip the line, don't hyphenate it. */
+.wg-slot .cardmini__rowlabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
 /* The outer `.bento` becomes a transparent frame once its content is the mini tile —
    `.cardmini` draws the actual card chrome (background/radius/shadow) itself, so
-   nothing doubles up. */
+   nothing doubles up. `border: 0` matters more than it looks: `.bento--tinted` puts a
+   1px border here, which made a Section's mini 2px taller than the shelf its slot had
+   already claimed — the tile spilled into the gutter below it. The frame contributes
+   nothing to the height; the tile IS the height. */
 .bento.bento--compact {
   padding: 0;
+  border: 0;
   background: transparent;
   box-shadow: none;
 }
 /* A MEDIA mini — the picture IS the persona (« Photo du jour », the weather hero's
-   wonder backdrop): full-bleed image pinned to the shared 8rem shelf height, no
-   padding, at most one frosted chip on top (the temperature). Barebones on purpose:
-   everything else waits for the tap-to-grow. */
+   wonder backdrop): full-bleed image pinned to the shared shelf height, no padding, at
+   most one frosted chip on top (the temperature). Barebones on purpose: everything else
+   waits for the tap-to-grow. */
 .wg-slot .cardmini--media {
   position: relative;
-  height: 8rem;
-  min-height: 0;
   padding: 0;
   overflow: hidden;
 }

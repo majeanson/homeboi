@@ -547,6 +547,7 @@ export const EN: typeof FR = {
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     cardEmpty: 'Nothing right now.',
+    cardEmptyMini: 'Nothing',
     editTitle: 'Rearrange your board',
     editHint: 'Drag a card to move it, ✕ to remove it, the number to resize it.',
     editDone: 'Done',

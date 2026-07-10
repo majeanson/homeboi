@@ -8,6 +8,9 @@ import {
   WG_COL_MIN,
   WG_COMPACT_MAX,
   WG_GAP,
+  WG_MINI_H,
+  WG_MINI_MAX_ITEMS,
+  WG_MINI_ROWS,
   WG_PHONE_COL_MIN,
   WG_ROW,
 } from './widgetGrid'
@@ -156,5 +159,39 @@ describe('isCompact', () => {
     expect(isCompact(Number.NaN, 1)).toBe(false)
     expect(isCompact(150, 0)).toBe(false)
     expect(isCompact(150, -1)).toBe(false)
+  })
+})
+
+describe('the compact tile shelf', () => {
+  // The stagger bug, as an assertion. `CardSlot` claims WG_MINI_ROWS for a mini WITHOUT
+  // measuring it, and widget-grid.css sizes the tile to `--wg-mini-h`. If those two ever
+  // disagree, every mini leaves dead space in its slot (or overflows it) — and the board
+  // goes back to reading as a ragged skyline.
+  it('WG_MINI_H is exactly what WG_MINI_ROWS rows are worth', () => {
+    expect(rowSpan(WG_MINI_H)).toBe(WG_MINI_ROWS)
+    // Exact, not merely "fits": one pixel more would already need another row.
+    expect(rowSpan(WG_MINI_H + 1)).toBe(WG_MINI_ROWS + 1)
+  })
+
+  it('--wg-mini-h in widget-grid.css is this number', () => {
+    // The CSS can't import the constant, so the constant asserts its own value. Change one,
+    // change both — this test is the tripwire.
+    expect(WG_MINI_H).toBe(152)
+  })
+
+  it('never promises more rows than the shelf can hold', () => {
+    // The list face spends WG_MINI_H on a header + WG_MINI_MAX_ITEMS one-line rows +
+    // padding. These three numbers mirror widget-grid.css (`.cardmini--list`); if the cap
+    // ever outgrew the shelf the last row would clip, which is the one failure a fixed
+    // height can produce and a `min-height` never could.
+    const HEADER = 24 // the tinted disc + the card's title
+    const ROW = 17 // 0.78rem at line-height 1.35, plus the 3px gap
+    const PADDING = 20 // 0.62rem, top and bottom
+    expect(HEADER + PADDING + WG_MINI_MAX_ITEMS * ROW).toBeLessThanOrEqual(WG_MINI_H)
+  })
+
+  it('stays a glance, not a list view', () => {
+    // Calm: the cap is a ceiling on how much a 142px tile may say, not just what fits.
+    expect(WG_MINI_MAX_ITEMS).toBeLessThanOrEqual(5)
   })
 })

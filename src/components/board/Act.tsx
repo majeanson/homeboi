@@ -20,9 +20,11 @@ export function Section({
   help,
   helpKey,
   now,
-  // The compact lens (see `CardMini`, BoardCard.tsx): a quiet one-line hint, or a full
-  // override of the compact body. Both no-ops unless this Section is actually rendered
-  // compact (inside a halved `CardSlot`, below the measured-width threshold).
+  // The compact lens (see `CardMini`, BoardCard.tsx): the rows to NAME when they fit, a
+  // quiet one-line hint when they don't, or a full override of the compact body. All
+  // no-ops unless this Section is actually rendered compact (inside a halved `CardSlot`,
+  // below the measured-width threshold).
+  compactItems,
   compactHint,
   compact,
   children,
@@ -42,6 +44,7 @@ export function Section({
   // section be made explainable without forking a header.
   help?: HelpMode
   helpKey?: string
+  compactItems?: readonly string[]
   compactHint?: React.ReactNode
   compact?: React.ReactNode
   children: React.ReactNode
@@ -63,7 +66,14 @@ export function Section({
       style={style}
     >
       {isMini ? (
-        <CardMini label={label} icon={icon} hint={compactHint} body={compact} onExpand={lens!.expand} />
+        <CardMini
+          label={label}
+          icon={icon}
+          hint={compactHint}
+          items={compactItems}
+          body={compact}
+          onExpand={lens!.expand}
+        />
       ) : (
         <>
           <SecLabel label={label} count={count} icon={icon} help={help} helpKey={helpKey} />

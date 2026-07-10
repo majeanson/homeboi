@@ -80,6 +80,22 @@ export interface BoardCardMeta {
   /** Mirrors the card's own header glyph. Labels come from i18n `boardCard.<id>`, so
    *  this lib stays free of i18n imports. */
   icon: IconName
+  /**
+   * The card's persona colour, as a CSS custom-property reference — what `CardSlot`
+   * publishes as `--wg-tint` on the slot.
+   *
+   * It is a FALLBACK, not an override: a card that sets its own `--sec-tint` (every
+   * `Section` with a `tint`, `.habitudes-card`, `.voyage-card`, `.auto-card`'s live
+   * `--car-tint`) still wins. It exists for the two places the card itself can't speak:
+   * a card that never set a tint at all (« Les carnets », « Le décompte »), and the
+   * EMPTY placeholder the slot draws in the card's stead when the card returned null —
+   * which used to render as an anonymous grey box, indistinguishable between "nothing
+   * here" and "no colour here".
+   *
+   * Groups by meaning, never per-card novelty (NFR-CALM): warm marigold = today, cool
+   * sky = later, sage/terracotta = the lists, teal = Le cercle's people and things.
+   */
+  tint: string
   zone: CardZone
   size: CardSize
   mode: CardMode
@@ -120,31 +136,31 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // `notes` is not `halvable`: a multi-card strip has no one-summary compact form.
   // `heroes` IS halvable — its mini is a MEDIA tile (the wonder photo + the
   // temperature, nothing else; DayHeroes.tsx), not the generic icon+title.
-  { id: 'notes', icon: 'push-pin-bold', zone: 'band', size: 'full', mode: 'auto', halvable: false },
-  { id: 'heroes', icon: 'sun-bold', zone: 'band', size: 'full', mode: 'auto' },
-  { id: 'mots', icon: 'envelope-bold', zone: 'band', size: 1, mode: 'auto' },
-  { id: 'aRegler', icon: 'warning-bold', zone: 'band', size: 1, mode: 'auto' },
-  { id: 'moments', icon: 'moon-stars-bold', zone: 'band', size: 1, mode: 'always' },
+  { id: 'notes', icon: 'push-pin-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', halvable: false },
+  { id: 'heroes', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto' },
+  { id: 'mots', icon: 'envelope-bold', tint: 'var(--teal)', zone: 'band', size: 1, mode: 'auto' },
+  { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
+  { id: 'moments', icon: 'moon-stars-bold', tint: 'var(--berry-deep)', zone: 'band', size: 1, mode: 'always' },
   // ── the masonry: car → the day's shape → the day → standing lists → upcoming → media ──
-  { id: 'autoCard', icon: 'car-bold', zone: 'grid', size: 'full', mode: 'auto' },
-  { id: 'fil', icon: 'clock-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'today', icon: 'sun-bold', zone: 'grid', size: 1, mode: 'always' },
-  { id: 'routineNext', icon: 'smiley-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'habitudes', icon: 'repeat-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'tomorrow', icon: 'sun-horizon-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'countdown', icon: 'hourglass-high-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'toFinish', icon: 'check-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'todos', icon: 'check-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'upcoming', icon: 'calendar-blank-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'cercleNotes', icon: 'file-text-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'voyage', icon: 'map-pin-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'carnets', icon: 'book-open-bold', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'seasonUpkeep', icon: 'broom-bold', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'autoCard', icon: 'car-bold', tint: 'var(--sky-deep)', zone: 'grid', size: 'full', mode: 'auto' },
+  { id: 'fil', icon: 'clock-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'today', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'always' },
+  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'habitudes', icon: 'repeat-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'tomorrow', icon: 'sun-horizon-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'countdown', icon: 'hourglass-high-bold', tint: 'var(--berry-deep)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'toFinish', icon: 'check-bold', tint: 'var(--sage)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'todos', icon: 'check-bold', tint: 'var(--terracotta)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'upcoming', icon: 'calendar-blank-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'voyage', icon: 'map-pin-bold', tint: 'var(--teal)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'carnets', icon: 'book-open-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'seasonUpkeep', icon: 'broom-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto' },
   // `drawings` is not `halvable` for the same reason as `notes`: a gallery door has
   // no one-summary compact form. `photos` IS halvable — its mini is a MEDIA tile
   // (just the current photo; PhotoFrame.tsx).
-  { id: 'drawings', icon: 'paint-brush-bold', zone: 'grid', size: 'full', mode: 'always', halvable: false },
-  { id: 'photos', icon: 'image-square-bold', zone: 'grid', size: 'full', mode: 'auto' },
+  { id: 'drawings', icon: 'paint-brush-bold', tint: 'var(--berry)', zone: 'grid', size: 'full', mode: 'always', halvable: false },
+  { id: 'photos', icon: 'image-square-bold', tint: 'var(--sky)', zone: 'grid', size: 'full', mode: 'auto' },
 ]
 
 const META = new Map<BoardCardId, BoardCardMeta>(BOARD_CARDS.map((c) => [c.id, c]))

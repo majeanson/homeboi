@@ -129,6 +129,93 @@ test.describe('board compact lens', () => {
     await expect(today.locator('.cardmini')).toBeVisible()
   })
 
+  // The tile NAMES what it holds when the rows fit (lib/widgetGrid.WG_MINI_MAX_ITEMS) —
+  // « À finir » should say « Pâté chinois », not « 1 ». The fixtures give it exactly one
+  // leftover, so the list face is what a household actually sees here.
+  test('a mini names its rows when they fit, instead of counting them', async ({ page }) => {
+    await open(page, { toFinish: 1 })
+    const tile = page.locator('.wg-slot[data-card="toFinish"] .cardmini')
+    await tile.scrollIntoViewIfNeeded()
+    await expect(tile).toHaveClass(/cardmini--list/)
+    await expect(tile.locator('.cardmini__title')).toHaveText('À finir')
+
+    const rows = tile.locator('.cardmini__row')
+    await expect(rows).toHaveCount(1)
+    await expect(rows.first()).toHaveText('Pâté chinois')
+    // The list face replaces the count hint — a tile never says both.
+    await expect(tile.locator('.cardmini__hint')).toHaveCount(0)
+  })
+
+  // The stagger, as a test. Minis used to be MEASURED, so two tiles whose natural heights
+  // straddled a 24px row boundary claimed different spans and the two columns drifted
+  // apart for the rest of the board. Now every mini claims WG_MINI_ROWS without measuring.
+  test('every mini is one shelf tall, and the columns never stagger', async ({ page }) => {
+    // This measures LAYOUT, and a tile mounts with a one-shot `scale(0.97)` pop — a card
+    // whose data lands late would otherwise be caught mid-animation and read ~3px short.
+    // The pop is already gated behind `prefers-reduced-motion`, so ask for stillness.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    // Size every halvable grid card to a half, so the minis are contiguous and the rows
+    // they form must pair up. (`reconcile` drops the ones that refuse a half.)
+    await open(page, {
+      autoCard: 1, fil: 1, today: 1, routineNext: 1, habitudes: 1, tomorrow: 1, countdown: 1,
+      toFinish: 1, todos: 1, upcoming: 1, cercleNotes: 1, voyage: 1, carnets: 1, seasonUpkeep: 1, photos: 1,
+    })
+    await page.waitForSelector('.board-grid .wg-slot .cardmini')
+
+    const geom = await page.evaluate(() => {
+      const slots = [...document.querySelectorAll('.board-grid .wg-slot')].filter((s) => s.querySelector('.cardmini'))
+      const round = (n: number) => Math.round(n)
+      return slots.map((s) => {
+        const slot = s.getBoundingClientRect()
+        const tile = s.querySelector('.cardmini')!.getBoundingClientRect()
+        return { slotH: round(slot.height), tileH: round(tile.height), top: round(slot.top) }
+      })
+    })
+    expect(geom.length, 'the fixtures should render several halved cards').toBeGreaterThan(2)
+
+    // One shelf: every tile the same height, and every slot exactly as tall as its tile.
+    // The second equality is the constant row span and `--wg-mini-h` agreeing (the pair
+    // widgetGrid.test locks) — a slot taller than its tile means the card is spilling into
+    // the gutter, which is how `.bento--tinted`'s border used to sneak 2px back in.
+    const tileHs = [...new Set(geom.map((g) => g.tileH))]
+    expect(tileHs).toHaveLength(1)
+    expect([...new Set(geom.map((g) => g.slotH))]).toEqual(tileHs)
+
+    // Aligned: with uniform spans the tiles pair off into rows, so all but at most one
+    // (a lone trailing tile) share their top edge with a neighbour. A staggered board
+    // shares none.
+    const tops = geom.map((g) => g.top)
+    const paired = tops.filter((t) => tops.filter((u) => Math.abs(u - t) <= 1).length > 1).length
+    expect(paired, `tops: ${tops.join(',')}`).toBeGreaterThanOrEqual(geom.length - 1)
+  })
+
+  // « Toujours afficher » on a card with nothing to say. It keeps its colour and SAYS it
+  // is empty (a dashed edge + one quiet word) — it used to render as an anonymous grey box.
+  test('an empty « always » card keeps its colour and says it is empty', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 })
+    await mockApi(page)
+    // « Les carnets » holds nothing in the fixtures, and `always` keeps its place anyway.
+    await seedState(page, { cardPrefs: { size: { carnets: 1 }, mode: { carnets: 'always' } } })
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+
+    const slot = page.locator('.wg-slot[data-card="carnets"]')
+    const tile = slot.locator('.cardmini')
+    await tile.scrollIntoViewIfNeeded()
+    await expect(tile).toBeVisible()
+    await expect(tile).toHaveClass(/wg-slot__placeholder/)
+    await expect(tile.locator('.cardmini__hint')).toHaveText('Rien')
+
+    const look = await slot.evaluate((el) => ({
+      tint: getComputedStyle(el).getPropertyValue('--wg-tint').trim(),
+      border: getComputedStyle(el.querySelector('.cardmini')!).borderTopStyle,
+    }))
+    // Colour says WHICH card; the dashed edge says it holds nothing. Two questions, two
+    // answers — a grey box conflated them.
+    expect(look.tint, 'the slot publishes the card’s tint').not.toBe('')
+    expect(look.border).toBe('dashed')
+  })
+
   test('arming edit mode collapses an expanded card', async ({ page }) => {
     await open(page)
     const slot = page.locator('.wg-slot[data-card="today"]')

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 import { type HelpMode } from '../../lib/helpMode'
+import { WG_MINI_MAX_ITEMS } from '../../lib/widgetGrid'
 import { useCardLens } from './CardLens'
 
 // The ONE board-card header — a category glyph disc + bold label + rule + an optional
@@ -96,15 +97,26 @@ export function SecLabel({
 
 // The COMPACT LENS's generic body: what `Section` / `BoardCard` render instead of the
 // full header + children when the card's MEASURED width falls under the compact
-// threshold (`lib/widgetGrid.isCompact`, read via `useCardLens`) — icon on top, the
-// card's own title, and at most one quiet line (`hint`: a count like '3' or a name
-// like 'Spaghetti' — never a score, never per-person). The whole tile IS the tap
-// target: a real `<button>` (never nested inside the card's own `<Link>`, which is
-// why `BoardCard` swaps its Link/div for this button outright rather than wrapping
-// it) that calls `lens.expand()` to grow the card back to the zone's full width in
-// place. `body` is a FULL override (a bespoke card's own compact content) — when
-// given, it replaces the generic icon/title/hint entirely; the button chrome (and
-// tap-to-expand) stays shared.
+// threshold (`lib/widgetGrid.isCompact`, read via `useCardLens`). The whole tile IS the
+// tap target: a real `<button>` (never nested inside the card's own `<Link>`, which is
+// why `BoardCard` swaps its Link/div for this button outright rather than wrapping it)
+// that calls `lens.expand()` to grow the card back to the zone's full width in place.
+//
+// A mini has THREE faces, in order of how much it manages to say. Every tile is exactly
+// `--wg-mini-h` tall whichever it picks (`WG_MINI_ROWS`), so a shelf of minis is a shelf:
+//
+//  1. `body` — a FULL override, for a card whose compact form isn't text at all (the
+//     photo frame's picture, the weather hero's wonder backdrop). Wins outright.
+//  2. THE LIST — `items`, when there are few enough of them to name honestly
+//     (`WG_MINI_MAX_ITEMS`). A header line (small disc + title) over one line per thing.
+//     This is the point of the lens: « À finir » should say *what* is left to finish, not
+//     that two somethings are.
+//  3. The GLANCE — icon on top, title, at most one quiet line (`hint`: a count like '3'
+//     or a name like 'Spaghetti' — never a score, never per-person). What a card falls
+//     back to when it holds too much to list, or has nothing listable to give.
+//
+// A card that can list passes BOTH `items` and a counting `hint`, and this picks: naming
+// three things beats counting them; naming three of nine is a lie the count tells better.
 export function CardMini({
   className,
   style,
@@ -112,6 +124,7 @@ export function CardMini({
   icon,
   iconNode,
   hint,
+  items,
   body,
   onExpand,
 }: {
@@ -121,30 +134,56 @@ export function CardMini({
   icon?: IconName
   iconNode?: ReactNode
   hint?: ReactNode
+  /** One line per thing the card holds. Rendered only when they all fit — see above. */
+  items?: readonly string[]
   body?: ReactNode
   onExpand: () => void
 }) {
   const t = useT()
+  // Index keys: this is a static, never-reordered projection of the card's rows, rebuilt
+  // whole on every data change. A stable id would buy nothing and cost every call site.
+  const rows = items && items.length > 0 && items.length <= WG_MINI_MAX_ITEMS ? items : null
+  const glyph = icon ? <Icon name={icon} size={rows ? 15 : 22} /> : iconNode
   return (
     <button
       type="button"
-      className={'cardmini' + (className ? ` ${className}` : '')}
+      className={'cardmini' + (rows ? ' cardmini--list' : '') + (className ? ` ${className}` : '')}
       style={style}
       aria-expanded={false}
       aria-label={t.board.expandCard(label)}
       onClick={onExpand}
     >
-      {body ?? (
-        <>
-          {(icon || iconNode) && (
-            <span className="cardmini__ico" aria-hidden="true">
-              {icon ? <Icon name={icon} size={22} /> : iconNode}
+      {body ??
+        (rows ? (
+          <>
+            <span className="cardmini__head">
+              {glyph && (
+                <span className="cardmini__ico" aria-hidden="true">
+                  {glyph}
+                </span>
+              )}
+              <b className="cardmini__title">{label}</b>
             </span>
-          )}
-          <b className="cardmini__title">{label}</b>
-          {hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>}
-        </>
-      )}
+            <ul className="cardmini__rows">
+              {rows.map((row, i) => (
+                <li key={i} className="cardmini__row">
+                  <span className="cardmini__dot" aria-hidden="true" />
+                  <span className="cardmini__rowlabel">{row}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <>
+            {glyph && (
+              <span className="cardmini__ico" aria-hidden="true">
+                {glyph}
+              </span>
+            )}
+            <b className="cardmini__title">{label}</b>
+            {hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>}
+          </>
+        ))}
     </button>
   )
 }
@@ -170,9 +209,11 @@ export function BoardCard({
   iconNode,
   help,
   helpKey,
-  // The compact lens (see `CardMini` above): a quiet one-line hint, or a full override
-  // of the compact body. Ignored when the card isn't rendered compact (outside a slot,
-  // or wide enough not to need it) — the ordinary header + children render untouched.
+  // The compact lens (see `CardMini` above): the rows to NAME when they fit, a quiet
+  // one-line hint when they don't, or a full override of the compact body. All ignored
+  // when the card isn't rendered compact (outside a slot, or wide enough not to need
+  // it) — the ordinary header + children render untouched.
+  compactItems,
   compactHint,
   compact,
   children,
@@ -187,6 +228,7 @@ export function BoardCard({
   iconNode?: ReactNode
   help?: HelpMode
   helpKey?: string
+  compactItems?: readonly string[]
   compactHint?: ReactNode
   compact?: ReactNode
   children: ReactNode
@@ -206,6 +248,7 @@ export function BoardCard({
         icon={icon}
         iconNode={iconNode}
         hint={compactHint}
+        items={compactItems}
         body={compact}
         onExpand={lens.expand}
       />

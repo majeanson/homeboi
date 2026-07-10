@@ -853,6 +853,13 @@ export function Board() {
       help={help}
       helpKey="fil"
       now={filNow}
+      // Compact: the day's things by name, in the order the ribbon places them.
+      compactItems={[
+        ...filTimed.map((e) => e.title),
+        ...filWork.map((w) => w.label || t.board.atWork),
+        ...todayChores.map((c) => c.title),
+        ...filUntimed.map((e) => e.title),
+      ]}
       compactHint={String(filTimed.length + filWork.length + todayChores.length + filUntimed.length)}
     >
       <Fil
@@ -907,9 +914,17 @@ export function Board() {
   const pastMeals = otherMeals.filter((m) => m.past)
   const liveEvents = shownEvents.filter((e) => !evtPast(e))
   const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
-  // A quiet count for the compact lens — everything the card is about to
-  // list, already at hand from the arrays just above.
-  const todayCount = liveMeals.length + liveEvents.length + (filShown ? 0 : todayChores.length) + todayHome.length
+  // What the compact lens shows — everything the card is about to list, by name, already
+  // at hand from the arrays just above. Few enough and the tile names them; too many and
+  // it shows the count instead (`CardMini`). Past items are deliberately absent: they're
+  // folded into « Déjà passé » below, and a tile has no room to say "and these are done".
+  const todayItems = [
+    ...liveMeals.map((m) => m.title),
+    ...liveEvents.map((e) => e.title),
+    ...(filShown ? [] : todayChores.map((c) => c.title)),
+    ...todayHome.map((c) => c.title),
+  ]
+  const todayCount = todayItems.length
   nodes.today = (
     <Section
       label={t.board.today}
@@ -918,6 +933,7 @@ export function Board() {
       help={help}
       helpKey="today"
       now={todayNow}
+      compactItems={todayItems}
       compactHint={todayCount > 0 ? String(todayCount) : undefined}
     >
 {/* « Prochainement » — the next timed thing today as a calm tappable
@@ -1012,6 +1028,13 @@ export function Board() {
       label={t.board.tomorrow}
       icon="sun-horizon-bold"
       tint="var(--sky)"
+      // Compact: tomorrow's things by name — the supper first, since it's the headline
+      // the household actually looks for.
+      compactItems={[
+        ...(showTomorrowSupper && data.tomorrowMeal ? [data.tomorrowMeal.title] : []),
+        ...otherTomorrowMeals.map((m) => m.title),
+        ...tomorrowEvents.map((e) => e.title),
+      ]}
       // A name when there's one obvious headline (tomorrow's supper, like
       // "Spaghetti"); otherwise a quiet count of what's coming.
       compactHint={
@@ -1108,6 +1131,8 @@ export function Board() {
       tint="var(--sage)"
       help={help}
       helpKey="toFinish"
+      // Compact: which restants are waiting — the only thing worth knowing here.
+      compactItems={leftovers.map((l) => l.title)}
       compactHint={String(leftovers.length)}
     >
       {leftovers.map((l) => (
@@ -1143,6 +1168,10 @@ export function Board() {
       tint="var(--terracotta)"
       help={help}
       helpKey="todos"
+      // Compact: the loose one-off tasks by name. The embedded « À compléter » checklists
+      // stay behind the tap — they're a second group with their own header, and a tile
+      // that mixed the two would name things without saying which list they belong to.
+      compactItems={todayTodos.map((c) => c.title)}
       compactHint={todayTodos.length > 0 ? String(todayTodos.length) : undefined}
     >
       {todayTodos.map(todoAct)}
@@ -1157,6 +1186,13 @@ export function Board() {
       tint="var(--sky)"
       help={help}
       helpKey="upcoming"
+      // Compact: what's coming, by name. The dates stay behind the tap — a 142px row can
+      // hold a title or a date, and the title is the one you scan for.
+      compactItems={[
+        ...upcomingEvents.map((e) => e.title),
+        ...upcomingChores.map((c) => c.title),
+        ...upcomingHome.map((c) => c.title),
+      ]}
       compactHint={String(upcomingEvents.length + upcomingChores.length + upcomingHome.length)}
     >
   {upcomingEvents.map((e) =>

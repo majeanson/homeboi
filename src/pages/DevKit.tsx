@@ -1646,31 +1646,50 @@ export function DevKit() {
             <Act cat="event" title="Rendez-vous dentiste" when="14:00" who="Camille" onOpen={() => {}} />
             <Act cat="chore" title="Sortir les poubelles" who="Marc" onCheck={() => {}} onOpen={() => {}} />
           </Demo>
-          {/* The compact lens (a card halved below ~220px, lib/widgetGrid.isCompact): icon
-              + title + at most one quiet line, never a squeezed full card. `CardLensProvider`
-              stands in for the real CardSlot measurement so the gallery can show it at any
-              width. See COMPONENTS.md · CardMini (BoardCard.tsx). */}
-          <Demo label="compact lens — a count hint, a name hint, and empty × compact (muted, no hint)">
-            <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '420px', flexWrap: 'wrap' }}>
-              <div style={{ width: '140px' }}>
+          {/* The compact lens (a card halved below ~220px, lib/widgetGrid.isCompact).
+              `CardLensProvider` stands in for the real CardSlot measurement so the gallery
+              can show it at any width; the `.wg-slot` wrapper is what the mini's CSS is
+              scoped under (and where `--wg-tint` rides in), so the tiles here look exactly
+              as they do on the board. See COMPONENTS.md · CardMini (BoardCard.tsx).
+              Three faces, in order of how much the tile manages to say: it NAMES its rows
+              when few enough fit (WG_MINI_MAX_ITEMS), counts them when too many, and shows
+              its tint + a dashed edge when the card is empty. All one shelf tall. */}
+          <Demo label="compact lens — names its rows, counts them when too many, and says « Rien » when empty">
+            <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '480px', flexWrap: 'wrap' }}>
+              <div className="wg-slot" style={{ width: '140px', ['--wg-tint' as string]: 'var(--sage)' }}>
                 <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
-                  <BoardSection label="Mots" icon="envelope-bold" compactHint="3">
-                    <Act cat="cercle" title="placeholder" />
-                  </BoardSection>
-                </CardLensProvider>
-              </div>
-              <div style={{ width: '140px' }}>
-                <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
-                  <BoardSection label="Aujourd’hui" icon="sun-bold" compactHint="Spaghetti">
+                  <BoardSection
+                    label="À finir"
+                    icon="arrow-counter-clockwise-bold"
+                    tint="var(--sage)"
+                    compactItems={['Pâté chinois', 'Soupe aux pois']}
+                    compactHint="2"
+                  >
                     <Act cat="meal" title="placeholder" />
                   </BoardSection>
                 </CardLensProvider>
               </div>
-              <div style={{ width: '140px', opacity: 0.75 }}>
+              <div className="wg-slot" style={{ width: '140px', ['--wg-tint' as string]: 'var(--marigold)' }}>
                 <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
-                  <BoardSection label="À venir" icon="calendar-blank-bold">
+                  {/* Too many to name honestly → the count, which says more than five of nine. */}
+                  <BoardSection
+                    label="Le fil du jour"
+                    icon="clock-bold"
+                    tint="var(--marigold)"
+                    compactItems={['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']}
+                    compactHint="9"
+                  >
                     <Act cat="event" title="placeholder" />
                   </BoardSection>
+                </CardLensProvider>
+              </div>
+              <div className="wg-slot" style={{ width: '140px', ['--wg-tint' as string]: 'var(--sky)' }}>
+                <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
+                  {/* What `CardSlot` draws for an `always` card that returned null: the card's
+                      own colour (from `--wg-tint`), a dashed edge, one quiet word. */}
+                  <BoardCard className="bento wg-slot__placeholder" label="À venir" icon="calendar-blank-bold" compactHint="Rien">
+                    <span />
+                  </BoardCard>
                 </CardLensProvider>
               </div>
             </div>

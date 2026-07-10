@@ -31,6 +31,9 @@ export function CarnetsCard() {
       className="carnets-card"
       icon="book-open-bold"
       label={c.title}
+      // Compact: name the things nearing their end rather than counting them — « le
+      // chauffe-eau » tells you what to look at; « 2 » doesn't.
+      compactItems={[...soon.map((s) => s.name), ...warranties.map((w) => w.name)]}
       compactHint={String(soon.length + warranties.length)}
     >
       <ul className="carnets-card__list">

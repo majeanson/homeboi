@@ -47,6 +47,8 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
           className="now-card now-card--regler"
           label={t.aRegler.title}
           icon="warning-bold"
+          // Name every friction when they fit; otherwise the lead one, as before.
+          items={signals.map((s) => frictionRow(s, t).text)}
           hint={first.text}
           onExpand={lens.expand}
         />

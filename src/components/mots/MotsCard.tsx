@@ -167,7 +167,15 @@ export function MotsCard() {
   const total = waiting.length + seen.length + sent.length
 
   return (
-    <Section label={fn.cardTitle} icon="envelope-bold" tint={CATS.cercle.color} compactHint={String(total)}>
+    <Section
+      label={fn.cardTitle}
+      icon="envelope-bold"
+      tint={CATS.cercle.color}
+      // Compact: name the mots in the card's own order (waiting first — the ones that
+      // want reading), falling back to the count when there are too many to name.
+      compactItems={[...waiting, ...seen, ...sent].map(labelOf)}
+      compactHint={String(total)}
+    >
       {waiting.map((m) => row(m))}
       {seen.length > 0 && (
         // Open by default when there are no waiting rows above it — otherwise the card is just

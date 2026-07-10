@@ -105,3 +105,36 @@ export function isCompact(colW: number, span: number): boolean {
   const width = span * colW + (span - 1) * WG_GAP
   return width < WG_COMPACT_MAX
 }
+
+/**
+ * Every compact tile claims exactly this many rows — a CONSTANT, never measured.
+ *
+ * A mini used to be measured like any other card, and it staggered the board: two tiles
+ * whose natural heights differ by a single pixel can land on different spans (the ruler
+ * is coarse — see `WG_MINI_H`), and from there the two columns never realign. So the
+ * compact lens fixes the span instead: a shelf of minis is a shelf, and the tile is sized
+ * to fill it (`--wg-mini-h`, widget-grid.css).
+ */
+export const WG_MINI_ROWS = 7
+
+/**
+ * The pixel height that span is worth — what `--wg-mini-h` must equal.
+ *
+ * Note what the arithmetic says about the ruler: a row is `WG_ROW` (8px) but every row
+ * carries a `WG_GAP` (16px) gap after it, so spans step in 24px, not 8. A mini height
+ * chosen off that lattice would leave dead space inside the slot; 7 rows lands exactly.
+ * (`rowSpan(WG_MINI_H) === WG_MINI_ROWS` is asserted in the tests.)
+ */
+export const WG_MINI_H = WG_MINI_ROWS * WG_ROW + (WG_MINI_ROWS - 1) * WG_GAP
+
+/**
+ * How many one-line item rows a compact tile can name before it gives up and falls back
+ * to icon + title + a quiet count.
+ *
+ * A mini's job is to ANSWER at a glance ("À finir: les restants de pâté chinois"), not to
+ * promise an answer behind a tap. So it lists what it holds — up to the point where the
+ * list stops fitting `WG_MINI_H` under its header (5 rows at ~17px, plus the header and
+ * padding, is ~129px of 152px; a sixth would crowd it). Past that, naming five of nine
+ * things is a lie the count tells better, so the tile shows the icon and the number.
+ */
+export const WG_MINI_MAX_ITEMS = 5

@@ -40,8 +40,11 @@ export function HabitudesCard() {
       icon="repeat-bold"
       label={fn.title}
       ariaLabel={fn.checkin}
-      // How many are still asking — of the habits this face may already see below.
-      // Never per-person, never a streak or a rank (calm).
+      // Compact: name the habits still asking, exactly as the rows below do — the card's
+      // whole point is that it names what's left rather than promising it. Falls back to
+      // the count when there are more than a tile can hold. Never per-person, never a
+      // streak or a rank (calm).
+      compactItems={due.map((h) => h.title)}
       compactHint={String(due.length)}
     >
       <ul className="habitudes-card__list">

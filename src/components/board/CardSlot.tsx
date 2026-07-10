@@ -21,7 +21,7 @@ import {
   type BoardCardId,
   type CardZone,
 } from '../../lib/boardCards'
-import { colWidth, isCompact, rowSpan } from '../../lib/widgetGrid'
+import { colWidth, isCompact, rowSpan, WG_MINI_ROWS } from '../../lib/widgetGrid'
 import { EmptyState } from '../EmptyState'
 import { InlineIcon } from '../Icon'
 import { BoardCard } from './BoardCard'
@@ -40,7 +40,8 @@ import { useWidgetGrid } from './WidgetGrid'
 // SPAN. The slot is the grid item, so its own height is dictated by the row span — which
 // makes measuring it circular. We measure the inner wrapper's natural height instead and
 // derive the span from that (see `rowSpan`). Re-measured on any content change via a
-// ResizeObserver, coalesced to one write per frame.
+// ResizeObserver, coalesced to one write per frame. A card in its COMPACT form is the one
+// exception: it claims a constant `WG_MINI_ROWS` and isn't measured at all (see below).
 //
 // EMPTY. `mode` decides what an empty card does (lib/boardCards):
 //   • 'never'  — never reaches a slot at all; `visibleCards` drops it, so its fetch is
@@ -111,6 +112,8 @@ export function CardSlot({
   // guard the brief asks for (and covers a stray call from outside a pointer tap).
   const expanded = grid?.expandedId === id
   const span = expanded ? cols : sizedSpan
+  // A tile in its compact form. Its ROW span is a constant, never measured — see below.
+  const isMini = compact && !expanded
   const lens = useMemo<CardLens>(
     () => ({
       compact,
@@ -127,7 +130,9 @@ export function CardSlot({
     const el = innerRef.current
     // A collapsed slot is `display:none`: it measures 0 and would thrash the span back to
     // 1. Leave the last good span alone; it is recomputed the moment it un-collapses.
-    if (!el || collapsed) return
+    // A MINI isn't measured at all (its span is the constant below), so don't observe one:
+    // the measurement is not merely unused, it is the thing that used to stagger the board.
+    if (!el || collapsed || isMini) return
     let raf = 0
     const measure = () =>
       setRows((prev) => {
@@ -144,11 +149,27 @@ export function CardSlot({
       cancelAnimationFrame(raf)
       ro.disconnect()
     }
-  }, [collapsed, span])
+  }, [collapsed, isMini, span])
 
+  // WHY A COMPACT TILE'S SPAN IS A CONSTANT.
+  // Measuring it is what made a shelf of half-width cards read as a ragged, staggered
+  // skyline. The row ruler steps in 24px (an 8px row plus the 16px gap that follows it),
+  // so two tiles whose natural heights differ by ONE pixel across that boundary claim a
+  // different number of rows — and once two columns disagree by a row, every card below
+  // them is offset. The heights differed for reasons no one chose: a hint line here, a
+  // two-line title there, a border on the card that matters this hour.
+  // So the lens stops asking. Every mini claims `WG_MINI_ROWS`, and `--wg-mini-h`
+  // (widget-grid.css) sizes the tile to fill exactly that. Uniform by construction, which
+  // is also what lets a mini spend its fixed height NAMING its rows (`CardMini`).
   const style = useMemo(
-    () => ({ ['--wg-span-rows' as string]: rows, ['--wg-span-cols' as string]: span }),
-    [rows, span],
+    () => ({
+      ['--wg-span-rows' as string]: isMini ? WG_MINI_ROWS : rows,
+      ['--wg-span-cols' as string]: span,
+      // The card's persona, for a card that never set `--sec-tint` itself — and for the
+      // empty placeholder below, which has no card to ask. Never overrides one that did.
+      ['--wg-tint' as string]: meta?.tint,
+    }),
+    [isMini, rows, span, meta],
   )
 
   const dnd = grid?.dnd ?? null
@@ -197,8 +218,17 @@ export function CardSlot({
         <CardLensProvider value={lens}>
           <div className="wg-slot__inner" ref={innerRef}>
             {children}
+            {/* An `always` card with nothing to say. It keeps its colour (`--wg-tint`,
+                mapped onto `--sec-tint` in widget-grid.css) and SAYS it is empty — a
+                dashed edge plus one quiet word — rather than rendering as an anonymous
+                grey box the eye can't tell from a card that simply has no tint. */}
             {placeholder && meta && (
-              <BoardCard className="bento wg-slot__placeholder" label={label} icon={meta.icon}>
+              <BoardCard
+                className="bento wg-slot__placeholder"
+                label={label}
+                icon={meta.icon}
+                compactHint={t.board.cardEmptyMini}
+              >
                 <EmptyState>{t.board.cardEmpty}</EmptyState>
               </BoardCard>
             )}

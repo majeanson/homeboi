@@ -71,6 +71,12 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
       label={t.boardCard.cercleNotes}
       icon="file-text-bold"
       tint="var(--teal-deep, #2a8f85)"
+      // Compact: the same heading `NotesList` shows — the explicit title, else the body's
+      // first line, else « Sans titre » (a media memo). Never filtered: one row per note,
+      // so the tile can't quietly name fewer things than the card holds.
+      compactItems={notes.map(
+        (n) => n.title.trim() || n.text.split('\n')[0]!.trim() || t.cercle.familyNotes.untitled,
+      )}
       compactHint={String(notes.length)}
     >
       <NotesList
