@@ -40,6 +40,12 @@ export const FR = {
     careLog: 'Historique d’entretien',
     homePins: 'Repères de la maison',
     drawings: 'Mes dessins',
+    habits: 'Mes habitudes',
+    mots: 'Les mots',
+    meals: 'Plan des repas',
+    ideas: 'Idées de repas',
+    groups: 'Les groupes',
+    trips: 'Voyages',
     help: 'Aide et guide',
     // #12 — ask the AI a question over your own data, from the search box.
     ask: 'Demander à l’IA',

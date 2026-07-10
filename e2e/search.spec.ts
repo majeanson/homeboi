@@ -76,6 +76,46 @@ test('a business hit deep-links to the item (opens its peek), not just the secti
   await expect(page.locator('.cercle-row.is-focus')).toBeVisible()
 })
 
+// Wave S (PARITY) — six kinds that were dark to Recherche now have a SEARCH_INDEX
+// entry + a section. Four (habit / free-text meal / free-text idea / group) match
+// baseline fixtures; mots + trips are empty by default, so seed one of each.
+const MOT = { id: 'mo1', member_id: null, author_member_id: 'm1', text: 'Réunion de famille dimanche', media_kind: null, media_key: null, scene_key: null, created_at: BASE, updated_at: BASE, opened_at: null, saved_at: null, surface_at: null, reply_to: null }
+const TRIP = { id: 'tr1', title: 'Voyage en Gaspésie', destination: 'Percé', notes: 'Apporter les bottes', start_at: BASE, end_at: BASE, members: [], colour: '#2a8f85', media_kind: null, media_key: null, position: 0, created_at: BASE, updated_at: BASE }
+
+test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/meal/idea/group/trip)', async ({ page }) => {
+  await overrideJson(page, 'mots', { mots: [MOT] })
+  await overrideJson(page, 'trips', { trips: [TRIP] })
+  await page.goto('/search')
+
+  // A habit — matched on its title, links to the daily check-in scene.
+  await page.locator('.search__input').fill('Marcher dehors')
+  await expect(page.getByRole('heading', { name: 'Mes habitudes' })).toBeVisible()
+  await expect(page.locator('.search__row[href="/board/habitudes"]').first()).toBeVisible()
+
+  // A « mot » — no name, matched on its body text (secondary), links to the board.
+  await page.locator('.search__input').fill('Réunion de famille')
+  await expect(page.getByRole('heading', { name: 'Les mots' })).toBeVisible()
+
+  // A FREE-TEXT supper — « Salade César » (no recipe_id). The recipe-linked
+  // « Spaghetti maison » deliberately does NOT show here (it's a recipe hit).
+  await page.locator('.search__input').fill('Salade César')
+  await expect(page.getByRole('heading', { name: 'Plan des repas' })).toBeVisible()
+
+  // A free-text meal idea.
+  await page.locator('.search__input').fill('Soupe poulet')
+  await expect(page.getByRole('heading', { name: 'Idées de repas' })).toBeVisible()
+
+  // A named group — « Le hockey » (friends kind → the /cercle social list).
+  await page.locator('.search__input').fill('hockey')
+  await expect(page.getByRole('heading', { name: 'Les groupes' })).toBeVisible()
+  await expect(page.locator('.search__row[href="/cercle?section=social"]').first()).toBeVisible()
+
+  // A trip — matched on its title, links to the trip notebook /voyage/:id.
+  await page.locator('.search__input').fill('Gaspésie')
+  await expect(page.getByRole('heading', { name: 'Voyages' })).toBeVisible()
+  await expect(page.locator('.search__row[href="/voyage/tr1"]').first()).toBeVisible()
+})
+
 test('a family-note hit deep-links to the note and expands it', async ({ page }) => {
   await page.goto('/search')
   await page.locator('.search__input').fill('tourtière')

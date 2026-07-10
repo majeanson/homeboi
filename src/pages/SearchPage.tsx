@@ -13,15 +13,18 @@ import { type Carnet, type CareLog, type HomePin, PIN_EMOJI } from '../lib/carne
 import { type GalleryDrawing } from '../lib/drawingGallery'
 import { type Member } from '../lib/members'
 import { imgUrl } from '../lib/image'
-import { type Contact, type Pet } from '../lib/cercle'
+import { type Contact, type Pet, type ContactGroupRaw } from '../lib/cercle'
 import { type FamilyNote } from '../lib/familyNotes'
 import { firstLine } from '../lib/noteMarkdown'
 import { type Business, BUSINESS_COLOUR } from '../lib/businesses'
 import { type Routine, type HomeProject } from '../components/operator/types'
 import { type TodosData } from '../lib/todos'
-import { type ReserveData, RESERVE_KEY } from '../components/kitchen/types'
+import { type ReserveData, RESERVE_KEY, type MealRow, type MealIdea, type MealIdeasData, MEAL_IDEAS_KEY } from '../components/kitchen/types'
 import { useCars } from '../lib/carPrefs'
-import { useRecipes, useBoardData, usePantry } from '../lib/queryHooks'
+import { useHabits } from '../lib/habits'
+import { useAllMots } from '../lib/mots'
+import { useTrips, tripDateLabel, VOYAGE_ICON } from '../components/voyage/voyage'
+import { useRecipes, useBoardData, usePantry, useMeals } from '../lib/queryHooks'
 import { recipeImg } from '../lib/recipes'
 import { GUIDE } from '../lib/guideContent'
 import { stripTokens, highlight } from '../lib/richText'
@@ -114,9 +117,13 @@ export function SearchPage() {
   // /api/cercle carries BOTH the people directory and the household animals (#pets):
   // read both off the one shared cache — no extra fetch — and search each as its own
   // section (a pet has its own /cercle/pet/:id card).
-  const cercleData = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: Contact[]; pets: Pet[] }>('cercle') }).data
+  // /api/cercle carries the people, the pets AND the named groups (#groups) — read
+  // all three off the one shared cache, no extra fetch. Groups had no SEARCH_INDEX
+  // entry, so a named « Les cousins » returned nothing (Wave S).
+  const cercleData = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: Contact[]; pets: Pet[]; groups?: ContactGroupRaw[] }>('cercle') }).data
   const contacts = cercleData?.contacts ?? []
   const pets = cercleData?.pets ?? []
+  const groups = cercleData?.groups ?? []
   // Le cercle → Famille → "Notes & recommandations" — searchable too (text only;
   // media-only notes carry no text so they don't surface here).
   const familyNotes = useQuery({ queryKey: FAMILY_NOTES_KEY, queryFn: () => api<{ notes: FamilyNote[] }>('family-notes') }).data?.notes ?? []
@@ -150,6 +157,20 @@ export function SearchPage() {
   // name behind each member_id. A hit links to the gallery (/drawings).
   const drawings = useQuery({ queryKey: DRAWINGS_KEY, queryFn: () => api<{ drawings: GalleryDrawing[] }>('drawings') }).data?.drawings ?? []
   const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? []
+  // Wave S — five more persistent kinds that were dark to Recherche. Each reads a
+  // warm cache (or its shared hook) so no page pays a new fetch on this scene.
+  // « Mes habitudes » (live:false — a search scene shouldn't add to the poll cadence).
+  const habits = useHabits({ live: false }).data?.habits ?? []
+  // « Laisse un mot » — the whole inbox (scheduled-but-unsurfaced mots are still the
+  // operator's own content, so they stay findable; media-only mots carry no text).
+  const mots = useAllMots()
+  // Plan des repas — only the FREE-TEXT suppers; recipe-linked ones surface via the
+  // recipe section, so filter them out to avoid a duplicate hit.
+  const meals = (useMeals().data?.days ?? []).filter((m: MealRow) => !m.recipe_id)
+  // Idées de repas — same free-text-only rule.
+  const mealIdeas = (useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas') }).data?.ideas ?? []).filter((i: MealIdea) => !i.recipe_id)
+  // Voyage (privé) — the trip notebooks; a hit jumps to /voyage/:id.
+  const trips = useTrips().data?.trips ?? []
   // Name lookups for the row subtitles / drawing-author match.
   const carnetName = useMemo(() => new Map(carnets.map((c) => [c.id, c.name])), [carnets])
   const memberName = useMemo(() => new Map(members.map((m) => [m.id, m.display_name])), [members])
@@ -225,6 +246,13 @@ export function SearchPage() {
     const pinHits = pick(homePins, SEARCH_INDEX.homePin)
     // Kept drawings — no text of their own, so match the author's name.
     const drawingHits = pick(drawings, drawingFields(memberName))
+    // Wave S — the five newly-searchable kinds.
+    const habitHits = pick(habits, SEARCH_INDEX.habit)
+    const motHits = pick(mots, SEARCH_INDEX.mot)
+    const mealHits = pick(meals, SEARCH_INDEX.meal)
+    const ideaHits = pick(mealIdeas, SEARCH_INDEX.mealIdea)
+    const groupHits = pick(groups, SEARCH_INDEX.group)
+    const tripHits = pick(trips, SEARCH_INDEX.trip)
     // The Guide / in-app help. Match a card on its title + one-liner + every
     // sub-point (label, detail, why) in the active language, tokens stripped to
     // the words a reader sees. A title/summary hit links to the whole card; when
@@ -260,8 +288,8 @@ export function SearchPage() {
     }
     guideAll.sort((a, b) => a.r - b.r)
     const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll.length ? guideAll[0].r : 99 }
-    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, events, listItems, notes, fridgeNotes, guide }
-  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, memberName, board, familyNotes, boardNotes, lang])
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, fridgeNotes, guide }
+  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, boardNotes, lang])
 
   const total = res
     ? res.recipes.items.length +
@@ -277,6 +305,12 @@ export function SearchPage() {
       res.care.items.length +
       res.pins.items.length +
       res.drawings.items.length +
+      res.habits.items.length +
+      res.mots.items.length +
+      res.meals.items.length +
+      res.ideas.items.length +
+      res.groups.items.length +
+      res.trips.items.length +
       res.events.items.length +
       res.listItems.items.length +
       res.notes.items.length +
@@ -520,6 +554,121 @@ export function SearchPage() {
                     </span>
                     <span className="search__main">
                       <span className="search__title">{hl(d.member_id ? memberName.get(d.member_id) ?? t.notes.drawing : t.notes.drawing)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.habits.best,
+                node: res!.habits.items.length > 0 && (
+              <Section key="habits" label={t.search.habits}>
+                {res!.habits.items.map((h) => (
+                  <Link key={h.id} to="/board/habitudes" className="search__row">
+                    <span className="search__pic" aria-hidden="true">
+                      {h.icon ? h.icon : <InlineIcon name="repeat-bold" />}
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(h.title)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.mots.best,
+                node: res!.mots.items.length > 0 && (
+              <Section key="mots" label={t.search.mots}>
+                {res!.mots.items.map((m) => (
+                  <Link key={m.id} to="/board" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.routine.deep }}>
+                      <InlineIcon name="envelope-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(firstLine(m.text) || m.text)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.meals.best,
+                node: res!.meals.items.length > 0 && (
+              <Section key="meals" label={t.search.meals}>
+                {res!.meals.items.map((m) => (
+                  <Link key={m.id} to={`/kitchen/day/${m.date}`} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.meal.deep }}>
+                      <InlineIcon name="fork-knife-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(m.title)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.ideas.best,
+                node: res!.ideas.items.length > 0 && (
+              <Section key="ideas" label={t.search.ideas}>
+                {res!.ideas.items.map((i) => (
+                  <Link key={i.id} to="/kitchen/idees" className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.meal.deep }}>
+                      <InlineIcon name="cooking-pot-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(i.title)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.groups.best,
+                node: res!.groups.items.length > 0 && (
+              <Section key="groups" label={t.search.groups}>
+                {res!.groups.items.map((g) => (
+                  <Link key={g.id} to={g.kind === 'family' ? `/cercle/family/${g.id}` : '/cercle?section=social'} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: g.colour ?? CATS.cercle.deep }}>
+                      <InlineIcon name="users-three-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(g.name)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.trips.best,
+                node: res!.trips.items.length > 0 && (
+              <Section key="trips" label={t.search.trips}>
+                {res!.trips.items.map((tr) => (
+                  <Link key={tr.id} to={`/voyage/${tr.id}`} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: tr.colour ?? CATS.event.deep }}>
+                      <InlineIcon name={VOYAGE_ICON} />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(tr.title)}</span>
+                      <span className="search__sub mono">{tripDateLabel(tr, lang)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

@@ -266,24 +266,24 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | 🔶³        | ➖¹       | ✅       | ✅      |
 | F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | 🔶³⁸    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
-| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ❌⁵       | 🔶⁶      | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | 🔶¹⁵     | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | 🔶⁶      | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
 | F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | 🔶¹⁵     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
-| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | 🔶⁴⁹        | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | 🔶⁴⁹         | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F11 Widget space         | ✅      | ➖      | ➖⁴⁴    | ➖⁹        | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
-| F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ❌        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
+| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
+| F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | 🔶³⁹    |
 | F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
 | F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖        | ✅       | ✅      |
 | F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | 🔶¹⁵     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | 🔶⁴⁹        | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | 🔶⁴⁹         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
 | F21 Personnes            | ✅      | ✅      | ✅      | 🔶²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
-| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ❌        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ✅       | ✅      |
+| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ✅       | ✅      |
 | F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | 🔶⁴⁰    |
 | F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
 | F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
@@ -292,7 +292,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
 | F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | 🔶¹⁵     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ❌      |
 | F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ❌¹⁶     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | 🔶⁴¹    |
-| F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | 🔶¹⁵     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | 🔶⁴²    |
 | F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅      |
 | F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | 🔶²¹       | 🔶²³      | ✅       | ✅      |
@@ -303,7 +303,7 @@ Footnotes (verdicts recorded so far):
 2. Home projects searchable; loose chores ("À faire") — verify which kinds `SEARCH_INDEX` covers.
 3. `color` column (pre-0087 outlier) — converge opportunistically during a schema-touching migration, never churn-only (UNIFORMIZING D.1).
 4. Deliberate no-peek verdict recorded in `adapters.ts` L387-397 / UNIFORMIZING: tapping navigates to the full page/scene ("tap the thing, get the thing").
-5. **Dry-run confirmed 2026-07-10**: no `habit` entry in `SEARCH_INDEX` — « Mes habitudes » invisible to Recherche. One-line fix (searchIndex.ts says so itself).
+5. **Dry-run confirmed 2026-07-10; FIXED (Wave S) 2026-07-10**: `habit` now has a `SEARCH_INDEX` entry (title) + a « Mes habitudes » SearchPage section → `/board/habitudes`. See ⁵¹.
 6. Guide card `habits` + `operatorHelp:habits` exist, but no « ? » help on the board/HabitudesPage surface itself and no tour step (audited 2026-07-10, Appendix A).
 7. Two-step R2 upload — exempt from useWrite/realtime per LIB-1 verdict.
 8. AI round-trip (capture classify / vide-frigo) can't be queued offline — exempt, but the _fallback_ manual path must work offline; verify.
@@ -349,6 +349,7 @@ Footnotes (verdicts recorded so far):
 48. **D8 verified 2026-07-10**: the themed tab **does** branch to a deliberate toddler view (ToddlerBoard / KidKitchen / CircleKidView / Liste toddler), which **curates this operator/organizational sub-feature out** — a design fold, not a missing branch. Capture(＋ FAB) & search are hidden by the kid one-way door (`HubLayout` L325/382); pantry/vide-frigo/circulaires/ghost/groups/business/cercle-notes/carnets/Voyage are folded out of the kid lens; Partager is operator plumbing. [F9/F10/F16/F17/F18/F20/F22/F24/F25/F26/F31/F33]
 49. **D9 found 2026-07-10**: no board card **and** the scene route is **not in any phone-overflow e2e sweep** (`screenshots.spec`/`layout-overflow.spec` cover the six hub tabs at 360/390px, not `/search` or `/circulaires`). The layout likely reflows (grid/`Cluster`) but its phone width is **unproven** — add both routes to `OVERFLOW_CASES`. [F10/F18]
 50. **D8 soft-✅ 2026-07-10**: `StickerWallPage` has **no explicit `useAudience` branch** — the same wall renders across lenses — but it is inherently picture-first (avatar + sticker-emoji grid, no reading), so it satisfies the toddler bar by nature. Under a strict "must branch" reading this drops to ❓. [F29]
+51. **Wave S SHIPPED 2026-07-10** — the six dark D6 kinds now each have a `SEARCH_INDEX` entry (`src/lib/searchIndex.ts`) + a rendered SearchPage section: **habit** (title→`/board/habitudes`), **mot** (body-only secondary hit, like `fridgeNote`→`/board`), **meal** & **mealIdea** (title, both filtered `!recipe_id` so recipe-linked ones surface via the recipe, not twice→`/kitchen/day/:date` & `/kitchen/idees`), **group** (name; family→`/cercle/family/:id`, else `/cercle?section=social`), **trip** (title + destination/notes→`/voyage/:id`). All read warm caches / shared hooks (no new fetch): groups ride the widened `CERCLE_KEY` query; habits via `useHabits({live:false})`; meals via `useMeals()`; trips via `useTrips()`; mots via `useAllMots()`; ideas inline on `MEAL_IDEAS_KEY`. FR+EN labels added (`t.search.{habits,mots,meals,ideas,groups,trips}`). Guard: `e2e/search.spec.ts` « Wave S » test seeds/asserts one of each kind. [F5/F6/F12/F13/F22/F31×D6]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
@@ -384,7 +385,7 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 
 - **Per-dimension reference implementation** (the file a fixer should copy from):
   - **D1 CRUD:** `functions/api/cercle.ts` + `CercleFormPage` (create/edit/delete
-    + `RowActions`); reorder from La liste (`usePointerDnd`, migration 0078/0110).
+    - `RowActions`); reorder from La liste (`usePointerDnd`, migration 0078/0110).
   - **D2 peek:** `buildBusiness` / `buildPet` (`adapters.ts` L105/L153) — clean,
     recent, minimal adapters. ✅ confirmed present.
   - **D3 undo:** `Liste.tsx` / `MealPool.tsx` via `useDeferredRemoval` — ✅ confirmed
@@ -414,13 +415,13 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 
 **🔴 User-visible gaps — do first (Waves S, H, T, E):**
 
-1. [ ] 🔴 **F5/F6/F12/F13/F22/F31×D6** — six persistent-content entities are
+1. [x] 🔴 **F5/F6/F12/F13/F22/F31×D6** — six persistent-content entities were
        **unfindable from Recherche** (no `SEARCH_INDEX` entry): Mots (F5),
-       Habitudes (F6, footnote 5 — dry-run confirmed), Plan des repas (F12), Idées
-       de repas (F13), Groupes (F22), Voyage (F31). Highest-breadth 🔴; each is a
-       one-line extractor + a SearchPage section. **→ Wave S.** (Dessins is already
-       searchable via `drawingFields`; recipe-linked meals reach via the recipe —
-       only free-text meals/ideas are dark.)
+       Habitudes (F6), Plan des repas (F12), Idées de repas (F13), Groupes (F22),
+       Voyage (F31). **DONE (Wave S) 2026-07-10** — all six now have a
+       `SEARCH_INDEX` entry + SearchPage section (footnote 51); cells ❌→✅. (Dessins
+       was already searchable via `drawingFields`; recipe-linked meals/ideas reach
+       via the recipe — filtered `!recipe_id` so they never surface twice.)
 2. [ ] 🔴 **F5×D8 / F6×D8** — **Mots & Habitudes render no toddler lens at all**
        (Day 3): `MotsCard` isn't pulled into `ToddlerBoard`; `HabitudesPage`/
        `HabitudesCard` import no `useAudience`. Both are child-relevant (a mot with
@@ -448,32 +449,32 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 9. [ ] 🟡 **F20×D4** — `ghost.ts` `patchGhost`/`deleteGhost` bypass `useWrite`
        (footnote 19). Low severity (usually rides a queued list add). **→ Wave O.**
 10. [ ] 🟡 **F3/F14/F23/F30/F32×D16** — smoke-rendered only, **no happy-path spec**
-       (footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`,
-       `/voiture`. **→ Wave E** (extend the sweeps; `cercle-crud.spec` is the template).
+        (footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`,
+        `/voiture`. **→ Wave E** (extend the sweeps; `cercle-crud.spec` is the template).
 11. [ ] 🟡 **F10×D9 / F18×D9** — SearchPage & CirculairesPage are **not in any
-       phone-overflow e2e sweep** and have no board card (footnote 49); phone width
-       unproven. **→ Wave E** — add `/search` + `/circulaires` to `OVERFLOW_CASES`.
+        phone-overflow e2e sweep** and have no board card (footnote 49); phone width
+        unproven. **→ Wave E** — add `/search` + `/circulaires` to `OVERFLOW_CASES`.
 12. [ ] 🟡 **F22×D13 / F34×D13 / F26×D13** — `sort_order`/`sort` ordering outliers
-       vs the `position` convention: contact_groups, members, carnets, home_pins
-       (footnote 21; F22 corrected from a pre-seeded ✅). **→ Wave D** (opportunistic).
+        vs the `position` convention: contact_groups, members, carnets, home_pins
+        (footnote 21; F22 corrected from a pre-seeded ✅). **→ Wave D** (opportunistic).
 13. [ ] 🟡 **F2×D13 / F32×D13 / F26×D13** — `color` column outliers vs `colour`:
-       tasks, schedule_blocks, carnets, home_projects (footnote 3). **→ Wave D.**
+        tasks, schedule_blocks, carnets, home_projects (footnote 3). **→ Wave D.**
 14. [ ] 🟡 **F4×D13** — `notes.dismissed_at` bespoke soft-clear name vs `deleted_at`
-       (footnote 22). **→ Wave D.**
+        (footnote 22). **→ Wave D.**
 15. [ ] 🟡 **F26×D14 / F34×D14** — `care_log.media_json` parallel array +
-       `members.avatar_kind`/`avatar_ref` dual-purpose deviate from the media trio
-       (footnote 23). **→ Wave D.**
+        `members.avatar_kind`/`avatar_ref` dual-purpose deviate from the media trio
+        (footnote 23). **→ Wave D.**
 16. [ ] 🟡 **F15×D14 / F28×D14** — recipe step-image + routine card-audio/photo
-       **parallel arrays** instead of the trio (footnote 10, DB-1 deferred). **→ Wave D.**
+        **parallel arrays** instead of the trio (footnote 10, DB-1 deferred). **→ Wave D.**
 
 **🟢 Nice-to-have / superset-safe (Wave D / opportunistic):**
 
 17. [ ] 🟢 **D5 hygiene (F4/F9/F28/F33×D5)** — `SILENT_PATHS` carries a **dead
-       `capture-classify`** entry and omits `note-media`, `routine-card-photo`,
-       `routine-selfie`, `ask`, `place-import`, `guest/intake-media`,
-       `guest/postbox-media`, `guest-links`, `guest/*-submit` — each over-broadcasts
-       `[['board']]` (harmless superset). Cells stay ✅; add to `SILENT_PATHS` when
-       a wave touches that file. **→ Wave D.**
+        `capture-classify`** entry and omits `note-media`, `routine-card-photo`,
+        `routine-selfie`, `ask`, `place-import`, `guest/intake-media`,
+        `guest/postbox-media`, `guest-links`, `guest/*-submit` — each over-broadcasts
+        `[['board']]` (harmless superset). Cells stay ✅; add to `SILENT_PATHS` when
+        a wave touches that file. **→ Wave D.**
 
 **Total: 17 ranked entries — 4 🔴, 12 🟡, 1 🟢.** No matrix ❌/🔶 is unrepresented.
 
@@ -489,13 +490,13 @@ matrix cell + tick the box when done. **Sized 2026-07-10 (Day 4).** Suggested
 order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then opportunistic
 (**P → D**). Each wave header notes its ranked-entry #s and its size.
 
-- [ ] **Wave S — Search** _(entry 1; ~S/M — one session)_. Add `SEARCH_INDEX`
-      entries so all six persistent kinds are findable. Copy the `listItem`/`recipe`
-      extractor shape in `src/lib/searchIndex.ts`; add a SearchPage section per kind.
-  - [ ] `habit` (F6) · [ ] `mot` (F5) · [ ] free-text `meal` (F12) · [ ] `mealIdea`
-        (F13) · [ ] `group` (F22) · [ ] `trip` (F31)
-  - _Verify:_ SearchPage returns one seeded row of each kind. Extend
-    `e2e/search.spec` with one query per new kind.
+- [x] **Wave S — Search** _(entry 1; SHIPPED 2026-07-10)_. Added a `SEARCH_INDEX`
+      entry + a SearchPage section for all six kinds (footnote 51).
+  - [x] `habit` (F6) · [x] `mot` (F5) · [x] free-text `meal` (F12) · [x] `mealIdea`
+        (F13) · [x] `group` (F22) · [x] `trip` (F31)
+  - _Verified:_ `e2e/search.spec.ts` « Wave S » test seeds one of each kind and
+    asserts its section heading + hit link (5/5 search specs green locally);
+    typecheck + 1436 unit tests green.
 - [ ] **Wave T — Toddler lens** _(entry 2; ~M)_. The two real D8 gaps only — the
       rest of the tab-features already fold deliberately (footnote 48).
   - [ ] **F5 Mots** — pull `MotsCard` into `ToddlerBoard` as a picture-first,

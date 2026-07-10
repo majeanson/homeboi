@@ -1,10 +1,14 @@
-import type { Contact, Pet } from './cercle'
+import type { Contact, Pet, ContactGroupRaw } from './cercle'
 import type { Business } from './businesses'
 import type { Carnet, CareLog, HomePin } from './carnets'
 import type { GalleryDrawing } from './drawingGallery'
 import type { FamilyNote } from './familyNotes'
 import type { Routine, HomeProject } from '../components/operator/types'
 import type { Todo } from './todos'
+import type { Habit } from './habits'
+import type { Mot } from './mots'
+import type { MealRow, MealIdea } from '../components/kitchen/types'
+import type { Trip } from '../components/voyage/voyage'
 import type { EventRow, NoteRow } from '../components/board/types'
 import { plainText } from './noteMarkdown'
 
@@ -102,6 +106,25 @@ export const SEARCH_INDEX = {
   fridgeNote: entry<NoteRow>({
     primary: () => '',
     secondary: (n) => n.text ?? '',
+  }),
+  // « Mes habitudes » — findable by title (no notes field on the row; per-day
+  // check-in notes live in a separate `days` array, not worth indexing).
+  habit: entry<Habit>({ primary: (h) => h.title }),
+  // « Laisse un mot » — a mot has NO name; its message text is a SECONDARY hit
+  // (mirrors fridgeNote), so a thing actually NAMED what you typed ranks above a
+  // mot that merely mentions it. Media-only mots carry no text → never surface.
+  mot: entry<Mot>({ primary: () => '', secondary: (m) => m.text ?? '' }),
+  // Plan des repas — free-text suppers only (recipe-linked meals already surface
+  // via their recipe; SearchPage filters `!recipe_id` before handing them here).
+  meal: entry<MealRow>({ primary: (m) => m.title }),
+  // Idées de repas — same free-text-only rule as meals.
+  mealIdea: entry<MealIdea>({ primary: (i) => i.title }),
+  // Groupes (Le cercle) — findable by name (kind is an enum, colour a hex).
+  group: entry<ContactGroupRaw>({ primary: (g) => g.name }),
+  // Voyage (privé) — trip title, with destination + free-text notes as the body.
+  trip: entry<Trip>({
+    primary: (t) => t.title,
+    secondary: (t) => `${t.destination ?? ''} ${t.notes ?? ''}`,
   }),
 } as const
 
