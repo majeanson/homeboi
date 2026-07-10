@@ -303,7 +303,7 @@ Footnotes (verdicts recorded so far):
 
 1. No media attachment by design — the entity is text/derived only.
 2. Home projects searchable; loose chores ("À faire") — verify which kinds `SEARCH_INDEX` covers.
-3. **CONVERGED (mig 0087, already shipped).** The `color` outliers `tasks`/`home_projects`/`schedule_blocks`/`carnets` (+ the household JSON-pref columns) were renamed to `colour`; readers alias `colour AS color` so the API JSON stays byte-identical. Cells 🔶→✅. Only non-column spellings remain out of scope (the `color?` keys *inside* reserve_locations/cars JSON, and the `avatar_kind='color'` discriminator value) — see UNIFORMIZING DB-2.
+3. **CONVERGED (mig 0087, already shipped).** The `color` outliers `tasks`/`home_projects`/`schedule_blocks`/`carnets` (+ the household JSON-pref columns) were renamed to `colour`; readers alias `colour AS color` so the API JSON stays byte-identical. Cells 🔶→✅. Only non-column spellings remain out of scope (the `color?` keys _inside_ reserve_locations/cars JSON, and the `avatar_kind='color'` discriminator value) — see UNIFORMIZING DB-2.
 4. Deliberate no-peek verdict recorded in `adapters.ts` L387-397 / UNIFORMIZING: tapping navigates to the full page/scene ("tap the thing, get the thing").
 5. **Dry-run confirmed 2026-07-10; FIXED (Wave S) 2026-07-10**: `habit` now has a `SEARCH_INDEX` entry (title) + a « Mes habitudes » SearchPage section → `/board/habitudes`. See ⁵¹.
 6. Guide card `habits` + `operatorHelp:habits` exist, but no « ? » help on the board/HabitudesPage surface itself and no tour step (audited 2026-07-10, Appendix A).
@@ -320,9 +320,9 @@ Footnotes (verdicts recorded so far):
 17. **D1 verified 2026-07-10**: `ghost.ts` has no `onRequestPost` **by design** — a ghost is _enrolled_ from an existing purchase via PATCH (buying never auto-enrolls); edit + delete both present. Adding a create endpoint would reopen the auto-learning the calm tenet forbids, so this is full-CRUD-by-deliberate-shape, not a gap.
 18. **D1 verified 2026-07-10**: `car.ts` is a **GET-only resolved read model** (`realtime.ts` L203 says so — "no write path"); the household's cars are edited via `household` PATCH (`household.ts` L206), and `car-day` is a create/delete day-marker (nothing to edit). `schedule` is full CRUD. Whole feature is manageable.
 19. **D4 found 2026-07-10 → RESOLVED (Wave O, footnote 56)**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` called `api('ghost',{method})` directly — enroll/snooze/remove bypassed the offline outbox. Now routed through `useWrite` at the call site; the raw wrappers were deleted.
-20. **D4 found 2026-07-10 → TRIAGED ➖ (Wave O) 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. **Verdict on the import batch: keep raw `api()` — record ➖, don't convert.** The merge is a *dependent id-chain*: each `upsertPerson` POST returns a contact id that the subsequent `cercle-links` / pet-owner / `cercle-groups` writes reference by value, and pets/groups POST their own ids consumed by follow-up membership writes. `useWrite` returns `{ data: null, queued: true }` when offline, so a queued person write yields no id and every downstream link/membership breaks — a corrupt half-import, strictly worse than requiring connectivity. The whole page is an interactive online flow (open a share link → live progress bar → done state) with online-only R2 photo re-copies (`copyPhotoToOwn`). This is the sanctioned "online-only batch" ➖, not a gap.
+20. **D4 found 2026-07-10 → TRIAGED ➖ (Wave O) 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. **Verdict on the import batch: keep raw `api()` — record ➖, don't convert.** The merge is a _dependent id-chain_: each `upsertPerson` POST returns a contact id that the subsequent `cercle-links` / pet-owner / `cercle-groups` writes reference by value, and pets/groups POST their own ids consumed by follow-up membership writes. `useWrite` returns `{ data: null, queued: true }` when offline, so a queued person write yields no id and every downstream link/membership breaks — a corrupt half-import, strictly worse than requiring connectivity. The whole page is an interactive online flow (open a share link → live progress bar → done state) with online-only R2 photo re-copies (`copyPhotoToOwn`). This is the sanctioned "online-only batch" ➖, not a gap.
 21. **CONVERGED (mig 0086, already shipped).** The ordering outliers `members.sort_order` (F34), `contact_groups.sort_order` (F22), `carnets.sort` + `home_pins.sort` (F26) were renamed to `position`; the API JSON shapes are preserved (members alias `position AS sort_order`; carnets/home_pins keep their `sort` JSON key mapped from the renamed column). Cells 🔶→✅. See UNIFORMIZING DB-3.
-22. **RESOLVED ➖ (sanctioned bespoke name).** `notes.dismissed_at` (0018) is a soft-*clear* timestamp, semantically "cleared not deleted" (a mis-clear is recoverable), and is already commented as such in the migration — the same sanctioned deviation as `carnets.archived_at`. Keep it: a churn-only rename to `deleted_at` would blur the distinct semantic. Cell 🔶→➖. (Per CLAUDE.md ▸ Schema conventions, a bespoke timestamp name is allowed when the semantic genuinely differs and is commented.)
+22. **RESOLVED ➖ (sanctioned bespoke name).** `notes.dismissed_at` (0018) is a soft-_clear_ timestamp, semantically "cleared not deleted" (a mis-clear is recoverable), and is already commented as such in the migration — the same sanctioned deviation as `carnets.archived_at`. Keep it: a churn-only rename to `deleted_at` would blur the distinct semantic. Cell 🔶→➖. (Per CLAUDE.md ▸ Schema conventions, a bespoke timestamp name is allowed when the semantic genuinely differs and is commented.)
 23. **D14 media-shape deviation** (lifecycle still correct — blobs freed via `deleteR2Blob`, shared `uploadMedia` used): `care_log.media_json` is a parallel array of doc keys (F26); `members.avatar_kind`/`avatar_ref` is a bespoke dual-purpose column predating the trio (F34). Normalization backlog, opportunistic only — same class as DB-1 (¹⁰).
 24. **D1 deliberate-none**: `capture`/`ask`/`transcribe` are AI _action_ endpoints, not stored entities — the routed note/event/task is CRUD'd in its own feature; `a-regler` is a derived queue. A memo blob rides `note-media` (F4), so capture stores no media of its own (D14 ➖¹).
 25. **D1 deliberate-none**: flyer/deal data is transient external (Flipp reconstruction); a deal rides a generic recurring list item (never its own row, per the deal↔item concept); `place-import` is an import action.
@@ -416,7 +416,7 @@ Footnotes (verdicts recorded so far):
 56. **Wave O SHIPPED 2026-07-10** — the D4 outbox-bypass closed. **F20 Fantômes** (was
     🔶 — footnote 19): `GhostSection`'s four mutations now go through the offline outbox.
     `track` / `save` / `remove` / `add` call `write('ghost', { method, body, affectedKeys:
-    [GHOSTS_KEY] })` (useWrite) instead of the raw `patchGhost`/`deleteGhost` `api()`
+[GHOSTS_KEY] })` (useWrite) instead of the raw `patchGhost`/`deleteGhost` `api()`
     wrappers, so a retune/track/remove/add made offline **queues + replays** — matching the
     sibling `write('list', …)` calls in the same file and `QuickAddPage`'s ghost-mute. The
     dead `patchGhost`/`deleteGhost` exports **and** the now-orphan `GhostPatch` type were
@@ -575,11 +575,21 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 **🟢 Nice-to-have / superset-safe (Wave D / opportunistic):**
 
 17. [ ] 🟢 **D5 hygiene (F4/F9/F28/F33×D5)** — `SILENT_PATHS` carries a **dead
-        `capture-classify`** entry and omits `note-media`, `routine-card-photo`,
-        `routine-selfie`, `ask`, `place-import`, `guest/intake-media`,
-        `guest/postbox-media`, `guest-links`, `guest/*-submit` — each over-broadcasts
-        `[['board']]` (harmless superset). Cells stay ✅; add to `SILENT_PATHS` when
-        a wave touches that file. **→ Wave D.**
+        `capture-classify`** entry (no route in `worker/routes.ts`) and omits
+        `note-media`, `routine-card-photo`, `routine-selfie`, `ask`, `place-import`,
+        `guest/intake-media`, `guest/postbox-media`, `guest-links`, `guest/*-submit`,
+        **`recipe-ocr`** — each over-broadcasts `[['board']]` (harmless superset).
+        Cells stay ✅; add to `SILENT_PATHS` when a wave touches that file. **→ Wave D.**
+        _(D5 adversarial re-verify 2026-07-10 — enumerated every `worker/routes.ts`
+        write vs `PATH_KEYS`∪`SILENT_PATHS`: **`recipe-ocr` was the one omission this
+        list had missed** — an `onRequestPost` returning `ok({text})` inline, same
+        AI-scratch class as the already-silent `recipe-vision`/`recipe-image`, so it
+        breaks the "AI-scratch endpoints broadcast nothing" invariant. `intake`'s
+        PATCH accept/reject is the same harmless-superset class, NOT a wrong-key bug:
+        its cercle merge runs client-side through the separate `/api/cercle*` writes,
+        which already carry the right keys. `family-share` defaults to `[['board']]`
+        **by design** (comment in `realtime.ts`). D5 correctness holds everywhere —
+        the board default never loses a board-surface refresh.)_
 
 **Total: 17 ranked entries — 4 🔴, 12 🟡, 1 🟢.** No matrix ❌/🔶 is unrepresented.
 
@@ -643,7 +653,7 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         toast (msg `stickerWallRemoved`) and awaits a refetch before un-hiding. No more
         raw write (light, frequent, polled → undo toast). (footnote 55)
   - _Verified:_ e2e (`stickers.spec`) — ✕ hides the cell + surfaces the toast with **no**
-        DELETE fired; undo restores it, still no write. typecheck + 1436 unit tests green.
+    DELETE fired; undo restores it, still no write. typecheck + 1436 unit tests green.
 - [x] **Wave O — Offline writes** _(entries 8, 9; ~S/M)_. **DONE 2026-07-10.**
   - [x] **F21** — **recorded ➖** (not converted): `FamilyImportPage.tsx`'s merge is a
         dependent id-chain (each person/pet/group POST's returned id feeds the following
@@ -657,8 +667,8 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         the now-dead wrappers + `GhostPatch` type deleted from `lib/ghost.ts` (kept
         read-only). (footnote 56)
   - _Verified:_ typecheck + 1436 unit tests green; `interactions.spec` ghost tests (add
-        staple → PATCH, track candidate → PATCH) pass through the new `write()` path; knip
-        shows no new dead exports (3 removed).
+    staple → PATCH, track candidate → PATCH) pass through the new `write()` path; knip
+    shows no new dead exports (3 removed).
 - [x] **Wave P — Peek verdicts** _(~XS — one cell)_. **DONE 2026-07-10 → ➖ (no-peek).**
       The one D2 ❌ was **F6 Habitudes**. Verdict: **record ➖, no `buildHabit` adapter**.
       The board `HabitudesCard` is a single `<BoardCard to="/board/habitudes">` — tapping
@@ -671,8 +681,7 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
       never a churn-only wave)_. When another wave touches one of these tables, fold
       in its convergence. **Reconciled 2026-07-10: the two scalar-rename items below
       already shipped in migs 0086/0087 before this audit was written — the audit
-      just hadn't caught up. What genuinely remains is opportunistic media-shape work
-      + the SILENT_PATHS cleanup.**
+      just hadn't caught up. What genuinely remains is opportunistic media-shape work + the SILENT_PATHS cleanup.**
   - [x] `sort_order`/`sort`→`position`: contact_groups, members, carnets, home_pins.
         **DONE — mig 0086.**
   - [x] `color`→`colour`: tasks, schedule_blocks, carnets, home_projects.
@@ -741,6 +750,82 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 - [ ] One e2e happy-path spec (or extend a sweep spec).
 - [ ] New shared primitive (if any) → DevKit + `COMPONENTS.md`.
 - [ ] Add the feature as a row in this file's Part 1 and score it.
+
+---
+
+## Part 6 — The standing gold-standard gate (how every new feature stays gap-free)
+
+Part 5's checklist is the **what**. This is the **when + how-enforced**, so a feature
+can't quietly ship below the bar. It closes the two failure modes this audit itself
+surfaced:
+
+- **Silent regression** — a feature ships missing a dimension nobody scored (the ❌/🔶
+  Days 1–4 found across the matrix).
+- **Stale verdict** — a matrix cell drifts from code: an ✅ that quietly broke, or a 🔶
+  whose fix already shipped. Both happened here — the **D13 × migs 0086/0087**
+  reconciliation (🔶 that was already done) and the **D5 × `recipe-ocr`** omission (a
+  list that read complete but wasn't). **A cell is a verdict, not a fact.**
+
+### The bar (restated)
+
+Gold standard = **gap-free** (every one of the 16 D-columns is ✅ or a justified ➖ —
+zero ❌, zero 🔶) **AND rich** (substantive ✅ where the dimension applies, not gap-free
+only by piling on deliberate ➖). A feature is "done" when its Part-1 row is gap-free;
+any 🔶/❌ is either fixed or converted to a ➖-with-why **before** it ships — never left
+as a silent TODO.
+
+### What already self-enforces vs. what needs eyes
+
+Lean on the guards that exist; spend review attention on the rest.
+
+| Guard | Dimensions | The mechanism |
+| --- | --- | --- |
+| **Red build catches drift** | D5 · D13/calm · D15 · D9 · D16 | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
+| **Manual only — nothing fails the build** | D2 peek · D3 undo · D6 search · D7 guide · D8 toddler · D10 voice · D11 empty · D12 attribution · D14 media-shape | The Part 5 checklist walk + a reviewer reading the row |
+
+**Rule of thumb: the manual-only nine are where features silently fall short** — they
+compile and pass tests while missing a peek, an empty state, a toddler lens, or a guide
+card. Score them explicitly, every time.
+
+### The per-feature workflow
+
+1. **Design against the checklist, not after.** Open Part 5 + the reuse table in
+   `CLAUDE.md`; decide up front which of the 16 dimensions apply and which are a
+   deliberate ➖ (with the why).
+2. **Build by reusing the primitive** for each applicable dimension — the CLAUDE.md
+   "Reach for these BEFORE hand-rolling" table maps dimension → primitive. A hand-rolled
+   version of something that already has a primitive **is** the regression.
+3. **Self-score the row.** Add the feature to Part 1 and fill all 16 matrix cells. A ➖
+   needs a footnote; a 🔶/❌ is a blocker, not a note.
+4. **Close every non-✅** — fix it, or downgrade to a justified ➖. Only then is it done.
+5. **Cite the evidence.** For any non-obvious cell, name the migration / commit / file
+   that proves it, so the next reader re-verifies in one hop. This is what keeps cells
+   falsifiable instead of folklore.
+
+### Anti-staleness (the discipline this whole audit exists to enforce)
+
+- **Re-verify before you build on a cell.** When you touch a feature, re-check its row
+  against current code. Today a stale 🔶 (D13, already fixed by 0086/0087) and an
+  incomplete ✅-list (D5, missing `recipe-ocr`) surfaced **only** by reading code.
+- **A resolved cell flips in the SAME commit that resolves it.** The D13 drift existed
+  purely because 0086/0087 shipped without touching PARITY. Don't repeat that.
+- **Opportunistic-only items (Wave D) are still recorded, never silently dropped** — an
+  unmapped `SILENT_PATHS` endpoint is added to entry 17 the moment it's noticed, even if
+  the fix waits for a table-touching wave.
+
+### Definition of Done (paste into the feature's commit/PR body)
+
+```
+Gold-standard check (PARITY Part 6):
+- [ ] Part-1 row added, all 16 cells scored (➖ = footnoted why; no bare 🔶/❌)
+- [ ] Reused the primitive for every applicable dimension (no hand-rolled fork)
+- [ ] Schema conventions + calm test green | authed() + routes.ts + PATH_KEYS/SILENT_PATHS
+- [ ] useWrite / useDeferredRemoval / api() ; shared query key
+- [ ] Peek adapter · search · empty · toddler+mobile+desktop · attribution-as-faces (or ➖ each)
+- [ ] Guide card merged (32-ceiling) + help entries ; i18n Québécois register
+- [ ] e2e happy-path ; any new primitive → DevKit + COMPONENTS.md
+- [ ] Non-obvious cells cite the migration/commit that proves them
+```
 
 ---
 

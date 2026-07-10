@@ -108,7 +108,13 @@ the add-a-feature checklist. Merge into an existing card before creating one.
 **Feature-parity audit:** **`PARITY.md`** is the standing playbook that scores
 every feature against every cross-cutting dimension (peek, undo, offline, search,
 help, toddler lens, e2e…) and carries the canonical **new-entity checklist** —
-consult it when adding an entity or asked about feature gaps/uniformity.
+consult it when adding an entity or asked about feature gaps/uniformity. **Any new
+feature walks the Part 5 checklist and passes the Part 6 gold-standard gate before
+it ships** (score its Part-1 row gap-free — every cell ✅ or a footnoted ➖, no bare
+🔶/❌ — reuse the primitive per dimension, and cite the migration/commit for
+non-obvious cells; paste Part 6's "Definition of Done" into the commit). A matrix
+cell is a **verdict, not a fact** — re-verify it against code before relying on it,
+and flip a cell in the same commit that resolves it.
 
 ---
 
