@@ -9,18 +9,19 @@
 >
 > **Successor to `UNIFORMIZING.md`** (2026-06-26, fully executed). Same format
 > (checkboxes, severity, verdicts), different altitude: UNIFORMIZING deduped
-> *mechanisms*; PARITY audits *features* for even coverage of those mechanisms.
+> _mechanisms_; PARITY audits _features_ for even coverage of those mechanisms.
 >
 > ⚠️ **The code is the truth.** UNIFORMIZING's hardest lesson: findings go stale
 > between sessions. Every score in Part 3 and every wave item in Part 4 must be
 > **re-verified in code before building**. This file records verdicts, not facts.
 >
 > **Legend** (used everywhere below):
+>
 > - ✅ present and wired through the shared mechanism
 > - ➖ **deliberately absent** — a first-class score, always with a one-line why
->   (precedent: recipes/routines have *no* detail peek on purpose — tapping
->   navigates to their full page). Parity means *considered everywhere*, not
->   *present everywhere*.
+>   (precedent: recipes/routines have _no_ detail peek on purpose — tapping
+>   navigates to their full page). Parity means _considered everywhere_, not
+>   _present everywhere_.
 > - ❌ gap — absent with no recorded verdict
 > - 🔶 partial / hand-rolled beside the shared mechanism (worst state: works, but
 >   invisible to the next session and drifts)
@@ -42,8 +43,13 @@ mark unfinished cells ❓, never guess.
       migration reading; no page-level judgment needed. **Done 2026-07-10** — all
       five columns filled/confirmed; footnotes 17–26 added; D5 was already fully
       seeded and is confirmed (one hygiene 🟢 gap surfaced).
-- [ ] **Day 2 — Audit A2 (mechanical):** columns **D6 search, D11 empty states,
-      D12 attribution, D16 e2e**. Finish any A1 leftovers.
+- [x] **Day 2 — Audit A2 (mechanical):** columns **D6 search, D11 empty states,
+      D12 attribution, D16 e2e**. **Done 2026-07-10** — all four filled for 34 rows;
+      footnotes 27–42 added. D11 near-universal (88 files use `EmptyState`/`useReportEmpty`);
+      D6 surfaced 5 new ❌ (Mots/meals/ideas/groups/Voyage) + confirmed Dessins searchable;
+      D12 filled with 6 deliberate ➖ (photos/capture/leftovers/pantry/ghost/carnets carry
+      no member-face by design); D16 **corrected two pre-seeds** (F18 ✅, F32 🔶) and flagged
+      5 smoke-only surfaces.
 - [ ] **Day 3 — Audit B (per-page reading):** columns **D2 peek, D3 undo/confirm,
       D7 guide/help/tour, D8 toddler lens, D9 kiosk/mobile, D10 voice, D15 i18n
       register**. These need opening the pages, not just grepping.
@@ -63,74 +69,74 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-~33 user-facing features. Anchors are the feature's *reach*: tables (migration
+~33 user-facing features. Anchors are the feature's _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
 se (Recherche has no table) — the anchors just tell the auditor where to look.
 
 ### Board (Le babillard)
 
-| # | Feature | Tables | Endpoints | Pages / components | Query keys |
-|---|---|---|---|---|---|
-| F1 | Agenda & événements | events (0001+) | events, month, year, this-week, day-notes | Board, DayPlanPage, EventFormPage, MomentScene, board/MonthView, YearView | EVENTS, MONTH, BOARD |
-| F2 | À faire (corvées) + Projets & entretien | tasks, task_participants, home_projects (0074) | chores, chores-ledger, home-projects | ChoreFormPage, HomeProjectFormPage, board cards, operator/chores | CHORES, HOME_PROJECTS |
-| F3 | À compléter (todos) | todos, todo_templates (0046/0047) | todos, todo-templates | todos/*, TodoSection | TODOS, TODO_TEMPLATES |
-| F4 | Notes frigo (texte/audio/dessin/photo) | notes (0018, media trio 0043/0055) | notes, note-media | board/Notes, MemoControls, DrawPad | BOARD |
-| F5 | Mots (« Laisse un mot ») | mots (0094/0095) | mots | MotsCard, mots/* | MOTS |
-| F6 | Mes habitudes | habits, habit_days (0112) | habits | HabitudesPage, HabitFormPage, habits/*, HabitudesCard | HABITS |
-| F7 | Photos / cadre | photos (0006) | photos | operator/photos, AmbientScreen | PHOTOS |
-| F8 | Dessins (galerie) | drawings (0056) | drawings | DrawingGalleryPage, DrawPad | DRAWINGS |
-| F9 | Capture (＋ / AddSheet / partage PWA) | captures | capture, ask, transcribe, a-regler | AddSheet, AskSheet, CaptureForm, QuickAddPage, /share | A_REGLER |
-| F10 | Recherche | — (client-side over caches) | — | SearchPage, lib/searchIndex.ts | (reads all) |
-| F11 | Le babillard (widget space lui-même) | household prefs (layout local) | board, today-changes, weather, wonder | Board, WidgetGrid, CardSlot, lib/boardCards, operator/boardLayout | BOARD, WEATHER |
+| #   | Feature                                 | Tables                                         | Endpoints                                 | Pages / components                                                        | Query keys            |
+| --- | --------------------------------------- | ---------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- | --------------------- |
+| F1  | Agenda & événements                     | events (0001+)                                 | events, month, year, this-week, day-notes | Board, DayPlanPage, EventFormPage, MomentScene, board/MonthView, YearView | EVENTS, MONTH, BOARD  |
+| F2  | À faire (corvées) + Projets & entretien | tasks, task_participants, home_projects (0074) | chores, chores-ledger, home-projects      | ChoreFormPage, HomeProjectFormPage, board cards, operator/chores          | CHORES, HOME_PROJECTS |
+| F3  | À compléter (todos)                     | todos, todo_templates (0046/0047)              | todos, todo-templates                     | todos/\*, TodoSection                                                     | TODOS, TODO_TEMPLATES |
+| F4  | Notes frigo (texte/audio/dessin/photo)  | notes (0018, media trio 0043/0055)             | notes, note-media                         | board/Notes, MemoControls, DrawPad                                        | BOARD                 |
+| F5  | Mots (« Laisse un mot »)                | mots (0094/0095)                               | mots                                      | MotsCard, mots/\*                                                         | MOTS                  |
+| F6  | Mes habitudes                           | habits, habit_days (0112)                      | habits                                    | HabitudesPage, HabitFormPage, habits/\*, HabitudesCard                    | HABITS                |
+| F7  | Photos / cadre                          | photos (0006)                                  | photos                                    | operator/photos, AmbientScreen                                            | PHOTOS                |
+| F8  | Dessins (galerie)                       | drawings (0056)                                | drawings                                  | DrawingGalleryPage, DrawPad                                               | DRAWINGS              |
+| F9  | Capture (＋ / AddSheet / partage PWA)   | captures                                       | capture, ask, transcribe, a-regler        | AddSheet, AskSheet, CaptureForm, QuickAddPage, /share                     | A_REGLER              |
+| F10 | Recherche                               | — (client-side over caches)                    | —                                         | SearchPage, lib/searchIndex.ts                                            | (reads all)           |
+| F11 | Le babillard (widget space lui-même)    | household prefs (layout local)                 | board, today-changes, weather, wonder     | Board, WidgetGrid, CardSlot, lib/boardCards, operator/boardLayout         | BOARD, WEATHER        |
 
 ### La cuisine
 
-| # | Feature | Tables | Endpoints | Pages / components | Query keys |
-|---|---|---|---|---|---|
-| F12 | Plan des repas | meals (0001+) | meals, meal-staples | kitchen/MealPool, DayEditor, operator/meals | (kitchen/types.ts keys) |
-| F13 | Idées de repas | meal_ideas (0025/0108) | meal-ideas, suggest-meal | kitchen/MealIdeas, IdeasDrawer, IdeasPage | (kitchen keys) |
-| F14 | Restants | meal_leftovers (0035) | meal-leftovers | kitchen/*, buildLeftover peek | (kitchen keys) |
-| F15 | Recettes (livre, import, cook mode, ❤) | recipes (0008+), recipe_loves (0044) | recipes, recipe-* (draft/image/import/ocr/vision/tags/step-image/to-list), recipe-loves | RecipeBookPage, RecipeViewPage, RecipeFormPage, CookPage, MultiCookPage, HeartButton | LOVES + kitchen keys |
-| F16 | Garde-manger (bas / à écouler / réserve) | pantry_low, pantry_use_soon (0010), pantry_reserve (0036) | pantry, use-soon, reserve | kitchen/PantryTab, ReserveSection, operator/reserve | (kitchen keys) |
-| F17 | Vide-frigo & suggestions IA | — | empty-fridge, suggest-meal | kitchen ＋ tile, VideFrigo flow | — |
-| F18 | Circulaires & aubaines | — (Flipp reconstruction) | deals, flyer, flyers, flyer-img, place-import | CirculairesPage, PriceMatchPage | FLYERS |
+| #   | Feature                                  | Tables                                                    | Endpoints                                                                                | Pages / components                                                                   | Query keys              |
+| --- | ---------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------- |
+| F12 | Plan des repas                           | meals (0001+)                                             | meals, meal-staples                                                                      | kitchen/MealPool, DayEditor, operator/meals                                          | (kitchen/types.ts keys) |
+| F13 | Idées de repas                           | meal_ideas (0025/0108)                                    | meal-ideas, suggest-meal                                                                 | kitchen/MealIdeas, IdeasDrawer, IdeasPage                                            | (kitchen keys)          |
+| F14 | Restants                                 | meal_leftovers (0035)                                     | meal-leftovers                                                                           | kitchen/\*, buildLeftover peek                                                       | (kitchen keys)          |
+| F15 | Recettes (livre, import, cook mode, ❤)   | recipes (0008+), recipe_loves (0044)                      | recipes, recipe-\* (draft/image/import/ocr/vision/tags/step-image/to-list), recipe-loves | RecipeBookPage, RecipeViewPage, RecipeFormPage, CookPage, MultiCookPage, HeartButton | LOVES + kitchen keys    |
+| F16 | Garde-manger (bas / à écouler / réserve) | pantry_low, pantry_use_soon (0010), pantry_reserve (0036) | pantry, use-soon, reserve                                                                | kitchen/PantryTab, ReserveSection, operator/reserve                                  | (kitchen keys)          |
+| F17 | Vide-frigo & suggestions IA              | —                                                         | empty-fridge, suggest-meal                                                               | kitchen ＋ tile, VideFrigo flow                                                      | —                       |
+| F18 | Circulaires & aubaines                   | — (Flipp reconstruction)                                  | deals, flyer, flyers, flyer-img, place-import                                            | CirculairesPage, PriceMatchPage                                                      | FLYERS                  |
 
 ### La liste
 
-| # | Feature | Tables | Endpoints | Pages / components | Query keys |
-|---|---|---|---|---|---|
-| F19 | La liste (+ allées, caisse) | list_items (0001+, 0078 position, 0110) | list, recipe-to-list | Liste, ListEditPage, CashierPage, PriceMatchPage, lib/picks | (liste keys) |
-| F20 | Fantômes & déjà acheté | ghost_items, purchase_log (0005+) | ghost | operator/shopping, ghost strip | GHOSTS, HISTORY |
+| #   | Feature                     | Tables                                  | Endpoints            | Pages / components                                          | Query keys      |
+| --- | --------------------------- | --------------------------------------- | -------------------- | ----------------------------------------------------------- | --------------- |
+| F19 | La liste (+ allées, caisse) | list_items (0001+, 0078 position, 0110) | list, recipe-to-list | Liste, ListEditPage, CashierPage, PriceMatchPage, lib/picks | (liste keys)    |
+| F20 | Fantômes & déjà acheté      | ghost_items, purchase_log (0005+)       | ghost                | operator/shopping, ghost strip                              | GHOSTS, HISTORY |
 
 ### Le cercle
 
-| # | Feature | Tables | Endpoints | Pages / components | Query keys |
-|---|---|---|---|---|---|
-| F21 | Personnes & familles | contacts (0049+), contact_links (0049/0050), contact_photos (0054) | cercle, cercle-links, cercle-photos | Cercle, CercleFormPage, CercleFamilyPage, FamilyBuilder, FamilyImportPage | CERCLE |
-| F22 | Groupes | contact_groups (+members) (0052) | cercle-groups | GroupForm, Social view | CERCLE |
-| F23 | Animaux | pets (0071) | pets | CerclePetPage, PetForm | CERCLE |
-| F24 | Business | businesses (0063/0065) | businesses | cercle/BusinessesTab, BusinessForm | BUSINESSES |
-| F25 | Notes du cercle | family_notes (0062/0093/0111) | family-notes | cercle/CercleNotes, NoteEditor, NotesList | FAMILY_NOTES |
-| F26 | Carnets (+ care-log, home-pins) | carnets, care_log, home_pins (0082) | carnets, care-log, home-pins | CercleCarnetPage, CarnetForm, CarnetDocs | CARNETS, CARE_LOG, HOME_PINS |
-| F27 | Notre monde | — (derived) | — | CercleWorldPage, lib/cercle layouts | CERCLE |
+| #   | Feature                         | Tables                                                             | Endpoints                           | Pages / components                                                        | Query keys                   |
+| --- | ------------------------------- | ------------------------------------------------------------------ | ----------------------------------- | ------------------------------------------------------------------------- | ---------------------------- |
+| F21 | Personnes & familles            | contacts (0049+), contact_links (0049/0050), contact_photos (0054) | cercle, cercle-links, cercle-photos | Cercle, CercleFormPage, CercleFamilyPage, FamilyBuilder, FamilyImportPage | CERCLE                       |
+| F22 | Groupes                         | contact_groups (+members) (0052)                                   | cercle-groups                       | GroupForm, Social view                                                    | CERCLE                       |
+| F23 | Animaux                         | pets (0071)                                                        | pets                                | CerclePetPage, PetForm                                                    | CERCLE                       |
+| F24 | Business                        | businesses (0063/0065)                                             | businesses                          | cercle/BusinessesTab, BusinessForm                                        | BUSINESSES                   |
+| F25 | Notes du cercle                 | family_notes (0062/0093/0111)                                      | family-notes                        | cercle/CercleNotes, NoteEditor, NotesList                                 | FAMILY_NOTES                 |
+| F26 | Carnets (+ care-log, home-pins) | carnets, care_log, home_pins (0082)                                | carnets, care-log, home-pins        | CercleCarnetPage, CarnetForm, CarnetDocs                                  | CARNETS, CARE_LOG, HOME_PINS |
+| F27 | Notre monde                     | — (derived)                                                        | —                                   | CercleWorldPage, lib/cercle layouts                                       | CERCLE                       |
 
 ### Routines
 
-| # | Feature | Tables | Endpoints | Pages / components | Query keys |
-|---|---|---|---|---|---|
-| F28 | Routines & player | routines, routine_runs (0001+, timers 0079) | routines, routine-audio, routine-card-photo, routine-selfie | Routines, RoutineFormPage, RoutineRunPage, RoutinePlayer | ROUTINES |
-| F29 | Mur de collants | routine_stickers (0105) | routine-stickers | StickerWallPage | STICKERS |
-| F30 | Jouer | — | — | JouerPage, jouer/* | — |
+| #   | Feature           | Tables                                      | Endpoints                                                   | Pages / components                                       | Query keys |
+| --- | ----------------- | ------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- | ---------- |
+| F28 | Routines & player | routines, routine_runs (0001+, timers 0079) | routines, routine-audio, routine-card-photo, routine-selfie | Routines, RoutineFormPage, RoutineRunPage, RoutinePlayer | ROUTINES   |
+| F29 | Mur de collants   | routine_stickers (0105)                     | routine-stickers                                            | StickerWallPage                                          | STICKERS   |
+| F30 | Jouer             | —                                           | —                                                           | JouerPage, jouer/\*                                      | —          |
 
 ### Transversal
 
-| # | Feature | Tables | Endpoints | Pages / components | Query keys |
-|---|---|---|---|---|---|
-| F31 | Voyage (privé + partagé) | trips + trip_notes/packing (0092), shared_trips + 3 (0101) | trips, trip-*, shared-trip-* (11) | VoyagePage, SharedVoyagePage, DeparturePage, voyage/* | TRIPS*, SHARED_TRIP* |
-| F32 | L'auto | schedule_blocks (0069), car_day (0070), household cars | car, car-day, schedule | VoiturePage, AutoCard, operator/schedule | CAR, SCHEDULE |
-| F33 | Partager & invités (guest links, intake, postbox, partage public, demo) | guests (0098+), intake_* (0075/0076), postbox_* (0085), shares (0102), family_shares (0100) | guest*, intake, postbox, share, share-public, family-share, demo | ShareModal, IntakeForm, Postbox, PartagePage, FamilyWindowPage, operator/guest + reviews | SHARES, guestWindowKey |
-| F34 | Réglages, appareils & veille | devices, pairing_codes, household(+preferences 0106) | pair/*, members, household, takeout, health, ai-* | Operator, Pair, Setup, operator/* (~28 sections), lib/ambient | DEVICES, MEMBERS, HOUSEHOLD, HEALTH |
+| #   | Feature                                                                 | Tables                                                                                        | Endpoints                                                         | Pages / components                                                                       | Query keys                          |
+| --- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------- |
+| F31 | Voyage (privé + partagé)                                                | trips + trip_notes/packing (0092), shared_trips + 3 (0101)                                    | trips, trip-_, shared-trip-_ (11)                                 | VoyagePage, SharedVoyagePage, DeparturePage, voyage/\*                                   | TRIPS*, SHARED_TRIP*                |
+| F32 | L'auto                                                                  | schedule_blocks (0069), car_day (0070), household cars                                        | car, car-day, schedule                                            | VoiturePage, AutoCard, operator/schedule                                                 | CAR, SCHEDULE                       |
+| F33 | Partager & invités (guest links, intake, postbox, partage public, demo) | guests (0098+), intake*\* (0075/0076), postbox*\* (0085), shares (0102), family_shares (0100) | guest\*, intake, postbox, share, share-public, family-share, demo | ShareModal, IntakeForm, Postbox, PartagePage, FamilyWindowPage, operator/guest + reviews | SHARES, guestWindowKey              |
+| F34 | Réglages, appareils & veille                                            | devices, pairing_codes, household(+preferences 0106)                                          | pair/_, members, household, takeout, health, ai-_                 | Operator, Pair, Setup, operator/\* (~28 sections), lib/ambient                           | DEVICES, MEMBERS, HOUSEHOLD, HEALTH |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -148,7 +154,7 @@ endpoints + `RowActions` / form pages. ➖ examples: purchase_log is append-only
 by design; routine_runs empty themselves nightly. Recipe: read the handler for
 supported methods, grep the pages for `RowActions`, edit routes, `usePointerDnd`.
 
-**D2 — Detail peek.** Tapping the item where it appears as a *row/mention* opens
+**D2 — Detail peek.** Tapping the item where it appears as a _row/mention_ opens
 `useEntityDetail` with a real adapter. Source: `src/components/detail/adapters.ts`
 (10 builders) + `DetailKind` in `src/lib/detail.ts`. ➖ verdicts already recorded
 in code: recipe, routine (navigate to their scene instead — "tap the thing, get
@@ -157,7 +163,7 @@ grep `adapters.ts` for the entity; if absent, decide ➖ (write the why) or ❌.
 
 **D3 — Undo vs confirm, correctly assigned.** Light delete → undo toast via
 `useDeferredRemoval` (mandatory for live-polled lists — flash-back glitch);
-heavy/cascading delete → `useConfirm`. Score 🔶 if a *light* delete uses a heavy
+heavy/cascading delete → `useConfirm`. Score 🔶 if a _light_ delete uses a heavy
 confirm (friction) or a delete has neither. Recipe: grep the feature's components
 for `useDeferredRemoval(` / `confirm(` and judge weight per site.
 
@@ -170,15 +176,15 @@ Known to re-verify: `DayPlanPage.tsx` (~15 raw writes), `Board.tsx` (~11),
 `FamilyImportPage.tsx` (~9) — never individually itemized by LIB-1.
 
 **D5 — Realtime keys.** The feature's write paths appear in `PATH_KEYS`
-(`functions/_lib/realtime.ts`) with the *right* keys, or intentionally in
+(`functions/_lib/realtime.ts`) with the _right_ keys, or intentionally in
 `SILENT_PATHS`. Unmapped writes fall through to `[['board']]` (safe but
 over-broad → 🔶). Recipe: read `PATH_KEYS`/`SILENT_PATHS` for the feature's
 endpoint names; check keys match `queryKeys.ts`.
 
 **D6 — Search.** The entity has a `SEARCH_INDEX` entry (`src/lib/searchIndex.ts`;
 "searchable = has an entry"). ➖ for ephemeral/derived things (weather, runs).
-Recipe: grep the kind in `SEARCH_INDEX`. *(Dry-run finding: `habit` is absent —
-F6 is unfindable from Recherche. Pre-scored ❌.)*
+Recipe: grep the kind in `SEARCH_INDEX`. _(Dry-run finding: `habit` is absent —
+F6 is unfindable from Recherche. Pre-scored ❌.)_
 
 **D7 — Guide card + « ? » help + tour.** Three sub-scores: (a) a guide card in
 `src/lib/guideContent.ts` (32-card ceiling — **merge into an existing card
@@ -189,7 +195,7 @@ first**, per `DISCOVERY.md`); (b) coverage by one of the 7 help registries
 Voyage, Mots, Carnets, Habitudes, L'auto, Dessins have thin/no help-mode
 coverage — verify per row. Read `DISCOVERY.md` before fixing anything here.
 
-**D8 — Toddler/Simple lens.** The page renders something *deliberate* under
+**D8 — Toddler/Simple lens.** The page renders something _deliberate_ under
 `useAudience()` = toddler (picture-first) and simple (parent views, calmer),
 or ➖ (operator/settings is locked away by design). Recipe: grep the page for
 `useAudience` and open it; "no branch at all" on a themed tab = ❌.
@@ -209,7 +215,7 @@ grep the feature's components for `EmptyState|useReportEmpty`; open the surface
 with no data (sample seed off).
 
 **D12 — Attribution & faces.** "Who" is captured with the right pattern (DB-5:
-soft member ref / `author_member_id` / external `author_label`) and *shown*
+soft member ref / `author_member_id` / external `author_label`) and _shown_
 (Avatar tint, never counts/ranks — chore-ledger rule). Recipe: check the table's
 `*_by` columns + whether the UI surfaces the face.
 
@@ -225,7 +231,7 @@ is a **sanctioned** exception (➖).
 unset → controls hide. Known 🔶 (DB-1 deferred, opportunistic): recipes
 `image` + parallel step-image arrays; routines parallel card-audio/photo arrays.
 
-**D15 — i18n register.** FR/EN key *parity* is tsc-enforced (`typeof FR`) — this
+**D15 — i18n register.** FR/EN key _parity_ is tsc-enforced (`typeof FR`) — this
 column only audits **register**: Québécois FR (souper, céduler, courriel), no
 France-French drift, toddler-facing strings speakable by TTS. Recipe: read the
 feature's `i18n.ts` block aloud.
@@ -243,44 +249,45 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 > Pre-filled cells below come from the 2026-07-10 exploration + dry-runs and are
 > **already verified**; everything else starts ❓.
 
-| Feature | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| F1 Agenda | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | ✅ | ➖¹ | ❓ | ❓ |
-| F2 Corvées+Projets | ✅ | ✅ | ❓ | ✅ | ✅ | 🔶² | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | 🔶³ | ➖¹ | ❓ | ❓ |
-| F3 Todos | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | ✅ | ➖¹ | ❓ | ❓ |
-| F4 Notes frigo | ✅ | ➖⁴ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | 🔶²² | ✅ | ❓ | ❓ |
-| F5 Mots | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ |
-| F6 Habitudes | ✅ | ❌ | ❓ | ✅ | ✅ | ❌⁵ | 🔶⁶ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ➖¹ | ❓ | ✅ |
-| F7 Photos | ✅ | ➖ | ❓ | ➖⁷ | ➖⁷ | ➖ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ✅ | ❓ | ❓ |
-| F8 Dessins | ✅ | ➖⁴ | ❓ | ➖⁷ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ✅ | ❓ | ✅ |
-| F9 Capture | ➖²⁴ | ➖ | ➖ | 🔶⁸ | ✅ | ➖ | ✅ | ❓ | ❓ | ✅ | ❓ | ❓ | ➖ | ➖¹ | ❓ | ✅ |
-| F10 Recherche | ➖ | ➖ | ➖ | ➖ | ➖ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ➖ | ➖ | ➖ | ❓ | ✅ |
-| F11 Widget space | ✅ | ➖ | ❓ | ➖⁹ | ➖ | ➖ | ✅ | ❓ | ✅ | ➖ | ✅ | ➖ | ➖ | ➖ | ❓ | ✅ |
-| F12 Plan repas | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ✅ | ➖ | ❓ | ✅ |
-| F13 Idées repas | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ✅ | ➖ | ❓ | ❓ |
-| F14 Restants | ✅ | ✅ | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ➖ | ❓ | ❓ |
-| F15 Recettes | ✅ | ➖⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ✅ | 🔶¹⁰ | ❓ | ✅ |
-| F16 Garde-manger | ✅ | ❓ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ❓ | ✅ | ➖ | ❓ | ❓ |
-| F17 Vide-frigo | ➖ | ➖ | ➖ | ➖⁸ | ➖ | ➖ | 🔶¹⁵ | ❓ | ❓ | ❓ | ❓ | ➖ | ➖ | ➖ | ❓ | ❓ |
-| F18 Circulaires | ➖²⁵ | ❓ | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ➖ | ➖ | ❓ | ❌ |
-| F19 La liste | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ✅ | ✅ | ✅ | ✅ | ➖ | ❓ | ✅ |
-| F20 Fantômes | ✅¹⁷ | ❓ | ❓ | 🔶¹⁹ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ➖ | ❓ | ❓ |
-| F21 Personnes | ✅ | ✅ | ❓ | 🔶²⁰ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ✅ | ➖ | ✅ | ✅ | ❓ | ✅ |
-| F22 Groupes | ✅ | ❓ | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | 🔶²¹ | ➖ | ❓ | ❓ |
-| F23 Animaux | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ✅ | ❓ | ❓ |
-| F24 Business | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ✅ | ❓ | ❓ |
-| F25 Notes cercle | ✅ | ➖⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ |
-| F26 Carnets | ✅ | ➖⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | 🔶³ ²¹ | 🔶²³ | ❓ | 🔶¹¹ |
-| F27 Notre monde | ➖ | ❓ | ➖ | ➖ | ➖ | ➖ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ➖ | ➖ | ❓ | ❓ |
-| F28 Routines | ✅ | ➖⁴ | ❓ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ✅ | ✅ | 🔶¹⁰ | ❓ | ✅ |
-| F29 Collants | ✅ | ➖ | ❓ | ✅ | ✅ | ➖ | 🔶¹⁵ | ❓ | ❓ | ➖ | ❓ | ✅ | ✅ | ➖ | ❓ | ❌ |
-| F30 Jouer | ➖ | ➖ | ➖ | ➖ | ➖ | ➖ | ❌¹⁶ | ✅ | ❓ | ❓ | ❓ | ➖ | ➖ | ➖ | ❓ | ❓ |
-| F31 Voyage | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ |
-| F32 L'auto | ✅¹⁸ | ❓ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | 🔶³ | ➖ | ❓ | ❌ |
-| F33 Partager & invités | 🔶²⁶ | ➖ | ❓ | ➖¹² | 🔶 | ➖ | ✅ | ➖ | ❓ | ❓ | ❓ | ✅¹³ | ✅ | ✅ | ❓ | ✅ |
-| F34 Réglages & appareils | ✅ | ➖ | ❓ | ➖¹² | ✅ | ➖ | ✅ | ➖¹⁴ | ❓ | ❓ | ❓ | ➖ | 🔶²¹ | 🔶²³ | ❓ | ✅ |
+| Feature                  | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
+| ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
+| F1 Agenda                | ✅      | ✅      | ❓      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖¹       | ❓       | ✅      |
+| F2 Corvées+Projets       | ✅      | ✅      | ❓      | ✅         | ✅    | 🔶²       | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | 🔶³        | ➖¹       | ❓       | ✅      |
+| F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖¹       | ❓       | 🔶³⁸    |
+| F4 Notes frigo           | ✅      | ➖⁴     | ❓      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ❓       | ✅      |
+| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
+| F6 Habitudes             | ✅      | ❌      | ❓      | ✅         | ✅    | ❌⁵       | 🔶⁶      | ❓         | ✅           | ❓        | ✅        | ✅      | ✅         | ➖¹       | ❓       | ✅      |
+| F7 Photos                | ✅      | ➖      | ❓      | ➖⁷        | ➖⁷   | ➖        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖³⁰     | ✅         | ✅        | ❓       | ✅      |
+| F8 Dessins               | ✅      | ➖⁴     | ❓      | ➖⁷        | ✅    | ✅        | 🔶¹⁵     | ❓         | ❓           | ➖        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
+| F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ❓         | ❓           | ✅        | ✅        | ➖³¹     | ➖         | ➖¹       | ❓       | ✅      |
+| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
+| F11 Widget space         | ✅      | ➖      | ❓      | ➖⁹        | ➖    | ➖        | ✅       | ❓         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
+| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖        | ❓       | ✅      |
+| F13 Idées repas          | ✅      | ❓      | ✅      | ✅         | ✅    | ❌        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖        | ❓       | ✅      |
+| F14 Restants             | ✅      | ✅      | ❓      | ✅         | ✅    | ➖²⁷      | ✅       | ❓         | ❓           | ➖        | ✅        | ➖³²     | ✅         | ➖        | ❓       | 🔶³⁹    |
+| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | 🔶¹⁰      | ❓       | ✅      |
+| F16 Garde-manger         | ✅      | ❓      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ➖³³     | ✅         | ➖        | ❓       | ✅      |
+| F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | 🔶¹⁵     | ❓         | ❓           | ❓        | ➖³⁶      | ➖      | ➖         | ➖        | ❓       | ✅      |
+| F18 Circulaires          | ➖²⁵    | ❓      | ❓      | ✅         | ✅    | ➖²⁸      | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
+| F19 La liste             | ✅      | ❓      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ➖        | ❓       | ✅      |
+| F20 Fantômes             | ✅¹⁷    | ❓      | ❓      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ❓         | ❓           | ➖        | ✅        | ➖³⁴     | ✅         | ➖        | ❓       | ✅      |
+| F21 Personnes            | ✅      | ✅      | ❓      | 🔶²⁰       | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ➖      | ✅         | ✅        | ❓       | ✅      |
+| F22 Groupes              | ✅      | ❓      | ❓      | ✅         | ✅    | ❌        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ❓       | ✅      |
+| F23 Animaux              | ✅      | ✅      | ❓      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ✅         | ✅        | ❓       | 🔶⁴⁰    |
+| F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ✅         | ✅        | ❓       | ✅      |
+| F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
+| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ➖³⁵     | 🔶³ ²¹     | 🔶²³      | ❓       | 🔶¹¹    |
+| F27 Notre monde          | ➖      | ❓      | ➖      | ➖         | ➖    | ➖        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
+| F28 Routines             | ✅      | ➖⁴     | ❓      | ✅         | ✅    | ✅        | ✅       | ✅         | ❓           | ❓        | ✅        | ✅      | ✅         | 🔶¹⁰      | ❓       | ✅      |
+| F29 Collants             | ✅      | ➖      | ❓      | ✅         | ✅    | ➖        | 🔶¹⁵     | ❓         | ❓           | ➖        | ✅        | ✅      | ✅         | ➖        | ❓       | ❌      |
+| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ❌¹⁶     | ✅         | ❓           | ❓        | ➖³⁷      | ➖      | ➖         | ➖        | ❓       | 🔶⁴¹    |
+| F31 Voyage               | ✅      | ❓      | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
+| F32 L'auto               | ✅¹⁸    | ❓      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ❓       | 🔶⁴²    |
+| F33 Partager & invités   | 🔶²⁶    | ➖      | ❓      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ❓           | ❓        | ✅        | ✅¹³    | ✅         | ✅        | ❓       | ✅      |
+| F34 Réglages & appareils | ✅      | ➖      | ❓      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ❓           | ❓        | ✅        | ➖      | 🔶²¹       | 🔶²³      | ❓       | ✅      |
 
 Footnotes (verdicts recorded so far):
+
 1. No media attachment by design — the entity is text/derived only.
 2. Home projects searchable; loose chores ("À faire") — verify which kinds `SEARCH_INDEX` covers.
 3. `color` column (pre-0087 outlier) — converge opportunistically during a schema-touching migration, never churn-only (UNIFORMIZING D.1).
@@ -288,7 +295,7 @@ Footnotes (verdicts recorded so far):
 5. **Dry-run confirmed 2026-07-10**: no `habit` entry in `SEARCH_INDEX` — « Mes habitudes » invisible to Recherche. One-line fix (searchIndex.ts says so itself).
 6. Guide card `habits` + `operatorHelp:habits` exist, but no « ? » help on the board/HabitudesPage surface itself and no tour step (audited 2026-07-10, Appendix A).
 7. Two-step R2 upload — exempt from useWrite/realtime per LIB-1 verdict.
-8. AI round-trip (capture classify / vide-frigo) can't be queued offline — exempt, but the *fallback* manual path must work offline; verify.
+8. AI round-trip (capture classify / vide-frigo) can't be queued offline — exempt, but the _fallback_ manual path must work offline; verify.
 9. Board layout is device-local localStorage (`lib/boardCards`), not a server write.
 10. DB-1 deferred: parallel media arrays (recipe step-images, routine card-audio/photos) instead of the trio — opportunistic convergence only.
 11. Carnet restore/scene covered; care-log flows beyond restore unspecced.
@@ -297,22 +304,38 @@ Footnotes (verdicts recorded so far):
 14. Settings locked away from toddler by design (kid one-way door).
 15. **Guide-only** (Appendix A): a guide card explains it, but no « ? » help entry and no tour step on its live surface. Tour absence alone is not a gap (tours are deliberately narrow); guide-without-help is 🔶 because the "?" is the in-place channel.
 16. **Fully undiscovered**: no guide card, no help entry, no tour step. `playContent.ts` powers the toddler play space but the discovery layer never mentions it.
-17. **D1 verified 2026-07-10**: `ghost.ts` has no `onRequestPost` **by design** — a ghost is *enrolled* from an existing purchase via PATCH (buying never auto-enrolls); edit + delete both present. Adding a create endpoint would reopen the auto-learning the calm tenet forbids, so this is full-CRUD-by-deliberate-shape, not a gap.
+17. **D1 verified 2026-07-10**: `ghost.ts` has no `onRequestPost` **by design** — a ghost is _enrolled_ from an existing purchase via PATCH (buying never auto-enrolls); edit + delete both present. Adding a create endpoint would reopen the auto-learning the calm tenet forbids, so this is full-CRUD-by-deliberate-shape, not a gap.
 18. **D1 verified 2026-07-10**: `car.ts` is a **GET-only resolved read model** (`realtime.ts` L203 says so — "no write path"); the household's cars are edited via `household` PATCH (`household.ts` L206), and `car-day` is a create/delete day-marker (nothing to edit). `schedule` is full CRUD. Whole feature is manageable.
-19. **D4 found 2026-07-10**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` call `api('ghost',{method})` directly — enroll/snooze/remove bypass the offline outbox. Candidate for `useWrite` in Wave O (low severity — usually rides alongside a list add that *is* queued).
+19. **D4 found 2026-07-10**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` call `api('ghost',{method})` directly — enroll/snooze/remove bypass the offline outbox. Candidate for `useWrite` in Wave O (low severity — usually rides alongside a list add that _is_ queued).
 20. **D4 found 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. Triage the import batch in Wave O.
 21. **D13 ordering outlier** (`position` convention): `sort_order`/`sort` instead of `position` — `members.sort_order` (0001, F34), `contact_groups.sort_order` (0052, F22 — **corrects the pre-seeded ✅**, verified in code), `carnets.sort` + `home_pins.sort` (0082, F26). Converge opportunistically during a schema-touching migration, never churn-only.
 22. **D13 soft-delete outlier**: `notes.dismissed_at` (0018) is a bespoke soft-clear timestamp instead of `deleted_at` — documented (mis-clear recoverable), semantically "cleared not deleted." Converge opportunistically.
 23. **D14 media-shape deviation** (lifecycle still correct — blobs freed via `deleteR2Blob`, shared `uploadMedia` used): `care_log.media_json` is a parallel array of doc keys (F26); `members.avatar_kind`/`avatar_ref` is a bespoke dual-purpose column predating the trio (F34). Normalization backlog, opportunistic only — same class as DB-1 (¹⁰).
-24. **D1 deliberate-none**: `capture`/`ask`/`transcribe` are AI *action* endpoints, not stored entities — the routed note/event/task is CRUD'd in its own feature; `a-regler` is a derived queue. A memo blob rides `note-media` (F4), so capture stores no media of its own (D14 ➖¹).
+24. **D1 deliberate-none**: `capture`/`ask`/`transcribe` are AI _action_ endpoints, not stored entities — the routed note/event/task is CRUD'd in its own feature; `a-regler` is a derived queue. A memo blob rides `note-media` (F4), so capture stores no media of its own (D14 ➖¹).
 25. **D1 deliberate-none**: flyer/deal data is transient external (Flipp reconstruction); a deal rides a generic recurring list item (never its own row, per the deal↔item concept); `place-import` is an import action.
 26. **D1 mixed**: `share`/`family-share`/`guest-links` are full create+list+revoke; `intake`+`postbox` are inbound **review queues** (GET+PATCH accept/reject, no user-facing delete/edit by design); `demo`/`share-public` are read actions.
+27. **D6 verified 2026-07-10** (Day 2): `meal_leftovers` has **no `SEARCH_INDEX` entry** — a leftover is transient (empties as it's eaten) and the dish itself is a **searchable recipe** (`recipe_id`). Deliberate-none, not a gap.
+28. **D6 verified 2026-07-10**: circulaires/deals have no `SEARCH_INDEX` entry — transient external Flipp reconstruction (same class as F17); a deal rides a **generic recurring `list_items` row** already searchable via `listItem` (deal↔item concept).
+29. **D6 verified 2026-07-10**: `ghost_items` has no `SEARCH_INDEX` entry — a ghost is an opt-in purchase-**cadence flag**; the thing you'd search for is its `list_items` row, already findable via `listItem`.
+30. **D12 verified 2026-07-10**: `photos` has **no author column** (id/household/key/created_at) — a shared household cadre/frame, no per-photo "who" by design.
+31. **D12 verified 2026-07-10**: `captures` is a **transient AI routing queue** (raw_text/source/resolved_type, no member ref); attribution lands on the routed note/event/task in its own feature (see ²⁴/¹).
+32. **D12 verified 2026-07-10**: `meal_leftovers` has no member ref — a household dish; provenance is `source_meal_id`/`recipe_id`, not a person.
+33. **D12 verified 2026-07-10**: `pantry_low` carries a `member_id` (whoflagged) but it is **not surfaced**; `pantry_use_soon`/`pantry_reserve` carry none — the garde-manger is a shared household flag that shows no face by design (calm).
+34. **D12 verified 2026-07-10**: `ghost_items` has no author column — household shopping cadence, no per-person "who."
+35. **D12 verified 2026-07-10**: a carnet's "who" is the servicing **`business_id`** (a cercle business), not a household-member face — it's a reference log of things, not member content. (Faces are absent by design, not a gap.)
+36. **D11 verified 2026-07-10**: Vide-frigo is an **AI suggestion flow**, not a persistent list surface — its empty/degraded state is the host IdeasDrawer's (`leftoversEmpty`), and R2/AI-unset hides it. No standalone empty state to own.
+37. **D11 verified 2026-07-10**: Jouer is a toddler **play space** that always renders its games (`SeekGame`/`DayTimeline`/`BirthdayCountdown`) — no data-list to empty, no bare `return null`.
+38. **D16 verified 2026-07-10**: the « À compléter » board card is **smoke-rendered** in the board sweeps (`board-edit`/`screenshots`, via `todo-templates` mocks) but **no spec creates/completes a todo** — happy-path e2e gap.
+39. **D16 verified 2026-07-10**: the ＋ « Restants » compose field is **reached** (keyboard.spec `kitchen-addsheet`) but **no spec POSTs/consumes a `meal-leftovers` row** — happy-path e2e gap.
+40. **D16 verified 2026-07-10**: `/cercle/pet/new` is **smoke-rendered** (scenes.spec layout sweep) but — unlike group/business/carnet, which `cercle-crud.spec` creates-and-POSTs — **no spec creates a pet**. Happy-path e2e gap.
+41. **D16 verified 2026-07-10**: `/jouer` is **smoke-rendered** at toddler audience (scenes.spec layout sweep, no-overflow asserted) but **no game-interaction happy path** is exercised.
+42. **D16 verified 2026-07-10** — **corrects the pre-seeded ❌**: `/voiture` **is** smoke-rendered with a no-overflow layout assertion (scenes.spec `voiture`), so it's not dark; but no schedule/car-day/carpool **CRUD** happy path exists in the default `npm run e2e` (realdata.spec touches it only under the separate real-data harness). Upgraded ❌→🔶.
 
 ### Gold standard (fill on Day 4)
 
 - **Overall most-complete features:** ❓ (exploration suggests **La liste (F19)**,
   **Recettes (F15)**, **Mots (F5)**, **Voyage (F31)** as candidates — confirm
-  from the completed matrix, then write *why* each is the reference.)
+  from the completed matrix, then write _why_ each is the reference.)
 - **Per-dimension reference implementation** (the file a fixer should copy from):
   - D2 peek: `buildBusiness`/`buildPet` (clean, recent) — ❓ confirm
   - D3 undo: Liste / MealPool via `useDeferredRemoval` — ❓ confirm
@@ -325,7 +348,9 @@ Footnotes (verdicts recorded so far):
 > matrix cell. Seed entries from dry-runs:
 
 - [ ] 🔴 F6×D6 — habits missing from `SEARCH_INDEX` (footnote 5).
-- [ ] 🔴 F32×D16 / F29×D16 / F18×D16 — no e2e spec for L'auto, mur de collants, circulaires/price-match (verify, then spec the happy paths).
+- [ ] 🔴 F5/F12/F13/F22/F31×D6 — **no `SEARCH_INDEX` entry** for Mots, Plan des repas, Idées de repas, Groupes, Voyage (found Day 2). All are persistent named content a user could reasonably look up: a message, a planned/idea dish (recipe-linked meals are reachable via the recipe, but free-text meals/ideas aren't), a named group, a trip. One-line extractor each + a SearchPage section. (Dessins **is** searchable — via `drawingFields` by author name.)
+- [ ] 🔴 F29×D16 — mur de collants has **no e2e at all** (confirmed: no `sticker`/`collant`/`StickerWall` match). Spec the happy path.
+- [ ] 🟡 F3/F14/F23/F30/F32×D16 — **smoke-rendered only, no happy-path spec** (Day 2, footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`, `/voiture`. **F18 (circulaires) turned out covered** (DealsBrowser start `coverage.spec` + results `sheets.spec` + price-match `cashier.spec`) → ✅; **F32 (L'auto)** is layout-smoke-rendered not dark → ❌ upgraded to 🔶. Add create/complete/interaction specs (extend the sweeps).
 - [ ] 🔴 F30×D7 — Jouer is fully undiscovered: no guide card, no « ? », no tour (footnote 16).
 - [ ] 🟡 F5/F8/F17/F29/F31×D7 — Mots, Dessins, Vide-frigo, Mur de collants, Voyage are guide-only: no « ? » help on their live surface (footnote 15).
 - [ ] 🟡 F6×D7 — habits have guide + operatorHelp but no « ? » where they live (footnote 6).
@@ -385,6 +410,7 @@ register it in `/dev/kit` (`src/pages/DevKit.tsx`) + `COMPONENTS.md`, or it's
 invisible to the next session.
 
 Candidates to watch for while auditing (not yet justified — need the 3-site proof):
+
 - [ ] ❓ a shared "entity list section" (header + rows + empty + add) — Board `Act`/`Section` vs kitchen pools vs cercle `NotesList` may already be 3 shapes of one thing.
 - [ ] ❓ a `useEntityCrud(queryKey, endpoint)` bundle (useWrite + useDeferredRemoval + invalidate wiring) if Day 1 shows the same 15-line block in 3+ features.
 - [ ] ❓ (add here as the matrix fills)
@@ -396,17 +422,20 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 `CLAUDE.md` and keep the canonical copy here.
 
 **Schema & backend**
+
 - [ ] Migration follows the schema conventions: `created_at`/`updated_at`/`deleted_at`, `position`, `colour`, media trio, DB-5 attribution pattern chosen consciously, JSON `NOT NULL` defaults, soft refs commented. Calm test stays green.
 - [ ] Handler under `functions/api/` wrapped in `authed()` (+ `'operator'` scope if destructive) **and** a `TABLE` row in `worker/routes.ts`.
 - [ ] `PATH_KEYS` entry in `functions/_lib/realtime.ts` (or `SILENT_PATHS` with a why) + `realtime.test.ts` still green.
 - [ ] Idempotent writes ride the existing middleware (nothing to do — verify only).
 
 **Frontend data**
+
 - [ ] Shared query key in `src/lib/queryKeys.ts` (page-local keys stay local).
 - [ ] Writes via `useWrite()`; polled-list deletes via `useDeferredRemoval`; heavy deletes via `useConfirm`.
 - [ ] Reads via `api()` only.
 
 **UX reach**
+
 - [ ] Detail adapter in `adapters.ts` — or a ➖ verdict comment beside the others.
 - [ ] `SEARCH_INDEX` entry (or ➖ for ephemeral kinds).
 - [ ] `EmptyState` / `useReportEmpty` on every surface (board card never returns bare null).
@@ -415,11 +444,13 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 - [ ] Attribution shown as faces, never counts (calm).
 
 **Discovery & i18n**
+
 - [ ] Guide: merge into an existing card in `lib/guideContent.ts` (32-card ceiling) with Ouvrir/Régler/Essayer; « ? » help entries in the owning registry; tour step if it changes a main surface. Read `DISCOVERY.md`; orphan tests green.
 - [ ] `i18n.ts` FR block in Québécois register (EN parity enforced by tsc).
 - [ ] New Réglages setting stacks into an existing sub (C-15), never a new pill.
 
 **Proof**
+
 - [ ] One e2e happy-path spec (or extend a sweep spec).
 - [ ] New shared primitive (if any) → DevKit + `COMPONENTS.md`.
 - [ ] Add the feature as a row in this file's Part 1 and score it.
@@ -434,42 +465,42 @@ Exact per-feature mapping of the three discovery channels. Sources:
 Tour coverage is **deliberately narrow** — only main-surface moves get a step;
 a ❌ in the Tour column alone is not a gap.
 
-| Feature | Guide card | « ? » help entries | Tour step |
-|---|---|---|---|
-| F1 Agenda | ✅ `set-agenda` (+`board` pt 2) | ✅ add:`event`; board:`today`,`fil`,`upcoming`; operator:`schoolYear` | ❌ |
-| F2 Corvées+Projets | ✅ `set-chores` | ✅ add:`chore`,`chores-pick`; operator:`choreLedger`,`homeProjets`,`homeEntretien` | ❌ |
-| F3 Todos | ✅ `todos` | ✅ add:`todo`; board:`todos`; operator:`todoTemplates` | ❌ |
-| F4 Notes frigo | ✅ `capture` pt 1 | ✅ add:`note` | ✅ board:`add-note` |
-| F5 Mots | ✅ `mots` | ❌ | ❌ |
-| F6 Habitudes | ✅ `habits` | 🔶 operator:`habits` only — nothing on the board/HabitudesPage surface | ❌ |
-| F7 Photos/cadre | ✅ `screensaver` + `set-display` | ✅ operator:`photos`,`ambient`,`display` | ❌ |
-| F8 Dessins galerie | 🔶 via `mots` (alias `drawings`) | ❌ | ❌ |
-| F9 Capture/AddSheet | ✅ `capture` | ✅ the whole `addHelp` registry | ✅ essentials:`add-fab`; board:`add-tiles` |
-| F10 Recherche | ✅ `board` pts 4–5 (alias `search`) | ✅ `search` key in board/kitchen/liste/cercle/routines registries | ✅ board:`search` |
-| F11 Widget space | ✅ `board-widgets` | ✅ operator:`boardLayout` | ✅ board:`board-cards` |
-| F12 Plan des repas | ✅ `kitchen` pt 1 | ✅ add:`meal`; kitchenTab:`meals`; operator:`mealSlots` | ✅ kitchen:plan-week |
-| F13 Idées de repas | ✅ `kitchen` pt 9 | ✅ add:`ideas`; kitchenTab:`ideas` | ✅ kitchen:`add-week` |
-| F14 Restants | ✅ `kitchen` pt 8 (alias `leftovers`) | ✅ add:`leftovers`; kitchenTab:`leftovers`,`useSoon`; board:`toFinish` | ❌ |
-| F15 Recettes | ✅ `recipes` | ✅ add:`recipe`,`cook`; kitchenTab:`recipes`,`recipesBook`,`collections`; operator:`recipeTags`,`recipePills`,`measureColors`,`voice` | ❌ |
-| F16 Garde-manger | ✅ `kitchen` pt 2 | ✅ add:`pantry`; kitchenTab:`pantry`,`low` | ✅ kitchen:running-low |
-| F17 Vide-frigo | 🔶 `kitchen` pt 3 only | ❌ (folded into `ideas`, no dedicated key) | ❌ |
-| F18 Circulaires | ✅ `deals` | ✅ add:`flyer`; liste:`flyer` | ❌ |
-| F19 La liste | ✅ `liste` | ✅ add:`list-item`,`quick-add`,`share`,`auto-pick`,`shop`; liste:`quick`,`clear` | ✅ liste:`liste-add`,sort-aisle |
-| F20 Fantômes | ✅ `ghost` (+`set-shopping`) | ✅ operator:`ghost` | ❌ |
-| F21 Personnes/familles | ✅ `cercle` + `set-household` | ✅ add:`person`,`family`,`connect`; cercle: 12 keys (`family`,`household`,`tree`,`links`,`birthdays`…) | ✅ cercle:`cercle-views`,links |
-| F22 Groupes | ✅ `cercle` pt 8 | ✅ add:`group`; cercle:`namedGroup`,`editGroup`,`deleteGroup`,`social`; operator:`cercleGroups` | ❌ |
-| F23 Animaux | ✅ `cercle` pt 1 | ✅ add:`pet` | ❌ |
-| F24 Business | ✅ `cercle` pt 11 | ✅ add:`business`; cercle:`business` | ❌ |
-| F25 Notes du cercle | ✅ `cercle` pt 10 | ✅ cercle:`notes` | ❌ |
-| F26 Carnets | ✅ `carnets` | ✅ cercle:`carnets` | ❌ |
-| F27 Notre monde | ✅ `cercle` pt 7 | ✅ cercle:`monde` | ✅ cercle:`cercle-world` |
-| F28 Routines | ✅ `routines` + `set-chores` | ✅ add:`routine`; routines:`card`; operator:`calm` | ✅ routines: 4 steps |
-| F29 Mur de collants | 🔶 `routines` pt 4 only | ❌ | ❌ |
-| F30 Jouer | ❌ | ❌ | ❌ |
-| F31 Voyage | ✅ `voyage` | ❌ (no help key anywhere) | ❌ |
-| F32 L'auto | ✅ `auto` + `set-agenda` | ✅ add:`ride`; operator:`cars`,`schedule` | ❌ |
-| F33 Partager/invités | ✅ `share-access` + `set-devices` | ✅ add:`share`; operator:`guest` | ❌ |
-| F34 Réglages/appareils | ✅ `settings` + `set-*` cards | ✅ the whole `operatorHelp` registry | ❌ |
+| Feature                | Guide card                            | « ? » help entries                                                                                                                    | Tour step                                  |
+| ---------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| F1 Agenda              | ✅ `set-agenda` (+`board` pt 2)       | ✅ add:`event`; board:`today`,`fil`,`upcoming`; operator:`schoolYear`                                                                 | ❌                                         |
+| F2 Corvées+Projets     | ✅ `set-chores`                       | ✅ add:`chore`,`chores-pick`; operator:`choreLedger`,`homeProjets`,`homeEntretien`                                                    | ❌                                         |
+| F3 Todos               | ✅ `todos`                            | ✅ add:`todo`; board:`todos`; operator:`todoTemplates`                                                                                | ❌                                         |
+| F4 Notes frigo         | ✅ `capture` pt 1                     | ✅ add:`note`                                                                                                                         | ✅ board:`add-note`                        |
+| F5 Mots                | ✅ `mots`                             | ❌                                                                                                                                    | ❌                                         |
+| F6 Habitudes           | ✅ `habits`                           | 🔶 operator:`habits` only — nothing on the board/HabitudesPage surface                                                                | ❌                                         |
+| F7 Photos/cadre        | ✅ `screensaver` + `set-display`      | ✅ operator:`photos`,`ambient`,`display`                                                                                              | ❌                                         |
+| F8 Dessins galerie     | 🔶 via `mots` (alias `drawings`)      | ❌                                                                                                                                    | ❌                                         |
+| F9 Capture/AddSheet    | ✅ `capture`                          | ✅ the whole `addHelp` registry                                                                                                       | ✅ essentials:`add-fab`; board:`add-tiles` |
+| F10 Recherche          | ✅ `board` pts 4–5 (alias `search`)   | ✅ `search` key in board/kitchen/liste/cercle/routines registries                                                                     | ✅ board:`search`                          |
+| F11 Widget space       | ✅ `board-widgets`                    | ✅ operator:`boardLayout`                                                                                                             | ✅ board:`board-cards`                     |
+| F12 Plan des repas     | ✅ `kitchen` pt 1                     | ✅ add:`meal`; kitchenTab:`meals`; operator:`mealSlots`                                                                               | ✅ kitchen:plan-week                       |
+| F13 Idées de repas     | ✅ `kitchen` pt 9                     | ✅ add:`ideas`; kitchenTab:`ideas`                                                                                                    | ✅ kitchen:`add-week`                      |
+| F14 Restants           | ✅ `kitchen` pt 8 (alias `leftovers`) | ✅ add:`leftovers`; kitchenTab:`leftovers`,`useSoon`; board:`toFinish`                                                                | ❌                                         |
+| F15 Recettes           | ✅ `recipes`                          | ✅ add:`recipe`,`cook`; kitchenTab:`recipes`,`recipesBook`,`collections`; operator:`recipeTags`,`recipePills`,`measureColors`,`voice` | ❌                                         |
+| F16 Garde-manger       | ✅ `kitchen` pt 2                     | ✅ add:`pantry`; kitchenTab:`pantry`,`low`                                                                                            | ✅ kitchen:running-low                     |
+| F17 Vide-frigo         | 🔶 `kitchen` pt 3 only                | ❌ (folded into `ideas`, no dedicated key)                                                                                            | ❌                                         |
+| F18 Circulaires        | ✅ `deals`                            | ✅ add:`flyer`; liste:`flyer`                                                                                                         | ❌                                         |
+| F19 La liste           | ✅ `liste`                            | ✅ add:`list-item`,`quick-add`,`share`,`auto-pick`,`shop`; liste:`quick`,`clear`                                                      | ✅ liste:`liste-add`,sort-aisle            |
+| F20 Fantômes           | ✅ `ghost` (+`set-shopping`)          | ✅ operator:`ghost`                                                                                                                   | ❌                                         |
+| F21 Personnes/familles | ✅ `cercle` + `set-household`         | ✅ add:`person`,`family`,`connect`; cercle: 12 keys (`family`,`household`,`tree`,`links`,`birthdays`…)                                | ✅ cercle:`cercle-views`,links             |
+| F22 Groupes            | ✅ `cercle` pt 8                      | ✅ add:`group`; cercle:`namedGroup`,`editGroup`,`deleteGroup`,`social`; operator:`cercleGroups`                                       | ❌                                         |
+| F23 Animaux            | ✅ `cercle` pt 1                      | ✅ add:`pet`                                                                                                                          | ❌                                         |
+| F24 Business           | ✅ `cercle` pt 11                     | ✅ add:`business`; cercle:`business`                                                                                                  | ❌                                         |
+| F25 Notes du cercle    | ✅ `cercle` pt 10                     | ✅ cercle:`notes`                                                                                                                     | ❌                                         |
+| F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets`                                                                                                                   | ❌                                         |
+| F27 Notre monde        | ✅ `cercle` pt 7                      | ✅ cercle:`monde`                                                                                                                     | ✅ cercle:`cercle-world`                   |
+| F28 Routines           | ✅ `routines` + `set-chores`          | ✅ add:`routine`; routines:`card`; operator:`calm`                                                                                    | ✅ routines: 4 steps                       |
+| F29 Mur de collants    | 🔶 `routines` pt 4 only               | ❌                                                                                                                                    | ❌                                         |
+| F30 Jouer              | ❌                                    | ❌                                                                                                                                    | ❌                                         |
+| F31 Voyage             | ✅ `voyage`                           | ❌ (no help key anywhere)                                                                                                             | ❌                                         |
+| F32 L'auto             | ✅ `auto` + `set-agenda`              | ✅ add:`ride`; operator:`cars`,`schedule`                                                                                             | ❌                                         |
+| F33 Partager/invités   | ✅ `share-access` + `set-devices`     | ✅ add:`share`; operator:`guest`                                                                                                      | ❌                                         |
+| F34 Réglages/appareils | ✅ `settings` + `set-*` cards         | ✅ the whole `operatorHelp` registry                                                                                                  | ❌                                         |
 
 **Reading:** only **F30 Jouer** is dark on all three channels. Guide-only
 (no « ? » on their live surface): **F5 Mots, F8 Dessins, F17 Vide-frigo,
@@ -479,13 +510,21 @@ F4, F9–F13, F16, F19, F21, F27, F28 by design.
 
 ---
 
-*Created 2026-07-10 from a two-agent exploration sweep (entities/endpoints/pages ×
+_Created 2026-07-10 from a two-agent exploration sweep (entities/endpoints/pages ×
 capability dimensions) + dry-run scoring. D7 column fully audited same day
 (Appendix A). **Audit Day 1 run 2026-07-10** — columns D1/D4/D5/D13/D14 filled or
 confirmed for all 34 rows (footnotes 17–26). D5 was already seeded and holds; D1
 verified (ghost/car deliberate shapes are ✅, F33 mixed 🔶); D4 clean except the
 FamilyImportPage import batch + ghost.ts (DayPlanPage/Board already migrated); D13
 outliers are `color`/`sort_order`/`sort`/`dismissed_at`; D14 outliers are the known
-recipe/routine parallel arrays + care_log.media_json + members avatar. Status:
-Parts 1–2 complete; matrix D1/D4/D5/D7/D13/D14 done; audit Days 2–3 (D2/D3/D6/D8–D12/
-D15/D16) not yet run.*
+recipe/routine parallel arrays + care_log.media_json + members avatar. **Audit Day 2
+run 2026-07-10** — columns D6/D11/D12/D16 filled for all 34 rows (footnotes 27–42):
+D11 is near-universal (only Vide-frigo ³⁶ + Jouer ³⁷ are deliberate ➖); D12 attribution
+holds where content is member-authored (events/todos/drawings/schedule show faces) with
+6 deliberate ➖ where the entity carries no member "who" by design; D6 found 5 real
+search gaps (Mots, meals, ideas, groups, Voyage) and confirmed Dessins is searchable via
+`drawingFields`; D16 **corrected two pre-seeded ❌** (F18 Circulaires is e2e-covered → ✅;
+F32 L'auto is layout-smoke-rendered → 🔶) and flagged 5 smoke-only surfaces (todos, restants,
+pet-create, jouer, voiture) as happy-path e2e gaps. Status: Parts 1–2 complete; matrix
+D1/D4/D5/D6/D7/D11/D12/D13/D14/D16 done; **audit Day 3 (D2/D3/D8/D9/D10/D15, per-page
+reading) not yet run**._
