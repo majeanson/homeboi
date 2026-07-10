@@ -37,9 +37,11 @@
 Each "day" is one session. Sessions are resumable — a half-filled column is fine;
 mark unfinished cells ❓, never guess.
 
-- [ ] **Day 1 — Audit A1 (mechanical, greppable):** columns **D1 CRUD, D4 offline,
+- [x] **Day 1 — Audit A1 (mechanical, greppable):** columns **D1 CRUD, D4 offline,
       D5 realtime, D13 schema hygiene, D14 media** for all rows. Pure grep +
-      migration reading; no page-level judgment needed.
+      migration reading; no page-level judgment needed. **Done 2026-07-10** — all
+      five columns filled/confirmed; footnotes 17–26 added; D5 was already fully
+      seeded and is confirmed (one hygiene 🟢 gap surfaced).
 - [ ] **Day 2 — Audit A2 (mechanical):** columns **D6 search, D11 empty states,
       D12 attribution, D16 e2e**. Finish any A1 leftovers.
 - [ ] **Day 3 — Audit B (per-page reading):** columns **D2 peek, D3 undo/confirm,
@@ -243,40 +245,40 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 
 | Feature | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| F1 Agenda | ❓ | ✅ | ❓ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | ❓ | ➖¹ | ❓ | ❓ |
-| F2 Corvées+Projets | ❓ | ✅ | ❓ | ❓ | ✅ | 🔶² | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | 🔶³ | ➖¹ | ❓ | ❓ |
-| F3 Todos | ❓ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | ❓ | ➖¹ | ❓ | ❓ |
-| F4 Notes frigo | ❓ | ➖⁴ | ❓ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ |
-| F5 Mots | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ |
-| F6 Habitudes | ❓ | ❌ | ❓ | ❓ | ✅ | ❌⁵ | 🔶⁶ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ➖¹ | ❓ | ✅ |
-| F7 Photos | ❓ | ➖ | ❓ | ➖⁷ | ➖⁷ | ➖ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ✅ | ❓ | ❓ |
-| F8 Dessins | ❓ | ➖⁴ | ❓ | ➖⁷ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ➖ | ❓ | ❓ | ❓ | ✅ | ❓ | ✅ |
-| F9 Capture | ❓ | ➖ | ➖ | 🔶⁸ | ✅ | ➖ | ✅ | ❓ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ |
+| F1 Agenda | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | ✅ | ➖¹ | ❓ | ❓ |
+| F2 Corvées+Projets | ✅ | ✅ | ❓ | ✅ | ✅ | 🔶² | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | 🔶³ | ➖¹ | ❓ | ❓ |
+| F3 Todos | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | ✅ | ➖¹ | ❓ | ❓ |
+| F4 Notes frigo | ✅ | ➖⁴ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | 🔶²² | ✅ | ❓ | ❓ |
+| F5 Mots | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ |
+| F6 Habitudes | ✅ | ❌ | ❓ | ✅ | ✅ | ❌⁵ | 🔶⁶ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ➖¹ | ❓ | ✅ |
+| F7 Photos | ✅ | ➖ | ❓ | ➖⁷ | ➖⁷ | ➖ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ✅ | ❓ | ❓ |
+| F8 Dessins | ✅ | ➖⁴ | ❓ | ➖⁷ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ✅ | ❓ | ✅ |
+| F9 Capture | ➖²⁴ | ➖ | ➖ | 🔶⁸ | ✅ | ➖ | ✅ | ❓ | ❓ | ✅ | ❓ | ❓ | ➖ | ➖¹ | ❓ | ✅ |
 | F10 Recherche | ➖ | ➖ | ➖ | ➖ | ➖ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ➖ | ➖ | ➖ | ❓ | ✅ |
 | F11 Widget space | ✅ | ➖ | ❓ | ➖⁹ | ➖ | ➖ | ✅ | ❓ | ✅ | ➖ | ✅ | ➖ | ➖ | ➖ | ❓ | ✅ |
-| F12 Plan repas | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ❓ | ➖ | ❓ | ✅ |
-| F13 Idées repas | ❓ | ❓ | ✅ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ❓ | ➖ | ❓ | ❓ |
-| F14 Restants | ❓ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ❓ | ➖ | ❓ | ❓ |
-| F15 Recettes | ❓ | ➖⁴ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ❓ | 🔶¹⁰ | ❓ | ✅ |
-| F16 Garde-manger | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ❓ | ❓ | ➖ | ❓ | ❓ |
+| F12 Plan repas | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ✅ | ➖ | ❓ | ✅ |
+| F13 Idées repas | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ✅ | ➖ | ❓ | ❓ |
+| F14 Restants | ✅ | ✅ | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ➖ | ❓ | ❓ |
+| F15 Recettes | ✅ | ➖⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ✅ | ✅ | 🔶¹⁰ | ❓ | ✅ |
+| F16 Garde-manger | ✅ | ❓ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ❓ | ✅ | ➖ | ❓ | ❓ |
 | F17 Vide-frigo | ➖ | ➖ | ➖ | ➖⁸ | ➖ | ➖ | 🔶¹⁵ | ❓ | ❓ | ❓ | ❓ | ➖ | ➖ | ➖ | ❓ | ❓ |
-| F18 Circulaires | ❓ | ❓ | ❓ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ➖ | ➖ | ❓ | ❌ |
+| F18 Circulaires | ➖²⁵ | ❓ | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ➖ | ➖ | ❓ | ❌ |
 | F19 La liste | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ✅ | ✅ | ✅ | ✅ | ➖ | ❓ | ✅ |
-| F20 Fantômes | ❓ | ❓ | ❓ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ❓ | ➖ | ❓ | ❓ |
-| F21 Personnes | ✅ | ✅ | ❓ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ✅ | ➖ | ❓ | ✅ | ❓ | ✅ |
-| F22 Groupes | ❓ | ❓ | ❓ | ❓ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ➖ | ❓ | ❓ |
-| F23 Animaux | ❓ | ✅ | ❓ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ✅ | ❓ | ❓ |
-| F24 Business | ❓ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ✅ | ❓ | ❓ |
-| F25 Notes cercle | ❓ | ➖⁴ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ |
-| F26 Carnets | ❓ | ➖⁴ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | 🔶³ | ❓ | ❓ | 🔶¹¹ |
+| F20 Fantômes | ✅¹⁷ | ❓ | ❓ | 🔶¹⁹ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | ✅ | ➖ | ❓ | ❓ |
+| F21 Personnes | ✅ | ✅ | ❓ | 🔶²⁰ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ✅ | ➖ | ✅ | ✅ | ❓ | ✅ |
+| F22 Groupes | ✅ | ❓ | ❓ | ✅ | ✅ | ❓ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | 🔶²¹ | ➖ | ❓ | ❓ |
+| F23 Animaux | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ✅ | ❓ | ❓ |
+| F24 Business | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ✅ | ✅ | ❓ | ❓ |
+| F25 Notes cercle | ✅ | ➖⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ |
+| F26 Carnets | ✅ | ➖⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ❓ | ❓ | 🔶³ ²¹ | 🔶²³ | ❓ | 🔶¹¹ |
 | F27 Notre monde | ➖ | ❓ | ➖ | ➖ | ➖ | ➖ | ✅ | ❓ | ❓ | ➖ | ❓ | ➖ | ➖ | ➖ | ❓ | ❓ |
-| F28 Routines | ❓ | ➖⁴ | ❓ | ❓ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ✅ | ❓ | 🔶¹⁰ | ❓ | ✅ |
-| F29 Collants | ❓ | ➖ | ❓ | ❓ | ✅ | ➖ | 🔶¹⁵ | ❓ | ❓ | ➖ | ❓ | ✅ | ❓ | ➖ | ❓ | ❌ |
+| F28 Routines | ✅ | ➖⁴ | ❓ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ❓ | ✅ | ✅ | 🔶¹⁰ | ❓ | ✅ |
+| F29 Collants | ✅ | ➖ | ❓ | ✅ | ✅ | ➖ | 🔶¹⁵ | ❓ | ❓ | ➖ | ❓ | ✅ | ✅ | ➖ | ❓ | ❌ |
 | F30 Jouer | ➖ | ➖ | ➖ | ➖ | ➖ | ➖ | ❌¹⁶ | ✅ | ❓ | ❓ | ❓ | ➖ | ➖ | ➖ | ❓ | ❓ |
-| F31 Voyage | ✅ | ❓ | ✅ | ❓ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ |
-| F32 L'auto | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | 🔶³ | ➖ | ❓ | ❌ |
-| F33 Partager & invités | ❓ | ➖ | ❓ | ➖¹² | 🔶 | ➖ | ✅ | ➖ | ❓ | ❓ | ❓ | ✅¹³ | ✅ | ✅ | ❓ | ✅ |
-| F34 Réglages & appareils | ✅ | ➖ | ❓ | ➖¹² | ✅ | ➖ | ✅ | ➖¹⁴ | ❓ | ❓ | ❓ | ➖ | ❓ | ➖ | ❓ | ✅ |
+| F31 Voyage | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | 🔶¹⁵ | ❓ | ❓ | ✅ | ❓ | ✅ | ✅ | ✅ | ❓ | ✅ |
+| F32 L'auto | ✅¹⁸ | ❓ | ✅ | ✅ | ✅ | ✅ | ✅ | ❓ | ❓ | ➖ | ❓ | ❓ | 🔶³ | ➖ | ❓ | ❌ |
+| F33 Partager & invités | 🔶²⁶ | ➖ | ❓ | ➖¹² | 🔶 | ➖ | ✅ | ➖ | ❓ | ❓ | ❓ | ✅¹³ | ✅ | ✅ | ❓ | ✅ |
+| F34 Réglages & appareils | ✅ | ➖ | ❓ | ➖¹² | ✅ | ➖ | ✅ | ➖¹⁴ | ❓ | ❓ | ❓ | ➖ | 🔶²¹ | 🔶²³ | ❓ | ✅ |
 
 Footnotes (verdicts recorded so far):
 1. No media attachment by design — the entity is text/derived only.
@@ -295,6 +297,16 @@ Footnotes (verdicts recorded so far):
 14. Settings locked away from toddler by design (kid one-way door).
 15. **Guide-only** (Appendix A): a guide card explains it, but no « ? » help entry and no tour step on its live surface. Tour absence alone is not a gap (tours are deliberately narrow); guide-without-help is 🔶 because the "?" is the in-place channel.
 16. **Fully undiscovered**: no guide card, no help entry, no tour step. `playContent.ts` powers the toddler play space but the discovery layer never mentions it.
+17. **D1 verified 2026-07-10**: `ghost.ts` has no `onRequestPost` **by design** — a ghost is *enrolled* from an existing purchase via PATCH (buying never auto-enrolls); edit + delete both present. Adding a create endpoint would reopen the auto-learning the calm tenet forbids, so this is full-CRUD-by-deliberate-shape, not a gap.
+18. **D1 verified 2026-07-10**: `car.ts` is a **GET-only resolved read model** (`realtime.ts` L203 says so — "no write path"); the household's cars are edited via `household` PATCH (`household.ts` L206), and `car-day` is a create/delete day-marker (nothing to edit). `schedule` is full CRUD. Whole feature is manageable.
+19. **D4 found 2026-07-10**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` call `api('ghost',{method})` directly — enroll/snooze/remove bypass the offline outbox. Candidate for `useWrite` in Wave O (low severity — usually rides alongside a list add that *is* queued).
+20. **D4 found 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. Triage the import batch in Wave O.
+21. **D13 ordering outlier** (`position` convention): `sort_order`/`sort` instead of `position` — `members.sort_order` (0001, F34), `contact_groups.sort_order` (0052, F22 — **corrects the pre-seeded ✅**, verified in code), `carnets.sort` + `home_pins.sort` (0082, F26). Converge opportunistically during a schema-touching migration, never churn-only.
+22. **D13 soft-delete outlier**: `notes.dismissed_at` (0018) is a bespoke soft-clear timestamp instead of `deleted_at` — documented (mis-clear recoverable), semantically "cleared not deleted." Converge opportunistically.
+23. **D14 media-shape deviation** (lifecycle still correct — blobs freed via `deleteR2Blob`, shared `uploadMedia` used): `care_log.media_json` is a parallel array of doc keys (F26); `members.avatar_kind`/`avatar_ref` is a bespoke dual-purpose column predating the trio (F34). Normalization backlog, opportunistic only — same class as DB-1 (¹⁰).
+24. **D1 deliberate-none**: `capture`/`ask`/`transcribe` are AI *action* endpoints, not stored entities — the routed note/event/task is CRUD'd in its own feature; `a-regler` is a derived queue. A memo blob rides `note-media` (F4), so capture stores no media of its own (D14 ➖¹).
+25. **D1 deliberate-none**: flyer/deal data is transient external (Flipp reconstruction); a deal rides a generic recurring list item (never its own row, per the deal↔item concept); `place-import` is an import action.
+26. **D1 mixed**: `share`/`family-share`/`guest-links` are full create+list+revoke; `intake`+`postbox` are inbound **review queues** (GET+PATCH accept/reject, no user-facing delete/edit by design); `demo`/`share-public` are read actions.
 
 ### Gold standard (fill on Day 4)
 
@@ -317,6 +329,12 @@ Footnotes (verdicts recorded so far):
 - [ ] 🔴 F30×D7 — Jouer is fully undiscovered: no guide card, no « ? », no tour (footnote 16).
 - [ ] 🟡 F5/F8/F17/F29/F31×D7 — Mots, Dessins, Vide-frigo, Mur de collants, Voyage are guide-only: no « ? » help on their live surface (footnote 15).
 - [ ] 🟡 F6×D7 — habits have guide + operatorHelp but no « ? » where they live (footnote 6).
+- [ ] 🟡 F21×D4 — `FamilyImportPage.tsx` bulk import = 9 raw `api()` writes, not offline-queued (footnote 20). DayPlanPage/Board turned out already-migrated — this is the only real D4 cluster.
+- [ ] 🟡 F20×D4 — `ghost.ts` `patchGhost`/`deleteGhost` bypass `useWrite` (footnote 19).
+- [ ] 🟡 F22×D13 / F34×D13 / F26×D13 — `sort_order`/`sort` ordering outliers (`position` convention): contact_groups, members, carnets, home_pins (footnote 21). F22 corrected from a pre-seeded ✅.
+- [ ] 🟡 F4×D13 — `notes.dismissed_at` bespoke soft-clear name vs `deleted_at` (footnote 22).
+- [ ] 🟡 F26×D14 / F34×D14 — `care_log.media_json` parallel array + `members.avatar_kind`/`avatar_ref` dual-purpose deviate from the media trio (footnote 23).
+- [ ] 🟢 D5 hygiene (F4/F9/F28/F33×D5) — `SILENT_PATHS` in `functions/_lib/realtime.ts` carries a **dead `capture-classify`** entry (no such route; the handler is `capture`), and the blob/AI endpoints `note-media`, `routine-card-photo`, `routine-selfie`, `ask`, `place-import`, `guest/intake-media`, `guest/postbox-media`, `guest-links`, `guest/*-submit` are **absent from `SILENT_PATHS`**, so each write over-broadcasts `[['board']]` (harmless superset — their real content path is mapped — but they should be silenced). Cells stay ✅; add these to `SILENT_PATHS` opportunistically.
 - [ ] ❓ … (Day 4 fills the rest, ranked.)
 
 ---
@@ -463,5 +481,11 @@ F4, F9–F13, F16, F19, F21, F27, F28 by design.
 
 *Created 2026-07-10 from a two-agent exploration sweep (entities/endpoints/pages ×
 capability dimensions) + dry-run scoring. D7 column fully audited same day
-(Appendix A). Status: Parts 1–2 complete; matrix pre-seeded + D7 done; audit
-Day 1 not yet run.*
+(Appendix A). **Audit Day 1 run 2026-07-10** — columns D1/D4/D5/D13/D14 filled or
+confirmed for all 34 rows (footnotes 17–26). D5 was already seeded and holds; D1
+verified (ghost/car deliberate shapes are ✅, F33 mixed 🔶); D4 clean except the
+FamilyImportPage import batch + ghost.ts (DayPlanPage/Board already migrated); D13
+outliers are `color`/`sort_order`/`sort`/`dismissed_at`; D14 outliers are the known
+recipe/routine parallel arrays + care_log.media_json + members avatar. Status:
+Parts 1–2 complete; matrix D1/D4/D5/D7/D13/D14 done; audit Days 2–3 (D2/D3/D6/D8–D12/
+D15/D16) not yet run.*
