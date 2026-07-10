@@ -41,7 +41,7 @@ The genuinely cross-cutting, prop-driven components. Categorised as the gallery 
 | **ContactFields** | `components/cercle/ContactFields.tsx` | THE shared identity field cluster (name parts, birthday, gender, optional phone/email/address) — controlled (`value`/`onChange` patch), `showContact`/`showAddress` toggles. Used by `ContactForm` AND the relative-facing intake form (`pages/IntakeForm.tsx`) so both render the exact same fields. Reuses `BirthdayPicker` + gender `Chip`s + the `cf__*` CSS. |
 | **Icon / InlineIcon** | `components/Icon.tsx` | Phosphor-bold SVG via `currentColor`; `IconName` is a compile-time union (`lib/pipIcons.ts`). 40+ call sites. |
 | **Disclosure** + **useSingleOpen** | `components/Disclosure.tsx` | Calm collapsed-by-default expand/toggle (caret + label + optional count). Tucks a space-hungry secondary group — suggestion chips, an aside — out of sight until tapped, so nothing populates the surface unasked (NFR-CALM-1). Wraps the departure-checklist "Listes prêtes" chips in **TodoSection** + the **AddSheet** todo form. Its per-item sibling, the **`useSingleOpen`** hook, drives the "tap a row → reveal its picker, one open at a time" expand in **MealPool** (the Idées/À écouler chips) and the read-mostly rows inside **IdeasDrawer** (Favoris/IA/Proposé par — trigger is a chip beside RowActions, body a sibling row — same toggle + rotating-caret cue, different layout). |
-| **SubTabs** | `components/SubTabs.tsx` | THE app-wide segmented "one job at a time" sub-tab control (the `.subtabs` family in `styles/core.css`): a calm pill row, active tab filled with the surface accent. `options[]` (key/label/optional `icon`) + `value` + `onSelect`; help-mode aware (pass `pick={help.pick}` + `armed={help.active}` so a tap EXPLAINS the tab in help mode), optional `trailing` slot (the "?" `HelpToggle`), `tour` anchor, `size="mini"` (the compact `.subtabs--mini`) / `className` passthrough (`deal-tabs`/`flyer-tabs`), and `tint` (a section colour — e.g. `SECTION_TINT[...].ink` — applied as a local `--accent` so the active pill wears that section's hue; the themed Réglages tabs). Used by **La cuisine** (Repas · Garde-manger · Recettes) and **Le cercle** (Liste · Liens · Arbre); the deal/flyer/recipe-book toggles still hand-roll `.subtabs` and can migrate onto it. |
+| **SubTabs** | `components/SubTabs.tsx` | THE app-wide segmented "one job at a time" sub-tab control (the `.subtabs` family in `styles/core.css`): a calm pill row, active tab filled with the surface accent. `options[]` (key/label/optional `icon`) + `value` + `onSelect`; help-mode aware (pass `pick={help.pick}` + `armed={help.active}` so a tap EXPLAINS the tab in help mode), optional `trailing` slot (the "?" `HelpToggle`), `tour` anchor, `size="mini"` (the compact `.subtabs--mini`) / `className` passthrough (`deal-tabs`/`flyer-tabs`), and `tint` (a section colour — e.g. `SECTION_TINT[...].ink` — applied as a local `--accent` so the active pill wears that section's hue; the themed Réglages tabs). Used by **La cuisine** (Repas · Garde-manger · Recettes) and **Le cercle** (Liste · Liens · Arbre); the deal/flyer/recipe-book toggles still hand-roll `.subtabs` and can migrate onto it. **Desktop-reachable via `useHScroll`**: the pill row hides its scrollbar, so when the segments outgrow the width (Réglages ▸ Système's nine subs) a mouse had no way at all to reach the tabs past the right edge. The row now maps a vertical wheel onto its horizontal scroll, draws ‹ › chevrons while it overflows (fine pointer only — touch swipes, and two chevrons would eat a phone's pill width; never on `size="mini"`, whose `.recipe-view-toggle` host flattens the row with `display:contents`), and scrolls the selected tab into view after a deep link. Guard: `e2e/hscroll.spec.ts`. |
 | **ColorPicker** | `components/ColorPicker.tsx` | Row of palette dots; controlled. |
 | **Toggle** | `components/Toggle.tsx` | THE calm on/off pill — `btn`/`btn--primary` filled when on, glyph + label, `aria-pressed` reflects state (`disabled`→`aria-disabled`). Caller supplies the state-dependent icon/label. Shared by Réglages ▸ Affichage (ambient + display); reuse for any boolean setting. NOT for a cycle button (day↔night). |
 | **MemberSwitcher** | `components/MemberSwitcher.tsx` | THE shared "pick-a-face" ROW — the calm Maisonnée + member faces control from the board's **"Aujourd'hui"** header (the `.mswitch` look). Controlled + identity-agnostic: `faces` (`{id,name,colour,photoUrl}` — map your snake_case `lib/members` OR camelCase `lib/cercle` member at the call site, resolving the photo via `imgUrl`) + `value`/`onChange` + `allLabel`/`ariaLabel`; `toggleOff` (default) clears on re-tap. The always-in-view row, best on a **kiosk** wall. Its collapsed sibling for **mobile** is **FaceSelect**. Used by the board (wrapped to the device profile in `board/chrome.tsx`) AND « Le cercle » (focus lens + Notes "whose notes"; local pick, doesn't move the device profile). |
@@ -412,14 +412,24 @@ done-based filter would never surface it — see `isDaySettled`). **Cadence stay
 `recur` reuses the shared `_lib/recur` engine untouched, `week` adds "n fois par semaine" as a
 quota over completion history — a shape `occurrenceOn` cannot express. Marking sends
 **ABSOLUTE per-day values, never deltas**, so a replayed offline outbox write converges
-instead of double-counting. Surfaces: the scene `HabitudesPage` (`/board/habitudes` —
-`SceneHead` + `HabitRow` + `HabitHistory`; rows asking at open are PINNED so a row never
-jumps out from under a tapping finger), the form scene `HabitForm` (`/habitude/new|:id/edit`,
-reuses `RecurPicker` + a feature-local `ReminderTimesField`), the board glance
-`HabitudesCard` (board card `'habitudes'`; **non-polling** `useHabits({live:false})` so a
-default-on card never adds `/api/habits` to the board poll), and the **calendar** — habits are
-DERIVED occurrences on `/api/month` (like birthdays / L'auto work windows), read-only, tapping
-into the scene. **Privacy is soft** (the `mots` model): a member's habits show only once their
+instead of double-counting. **ONE marking hook** (`useMarkHabit` in `lib/habits`) and **ONE
+controls cluster** (`HabitControls`, extracted out of `HabitRow`) back every surface that can
+tap a mark, so the four-kind switch never drifts into three copies. Surfaces: the scene
+`HabitudesPage` (`/board/habitudes` — `SceneHead` + `HabitRow` (wraps `HabitControls`) +
+`HabitHistory`; rows asking at open are PINNED so a row never jumps out from under a tapping
+finger; below the fold, an **« En pause »** `Disclosure` is the one door back to an archived
+habit — otherwise unreachable once `visibleHabits` filters it out everywhere), the form scene
+`HabitForm` (`/habitude/new|:id/edit`, reuses `RecurPicker` + a feature-local
+`ReminderTimesField`, mic on the title via `useVoiceInput`), the board glance `HabitudesCard`
+(board card `'habitudes'`; **non-polling** `useHabits({live:false})` so a default-on card never
+adds `/api/habits` to the board poll), **`HabitHistory`'s week dots** (past/today dots are
+tappable — « j'ai oublié hier » — selecting a day reveals `HabitControls` for it, never marking
+on the tap itself), and the **calendar** — the grid dots stay DERIVED occurrences on
+`/api/month` (like birthdays / L'auto work windows), but the tapped-day panel now offers REAL
+`HabitRow` marking for today/any past day (any face-visible habit is reachable, not just the
+due ones — due-or-marked lead, the rest fold under « Autres habitudes »); a future day or a
+guest session stays the old read-only derived-occurrence list, tapping into the scene.
+**Privacy is soft** (the `mots` model): a member's habits show only once their
 face is picked; the board card then names each still-due habit with the same quiet reading the
 check-in row uses (`habitReading()` in `lib/habits`, shared with `HabitRow` — « 0 sur 8
 verres »), never a streak, never a rank, never another member's state. **It opens itself** (`lib/habitCheckin.ts`, mounted
@@ -431,7 +441,7 @@ opt-outs stacked into Réglages ▸ Système ▸ **Mode veille** (C-15, no new p
 progress is derived at read time, per habit — no `streak`/`points`/`badge` column can exist
 (the calm-tenets test scans for those substrings), and no member is ever ranked against
 another. A limit gone over reads « C'est noté » on a terracotta spine — never a red row.
-`HabitRow`/`HabitHistory`/`ReminderTimesField` stay feature-local (not shared primitives).
+`HabitRow`/`HabitControls`/`HabitHistory`/`ReminderTimesField` stay feature-local (not shared primitives).
 
 ---
 
@@ -467,6 +477,17 @@ item's content keeps everything on one line and bleeds off the right (the `.shee
 `<Cluster fill>` for "grow to share the row but wrap when narrow." The e2e guard
 `add-sheet-overflow.spec.ts` measures per-child bleed past the container's right edge,
 which sees through the clip.
+
+**A side-scrolling row must stay reachable with a MOUSE → `useHScroll` (`lib/hscroll.ts`).**
+Every `.rail`/`.subtabs`-style row hides its scrollbar for calm. On touch you swipe it;
+on a desktop that used to hide content outright — no bar to drag, no swipe, and a mouse
+wheel only emits `deltaY`, which no browser maps onto a horizontal scroller. `useHScroll`
+translates the wheel (handing it back to the page at either end, so the row is never a
+wheel trap) and reports `overflowing`/`atStart`/`atEnd` + `page()`/`toView()` so a caller
+can draw an affordance. It adds no DOM and no layout, so it's safe on any existing row.
+`Rail` and `SubTabs` wire it themselves (SubTabs also draws ‹ › chevrons while the row
+overflows, on a fine pointer only, and keeps the selected tab in view). Attach it by hand
+to any other hidden-scrollbar row. Guard: `e2e/hscroll.spec.ts`.
 
 ---
 

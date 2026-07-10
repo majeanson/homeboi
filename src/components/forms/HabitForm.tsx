@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
+import { useVoiceInput } from '../../lib/useVoiceInput'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -42,6 +43,7 @@ export function HabitForm({
   const confirm = useConfirm()
 
   const [title, setTitle] = useState(value?.title ?? '')
+  const voice = useVoiceInput(setTitle)
   const [icon, setIcon] = useState(value?.icon ?? '')
   const [colour, setColour] = useState(value?.colour ?? '#88A36F')
   const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
@@ -122,7 +124,9 @@ export function HabitForm({
         onChange={setTitle}
         onSubmit={() => submit()}
         submitIcon={null}
-        placeholder={fn.titlePlaceholder}
+        voice={voice}
+        voiceLabel={t.capture.voice}
+        placeholder={voice.listening ? t.capture.listening : fn.titlePlaceholder}
         ariaLabel={fn.titleLabel}
       />
 

@@ -10,6 +10,7 @@ import {
   isDueOn,
   reminderDue,
   remainingThisWeek,
+  splitHabitsForDay,
   visibleHabits,
   weekBounds,
   type Habit,
@@ -174,6 +175,41 @@ describe('visibleHabits — private-ish by face', () => {
 
   it('archived habits drop out of every face', () => {
     expect(visibleHabits([habit({ id: 'z', archived: true })], null)).toEqual([])
+  })
+})
+
+// The calendar day panel's split (task « n'importe quelle habitude, n'importe
+// quel jour »): due-or-marked leads, everything else visible still reachable
+// under the fold.
+describe('splitHabitsForDay — the calendar day panel’s due-or-marked vs. everything-else split', () => {
+  it('a due-but-unmarked habit leads; an unrelated visible habit falls to "other"', () => {
+    const walk = habit({ id: 'a' }) // due today (due_days includes day(0))
+    const notDue = habit({ id: 'b', due_days: [], position: 1 }) // never scheduled today, never marked
+    const { due, other } = splitHabitsForDay([walk, notDue], [], null, day(0))
+    expect(due.map((h) => h.id)).toEqual(['a'])
+    expect(other.map((h) => h.id)).toEqual(['b'])
+  })
+
+  it('a marked-but-not-due habit (backfilled) still leads, even off its schedule', () => {
+    const walk = habit({ id: 'a', due_days: [day(-5)] }) // due 5 days ago, not today
+    const markedYesterday = [mark({ habit_id: 'a', day: day(-5), value: 1 })]
+    const { due, other } = splitHabitsForDay([walk], markedYesterday, null, day(-5))
+    expect(due.map((h) => h.id)).toEqual(['a'])
+    expect(other).toEqual([])
+  })
+
+  it('archived habits never appear in either list', () => {
+    const paused = habit({ id: 'z', archived: true })
+    const { due, other } = splitHabitsForDay([paused], [], null, day(0))
+    expect(due).toEqual([])
+    expect(other).toEqual([])
+  })
+
+  it('respects the private-ish face filter, same as visibleHabits', () => {
+    const mine = habit({ id: 'b', member_id: 'm1', position: 1, due_days: [] })
+    const theirs = habit({ id: 'c', member_id: 'm2', position: 2, due_days: [] })
+    const { due, other } = splitHabitsForDay([mine, theirs], [], 'm1', day(0))
+    expect([...due, ...other].map((h) => h.id)).toEqual(['b'])
   })
 })
 

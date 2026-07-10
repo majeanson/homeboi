@@ -1,8 +1,11 @@
+import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { FR } from '../i18n'
 import { api } from './api'
 import { live } from './query'
-import { HABITS_KEY } from './queryKeys'
+import { HABITS_KEY, MONTH_KEY } from './queryKeys'
+import { useWrite } from './write'
+import { useProfile } from './profile'
 import { addLocalDays, localDayOfWeek, localMinuteOfDay, todayLocalDay } from './localDay'
 
 // « Mes habitudes » — the wire shape from /api/habits + the pure selectors behind
@@ -58,6 +61,41 @@ export function useHabits(opts?: { live?: boolean }) {
     queryFn: () => api<HabitsPayload>('habits'),
     ...(opts?.live === false ? { staleTime: 5 * 60_000 } : live),
   })
+}
+
+// The ONE check-in write, shared by every marking surface (the scene, the
+// history backfill dots, the calendar day panel): an ABSOLUTE per-day value,
+// upserted on (habit, day). The optimistic patch mirrors the server's upsert so
+// the tap lands instantly and a replayed offline write converges on the same row
+// rather than double-counting. MONTH_KEY rides along too — a mark taken from the
+// scene or the history dots must still refresh the marking device's own month
+// grid, which previously only reconciled on its own next poll.
+export function useMarkHabit() {
+  const write = useWrite()
+  const { memberId: face } = useProfile()
+  return useCallback(
+    (habit: Habit, day: number, next: { value: number; slips?: number }) => {
+      const body = { id: habit.id, mark: { day, value: next.value, slips: next.slips ?? 0 } }
+      void write('habits', {
+        method: 'PATCH',
+        body,
+        affectedKeys: [HABITS_KEY, MONTH_KEY],
+        optimistic: (qc) =>
+          qc.setQueryData<HabitsPayload>(HABITS_KEY, (cur) => {
+            if (!cur) return cur
+            const rest = cur.days.filter((d) => !(d.habit_id === habit.id && d.day === day))
+            return {
+              ...cur,
+              days: [
+                ...rest,
+                { habit_id: habit.id, day, value: next.value, slips: next.slips ?? 0, member_id: face, note: '' },
+              ],
+            }
+          }),
+      })
+    },
+    [write, face],
+  )
 }
 
 // --- Day lookup --------------------------------------------------------------
@@ -193,6 +231,25 @@ export function visibleHabits(habits: Habit[], face: string | null): Habit[] {
     ? habits.filter((h) => h.member_id === null || h.member_id === face)
     : habits.filter((h) => h.member_id === null)
   return base.filter((h) => !h.archived).sort((a, b) => a.position - b.position)
+}
+
+// The calendar day panel's split (backfill from the calendar, task « n'importe
+// quelle habitude, n'importe quel jour »): habits due-or-already-marked for `day`
+// lead the panel; every other face-visible habit is still reachable, just folded
+// under « Autres habitudes » so the panel stays calm even for a household with
+// many habits. Pure (no day-in-the-future / read-only gate here — that's the
+// caller's call, since it also depends on who's looking).
+export function splitHabitsForDay(
+  habits: Habit[],
+  days: HabitDay[],
+  face: string | null,
+  day: number,
+): { due: Habit[]; other: Habit[] } {
+  const visible = visibleHabits(habits, face)
+  const due = visible.filter((h) => isDueOn(h, days, day) || isDayMarked(dayRow(days, h.id, day)))
+  const dueIds = new Set(due.map((h) => h.id))
+  const other = visible.filter((h) => !dueIds.has(h.id))
+  return { due, other }
 }
 
 // --- Derived history (the "fuller history" view) -----------------------------

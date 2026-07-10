@@ -6,6 +6,7 @@ import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useProfile } from '../../lib/profile'
 import { useUndoToast } from '../../lib/toast'
+import { isGuest } from '../../lib/device'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
@@ -16,8 +17,12 @@ import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } 
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { type Lang } from '../../i18n'
+import '../../styles/habits.css'
+import { useHabits, useMarkHabit, habitStatusOn, splitHabitsForDay } from '../../lib/habits'
 import { Icon } from '../Icon'
 import { Act } from './Act'
+import { Disclosure } from '../Disclosure'
+import { HabitRow } from '../habits/HabitRow'
 import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
@@ -47,9 +52,11 @@ interface MTrip { id: string; title: string; colour: string; start_at: number; e
 // shown under the trip card on that exact day (not just the global trip band).
 interface MTripPlan { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }
 // « Mes habitudes » — a DERIVED occurrence, never a stored row (the birthdays
-// pattern). Read-only here: the tap goes to « Le point du jour », where marking
-// lives. A scheduled habit emits every due day; a week-quota one only the days it
-// was actually done (no fictional scheduling). `done` = the intention was met.
+// pattern), used for the grid DOTS only. A scheduled habit emits every due day; a
+// week-quota one only the days it was actually done (no fictional scheduling).
+// `done` = the intention was met. The tapped-day PANEL below reads the real habits
+// (useHabits) instead, so today/any past day can be marked right there — a future
+// day (or a guest) still just taps through to « Le point du jour ».
 interface MHabit { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }
 export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[]; habits?: MHabit[] }
 
@@ -159,6 +166,15 @@ export function MonthView({
   // hidden at once so /api/month can't resurrect them before the PATCH commits, and
   // a tap of Annuler simply never marks it done (Liste's pendingClear pattern).
   const [pendingTodo, setPendingTodo] = useState<Set<string>>(new Set())
+
+  // « Mes habitudes » — the day panel can now CHECK a habit for today or any past
+  // day (backfill from the calendar), not just view the derived occurrence. Reads
+  // the same HABITS_KEY cache the check-in scene uses (`live: false`: this is a
+  // slow browse read, never added to the board's own poll — the free-tier lever).
+  const ro = isGuest()
+  const { data: habitsData } = useHabits({ live: false })
+  const markHabit = useMarkHabit()
+  const habitDays = habitsData?.days ?? []
 
   const grid = useMemo(() => {
     const { year, month } = localYMD(todayDay)
@@ -277,6 +293,19 @@ export function MonthView({
     (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.habits.length + sel.notes.length : 0) +
     selTrips.length +
     selTripPlans.length
+
+  // Habits get REAL marking controls on today/past (backfill from the calendar);
+  // a future day, or a guest session, stays the read-only derived occurrence list
+  // (sel.habits, from /api/month) with its usual tap-through to the scene. Any
+  // face-visible habit is reachable for a past/today day, not just the due ones —
+  // splitHabitsForDay (lib/habits) puts due-or-already-marked first, the rest
+  // fold under « Autres habitudes » so the panel stays calm even for a household
+  // with many habits.
+  const habitsInteractive = selected <= todayDay && !ro
+  const { due: dueOrMarkedHabits, other: otherHabits } = habitsInteractive
+    ? splitHabitsForDay(habitsData?.habits ?? [], habitDays, face, selected)
+    : { due: [], other: [] }
+  const habitsPanelActive = habitsInteractive && dueOrMarkedHabits.length + otherHabits.length > 0
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -453,7 +482,7 @@ export function MonthView({
         {car && <AutoCardView model={car} day={selected} />}
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
-        ) : selCount === 0 ? (
+        ) : selCount === 0 && !habitsPanelActive ? (
           <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (
           <>
@@ -588,20 +617,56 @@ export function MonthView({
                 onOpen={() => nav(momentHref(selected))}
               />
             ))}
-            {/* « Mes habitudes » landing on this day — read-only here (derived, like a
-                birthday); the tap goes to « Le point du jour », where marking lives. */}
-            {(sel?.habits ?? []).map((h) => (
-              <Act
-                key={h.id}
-                cat="routine"
-                icon="repeat-bold"
-                title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
-                who={h.done ? t.habits.doneToday : undefined}
-                done={h.done}
-                color={h.colour ?? undefined}
-                onOpen={() => nav('/board/habitudes')}
-              />
-            ))}
+            {/* « Mes habitudes » landing on this day. TODAY/PAST (not a guest): real
+                per-kind marking rows — any face-visible habit is reachable for the
+                day (backfill), not just the ones due then; due-or-marked lead, the
+                rest fold under « Autres habitudes ». FUTURE (or a guest): stays the
+                read-only derived occurrence (like a birthday), tap → the scene. */}
+            {habitsInteractive ? (
+              habitsPanelActive && (
+                <div className="monthv__habits">
+                  {dueOrMarkedHabits.length > 0 && (
+                    <div className="habitudes__list">
+                      {dueOrMarkedHabits.map((h) => (
+                        <HabitRow
+                          key={h.id}
+                          habit={h}
+                          status={habitStatusOn(h, habitDays, selected)}
+                          onMark={(next) => markHabit(h, selected, next)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {otherHabits.length > 0 && (
+                    <Disclosure label={t.habits.otherHabits} count={otherHabits.length} className="monthv__habits-other">
+                      <div className="habitudes__list">
+                        {otherHabits.map((h) => (
+                          <HabitRow
+                            key={h.id}
+                            habit={h}
+                            status={habitStatusOn(h, habitDays, selected)}
+                            onMark={(next) => markHabit(h, selected, next)}
+                          />
+                        ))}
+                      </div>
+                    </Disclosure>
+                  )}
+                </div>
+              )
+            ) : (
+              (sel?.habits ?? []).map((h) => (
+                <Act
+                  key={h.id}
+                  cat="routine"
+                  icon="repeat-bold"
+                  title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
+                  who={h.done ? t.habits.doneToday : undefined}
+                  done={h.done}
+                  color={h.colour ?? undefined}
+                  onOpen={() => nav('/board/habitudes')}
+                />
+              ))
+            )}
             {(sel?.notes ?? []).map((n) => (
               <DayNote key={n.id} note={n} members={members} />
             ))}

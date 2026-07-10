@@ -1,6 +1,6 @@
 import { useT } from '../../i18n'
 import { Icon } from '../Icon'
-import { Cluster } from '../Layout'
+import { HabitControls } from './HabitControls'
 import { habitReading, type Habit, type HabitStatus } from '../../lib/habits'
 
 // One habit on the check-in scene. Deliberately BIGGER than the board's <Act> row:
@@ -64,69 +64,7 @@ export function HabitRow({ habit, status, onMark, onOpen, readOnly }: HabitRowPr
         )}
       </button>
 
-      {!readOnly && (
-        <Cluster className="habit-row__actions" role="group" aria-label={habit.title}>
-          {kind === 'do' && (
-            <button
-              type="button"
-              className={'btn habit-row__do' + (status.done ? ' is-on' : '')}
-              aria-pressed={status.done}
-              onClick={() => onMark({ value: status.done ? 0 : 1 })}
-            >
-              <Icon name="check-bold" size={18} /> {status.done ? fn.doneToday : fn.markDone}
-            </button>
-          )}
-
-          {(kind === 'count' || kind === 'limit') && (
-            <>
-              {/* ＋1 comes FIRST and the corrector never appears/disappears beside
-                  it: tallying is a repeated tap (eight glasses, five cigarettes),
-                  so the primary button must not shift under the finger between
-                  taps. − is always rendered, merely disabled at zero. */}
-              <button type="button" className="btn habit-row__plus" onClick={() => onMark({ value: status.value + 1 })}>
-                <Icon name="plus-bold" size={18} /> {fn.plusOne}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost habit-row__minus"
-                aria-label={fn.minusOne}
-                disabled={status.value === 0}
-                onClick={() => onMark({ value: Math.max(0, status.value - 1) })}
-              >
-                <Icon name="minus-bold" size={16} />
-              </button>
-              {/* A ceiling habit needs a way to say « aucune aujourd'hui » — else a
-                  zero day is indistinguishable from an untouched one. Last in the
-                  row, so it can drop away once marked without moving ＋ or −. */}
-              {kind === 'limit' && !status.marked && (
-                <button type="button" className="btn btn--ghost" onClick={() => onMark({ value: 0 })}>
-                  {fn.noneToday}
-                </button>
-              )}
-            </>
-          )}
-
-          {kind === 'avoid' && (
-            <>
-              <button
-                type="button"
-                className={'btn habit-row__held' + (status.done ? ' is-on' : '')}
-                aria-pressed={status.done}
-                onClick={() => onMark({ value: 1, slips: 0 })}
-              >
-                <Icon name="check-bold" size={18} /> {fn.held}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost habit-row__slip"
-                onClick={() => onMark({ value: 0, slips: status.slips + 1 })}
-              >
-                {fn.slip}
-              </button>
-            </>
-          )}
-        </Cluster>
-      )}
+      {!readOnly && <HabitControls habit={habit} status={status} onMark={onMark} />}
     </div>
   )
 }

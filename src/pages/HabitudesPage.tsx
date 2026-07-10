@@ -10,21 +10,23 @@ import { useProfile } from '../lib/profile'
 import { useWrite } from '../lib/write'
 import { imgUrl } from '../lib/image'
 import { type Member } from '../lib/members'
-import { HABITS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
+import { HABITS_KEY, BOARD_KEY, MONTH_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import {
   useHabits,
+  useMarkHabit,
   habitStatusOn,
   visibleHabits,
   isDaySettled,
   dayRow,
   habitToday,
   type Habit,
-  type HabitsPayload,
 } from '../lib/habits'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { Disclosure } from '../components/Disclosure'
 import { RowActions } from '../components/RowActions'
+import { ListRow } from '../components/ListRow'
+import { Cluster } from '../components/Layout'
 import { MemberSwitcher, type MemberFace } from '../components/MemberSwitcher'
 import { HabitRow } from '../components/habits/HabitRow'
 import { HabitHistory } from '../components/habits/HabitHistory'
@@ -66,6 +68,12 @@ export function HabitudesPage() {
   }))
 
   const mine = visibleHabits(habits, face)
+  // Paused habits are invisible to visibleHabits (it filters archived out for
+  // every other consumer, and its contract must stay that way) — computed
+  // separately here so pausing is no longer a one-way door (see « En pause » below).
+  const pausedMine = habits.filter(
+    (h) => h.archived && (face ? h.member_id === null || h.member_id === face : h.member_id === null),
+  )
   const isAsking = (h: Habit) => habitStatusOn(h, days, today).due && !isDaySettled(h, dayRow(days, h.id, today))
 
   // A row must never be yanked out from under a finger. A `count` habit settles
@@ -87,42 +95,27 @@ export function HabitudesPage() {
   const asking = mine.filter(inList)
   const settled = mine.filter((h) => !inList(h))
 
-  // The check-in write: an ABSOLUTE per-day value, upserted on (habit, day). The
-  // optimistic patch mirrors the server's upsert so the tap lands instantly and a
-  // replayed offline write converges on the same row rather than double-counting.
-  const mark = (habit: Habit, next: { value: number; slips?: number }) => {
-    const body = { id: habit.id, mark: { day: today, value: next.value, slips: next.slips ?? 0 } }
-    void write('habits', {
-      method: 'PATCH',
-      body,
-      affectedKeys: [HABITS_KEY],
-      optimistic: (qc) =>
-        qc.setQueryData<HabitsPayload>(HABITS_KEY, (cur) => {
-          if (!cur) return cur
-          const rest = cur.days.filter((d) => !(d.habit_id === habit.id && d.day === today))
-          return {
-            ...cur,
-            days: [
-              ...rest,
-              { habit_id: habit.id, day: today, value: next.value, slips: next.slips ?? 0, member_id: face, note: '' },
-            ],
-          }
-        }),
-    })
-  }
+  // The check-in write: ONE shared hook (lib/habits) used by every marking
+  // surface — this scene, the history backfill dots, and the calendar day panel.
+  const markHabit = useMarkHabit()
+
+  // « Reprendre » — un-archive from the fold below; a plain field edit, not a day
+  // mark, so it rides useWrite directly rather than useMarkHabit.
+  const resume = (h: Habit) =>
+    void write('habits', { method: 'PATCH', body: { id: h.id, archived: false }, affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY] })
 
   const renderRow = (h: Habit) => (
     <div key={h.id} className="habitudes__item">
       <HabitRow
         habit={h}
         status={habitStatusOn(h, days, today)}
-        onMark={(next) => mark(h, next)}
+        onMark={(next) => markHabit(h, today, next)}
         onOpen={() => setOpenId((cur) => (cur === h.id ? null : h.id))}
         readOnly={ro}
       />
       {openId === h.id && (
         <div className="habitudes__peek">
-          <HabitHistory habit={h} days={days} today={today} />
+          <HabitHistory habit={h} days={days} today={today} readOnly={ro} />
           {/* Editing lives behind the row's own peek rather than on the row: the
               check-in surface is for tapping, not for managing. */}
           <RowActions
@@ -168,6 +161,33 @@ export function HabitudesPage() {
               </Disclosure>
             )}
           </>
+        )}
+
+        {/* « En pause » — paused habits are invisible to visibleHabits (every other
+            surface), so this is the ONLY door back: name it + « Reprendre », plus the
+            edit door when signed in. Guests never see it (read-only, and there's
+            nothing to reach for one anyway). Outside the mine.length===0 branch above
+            so a face whose only habits are paused still finds this fold. */}
+        {!ro && pausedMine.length > 0 && (
+          <Disclosure label={fn.paused} count={pausedMine.length} className="habitudes__paused">
+            <section className="habitudes__list">
+              {pausedMine.map((h) => (
+                <ListRow
+                  key={h.id}
+                  leading={<span aria-hidden="true">{h.icon || '•'}</span>}
+                  title={h.title}
+                  actions={
+                    <Cluster>
+                      <button type="button" className="btn btn--ghost btn--sm" onClick={() => resume(h)}>
+                        {fn.resume}
+                      </button>
+                      {signedIn && <RowActions onEdit={() => nav(`/habitude/${h.id}/edit`)} editLabel={fn.editOne(h.title)} />}
+                    </Cluster>
+                  }
+                />
+              ))}
+            </section>
+          </Disclosure>
         )}
 
         {/* Adding is operator-grade (the form is a FormScene), so a kiosk that

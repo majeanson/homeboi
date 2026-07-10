@@ -236,10 +236,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (body?.mark) {
     const today = localDayStart(new Date(Date.now()))
     const day = Math.round(Number(body.mark.day))
-    // Today or a small grace window back (a late-evening catch-up) — never a
-    // back-filled week of fiction, never the future.
-    if (!Number.isFinite(day) || day > today || day < addLocalDays(today, -2))
-      return badRequest('Jour hors fenêtre.')
+    // ANY past day is fair game — the calendar day panel and the history dots both
+    // let you backfill « j'ai oublié hier » (or last week), so there is no grace
+    // floor anymore. Still never the future: a day is only ever marked once it has
+    // happened.
+    if (!Number.isFinite(day) || day > today) return badRequest('Jour hors fenêtre.')
     const value = Math.min(MAX_VALUE, Math.max(0, Math.round(Number(body.mark.value) || 0)))
     const slips = habit.kind === 'avoid' ? Math.min(MAX_VALUE, Math.max(0, Math.round(Number(body.mark.slips) || 0))) : 0
     const note = typeof body.mark.note === 'string' ? body.mark.note.trim().slice(0, NOTE_CAP) : null
@@ -327,6 +328,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   return ok({ ok: true })
 })
 
+// Destructive (drops the habit + its history is orphaned) and the UI only offers
+// it from the operator-only form, so the API matches: a kiosk/guest can never
+// delete a habit even if a request slipped past the UI.
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   const id = body?.id?.trim()
@@ -337,4 +341,4 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(nowSec(), id, actor.householdId)
     .run()
   return ok({ ok: true })
-})
+}, 'operator')

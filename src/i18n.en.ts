@@ -92,6 +92,7 @@ export const EN: typeof FR = {
     emptyHousehold: 'No household habits. Pick a person, or add one.',
     allSettled: 'Everything is settled for today.',
     alreadySettled: 'Already settled',
+    otherHabits: 'Other habits',
     markDone: 'Done',
     doneToday: 'Done today',
     plusOne: 'One more',
@@ -146,6 +147,7 @@ export const EN: typeof FR = {
     remindersHint: 'A reminder shows up on the screen that’s on — never in your pocket.',
     pause: 'Pause',
     resume: 'Resume',
+    paused: 'Paused',
     deleteConfirm: (title: string) => `Delete “${title}” and its history?`,
   },
   aRegler: {
@@ -187,6 +189,7 @@ export const EN: typeof FR = {
     exitWrong: 'Not quite. Try again.',
   },
   help: { learnMore: 'Help for this section', gotIt: 'Got it', goToGuide: 'See the guide', helpMode: 'Help', tapForHelp: 'Tap a button to see what it does.', takeTour: 'Take the tour' },
+  subtabs: { prev: 'Previous tabs', next: 'Next tabs' },
   tour: { label: 'Guided tour', stepOf: (n: number, total: number) => `Step ${n} of ${total}`, skip: 'Skip', back: 'Back', next: 'Next', done: 'Done', learnMore: 'Learn more' },
   today: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
   home: {
@@ -352,6 +355,7 @@ export const EN: typeof FR = {
     addNew: (s: string) => `Add “${s}”`,
     addedN: (n: number) => `${n} added`,
     quickRemoved: (s: string) => `Removed “${s}” from suggestions`,
+    quickRemove: (s: string) => `Remove “${s}” from suggestions`,
     // Edit sheet
     editTitle: 'Edit item',
     nameLabel: 'Name',
@@ -1816,6 +1820,8 @@ export const EN: typeof FR = {
     lensAria: 'Understand or adjust',
     kioskNotice:
       'Paired tablet: you can change most settings here. Members and tablet pairing need the operator account (sign in on a phone).',
+    guestNotice:
+      'Read-only: the guide is all yours, and so is this device’s own display (theme, language, view, board layout). None of it changes anything for the household.',
     kioskSignIn: 'Sign in as operator',
     needChild: 'Add a child first (check “Child”).',
     forWho: 'For whom:',

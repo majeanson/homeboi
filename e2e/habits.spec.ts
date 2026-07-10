@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, BASE, MMID } from './mocks'
 
+const DAY = 86400
+
 // « Mes habitudes » ▸ « Le point du jour » — the daily check-in scene. Locks the
 // four kind-specific tap behaviours (do / count / limit / avoid), the private-ish
 // face filter, and the calm tone (a limit gone over is noted, never scolded).
@@ -236,19 +238,105 @@ test.describe('the board card + the calendar', () => {
     await expect(card.locator('.habitudes-card__row', { hasText: 'Cigarettes' }).locator('.habitudes-card__sub')).toHaveText('0 de 5')
   })
 
-  test('the calendar shows habits as derived, read-only occurrences, filtered by face', async ({ page }) => {
+  test('today’s day panel offers real marking controls, filtered by face', async ({ page }) => {
     await board(page, 'month')
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
 
-    // Today's day panel lists the household habit, read-only (no check affordance).
+    // Today's day panel names the household habit with a REAL per-kind row (not
+    // just the derived read-only card the future/guest path still uses).
     const panel = page.locator('.monthv__day')
-    await expect(panel).toContainText('Marcher dehors')
-    await expect(panel.locator('.act__checkbtn')).toHaveCount(0)
+    const walk = panel.locator('.habit-row', { hasText: 'Marcher dehors' })
+    await expect(walk).toBeVisible()
+    await expect(walk.getByRole('button', { name: 'C’est fait' })).toBeVisible()
     // Maman's habit is not shown to whoever is standing at the tablet.
-    await expect(panel).not.toContainText('Boire de l’eau')
+    await expect(panel.locator('.habit-row', { hasText: 'Boire de l’eau' })).toHaveCount(0)
 
     await pickFace(page, 'Maman')
-    await expect(panel).toContainText('Boire de l’eau')
+    await expect(panel.locator('.habit-row', { hasText: 'Boire de l’eau' })).toBeVisible()
+  })
+
+  test('marking a habit from the calendar day panel updates its state', async ({ page }) => {
+    await board(page, 'month')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+
+    const panel = page.locator('.monthv__day')
+    const walk = panel.locator('.habit-row', { hasText: 'Marcher dehors' })
+    await walk.getByRole('button', { name: 'C’est fait' }).click()
+    await expect(walk).toHaveClass(/habit-row--done/)
+    // Survives the refetch the write triggers (HABITS_KEY + MONTH_KEY invalidate) —
+    // the mock's check-in read serves this session's marks back.
+    await expect(walk.getByRole('button', { name: 'Fait aujourd’hui' })).toBeVisible()
+  })
+
+  test('a future day’s panel stays read-only — the derived occurrence, tapping into the scene', async ({ page }) => {
+    await board(page, 'month')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+
+    // Tomorrow: the very next grid cell after « aujourd'hui ».
+    await page.locator('.monthv__cell.is-today + .monthv__cell').click()
+    const panel = page.locator('.monthv__day')
+    await expect(panel).toContainText('Marcher dehors')
+    // No interactive row, no check affordance — just the old derived nav card.
+    await expect(panel.locator('.habit-row')).toHaveCount(0)
+    await panel.locator('.act', { hasText: 'Marcher dehors' }).click()
+    expect(new URL(page.url()).pathname).toBe('/board/habitudes')
+  })
+})
+
+test.describe('backfill from the history dots — « j\'ai oublié hier »', () => {
+  test('tapping a past dot never marks by itself; marking it there fills the dot in', async ({ page }) => {
+    // Freeze to Monday 04:00 local (MMID+DAY) so « aujourd'hui » sits at index 1 of
+    // the week strip (Sunday-start) and yesterday (MMID, a Sunday) is a real PAST
+    // dot right before it — MMID itself (a Sunday) has no earlier dot in its own
+    // week to backfill from.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.setFixedTime(new Date((MMID + DAY + 4 * 3600) * 1000))
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/board/habitudes')
+    await page.locator('.habitudes').waitFor({ state: 'visible', timeout: 15_000 })
+
+    const walk = row(page, 'Marcher dehors')
+    await walk.locator('.habit-row__body').click()
+    const history = page.locator('.habit-history')
+    await expect(history).toBeVisible()
+
+    const yesterday = history.locator('.habit-history__dot.is-today').locator('xpath=preceding-sibling::li[1]')
+    await expect(yesterday).toBeVisible()
+    await yesterday.locator('.habit-history__dotbtn').click()
+
+    // A tap only SELECTS the day and reveals its controls — it never marks by itself.
+    const markday = history.locator('.habit-history__markday')
+    await expect(markday).toBeVisible()
+    await expect(yesterday).not.toHaveClass(/is-done/)
+
+    await markday.getByRole('button', { name: 'C’est fait' }).click()
+    await expect(yesterday).toHaveClass(/is-done/)
+
+    // Tapping the selected dot again collapses the controls.
+    await yesterday.locator('.habit-history__dotbtn').click()
+    await expect(markday).toHaveCount(0)
+  })
+})
+
+test.describe('« En pause »', () => {
+  test('a paused habit is invisible on the scene until « En pause » is opened, and « Reprendre » restores it', async ({ page }) => {
+    await checkin(page)
+
+    // Archived — invisible everywhere else on the scene (never in the asking or
+    // « Déjà réglé » lists).
+    await expect(row(page, 'Méditer')).toHaveCount(0)
+
+    const fold = page.locator('.habitudes__paused')
+    await expect(fold).toContainText('En pause')
+    await fold.locator('.disclosure__summary').click()
+    await expect(fold).toContainText('Méditer')
+
+    await fold.getByRole('button', { name: 'Reprendre' }).click()
+
+    // Un-paused: back among the ordinary habits, and the fold empties out.
+    await expect(row(page, 'Méditer')).toBeVisible()
+    await expect(page.locator('.habitudes__paused')).toHaveCount(0)
   })
 })
 

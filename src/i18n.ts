@@ -101,6 +101,10 @@ export const FR = {
     emptyHousehold: 'Aucune habitude de la maisonnée. Choisis une personne, ou ajoutes-en une.',
     allSettled: 'Tout est réglé pour aujourd’hui.',
     alreadySettled: 'Déjà réglé',
+    // Le calendrier ▸ le panneau du jour : les habitudes dues ou déjà cochées ce
+    // jour-là passent en premier ; le reste (n'importe quelle habitude, pour
+    // rattraper un jour passé) se replie sous ce libellé.
+    otherHabits: 'Autres habitudes',
     // do
     markDone: 'C’est fait',
     doneToday: 'Fait aujourd’hui',
@@ -162,6 +166,9 @@ export const FR = {
     remindersHint: 'Le rappel apparaît sur l’écran allumé, jamais dans ta poche.',
     pause: 'Mettre en pause',
     resume: 'Reprendre',
+    // Une habitude en pause disparaît de partout ailleurs (Le point du jour, le
+    // calendrier) — ce repli est la SEULE porte pour la retrouver et la reprendre.
+    paused: 'En pause',
     deleteConfirm: (title: string) => `Supprimer « ${title} » et son historique ?`,
   },
   // « À régler » — le coup d'œil transversal : les quelques frictions à régler.
@@ -206,6 +213,9 @@ export const FR = {
     exitWrong: 'Pas tout à fait. Réessaie.',
   },
   help: { learnMore: 'Aide sur cette section', gotIt: 'Compris', goToGuide: 'Voir le guide', helpMode: 'Aide', tapForHelp: 'Touche un bouton pour savoir ce qu’il fait.', takeTour: 'Faire le tour' },
+  // Chevrons on a sub-tab row that's too wide to show every tab at once (mouse only —
+  // a touch surface swipes the row instead). See useHScroll / SubTabs.
+  subtabs: { prev: 'Onglets précédents', next: 'Onglets suivants' },
   tour: { label: 'Visite guidée', stepOf: (n: number, total: number) => `Étape ${n} sur ${total}`, skip: 'Passer', back: 'Retour', next: 'Suivant', done: 'Terminé', learnMore: 'En savoir plus' },
   today: { morning: 'Bon matin', afternoon: 'Bon après-midi', evening: 'Bonne soirée' },
   home: {
@@ -383,6 +393,7 @@ export const FR = {
     addNew: (s: string) => `Ajouter « ${s} »`,
     addedN: (n: number) => `${n} ajouté${n > 1 ? 's' : ''}`,
     quickRemoved: (s: string) => `« ${s} » retiré des suggestions`,
+    quickRemove: (s: string) => `Retirer « ${s} » des suggestions`,
     // Edit sheet
     editTitle: 'Modifier l’article',
     nameLabel: 'Nom',
@@ -1919,6 +1930,10 @@ export const FR = {
     lensAria: 'Comprendre ou régler',
     kioskNotice:
       'Tablette jumelée : tu peux ajuster la plupart des réglages ici. La maisonnée et le jumelage des tablettes demandent le compte opérateur (connexion sur un téléphone).',
+    // A read-only guest (la démo) reaches Réglages for the guide + this device's own
+    // display. Say what IS theirs rather than what isn't — they can't sign in anyway.
+    guestNotice:
+      'Lecture seule : tu peux tout lire dans le guide, et régler l’affichage de cet appareil (thème, langue, vue, disposition du babillard). Rien de ça ne change quoi que ce soit pour la maisonnée.',
     kioskSignIn: 'Se connecter comme opérateur',
     needChild: 'Ajoute d’abord un enfant (coche « Enfant »).',
     forWho: 'Pour qui :',

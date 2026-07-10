@@ -163,7 +163,8 @@ const ROUTINE_CARDS = [
 // are LOCAL midnights around MMID, so a spec freezing the clock to BASE sees them
 // all due today. `days: []` = nothing marked yet (the check-in scene's start
 // state). A household habit (member_id null) and two of Maman's (m1) exercise the
-// private-ish face filter.
+// private-ish face filter. hb6 is archived (paused) — exercises the « En pause »
+// fold (it must be invisible everywhere else on the scene).
 const HABITS = {
   today: MMID,
   days: [] as unknown[],
@@ -173,6 +174,9 @@ const HABITS = {
     { id: 'hb3', member_id: 'm1', title: 'Cigarettes', icon: '🚬', colour: '#C87941', kind: 'limit', target: 5, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 2, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
     { id: 'hb4', member_id: null, title: 'Pas de chocolat', icon: '🍫', colour: '#B06A93', kind: 'avoid', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 3, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
     { id: 'hb5', member_id: null, title: 'Sortie à vélo', icon: '🚲', colour: '#F2A03D', kind: 'do', target: null, unit: '', cadence: 'week', recur: null, week_times: 2, reminders: [], position: 4, archived: false, due_days: [] },
+    // Due today (like hb1) so « Reprendre » lands it straight back in the ASKING
+    // list — no fold to open first to see it reappear.
+    { id: 'hb6', member_id: null, title: 'Méditer', icon: '🧘', colour: '#7C9885', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 5, archived: true, due_days: [MMID - DAY, MMID, MMID + DAY] },
   ],
 }
 
@@ -525,8 +529,10 @@ const ROUTES: Record<string, unknown> = {
   routines: ROUTINES,
   habits: HABITS,
   // The calendar window (/api/month). Habits ride it as DERIVED occurrences (the
-  // birthdays pattern): a household one on MMID, and one of Maman's — so a spec can
-  // assert the private-ish filter applies on the grid too.
+  // birthdays pattern): a household one on MMID, one on MMID+DAY (tomorrow — so a
+  // spec can assert the FUTURE day panel still reads read-only off this derived
+  // list), and one of Maman's — so a spec can assert the private-ish filter
+  // applies on the grid too.
   month: {
     events: [],
     meals: [],
@@ -539,6 +545,7 @@ const ROUTES: Record<string, unknown> = {
     habits: [
       { id: 'hb1#0', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID, done: false },
       { id: 'hb1#1', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID - DAY, done: true },
+      { id: 'hb1#2', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID + DAY, done: false },
       { id: 'hb2#0', habit_id: 'hb2', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', member_id: 'm1', day: MMID, done: false },
     ],
   },
@@ -702,6 +709,10 @@ export async function mockApi(
   // ABSOLUTE per-day value on (habit_id, day), so the mock does the same and the
   // check-in refetch confirms the tap instead of reverting it.
   const habitDays = new Map<string, { habit_id: string; day: number; value: number; slips: number; member_id: null; note: string }>()
+  // « En pause » ▸ « Reprendre »: habit ids explicitly un-archived this session
+  // (a plain field-edit PATCH, not a day mark), so the check-in refetch confirms
+  // the resume instead of reverting to the fixture's static `archived: true`.
+  const resumedHabits = new Set<string>()
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace(/^\/api\//, '')
@@ -771,6 +782,11 @@ export async function mockApi(
               member_id: null,
               note: '',
             })
+          }
+          // « Reprendre » — a plain field edit (archived: false), not a day mark.
+          if (body.id && typeof body.archived === 'boolean') {
+            if (body.archived) resumedHabits.delete(body.id)
+            else resumedHabits.add(body.id)
           }
         } catch {
           /* no body */
@@ -874,10 +890,12 @@ export async function mockApi(
       return
     }
 
-    // The check-in read serves this session's day marks, so a tap survives the
-    // refetch that follows it (the same trick as the board's list checks above).
-    if (path === 'habits' && habitDays.size) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ ...HABITS, days: [...habitDays.values()] }) })
+    // The check-in read serves this session's day marks + any « Reprendre », so a
+    // tap survives the refetch that follows it (the same trick as the board's list
+    // checks above).
+    if (path === 'habits' && (habitDays.size || resumedHabits.size)) {
+      const habits = HABITS.habits.map((h) => (resumedHabits.has(h.id) ? { ...h, archived: false } : h))
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ ...HABITS, habits, days: [...habitDays.values()] }) })
       return
     }
 
