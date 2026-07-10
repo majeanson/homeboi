@@ -101,8 +101,6 @@ export const FR = {
     emptyHousehold: 'Aucune habitude de la maisonnée. Choisis une personne, ou ajoutes-en une.',
     allSettled: 'Tout est réglé pour aujourd’hui.',
     alreadySettled: 'Déjà réglé',
-    // Le babillard : présence seulement, jamais l'état d'un autre membre.
-    yoursAwait: 'Tes habitudes t’attendent',
     // do
     markDone: 'C’est fait',
     doneToday: 'Fait aujourd’hui',

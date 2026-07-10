@@ -1,16 +1,18 @@
 import { useT } from '../../i18n'
 import { useProfile } from '../../lib/profile'
-import { useHabits, dueToday, habitStatusOn, habitToday, type Habit } from '../../lib/habits'
+import { useHabits, dueToday, habitReading, habitStatusOn, habitToday } from '../../lib/habits'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
-// The board's « Mes habitudes » glance — a door to « Le point du jour », not a
-// second check-in surface. Privacy first (the MotsCard model):
+// The board's « Mes habitudes » glance — a door to « Le point du jour », and a
+// reading of what today is still asking. Each habit still due is named with the
+// same quiet line the check-in row uses (« 0 sur 2 verres »), so the card answers
+// at a glance instead of only promising that something waits.
 //
-//   • HOUSEHOLD habits (member_id null) are named, with a quiet reading of today.
-//   • A picked face's OWN habits collapse to ONE presence line (« Tes habitudes
-//     t'attendent »). Never a count, never a rank, and never another member's
-//     state — whoever is standing at the tablet learns nothing about anyone else.
+// Privacy is the face filter, not a blur: `dueToday` shows the maisonnée's habits
+// plus the PICKED face's own — never another member's. Standing at the tablet as
+// « Maisonnée » you see only household habits; picking your face shows yours, the
+// same set the check-in scene names. Never a count, never a rank.
 //
 // Self-hides when nothing is asking today (calm: the day empties and stays empty).
 export function HabitudesCard() {
@@ -31,17 +33,6 @@ export function HabitudesCard() {
   useReportEmpty(empty)
   if (empty) return null
 
-  const household = due.filter((h) => h.member_id === null)
-  const hasMine = due.some((h) => h.member_id !== null)
-
-  // The household row's quiet reading — the same words the check-in scene uses.
-  const reading = (h: Habit) => {
-    const s = habitStatusOn(h, days, today)
-    if (h.kind === 'count') return fn.ofTarget(s.value, s.target ?? 0, h.unit)
-    if (h.cadence === 'week' && s.remainingWeek > 0) return fn.remainingWeek(s.remainingWeek)
-    return ''
-  }
-
   return (
     <BoardCard
       to="/board/habitudes"
@@ -49,27 +40,24 @@ export function HabitudesCard() {
       icon="repeat-bold"
       label={fn.title}
       ariaLabel={fn.checkin}
-      // A household-wide count only — never which habits, never per-person (privacy +
-      // calm, same rule the card's own body follows).
-      compactHint={household.length > 0 ? String(household.length) : undefined}
+      // How many are still asking — of the habits this face may already see below.
+      // Never per-person, never a streak or a rank (calm).
+      compactHint={String(due.length)}
     >
       <ul className="habitudes-card__list">
-        {household.map((h) => (
-          <li key={h.id} className="habitudes-card__row">
-            <span className="habitudes-card__ico" aria-hidden="true">
-              {h.icon || '•'}
-            </span>
-            <span className="habitudes-card__title">{h.title}</span>
-            <span className="habitudes-card__sub mono">{reading(h)}</span>
-          </li>
-        ))}
+        {due.map((h) => {
+          const reading = habitReading(h, habitStatusOn(h, days, today), fn)
+          return (
+            <li key={h.id} className="habitudes-card__row">
+              <span className="habitudes-card__ico" aria-hidden="true">
+                {h.icon || '•'}
+              </span>
+              <span className="habitudes-card__title">{h.title}</span>
+              {reading && <span className="habitudes-card__sub mono">{reading}</span>}
+            </li>
+          )
+        })}
       </ul>
-      {/* Presence only — a boolean dot, like the face row's « un mot t'attend ». */}
-      {hasMine && (
-        <p className="habitudes-card__mine mono">
-          <span className="face-dot" aria-hidden="true" /> {fn.yoursAwait}
-        </p>
-      )}
     </BoardCard>
   )
 }

@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
+import { FR } from '../i18n'
 import {
   deriveProgress,
   dueToday,
+  habitReading,
   habitStatusOn,
   isDayDone,
   isDaySettled,
@@ -196,6 +198,29 @@ describe('habitStatusOn', () => {
     const h = habit({ kind: 'count', target: 8 })
     const s = habitStatusOn(h, [mark({ day: day(0), value: 3 })], day(0))
     expect(s).toMatchObject({ due: true, done: false, marked: true, settled: false, value: 3, target: 8 })
+  })
+})
+
+// ONE reading, shared by the check-in row and the board glance — so the card can
+// name a habit's state without re-deriving (and drifting from) the scene's words.
+describe('habitReading — today in the habit’s own words, never a score', () => {
+  const read = (h: Habit, days: HabitDay[] = []) => habitReading(h, habitStatusOn(h, days, day(0)), FR.habits)
+
+  it('counts toward a target and confirms against a ceiling', () => {
+    expect(read(habit({ kind: 'count', target: 8, unit: 'verres' }), [mark({ day: day(0), value: 3 })])).toBe(
+      '3 sur 8 verres',
+    )
+    expect(read(habit({ kind: 'limit', target: 5 }), [mark({ day: day(0), value: 2 })])).toBe('2 de 5')
+  })
+
+  it('never scolds: over the ceiling is noted, a slip just happens', () => {
+    expect(read(habit({ kind: 'limit', target: 5 }), [mark({ day: day(0), value: 6 })])).toBe(FR.habits.noted)
+    expect(read(habit({ kind: 'avoid' }), [mark({ day: day(0), value: 0, slips: 1 })])).toBe(FR.habits.slipped)
+  })
+
+  it('a plain daily "do" habit reads as nothing — the title says it all', () => {
+    expect(read(habit({ kind: 'do' }))).toBe('')
+    expect(read(habit({ kind: 'do', cadence: 'week', week_times: 3 }))).toBe(FR.habits.remainingWeek(3))
   })
 })
 

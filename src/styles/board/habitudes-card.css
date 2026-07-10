@@ -2,8 +2,9 @@
    (the carnets-card / voyage-card precedent). The check-in SCENE's own styles stay
    lazy in styles/habits.css, imported as a side effect by HabitudesPage.
 
-   Calm: this card names the household's habits and reduces a picked face's own to
-   ONE presence dot. No counts, no ranks, never another member's state. */
+   Calm: this card names the habits the picked face may see (household + their own,
+   per the dueToday filter) with today's quiet reading. No streaks, no ranks, never
+   another member's state. */
 
 .habitudes-card {
   display: block;
@@ -58,21 +59,4 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Presence only — the same boolean dot the face row uses for « un mot t'attend ». */
-.habitudes-card__mine {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin: 0.55rem 0 0;
-  padding-top: 0.5rem;
-  border-top: 1.5px solid var(--line);
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-
-.habitudes-card__mine .face-dot {
-  position: static;
-  flex: none;
 }

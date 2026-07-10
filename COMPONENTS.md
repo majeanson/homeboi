@@ -404,8 +404,9 @@ reuses `RecurPicker` + a feature-local `ReminderTimesField`), the board glance
 default-on card never adds `/api/habits` to the board poll), and the **calendar** — habits are
 DERIVED occurrences on `/api/month` (like birthdays / L'auto work windows), read-only, tapping
 into the scene. **Privacy is soft** (the `mots` model): a member's habits show only once their
-face is picked; the board says « Tes habitudes t'attendent » behind a boolean dot, never a
-count and never another member's state. **It opens itself** (`lib/habitCheckin.ts`, mounted
+face is picked; the board card then names each still-due habit with the same quiet reading the
+check-in row uses (`habitReading()` in `lib/habits`, shared with `HabitRow` — « 0 sur 8
+verres »), never a streak, never a rank, never another member's state. **It opens itself** (`lib/habitCheckin.ts`, mounted
 shell-level in `HubLayout`): once on the first app open of a new local day, and at a habit's
 reminder times (wall-clock minutes past local midnight, DST-safe, 30-min grace, once per day
 per device) — but ONLY from a calm surface (the board or over the screensaver), never

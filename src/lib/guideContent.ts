@@ -1143,8 +1143,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'À toi, ou à la maisonnée', en: 'Yours, or the household’s' },
         detail: {
-          fr: 'Une habitude appartient à un visage ou à toute la maisonnée. Les tiennes ne s’affichent qu’une fois ton visage choisi — le babillard dit seulement « Tes habitudes t’attendent ».',
-          en: 'A habit belongs to one face or to the whole household. Yours only show once your face is picked — the board just says “Your habits are waiting”.',
+          fr: 'Une habitude appartient à un visage ou à toute la maisonnée. Les tiennes ne s’affichent qu’une fois ton visage choisi — le babillard nomme alors ce qui te reste (« 0 sur 2 verres »), et jamais les habitudes de quelqu’un d’autre.',
+          en: 'A habit belongs to one face or to the whole household. Yours only show once your face is picked — the board then names what’s left (“0 of 2 glasses”), and never anyone else’s habits.',
         },
       },
     ],

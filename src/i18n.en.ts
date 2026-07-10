@@ -92,7 +92,6 @@ export const EN: typeof FR = {
     emptyHousehold: 'No household habits. Pick a person, or add one.',
     allSettled: 'Everything is settled for today.',
     alreadySettled: 'Already settled',
-    yoursAwait: 'Your habits are waiting',
     markDone: 'Done',
     doneToday: 'Done today',
     plusOne: 'One more',

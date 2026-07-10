@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { FR } from '../i18n'
 import { api } from './api'
 import { live } from './query'
 import { HABITS_KEY } from './queryKeys'
@@ -161,6 +162,26 @@ export function habitStatusOn(habit: Habit, days: HabitDay[], day: number): Habi
     slips: row?.slips ?? 0,
     remainingWeek: remainingThisWeek(habit, days, day),
     target: habit.target,
+  }
+}
+
+// The quiet line under a habit's title — "where today stands, in the habit's own
+// words". ONE reading, shared by the check-in row (HabitRow) and the board's
+// « Mes habitudes » glance, so the two surfaces never drift apart. Never a score:
+// a `limit` gone over reads « C'est noté », a slip « ça arrive ».
+type HabitStrings = typeof FR.habits
+
+export function habitReading(habit: Habit, status: HabitStatus, fn: HabitStrings): string {
+  const target = status.target ?? 0
+  switch (habit.kind) {
+    case 'count':
+      return fn.ofTarget(status.value, target, habit.unit)
+    case 'limit':
+      return status.value > target ? fn.noted : fn.ofCeiling(status.value, target, habit.unit)
+    case 'avoid':
+      return status.slips > 0 ? fn.slipped : status.marked ? fn.held : fn.avoidHint
+    case 'do':
+      return habit.cadence === 'week' && status.remainingWeek > 0 ? fn.remainingWeek(status.remainingWeek) : ''
   }
 }
 

@@ -1,7 +1,7 @@
 import { useT } from '../../i18n'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
-import type { Habit, HabitStatus } from '../../lib/habits'
+import { habitReading, type Habit, type HabitStatus } from '../../lib/habits'
 
 // One habit on the check-in scene. Deliberately BIGGER than the board's <Act> row:
 // this is a full-screen, one-tap-at-a-time surface (the « Avant de partir » big-row
@@ -35,12 +35,7 @@ export function HabitRow({ habit, status, onMark, onOpen, readOnly }: HabitRowPr
   const over = kind === 'limit' && status.value > target
 
   // The quiet line under the title: where today stands, in the habit's own words.
-  const sub = (() => {
-    if (kind === 'count') return fn.ofTarget(status.value, target, habit.unit)
-    if (kind === 'limit') return over ? fn.noted : fn.ofCeiling(status.value, target, habit.unit)
-    if (kind === 'avoid') return status.slips > 0 ? fn.slipped : status.marked ? fn.held : fn.avoidHint
-    return habit.cadence === 'week' && status.remainingWeek > 0 ? fn.remainingWeek(status.remainingWeek) : ''
-  })()
+  const sub = habitReading(habit, status, fn)
 
   const cls =
     'habit-row' +

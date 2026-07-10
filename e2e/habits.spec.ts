@@ -218,19 +218,22 @@ test.describe('the board card + the calendar', () => {
     await expect(page.locator('.sheet.show')).toHaveCount(0)
   }
 
-  test('the board card names household habits and reduces a face’s own to a presence line', async ({ page }) => {
+  test('the board card names the due habits with today’s reading, filtered by face', async ({ page }) => {
     await board(page)
     const card = page.locator('.habitudes-card')
     await expect(card).toBeVisible()
     await expect(card).toContainText('Marcher dehors')
-    // At rest the card shows no presence line (no face picked → no personal habits).
-    await expect(card.locator('.habitudes-card__mine')).toHaveCount(0)
-
-    // With Maman picked, her habits stay UNNAMED — presence only, never a count.
-    await pickFace(page, 'Maman')
-    await expect(card.locator('.habitudes-card__mine')).toContainText('Tes habitudes t’attendent')
+    // At rest (« Maisonnée ») a member's own habits are not shown to whoever is
+    // standing at the tablet — the face filter, not a blur.
     await expect(card).not.toContainText('Boire de l’eau')
     await expect(card).not.toContainText('Cigarettes')
+
+    // Picking her face names her habits, each with the same quiet reading the
+    // check-in row uses — the card answers, rather than only promising.
+    await pickFace(page, 'Maman')
+    const water = card.locator('.habitudes-card__row', { hasText: 'Boire de l’eau' })
+    await expect(water.locator('.habitudes-card__sub')).toHaveText('0 sur 8 verres')
+    await expect(card.locator('.habitudes-card__row', { hasText: 'Cigarettes' }).locator('.habitudes-card__sub')).toHaveText('0 de 5')
   })
 
   test('the calendar shows habits as derived, read-only occurrences, filtered by face', async ({ page }) => {
