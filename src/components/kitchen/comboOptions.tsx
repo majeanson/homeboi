@@ -50,7 +50,7 @@ export function recipeOptions(
 
 // The Restants pool — no cookability (a leftover is already cooked), just the
 // recycle picto, so it reads as a leftover beside the recipe rows.
-function leftoverOptions(leftovers: Leftover[], group?: string): ComboOption<Leftover>[] {
+function leftoverOptions(leftovers: Leftover[], t: T, group?: string): ComboOption<Leftover>[] {
   return leftovers.map((l) => ({
     id: l.id,
     label: l.title,
@@ -58,6 +58,10 @@ function leftoverOptions(leftovers: Leftover[], group?: string): ComboOption<Lef
     group,
     icon: 'arrow-counter-clockwise-bold',
     iconColor: 'var(--terracotta-deep)',
+    // A leftover born from a saved recipe: tapping its picto opens that recipe (the
+    // same tight icon-only link the recipe rows use); the rest of the row still picks.
+    iconTo: l.recipe_id ? `/kitchen/recipe/${l.recipe_id}` : undefined,
+    iconToLabel: l.recipe_id ? t.recipes.open : undefined,
   }))
 }
 
@@ -78,7 +82,7 @@ export function mealPickOptions(
   const r: ComboOption<MealPick>[] = recipeOptions(recipes, lowItems, listItems, t, both ? t.recipes.title : undefined).map(
     (o) => ({ ...o, data: { kind: 'recipe', recipe: o.data } }),
   )
-  const l: ComboOption<MealPick>[] = leftoverOptions(leftovers, both ? t.kitchen.leftovers : undefined).map((o) => ({
+  const l: ComboOption<MealPick>[] = leftoverOptions(leftovers, t, both ? t.kitchen.leftovers : undefined).map((o) => ({
     ...o,
     data: { kind: 'leftover', leftover: o.data },
   }))
@@ -88,7 +92,7 @@ export function mealPickOptions(
 // Recent / today's planned meals — "we ate this, there's some left" suggestions
 // for the leftovers field. Carries recipe_id + the source meal id so a leftover
 // born from a cooked recipe keeps its link.
-export function mealOptions(meals: MealRow[], group?: string): ComboOption<MealRow>[] {
+export function mealOptions(meals: MealRow[], t: T, group?: string): ComboOption<MealRow>[] {
   return meals.map((m) => ({
     id: m.id,
     label: m.title,
@@ -96,5 +100,9 @@ export function mealOptions(meals: MealRow[], group?: string): ComboOption<MealR
     group,
     icon: 'arrow-counter-clockwise-bold',
     iconColor: 'var(--terracotta-deep)',
+    // A recent meal cooked from a saved recipe keeps its link: tapping the picto
+    // opens that recipe before you spin it into a leftover; the row still picks.
+    iconTo: m.recipe_id ? `/kitchen/recipe/${m.recipe_id}` : undefined,
+    iconToLabel: m.recipe_id ? t.recipes.open : undefined,
   }))
 }

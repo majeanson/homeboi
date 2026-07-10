@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -107,7 +108,7 @@ export function IdeasDrawer({
   const members = membersData?.members ?? []
   const memberById = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
 
-  const recentOpts = mealOptions(recentMeals)
+  const recentOpts = mealOptions(recentMeals, t)
 
   // « Idées » — the kept, reusable pool. Planning an idea leaves it in the pool. The
   // 👧 chip's rows are meal_ideas rows too, so they plan through the same helper.
@@ -242,6 +243,10 @@ export function IdeasDrawer({
             buildAddBody={(title, picked) => ({ title, recipeId: picked?.data.recipe_id ?? null, sourceMealId: picked?.data.id ?? null })}
             onPlan={planLeftover}
             renderLead={() => <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />}
+            // A leftover born from a saved recipe: its picto opens that recipe (same
+            // tight icon-only link « Idées » uses). Tapping the chip still plans it.
+            leadTo={(l) => (l.recipe_id ? `/kitchen/recipe/${l.recipe_id}` : undefined)}
+            leadToLabel={t.recipes.open}
             week={week}
             helpKey="leftovers"
             guide={{ card: 'kitchen', point: 8 }}
@@ -323,6 +328,7 @@ function RecipeRows({
   onPlan: (r: Recipe, date: number, slot: MealSlot) => void
   faces?: (key: string) => ReactNode
 }) {
+  const t = useT()
   const { isOpen, toggle, close } = useSingleOpen()
   // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
   const heroSlot = useMealPrefs().hero
@@ -330,12 +336,20 @@ function RecipeRows({
   const planSlot = planSlotPick ?? heroSlot
   return (
     <ul className="kitchen__ideas-list">
-      {rows.map((row) => (
+      {rows.map((row) => {
+        // Each row IS a recipe, so its picto opens that recipe (the tight icon-only
+        // link « Idées »/« Restants » use); the chip itself still reveals the plan
+        // picker. A guest can still follow it — recipe pages are read-only-safe.
+        const to = `/kitchen/recipe/${row.recipe.id}`
+        return (
         <li key={row.key} className="kitchen__idea">
           <div className="kitchen__idea-row">
+            <Link to={to} className="kitchen__idea-open" aria-label={t.recipes.open} title={t.recipes.open}>
+              <InlineIcon name={row.icon} size={14} color={row.iconColor} />
+            </Link>
             {readOnly ? (
               <span className="chip kitchen__idea-name" aria-disabled="true">
-                <InlineIcon name={row.icon} size={14} color={row.iconColor} /> {row.title}
+                {row.title}
                 {row.sub && <span className="mono kitchen__suggestion-sub"> · {row.sub}</span>}
               </span>
             ) : (
@@ -345,7 +359,7 @@ function RecipeRows({
                 onClick={() => toggle(row.key)}
                 aria-expanded={isOpen(row.key)}
               >
-                <InlineIcon name={row.icon} size={14} color={row.iconColor} /> {row.title}
+                {row.title}
                 {row.sub && <span className="mono kitchen__suggestion-sub"> · {row.sub}</span>}
                 <span className="kitchen__idea-caret" aria-hidden="true">
                   <Icon name="caret-down-bold" size={12} />
@@ -366,7 +380,8 @@ function RecipeRows({
             />
           )}
         </li>
-      ))}
+        )
+      })}
     </ul>
   )
 }

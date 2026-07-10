@@ -382,8 +382,8 @@ export function AddSheet({
   // Today's planned (non-leftover) meals → "we ate this, there's some left"
   // suggestions for the leftovers combobox; picking one carries its recipe link.
   const leftoverMealOpts = useMemo(
-    () => mealOptions((mealsData?.days ?? []).filter((d) => d.date === weekStart && !d.is_leftover)),
-    [mealsData, weekStart],
+    () => mealOptions((mealsData?.days ?? []).filter((d) => d.date === weekStart && !d.is_leftover), t),
+    [mealsData, weekStart, t],
   )
 
   const { data: membersData } = useQuery({
