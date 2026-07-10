@@ -290,7 +290,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | 🔶³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
 | F27 Notre monde          | ➖      | ➖⁴³    | ➖      | ➖         | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
-| F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅⁵⁴    |
+| F29 Collants             | ✅      | ➖      | ✅⁵⁵    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅⁵⁴    |
 | F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | ✅⁵⁴    |
 | F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | ✅⁵⁴    |
@@ -400,6 +400,17 @@ Footnotes (verdicts recorded so far):
     `screenshots.spec` `OVERFLOW_CASES` (360/390px, FR+EN) — the poll now also inspects
     `.scene__body` for scene routes; all 8 pass (no phone overflow). All new specs pass
     locally; typecheck green. [F3/F14/F23/F29/F30/F32×D16, F10/F18×D9]
+55. **Wave U SHIPPED 2026-07-10** — the one D3 misassignment (footnote 46) closed.
+    **F29 Collants** (was 🔶 — raw DELETE, no undo/confirm): `StickerWallPage` now runs the
+    sticker ✕ through `useDeferredRemoval(STICKERS_KEY)`, the same calm-delete every polled
+    list uses. `all = removal.visible(stickersQ.data.stickers)` filters the wall (empty
+    check + grouping ride the filtered array), so a removed cell hides at once and no
+    poll/realtime/invalidate can resurrect it; `removal.remove([id], t.routines.stickerWallRemoved, …)`
+    holds the DELETE behind the undo toast and awaits a refetch before un-hiding. New i18n
+    key `stickerWallRemoved` (FR « Autocollant retiré » / EN « Sticker removed »). The
+    `stickers.spec` DELETE test was rewritten (superseding footnote 54's raw-DELETE assert):
+    ✕ hides the cell + surfaces the toast with **zero** DELETE fired, undo restores it still
+    with no write. typecheck + 1436 unit tests + `stickers.spec` (2) green. [F29×D3]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
@@ -496,9 +507,10 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 6. [x] 🟡 **F6×D7** — habits had guide + `operatorHelp`; **verdict corrected (Wave H)
        2026-07-10** — `HabitudesPage` already carries a `SceneHead card="habits"`
        `HelpDot`, the on-surface « ? » the Day-3 audit undercounted. 🔶→✅ (footnote 53).
-7. [ ] 🟡 **F29×D3** — the sticker ✕ is a **raw DELETE** with no undo toast and no
-       confirm on a polled list (footnote 46 — the one D3 misassignment). **→ Wave U**:
-       wrap in `useDeferredRemoval(STICKERS_KEY)`.
+7. [x] 🟡 **F29×D3** — the sticker ✕ was a **raw DELETE** with no undo toast and no
+       confirm on a polled list (footnote 46 — the one D3 misassignment). **DONE
+       (Wave U) 2026-07-10** — wrapped in `useDeferredRemoval(STICKERS_KEY)`; 🔶→✅
+       (footnote 55).
 8. [ ] 🟡 **F21×D4** — `FamilyImportPage.tsx` bulk import = **9 raw `api()` writes**,
        not offline-queued (footnote 20). The only real D4 cluster — DayPlanPage/Board
        turned out already-migrated. **→ Wave O.**
@@ -588,10 +600,14 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         `OVERFLOW_CASES` (poll now also checks `.scene__body`); 8/8 pass FR+EN @360/390.
   - _Verified:_ each new/changed spec passes locally; typecheck green. (footnote 54)
   - _Note:_ trust CI's E2E job for the full signal; specs run individually here.
-- [ ] **Wave U — Undo/confirm rebalance** _(entry 7; ~S — one file)_.
-  - [ ] **F29** — wrap the sticker ✕ (`StickerWallPage.tsx` L62) in
-        `useDeferredRemoval(STICKERS_KEY)` (light, frequent, polled → undo toast).
-  - _Verify:_ delete → undo within 5 s; next poll doesn't resurrect mid-undo.
+- [x] **Wave U — Undo/confirm rebalance** _(entry 7; ~S — one file)_. **DONE 2026-07-10.**
+  - [x] **F29** — wrapped the sticker ✕ (`StickerWallPage.tsx`) in
+        `useDeferredRemoval(STICKERS_KEY)`: `removal.visible()` filters the wall rows so a
+        removed cell hides at once, `removal.remove()` holds the DELETE behind the undo
+        toast (msg `stickerWallRemoved`) and awaits a refetch before un-hiding. No more
+        raw write (light, frequent, polled → undo toast). (footnote 55)
+  - _Verified:_ e2e (`stickers.spec`) — ✕ hides the cell + surfaces the toast with **no**
+        DELETE fired; undo restores it, still no write. typecheck + 1436 unit tests green.
 - [ ] **Wave O — Offline writes** _(entries 8, 9; ~S/M)_.
   - [ ] **F21** — convert `FamilyImportPage.tsx`'s 9 raw `api()` writes to `useWrite`
         (avatar POSTs stay R2 two-step exempt); or record ➖ for the batch shape.

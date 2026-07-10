@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useCalm } from '../lib/calm'
 import { MEMBERS_KEY, STICKERS_KEY } from '../lib/queryKeys'
 import { type StickerRow } from '../lib/stickers'
@@ -33,6 +34,7 @@ export function StickerWallPage() {
   const close = useSceneClose('/routines')
   useEscapeKey(close)
   const write = useWrite()
+  const removal = useDeferredRemoval(STICKERS_KEY)
   const [editing, setEditing] = useState(false)
 
   const stickersQ = useQuery({ queryKey: STICKERS_KEY, queryFn: () => api<{ stickers: StickerRow[] }>('routine-stickers') })
@@ -44,7 +46,9 @@ export function StickerWallPage() {
 
   const members = membersQ.data.members
   const memberById = new Map(members.map((m) => [m.id, m]))
-  const all = stickersQ.data.stickers
+  // Filter out any sticker whose removal is still settling behind the undo toast,
+  // so a deferred one hides immediately and no poll can flash it back mid-undo.
+  const all = removal.visible(stickersQ.data.stickers)
 
   // Group by member (null → a shared "Maisonnée" wall), preserving award order.
   const byMember = new Map<string, StickerRow[]>()
@@ -59,8 +63,13 @@ export function StickerWallPage() {
     ...(byMember.has('__household__') ? ['__household__'] : []),
   ]
 
+  // A light, frequent delete on a live-polled list → the undo toast (never a bare
+  // write): removal.visible() hides the cell now, the DELETE is held behind the toast,
+  // and un-hiding awaits a refetch so the next poll can't resurrect it mid-undo.
   const remove = (id: string) =>
-    write('routine-stickers', { method: 'DELETE', body: { id }, affectedKeys: [STICKERS_KEY] }).catch(() => {})
+    removal.remove([id], t.routines.stickerWallRemoved, () =>
+      write('routine-stickers', { method: 'DELETE', body: { id }, affectedKeys: [STICKERS_KEY] }),
+    )
 
   return (
     <div className="scene sticker-wall-scene">

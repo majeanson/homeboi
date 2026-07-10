@@ -1704,6 +1704,7 @@ export const EN: typeof FR = {
     stickerWallTitle: 'Sticker wall',
     stickerWallEmpty: 'No stickers yet. Finish a routine to place one.',
     stickerWallHousehold: 'Household',
+    stickerWallRemoved: 'Sticker removed',
     // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Record your voice',
     clipRecorded: 'Clip recorded',

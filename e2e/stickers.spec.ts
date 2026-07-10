@@ -53,7 +53,7 @@ test('finishing a routine (calm off) places a sticker → POST', async ({ page }
   await expect(page.locator('.tdl-sticker__done')).toBeVisible()
 })
 
-test('the sticker wall shows stickers and removes one → DELETE', async ({ page }) => {
+test('the sticker wall removes one behind the undo toast, and undo restores it', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page)
   await page.route('**/api/routine-stickers**', (route) =>
@@ -68,17 +68,27 @@ test('the sticker wall shows stickers and removes one → DELETE', async ({ page
       }),
     }),
   )
+  // A light, frequent delete on a live-polled list goes through useDeferredRemoval: the
+  // DELETE is HELD behind the undo toast, so tapping ✕ must NOT fire a write, and undo
+  // must restore the cell (Wave U). Guard: capture any DELETE that leaks out early.
+  let deleted = false
+  page.on('request', (r) => {
+    if (r.method() === 'DELETE' && new URL(r.url()).pathname.endsWith('/api/routine-stickers')) deleted = true
+  })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: false })
   await page.goto('/routine/stickers')
+  const glyphs = page.locator('.sticker-wall__glyph')
   // Léa's ⭐ + the Maisonnée 🌈 — two placed stickers, grouped by who.
-  await expect(page.locator('.sticker-wall__glyph')).toHaveCount(2)
+  await expect(glyphs).toHaveCount(2)
   // The ✕ per cell only appears in edit mode (the header « Modifier » toggle).
   await page.getByRole('button', { name: 'Modifier' }).click()
-  const [req] = await Promise.all([
-    page.waitForRequest(
-      (r) => r.method() === 'DELETE' && new URL(r.url()).pathname.endsWith('/api/routine-stickers'),
-    ),
-    page.locator('.sticker-wall__remove').first().click(),
-  ])
-  expect(req.postDataJSON().id).toMatch(/^st[12]$/)
+  // Remove one → it hides at once (deferred), the undo toast surfaces, no write yet.
+  await page.locator('.sticker-wall__remove').first().click()
+  await expect(glyphs).toHaveCount(1)
+  await expect(page.locator('.undo-toast__msg')).toContainText('Autocollant retiré')
+  expect(deleted).toBe(false)
+  // Undo restores the cell — and the DELETE never fires (the write was only held).
+  await page.locator('.undo-toast__btn').first().click()
+  await expect(glyphs).toHaveCount(2)
+  expect(deleted).toBe(false)
 })

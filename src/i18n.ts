@@ -1820,6 +1820,7 @@ export const FR = {
     stickerWallTitle: 'Mur d’autocollants',
     stickerWallEmpty: 'Pas encore d’autocollants. Termine une routine pour en placer un.',
     stickerWallHousehold: 'Maisonnée',
+    stickerWallRemoved: 'Autocollant retiré',
     // Parent-voice clips for routine cards (feature #17 A).
     recordClip: 'Enregistrer ta voix',
     clipRecorded: 'Clip enregistré',
