@@ -50,9 +50,14 @@ mark unfinished cells ❓, never guess.
       D12 filled with 6 deliberate ➖ (photos/capture/leftovers/pantry/ghost/carnets carry
       no member-face by design); D16 **corrected two pre-seeds** (F18 ✅, F32 🔶) and flagged
       5 smoke-only surfaces.
-- [ ] **Day 3 — Audit B (per-page reading):** columns **D2 peek, D3 undo/confirm,
-      D7 guide/help/tour, D8 toddler lens, D9 kiosk/mobile, D10 voice, D15 i18n
-      register**. These need opening the pages, not just grepping.
+- [x] **Day 3 — Audit B (per-page reading):** columns **D2 peek, D3 undo/confirm,
+      D8 toddler lens, D9 kiosk/mobile, D10 voice, D15 i18n register** (D7 was Day 1).
+      **Done 2026-07-10** — all six filled for 34 rows; footnotes 43–50. **The matrix is
+      now complete (zero ❓).** D2/D10 are deliberate ➖ (peek = "tap the thing, get the
+      thing"; voice routes through the ＋ capture spine); D15 all ✅ (register consistently
+      Québécois, tsc-enforced parity); D3 clean but for **F29 sticker raw-delete (🔶)**; D8
+      found **F5 Mots + F6 Habitudes have no toddler lens (❌)**; D9 all ✅ but for **F10/F18
+      unswept scenes (🔶)**. D8/D9 read by two parallel Explore agents; the rest greppable.
 - [ ] **Day 4 — Rank & choose:** fill Part 3's gold-standard section + the ranked
       gap list; write the Part 4 waves as sized checkbox lists.
 - [ ] **Day 5+ — Fix-waves:** one wave per session (Part 4). After each wave,
@@ -251,40 +256,40 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 
 | Feature                  | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
 | ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
-| F1 Agenda                | ✅      | ✅      | ❓      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖¹       | ❓       | ✅      |
-| F2 Corvées+Projets       | ✅      | ✅      | ❓      | ✅         | ✅    | 🔶²       | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | 🔶³        | ➖¹       | ❓       | ✅      |
-| F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖¹       | ❓       | 🔶³⁸    |
-| F4 Notes frigo           | ✅      | ➖⁴     | ❓      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ❓       | ✅      |
-| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
-| F6 Habitudes             | ✅      | ❌      | ❓      | ✅         | ✅    | ❌⁵       | 🔶⁶      | ❓         | ✅           | ❓        | ✅        | ✅      | ✅         | ➖¹       | ❓       | ✅      |
-| F7 Photos                | ✅      | ➖      | ❓      | ➖⁷        | ➖⁷   | ➖        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖³⁰     | ✅         | ✅        | ❓       | ✅      |
-| F8 Dessins               | ✅      | ➖⁴     | ❓      | ➖⁷        | ✅    | ✅        | 🔶¹⁵     | ❓         | ❓           | ➖        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
-| F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ❓         | ❓           | ✅        | ✅        | ➖³¹     | ➖         | ➖¹       | ❓       | ✅      |
-| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
-| F11 Widget space         | ✅      | ➖      | ❓      | ➖⁹        | ➖    | ➖        | ✅       | ❓         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
-| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖        | ❓       | ✅      |
-| F13 Idées repas          | ✅      | ❓      | ✅      | ✅         | ✅    | ❌        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | ➖        | ❓       | ✅      |
-| F14 Restants             | ✅      | ✅      | ❓      | ✅         | ✅    | ➖²⁷      | ✅       | ❓         | ❓           | ➖        | ✅        | ➖³²     | ✅         | ➖        | ❓       | 🔶³⁹    |
-| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ✅      | ✅         | 🔶¹⁰      | ❓       | ✅      |
-| F16 Garde-manger         | ✅      | ❓      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ➖³³     | ✅         | ➖        | ❓       | ✅      |
-| F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | 🔶¹⁵     | ❓         | ❓           | ❓        | ➖³⁶      | ➖      | ➖         | ➖        | ❓       | ✅      |
-| F18 Circulaires          | ➖²⁵    | ❓      | ❓      | ✅         | ✅    | ➖²⁸      | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
-| F19 La liste             | ✅      | ❓      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ➖        | ❓       | ✅      |
-| F20 Fantômes             | ✅¹⁷    | ❓      | ❓      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ❓         | ❓           | ➖        | ✅        | ➖³⁴     | ✅         | ➖        | ❓       | ✅      |
-| F21 Personnes            | ✅      | ✅      | ❓      | 🔶²⁰       | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ➖      | ✅         | ✅        | ❓       | ✅      |
-| F22 Groupes              | ✅      | ❓      | ❓      | ✅         | ✅    | ❌        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ❓       | ✅      |
-| F23 Animaux              | ✅      | ✅      | ❓      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ✅         | ✅        | ❓       | 🔶⁴⁰    |
-| F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ✅         | ✅        | ❓       | ✅      |
-| F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
-| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ❓        | ✅        | ➖³⁵     | 🔶³ ²¹     | 🔶²³      | ❓       | 🔶¹¹    |
-| F27 Notre monde          | ➖      | ❓      | ➖      | ➖         | ➖    | ➖        | ✅       | ❓         | ❓           | ➖        | ✅        | ➖      | ➖         | ➖        | ❓       | ✅      |
-| F28 Routines             | ✅      | ➖⁴     | ❓      | ✅         | ✅    | ✅        | ✅       | ✅         | ❓           | ❓        | ✅        | ✅      | ✅         | 🔶¹⁰      | ❓       | ✅      |
-| F29 Collants             | ✅      | ➖      | ❓      | ✅         | ✅    | ➖        | 🔶¹⁵     | ❓         | ❓           | ➖        | ✅        | ✅      | ✅         | ➖        | ❓       | ❌      |
-| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ❌¹⁶     | ✅         | ❓           | ❓        | ➖³⁷      | ➖      | ➖         | ➖        | ❓       | 🔶⁴¹    |
-| F31 Voyage               | ✅      | ❓      | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ❓         | ❓           | ✅        | ✅        | ✅      | ✅         | ✅        | ❓       | ✅      |
-| F32 L'auto               | ✅¹⁸    | ❓      | ✅      | ✅         | ✅    | ✅        | ✅       | ❓         | ❓           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ❓       | 🔶⁴²    |
-| F33 Partager & invités   | 🔶²⁶    | ➖      | ❓      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ❓           | ❓        | ✅        | ✅¹³    | ✅         | ✅        | ❓       | ✅      |
-| F34 Réglages & appareils | ✅      | ➖      | ❓      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ❓           | ❓        | ✅        | ➖      | 🔶²¹       | 🔶²³      | ❓       | ✅      |
+| F1 Agenda                | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | 🔶³        | ➖¹       | ✅       | ✅      |
+| F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | 🔶³⁸    |
+| F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
+| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ❌⁵       | 🔶⁶      | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
+| F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | 🔶¹⁵     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
+| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | 🔶⁴⁹        | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F11 Widget space         | ✅      | ➖      | ➖⁴⁴    | ➖⁹        | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ❌        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
+| F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ❌        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
+| F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | 🔶³⁹    |
+| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
+| F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖        | ✅       | ✅      |
+| F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | 🔶¹⁵     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | 🔶⁴⁹        | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
+| F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
+| F21 Personnes            | ✅      | ✅      | ✅      | 🔶²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
+| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ❌        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ✅       | ✅      |
+| F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | 🔶⁴⁰    |
+| F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
+| F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | 🔶³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
+| F27 Notre monde          | ➖      | ➖⁴³    | ➖      | ➖         | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
+| F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | 🔶¹⁵     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ❌      |
+| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ❌¹⁶     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | 🔶⁴¹    |
+| F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ❌        | 🔶¹⁵     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | 🔶⁴²    |
+| F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅      |
+| F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | 🔶²¹       | 🔶²³      | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
 
@@ -330,6 +335,14 @@ Footnotes (verdicts recorded so far):
 40. **D16 verified 2026-07-10**: `/cercle/pet/new` is **smoke-rendered** (scenes.spec layout sweep) but — unlike group/business/carnet, which `cercle-crud.spec` creates-and-POSTs — **no spec creates a pet**. Happy-path e2e gap.
 41. **D16 verified 2026-07-10**: `/jouer` is **smoke-rendered** at toddler audience (scenes.spec layout sweep, no-overflow asserted) but **no game-interaction happy path** is exercised.
 42. **D16 verified 2026-07-10** — **corrects the pre-seeded ❌**: `/voiture` **is** smoke-rendered with a no-overflow layout assertion (scenes.spec `voiture`), so it's not dark; but no schedule/car-day/carpool **CRUD** happy path exists in the default `npm run e2e` (realdata.spec touches it only under the separate real-data harness). Upgraded ❌→🔶.
+43. **D2 verified 2026-07-10** (Day 3): no `useEntityDetail` peek — deliberate, by the "tap the thing, get the thing" rule (like recipe/routine ⁴). These tap-targets either **navigate to their own page** (Voyage→trip scene, L'auto→VoiturePage, Groupes→`/cercle/family/:id`, Notre monde→into Le cercle) or are a **one-tap action/toggle** (Idées=plan-this, Garde-manger=toggle a low flag, La liste=check in place, Circulaires=links to the flyer / rides a searchable list item, Fantômes=operator admin RowActions). A peek here would be an inter-tap menu. [F13/F16/F18/F19/F20/F22/F27/F31/F32]
+44. **D3 verified 2026-07-10**: the board has **no destructive delete** — hiding/moving a card is a reversible **device-local** toggle (`lib/boardCards`), not a row delete; nothing to undo-or-confirm. [F11]
+45. **D3 verified 2026-07-10**: deals aren't user-deletable content (transient Flipp reconstruction ²⁸); the generic recurring list item a deal rides carries the undo. [F18]
+46. **D3 found 2026-07-10** — **the one D3 misassignment**: the sticker ✕ (`StickerWallPage.tsx` L62) fires a raw `write('routine-stickers', DELETE)` with **neither an undo toast nor a confirm**, on a live-polled list (`STICKERS_KEY`) — the deferred-removal rule (light, frequent delete → undo) isn't applied. Candidate for `useDeferredRemoval` in Wave U. [F29]
+47. **D10 verified 2026-07-10**: voice for these entities lands via the **＋ capture spine** (Whisper→AI-classified to event/task/meal/list/note, F9 ✅) or the surface is a **structured form** (event date/time, chore recurrence, contact phone/address, recipe import/OCR, carnet service log, settings toggles); the in-place quick-add is keyboard by design. Composers that DO carry inline voice: notes ⁴ / mots / pantry / liste / cercle-notes / voyage / habits(HabitForm). [F1/F2/F3/F10/F12/F13/F15/F17/F21/F26/F28/F30/F33/F34]
+48. **D8 verified 2026-07-10**: the themed tab **does** branch to a deliberate toddler view (ToddlerBoard / KidKitchen / CircleKidView / Liste toddler), which **curates this operator/organizational sub-feature out** — a design fold, not a missing branch. Capture(＋ FAB) & search are hidden by the kid one-way door (`HubLayout` L325/382); pantry/vide-frigo/circulaires/ghost/groups/business/cercle-notes/carnets/Voyage are folded out of the kid lens; Partager is operator plumbing. [F9/F10/F16/F17/F18/F20/F22/F24/F25/F26/F31/F33]
+49. **D9 found 2026-07-10**: no board card **and** the scene route is **not in any phone-overflow e2e sweep** (`screenshots.spec`/`layout-overflow.spec` cover the six hub tabs at 360/390px, not `/search` or `/circulaires`). The layout likely reflows (grid/`Cluster`) but its phone width is **unproven** — add both routes to `OVERFLOW_CASES`. [F10/F18]
+50. **D8 soft-✅ 2026-07-10**: `StickerWallPage` has **no explicit `useAudience` branch** — the same wall renders across lenses — but it is inherently picture-first (avatar + sticker-emoji grid, no reading), so it satisfies the toddler bar by nature. Under a strict "must branch" reading this drops to ❓. [F29]
 
 ### Gold standard (fill on Day 4)
 
@@ -351,6 +364,9 @@ Footnotes (verdicts recorded so far):
 - [ ] 🔴 F5/F12/F13/F22/F31×D6 — **no `SEARCH_INDEX` entry** for Mots, Plan des repas, Idées de repas, Groupes, Voyage (found Day 2). All are persistent named content a user could reasonably look up: a message, a planned/idea dish (recipe-linked meals are reachable via the recipe, but free-text meals/ideas aren't), a named group, a trip. One-line extractor each + a SearchPage section. (Dessins **is** searchable — via `drawingFields` by author name.)
 - [ ] 🔴 F29×D16 — mur de collants has **no e2e at all** (confirmed: no `sticker`/`collant`/`StickerWall` match). Spec the happy path.
 - [ ] 🟡 F3/F14/F23/F30/F32×D16 — **smoke-rendered only, no happy-path spec** (Day 2, footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`, `/voiture`. **F18 (circulaires) turned out covered** (DealsBrowser start `coverage.spec` + results `sheets.spec` + price-match `cashier.spec`) → ✅; **F32 (L'auto)** is layout-smoke-rendered not dark → ❌ upgraded to 🔶. Add create/complete/interaction specs (extend the sweeps).
+- [ ] 🔴 F5×D8 / F6×D8 — **Mots & Habitudes have no toddler lens at all** (Day 3): `MotsCard` isn't pulled into `ToddlerBoard`, and `HabitudesPage`/`HabitudesCard` import no `useAudience` — both are child-relevant (a mot with a drawing/voice; "brosse tes dents") and neither is operator-locked, so ➖ would be wrong. Wave T: give each a picture-first/read-aloud treatment or a written ➖.
+- [ ] 🟡 F29×D3 — **the sticker ✕ is a raw DELETE** with no undo toast and no confirm on a polled list (footnote 46). Wave U: wrap in `useDeferredRemoval(STICKERS_KEY)`.
+- [ ] 🟡 F10×D9 / F18×D9 — SearchPage & CirculairesPage are **not in any phone-overflow e2e sweep** and have no board card (footnote 49); phone width unproven. Ties to Wave E — add `/search` + `/circulaires` to `OVERFLOW_CASES` in `screenshots.spec`.
 - [ ] 🔴 F30×D7 — Jouer is fully undiscovered: no guide card, no « ? », no tour (footnote 16).
 - [ ] 🟡 F5/F8/F17/F29/F31×D7 — Mots, Dessins, Vide-frigo, Mur de collants, Voyage are guide-only: no « ? » help on their live surface (footnote 15).
 - [ ] 🟡 F6×D7 — habits have guide + operatorHelp but no « ? » where they live (footnote 6).
@@ -525,6 +541,13 @@ holds where content is member-authored (events/todos/drawings/schedule show face
 search gaps (Mots, meals, ideas, groups, Voyage) and confirmed Dessins is searchable via
 `drawingFields`; D16 **corrected two pre-seeded ❌** (F18 Circulaires is e2e-covered → ✅;
 F32 L'auto is layout-smoke-rendered → 🔶) and flagged 5 smoke-only surfaces (todos, restants,
-pet-create, jouer, voiture) as happy-path e2e gaps. Status: Parts 1–2 complete; matrix
-D1/D4/D5/D6/D7/D11/D12/D13/D14/D16 done; **audit Day 3 (D2/D3/D8/D9/D10/D15, per-page
-reading) not yet run**._
+pet-create, jouer, voiture) as happy-path e2e gaps. **Audit Day 3 run 2026-07-10** — columns
+D2/D3/D8/D9/D10/D15 filled for all 34 rows (footnotes 43–50), so **the 16-column matrix is now
+complete (zero ❓)**. D2 peek + D10 voice are deliberate ➖ across the board (peek follows
+"tap the thing, get the thing"; voice concentrates on the ＋ capture spine + memo/quick-add
+surfaces); D15 register is uniformly Québécois → all ✅. D3 is correctly assigned everywhere
+except the **F29 sticker ✕ raw delete (🔶** — no undo, no confirm, on a polled list). D8 found
+two real gaps — **F5 Mots and F6 Habitudes render no toddler lens (❌)** — the rest ✅ or a
+deliberate kid-view fold (➖); D9 is ✅ except **F10 Recherche / F18 Circulaires (🔶** — unswept
+scenes, no board card). Status: **audit phase COMPLETE (Parts 1–2 + all 16 matrix columns);
+next is Day 4 — rank & choose (gold-standard section + ranked gap list + Part 4 waves).**_
