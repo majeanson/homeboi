@@ -46,14 +46,6 @@ export interface GhostCandidate {
   cadenceDays: number
 }
 
-export interface GhostPatch {
-  key?: string
-  label?: string
-  cadenceDays?: number | null
-  muted?: boolean
-  standing?: boolean // #27
-}
-
 // The list strip read now also carries the household's standing staples (#27) for
 // the Quick-add "Toujours" group. Default both to [] so a thin/failed response
 // never breaks the caller.
@@ -66,6 +58,6 @@ export const fetchGhostManage = () =>
     candidates: r.candidates ?? [],
   }))
 
-export const patchGhost = (body: GhostPatch) => api('ghost', { method: 'PATCH', body })
-
-export const deleteGhost = (key: string) => api('ghost', { method: 'DELETE', body: { key } })
+// Ghost MUTATIONS go through useWrite('ghost', …) at the call sites (GhostSection,
+// QuickAddPage) so they queue + replay offline — never the raw api() bypass this
+// module once carried (D4, Wave O). This module stays read-only.

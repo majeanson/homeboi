@@ -9,7 +9,7 @@ import { useConfirm } from '../../lib/confirm'
 import { useUndoToast } from '../../lib/toast'
 import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
-import { fetchGhostManage, patchGhost, deleteGhost, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
+import { fetchGhostManage, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
@@ -382,6 +382,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
 // one-tap "track it?" suggestions — the deliberate opt-in.
 export function GhostSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const write = useWrite()
   const confirm = useConfirm()
   const [items, setItems] = useState<GhostManageItem[]>([])
   const [candidates, setCandidates] = useState<GhostCandidate[]>([])
@@ -402,8 +403,16 @@ export function GhostSection({ help }: { help?: HelpMode }) {
 
   // The conscious step: one tap turns a frequent buy into a tracked item, with
   // its learned cadence as the starting point.
+  // All four ghost mutations go through useWrite (not the raw api() wrappers) so a
+  // retune/track/remove/add made offline queues + replays instead of being lost —
+  // matching the sibling list writes here and QuickAddPage's ghost-mute (D4, Wave O).
+  // affectedKeys refreshes the Liste quick-add panel; load() refreshes this view.
   async function track(c: GhostCandidate) {
-    await patchGhost({ key: c.key, label: c.label, cadenceDays: c.cadenceDays }).catch(() => {})
+    await write('ghost', {
+      method: 'PATCH',
+      body: { key: c.key, label: c.label, cadenceDays: c.cadenceDays },
+      affectedKeys: [GHOSTS_KEY],
+    }).catch(() => {})
     load()
   }
 
@@ -411,20 +420,24 @@ export function GhostSection({ help }: { help?: HelpMode }) {
     item: GhostManageItem,
     patch: { cadenceDays?: number; muted?: boolean; standing?: boolean },
   ) {
-    await patchGhost({
-      key: item.key,
-      label: item.label,
-      cadenceDays: patch.cadenceDays ?? item.cadenceDays ?? undefined,
-      muted: patch.muted ?? item.muted,
-      // Always send the resolved standing so tuning cadence/mute never unpins it.
-      standing: patch.standing ?? item.standing,
+    await write('ghost', {
+      method: 'PATCH',
+      body: {
+        key: item.key,
+        label: item.label,
+        cadenceDays: patch.cadenceDays ?? item.cadenceDays ?? undefined,
+        muted: patch.muted ?? item.muted,
+        // Always send the resolved standing so tuning cadence/mute never unpins it.
+        standing: patch.standing ?? item.standing,
+      },
+      affectedKeys: [GHOSTS_KEY],
     }).catch(() => {})
     load()
   }
   async function remove(item: GhostManageItem) {
     // Removing a tracked staple is permanent (no undo here) — confirm first.
     if (!(await confirm({ message: t.common.deleteConfirm, tone: 'danger' }))) return
-    await deleteGhost(item.key).catch(() => {})
+    await write('ghost', { method: 'DELETE', body: { key: item.key }, affectedKeys: [GHOSTS_KEY] }).catch(() => {})
     load()
   }
   async function add(e: React.FormEvent) {
@@ -432,7 +445,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
     const name = label.trim()
     if (!name) return
     const n = Math.max(1, Math.min(365, Math.round(Number(days) || 7)))
-    await patchGhost({ label: name, cadenceDays: n }).catch(() => {})
+    await write('ghost', { method: 'PATCH', body: { label: name, cadenceDays: n }, affectedKeys: [GHOSTS_KEY] }).catch(() => {})
     setLabel('')
     setDays('7')
     load()

@@ -281,8 +281,8 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | ✅⁵³     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
-| F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
-| F21 Personnes            | ✅      | ✅      | ✅      | 🔶²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
+| F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | ✅⁵⁶       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
+| F21 Personnes            | ✅      | ✅      | ✅      | ➖²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
 | F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ✅       | ✅      |
 | F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅⁵⁴    |
 | F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
@@ -317,8 +317,8 @@ Footnotes (verdicts recorded so far):
 16. **Fully undiscovered**: no guide card, no help entry, no tour step. `playContent.ts` powers the toddler play space but the discovery layer never mentions it.
 17. **D1 verified 2026-07-10**: `ghost.ts` has no `onRequestPost` **by design** — a ghost is _enrolled_ from an existing purchase via PATCH (buying never auto-enrolls); edit + delete both present. Adding a create endpoint would reopen the auto-learning the calm tenet forbids, so this is full-CRUD-by-deliberate-shape, not a gap.
 18. **D1 verified 2026-07-10**: `car.ts` is a **GET-only resolved read model** (`realtime.ts` L203 says so — "no write path"); the household's cars are edited via `household` PATCH (`household.ts` L206), and `car-day` is a create/delete day-marker (nothing to edit). `schedule` is full CRUD. Whole feature is manageable.
-19. **D4 found 2026-07-10**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` call `api('ghost',{method})` directly — enroll/snooze/remove bypass the offline outbox. Candidate for `useWrite` in Wave O (low severity — usually rides alongside a list add that _is_ queued).
-20. **D4 found 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. Triage the import batch in Wave O.
+19. **D4 found 2026-07-10 → RESOLVED (Wave O, footnote 56)**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` called `api('ghost',{method})` directly — enroll/snooze/remove bypassed the offline outbox. Now routed through `useWrite` at the call site; the raw wrappers were deleted.
+20. **D4 found 2026-07-10 → TRIAGED ➖ (Wave O) 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. **Verdict on the import batch: keep raw `api()` — record ➖, don't convert.** The merge is a *dependent id-chain*: each `upsertPerson` POST returns a contact id that the subsequent `cercle-links` / pet-owner / `cercle-groups` writes reference by value, and pets/groups POST their own ids consumed by follow-up membership writes. `useWrite` returns `{ data: null, queued: true }` when offline, so a queued person write yields no id and every downstream link/membership breaks — a corrupt half-import, strictly worse than requiring connectivity. The whole page is an interactive online flow (open a share link → live progress bar → done state) with online-only R2 photo re-copies (`copyPhotoToOwn`). This is the sanctioned "online-only batch" ➖, not a gap.
 21. **D13 ordering outlier** (`position` convention): `sort_order`/`sort` instead of `position` — `members.sort_order` (0001, F34), `contact_groups.sort_order` (0052, F22 — **corrects the pre-seeded ✅**, verified in code), `carnets.sort` + `home_pins.sort` (0082, F26). Converge opportunistically during a schema-touching migration, never churn-only.
 22. **D13 soft-delete outlier**: `notes.dismissed_at` (0018) is a bespoke soft-clear timestamp instead of `deleted_at` — documented (mis-clear recoverable), semantically "cleared not deleted." Converge opportunistically.
 23. **D14 media-shape deviation** (lifecycle still correct — blobs freed via `deleteR2Blob`, shared `uploadMedia` used): `care_log.media_json` is a parallel array of doc keys (F26); `members.avatar_kind`/`avatar_ref` is a bespoke dual-purpose column predating the trio (F34). Normalization backlog, opportunistic only — same class as DB-1 (¹⁰).
@@ -411,11 +411,24 @@ Footnotes (verdicts recorded so far):
     `stickers.spec` DELETE test was rewritten (superseding footnote 54's raw-DELETE assert):
     ✕ hides the cell + surfaces the toast with **zero** DELETE fired, undo restores it still
     with no write. typecheck + 1436 unit tests + `stickers.spec` (2) green. [F29×D3]
+56. **Wave O SHIPPED 2026-07-10** — the D4 outbox-bypass closed. **F20 Fantômes** (was
+    🔶 — footnote 19): `GhostSection`'s four mutations now go through the offline outbox.
+    `track` / `save` / `remove` / `add` call `write('ghost', { method, body, affectedKeys:
+    [GHOSTS_KEY] })` (useWrite) instead of the raw `patchGhost`/`deleteGhost` `api()`
+    wrappers, so a retune/track/remove/add made offline **queues + replays** — matching the
+    sibling `write('list', …)` calls in the same file and `QuickAddPage`'s ghost-mute. The
+    dead `patchGhost`/`deleteGhost` exports **and** the now-orphan `GhostPatch` type were
+    deleted from `lib/ghost.ts` (it stays read-only: `fetchGhosts`/`fetchGhostManage`), so
+    the bypass can't be re-introduced by importing a wrapper. `affectedKeys` refreshes the
+    Liste quick-add panel; the section's local `load()` still refreshes the manage view.
+    typecheck + 1436 unit tests + `interactions.spec` ghost PATCH tests green; knip shows no
+    new dead exports (3 fewer). F21 stayed raw by design (➖, footnote 20). [F20×D4]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
-**Method:** a "gap-free" row has **zero ❌ and zero 🔶** (only ✅ / ➖). Eight rows
-qualify: **F1, F7, F11, F16, F19, F24, F25, F27**. But gap-free ≠ exemplary — F7
+**Method:** a "gap-free" row has **zero ❌ and zero 🔶** (only ✅ / ➖). Nine rows
+qualify: **F1, F7, F11, F16, F19, F21, F24, F25, F27** (F21 joined once Wave O settled
+its last 🔶 to ➖; footnote 20). But gap-free ≠ exemplary — F7
 Photos / F11 Widget space / F27 Notre monde are clean largely by carrying many
 _deliberate_ ➖ (simple or derived features with little surface to get wrong). The
 **gold standard = gap-free AND rich** (many substantive ✅, ➖ only where a
@@ -511,11 +524,16 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
        confirm on a polled list (footnote 46 — the one D3 misassignment). **DONE
        (Wave U) 2026-07-10** — wrapped in `useDeferredRemoval(STICKERS_KEY)`; 🔶→✅
        (footnote 55).
-8. [ ] 🟡 **F21×D4** — `FamilyImportPage.tsx` bulk import = **9 raw `api()` writes**,
-       not offline-queued (footnote 20). The only real D4 cluster — DayPlanPage/Board
-       turned out already-migrated. **→ Wave O.**
-9. [ ] 🟡 **F20×D4** — `ghost.ts` `patchGhost`/`deleteGhost` bypass `useWrite`
-       (footnote 19). Low severity (usually rides a queued list add). **→ Wave O.**
+8. [x] 🟡 **F21×D4** — `FamilyImportPage.tsx` bulk import = **9 raw `api()` writes**,
+       not offline-queued (footnote 20). **DONE (Wave O) 2026-07-10 → ➖ (by design)**:
+       the merge is a dependent id-chain (person POST → its id feeds the link/pet/group
+       writes) plus online-only R2 photo re-copies — a queued person write returns a
+       `null` id, so `useWrite` would break the chain into a half-import. Legitimately an
+       online interactive batch (share-link → progress bar → done). 🔶→➖ (footnote 20).
+9. [x] 🟡 **F20×D4** — `ghost.ts` `patchGhost`/`deleteGhost` bypassed `useWrite`
+       (footnote 19). **DONE (Wave O) 2026-07-10** — `GhostSection`'s four mutations
+       (track/save/remove/add) now go through `write('ghost', …)`; the raw wrappers
+       (+`GhostPatch`) deleted. 🔶→✅ (footnote 56).
 10. [x] 🟡 **F3/F14/F23/F30/F32×D16** — smoke-rendered only, no happy-path spec.
         **DONE (Wave E) 2026-07-10** — todo/restants (`interactions.spec`), pet
         (`cercle-crud.spec`), jouer/voiture (`play-and-car.spec`); 🔶→✅ (footnote 54).
@@ -608,11 +626,21 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         raw write (light, frequent, polled → undo toast). (footnote 55)
   - _Verified:_ e2e (`stickers.spec`) — ✕ hides the cell + surfaces the toast with **no**
         DELETE fired; undo restores it, still no write. typecheck + 1436 unit tests green.
-- [ ] **Wave O — Offline writes** _(entries 8, 9; ~S/M)_.
-  - [ ] **F21** — convert `FamilyImportPage.tsx`'s 9 raw `api()` writes to `useWrite`
-        (avatar POSTs stay R2 two-step exempt); or record ➖ for the batch shape.
-  - [ ] **F20** — `ghost.ts` `patchGhost`/`deleteGhost` → `useWrite` (low severity).
-  - _Verify:_ airplane-mode write → reload → replayed (offline-outbox e2e pattern).
+- [x] **Wave O — Offline writes** _(entries 8, 9; ~S/M)_. **DONE 2026-07-10.**
+  - [x] **F21** — **recorded ➖** (not converted): `FamilyImportPage.tsx`'s merge is a
+        dependent id-chain (each person/pet/group POST's returned id feeds the following
+        link/membership writes) plus online-only R2 photo re-copies. A queued write
+        returns a `null` id under `useWrite`, so offline-queuing the batch would produce a
+        broken half-import — worse than the current explicit online-only flow (share-link →
+        progress bar → done). By-design online. (footnote 20)
+  - [x] **F20** — `GhostSection`'s four mutations (`track`/`save`/`remove`/`add`) now call
+        `write('ghost', { … , affectedKeys: [GHOSTS_KEY] })` instead of the raw
+        `patchGhost`/`deleteGhost` wrappers, matching QuickAddPage's ghost-mute precedent;
+        the now-dead wrappers + `GhostPatch` type deleted from `lib/ghost.ts` (kept
+        read-only). (footnote 56)
+  - _Verified:_ typecheck + 1436 unit tests green; `interactions.spec` ghost tests (add
+        staple → PATCH, track candidate → PATCH) pass through the new `write()` path; knip
+        shows no new dead exports (3 removed).
 - [ ] **Wave P — Peek verdicts** _(~XS — one cell)_. Only one D2 ❌ exists: **F6
       Habitudes**. Either add a `buildHabit` adapter (copy `buildBusiness`) or record
       a ➖ verdict in `adapters.ts` beside the recipe/routine ones. (All other D2 are
