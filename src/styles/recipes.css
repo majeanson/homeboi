@@ -628,17 +628,25 @@
   align-items: center;
   gap: 0.4rem;
 }
-/* A row whose picto links out (an idea → its recipe). Its own tight target so the
-   rest of the chip still opens the plan picker; it sits outside the chip because a
-   button can't nest an anchor. Mirrors `.combobox__open` on the dropdown rows. */
+/* A row whose picto links out (an idea → its recipe). It stays its OWN element (a
+   button can't nest an anchor), but it and the chip fuse into ONE pill: the icon is
+   the pill's leading edge (tight target → the recipe), the chip body the rest (→ the
+   plan picker). Visually one control; the seam is where the two taps split, so the
+   targets never overlap the way an icon buried mid-row would. Mirrors
+   `.combobox__open` on the dropdown rows. */
 .kitchen__idea-open {
   flex: none;
   display: grid;
   place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: var(--radius-sm);
+  width: 2.4rem;
+  min-height: 40px; /* match the chip so the pill has one clean height */
+  border: 1px solid var(--line);
+  border-right: none; /* share the seam with the chip — no double line */
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  background: transparent;
+  color: var(--berry-deep);
   text-decoration: none;
+  margin-right: -0.4rem; /* cancel the row gap so it abuts the chip */
 }
 .kitchen__idea-open:hover,
 .kitchen__idea-open:focus-visible {
@@ -646,6 +654,11 @@
 }
 .kitchen__idea-open:active {
   transform: translateY(1px);
+}
+/* The chip drops its left rounding when a picto-link precedes it, closing the pill. */
+.kitchen__idea-open + .kitchen__idea-name {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 .kitchen__idea-name {
   flex: 1;
