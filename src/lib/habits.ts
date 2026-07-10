@@ -17,7 +17,12 @@ import { addLocalDays, localDayOfWeek, localMinuteOfDay, todayLocalDay } from '.
 // chain, a total across habits, or a comparison between members.
 
 export type HabitKind = 'do' | 'count' | 'limit' | 'avoid'
-export type HabitCadence = 'recur' | 'week'
+// Four rhythms, two families:
+//   • BY DAY   — 'recur' (a schedule of dates) | 'week' (n times per local week)
+//   • BY MOMENT (intra-day) — 'day' (n times a day) | 'hours' (every N hours in a window)
+// The intra-day pair comes due EVERY day: what they ask for is a COUNT inside the
+// day, not a set of dates. Both read that count off one field, `day_times`.
+export type HabitCadence = 'recur' | 'week' | 'day' | 'hours'
 
 export interface Habit {
   id: string
@@ -31,11 +36,23 @@ export interface Habit {
   cadence: HabitCadence
   recur: string | null // raw Recur JSON (cadence='recur'); NULL = every day
   week_times: number | null // cadence='week': n times per local week
+  day_times: number | null // cadence='day'|'hours': n moments per local day ('hours' → computed server-side)
+  every_hours: number | null // cadence='hours': hours between moments
+  window_start: number | null // cadence='hours': first moment, minutes past local midnight
+  window_end: number | null // cadence='hours': last moment allowed, same unit
   reminders: number[] // minutes past local midnight
   position: number
   archived: boolean
-  due_days: number[] // server-expanded scheduled days (local midnights); empty for cadence='week'
+  due_days: number[] // server-expanded scheduled days (local midnights); empty for every cadence but 'recur'
 }
+
+// Defaults for the two intra-day cadences, shared by the form and the fallbacks
+// below so a half-filled row never reads as "zero moments a day".
+export const DEFAULT_DAY_TIMES = 3
+export const DEFAULT_EVERY_HOURS = 4
+export const DEFAULT_WINDOW_START = 8 * 60 // 08:00
+export const DEFAULT_WINDOW_END = 20 * 60 // 20:00
+export const MAX_DAY_TIMES = 24
 
 export interface HabitDay {
   habit_id: string
@@ -111,6 +128,39 @@ export function weekBounds(day: number): [number, number] {
   return [start, addLocalDays(start, 7)]
 }
 
+// --- Intra-day rhythm ---------------------------------------------------------
+
+// The wall-clock moments an 'hours' habit asks for: from window_start, every
+// every_hours, while still inside the window. Minutes past local midnight — the
+// same unit as `reminders`, so the reminder engine reads one shape.
+// Mirrors the server's slot COUNT (functions/api/habits.ts), which is what it
+// stores into day_times; only the times themselves are re-derived here. Takes the
+// four fields it reads, so the form can preview a DRAFT rhythm before it's a Habit.
+export function hourSlots(habit: Pick<Habit, 'cadence' | 'every_hours' | 'window_start' | 'window_end'>): number[] {
+  if (habit.cadence !== 'hours') return []
+  const step = Math.max(1, habit.every_hours ?? DEFAULT_EVERY_HOURS) * 60
+  const start = habit.window_start ?? DEFAULT_WINDOW_START
+  // An end before the start would fit zero moments; pin it, so a half-dragged
+  // window still asks once (the server pins it the same way).
+  const end = Math.max(start, habit.window_end ?? DEFAULT_WINDOW_END)
+  const out: number[] = []
+  for (let m = start; m <= end && out.length < MAX_DAY_TIMES; m += step) out.push(m)
+  return out
+}
+
+// How many marks THIS DAY is asking for — the one number both intra-day cadences
+// resolve to. Every other cadence asks once (a scheduled day is done or it isn't).
+export function dayGoal(habit: Habit): number {
+  if (habit.cadence !== 'day' && habit.cadence !== 'hours') return 1
+  return Math.max(1, Math.min(MAX_DAY_TIMES, habit.day_times ?? DEFAULT_DAY_TIMES))
+}
+
+// The times a habit can nudge at: an 'hours' habit's moments ARE its reminders
+// (the rhythm generated them), so it never carries a hand-typed list.
+export function reminderTimes(habit: Habit): number[] {
+  return habit.cadence === 'hours' ? hourSlots(habit) : habit.reminders
+}
+
 // --- "Is this day's intention met?" ------------------------------------------
 // Per kind, from that day's row alone. An ABSENT row is never a failure — it's a
 // day nobody marked (neutral). `limit` counts as met while at/under the ceiling,
@@ -118,8 +168,10 @@ export function weekBounds(day: number): [number, number] {
 export function isDayDone(habit: Habit, row: HabitDay | undefined): boolean {
   const value = row?.value ?? 0
   switch (habit.kind) {
+    // An intra-day rhythm turns « fait » into « fait n fois » — the value tallies
+    // the moments, so one tap no longer settles a « 3 fois par jour » habit.
     case 'do':
-      return value > 0
+      return value >= dayGoal(habit)
     case 'count':
       return value >= (habit.target ?? 1)
     case 'limit':
@@ -162,12 +214,15 @@ export function remainingThisWeek(habit: Habit, days: HabitDay[], day: number): 
 }
 
 // Is the habit asking for attention on `day`?
-//   • cadence 'recur' → the server expanded its scheduled days into due_days.
-//   • cadence 'week'  → any day, until the week's quota is met.
+//   • cadence 'recur'        → the server expanded its scheduled days into due_days.
+//   • cadence 'week'         → any day, until the week's quota is met.
+//   • cadence 'day'/'hours'  → every day (the rhythm lives INSIDE the day; whether
+//     today is finished is isDaySettled's question, not this one).
 // An archived habit never comes due.
 export function isDueOn(habit: Habit, days: HabitDay[], day: number): boolean {
   if (habit.archived) return false
   if (habit.cadence === 'week') return remainingThisWeek(habit, days, day) > 0
+  if (habit.cadence === 'day' || habit.cadence === 'hours') return true
   return habit.due_days.includes(day)
 }
 
@@ -187,6 +242,8 @@ export interface HabitStatus {
   remainingWeek: number
   /** count/limit only: the goal or ceiling. */
   target: number | null
+  /** How many marks the day asks for: >1 only on an intra-day cadence. */
+  goal: number
 }
 
 export function habitStatusOn(habit: Habit, days: HabitDay[], day: number): HabitStatus {
@@ -200,6 +257,7 @@ export function habitStatusOn(habit: Habit, days: HabitDay[], day: number): Habi
     slips: row?.slips ?? 0,
     remainingWeek: remainingThisWeek(habit, days, day),
     target: habit.target,
+    goal: dayGoal(habit),
   }
 }
 
@@ -219,6 +277,9 @@ export function habitReading(habit: Habit, status: HabitStatus, fn: HabitStrings
     case 'avoid':
       return status.slips > 0 ? fn.slipped : status.marked ? fn.held : fn.avoidHint
     case 'do':
+      // An intra-day rhythm says where the day stands in moments (« 2 sur 4 fois »);
+      // a week quota says what the week still owes; a plain daily habit says nothing.
+      if (status.goal > 1) return fn.ofTarget(status.value, status.goal, fn.timesUnit)
       return habit.cadence === 'week' && status.remainingWeek > 0 ? fn.remainingWeek(status.remainingWeek) : ''
   }
 }
@@ -287,9 +348,10 @@ export function deriveProgress(habit: Habit, days: HabitDay[], today: number): H
 // without resurrecting a 09:00 reminder at supper time.
 export const REMINDER_GRACE_MIN = 30
 
-// Which of `habit.reminders` should fire right now: inside its grace window, not
+// Which of the habit's moments should fire right now: inside its grace window, not
 // already fired today, and only while the habit is still un-done. Returns the
-// reminder minute to record as fired, or null.
+// reminder minute to record as fired, or null. An 'hours' habit's moments come
+// from its rhythm (hourSlots) — there is nothing to type by hand.
 export function reminderDue(
   habit: Habit,
   nowMinute: number,
@@ -297,7 +359,7 @@ export function reminderDue(
   settled: boolean,
 ): number | null {
   if (settled || habit.archived) return null
-  for (const m of habit.reminders) {
+  for (const m of reminderTimes(habit)) {
     if (firedMinutes.includes(m)) continue
     if (nowMinute >= m && nowMinute < m + REMINDER_GRACE_MIN) return m
   }

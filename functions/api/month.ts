@@ -156,10 +156,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // « Mes habitudes » — live, unarchived only (a paused habit leaves the calendar
     // but keeps its history).
     ctx.env.DB.prepare(
-      'SELECT id, member_id, title, icon, colour, kind, target, cadence, recur_json, anchor_at FROM habits WHERE household_id = ? AND deleted_at IS NULL AND archived_at IS NULL',
+      'SELECT id, member_id, title, icon, colour, kind, target, cadence, recur_json, day_times, anchor_at FROM habits WHERE household_id = ? AND deleted_at IS NULL AND archived_at IS NULL',
     )
       .bind(hh)
-      .all<{ id: string; member_id: string | null; title: string; icon: string; colour: string | null; kind: string; target: number | null; cadence: string; recur_json: string | null; anchor_at: number }>(),
+      .all<{ id: string; member_id: string | null; title: string; icon: string; colour: string | null; kind: string; target: number | null; cadence: string; recur_json: string | null; day_times: number | null; anchor_at: number }>(),
     ctx.env.DB.prepare(
       'SELECT habit_id, day, value, slips FROM habit_days WHERE day >= ? AND day < ? AND habit_id IN (SELECT id FROM habits WHERE household_id = ? AND deleted_at IS NULL)',
     )
@@ -352,16 +352,20 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // still happens on « Le point du jour ».
   //
   // A SCHEDULED habit (cadence 'recur', a null rule meaning every day) emits one
-  // occurrence per due day, carrying whether that day was met. A WEEK-QUOTA habit has
-  // no fixed days by definition, so it emits ONLY the days it was actually done —
+  // occurrence per due day, carrying whether that day was met. An INTRA-DAY habit
+  // ('day'/'hours') carries no rule either, so it falls through the same daily
+  // expansion — it asks every day, just several times within it. A WEEK-QUOTA habit
+  // has no fixed days by definition, so it emits ONLY the days it was actually done —
   // honest history rather than fictional scheduling across the whole week.
   //
   // `member_id` rides along so the client can apply the same private-ish filter the
   // check-in scene does (household habits + the picked face's own).
   const habitDayBy = new Map(habitDaysRes.results.map((d) => [`${d.habit_id}:${d.day}`, d]))
-  const habitDone = (h: { kind: string; target: number | null }, d: { value: number; slips: number } | undefined): boolean => {
+  // Mirrors isDayDone + dayGoal in src/lib/habits.ts — an intra-day « do » is met
+  // once the day's moments are all marked, not at the first tap.
+  const habitDone = (h: { kind: string; target: number | null; day_times: number | null }, d: { value: number; slips: number } | undefined): boolean => {
     const value = d?.value ?? 0
-    if (h.kind === 'do') return value > 0
+    if (h.kind === 'do') return value >= Math.max(1, h.day_times ?? 1)
     if (h.kind === 'count') return value >= (h.target ?? 1)
     if (h.kind === 'limit') return value <= (h.target ?? 0)
     return value > 0 && (d?.slips ?? 0) === 0 // avoid: held, and without a slip

@@ -12,7 +12,8 @@ import { profileMemberId } from '../_lib/profile'
 //
 //   GET    /api/habits -> { habits (each with due_days), days, today }
 //   POST   /api/habits -> create { title, icon?, colour?, kind, target?, unit?,
-//                                  cadence, recur?, weekTimes?, reminders?, memberId? }
+//                                  cadence, recur?, weekTimes?, dayTimes?, everyHours?,
+//                                  windowStart?, windowEnd?, reminders?, memberId? }
 //   PATCH  /api/habits -> { id, mark: { day, value, slips?, note? } }  — the day upsert
 //                         { id, ...field edits, archived?: boolean }   — edit / pause
 //   DELETE /api/habits -> { id } soft delete (history rows stay)
@@ -24,6 +25,11 @@ import { profileMemberId } from '../_lib/profile'
 
 const KINDS = ['do', 'count', 'limit', 'avoid'] as const
 type HabitKind = (typeof KINDS)[number]
+
+// Four rhythms: two that pick DAYS ('recur' schedule, 'week' quota) and two that
+// live INSIDE the day ('day' = n times a day, 'hours' = every N hours in a window).
+const CADENCES = ['recur', 'week', 'day', 'hours'] as const
+type HabitCadence = (typeof CADENCES)[number]
 
 interface HabitRow {
   id: string
@@ -37,6 +43,10 @@ interface HabitRow {
   cadence: string
   recur_json: string | null
   week_times: number | null
+  day_times: number | null
+  every_hours: number | null
+  window_start: number | null
+  window_end: number | null
   anchor_at: number
   reminders_json: string
   position: number
@@ -48,6 +58,9 @@ const UNIT_CAP = 40
 const NOTE_CAP = 500
 const MAX_VALUE = 100000 // "walk 100 000 steps" fits; junk beyond it doesn't
 const MAX_REMINDERS = 6
+const MAX_DAY_TIMES = 24 // an hourly rhythm, at most — past that it isn't a habit
+const DEFAULT_WINDOW_START = 8 * 60
+const DEFAULT_WINDOW_END = 20 * 60
 
 // How far the dueness window reaches: ~10 weeks back feeds the week/month
 // history views; +2 days forward lets an always-on kiosk flip to the new day at
@@ -83,6 +96,58 @@ function parseReminders(json: string): number[] {
 // A recur-cadence habit with no rule means "every day".
 const EVERY_DAY: Recur = { freq: 'daily' }
 
+const clamp = (v: unknown, lo: number, hi: number, fallback: number): number => {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback
+}
+
+// A wall-clock minute past LOCAL midnight, or the fallback.
+const minuteOfDay = (v: unknown, fallback: number): number => clamp(v, 0, 1439, fallback)
+
+interface CadenceShape {
+  cadence: HabitCadence
+  recur_json: string | null
+  week_times: number | null
+  day_times: number | null
+  every_hours: number | null
+  window_start: number | null
+  window_end: number | null
+}
+
+// The whole « À quel rythme ? » answer, normalized in ONE place: each cadence
+// keeps only its own fields and NULLs the other three shapes, so switching a
+// habit from « aux 4 h » to « 3 fois par semaine » can never leave a stale window
+// behind for a reader to guard against.
+//
+// 'hours' is the only shape with a DERIVED field: day_times is the number of
+// moments the window fits, computed here and stored, so the calendar and the
+// check-in scene read one number instead of re-deriving a slot grid.
+function cadenceShape(body: {
+  cadence?: string
+  recur?: unknown
+  weekTimes?: unknown
+  dayTimes?: unknown
+  everyHours?: unknown
+  windowStart?: unknown
+  windowEnd?: unknown
+}): CadenceShape {
+  const empty = { recur_json: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null }
+  const cadence = (CADENCES as readonly string[]).includes(body.cadence ?? '') ? (body.cadence as HabitCadence) : 'recur'
+
+  if (cadence === 'week') return { ...empty, cadence, week_times: clamp(body.weekTimes, 1, 7, 1) }
+  if (cadence === 'day') return { ...empty, cadence, day_times: clamp(body.dayTimes, 1, MAX_DAY_TIMES, 1) }
+  if (cadence === 'hours') {
+    const everyHours = clamp(body.everyHours, 1, 12, 4)
+    const start = minuteOfDay(body.windowStart, DEFAULT_WINDOW_START)
+    // An end before the start would fit zero moments; pin it to the start (one moment).
+    const end = Math.max(start, minuteOfDay(body.windowEnd, DEFAULT_WINDOW_END))
+    const slots = Math.min(MAX_DAY_TIMES, Math.floor((end - start) / (everyHours * 60)) + 1)
+    return { ...empty, cadence, day_times: slots, every_hours: everyHours, window_start: start, window_end: end }
+  }
+  const recur = normalizeRecur(body.recur)
+  return { ...empty, cadence, recur_json: recur ? JSON.stringify(recur) : null }
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
   const from = addLocalDays(today, -PAST_DAYS)
@@ -90,7 +155,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const rows = await ctx.env.DB.prepare(
     `SELECT id, member_id, title, icon, colour, kind, target, unit, cadence, recur_json,
-            week_times, anchor_at, reminders_json, position, archived_at
+            week_times, day_times, every_hours, window_start, window_end,
+            anchor_at, reminders_json, position, archived_at
        FROM habits WHERE household_id = ? AND deleted_at IS NULL
       ORDER BY position, created_at`,
   )
@@ -108,9 +174,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const habits = rows.results.map((h) => {
     // Scheduled habits get concrete due days over the window (birthdays-style
-    // derive-on-read); week-quota habits have no fixed days by definition.
+    // derive-on-read). Every other cadence has no fixed days by definition: a week
+    // quota floats across the week, and an intra-day rhythm is due every day (the
+    // client answers that from the cadence alone, so no expansion is needed).
     const due =
-      h.cadence === 'week' ? [] : expandRange(h.anchor_at, parseRecur(h.recur_json) ?? EVERY_DAY, from, to).map((at) => localDayStart(new Date(at * 1000)))
+      h.cadence === 'recur'
+        ? expandRange(h.anchor_at, parseRecur(h.recur_json) ?? EVERY_DAY, from, to).map((at) => localDayStart(new Date(at * 1000)))
+        : []
     return {
       id: h.id,
       member_id: h.member_id,
@@ -123,6 +193,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       cadence: h.cadence,
       recur: h.recur_json, // raw rule JSON; the form re-hydrates it via recurOf()
       week_times: h.week_times,
+      day_times: h.day_times,
+      every_hours: h.every_hours,
+      window_start: h.window_start,
+      window_end: h.window_end,
       reminders: parseReminders(h.reminders_json),
       position: h.position,
       archived: h.archived_at != null,
@@ -144,6 +218,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
     cadence?: string
     recur?: unknown
     weekTimes?: number
+    dayTimes?: number
+    everyHours?: number
+    windowStart?: number
+    windowEnd?: number
     reminders?: unknown
     memberId?: string | null
   }>(ctx.request)
@@ -151,9 +229,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const title = body?.title?.trim().slice(0, TITLE_CAP)
   if (!title) return badRequest('Titre requis.')
   const kind = kindOf(body?.kind) ?? 'do'
-  const cadence = body?.cadence === 'week' ? 'week' : 'recur'
-  const recur = cadence === 'recur' ? normalizeRecur(body?.recur) : null
-  const weekTimes = cadence === 'week' ? Math.min(7, Math.max(1, Math.round(Number(body?.weekTimes) || 1))) : null
+  const rhythm = cadenceShape(body ?? {})
   // count/limit need a goal/ceiling; default 1 so a bad payload still reads sanely.
   const target = kind === 'count' || kind === 'limit' ? (targetOrNull(body?.target) ?? 1) : null
 
@@ -178,8 +254,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   await ctx.env.DB.prepare(
     `INSERT INTO habits (id, household_id, member_id, title, icon, colour, kind, target, unit,
-                         cadence, recur_json, week_times, anchor_at, reminders_json, position, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                         cadence, recur_json, week_times, day_times, every_hours, window_start, window_end,
+                         anchor_at, reminders_json, position, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       id,
@@ -191,9 +268,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
       kind,
       target,
       (body?.unit ?? '').trim().slice(0, UNIT_CAP),
-      cadence,
-      recur ? JSON.stringify(recur) : null,
-      weekTimes,
+      rhythm.cadence,
+      rhythm.recur_json,
+      rhythm.week_times,
+      rhythm.day_times,
+      rhythm.every_hours,
+      rhythm.window_start,
+      rhythm.window_end,
       nowSec(),
       JSON.stringify(normalizeReminders(body?.reminders)),
       pos?.p ?? 1,
@@ -216,6 +297,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     cadence?: string
     recur?: unknown
     weekTimes?: number
+    dayTimes?: number
+    everyHours?: number
+    windowStart?: number
+    windowEnd?: number
     reminders?: unknown
     memberId?: string | null
     archived?: boolean
@@ -287,11 +372,12 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     sets.push('unit = ?')
     binds.push(body.unit.trim().slice(0, UNIT_CAP))
   }
-  if (body?.cadence === 'week' || body?.cadence === 'recur') {
-    const recur = body.cadence === 'recur' ? normalizeRecur(body.recur) : null
-    const weekTimes = body.cadence === 'week' ? Math.min(7, Math.max(1, Math.round(Number(body.weekTimes) || 1))) : null
-    sets.push('cadence = ?', 'recur_json = ?', 'week_times = ?')
-    binds.push(body.cadence, recur ? JSON.stringify(recur) : null, weekTimes)
+  // The rhythm moves as ONE field: every shape is rewritten together (the unused
+  // three back to NULL), so an edit can't leave a stale window on a weekly habit.
+  if ((CADENCES as readonly string[]).includes(body?.cadence ?? '')) {
+    const r = cadenceShape(body ?? {})
+    sets.push('cadence = ?', 'recur_json = ?', 'week_times = ?', 'day_times = ?', 'every_hours = ?', 'window_start = ?', 'window_end = ?')
+    binds.push(r.cadence, r.recur_json, r.week_times, r.day_times, r.every_hours, r.window_start, r.window_end)
   }
   if (body != null && Object.prototype.hasOwnProperty.call(body, 'reminders')) {
     sets.push('reminders_json = ?')

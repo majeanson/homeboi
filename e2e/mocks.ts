@@ -159,24 +159,28 @@ const ROUTINE_CARDS = [
   { icon: '🎒', label: 'Sac à dos' },
 ]
 
-// « Mes habitudes » — one habit of each kind, plus a week-quota one. `due_days`
-// are LOCAL midnights around MMID, so a spec freezing the clock to BASE sees them
-// all due today. `days: []` = nothing marked yet (the check-in scene's start
-// state). A household habit (member_id null) and two of Maman's (m1) exercise the
-// private-ish face filter. hb6 is archived (paused) — exercises the « En pause »
-// fold (it must be invisible everywhere else on the scene).
+// « Mes habitudes » — one habit of each kind, plus a week-quota one and an
+// intra-day one. `due_days` are LOCAL midnights around MMID, so a spec freezing
+// the clock to BASE sees them all due today. `days: []` = nothing marked yet (the
+// check-in scene's start state). A household habit (member_id null) and two of
+// Maman's (m1) exercise the private-ish face filter. hb6 is archived (paused) —
+// exercises the « En pause » fold (it must be invisible everywhere else on the
+// scene). hb7 rides the 'hours' rhythm: no due_days (it's due EVERY day), its
+// day_times computed server-side from the window, and its moments ARE its
+// reminders — 08:00 · 12:00 · 16:00 · 20:00.
 const HABITS = {
   today: MMID,
   days: [] as unknown[],
   habits: [
-    { id: 'hb1', member_id: null, title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [540], position: 0, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
-    { id: 'hb2', member_id: 'm1', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', target: 8, unit: 'verres', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 1, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
-    { id: 'hb3', member_id: 'm1', title: 'Cigarettes', icon: '🚬', colour: '#C87941', kind: 'limit', target: 5, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 2, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
-    { id: 'hb4', member_id: null, title: 'Pas de chocolat', icon: '🍫', colour: '#B06A93', kind: 'avoid', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 3, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
-    { id: 'hb5', member_id: null, title: 'Sortie à vélo', icon: '🚲', colour: '#F2A03D', kind: 'do', target: null, unit: '', cadence: 'week', recur: null, week_times: 2, reminders: [], position: 4, archived: false, due_days: [] },
+    { id: 'hb1', member_id: null, title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [540], position: 0, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb2', member_id: 'm1', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', target: 8, unit: 'verres', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [], position: 1, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb3', member_id: 'm1', title: 'Cigarettes', icon: '🚬', colour: '#C87941', kind: 'limit', target: 5, unit: '', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [], position: 2, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb4', member_id: null, title: 'Pas de chocolat', icon: '🍫', colour: '#B06A93', kind: 'avoid', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [], position: 3, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb5', member_id: null, title: 'Sortie à vélo', icon: '🚲', colour: '#F2A03D', kind: 'do', target: null, unit: '', cadence: 'week', recur: null, week_times: 2, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [], position: 4, archived: false, due_days: [] },
     // Due today (like hb1) so « Reprendre » lands it straight back in the ASKING
     // list — no fold to open first to see it reappear.
-    { id: 'hb6', member_id: null, title: 'Méditer', icon: '🧘', colour: '#7C9885', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, reminders: [], position: 5, archived: true, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb6', member_id: null, title: 'Méditer', icon: '🧘', colour: '#7C9885', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [], position: 5, archived: true, due_days: [MMID - DAY, MMID, MMID + DAY] },
+    { id: 'hb7', member_id: null, title: 'Bouger un peu', icon: '🧍', colour: '#7C9885', kind: 'do', target: null, unit: '', cadence: 'hours', recur: null, week_times: null, day_times: 4, every_hours: 4, window_start: 480, window_end: 1200, reminders: [], position: 6, archived: false, due_days: [] },
   ],
 }
 

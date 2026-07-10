@@ -336,6 +336,14 @@
   gap: 0.5rem 1rem;
 }
 
+/* « Aux X heures » — the waking window's two time fields. Each row keeps a real
+   min-width and grows with `auto` basis, so the pair sits side by side on a wide
+   form and wraps honestly on a phone (a fixed basis would overflow instead). */
+.habit-form__window .recur__row {
+  flex: 1 1 auto;
+  min-width: 10rem;
+}
+
 .habit-form__manage {
   display: flex;
   flex-wrap: wrap;

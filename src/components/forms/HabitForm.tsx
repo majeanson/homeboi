@@ -5,24 +5,40 @@ import { useConfirm } from '../../lib/confirm'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
+import { Cluster } from '../Layout'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
-import { ReminderTimesField } from '../habits/ReminderTimesField'
+import { ReminderTimesField, minutesToHhmm, hhmmToMinutes } from '../habits/ReminderTimesField'
 import { recurOf } from '../../lib/recurLabel'
 import { HABITS_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
-import type { Habit, HabitCadence, HabitKind } from '../../lib/habits'
+import {
+  hourSlots,
+  DEFAULT_DAY_TIMES,
+  DEFAULT_EVERY_HOURS,
+  DEFAULT_WINDOW_START,
+  DEFAULT_WINDOW_END,
+  MAX_DAY_TIMES,
+  type Habit,
+  type HabitCadence,
+  type HabitKind,
+} from '../../lib/habits'
 
 // The « Mes habitudes » form — create and edit. Owns its POST/PATCH; calls
 // onSaved() when done. Pass `value` to edit in place (with a `key` so it re-inits
 // when the target changes), mirroring ChoreForm/EventForm.
 //
-// Cadence is a two-way segment, NOT a widened Recur: « Selon un horaire » reuses
-// the shared RecurPicker untouched, while « X fois par semaine » is a quota over
-// completion history — a shape occurrenceOn cannot express (see lib/habits).
+// Cadence is a four-way segment, NOT a widened Recur. « Selon un horaire » reuses
+// the shared RecurPicker untouched; the other three are habit-local shapes that
+// occurrenceOn cannot express (see lib/habits):
+//   • « X fois par semaine » — a quota over completion history.
+//   • « X fois par jour »    — a quota inside the day.
+//   • « Aux X heures »       — moments spaced through a waking window, which also
+//     become the habit's reminder times (so the hand-typed list steps aside).
 
 const KINDS: HabitKind[] = ['do', 'count', 'limit', 'avoid']
+const CADENCES: HabitCadence[] = ['recur', 'week', 'day', 'hours']
 
 export function HabitForm({
   faces,
@@ -53,11 +69,20 @@ export function HabitForm({
   const [cadence, setCadence] = useState<HabitCadence>(value?.cadence ?? 'recur')
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur))
   const [weekTimes, setWeekTimes] = useState(value?.week_times ?? 2)
+  // An 'hours' habit's day_times is server-DERIVED, so it never seeds the « X fois
+  // par jour » field — only a genuine 'day' habit does.
+  const [dayTimes, setDayTimes] = useState((value?.cadence === 'day' && value.day_times) || DEFAULT_DAY_TIMES)
+  const [everyHours, setEveryHours] = useState(value?.every_hours ?? DEFAULT_EVERY_HOURS)
+  const [windowStart, setWindowStart] = useState(value?.window_start ?? DEFAULT_WINDOW_START)
+  const [windowEnd, setWindowEnd] = useState(value?.window_end ?? DEFAULT_WINDOW_END)
   const [reminders, setReminders] = useState<number[]>(value?.reminders ?? [])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
   const counted = kind === 'count' || kind === 'limit'
+  // Live preview of the moments the hours rhythm makes — the same list the check-in
+  // scene will nudge at. Derived from the draft, so it moves as the numbers move.
+  const slots = hourSlots({ cadence: 'hours', every_hours: everyHours, window_start: windowStart, window_end: windowEnd })
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -75,9 +100,15 @@ export function HabitForm({
       unit: counted ? unit.trim() : '',
       cadence,
       // Each cadence sends only its own shape — a `week` habit has no rule to expand,
-      // a `recur` one has no quota. A null rule on 'recur' reads as "every day".
+      // a `recur` one has no quota. A null rule on 'recur' reads as "every day". The
+      // server NULLs the shapes it wasn't sent, so switching rhythms leaves nothing
+      // stale behind; `hours` sends its window and gets its day_times computed there.
       recur: cadence === 'recur' ? recur : null,
       weekTimes: cadence === 'week' ? weekTimes : null,
+      dayTimes: cadence === 'day' ? dayTimes : null,
+      everyHours: cadence === 'hours' ? everyHours : null,
+      windowStart: cadence === 'hours' ? windowStart : null,
+      windowEnd: cadence === 'hours' ? windowEnd : null,
       reminders,
     }
     try {
@@ -196,25 +227,26 @@ export function HabitForm({
         </div>
       )}
 
-      {/* Cadence: a schedule (the shared engine) OR a weekly quota (habit-local). */}
+      {/* Cadence: a schedule (the shared engine), a weekly quota, or one of the two
+          intra-day rhythms — all habit-local shapes. */}
       <fieldset className="habit-form__cadence">
         <legend className="mono">{fn.cadenceLabel}</legend>
-        <label className={'habit-form__seg' + (cadence === 'recur' ? ' is-on' : '')}>
-          <input type="radio" name="habit-cadence" checked={cadence === 'recur'} onChange={() => setCadence('recur')} />
-          {fn.cadenceSchedule}
-        </label>
-        <label className={'habit-form__seg' + (cadence === 'week' ? ' is-on' : '')}>
-          <input type="radio" name="habit-cadence" checked={cadence === 'week'} onChange={() => setCadence('week')} />
-          {fn.cadenceWeek}
-        </label>
+        {CADENCES.map((c) => (
+          <label key={c} className={'habit-form__seg' + (cadence === c ? ' is-on' : '')}>
+            <input type="radio" name="habit-cadence" checked={cadence === c} onChange={() => setCadence(c)} />
+            {fn.cadenceName[c]}
+          </label>
+        ))}
       </fieldset>
 
-      {cadence === 'recur' ? (
+      {cadence === 'recur' && (
         <>
           <RecurPicker value={recur} onChange={setRecur} />
           {!recur && <p className="operator__seg-hint mono">{fn.everyDayHint}</p>}
         </>
-      ) : (
+      )}
+
+      {cadence === 'week' && (
         <label className="recur__row mono">
           <span>{fn.weekTimesLabel}</span>
           <input
@@ -229,7 +261,81 @@ export function HabitForm({
         </label>
       )}
 
-      <ReminderTimesField value={reminders} onChange={setReminders} />
+      {/* « X fois par jour » — the daily twin of the weekly quota. */}
+      {cadence === 'day' && (
+        <>
+          <label className="recur__row mono">
+            <span>{fn.dayTimesLabel}</span>
+            <input
+              className="input recur__interval"
+              type="number"
+              min={1}
+              max={MAX_DAY_TIMES}
+              value={dayTimes}
+              onChange={(e) => setDayTimes(Math.max(1, Math.min(MAX_DAY_TIMES, Number(e.target.value) || 1)))}
+            />
+            <span>{fn.dayTimesUnit}</span>
+          </label>
+          <p className="operator__seg-hint mono">{fn.intradayHint}</p>
+        </>
+      )}
+
+      {/* « Aux X heures » — moments spaced through a waking window. The preview shows
+          the exact times, because those ARE the reminders (no hand-typed list). */}
+      {cadence === 'hours' && (
+        <>
+          <label className="recur__row mono">
+            <span>{fn.everyHoursLabel}</span>
+            <input
+              className="input recur__interval"
+              type="number"
+              min={1}
+              max={12}
+              value={everyHours}
+              onChange={(e) => setEveryHours(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
+            />
+            <span>{fn.everyHoursUnit}</span>
+          </label>
+          <Cluster className="habit-form__window">
+            <label className="recur__row mono">
+              <span>{fn.windowFromLabel}</span>
+              <input
+                className="input"
+                type="time"
+                value={minutesToHhmm(windowStart)}
+                aria-label={fn.windowFromLabel}
+                onChange={(e) => {
+                  const m = hhmmToMinutes(e.target.value)
+                  if (m !== null) setWindowStart(m)
+                }}
+              />
+            </label>
+            <label className="recur__row mono">
+              <span>{fn.windowToLabel}</span>
+              <input
+                className="input"
+                type="time"
+                value={minutesToHhmm(windowEnd)}
+                aria-label={fn.windowToLabel}
+                onChange={(e) => {
+                  const m = hhmmToMinutes(e.target.value)
+                  if (m !== null) setWindowEnd(m)
+                }}
+              />
+            </label>
+          </Cluster>
+          <p className="operator__seg-hint mono">{fn.hoursMoments(slots.length, slots.map(minutesToHhmm).join(' · '))}</p>
+          <p className="operator__seg-hint mono">{fn.intradayHint}</p>
+        </>
+      )}
+
+      {/* An hours rhythm generates its own moments — a second, hand-typed list of
+          times beside it would just be a way to disagree with itself. */}
+      {cadence === 'hours' ? (
+        <p className="operator__seg-hint mono">{fn.remindersFromRhythm}</p>
+      ) : (
+        <ReminderTimesField value={reminders} onChange={setReminders} />
+      )}
       <ColorPicker value={colour} onChange={setColour} label={t.operator.colorLabel} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}

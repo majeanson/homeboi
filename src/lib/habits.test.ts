@@ -1,14 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { FR } from '../i18n'
 import {
+  dayGoal,
   deriveProgress,
   dueToday,
   habitReading,
   habitStatusOn,
+  hourSlots,
   isDayDone,
   isDaySettled,
   isDueOn,
   reminderDue,
+  reminderTimes,
   remainingThisWeek,
   splitHabitsForDay,
   visibleHabits,
@@ -38,6 +41,10 @@ function habit(over: Partial<Habit> = {}): Habit {
     cadence: 'recur',
     recur: null,
     week_times: null,
+    day_times: null,
+    every_hours: null,
+    window_start: null,
+    window_end: null,
     reminders: [],
     position: 0,
     archived: false,
@@ -151,6 +158,50 @@ describe('cadence', () => {
     expect(isDueOn(h, lastWeek, WED)).toBe(true)
   })
 
+  // The two intra-day rhythms: due EVERY day (they carry no due_days), and what
+  // they ask for is a count INSIDE the day.
+  it('day: n times a day — due every day, done only once the moments are all in', () => {
+    const h = habit({ cadence: 'day', day_times: 3, due_days: [] })
+    expect(dayGoal(h)).toBe(3)
+    expect(isDueOn(h, [], day(0))).toBe(true)
+    expect(isDueOn(h, [], day(4))).toBe(true) // no schedule to fall off of
+    expect(isDayDone(h, mark({ day: day(0), value: 2 }))).toBe(false)
+    expect(isDayDone(h, mark({ day: day(0), value: 3 }))).toBe(true)
+    // Still asking at 2/3 — one tap must not settle a day that wanted three.
+    expect(dueToday([h], [mark({ day: day(0), value: 2 })], null, day(0)).map((x) => x.id)).toEqual(['h1'])
+  })
+
+  it('hours: the moments come from the window, and ARE the reminders', () => {
+    const h = habit({ cadence: 'hours', every_hours: 4, window_start: 480, window_end: 1200, day_times: 4, due_days: [] })
+    expect(hourSlots(h)).toEqual([480, 720, 960, 1200]) // 08:00 · 12:00 · 16:00 · 20:00
+    expect(reminderTimes(h)).toEqual([480, 720, 960, 1200])
+    expect(isDueOn(h, [], day(0))).toBe(true)
+    expect(dayGoal(h)).toBe(4)
+  })
+
+  it('hours: a window that fits no whole step still asks once, and never runs past its end', () => {
+    const tight = habit({ cadence: 'hours', every_hours: 6, window_start: 540, window_end: 600 })
+    expect(hourSlots(tight)).toEqual([540])
+    // An end dragged before the start pins to the start rather than asking zero times.
+    const inverted = habit({ cadence: 'hours', every_hours: 2, window_start: 600, window_end: 300 })
+    expect(hourSlots(inverted)).toEqual([600])
+  })
+
+  it('a day/hours rhythm never touches the other cadences’ goal of one', () => {
+    expect(dayGoal(habit())).toBe(1)
+    expect(dayGoal(habit({ cadence: 'week', week_times: 3 }))).toBe(1)
+    expect(hourSlots(habit())).toEqual([])
+    expect(reminderTimes(habit({ reminders: [540] }))).toEqual([540])
+  })
+
+  // A counted habit keeps its own target: the rhythm says WHEN it asks, the kind
+  // says what "met" means. Only a plain `do` borrows the rhythm as its goal.
+  it('an intra-day count habit still measures against its target, not the rhythm', () => {
+    const h = habit({ kind: 'count', target: 8, unit: 'verres', cadence: 'hours', every_hours: 4, window_start: 480, window_end: 1200, day_times: 4 })
+    expect(isDayDone(h, mark({ day: day(0), value: 4 }))).toBe(false)
+    expect(isDayDone(h, mark({ day: day(0), value: 8 }))).toBe(true)
+  })
+
   it('weekBounds spans exactly seven local days from Sunday', () => {
     const [start, end] = weekBounds(WED)
     expect(addLocalDays(start, 7)).toBe(end)
@@ -258,6 +309,11 @@ describe('habitReading — today in the habit’s own words, never a score', () 
     expect(read(habit({ kind: 'do' }))).toBe('')
     expect(read(habit({ kind: 'do', cadence: 'week', week_times: 3 }))).toBe(FR.habits.remainingWeek(3))
   })
+
+  it('an intra-day "do" habit reads where the day stands, in moments', () => {
+    const h = habit({ kind: 'do', cadence: 'day', day_times: 4, due_days: [] })
+    expect(read(h, [mark({ day: day(0), value: 2 })])).toBe('2 sur 4 fois')
+  })
 })
 
 describe('deriveProgress — gentle, per habit, never a chain', () => {
@@ -309,5 +365,13 @@ describe('reminderDue — in-app, read-time, once per day', () => {
   it('stays quiet once the habit is settled, or when archived', () => {
     expect(reminderDue(h, 540, [], true)).toBe(null)
     expect(reminderDue(habit({ reminders: [540], archived: true }), 540, [], false)).toBe(null)
+  })
+
+  // An hours habit types no reminders: the rhythm's own moments nudge, one by one.
+  it('an hours rhythm nudges at each of its moments, ignoring any leftover typed list', () => {
+    const rhythm = habit({ cadence: 'hours', every_hours: 4, window_start: 480, window_end: 1200, day_times: 4, reminders: [1, 2], due_days: [] })
+    expect(reminderDue(rhythm, 480, [], false)).toBe(480)
+    expect(reminderDue(rhythm, 960, [480, 720], false)).toBe(960)
+    expect(reminderDue(rhythm, 1, [], false)).toBe(null) // the stale typed list stays silent
   })
 })

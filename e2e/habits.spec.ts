@@ -101,6 +101,25 @@ test.describe('Le point du jour', () => {
     await expect(choc).toHaveClass(/habit-row--done/)
   })
 
+  // An intra-day rhythm (« aux 4 h ») asks for several moments, so a « Faire » habit
+  // tallies instead of toggling: one tap must not settle a day that wanted four.
+  test('an intra-day habit counts its moments — one tap does not settle the day', async ({ page }) => {
+    await checkin(page)
+    const move = row(page, 'Bouger un peu')
+    await expect(move.locator('.habit-row__sub')).toHaveText('0 sur 4 fois')
+    // No single « C'est fait » toggle — it borrows the counted ＋1/− pair.
+    await expect(move.getByRole('button', { name: 'C’est fait' })).toHaveCount(0)
+
+    const plus = move.getByRole('button', { name: 'Encore un' })
+    for (let i = 0; i < 3; i++) await plus.click()
+    await expect(move.locator('.habit-row__sub')).toHaveText('3 sur 4 fois')
+    await expect(move).not.toHaveClass(/habit-row--done/)
+
+    await plus.click()
+    await expect(move.locator('.habit-row__sub')).toHaveText('4 sur 4 fois')
+    await expect(move).toHaveClass(/habit-row--done/)
+  })
+
   test('a week-quota habit says how many times are left, and its history opens', async ({ page }) => {
     await checkin(page)
     const bike = row(page, 'Sortie à vélo')
@@ -144,6 +163,52 @@ test.describe('the habit form', () => {
     await page.getByRole('button', { name: 'Nouvelle habitude' }).click()
     await expect.poll(() => posted.length).toBe(1)
     expect(posted[0]).toMatchObject({ title: 'Sortie à vélo', cadence: 'week', weekTimes: 3, recur: null, kind: 'do' })
+  })
+
+  // The two intra-day rhythms. « Aux X heures » previews the exact moments it makes,
+  // and those moments ARE the reminders — so the hand-typed list steps aside.
+  test('creates an intra-day habit: the hours rhythm previews its moments and owns the reminders', async ({ page }) => {
+    const posted: Record<string, unknown>[] = []
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await mockApi(page)
+    await page.route('**/api/habits', async (route) => {
+      if (route.request().method() === 'POST') {
+        posted.push(JSON.parse(route.request().postData() || '{}'))
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'new' }) })
+      }
+      return route.fallback()
+    })
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/habitude/new')
+    await page.getByLabel('L’habitude').fill('Bouger un peu')
+
+    // « X fois par jour » — the daily twin of the weekly quota, with no schedule.
+    await page.locator('.habit-form__seg', { hasText: 'X fois par jour' }).click()
+    await expect(page.locator('.recur')).toHaveCount(0)
+    await page.getByLabel('Combien de fois').fill('3')
+
+    // « Aux X heures » — the window makes the moments, and the reminder list is gone.
+    await page.locator('.habit-form__seg', { hasText: 'Aux X heures' }).click()
+    await expect(page.getByRole('button', { name: 'Ajouter un rappel' })).toHaveCount(0)
+    await expect(page.locator('.habit-form__window')).toBeVisible()
+    await expect(page.locator('.operator__seg-hint').first()).toContainText('4 moments : 08:00 · 12:00 · 16:00 · 20:00')
+    // Halve the spacing and the preview doubles the moments, live.
+    await page.getByLabel('Toutes les').fill('6')
+    await expect(page.locator('.operator__seg-hint').first()).toContainText('3 moments : 08:00 · 14:00 · 20:00')
+
+    await page.getByRole('button', { name: 'Nouvelle habitude' }).click()
+    await expect.poll(() => posted.length).toBe(1)
+    // Only the chosen rhythm's own shape is sent; the server NULLs the rest.
+    expect(posted[0]).toMatchObject({
+      title: 'Bouger un peu',
+      cadence: 'hours',
+      everyHours: 6,
+      windowStart: 480,
+      windowEnd: 1200,
+      recur: null,
+      weekTimes: null,
+      dayTimes: null,
+    })
   })
 
   test('a counted habit asks for a target; an avoid habit does not', async ({ page }) => {
@@ -437,5 +502,10 @@ test('the habit form never bleeds off a narrow phone', async ({ page }) => {
   await page.locator('.habit-form__kind', { hasText: 'Compter' }).click()
   await page.getByRole('button', { name: 'Ajouter un rappel' }).click()
   await page.locator('.habit-form__seg', { hasText: 'X fois par semaine' }).click()
+  await noOverflow(page, '.scene')
+  // The four-segment cadence row and the hours window's two time fields both wrap
+  // rather than bleed — they're the newest rows, and the likeliest to overflow.
+  await page.locator('.habit-form__seg', { hasText: 'Aux X heures' }).click()
+  await expect(page.locator('.habit-form__window')).toBeVisible()
   await noOverflow(page, '.scene')
 })

@@ -14,6 +14,10 @@ import type { Habit, HabitStatus } from '../../lib/habits'
 //   • CONFIRMATION-shaped — `limit` (＋1 against a soft ceiling; going over reads
 //     « C'est noté », never red, never a lecture) and `avoid` (« Tenu » / « Petit
 //     écart » — neither styled as failure).
+//
+// A `do` habit on an INTRA-DAY rhythm (« 3 fois par jour », « aux 4 h ») asks for
+// several moments, so it borrows the counted ＋1/− pair rather than a single
+// toggle: one tap must not settle a day that wanted four.
 
 export interface HabitControlsProps {
   habit: Habit
@@ -27,10 +31,11 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
   const t = useT()
   const fn = t.habits
   const { kind } = habit
+  const tallied = kind === 'count' || kind === 'limit' || (kind === 'do' && status.goal > 1)
 
   return (
     <Cluster className={'habit-row__actions' + (className ? ' ' + className : '')} role="group" aria-label={habit.title}>
-      {kind === 'do' && (
+      {kind === 'do' && status.goal === 1 && (
         <button
           type="button"
           className={'btn habit-row__do' + (status.done ? ' is-on' : '')}
@@ -41,7 +46,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
         </button>
       )}
 
-      {(kind === 'count' || kind === 'limit') && (
+      {tallied && (
         <>
           {/* ＋1 comes FIRST and the corrector never appears/disappears beside it:
               tallying is a repeated tap (eight glasses, five cigarettes), so the

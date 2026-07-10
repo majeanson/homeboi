@@ -1114,8 +1114,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le rythme que tu veux', en: 'Whatever rhythm you want' },
         detail: {
-          fr: 'Chaque jour, certains jours de la semaine, un jour sur trois — ou simplement « 2 fois par semaine », sans jour fixe : l’habitude attend jusqu’à ce que la semaine soit remplie.',
-          en: 'Every day, certain weekdays, every third day — or simply “2 times a week”, with no fixed day: the habit waits until the week is filled.',
+          fr: 'Chaque jour, certains jours de la semaine, un jour sur trois. Ou sans jour fixe : « 2 fois par semaine », et l’habitude attend que la semaine soit remplie. Ou à l’intérieur d’une journée : « 3 fois par jour », ou « aux 4 heures » entre 8 h et 20 h — les rappels suivent alors le rythme tout seuls.',
+          en: 'Every day, certain weekdays, every third day. Or with no fixed day: “2 times a week”, and the habit waits until the week is filled. Or inside a single day: “3 times a day”, or “every 4 hours” between 8am and 8pm — the reminders then follow the rhythm on their own.',
         },
       },
       {

@@ -122,6 +122,8 @@ export const FR = {
     avoidHint: 'Tenu aujourd’hui ?',
     // cadence
     remainingWeek: (n: number) => (n === 1 ? 'Encore une fois cette semaine' : `Encore ${n} fois cette semaine`),
+    // L'unité d'un rythme intra-journée : « 2 sur 4 fois ».
+    timesUnit: 'fois',
     // history (doux : ce qui s'est passé, jamais une note)
     thisWeek: 'Cette semaine',
     weekDone: (n: number) => (n === 1 ? '1 jour cette semaine' : `${n} jours cette semaine`),
@@ -153,11 +155,29 @@ export const FR = {
     unitLabel: 'Unité',
     unitPlaceholder: 'verres, pas…',
     cadenceLabel: 'À quel rythme ?',
-    cadenceSchedule: 'Selon un horaire',
-    cadenceWeek: 'X fois par semaine',
+    // Quatre rythmes : deux qui choisissent des JOURS, deux qui vivent DANS la journée.
+    cadenceName: {
+      recur: 'Selon un horaire',
+      week: 'X fois par semaine',
+      day: 'X fois par jour',
+      hours: 'Aux X heures',
+    },
     everyDayHint: 'Sans horaire, l’habitude revient chaque jour.',
     weekTimesLabel: 'Combien de fois',
     weekTimesUnit: 'fois par semaine',
+    // Les deux rythmes intra-journée : l'habitude revient chaque jour, et c'est
+    // À L'INTÉRIEUR de la journée que ça se joue.
+    dayTimesLabel: 'Combien de fois',
+    dayTimesUnit: 'fois par jour',
+    everyHoursLabel: 'Toutes les',
+    everyHoursUnit: 'heures',
+    windowFromLabel: 'À partir de',
+    windowToLabel: 'Jusqu’à',
+    intradayHint: 'L’habitude revient chaque jour ; le rythme se joue à l’intérieur de la journée.',
+    // « 4 moments : 08:00 · 12:00 · 16:00 · 20:00 »
+    hoursMoments: (n: number, times: string) => `${n} moment${n > 1 ? 's' : ''} : ${times}`,
+    // Un rythme aux heures FABRIQUE ses rappels — rien à taper à la main.
+    remindersFromRhythm: 'Les rappels suivent le rythme, aux heures ci-dessus.',
     remindersLabel: 'Rappels',
     reminderAt: 'Heure du rappel',
     addReminder: 'Ajouter un rappel',

@@ -409,8 +409,15 @@ with an append-only per-day history (`habit_days`, `UNIQUE(habit_id, day)` at LO
 in two shapes: GOAL-shaped `do`/`count` settle when reached; CONFIRMATION-shaped
 `limit`/`avoid` settle once TOUCHED (a "max 5 smokes" habit reads as done at zero, so a
 done-based filter would never surface it — see `isDaySettled`). **Cadence stays habit-local**:
-`recur` reuses the shared `_lib/recur` engine untouched, `week` adds "n fois par semaine" as a
-quota over completion history — a shape `occurrenceOn` cannot express. Marking sends
+`recur` reuses the shared `_lib/recur` engine untouched; the other three are shapes
+`occurrenceOn` cannot express — `week` ("n fois par semaine", a quota over completion history)
+plus the two INTRA-DAY rhythms (mig 0113) `day` ("n fois par jour") and `hours` ("aux N heures"
+inside a waking window). Both intra-day rhythms are due EVERY day and resolve to ONE number,
+`day_times` (typed for `day`, server-computed from the window for `hours`), which `dayGoal()`
+hands to `isDayDone` — so a `do` habit on a rhythm tallies ＋1/− like a `count` instead of
+toggling, and `api/month` reads the same field rather than re-deriving a slot grid. An `hours`
+habit's moments **are** its reminders (`hourSlots` → `reminderTimes`), so `ReminderTimesField`
+steps aside for it rather than offering a second list to disagree with. Marking sends
 **ABSOLUTE per-day values, never deltas**, so a replayed offline outbox write converges
 instead of double-counting. **ONE marking hook** (`useMarkHabit` in `lib/habits`) and **ONE
 controls cluster** (`HabitControls`, extracted out of `HabitRow`) back every surface that can
