@@ -28,7 +28,8 @@ import { Icon, type IconName } from './Icon'
 import { useMemoAttach } from './MemoAttach'
 import { EditField } from './EditField'
 import { MotComposer } from './mots/MotComposer'
-import { EntityCombobox, type ComboOption } from './EntityCombobox'
+import { EntityCombobox } from './EntityCombobox'
+import { templateOptions } from './todos/comboOptions'
 import { Chip } from './Chip'
 import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
@@ -922,13 +923,7 @@ export function AddSheet({
             <EntityCombobox<TodoTemplate>
               value={todoText}
               onChange={setTodoText}
-              options={todoTemplates.map((tpl): ComboOption<TodoTemplate> => ({
-                id: tpl.id,
-                label: tpl.title,
-                data: tpl,
-                icon: 'check-square-bold',
-                group: t.todos.templatesLabel,
-              }))}
+              options={templateOptions(todoTemplates, t)}
               onSubmit={(v) => void submitTodo(v)}
               onPick={(opt) => {
                 setTodoText('')

@@ -18,8 +18,9 @@ import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
 import { type Recipe } from '../../lib/recipes'
 import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, LEFTOVERS_KEY, MEALS_KEY } from './types'
-import { recipeOptions, mealOptions } from './comboOptions'
+import { mealOptions } from './comboOptions'
 import { MealPool } from './MealPool'
+import { MealIdeas, usePlanIdea } from './MealIdeas'
 import { MealPlanPicker } from './MealPlanPicker'
 import { SubTabs } from '../SubTabs'
 import { Cluster } from '../Layout'
@@ -32,7 +33,8 @@ import { RowActions } from '../RowActions'
 // "what's for supper" ideas lives, replacing four-plus scattered pools a family
 // learned one of and never found the rest (dormant machinery). A SubTabs row of
 // sources, ONE active at a time:
-//   Idées (default)   — the kept, reusable pool (MEAL_IDEAS_KEY) — was MealIdeas.tsx.
+//   Idées (default)   — the kept, reusable pool (MEAL_IDEAS_KEY), the shared
+//                        <MealIdeas> the kitchen week grid also renders inline.
 //   ⭐ Favoris          — recipes the household loved (useLoves) — shows WHICH faces
 //                        loved it, never a count (calm — the chore-ledger rule).
 //   🧊 À écouler        — Restants (leftovers) to finish + a `rankUseSoon` shortlist
@@ -105,17 +107,11 @@ export function IdeasDrawer({
   const members = membersData?.members ?? []
   const memberById = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
 
-  const recipeOpts = recipeOptions(recipes, lowItems, listItems, t)
   const recentOpts = mealOptions(recentMeals)
 
-  // « Idées » — the kept, reusable pool. Planning an idea leaves it in the pool.
-  function planIdea(idea: MealIdea, date: number, slot: MealSlot) {
-    void write('meals', {
-      method: 'POST',
-      body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY],
-    }).catch(() => {})
-  }
+  // « Idées » — the kept, reusable pool. Planning an idea leaves it in the pool. The
+  // 👧 chip's rows are meal_ideas rows too, so they plan through the same helper.
+  const planIdea = usePlanIdea()
 
   // « À écouler » — Restants: planning CONSUMES the pool row (it becomes a real,
   // badged meal), so this carries a compensating undo (delete the meal AND
@@ -220,32 +216,14 @@ export function IdeasDrawer({
       />
 
       {active === 'ideas' && (
-        <MealPool<MealIdea, Recipe>
-          items={ideas}
-          queryKey={MEAL_IDEAS_KEY}
-          collectionKey="ideas"
-          endpoint="meal-ideas"
-          options={recipeOpts}
-          buildAddBody={(title, picked) => ({ title, recipeId: picked?.data.id ?? null, suggestedBy: profileId })}
-          onPlan={planIdea}
-          renderLead={(idea) => (idea.recipe_id ? <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" /> : null)}
-          // An idea born from a recipe: its 📖 picto opens that recipe (same tight
-          // icon-only link as the combobox row). Tapping the chip still plans it.
-          leadTo={(idea) => (idea.recipe_id ? `/kitchen/recipe/${idea.recipe_id}` : undefined)}
-          leadToLabel={t.recipes.open}
+        <MealIdeas
+          ideas={ideas}
+          recipes={recipes}
           week={week}
-          helpKey="ideas"
-          noMatchLabel={t.recipes.noMatch}
-          guide={{ card: 'kitchen', point: 9 }}
+          lowItems={lowItems}
+          listItems={listItems}
+          profileId={profileId}
           hideHeading
-          labels={{
-            heading: t.kitchen.ideas,
-            addAria: t.kitchen.addIdea,
-            addPlaceholder: t.kitchen.addIdea,
-            empty: t.kitchen.ideasEmpty,
-            removeLabel: t.kitchen.removeIdea,
-            removedUndo: (title) => t.undo.mealIdeaRemoved(title),
-          }}
         />
       )}
 

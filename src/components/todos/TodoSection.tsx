@@ -24,7 +24,8 @@ import { CATS } from '../../lib/cats'
 import { tintInk, readableInk } from '../../lib/colors'
 import { Icon, type IconName } from '../Icon'
 import { EditField } from '../EditField'
-import { EntityCombobox, type ComboOption } from '../EntityCombobox'
+import { EntityCombobox } from '../EntityCombobox'
+import { templateOptions } from './comboOptions'
 import { RowActions } from '../RowActions'
 
 interface FaceMember {
@@ -350,13 +351,7 @@ export function TodoSection({
         <EntityCombobox<TodoTemplate>
           value={addText}
           onChange={setAddText}
-          options={templates.map((tpl): ComboOption<TodoTemplate> => ({
-            id: tpl.id,
-            label: tpl.title,
-            data: tpl,
-            icon: 'check-square-bold',
-            group: t.todos.templatesLabel,
-          }))}
+          options={templateOptions(templates, t)}
           onSubmit={(v) => add(v)}
           onPick={(opt) => {
             setAddText('')

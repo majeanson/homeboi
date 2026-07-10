@@ -100,6 +100,7 @@ import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
 import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
+import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { OperatorSection } from '../components/operator/OperatorSection'
 import { HouseholdListSection } from '../components/operator/HouseholdListSection'
@@ -341,32 +342,43 @@ function FridgeSheetDemo() {
 // — the chrome is what the gallery shows, same rule as EmptyFridgeSheet). In the app
 // it's the body of the /kitchen/idees scene, which owns the ?tab= source; here a
 // plain useState stands in (DevKit's own URL params are its search + category).
+const IDEAS_DEMO_RECIPE: Recipe = {
+  id: 'r1',
+  title: 'Spaghetti maison',
+  ingredients: [],
+  steps: [],
+  servings: null,
+  notes: null,
+  source: null,
+  image: null,
+  tags: [],
+  updatedAt: 0,
+}
+const IDEAS_DEMO_IDEAS = [{ id: 'i1', title: 'Tacos', recipe_id: null, suggested_by: null, created_at: 0 }]
+const ideasDemoWeek = (now: number) => Array.from({ length: 5 }, (_, i) => ({ date: addLocalDays(now, i), label: `Jour ${i + 1}` }))
+
+// The kept pool on its own — what the kitchen week grid renders inline, heading and
+// all. The drawer below shows the same component under its first source chip.
+function MealIdeasDemo() {
+  const week = ideasDemoWeek(todayLocalDay())
+  return (
+    <MealIdeas ideas={IDEAS_DEMO_IDEAS} recipes={[IDEAS_DEMO_RECIPE]} week={week} lowItems={[]} listItems={[]} profileId={null} />
+  )
+}
+
 function IdeasDrawerDemo() {
   const [chip, setChip] = useState<IdeasChip>('ideas')
   const ai = useAiWake()
-  const now = todayLocalDay()
-  const week = Array.from({ length: 5 }, (_, i) => ({ date: addLocalDays(now, i), label: `Jour ${i + 1}` }))
-  const recipe: Recipe = {
-    id: 'r1',
-    title: 'Spaghetti maison',
-    ingredients: [],
-    steps: [],
-    servings: null,
-    notes: null,
-    source: null,
-    image: null,
-    tags: [],
-    updatedAt: 0,
-  }
+  const week = ideasDemoWeek(todayLocalDay())
   return (
     <div className="ideas-drawer">
       <IdeasDrawer
         chip={chip}
         onChip={setChip}
-        ideas={[{ id: 'i1', title: 'Tacos', recipe_id: null, suggested_by: null, created_at: 0 }]}
+        ideas={IDEAS_DEMO_IDEAS}
         leftovers={[{ id: 'l1', title: 'Pâté chinois', created_at: 0 }]}
         recentMeals={[]}
-        recipes={[recipe]}
+        recipes={[IDEAS_DEMO_RECIPE]}
         lowItems={[]}
         listItems={[]}
         soonItems={['épinards']}
@@ -814,6 +826,18 @@ export function DevKit() {
             group: 'Restants',
             icon: 'arrow-counter-clockwise-bold',
             iconColor: 'var(--terracotta-deep)',
+          },
+          // `hint` — a faint second line naming what the option CONTAINS, for options
+          // that expand into several things when picked (a todo template instantiates
+          // a whole checklist). Clamped to two lines; the badge holds the true total.
+          {
+            id: 't1',
+            label: 'Avant de partir',
+            data: 't1',
+            group: 'Modèles :',
+            icon: 'check-square-bold',
+            hint: 'Clés · Portefeuille · Bouteille d’eau · Manteau · +2',
+            badge: <span className="combobox__badge mono">6</span>,
           },
         ]
         // typeaheadOnly: suggestions appear ONLY while typing a match (no caret,
@@ -2385,6 +2409,17 @@ export function DevKit() {
       render: () => (
         <Demo label="« Vide-frigo » (#5) — AI ideas from what's about to spoil → pick a few → full recipes (needs the live API)">
           <FridgeSheetDemo />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Sections & pages',
+      name: 'MealIdeas',
+      file: 'components/kitchen/MealIdeas.tsx',
+      kw: 'idées repas pool garder recette planifier meal ideas kept pool plan a day mealpool',
+      render: () => (
+        <Demo label="the kept « Idées de repas » pool — rendered inline under the kitchen week grid AND as the drawer's first source">
+          <MealIdeasDemo />
         </Demo>
       ),
     },

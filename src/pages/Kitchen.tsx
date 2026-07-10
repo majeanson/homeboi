@@ -31,7 +31,8 @@ import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { type IdeasChip } from '../components/kitchen/IdeasDrawer'
-import { weekDates } from '../components/kitchen/week'
+import { MealIdeas } from '../components/kitchen/MealIdeas'
+import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
 import { useEntityDetail } from '../components/detail/DetailProvider'
@@ -50,8 +51,11 @@ import { scrollBehavior } from '../lib/motion'
 // the tab components in src/components/kitchen/* (useMealPlanning = type/pick a
 // supper + the AI staples step, useRecipeShop = shop-the-week, useAiWake = the
 // shared cold-start/AI-off truth). C-14 folded every "what's for supper" idea
-// source (the old inline AI/book/use-it-up suggestion band + the MealIdeas/
-// Leftovers pools) into the ONE IdeasDrawer, opened from the grid or the ＋ sheet.
+// source (the old inline AI/book/use-it-up suggestion band + the Leftovers pool)
+// into the ONE IdeasDrawer, opened from the grid or the ＋ sheet — but the kept
+// « Idées de repas » pool itself stays INLINE under the week grid (<MealIdeas>, the
+// same component the drawer's first source renders), since it's the one a family
+// adds to daily. « Plus d'idées » opens the drawer for the other four sources.
 
 export function Kitchen() {
   const t = useT()
@@ -168,6 +172,9 @@ export function Kitchen() {
     date,
     meal: days.find((d) => d.date === date && d.slot === heroSlot),
   }))
+  // The same window as `{date,label}` day chips — what the inline « Idées de repas »
+  // pool plans onto. Same source and DST-safe stepping as the grid above.
+  const weekLabeled = useWeekLabeled(weekStart, windowDays, lang)
   // date+slot → its planned meals, in order (a slot holds several now). Server
   // already orders by position; this just filters the flat list.
   const mealsFor = (date: number, slot: string) => days.filter((d) => d.date === date && d.slot === slot)
@@ -566,16 +573,29 @@ export function Kitchen() {
               DayPlanPage) — a row's pencil and the ＋ "Planifier un repas" day
               picker both navigate there. No in-page sheet to render here. */}
 
+          {/* The kept « Idées de repas » pool, back under the week grid where the
+              week is read — the pool you add to daily shouldn't cost a scene. It is
+              the SAME <MealIdeas> the drawer's first source renders, so the two can
+              never drift. C-14 moved the OTHER idea sources (⭐ 🧊 🤖 👧) away, not
+              this one. The pool owns the "ideas" help bubble via its heading. */}
+          <MealIdeas
+            ideas={ideasQ.data?.ideas ?? []}
+            recipes={recipes}
+            week={weekLabeled}
+            lowItems={lowItems}
+            listItems={listItems}
+            profileId={profileId}
+            help={tabHelp}
+          />
+
           {/* C-14 — the ONE « Idées » drawer opener, reachable here AND from the ＋
-              Add sheet. Restants keeps a slim one-line hint beside it (decided) —
+              Add sheet. It reads « Plus d'idées » beside the inline pool: the drawer
+              is where the OTHER sources live (⭐ Favoris, 🧊 À écouler, 🤖 IA, 👧
+              Proposé par). Restants keeps a slim one-line hint beside it (decided) —
               the full list lives inside the drawer's 🧊 « À écouler » chip. */}
           <Cluster className="kitchen__ideas-opener">
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={tabHelp.pick('ideas', () => openIdeas('ideas'))}
-            >
-              <InlineIcon name="bowl-food-bold" /> {t.kitchen.ideas}
+            <button type="button" className="btn btn--primary" onClick={() => openIdeas('ideas')}>
+              <InlineIcon name="bowl-food-bold" /> {t.kitchen.ideasMore}
             </button>
             {(leftoversQ.data?.leftovers?.length ?? 0) > 0 && (
               <button
@@ -588,7 +608,6 @@ export function Kitchen() {
               </button>
             )}
           </Cluster>
-          {tabHelp.bubbleFor('ideas')}
           {tabHelp.bubbleFor('leftovers')}
         </section>
         )}

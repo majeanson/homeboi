@@ -45,6 +45,12 @@ export interface ComboOption<T = unknown> {
   iconToLabel?: string
   /** Right-aligned badge (cookability "Prêt" / "il manque 2", a date…). */
   badge?: ReactNode
+  /** Faint second line under the label: what this option CONTAINS, so you can read
+   *  before you commit (a todo template's items, "Clés · Portefeuille · +2").
+   *  Clamped to two lines — keep the authoritative total in `badge`, since a long
+   *  hint is truncated. Always visible: a hover-only preview would be unreachable
+   *  on the wall tablet, where a tap on the row picks it outright. */
+  hint?: ReactNode
   /** Extra strings folded into the type-to-filter match (e.g. recipe ingredients). */
   keywords?: string[]
 }
@@ -366,13 +372,16 @@ export function EntityCombobox<T>({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pick(o)}
                   >
-                    <span className="combobox__row-title">
-                      {o.icon && !o.iconTo && (
-                        <>
-                          <InlineIcon name={o.icon} size={14} color={o.iconColor} />{' '}
-                        </>
-                      )}
-                      {o.label}
+                    <span className="combobox__row-main">
+                      <span className="combobox__row-title">
+                        {o.icon && !o.iconTo && (
+                          <>
+                            <InlineIcon name={o.icon} size={14} color={o.iconColor} />{' '}
+                          </>
+                        )}
+                        {o.label}
+                      </span>
+                      {o.hint && <span className="combobox__row-hint">{o.hint}</span>}
                     </span>
                     {o.badge}
                   </button>

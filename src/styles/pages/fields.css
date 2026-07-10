@@ -308,11 +308,38 @@
 .combobox__open:active {
   transform: translateY(1px);
 }
+/* The row's text column: title, plus an optional `hint` line beneath it. Stays a
+   column so the badge keeps its own right-aligned cell however tall the hint runs. */
+.combobox__row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+}
 .combobox__row-title {
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* What the option contains, read before committing to it. Two lines max: enough to
+   recognize a list, never enough to push the next option off a phone screen. The
+   badge carries the authoritative total, so clamping here loses nothing. */
+.combobox__row-hint {
+  max-width: 100%;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--ink-faint);
+  font-size: 0.74rem;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .combobox__badge {
   flex: none;

@@ -132,6 +132,13 @@ for (const width of [360, 390]) {
       await page.locator('.addsheet__scope .btn').last().click()
       await expect(page.locator('.addsheet__scope-date')).toBeVisible()
       await assertClean(page, 'todo scope row + date picker')
+
+      // State 4b — open the « Modèles : » dropdown. Each template row now carries a
+      // `hint` line naming the items it would add (wrapping, two-line clamped) beside
+      // a count badge — a text block that must wrap inside the row, never widen it.
+      await page.locator('.addsheet__todo .combobox__caret').click()
+      await expect(page.locator('.addsheet__todo .combobox__row-hint').first()).toBeVisible()
+      await assertClean(page, 'todo template dropdown, item hints')
     }
 
     // State 5 — « Laisse un mot »: a face row, the composer field with its 📎, and

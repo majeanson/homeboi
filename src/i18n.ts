@@ -1092,6 +1092,8 @@ export const FR = {
     chooseLeftover: 'Choisir un reste',
     alsoStaples: 'Ajouter les ingrédients aussi',
     ideas: 'Idées de repas',
+    // The grid opener beside the inline pool: the drawer holds the OTHER sources.
+    ideasMore: 'Plus d’idées',
     ideasHint: 'Une liste d’idées à garder — place-les sur un jour quand tu veux.',
     ideasEmpty: 'Pas encore d’idées. Ajoute-en une.',
     addIdea: 'Ajouter une idée',

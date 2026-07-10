@@ -1008,6 +1008,7 @@ export const EN: typeof FR = {
     chooseLeftover: 'Choose a leftover',
     alsoStaples: 'Add the ingredients too',
     ideas: 'Meal ideas',
+    ideasMore: 'More ideas',
     ideasHint: 'A shortlist to keep — drop one onto a day whenever you like.',
     ideasEmpty: 'No ideas yet. Add one.',
     addIdea: 'Add an idea',
