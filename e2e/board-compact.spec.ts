@@ -62,13 +62,15 @@ test.describe('board compact lens', () => {
     })
     expect(height).toBeLessThanOrEqual(lineHeight * 2 + 1)
 
-    // « Avant de partir » (the key) is its OWN corner tap target on the day tile — a Link to
-    // the pre-departure checklist, so a halved « Auj. » reaches it without growing first. It
-    // lives OUTSIDE the tile's button (a sibling), never nested-interactive inside it.
-    const key = page.locator('.wg-slot[data-card="today"] .cardmini__corner')
-    await expect(key).toBeVisible()
-    await expect(key).toHaveAttribute('href', /\/board\/departure$/)
-    await expect(tile.locator('.cardmini__corner'), 'the corner is a sibling, not inside the button').toHaveCount(0)
+    // Two corner tap targets on the day tile — a pencil to « Planifier » (the day plan) and
+    // a key to « Avant de partir » (the checklist) — so a halved « Auj. » reaches both
+    // without growing first. Each is a Link OUTSIDE the tile's button (a sibling), never
+    // nested-interactive inside it.
+    const corners = page.locator('.wg-slot[data-card="today"] .cardmini__corner')
+    await expect(corners).toHaveCount(2)
+    await expect(page.locator('.wg-slot[data-card="today"] .cardmini__corner[href*="/kitchen/day/"]')).toHaveCount(1)
+    await expect(page.locator('.wg-slot[data-card="today"] .cardmini__corner[href$="/board/departure"]')).toHaveCount(1)
+    await expect(tile.locator('.cardmini__corner'), 'the corners are siblings, not inside the button').toHaveCount(0)
   })
 
   // #root/.hub__body clip overflow-x, so a too-wide child is HIDDEN, not caught by a

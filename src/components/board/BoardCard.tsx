@@ -12,6 +12,12 @@ import { useCardLens } from './CardLens'
 // The lead replaces the dot (the token already anchors the row) and is never a count.
 export type CompactRow = string | { lead?: string; label: string }
 
+// A small secondary action pinned to a mini tile's bottom-right corner — its own tap
+// target, a `<Link>` rendered OUTSIDE the tile's button (never nested-interactive). One
+// or two per tile (« Aujourd'hui » carries a pencil → « Planifier » and a key → « Avant
+// de partir »); « Demain » just the pencil.
+export type CornerAction = { to: string; icon: IconName; label: string }
+
 // The ONE board-card header — a category glyph disc + bold label + rule + an optional
 // quiet count (never a score), with optional contextual help. This is the `.sec-label`
 // anatomy that every board glance card shares; extracted so the four cards that hand
@@ -160,11 +166,11 @@ export function CardMini({
    *  a card whose compact form has nothing worth expanding into (an empty « L'auto » →
    *  « /voiture », an empty placeholder → the page that adds one). Skips tap-to-grow. */
   to?: string
-  /** A small secondary action pinned to the tile's bottom-right corner — its OWN tap
-   *  target (« Aujourd'hui » → the key to « Avant de partir »). Rendered as a sibling
-   *  `<Link>` outside the tile's button, so it's a real second control, not nested-
-   *  interactive HTML; tapping it navigates, tapping the rest of the tile still grows. */
-  corner?: { to: string; icon: IconName; label: string }
+  /** One or two small actions pinned to the tile's bottom-right corner — each its OWN tap
+   *  target (« Aujourd'hui » → a pencil to « Planifier » + a key to « Avant de partir »).
+   *  Rendered as sibling `<Link>`s outside the tile's button, so they're real controls, not
+   *  nested-interactive HTML; tapping one navigates, tapping the rest of the tile grows. */
+  corner?: CornerAction | readonly CornerAction[]
   onExpand: () => void
 }) {
   const t = useT()
@@ -233,16 +239,22 @@ export function CardMini({
       {inner}
     </button>
   )
-  if (!corner) return tile
-  // The corner action is a SIBLING of the tile (not a child) so it isn't an interactive
-  // element nested inside the tile's button/link. The host span carries the fixed mini
-  // height and positions the corner over the tile's bottom-right.
+  const corners = corner ? (Array.isArray(corner) ? corner : [corner as CornerAction]) : []
+  if (corners.length === 0) return tile
+  // The corner actions are SIBLINGS of the tile (not children) so they aren't interactive
+  // elements nested inside the tile's button/link. The host span carries the fixed mini
+  // height and positions the cluster over the tile's bottom-right; `--corner-n` lets the
+  // list face reserve room on its last row so text ellipsizes clear of the discs.
   return (
-    <span className="cardmini-host">
+    <span className="cardmini-host" style={{ ['--corner-n']: corners.length } as CSSProperties}>
       {tile}
-      <Link className="cardmini__corner" to={corner.to} aria-label={corner.label} title={corner.label}>
-        <Icon name={corner.icon} size={15} />
-      </Link>
+      <span className="cardmini__corners">
+        {corners.map((c) => (
+          <Link key={c.to} className="cardmini__corner" to={c.to} aria-label={c.label} title={c.label}>
+            <Icon name={c.icon} size={15} />
+          </Link>
+        ))}
+      </span>
     </span>
   )
 }
@@ -298,8 +310,8 @@ export function BoardCard({
   compactLabel?: string
   /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
   compactTo?: string
-  /** A small corner action on the mini (see `CardMini.corner`). */
-  compactCorner?: { to: string; icon: IconName; label: string }
+  /** One or two small corner actions on the mini (see `CardMini.corner`). */
+  compactCorner?: CornerAction | readonly CornerAction[]
   compact?: ReactNode
   children: ReactNode
 }) {

@@ -273,14 +273,20 @@
 .wg-slot .cardmini-host .cardmini {
   height: 100%;
 }
-/* The corner action (« Aujourd'hui » → the key to « Avant de partir »): a small frosted
-   disc pinned bottom-right, its OWN tap target above the tile. Card-tinted like the header
-   disc; ≥28px so it stays touch-friendly without crowding the rows above it. */
-.wg-slot .cardmini__corner {
+/* The corner cluster (« Aujourd'hui » → a pencil to « Planifier » + the key to « Avant de
+   partir »): one or two small frosted discs pinned bottom-right, each its OWN tap target
+   above the tile. */
+.wg-slot .cardmini__corners {
   position: absolute;
   z-index: 1;
   right: 6px;
   bottom: 6px;
+  display: flex;
+  gap: 5px;
+}
+/* Card-tinted like the header disc; ≥30px so it stays touch-friendly without crowding the
+   rows above it. */
+.wg-slot .cardmini__corner {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -295,10 +301,11 @@
 .wg-slot .cardmini__corner:active {
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }
-/* In the list face the corner disc sits over the bottom-right, where the LAST row ends —
-   reserve room so a long last row ellipsizes before it instead of hiding under it. */
+/* In the list face the corner cluster sits over the bottom-right, where the LAST row ends —
+   reserve room (scaled to the number of discs) so a long last row ellipsizes before them
+   instead of hiding under them. */
 .wg-slot .cardmini-host .cardmini--list .cardmini__row:last-child .cardmini__rowlabel {
-  padding-right: 1.9rem;
+  padding-right: calc(0.3rem + var(--corner-n, 1) * 1.7rem);
 }
 /* Bespoke cards whose palette does NOT arrive as `--sec-tint`: map their own token
    onto it so the persona rules above apply unchanged. */

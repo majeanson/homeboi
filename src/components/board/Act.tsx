@@ -4,7 +4,7 @@ import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 import { type HelpMode } from '../../lib/helpMode'
-import { SecLabel, CardMini, type CompactRow } from './BoardCard'
+import { SecLabel, CardMini, type CompactRow, type CornerAction } from './BoardCard'
 import { useCardLens } from './CardLens'
 
 // Pip section header: an optional category glyph + label + rule + a quiet count
@@ -57,8 +57,8 @@ export function Section({
   compactLabel?: string
   /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
   compactTo?: string
-  /** A small corner action on the mini (see `CardMini.corner`). */
-  compactCorner?: { to: string; icon: IconName; label: string }
+  /** One or two small corner actions on the mini (see `CardMini.corner`). */
+  compactCorner?: CornerAction | readonly CornerAction[]
   compact?: React.ReactNode
   children: React.ReactNode
 }) {

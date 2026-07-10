@@ -47,6 +47,10 @@ export function VoyageCard() {
       label={t.voyage.nextTrip}
       compactLabel={t.voyage.nextTripShort}
       compactHint={rows[0]?.title}
+      // The mini names the next trip; tapping it opens THAT trip's notebook straight away
+      // (a shared row → the shared scene) instead of growing to a one-row list of the same
+      // thing. The grown card is still there for the rare 2–3 upcoming trips, via the size chip.
+      compactTo={rows[0] ? (rows[0].shared ? `/voyage/partage/${rows[0].id}` : `/voyage/${rows[0].id}`) : undefined}
     >
       <ul className="voyage-card__list">
         {rows.map((tr) => (

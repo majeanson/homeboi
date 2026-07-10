@@ -26,6 +26,11 @@ export function CarnetsCard() {
   useReportEmpty(empty)
   if (empty) return null
 
+  // When exactly ONE thing is nearing its end, the mini names it and taps straight to that
+  // carnet — the same "don't grow into a one-row list of the same thing" nav voyage uses.
+  // With several, the mini lists them and grows so you can pick which.
+  const onlyId = soon.length + warranties.length === 1 ? (soon[0]?.carnetId ?? warranties[0]?.carnetId) : undefined
+
   return (
     <BoardCard
       className="carnets-card"
@@ -35,6 +40,7 @@ export function CarnetsCard() {
       // chauffe-eau » tells you what to look at; « 2 » doesn't.
       compactItems={[...soon.map((s) => s.name), ...warranties.map((w) => w.name)]}
       compactHint={String(soon.length + warranties.length)}
+      compactTo={onlyId ? `/cercle/carnet/${onlyId}` : undefined}
     >
       <ul className="carnets-card__list">
         {soon.map((s) => (

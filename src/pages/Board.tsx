@@ -946,10 +946,13 @@ export function Board() {
       now={todayNow}
       compactItems={todayItems}
       compactHint={todayCount > 0 ? String(todayCount) : undefined}
-      // « Avant de partir » (the key) reachable straight from the halved day tile — its own
-      // corner tap target, so a mini « Auj. » still opens the pre-departure checklist
-      // without growing the card first. Matches the always-on key on the full card.
-      compactCorner={{ to: '/board/departure', icon: 'key-bold', label: t.departure.title }}
+      // Two corner shortcuts on the halved day tile, each its own tap target: a pencil to
+      // « Planifier aujourd'hui » (the day's plan page) and the key to « Avant de partir »
+      // (the pre-departure checklist) — both reachable without growing the card first.
+      compactCorner={[
+        { to: `/kitchen/day/${todayDay}`, icon: 'pencil-simple-bold', label: t.board.planToday },
+        { to: '/board/departure', icon: 'key-bold', label: t.departure.title },
+      ]}
       // The day's temperature, where the eye already is (a quiet frosted chip, never a
       // count). Degrees only — the weather GLYPH pushed the title to ellipsize in the tiny
       // header; the grown card shows the icon. The chip is small enough to keep the title.
@@ -1065,6 +1068,9 @@ export function Board() {
       // high/low "18°/11°" plus a weather icon pushed « Demain » to ellipsize to « De… » in
       // a 142px tile. The high is the headline; the grown card shows both + the icon.
       compactHead={tomorrowWx ? `${tomorrowWx.highC}°` : undefined}
+      // A pencil to « Planifier demain » (tomorrow's plan page) straight from the mini —
+      // the night-before "sortir le poulet" gesture, one tap from the halved tile.
+      compactCorner={{ to: `/kitchen/day/${tomorrowDay}`, icon: 'pencil-simple-bold', label: t.board.planTomorrow }}
     >
       {/* D-17: the school/congé qualifier — silent almost every day BY
           DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,
