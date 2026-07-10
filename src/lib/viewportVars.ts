@@ -96,11 +96,20 @@ export function trackVisualViewport(): void {
   const apply = () => {
     queued = false
     if (vv.scale > 1) return
+    // A SUSPENDED web view reports a collapsed visualViewport — iOS does this while
+    // the app-switcher, the screenshot preview/markup editor, or a system share sheet
+    // is on top. `innerHeight - vv.height` then looks exactly like a keyboard, so we'd
+    // latch --kb + `.kb-open` and come back with the tab bar and ＋ FAB hidden and a
+    // parked sheet peeking over the bottom edge. Measure only what the user can see.
+    if (document.hidden) return
     kbInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
     root.setProperty('--vvh', `${Math.round(vv.height)}px`)
     root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`)
-    root.setProperty('--kb', `${kbInset}px`)
     const open = kbInset > KB_THRESHOLD
+    // --kb means "how much keyboard covers the bottom", so it must agree with
+    // `.kb-open` — publishing a sub-threshold inset (browser chrome, an accessory
+    // bar) lifted every consumer off a keyboard that isn't there.
+    root.setProperty('--kb', `${open ? kbInset : 0}px`)
     // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
     // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
     // field being edited for attention. `.kb-open` keys the CSS in hub.css.
@@ -134,6 +143,27 @@ export function trackVisualViewport(): void {
   apply()
   vv.addEventListener('resize', schedule)
   vv.addEventListener('scroll', schedule)
+
+  // Coming back from a suspend, re-measure. Two things need it: the `document.hidden`
+  // guard above skipped every event that arrived while away, and rAF is frozen while
+  // hidden — so a callback queued on the way out never ran, leaving `queued` latched
+  // true and `schedule()` deaf to every later resize. Clear the latch, then re-read a
+  // few times as the viewport settles (iOS serves the pre-suspend height for a frame
+  // or two, and sometimes never fires a resize of its own on the way back).
+  //
+  // Three signals because no single one covers every way iOS takes the screen away:
+  // the app-switcher and a backgrounded PWA fire `visibilitychange`; a system overlay
+  // that merely covers us (the screenshot preview → Markup editor, a share sheet)
+  // fires only window blur/focus; a bfcache restore fires only `pageshow`.
+  const remeasure = () => {
+    if (document.hidden) return
+    queued = false
+    schedule()
+    for (const ms of [60, 200, 500]) setTimeout(schedule, ms)
+  }
+  document.addEventListener('visibilitychange', remeasure)
+  window.addEventListener('focus', remeasure)
+  window.addEventListener('pageshow', remeasure)
 
   // Tapping a field re-pins it — whether the keyboard is still arriving (the
   // rising edge above also fires) or ALREADY up (moving between fields, which gets

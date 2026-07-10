@@ -184,3 +184,81 @@ test('recipe form fits a short viewport', async ({ page }) => {
   await expectAbove(page.locator('.recipe-modal__foot .btn--primary'), 480, 'short-vp Enregistrer')
   await expectAbove(page.locator('.recipe-modal__bar button').last(), 480, 'short-vp ✕')
 })
+
+// iOS suspends the web view whenever something covers it — the app-switcher, the
+// screenshot preview → Markup editor, a share sheet. `visualViewport` collapses while
+// away, so `innerHeight - vv.height` reads exactly like a keyboard. Left unhandled,
+// --kb + `.kb-open` latch at keyboard-open values and the board comes back with its
+// tab bar and ＋ FAB hidden and the always-mounted, EMPTY entity-detail peek lifted
+// back over the bottom edge — a shell whose ✕ closes an already-closed sheet, so it
+// can't be dismissed short of restarting the app.
+//
+// Two independent guarantees, so neither alone has to hold:
+//   1. CSS — a parked sheet is inert no matter what --kb says.
+//   2. JS  — --kb/.kb-open never latch across a suspend.
+// Each of these runs INSIDE the page, so it must stand alone — no closure over the
+// Node scope. `shrinkBy` fakes iOS collapsing the visual viewport; `setHidden` fakes
+// the app being covered; `kbState` reads back what viewportVars published.
+const shrinkBy = (px: number) => {
+  const stub = (window as unknown as { __vvStub: { height: number; dispatchEvent: (e: Event) => boolean } }).__vvStub
+  stub.height = window.innerHeight - px
+  if (px > 0) stub.dispatchEvent(new Event('resize'))
+}
+const setHidden = (hidden: boolean) => {
+  Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (hidden ? 'hidden' : 'visible') })
+  document.dispatchEvent(new Event('visibilitychange'))
+}
+const kbState = () => ({
+  open: document.documentElement.classList.contains('kb-open'),
+  kb: getComputedStyle(document.documentElement).getPropertyValue('--kb').trim(),
+})
+
+test('a parked sheet stays inert even with --kb stuck open', async ({ page }) => {
+  const open = boot({ w: 390, h: 844 })
+  await open(page, '/board')
+
+  // Force the worst case the JS is supposed to prevent, and prove the CSS survives it.
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty('--kb', '336px')
+    document.documentElement.classList.add('kb-open')
+  })
+
+  const parked = page.locator('.sheet:not(.show)')
+  const n = await parked.count()
+  expect(n, 'the board mounts parked sheets (detail peek, profile picker)').toBeGreaterThan(0)
+  for (let i = 0; i < n; i++) await expect(parked.nth(i), `parked sheet ${i} hidden`).not.toBeVisible()
+
+  // …and nothing of theirs intercepts a tap along the bottom edge.
+  const hits = await page.evaluate(() =>
+    [700, 780, 830].map((y) => (document.elementFromPoint(195, y)?.closest('.sheet') ? 'sheet' : 'page')),
+  )
+  expect(hits, 'bottom of the screen belongs to the page, not a parked sheet').toEqual(['page', 'page', 'page'])
+})
+
+test('a suspend never latches --kb / .kb-open', async ({ page }) => {
+  const open = boot({ w: 390, h: 844 })
+  await open(page, '/board')
+  expect(await page.evaluate(kbState)).toEqual({ open: false, kb: '0px' })
+
+  // The collapse can land BEFORE visibilitychange, while we still count as visible —
+  // this is the event that latched the phantom keyboard.
+  await page.evaluate(shrinkBy, 500)
+  await page.waitForTimeout(120)
+
+  // Away. Nothing measured while hidden is trustworthy, so nothing is written.
+  await page.evaluate(setHidden, true)
+  await page.evaluate(shrinkBy, 620) // iOS keeps shrinking us on the way out
+  await page.waitForTimeout(120)
+
+  // Back — with the viewport silently restored and NO resize event of its own, which
+  // is the case that used to leave the vars stuck forever.
+  await page.evaluate(shrinkBy, 0)
+  await page.evaluate(setHidden, false)
+  await page.waitForTimeout(700) // remeasure's settle retries (60/200/500ms)
+  expect(await page.evaluate(kbState), 'vars cleared on the way back').toEqual({ open: false, kb: '0px' })
+
+  // The tab bar and ＋ FAB came back with it.
+  await expect(page.locator('.hubnav')).toBeVisible()
+  await expect(page.locator('.add-fab')).toBeVisible()
+})

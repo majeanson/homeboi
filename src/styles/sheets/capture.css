@@ -457,9 +457,14 @@ body.is-recording .add-fab {
   position: fixed;
   left: 0;
   right: 0;
-  /* Lifted above the on-screen keyboard (--kb from viewportVars.ts) so the
-     sheet's inputs and buttons never sink behind it; 0 when no keyboard. */
-  bottom: var(--kb, 0px);
+  /* A PARKED sheet sits hard against the bottom edge, never on --kb. The lift
+     above the on-screen keyboard belongs to `.sheet.show` alone: `translateY(110%)`
+     is 110% of the sheet's OWN height, so it only clears the screen from bottom:0.
+     Anchored on a non-zero --kb, a short sheet (the empty entity-detail peek is
+     ~100px) no longer travels far enough and reappears — an inert shell whose ✕
+     closes an already-closed sheet. That was the "rolled-up sheet I can't close"
+     glitch after iOS suspended the web view with --kb stuck. */
+  bottom: 0;
   z-index: 31;
   max-width: 40rem;
   margin: 0 auto;
@@ -480,15 +485,30 @@ body.is-recording .add-fab {
   box-shadow: var(--shadow-lg);
   padding: 14px 22px calc(30px + env(safe-area-inset-bottom, 0px));
   transform: translateY(110%);
-  transition: transform var(--dur-slow) var(--ease-out);
+  /* Belt to the bottom:0 braces above: a parked sheet is INERT — unseen, untappable,
+     out of the a11y tree — whatever a stale viewport var does to its geometry. The
+     0s visibility step is delayed by the slide-out so the transition still plays,
+     then snaps to hidden at the end. */
+  visibility: hidden;
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    visibility 0s linear var(--dur-slow);
 }
 .sheet.show {
+  /* Lifted above the on-screen keyboard (--kb from viewportVars.ts) so the sheet's
+     inputs and buttons never sink behind it; 0 when no keyboard. */
+  bottom: var(--kb, 0px);
   transform: translateY(0);
+  visibility: visible;
+  transition:
+    transform var(--dur-slow) var(--ease-out),
+    visibility 0s;
 }
 /* E-40: the bottom sheet's viewport-height slide is significant motion — appear
    in place when the device asks for reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .sheet {
+  .sheet,
+  .sheet.show {
     transition: none;
   }
 }
