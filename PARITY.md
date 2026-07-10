@@ -266,10 +266,10 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | 🔶³        | ➖¹       | ✅       | ✅      |
 | F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | 🔶³⁸    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
-| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | 🔶¹⁵     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | 🔶⁶      | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
-| F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | 🔶¹⁵     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | ✅⁵³     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
 | F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | 🔶⁴⁹         | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F11 Widget space         | ✅      | ➖      | ➖⁴⁴    | ➖⁹        | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
@@ -278,7 +278,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | 🔶³⁹    |
 | F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
 | F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖        | ✅       | ✅      |
-| F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | 🔶¹⁵     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | ✅⁵³     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | 🔶⁴⁹         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
@@ -290,9 +290,9 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | 🔶³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
 | F27 Notre monde          | ➖      | ➖⁴³    | ➖      | ➖         | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
-| F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | 🔶¹⁵     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ❌      |
-| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ❌¹⁶     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | 🔶⁴¹    |
-| F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | 🔶¹⁵     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ❌      |
+| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | 🔶⁴¹    |
+| F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | 🔶⁴²    |
 | F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅      |
 | F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | 🔶²¹       | 🔶²³      | ✅       | ✅      |
@@ -366,6 +366,26 @@ Footnotes (verdicts recorded so far):
     `e2e/interactions.spec.ts` « Mes habitudes » test asserts the toddler board renders a
     due household habit as a tile and a tap does NOT fire a habits write. typecheck + 1436
     unit tests green. [F5/F6×D8]
+53. **Wave H SHIPPED 2026-07-10** — the D7 « ? »/guide gaps closed via the two channels
+    the app already uses, picked per surface (merge-first, no new registry, no new card):
+    **F30 Jouer** (was ❌ on all three) — a « Jouer » **point appended to the `routines`
+    guide card** (route `/jouer`), so the toddler play space is discoverable in the guide +
+    FeatureMap; its « ? »/tour stay ➖ by nature (a toddler surface — `HelpDot` hides for
+    the toddler audience, tours are narrow). **F5 Mots** — a real in-place `BOARD_HELP.mots`
+    entry threaded through `MotsCard`'s `Section` (armed « ? » → tap the title → bubble →
+    guide `mots`). **F8 Dessins** (`DrawingGalleryPage`) + **F29 Collants** (`StickerWallPage`)
+    — a `SceneHead card=` `HelpDot` each (`drawings`/`routines`), the scene-appropriate on
+    -surface « ? » (neither had any before). **F17 Vide-frigo** — a `HelpDot card="kitchen"`
+    on the `EmptyFridgeSheet` title (also already folded into the ＋ `ideas` bubble). **F6
+    Habitudes** + **F31 Voyage** — **verdict correction**: both live surfaces ALREADY carry a
+    `SceneHead card=` `HelpDot` (`HabitudesPage` card="habits", `VoyagePage` card="voyage");
+    the Day-3 audit counted only the 7 help REGISTRIES and undercounted the `HelpDot` channel,
+    so these were never truly help-dark. (The board `HabitudesCard` is a `<Link>`; an armed
+    help-title inside it navigates instead of bubbling — the scene `HelpDot` is the right
+    channel there, not a board help-mode entry.) Guard: `e2e/help.spec.ts` « Mots » test arms
+    the board « ? », taps the card title, asserts the in-place bubble + its `card=mots` guide
+    link (per-test `/api/mots` override, so no board snapshot moves). typecheck +
+    `helpRegistry`/`guideLinks` + 1436 unit tests green. [F5/F6/F8/F17/F29/F30/F31×D7]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
@@ -443,18 +463,24 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
        `HabitudesCard` imported no `useAudience`. **DONE (Wave T) 2026-07-10** — both
        now fold into `ToddlerBoard` as picture-first, read-aloud `BigTiles` sections
        (« Un mot pour toi » / « Mes habitudes »); cells ❌→✅ (footnote 52).
-3. [ ] 🔴 **F30×D7** — **Jouer is fully undiscovered**: no guide card, no « ? », no
-       tour (footnote 16 — the only feature dark on all three channels). **→ Wave H.**
+3. [x] 🔴 **F30×D7** — Jouer was fully undiscovered: no guide card, no « ? », no tour
+       (footnote 16 — the only feature dark on all three channels). **DONE (Wave H)
+       2026-07-10** — a « Jouer » point on the `routines` guide card (route `/jouer`)
+       makes it discoverable in the guide + FeatureMap; ❌→✅ (footnote 53). « ? »/tour
+       stay ➖ (a toddler surface — `HelpDot` hides for that audience).
 4. [ ] 🔴 **F29×D16** — **mur de collants has no e2e at all** (footnote, confirmed:
        no `sticker`/`collant`/`StickerWall` match). Spec the happy path. **→ Wave E.**
 
 **🟡 Hygiene / drift — invisible to users, converge opportunistically (Waves U, O, D, H, E):**
 
-5. [ ] 🟡 **F5/F8/F17/F29/F31×D7** — guide-only: Mots, Dessins, Vide-frigo, Mur de
-       collants, Voyage have a guide card but **no « ? » help on their live surface**
-       (footnote 15). **→ Wave H** (merge into existing cards; 32 is a ceiling).
-6. [ ] 🟡 **F6×D7** — habits have guide + `operatorHelp` but no « ? » where they
-       live (footnote 6). **→ Wave H.**
+5. [x] 🟡 **F5/F8/F17/F29/F31×D7** — guide-only: Mots, Dessins, Vide-frigo, Mur de
+       collants, Voyage had a guide card but no « ? » on their live surface (footnote 15).
+       **DONE (Wave H) 2026-07-10** — Mots got an in-place `BOARD_HELP` entry; Dessins/
+       Collants got a `SceneHead card=` `HelpDot`; Vide-frigo a `HelpDot` on its sheet;
+       Voyage already had one (verdict corrected). Cells 🔶→✅ (footnote 53).
+6. [x] 🟡 **F6×D7** — habits had guide + `operatorHelp`; **verdict corrected (Wave H)
+       2026-07-10** — `HabitudesPage` already carries a `SceneHead card="habits"`
+       `HelpDot`, the on-surface « ? » the Day-3 audit undercounted. 🔶→✅ (footnote 53).
 7. [ ] 🟡 **F29×D3** — the sticker ✕ is a **raw DELETE** with no undo toast and no
        confirm on a polled list (footnote 46 — the one D3 misassignment). **→ Wave U**:
        wrap in `useDeferredRemoval(STICKERS_KEY)`.
@@ -522,15 +548,18 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
   - _Verified:_ `e2e/interactions.spec.ts` « Mes habitudes » renders a due habit tile +
         asserts a tap fires no write; both sections reuse the `BigTiles` grid (no
         hand-rolled flex → no 360px overflow); typecheck + 1436 unit tests green.
-- [ ] **Wave H — Help/tour/guide** _(entries 3, 5, 6; ~M)_. **Read `DISCOVERY.md`
-      first**; merge into existing cards (32 is a ceiling); keep
-      `helpRegistry.test.ts` + `guideLinks.test.ts` green.
-  - [ ] **F30 Jouer** (🔴, entry 3) — dark on all three channels: add a guide card
-        (or merge into `routines`), a « ? » entry, at least the guide launcher.
-  - [ ] Guide-only « ? » gaps (entry 5): **F5 Mots, F8 Dessins, F17 Vide-frigo,
-        F29 Collants, F31 Voyage** — add an on-surface help key each.
-  - [ ] **F6 Habitudes** (entry 6) — add a board/HabitudesPage « ? » (help today
-        lives only in `operatorHelp`).
+- [x] **Wave H — Help/tour/guide** _(entries 3, 5, 6; SHIPPED 2026-07-10)_. Merged into
+      existing cards (no new card, no new registry); `helpRegistry` + `guideLinks` green.
+  - [x] **F30 Jouer** (🔴, entry 3) — a « Jouer » **point on the `routines` guide card**
+        (route `/jouer`), the guide launcher. « ? »/tour ➖ (toddler surface).
+  - [x] Guide-only « ? » gaps (entry 5): **F5 Mots** → in-place `BOARD_HELP.mots` on the
+        card; **F8 Dessins** + **F29 Collants** → `SceneHead card=` `HelpDot`; **F17
+        Vide-frigo** → `HelpDot` on the sheet title; **F31 Voyage** → already had one.
+  - [x] **F6 Habitudes** (entry 6) — `HabitudesPage` already has a `SceneHead card=`
+        `HelpDot` (verdict correction; the board `<Link>` card can't host an armed help-title).
+  - _Verified:_ `e2e/help.spec.ts` « Mots » arms the board « ? », taps the title, asserts
+        the bubble + `card=mots` link (per-test mots override, no snapshot moves).
+        typecheck + `helpRegistry`/`guideLinks` + 1436 unit tests green. (footnote 53)
   - _Don't touch:_ Carnets/L'auto turned out covered (Appendix A).
 - [ ] **Wave E — e2e** _(entries 4, 10, 11; ~M/L)_. Happy path only; extend sweeps,
       don't build new harnesses. `cercle-crud.spec` is the create-and-POST template.
@@ -671,11 +700,18 @@ a ❌ in the Tour column alone is not a gap.
 | F33 Partager/invités   | ✅ `share-access` + `set-devices`     | ✅ add:`share`; operator:`guest`                                                                                                      | ❌                                         |
 | F34 Réglages/appareils | ✅ `settings` + `set-*` cards         | ✅ the whole `operatorHelp` registry                                                                                                  | ❌                                         |
 
-**Reading:** only **F30 Jouer** is dark on all three channels. Guide-only
-(no « ? » on their live surface): **F5 Mots, F8 Dessins, F17 Vide-frigo,
+**Reading (as audited Day 3):** only **F30 Jouer** was dark on all three channels.
+Guide-only (no « ? » on their live surface): **F5 Mots, F8 Dessins, F17 Vide-frigo,
 F29 Collants, F31 Voyage** (+ F6 Habitudes' help lives only in Réglages).
 Everything else has at least guide + help; tour steps exist for
 F4, F9–F13, F16, F19, F21, F27, F28 by design.
+
+> **Post-Wave-H update (2026-07-10):** all seven are ✅ now (matrix D7, footnote 53).
+> The « ? » column above counted only the 7 help REGISTRIES; it undercounted the
+> `SceneHead card=` **`HelpDot`** channel, so F6 Habitudes (`HabitudesPage`) and F31
+> Voyage (`VoyagePage`) were never truly dark. F5 gained an in-place `BOARD_HELP` entry;
+> F8/F29 gained a `HelpDot`; F17 gained one on its sheet; F30 gained a `routines` guide
+> point (its « ? »/tour stay ➖ — a toddler surface).
 
 ---
 

@@ -67,6 +67,7 @@ export function StickerWallPage() {
       <SceneHead
         title={t.routines.stickerWallTitle}
         icon="sparkle-bold"
+        card="routines"
         onClose={close}
         action={
           !isGuest() && all.length > 0 ? (

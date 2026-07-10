@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal } from '../Modal'
 import { Chip } from '../Chip'
+import { HelpDot } from '../HelpDot'
 import { Icon, InlineIcon } from '../Icon'
 import { api, isStatus } from '../../lib/api'
 import { useT } from '../../i18n'
@@ -144,7 +145,7 @@ export function EmptyFridgeSheet({
       className="fridge-modal"
       title={
         <>
-          <InlineIcon name="carrot-bold" color="#6B8A52" /> {f.title}
+          <InlineIcon name="carrot-bold" color="#6B8A52" /> {f.title} <HelpDot card="kitchen" />
         </>
       }
     >

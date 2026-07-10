@@ -80,7 +80,7 @@ export function DrawingGalleryPage() {
 
   return (
     <div className="scene drawgallery" aria-label={t.memo.galleryTitle}>
-      <SceneHead title={t.memo.galleryTitle} icon="paint-brush-bold" onClose={close} />
+      <SceneHead title={t.memo.galleryTitle} icon="paint-brush-bold" card="drawings" onClose={close} />
       <div className="scene__body drawgallery__body">
         {!ro && (
           <button type="button" className="btn btn--primary drawgallery__add" onClick={() => setAdding(true)}>

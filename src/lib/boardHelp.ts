@@ -36,6 +36,14 @@ export const BOARD_HELP = {
       en: '“À faire”: one-off things you tick off, then they’re done (often dictated). “À compléter” below: your recurring checklists — pool bag, before leaving… — reusable in one tap.',
     },
   },
+  // « Laisse un mot » — the member-to-member inbox card. Deep-links to the `mots` guide.
+  mots: {
+    card: 'mots',
+    body: {
+      fr: 'Mots : un petit message qu’un membre laisse à un autre — écrit, vocal, dessiné ou en photo. Il attend, fermé, sur ton visage; touche-le pour l’ouvrir. Jamais de compte de non-lus.',
+      en: 'Notes: a little message one member leaves for another — typed, spoken, drawn or a photo. It waits, unopened, on your face; tap it to open. Never an unread count.',
+    },
+  },
   // The rest of the board's section cards — a one-line "what is this" each, deep-linking to
   // the relevant guide concept. Help-mode only (armed via the board "?"), so no clutter.
   today: {

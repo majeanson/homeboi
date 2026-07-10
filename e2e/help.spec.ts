@@ -38,6 +38,58 @@ test('the contextual ? deep-links into the matching Guide card', async ({ page }
   await expect(target).toContainText('cuisine')
 })
 
+// Wave H (F5×D7): the « Mots » board card now carries an in-place « ? » help entry —
+// arm the board's help mode, tap the card title, get a bubble that deep-links to the
+// mots guide card. (Mots is a Section/div card, so the armed title explains in place
+// rather than navigating.)
+test('board ? explains « Mots » in place and links to its guide', async ({ page }) => {
+  // Same setup as boot(), but slot in a per-test « Mots » override AFTER mockApi's
+  // catch-all (Playwright tries the last-registered route first) so one waiting
+  // family-wide mot makes the card render at rest — every OTHER board spec's snapshots
+  // stay untouched (the default /api/mots still returns empty there).
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await page.route('**/api/mots**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        mots: [
+          {
+            id: 'mo1', member_id: null, author_member_id: 'm2', text: 'Bonne journée !',
+            media_kind: null, media_key: null, scene_key: null, created_at: 1_749_369_600,
+            updated_at: null, opened_at: null, saved_at: null, surface_at: null, reply_to: null,
+          },
+        ],
+      }),
+    }),
+  )
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
+    } catch {
+      /* noop */
+    }
+  })
+  await page.goto('/board')
+  await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
+  // Arm the board's help mode (the round "?" toggle in the header).
+  const toggle = page.locator('.help-toggle').first()
+  await expect(toggle).toBeVisible()
+  await toggle.click()
+  // The « Mots » card title is now a help target; tapping it explains the card in place.
+  const title = page.locator('.help-title', { hasText: 'Mots' })
+  await expect(title).toBeVisible()
+  await title.click()
+  // The armed title renders the bubble both beside the card and at board level — take the first.
+  const bubble = page.locator('.help-bubble').first()
+  await expect(bubble).toBeVisible()
+  // « Voir le guide » deep-links to the mots guide card (no navigation off the board first).
+  await bubble.locator('.help-bubble__guide').click()
+  await expect(page).toHaveURL(/card=mots/)
+})
+
 test('tutorial vs expert mode shows / hides the ? dots', async ({ page }) => {
   // Tutorial is the default: the dot shows.
   await boot(page, '/liste')

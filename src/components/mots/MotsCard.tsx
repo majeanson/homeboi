@@ -13,6 +13,7 @@ import { formatDay, formatTime } from '../../lib/format'
 import { CATS } from '../../lib/cats'
 import { type IconName } from '../Icon'
 import { Act, Section } from '../board/Act'
+import { type HelpMode } from '../../lib/helpMode'
 import { Disclosure } from '../Disclosure'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { Modal } from '../Modal'
@@ -31,7 +32,9 @@ import { buildMot, type DetailCtx } from '../detail/adapters'
 const mediaGlyph = (k: Mot['media_kind']): IconName =>
   k === 'audio' ? 'microphone-bold' : k === 'drawing' ? 'paint-brush-bold' : k === 'image' ? 'image-square-bold' : 'envelope-bold'
 
-export function MotsCard() {
+// `help` (optional): the board's help-mode instance — when armed, the card title becomes
+// tappable → an in-place bubble explaining « Mots » with a « Voir le guide » deep-link.
+export function MotsCard({ help }: { help?: HelpMode } = {}) {
   const t = useT()
   const fn = t.mots
   const { lang } = useLang()
@@ -171,6 +174,8 @@ export function MotsCard() {
       label={fn.cardTitle}
       icon="envelope-bold"
       tint={CATS.cercle.color}
+      help={help}
+      helpKey="mots"
       // Compact: name the mots in the card's own order (waiting first — the ones that
       // want reading), falling back to the count when there are too many to name.
       compactItems={[...waiting, ...seen, ...sent].map(labelOf)}

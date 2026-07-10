@@ -652,6 +652,14 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/settings?tab=routines&sub=routines',
       },
+      {
+        label: { fr: 'Jouer', en: 'Play' },
+        detail: {
+          fr: 'Un petit coin de jeux pour les tout-petits : trouve l’objet, la journée en images, le décompte des fêtes. Tout à voix haute, aucun pointage — un espace calme, jamais une récompense.',
+          en: 'A little play corner for toddlers: find-the-object, the day in pictures, the birthday countdown. All read aloud, no scoring — a calm space, never a reward.',
+        },
+        route: '/jouer',
+      },
     ],
   },
   {

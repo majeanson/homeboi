@@ -180,6 +180,7 @@ export function Board() {
       toFinish: t.board.toFinish,
       upcoming: t.board.upcoming,
       search: t.search.title,
+      mots: t.mots.cardTitle,
     }
     return titles[k] ?? k
   })
@@ -837,7 +838,7 @@ export function Board() {
   )
   // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
   // nothing for the picked face). Guests never see another face's mots.
-  nodes.mots = ro ? null : <MotsCard />
+  nodes.mots = ro ? null : <MotsCard help={help} />
   nodes.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
   nodes.moments = <MomentPeek />
   // « L'auto » glance — the car's status today + today's rides. #28
