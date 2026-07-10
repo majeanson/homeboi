@@ -266,8 +266,8 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | 🔶³        | ➖¹       | ✅       | ✅      |
 | F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | 🔶³⁸    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
-| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | 🔶¹⁵     | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | 🔶⁶      | ❌         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | 🔶¹⁵     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | 🔶⁶      | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
 | F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | 🔶¹⁵     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
@@ -350,6 +350,22 @@ Footnotes (verdicts recorded so far):
 49. **D9 found 2026-07-10**: no board card **and** the scene route is **not in any phone-overflow e2e sweep** (`screenshots.spec`/`layout-overflow.spec` cover the six hub tabs at 360/390px, not `/search` or `/circulaires`). The layout likely reflows (grid/`Cluster`) but its phone width is **unproven** — add both routes to `OVERFLOW_CASES`. [F10/F18]
 50. **D8 soft-✅ 2026-07-10**: `StickerWallPage` has **no explicit `useAudience` branch** — the same wall renders across lenses — but it is inherently picture-first (avatar + sticker-emoji grid, no reading), so it satisfies the toddler bar by nature. Under a strict "must branch" reading this drops to ❓. [F29]
 51. **Wave S SHIPPED 2026-07-10** — the six dark D6 kinds now each have a `SEARCH_INDEX` entry (`src/lib/searchIndex.ts`) + a rendered SearchPage section: **habit** (title→`/board/habitudes`), **mot** (body-only secondary hit, like `fridgeNote`→`/board`), **meal** & **mealIdea** (title, both filtered `!recipe_id` so recipe-linked ones surface via the recipe, not twice→`/kitchen/day/:date` & `/kitchen/idees`), **group** (name; family→`/cercle/family/:id`, else `/cercle?section=social`), **trip** (title + destination/notes→`/voyage/:id`). All read warm caches / shared hooks (no new fetch): groups ride the widened `CERCLE_KEY` query; habits via `useHabits({live:false})`; meals via `useMeals()`; trips via `useTrips()`; mots via `useAllMots()`; ideas inline on `MEAL_IDEAS_KEY`. FR+EN labels added (`t.search.{habits,mots,meals,ideas,groups,trips}`). Guard: `e2e/search.spec.ts` « Wave S » test seeds/asserts one of each kind. [F5/F6/F12/F13/F22/F31×D6]
+52. **Wave T SHIPPED 2026-07-10** — the two real D8 gaps closed by folding both into
+    `ToddlerBoard` as picture-first, hear-first `BigTiles` sections (the same primitive
+    every other kid-lens section uses — no new component). **F5 Mots** « Un mot pour toi »:
+    the waiting mots for the picked face (+ Maisonnée), a drawing/photo shown in the tile,
+    a voice memo playing the sender's clip on tap (`playNarration`, TTS fallback), a text
+    mot read aloud — tinted by the sender, hidden from a guest (privacy, like the parent
+    card), presence-only (never a count). **F6 Habitudes** « Mes habitudes »: the habits
+    still asking today for the picked face, tiles carrying the SAME `habitReading` line the
+    parent `HabitudesCard`/`HabitRow` use (« 0 sur 2 verres »), read aloud on tap — a parent
+    still marks them in « Le point du jour » (read-aloud, never a mark from the kid lens).
+    Both read non-polling (`useMots({live:false})` — a new opt mirroring `useHabits` — and
+    `useHabits({live:false})`) so a locked kiosk adds no poll (the free-tier lever); both
+    self-hide when nothing waits/asks. `t.mots.kidTitle` added (FR/EN). Guard:
+    `e2e/interactions.spec.ts` « Mes habitudes » test asserts the toddler board renders a
+    due household habit as a tile and a tap does NOT fire a habits write. typecheck + 1436
+    unit tests green. [F5/F6×D8]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
@@ -422,12 +438,11 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
        `SEARCH_INDEX` entry + SearchPage section (footnote 51); cells ❌→✅. (Dessins
        was already searchable via `drawingFields`; recipe-linked meals/ideas reach
        via the recipe — filtered `!recipe_id` so they never surface twice.)
-2. [ ] 🔴 **F5×D8 / F6×D8** — **Mots & Habitudes render no toddler lens at all**
-       (Day 3): `MotsCard` isn't pulled into `ToddlerBoard`; `HabitudesPage`/
-       `HabitudesCard` import no `useAudience`. Both are child-relevant (a mot with
-       a drawing/voice; "brosse tes dents") and neither is operator-locked, so ➖
-       would be wrong. **→ Wave T** — picture-first/read-aloud treatment or a
-       written ➖.
+2. [x] 🔴 **F5×D8 / F6×D8** — Mots & Habitudes rendered no toddler lens at all
+       (Day 3): `MotsCard` wasn't pulled into `ToddlerBoard`; `HabitudesPage`/
+       `HabitudesCard` imported no `useAudience`. **DONE (Wave T) 2026-07-10** — both
+       now fold into `ToddlerBoard` as picture-first, read-aloud `BigTiles` sections
+       (« Un mot pour toi » / « Mes habitudes »); cells ❌→✅ (footnote 52).
 3. [ ] 🔴 **F30×D7** — **Jouer is fully undiscovered**: no guide card, no « ? », no
        tour (footnote 16 — the only feature dark on all three channels). **→ Wave H.**
 4. [ ] 🔴 **F29×D16** — **mur de collants has no e2e at all** (footnote, confirmed:
@@ -497,13 +512,16 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
   - _Verified:_ `e2e/search.spec.ts` « Wave S » test seeds one of each kind and
     asserts its section heading + hit link (5/5 search specs green locally);
     typecheck + 1436 unit tests green.
-- [ ] **Wave T — Toddler lens** _(entry 2; ~M)_. The two real D8 gaps only — the
-      rest of the tab-features already fold deliberately (footnote 48).
-  - [ ] **F5 Mots** — pull `MotsCard` into `ToddlerBoard` as a picture-first,
-        read-aloud card (a mot's drawing/voice is child-facing), **or** write a ➖.
-  - [ ] **F6 Habitudes** — branch `HabitudesPage`/`HabitudesCard` on `useAudience`
-        (picture-first "brosse tes dents"), **or** write a ➖.
-  - _Verify:_ `?kid=1` renders each without reading; 360px no-overflow on both.
+- [x] **Wave T — Toddler lens** _(entry 2; SHIPPED 2026-07-10)_. The two real D8 gaps
+      only — the rest of the tab-features already fold deliberately (footnote 48).
+  - [x] **F5 Mots** — folded into `ToddlerBoard` as « Un mot pour toi »: the waiting
+        mots as picture-first `BigTiles` (drawing/photo in the tile, voice memo plays
+        the clip, text read aloud), sender-tinted, guest-hidden. (footnote 52)
+  - [x] **F6 Habitudes** — folded into `ToddlerBoard` as « Mes habitudes »: the habits
+        still asking today, read-aloud tiles carrying the parent `habitReading` line.
+  - _Verified:_ `e2e/interactions.spec.ts` « Mes habitudes » renders a due habit tile +
+        asserts a tap fires no write; both sections reuse the `BigTiles` grid (no
+        hand-rolled flex → no 360px overflow); typecheck + 1436 unit tests green.
 - [ ] **Wave H — Help/tour/guide** _(entries 3, 5, 6; ~M)_. **Read `DISCOVERY.md`
       first**; merge into existing cards (32 is a ceiling); keep
       `helpRegistry.test.ts` + `guideLinks.test.ts` green.

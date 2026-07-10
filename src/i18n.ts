@@ -1748,6 +1748,8 @@ export const FR = {
     placeholder: 'Écris un mot…',
     send: 'Laisser le mot',
     cardTitle: 'Mots',
+    // Toddler lens (ToddlerBoard) — the picture-first « un mot t'attend » section.
+    kidTitle: 'Un mot pour toi',
     from: 'De',
     forYou: 'Pour toi',
     forMaisonnee: 'Pour la Maisonnée',

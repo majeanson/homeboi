@@ -5,13 +5,18 @@ import { Icon, InlineIcon } from '../Icon'
 import { useSpeak } from '../../lib/speak'
 import { pictoFor } from '../../lib/picto'
 import { formatTime } from '../../lib/format'
+import { imgUrl } from '../../lib/image'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { useBoardCards, isCardVisible } from '../../lib/boardCards'
 import { slotLabel as slotLabelFor } from '../../lib/mealSlots'
 import { weatherIcon, weatherTint, weatherTip, type Weather } from '../../lib/weather'
+import { useProfile } from '../../lib/profile'
+import { isGuest } from '../../lib/device'
+import { useMots, waitingMots, type Mot } from '../../lib/mots'
+import { useHabits, dueToday, habitReading, habitStatusOn, habitToday } from '../../lib/habits'
 import type { BoardModel } from '../../lib/boardModel'
 import type { Todo } from '../../lib/todos'
-import { colorOf, type BoardData, type EventRow, type MealRow } from './types'
+import { colorOf, nameOf, type BoardData, type EventRow, type MealRow } from './types'
 import { BoardCanvas } from './BoardCanvas'
 import { Notes } from './Notes'
 import { DayNote } from './DayNote'
@@ -57,6 +62,10 @@ export function ToddlerBoard({
   // Which Grille cards this device shows (Réglages ▸ Affichage ▸ Disposition) —
   // only `fil` is consulted here, for « Le fil du jour » toddler section.
   const boardCards = useBoardCards()
+  // The picked face (« Aujourd'hui » row) — the same private-ish filter the parent
+  // MotsCard / HabitudesCard use: a mot / habit for one child shows only when that
+  // child is picked; « Maisonnée » sees only the family-wide ones.
+  const { memberId: face } = useProfile()
 
   const memberColor = (id: string | null) => colorOf(data?.members ?? [], id)
   const slotLabel = (slot: string) => slotLabelFor(slot, t)
@@ -69,6 +78,56 @@ export function ToddlerBoard({
   const otherMeals = model.meals.otherToday
   const otherTomorrowMeals = model.meals.otherTomorrow
   const leftovers = model.leftovers
+
+  // « Un mot pour toi » (F5, D8) — the waiting mots for the picked face (+ Maisonnée),
+  // as picture-first hear-first tiles: a drawing/photo shows in the tile, a voice memo
+  // plays the parent's clip on tap (TTS fallback), a text mot is read aloud. Hidden from
+  // a guest (privacy, like the parent MotsCard). Non-polling read (like HabitudesCard) so
+  // a locked kiosk doesn't add /api/mots to its poll. Presence only — never a count.
+  const fnMots = t.mots
+  const mots = useMots({ live: false })
+  const motGlyph = (k: Mot['media_kind']) =>
+    k === 'audio' ? '🎤' : k === 'drawing' ? '🎨' : k === 'image' ? '📷' : '💌'
+  const motLabel = (m: Mot) =>
+    m.text.split('\n').find((l) => l.trim())?.trim() ||
+    (m.media_kind === 'audio' ? fnMots.memo : m.media_kind === 'drawing' ? fnMots.drawing : m.media_kind === 'image' ? fnMots.photo : fnMots.untitled)
+  const motTiles: Tile[] = isGuest()
+    ? []
+    : waitingMots(mots, face).map((m) => {
+        const from = nameOf(data?.members ?? [], m.author_member_id)
+        const fromLine = from ? `${fnMots.from} ${from}` : null
+        const isPic = (m.media_kind === 'drawing' || m.media_kind === 'image') && m.media_key
+        return {
+          key: m.id,
+          icon: motGlyph(m.media_kind),
+          image: isPic ? imgUrl(m.media_key!) : undefined,
+          label: motLabel(m),
+          sub: fromLine ?? undefined,
+          narration: [motLabel(m), fromLine].filter(Boolean).join('. '),
+          // A voice memo plays the sender's own clip (falls back to TTS on any error).
+          audioKey: m.media_kind === 'audio' ? m.media_key : undefined,
+          color: memberColor(m.author_member_id) ?? undefined,
+        }
+      })
+
+  // « Mes habitudes » (F6, D8) — the habits still asking today for the picked face, as
+  // read-aloud tiles (« brosse tes dents », « 0 sur 2 verres »). The SAME reading the
+  // parent HabitudesCard/HabitRow use (lib/habits), so the two lenses never drift. A tap
+  // hears the habit; a parent still marks it in « Le point du jour ». Non-polling read,
+  // same free-tier reasoning as the parent card. Never a streak, never a rank (calm).
+  const habitsToday = habitToday()
+  const { data: habitsData } = useHabits({ live: false })
+  const habitTiles: Tile[] = dueToday(habitsData?.habits ?? [], habitsData?.days ?? [], face, habitsToday).map((h) => {
+    const reading = habitReading(h, habitStatusOn(h, habitsData?.days ?? [], habitsToday), t.habits)
+    return {
+      key: h.id,
+      icon: h.icon || '🔁',
+      label: h.title,
+      sub: reading || undefined,
+      narration: reading ? `${h.title}. ${reading}` : h.title,
+      color: h.colour ?? memberColor(h.member_id) ?? undefined,
+    }
+  })
 
   const eventTiles = (rows: EventRow[]): Tile[] =>
     rows.map((e) => ({
@@ -161,6 +220,9 @@ export function ToddlerBoard({
             {weatherHero}
           </div>
           <Notes notes={data.notes ?? []} members={data.members} toddler />
+          {/* « Un mot pour toi » — the mots waiting for the picked child, picture-first
+              and hear-first. Self-hides when nothing waits (empty tiles → no section). */}
+          {kidSection(fnMots.kidTitle, motTiles)}
           {/* A big, friendly door into "Mes dessins" — the kid's own drawing
               collection (draw new ones with handwriting lines / tracing / colour-in
               / stickers, and see everything they've kept). */}
@@ -245,6 +307,10 @@ export function ToddlerBoard({
               color: memberColor(td.member_id) ?? undefined,
             })),
           ])}
+          {/* « Mes habitudes » — what today is still asking (« brosse tes dents »),
+              read aloud. Same face filter + reading as the parent card; self-hides
+              when nothing is due. A parent marks them in « Le point du jour ». */}
+          {kidSection(t.habits.title, habitTiles)}
           {data.tomorrowNote && (
             <DayNote note={data.tomorrowNote} members={data.members} label={t.board.prepTomorrow} toddler />
           )}

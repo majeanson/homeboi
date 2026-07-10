@@ -1634,6 +1634,8 @@ export const EN: typeof FR = {
     placeholder: 'Write a note…',
     send: 'Leave the note',
     cardTitle: 'Notes',
+    // Toddler lens (ToddlerBoard) — the picture-first “a note is waiting” section.
+    kidTitle: 'A note for you',
     from: 'From',
     forYou: 'For you',
     forMaisonnee: 'For the Household',

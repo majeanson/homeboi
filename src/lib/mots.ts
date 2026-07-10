@@ -82,8 +82,16 @@ export function waitingRecipientIds(mots: Mot[]): Set<string> {
 // The RAW mots cache — every live mot, INCLUDING not-yet-surfaced scheduled ones. Only the
 // sender outbox (which must show + cancel a « Plus tard ») reads this; everything the
 // RECIPIENT sees goes through useMots below, which gates the schedule.
-export function useAllMots(): Mot[] {
-  const { data } = useQuery({ queryKey: MOTS_KEY, queryFn: () => api<{ mots: Mot[] }>('mots'), ...live })
+//
+// `live: false` shares the cache off the poll cadence (like useHabits/useCarnets): the
+// toddler board reads mots to hear « un mot pour toi » without adding /api/mots to a locked
+// kiosk's poll — realtime nudges + focus refetch still keep it fresh (the free-tier lever).
+export function useAllMots(opts?: { live?: boolean }): Mot[] {
+  const { data } = useQuery({
+    queryKey: MOTS_KEY,
+    queryFn: () => api<{ mots: Mot[] }>('mots'),
+    ...(opts?.live === false ? { staleTime: 5 * 60_000 } : live),
+  })
   return data?.mots ?? []
 }
 
@@ -91,9 +99,9 @@ export function useAllMots(): Mot[] {
 // are gated HERE — the single chokepoint — so a not-yet-surfaced mot is absent from the
 // inbox, the « Déjà vus » group AND the face dot at once. The live poll re-renders this, so
 // a scheduled mot appears within a poll interval of its surface_at (calm: no push).
-export function useMots(): Mot[] {
+export function useMots(opts?: { live?: boolean }): Mot[] {
   const now = Date.now() / 1000
-  return useAllMots().filter((m) => isSurfaced(m, now))
+  return useAllMots(opts).filter((m) => isSurfaced(m, now))
 }
 
 // Does this specific face have a mot waiting for them? Used by the face-row dot.

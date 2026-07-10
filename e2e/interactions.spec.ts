@@ -1278,6 +1278,26 @@ test.describe('fridge notes', () => {
   })
 })
 
+// F6 × D8 (Wave T): the toddler board now folds « Mes habitudes » in as read-aloud
+// tiles, so a pre-reader hears what today is still asking (« brosse tes dents »).
+test('toddler board shows « Mes habitudes » due today, read-aloud not marked', async ({ page }) => {
+  await APP('/board', 'toddler')(page)
+  await settle(page, '.kid__main')
+  // « Bouger un peu » is an every-day 'hours' household habit — due today under any
+  // clock — so it surfaces as a picture-first hear-first tile (no frozen clock needed).
+  const tile = page.locator('.today-kid__section .bigtile', { hasText: 'Bouger un peu' })
+  await expect(tile).toBeVisible()
+  // Reading is a nicety, not a mark: a tap on a habit tile must NOT fire a habits write
+  // (a parent still marks it in « Le point du jour »).
+  let wrote = false
+  page.on('request', (r) => {
+    if (r.method() !== 'GET' && new URL(r.url()).pathname.endsWith('/api/habits')) wrote = true
+  })
+  await tile.click()
+  await expect(tile).toBeVisible()
+  expect(wrote).toBe(false)
+})
+
 test('toddler reads a step aloud, then starts + finishes it', async ({ page }) => {
   await APP('/routines', 'toddler')(page)
   await settle(page, '.kid')
