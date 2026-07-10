@@ -22,6 +22,9 @@ import {
   familyReachableKeys,
   worldClustersFrom,
   buildWorld,
+  islandFaceLayout,
+  layoutIslands,
+  layoutFamilyForest,
   daysUntilBirthday,
   ageOnNextBirthday,
   parseBirthday,
@@ -799,5 +802,202 @@ describe('worldClustersFrom', () => {
     expect(social?.groupKind).toBe('friends')
     // social comes after the family in priority order
     expect(clusters.findIndex((c) => c.kind === 'group')).toBeGreaterThan(clusters.findIndex((c) => c.kind === 'family'))
+  })
+})
+
+// ---- Graph geometry ---------------------------------------------------------
+// These pin the bug that made Social ▸ Liens unreadable: a ring whose radius came from
+// a constant cap, so N faces were dealt onto a circle with room for far fewer.
+
+const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
+const minSpacing = (pts: { x: number; y: number }[]) => {
+  let m = Infinity
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) m = Math.min(m, dist(pts[i], pts[j]))
+  return m
+}
+
+describe('islandFaceLayout', () => {
+  const SLOT = 60
+
+  it('never lets two faces on an island overlap, at any size', () => {
+    // 2..40 people. The regression: 18 faces used to land on a radius-84 ring.
+    for (let n = 2; n <= 40; n++) {
+      const { offsets } = islandFaceLayout(n, SLOT)
+      expect(offsets).toHaveLength(n)
+      expect(minSpacing(offsets), `${n} faces sit closer than one slot apart`).toBeGreaterThanOrEqual(SLOT * 0.99)
+    }
+  })
+
+  it('grows the ring with the count instead of capping it', () => {
+    const r6 = islandFaceLayout(6, SLOT).r
+    const r18 = islandFaceLayout(18, SLOT).r
+    const r30 = islandFaceLayout(30, SLOT).r
+    expect(r18).toBeGreaterThan(r6)
+    expect(r30).toBeGreaterThan(r18)
+  })
+
+  it('keeps the inner ring a full slot inside the outer one', () => {
+    const { offsets, r } = islandFaceLayout(9, SLOT) // 6 outer + 3 inner
+    const inner = Math.min(...offsets.map((o) => Math.hypot(o.x, o.y)))
+    expect(r - inner).toBeGreaterThanOrEqual(SLOT * 1.04)
+  })
+
+  it('centres a lone face', () => {
+    expect(islandFaceLayout(1, SLOT).offsets).toEqual([{ x: 0, y: 0 }])
+  })
+})
+
+describe('layoutIslands', () => {
+  const ppl = buildPeople([contact('a', 'Ana'), contact('b', 'Bo'), contact('c', 'Cy')], [member('m1', 'Moi')])
+  const byKey = new Map(ppl.map((p) => [p.key, p]))
+  const mk = personKey('member', 'm1')
+  const ca = personKey('contact', 'a')
+  const cb = personKey('contact', 'b')
+  const cc = personKey('contact', 'c')
+  const OPTS = { face: 50, pad: 20, gap: 70, labelH: 30 }
+  const mid = (p: { cx: number; cy: number }) => ({ x: p.cx, y: p.cy })
+
+  it('centres the household and orbits the rest around it', () => {
+    const world = buildWorld(
+      ppl,
+      [],
+      [
+        { id: 'household', name: 'Maison', kind: 'household' as const, colour: null, memberKeys: [mk] },
+        { id: 'g1', name: 'Amis', kind: 'group' as const, colour: null, memberKeys: [ca, cb] },
+      ],
+      'Autres',
+    )
+    const l = layoutIslands(world, byKey, OPTS)!
+    const house = l.placed.find((p) => p.island.kind === 'household')!
+    const amis = l.placed.find((p) => p.island.id === 'g1')!
+    expect(l.placed.some((p) => p.island.kind === 'others')).toBe(true) // c is unaffiliated
+    expect(dist(mid(house), mid(amis))).toBeGreaterThan(house.outerR)
+    expect(amis.faces).toHaveLength(2)
+  })
+
+  it('centres a lone circle rather than orbiting nothing (Social has no household)', () => {
+    const world = buildWorld(ppl, [], [{ id: 'g1', name: 'Amis', kind: 'group' as const, colour: null, memberKeys: [mk, ca, cb, cc] }], 'Autres')
+    const l = layoutIslands(world, byKey, OPTS)!
+    expect(l.placed).toHaveLength(1)
+    expect(l.placed[0].cx).toBeCloseTo(l.width / 2, 0)
+  })
+
+  it('keeps two islands from overlapping, and every face inside its halo', () => {
+    const world = buildWorld(
+      ppl,
+      [],
+      [
+        { id: 'g1', name: 'Un', kind: 'group' as const, colour: null, memberKeys: [mk, ca] },
+        { id: 'g2', name: 'Deux', kind: 'group' as const, colour: null, memberKeys: [cb, cc] },
+      ],
+      'Autres',
+    )
+    const l = layoutIslands(world, byKey, OPTS)!
+    const [a, b] = l.placed
+    expect(dist(mid(a), mid(b))).toBeGreaterThanOrEqual(a.outerR + b.outerR)
+    for (const isl of l.placed) for (const f of isl.faces) expect(Math.hypot(f.x, f.y) + OPTS.face / 2).toBeLessThanOrEqual(isl.outerR + 0.01)
+  })
+
+  it('emits a positive-coordinate box that contains every island', () => {
+    const world = buildWorld(ppl, [], [{ id: 'g1', name: 'Amis', kind: 'group' as const, colour: null, memberKeys: [ca, cb] }], 'Autres')
+    const l = layoutIslands(world, byKey, OPTS)!
+    for (const isl of l.placed) {
+      expect(isl.cx - isl.outerR).toBeGreaterThanOrEqual(0)
+      expect(isl.cy - isl.outerR).toBeGreaterThanOrEqual(0)
+      expect(isl.cx + isl.outerR).toBeLessThanOrEqual(l.width)
+      expect(isl.cy + isl.outerR).toBeLessThanOrEqual(l.height)
+    }
+  })
+
+  it('returns null for an empty world', () => {
+    expect(layoutIslands({ islands: [], bridges: [] }, byKey, OPTS)).toBeNull()
+  })
+})
+
+describe('layoutFamilyForest', () => {
+  const OPTS = { rowH: 100, colW: 100, compGap: 50 }
+  const yOf = (l: NonNullable<ReturnType<typeof layoutFamilyForest>>, key: string) => l.nodes.find((n) => n.p.key === key)!.y
+
+  // Two families, each parent→child; the two parents are friends, and one of them is
+  // also friends with someone who has no family of their own.
+  const contacts = [contact('p1', 'Pa', 'Un'), contact('k1', 'Kid', 'Un'), contact('p2', 'Pb', 'Deux'), contact('k2', 'Kidb', 'Deux'), contact('lone', 'Solo')]
+  const people = buildPeople(contacts, [])
+  const K = (id: string) => personKey('contact', id)
+  const family = [klink('p1', 'contact', 'k1', 'contact', 'parent'), klink('p2', 'contact', 'k2', 'contact', 'parent')]
+  const friendship = [klink('p1', 'contact', 'p2', 'contact', 'friend'), klink('p1', 'contact', 'lone', 'contact', 'friend')]
+
+  it('stack: keeps Famille’s behaviour — blood only, trees under one another', () => {
+    const l = layoutFamilyForest(people, [...family, ...friendship], { ...OPTS, flow: 'stack', compMinW: 600 })!
+    expect(l.nodes.map((n) => n.p.key).sort()).toEqual([K('p1'), K('k1'), K('p2'), K('k2')].sort()) // `lone` has no family → dropped
+    expect(l.socialEdges).toHaveLength(0)
+    expect(l.frames).toHaveLength(0)
+    expect(l.seps).toHaveLength(1) // one divider between the two stacked trees
+    expect(l.familyEdges).toHaveLength(2)
+    // The two trees never share bands: family Deux sits entirely below family Un.
+    expect(yOf(l, K('p2'))).toBeGreaterThan(yOf(l, K('k1')))
+  })
+
+  it('row: draws the friendships between families and keeps blood ties separate', () => {
+    const l = layoutFamilyForest(people, [...family, ...friendship], { ...OPTS, flow: 'row', socialTies: true, includeIsolated: true })!
+    expect(l.familyEdges).toHaveLength(2)
+    expect(l.socialEdges).toHaveLength(2) // p1↔p2 and p1↔lone
+    expect(l.nodes).toHaveLength(5) // the lone friend is a tree of one, not dropped
+  })
+
+  it('row: a friendship between two parents puts their families on the same band', () => {
+    const l = layoutFamilyForest(people, [...family, ...friendship], { ...OPTS, flow: 'row', socialTies: true, includeIsolated: true })!
+    expect(yOf(l, K('p1'))).toBe(yOf(l, K('p2'))) // the friendship reads as a level line
+    expect(yOf(l, K('k1'))).toBe(yOf(l, K('k2')))
+    expect(yOf(l, K('k1'))).toBeGreaterThan(yOf(l, K('p1'))) // children still below parents
+    expect(yOf(l, K('lone'))).toBe(yOf(l, K('p1'))) // the lone friend aligns on his friend
+  })
+
+  it('row: aligns a cross-generation friendship on the friends themselves', () => {
+    // p1 (a parent) is friends with k2 (the other family's CHILD) → those two align,
+    // which lifts family Deux one band up.
+    const cross = [klink('p1', 'contact', 'k2', 'contact', 'friend')]
+    const l = layoutFamilyForest(people, [...family, ...cross], { ...OPTS, flow: 'row', socialTies: true, includeIsolated: true })!
+    expect(yOf(l, K('p1'))).toBe(yOf(l, K('k2')))
+    expect(yOf(l, K('p2'))).toBeLessThan(yOf(l, K('p1')))
+  })
+
+  it('row: frames and names each family, never a lone friend', () => {
+    const names = new Map([
+      [K('p1'), { name: 'Famille Un', colour: '#111' }],
+      [K('k1'), { name: 'Famille Un', colour: '#111' }],
+      [K('p2'), { name: 'Famille Deux', colour: null }],
+      [K('k2'), { name: 'Famille Deux', colour: null }],
+      [K('lone'), { name: 'Le hockey', colour: null }],
+    ])
+    const l = layoutFamilyForest(people, [...family, ...friendship], {
+      ...OPTS,
+      flow: 'row',
+      socialTies: true,
+      includeIsolated: true,
+      framePadX: 10,
+      framePadY: 40,
+      clusterOf: (k) => names.get(k) ?? null,
+    })!
+    expect(l.frames.map((f) => f.name).sort()).toEqual(['Famille Deux', 'Famille Un'])
+    expect(l.frames.find((f) => f.name === 'Famille Un')!.colour).toBe('#111')
+    // Every framed family's faces sit inside its own frame, and nobody else's.
+    for (const f of l.frames) {
+      const inside = l.nodes.filter((n) => n.x >= f.x && n.x <= f.x + f.w && n.y >= f.y && n.y <= f.y + f.h)
+      expect(inside).toHaveLength(f.count)
+    }
+    // Two frames never overlap.
+    const [a, b] = l.frames
+    expect(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h).toBe(false)
+  })
+
+  it('ignores a friendship inside one family — it adds nothing to read', () => {
+    const inFamily = [klink('p1', 'contact', 'k1', 'contact', 'friend')]
+    const l = layoutFamilyForest(people, [...family, ...inFamily], { ...OPTS, flow: 'row', socialTies: true, includeIsolated: true })!
+    expect(l.socialEdges).toHaveLength(0)
+  })
+
+  it('returns null when there is nobody to place', () => {
+    expect(layoutFamilyForest([], [], { ...OPTS, flow: 'stack' })).toBeNull()
+    expect(layoutFamilyForest(buildPeople([contact('x', 'X')], []), [], { ...OPTS, flow: 'stack' })).toBeNull() // no family link
   })
 })

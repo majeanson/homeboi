@@ -717,8 +717,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
         detail: {
-          fr: 'Liste (le répertoire par famille), Liens (touche un visage, ses liens s’affichent autour) et Arbre (les générations). La rangée de visages relit tout du point de vue de la personne choisie.',
-          en: 'List (the directory by family), Links (tap a face, their ties fan out) and Tree (the generations). The face row rereads everything from the picked person’s perspective.',
+          fr: 'Liste (le répertoire par famille), Liens (touche un visage, ses liens s’affichent autour) et Arbre (les générations). La rangée de visages relit tout du point de vue de la personne choisie. Dans Social, Liens montre plutôt tes cercles — chaque famille, chaque groupe — et Arbre la famille de chaque ami, reliée aux autres par les amitiés.',
+          en: 'List (the directory by family), Links (tap a face, their ties fan out) and Tree (the generations). The face row rereads everything from the picked person’s perspective. Under Social, Links instead shows your circles — every family, every group — and Tree shows each friend’s family, joined to the others by the friendships between them.',
         },
       },
       {

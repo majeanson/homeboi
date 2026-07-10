@@ -1292,6 +1292,475 @@ export function buildWorld(
   return { islands, bridges }
 }
 
+// ---- Graph geometry — what the whole-web views draw --------------------------
+// The cercle's overview graphs are hand-rolled SVG, and each used to hide its layout
+// inside its own component, where it couldn't be tested and quietly drifted: the old
+// Social ring capped its radius at a constant, so eighteen faces were dealt onto a
+// circle with room for nine. The math lives here now — pure, deterministic, tested.
+//
+//   • layoutIslands()      — named circles + the bridges between them. Drawn by
+//                            « Notre monde » and by Social ▸ Liens.
+//   • layoutFamilyForest() — generation-banded family trees. Famille ▸ Arbre stacks
+//                            them; Social ▸ Arbre sets them side by side and draws the
+//                            FRIENDSHIPS that tie one family to the next.
+
+// Even ring of `n` offsets at radius `r`, starting from `start` (default top).
+function ringOffsets(n: number, r: number, start = -Math.PI / 2): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = []
+  for (let i = 0; i < n; i++) {
+    const a = start + (2 * Math.PI * i) / n
+    out.push({ x: r * Math.cos(a), y: r * Math.sin(a) })
+  }
+  return out
+}
+
+// Face offsets inside an island + the ring radius they sit on. Every radius is derived
+// from the COUNT, never from a constant — a constant cap is what dealt eighteen faces
+// onto a circle with room for nine. `slot` is the width one face reserves (the avatar,
+// plus room for its name where one is drawn).
+//
+// A ring of `m` slots needs `r ≥ (slot / 2) / sin(π / m)`, so its chord — the gap
+// between two neighbours — never falls under one slot. Past 8 people a second, inner
+// ring keeps the island from ballooning, offset half a step so its faces sit in the
+// outer ring's gaps, and pushed a full slot inside it so the two rings can't collide.
+export function islandFaceLayout(n: number, slot: number): { offsets: { x: number; y: number }[]; r: number } {
+  if (n <= 1) return { offsets: [{ x: 0, y: 0 }], r: slot * 0.62 }
+  const ringR = (m: number) => Math.max(slot * 0.95, (slot * 0.62) / Math.sin(Math.PI / m))
+  if (n <= 8) {
+    const r = ringR(n)
+    return { offsets: ringOffsets(n, r), r }
+  }
+  const outerN = Math.ceil(n * 0.6)
+  const innerN = n - outerN
+  const innerR = ringR(innerN)
+  const outerR = Math.max(ringR(outerN), innerR + slot * 1.05)
+  return {
+    offsets: [...ringOffsets(outerN, outerR), ...ringOffsets(innerN, innerR, -Math.PI / 2 + Math.PI / Math.max(1, innerN))],
+    r: outerR,
+  }
+}
+
+export interface IslandLayoutOpts {
+  face: number // avatar disc diameter
+  pad: number // breathing room between the outer face ring and the halo
+  gap: number // between two islands
+  labelH: number // room under an island for its name + count
+  /** Width one face reserves on its ring. Defaults to `face`; widen it where a name
+   *  is drawn under the disc (Social ▸ Liens) so the labels can't collide. */
+  slot?: number
+}
+export interface PlacedIsland {
+  island: WorldIsland
+  cx: number
+  cy: number
+  outerR: number
+  faces: { p: Person; x: number; y: number }[] // x/y are offsets from the island centre
+}
+export interface PlacedBridge {
+  a: PlacedIsland
+  b: PlacedIsland
+  viaKeys: string[]
+  key: string
+}
+export interface IslandLayout {
+  placed: PlacedIsland[]
+  bridges: PlacedBridge[]
+  width: number
+  height: number
+}
+
+// Place every island: a household island (if any) anchors the centre and the rest
+// orbit it, each island's angular share scaled to its own size so a big family doesn't
+// crowd a small group. Returns a positive-coordinate box ready for a viewBox.
+export function layoutIslands(world: World, byKey: Map<string, Person>, o: IslandLayoutOpts): IslandLayout | null {
+  const islands = world.islands
+  if (islands.length === 0) return null
+
+  const slot = o.slot ?? o.face
+  const sized = new Map<string, { faces: { p: Person; x: number; y: number }[]; outerR: number }>()
+  for (const isl of islands) {
+    const ppl = isl.memberKeys.map((k) => byKey.get(k)).filter((p): p is Person => !!p)
+    const fl = islandFaceLayout(ppl.length, slot)
+    const faces = ppl.map((p, i) => ({ p, x: fl.offsets[i].x, y: fl.offsets[i].y }))
+    sized.set(isl.id, { faces, outerR: fl.r + o.face / 2 + o.pad })
+  }
+  const outerR = (id: string) => sized.get(id)!.outerR
+
+  // The Maisonnée sits at the centre; everything else orbits it. (No household — as in
+  // Social, where you are not one of the circles — the ring just fills the circle.)
+  const centre = islands.find((i) => i.kind === 'household') ?? null
+  const ring = islands.filter((i) => i !== centre)
+
+  const pos = new Map<string, { x: number; y: number }>()
+  if (centre) pos.set(centre.id, { x: 0, y: 0 })
+
+  if (ring.length === 1 && !centre) {
+    pos.set(ring[0].id, { x: 0, y: 0 }) // a lone circle centres rather than orbiting nothing
+  } else if (ring.length) {
+    const rs = ring.map((i) => outerR(i.id))
+    const maxR = Math.max(...rs)
+    const centreR = centre ? outerR(centre.id) : 0
+    const arc = ring.reduce((s, _i, idx) => s + 2 * rs[idx] + o.gap, 0)
+    const RR = Math.max(arc / (2 * Math.PI), centreR + maxR + o.gap, maxR + o.gap)
+    // Angular width per island, scaled to fill the full circle (spacing ∝ size).
+    const widths = ring.map((_i, idx) => (2 * rs[idx] + o.gap) / RR)
+    const sumW = widths.reduce((a, b) => a + b, 0) || 1
+    const scale = (2 * Math.PI) / sumW
+    let ang = -Math.PI / 2
+    ring.forEach((isl, idx) => {
+      const wid = widths[idx] * scale
+      const a = ang + wid / 2
+      pos.set(isl.id, { x: RR * Math.cos(a), y: RR * Math.sin(a) })
+      ang += wid
+    })
+  }
+
+  // Bounds → translate into a positive viewBox with a margin (+ room for labels).
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const isl of islands) {
+    const c = pos.get(isl.id)!
+    const r = outerR(isl.id)
+    minX = Math.min(minX, c.x - r)
+    maxX = Math.max(maxX, c.x + r)
+    minY = Math.min(minY, c.y - r)
+    maxY = Math.max(maxY, c.y + r + o.labelH)
+  }
+  const M = 40
+  const dx = M - minX
+  const dy = M - minY
+  const placedById = new Map<string, PlacedIsland>()
+  for (const isl of islands) {
+    const c = pos.get(isl.id)!
+    const s = sized.get(isl.id)!
+    placedById.set(isl.id, { island: isl, cx: c.x + dx, cy: c.y + dy, outerR: s.outerR, faces: s.faces })
+  }
+  const placed = islands.map((i) => placedById.get(i.id)!)
+  const bridges: PlacedBridge[] = world.bridges
+    .map((b) => {
+      const a = placedById.get(b.aId)
+      const bb = placedById.get(b.bId)
+      return a && bb ? { a, b: bb, viaKeys: b.viaKeys, key: `${b.aId}|${b.bId}` } : null
+    })
+    .filter((b): b is PlacedBridge => !!b)
+
+  return { placed, bridges, width: maxX - minX + M * 2, height: maxY - minY + M * 2 }
+}
+
+// ---- The family forest ------------------------------------------------------
+
+export interface ForestOpts {
+  rowH: number // one generation band
+  colW: number // one person's column within a band
+  compGap: number // between two trees
+  /** 'stack' — trees under one another (Famille). 'row' — side by side (Social). */
+  flow: 'stack' | 'row'
+  /** Draw + align on the non-family links that join two trees (Social's friendships). */
+  socialTies?: boolean
+  /** Keep a person with no family link at all (a friend who is nobody's parent). */
+  includeIsolated?: boolean
+  /** A floor on each tree's width — 'stack' fills the surface, 'row' hugs its content. */
+  compMinW?: number
+  /** Room above a tree for its family name. */
+  labelH?: number
+  /** Breathing room left and right of a tree's frame. */
+  framePadX?: number
+  /** Room the frame leaves above the first band's faces and below the last's. */
+  framePadY?: number
+  /** Stable left→right position within a band (the directory's family order). */
+  orderOf?: (key: string) => number
+  /** Names + tints a tree's frame. */
+  clusterOf?: (key: string) => { name: string; colour: string | null } | null
+}
+export interface ForestPoint {
+  x: number
+  y: number
+}
+export interface ForestEdge {
+  a: ForestPoint
+  b: ForestPoint
+  key: string
+}
+export interface ForestFrame {
+  key: string
+  name: string
+  colour: string | null
+  count: number
+  x: number
+  y: number
+  w: number
+  h: number
+}
+export interface ForestLayout {
+  nodes: { p: Person; x: number; y: number }[]
+  familyEdges: ForestEdge[]
+  socialEdges: ForestEdge[]
+  frames: ForestFrame[]
+  seps: number[] // y of the divider between two stacked trees ('stack' only)
+  width: number
+  height: number
+}
+
+// The family group a tree belongs to: whichever cluster most of its members sit in.
+function majorityCluster(
+  members: Person[],
+  clusterOf?: (key: string) => { name: string; colour: string | null } | null,
+): { name: string; colour: string | null } | null {
+  if (!clusterOf) return null
+  const tally = new Map<string, { name: string; colour: string | null; n: number }>()
+  for (const p of members) {
+    const c = clusterOf(p.key)
+    if (!c) continue
+    const e = tally.get(c.name) ?? { name: c.name, colour: c.colour, n: 0 }
+    e.n++
+    tally.set(c.name, e)
+  }
+  let best: { name: string; colour: string | null; n: number } | null = null
+  for (const e of tally.values()) if (!best || e.n > best.n) best = e
+  return best && { name: best.name, colour: best.colour }
+}
+
+// Lay out every family as its own generation-banded tree.
+//
+// 'stack' (Famille ▸ Arbre) puts each tree under the last, separated by a divider —
+// two unrelated families never share a band, so nobody's grandmother lines up with
+// somebody's toddler.
+//
+// 'row' (Social ▸ Arbre) sets the trees side by side and draws the friendships that
+// join them. Those friendships also ALIGN the trees: if Francis (a parent) is friends
+// with Michelle (a parent), their two families are shifted so both land on the same
+// band and the friendship reads as a horizontal line. A friend with no family of their
+// own is a tree of one.
+export function layoutFamilyForest(people: Person[], links: ContactLink[], o: ForestOpts): ForestLayout | null {
+  const gen = generationOf(people, links)
+  const members = o.includeIsolated ? people : people.filter((p) => gen.has(p.key))
+  if (members.length === 0) return null
+  const memberKeys = new Set(members.map((p) => p.key))
+  // An isolated person is a band-0 tree of one; within a tree, gen's origin is
+  // arbitrary but consistent, which is all the bands need.
+  const bandOf = (k: string) => gen.get(k) ?? 0
+  const compMinW = o.compMinW ?? 0
+  const labelH = o.labelH ?? 0
+  const framePadX = o.framePadX ?? 0
+  const framePadY = o.framePadY ?? 0
+  const orderOf = o.orderOf ?? (() => Number.MAX_SAFE_INTEGER)
+
+  // Trees = connected components over the FAMILY edges (the same edge set generationOf
+  // walked), so a social tie never fuses two families into one tree.
+  const uf = new UnionFind()
+  members.forEach((p) => uf.add(p.key))
+  for (const l of links) {
+    if (!isFamilyRel(l.type)) continue
+    const { aKey, bKey } = linkEndpoints(l)
+    if (memberKeys.has(aKey) && memberKeys.has(bKey)) uf.union(aKey, bKey)
+  }
+  const compOf = (k: string) => uf.find(k)
+
+  interface Comp {
+    root: string
+    members: Person[]
+    bands: Map<number, Person[]> // absolute band (gen) → people
+    minB: number
+    maxB: number
+    width: number
+    off: number // added to a member's band to place it on the shared grid
+  }
+  const byRoot = new Map<string, Person[]>()
+  for (const p of members) {
+    const r = compOf(p.key)
+    if (!byRoot.has(r)) byRoot.set(r, [])
+    byRoot.get(r)!.push(p)
+  }
+  const comps: Comp[] = [...byRoot.entries()].map(([root, ms]) => {
+    const bands = new Map<number, Person[]>()
+    for (const p of ms) {
+      const b = bandOf(p.key)
+      if (!bands.has(b)) bands.set(b, [])
+      bands.get(b)!.push(p)
+    }
+    for (const row of bands.values()) row.sort((a, b) => orderOf(a.key) - orderOf(b.key) || a.name.localeCompare(b.name))
+    const keys = [...bands.keys()]
+    const maxCount = Math.max(...[...bands.values()].map((b) => b.length))
+    return {
+      root,
+      members: ms,
+      bands,
+      minB: Math.min(...keys),
+      maxB: Math.max(...keys),
+      width: Math.max(compMinW, maxCount * o.colW),
+      off: 0,
+    }
+  })
+  const compByRoot = new Map(comps.map((c) => [c.root, c]))
+
+  // Cross-tree social ties, one per unordered pair. `via` is the first edge seen for
+  // the pair of TREES — the delta that aligns them.
+  const seenPair = new Set<string>()
+  const socialPairs: { a: string; b: string }[] = []
+  const meta = new Map<string, { ca: string; cb: string; a: string; b: string; n: number }>()
+  if (o.socialTies) {
+    for (const l of links) {
+      if (isFamilyRel(l.type)) continue
+      const { aKey, bKey } = linkEndpoints(l)
+      if (aKey === bKey || !memberKeys.has(aKey) || !memberKeys.has(bKey)) continue
+      const ca = compOf(aKey)
+      const cb = compOf(bKey)
+      if (ca === cb) continue // a friendship inside one family adds nothing to read
+      const pk = aKey < bKey ? `${aKey}|${bKey}` : `${bKey}|${aKey}`
+      if (seenPair.has(pk)) continue
+      seenPair.add(pk)
+      socialPairs.push({ a: aKey, b: bKey })
+      const mk = ca < cb ? `${ca}|${cb}` : `${cb}|${ca}`
+      const e = meta.get(mk)
+      if (e) e.n++
+      else meta.set(mk, { ca, cb, a: aKey, b: bKey, n: 1 })
+    }
+  }
+
+  // Band alignment. Anchor the biggest tree, then absorb trees along their strongest
+  // friendship first (greedy, so the busiest tie is the one drawn flat).
+  const bySize = [...comps].sort((a, b) => b.members.length - a.members.length || a.root.localeCompare(b.root))
+  const order: Comp[] = []
+  if (o.flow === 'stack' || meta.size === 0) {
+    for (const c of comps) c.off = -c.minB
+    order.push(...bySize)
+  } else {
+    const fixed = new Set<string>()
+    const anchor = bySize[0]
+    anchor.off = -anchor.minB
+    fixed.add(anchor.root)
+    order.push(anchor)
+    const edges = [...meta.values()].sort((x, y) => y.n - x.n || x.ca.localeCompare(y.ca))
+    let grew = true
+    while (grew) {
+      grew = false
+      for (const e of edges) {
+        const forward = fixed.has(e.ca) && !fixed.has(e.cb)
+        const backward = fixed.has(e.cb) && !fixed.has(e.ca)
+        if (!forward && !backward) continue
+        const knownRoot = forward ? e.ca : e.cb
+        const freshRoot = forward ? e.cb : e.ca
+        const knownKey = forward ? e.a : e.b
+        const freshKey = forward ? e.b : e.a
+        const c = compByRoot.get(freshRoot)!
+        // Put the two friends on one band: off[fresh] + band(fresh) === off[known] + band(known).
+        c.off = compByRoot.get(knownRoot)!.off + bandOf(knownKey) - bandOf(freshKey)
+        fixed.add(freshRoot)
+        order.push(c)
+        grew = true
+      }
+    }
+    for (const c of bySize) {
+      if (fixed.has(c.root)) continue
+      c.off = -c.minB // no friendship to align on — start this tree at the top
+      order.push(c)
+    }
+  }
+  const pos = new Map<string, { x: number; y: number }>()
+  const frames: ForestFrame[] = []
+  const seps: number[] = []
+  let width = 0
+  let height = 0
+
+  const placeComp = (c: Comp, x: number, top: number, gridMinA: number) => {
+    for (const [b, row] of c.bands)
+      row.forEach((p, i) => {
+        pos.set(p.key, { x: x + ((i + 0.5) / row.length) * c.width, y: top + (b + c.off - gridMinA) * o.rowH + o.rowH / 2 })
+      })
+    const cluster = majorityCluster(c.members, o.clusterOf)
+    // A lone friend is a tree of one — a frame around a single face says nothing.
+    if (cluster && c.members.length > 1)
+      frames.push({
+        key: c.root,
+        name: cluster.name,
+        colour: cluster.colour,
+        count: c.members.length,
+        // Hug the faces: from the top band's centre-line to the bottom band's.
+        x: x - framePadX,
+        y: top + (c.minB + c.off - gridMinA) * o.rowH + o.rowH / 2 - framePadY,
+        w: c.width + framePadX * 2,
+        h: (c.maxB - c.minB) * o.rowH + framePadY * 2,
+      })
+  }
+
+  if (o.flow === 'stack') {
+    // Biggest family first; stack the rest below it, each centred on the widest tree.
+    width = Math.max(...order.map((c) => c.width))
+    let y = 0
+    order.forEach((c, i) => {
+      if (i > 0) {
+        seps.push(y + o.compGap / 2) // a divider sits in the gap between two trees
+        y += o.compGap
+      }
+      placeComp(c, (width - c.width) / 2, y, 0)
+      y += (c.maxB - c.minB + 1) * o.rowH
+    })
+    height = y
+  } else {
+    // Side by side, wrapping into rows that keep the whole forest roughly landscape.
+    // Trees that a friendship aligned sit next to one another (that's `order`), so as
+    // many of those ties as possible stay on one row and read as level lines.
+    const totalW = order.reduce((s, c) => s + c.width + o.compGap, 0)
+    const tallest = Math.max(...order.map((c) => (c.maxB - c.minB + 1) * o.rowH)) + labelH
+    const rows = Math.max(1, Math.round(Math.sqrt(totalW / Math.max(1, tallest * 1.7))))
+
+    const fill = (target: number): Comp[][] => {
+      const out: Comp[][] = [[]]
+      let lineW = 0
+      for (const c of order) {
+        const cur = out[out.length - 1]
+        if (cur.length && lineW + c.width + o.compGap > target) {
+          out.push([c])
+          lineW = c.width + o.compGap
+        } else {
+          cur.push(c)
+          lineW += c.width + o.compGap
+        }
+      }
+      return out
+    }
+    // A greedy fill at exactly totalW/rows overshoots — the last tree spills into a row
+    // of its own. Widen the target until the fill actually lands in `rows` lines.
+    let lines = fill(totalW / rows)
+    for (let k = 1; k <= 24 && lines.length > rows; k++) lines = fill((totalW / rows) * (1 + 0.05 * k))
+
+    let y = 0
+    for (const line of lines) {
+      // Every tree on a line shares one band grid, so an aligned friendship is level.
+      const lineMinA = Math.min(...line.map((c) => c.minB + c.off))
+      const lineMaxA = Math.max(...line.map((c) => c.maxB + c.off))
+      const top = y + labelH
+      let x = 0
+      for (const c of line) {
+        placeComp(c, x, top, lineMinA)
+        x += c.width + o.compGap
+      }
+      width = Math.max(width, x - o.compGap)
+      y = top + (lineMaxA - lineMinA + 1) * o.rowH + o.compGap
+    }
+    height = Math.max(0, y - o.compGap)
+  }
+
+  const edgeAt = (aKey: string, bKey: string, key: string): ForestEdge | null => {
+    const a = pos.get(aKey)
+    const b = pos.get(bKey)
+    return a && b ? { a, b, key } : null
+  }
+  const familyEdges = links
+    .filter((l) => isFamilyRel(l.type))
+    .map((l) => {
+      const { aKey, bKey } = linkEndpoints(l)
+      return edgeAt(aKey, bKey, l.id)
+    })
+    .filter((e): e is ForestEdge => !!e)
+  const socialEdges = socialPairs.map((p) => edgeAt(p.a, p.b, `${p.a}|${p.b}`)).filter((e): e is ForestEdge => !!e)
+
+  const nodes = members.map((p) => ({ p, ...pos.get(p.key)! }))
+  return { nodes, familyEdges, socialEdges, frames, seps, width: Math.max(width, o.colW), height }
+}
+
 // ---- Inference suggestions --------------------------------------------------
 
 export interface InferredLink {

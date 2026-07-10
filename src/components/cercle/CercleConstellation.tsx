@@ -5,7 +5,7 @@ import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 import { PanZoom } from '../PanZoom'
-import { type Person, type World, type WorldIsland } from '../../lib/cercle'
+import { layoutIslands, type PlacedBridge, type Person, type World, type WorldIsland } from '../../lib/cercle'
 
 // « Notre monde » — the BIG-PICTURE map of the whole circle. Where Liens shows one
 // person's ties and Arbre one family's generations, this zooms OUT: each cluster (the
@@ -20,53 +20,15 @@ import { type Person, type World, type WorldIsland } from '../../lib/cercle'
 // Read-only by design: this is a place to UNDERSTAND the structure, not edit it — a
 // tap speaks a name and captions it; the full person card lives in the normal cercle.
 
-// Default island tints by kind (a named group's own colour still wins).
+// Default island tints by kind (a named group's own colour still wins). Shared with
+// Social ▸ Liens, which draws the same islands for the social slice of the circle.
 const ISLAND_COLOUR: Record<WorldIsland['kind'], string> = {
   household: '#2A8F85', // the cercle teal — home, at the centre
   family: '#C45E86', // the cercle rose — a family
   group: '#6B8A52', // a warm green — a social group
   others: '#8A8780', // muted — people in no cluster
 }
-
-interface Placed {
-  island: WorldIsland
-  cx: number
-  cy: number
-  outerR: number
-  colour: string
-  faces: { p: Person; x: number; y: number }[]
-}
-interface PlacedBridge {
-  a: Placed
-  b: Placed
-  viaKeys: string[]
-  key: string
-}
-
-// Even ring of `n` offsets at radius `r`, starting from `start` (default top).
-function ringOffsets(n: number, r: number, start = -Math.PI / 2): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = []
-  for (let i = 0; i < n; i++) {
-    const a = start + (2 * Math.PI * i) / n
-    out.push({ x: r * Math.cos(a), y: r * Math.sin(a) })
-  }
-  return out
-}
-
-// Face offsets inside an island + the ring radius they sit on. One ring up to 8, then
-// an outer + inner ring so a big family doesn't blow the island up.
-function faceLayout(n: number, face: number): { offsets: { x: number; y: number }[]; r: number } {
-  if (n <= 1) return { offsets: [{ x: 0, y: 0 }], r: face * 0.62 }
-  if (n <= 8) {
-    const r = Math.max(face * 0.95, (face * 0.62) / Math.sin(Math.PI / n))
-    return { offsets: ringOffsets(n, r), r }
-  }
-  const outerN = Math.ceil(n * 0.6)
-  const innerN = n - outerN
-  const outerR = Math.max(face * 1.15, (face * 0.62) / Math.sin(Math.PI / outerN))
-  const innerR = outerR * 0.5
-  return { offsets: [...ringOffsets(outerN, outerR), ...ringOffsets(innerN, innerR, -Math.PI / 2 + Math.PI / Math.max(1, innerN))], r: outerR }
-}
+export const islandColour = (isl: WorldIsland): string => isl.colour || ISLAND_COLOUR[isl.kind]
 
 export function CercleConstellation({ world, byKey, toddler = false }: { world: World; byKey: Map<string, Person>; toddler?: boolean }) {
   const t = useT()
@@ -80,81 +42,11 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
   // Stop any narration when the map unmounts (leaving the scene mid-tour).
   useEffect(() => () => stopSpeaking(), [])
 
-  // ----- layout (pure geometry off the world structure) -----------------------
-  const layout = useMemo(() => {
-    const islands = world.islands
-    if (islands.length === 0) return null
-
-    // Each island: its faces + outer radius.
-    const sized = new Map<string, { faces: { p: Person; x: number; y: number }[]; outerR: number; colour: string }>()
-    for (const isl of islands) {
-      const ppl = isl.memberKeys.map((k) => byKey.get(k)).filter((p): p is Person => !!p)
-      const fl = faceLayout(ppl.length, FACE)
-      const faces = ppl.map((p, i) => ({ p, x: fl.offsets[i].x, y: fl.offsets[i].y }))
-      sized.set(isl.id, { faces, outerR: fl.r + FACE / 2 + PAD, colour: isl.colour || ISLAND_COLOUR[isl.kind] })
-    }
-    const outerR = (id: string) => sized.get(id)!.outerR
-
-    // The Maisonnée sits at the centre; everything else orbits it. (No household → the
-    // ring just fills the whole circle with no hub.)
-    const centre = islands.find((i) => i.kind === 'household') ?? null
-    const ring = islands.filter((i) => i !== centre)
-
-    const pos = new Map<string, { x: number; y: number }>()
-    if (centre) pos.set(centre.id, { x: 0, y: 0 })
-
-    if (ring.length) {
-      const rs = ring.map((i) => outerR(i.id))
-      const maxR = Math.max(...rs)
-      const centreR = centre ? outerR(centre.id) : 0
-      const arc = ring.reduce((s, _i, idx) => s + 2 * rs[idx] + GAP, 0)
-      const RR = Math.max(arc / (2 * Math.PI), centreR + maxR + GAP, maxR + GAP)
-      // Angular width per island, scaled to fill the full circle (spacing ∝ size).
-      const widths = ring.map((_i, idx) => (2 * rs[idx] + GAP) / RR)
-      const sumW = widths.reduce((a, b) => a + b, 0) || 1
-      const scale = (2 * Math.PI) / sumW
-      let ang = -Math.PI / 2
-      ring.forEach((isl, idx) => {
-        const wid = widths[idx] * scale
-        const a = ang + wid / 2
-        pos.set(isl.id, { x: RR * Math.cos(a), y: RR * Math.sin(a) })
-        ang += wid
-      })
-    }
-
-    // Bounds → translate into a positive viewBox with a margin (+ room for labels).
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-    for (const isl of islands) {
-      const c = pos.get(isl.id)!
-      const r = outerR(isl.id)
-      minX = Math.min(minX, c.x - r)
-      maxX = Math.max(maxX, c.x + r)
-      minY = Math.min(minY, c.y - r)
-      maxY = Math.max(maxY, c.y + r + LABEL_H)
-    }
-    const M = 40
-    const dx = M - minX
-    const dy = M - minY
-    const placed = new Map<string, Placed>()
-    for (const isl of islands) {
-      const c = pos.get(isl.id)!
-      const s = sized.get(isl.id)!
-      placed.set(isl.id, { island: isl, cx: c.x + dx, cy: c.y + dy, outerR: s.outerR, colour: s.colour, faces: s.faces })
-    }
-    const placedArr = islands.map((i) => placed.get(i.id)!)
-    const bridges: PlacedBridge[] = world.bridges
-      .map((b) => {
-        const a = placed.get(b.aId)
-        const bb = placed.get(b.bId)
-        return a && bb ? { a, b: bb, viaKeys: b.viaKeys, key: `${b.aId}|${b.bId}` } : null
-      })
-      .filter((b): b is PlacedBridge => !!b)
-
-    return { placed: placedArr, bridges, width: maxX - minX + M * 2, height: maxY - minY + M * 2 }
-  }, [world, byKey, FACE, PAD, GAP, LABEL_H])
+  // ----- layout (pure geometry off the world structure — see lib/cercle) -------
+  const layout = useMemo(
+    () => layoutIslands(world, byKey, { face: FACE, pad: PAD, gap: GAP, labelH: LABEL_H }),
+    [world, byKey, FACE, PAD, GAP, LABEL_H],
+  )
 
   // ----- narration lines ------------------------------------------------------
   // Name EVERYONE on the island — people AND pets (#pets-in-story). No cap: dropping
@@ -282,7 +174,7 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
                 'world-island world-island--' + isl.island.kind +
                 (activeIslandId === isl.island.id ? ' is-active' : '')
               }
-              style={{ '--isl': isl.colour } as React.CSSProperties}
+              style={{ '--isl': islandColour(isl.island) } as React.CSSProperties}
             >
               {/* The halo + its tappable name speak the island. */}
               <circle cx={isl.cx} cy={isl.cy} r={isl.outerR} className="world-island__halo" />

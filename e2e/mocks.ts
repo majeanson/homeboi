@@ -420,6 +420,10 @@ const CERCLE_MEMBERS = [
   { id: 'm3', displayName: 'Léa', avatarKind: 'color', avatarRef: '#88A36F', colour: '#88A36F', isChild: true, email: null, phone: null, birthday: '2017-06-25', notes: null, gender: 'f' },
   { id: 'm4', displayName: 'Noah', avatarKind: 'color', avatarRef: '#F2A03D', colour: '#F2A03D', isChild: true, email: null, phone: null, birthday: '2019-11-30', notes: null, gender: 'm' },
 ]
+// c1–c3 are the Maisonnée's own extended family (Famille). Everyone from c4 down is
+// SOCIAL: two friends who have families of their OWN (Gagnon, Roy — so Social ▸ Arbre
+// has real trees to draw side by side), a hockey group of three unrelated people, one
+// colleague, and a neighbour in no circle at all (« Autres personnes »).
 const CERCLE_CONTACTS = [
   { id: 'c1', firstName: 'Rose', lastName: 'Tremblay', nickname: 'Mamie', photoKey: null, birthday: '1958-03-19', email: null, phone: '450-555-0201', address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
   { id: 'c2', firstName: 'Jean', lastName: 'Tremblay', nickname: 'Papi', photoKey: null, birthday: '1956-07-08', email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
@@ -427,6 +431,15 @@ const CERCLE_CONTACTS = [
   { id: 'c4', firstName: 'Sophie', lastName: 'Gagnon', nickname: null, photoKey: null, birthday: '1989-05-22', email: null, phone: '514-555-0303', address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
   { id: 'c5', firstName: 'Thomas', lastName: 'Roy', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
   { id: 'c6', firstName: 'Luc', lastName: 'Bélanger', nickname: 'Voisin', photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c7', firstName: 'Étienne', lastName: 'Gagnon', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c8', firstName: 'Zoé', lastName: 'Gagnon', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
+  { id: 'c9', firstName: 'Malik', lastName: 'Gagnon', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c10', firstName: 'Julie', lastName: 'Roy', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
+  { id: 'c11', firstName: 'Alice', lastName: 'Roy', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
+  { id: 'c12', firstName: 'Karim', lastName: 'Benali', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c13', firstName: 'Nadia', lastName: 'Fortin', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'f' },
+  { id: 'c14', firstName: 'Pierre-Luc', lastName: 'Caron', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
+  { id: 'c15', firstName: 'Éric', lastName: 'Nadeau', nickname: null, photoKey: null, birthday: null, email: null, phone: null, address: null, notes: null, tags: [], memberId: null, customFields: [], gender: 'm' },
 ]
 // Inverse-paired links: the relationship engine stores both type + reverseType.
 const L = (id: string, aK: string, aId: string, bK: string, bId: string, type: string, reverseType: string) => ({
@@ -442,13 +455,31 @@ const CERCLE_LINKS = [
   L('k7', 'contact', 'c2', 'member', 'm1', 'parent', 'child'),
   L('k8', 'contact', 'c1', 'contact', 'c2', 'spouse', 'spouse'),
   L('k9', 'contact', 'c3', 'member', 'm1', 'sibling', 'sibling'),
+  // Social ties reach the household but never cross into Famille (best_friend and
+  // colleague are not family rels), so a friend's own family stays on the Social side.
   L('k10', 'contact', 'c4', 'member', 'm1', 'best_friend', 'best_friend'),
   L('k11', 'contact', 'c5', 'member', 'm2', 'colleague', 'colleague'),
+  // Sophie's family.
+  L('k12', 'contact', 'c4', 'contact', 'c7', 'spouse', 'spouse'),
+  L('k13', 'contact', 'c4', 'contact', 'c8', 'parent', 'child'),
+  L('k14', 'contact', 'c4', 'contact', 'c9', 'parent', 'child'),
+  L('k15', 'contact', 'c7', 'contact', 'c8', 'parent', 'child'),
+  L('k16', 'contact', 'c7', 'contact', 'c9', 'parent', 'child'),
+  // Thomas's family.
+  L('k17', 'contact', 'c5', 'contact', 'c10', 'spouse', 'spouse'),
+  L('k18', 'contact', 'c5', 'contact', 'c11', 'parent', 'child'),
+  L('k19', 'contact', 'c10', 'contact', 'c11', 'parent', 'child'),
+  // The friendships that tie those families together — what Social ▸ Arbre draws as
+  // dashed connectors, and aligns the two trees on.
+  L('k20', 'contact', 'c4', 'contact', 'c5', 'friend', 'friend'),
+  L('k21', 'contact', 'c7', 'contact', 'c6', 'friend', 'friend'),
+  L('k22', 'contact', 'c4', 'contact', 'c12', 'friend', 'friend'),
 ]
 const CERCLE_GROUPS = [
   { id: 'g1', name: 'Famille Tremblay', kind: 'family', colour: '#C2563A', memberKeys: [{ personId: 'c1', personKind: 'contact' }, { personId: 'c2', personKind: 'contact' }, { personId: 'c3', personKind: 'contact' }] },
-  { id: 'g2', name: 'Amis', kind: 'friends', colour: '#5891AC', memberKeys: [{ personId: 'c4', personKind: 'contact' }] },
-  { id: 'g3', name: 'Collègues', kind: 'work', colour: '#7BB0C9', memberKeys: [{ personId: 'c5', personKind: 'contact' }] },
+  // A « friends »-kind group implies a friend tie between its members (friendLinksFromGroups).
+  { id: 'g2', name: 'Le hockey', kind: 'friends', colour: '#5891AC', memberKeys: [{ personId: 'c12', personKind: 'contact' }, { personId: 'c13', personKind: 'contact' }, { personId: 'c14', personKind: 'contact' }] },
+  { id: 'g3', name: 'Collègues', kind: 'work', colour: '#7BB0C9', memberKeys: [{ personId: 'c15', personKind: 'contact' }] },
 ]
 const CERCLE = { members: CERCLE_MEMBERS, contacts: CERCLE_CONTACTS, links: CERCLE_LINKS, groups: CERCLE_GROUPS }
 

@@ -415,6 +415,16 @@ function CercleParent() {
     [householdKeys, sectionNamedGroups, familyGroups],
   )
 
+  // The same three buckets, resolved to a DISPLAY name + tint — what Social ▸ Arbre
+  // writes above each family's frame. (buildFamilyGrouping keys by group id, which is
+  // right for ordering + colour but reads as a uuid on screen.)
+  const clusterNames = useMemo(() => {
+    const m = new Map<string, { name: string; colour: string | null }>()
+    for (const g of sectionNamedGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { name: g.name, colour: g.colour })
+    for (const g of familyGroups) for (const k of g.memberKeys) if (!m.has(k)) m.set(k, { name: g.name, colour: null })
+    return m
+  }, [sectionNamedGroups, familyGroups])
+
   // The focus lens, resolved: the focused member's person key + display name. A
   // member deleted while focused silently falls back to Maisonnée (no match).
   const focusMember = focusId ? members.find((m) => m.id === focusId) ?? null : null
@@ -762,12 +772,13 @@ function CercleParent() {
           <>
           {viewSwitch}
 
-          {/* The Social section shows the WHOLE web at once (clusters for Liens, a
-              blob for Arbre) — the single-focus ego view would only show one person's
-              circle, and the generational tree is meaningless for friends. Famille
-              keeps the focus-driven ego view + the real family tree. */}
+          {/* Social shows the WHOLE web at once — the single-focus ego view would only
+              show one person's circle. Liens draws your circles as named islands
+              (CercleWeb); Arbre draws each friend's family as its own tree, side by
+              side, joined by the friendships between them (CercleTree social). Famille
+              keeps the focus-driven ego view + the stacked family tree. */}
           {(() => {
-            const showWeb = section === 'social' && view !== 'list'
+            const showWeb = section === 'social' && view === 'links'
 
           return (
           <>
@@ -796,11 +807,18 @@ function CercleParent() {
           })()}
 
           {showWeb ? (
-            <CercleWeb people={sectionPeople} links={links} onOpen={openPerson} grouping={grouping} mode={view === 'links' ? 'clusters' : 'blob'} />
+            <CercleWeb people={sectionPeople} links={links} groups={sectionNamedGroups} familyClusters={familyGroups} onOpen={openPerson} />
           ) : view === 'links' ? (
             <CercleEgo people={sectionPeople} links={links} onOpen={openPerson} focusKey={focusKey} grouping={grouping} />
           ) : view === 'tree' ? (
-            <CercleTree people={sectionPeople} links={links} onOpen={openPerson} grouping={grouping} />
+            <CercleTree
+              people={sectionPeople}
+              links={links}
+              onOpen={openPerson}
+              grouping={grouping}
+              social={section === 'social'}
+              clusterNames={clusterNames}
+            />
           ) : (
             <>
               <SectionIntro card="cercle" />
