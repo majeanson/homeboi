@@ -35,12 +35,13 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
-import { formatDay, formatDayMaybeYear, formatTime } from '../lib/format'
+import { formatDay, formatDayMaybeYear, formatTime, weekdayShort } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { useNow, isPastSec } from '../lib/itemLife'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, heroCardLabel, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
+import { type CompactRow } from '../components/board/BoardCard'
 import { Disclosure } from '../components/Disclosure'
 import { Fil } from '../components/board/Fil'
 import { PhotoFrame } from '../components/board/PhotoFrame'
@@ -860,12 +861,13 @@ export function Board() {
       help={help}
       helpKey="fil"
       now={filNow}
-      // Compact: the day's things by name, in the order the ribbon places them.
+      // Compact: the day's things by name, in the order the ribbon places them — timed
+      // rows lead with their hour so the tile says WHEN, not just what.
       compactItems={[
-        ...filTimed.map((e) => e.title),
-        ...filWork.map((w) => w.label || t.board.atWork),
-        ...todayChores.map((c) => c.title),
-        ...filUntimed.map((e) => e.title),
+        ...filTimed.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+        ...filWork.map((w) => ({ lead: formatTime(w.at, lang), label: w.label || t.board.atWork })),
+        ...todayChores.map((c) => ({ label: c.title })),
+        ...filUntimed.map((e) => ({ label: e.title })),
       ]}
       compactHint={String(filTimed.length + filWork.length + todayChores.length + filUntimed.length)}
     >
@@ -925,11 +927,12 @@ export function Board() {
   // at hand from the arrays just above. Few enough and the tile names them; too many and
   // it shows the count instead (`CardMini`). Past items are deliberately absent: they're
   // folded into « Déjà passé » below, and a tile has no room to say "and these are done".
-  const todayItems = [
-    ...liveMeals.map((m) => m.title),
-    ...liveEvents.map((e) => e.title),
-    ...(filShown ? [] : todayChores.map((c) => c.title)),
-    ...todayHome.map((c) => c.title),
+  const todayItems: CompactRow[] = [
+    ...liveMeals.map((m) => ({ label: m.title })),
+    // Timed events lead with their hour; meals/chores/home are untimed → a plain dot.
+    ...liveEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+    ...(filShown ? [] : todayChores.map((c) => ({ label: c.title }))),
+    ...todayHome.map((c) => ({ label: c.title })),
   ]
   const todayCount = todayItems.length
   nodes.today = (
@@ -942,6 +945,16 @@ export function Board() {
       now={todayNow}
       compactItems={todayItems}
       compactHint={todayCount > 0 ? String(todayCount) : undefined}
+      // The day's temperature, where the eye already is (a quiet frosted chip, never a
+      // count). Only in the list face — the header the chip rides only exists there.
+      compactHead={
+        weather ? (
+          <>
+            <Icon name={weatherIcon({ bucket: weather.bucket, isDay: true, tempC: weather.tempC })} size={13} />
+            {weather.tempC}°
+          </>
+        ) : undefined
+      }
     >
 {/* « Prochainement » — the next timed thing today as a calm tappable
     headline above the full day list (the glance the « Maintenant » view
@@ -1038,9 +1051,9 @@ export function Board() {
       // Compact: tomorrow's things by name — the supper first, since it's the headline
       // the household actually looks for.
       compactItems={[
-        ...(showTomorrowSupper && data.tomorrowMeal ? [data.tomorrowMeal.title] : []),
-        ...otherTomorrowMeals.map((m) => m.title),
-        ...tomorrowEvents.map((e) => e.title),
+        ...(showTomorrowSupper && data.tomorrowMeal ? [{ label: data.tomorrowMeal.title }] : []),
+        ...otherTomorrowMeals.map((m) => ({ label: m.title })),
+        ...tomorrowEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
       ]}
       // A name when there's one obvious headline (tomorrow's supper, like
       // "Spaghetti"); otherwise a quiet count of what's coming.
@@ -1050,6 +1063,15 @@ export function Board() {
           : otherTomorrowMeals.length + tomorrowEvents.length > 0
             ? String(otherTomorrowMeals.length + tomorrowEvents.length)
             : undefined
+      }
+      // Tomorrow's forecast, max/min — the thing a household checks the night before.
+      compactHead={
+        tomorrowWx ? (
+          <>
+            <Icon name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })} size={13} />
+            {tomorrowWx.highC}°/{tomorrowWx.lowC}°
+          </>
+        ) : undefined
       }
     >
       {/* D-17: the school/congé qualifier — silent almost every day BY
@@ -1193,12 +1215,12 @@ export function Board() {
       tint="var(--sky)"
       help={help}
       helpKey="upcoming"
-      // Compact: what's coming, by name. The dates stay behind the tap — a 142px row can
-      // hold a title or a date, and the title is the one you scan for.
+      // Compact: what's coming — each row led by its short weekday (« sam · Fête »), since
+      // these are days out and the day is the thing you're scanning for.
       compactItems={[
-        ...upcomingEvents.map((e) => e.title),
-        ...upcomingChores.map((c) => c.title),
-        ...upcomingHome.map((c) => c.title),
+        ...upcomingEvents.map((e) => ({ lead: weekdayShort(e.start_at, lang), label: e.title })),
+        ...upcomingChores.map((c) => ({ lead: weekdayShort(c.at, lang), label: c.title })),
+        ...upcomingHome.map((c) => ({ lead: weekdayShort(c.at, lang), label: c.title })),
       ]}
       compactHint={String(upcomingEvents.length + upcomingChores.length + upcomingHome.length)}
     >

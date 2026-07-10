@@ -99,7 +99,9 @@ export function CountdownCard({ upcoming }: { upcoming: EventRow[] }) {
       className="bento countdown-card"
       label={t.countdown.title}
       icon="hourglass-high-bold"
-      compactHint={`${suggestion.emoji} ${suggestion.label}`}
+      // The offered day, named + counted (« 🎂 Fête de Léa · 5 dodos ») — the two-line
+      // hint fits the whole phrase now, so the mini says what AND how far.
+      compactHint={`${suggestion.emoji} ${suggestion.label} · ${t.countdown.dodosN(daysUntilLocal(suggestion.at))}`}
     >
       <p className="countdown-card__ask">
         <span aria-hidden="true">{suggestion.emoji}</span> {t.countdown.suggest(suggestion.label)}

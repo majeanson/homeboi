@@ -778,10 +778,10 @@ as a silent TODO.
 
 Lean on the guards that exist; spend review attention on the rest.
 
-| Guard | Dimensions | The mechanism |
-| --- | --- | --- |
-| **Red build catches drift** | D5 · D13/calm · D15 · D9 · D16 | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
-| **Manual only — nothing fails the build** | D2 peek · D3 undo · D6 search · D7 guide · D8 toddler · D10 voice · D11 empty · D12 attribution · D14 media-shape | The Part 5 checklist walk + a reviewer reading the row |
+| Guard                                     | Dimensions                                                                                                        | The mechanism                                                                                                                                                                                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Red build catches drift**               | D5 · D13/calm · D15 · D9 · D16                                                                                    | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
+| **Manual only — nothing fails the build** | D2 peek · D3 undo · D6 search · D7 guide · D8 toddler · D10 voice · D11 empty · D12 attribution · D14 media-shape | The Part 5 checklist walk + a reviewer reading the row                                                                                                                                                                                      |
 
 **Rule of thumb: the manual-only nine are where features silently fall short** — they
 compile and pass tests while missing a peek, an empty state, a toddler lens, or a guide

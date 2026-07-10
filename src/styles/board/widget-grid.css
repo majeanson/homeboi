@@ -310,11 +310,21 @@
 }
 .wg-slot .cardmini__hint {
   max-width: 100%;
+  /* Two lines, not one: a glance card's hint is its ONLY content (« Avec Papa · revient
+     17 h », a fête name, « Léa · Matin ») — clamping to one line ellipsized most of it
+     away (« Saint-Jean-Bapti… »). Two lines lets the whole short phrase read; a genuinely
+     long one still ellipsizes at the second line. `overflow-wrap: normal` keeps the
+     no-mid-word-break rule the title follows. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
   color: var(--ink-soft);
   font-size: 0.78rem;
+  line-height: 1.3;
 }
 
 /* ---- Compact lens, the LIST face: a mini that names what it holds --------------- */
@@ -344,10 +354,42 @@
   height: 1.5rem;
 }
 /* One line only in the list face — the rows below need the height more than a long card
-   title does, and every board card's title is short enough to survive an ellipsis. */
+   title does, and every board card's title is short enough to survive an ellipsis. The
+   title takes the row; a trailing head extra (the weather chip) keeps its own width. */
 .wg-slot .cardmini--list .cardmini__title {
+  flex: 1 1 auto;
+  min-width: 0;
   -webkit-line-clamp: 1;
   font-size: 0.84rem;
+}
+/* The weather chip pinned to the header's trailing edge on « Aujourd'hui » / « Demain ».
+   A quiet frosted pill, never a badge/count — just today's degrees where the eye already
+   is. `flex: none` so it never squeezes the title; it sits after the `min-width:0` title
+   which ellipsizes first. */
+.wg-slot .cardmini__headx {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-faint))) 16%, var(--card));
+  color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-soft))) 70%, var(--ink));
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+/* A row's leading time/day token (« 9 h », « sam ») — replaces the dot on a chronological
+   card so it SAYS when. Fixed min-width so the labels line up in a column; tinted to the
+   card like the dot was, tabular so digits don't jitter. */
+.wg-slot .cardmini__lead {
+  flex: none;
+  min-width: 2.1rem;
+  color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-soft))) 60%, var(--ink-soft));
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .wg-slot .cardmini__rows {
   display: flex;

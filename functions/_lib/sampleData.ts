@@ -31,6 +31,12 @@ const SAMPLE_TABLES = [
   'contacts', // → members (member_id)
   'businesses',
   'trips',
+  // extended (migration 0114 gave these is_sample). habit_days is NOT swept here — it
+  // has no household_id column and the seed creates none (see the migration comment).
+  'meal_leftovers', // → households only (recipe/source not FK)
+  'schedule_blocks', // → members
+  'habits', // → members (habit_days would come first, but none are seeded)
+  'family_notes', // → members (member_id + author_member_id)
   // original core
   'events',
   'meals', // → recipes, so before recipes
@@ -391,6 +397,50 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       `INSERT INTO trips (id, household_id, title, destination, start_at, end_at, members, colour, position, created_at, is_sample)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
     ).bind(newId(), h, 'Chalet au lac', 'Lac Memphrémagog', d10, d12, JSON.stringify([maman, papa, lea, noah]), '#5891AC', ts, S),
+
+    // an undated leftover (« À finir ») — a dish to eat first, no day chosen. No
+    // quantity (calm) — a dish name only.
+    P(
+      `INSERT INTO meal_leftovers (id, household_id, title, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
+    ).bind(newId(), h, 'Pâté chinois', ts, S),
+
+    // a work schedule window (« L'auto ») — Papa takes the car Mon–Fri 8h–17h, so the
+    // car card shows a real weekly backdrop instead of « libre toute la journée ».
+    // start/end are MINUTES from local midnight; recurrence is the shared weekly Recur
+    // rule (migration 0090 folded the old `weekdays` column into `recur_json`): weekdays
+    // 1..5 = Mon–Fri (0=Sun), every week.
+    P(
+      `INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, recur_json, holds_car, colour, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+    ).bind(newId(), h, papa, 'Travail', 8 * 60, 17 * 60, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [1, 2, 3, 4, 5] }), '#5891AC', ts, S),
+
+    // habits (« Mes habitudes ») — one household-wide, one Maman's own. No history rows
+    // (habit_days): an un-touched habit reads as a neutral, un-checked today. anchor_at
+    // = now so occurrences start today; recur_json NULL = every day.
+    P(
+      `INSERT INTO habits (id, household_id, member_id, title, icon, colour, kind, cadence, anchor_at, position, created_at, is_sample)
+       VALUES (?, ?, NULL, ?, ?, ?, 'do', 'recur', ?, 0, ?, ?)`,
+    ).bind(newId(), h, 'Marcher dehors', '🚶', '#88A36F', ts, ts, S),
+    P(
+      `INSERT INTO habits (id, household_id, member_id, title, icon, colour, kind, target, unit, cadence, anchor_at, position, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, 'count', 8, ?, 'recur', ?, 1, ?, ?)`,
+    ).bind(newId(), h, maman, 'Boire de l’eau', '💧', '#5891AC', 'verres', ts, ts, S),
+
+    // a family note (« Notes (cercle) ») — a durable Maisonnée note (member_id NULL),
+    // titled + lightweight Markdown body, attributed to Maman. Media-free.
+    P(
+      `INSERT INTO family_notes (id, household_id, member_id, author_member_id, title, text, created_at, updated_at, is_sample)
+       VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      newId(),
+      h,
+      maman,
+      'Gardienne',
+      'Numéro de la gardienne : 514-555-0176.\nCouché des enfants à 19 h 30.',
+      ts,
+      ts,
+      S,
+    ),
   ]
 
   await env.DB.batch(stmts)

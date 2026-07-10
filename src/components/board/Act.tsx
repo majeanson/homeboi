@@ -4,7 +4,7 @@ import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 import { type HelpMode } from '../../lib/helpMode'
-import { SecLabel, CardMini } from './BoardCard'
+import { SecLabel, CardMini, type CompactRow } from './BoardCard'
 import { useCardLens } from './CardLens'
 
 // Pip section header: an optional category glyph + label + rule + a quiet count
@@ -26,6 +26,7 @@ export function Section({
   // below the measured-width threshold).
   compactItems,
   compactHint,
+  compactHead,
   compact,
   children,
 }: {
@@ -44,8 +45,11 @@ export function Section({
   // section be made explainable without forking a header.
   help?: HelpMode
   helpKey?: string
-  compactItems?: readonly string[]
+  compactItems?: readonly CompactRow[]
   compactHint?: React.ReactNode
+  // A small extra pinned to the trailing edge of the compact list header (a weather
+  // chip). See `CardMini`'s `head`.
+  compactHead?: React.ReactNode
   compact?: React.ReactNode
   children: React.ReactNode
 }) {
@@ -70,6 +74,7 @@ export function Section({
           label={label}
           icon={icon}
           hint={compactHint}
+          head={compactHead}
           items={compactItems}
           body={compact}
           onExpand={lens!.expand}

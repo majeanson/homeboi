@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, BASE } from './mocks'
 
 // The board's compact lens (lib/widgetGrid.isCompact + components/board/CardLens): a
 // card halved on a phone renders a genuinely small tile — icon + title + at most one
@@ -144,6 +144,34 @@ test.describe('board compact lens', () => {
     await expect(rows.first()).toHaveText('Pâté chinois')
     // The list face replaces the count hint — a tile never says both.
     await expect(tile.locator('.cardmini__hint')).toHaveCount(0)
+  })
+
+  // The list face carries MORE than bare titles now: a chronological card leads each
+  // timed row with its hour (« Aujourd'hui », « Le fil », « À venir » with a weekday), and
+  // « Aujourd'hui » / « Demain » pin a quiet weather chip to the header. Both ride the same
+  // fixed-height tile — this guards that they render without breaking the shelf.
+  test('a chronological mini leads its rows with a time and shows a weather chip', async ({ page }) => {
+    // Freeze to the fixture's anchor so today's timed events stay live (else lib/itemLife
+    // folds them into « Déjà passé » vs the real clock and the today tile falls to its
+    // glance face with no rows to lead). Hide « Le fil du jour » so « Aujourd'hui » owns
+    // the day's timeline (when the fil is shown it carries the timed events instead).
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await page.setViewportSize({ width: 360, height: 740 })
+    await mockApi(page)
+    await seedState(page, { cardPrefs: { size: { today: 1 }, mode: { fil: 'never' } } })
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+
+    const tile = page.locator('.wg-slot[data-card="today"] .cardmini')
+    await tile.scrollIntoViewIfNeeded()
+    await expect(tile).toHaveClass(/cardmini--list/)
+    // A timed event row leads with its hour (the fixture's Garderie/Soccer are timed).
+    await expect(tile.locator('.cardmini__lead').first()).toBeVisible()
+    // The weather chip rides the header (the fixture stubs weather).
+    await expect(tile.locator('.cardmini__headx')).toBeVisible()
+    // Still one shelf tall — the extras must not spill past the fixed height.
+    const spill = await tile.evaluate((el) => el.scrollHeight > el.clientHeight + 1)
+    expect(spill, 'the list face must not overflow its fixed height').toBeFalsy()
   })
 
   // The stagger, as a test. Minis used to be MEASURED, so two tiles whose natural heights

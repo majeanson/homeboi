@@ -54,7 +54,9 @@ export function RoutineNextCard() {
       style={{ '--tint': tint } as CSSProperties}
       icon={icon}
       label={t.boardCard.routineNext}
-      compactHint={routine.name}
+      // Who + which routine (« Léa · Matin ») — the mini says whose turn it is, not just
+      // the routine's name.
+      compactHint={routine.memberName ? `${routine.memberName} · ${routine.name}` : routine.name}
     >
       <div className="routine-next-card__body">
         <span className="routine-next-card__face">

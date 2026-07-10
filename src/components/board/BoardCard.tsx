@@ -6,6 +6,12 @@ import { type HelpMode } from '../../lib/helpMode'
 import { WG_MINI_MAX_ITEMS } from '../../lib/widgetGrid'
 import { useCardLens } from './CardLens'
 
+// One row of a compact list face. A bare string names a thing (a leading dot anchors
+// it); the object form leads the row with a short fixed token — a time (« 9 h ») or a
+// day (« sam ») — so a chronological card SAYS when, not just what, in the same 142px.
+// The lead replaces the dot (the token already anchors the row) and is never a count.
+export type CompactRow = string | { lead?: string; label: string }
+
 // The ONE board-card header — a category glyph disc + bold label + rule + an optional
 // quiet count (never a score), with optional contextual help. This is the `.sec-label`
 // anatomy that every board glance card shares; extracted so the four cards that hand
@@ -124,6 +130,7 @@ export function CardMini({
   icon,
   iconNode,
   hint,
+  head,
   items,
   body,
   onExpand,
@@ -134,8 +141,13 @@ export function CardMini({
   icon?: IconName
   iconNode?: ReactNode
   hint?: ReactNode
-  /** One line per thing the card holds. Rendered only when they all fit — see above. */
-  items?: readonly string[]
+  /** A small extra pinned to the trailing edge of the list-face header — a weather
+   *  chip on « Aujourd'hui » / « Demain ». Only the list face has a header, so this
+   *  shows only when the tile names its rows. */
+  head?: ReactNode
+  /** One line per thing the card holds. Rendered only when they all fit — see above.
+   *  A row may lead with a short time/day token (see `CompactRow`). */
+  items?: readonly CompactRow[]
   body?: ReactNode
   onExpand: () => void
 }) {
@@ -163,14 +175,23 @@ export function CardMini({
                 </span>
               )}
               <b className="cardmini__title">{label}</b>
+              {head != null && head !== '' && <span className="cardmini__headx">{head}</span>}
             </span>
             <ul className="cardmini__rows">
-              {rows.map((row, i) => (
-                <li key={i} className="cardmini__row">
-                  <span className="cardmini__dot" aria-hidden="true" />
-                  <span className="cardmini__rowlabel">{row}</span>
-                </li>
-              ))}
+              {rows.map((row, i) => {
+                const lead = typeof row === 'string' ? undefined : row.lead
+                const text = typeof row === 'string' ? row : row.label
+                return (
+                  <li key={i} className="cardmini__row">
+                    {lead ? (
+                      <span className="cardmini__lead mono">{lead}</span>
+                    ) : (
+                      <span className="cardmini__dot" aria-hidden="true" />
+                    )}
+                    <span className="cardmini__rowlabel">{text}</span>
+                  </li>
+                )
+              })}
             </ul>
           </>
         ) : (
@@ -215,6 +236,7 @@ export function BoardCard({
   // it) — the ordinary header + children render untouched.
   compactItems,
   compactHint,
+  compactHead,
   compact,
   children,
 }: {
@@ -228,8 +250,9 @@ export function BoardCard({
   iconNode?: ReactNode
   help?: HelpMode
   helpKey?: string
-  compactItems?: readonly string[]
+  compactItems?: readonly CompactRow[]
   compactHint?: ReactNode
+  compactHead?: ReactNode
   compact?: ReactNode
   children: ReactNode
 }) {
@@ -248,6 +271,7 @@ export function BoardCard({
         icon={icon}
         iconNode={iconNode}
         hint={compactHint}
+        head={compactHead}
         items={compactItems}
         body={compact}
         onExpand={lens.expand}
