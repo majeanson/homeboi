@@ -222,8 +222,11 @@
 .wg-slot .cardmini {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  /* Top-left, both faces: content stacks from the top and hugs the leading edge, so a
+     mini SPENDS its fixed height instead of centring a badge in the middle of it. The
+     list face used to override these three; they're the base now and it inherits them. */
+  align-items: stretch;
+  justify-content: flex-start;
   gap: 6px;
   width: 100%;
   /* FIXED, not `min-height`. Every mini is exactly one shelf tall, and `CardSlot` claims
@@ -250,10 +253,15 @@
   box-shadow: var(--shadow-sm);
   color: inherit;
   font: inherit;
-  text-align: center;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+/* The glance face: the shared header, then a hint filling the space below it. Slightly
+   roomier padding than the list face (which packs rows) — same shelf, calmer body. */
+.wg-slot .cardmini--glance {
+  padding: 0.72rem 0.6rem;
 }
 /* Bespoke cards whose palette does NOT arrive as `--sec-tint`: map their own token
    onto it so the persona rules above apply unchanged. */
@@ -266,6 +274,24 @@
 .wg-slot .cardmini.now-card--moment {
   --sec-tint: var(--berry-deep);
 }
+/* « Moments » mini: the four handoff windows as a 2×2 chip grid under the header, filling
+   the tile's remaining height so a half-width card is a working chooser, not a teaser. The
+   chips relax their 44px hero min-height to share the shelf evenly (grid-auto-rows: 1fr). */
+.wg-slot .cardmini--moments .cardmini__windows {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 5px;
+  min-width: 0;
+}
+.wg-slot .cardmini--moments .moment-chip {
+  min-height: 0;
+  height: 100%;
+  min-width: 0;
+  padding: 0.3rem;
+  font-size: 0.74rem;
+}
 .wg-slot .cardmini:active {
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }
@@ -277,13 +303,21 @@
 .wg-slot .cardmini.wg-slot__placeholder {
   border-style: dashed;
 }
+/* The shared header — the tinted disc + title (+ optional trailing chip) both faces pin
+   top-left. Was `.cardmini--list .cardmini__head`; it heads the glance face now too. */
+.wg-slot .cardmini__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
 .wg-slot .cardmini__ico {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
   color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-soft))) 82%, var(--ink));
   background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-faint))) 18%, var(--card));
@@ -292,6 +326,10 @@
    turned "Spaghetti" into "Spaghet/ti" at 143px) — clamp to two lines and let a
    genuinely long title ellipsize instead. */
 .wg-slot .cardmini__title {
+  /* Takes the header row's remaining width beside the disc; a trailing chip (weather)
+     keeps its own width and the title ellipsizes first (min-width:0). */
+  flex: 1 1 auto;
+  min-width: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -302,7 +340,7 @@
   max-width: 100%;
   font-family: var(--display);
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   line-height: 1.25;
   /* Persona, quietly: the title leans toward the card's tint the way `tintInk` does
      for Act rows — ink-dominant so it stays legible on the wash. */
@@ -338,29 +376,14 @@
    Calm: the rows are a READING, never a control. No checks, no counts, no ranks — the
    tile is one tap target that grows the real card, exactly as the icon face is. */
 .wg-slot .cardmini--list {
-  align-items: stretch;
   gap: 6px;
   padding: 0.62rem 0.6rem;
-  text-align: left;
-}
-.wg-slot .cardmini--list .cardmini__head {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-}
-.wg-slot .cardmini--list .cardmini__ico {
-  width: 1.5rem;
-  height: 1.5rem;
 }
 /* One line only in the list face — the rows below need the height more than a long card
-   title does, and every board card's title is short enough to survive an ellipsis. The
-   title takes the row; a trailing head extra (the weather chip) keeps its own width. */
+   title does, and every board card's title is short enough to survive an ellipsis. (The
+   glance face keeps the base 2-line clamp: with no rows below, the title has the room.) */
 .wg-slot .cardmini--list .cardmini__title {
-  flex: 1 1 auto;
-  min-width: 0;
   -webkit-line-clamp: 1;
-  font-size: 0.84rem;
 }
 /* The weather chip pinned to the header's trailing edge on « Aujourd'hui » / « Demain ».
    A quiet frosted pill, never a badge/count — just today's degrees where the eye already

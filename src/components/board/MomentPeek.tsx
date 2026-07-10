@@ -3,7 +3,6 @@ import { timeOfDay } from '../../lib/timeofday'
 import { useT } from '../../i18n'
 import { Icon } from '../Icon'
 import { useCardLens } from './CardLens'
-import { CardMini } from './BoardCard'
 
 type Scope = 'tonight' | 'tomorrow' | 'date' | 'week'
 
@@ -28,19 +27,35 @@ export function MomentPeek() {
     { k: 'week', label: t.moment.scope.week },
   ]
   // The compact lens (see CardLens.tsx): `null` outside a CardSlot (DevKit/MomentsView).
-  // The four windows are direct nav chips — that IS the card's whole function, so a
-  // genuinely compact width shows just the lead window's name as a quiet hint and taps
-  // to GROW back to the full chooser in place, rather than hiding the other three.
+  // The four windows ARE the card's whole function, so even the mini shows all four as
+  // direct nav chips (a 2×2 grid under the top-left header) rather than one hint that
+  // taps to grow — a half-width « Moments » is still a working handoff chooser, not a
+  // teaser. The contextual window (tonight by day, tomorrow at night) stays emphasized.
+  // No tap-to-grow here: the chips are the tap targets (and can't nest in a grow button).
   const lens = useCardLens()
   if (lens && lens.compact && !lens.expanded) {
     return (
-      <CardMini
-        className="now-card now-card--moment"
-        label={t.moment.title}
-        icon={icon}
-        hint={windows.find((w) => w.k === lead)?.label}
-        onExpand={lens.expand}
-      />
+      <div className="cardmini cardmini--glance cardmini--moments now-card--moment">
+        <span className="cardmini__head">
+          <span className="cardmini__ico" aria-hidden="true">
+            <Icon name={icon} size={15} />
+          </span>
+          <b className="cardmini__title">{t.moment.title}</b>
+        </span>
+        <div className="cardmini__windows" role="group" aria-label={t.moment.title}>
+          {windows.map((w) => (
+            <button
+              key={w.k}
+              type="button"
+              className={'moment-chip' + (w.k === lead ? ' is-lead' : '')}
+              onClick={() => nav(`/moment?scope=${w.k}`)}
+              aria-label={`${t.moment.title} · ${w.label}`}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
+      </div>
     )
   }
   return (

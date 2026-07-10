@@ -109,17 +109,19 @@ export function SecLabel({
 // that calls `lens.expand()` to grow the card back to the zone's full width in place.
 //
 // A mini has THREE faces, in order of how much it manages to say. Every tile is exactly
-// `--wg-mini-h` tall whichever it picks (`WG_MINI_ROWS`), so a shelf of minis is a shelf:
+// `--wg-mini-h` tall whichever it picks (`WG_MINI_ROWS`), so a shelf of minis is a shelf.
+// The LIST and the GLANCE share ONE header — a tinted disc pinned top-left beside the
+// title, with an optional trailing extra (the weather chip). Only the BODY differs:
 //
 //  1. `body` — a FULL override, for a card whose compact form isn't text at all (the
 //     photo frame's picture, the weather hero's wonder backdrop). Wins outright.
 //  2. THE LIST — `items`, when there are few enough of them to name honestly
-//     (`WG_MINI_MAX_ITEMS`). A header line (small disc + title) over one line per thing.
-//     This is the point of the lens: « À finir » should say *what* is left to finish, not
-//     that two somethings are.
-//  3. The GLANCE — icon on top, title, at most one quiet line (`hint`: a count like '3'
-//     or a name like 'Spaghetti' — never a score, never per-person). What a card falls
-//     back to when it holds too much to list, or has nothing listable to give.
+//     (`WG_MINI_MAX_ITEMS`). The shared header over one line per thing. This is the point
+//     of the lens: « À finir » should say *what* is left to finish, not that two are.
+//  3. The GLANCE — the shared header (so an empty card's icon still sits top-left, never a
+//     lonely centred badge) over at most one quiet line (`hint`: a count like '3' or a name
+//     like 'Spaghetti' — never a score, never per-person). What a card falls back to when
+//     it holds too much to list, or has nothing listable to give.
 //
 // A card that can list passes BOTH `items` and a counting `hint`, and this picks: naming
 // three things beats counting them; naming three of nine is a lie the count tells better.
@@ -155,28 +157,38 @@ export function CardMini({
   // Index keys: this is a static, never-reordered projection of the card's rows, rebuilt
   // whole on every data change. A stable id would buy nothing and cost every call site.
   const rows = items && items.length > 0 && items.length <= WG_MINI_MAX_ITEMS ? items : null
-  const glyph = icon ? <Icon name={icon} size={rows ? 15 : 22} /> : iconNode
+  const glyph = icon ? <Icon name={icon} size={15} /> : iconNode
+  // BOTH faces share one header — the tinted disc pinned TOP-LEFT beside the title, with an
+  // optional trailing extra (the weather chip). The glance face used to centre a big icon
+  // over the title, which wasted the tile's height and made an empty card read as a lonely
+  // badge; anchoring every mini's icon top-left keeps a shelf of tiles visually aligned and
+  // frees the body below to actually say something (a hint, a temp, a count).
+  const header = (
+    <span className="cardmini__head">
+      {glyph && (
+        <span className="cardmini__ico" aria-hidden="true">
+          {glyph}
+        </span>
+      )}
+      <b className="cardmini__title">{label}</b>
+      {head != null && head !== '' && <span className="cardmini__headx">{head}</span>}
+    </span>
+  )
   return (
     <button
       type="button"
-      className={'cardmini' + (rows ? ' cardmini--list' : '') + (className ? ` ${className}` : '')}
+      className={
+        'cardmini' + (rows ? ' cardmini--list' : ' cardmini--glance') + (className ? ` ${className}` : '')
+      }
       style={style}
       aria-expanded={false}
       aria-label={t.board.expandCard(label)}
       onClick={onExpand}
     >
-      {body ??
-        (rows ? (
-          <>
-            <span className="cardmini__head">
-              {glyph && (
-                <span className="cardmini__ico" aria-hidden="true">
-                  {glyph}
-                </span>
-              )}
-              <b className="cardmini__title">{label}</b>
-              {head != null && head !== '' && <span className="cardmini__headx">{head}</span>}
-            </span>
+      {body ?? (
+        <>
+          {header}
+          {rows ? (
             <ul className="cardmini__rows">
               {rows.map((row, i) => {
                 const lead = typeof row === 'string' ? undefined : row.lead
@@ -193,18 +205,11 @@ export function CardMini({
                 )
               })}
             </ul>
-          </>
-        ) : (
-          <>
-            {glyph && (
-              <span className="cardmini__ico" aria-hidden="true">
-                {glyph}
-              </span>
-            )}
-            <b className="cardmini__title">{label}</b>
-            {hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>}
-          </>
-        ))}
+          ) : (
+            hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>
+          )}
+        </>
+      )}
     </button>
   )
 }
