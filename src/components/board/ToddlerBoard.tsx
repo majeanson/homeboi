@@ -14,7 +14,6 @@ import { useProfile } from '../../lib/profile'
 import { isGuest } from '../../lib/device'
 import { useMots, waitingMots, type Mot } from '../../lib/mots'
 import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi, faceTriedDefi, useToggleDefiMark } from '../../lib/habits'
-import { localizeDefi } from '../../lib/defiDeck'
 import type { BoardModel } from '../../lib/boardModel'
 import type { Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type EventRow, type MealRow } from './types'
@@ -137,7 +136,9 @@ export function ToddlerBoard({
   // guest) → speak-only. Never a count (calm).
   const committedDefi = todaysDefi(habitsData, habitsToday)
   const toggleDefiMark = useToggleDefiMark()
-  const defiText = committedDefi ? localizeDefi(committedDefi.text, lang) : ''
+  // Raw committed text (already in the household's language) — the toddler tile skips
+  // the deck's re-localization so the ~500-entry deck stays out of the eager bundle.
+  const defiText = committedDefi ? committedDefi.text : ''
   const defiTried = committedDefi ? faceTriedDefi(habitsData?.marks, committedDefi.habit.id, habitsToday, face) : false
   const defiTiles: Tile[] = committedDefi
     ? [
