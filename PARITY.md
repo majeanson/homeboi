@@ -233,9 +233,11 @@ soft member ref / `author_member_id` / external `author_label`) and _shown_
 **D13 — Schema hygiene.** `colour` not `color`, `position` not `sort_order`,
 `deleted_at` for soft delete, JSON columns `NOT NULL` with defaults, soft refs
 commented. Forward-rule only — don't churn working tables; score 🔶 with a
-"converge opportunistically" note. Known outliers (from migrations sweep):
-`color` on tasks/home_projects/schedule_blocks/carnets; `carnets.archived_at`
-is a **sanctioned** exception (➖).
+"converge opportunistically" note. **The scalar `color`→`colour` (mig 0087) and
+`sort_order`/`sort`→`position` (mig 0086) convergences have already shipped**, so
+those cells are ✅ (footnotes 3, 21). Remaining exceptions are all sanctioned ➖:
+`carnets.archived_at` (reversible archive) and `notes.dismissed_at` (soft-clear,
+footnote 22).
 
 **D14 — Media pattern.** Attachments use the `media_kind` + `media_key`
 (+ `scene_key`) trio and `uploadMedia()`, old blobs freed on replace/clear, R2
@@ -263,9 +265,9 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | Feature                  | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
 | ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
 | F1 Agenda                | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
-| F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | 🔶³        | ➖¹       | ✅       | ✅      |
+| F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅³        | ➖¹       | ✅       | ✅      |
 | F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
-| F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
+| F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ➖²²       | ✅        | ✅       | ✅      |
 | F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F6 Habitudes             | ✅      | ➖⁵⁷    | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
@@ -283,25 +285,25 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | ✅⁵⁶       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
 | F21 Personnes            | ✅      | ✅      | ✅      | ➖²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
-| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ✅       | ✅      |
+| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅²¹       | ➖        | ✅       | ✅      |
 | F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅⁵⁴    |
 | F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
 | F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | 🔶³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
+| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | ✅³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
 | F27 Notre monde          | ➖      | ➖⁴³    | ➖      | ➖         | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
 | F29 Collants             | ✅      | ➖      | ✅⁵⁵    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅⁵⁴    |
 | F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | ✅⁵⁴    |
 | F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | ✅⁵⁴    |
+| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | ✅³        | ➖        | ✅       | ✅⁵⁴    |
 | F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅      |
-| F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | 🔶²¹       | 🔶²³      | ✅       | ✅      |
+| F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | ✅²¹       | 🔶²³      | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
 
 1. No media attachment by design — the entity is text/derived only.
 2. Home projects searchable; loose chores ("À faire") — verify which kinds `SEARCH_INDEX` covers.
-3. `color` column (pre-0087 outlier) — converge opportunistically during a schema-touching migration, never churn-only (UNIFORMIZING D.1).
+3. **CONVERGED (mig 0087, already shipped).** The `color` outliers `tasks`/`home_projects`/`schedule_blocks`/`carnets` (+ the household JSON-pref columns) were renamed to `colour`; readers alias `colour AS color` so the API JSON stays byte-identical. Cells 🔶→✅. Only non-column spellings remain out of scope (the `color?` keys *inside* reserve_locations/cars JSON, and the `avatar_kind='color'` discriminator value) — see UNIFORMIZING DB-2.
 4. Deliberate no-peek verdict recorded in `adapters.ts` L387-397 / UNIFORMIZING: tapping navigates to the full page/scene ("tap the thing, get the thing").
 5. **Dry-run confirmed 2026-07-10; FIXED (Wave S) 2026-07-10**: `habit` now has a `SEARCH_INDEX` entry (title) + a « Mes habitudes » SearchPage section → `/board/habitudes`. See ⁵¹.
 6. Guide card `habits` + `operatorHelp:habits` exist, but no « ? » help on the board/HabitudesPage surface itself and no tour step (audited 2026-07-10, Appendix A).
@@ -319,8 +321,8 @@ Footnotes (verdicts recorded so far):
 18. **D1 verified 2026-07-10**: `car.ts` is a **GET-only resolved read model** (`realtime.ts` L203 says so — "no write path"); the household's cars are edited via `household` PATCH (`household.ts` L206), and `car-day` is a create/delete day-marker (nothing to edit). `schedule` is full CRUD. Whole feature is manageable.
 19. **D4 found 2026-07-10 → RESOLVED (Wave O, footnote 56)**: `src/lib/ghost.ts` `patchGhost`/`deleteGhost` called `api('ghost',{method})` directly — enroll/snooze/remove bypassed the offline outbox. Now routed through `useWrite` at the call site; the raw wrappers were deleted.
 20. **D4 found 2026-07-10 → TRIAGED ➖ (Wave O) 2026-07-10** (the never-itemized cluster): `FamilyImportPage.tsx` fires **9 raw `api()` writes** (cercle ×4, cercle-links ×2, pets, cercle-groups ×2) for the bulk family-tree import — online-only batch, not queued. Its avatar POSTs are R2 two-step uploads (exempt, ⁷). `DayPlanPage.tsx` (13 writes) and `Board.tsx` (9) turned out **already fully on `useWrite`** — the old "~15/~11 raw" worry was stale. **Verdict on the import batch: keep raw `api()` — record ➖, don't convert.** The merge is a *dependent id-chain*: each `upsertPerson` POST returns a contact id that the subsequent `cercle-links` / pet-owner / `cercle-groups` writes reference by value, and pets/groups POST their own ids consumed by follow-up membership writes. `useWrite` returns `{ data: null, queued: true }` when offline, so a queued person write yields no id and every downstream link/membership breaks — a corrupt half-import, strictly worse than requiring connectivity. The whole page is an interactive online flow (open a share link → live progress bar → done state) with online-only R2 photo re-copies (`copyPhotoToOwn`). This is the sanctioned "online-only batch" ➖, not a gap.
-21. **D13 ordering outlier** (`position` convention): `sort_order`/`sort` instead of `position` — `members.sort_order` (0001, F34), `contact_groups.sort_order` (0052, F22 — **corrects the pre-seeded ✅**, verified in code), `carnets.sort` + `home_pins.sort` (0082, F26). Converge opportunistically during a schema-touching migration, never churn-only.
-22. **D13 soft-delete outlier**: `notes.dismissed_at` (0018) is a bespoke soft-clear timestamp instead of `deleted_at` — documented (mis-clear recoverable), semantically "cleared not deleted." Converge opportunistically.
+21. **CONVERGED (mig 0086, already shipped).** The ordering outliers `members.sort_order` (F34), `contact_groups.sort_order` (F22), `carnets.sort` + `home_pins.sort` (F26) were renamed to `position`; the API JSON shapes are preserved (members alias `position AS sort_order`; carnets/home_pins keep their `sort` JSON key mapped from the renamed column). Cells 🔶→✅. See UNIFORMIZING DB-3.
+22. **RESOLVED ➖ (sanctioned bespoke name).** `notes.dismissed_at` (0018) is a soft-*clear* timestamp, semantically "cleared not deleted" (a mis-clear is recoverable), and is already commented as such in the migration — the same sanctioned deviation as `carnets.archived_at`. Keep it: a churn-only rename to `deleted_at` would blur the distinct semantic. Cell 🔶→➖. (Per CLAUDE.md ▸ Schema conventions, a bespoke timestamp name is allowed when the semantic genuinely differs and is commented.)
 23. **D14 media-shape deviation** (lifecycle still correct — blobs freed via `deleteR2Blob`, shared `uploadMedia` used): `care_log.media_json` is a parallel array of doc keys (F26); `members.avatar_kind`/`avatar_ref` is a bespoke dual-purpose column predating the trio (F34). Normalization backlog, opportunistic only — same class as DB-1 (¹⁰).
 24. **D1 deliberate-none**: `capture`/`ask`/`transcribe` are AI _action_ endpoints, not stored entities — the routed note/event/task is CRUD'd in its own feature; `a-regler` is a derived queue. A memo blob rides `note-media` (F4), so capture stores no media of its own (D14 ➖¹).
 25. **D1 deliberate-none**: flyer/deal data is transient external (Flipp reconstruction); a deal rides a generic recurring list item (never its own row, per the deal↔item concept); `place-import` is an import action.
@@ -436,9 +438,12 @@ Footnotes (verdicts recorded so far):
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
-**Method:** a "gap-free" row has **zero ❌ and zero 🔶** (only ✅ / ➖). Nine rows
-qualify: **F1, F7, F11, F16, F19, F21, F24, F25, F27** (F21 joined once Wave O settled
-its last 🔶 to ➖; footnote 20). But gap-free ≠ exemplary — F7
+**Method:** a "gap-free" row has **zero ❌ and zero 🔶** (only ✅ / ➖). Twelve rows
+qualify: **F1, F4, F7, F11, F16, F19, F21, F22, F24, F25, F27, F32** (F21 joined once
+Wave O settled its last 🔶 to ➖, footnote 20; **F4, F22, F32 joined once the Wave D
+D13 reconciliation confirmed migs 0086/0087 had already converged their
+`colour`/`position` cells — 2026-07-10, footnotes 3/21/22**). But gap-free ≠
+exemplary — F7
 Photos / F11 Widget space / F27 Notre monde are clean largely by carrying many
 _deliberate_ ➖ (simple or derived features with little surface to get wrong). The
 **gold standard = gap-free AND rich** (many substantive ✅, ➖ only where a
@@ -551,13 +556,16 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
         -overflow sweep. **DONE (Wave E) 2026-07-10** — `/search` + `/liste/circulaires`
         added to `screenshots.spec` `OVERFLOW_CASES` (poll now checks `.scene__body`);
         🔶→✅ (footnote 54).
-12. [ ] 🟡 **F22×D13 / F34×D13 / F26×D13** — `sort_order`/`sort` ordering outliers
-        vs the `position` convention: contact_groups, members, carnets, home_pins
-        (footnote 21; F22 corrected from a pre-seeded ✅). **→ Wave D** (opportunistic).
-13. [ ] 🟡 **F2×D13 / F32×D13 / F26×D13** — `color` column outliers vs `colour`:
-        tasks, schedule_blocks, carnets, home_projects (footnote 3). **→ Wave D.**
-14. [ ] 🟡 **F4×D13** — `notes.dismissed_at` bespoke soft-clear name vs `deleted_at`
-        (footnote 22). **→ Wave D.**
+12. [x] ✅ **F22×D13 / F34×D13 / F26×D13** — `sort_order`/`sort`→`position`:
+        contact_groups, members, carnets, home_pins. **DONE (mig 0086, already
+        shipped)** — reconciled 2026-07-10; cells 🔶→✅ (footnote 21).
+13. [x] ✅ **F2×D13 / F32×D13 / F26×D13** — `color`→`colour`: tasks,
+        schedule_blocks, carnets, home_projects (+ household JSON-pref columns).
+        **DONE (mig 0087, already shipped)** — reconciled 2026-07-10; cells 🔶→✅
+        (footnote 3).
+14. [x] ➖ **F4×D13** — `notes.dismissed_at` vs `deleted_at`. **Verdict: keep**
+        (sanctioned bespoke soft-clear name, already commented in 0018 — like
+        `carnets.archived_at`); cell 🔶→➖ (footnote 22). Not a churn target.
 15. [ ] 🟡 **F26×D14 / F34×D14** — `care_log.media_json` parallel array +
         `members.avatar_kind`/`avatar_ref` dual-purpose deviate from the media trio
         (footnote 23). **→ Wave D.**
@@ -661,14 +669,20 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
       `buildRecipe`. Cell ❌→➖ (footnote 57). **D2 now has zero ❌.**
 - [ ] **Wave D — Schema/media convergence (opportunistic only)** _(entries 12–17;
       never a churn-only wave)_. When another wave touches one of these tables, fold
-      in its convergence:
-  - [ ] `sort_order`/`sort`→`position`: contact_groups, members, carnets, home_pins.
-  - [ ] `color`→`colour`: tasks, schedule_blocks, carnets, home_projects.
-  - [ ] `notes.dismissed_at`→`deleted_at` (or keep + comment the distinct semantic).
+      in its convergence. **Reconciled 2026-07-10: the two scalar-rename items below
+      already shipped in migs 0086/0087 before this audit was written — the audit
+      just hadn't caught up. What genuinely remains is opportunistic media-shape work
+      + the SILENT_PATHS cleanup.**
+  - [x] `sort_order`/`sort`→`position`: contact_groups, members, carnets, home_pins.
+        **DONE — mig 0086.**
+  - [x] `color`→`colour`: tasks, schedule_blocks, carnets, home_projects.
+        **DONE — mig 0087.**
+  - [x] `notes.dismissed_at`: **keep + commented** (sanctioned distinct semantic,
+        like `carnets.archived_at`) — not a rename target.
   - [ ] media parallel arrays → trio: `care_log.media_json`, `members.avatar_*`,
-        recipe step-images, routine card-audio/photo.
+        recipe step-images, routine card-audio/photo. _(genuinely pending, opportunistic)_
   - [ ] `SILENT_PATHS` cleanup: drop dead `capture-classify`; add the 9 blob/AI
-        endpoints (entry 17). Keep `realtime.test.ts` green.
+        endpoints (entry 17). Keep `realtime.test.ts` green. _(genuinely pending)_
 
 ---
 
@@ -797,7 +811,10 @@ confirmed for all 34 rows (footnotes 17–26). D5 was already seeded and holds; 
 verified (ghost/car deliberate shapes are ✅, F33 mixed 🔶); D4 clean except the
 FamilyImportPage import batch + ghost.ts (DayPlanPage/Board already migrated); D13
 outliers are `color`/`sort_order`/`sort`/`dismissed_at`; D14 outliers are the known
-recipe/routine parallel arrays + care_log.media_json + members avatar. **Audit Day 2
+recipe/routine parallel arrays + care_log.media_json + members avatar. _(Reconciled
+2026-07-10: the `color`/`sort_order`/`sort` outliers were **already converged** by
+migs 0087/0086 before this audit — those cells are ✅; `dismissed_at` is a sanctioned
+➖. See footnotes 3/21/22 + Wave D.)_ **Audit Day 2
 run 2026-07-10** — columns D6/D11/D12/D16 filled for all 34 rows (footnotes 27–42):
 D11 is near-universal (only Vide-frigo ³⁶ + Jouer ³⁷ are deliberate ➖); D12 attribution
 holds where content is member-authored (events/todos/drawings/schedule show faces) with
