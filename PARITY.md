@@ -58,8 +58,14 @@ mark unfinished cells ❓, never guess.
       Québécois, tsc-enforced parity); D3 clean but for **F29 sticker raw-delete (🔶)**; D8
       found **F5 Mots + F6 Habitudes have no toddler lens (❌)**; D9 all ✅ but for **F10/F18
       unswept scenes (🔶)**. D8/D9 read by two parallel Explore agents; the rest greppable.
-- [ ] **Day 4 — Rank & choose:** fill Part 3's gold-standard section + the ranked
-      gap list; write the Part 4 waves as sized checkbox lists.
+- [x] **Day 4 — Rank & choose:** fill Part 3's gold-standard section + the ranked
+      gap list; write the Part 4 waves as sized checkbox lists. **Done 2026-07-10** —
+      gold standard = **F19 La liste** (overall ref) + F1 Agenda / F24 Business /
+      F25 Notes cercle (all gap-free & rich), F15/F21 near-gold; **corrected the
+      exploration's Mots/Voyage guesses** (both carry real ❌). Ranked gap list =
+      **17 entries (4 🔴, 12 🟡, 1 🟢)**, each mapped to a wave. Part 4's eight waves
+      now sized with per-item checkboxes + verify steps; suggested order S→T→H→E
+      (🔴), then U→O (🟡), then P→D (opportunistic).
 - [ ] **Day 5+ — Fix-waves:** one wave per session (Part 4). After each wave,
       update the matrix cells it fixed and re-run the wave's verification.
 - [ ] **Last day — Part 5:** extract primitives (≥3-features rule), finalize the
@@ -344,39 +350,132 @@ Footnotes (verdicts recorded so far):
 49. **D9 found 2026-07-10**: no board card **and** the scene route is **not in any phone-overflow e2e sweep** (`screenshots.spec`/`layout-overflow.spec` cover the six hub tabs at 360/390px, not `/search` or `/circulaires`). The layout likely reflows (grid/`Cluster`) but its phone width is **unproven** — add both routes to `OVERFLOW_CASES`. [F10/F18]
 50. **D8 soft-✅ 2026-07-10**: `StickerWallPage` has **no explicit `useAudience` branch** — the same wall renders across lenses — but it is inherently picture-first (avatar + sticker-emoji grid, no reading), so it satisfies the toddler bar by nature. Under a strict "must branch" reading this drops to ❓. [F29]
 
-### Gold standard (fill on Day 4)
+### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
-- **Overall most-complete features:** ❓ (exploration suggests **La liste (F19)**,
-  **Recettes (F15)**, **Mots (F5)**, **Voyage (F31)** as candidates — confirm
-  from the completed matrix, then write _why_ each is the reference.)
+**Method:** a "gap-free" row has **zero ❌ and zero 🔶** (only ✅ / ➖). Eight rows
+qualify: **F1, F7, F11, F16, F19, F24, F25, F27**. But gap-free ≠ exemplary — F7
+Photos / F11 Widget space / F27 Notre monde are clean largely by carrying many
+_deliberate_ ➖ (simple or derived features with little surface to get wrong). The
+**gold standard = gap-free AND rich** (many substantive ✅, ➖ only where a
+dimension is deliberately N/A):
+
+- **⭐ La liste (F19)** — the overall reference. Full CRUD + reorder, `useWrite`
+  offline, realtime keys, searchable, `useDeferredRemoval` undo, empty states,
+  attribution faces, voice on the quick-add, toddler lens, e2e, guide+help+tour.
+  Its only ➖ are D2 peek (check-in-place, "tap the thing") and D14 media (a list
+  item has no blob) — both deliberate. Copy its wiring for any new list entity.
+- **Agenda (F1)** — the reference for a **timed/dated** entity: lifecycle roll-off,
+  month/year/day/this-week reach, peek adapter, faces, e2e. ➖ only on D10 voice
+  (structured date form) and D14 media (text/derived).
+- **Business (F24)** & **Notes du cercle (F25)** — the reference for a **cercle
+  content entity**: clean full CRUD, peek adapter (F24), media trio (both), search,
+  offline, realtime, help. Recent code, schema-conventions-native — the cleanest
+  templates for a new cercle sub-entity.
+
+**Near-gold (one _opportunistic_ 🔶, otherwise exemplary):** **Recettes (F15)** —
+only D14 🔶¹⁰ (parallel step-image arrays, DB-1 deferred); **Personnes (F21)** —
+only D4 🔶²⁰ (the bulk-import batch bypasses `useWrite`). Both are otherwise
+full-coverage reference features.
+
+**Correction to the exploration's guesses (code-is-truth):** **Mots (F5)** and
+**Voyage (F31)** were _wrongly_ nominated by the pre-audit exploration — the
+completed matrix shows each carries **real ❌ gaps** (F5: D6 search + D8 toddler;
+F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave targets.
+
 - **Per-dimension reference implementation** (the file a fixer should copy from):
-  - D2 peek: `buildBusiness`/`buildPet` (clean, recent) — ❓ confirm
-  - D3 undo: Liste / MealPool via `useDeferredRemoval` — ❓ confirm
-  - D7 discovery: Le cercle (help registry + tour + guide cards + FAB) — ❓ confirm
-  - … one line per dimension.
+  - **D1 CRUD:** `functions/api/cercle.ts` + `CercleFormPage` (create/edit/delete
+    + `RowActions`); reorder from La liste (`usePointerDnd`, migration 0078/0110).
+  - **D2 peek:** `buildBusiness` / `buildPet` (`adapters.ts` L105/L153) — clean,
+    recent, minimal adapters. ✅ confirmed present.
+  - **D3 undo:** `Liste.tsx` / `MealPool.tsx` via `useDeferredRemoval` — ✅ confirmed
+    (17 call sites total; these two are the canonical polled-list pattern).
+  - **D4 offline:** `useWrite()` in `Liste.tsx` (queue → replay → idempotency).
+  - **D5 realtime:** `PATH_KEYS` block for `list`/`meals` in `_lib/realtime.ts`.
+  - **D6 search:** `SEARCH_INDEX` entry for `listItem` / `recipe` (`searchIndex.ts`).
+  - **D7 discovery:** **Le cercle (F21)** — 12 `cercleHelp` keys + tour steps +
+    guide `cercle` card + FAB (Appendix A, richest of any feature). ✅ confirmed.
+  - **D8 toddler:** `ToddlerBoard` / `KidKitchen` / `CircleKidView` (the deliberate
+    lens fold, footnote 48).
+  - **D9 kiosk/mobile:** any `lib/boardCards` card + `Cluster`/`Rail` rows.
+  - **D11 empty:** `EmptyState` (88 files) / `useReportEmpty` for a board card.
+  - **D12 attribution:** events/todos/drawings show `Avatar` tint (soft member ref).
+  - **D13 schema / D14 media:** Business (F24) & Notes cercle (F25) migrations —
+    `colour`/`position`/`created_at` + the `media_kind`+`media_key` trio, native.
+  - **D16 e2e:** `cercle-crud.spec` (create-and-POST group/business/carnet) is the
+    happy-path template Wave E copies for the smoke-only gaps.
 
-### Ranked gap list (fill on Day 4)
+### Ranked gap list (Day 4 — finalized 2026-07-10)
 
 > 🔴 user-visible gap · 🟡 hygiene/drift · 🟢 nice-to-have. Every entry cites its
-> matrix cell. Seed entries from dry-runs:
+> matrix cell + its target wave. **This is the complete, ordered backlog** — the
+> matrix has zero ❌/🔶 not represented below. Ranking rule: 🔴 (a user can't find
+> / can't do / can't reach a thing) before 🟡 (drift invisible to users) before 🟢.
+> Within a tier, breadth (features affected) breaks ties.
 
-- [ ] 🔴 F6×D6 — habits missing from `SEARCH_INDEX` (footnote 5).
-- [ ] 🔴 F5/F12/F13/F22/F31×D6 — **no `SEARCH_INDEX` entry** for Mots, Plan des repas, Idées de repas, Groupes, Voyage (found Day 2). All are persistent named content a user could reasonably look up: a message, a planned/idea dish (recipe-linked meals are reachable via the recipe, but free-text meals/ideas aren't), a named group, a trip. One-line extractor each + a SearchPage section. (Dessins **is** searchable — via `drawingFields` by author name.)
-- [ ] 🔴 F29×D16 — mur de collants has **no e2e at all** (confirmed: no `sticker`/`collant`/`StickerWall` match). Spec the happy path.
-- [ ] 🟡 F3/F14/F23/F30/F32×D16 — **smoke-rendered only, no happy-path spec** (Day 2, footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`, `/voiture`. **F18 (circulaires) turned out covered** (DealsBrowser start `coverage.spec` + results `sheets.spec` + price-match `cashier.spec`) → ✅; **F32 (L'auto)** is layout-smoke-rendered not dark → ❌ upgraded to 🔶. Add create/complete/interaction specs (extend the sweeps).
-- [ ] 🔴 F5×D8 / F6×D8 — **Mots & Habitudes have no toddler lens at all** (Day 3): `MotsCard` isn't pulled into `ToddlerBoard`, and `HabitudesPage`/`HabitudesCard` import no `useAudience` — both are child-relevant (a mot with a drawing/voice; "brosse tes dents") and neither is operator-locked, so ➖ would be wrong. Wave T: give each a picture-first/read-aloud treatment or a written ➖.
-- [ ] 🟡 F29×D3 — **the sticker ✕ is a raw DELETE** with no undo toast and no confirm on a polled list (footnote 46). Wave U: wrap in `useDeferredRemoval(STICKERS_KEY)`.
-- [ ] 🟡 F10×D9 / F18×D9 — SearchPage & CirculairesPage are **not in any phone-overflow e2e sweep** and have no board card (footnote 49); phone width unproven. Ties to Wave E — add `/search` + `/circulaires` to `OVERFLOW_CASES` in `screenshots.spec`.
-- [ ] 🔴 F30×D7 — Jouer is fully undiscovered: no guide card, no « ? », no tour (footnote 16).
-- [ ] 🟡 F5/F8/F17/F29/F31×D7 — Mots, Dessins, Vide-frigo, Mur de collants, Voyage are guide-only: no « ? » help on their live surface (footnote 15).
-- [ ] 🟡 F6×D7 — habits have guide + operatorHelp but no « ? » where they live (footnote 6).
-- [ ] 🟡 F21×D4 — `FamilyImportPage.tsx` bulk import = 9 raw `api()` writes, not offline-queued (footnote 20). DayPlanPage/Board turned out already-migrated — this is the only real D4 cluster.
-- [ ] 🟡 F20×D4 — `ghost.ts` `patchGhost`/`deleteGhost` bypass `useWrite` (footnote 19).
-- [ ] 🟡 F22×D13 / F34×D13 / F26×D13 — `sort_order`/`sort` ordering outliers (`position` convention): contact_groups, members, carnets, home_pins (footnote 21). F22 corrected from a pre-seeded ✅.
-- [ ] 🟡 F4×D13 — `notes.dismissed_at` bespoke soft-clear name vs `deleted_at` (footnote 22).
-- [ ] 🟡 F26×D14 / F34×D14 — `care_log.media_json` parallel array + `members.avatar_kind`/`avatar_ref` dual-purpose deviate from the media trio (footnote 23).
-- [ ] 🟢 D5 hygiene (F4/F9/F28/F33×D5) — `SILENT_PATHS` in `functions/_lib/realtime.ts` carries a **dead `capture-classify`** entry (no such route; the handler is `capture`), and the blob/AI endpoints `note-media`, `routine-card-photo`, `routine-selfie`, `ask`, `place-import`, `guest/intake-media`, `guest/postbox-media`, `guest-links`, `guest/*-submit` are **absent from `SILENT_PATHS`**, so each write over-broadcasts `[['board']]` (harmless superset — their real content path is mapped — but they should be silenced). Cells stay ✅; add these to `SILENT_PATHS` opportunistically.
-- [ ] ❓ … (Day 4 fills the rest, ranked.)
+**🔴 User-visible gaps — do first (Waves S, H, T, E):**
+
+1. [ ] 🔴 **F5/F6/F12/F13/F22/F31×D6** — six persistent-content entities are
+       **unfindable from Recherche** (no `SEARCH_INDEX` entry): Mots (F5),
+       Habitudes (F6, footnote 5 — dry-run confirmed), Plan des repas (F12), Idées
+       de repas (F13), Groupes (F22), Voyage (F31). Highest-breadth 🔴; each is a
+       one-line extractor + a SearchPage section. **→ Wave S.** (Dessins is already
+       searchable via `drawingFields`; recipe-linked meals reach via the recipe —
+       only free-text meals/ideas are dark.)
+2. [ ] 🔴 **F5×D8 / F6×D8** — **Mots & Habitudes render no toddler lens at all**
+       (Day 3): `MotsCard` isn't pulled into `ToddlerBoard`; `HabitudesPage`/
+       `HabitudesCard` import no `useAudience`. Both are child-relevant (a mot with
+       a drawing/voice; "brosse tes dents") and neither is operator-locked, so ➖
+       would be wrong. **→ Wave T** — picture-first/read-aloud treatment or a
+       written ➖.
+3. [ ] 🔴 **F30×D7** — **Jouer is fully undiscovered**: no guide card, no « ? », no
+       tour (footnote 16 — the only feature dark on all three channels). **→ Wave H.**
+4. [ ] 🔴 **F29×D16** — **mur de collants has no e2e at all** (footnote, confirmed:
+       no `sticker`/`collant`/`StickerWall` match). Spec the happy path. **→ Wave E.**
+
+**🟡 Hygiene / drift — invisible to users, converge opportunistically (Waves U, O, D, H, E):**
+
+5. [ ] 🟡 **F5/F8/F17/F29/F31×D7** — guide-only: Mots, Dessins, Vide-frigo, Mur de
+       collants, Voyage have a guide card but **no « ? » help on their live surface**
+       (footnote 15). **→ Wave H** (merge into existing cards; 32 is a ceiling).
+6. [ ] 🟡 **F6×D7** — habits have guide + `operatorHelp` but no « ? » where they
+       live (footnote 6). **→ Wave H.**
+7. [ ] 🟡 **F29×D3** — the sticker ✕ is a **raw DELETE** with no undo toast and no
+       confirm on a polled list (footnote 46 — the one D3 misassignment). **→ Wave U**:
+       wrap in `useDeferredRemoval(STICKERS_KEY)`.
+8. [ ] 🟡 **F21×D4** — `FamilyImportPage.tsx` bulk import = **9 raw `api()` writes**,
+       not offline-queued (footnote 20). The only real D4 cluster — DayPlanPage/Board
+       turned out already-migrated. **→ Wave O.**
+9. [ ] 🟡 **F20×D4** — `ghost.ts` `patchGhost`/`deleteGhost` bypass `useWrite`
+       (footnote 19). Low severity (usually rides a queued list add). **→ Wave O.**
+10. [ ] 🟡 **F3/F14/F23/F30/F32×D16** — smoke-rendered only, **no happy-path spec**
+       (footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`,
+       `/voiture`. **→ Wave E** (extend the sweeps; `cercle-crud.spec` is the template).
+11. [ ] 🟡 **F10×D9 / F18×D9** — SearchPage & CirculairesPage are **not in any
+       phone-overflow e2e sweep** and have no board card (footnote 49); phone width
+       unproven. **→ Wave E** — add `/search` + `/circulaires` to `OVERFLOW_CASES`.
+12. [ ] 🟡 **F22×D13 / F34×D13 / F26×D13** — `sort_order`/`sort` ordering outliers
+       vs the `position` convention: contact_groups, members, carnets, home_pins
+       (footnote 21; F22 corrected from a pre-seeded ✅). **→ Wave D** (opportunistic).
+13. [ ] 🟡 **F2×D13 / F32×D13 / F26×D13** — `color` column outliers vs `colour`:
+       tasks, schedule_blocks, carnets, home_projects (footnote 3). **→ Wave D.**
+14. [ ] 🟡 **F4×D13** — `notes.dismissed_at` bespoke soft-clear name vs `deleted_at`
+       (footnote 22). **→ Wave D.**
+15. [ ] 🟡 **F26×D14 / F34×D14** — `care_log.media_json` parallel array +
+       `members.avatar_kind`/`avatar_ref` dual-purpose deviate from the media trio
+       (footnote 23). **→ Wave D.**
+16. [ ] 🟡 **F15×D14 / F28×D14** — recipe step-image + routine card-audio/photo
+       **parallel arrays** instead of the trio (footnote 10, DB-1 deferred). **→ Wave D.**
+
+**🟢 Nice-to-have / superset-safe (Wave D / opportunistic):**
+
+17. [ ] 🟢 **D5 hygiene (F4/F9/F28/F33×D5)** — `SILENT_PATHS` carries a **dead
+       `capture-classify`** entry and omits `note-media`, `routine-card-photo`,
+       `routine-selfie`, `ask`, `place-import`, `guest/intake-media`,
+       `guest/postbox-media`, `guest-links`, `guest/*-submit` — each over-broadcasts
+       `[['board']]` (harmless superset). Cells stay ✅; add to `SILENT_PATHS` when
+       a wave touches that file. **→ Wave D.**
+
+**Total: 17 ranked entries — 4 🔴, 12 🟡, 1 🟢.** No matrix ❌/🔶 is unrepresented.
 
 ---
 
@@ -386,32 +485,67 @@ One wave = one dimension across all its gapped features, sized to one session.
 Standing rules for every wave: **reuse the existing primitive** (extend, don't
 fork); a new Réglages setting merges into an existing sub (C-15); mobile +
 toddler friendly; rows via `Cluster`/`Rail`; push straight to `main`; update the
-matrix cell + tick the box when done.
+matrix cell + tick the box when done. **Sized 2026-07-10 (Day 4).** Suggested
+order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then opportunistic
+(**P → D**). Each wave header notes its ranked-entry #s and its size.
 
-- [ ] **Wave S — Search:** add missing `SEARCH_INDEX` entries (habits + whatever
-      Day 2 finds). Verify: SearchPage finds one of each kind.
-- [ ] **Wave H — Help/tour/guide:** cover the discovery-thin features — audited
-      2026-07-10 (Appendix A): **Jouer (nothing at all)**, then the guide-only
-      set (Mots, Dessins galerie, Vide-frigo, Mur de collants, Voyage) + habits'
-      missing on-surface « ? ». Carnets/L'auto turned out covered — don't touch.
-      **Read `DISCOVERY.md` first**; merge into existing cards (32 is a
-      ceiling); run `helpRegistry.test.ts` + `guideLinks.test.ts`.
-- [ ] **Wave U — Undo/confirm rebalance:** demote light deletes wrongly behind
-      `useConfirm` to the undo toast; add `useDeferredRemoval` where polled lists
-      delete raw. Verify: delete → undo within 5 s on each touched surface.
-- [ ] **Wave O — Offline writes:** triage the un-itemized raw `api()` writes
-      (DayPlanPage, Board, FamilyImportPage + Day 1 finds); convert user-content
-      ones to `useWrite`, record ➖ verdicts for the rest. Verify: airplane-mode
-      write → reload → replayed (e2e offline-outbox pattern).
-- [ ] **Wave P — Peek verdicts:** for every D2 ❌, either add an adapter
-      (copy the reference builder) or record ➖ in `adapters.ts`'s verdict comment.
-- [ ] **Wave T — Toddler/kiosk sweep:** every themed-tab feature gets a deliberate
-      toddler treatment or a written ➖; 360px overflow sweep on touched pages.
-- [ ] **Wave E — e2e:** specs for the uncovered features (happy path only; extend
-      the visual sweeps rather than new harnesses where possible).
-- [ ] **Wave D — Schema/media convergence (opportunistic only):** when a wave
-      above already touches a table, fold in the `color`→`colour` /
-      parallel-array→trio convergence (DB-1/D.1 rules). Never a churn-only wave.
+- [ ] **Wave S — Search** _(entry 1; ~S/M — one session)_. Add `SEARCH_INDEX`
+      entries so all six persistent kinds are findable. Copy the `listItem`/`recipe`
+      extractor shape in `src/lib/searchIndex.ts`; add a SearchPage section per kind.
+  - [ ] `habit` (F6) · [ ] `mot` (F5) · [ ] free-text `meal` (F12) · [ ] `mealIdea`
+        (F13) · [ ] `group` (F22) · [ ] `trip` (F31)
+  - _Verify:_ SearchPage returns one seeded row of each kind. Extend
+    `e2e/search.spec` with one query per new kind.
+- [ ] **Wave T — Toddler lens** _(entry 2; ~M)_. The two real D8 gaps only — the
+      rest of the tab-features already fold deliberately (footnote 48).
+  - [ ] **F5 Mots** — pull `MotsCard` into `ToddlerBoard` as a picture-first,
+        read-aloud card (a mot's drawing/voice is child-facing), **or** write a ➖.
+  - [ ] **F6 Habitudes** — branch `HabitudesPage`/`HabitudesCard` on `useAudience`
+        (picture-first "brosse tes dents"), **or** write a ➖.
+  - _Verify:_ `?kid=1` renders each without reading; 360px no-overflow on both.
+- [ ] **Wave H — Help/tour/guide** _(entries 3, 5, 6; ~M)_. **Read `DISCOVERY.md`
+      first**; merge into existing cards (32 is a ceiling); keep
+      `helpRegistry.test.ts` + `guideLinks.test.ts` green.
+  - [ ] **F30 Jouer** (🔴, entry 3) — dark on all three channels: add a guide card
+        (or merge into `routines`), a « ? » entry, at least the guide launcher.
+  - [ ] Guide-only « ? » gaps (entry 5): **F5 Mots, F8 Dessins, F17 Vide-frigo,
+        F29 Collants, F31 Voyage** — add an on-surface help key each.
+  - [ ] **F6 Habitudes** (entry 6) — add a board/HabitudesPage « ? » (help today
+        lives only in `operatorHelp`).
+  - _Don't touch:_ Carnets/L'auto turned out covered (Appendix A).
+- [ ] **Wave E — e2e** _(entries 4, 10, 11; ~M/L)_. Happy path only; extend sweeps,
+      don't build new harnesses. `cercle-crud.spec` is the create-and-POST template.
+  - [ ] **F29 Collants** (🔴, entry 4) — first-ever spec: place a sticker, assert
+        the POST, remove it.
+  - [ ] Smoke-only → happy path (entry 10): **F3 todos** (create+complete),
+        **F14 ＋Restants** (POST+consume), **F23 pet** (`/cercle/pet/new` create),
+        **F30 jouer** (one game interaction), **F32 voiture** (schedule/car-day CRUD).
+  - [ ] Overflow sweep (entry 11): add **`/search` + `/circulaires`** to
+        `OVERFLOW_CASES` in `e2e/screenshots.spec` (360/390px).
+  - _Note:_ trust CI's E2E job for signal; don't run e2e locally by default.
+- [ ] **Wave U — Undo/confirm rebalance** _(entry 7; ~S — one file)_.
+  - [ ] **F29** — wrap the sticker ✕ (`StickerWallPage.tsx` L62) in
+        `useDeferredRemoval(STICKERS_KEY)` (light, frequent, polled → undo toast).
+  - _Verify:_ delete → undo within 5 s; next poll doesn't resurrect mid-undo.
+- [ ] **Wave O — Offline writes** _(entries 8, 9; ~S/M)_.
+  - [ ] **F21** — convert `FamilyImportPage.tsx`'s 9 raw `api()` writes to `useWrite`
+        (avatar POSTs stay R2 two-step exempt); or record ➖ for the batch shape.
+  - [ ] **F20** — `ghost.ts` `patchGhost`/`deleteGhost` → `useWrite` (low severity).
+  - _Verify:_ airplane-mode write → reload → replayed (offline-outbox e2e pattern).
+- [ ] **Wave P — Peek verdicts** _(~XS — one cell)_. Only one D2 ❌ exists: **F6
+      Habitudes**. Either add a `buildHabit` adapter (copy `buildBusiness`) or record
+      a ➖ verdict in `adapters.ts` beside the recipe/routine ones. (All other D2 are
+      already ✅ or a written ➖.)
+- [ ] **Wave D — Schema/media convergence (opportunistic only)** _(entries 12–17;
+      never a churn-only wave)_. When another wave touches one of these tables, fold
+      in its convergence:
+  - [ ] `sort_order`/`sort`→`position`: contact_groups, members, carnets, home_pins.
+  - [ ] `color`→`colour`: tasks, schedule_blocks, carnets, home_projects.
+  - [ ] `notes.dismissed_at`→`deleted_at` (or keep + comment the distinct semantic).
+  - [ ] media parallel arrays → trio: `care_log.media_json`, `members.avatar_*`,
+        recipe step-images, routine card-audio/photo.
+  - [ ] `SILENT_PATHS` cleanup: drop dead `capture-classify`; add the 9 blob/AI
+        endpoints (entry 17). Keep `realtime.test.ts` green.
 
 ---
 
@@ -549,5 +683,10 @@ surfaces); D15 register is uniformly Québécois → all ✅. D3 is correctly as
 except the **F29 sticker ✕ raw delete (🔶** — no undo, no confirm, on a polled list). D8 found
 two real gaps — **F5 Mots and F6 Habitudes render no toddler lens (❌)** — the rest ✅ or a
 deliberate kid-view fold (➖); D9 is ✅ except **F10 Recherche / F18 Circulaires (🔶** — unswept
-scenes, no board card). Status: **audit phase COMPLETE (Parts 1–2 + all 16 matrix columns);
-next is Day 4 — rank & choose (gold-standard section + ranked gap list + Part 4 waves).**_
+scenes, no board card). **Day 4 run 2026-07-10** — gold standard chosen (F19 La liste
+the overall reference; F1/F24/F25 gap-free-and-rich; F15/F21 near-gold; the pre-audit
+Mots/Voyage guesses **corrected** — both carry real ❌); ranked gap list finalized at
+**17 entries (4 🔴, 12 🟡, 1 🟢)**, each mapped to a wave; Part 4's eight waves sized
+into per-item checkbox lists with verify steps. Status: **planning phase COMPLETE
+(Parts 1–4); next is Day 5+ — execute the fix-waves, one per session (suggested order
+S→T→H→E, then U→O, then P→D), updating matrix cells as each ships.**_
