@@ -267,7 +267,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
 | F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F6 Habitudes             | ✅      | ➖⁵⁷    | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
 | F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | ✅⁵³     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
@@ -423,6 +423,16 @@ Footnotes (verdicts recorded so far):
     Liste quick-add panel; the section's local `load()` still refreshes the manage view.
     typecheck + 1436 unit tests + `interactions.spec` ghost PATCH tests green; knip shows no
     new dead exports (3 fewer). F21 stayed raw by design (➖, footnote 20). [F20×D4]
+57. **Wave P SHIPPED 2026-07-10** — the last D2 ❌ resolved to a **deliberate ➖**.
+    **F6 Habitudes** had no `useEntityDetail` peek. Verdict: **no `buildHabit` adapter** —
+    the board `HabitudesCard` is one `<BoardCard to="/board/habitudes">`, so a tap opens
+    « Le point du jour » (`HabitudesPage`) where check-in (`HabitRow`), history
+    (`HabitHistory`) and edit already live; the habit rows aren't independently tappable, so
+    there's no per-habit entity to peek — a sheet would be a redundant menu in front of the
+    page. Same "tap the thing, get the thing" rule as `buildRoutine`/`buildRecipe`/recipe-
+    meal; recorded in that NOTE block in `adapters.ts`. No code behaviour change (a comment +
+    the matrix verdict); typecheck + 1436 unit tests green. **D2 now carries zero ❌ — every
+    peek cell is a ✅ or a written ➖.** [F6×D2]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
@@ -641,10 +651,14 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
   - _Verified:_ typecheck + 1436 unit tests green; `interactions.spec` ghost tests (add
         staple → PATCH, track candidate → PATCH) pass through the new `write()` path; knip
         shows no new dead exports (3 removed).
-- [ ] **Wave P — Peek verdicts** _(~XS — one cell)_. Only one D2 ❌ exists: **F6
-      Habitudes**. Either add a `buildHabit` adapter (copy `buildBusiness`) or record
-      a ➖ verdict in `adapters.ts` beside the recipe/routine ones. (All other D2 are
-      already ✅ or a written ➖.)
+- [x] **Wave P — Peek verdicts** _(~XS — one cell)_. **DONE 2026-07-10 → ➖ (no-peek).**
+      The one D2 ❌ was **F6 Habitudes**. Verdict: **record ➖, no `buildHabit` adapter**.
+      The board `HabitudesCard` is a single `<BoardCard to="/board/habitudes">` — tapping
+      it opens « Le point du jour » (`HabitudesPage`), where check-in/history/edit live;
+      the individual habit rows aren't independently tappable, so there's no per-habit
+      thing to peek — a sheet would be a redundant menu in front of the page. Recorded in
+      `adapters.ts`'s "tap the thing, get the thing" NOTE beside `buildRoutine`/
+      `buildRecipe`. Cell ❌→➖ (footnote 57). **D2 now has zero ❌.**
 - [ ] **Wave D — Schema/media convergence (opportunistic only)** _(entries 12–17;
       never a churn-only wave)_. When another wave touches one of these tables, fold
       in its convergence:

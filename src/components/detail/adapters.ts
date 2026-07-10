@@ -392,6 +392,11 @@ export function buildDay(
 //     (/routine/:id/run); the card itself already carries one-tap ✎ and ▶, and
 //     « Partager » moved onto the routine's own scene (/routine/:id).
 //   · a recipe-linked MEAL → useOpenMeal navigates to the recipe view too.
+//   · a HABIT (« Mes habitudes ») → the board `HabitudesCard` is ONE `<BoardCard
+//     to="/board/habitudes">`; tapping it opens « Le point du jour » (HabitudesPage),
+//     where check-in (HabitRow), history (HabitHistory) and edit already live. The
+//     individual habit rows aren't independently tappable, so there's no per-habit peek
+//     to build — a sheet would be a redundant menu in front of the page. (PARITY F6×D2 ➖.)
 // What's left below are peeks that are CONTENT, not menus: an event, a chore, a mot
 // (it plays the voice clip), a day, a contact — none of them has a page to jump to,
 // so the sheet IS the destination.
