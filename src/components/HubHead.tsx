@@ -96,11 +96,12 @@ export function HubHead({
               aria-label={t.search.title}
               title={t.search.title}
               onClick={searchPick(() => nav('/search'))}
+              data-tour="search"
             >
               <Icon name="magnifying-glass-bold" size={20} />
             </button>
           ) : (
-            <Link to="/search" className="app-head__search" aria-label={t.search.title} title={t.search.title}>
+            <Link to="/search" className="app-head__search" aria-label={t.search.title} title={t.search.title} data-tour="search">
               <Icon name="magnifying-glass-bold" size={20} />
             </Link>
           ))}

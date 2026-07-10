@@ -811,7 +811,7 @@ export function AddSheet({
 
         {/* Fast path: the note box rides ABOVE the chooser on the board, so a quick
             note is one write-and-Add away (its tile is dropped from the grid below). */}
-        {noteAtTop && <div className="addsheet__lead">{noteForm}</div>}
+        {noteAtTop && <div className="addsheet__lead" data-tour="add-note">{noteForm}</div>}
 
         {/* The section's chooser — ONE grid with every action the section offers,
             shown at once (no "Plus…" overflow). The recipe tile is navigate-only:
@@ -821,14 +821,14 @@ export function AddSheet({
             (noteAtTop) — the rest stay here as explicit overrides. The grid
             reflows (auto-fill) so any tile count stays even. */}
         {tiles.length > 1 && gridTiles.length > 0 && (
-          <div className="cat-grid">{gridTiles.map(renderTile)}</div>
+          <div className="cat-grid" data-tour="add-tiles">{gridTiles.map(renderTile)}</div>
         )}
 
         {/* The kitchen week's actions (shop the week / AI ideas / book ideas /
             use-up / vide-frigo) — offered on every parent kitchen sub-tab now.
             Firing one jumps to Repas (where its result renders) behind the sheet. */}
         {!noKitchenActions(kitchenActions.flags) && (
-          <div className="sheet__group">
+          <div className="sheet__group" data-tour="add-week">
             <p className="sheet__group-label mono">{t.kitchen.week}</p>
             <div className="cat-grid">
               {KITCHEN_ACTIONS.filter((a) => a.show(kitchenActions.flags, help.active, aiEnabled)).map((a) => (
@@ -1194,7 +1194,7 @@ export function AddSheet({
             /routine/<id>. Listing the routines here is the "modify existing" ask:
             you pick the one to change instead of hunting it down in Réglages. */}
         {mode === 'routine-pick' && (
-          <div className="addsheet__cook">
+          <div className="addsheet__cook" data-tour="add-routines">
             <button
               type="button"
               className="btn btn--primary btn--block"

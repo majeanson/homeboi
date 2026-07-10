@@ -21,7 +21,7 @@ settings) are one tap back.** No dead-end prose.
 | Settings taxonomy | `src/lib/settingsNav.ts` | PLAIN DATA: `SETTINGS_SUBS` (sub ids + order, the one source), `SETTINGS_FOCUS` (focusable section anchors = operatorHelp helpKeys), `SUB_GOTO` (sub → live surface), `ROUTE_PREFIXES` (valid link targets, mirrors `router.tsx`). |
 | "?" help-mode | `src/lib/helpMode.tsx` + `HelpBubble`/`HelpDot` | Tap "?" then a control → in-place bubble + « Voir le guide » deep-link. |
 | Help registries | `src/lib/{board,liste,routines,kitchenTab,operator,add,cercle}Help.ts` | 7 maps of `{ body, card, point? }` — every hint names its guide card/point. |
-| Tours | `src/lib/tour.tsx`, `src/lib/tourContent.ts`, `components/tour/TourOverlay.tsx` | Spotlight walkthroughs; steps anchor `data-tour` keys, can end on a guide card. `guidePlusActions(id)` pulls a section card's « ＋ » point verbatim. |
+| Tours | `src/lib/tour.tsx`, `src/lib/tourContent.ts`, `components/tour/TourOverlay.tsx` | Spotlight walkthroughs; steps anchor `data-tour` keys, can end on a guide card. `guidePoint(id, frLabel)` reuses any guide point's detail verbatim as a step body (`guidePlusActions(id)` = the « ＋ » point). A step with `sheet: true` walks INSIDE the ＋ sheet — HubLayout holds the section chooser open for it (in-sheet anchors: `add-note`, `add-tiles`, `add-week`, `add-routines`). |
 | ＋ sheet | `src/lib/addSheet.tsx` + `components/AddSheet.tsx` | `SECTION_MODES` tiles; `ADD_MODES` (all modes, validates `?plus=`); tile explanations live in `ADD_HELP` + guide points, not on the tiles. |
 
 ## The URL grammar (deep links)
@@ -124,7 +124,10 @@ cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
    `SETTINGS_FOCUS` to make it `?focus=`-able; add a `SUB_GOTO` entry if the sub
    gained an obvious live counterpart.
 4. **Tour** (optional): a step in that section's tour naming a `data-tour`
-   anchor, or let the card's `tour` replay cover it.
+   anchor, or let the card's `tour` replay cover it. Source the body from the
+   guide point you wrote in step 1 (`guidePoint(card, frLabel)`) rather than
+   re-typing the prose; a quick-add tile is covered by the section's in-sheet
+   `sheet: true` step (the « ＋ » enumeration) for free.
 5. **Tests**: `npm run typecheck` + vitest — `helpRegistry` + `guideLinks`
    validate the whole graph; fix what they name.
 

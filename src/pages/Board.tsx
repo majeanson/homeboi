@@ -1290,6 +1290,7 @@ export function Board() {
             onClick={() => setProfileOpen(true)}
             aria-label={t.profile.who}
             title={t.profile.who}
+            data-tour="board-faces"
           >
             {me ? (
               (() => {
@@ -1323,7 +1324,12 @@ export function Board() {
           and an individual member — so anyone at the wall tablet can quickly act
           as themselves, then tap Maisonnée (or their face again) to step back. */}
       {surface === 'kiosk' && data && data.members.length > 0 && (
-        <MemberSwitcher members={data.members} t={t} />
+        // The tour anchor wraps here (block-level, layout-neutral): the same
+        // `board-faces` key sits on the mobile profile chip above — exactly one
+        // of the two renders per surface, so the spotlight finds the right one.
+        <div data-tour="board-faces">
+          <MemberSwitcher members={data.members} t={t} />
+        </div>
       )}
 
       {/* No "Vue de <nom>" stamp: the profile chip / member switcher above
@@ -1421,6 +1427,7 @@ export function Board() {
             expandedId={expandedId}
             onExpand={expandCard}
             onCollapse={collapseCard}
+            data-tour="board-cards"
           >
             {visibleCards(boardCards, 'band').map((id) => (
               <CardSlot key={id} id={id} zone="band" empty={slotEmpty(nodes[id])}>

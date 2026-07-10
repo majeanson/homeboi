@@ -110,6 +110,7 @@ export function WidgetGrid({
   onExpand = NOOP_EXPAND,
   onCollapse = NOOP_COLLAPSE,
   className,
+  'data-tour': dataTour,
   children,
 }: {
   zone: CardZone
@@ -121,6 +122,8 @@ export function WidgetGrid({
   onExpand?: (id: BoardCardId) => void
   onCollapse?: () => void
   className?: string
+  // `data-tour` anchor id for the guided tour's spotlight (Cluster/Rail precedent).
+  'data-tour'?: string
   children: ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -173,6 +176,7 @@ export function WidgetGrid({
         }
         style={{ ['--wg-cols' as string]: cols }}
         data-zone={zone}
+        data-tour={dataTour}
         // The grid's own trailing space is a drop target: releasing a card over the gap
         // below the last slot appends it to this zone. A pointer over a SLOT resolves to
         // the slot first (the hit-test walks up from the deepest element), so this only

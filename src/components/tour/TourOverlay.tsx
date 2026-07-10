@@ -99,7 +99,14 @@ export function TourOverlay() {
     let tries = 0
     const measure = () => {
       const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`)
-      if (!el) {
+      // A parked bottom sheet stays MOUNTED (visibility:hidden, translated off-
+      // screen), so an in-sheet anchor (`add-tiles`…) exists before the sheet is
+      // shown. Treat a hidden anchor as absent: the retry loop below waits for
+      // HubLayout to slide the sheet in (a `sheet: true` step opens it).
+      const shown =
+        el != null &&
+        (typeof el.checkVisibility === 'function' ? el.checkVisibility() : getComputedStyle(el).visibility !== 'hidden')
+      if (!el || !shown) {
         // The anchor can mount late: start() navigates to the tour's route, then a
         // lazy page + its data fetch land a beat later. Retry for a few seconds.
         // If it's STILL absent (hidden on this surface, or it never mounts), do NOT
@@ -127,12 +134,17 @@ export function TourOverlay() {
     }
     window.addEventListener('resize', onChange)
     window.addEventListener('scroll', onChange, true)
+    // The ＋ sheet slides in with a transform transition — a rect measured
+    // mid-slide is stale the moment it lands. Any transition settling anywhere
+    // re-measures (capture, since the sheet is a sibling portal).
+    window.addEventListener('transitionend', onChange, true)
     window.visualViewport?.addEventListener('resize', onChange)
     return () => {
       cancelAnimationFrame(raf)
       if (timer) clearTimeout(timer)
       window.removeEventListener('resize', onChange)
       window.removeEventListener('scroll', onChange, true)
+      window.removeEventListener('transitionend', onChange, true)
       window.visualViewport?.removeEventListener('resize', onChange)
     }
   }, [live, step])

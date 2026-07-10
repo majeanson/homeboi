@@ -11,6 +11,7 @@
 // attribute. To make a one-off coachmark, a single-step Tour is enough — the
 // engine (lib/tour.tsx) and overlay (components/tour/TourOverlay.tsx) are generic.
 import type { IconName } from '../components/Icon'
+import { ADD_HELP } from './addHelp'
 import { GUIDE, guideWhat, type Bi } from './guideContent'
 
 // guideWhat (the one-line `what` of a Guide card, reused verbatim as a coachmark
@@ -18,18 +19,22 @@ import { GUIDE, guideWhat, type Bi } from './guideContent'
 // lives in lib/guideContent — P2-9/C-15 promoted it so lib/addHelp and
 // lib/cercleHelp's `helpFromGuide` share the exact same lookup + failure class.
 
-// The "what the ＋ adds here" enumeration from a section's Guide card ("Le bouton
-// ＋ ici" point), reused verbatim as the section tour's add-step body — so the tour
-// lists every add-action a section offers and stays in lockstep with the Guide (one
-// source, no drift). Located by its ＋ marker (not a brittle index), and it throws
-// at module load if the point is missing, so a rename can't ship a blank add-step.
-function guidePlusActions(id: string): Bi {
+// A named point's `detail` from a Guide card, reused verbatim as a tour-step body
+// — so a step and its full reference share ONE prose (no drift). Located by a
+// FR-label substring (not a brittle index), and it throws at module load if the
+// point is missing, so a guide rename can't silently ship a blank step.
+function guidePoint(id: string, frLabel: string): Bi {
   const card = GUIDE.find((e) => e.id === id)
   if (!card) throw new Error(`tourContent: no Guide card "${id}"`)
-  const point = card.points.find((p) => p.label.fr.includes('＋'))
-  if (!point) throw new Error(`tourContent: no "＋" add-actions point in Guide card "${id}"`)
+  const point = card.points.find((p) => p.label.fr.includes(frLabel))
+  if (!point) throw new Error(`tourContent: no "${frLabel}" point in Guide card "${id}"`)
   return point.detail
 }
+
+// The "what the ＋ adds here" enumeration from a section's Guide card ("Le bouton
+// ＋ ici" point) — the tour's in-sheet tiles step reuses it verbatim, so the tour
+// lists every add-action a section offers and stays in lockstep with the Guide.
+const guidePlusActions = (id: string): Bi => guidePoint(id, '＋')
 
 type TourStep = {
   // A `data-tour` key to spotlight; omit for a centred card.
@@ -43,6 +48,11 @@ type TourStep = {
   // (deep reference: tell me everything), via the same ?card= path as HelpDot.
   // Pair it with `body: guideWhat(<id>)` to single-source the one-liner too.
   card?: string
+  // This step happens INSIDE the ＋ quick-add sheet: while it's active, HubLayout
+  // holds the current section's chooser open (and lets it go on the next non-sheet
+  // step / tour end). Pair with an in-sheet target (`add-note`, `add-tiles`,
+  // `add-week`, `add-routines` — anchors in components/AddSheet.tsx).
+  sheet?: boolean
 }
 
 export type Tour = {
@@ -50,6 +60,34 @@ export type Tour = {
   // Navigate here before step 0 so the step anchors exist (e.g. the board).
   startRoute?: string
   steps: TourStep[]
+}
+
+// The two quick-add steps every section tour closes on: spotlight the ＋ FAB,
+// then step INSIDE the sheet (sheet: true) and enumerate its tiles — the body is
+// the section Guide card's « ＋ » point, verbatim (one source, no drift). The
+// enumeration sits on the in-sheet step (where the tiles are on screen), not on
+// the FAB, so the words and the things they name are visible together.
+function addSheetSteps(id: string, extra: TourStep[] = []): TourStep[] {
+  return [
+    {
+      target: 'add-fab',
+      icon: 'plus-bold',
+      title: { fr: 'Le bouton ＋', en: 'The ＋ button' },
+      body: {
+        fr: 'Tout s’ajoute par ce bouton — il offre ce qui a du sens pour la section où tu es. « Suivant » l’ouvre pour te montrer.',
+        en: 'Everything is added through this button — it offers what makes sense for the section you’re in. “Next” opens it to show you.',
+      },
+    },
+    ...extra,
+    {
+      target: 'add-tiles',
+      sheet: true,
+      icon: 'plus-bold',
+      card: id,
+      title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
+      body: guidePlusActions(id),
+    },
+  ]
 }
 
 export const TOURS: Tour[] = [
@@ -73,6 +111,16 @@ export const TOURS: Tour[] = [
         body: {
           fr: 'Tes six onglets : [[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:smiley-bold]] Routines (les enfants), [[icon:users-three-bold]] Le cercle (la famille et les amis), [[icon:sparkle-bold]] La liste (l’épicerie) et [[icon:gear-six-bold]] Réglages.',
           en: 'Your six tabs: [[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:smiley-bold]] Routines (the kids), [[icon:users-three-bold]] the Circle (family and friends), [[icon:sparkle-bold]] the List (groceries) and [[icon:gear-six-bold]] Settings.',
+        },
+      },
+      {
+        target: 'board-faces',
+        icon: 'users-three-bold',
+        card: 'board',
+        title: { fr: 'Qui regarde ?', en: 'Who’s looking?' },
+        body: {
+          fr: 'Touche un visage pour voir l’écran de cette personne — Maisonnée, c’est tout le monde. Ce que tu ajoutes est signé du visage choisi.',
+          en: 'Tap a face to see that person’s screen — Household is everyone. What you add is signed by the picked face.',
         },
       },
       {
@@ -113,10 +161,13 @@ export const TOURS: Tour[] = [
     ],
   },
 
-  // #32 — a SHORT per-section tour, launched from that section's intro card
-  // ("Faire le tour"). Each: a centred "what this is" (the Guide one-liner), one
-  // spotlight on the section's main control, then the ＋ for "add here". The tour
-  // id MATCHES the section's Guide-card id, so SectionIntro starts it by its `card`.
+  // #32 — a per-section tour, launched from that section's intro card ("Faire le
+  // tour") or replayed from the section's Guide card. Shape: a centred "what this
+  // is" (the Guide one-liner), spotlights on the section's main controls, a couple
+  // of features worth knowing (bodies single-sourced from the Guide card's points
+  // via guidePoint), then the ＋ — first the FAB, then INSIDE the open sheet
+  // (addSheetSteps). The tour id MATCHES the section's Guide-card id, so
+  // SectionIntro starts it by its `card`.
   {
     id: 'board',
     startRoute: '/board',
@@ -125,18 +176,42 @@ export const TOURS: Tour[] = [
       {
         target: 'board-views',
         icon: 'calendar-dots-bold',
+        card: 'board',
         title: { fr: 'Change la vue', en: 'Change the view' },
-        body: {
-          fr: 'Grille (la semaine), « Maintenant » (la prochaine affaire), par personne, le mois, ou « Moments » (un moment choisi + sa liste « À compléter ») — le même babillard, vu autrement.',
-          en: 'Grid (the week), “Now” (the next thing), by person, the month, or “Moments” (a chosen moment + its “To complete” list) — the same board, seen differently.',
-        },
+        body: guidePoint('board', 'Changer la vue'),
       },
       {
-        target: 'add-fab',
-        icon: 'plus-bold',
-        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
-        body: guidePlusActions('board'),
+        icon: 'hourglass-high-bold',
+        card: 'board',
+        title: { fr: 'Voir un moment', en: 'See a moment' },
+        body: guidePoint('board', 'Voir un moment'),
       },
+      {
+        target: 'board-cards',
+        icon: 'stack-bold',
+        card: 'board-widgets',
+        title: { fr: 'Place tes cartes toi-même', en: 'Place your cards yourself' },
+        body: guidePoint('board', 'Personnaliser le babillard'),
+      },
+      {
+        target: 'search',
+        icon: 'magnifying-glass-bold',
+        card: 'board',
+        title: { fr: 'Tout chercher', en: 'Search everything' },
+        body: guidePoint('board', 'Tout chercher'),
+      },
+      ...addSheetSteps('board', [
+        {
+          target: 'add-note',
+          sheet: true,
+          icon: 'pencil-simple-bold',
+          card: 'capture',
+          title: { fr: 'La note rapide', en: 'The quick note' },
+          // The ADD_HELP bubble for this very field, verbatim — the "?" and the
+          // tour explain the control with the same words.
+          body: ADD_HELP.note.body,
+        },
+      ]),
     ],
   },
   {
@@ -154,11 +229,30 @@ export const TOURS: Tour[] = [
         },
       },
       {
-        target: 'add-fab',
-        icon: 'plus-bold',
-        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
-        body: guidePlusActions('kitchen'),
+        icon: 'calendar-blank-bold',
+        card: 'kitchen',
+        title: { fr: 'Planifier la semaine', en: 'Plan the week' },
+        body: guidePoint('kitchen', 'Planifier la semaine'),
       },
+      {
+        icon: 'shopping-bag-bold',
+        card: 'kitchen',
+        title: { fr: 'Ce qui s’achève', en: 'Running low' },
+        body: guidePoint('kitchen', 'Ce qui s’achève'),
+      },
+      ...addSheetSteps('kitchen', [
+        {
+          target: 'add-week',
+          sheet: true,
+          icon: 'lightning-bold',
+          card: 'kitchen',
+          title: { fr: 'Les actions de la semaine', en: 'The week’s actions' },
+          body: {
+            fr: '« Magasiner » compare le plan de la semaine au garde-manger et ajoute ce qui manque à la liste. « Idées » ouvre le tiroir d’idées de repas — ⭐ favoris, 🧊 à écouler, 🤖 l’IA.',
+            en: '“Shop” compares the week’s plan to the pantry and adds what’s missing to the list. “Ideas” opens the meal-ideas drawer — ⭐ favorites, 🧊 use-it-up, 🤖 AI.',
+          },
+        },
+      ]),
     ],
   },
   {
@@ -176,10 +270,38 @@ export const TOURS: Tour[] = [
         },
       },
       {
+        icon: 'microphone-bold',
+        card: 'routines',
+        title: { fr: 'Ta voix, tes photos', en: 'Your voice, your photos' },
+        body: guidePoint('routines', 'Ta voix, tes photos'),
+      },
+      {
+        icon: 'timer-bold',
+        card: 'routines',
+        title: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
+        body: guidePoint('routines', 'Une minuterie sur une étape'),
+      },
+      // Routines' ＋ opens the manage picker (no tile chooser), so its in-sheet
+      // step anchors the picker panel instead of the generic tiles grid.
+      {
         target: 'add-fab',
         icon: 'plus-bold',
-        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
-        body: guidePlusActions('routines'),
+        title: { fr: 'Le bouton ＋', en: 'The ＋ button' },
+        body: {
+          fr: 'Ici, le ＋ gère les routines. « Suivant » l’ouvre pour te montrer.',
+          en: 'Here, the ＋ manages the routines. “Next” opens it to show you.',
+        },
+      },
+      {
+        target: 'add-routines',
+        sheet: true,
+        icon: 'plus-bold',
+        card: 'routines',
+        title: { fr: 'Créer ou modifier', en: 'Create or edit' },
+        body: {
+          fr: '« Nouvelle routine » en bâtit une; touche une routine existante pour la modifier. Les étapes et les images se montent là.',
+          en: '“New routine” builds one; tap an existing routine to edit it. The steps and pictures are put together there.',
+        },
       },
     ],
   },
@@ -198,11 +320,19 @@ export const TOURS: Tour[] = [
         },
       },
       {
-        target: 'add-fab',
-        icon: 'plus-bold',
-        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
-        body: guidePlusActions('cercle'),
+        icon: 'link-bold',
+        card: 'cercle',
+        title: { fr: 'Des liens entre les gens', en: 'Links between people' },
+        body: guidePoint('cercle', 'Des liens entre les gens'),
       },
+      {
+        target: 'cercle-world',
+        icon: 'sparkle-bold',
+        card: 'cercle',
+        title: { fr: 'Notre monde', en: 'Our world' },
+        body: guidePoint('cercle', 'Notre monde'),
+      },
+      ...addSheetSteps('cercle'),
     ],
   },
   {
@@ -220,11 +350,18 @@ export const TOURS: Tour[] = [
         },
       },
       {
-        target: 'add-fab',
-        icon: 'plus-bold',
-        title: { fr: 'Ce que tu peux ajouter ici', en: 'What you can add here' },
-        body: guidePlusActions('liste'),
+        icon: 'storefront-bold',
+        card: 'liste',
+        title: { fr: 'Trier par allée', en: 'Sort by aisle' },
+        body: guidePoint('liste', 'Trier par allée'),
       },
+      {
+        icon: 'tag-bold',
+        card: 'deals',
+        title: { fr: 'Choisir les meilleurs prix', en: 'Pick the best prices' },
+        body: guidePoint('liste', 'Choisir les meilleurs prix'),
+      },
+      ...addSheetSteps('liste'),
     ],
   },
 ]

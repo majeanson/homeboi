@@ -11,6 +11,7 @@ import { useProfile } from '../lib/profile'
 import { useHabitCheckinTrigger } from '../lib/habitCheckin'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
 import { useTapToHearListener } from '../lib/tapToHear'
+import { useTour } from '../lib/tour'
 import { useTourOfferDot } from '../lib/tourOffer'
 import { useAmbient } from '../lib/ambient'
 import { useKeepAwake } from '../lib/keepAwake'
@@ -344,6 +345,25 @@ export function HubLayout() {
     }
     openAdd(mode)
   }, [params, setParams, showAdd, signedIn, authLoading, openAdd])
+
+  // A guided-tour step can walk INSIDE the ＋ sheet (`sheet: true` in
+  // lib/tourContent): while such a step is active, hold the current section's
+  // chooser open; on the next non-sheet step (or the tour ending) let it go.
+  // Ref-tracked so we only ever close a sheet the tour itself opened — a user's
+  // own open sheet is never yanked shut by an unrelated tour step.
+  const { activeTour, stepIndex: tourStepIndex } = useTour()
+  const tourWantsSheet = !!activeTour?.steps[tourStepIndex]?.sheet && showAdd
+  const tourHeldSheet = useRef(false)
+  useEffect(() => {
+    if (tourWantsSheet) {
+      setAddMode(null)
+      setAddModes(null)
+      setAddOpen(true)
+    } else if (tourHeldSheet.current) {
+      setAddOpen(false)
+    }
+    tourHeldSheet.current = tourWantsSheet
+  }, [tourWantsSheet])
   // A CURATED share link (sitter / welcome) has no business in the hub — its data
   // 403s server-side anyway. Bounce it to its own standalone scene. showcase stays
   // (it IS the read-only hub); a settings-preview guest isn't a link guest, so it's

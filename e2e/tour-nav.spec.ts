@@ -30,6 +30,33 @@ test('guided tour does not block the bottom nav', async ({ page }) => {
   await expect(page.locator('.tour')).toBeVisible()
 })
 
+test('a section tour walks INSIDE the ＋ sheet, then closes it', async ({ page }) => {
+  // A `sheet: true` step (lib/tourContent) has HubLayout hold the section's ＋
+  // chooser open while the step is active, so the tour can spotlight the tiles
+  // themselves; ending the tour lets the sheet go. Entry: the La liste intro
+  // card's « Faire le tour » (tours pre-seen so essentials doesn't auto-start,
+  // intros left un-dismissed so the button is there).
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', intros: true })
+  await page.goto('/liste')
+  await page.locator('.section-intro__tour').click()
+  await page.locator('.tour').waitFor({ state: 'visible' })
+
+  // Walk to the last step (the in-sheet tiles step): the ＋ sheet opens under
+  // the tour and the spotlighted tile grid is really visible inside it.
+  const next = page.getByRole('button', { name: /Suivant|Next/ })
+  while (await next.isVisible()) await next.click()
+  await expect(page.locator('.sheet.show [data-tour="add-tiles"]')).toBeVisible()
+  await expect(page.locator('.tour__ring')).toBeVisible()
+
+  // Finishing the tour releases the sheet it opened.
+  await page.getByRole('button', { name: /Terminé|Done/ }).click()
+  await expect(page.locator('.tour')).toHaveCount(0)
+  await expect(page.locator('.sheet.show')).toHaveCount(0)
+})
+
 test('tour card names itself (capture)', async ({ page }) => {
   await boot(page)
   await page.locator('.tour').waitFor({ state: 'visible', timeout: 10_000 })
