@@ -105,6 +105,11 @@ comprehension ↔ action system (guide taxonomy, help registries, the
 `?tab/sub/lens/card/point/focus/plus` URL grammar, the alias drill) and carries
 the add-a-feature checklist. Merge into an existing card before creating one.
 
+**Feature-parity audit:** **`PARITY.md`** is the standing playbook that scores
+every feature against every cross-cutting dimension (peek, undo, offline, search,
+help, toddler lens, e2e…) and carries the canonical **new-entity checklist** —
+consult it when adding an entity or asked about feature gaps/uniformity.
+
 ---
 
 ## Commands
