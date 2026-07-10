@@ -155,6 +155,9 @@ export const FR = {
     unitLabel: 'Unité',
     unitPlaceholder: 'verres, pas…',
     cadenceLabel: 'À quel rythme ?',
+    // Trois blocs du formulaire se ressemblent (rythme, horaire, rappels) : chacun
+    // dit en une ligne ce qu'il répond, sinon ils se lisent comme des rivaux.
+    cadenceSub: 'Quand l’habitude revient te voir.',
     // Quatre rythmes : deux qui choisissent des JOURS, deux qui vivent DANS la journée.
     cadenceName: {
       recur: 'Selon un horaire',
@@ -162,6 +165,8 @@ export const FR = {
       day: 'X fois par jour',
       hours: 'Aux X heures',
     },
+    scheduleHint: 'Choisis les jours où elle revient.',
+    weekHint: 'Aucun jour fixe : elle attend que la semaine soit remplie.',
     everyDayHint: 'Sans horaire, l’habitude revient chaque jour.',
     weekTimesLabel: 'Combien de fois',
     weekTimesUnit: 'fois par semaine',
@@ -179,6 +184,8 @@ export const FR = {
     // Un rythme aux heures FABRIQUE ses rappels — rien à taper à la main.
     remindersFromRhythm: 'Les rappels suivent le rythme, aux heures ci-dessus.',
     remindersLabel: 'Rappels',
+    // LA phrase qui sépare les deux : le rythme dit QUAND, le rappel dit À QUELLE HEURE.
+    remindersSub: 'Le rythme dit quand l’habitude revient ; le rappel dit à quelle heure te faire signe.',
     reminderAt: 'Heure du rappel',
     addReminder: 'Ajouter un rappel',
     removeReminder: 'Enlever ce rappel',

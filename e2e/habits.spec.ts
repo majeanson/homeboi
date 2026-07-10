@@ -191,10 +191,10 @@ test.describe('the habit form', () => {
     await page.locator('.habit-form__seg', { hasText: 'Aux X heures' }).click()
     await expect(page.getByRole('button', { name: 'Ajouter un rappel' })).toHaveCount(0)
     await expect(page.locator('.habit-form__window')).toBeVisible()
-    await expect(page.locator('.operator__seg-hint').first()).toContainText('4 moments : 08:00 · 12:00 · 16:00 · 20:00')
+    await expect(page.locator('.habit-form__moments')).toContainText('4 moments : 08:00 · 12:00 · 16:00 · 20:00')
     // Halve the spacing and the preview doubles the moments, live.
     await page.getByLabel('Toutes les').fill('6')
-    await expect(page.locator('.operator__seg-hint').first()).toContainText('3 moments : 08:00 · 14:00 · 20:00')
+    await expect(page.locator('.habit-form__moments')).toContainText('3 moments : 08:00 · 14:00 · 20:00')
 
     await page.getByRole('button', { name: 'Nouvelle habitude' }).click()
     await expect.poll(() => posted.length).toBe(1)
@@ -209,6 +209,39 @@ test.describe('the habit form', () => {
       weekTimes: null,
       dayTimes: null,
     })
+  })
+
+  // Three blocks of this form all speak about time. Each must say which question it
+  // answers, and the schedule must visibly belong to the rhythm that opened it —
+  // otherwise « À quel rythme ? », « Répéter » and « Rappels » read as rivals.
+  test('rhythm, schedule and reminders each say what they are for', async ({ page }) => {
+    await page.clock.setFixedTime(new Date(BASE * 1000))
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await page.goto('/habitude/new')
+
+    const cadence = page.locator('.habit-form__cadence')
+    await expect(cadence.locator('.habit-form__legend-sub')).toContainText('Quand l’habitude revient')
+    // « Répéter » lives INSIDE the cadence block — it is the detail of « Selon un
+    // horaire », not a separate setting competing with it.
+    await expect(cadence.locator('.habit-form__cadence-body .recur')).toBeVisible()
+
+    // The reminders block is OUTSIDE it, and says what a reminder is not.
+    const reminders = page.locator('.reminders')
+    await expect(cadence.locator('.reminders')).toHaveCount(0)
+    await expect(reminders.locator('.reminders__sub')).toContainText('le rappel dit à quelle heure')
+
+    // Each rhythm explains itself in one line as it is chosen.
+    await page.locator('.habit-form__seg', { hasText: 'X fois par semaine' }).click()
+    await expect(cadence.locator('.habit-form__hint')).toContainText('attend que la semaine soit remplie')
+    await page.locator('.habit-form__seg', { hasText: 'X fois par jour' }).click()
+    await expect(cadence.locator('.habit-form__hint')).toContainText('à l’intérieur de la journée')
+
+    // An hours rhythm fills the reminders itself — the block keeps its heading and
+    // says so, rather than vanishing and leaving the user wondering where it went.
+    await page.locator('.habit-form__seg', { hasText: 'Aux X heures' }).click()
+    await expect(reminders.locator('.reminders__label')).toBeVisible()
+    await expect(reminders).toContainText('Les rappels suivent le rythme')
   })
 
   test('a counted habit asks for a target; an avoid habit does not', async ({ page }) => {

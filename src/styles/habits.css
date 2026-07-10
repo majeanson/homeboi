@@ -260,10 +260,21 @@
 
 /* Four kind cards, each with its example. They wrap on a phone; on a wide screen
    they sit two-up. Radios stay real radios (keyboard + screen reader). */
-.habit-form__kinds,
-.habit-form__cadence {
+.habit-form__kinds {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The cadence fieldset stacks: legend, the segment row, then the chosen rhythm's
+   own controls. Column — NOT the kinds' wrap-row — because the body below must sit
+   under the segments, never beside them. */
+.habit-form__cadence {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   margin: 0;
   padding: 0;
@@ -276,6 +287,47 @@
   padding: 0 0 0.35rem;
   color: var(--ink-soft);
   font-size: 0.85rem;
+}
+
+/* Each time-shaped block names the question it answers, so « À quel rythme ? »,
+   « Répéter » and « Rappels » stop reading as three rivals. */
+.habit-form__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.habit-form__legend-title {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.habit-form__legend-sub,
+.habit-form__hint,
+.reminders__sub {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+/* The chosen rhythm's controls, tucked behind a tinted rule: whatever shows here
+   is plainly the DETAIL of the segment picked above, not a rival setting. */
+.habit-form__cadence-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+/* The moments an « aux X heures » rhythm makes — the same list that will nudge. */
+.habit-form__moments {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .habit-form__kind {
@@ -363,9 +415,12 @@
   gap: 0.4rem;
 }
 
+/* Same anatomy as the cadence legend (title + one explaining line), so the two
+   blocks read as siblings answering DIFFERENT questions rather than the same one. */
 .reminders__label {
-  color: var(--ink-soft);
+  color: var(--ink);
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .reminders__row {

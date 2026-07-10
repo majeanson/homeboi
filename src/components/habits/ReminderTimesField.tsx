@@ -43,6 +43,9 @@ export function ReminderTimesField({ value, onChange }: { value: number[]; onCha
   return (
     <div className="reminders">
       <span className="reminders__label mono">{fn.remindersLabel}</span>
+      {/* The form's three time-shaped blocks used to read as rivals: this line says
+          what a reminder is NOT (it is not the rhythm — it never adds a day). */}
+      <p className="reminders__sub mono">{fn.remindersSub}</p>
       {value.map((min, i) => (
         <Cluster key={i} className="reminders__row">
           <input
