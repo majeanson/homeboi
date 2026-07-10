@@ -946,6 +946,10 @@ export function Board() {
       now={todayNow}
       compactItems={todayItems}
       compactHint={todayCount > 0 ? String(todayCount) : undefined}
+      // « Avant de partir » (the key) reachable straight from the halved day tile — its own
+      // corner tap target, so a mini « Auj. » still opens the pre-departure checklist
+      // without growing the card first. Matches the always-on key on the full card.
+      compactCorner={{ to: '/board/departure', icon: 'key-bold', label: t.departure.title }}
       // The day's temperature, where the eye already is (a quiet frosted chip, never a
       // count). Degrees only — the weather GLYPH pushed the title to ellipsize in the tiny
       // header; the grown card shows the icon. The chip is small enough to keep the title.

@@ -263,6 +263,43 @@
 .wg-slot .cardmini--glance {
   padding: 0.72rem 0.6rem;
 }
+/* A mini that carries a corner action: the host span holds the fixed shelf height and
+   anchors the corner control over the tile's bottom-right. The tile fills it. */
+.wg-slot .cardmini-host {
+  position: relative;
+  display: block;
+  height: var(--wg-mini-h);
+}
+.wg-slot .cardmini-host .cardmini {
+  height: 100%;
+}
+/* The corner action (« Aujourd'hui » → the key to « Avant de partir »): a small frosted
+   disc pinned bottom-right, its OWN tap target above the tile. Card-tinted like the header
+   disc; ≥28px so it stays touch-friendly without crowding the rows above it. */
+.wg-slot .cardmini__corner {
+  position: absolute;
+  z-index: 1;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-soft))) 82%, var(--ink));
+  background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--card))) 22%, var(--card));
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--line))) 45%, var(--line));
+  -webkit-tap-highlight-color: transparent;
+}
+.wg-slot .cardmini__corner:active {
+  box-shadow: var(--shadow-press, var(--shadow-sm));
+}
+/* In the list face the corner disc sits over the bottom-right, where the LAST row ends —
+   reserve room so a long last row ellipsizes before it instead of hiding under it. */
+.wg-slot .cardmini-host .cardmini--list .cardmini__row:last-child .cardmini__rowlabel {
+  padding-right: 1.9rem;
+}
 /* Bespoke cards whose palette does NOT arrive as `--sec-tint`: map their own token
    onto it so the persona rules above apply unchanged. */
 .wg-slot .cardmini.auto-card {

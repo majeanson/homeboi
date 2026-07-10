@@ -61,6 +61,14 @@ test.describe('board compact lens', () => {
       return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(cs.lineHeight) }
     })
     expect(height).toBeLessThanOrEqual(lineHeight * 2 + 1)
+
+    // « Avant de partir » (the key) is its OWN corner tap target on the day tile — a Link to
+    // the pre-departure checklist, so a halved « Auj. » reaches it without growing first. It
+    // lives OUTSIDE the tile's button (a sibling), never nested-interactive inside it.
+    const key = page.locator('.wg-slot[data-card="today"] .cardmini__corner')
+    await expect(key).toBeVisible()
+    await expect(key).toHaveAttribute('href', /\/board\/departure$/)
+    await expect(tile.locator('.cardmini__corner'), 'the corner is a sibling, not inside the button').toHaveCount(0)
   })
 
   // #root/.hub__body clip overflow-x, so a too-wide child is HIDDEN, not caught by a

@@ -29,6 +29,7 @@ export function Section({
   compactHead,
   compactLabel,
   compactTo,
+  compactCorner,
   compact,
   children,
 }: {
@@ -56,6 +57,8 @@ export function Section({
   compactLabel?: string
   /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
   compactTo?: string
+  /** A small corner action on the mini (see `CardMini.corner`). */
+  compactCorner?: { to: string; icon: IconName; label: string }
   compact?: React.ReactNode
   children: React.ReactNode
 }) {
@@ -85,6 +88,7 @@ export function Section({
           items={compactItems}
           body={compact}
           to={compactTo}
+          corner={compactCorner}
           onExpand={lens!.expand}
         />
       ) : (

@@ -137,6 +137,7 @@ export function CardMini({
   items,
   body,
   to,
+  corner,
   onExpand,
 }: {
   className?: string
@@ -159,6 +160,11 @@ export function CardMini({
    *  a card whose compact form has nothing worth expanding into (an empty « L'auto » →
    *  « /voiture », an empty placeholder → the page that adds one). Skips tap-to-grow. */
   to?: string
+  /** A small secondary action pinned to the tile's bottom-right corner — its OWN tap
+   *  target (« Aujourd'hui » → the key to « Avant de partir »). Rendered as a sibling
+   *  `<Link>` outside the tile's button, so it's a real second control, not nested-
+   *  interactive HTML; tapping it navigates, tapping the rest of the tile still grows. */
+  corner?: { to: string; icon: IconName; label: string }
   onExpand: () => void
 }) {
   const t = useT()
@@ -211,14 +217,11 @@ export function CardMini({
   // A card with nothing worth growing into taps straight through to a useful place (its
   // config / add page) rather than expanding to an empty shell — a `<Link>`, not a
   // grow-`<button>`. Everything else keeps tap-to-grow.
-  if (to) {
-    return (
-      <Link to={to} className={cls} style={style} aria-label={label}>
-        {inner}
-      </Link>
-    )
-  }
-  return (
+  const tile = to ? (
+    <Link to={to} className={cls} style={style} aria-label={label}>
+      {inner}
+    </Link>
+  ) : (
     <button
       type="button"
       className={cls}
@@ -229,6 +232,18 @@ export function CardMini({
     >
       {inner}
     </button>
+  )
+  if (!corner) return tile
+  // The corner action is a SIBLING of the tile (not a child) so it isn't an interactive
+  // element nested inside the tile's button/link. The host span carries the fixed mini
+  // height and positions the corner over the tile's bottom-right.
+  return (
+    <span className="cardmini-host">
+      {tile}
+      <Link className="cardmini__corner" to={corner.to} aria-label={corner.label} title={corner.label}>
+        <Icon name={corner.icon} size={15} />
+      </Link>
+    </span>
   )
 }
 
@@ -262,6 +277,7 @@ export function BoardCard({
   compactHead,
   compactLabel,
   compactTo,
+  compactCorner,
   compact,
   children,
 }: {
@@ -282,6 +298,8 @@ export function BoardCard({
   compactLabel?: string
   /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
   compactTo?: string
+  /** A small corner action on the mini (see `CardMini.corner`). */
+  compactCorner?: { to: string; icon: IconName; label: string }
   compact?: ReactNode
   children: ReactNode
 }) {
@@ -305,6 +323,7 @@ export function BoardCard({
         items={compactItems}
         body={compact}
         to={compactTo}
+        corner={compactCorner}
         onExpand={lens.expand}
       />
     )
