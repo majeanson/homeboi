@@ -59,9 +59,13 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   const { lang, setLang } = useLang()
   const { audience, setAudience, guestPreview, setGuestPreview } = useAudience()
   const { tutorial, setTutorial } = useHelp()
-  // Read-only guest: hide every device-preference control EXCEPT the audience
-  // switch, which is the operator's way back out of the Guest preview.
-  const ro = isGuest()
+  // Nothing in this section is gated on `isGuest()`: theme, day-part drift, the photo
+  // band, language, contrast, text size, the audience lens and the tutorial hints are
+  // all DEVICE-LOCAL prefs (localStorage), not household writes. A babysitter — or a
+  // visitor on the public demo — flipping this device to English, to Night, or to the
+  // toddler lens changes nothing for the household, and being able to is most of what
+  // makes the demo worth looking at. See the note on isGuest() in lib/device.
+  // (MeasureColorsSection below IS gated: it PATCHes /api/household.)
   const [theme, setThemeState] = useState<Theme>(() => getTheme())
   // Ambient day-part drift (feature #1) — calm furniture, default ON, opt-out here.
   const [ambient, setAmbientState] = useState<boolean>(() => isDaypartAuto())
@@ -103,9 +107,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
     }
   }
   // Accessibility profile (#36): high-contrast + larger text. CSS-driven on
-  // <html> (lib/accessibility); local mirrors re-render the active pip. Shown to
-  // everyone (incl. a guest) — it's a device-local presentation control, not a
-  // write to the household, so it isn't gated behind `ro`.
+  // <html> (lib/accessibility); local mirrors re-render the active pip.
   const [contrast, setContrastState] = useState<Contrast>(() => getContrast())
   const [textScale, setTextScaleState] = useState<TextScale>(() => getTextScale())
   function pickContrast(c: Contrast) {
@@ -120,106 +122,92 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.display} help={help} helpKey="display">
       <div className="operator__display">
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
-            {/* While ambient is on, day/night follows the time (auto day/night) —
-                the manual toggle is governed by it, so show it disabled with a
-                hint rather than letting a tap be silently re-asserted next tick. */}
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setThemeState(toggleTheme())}
-              disabled={ambient}
-              aria-disabled={ambient}
-            >
-              <InlineIcon
-                name={theme === 'night' ? 'moon-stars-bold' : 'sun-bold'}
-                size={16}
-                color={theme === 'night' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
-              />{' '}
-              {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
-            </button>
-            {ambient && <p className="operator__seg-hint mono">{t.operator.themeFollowsTime}</p>}
-          </div>
-        )}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
-            <Toggle
-              on={ambient}
-              icon={ambient ? 'sun-horizon-bold' : 'sun-bold'}
-              label={ambient ? t.operator.ambientOn : t.operator.ambientOff}
-              onClick={toggleAmbient}
-            />
-          </div>
-        )}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.apodLabel}</span>
-            <Toggle
-              on={apod}
-              icon="moon-stars-bold"
-              label={apod ? t.operator.apodOn : t.operator.apodOff}
-              onClick={() => setApodEnabled(!apod)}
-            />
-            <p className="operator__seg-hint mono">{t.operator.apodHint}</p>
-          </div>
-        )}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.canvasLabel}</span>
-            <Toggle
-              on={canvas}
-              icon={canvas ? 'sun-horizon-bold' : 'sun-bold'}
-              label={canvas ? t.operator.canvasOn : t.operator.canvasOff}
-              onClick={() => setCanvasEnabled(!canvas)}
-            />
-            <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
-          </div>
-        )}
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
+          {/* While ambient is on, day/night follows the time (auto day/night) —
+              the manual toggle is governed by it, so show it disabled with a
+              hint rather than letting a tap be silently re-asserted next tick. */}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setThemeState(toggleTheme())}
+            disabled={ambient}
+            aria-disabled={ambient}
+          >
+            <InlineIcon
+              name={theme === 'night' ? 'moon-stars-bold' : 'sun-bold'}
+              size={16}
+              color={theme === 'night' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
+            />{' '}
+            {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
+          </button>
+          {ambient && <p className="operator__seg-hint mono">{t.operator.themeFollowsTime}</p>}
+        </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
+          <Toggle
+            on={ambient}
+            icon={ambient ? 'sun-horizon-bold' : 'sun-bold'}
+            label={ambient ? t.operator.ambientOn : t.operator.ambientOff}
+            onClick={toggleAmbient}
+          />
+        </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.apodLabel}</span>
+          <Toggle
+            on={apod}
+            icon="moon-stars-bold"
+            label={apod ? t.operator.apodOn : t.operator.apodOff}
+            onClick={() => setApodEnabled(!apod)}
+          />
+          <p className="operator__seg-hint mono">{t.operator.apodHint}</p>
+        </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.canvasLabel}</span>
+          <Toggle
+            on={canvas}
+            icon={canvas ? 'sun-horizon-bold' : 'sun-bold'}
+            label={canvas ? t.operator.canvasOn : t.operator.canvasOff}
+            onClick={() => setCanvasEnabled(!canvas)}
+          />
+          <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
+        </div>
         {/* A-2 (bmad/09): the derived QC/CA fêtes announce lines on the board —
             all on by default (zero-impact), this device can opt out. */}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.fetesLabel}</span>
-            <Toggle
-              on={fetes}
-              icon="calendar-dots-bold"
-              label={fetes ? t.operator.ambientOnWord : t.operator.ambientOffWord}
-              onClick={() => setHolidaysEnabled(!fetes)}
-            />
-            <p className="operator__seg-hint mono">{t.operator.fetesHint}</p>
-          </div>
-        )}
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.fetesLabel}</span>
+          <Toggle
+            on={fetes}
+            icon="calendar-dots-bold"
+            label={fetes ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+            onClick={() => setHolidaysEnabled(!fetes)}
+          />
+          <p className="operator__seg-hint mono">{t.operator.fetesHint}</p>
+        </div>
         {/* D-21 (bmad/10) « Sortir le bac »: a flagged recurring chore's own
             "evening before" announce line — all on by default, this device can
             opt out (lib/choreAnnounce), same shape as the fêtes toggle above. */}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.binAnnounceLabel}</span>
-            <Toggle
-              on={binAnnounce}
-              icon="hand-heart-bold"
-              label={binAnnounce ? t.operator.ambientOnWord : t.operator.ambientOffWord}
-              onClick={() => setChoreAnnounceEnabled(!binAnnounce)}
-            />
-            <p className="operator__seg-hint mono">{t.operator.binAnnounceHint}</p>
-          </div>
-        )}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.keepAwakeLabel}</span>
-            <Toggle
-              on={keepAwake}
-              icon="device-tablet-bold"
-              label={keepAwake ? t.operator.keepAwakeOn : t.operator.keepAwakeOff}
-              onClick={() => setKeepAwake(!keepAwake)}
-            />
-            <p className="operator__seg-hint mono">{t.operator.keepAwakeHint}</p>
-          </div>
-        )}
-        {!ro && cloudOcrAvailable && (
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.binAnnounceLabel}</span>
+          <Toggle
+            on={binAnnounce}
+            icon="hand-heart-bold"
+            label={binAnnounce ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+            onClick={() => setChoreAnnounceEnabled(!binAnnounce)}
+          />
+          <p className="operator__seg-hint mono">{t.operator.binAnnounceHint}</p>
+        </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.keepAwakeLabel}</span>
+          <Toggle
+            on={keepAwake}
+            icon="device-tablet-bold"
+            label={keepAwake ? t.operator.keepAwakeOn : t.operator.keepAwakeOff}
+            onClick={() => setKeepAwake(!keepAwake)}
+          />
+          <p className="operator__seg-hint mono">{t.operator.keepAwakeHint}</p>
+        </div>
+        {cloudOcrAvailable && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.operator.ocrLabel}</span>
             <div className="audience-switch mono" role="group" aria-label={t.operator.ocrLabel}>
@@ -245,14 +233,12 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             </p>
           </div>
         )}
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.langLabel}</span>
-            <button type="button" className="btn" onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
-              {lang === 'fr' ? 'Français' : 'English'}
-            </button>
-          </div>
-        )}
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.langLabel}</span>
+          <button type="button" className="btn" onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
+            {lang === 'fr' ? 'Français' : 'English'}
+          </button>
+        </div>
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.contrastLabel}</span>
           <div className="audience-switch mono" role="group" aria-label={t.operator.contrastLabel}>
@@ -348,29 +334,27 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
           {audience === 'simple' && !guestPreview && <p className="operator__seg-hint mono">{t.audience.simpleHint}</p>}
         </div>
-        {!ro && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.tutorialLabel}</span>
-            <div className="audience-switch mono" role="group" aria-label={t.operator.tutorialTitle}>
-              <button
-                type="button"
-                className={`audience-switch__opt${tutorial ? ' is-active' : ''}`}
-                onClick={() => setTutorial(true)}
-                aria-pressed={tutorial}
-              >
-                <InlineIcon name="graduation-cap-bold" /> {t.operator.tutorialOn}
-              </button>
-              <button
-                type="button"
-                className={`audience-switch__opt${!tutorial ? ' is-active' : ''}`}
-                onClick={() => setTutorial(false)}
-                aria-pressed={!tutorial}
-              >
-                <InlineIcon name="lightning-bold" /> {t.operator.tutorialOff}
-              </button>
-            </div>
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.operator.tutorialLabel}</span>
+          <div className="audience-switch mono" role="group" aria-label={t.operator.tutorialTitle}>
+            <button
+              type="button"
+              className={`audience-switch__opt${tutorial ? ' is-active' : ''}`}
+              onClick={() => setTutorial(true)}
+              aria-pressed={tutorial}
+            >
+              <InlineIcon name="graduation-cap-bold" /> {t.operator.tutorialOn}
+            </button>
+            <button
+              type="button"
+              className={`audience-switch__opt${!tutorial ? ' is-active' : ''}`}
+              onClick={() => setTutorial(false)}
+              aria-pressed={!tutorial}
+            >
+              <InlineIcon name="lightning-bold" /> {t.operator.tutorialOff}
+            </button>
           </div>
-        )}
+        </div>
         {/* The calm "Récents" session log (#38) — a quiet look back at what just
             happened, with a late Annuler. Reachable here even after the toast fades. */}
         <div className="operator__seg">
@@ -422,13 +406,10 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   // The section is useful whenever the device can speak EITHER language; the
   // per-language "no voice installed" hint below guides installing the missing one.
   const available = hasVoiceFor('fr') || hasVoiceFor('en')
-  // Read-only guest: voice prefs are write-ish device controls — hide the whole
-  // section (the test button + select + slider all mutate the saved pref).
-  const ro = isGuest()
 
   return (
     <OperatorSection title={t.operator.voiceTitle} help={help} helpKey="voice">
-      {ro ? null : !available ? (
+      {!available ? (
         <p className="operator__hint mono">{t.operator.voiceNone}</p>
       ) : (
         <div className="operator__voice">
@@ -529,7 +510,9 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const { overrides, preview, commit, reset } = useMeasureColorsEditor()
-  // Read-only guest: colour edits are writes — hide the whole section.
+  // The ONE gated control in this file, and gated for the right reason: unlike the
+  // device-local prefs above, measure colours are a HOUSEHOLD setting — the editor
+  // PATCHes /api/household on close, so a read-only guest has nothing to commit.
   if (isGuest()) return null
   // A sample line that exercises every colour family + the scoop circles.
   const sample =
@@ -581,24 +564,16 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
 export function CalmSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { calm, setCalm } = useCalm()
-  // Read-only guest: the calm toggle is a write — show the state as plain text only.
-  const ro = isGuest()
   return (
     <OperatorSection title={t.operator.calmTitle} help={help} helpKey="calm">
-      {ro ? (
-        <p className="operator__hint mono">
-          {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
-        </p>
-      ) : (
-        <button
-          type="button"
-          className={`btn${calm ? ' btn--primary' : ''}`}
-          onClick={() => setCalm(!calm)}
-          aria-pressed={calm}
-        >
-          {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
-        </button>
-      )}
+      <button
+        type="button"
+        className={`btn${calm ? ' btn--primary' : ''}`}
+        onClick={() => setCalm(!calm)}
+        aria-pressed={calm}
+      >
+        {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
+      </button>
     </OperatorSection>
   )
 }

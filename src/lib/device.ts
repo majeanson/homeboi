@@ -156,8 +156,35 @@ export function setGuestPreview(on: boolean): void {
   }
 }
 
-/** Read-only session — link guest OR the operator's settings preview. */
+/**
+ * Read-only session — link guest OR the operator's settings preview.
+ *
+ * `isGuest()` guards HOUSEHOLD WRITES, and nothing else. Gate an `/api/*` mutation
+ * with it (`writeWith` already does, structurally) and hide the control that fires
+ * one. That is its entire job.
+ *
+ * Do NOT gate a DEVICE-LOCAL preference with it. Theme, language, contrast, text
+ * size, the audience lens, read-aloud voice, calm mode, the screensaver, and the
+ * board's card layout (lib/boardCards) all live in THIS browser's localStorage.
+ * They never reach the server, never touch the household, and reveal nothing a
+ * read-only viewer can't already see — so a guest may use them freely, whether
+ * that's a babysitter or a visitor kicking the tires on the public demo
+ * (functions/api/demo.ts, which is just a `showcase` guest token).
+ *
+ * Conflating the two is a live failure mode here: it once hid card reordering, the
+ * language switch, the toddler lens and the entire in-app guide from the demo — all
+ * of which cost the household exactly nothing. If you're reaching for `isGuest()`,
+ * first ask whether the thing you're hiding writes to the server. If it doesn't,
+ * don't hide it.
+ */
 export const isGuest = () => !!getGuestToken() || isGuestPreview()
 
-/** Link guest only: locked out of Réglages (a settings-preview guest keeps it). */
+/**
+ * Link guest only (a settings-preview guest is a full operator underneath).
+ *
+ * Réglages stays REACHABLE for a link guest — the guide is the best thing we have
+ * to explain the app — but Operator narrows it to Comprendre + the device-local
+ * subs (see GUEST_SUBS in pages/Operator.tsx). Everything that reads or writes the
+ * household is dropped there, not here.
+ */
 export const isGuestLocked = () => !!getGuestToken()

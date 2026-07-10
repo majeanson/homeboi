@@ -385,10 +385,16 @@ export function Board() {
   // State lives in the URL so Réglages ▸ Disposition can deep-link into it (/board?edit=1)
   // and so a remount (a scene closing over the board) doesn't drop you out of it.
   const [editParam, setEditParam] = useTabParam<'0' | '1'>('edit', '0', ['0', '1'])
-  // Who may rearrange: not a read-only guest; not a cast display (which renders this very
-  // Board on a TV, with no pointer to hold); and only the parent lens — a toddler's press
-  // belongs to tap-to-hear, and the simple lens has no cards to drag.
-  const canEdit = !ro && !isDisplay() && audience === 'parent'
+  // Who may rearrange: not a cast display (which renders this very Board on a TV, with no
+  // pointer to hold), and only the parent lens — a toddler's press belongs to tap-to-hear,
+  // and the simple lens has no cards to drag.
+  //
+  // A read-only guest MAY rearrange. The layout is a per-device localStorage store
+  // (lib/boardCards); dragging a card writes nothing to the server and changes nothing for
+  // the household — so `ro` has no business here, and gating on it is what left the public
+  // demo unable to touch the one feature that best shows off the widget space. See the note
+  // on isGuest() in lib/device.
+  const canEdit = !isDisplay() && audience === 'parent'
   const editing = canEdit && editParam === '1'
   const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
 

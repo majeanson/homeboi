@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getStroke } from 'perfect-freehand'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
+import { useHScroll } from '../lib/hscroll'
 import { CERCLE_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import { useRecipes } from '../lib/queryHooks'
 import { drawTraceLine, measureTrace, wrapTrace } from '../lib/traceFont'
@@ -502,6 +503,10 @@ export function DrawPad({
     return out
   }, [membersQ.data, cercleQ.data, recipesQ.data])
   const rootRef = useRef<HTMLDivElement>(null)
+  // Both tool bars scroll sideways with a hidden scrollbar — map the wheel onto them so
+  // a mouse can reach the tools / stickers past the right edge.
+  const toolsScroll = useHScroll<HTMLDivElement>()
+  const ctxScroll = useHScroll<HTMLDivElement>()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Committed freehand strokes (source of truth; rendered by perfect-freehand).
   const strokesRef = useRef<Stroke[]>([])
@@ -1687,8 +1692,10 @@ export function DrawPad({
   // any transformed ancestor so it's always a true full-page scene.
   return createPortal(
     <div ref={rootRef} className={'drawpad' + (toddler ? ' drawpad--kid' : '')} role="dialog" aria-modal="true" aria-label={initial || initialSceneUrl ? t.memo.editTitle : t.memo.drawTitle}>
-      {/* Row 1 — compact tool row (scrolls sideways, never wraps tall). */}
-      <div className="drawpad__bar drawpad__bar--tools">
+      {/* Row 1 — compact tool row (scrolls sideways, never wraps tall). The scrollbar is
+          hidden, so useHScroll maps the wheel — a mouse otherwise can't reach the tools
+          past the right edge. */}
+      <div className="drawpad__bar drawpad__bar--tools" ref={toolsScroll.ref}>
         <div className="drawpad__modes" role="group" aria-label={t.memo.tool}>
           {MODES.map((m) => (
             <button key={m.key} type="button" className={'drawpad__mode' + (mode === m.key ? ' is-on' : '')} onClick={() => setMode(m.key)} aria-label={m.label} aria-pressed={mode === m.key}>
@@ -1734,7 +1741,7 @@ export function DrawPad({
           in sticker mode: the roomy picture board below replaces the cramped scroll bar
           (whose off-screen stickers a pre-reader never discovers). */}
       {!(toddler && mode === 'sticker') && (
-      <div className="drawpad__bar drawpad__bar--ctx">
+      <div className="drawpad__bar drawpad__bar--ctx" ref={ctxScroll.ref}>
         {mode === 'text' ? (
           <input className="input drawpad__text" value={text} onChange={(e) => setText(e.target.value)} placeholder={t.memo.textPlaceholder} aria-label={t.memo.drawText} maxLength={24} />
         ) : mode === 'sticker' ? (

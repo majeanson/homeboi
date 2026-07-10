@@ -3,7 +3,6 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { InlineIcon } from '../Icon'
 import { Cluster } from '../Layout'
-import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import {
@@ -38,6 +37,10 @@ import {
 // group. Reuses OperatorSection + DragPill + usePointerDnd — no new primitives.
 //
 // Calm: it only places, sizes and hides cards that already exist. No counts, no ranks.
+//
+// Every knob here writes localStorage, never the server, so there is nothing to gate on
+// `isGuest()` — a babysitter or a demo visitor rearranging THEIR screen changes nothing for
+// the household. (See the note on isGuest() in lib/device.)
 
 const MODE_CYCLE: CardMode[] = ['always', 'auto', 'never']
 // Always shown / shown ~sometimes (only when it has something to say) / never. Drawn from
@@ -46,7 +49,6 @@ const MODE_ICON = { always: 'check-bold', auto: 'approximate-equals-bold', never
 
 export function BoardLayoutSection({ help }: { help?: HelpMode }) {
   const t = useT()
-  const ro = isGuest()
   const prefs = useBoardCards()
 
   // Both lists share ONE session; the zone travels in the drop-zone id. Hold-to-drag so a
@@ -120,30 +122,26 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
               zone={zoneKey(zone, id)}
               label={t.boardCard[id]}
               className={'board-layout__row' + (cardMode(prefs, id) === 'never' ? ' is-hidden' : '')}
-              showGrip={!ro}
+              showGrip
             >
               <span className="board-layout__name">
                 <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}
               </span>
-              {!ro && (
-                <Cluster>
-                  {sizeBtn(id)}
-                  {modeBtn(id)}
-                </Cluster>
-              )}
+              <Cluster>
+                {sizeBtn(id)}
+                {modeBtn(id)}
+              </Cluster>
             </DragPill>
           )
         })}
         {/* The tail target: drop here to append, which is the only way to move a card
             back into a group you emptied. */}
-        {!ro && (
-          <li
-            data-dnd-zone={zoneKey(zone, 'end')}
-            className={'board-layout__end mono' + (dnd.over === zoneKey(zone, 'end') ? ' dnd-over' : '')}
-          >
-            {t.operator.boardLayoutDropHere}
-          </li>
-        )}
+        <li
+          data-dnd-zone={zoneKey(zone, 'end')}
+          className={'board-layout__end mono' + (dnd.over === zoneKey(zone, 'end') ? ' dnd-over' : '')}
+        >
+          {t.operator.boardLayoutDropHere}
+        </li>
       </ul>
     </>
   )
@@ -158,11 +156,9 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
         // The old « Réorganiser sur le babillard » link moved to the shared
         // « Voir dans l'app » row (SUB_GOTO in lib/settingsNav) — one pattern
         // for every sub, not a bespoke button here.
-        !ro ? (
-          <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
-            {t.operator.boardLayoutReset}
-          </button>
-        ) : undefined
+        <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
+          {t.operator.boardLayoutReset}
+        </button>
       }
     >
       {list('band', t.operator.boardLayoutBand)}

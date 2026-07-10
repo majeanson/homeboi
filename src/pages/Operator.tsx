@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useAi, useAiToggle } from '../lib/ai'
-import { isPaired } from '../lib/device'
+import { isPaired, isGuestLocked } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
 import { AmbientSettingsSection, HabitCheckinSection } from '../components/operator/ambient'
@@ -42,6 +42,7 @@ import { SubTabs } from '../components/SubTabs'
 import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
+import { useHScroll } from '../lib/hscroll'
 import { SETTINGS_SUBS, SUB_GOTO, type SettingsTabId } from '../lib/settingsNav'
 import { scrollBehavior } from '../lib/motion'
 import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY, HEALTH_KEY } from '../lib/queryKeys'
@@ -128,19 +129,25 @@ export function Operator() {
   const qc = useQueryClient()
 
   // A paired wall tablet may open Réglages too; `signedIn` is the full operator.
+  // A read-only LINK guest (the public demo) may open it as well — for the guide and
+  // the device-local knobs, and nothing else. See GUEST_SUBS below.
   const paired = isPaired()
-  const canEnter = signedIn || paired
+  const guest = isGuestLocked()
+  const canEnter = signedIn || paired || guest
 
   // Fetch for either an operator OR a paired kiosk — an anon visitor still 401s.
   // Members GET is open (the agenda picker needs the faces even on a kiosk); the
   // WRITES under Membres stay operator-only and that tab is hidden for a kiosk.
   // Devices is operator-only top-to-bottom, so its read stays cookie-gated. Each
   // strip is independent so one failing read never blanks the rest (data?? []).
-  const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: canEnter })
+  // A guest reads none of it: every sub these feed is dropped for them, so fetching
+  // would be four pointless round-trips (and `pair/devices` a guaranteed 403).
+  const loadHousehold = canEnter && !guest
+  const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: loadHousehold })
   const devicesQ = useQuery({ queryKey: DEVICES_KEY, queryFn: () => api<{ devices: Device[] }>('pair/devices'), enabled: signedIn })
-  const choresQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: canEnter })
-  const routinesQ = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: canEnter })
-  const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventRow[] }>('events'), enabled: canEnter })
+  const choresQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: loadHousehold })
+  const routinesQ = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: loadHousehold })
+  const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventRow[] }>('events'), enabled: loadHousehold })
 
   const members = membersQ.data?.members ?? []
   const devices = devicesQ.data?.devices ?? []
@@ -287,6 +294,11 @@ export function Operator() {
     return labels[k] ?? k
   }, tab)
 
+  // Under 60rem the tab nav is a one-line scroll row with a hidden scrollbar, which a
+  // mouse can't scroll sideways; this maps the wheel onto it. Above 60rem the nav is a
+  // vertical sidebar and the hook no-ops (nothing overflows horizontally).
+  const tabsScroll = useHScroll<HTMLElement>()
+
   // Each themed tab's « Régler » lens holds its sub-sections in a SubTabs pill
   // row ("one job at a time") instead of stacking every panel in one long scroll.
   // The sub ids AND their order come from SETTINGS_SUBS (lib/settingsNav) — the
@@ -420,13 +432,34 @@ export function Operator() {
   // link folds to the tab's first visible sub instead of bypassing the gate.
   const gatedSubs: Record<string, string[]> = fullAccess ? {} : { cercle: ['members', 'cercle'], settings: ['tablets', 'guest'] }
 
+  // Guest gating, per-sub — an ALLOWLIST, not a denylist, because the safe set is the
+  // small one and a sub added later must not silently open itself to the demo. These
+  // five are exactly the subs whose every control writes localStorage: « Disposition »
+  // (lib/boardCards), « Affichage » (theme/lang/lens/a11y), « Mode veille »
+  // (lib/ambient), « Voix » (lib/speak) and « Calme ». Everything else reads or writes
+  // the household — Membres, Tablettes, Invités, Photos, IA, and « Version &
+  // diagnostics » (which carries « Emporter mes données », an export of the whole
+  // household). Note « Apparence » stays out: it looks device-local, but
+  // MeasureColorsSection PATCHes /api/household.
+  //
+  // Comprendre — the guide — stays open on every tab, and Découvrir has no subs at
+  // all, so a guest always has something to read even where Régler is empty.
+  const GUEST_SUBS: Record<string, string[]> = { board: ['layout'], settings: ['display', 'ambient', 'voice', 'calm'] }
+
   // The current tab's sub-sections + which one is open, held in the URL (?sub=<key>)
   // so a sub-tab survives a refresh / return-from-scene and composes with ?tab=. The
   // sub fallback comes from a retired-tab fold when the URL used one and named no
   // explicit ?sub (so /settings?tab=chores opens Routines ▸ Corvées), else the tab's
   // first sub. useTabParam folds an out-of-set ?sub (e.g. left over from another tab)
   // to that fallback, so switching tabs always lands on a valid sub.
-  const subs = subSections[tab] ? subSections[tab].filter((s) => !gatedSubs[tab]?.includes(s.key)) : null
+  //
+  // `subs` is null when this tab offers the viewer no Régler side at all (Découvrir,
+  // or any tab a guest can't configure) — the lens toggle then drops to Comprendre
+  // alone rather than rendering an empty pill row.
+  const visibleSubs = subSections[tab]
+    ? subSections[tab].filter((s) => (guest ? (GUEST_SUBS[tab] ?? []).includes(s.key) : !gatedSubs[tab]?.includes(s.key)))
+    : null
+  const subs = visibleSubs && visibleSubs.length > 0 ? visibleSubs : null
   const subKeys = subs ? subs.map((s) => s.key) : []
   const aliasSub = legacyTarget?.sub
   // A retired within-tab sub (e.g. /settings?tab=kitchen&sub=tags) folds via
@@ -450,6 +483,10 @@ export function Operator() {
         <div>
           <h1>{t.operator.title}</h1>
         </div>
+        {/* A guest gets no household chrome: no household name to leak, no IA switch
+            (that one's a write), no session to sign out of, and no « Se connecter »
+            nudge — HubLayout's banner already says what this session is. */}
+        {!guest && (
         <div className="operator__meta mono">
           <span>{household?.name}</span>
           {/* The "IA : active" status tag is now the quick on/off switch (the fuller
@@ -499,9 +536,18 @@ export function Operator() {
             </button>
           )}
         </div>
+        )}
       </div>
 
-      {!signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>}
+      {/* Two different "you can't change everything here" notes: a kiosk is invited to
+          sign in for the operator-only subs; a guest can't sign in at all, so say what
+          IS theirs (the guide, and this device's own display) instead of dangling a
+          door that doesn't open. */}
+      {guest ? (
+        <p className="operator__kiosk-note mono">{t.operator.guestNotice}</p>
+      ) : (
+        !signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>
+      )}
 
       {/* Settings navigation: a sticky vertical sidebar on a wide screen (kiosk/
           desktop, its own scroll region), a one-line scroll row on a phone.
@@ -510,6 +556,7 @@ export function Operator() {
           resolve through LEGACY_TAB, so every old ?tab=<id> still lands. */}
       <div className="operator__body">
         <nav
+          ref={tabsScroll.ref}
           className="operator__tabs mono"
           role="tablist"
           aria-label={t.operator.sections}
@@ -560,21 +607,24 @@ export function Operator() {
             <DiscoverSection />
           ) : (
             <>
-              <SubTabs
-                size="mini"
-                className="operator__lens"
-                options={[
-                  { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
-                  { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
-                ]}
-                value={lens}
-                onSelect={setLens}
-                ariaLabel={t.operator.lensAria}
-                tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
-              />
-              {lens === 'comprendre' ? (
-                <ComprendrePanel section={tab as SectionKey} />
-              ) : subs ? (
+              {/* No Régler side on this tab for this viewer (a guest outside GUEST_SUBS):
+                  drop the lens toggle rather than offer a pill that opens nothing, and
+                  let the guide stand on its own. */}
+              {subs && (
+                <SubTabs
+                  size="mini"
+                  className="operator__lens"
+                  options={[
+                    { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
+                    { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
+                  ]}
+                  value={lens}
+                  onSelect={setLens}
+                  ariaLabel={t.operator.lensAria}
+                  tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
+                />
+              )}
+              {lens === 'regler' && subs ? (
                 <>
                   <SubTabs
                     options={subs.map((s) => ({ key: s.key, label: s.label }))}
@@ -594,7 +644,9 @@ export function Operator() {
                   )}
                   {activeSub?.node}
                 </>
-              ) : null}
+              ) : (
+                <ComprendrePanel section={tab as SectionKey} />
+              )}
             </>
           )}
         </div>

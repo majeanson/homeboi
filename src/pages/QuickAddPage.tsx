@@ -12,6 +12,7 @@ import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { AislePicker } from '../components/AislePicker'
+import { RowActions } from '../components/RowActions'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // Accent/case-blind matching so "creme" filters to "Crème".
@@ -233,6 +234,9 @@ function QaChip({
   const mainRef = useRef<HTMLButtonElement>(null)
   // An already-added chip is inert (✓ locked) — don't let it swipe away too.
   useSwipeToDelete(mainRef, isAdded ? () => {} : onRemove)
+  // useSwipeToDelete binds touch events only, so the swipe is invisible to a mouse and
+  // a keyboard — removing a suggestion was unreachable on desktop. RowActions is the
+  // mirror (the same pattern as La liste, whose edit sheet keeps a real Delete button).
   return (
     <div className="list-row qa__row">
       <span className="list-row__del" aria-hidden="true">
@@ -264,6 +268,9 @@ function QaChip({
           nest in a button), keyed by the item's name so it's the SAME override the
           list line uses. Set it once here on "Oeuf" and it sticks for the line too. */}
       {!isGuest() && <AislePicker text={item.label} className="qa__aisle" />}
+      {!isAdded && (
+        <RowActions onDelete={onRemove} deleteLabel={t.list.quickRemove(item.label)} size={16} />
+      )}
     </div>
   )
 }

@@ -1378,7 +1378,7 @@ export function DevKit() {
       cat: 'Fondations',
       name: 'Cluster · Rail',
       file: 'components/Layout.tsx',
-      kw: 'cluster rail row rangée flex wrap scroll overflow débordement boutons layout disposition',
+      kw: 'cluster rail row rangée flex wrap scroll overflow débordement boutons layout disposition molette souris hscroll',
       render: () => (
         <>
           <Demo label="Cluster — wrap-safe button row (drops to a second line, never off the right)">
@@ -1403,7 +1403,10 @@ export function DevKit() {
               <button className="btn btn--sm">Action</button>
             </Cluster>
           </Demo>
-          <Demo label="Rail — one line that SCROLLS sideways on overflow (never squishes)">
+          {/* Rail rides useHScroll (lib/hscroll): its scrollbar is hidden, so without the
+              wheel mapping a mouse could never reach whatever sits past the right edge.
+              Narrow the window (or scroll the row with a wheel) to see it. */}
+          <Demo label="Rail — one line that SCROLLS sideways on overflow (never squishes). Roule la molette dessus : elle défile de côté.">
             <Rail>
               {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].map((k) => (
                 <button key={k} className="btn btn--sm" style={{ whiteSpace: 'nowrap' }}>

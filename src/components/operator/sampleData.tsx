@@ -5,6 +5,7 @@ import { useT } from '../../i18n'
 import { useOnline } from '../../lib/online'
 import { useConfirm } from '../../lib/confirm'
 import { api } from '../../lib/api'
+import { isGuest } from '../../lib/device'
 import { SAMPLE_KEY } from '../../lib/queryKeys'
 
 // The Réglages home for the demo/sample data (onboarding Phase 1). The board banner
@@ -20,7 +21,12 @@ export function SampleDataControls() {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
 
-  const q = useQuery({ queryKey: SAMPLE_KEY, queryFn: () => api<{ count: number }>('seed') })
+  // Réglages ▸ Découvrir is reachable by a read-only guest now (the public demo lives
+  // there), and seeding/clearing is operator-scoped — GET seed would answer, then hand
+  // a demo visitor three buttons that all 403. Don't ask, don't render.
+  const ro = isGuest()
+  const q = useQuery({ queryKey: SAMPLE_KEY, queryFn: () => api<{ count: number }>('seed'), enabled: !ro })
+  if (ro) return null
   if (q.isPending) return null // don't flash present/absent before the count settles
   const count = q.data?.count ?? 0
 

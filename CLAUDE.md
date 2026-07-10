@@ -67,6 +67,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
 | In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Le cercle) |
 | A horizontal row of buttons / chips / controls | **`Cluster`** (wraps) / **`Rail`** (scrolls one line) — never a hand-rolled flex row | `components/Layout.tsx` (`.cluster`/`.rail` in `core.css`; see [Horizontal overflow](#horizontal-overflow)) |
+| A row that scrolls sideways with a hidden scrollbar | **`useHScroll()`** — maps the mouse wheel onto it, reports `overflowing`/`atStart`/`atEnd` | `lib/hscroll.ts` (`Rail`/`SubTabs` wire it already; see [Horizontal overflow](#horizontal-overflow)) |
 | A dialog / bottom sheet | **`Modal`** + `useModal` / `useSwipeToDismiss` | `components/Modal.tsx`, `lib/useModal.ts` |
 | A Réglages section wrapper | **`OperatorSection`** | `components/operator/OperatorSection.tsx` |
 | Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
@@ -91,6 +92,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Calm guarantees | structural ones are non-negotiable (a **test** enforces no streak/points/badge/push/inventory) | …add counts, ranks, streaks, points, push, or a quantity column |
 | Backend endpoint | handler under `functions/api/` **+** `authed()` wrapper **+** a `TABLE` row in `worker/routes.ts` | …hand-roll the auth guard, or forget the route table |
 | Delete / clear a row from a **live-polled** list | **`useDeferredRemoval(queryKey)`** (`lib/useDeferredRemoval.ts`) — `visible()` filters the rows, `remove()` holds the write behind the undo toast + awaits a refetch | …optimistically `setQueryData` then defer the write: the next poll resurrects the row mid-undo (flash-back glitch) |
+| Hide a control from a read-only guest | **`isGuest()` — but only if it writes `/api/*`** | …gate a **device-local** pref with it (theme, language, audience lens, voice, calm, `lib/boardCards` layout): they're localStorage, they change nothing for the household, and gating them is what hid board reordering + the whole in-app guide from the public demo. See [The demo is a guest link](#the-demo-is-a-guest-link) |
 
 **When you DO add a new shared component:** register it in `src/pages/DevKit.tsx`,
 add it to `COMPONENTS.md`, and (if user-facing) document it in the in-app Guide
@@ -312,6 +314,44 @@ build if the schema ever grows a `streak`/`points`/`badge`/`push_subscription` t
 or a pantry `quantity`/`stock_count` column. The anti-addiction, no-inventory stance
 can't drift in by accident. Keep it green.
 
+### The demo is a guest link
+
+There is no demo mode, route, or flag. `POST /api/demo` (`functions/api/demo.ts`,
+CSRF-exempt) find-or-creates a singleton demo household, reseeds it when its newest
+sample row ages past 24 h (so dates read as "today"), and mints a **4-hour read-only
+`showcase` guest token**. `/` sends the visitor to `/board?guest=<token>` and they are,
+from then on, an ordinary guest. So **whatever a guest can't do, the demo can't show.**
+
+That makes `isGuest()` load-bearing for marketing, and it is easy to over-apply:
+
+- **`isGuest()` means "can't write to the household."** Guard `/api/*` mutations with
+  it (`writeWith` already refuses one structurally) and hide the controls that fire
+  them. Three independent layers back this up — client, `authed()`, and the
+  `guestScope.ts` allowlist — so relaxing the client guard alone can't leak a write.
+- **Device-local preferences are NOT writes.** Theme, language, contrast/text size, the
+  audience lens, read-aloud voice, calm mode, the screensaver and the board's card
+  layout (`lib/boardCards`) all live in this browser's localStorage. A guest may use
+  them; the household never sees it. `display.tsx`, `boardLayout.tsx` and `Board.tsx`'s
+  `canEdit` are the reference call sites.
+- **Réglages stays reachable for a link guest**, narrowed by the `GUEST_SUBS` allowlist
+  in `pages/Operator.tsx`: Découvrir + « Comprendre » on every tab, plus the five
+  device-local subs. It's an allowlist on purpose — a sub added later must not open
+  itself to the demo. (`kitchen ▸ apparence` looks device-local but `MeasureColorsSection`
+  PATCHes `/api/household`, so it stays out.)
+- **Privacy hides are separate and stay.** `MotsCard`, `home-pins` and `care-log` hide
+  from a guest because an operator can mint a `showcase` link to their **own** household
+  (Réglages ▸ Partage), not just to the fake demo one. Don't relax those on `guestKind`.
+- The **auto-launching tour** is deliberately off for guests: its script narrates the ＋
+  FAB, which a read-only session doesn't have. Replaying it by hand from a guide card
+  works (`TourOverlay` centres a step whose anchor is missing).
+
+Guards: `e2e/guest-settings.spec.ts` and the guest cases in `e2e/board-edit.spec.ts`.
+
+**Still missing:** the demo is read-only because the demo household is a *singleton* —
+every visitor shares it, so writes would collide. An interactive demo needs a
+per-visitor ephemeral household (seed on mint, TTL-sweep on expiry), not a looser guard.
+`demo.ts` flags this as deferred.
+
 ### PWA / offline
 
 `vite.config.ts` generates `dist/sw.js` at build time with the real hashed asset list
@@ -421,6 +461,27 @@ reason it ships unnoticed is that `#root`, `.hub__body`, and `.sheet` all set
   states. When you add a new sheet/overlay row, extend that spec (or the phone-width
   sweep in `e2e/screenshots.spec.ts` / `e2e/layout-overflow.spec.ts`) to open it.
 
+### A scrolling row must be reachable with a mouse, not just a thumb
+
+The mirror-image bug. Every side-scrolling row here hides its scrollbar for calm
+(`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`). On a touch screen you
+swipe it. **On a desktop that hides content outright**: there's no bar to drag, no swipe,
+and a mouse wheel only ever emits `deltaY` — which no browser maps onto a *horizontal*
+scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable with a mouse.
+
+- **Any hidden-scrollbar horizontal row gets `useHScroll()`** (`lib/hscroll.ts`). It maps
+  the wheel, hands it back to the page at either end (never a wheel trap), and exposes
+  `overflowing`/`atStart`/`atEnd` + `page()`/`toView()`. No DOM, no layout change.
+  `Rail` and `SubTabs` already wire it; a hand-rolled row must attach the ref itself.
+- **Don't leave a touch gesture as the ONLY path to an action.** A swipe
+  (`useSwipeToDelete` binds `touchstart/move/end` — invisible to a mouse *and* a
+  keyboard) or a long-press needs a real mirror: `RowActions`, an edit sheet's Delete,
+  or a Réglages screen. Same for any decorative overlay — an `aria-hidden`, `opacity:0`
+  pane that still takes hits (`.list-row__del` before `pointer-events:none`) silently
+  swallows clicks on the controls beneath it.
+- Guards: `e2e/hscroll.spec.ts` (wheel, chevrons, no wheel trap, deep-link scroll-in)
+  and `e2e/quickadd-remove.spec.ts` (mouse+keyboard delete, pane doesn't eat clicks).
+
 ## Conventions & gotchas
 
 - **Reuse before you create** (standing rule). Read the existing section + check
@@ -431,6 +492,10 @@ reason it ships unnoticed is that `#root`, `.hub__body`, and `.sheet` all set
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
 - **No horizontal overflow** — any row of controls uses `Cluster`/`Rail`, not a
   hand-rolled flex row (standing rule). See [Horizontal overflow](#horizontal-overflow).
+- **Every UI change must be desktop-friendly too** (standing rule): nothing may be
+  reachable *only* by a touch gesture. A hidden-scrollbar side-scrolling row gets
+  `useHScroll()`; a swipe or long-press gets a mouse/keyboard mirror. See
+  [A scrolling row must be reachable with a mouse](#a-scrolling-row-must-be-reachable-with-a-mouse-not-just-a-thumb).
 - **A new Réglages setting merges into an existing sub, never a new pill**
   (standing rule, C-15). Réglages already counts 30-ish subs; find the themed
   tab + sub that already owns the concept (e.g. any kitchen colour/appearance

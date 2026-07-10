@@ -10,6 +10,7 @@ import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useTabParam } from '../lib/tabParam'
+import { useHScroll } from '../lib/hscroll'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildContact, buildMemberPerson, buildPet } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
@@ -131,6 +132,8 @@ function CercleParent() {
   const recordUndo = useRecordUndo()
   const openSheet = useOpenPersonSheet()
   const { surface } = useSurface()
+  // Wheel → sideways on the upcoming-birthdays strip (its scrollbar is hidden).
+  const bdaysScroll = useHScroll<HTMLDivElement>()
   // A guest is read-only: no drag-to-group affordance (every drop is a write).
   const ro = isGuest()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
@@ -829,7 +832,9 @@ function CercleParent() {
                     <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
                   </HelpTitle>
                   {help.bubbleFor('birthdays')}
-                  <div className="cercle-bdays__row">
+                  {/* Hidden scrollbar + fixed-width tiles: without useHScroll a mouse
+                      can't reach the birthdays past the right edge. */}
+                  <div className="cercle-bdays__row" ref={bdaysScroll.ref}>
                     {birthdays.map(({ p, days }) => (
                       <button type="button" key={p.key} className="cercle-bday" onClick={() => openPerson(p)}>
                         <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={40} />

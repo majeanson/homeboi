@@ -1,4 +1,5 @@
 import type { ElementType, ReactNode } from 'react'
+import { useHScroll } from '../lib/hscroll'
 
 // Row primitives — the two sanctioned ways to lay out a horizontal row of things
 // (buttons, chips, controls) so it NEVER bleeds off the right edge on a narrow phone.
@@ -55,9 +56,14 @@ export function Cluster({
 
 // One-line row that scrolls sideways on overflow instead of clipping the last item
 // (generalises the .subtabs behaviour). Children keep their size and stay in a row.
+//
+// The rail hides its scrollbar, so useHScroll maps a vertical mouse wheel onto its
+// horizontal scroll — otherwise a desktop mouse has no way at all to reach whatever
+// sits past the right edge (no bar to drag, no swipe). Adds no DOM and no layout.
 export function Rail({ children, className, as: As = 'div', ...rest }: RowProps) {
+  const { ref } = useHScroll<HTMLDivElement>()
   return (
-    <As className={'rail' + (className ? ' ' + className : '')} {...rest}>
+    <As ref={ref} className={'rail' + (className ? ' ' + className : '')} {...rest}>
       {children}
     </As>
   )

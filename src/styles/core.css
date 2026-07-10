@@ -1326,6 +1326,39 @@ textarea.input {
   background: var(--accent);
   color: var(--accent-ink);
 }
+/* Mouse affordance for an overflowing pill row. `.subtabs` hides its scrollbar, and a
+   mouse wheel only emits deltaY — which no browser maps onto a horizontal scroller —
+   so a wide row (Réglages ▸ Système's nine subs) had its right-hand tabs unreachable
+   with a mouse. <SubTabs> renders these ONLY while the row actually overflows; the
+   wheel is translated by useHScroll and the keyboard already has ←/→ on the tablist.
+   Fine pointer only: on a touch surface you swipe the row, and two chevrons would eat
+   the pill's width on a phone. */
+.subtabs-row__arrow {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .subtabs-row__arrow {
+    display: inline-flex;
+  }
+}
+.subtabs-row__arrow:hover:not(:disabled) {
+  color: var(--ink);
+}
+.subtabs-row__arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
 /* --- Row primitives: Cluster & Rail --------------------------------------- */
 /* The two sanctioned ways to lay out a horizontal row of things (buttons, chips,

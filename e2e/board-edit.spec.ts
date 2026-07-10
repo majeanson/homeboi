@@ -248,32 +248,57 @@ test.describe('board edit mode', () => {
     expect(b.x).toBeGreaterThan(a.x + a.width - 4)
   })
 
-  // The two devices that must never edit: a read-only guest (the babysitter), and a cast
-  // display — which renders this very <Board/> on a TV, with no pointer to hold.
-  for (const { who, key } of [
-    { who: 'a cast display', key: 'babillard-display' },
-    { who: 'a guest', key: 'babillard-guest-token' },
-  ]) {
-    test(`${who} can never arm edit mode`, async ({ page }) => {
-      await mockApi(page)
-      await seedState(page, {})
-      await page.addInitScript((k) => localStorage.setItem(k, '1'), key)
-      await page.goto('/board')
-      await page.waitForSelector('.board-grid')
-      await hold(page, 'today').catch(() => {})
-      await expect(page.locator('.board-edit')).toHaveCount(0)
-      await expect(page.locator('.wg-slot__grip')).toHaveCount(0)
-    })
+  // The ONE device that must never edit: a cast display, which renders this very <Board/>
+  // on a TV with no pointer to hold. Note this is a capability check, not a permission
+  // one — see the guest tests below for why the read-only guest is NOT in this list.
+  test('a cast display can never arm edit mode', async ({ page }) => {
+    await mockApi(page)
+    await seedState(page, {})
+    await page.addInitScript(() => localStorage.setItem('babillard-display', '1'))
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid')
+    await hold(page, 'today').catch(() => {})
+    await expect(page.locator('.board-edit')).toHaveCount(0)
+    await expect(page.locator('.wg-slot__grip')).toHaveCount(0)
+  })
 
-    test(`${who} cannot force it with ?edit=1 either`, async ({ page }) => {
-      await mockApi(page)
-      await seedState(page, {})
-      await page.addInitScript((k) => localStorage.setItem(k, '1'), key)
-      await page.goto('/board?edit=1')
-      await page.waitForSelector('.board-grid')
-      await expect(page.locator('.board-edit')).toHaveCount(0)
-    })
-  }
+  test('a cast display cannot force it with ?edit=1 either', async ({ page }) => {
+    await mockApi(page)
+    await seedState(page, {})
+    await page.addInitScript(() => localStorage.setItem('babillard-display', '1'))
+    await page.goto('/board?edit=1')
+    await page.waitForSelector('.board-grid')
+    await expect(page.locator('.board-edit')).toHaveCount(0)
+  })
+
+  // A read-only guest — the babysitter, and the public demo, which is nothing but a
+  // `showcase` guest token (functions/api/demo.ts) — MAY rearrange. The layout is a
+  // per-device localStorage store (lib/boardCards): dragging a card writes nothing to the
+  // server and changes nothing for the household. This used to be gated on `isGuest()`
+  // alongside the real write guards, which left the demo unable to touch the one feature
+  // that best shows the widget space off. Guarding these two directions so it stays fixed.
+  test('a read-only guest can arm edit mode and rearrange their own screen', async ({ page }) => {
+    await mockApi(page)
+    await seedState(page, {})
+    await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid')
+    await hold(page, 'today')
+    await expect(page.locator('.board-edit')).toBeVisible()
+    await expect(page.locator('.wg-slot__grip').first()).toBeVisible()
+  })
+
+  test('a read-only guest still cannot write to the household', async ({ page }) => {
+    // The corollary, on the same page: edit mode is reachable, the ＋ FAB is not. If this
+    // ever flips, the guard was widened past device-local prefs.
+    await mockApi(page)
+    await seedState(page, {})
+    await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
+    await page.goto('/board?edit=1')
+    await page.waitForSelector('.board-grid')
+    await expect(page.locator('.board-edit')).toBeVisible()
+    await expect(page.locator('.add-fab')).toHaveCount(0)
+  })
 })
 
 // A card DRAGGED ACROSS ZONES must keep rendering: the two zones used to build

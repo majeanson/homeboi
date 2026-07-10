@@ -47,6 +47,12 @@
   color: #fff;
   font-weight: 700;
   opacity: 0;
+  /* Inert in EVERY sense. Being positioned (z-index:0) it paints above any in-flow
+     sibling, so at rest this invisible pane was silently eating clicks on anything in
+     the row that isn't the z-index:1 `.list-row__main` — the quick-add aisle picker and
+     its delete button both landed on the pane instead. The swipe listens on
+     `.list-row__main`, never here, so the pane never needs to be a hit target. */
+  pointer-events: none;
 }
 .list-row--swiping .list-row__del {
   opacity: 1;

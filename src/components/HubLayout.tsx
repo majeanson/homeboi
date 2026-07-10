@@ -305,11 +305,14 @@ export function HubLayout() {
   // genuinely differ (the board view swap, the exit-gate math).
   const restricted = toddler || simple
   // `guest` = read-only session (hides every mutating control + the ＋ FAB, shows
-  // the banner): a link babysitter OR the operator's settings preview.
-  // `guestLocked` = the LINK guest only — that one is also barred from Réglages
-  // (hide the tab, bounce a stray /settings URL). The settings-PREVIEW guest keeps
-  // Réglages so the operator can switch back to Parent, the way you leave toddler
-  // mode. Either way the server independently 403s every guest write.
+  // the banner): a link babysitter OR the operator's settings preview. Either way
+  // the server independently 403s every guest write.
+  //
+  // A guest KEEPS Réglages. Barring it outright also took the in-app guide, the
+  // language switch, the audience lens and « Disposition » — none of which write to
+  // the household, and all of which are the reason to open the app at all (the
+  // public demo is nothing but a guest link — functions/api/demo.ts). Operator
+  // narrows what's INSIDE instead: Comprendre + the device-local subs (GUEST_SUBS).
   const guest = isGuestLocked() || guestPreview
   const guestLocked = isGuestLocked()
   // Capture is a parent action (the ＋ Add sheet). Not for a toddler, not in
@@ -376,7 +379,7 @@ export function HubLayout() {
   // The simplified lenses have no business in Réglages — not on a locked kiosk, and
   // not in an unlocked parent preview either (a kid/grandma mustn't reach settings
   // via a stray /settings URL). Only the parent view (and the guest PREVIEW) open it.
-  if ((locked || restricted || guestLocked) && isSettings) return <Navigate to="/board" replace />
+  if ((locked || restricted) && isSettings) return <Navigate to="/board" replace />
 
   if (pairingLost) {
     return (
@@ -416,7 +419,8 @@ export function HubLayout() {
   // kiosk a three-year-old (or a visiting grandma) must not reach settings/billing
   // (PRD C5), and the same holds for an unlocked preview — the lens is a one-way
   // door, so Réglages only ever returns by relaunching into parent (?kid=0/?simple=0).
-  const tabs = locked || restricted || guestLocked ? TABS.filter((tab) => tab.to !== '/settings') : TABS
+  // A guest keeps the tab (see above) — it's how the demo reaches the guide.
+  const tabs = locked || restricted ? TABS.filter((tab) => tab.to !== '/settings') : TABS
   // The collapse only applies on the kiosk left rail; mobile's bottom bar stays.
   // Never in a simplified lens — the viewer mustn't be able to hide their own
   // navigation (or the exit gate that lives in the rail), so the section column
