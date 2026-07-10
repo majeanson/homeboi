@@ -1033,7 +1033,7 @@ export function Board() {
   // « Mes habitudes » — a door to « Le point du jour ». Names the household
   // habits; a picked face's own ones stay a presence line (private-ish).
   // Self-hides when nothing is asking today.
-  nodes.habitudes = <HabitudesCard />
+  nodes.habitudes = <HabitudesCard help={help} />
   // « Demain » — split out of the « Aujourd'hui » card into its OWN bento (it
   // used to be bunched in as a sub-group, which made the today tile by far the
   // tallest, busiest thing on the wall). Its own card keeps each glance to one

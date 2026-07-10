@@ -4,6 +4,7 @@ import { isGuest } from '../../lib/device'
 import { useProfile } from '../../lib/profile'
 import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi } from '../../lib/habits'
 import { useReportEmpty } from '../../lib/useReportEmpty'
+import { type HelpMode } from '../../lib/helpMode'
 import { BoardCard } from './BoardCard'
 import { DefiBlock } from '../habits/DefiBlock'
 
@@ -18,7 +19,7 @@ import { DefiBlock } from '../habits/DefiBlock'
 // Self-hides only when there is NOTHING to offer: no défi committed, no habit due,
 // and the device can't pige (a guest). An operator/kiosk always sees at least the
 // défi's « Pige un défi » invitation — the whole point of the card.
-export function HabitudesCard() {
+export function HabitudesCard({ help }: { help?: HelpMode }) {
   const t = useT()
   const fn = t.habits
   const { memberId: face } = useProfile()
@@ -56,7 +57,7 @@ export function HabitudesCard() {
       {/* « Le défi du jour » — the shared défi surface (also mounted in « Le point
           du jour »). Its own buttons are why this card no longer wraps everything in
           a Link (a nested <button> inside <Link> is invalid). */}
-      <DefiBlock payload={data} today={today} />
+      <DefiBlock payload={data} today={today} help={help} />
 
       {/* The habits still asking today. Wrapped in its own Link so tapping the list
           still opens « Le point du jour » — the défi block above keeps its buttons. */}

@@ -99,4 +99,26 @@ test.describe('Le défi du jour', () => {
     await page.locator('.habitudes').waitFor({ state: 'visible', timeout: 15_000 })
     await expect(page.locator('.habitudes .defi-block--live')).toBeVisible()
   })
+
+  test('the board « ? » explains the défi in place and deep-links to its guide', async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
+      } catch {
+        /* noop */
+      }
+    })
+    await board(page)
+    // Arm the board's help mode (the round "?" toggle in the header).
+    await page.locator('.help-toggle').first().click()
+    // The défi kicker is now a help target; tapping it explains it in place.
+    const title = page.locator('.help-title', { hasText: 'Le défi du jour' })
+    await expect(title).toBeVisible()
+    await title.click()
+    const bubble = page.locator('.help-bubble').first()
+    await expect(bubble).toBeVisible()
+    // « Voir le guide » deep-links to the habits guide card (défi is its first point).
+    await bubble.locator('.help-bubble__guide').click()
+    await expect(page).toHaveURL(/card=habits/)
+  })
 })

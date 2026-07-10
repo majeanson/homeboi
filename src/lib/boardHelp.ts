@@ -36,6 +36,16 @@ export const BOARD_HELP = {
       en: '“À faire”: one-off things you tick off, then they’re done (often dictated). “À compléter” below: your recurring checklists — pool bag, before leaving… — reusable in one tap.',
     },
   },
+  // « Le défi du jour » — the day-long family défi on the Habitudes card. Deep-links to
+  // the « Le défi du jour » point (index 0) of the `habits` guide card.
+  defi: {
+    card: 'habits',
+    point: 0,
+    body: {
+      fr: 'Le défi du jour : un petit défi qui dure toute la journée (« porte du jaune »). Pige-en un, essaie-le, puis chacun le coche quand il l’a tenu. Une invitation, jamais un devoir — rien n’est compté.',
+      en: 'Today’s challenge: a little challenge that lasts all day (“wear something yellow”). Draw one, try it, then each person checks it off once they’ve done it. An invitation, never a duty — nothing is counted.',
+    },
+  },
   // « Laisse un mot » — the member-to-member inbox card. Deep-links to the `mots` guide.
   mots: {
     card: 'mots',

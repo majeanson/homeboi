@@ -16,6 +16,7 @@ import {
   useToggleDefiMark,
 } from '../../lib/habits'
 import { pigeDefi, localizeDefi, type Defi } from '../../lib/defiDeck'
+import { type HelpMode } from '../../lib/helpMode'
 import { Avatar } from '../Avatar'
 import { Cluster } from '../Layout'
 
@@ -25,7 +26,17 @@ import { Cluster } from '../Layout'
 // after up to 3 re-rolls — « la troisième est la bonne »), and lets each picked
 // FACE check it off (« Je l'ai tenu ! »). Faces light up; nothing is ever counted
 // or ranked (NFR-CALM-1). A guest sees a committed défi read-only and can't pige.
-export function DefiBlock({ payload, today }: { payload: HabitsPayload | undefined; today: number }) {
+export function DefiBlock({
+  payload,
+  today,
+  help,
+}: {
+  payload: HabitsPayload | undefined
+  today: number
+  // Board « ? » help-mode (optional): when armed, the kicker becomes tappable and
+  // pops an in-place bubble. The scene passes nothing (no help mode there).
+  help?: HelpMode
+}) {
   const t = useT()
   const fn = t.habits.defi
   const { lang } = useLang()
@@ -61,16 +72,36 @@ export function DefiBlock({ payload, today }: { payload: HabitsPayload | undefin
     setRolls(0)
   }
 
+  // The header, shared by both branches: the 🎯 kicker becomes a « ? »-help title
+  // when the board's help mode is armed (SecLabel's pattern), with the bubble just
+  // below. `data-tour="defi"` on the block anchors the board tour's défi step.
+  const head = (
+    <div className="defi-block__head">
+      <span className="defi-block__ico" aria-hidden="true">🎯</span>
+      {help?.active ? (
+        <button
+          type="button"
+          className="help-title defi-block__kicker"
+          onClick={help.pick('defi', () => {})}
+          title={t.help.learnMore}
+        >
+          {fn.title}
+        </button>
+      ) : (
+        <span className="defi-block__kicker">{fn.title}</span>
+      )}
+    </div>
+  )
+  const bubble = help ? help.bubbleFor('defi') : null
+
   // --- Committed: show the défi + who's tried it -----------------------------
   if (committed) {
     const faces = defiMarkFaces(payload?.marks, committed.habit.id, today)
     const tried = faceTriedDefi(payload?.marks, committed.habit.id, today, face)
     return (
-      <div className="defi-block defi-block--live">
-        <div className="defi-block__head">
-          <span className="defi-block__ico" aria-hidden="true">🎯</span>
-          <span className="defi-block__kicker">{fn.title}</span>
-        </div>
+      <div className="defi-block defi-block--live" data-tour="defi">
+        {head}
+        {bubble}
         <p className="defi-block__text">{localizeDefi(committed.text, lang)}</p>
         <div className="defi-block__foot">
           {faces.length > 0 && (
@@ -116,11 +147,9 @@ export function DefiBlock({ payload, today }: { payload: HabitsPayload | undefin
 
   // --- Not committed: the pige flow ------------------------------------------
   return (
-    <div className="defi-block defi-block--pige">
-      <div className="defi-block__head">
-        <span className="defi-block__ico" aria-hidden="true">🎯</span>
-        <span className="defi-block__kicker">{fn.title}</span>
-      </div>
+    <div className="defi-block defi-block--pige" data-tour="defi">
+      {head}
+      {bubble}
       {drawn ? (
         <>
           <p className="defi-block__text">{drawn[lang]}</p>

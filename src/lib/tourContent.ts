@@ -200,6 +200,16 @@ export const TOURS: Tour[] = [
         title: { fr: 'Tout chercher', en: 'Search everything' },
         body: guidePoint('board', 'Tout chercher'),
       },
+      {
+        // « Le défi du jour » sits on the Habitudes card; its step reuses the guide
+        // point's own words. Anchor is DefiBlock's data-tour="defi" (TourOverlay
+        // centres the step if the card is compact / the anchor is absent).
+        target: 'defi',
+        icon: 'sparkle-bold',
+        card: 'habits',
+        title: { fr: 'Le défi du jour', en: 'Today’s challenge' },
+        body: guidePoint('habits', 'Le défi du jour'),
+      },
       ...addSheetSteps('board', [
         {
           target: 'add-note',
