@@ -12,7 +12,8 @@ import { bumpFrequent } from '../../lib/frequents'
 import { JOINDRE_SCOPE } from '../../lib/joindre'
 import { imgUrl } from '../../lib/image'
 import { faint, tintInk } from '../../lib/colors'
-import { BUSINESSES_KEY } from '../../lib/queryKeys'
+import { BUSINESSES_KEY, MEMBERS_KEY, EVENTS_KEY } from '../../lib/queryKeys'
+import { nextRdvFor } from '../../lib/nextRdv'
 import { type Business } from '../../lib/businesses'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildBusiness } from '../detail/adapters'
@@ -20,6 +21,9 @@ import { Icon, InlineIcon } from '../Icon'
 import { EmptyState } from '../EmptyState'
 import { Modal } from '../Modal'
 import { BusinessForm } from './BusinessForm'
+import { JoindreRail } from './JoindreRail'
+import { EventForm, type EventInit } from '../forms/EventForm'
+import { type FormMember } from '../FormScene'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { scrollBehavior } from '../../lib/motion'
 
@@ -49,6 +53,13 @@ export function BusinessesTab({
   // tile → page-level modal), like person/family/group/connect — so the tab carries no
   // add button of its own. Editing still lives here, reached from a business's peek.
   const [editing, setEditing] = useState<Business | null>(null)
+  // « Planifier un rendez-vous » — opened from a business's peek, hosts the shared
+  // EventForm pre-seeded with this vendor as the "Avec". Members feed the form's
+  // "concerne" buttons (harmless if the fetch is cold — the business is seeded anyway).
+  const [rdv, setRdv] = useState<Business | null>(null)
+  const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: FormMember[] }>('members') })
+  // Upcoming events → the « Prochain rendez-vous » glance on a vendor's peek.
+  const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
 
   const { data } = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses'), ...live })
   const all = data?.businesses ?? []
@@ -62,8 +73,9 @@ export function BusinessesTab({
   }
 
   function openPeek(b: Business) {
+    const nextRdv = nextRdvFor(eventsQ.data?.events ?? [], (e) => e.business_id === b.id)
     detail.open(
-      buildBusiness(b, { t, lang, members: [] }, ro ? undefined : { onEdit: () => setEditing(b), onDelete: () => remove(b) }),
+      buildBusiness(b, { t, lang, members: [] }, ro ? { nextRdv } : { onEdit: () => setEditing(b), onDelete: () => remove(b), onSchedule: () => setRdv(b), nextRdv }),
     )
   }
 
@@ -151,8 +163,25 @@ export function BusinessesTab({
         })
       )}
 
+      {/* « Joindre » (A-6) — the quick-dial rail at the foot of the Business tab,
+          scoped to vendors. Mobile only, self-hides under 2 eligible + for a guest. */}
+      <JoindreRail people={[]} businesses={shown} />
+
       <Modal open={!!editing} onClose={() => setEditing(null)} title={bz.edit}>
         {editing && <BusinessForm value={editing} onSaved={() => setEditing(null)} onCancel={() => setEditing(null)} />}
+      </Modal>
+
+      {/* « Planifier un rendez-vous » with this vendor — the shared EventForm, seeded
+          with the business as the "Avec". Lands on the board/agenda/month like any event. */}
+      <Modal open={!!rdv} onClose={() => setRdv(null)} title={t.cercle.scheduleRdv}>
+        {rdv && (
+          <EventForm
+            members={membersQ.data?.members ?? []}
+            seedWith={{ businessId: rdv.id, name: rdv.name }}
+            onSaved={() => setRdv(null)}
+            onCancel={() => setRdv(null)}
+          />
+        )}
       </Modal>
     </section>
   )

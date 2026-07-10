@@ -25,7 +25,9 @@ import { bumpFrequent } from '../lib/frequents'
 import { JOINDRE_SCOPE, type JoindreCandidate } from '../lib/joindre'
 import { type Business } from '../lib/businesses'
 import { JoindreRail } from '../components/cercle/JoindreRail'
-import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY, MEMBERS_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { EventForm, type EventSeedWith, type EventInit } from '../components/forms/EventForm'
+import { nextRdvFor } from '../lib/nextRdv'
+import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY, MEMBERS_KEY, BOARD_KEY, EVENTS_KEY } from '../lib/queryKeys'
 import { Loading, LoadError, PairPrompt } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
 import { HubHead } from '../components/HubHead'
@@ -160,6 +162,10 @@ function CercleParent() {
   // The "Relier deux personnes" connector, opened (optionally seeded with one side)
   // from the ＋ chooser, a person's peek, or a family group header.
   const [connect, setConnect] = useState<{ seedAKey?: string } | null>(null)
+  // « Planifier un rendez-vous » — opened from a person's / member's peek, hosts the
+  // shared EventForm pre-seeded with them as the "Avec" (businesses do the same from
+  // their own peek inside BusinessesTab). Read-only guests never see the action.
+  const [rdv, setRdv] = useState<EventSeedWith | null>(null)
   // A global-search hit deep-links to a specific business / family note via
   // ?item=<id> (§892 — land on the item, not just the section list). Captured below,
   // stripped from the URL, and handed to the active section's tab so it opens/expands
@@ -236,6 +242,10 @@ function CercleParent() {
   const { data: bizData } = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses'), ...live })
   const businesses = useMemo(() => bizData?.businesses ?? [], [bizData])
   const bizById = useMemo(() => new Map(businesses.map((b) => [b.id, b.name])), [businesses])
+  // Upcoming events — feeds the « Prochain rendez-vous » glance on a contact's peek
+  // (the next event linked to them). Shares EVENTS_KEY so it's warm from the agenda.
+  const { data: eventsData } = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
+  const events = useMemo(() => eventsData?.events ?? [], [eventsData])
   // Collapse each member + its hard-linked contact into ONE person (and remap that
   // contact's links/groups onto the member) so nobody shows up twice. Pets join as
   // their own PersonKind 'pet' (never absorbed).
@@ -265,13 +275,14 @@ function CercleParent() {
     [contacts],
   )
 
-  // « Joindre » (A-6): the whole circle, cast to the rail's minimal shape — a
+  // « Joindre » (A-6): cast a set of people to the rail's minimal shape — a
   // contact's `tags` (the `urgence` cold-start signal) come along, members/pets
-  // carry none unless a linked contact supplied them. Businesses feed the rail
-  // separately (see JoindreRail below).
-  const joindrePeople: JoindreCandidate[] = useMemo(
-    () =>
-      people.map((p) => ({
+  // carry none unless a linked contact supplied them. The rail now lives at the
+  // FOOT of Famille/Sociale scoped to that section's people (see below);
+  // businesses feed their own rail in the Business tab.
+  const toJoindre = useCallback(
+    (list: Person[]): JoindreCandidate[] =>
+      list.map((p) => ({
         key: p.key,
         kind: p.kind,
         name: p.name,
@@ -288,7 +299,7 @@ function CercleParent() {
               ? contactByMemberId.get(p.id)?.tags
               : undefined,
       })),
-    [people, contactsById, contactByMemberId],
+    [contactsById, contactByMemberId],
   )
 
   // The Maisonnée IS your one family: every household member — AND the household's
@@ -409,6 +420,12 @@ function CercleParent() {
   // build their own byKey off this list, so any link to a filtered-out person is
   // simply dropped — no separate link filter.
   const sectionPeople = useMemo(() => people.filter((p) => inSection(p.key)), [people, inSection])
+  // « Joindre » rail for the active people section — Famille shows your family's
+  // numbers, Sociale your friends' (businesses have their own rail in the Business tab).
+  const sectionJoindre = useMemo(() => toJoindre(sectionPeople), [toJoindre, sectionPeople])
+  // EventForm wants the raw /api/members shape (snake_case display_name); the cercle
+  // cache carries camelCase Members, so map across for the « rendez-vous » form.
+  const formMembers = useMemo(() => members.map((m) => ({ id: m.id, display_name: m.displayName })), [members])
 
   // Per-person family grouping shared by BOTH relationship views (Liens + Arbre):
   // the cluster a person sits in + the disc colour (reusing the directory's family
@@ -501,16 +518,28 @@ function CercleParent() {
       : undefined
     // "Relier à quelqu'un" — open the connector seeded with this person as side A.
     const onConnect = () => setConnect({ seedAKey: p.key })
+    // « Planifier un rendez-vous » — seed the event form with this person (a cercle
+    // contact) or member; hidden for a read-only guest (writes an event).
+    const onSchedule = ro
+      ? undefined
+      : () => setRdv(p.kind === 'member' ? { memberId: p.id, name: p.name } : { contactId: p.id, name: p.name })
     if (p.kind === 'pet') {
       const pet = pets.find((x) => x.id === p.id)
       if (!pet) return
       const vetName = pet.vetBusinessId ? bizById.get(pet.vetBusinessId) ?? null : null
+      // A vet visit: seed the pet's vet Business + a « Vétérinaire — <nom> » title.
+      // Only when the pet has a vet on file (else there's no counterpart to schedule with).
+      const onVetRdv =
+        ro || !pet.vetBusinessId
+          ? undefined
+          : () => setRdv({ businessId: pet.vetBusinessId, name: vetName ?? '', title: t.cercle.pet.vetRdvTitle(pet.name) })
       detail.open(
         buildPet(pet, { t, lang, members: [] }, {
           relations,
           groupToggle,
           vetName,
           onConnect,
+          onSchedule: onVetRdv,
           buildFamilyHref,
           onEdit: () => nav(`/cercle/pet/${pet.id}`),
           onDelete: ro ? undefined : () => void deletePet(pet),
@@ -519,9 +548,10 @@ function CercleParent() {
     } else if (p.kind === 'contact') {
       const c = contactsById.get(p.id)
       if (!c) return
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), onConnect, buildFamilyHref }))
+      const nextRdv = nextRdvFor(events, (e) => e.contact_id === c.id)
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref }))
     } else {
-      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, buildFamilyHref }))
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, onSchedule, buildFamilyHref }))
     }
   }
 
@@ -714,9 +744,19 @@ function CercleParent() {
       />
       {help.bubbleFor('globalSearch')}
 
-      {/* « Joindre » (A-6) — the quick-dial rail, mobile only, self-hides under 2
-          eligible reach-outs (a read-only guest never sees it either). */}
-      <JoindreRail people={joindrePeople} businesses={businesses} />
+      {/* « Planifier un rendez-vous » — the shared EventForm, seeded with the person /
+          member from their peek's action. Businesses schedule from their own peek
+          inside BusinessesTab. Lands on the board/agenda/month like any event. */}
+      <Modal open={!!rdv} onClose={() => setRdv(null)} title={t.cercle.scheduleRdv}>
+        {rdv && (
+          <EventForm
+            members={formMembers}
+            seedWith={rdv}
+            onSaved={() => setRdv(null)}
+            onCancel={() => setRdv(null)}
+          />
+        )}
+      </Modal>
 
       {/* The connector — a modal so it's prominent from any entry point (the ＋
           chooser, a person's peek, a family group header). */}
@@ -1056,6 +1096,12 @@ function CercleParent() {
           </>
           )
           })()}
+
+          {/* « Joindre » (A-6) — the quick-dial rail, now at the FOOT of the section
+              and scoped to its people (Famille = your family's numbers, Sociale = your
+              friends'). Mobile only, self-hides under 2 eligible reach-outs and for a
+              read-only guest. Businesses get their own rail in the Business tab. */}
+          <JoindreRail people={sectionJoindre} businesses={[]} />
           </>
           )}
         </>

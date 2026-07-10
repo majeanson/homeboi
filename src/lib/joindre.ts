@@ -1,5 +1,6 @@
-// « Joindre » (A-6, bmad/10) — the phone-book-up-front rail atop Le cercle on
-// mobile. Pure ranking here; the rail itself is `components/cercle/JoindreRail.tsx`.
+// « Joindre » (A-6, bmad/10) — the quick-dial rail at the foot of Le cercle's people
+// tabs + Business, on mobile. Pure ranking here; the rail itself is
+// `components/cercle/JoindreRail.tsx`.
 //
 // Eligibility: has a `phone` (a `tel:` link) or an `email` (a `mailto:` link) —
 // nothing else qualifies for the rail (a birthday-only contact never shows up).

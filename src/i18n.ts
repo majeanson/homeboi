@@ -1493,8 +1493,13 @@ export const FR = {
       sayBridge: (via: string, a: string, b: string) => `${via} relie ${a} et ${b}.`,
     },
     view: { list: 'Liste', links: 'Liens', tree: 'Arbre', monde: 'Monde' },
-    // « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile.
+    // « Joindre » (A-6) — the quick-dial rail at the foot of Famille/Sociale/Business.
     joindreTitle: 'Joindre',
+    // « Planifier un rendez-vous » — a peek action that opens the shared EventForm
+    // pre-seeded with this person/business as the "Avec".
+    scheduleRdv: 'Planifier un rendez-vous',
+    // Read-only glance on the peek: the soonest upcoming event linked to this person/business.
+    nextRdv: 'Prochain rendez-vous',
     memberBadge: 'Maisonnée',
     // The "voir le cercle selon une personne" focus row (reuses MemberSwitcher).
     focusLabel: 'Voir selon une personne',
@@ -1676,6 +1681,9 @@ export const FR = {
       sitterNotes: 'Consignes pour la gardienne',
       vet: 'Vétérinaire',
       vetPick: 'Choisir un business…',
+      // « Planifier un rendez-vous » from a pet peek — seeds the vet Business + a title.
+      vetRdv: 'Rendez-vous vétérinaire',
+      vetRdvTitle: (name: string) => `Vétérinaire — ${name}`,
       weight: 'Poids',
       weightAdd: 'Ajouter',
       weightDate: 'Date',

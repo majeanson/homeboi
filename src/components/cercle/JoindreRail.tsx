@@ -9,8 +9,9 @@ import { Avatar } from '../Avatar'
 import { InlineIcon } from '../Icon'
 
 // « Joindre » (A-6, bmad/10) — "call the dentist" used to be a 3-tap hunt across
-// Famille/Social/Business. This puts the everyday job first: a one-tap quick-dial
-// rail atop Le cercle, ranked by lib/joindre (frequents-first, urgence-first cold
+// Famille/Social/Business. This is a one-tap quick-dial rail at the FOOT of each
+// people section (Famille/Sociale, scoped to that section's people) and the Business
+// tab (scoped to vendors), ranked by lib/joindre (frequents-first, urgence-first cold
 // start). MOBILE ONLY (a shared kiosk wall has no business dialing out on its own)
 // and hidden for a read-only guest. Self-hides below 2 eligible entries — a single
 // tile would just duplicate the row's own quick-link.

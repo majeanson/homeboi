@@ -67,9 +67,21 @@ type WhoPick = { kind: 'contact' | 'business' }
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
+// Pre-seed the "Avec" of a BRAND-NEW rendez-vous (no `value`) — a person, a
+// business, or a member. Used by « Le cercle »'s "Planifier un rendez-vous" peek
+// action so the appointment opens with its counterpart already filled in.
+export interface EventSeedWith {
+  contactId?: string | null
+  businessId?: string | null
+  memberId?: string | null
+  name: string // seeds the "with" combobox text (people/businesses); members show as a highlit button
+  title?: string // optional pre-filled event title (e.g. a pet's vet visit « Vétérinaire — Rex »)
+}
+
 export function EventForm({
   members,
   value,
+  seedWith,
   initialDate,
   defaultRide,
   defaultActivity,
@@ -78,6 +90,7 @@ export function EventForm({
 }: {
   members: FormMember[]
   value?: EventInit | null
+  seedWith?: EventSeedWith | null
   initialDate?: number // local-midnight unix s to pre-fill a NEW event's date (from the calendar)
   defaultRide?: boolean // « L'auto »: open as a ride (Transport block expanded + car pre-picked)
   defaultActivity?: boolean // « Activité »: a recurring kid commitment — default weekly + open the logistics block
@@ -88,20 +101,24 @@ export function EventForm({
   const init = value ? new Date(value.start_at * 1000) : null
   // Pre-fill the date from the edited event, else a calendar-seeded day, else blank.
   const dateSeed = init ?? (initialDate ? new Date(initialDate * 1000) : null)
-  const [title, setTitle] = useState(value?.title ?? '')
+  const [title, setTitle] = useState(value?.title ?? (value ? '' : seedWith?.title ?? ''))
   const [date, setDate] = useState(
     dateSeed ? `${dateSeed.getFullYear()}-${pad(dateSeed.getMonth() + 1)}-${pad(dateSeed.getDate())}` : '',
   )
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
-  const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? null)
+  // A new rendez-vous seeded from a member peek pre-selects that member; a person /
+  // business seed leaves the member unset and fills the "with" picker below instead.
+  const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? (value ? null : seedWith?.memberId ?? null))
   // The "who" of a rendez-vous is exactly one of: a member, a « Le cercle » person
   // ("Mamie visite"), or a Business ("vet", "plombier"). Picking any one clears the
   // others. People come from the shared cercle cache + businesses from theirs (both
   // often already warm); a failed fetch just hides that option rather than breaking
   // the form.
-  const [contactId, setContactId] = useState<string | null>(value?.contact_id ?? null)
-  const [businessId, setBusinessId] = useState<string | null>(value?.business_id ?? null)
-  const [pickText, setPickText] = useState(value?.contact_name ?? value?.business_name ?? '')
+  const [contactId, setContactId] = useState<string | null>(value?.contact_id ?? (value ? null : seedWith?.contactId ?? null))
+  const [businessId, setBusinessId] = useState<string | null>(value?.business_id ?? (value ? null : seedWith?.businessId ?? null))
+  const [pickText, setPickText] = useState(
+    value?.contact_name ?? value?.business_name ?? (value ? '' : seedWith?.memberId ? '' : seedWith?.name ?? ''),
+  )
   const { data: cercle } = useQuery({
     queryKey: CERCLE_KEY,
     queryFn: () => api<{ contacts: Contact[]; links: ContactLink[] }>('cercle'),

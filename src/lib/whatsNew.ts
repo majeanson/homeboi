@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'cercle-rendez-vous',
+    text: {
+      fr: 'Nouveau : dans Le cercle, touche une personne ou un commerce puis « Planifier un rendez-vous » — il apparaît au babillard et à l’agenda, avec rappel.',
+      en: 'New: in the circle, tap a person or business then “Plan an appointment” — it shows on the board and agenda, with a reminder.',
+    },
+    card: 'cercle',
+  },
+  {
     id: 'carte-gardienne',
     text: {
       fr: 'Nouveau : le lien « Gardienne » te montre maintenant ce qui manque encore avant de l’envoyer, et une case « Joindre un parent » optionnelle.',
@@ -103,8 +111,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'joindre-rail',
     text: {
-      fr: 'Nouveau : « Joindre » — sur mobile, une rangée en haut du cercle pour appeler ou écrire d’un doigt, les plus utiles en premier.',
-      en: 'New: “Reach out” — on mobile, a row at the top of the circle to call or email in one tap, the most useful ones first.',
+      fr: 'Nouveau : « Joindre » — sur mobile, une rangée au bas de chaque onglet du cercle pour appeler ou écrire d’un doigt, les plus utiles en premier.',
+      en: 'New: “Reach out” — on mobile, a row at the foot of each circle tab to call or email in one tap, the most useful ones first.',
     },
     card: 'cercle',
   },

@@ -14,6 +14,7 @@ import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { type Recipe } from '../../lib/recipes'
 import { type Mot } from '../../lib/mots'
+import { type NextRdv } from '../../lib/nextRdv'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
 import type { IconName } from '../Icon'
@@ -100,14 +101,21 @@ export function buildEvent(
   }
 }
 
+// « Prochain rendez-vous » glance → a labelled one-line list block. All-day events
+// drop the time; a timed one shows « <date> · <heure> — <titre> ».
+function rdvBlock(label: string, r: NextRdv, lang: Lang): DetailBlock {
+  const when = r.allDay ? formatDayMaybeYear(r.at, lang) : `${formatDayMaybeYear(r.at, lang)} · ${formatTime(r.at, lang)}`
+  return { kind: 'list', label, items: [`${when} — ${r.title}`] }
+}
+
 // — A « Le cercle » Business (vet, plumber, hospital…) — a standalone service card.
 // NOT a person: no relationships/birthday/family. Just quick reach + notes + edit.
 export function buildBusiness(
   b: Business,
   ctx: DetailCtx,
-  opts?: { onEdit?: () => void; onDelete?: () => void },
+  opts?: { onEdit?: () => void; onDelete?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null },
 ): DetailModel {
-  const { t } = ctx
+  const { t, lang } = ctx
   const bz = t.cercle.business
   const accent = b.colour ?? BUSINESS_COLOUR
   const mapsHref = b.address?.trim()
@@ -115,6 +123,9 @@ export function buildBusiness(
     : null
 
   const blocks: DetailBlock[] = []
+  // « Prochain rendez-vous » — a read-only glance up top when an upcoming event is
+  // linked to this vendor (computed by the caller via lib/nextRdv).
+  if (opts?.nextRdv) blocks.push(rdvBlock(t.cercle.nextRdv, opts.nextRdv, lang))
   if (b.category?.trim()) blocks.push({ kind: 'chips', chips: [b.category.trim()] })
   if (b.notes?.trim()) blocks.push({ kind: 'text', text: b.notes.trim() })
   if (b.address?.trim()) blocks.push({ kind: 'text', text: b.address.trim() })
@@ -132,6 +143,9 @@ export function buildBusiness(
     const url = /^https?:\/\//.test(b.website.trim()) ? b.website.trim() : `https://${b.website.trim()}`
     actions.push({ key: 'web', label: bz.website, icon: 'arrow-up-right-bold', run: () => { window.open(url, '_blank', 'noopener') } })
   }
+  // « Planifier un rendez-vous » — a rendez-vous with this vendor (vet, plumber…),
+  // opening the shared EventForm pre-seeded with this business as the "Avec".
+  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
   if (opts?.onDelete) actions.push({ key: 'delete', label: bz.delete, icon: 'trash-bold', run: opts.onDelete })
   if (opts?.onEdit) actions.push({ key: 'edit', label: bz.edit, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
@@ -161,6 +175,7 @@ export function buildPet(
     onDelete?: () => void
     buildFamilyHref?: string
     onConnect?: () => void
+    onSchedule?: () => void // a vet visit — the caller seeds the pet's vet Business
   },
 ): DetailModel {
   const { t, lang } = ctx
@@ -190,6 +205,9 @@ export function buildPet(
   const actions: DetailAction[] = []
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
   if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  // « Rendez-vous chez le vétérinaire » — seeds the pet's vet Business into the event
+  // form (only offered when the pet has a vet on file, so there IS a counterpart).
+  if (opts?.onSchedule) actions.push({ key: 'rdv', label: p.vetRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
   if (opts?.onDelete) actions.push({ key: 'delete', label: p.delete, icon: 'trash-bold', run: opts.onDelete })
   if (opts?.onEdit) actions.push({ key: 'edit', label: p.edit, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
@@ -416,7 +434,7 @@ export interface GroupToggle {
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onExport?: () => void; onConnect?: () => void; buildFamilyHref?: string },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#2A8F85'
@@ -434,6 +452,9 @@ export function buildContact(
   const maps = mapsUrl(c.address)
 
   const blocks: DetailBlock[] = []
+  // « Prochain rendez-vous » — a read-only glance when an upcoming event is linked
+  // to this person (computed by the caller via lib/nextRdv).
+  if (opts?.nextRdv) blocks.push(rdvBlock(t.cercle.nextRdv, opts.nextRdv, lang))
   if (c.notes?.trim()) blocks.push({ kind: 'text', text: c.notes.trim() })
   if (addr) blocks.push({ kind: 'text', text: addr })
   if (opts?.relations?.length) blocks.push({ kind: 'list', label: t.cercle.relationships, items: opts.relations })
@@ -453,6 +474,9 @@ export function buildContact(
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
   // "Relier à quelqu'un" — open the connector with this person as side A.
   if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  // « Planifier un rendez-vous » — a rendez-vous with this person, opening the
+  // shared EventForm pre-seeded with them as the "Avec".
+  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
   // "Exporter (vCard)" — download a .vcf to drop this person into any phone/Mac.
   if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', run: opts.onExport })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
@@ -478,7 +502,7 @@ export function buildContact(
 export function buildMemberPerson(
   p: Person,
   ctx: DetailCtx,
-  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; buildFamilyHref?: string },
+  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; onSchedule?: () => void; buildFamilyHref?: string },
 ): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#2A8F85'
@@ -493,6 +517,9 @@ export function buildMemberPerson(
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
   // "Relier à quelqu'un" — open the connector with this member as side A.
   if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  // « Planifier un rendez-vous » — an appointment concerning this member, opening
+  // the shared EventForm with them pre-selected.
+  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
   actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=cercle&sub=members' })
   return {
     kind: 'contact',

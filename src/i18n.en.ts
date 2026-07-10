@@ -1390,6 +1390,8 @@ export const EN: typeof FR = {
     view: { list: 'List', links: 'Links', tree: 'Tree', monde: 'World' },
     // « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile.
     joindreTitle: 'Reach out',
+    scheduleRdv: 'Plan an appointment',
+    nextRdv: 'Next appointment',
     memberBadge: 'Household',
     focusLabel: 'See from a person',
     focusBy: (name: string) => `Links seen from ${name}`,
@@ -1563,6 +1565,8 @@ export const EN: typeof FR = {
       sitterNotes: 'Sitter instructions',
       vet: 'Vet',
       vetPick: 'Pick a business…',
+      vetRdv: 'Vet appointment',
+      vetRdvTitle: (name: string) => `Vet — ${name}`,
       weight: 'Weight',
       weightAdd: 'Add',
       weightDate: 'Date',
