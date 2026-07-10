@@ -27,6 +27,8 @@ export function Section({
   compactItems,
   compactHint,
   compactHead,
+  compactLabel,
+  compactTo,
   compact,
   children,
 }: {
@@ -50,6 +52,10 @@ export function Section({
   // A small extra pinned to the trailing edge of the compact list header (a weather
   // chip). See `CardMini`'s `head`.
   compactHead?: React.ReactNode
+  /** A shorter title for the mini face only (see `CardMini.compactLabel`). */
+  compactLabel?: string
+  /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
+  compactTo?: string
   compact?: React.ReactNode
   children: React.ReactNode
 }) {
@@ -72,11 +78,13 @@ export function Section({
       {isMini ? (
         <CardMini
           label={label}
+          compactLabel={compactLabel}
           icon={icon}
           hint={compactHint}
           head={compactHead}
           items={compactItems}
           body={compact}
+          to={compactTo}
           onExpand={lens!.expand}
         />
       ) : (

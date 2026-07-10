@@ -938,6 +938,7 @@ export function Board() {
   nodes.today = (
     <Section
       label={t.board.today}
+      compactLabel={t.board.todayShort}
       icon="sun-bold"
       tint="var(--marigold)"
       help={help}
@@ -946,15 +947,9 @@ export function Board() {
       compactItems={todayItems}
       compactHint={todayCount > 0 ? String(todayCount) : undefined}
       // The day's temperature, where the eye already is (a quiet frosted chip, never a
-      // count). Only in the list face — the header the chip rides only exists there.
-      compactHead={
-        weather ? (
-          <>
-            <Icon name={weatherIcon({ bucket: weather.bucket, isDay: true, tempC: weather.tempC })} size={13} />
-            {weather.tempC}°
-          </>
-        ) : undefined
-      }
+      // count). Degrees only — the weather GLYPH pushed the title to ellipsize in the tiny
+      // header; the grown card shows the icon. The chip is small enough to keep the title.
+      compactHead={weather ? `${weather.tempC}°` : undefined}
     >
 {/* « Prochainement » — the next timed thing today as a calm tappable
     headline above the full day list (the glance the « Maintenant » view
@@ -978,13 +973,12 @@ export function Board() {
     to cooking the next planned meal (hidden for a leftover — nothing to
     cook) and a one-tap door to « Avant de partir » (the pre-departure
     checklist + corvées + L'auto). Calm pills, not banners.
-    NFR-CALM: the whole row is suppressed on a genuinely clear day — an empty
-    agenda has nothing to cook and no reason to prompt "before you leave", so
-    the glance card stays a thing to READ, not an operate surface. The depart
-    pill was previously rendered unconditionally; it now rides the same gate. */}
-{!dayClear && (
+    NFR-CALM: the COOK pill rides `!dayClear` — an empty agenda has nothing to
+    cook. « Avant de partir » (the key) stays put on every day, clear or not:
+    leaving the house is a thing you do regardless of how full the agenda is, and
+    Marc wants the key reliably one tap away from the day card. */}
 <div className="board-actions">
-  {cook.meal && !cook.meal.is_leftover && (
+  {!dayClear && cook.meal && !cook.meal.is_leftover && (
     <button
       type="button"
       className="btn btn--ghost mono board-action--cook"
@@ -1002,7 +996,6 @@ export function Board() {
     <InlineIcon name="key-bold" size={16} /> {t.departure.title}
   </button>
 </div>
-)}
 {/* When « Le fil du jour » is on screen it carries today's events + chores, so
     the day list shows only meals + home work here (no double render). The calm
     "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
@@ -1064,15 +1057,10 @@ export function Board() {
             ? String(otherTomorrowMeals.length + tomorrowEvents.length)
             : undefined
       }
-      // Tomorrow's forecast, max/min — the thing a household checks the night before.
-      compactHead={
-        tomorrowWx ? (
-          <>
-            <Icon name={weatherIcon({ bucket: tomorrowWx.bucket, isDay: true, tempC: tomorrowWx.highC })} size={13} />
-            {tomorrowWx.highC}°/{tomorrowWx.lowC}°
-          </>
-        ) : undefined
-      }
+      // Tomorrow's forecast in the mini header: just the daytime HIGH, no glyph — the full
+      // high/low "18°/11°" plus a weather icon pushed « Demain » to ellipsize to « De… » in
+      // a 142px tile. The high is the headline; the grown card shows both + the icon.
+      compactHead={tomorrowWx ? `${tomorrowWx.highC}°` : undefined}
     >
       {/* D-17: the school/congé qualifier — silent almost every day BY
           DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,
@@ -1197,11 +1185,15 @@ export function Board() {
       tint="var(--terracotta)"
       help={help}
       helpKey="todos"
-      // Compact: the loose one-off tasks by name. The embedded « À compléter » checklists
-      // stay behind the tap — they're a second group with their own header, and a tile
-      // that mixed the two would name things without saying which list they belong to.
-      compactItems={todayTodos.map((c) => c.title)}
-      compactHint={todayTodos.length > 0 ? String(todayTodos.length) : undefined}
+      // Compact: everything the card actually holds, by name — the loose one-off tasks
+      // AND the open « À compléter » checklist items (they were omitted before, so a card
+      // whose only to-dos were checklist items read as an empty « À faire »). Both are
+      // "things to do"; in a 142px glance, naming them beats a header that says which
+      // sub-list each belongs to (that distinction is still there once the card grows).
+      compactItems={[...todayTodos.map((c) => c.title), ...openTodos.map((td) => td.title)]}
+      compactHint={
+        todayTodos.length + openTodos.length > 0 ? String(todayTodos.length + openTodos.length) : undefined
+      }
     >
       {todayTodos.map(todoAct)}
       <TodoSection title={t.todos.title} members={data.members} bento={false} />

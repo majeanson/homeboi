@@ -49,7 +49,9 @@ test.describe('board compact lens', () => {
 
     const title = tile.locator('.cardmini__title')
     await expect(title).toBeVisible()
-    await expect(title).toHaveText('Aujourd’hui')
+    // The mini wears the short title (compactLabel) — « Aujourd'hui » ellipsizes once the
+    // weather chip shares the 142px header, so the compact face reads « Auj. ».
+    await expect(title).toHaveText('Auj.')
 
     // Never a squeezed full card ("Spaghetti" → "Spaghet/ti"): the title box must fit
     // within its 2-line clamp, not a taller stack of one-word-per-line wraps. Reading
@@ -233,6 +235,12 @@ test.describe('board compact lens', () => {
     await expect(tile).toBeVisible()
     await expect(tile).toHaveClass(/wg-slot__placeholder/)
     await expect(tile.locator('.cardmini__hint')).toHaveText('Rien')
+
+    // An empty pinned card with a natural "add one" page (« Les carnets » → Le cercle)
+    // taps STRAIGHT THERE instead of growing into a « Rien pour l'instant » shell: the tile
+    // is an anchor, not a grow-button (BOARD_CARDS[].emptyTo → CardSlot → compactTo).
+    await expect(tile).toHaveJSProperty('tagName', 'A')
+    await expect(tile).toHaveAttribute('href', /\/cercle$/)
 
     const look = await slot.evaluate((el) => ({
       tint: getComputedStyle(el).getPropertyValue('--wg-tint').trim(),

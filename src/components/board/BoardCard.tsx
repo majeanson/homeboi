@@ -129,28 +129,36 @@ export function CardMini({
   className,
   style,
   label,
+  compactLabel,
   icon,
   iconNode,
   hint,
   head,
   items,
   body,
+  to,
   onExpand,
 }: {
   className?: string
   style?: CSSProperties
   label: string
+  /** A shorter title JUST for the mini — the full `label` ellipsizes in a 142px header
+   *  once a weather chip shares it (« Aujourd'hui » → « Auj. »). Falls back to `label`. */
+  compactLabel?: string
   icon?: IconName
   iconNode?: ReactNode
   hint?: ReactNode
-  /** A small extra pinned to the trailing edge of the list-face header — a weather
-   *  chip on « Aujourd'hui » / « Demain ». Only the list face has a header, so this
-   *  shows only when the tile names its rows. */
+  /** A small extra pinned to the trailing edge of the header — a weather chip on
+   *  « Aujourd'hui » / « Demain ». Shows on both faces (it rides the shared header). */
   head?: ReactNode
   /** One line per thing the card holds. Rendered only when they all fit — see above.
    *  A row may lead with a short time/day token (see `CompactRow`). */
   items?: readonly CompactRow[]
   body?: ReactNode
+  /** When set, tapping the mini NAVIGATES here instead of growing the card in place — for
+   *  a card whose compact form has nothing worth expanding into (an empty « L'auto » →
+   *  « /voiture », an empty placeholder → the page that adds one). Skips tap-to-grow. */
+  to?: string
   onExpand: () => void
 }) {
   const t = useT()
@@ -170,46 +178,56 @@ export function CardMini({
           {glyph}
         </span>
       )}
-      <b className="cardmini__title">{label}</b>
+      <b className="cardmini__title">{compactLabel ?? label}</b>
       {head != null && head !== '' && <span className="cardmini__headx">{head}</span>}
     </span>
   )
+  const inner = body ?? (
+    <>
+      {header}
+      {rows ? (
+        <ul className="cardmini__rows">
+          {rows.map((row, i) => {
+            const lead = typeof row === 'string' ? undefined : row.lead
+            const text = typeof row === 'string' ? row : row.label
+            return (
+              <li key={i} className="cardmini__row">
+                {lead ? (
+                  <span className="cardmini__lead mono">{lead}</span>
+                ) : (
+                  <span className="cardmini__dot" aria-hidden="true" />
+                )}
+                <span className="cardmini__rowlabel">{text}</span>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>
+      )}
+    </>
+  )
+  const cls = 'cardmini' + (rows ? ' cardmini--list' : ' cardmini--glance') + (className ? ` ${className}` : '')
+  // A card with nothing worth growing into taps straight through to a useful place (its
+  // config / add page) rather than expanding to an empty shell — a `<Link>`, not a
+  // grow-`<button>`. Everything else keeps tap-to-grow.
+  if (to) {
+    return (
+      <Link to={to} className={cls} style={style} aria-label={label}>
+        {inner}
+      </Link>
+    )
+  }
   return (
     <button
       type="button"
-      className={
-        'cardmini' + (rows ? ' cardmini--list' : ' cardmini--glance') + (className ? ` ${className}` : '')
-      }
+      className={cls}
       style={style}
       aria-expanded={false}
       aria-label={t.board.expandCard(label)}
       onClick={onExpand}
     >
-      {body ?? (
-        <>
-          {header}
-          {rows ? (
-            <ul className="cardmini__rows">
-              {rows.map((row, i) => {
-                const lead = typeof row === 'string' ? undefined : row.lead
-                const text = typeof row === 'string' ? row : row.label
-                return (
-                  <li key={i} className="cardmini__row">
-                    {lead ? (
-                      <span className="cardmini__lead mono">{lead}</span>
-                    ) : (
-                      <span className="cardmini__dot" aria-hidden="true" />
-                    )}
-                    <span className="cardmini__rowlabel">{text}</span>
-                  </li>
-                )
-              })}
-            </ul>
-          ) : (
-            hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>
-          )}
-        </>
-      )}
+      {inner}
     </button>
   )
 }
@@ -242,6 +260,8 @@ export function BoardCard({
   compactItems,
   compactHint,
   compactHead,
+  compactLabel,
+  compactTo,
   compact,
   children,
 }: {
@@ -258,6 +278,10 @@ export function BoardCard({
   compactItems?: readonly CompactRow[]
   compactHint?: ReactNode
   compactHead?: ReactNode
+  /** A shorter title for the mini face only (see `CardMini.compactLabel`). */
+  compactLabel?: string
+  /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
+  compactTo?: string
   compact?: ReactNode
   children: ReactNode
 }) {
@@ -273,12 +297,14 @@ export function BoardCard({
         className={className}
         style={style}
         label={label}
+        compactLabel={compactLabel}
         icon={icon}
         iconNode={iconNode}
         hint={compactHint}
         head={compactHead}
         items={compactItems}
         body={compact}
+        to={compactTo}
         onExpand={lens.expand}
       />
     )

@@ -34,6 +34,14 @@ import { useWidgetGrid } from './WidgetGrid'
 // a card that carries its own chrome can be moved between zones without changing
 // appearance, which is why `.bento`'s fill/shadow moved off `.board-grid > .bento`.
 //
+// The few board cards whose full title ellipsizes in a 142px mini header wear a short form
+// there (mirrors the live cards' own `compactLabel`). Keyed by id; an absent id falls back
+// to the plain label. Kept here (not in boardCards meta) because the strings are i18n.
+const SHORT_LABEL: Partial<Record<BoardCardId, (t: ReturnType<typeof useT>) => string>> = {
+  today: (t) => t.board.todayShort,
+  voyage: (t) => t.voyage.nextTripShort,
+}
+
 // Not to be confused with `BoardCard` (BoardCard.tsx), which is the shared HEADER +
 // container anatomy a card renders INSIDE this slot. Slot = where; BoardCard = what.
 //
@@ -226,8 +234,15 @@ export function CardSlot({
               <BoardCard
                 className="bento wg-slot__placeholder"
                 label={label}
+                // The tiny placeholder tile wears the same short title the live card would
+                // (« Prochain voyage » → « Voyage ») so it doesn't wrap to two lines. Only
+                // the few long-titled cards have one; the rest fall back to their label.
+                compactLabel={SHORT_LABEL[id]?.(t)}
                 icon={meta.icon}
                 compactHint={t.board.cardEmptyMini}
+                // An empty pinned card taps straight to where you'd add one (if it has such
+                // a page) rather than growing into a « Rien pour l'instant » shell.
+                compactTo={meta.emptyTo}
               >
                 <EmptyState>{t.board.cardEmpty}</EmptyState>
               </BoardCard>

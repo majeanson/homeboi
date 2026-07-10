@@ -116,6 +116,10 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
       icon="car-bold"
       label={carLabel}
       compactHint={status}
+      // Nothing planned (free, no rides): the mini's status line IS all the grown card
+      // would show, so tap straight through to « L'auto » (add a ride / set the schedule)
+      // rather than expanding to the same sentence. With rides, the tap grows to show them.
+      compactTo={!busy && rides.length === 0 ? '/voiture' : undefined}
     >
       <div className={`auto-card__status${busy ? ' auto-card__status--busy' : ''}`}>
         {holder && (

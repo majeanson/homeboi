@@ -100,6 +100,26 @@ export const FR = {
   // Pas de série, pas de points, pas de classement (aucune comparaison entre membres).
   habits: {
     title: 'Mes habitudes',
+    // « Le défi du jour » — un petit défi qui dure toute la journée (« porte du
+    // jaune », « salue une nouvelle personne »), que toute la maisonnée peut
+    // relever. Le matin, on pige (jusqu’à 3 fois — la troisième est la bonne),
+    // puis on essaie ; chacun coche quand c’est fait. Pas de série, pas de points
+    // (calm) : on éclaire les visages qui l’ont tenu, jamais un score.
+    defi: {
+      title: 'Le défi du jour',
+      sub: 'Un petit défi pour toute la maisonnée, aujourd’hui.',
+      pige: 'Pige un défi',
+      pigeAgain: 'Pige encore',
+      accept: 'On l’essaie !',
+      thirdIsIt: 'La troisième est la bonne !',
+      mine: 'Écris le tien',
+      minePlaceholder: 'Porte du jaune aujourd’hui…',
+      tried: 'Je l’ai tenu !',
+      undo: 'Finalement, non',
+      whoTried: 'Qui l’a relevé',
+      pickFace: 'Choisis ton visage pour cocher.',
+      markAria: (title: string) => `J’ai tenu : ${title}`,
+    },
     checkin: 'Le point du jour',
     whoseDay: 'La journée de qui ?',
     manage: 'Gérer mes habitudes',
@@ -576,6 +596,9 @@ export const FR = {
   },
   board: {
     today: 'Aujourd’hui',
+    // The mini-tile title — « Aujourd’hui » ellipsizes to « Aujou… » once the weather chip
+    // shares the 142px header, so the compact face wears a short form (BoardCard compactLabel).
+    todayShort: 'Auj.',
     // « Le fil du jour » — the day-ribbon card: today's timed events as a shape, with a
     // calm « maintenant » marker. `anytime` heads the all-day items that have no clock time.
     fil: 'Le fil du jour',
@@ -838,6 +861,9 @@ export const FR = {
     deleteDocConfirm: (name: string) => `Supprimer ${name} ? Le fichier ne pourra pas être récupéré.`,
     // board card + month band
     nextTrip: 'Prochain voyage',
+    // Mini-tile title: « Prochain voyage » ellipsizes in a 142px tile, so the compact face
+    // wears the short form (BoardCard compactLabel).
+    nextTripShort: 'Voyage',
     ongoing: 'En cours',
     inDays: (n: number) => (n === 1 ? 'Demain' : `Dans ${n} jours`),
     startsToday: 'Aujourd’hui',

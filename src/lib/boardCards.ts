@@ -109,6 +109,16 @@ export interface BoardCardMeta {
    * clamps away a stored half that predates the flag.
    */
   halvable?: boolean
+  /**
+   * Where an EMPTY compact tile taps to. When the slot draws the empty placeholder (an
+   * `always` card that has nothing to show), its mini would otherwise grow into a « Rien
+   * pour l'instant » shell — a dead expand. If the card has a natural "go add one" page,
+   * name it here and the empty mini navigates there instead (CardSlot → `compactTo`).
+   * Omit for a card with no such destination (it keeps the plain grow-to-empty-shell).
+   * A card that fills itself with a live status (« L'auto » free-all-day) passes its own
+   * `compactTo` from the component — this is only the slot-drawn placeholder path.
+   */
+  emptyTo?: string
 }
 
 // THE canonical card list: identity, default placement, default size, default emptiness
@@ -142,20 +152,20 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
   { id: 'moments', icon: 'moon-stars-bold', tint: 'var(--berry-deep)', zone: 'band', size: 1, mode: 'always' },
   // ── the masonry: car → the day's shape → the day → standing lists → upcoming → media ──
-  { id: 'autoCard', icon: 'car-bold', tint: 'var(--sky-deep)', zone: 'grid', size: 'full', mode: 'auto' },
+  { id: 'autoCard', icon: 'car-bold', tint: 'var(--sky-deep)', zone: 'grid', size: 'full', mode: 'auto', emptyTo: '/voiture' },
   { id: 'fil', icon: 'clock-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'today', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'always' },
-  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'habitudes', icon: 'repeat-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/routines' },
+  { id: 'habitudes', icon: 'repeat-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/board/habitudes' },
   { id: 'tomorrow', icon: 'sun-horizon-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'countdown', icon: 'hourglass-high-bold', tint: 'var(--berry-deep)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'toFinish', icon: 'check-bold', tint: 'var(--sage)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'toFinish', icon: 'check-bold', tint: 'var(--sage)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/kitchen' },
   { id: 'todos', icon: 'check-bold', tint: 'var(--terracotta)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'upcoming', icon: 'calendar-blank-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'voyage', icon: 'map-pin-bold', tint: 'var(--teal)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'carnets', icon: 'book-open-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'seasonUpkeep', icon: 'broom-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto' },
+  { id: 'upcoming', icon: 'calendar-blank-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/event/new' },
+  { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/cercle' },
+  { id: 'voyage', icon: 'map-pin-bold', tint: 'var(--teal)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/voyage/new' },
+  { id: 'carnets', icon: 'book-open-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/cercle' },
+  { id: 'seasonUpkeep', icon: 'broom-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/home-project/new' },
   // `drawings` is not `halvable` for the same reason as `notes`: a gallery door has
   // no one-summary compact form. `photos` IS halvable — its mini is a MEDIA tile
   // (just the current photo; PhotoFrame.tsx).
