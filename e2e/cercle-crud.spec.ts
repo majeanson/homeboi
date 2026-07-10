@@ -54,3 +54,14 @@ test('creating a carnet posts to carnets', async ({ page }) => {
     dialog.getByRole('button', { name: 'Ajouter un carnet' }).click(),
   )
 })
+
+// F23 Animaux (PARITY Wave E, entry 10) — /cercle/pet/new was layout-smoke-rendered
+// only; unlike group/business/carnet above it had no create-and-POST spec. A pet needs
+// just a name to submit (species/owner are optional).
+test('creating a pet posts to pets', async ({ page }) => {
+  await page.goto('/cercle/pet/new')
+  await page.getByLabel('Nom', { exact: true }).fill('Rex')
+  await expectApi(page, 'POST', 'pets', () =>
+    page.getByRole('button', { name: 'Ajouter un animal' }).click(),
+  )
+})

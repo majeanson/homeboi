@@ -544,6 +544,36 @@ test.describe('add sheet', () => {
     )
   })
 
+  // F3 « À compléter » (PARITY Wave E, entry 10) — the board todo card was smoke
+  // -rendered only; nothing created a todo. The board ＋ « À compléter » tile opens a
+  // compose box (scope chips + the templates combobox) that POSTs /api/todos.
+  test('the board ＋ « À compléter » box posts a todo', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.cat-pick', { hasText: 'À compléter' }).click()
+    await page.locator('.addsheet__todo input.edit-field__input').fill('Sac de piscine')
+    await expectApi(page, 'POST', 'todos', () =>
+      page.locator('.addsheet__todo .edit-field__submit').click(),
+    )
+  })
+
+  // F14 Restants (PARITY Wave E, entry 10) — the ＋ « Restants » field was reached in
+  // keyboard.spec but nothing POSTed a leftover. The kitchen ＋ « Restants » tile opens
+  // the unified free-text/meal combobox that POSTs /api/meal-leftovers.
+  test('the kitchen ＋ « Restants » box posts a leftover', async ({ page }) => {
+    await APP('/kitchen')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    await expect(page.locator('.sheet.show')).toBeVisible()
+    await page.locator('.cat-pick', { hasText: 'Restants' }).click()
+    await page.locator('.sheet.show input.edit-field__input').fill('Reste de spaghetti')
+    await expectApi(page, 'POST', 'meal-leftovers', () =>
+      page.locator('.sheet.show .edit-field__submit').click(),
+    )
+  })
+
   // C-14 — the kitchen ＋ sheet's week-action tiles shrank to 2 (shop + « Idées »):
   // Vide-frigo now opens from the IdeasDrawer's own footer button, not a direct
   // ＋ tile. The tile navigates to the drawer's full-screen scene (/kitchen/idees).

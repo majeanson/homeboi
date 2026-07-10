@@ -278,6 +278,11 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/liste', audience: 'parent', ready: '.hub' },
   { path: '/liste', audience: 'toddler', ready: '.hub' },
   { path: '/settings', audience: 'parent', ready: '.hub' },
+  // Two scenes with no board card + no hub body, so their phone width was never swept
+  // (PARITY D9 footnote 49): the global search and the deals browser. Full-screen
+  // `.scene` routes — the poll below also inspects `.scene__body`.
+  { path: '/search', audience: 'parent', ready: '.search' },
+  { path: '/liste/circulaires', audience: 'parent', ready: '.scene' },
   { path: '/login', audience: 'parent', ready: '.page' },
   { path: '/signup', audience: 'parent', ready: '.page' },
   { path: '/pair', audience: 'parent', ready: '.page' },
@@ -308,7 +313,9 @@ for (const width of PHONE_WIDTHS) {
             async () =>
               page.evaluate(() => {
                 const doc = document.documentElement
-                const body = document.querySelector('.hub__body')
+                // Hub tabs scroll inside `.hub__body`; full-screen scenes (search, deals)
+                // inside `.scene__body` — check whichever this route has.
+                const body = document.querySelector('.hub__body') || document.querySelector('.scene__body')
                 const docOver = doc.scrollWidth > doc.clientWidth + 1
                 const bodyOver = !!body && body.scrollWidth > body.clientWidth + 1
                 return docOver ? 'doc-overflow' : bodyOver ? 'body-overflow' : 'ok'

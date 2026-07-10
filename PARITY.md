@@ -264,36 +264,36 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
 | F1 Agenda                | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | 🔶³        | ➖¹       | ✅       | ✅      |
-| F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | 🔶³⁸    |
+| F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | 🔶²²       | ✅        | ✅       | ✅      |
 | F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F6 Habitudes             | ✅      | ❌      | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
 | F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | ✅⁵³     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
-| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | 🔶⁴⁹         | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F11 Widget space         | ✅      | ➖      | ➖⁴⁴    | ➖⁹        | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
-| F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | 🔶³⁹    |
+| F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | ✅⁵⁴    |
 | F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
 | F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖        | ✅       | ✅      |
 | F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | ✅⁵³     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | 🔶⁴⁹         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
+| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | 🔶¹⁹       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
 | F21 Personnes            | ✅      | ✅      | ✅      | 🔶²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
 | F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | 🔶²¹       | ➖        | ✅       | ✅      |
-| F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | 🔶⁴⁰    |
+| F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅⁵⁴    |
 | F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
 | F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | 🔶³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
 | F27 Notre monde          | ➖      | ➖⁴³    | ➖      | ➖         | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
-| F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ❌      |
-| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | 🔶⁴¹    |
+| F29 Collants             | ✅      | ➖      | 🔶⁴⁶    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅⁵⁴    |
+| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | ✅⁵⁴    |
 | F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | 🔶⁴²    |
+| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | 🔶³        | ➖        | ✅       | ✅⁵⁴    |
 | F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅      |
 | F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | 🔶²¹       | 🔶²³      | ✅       | ✅      |
 
@@ -386,6 +386,20 @@ Footnotes (verdicts recorded so far):
     the board « ? », taps the card title, asserts the in-place bubble + its `card=mots` guide
     link (per-test `/api/mots` override, so no board snapshot moves). typecheck +
     `helpRegistry`/`guideLinks` + 1436 unit tests green. [F5/F6/F8/F17/F29/F30/F31×D7]
+54. **Wave E SHIPPED 2026-07-10** — the smoke-only e2e gaps closed by extending sweeps
+    (no new harness), `cercle-crud.spec` the create-and-POST template. **F29 Collants**
+    (was ❌ — first-ever spec): new `e2e/stickers.spec.ts` — an all-done routine at
+    `/routine/r1/run` (calm off) shows the completion picker → asserts the **POST**
+    `routine-stickers`; the wall (`/routine/stickers`, seeded via override) renders two
+    stickers and edit-mode ✕ asserts the **DELETE**. **Entry 10** (smoke→happy): **F23**
+    pet create → `cercle-crud.spec` (`/cercle/pet/new` POST `pets`); **F3** todo + **F14**
+    restants → `interactions.spec` (board ＋ « À compléter » POST `todos`; kitchen ＋
+    « Restants » POST `meal-leftovers`); **F30** jouer + **F32** voiture →
+    `e2e/play-and-car.spec.ts` (the find-it game reaches « Bravo »; the car week-editor
+    POSTs `car-day`). **Entry 11** (F10/F18×D9): `/search` + `/liste/circulaires` added to
+    `screenshots.spec` `OVERFLOW_CASES` (360/390px, FR+EN) — the poll now also inspects
+    `.scene__body` for scene routes; all 8 pass (no phone overflow). All new specs pass
+    locally; typecheck green. [F3/F14/F23/F29/F30/F32×D16, F10/F18×D9]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
@@ -468,8 +482,9 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
        2026-07-10** — a « Jouer » point on the `routines` guide card (route `/jouer`)
        makes it discoverable in the guide + FeatureMap; ❌→✅ (footnote 53). « ? »/tour
        stay ➖ (a toddler surface — `HelpDot` hides for that audience).
-4. [ ] 🔴 **F29×D16** — **mur de collants has no e2e at all** (footnote, confirmed:
-       no `sticker`/`collant`/`StickerWall` match). Spec the happy path. **→ Wave E.**
+4. [x] 🔴 **F29×D16** — mur de collants had no e2e at all. **DONE (Wave E) 2026-07-10** —
+       `e2e/stickers.spec.ts` places a sticker (POST) via a completed routine and removes
+       one from the wall (DELETE); ❌→✅ (footnote 54).
 
 **🟡 Hygiene / drift — invisible to users, converge opportunistically (Waves U, O, D, H, E):**
 
@@ -489,12 +504,13 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
        turned out already-migrated. **→ Wave O.**
 9. [ ] 🟡 **F20×D4** — `ghost.ts` `patchGhost`/`deleteGhost` bypass `useWrite`
        (footnote 19). Low severity (usually rides a queued list add). **→ Wave O.**
-10. [ ] 🟡 **F3/F14/F23/F30/F32×D16** — smoke-rendered only, **no happy-path spec**
-        (footnotes 38–42): todos card, ＋ Restants field, `/cercle/pet/new`, `/jouer`,
-        `/voiture`. **→ Wave E** (extend the sweeps; `cercle-crud.spec` is the template).
-11. [ ] 🟡 **F10×D9 / F18×D9** — SearchPage & CirculairesPage are **not in any
-        phone-overflow e2e sweep** and have no board card (footnote 49); phone width
-        unproven. **→ Wave E** — add `/search` + `/circulaires` to `OVERFLOW_CASES`.
+10. [x] 🟡 **F3/F14/F23/F30/F32×D16** — smoke-rendered only, no happy-path spec.
+        **DONE (Wave E) 2026-07-10** — todo/restants (`interactions.spec`), pet
+        (`cercle-crud.spec`), jouer/voiture (`play-and-car.spec`); 🔶→✅ (footnote 54).
+11. [x] 🟡 **F10×D9 / F18×D9** — SearchPage & CirculairesPage weren't in any phone
+        -overflow sweep. **DONE (Wave E) 2026-07-10** — `/search` + `/liste/circulaires`
+        added to `screenshots.spec` `OVERFLOW_CASES` (poll now checks `.scene__body`);
+        🔶→✅ (footnote 54).
 12. [ ] 🟡 **F22×D13 / F34×D13 / F26×D13** — `sort_order`/`sort` ordering outliers
         vs the `position` convention: contact_groups, members, carnets, home_pins
         (footnote 21; F22 corrected from a pre-seeded ✅). **→ Wave D** (opportunistic).
@@ -546,8 +562,8 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
   - [x] **F6 Habitudes** — folded into `ToddlerBoard` as « Mes habitudes »: the habits
         still asking today, read-aloud tiles carrying the parent `habitReading` line.
   - _Verified:_ `e2e/interactions.spec.ts` « Mes habitudes » renders a due habit tile +
-        asserts a tap fires no write; both sections reuse the `BigTiles` grid (no
-        hand-rolled flex → no 360px overflow); typecheck + 1436 unit tests green.
+    asserts a tap fires no write; both sections reuse the `BigTiles` grid (no
+    hand-rolled flex → no 360px overflow); typecheck + 1436 unit tests green.
 - [x] **Wave H — Help/tour/guide** _(entries 3, 5, 6; SHIPPED 2026-07-10)_. Merged into
       existing cards (no new card, no new registry); `helpRegistry` + `guideLinks` green.
   - [x] **F30 Jouer** (🔴, entry 3) — a « Jouer » **point on the `routines` guide card**
@@ -558,19 +574,20 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
   - [x] **F6 Habitudes** (entry 6) — `HabitudesPage` already has a `SceneHead card=`
         `HelpDot` (verdict correction; the board `<Link>` card can't host an armed help-title).
   - _Verified:_ `e2e/help.spec.ts` « Mots » arms the board « ? », taps the title, asserts
-        the bubble + `card=mots` link (per-test mots override, no snapshot moves).
-        typecheck + `helpRegistry`/`guideLinks` + 1436 unit tests green. (footnote 53)
+    the bubble + `card=mots` link (per-test mots override, no snapshot moves).
+    typecheck + `helpRegistry`/`guideLinks` + 1436 unit tests green. (footnote 53)
   - _Don't touch:_ Carnets/L'auto turned out covered (Appendix A).
-- [ ] **Wave E — e2e** _(entries 4, 10, 11; ~M/L)_. Happy path only; extend sweeps,
-      don't build new harnesses. `cercle-crud.spec` is the create-and-POST template.
-  - [ ] **F29 Collants** (🔴, entry 4) — first-ever spec: place a sticker, assert
-        the POST, remove it.
-  - [ ] Smoke-only → happy path (entry 10): **F3 todos** (create+complete),
-        **F14 ＋Restants** (POST+consume), **F23 pet** (`/cercle/pet/new` create),
-        **F30 jouer** (one game interaction), **F32 voiture** (schedule/car-day CRUD).
-  - [ ] Overflow sweep (entry 11): add **`/search` + `/circulaires`** to
-        `OVERFLOW_CASES` in `e2e/screenshots.spec` (360/390px).
-  - _Note:_ trust CI's E2E job for signal; don't run e2e locally by default.
+- [x] **Wave E — e2e** _(entries 4, 10, 11; SHIPPED 2026-07-10)_. Happy path only;
+      extended sweeps, no new harness. `cercle-crud.spec` was the create-and-POST template.
+  - [x] **F29 Collants** (🔴, entry 4) — `e2e/stickers.spec.ts`: a completed routine
+        (calm off) places a sticker (POST), the wall removes one (DELETE).
+  - [x] Smoke-only → happy path (entry 10): **F3 todos** (＋ POST `todos`), **F14
+        ＋Restants** (＋ POST `meal-leftovers`), **F23 pet** (`/cercle/pet/new` POST
+        `pets`), **F30 jouer** (find-it → « Bravo »), **F32 voiture** (POST `car-day`).
+  - [x] Overflow sweep (entry 11): **`/search` + `/liste/circulaires`** added to
+        `OVERFLOW_CASES` (poll now also checks `.scene__body`); 8/8 pass FR+EN @360/390.
+  - _Verified:_ each new/changed spec passes locally; typecheck green. (footnote 54)
+  - _Note:_ trust CI's E2E job for the full signal; specs run individually here.
 - [ ] **Wave U — Undo/confirm rebalance** _(entry 7; ~S — one file)_.
   - [ ] **F29** — wrap the sticker ✕ (`StickerWallPage.tsx` L62) in
         `useDeferredRemoval(STICKERS_KEY)` (light, frequent, polled → undo toast).
