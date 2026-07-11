@@ -38,7 +38,7 @@ const DAY = 86400
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
+interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; contact_address?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; business_address?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
@@ -578,7 +578,7 @@ export function MonthView({
                   onOpen={() =>
                     detail.open(
                       buildEvent(
-                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
+                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, contact_address: e.contact_address, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, business_address: e.business_address, birthday: e.birthday, age: e.age },
                         detailCtx,
                         eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
                       ),

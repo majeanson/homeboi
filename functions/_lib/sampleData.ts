@@ -388,7 +388,6 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
         // today
         [lea, 'Garderie', at(d0, 9), 0],
         [papa, 'Réunion d’équipe', at(d0, 10), 0],
-        [noah, 'Rendez-vous dentiste', at(d0, 15), 0],
         [maman, 'Cours de yoga', at(d0, 19), 0],
         // tomorrow
         [lea, 'Soccer', at(d1, 17), 0],
@@ -416,6 +415,13 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, bring_template_id, created_at, is_sample)
        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`,
     ).bind(newId(), h, lea, 'Soccer de Léa', at(d0, 17), tplSoccer, ts, S),
+
+    // …and Noah's dentist visit rides its BUSINESS (the clinic has an address), so
+    // the rendez-vous peek shows the « Itinéraire » one-tap directions in the demo.
+    P(
+      `INSERT INTO events (id, household_id, member_id, business_id, title, start_at, all_day, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+    ).bind(newId(), h, noah, dentisteBiz, 'Rendez-vous dentiste', at(d0, 15), ts, S),
 
     // list_items — a real, full grocery list. The first is attributed to Maman (added_by);
     // the rest are plain manual rows.

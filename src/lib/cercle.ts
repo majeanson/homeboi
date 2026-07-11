@@ -1020,6 +1020,19 @@ export function formatAddress(a: ContactAddress | null | undefined): string | nu
   return parts.length ? parts.join(', ') : null
 }
 
+// The raw wire form: contacts.address is a JSON string in SQL; surfaces that read
+// it straight off a joined row (the rendez-vous peek's contact_address) parse it
+// here rather than each hand-rolling a guarded JSON.parse. Null on absent/garbage.
+export function parseContactAddress(raw: string | null | undefined): ContactAddress | null {
+  if (!raw?.trim()) return null
+  try {
+    const v = JSON.parse(raw)
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as ContactAddress) : null
+  } catch {
+    return null
+  }
+}
+
 // A Google Maps DIRECTIONS link to the address (opens turn-by-turn in the Maps app
 // on a phone, the web map on a tablet). Null when there's no address to route to.
 export function mapsUrl(a: ContactAddress | null | undefined): string | null {

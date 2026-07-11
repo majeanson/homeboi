@@ -7,7 +7,7 @@
 import { CATS } from '../../lib/cats'
 import { colourFor } from '../../lib/things'
 import { imgUrl } from '../../lib/image'
-import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, fullName } from '../../lib/cercle'
+import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, parseContactAddress, fullName } from '../../lib/cercle'
 import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
 import { KIND_EMOJI, type CarnetKind } from '../../lib/carnets'
 import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
@@ -76,6 +76,14 @@ export function buildEvent(
   // A business rendez-vous carries the business's own colour (joined server-side);
   // it tints both the accent and the non-member "who" disc.
   const bizColour = e.business_id ? e.business_colour ?? CATS.event.color : null
+  // « Itinéraire » — when the « Avec » (business or contact) has an address, the
+  // peek offers turn-by-turn directions in one tap: the business address is a plain
+  // string, the contact one the ContactAddress JSON (both joined server-side, like
+  // contact_name). Same DIRECTIONS deep-link mapsUrl builds for a contact card.
+  const bizAddr = e.business_address?.trim()
+  const mapsHref = bizAddr
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(bizAddr)}`
+    : mapsUrl(parseContactAddress(e.contact_address))
   // « Qui » — the household people this concerns (passengers, or the legacy single
   // member_id). One face → the single `who` chip; several → a `whoStack` the sheet
   // draws as a face pile. The external « Avec » (business/contact) name stays the
@@ -98,6 +106,11 @@ export function buildEvent(
     // guest/toddler peek stays read-only. Exactly one primary (edit when present).
     actions: [
       { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` },
+      // « Itinéraire » — turn-by-turn to the rendez-vous, one tap before the door.
+      // Read-only navigation, so it stays for guests/kiosks (no opt gate needed).
+      ...(mapsHref
+        ? [{ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold' as const, run: () => { window.open(mapsHref, '_blank', 'noopener') } }]
+        : []),
       ...(opts?.onEdit
         ? [{ key: 'edit', label: t.common.edit, icon: 'pencil-simple-bold' as const, primary: true, run: opts.onEdit }]
         : []),

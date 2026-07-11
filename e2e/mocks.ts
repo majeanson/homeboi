@@ -46,7 +46,9 @@ export const BOARD = {
   today: [
     { id: 'e0', title: 'Rappel: facture', start_at: BASE + 2 * 3600, all_day: 0, member_id: null },
     { id: 'e1', title: 'Garderie', start_at: BASE + 3600, all_day: 0, member_id: 'm3' },
-    { id: 'e2', title: 'Rendez-vous dentiste', start_at: BASE + 6 * 3600, all_day: 0, member_id: 'm4' },
+    // The dentist rendez-vous rides a BUSINESS with an address, so its peek offers
+    // « Itinéraire » (turn-by-turn directions) — event-peek-actions.spec exercises it.
+    { id: 'e2', title: 'Rendez-vous dentiste', start_at: BASE + 6 * 3600, all_day: 0, member_id: 'm4', business_id: 'b1', business_name: 'Clinique dentaire Sourire', business_colour: '#4A90A4', business_address: '18 boul. Jacques-Cartier, Sherbrooke' },
     { id: 'e3', title: 'Soccer', start_at: BASE + 9 * 3600, all_day: 0, member_id: 'm3' },
   ],
   tomorrow: [{ id: 'e4', title: 'Épicerie', start_at: BASE + DAY + 4 * 3600, all_day: 0, member_id: 'm1' }],

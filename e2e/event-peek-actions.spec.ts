@@ -71,3 +71,30 @@ test('Modify opens the event form pre-filled', async ({ page }) => {
   // The EventForm's first input is the title, pre-filled from the event being edited.
   await expect(modal.locator('input').first()).toHaveValue('Rendez-vous dentiste', { timeout: 10_000 })
 })
+
+// « Itinéraire » — a rendez-vous whose « Avec » (business/contact) has an address
+// offers one-tap turn-by-turn: the peek opens Google Maps DIRECTIONS to it. The
+// fixture's dentist (e2) rides a business with an address; an address-less event
+// (e1 Garderie) must NOT grow the button.
+test('« Itinéraire » opens Google Maps directions when the rendez-vous has an address', async ({ page }) => {
+  // The popup would load the real google.com in CI — stub the route at the context
+  // level (popups inherit context routes, not page routes).
+  await page.context().route('**/maps/dir/**', (r) =>
+    r.fulfill({ status: 200, contentType: 'text/html', body: '<title>maps</title>' }),
+  )
+  await openEventPeek(page)
+  const [popup] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.locator('.detail-sheet__actions').getByText('Itinéraire', { exact: true }).click(),
+  ])
+  expect(popup.url()).toContain('google.com/maps/dir')
+  expect(popup.url()).toContain(encodeURIComponent('18 boul. Jacques-Cartier, Sherbrooke'))
+  await popup.close()
+
+  // No address → no button: the Garderie peek stays Itinéraire-free.
+  await page.keyboard.press('Escape')
+  await page.locator('.detail-sheet').waitFor({ state: 'hidden' })
+  await page.locator('.act', { hasText: 'Garderie' }).first().click()
+  await page.locator('.detail-sheet').waitFor({ state: 'visible' })
+  await expect(page.locator('.detail-sheet__actions').getByText('Itinéraire', { exact: true })).toHaveCount(0)
+})
