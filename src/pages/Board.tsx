@@ -945,7 +945,10 @@ export function Board() {
       helpKey="today"
       now={todayNow}
       compactItems={todayItems}
-      compactHint={todayCount > 0 ? String(todayCount) : undefined}
+      // A count when there's something to count; on a genuinely clear day a calm
+      // « Journée libre » so the mini tile isn't an empty void under its header (the
+      // corners still offer « Planifier » + « Avant de partir »).
+      compactHint={todayCount > 0 ? String(todayCount) : dayClear ? t.board.dayFree : undefined}
       // Two corner shortcuts on the halved day tile, each its own tap target: a pencil to
       // « Planifier aujourd'hui » (the day's plan page) and the key to « Avant de partir »
       // (the pre-departure checklist) — both reachable without growing the card first.
@@ -985,6 +988,17 @@ export function Board() {
     leaving the house is a thing you do regardless of how full the agenda is, and
     Marc wants the key reliably one tap away from the day card. */}
 <div className="board-actions">
+  {/* « Planifier aujourd'hui » — the day's plan page, one tap. The mini tile carries
+      this as a corner pencil; here it's a real labelled button so it's reachable in the
+      GROWN card too, and stays put whether the day is clear or full (Marc: always
+      available, not mini-only). */}
+  <button
+    type="button"
+    className="btn btn--ghost mono board-action--plan"
+    onClick={() => nav(`/kitchen/day/${todayDay}`)}
+  >
+    <InlineIcon name="pencil-simple-bold" size={16} /> {t.board.planToday}
+  </button>
   {!dayClear && cook.meal && !cook.meal.is_leftover && (
     <button
       type="button"
@@ -1050,18 +1064,24 @@ export function Board() {
       tint="var(--sky)"
       // Compact: tomorrow's things by name — the supper first, since it's the headline
       // the household actually looks for.
+      // Everything tomorrow holds, by name: the supper, other meals, events, AND the
+      // « À compléter » checklist (the night-before "boîte à lunch" items) — which used
+      // to be invisible on the mini, leaving a tile that read empty while the grown card
+      // clearly had rows (Marc's screenshot). The full body still renders them below.
       compactItems={[
         ...(showTomorrowSupper && data.tomorrowMeal ? [{ label: data.tomorrowMeal.title }] : []),
         ...otherTomorrowMeals.map((m) => ({ label: m.title })),
         ...tomorrowEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+        ...(tomorrowTodosData?.todos ?? []).map((td) => ({ label: td.title })),
       ]}
       // A name when there's one obvious headline (tomorrow's supper, like
-      // "Spaghetti"); otherwise a quiet count of what's coming.
+      // "Spaghetti"); otherwise a quiet count of everything coming (meals + events + the
+      // À compléter list), so the count never undersells a tile that has checklist rows.
       compactHint={
         showTomorrowSupper && data.tomorrowMeal
           ? data.tomorrowMeal.title
-          : otherTomorrowMeals.length + tomorrowEvents.length > 0
-            ? String(otherTomorrowMeals.length + tomorrowEvents.length)
+          : otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTodoCount > 0
+            ? String(otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTodoCount)
             : undefined
       }
       // Tomorrow's forecast in the mini header: just the daytime HIGH, no glyph — the full
@@ -1142,6 +1162,19 @@ export function Board() {
       {/* À compléter pinned to tomorrow — its named sections collapse so a long
           checklist stays a compact glance here; check/add stay functional. */}
       <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
+      {/* « Planifier demain » — the night-before "sortir le poulet" gesture. The mini
+          carries it as a corner pencil; here it's a real labelled button so it stays
+          reachable in the GROWN card too, whatever tomorrow already holds (Marc:
+          always available, not mini-only). */}
+      <div className="board-actions">
+        <button
+          type="button"
+          className="btn btn--ghost mono board-action--plan"
+          onClick={() => nav(`/kitchen/day/${tomorrowDay}`)}
+        >
+          <InlineIcon name="pencil-simple-bold" size={16} /> {t.board.planTomorrow}
+        </button>
+      </div>
     </Section>
   ) : null
   // « À finir » — leftovers + à-faire bunched (null when both empty).

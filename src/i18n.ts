@@ -610,6 +610,9 @@ export const FR = {
     tomorrow: 'Demain',
     planToday: 'Planifier aujourd’hui',
     planTomorrow: 'Planifier demain',
+    // The mini-tile fallback line for a genuinely empty day (nothing planned): a calm
+    // word so the compact « Auj. » tile isn't a bare void under its header + corners.
+    dayFree: 'Journée libre',
     meals: 'Repas du jour',
     dayNote: 'Note du jour',
     prepTomorrow: 'À préparer pour demain',
@@ -2941,6 +2944,9 @@ export const FR = {
     title: 'À compléter',
     empty: 'Rien à compléter. Les petits trucs à ne pas oublier — un formulaire, un appel — s’ajoutent ici.',
     addPlaceholder: 'Ajouter à compléter…',
+    // Second add-button on the board glance: pin the new todo to today instead of
+    // « en tout temps » — so it lands in the Aujourd’hui group and rolls off later.
+    addToday: 'Pour ajd',
     check: 'Cocher',
     uncheck: 'Décocher',
     clearChecked: 'Effacer cochées',

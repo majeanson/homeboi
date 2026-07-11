@@ -265,6 +265,10 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     ).bind(newId(), h, lea, 'Soccer', at(d1, 17), ts, S),
     P(
       `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+    ).bind(newId(), h, maman, 'Souper chez Mamie et Papi', at(d3, 18), ts, S),
+    P(
+      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
        VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
     ).bind(newId(), h, lea, 'Fête de Léa', d5, ts, S),
 
@@ -326,6 +330,13 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
        VALUES (?, ?, ?, NULL, ?, 1, ?, ?, ?)`,
     ).bind(newId(), h, 'Boîte à lunch des enfants', maman, ts, ts, S),
+    // a per-day todo pinned to TOMORROW (day = d1) — the night-before « À compléter »
+    // that surfaces on the « Demain » card (mini list + grown body), so the demo shows
+    // that checklist alive instead of an empty tomorrow tile.
+    P(
+      `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+    ).bind(newId(), h, 'Signer l’agenda de Léa', d1, lea, ts, ts, S),
 
     // ── Extended demo (parents before children for the FK batch) ──────────────
 
