@@ -551,6 +551,69 @@
   font-weight: 700;
   font-size: 1rem;
 }
+/* The enriched weather mini: the full card's info that FITS, overlaid on the wonder photo.
+   A top-to-bottom scrim keeps white text legible over ANY backdrop (photo or the clear-day
+   wash), so we don't need a photo/no-photo split. Condition + temp ride the top; the same
+   three few-hours-ahead windows ride the bottom. */
+.wg-slot .cardmini__wx {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0.5rem 0.5rem 0.45rem;
+  color: #fff;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
+  background: linear-gradient(to top, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.05) 45%, rgb(0 0 0 / 0.32));
+}
+.wg-slot .cardmini__wx-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.wg-slot .cardmini__wx-temp {
+  flex: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.wg-slot .cardmini__wx-cond {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.78rem;
+  opacity: 0.95;
+}
+.wg-slot .cardmini__wx-hours {
+  display: flex;
+  gap: 4px;
+}
+.wg-slot .cardmini__wx-hour {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 1px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.16);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  font-size: 0.68rem;
+  line-height: 1.15;
+  font-weight: 700;
+}
+.wg-slot .cardmini__wx-when {
+  opacity: 0.85;
+  font-weight: 600;
+}
 
 /* ---- Compact lens: in-place growth (Phase 3) --------------------------------- */
 /* Tapping a compact tile (or its header once grown — see below) tells `CardLens` to

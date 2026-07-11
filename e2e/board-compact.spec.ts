@@ -186,6 +186,23 @@ test.describe('board compact lens', () => {
     expect(spill, 'the list face must not overflow its fixed height').toBeFalsy()
   })
 
+  // The weather mini is a MEDIA tile (the wonder photo), but it keeps the full card's info
+  // that fits: the condition word (« Dégagé ») + temp on top, and the same three
+  // few-hours-ahead windows along the bottom — not just a bare temperature chip.
+  test('the weather mini keeps the condition word and its three hour windows', async ({ page }) => {
+    await open(page, { heroes: 1 })
+    const tile = page.locator('.wg-slot[data-card="heroes"] .cardmini')
+    await tile.scrollIntoViewIfNeeded()
+    await expect(tile).toHaveClass(/cardmini--media/)
+    // The condition label (bucket 'clear' → « Dégagé » in the fixture) rides the top.
+    await expect(tile.locator('.cardmini__wx-cond')).toHaveText('Dégagé')
+    // The three windows the mock's `hours` outlook provides ride the bottom.
+    await expect(tile.locator('.cardmini__wx-hour')).toHaveCount(3)
+    // Still one shelf tall — the extras must not spill past the fixed media height.
+    const spill = await tile.evaluate((el) => el.scrollHeight > el.clientHeight + 1)
+    expect(spill, 'the weather mini must not overflow its fixed height').toBeFalsy()
+  })
+
   // The stagger, as a test. Minis used to be MEASURED, so two tiles whose natural heights
   // straddled a 24px row boundary claimed different spans and the two columns drifted
   // apart for the rest of the board. Now every mini claims WG_MINI_ROWS without measuring.

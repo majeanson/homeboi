@@ -66,8 +66,30 @@ export function DayHeroes({
               style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: CATS.event.wash }}
               aria-hidden="true"
             />
-            <span className="cardmini__temp">
-              <Icon name={weatherIcon(weather)} size={16} /> {weather.tempC}°
+            {/* Keep the full card's weather info that FITS: the condition word (« Nuageux »)
+                + temp on top, and the same 3 few-hours-ahead windows along the bottom — over
+                a scrim so white text reads on any wonder photo. The tap still grows the card. */}
+            <span className="cardmini__wx">
+              <span className="cardmini__wx-head">
+                <Icon name={weatherIcon(weather)} size={16} />
+                <b className="cardmini__wx-temp">{weather.tempC}°</b>
+                <span className="cardmini__wx-cond">{t.weather[weather.bucket]}</span>
+              </span>
+              {hours && hours.length > 0 && (
+                <span className="cardmini__wx-hours" aria-hidden="true">
+                  {hours.slice(0, 3).map((h) => (
+                    <span className="cardmini__wx-hour" key={h.hour}>
+                      <span className="cardmini__wx-when mono">{h.hour}h</span>
+                      <Icon
+                        name={weatherIcon({ bucket: h.bucket, isDay: h.hour >= 7 && h.hour < 20, tempC: h.tempC })}
+                        size={15}
+                        color="#fff"
+                      />
+                      <b>{h.tempC}°</b>
+                    </span>
+                  ))}
+                </span>
+              )}
             </span>
           </>
         }

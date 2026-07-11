@@ -502,7 +502,16 @@ const AUTH_ME = {
 const ROUTES: Record<string, unknown> = {
   'auth/me': AUTH_ME,
   board: BOARD,
-  weather: { weather: { tempC: 21, bucket: 'clear', isDay: true }, tomorrow: { bucket: 'rain', highC: 18, lowC: 11 } },
+  weather: {
+    weather: { tempC: 21, bucket: 'clear', isDay: true },
+    tomorrow: { bucket: 'rain', highC: 18, lowC: 11 },
+    // The few-hours-ahead outlook — the 3 windows the weather card (full + mini) shows.
+    hours: [
+      { hour: 15, tempC: 22, bucket: 'clear' },
+      { hour: 18, tempC: 19, bucket: 'cloud' },
+      { hour: 21, tempC: 16, bucket: 'cloud' },
+    ],
+  },
   wonder: { wonder: null }, // daily-wonder band hides in screenshots; set a {source,title,explanation,imgUrl} object to exercise it
   photos: { photos: [] },
   meals: MEALS,
