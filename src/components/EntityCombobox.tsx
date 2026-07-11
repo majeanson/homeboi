@@ -69,6 +69,12 @@ export interface EntityComboboxProps<T> {
   submitIcon?: IconName | null
   submitLeadingIcon?: IconName
   submitVariant?: 'sm' | 'primary'
+  /** A SECOND commit button beside the primary submit — same free text, a different
+   *  destination (e.g. the board todo card's « Pour ajd » pins to today, not global).
+   *  Requires `secondaryLabel`; disabled/gated exactly like the primary submit. */
+  secondaryLabel?: ReactNode
+  onSecondary?: (text: string) => void
+  secondaryLeadingIcon?: IconName
   /** Compact ✕ cancel at the row end (closes an inline editor). */
   onCancel?: () => void
   placeholder?: string
@@ -110,6 +116,9 @@ export function EntityCombobox<T>({
   submitIcon = 'check-bold',
   submitLeadingIcon,
   submitVariant = 'sm',
+  secondaryLabel,
+  onSecondary,
+  secondaryLeadingIcon,
   onCancel,
   placeholder,
   ariaLabel,
@@ -175,6 +184,12 @@ export function EntityCombobox<T>({
     if (!onSubmit || disabled || busy) return
     if (!value.trim()) return
     onSubmit(value)
+  }
+
+  const commitSecondary = () => {
+    if (!onSecondary || disabled || busy) return
+    if (!value.trim()) return
+    onSecondary(value)
   }
 
   const pick = (opt: ComboOption<T>) => {
@@ -317,6 +332,17 @@ export function EntityCombobox<T>({
           >
             {submitLeadingIcon && <Icon name={submitLeadingIcon} size={18} />}
             {submitLabel}
+          </button>
+        )}
+        {secondaryLabel && onSecondary && (
+          <button
+            type="button"
+            className={`btn btn--${submitVariant} edit-field__submit`}
+            disabled={submitDisabled}
+            onClick={commitSecondary}
+          >
+            {secondaryLeadingIcon && <Icon name={secondaryLeadingIcon} size={18} />}
+            {secondaryLabel}
           </button>
         )}
         {showIconSubmit && (

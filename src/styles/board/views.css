@@ -10,6 +10,14 @@
   justify-content: flex-end;
   margin: -8px 0 14px;
 }
+/* Small phones: this row often wraps to two lines (clock+date, then the view
+   toggle), so its bottom margin costs more here — shrink it to keep the board
+   content above the fold. Pairs with the header tightening in today.css. */
+@media (max-width: 560px) {
+  .board-controls {
+    margin-bottom: 8px;
+  }
+}
 /* Today's date rides in the controls row (beside the view selector), not on its
    own line under the greeting. mr:auto keeps it left while the chip + toggle stay
    right-aligned under the avatar. */

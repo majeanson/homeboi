@@ -21,18 +21,7 @@ import { InlineIcon } from '../Icon'
 import { useCars } from '../../lib/carPrefs'
 import { useOnline } from '../../lib/online'
 import { recurOf } from '../../lib/recurLabel'
-
-// Parse the events.passengers JSON column (a member-id array) into a string[] for the
-// form's multi-select. Defensive: a malformed/absent value reads as no passengers.
-const parsePassengers = (raw?: string | null): string[] => {
-  if (!raw) return []
-  try {
-    const v = JSON.parse(raw)
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
-  } catch {
-    return []
-  }
-}
+import { parsePeopleIds } from '../../lib/eventPeople'
 
 // The complete event (rendez-vous) form — title, date, optional time (no time =
 // all-day), member, and recurrence. Shared by Settings ▸ Agenda AND the global
@@ -56,7 +45,7 @@ export interface EventInit {
   recur_json?: string | null
   lead_seconds?: number | null
   car_id?: string | null // « L'auto »: which household car this ride takes
-  passengers?: string | null // « L'auto »: member ids riding along (JSON array)
+  passengers?: string | null // « Qui »: the household people this concerns (JSON id array); member_id = passengers[0]
   bring_template_id?: string | null // « Activité »: the todo_templates id of its "what to bring" list
 }
 
@@ -106,14 +95,21 @@ export function EventForm({
     dateSeed ? `${dateSeed.getFullYear()}-${pad(dateSeed.getMonth() + 1)}-${pad(dateSeed.getDate())}` : '',
   )
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
-  // A new rendez-vous seeded from a member peek pre-selects that member; a person /
-  // business seed leaves the member unset and fills the "with" picker below instead.
-  const [memberId, setMemberId] = useState<string | null>(value?.member_id ?? (value ? null : seedWith?.memberId ?? null))
-  // The "who" of a rendez-vous is exactly one of: a member, a « Le cercle » person
-  // ("Mamie visite"), or a Business ("vet", "plombier"). Picking any one clears the
-  // others. People come from the shared cercle cache + businesses from theirs (both
-  // often already warm); a failed fetch just hides that option rather than breaking
-  // the form.
+  // « Qui » — the household people this rendez-vous concerns. ONE multi-select (calm:
+  // pick each face once). Stored in `passengers`; `member_id` is written as the
+  // denormalized primary (people[0]) — the single-car "qui a l'auto" holder and the
+  // back-compat face for pre-multi rows. Seed order: an edited row's passengers, else
+  // its legacy single member_id, else a member peek seed.
+  const seedPeople = parsePeopleIds(value?.passengers)
+  const [people, setPeople] = useState<string[]>(
+    seedPeople.length ? seedPeople : value?.member_id ? [value.member_id] : value ? [] : seedWith?.memberId ? [seedWith.memberId] : [],
+  )
+  const togglePerson = (id: string) => setPeople((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]))
+  // « Avec » — the OPTIONAL external counterpart of a rendez-vous: a « Le cercle »
+  // person ("Mamie visite") OR a Business ("vet", "plombier"). Independent of « Qui »
+  // above (the vet appointment IS for the kids — the two axes coexist); only business
+  // vs contact stay mutually exclusive (one external entity). People/businesses come
+  // from their shared caches; a failed fetch just hides that option.
   const [contactId, setContactId] = useState<string | null>(value?.contact_id ?? (value ? null : seedWith?.contactId ?? null))
   const [businessId, setBusinessId] = useState<string | null>(value?.business_id ?? (value ? null : seedWith?.businessId ?? null))
   const [pickText, setPickText] = useState(
@@ -131,11 +127,6 @@ export function EventForm({
   })
   const contacts = cercle?.contacts ?? []
   const businesses = bizData?.businesses ?? []
-  const clearWho = () => {
-    setContactId(null)
-    setBusinessId(null)
-    setPickText('')
-  }
   // A new « Activité » defaults to a weekly recurrence (a soccer-every-Tuesday rhythm)
   // so the operator usually just confirms it.
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json) ?? (defaultActivity ? { freq: 'weekly', interval: 1, weekdays: [] } : null))
@@ -189,16 +180,13 @@ export function EventForm({
     setBringDraft((d) => [...d, x])
     setBringInput('')
   }
-  // « L'auto » — the optional ride layer: does this event take a household car, and
-  // which kids ride along. Both default off so a plain event is unchanged. The
-  // driver is still the member/contact above (member = we drive · a cercle contact =
-  // a carpool parent drives their car). Collapsed in a Disclosure (calm: secondary).
+  // « L'auto » — the optional ride layer: does this event take a household car? The
+  // people riding are « Qui » above (no separate passenger list); a cercle contact in
+  // « Avec » still reads as a carpool parent driving their car. Default off so a plain
+  // event is unchanged. Collapsed in a Disclosure (calm: secondary).
   const { cars, hasCar, primary } = useCars()
   // A new ride (defaultRide) pre-picks the household car so it's a one-tap add.
   const [carId, setCarId] = useState<string | null>(value?.car_id ?? (defaultRide && primary ? primary.id : null))
-  const [passengers, setPassengers] = useState<string[]>(parsePassengers(value?.passengers))
-  const togglePassenger = (id: string) =>
-    setPassengers((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]))
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
@@ -218,14 +206,17 @@ export function EventForm({
       title: title.trim(),
       startAt,
       allDay: !time,
-      // The server enforces the same precedence (business → contact → member).
-      memberId: contactId || businessId ? null : memberId,
+      // « Qui » is the source of truth (stored in passengers); member_id is the
+      // denormalized primary (people[0]) for the car holder + legacy single-face
+      // reads. « Avec » (contact/business) is independent; only business vs contact
+      // are mutually exclusive (the server keeps that one external answer).
+      memberId: people[0] ?? null,
       contactId: businessId ? null : contactId,
       businessId,
       recur,
       leadSeconds: lead,
       carId,
-      passengers,
+      passengers: people,
       bringTemplateId: effectiveBring,
     }
     setBusy(true)
@@ -280,24 +271,20 @@ export function EventForm({
           aria-label={t.operator.eventTimeLabel}
         />
       </label>
-      <div className="operator__rotation mono">
-        {members.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            className={`btn btn--ghost${memberId === m.id && !contactId && !businessId ? ' is-active' : ''}`}
-            aria-pressed={memberId === m.id && !contactId && !businessId}
-            onClick={() => {
-              clearWho()
-              setMemberId(memberId === m.id ? null : m.id)
-            }}
-          >
-            {m.display_name}
-          </button>
-        ))}
-      </div>
-      {/* …or someone from Le cercle, OR a Business (vet, plombier…) — a rendez-vous.
-          Picking any "with" clears the member above; the server keeps it one answer. */}
+      {members.length > 0 && (
+        <>
+          <p className="mono event-transport__label">{t.operator.eventPeople}</p>
+          <MemberPicker
+            faces={members.map(toFace)}
+            values={people}
+            onToggle={togglePerson}
+            ariaLabel={t.operator.eventPeople}
+          />
+        </>
+      )}
+      {/* « Avec » — the optional EXTERNAL counterpart: someone from Le cercle or a
+          Business (vet, plombier…). Independent of « Qui » above; business vs contact
+          stay one answer. */}
       {(contacts.length > 0 || businesses.length > 0) && (
         <EntityCombobox<WhoPick>
           value={pickText}
@@ -314,7 +301,6 @@ export function EventForm({
           ]}
           frequentsKey="event-who"
           onPick={(opt) => {
-            setMemberId(null)
             if (opt.data?.kind === 'business') {
               setBusinessId(opt.id)
               setContactId(null)
@@ -334,45 +320,30 @@ export function EventForm({
       {/* The event form is ONE form: a plain rendez-vous up top, then two OPTIONAL
           sections (calm: collapsed by default). They replace the old separate
           ＋ « Trajet » / « Activité » tiles — fill only what you need. */}
-      {/* « Trajet » — the optional ride layer: which household car it takes (tap again
-          to clear = no car / carpool) + which kids ride along. The driver stays the
-          member/contact above. Hidden when there's no car AND no members. */}
-      {(hasCar || members.length > 0) && (
+      {/* « Trajet » — the optional ride layer: which household car this takes (tap
+          again to clear = no car / carpool). The people riding are « Qui » above.
+          Hidden when the household has no car. */}
+      {hasCar && (
         <Disclosure
           label={t.operator.eventTrajet}
-          defaultOpen={carId != null || passengers.length > 0 || !!defaultRide}
+          defaultOpen={carId != null || !!defaultRide}
           className="event-transport"
         >
-          {hasCar && (
-            <>
-              <p className="mono event-transport__label">{t.operator.eventCarWho}</p>
-              <div className="operator__rotation mono">
-                {cars.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    className={`btn btn--ghost${carId === c.id ? ' is-active' : ''}`}
-                    aria-pressed={carId === c.id}
-                    style={carId === c.id && c.color ? { borderColor: c.color, color: c.color } : undefined}
-                    onClick={() => setCarId(carId === c.id ? null : c.id)}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {members.length > 0 && (
-            <>
-              <p className="mono event-transport__label">{t.operator.eventPassengers}</p>
-              <MemberPicker
-                faces={members.map(toFace)}
-                values={passengers}
-                onToggle={togglePassenger}
-                ariaLabel={t.operator.eventPassengers}
-              />
-            </>
-          )}
+          <p className="mono event-transport__label">{t.operator.eventCarWho}</p>
+          <div className="operator__rotation mono">
+            {cars.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className={`btn btn--ghost${carId === c.id ? ' is-active' : ''}`}
+                aria-pressed={carId === c.id}
+                style={carId === c.id && c.color ? { borderColor: c.color, color: c.color } : undefined}
+                onClick={() => setCarId(carId === c.id ? null : c.id)}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
         </Disclosure>
       )}
       {/* « À apporter » — the optional bring-list for an activity (« Soccer : souliers ·

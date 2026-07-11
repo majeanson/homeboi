@@ -5,6 +5,7 @@ import { wash, tintInk, edge } from '../../lib/colors'
 import { Icon } from '../Icon'
 import { Sheet } from '../Sheet'
 import { Avatar } from '../Avatar'
+import { AvatarStack } from '../AvatarStack'
 import { ZoomableImg } from '../ZoomableImg'
 import type { DetailAction, DetailBlock, DetailModel } from '../../lib/detail'
 
@@ -67,7 +68,17 @@ function DetailBody({ model, onAction }: { model: DetailModel; onAction: (a: Det
             {model.title}
           </h3>
           {model.whoLabel && <span className="detail-sheet__sub">{model.whoLabel}</span>}
-          {model.who && (
+          {model.whoStack && model.whoStack.length > 0 ? (
+            // « Qui » — several people share this (a rendez-vous for two kids). A face
+            // stack + their names, no single subject (calm: faces, never a count).
+            <span className="detail-sheet__who">
+              <AvatarStack
+                faces={model.whoStack.map((w) => ({ kind: w.avatarKind, photo: w.avatarRef, colour: w.colour, name: w.name }))}
+                size={26}
+              />
+              <span>{model.whoStack.map((w) => w.name).filter(Boolean).join(', ')}</span>
+            </span>
+          ) : model.who ? (
             <span className="detail-sheet__who">
               <Avatar
                 kind={model.who.avatarKind}
@@ -81,7 +92,7 @@ function DetailBody({ model, onAction }: { model: DetailModel; onAction: (a: Det
                 {model.who.name}
               </span>
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 

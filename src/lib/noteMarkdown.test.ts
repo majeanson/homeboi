@@ -32,6 +32,16 @@ describe('renderNoteBody', () => {
     expect(out).toContain('aria-pressed="false"')
   })
 
+  it('keeps an empty trailing checkbox as a checkbox (not a degraded bullet)', () => {
+    // The whole-body `.trim()` on save strips the trailing space of a trailing empty
+    // check line, leaving `- [ ]` with no space after `]`. It must still render as a
+    // checkbox item, never fall through to a bullet showing literal `[ ]`.
+    const out = html('- [ ] a\n- [ ] b\n- [ ]')
+    expect(out).toContain('note-md__checklist')
+    expect(out).not.toContain('note-md__ul') // no bullet-list fallback
+    expect((out.match(/note-md__check\b/g) ?? []).length).toBe(3)
+  })
+
   it('renders a quote and paragraphs with line breaks', () => {
     expect(html('> quoted')).toContain('<blockquote')
     expect(html('line one\nline two')).toContain('<br/>')

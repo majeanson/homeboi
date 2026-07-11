@@ -1,6 +1,6 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { dayStart, newId, nowSec } from '../_lib/ids'
+import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { normalizeRecur } from '../_lib/recur'
 
 // Events (the agenda the board merges). Until now events could only be born from
@@ -12,15 +12,32 @@ import { normalizeRecur } from '../_lib/recur'
 //
 // An event may RECUR (recur_json: a {freq,interval?,weekdays?} rule). start_at is
 // the anchor; the board expands the series. See _lib/recur.
-export const onRequestGet = authed(async (ctx, actor) => {
-  // Upcoming one-offs (today forward) PLUS every recurring series (whose anchor
-  // may be in the past, e.g. "garbage every Wednesday" set weeks ago).
-  const today = dayStart(new Date(Date.now()))
-  const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id,
+// The columns the board/peek/editor all need — one source so ?id= and the list
+// return the identical row shape.
+const EVENT_COLS = `id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id,
             (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
             (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name,
-            (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour
+            (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour`
+
+export const onRequestGet = authed(async (ctx, actor) => {
+  // ?id=<id> → the ONE event, looked up directly (no date window). The peek's edit
+  // modal uses this: fetching by id always finds the row, whatever its date — a past
+  // one-off or today's all-day (which, evening ET, falls outside the list window
+  // below). Returned as a one-element `events` array so callers share the row shape.
+  const id = new URL(ctx.request.url).searchParams.get('id')
+  if (id) {
+    const row = await ctx.env.DB.prepare(`SELECT ${EVENT_COLS} FROM events WHERE id = ? AND household_id = ?`)
+      .bind(id, actor.householdId)
+      .first()
+    return ok({ events: row ? [row] : [] })
+  }
+  // Otherwise the management/agenda list: upcoming one-offs (today forward) PLUS
+  // every recurring series (whose anchor may be in the past, e.g. "garbage every
+  // Wednesday" set weeks ago). "Today" is LOCAL midnight (America/Toronto), matching
+  // how the board expands events, so it never drops today's all-day events.
+  const today = localDayStart(new Date(Date.now()))
+  const { results } = await ctx.env.DB.prepare(
+    `SELECT ${EVENT_COLS}
        FROM events
       WHERE household_id = ? AND (recur_json IS NOT NULL OR start_at >= ?)
       ORDER BY start_at LIMIT 100`,
@@ -50,13 +67,15 @@ const recurJson = (recur: unknown): string | null => {
   return r ? JSON.stringify(r) : null
 }
 
-// An event's "who" is exactly one of business / contact / member. Precedence
-// (business → contact → member) so a picked business wins and the others null out —
-// the rendez-vous keeps a single, unambiguous answer.
+// An event carries two independent "who" axes: « Qui » — the household people it
+// concerns (stored in `passengers`; `member_id` is their denormalized primary, the
+// single-car holder + legacy single-face) — and « Avec » — an OPTIONAL external
+// counterpart, exactly one of business / contact (business wins). member_id is NOT
+// cleared by an « Avec »: the vet appointment is still FOR the kids, so both coexist.
 function pickWho(body: EventBody): { businessId: string | null; contactId: string | null; memberId: string | null } {
   const businessId = body.businessId ?? null
   const contactId = businessId ? null : body.contactId ?? null
-  const memberId = businessId || contactId ? null : body.memberId ?? null
+  const memberId = body.memberId ?? null
   return { businessId, contactId, memberId }
 }
 

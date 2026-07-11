@@ -19,6 +19,7 @@ import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
 import type { IconName } from '../Icon'
 import { nameOf, colorOf, type Dict, type Member, type EventRow, type ChoreInstance } from '../board/types'
+import { eventMembers } from '../../lib/eventPeople'
 import type { DetailAction, DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
 
 // What every builder needs to resolve names/faces + locale + copy. `recipeFor`
@@ -75,15 +76,23 @@ export function buildEvent(
   // A business rendez-vous carries the business's own colour (joined server-side);
   // it tints both the accent and the non-member "who" disc.
   const bizColour = e.business_id ? e.business_colour ?? CATS.event.color : null
+  // « Qui » — the household people this concerns (passengers, or the legacy single
+  // member_id). One face → the single `who` chip; several → a `whoStack` the sheet
+  // draws as a face pile. The external « Avec » (business/contact) name stays the
+  // fallback face when no member is set (a pure vet appointment).
+  const people = eventMembers(e)
+  const whoStack = people.map((id) => whoOf(members, id)).filter((w): w is DetailWho => !!w)
   const who: DetailWho | null =
-    whoOf(members, e.member_id) ?? (whoName ? { name: whoName, colour: bizColour ?? CATS.event.color } : null)
+    whoStack[0] ?? (whoName ? { name: whoName, colour: bizColour ?? CATS.event.color } : null)
   return {
     kind: 'event',
     title: e.title,
     icon: CATS.event.icon,
-    accent: bizColour ?? colorOf(members, e.member_id) ?? CATS.event.color,
+    // Spine = the business colour, else the first person's, else the event default.
+    accent: bizColour ?? whoStack[0]?.colour ?? CATS.event.color,
     when: e.all_day ? t.board.allDay : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}`,
     who,
+    whoStack: whoStack.length > 1 ? whoStack : undefined,
     // Basic peek actions: see the day, Modify (the primary — opens the event form),
     // Share, Delete (danger). Modify/Delete/Share are opt-gated at the call site so a
     // guest/toddler peek stays read-only. Exactly one primary (edit when present).

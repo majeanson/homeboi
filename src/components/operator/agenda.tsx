@@ -21,6 +21,7 @@ import { Cluster } from '../Layout'
 import { MONTH_KEY, EVENTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
+import { eventMembers } from '../../lib/eventPeople'
 
 // Events: the operator manages the agenda here (edit/delete + reschedule), but
 // ADDING is the same ＋ as everywhere — this section opens it (open('event'))
@@ -58,6 +59,12 @@ export function EventsSection({
     })
   }
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.display_name
+  // « Qui » for the agenda list subtitle: all the household people the event concerns,
+  // names joined (this is a management list, not a glance — plain text, no face pile).
+  const eventWho = (ev: EventRow) => {
+    const names = eventMembers(ev).map((id) => memberName(id)).filter(Boolean) as string[]
+    return names.length ? names.join(', ') : undefined
+  }
   const memberColor = (id: string | null) => members.find((m) => m.id === id)?.colour
 
   return (
@@ -91,7 +98,7 @@ export function EventsSection({
                     {formatDay(ev.start_at, lang)}
                     {ev.all_day ? '' : ` ${formatTime(ev.start_at, lang)}`}
                     {(() => {
-                      const who = ev.business_name ?? ev.contact_name ?? memberName(ev.member_id)
+                      const who = ev.business_name ?? ev.contact_name ?? eventWho(ev)
                       return who ? ` · ${who}` : ''
                     })()}
                   </>

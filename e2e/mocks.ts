@@ -400,13 +400,10 @@ const CAR = {
 // « À compléter » (#17) — the real todos list, served at /api/todos (board glance =
 // global + today). Two standing LOOSE items (« À faire » card) plus an instantiated
 // « Avant de partir » checklist pinned to TODAY (source_template_id set, mig 0116 —
-// the departure card + scene render these; the « À faire » card must NOT).
-// `day: TODAY` is patched in at serve time below (mock day anchors are dynamic).
-const TODAY_DAY = (() => {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return Math.floor(d.getTime() / 1000)
-})()
+// the departure card + scene render these; the « À faire » card must NOT). Same
+// day helper as every other mock anchor (yearDay) so the fixture and the app agree
+// on what "today" means whatever timezone the runner sits in.
+const TODAY_DAY = localDayStart(new Date())
 const TODOS = {
   todos: [
     { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null },

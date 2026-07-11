@@ -24,6 +24,7 @@ import { useBoardData } from '../../lib/queryHooks'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, type DetailCtx } from '../detail/adapters'
+import { eventMembers, memberFaces } from '../../lib/eventPeople'
 import { useOpenMeal } from '../detail/useOpenMeal'
 import { useEventPeekActions } from '../detail/EventPeekActions'
 import { isGuest } from '../../lib/device'
@@ -55,6 +56,7 @@ interface MomentData {
     at: number
     all_day: number
     member_id: string | null
+    passengers?: string | null
     contact_name?: string | null
     business_name?: string | null
     business_colour?: string | null
@@ -146,6 +148,11 @@ export function MomentsView({
   const formMembers = boardQ.data?.members ?? []
   const memberName = (id: string | null | undefined) =>
     (id && formMembers.find((m) => m.id === id)?.display_name) || undefined
+  // « Qui » faces — only when SEVERAL share the event (solo keeps its plain name).
+  const eventFaces = (e: MomentData['events'][number]) => {
+    const f = memberFaces(eventMembers(e), formMembers)
+    return f.length > 1 ? f : undefined
+  }
 
   // Tap a row → the shared entity-detail peek, exactly like the board's own rows.
   // The provider is HubLayout's for the in-board view and MomentScene's for the
@@ -192,6 +199,7 @@ export function MomentsView({
       start_at: e.at,
       all_day: e.all_day,
       member_id: e.member_id,
+      passengers: e.passengers ?? null,
       contact_name: e.contact_name ?? null,
       business_name: e.business_name ?? null,
       business_colour: e.business_colour ?? null,
@@ -254,6 +262,7 @@ export function MomentsView({
                   : formatTime(e.at, lang)
           }
           who={e.work ? memberName(e.member_id) : (e.business_name ?? e.contact_name ?? memberName(e.member_id))}
+          whoFaces={e.work ? undefined : eventFaces(e)}
           color={e.work ? (e.color ?? undefined) : (e.business_colour ?? undefined)}
           onOpen={() => openEvent(e)}
         />,

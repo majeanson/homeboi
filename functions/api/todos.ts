@@ -40,7 +40,9 @@ const COLS = 'id, title, day, member_id, done_at, position, section, source_temp
 
 // The opportunistic roll-off: departure checklist instances pinned to a past day
 // are finished business — delete them so no Tuesday list lingers into Thursday.
-// Batched into every write path (POST both branches + clearChecked), never GET.
+// Batched into EVERY write path (POST both branches, PATCH toggle + clearChecked,
+// DELETE), never GET — a guest GET must not write. Cheap: the (household_id, day)
+// index carries the range; source_template_id is a residual filter.
 const sweepStale = (db: D1Database, householdId: string, today: number) =>
   db
     .prepare('DELETE FROM todos WHERE household_id = ? AND source_template_id IS NOT NULL AND day IS NOT NULL AND day < ?')
@@ -78,15 +80,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // Instantiate a template → a batch of real, independent CHECKLIST-INSTANCE todos
   // (the departure checklist made concrete; source_template_id marks each row, mig
   // 0116). Always DAY-PINNED: no day in the body → today, so a « global avant de
-  // partir » cannot exist at the data level. Every row carries `section` = the top
-  // template's title (plain or composed — the departure card folds on it); a
-  // COMPOSED template (one that includes other lists, at any depth) still flattens
-  // to that SINGLE section (deduped across the whole result). Items keep their
-  // order via `position` (they share one created_at, so position breaks the tie).
-  // Cycle-safe + capped. Mirrors expandSectioned in src/lib/todos.ts.
+  // partir » cannot exist at the data level. The day is also FLOORED to today: a
+  // past day would have the inserted rows match the sweep's `day < today` in this
+  // very batch (insert-then-delete, a silent no-op), and an offline outbox POST
+  // replayed after midnight would otherwise land on an already-gone day — leaving
+  // the house is a today-or-later thing, so the floor is the honest semantic.
+  // Every row carries `section` = the top template's title (plain or composed —
+  // the departure card folds on it); a COMPOSED template (one that includes other
+  // lists, at any depth) still flattens to that SINGLE section (deduped across the
+  // whole result). Items keep their order via `position` (they share one
+  // created_at, so position breaks the tie). Cycle-safe + capped. Mirrors
+  // expandSectioned in src/lib/todos.ts.
   const today = localDayStart(new Date())
   if (body?.templateId) {
-    const pinnedDay = day ?? today
+    const pinnedDay = Math.max(day ?? today, today)
     const rows = await ctx.env.DB.prepare('SELECT id, title, items_json FROM todo_templates WHERE household_id = ?')
       .bind(actor.householdId)
       .all<{ id: string; title: string; items_json: string }>()
@@ -155,10 +162,20 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
   const ts = nowSec()
+  const today = localDayStart(new Date())
+  // Toggle/rename ride the sweep too — checking a box is the household's most
+  // frequent todos write, and without it a check-only household never sheds its
+  // past-day instances ("every write path" must actually mean every write path).
   if (typeof body?.done === 'boolean') {
-    await ctx.env.DB.prepare('UPDATE todos SET done_at = ?, updated_at = ? WHERE id = ? AND household_id = ?')
-      .bind(body.done ? ts : null, ts, id, actor.householdId)
-      .run()
+    await ctx.env.DB.batch([
+      ctx.env.DB.prepare('UPDATE todos SET done_at = ?, updated_at = ? WHERE id = ? AND household_id = ?').bind(
+        body.done ? ts : null,
+        ts,
+        id,
+        actor.householdId,
+      ),
+      sweepStale(ctx.env.DB, actor.householdId, today),
+    ])
   }
   if (typeof body?.title === 'string' && body.title.trim()) {
     await ctx.env.DB.prepare('UPDATE todos SET title = ?, updated_at = ? WHERE id = ? AND household_id = ?')
@@ -172,7 +189,10 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
-  await ctx.env.DB.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(id, actor.householdId).run()
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(id, actor.householdId),
+    sweepStale(ctx.env.DB, actor.householdId, localDayStart(new Date())),
+  ])
   return ok({ ok: true })
 })
 

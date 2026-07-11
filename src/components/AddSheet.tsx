@@ -561,7 +561,11 @@ export function AddSheet({
   }
 
   // Instantiate a whole checklist from the quick-add sheet — a composed list lands
-  // as one sectioned batch (see functions/api/todos.ts). Honours the scope choice.
+  // as one sectioned batch (see functions/api/todos.ts). Honours the today/date
+  // scopes; « En tout temps » does NOT exist for a checklist (the mig-0116 split:
+  // an instance is always day-pinned, the server would coerce null→today anyway),
+  // so the global scope explicitly falls back to today — and the hint line above
+  // the picker says so rather than letting the scope toggle silently lie.
   async function quickAddTemplate(templateId: string) {
     if (busy) return
     if (todoScope === 'date' && todoDaySec() == null) return
@@ -569,7 +573,7 @@ export function AddSheet({
     try {
       await write('todos', {
         method: 'POST',
-        body: { templateId, day: todoDaySec() },
+        body: { templateId, day: todoDaySec() ?? todayLocalDay() },
         affectedKeys: [TODOS_KEY, MONTH_KEY],
       })
       setTodoScope('global')
@@ -878,8 +882,10 @@ export function AddSheet({
 
         {mode === 'todo' && (
           <div className="addsheet__todo">
-            {/* Standing (default) vs today vs a chosen date — applies to BOTH the typed
-                line and a checklist dropped in below. */}
+            {/* Standing (default) vs today vs a chosen date. The scope applies fully to
+                the TYPED line; a CHECKLIST picked below is always day-pinned (mig 0116 —
+                no « global avant de partir » exists), so under « En tout temps » it lands
+                on today instead — the hint under the field says so. */}
             <Cluster fill className="addsheet__scope" role="group" aria-label={t.todos.title}>
               <button
                 type="button"
@@ -937,6 +943,9 @@ export function AddSheet({
               voice={todoVoice}
               busy={busy}
             />
+            {/* A checklist is a DEPARTURE thing: always for one day. Under the global
+                scope the pick lands on today — say it, don't let the toggle lie. */}
+            {todoScope === 'global' && <p className="addsheet__todo-hint mono">{t.todos.templateDayHint}</p>}
           </div>
         )}
 

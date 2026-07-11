@@ -8,7 +8,10 @@
 // editor bridge applies them with a global `.replace` while the renderer walks them with a
 // non-global `.exec`, so they legitimately differ by flag.)
 export const HEAD_RE = /^(#{1,6})\s+(.*)$/
-export const CHECK_RE = /^[-*]\s+\[([ xX])\]\s+(.*)$/
+// `\s*` (not `\s+`) after `]` so an EMPTY checklist item — `- [ ]` with no text and thus
+// no trailing space — still parses as a checkbox. Otherwise the whole-body `.trim()` on
+// save strips that trailing space and the line degrades to a bullet showing `[ ]`.
+export const CHECK_RE = /^[-*]\s+\[([ xX])\]\s*(.*)$/
 export const BULLET_RE = /^[-*]\s+(.*)$/
 export const NUMBER_RE = /^\d+\.\s+(.*)$/
 export const QUOTE_RE = /^>\s?(.*)$/

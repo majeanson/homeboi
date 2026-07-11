@@ -96,7 +96,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 // as the per-person lens; the card/section atoms live in src/components/board/*.
 import { BOARD_KEY, TODOS_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
-import { type TodosData, todosKey, todosPath, isChecklistRow } from '../lib/todos'
+import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
 import { isGuest, isDisplay } from '../lib/device'
 import { Cluster } from '../components/Layout'
@@ -262,7 +262,10 @@ export function Board() {
   // The « Avant de partir » split (mig 0116): the « À faire » card shows only the
   // LOOSE open todos; the TOTAL (`openTodos`) keeps feeding dayClear + the toddler
   // tiles, so the all-clear hero can't contradict a pending departure checklist.
-  const openLoose = openTodos.filter((td) => !isChecklistRow(td))
+  // `splitTodos` is THE one loose/checklist discriminator — the card's grown body
+  // (<TodoSection show='loose'>) buckets with it too, so the mini can never name a
+  // row (e.g. a legacy pre-0116 sectioned instance) that the grown card then hides.
+  const openLoose = splitTodos(openTodos).loose
 
   // Tomorrow's per-day À compléter todos — surfaced inside the Demain card so a
   // checklist pinned to tomorrow is visible there too. The À compléter card itself

@@ -105,6 +105,24 @@
 .app-head__ask {
   background: var(--sage);
 }
+/* Small phones: the greeting hero eats scarce vertical space, pushing the
+   section's own content — and the reach to the bottom nav / ＋ FAB — down the
+   scroll. Tighten the header's footprint (top padding, the greeting size, the
+   gap below it) so more of every tab is visible above the fold. Scoped to the
+   shared header, so ALL hub tabs (Board/Kitchen/Liste/Cercle/Routines) inherit
+   it. The action discs keep their tap size; the row height is disc-driven, so
+   the win comes from the padding + margin, not the font. */
+@media (max-width: 560px) {
+  .today-feed {
+    padding-top: 0.75rem;
+  }
+  .app-head {
+    margin-bottom: 10px;
+  }
+  .greet {
+    font-size: 27px;
+  }
+}
 /* The contextual help "?" beside a section title (HelpDot). Quiet by default,
    a soft ring on hover/focus — discoverable without shouting (calm). Hidden in
    the toddler lens and in expert mode at the source (component returns null). */
@@ -440,6 +458,23 @@
 .avatar--help:focus-visible {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
+}
+/* AvatarStack — a compact overlapping row of faces (an event's « Qui », a ride's
+   passengers). Negative inline margin so several faces read as one cluster; a thin
+   surface-coloured ring separates them. Shared by the detail peek + board Act rows.
+   No numeric "+N": households are small and passengers cap at 12 (calm: faces, never
+   a count). */
+.avatar-stack {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+.avatar-stack > .avatar {
+  margin-inline-start: -0.3rem;
+  box-shadow: 0 0 0 2px var(--surface, #fff);
+}
+.avatar-stack > .avatar:first-child {
+  margin-inline-start: 0;
 }
 .avatar__help {
   position: absolute;

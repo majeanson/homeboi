@@ -1845,6 +1845,11 @@
   outline: none;
   padding: 0.2rem 0 1rem;
   counter-reset: ne;
+  /* Mirror the read view (.note-md): a long unbroken word/URL wraps instead of
+     overflowing — .note-editor is overflow:hidden, so an unwrapped line would be
+     silently clipped. `anywhere` also lets the flex list-rows (.ne-check/.ne-bullet/
+     .ne-number) shrink so their text can't push past the right edge. */
+  overflow-wrap: anywhere;
 }
 .note-editor__body[data-empty='true']::before {
   content: attr(data-placeholder);

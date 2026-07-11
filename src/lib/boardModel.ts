@@ -1,4 +1,5 @@
 import { isPastSec, mealSlotPast, useNow } from './itemLife'
+import { eventMembers } from './eventPeople'
 import { localDayStart, addLocalDays, localMinuteOfDay } from './localDay'
 import { holidaysOnDay, holidaysInRange, schoolDayKind, type Holiday, type SchoolYear } from './year'
 import { pickNextEventToday, BOARD_NEXTUP } from './ambientScene'
@@ -121,8 +122,8 @@ export interface BoardModel {
     untimed: ModelEvent[]
     work: WorkRow[]
     // Content-only "is there enough to draw a ribbon" gate (≥2 placeable things).
-    // Per-device show/hide (Réglages ▸ Affichage ▸ Disposition, lib/boardCards) is
-    // LENS-side — the caller ANDs this with `isCardVisible(boardCards, 'fil')`.
+    // The « Aujourd'hui » card renders the ribbon when this is true, its flat agenda
+    // otherwise — there's no longer a separate `fil` card to show/hide.
     eligible: boolean
   }
   // A genuinely clear day for the PARENT board: nothing to attend or do today
@@ -188,7 +189,14 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   // events/chores drop away. A shared chore stays visible to any teammate in its
   // rotation even on someone else's turn (the `who` line still says whose turn).
   const focusing = !!profileId
-  const mineEvent = (e: EventRow) => !focusing || e.member_id === profileId || e.member_id === null
+  // « Qui » may name several people now: the event is "mine" if the picked face is
+  // among them (or it's a shared, owner-less event). eventMembers folds passengers +
+  // the legacy single member_id into one set.
+  const mineEvent = (e: EventRow) => {
+    if (!focusing) return true
+    const ids = eventMembers(e)
+    return ids.length === 0 || (!!profileId && ids.includes(profileId))
+  }
   const mineChore = (c: ChoreInstance) =>
     !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
   const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null

@@ -20,8 +20,11 @@ import {
 // the eager index. Only the tiny `Defi` type is imported statically (erased at build).
 import type { Defi } from '../../lib/defiDeck'
 import { type HelpMode } from '../../lib/helpMode'
+import { useVoiceInput } from '../../lib/useVoiceInput'
 import { Avatar } from '../Avatar'
 import { Cluster } from '../Layout'
+import { EditField } from '../EditField'
+import { Icon } from '../Icon'
 
 type DeckModule = typeof import('../../lib/defiDeck')
 
@@ -78,6 +81,21 @@ export function DefiBlock({
   const [drawn, setDrawn] = useState<Defi | null>(null)
   const [rolls, setRolls] = useState(0)
 
+  // « Écris le tien » — a family member can type OR speak their own défi for the day
+  // instead of piging one. Commits down the same useCommitDefi path (the server
+  // already accepts a free-text défi). Voice appends so a spoken phrase never wipes
+  // what's typed. The field auto-hides for a guest (EditField's default).
+  const [writing, setWriting] = useState(false)
+  const [custom, setCustom] = useState('')
+  const customVoice = useVoiceInput((v) => setCustom((c) => (c ? `${c} ${v}` : v)))
+  const writeOwn = () => {
+    const clean = custom.trim()
+    if (!clean) return
+    commit(clean)
+    setCustom('')
+    setWriting(false)
+  }
+
   const pige = () => {
     if (!deck) return // deck still loading (buttons are disabled until then)
     const exclude = new Set(recent)
@@ -97,7 +115,7 @@ export function DefiBlock({
   // below. `data-tour="defi"` on the block anchors the board tour's défi step.
   const head = (
     <div className="defi-block__head">
-      <span className="defi-block__ico" aria-hidden="true">🎯</span>
+      <Icon name="crosshair-bold" size={16} style={{ color: 'var(--sec-tint, var(--sage-deep))' }} />
       {help?.active ? (
         <button
           type="button"
@@ -186,12 +204,36 @@ export function DefiBlock({
             )}
           </Cluster>
         </>
+      ) : writing ? (
+        // A family member writes (or speaks) their own défi for the day.
+        <EditField
+          value={custom}
+          onChange={setCustom}
+          onSubmit={writeOwn}
+          submitLabel={fn.accept}
+          submitVariant="primary"
+          placeholder={fn.minePlaceholder}
+          ariaLabel={fn.mine}
+          autoFocus
+          maxLength={120}
+          voice={customVoice}
+          voiceLabel={fn.mine}
+          onCancel={() => {
+            setWriting(false)
+            setCustom('')
+          }}
+        />
       ) : (
         <>
           <p className="defi-block__sub">{fn.sub}</p>
-          <button type="button" className="btn btn--primary btn--sm defi-block__pige" onClick={pige} disabled={!deck}>
-            {fn.pige}
-          </button>
+          <Cluster>
+            <button type="button" className="btn btn--primary btn--sm defi-block__pige" onClick={pige} disabled={!deck}>
+              {fn.pige}
+            </button>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setWriting(true)}>
+              {fn.mine}
+            </button>
+          </Cluster>
         </>
       )}
     </div>

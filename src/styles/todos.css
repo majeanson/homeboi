@@ -342,3 +342,12 @@
 .depart-card .todo-sec .sec-label {
   margin-top: 0.35rem;
 }
+
+/* ＋ sheet: the quiet "a checklist lands on today" line under the todo field —
+   shown only under the « En tout temps » scope, where a picked checklist and the
+   typed line would otherwise diverge silently (mig 0116: instances are day-pinned). */
+.addsheet__todo-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}

@@ -69,7 +69,12 @@
 }
 /* The body — a stacked title + meta line; the whole block is the tap target. */
 .cnote__main {
-  flex: 1 1 auto;
+  /* Basis 0 (not `auto`): `.cnote` wraps, and an `auto` basis = the title+preview
+     content width, which won't fit beside the grip+dot and wraps the whole block to
+     its own line (tint pill orphaned above the title). Basis 0 + min-width:0 lets it
+     shrink and stay inline — dot ▸ title on one row. The expanded body still drops to
+     a new line on its own `flex: 1 0 100%`. */
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;

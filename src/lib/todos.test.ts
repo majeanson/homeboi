@@ -10,7 +10,6 @@ import {
   checkedIds,
   isChecklistRow,
   splitTodos,
-  groupBySection,
   toStored,
   expandTemplate,
   expandSectioned,
@@ -58,23 +57,6 @@ describe('open / checked', () => {
   it('checkedIds returns exactly the checked ids', () => {
     const list = [todo({ id: 'a', done_at: null }), todo({ id: 'b', done_at: 7 }), todo({ id: 'c', done_at: 8 })]
     expect(checkedIds(list)).toEqual(['b', 'c'])
-  })
-})
-
-describe('groupBySection', () => {
-  it('groups contiguous runs by section in order, loose runs headless', () => {
-    const rows = [
-      todo({ id: 'x', section: null }),
-      todo({ id: 'a1', section: 'Avant de partir' }),
-      todo({ id: 'a2', section: 'Avant de partir' }),
-      todo({ id: 'b1', section: 'Chez grand-papa' }),
-    ]
-    const groups = groupBySection(rows)
-    expect(groups.map((g) => [g.section, g.todos.map((t) => t.id)])).toEqual([
-      [null, ['x']],
-      ['Avant de partir', ['a1', 'a2']],
-      ['Chez grand-papa', ['b1']],
-    ])
   })
 })
 

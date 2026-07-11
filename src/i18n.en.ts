@@ -80,7 +80,6 @@ export const EN: typeof FR = {
   departure: {
     title: 'Before you go',
     titleShort: 'Go',
-    checklist: 'Leaving checklist',
     lists: 'Leaving checklists',
     open: 'Open the departure screen',
     today: 'Today',
@@ -88,8 +87,6 @@ export const EN: typeof FR = {
     bring: 'What to bring',
     bringAdd: 'Add to checklist',
     allDay: 'All day',
-    noTemplate: 'Make a “Before you go” list in Settings ▸ To-do lists to tick it off here.',
-    emptyList: 'This list is empty.',
     emptyLists: 'No leaving checklist for today — pick one below.',
     noEvents: 'Nothing planned today.',
   },
@@ -2788,6 +2785,7 @@ export const EN: typeof FR = {
     scopeGlobal: 'Anytime',
     scopeToday: 'Today',
     scopeDate: 'A date',
+    templateDayHint: 'A checklist is added for the day — here, today.',
     templatesTitle: 'Checklists',
     templatesHint:
       'Prep reusable lists (e.g. "Before leaving", "At grandpa\'s") and drop them in with one tap when things get hectic. A list can even include others — they become sections.',

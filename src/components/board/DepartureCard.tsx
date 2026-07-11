@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { type HelpMode } from '../../lib/helpMode'
-import { todayLocalDay, addLocalDays } from '../../lib/localDay'
-import { MONTH_KEY, TODOS_KEY, WEATHER_KEY } from '../../lib/queryKeys'
+import { todayLocalDay } from '../../lib/localDay'
+import { TODOS_KEY, WEATHER_KEY } from '../../lib/queryKeys'
 import { type TodosData, isChecklistRow, isOpen } from '../../lib/todos'
 import { type Weather, type DayOutlook, weatherIcon, weatherTint, weatherTip } from '../../lib/weather'
 import { useBoardData } from '../../lib/queryHooks'
@@ -28,22 +28,17 @@ import { ActivityBring } from './ActivityBring'
 export function DepartureCard({ help }: { help?: HelpMode }) {
   const t = useT()
   const today = todayLocalDay()
-  const members = useBoardData().data?.members ?? []
+  // Members AND today's events (incl. `bring_template_id` — the /api/board events
+  // now carry it precisely so this card costs NO extra fetch) ride the board
+  // payload the page already polls. Zero net-new requests for the free tier.
+  const board = useBoardData().data
+  const members = board?.members ?? []
 
-  // The SAME caches the departure scene reads (shared keys), deliberately
-  // non-polling: a default-on board card must not add /api/month + /api/todos to
-  // the board poll (the free-tier lever) — the board payload and realtime nudges
-  // already keep the household fresh, and the embedded TodoSection polls TODOS_KEY
-  // itself while the card is grown.
+  // The SAME cache the departure scene reads (shared key), deliberately
+  // non-polling: the board payload and realtime nudges already keep the household
+  // fresh, and the embedded TodoSection polls TODOS_KEY itself while the card is
+  // grown — this direct read only powers the compact mini.
   const todos = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos') }).data?.todos ?? []
-  const month = useQuery({
-    queryKey: [...MONTH_KEY, today, addLocalDays(today, 1)],
-    queryFn: () =>
-      api<{ events: { id: string; title: string; bring_template_id?: string | null }[] }>(
-        `month?from=${today}&to=${addLocalDays(today, 1)}`,
-      ),
-    staleTime: 5 * 60 * 1000,
-  }).data
   const weather = useQuery({
     queryKey: WEATHER_KEY,
     queryFn: () => api<{ weather: Weather | null; tomorrow: DayOutlook | null }>('weather'),
@@ -90,7 +85,7 @@ export function DepartureCard({ help }: { help?: HelpMode }) {
 
       {/* « À apporter » — today's activities that carry a bring-list (soccer cleats,
           instrument…); renders nothing when none do. */}
-      <ActivityBring events={month?.events ?? []} day={today} />
+      <ActivityBring events={board?.today ?? []} day={today} />
 
       {/* The door — the full pre-departure screen (weather + agenda + corvées +
           L'auto). Kept on every day, clear or not. */}

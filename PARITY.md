@@ -460,8 +460,10 @@ Footnotes (verdicts recorded so far):
 59. **« Avant de partir » split SHIPPED 2026-07-10 (F35, migs 0116/0117)** — checklist
     instances are their own concept: `todos.source_template_id` (soft ref, commented, no FK)
     marks a row instantiated from a `todo_templates` checklist; instantiation is ALWAYS
-    day-pinned server-side (a day-less template POST defaults to today — no global departure
-    list can exist) and past-day instances are swept opportunistically on every todos write
+    day-pinned server-side (a day-less template POST defaults to today, and the day is
+    FLOORED to today — a past day would be insert-then-swept in the same batch — so no
+    global or past-day departure list can exist) and past-day instances are swept
+    opportunistically on every todos write, POST + PATCH toggle/clear + DELETE
     (never in GET — a guest GET must not write). `section` = the top template's title on EVERY
     instantiation (plain or composed) so the fold header always exists. Rides the existing
     `/api/todos` end-to-end (authed handler, TABLE row, `todos` PATH_KEYS, useWrite/outbox,

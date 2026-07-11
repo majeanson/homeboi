@@ -62,7 +62,8 @@ export interface DetailModel {
   photo?: string | null // an already-resolved image src (imgUrl()/recipeImg()) for the header
   when?: string // a preformatted date/time label ("Ce soir", "mar. 18 juin · 17 h 30")
   whoLabel?: string // a quiet sub-line under the title (e.g. a meal slot)
-  who?: DetailWho | null // a face chip
+  who?: DetailWho | null // a single face chip
+  whoStack?: DetailWho[] // several faces (an event's « Qui » — the people it concerns); takes precedence over `who`
   blocks?: DetailBlock[]
   actions?: DetailAction[]
 }

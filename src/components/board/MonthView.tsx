@@ -28,6 +28,7 @@ import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildEvent, buildChore, type DetailCtx } from '../detail/adapters'
+import { eventMembers, memberFaces } from '../../lib/eventPeople'
 import { useOpenMeal } from '../detail/useOpenMeal'
 import { useEventPeekActions } from '../detail/EventPeekActions'
 import { colorOf, nameOf, type Dict, type Member } from './types'
@@ -37,7 +38,7 @@ const DAY = 86400
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
+interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
@@ -247,6 +248,12 @@ export function MonthView({
   const cookLine = (id: string | null) => {
     const who = nameOf(members, id)
     return who ? `${who} ${t.board.cooks}` : undefined
+  }
+  // « Qui » faces for an event row — only when SEVERAL people share it (a solo one
+  // keeps its plain name; the peek lists everyone).
+  const eventFaces = (e: MEvent) => {
+    const f = memberFaces(eventMembers(e), members)
+    return f.length > 1 ? f : undefined
   }
 
   // Check an À compléter todo done straight from the calendar panel (the follow-up
@@ -566,11 +573,12 @@ export function MonthView({
                   title={e.title}
                   when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
                   who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
+                  whoFaces={eventFaces(e)}
                   color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
                   onOpen={() =>
                     detail.open(
                       buildEvent(
-                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
+                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, birthday: e.birthday, age: e.age },
                         detailCtx,
                         eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
                       ),

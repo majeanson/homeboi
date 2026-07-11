@@ -70,6 +70,13 @@ export const isChecklistRow = (t: Todo): boolean => t.source_template_id != null
 // legacy sectioned row without the ref still folds under its section title),
 // first-seen order. `section` is the group's display header (null only for
 // pathological legacy rows — callers fall back to a generic title).
+//
+// Legacy policy (accepted, deliberate): a PRE-0116 COMPOSED-template instance
+// (section set, ref null — plain ones got section null and stay loose) is treated
+// as a checklist, so after the split it RELOCATES from « À faire » to the
+// departure card; a global (day-null) one never matches the server sweep and
+// lingers there until ticked + « Effacer cochées ». Bounded one-time cost — do
+// NOT widen the sweep to ref-less rows (it would eat hand-sectioned data).
 export interface ChecklistGroup {
   key: string
   section: string | null
@@ -95,24 +102,9 @@ export function splitTodos(todos: Todo[]): { loose: Todo[]; checklists: Checklis
 // deferred-undo clear so a tick made after scheduling the undo isn't removed.
 export const checkedIds = (todos: Todo[]): string[] => todos.filter(isChecked).map((t) => t.id)
 
-// ── Sectioned render ────────────────────────────────────────────────────────
-// Group todos into contiguous runs sharing a section, in server order — so a
-// composed list renders "a list with sections". A run whose section is null is
-// headless (loose items / manual adds).
-export interface TodoGroup {
-  section: string | null
-  todos: Todo[]
-}
-export function groupBySection(todos: Todo[]): TodoGroup[] {
-  const groups: TodoGroup[] = []
-  for (const td of todos) {
-    const section = td.section ?? null
-    const last = groups[groups.length - 1]
-    if (last && last.section === section) last.todos.push(td)
-    else groups.push({ section, todos: [td] })
-  }
-  return groups
-}
+// (groupBySection — the old contiguous-run section grouper — was deleted with the
+// mig-0116 split: splitTodos above buckets across the WHOLE list and is the one
+// grouping helper every surface uses.)
 
 // ── Template composition (mirrors the server expansion in functions/api/todos.ts) ──
 

@@ -75,5 +75,5 @@ export interface EventRow {
   recur_json?: string | null
   lead_seconds?: number | null
   car_id?: string | null // « L'auto »: which household car this ride takes (null = carpool/none)
-  passengers?: string | null // « L'auto »: member ids riding along (JSON array)
+  passengers?: string | null // « Qui »: the household people this concerns (JSON id array); member_id = passengers[0]
 }

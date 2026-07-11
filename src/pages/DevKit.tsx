@@ -61,6 +61,7 @@ import type { ContactGroup, Member, Person, PersonKind, World } from '../lib/cer
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
+import { AvatarStack } from '../components/AvatarStack'
 import { Act, Section as BoardSection } from '../components/board/Act'
 import { BoardCard } from '../components/board/BoardCard'
 import { MealPool } from '../components/kitchen/MealPool'
@@ -2080,6 +2081,32 @@ export function DevKit() {
               <Avatar name="Félix" colour="#2A8F85" />
               <Avatar name="Rose" colour="#2A8F85" />
             </div>
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'AvatarStack',
+      file: 'components/AvatarStack.tsx',
+      kw: 'avatar stack faces pile passagers qui event rendez-vous people group overlap',
+      render: () => (
+        // A compact overlapping row of faces — an event's « Qui » (the people a
+        // rendez-vous concerns) or a ride's passengers. Calm: faces only, never a
+        // "+N" count. Used by the detail peek + the board Act rows.
+        <>
+          <Demo label="several people share one thing">
+            <AvatarStack
+              faces={[
+                { name: 'Camille', colour: PALETTE[2] },
+                { name: 'Léo', colour: PALETTE[0] },
+                { name: 'Rose', colour: PALETTE[4] },
+              ]}
+              size={26}
+            />
+          </Demo>
+          <Demo label="one face (a solo rendez-vous)">
+            <AvatarStack faces={[{ name: 'Marc', colour: PALETTE[4] }]} size={26} />
           </Demo>
         </>
       ),

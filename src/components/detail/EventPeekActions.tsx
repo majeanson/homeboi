@@ -84,9 +84,14 @@ export function useEventPeekActions(): EventPeekActions {
 function EventEditModal({ eventId, onClose }: { eventId: string; onClose: () => void }) {
   const t = useT()
   const qc = useQueryClient()
-  const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventInit[] }>('events') })
+  // Fetch the ONE event by id (no date window) so the row is always found — a past
+  // one-off or today's all-day event that isn't in the agenda list still edits fine.
+  const eventQ = useQuery({
+    queryKey: [...EVENTS_KEY, eventId],
+    queryFn: () => api<{ events: EventInit[] }>(`events?id=${encodeURIComponent(eventId)}`),
+  })
   const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: FormMember[] }>('members') })
-  const value = eventsQ.data?.events.find((e) => e.id === eventId) ?? null
+  const value = eventQ.data?.events[0] ?? null
 
   return (
     <Modal open onClose={onClose} title={t.common.edit}>
@@ -102,8 +107,11 @@ function EventEditModal({ eventId, onClose }: { eventId: string; onClose: () => 
           }}
           onCancel={onClose}
         />
-      ) : (
+      ) : eventQ.isLoading ? (
         <StatusMessage tone="info">{t.common.loading}</StatusMessage>
+      ) : (
+        // Query settled but no row (e.g. deleted on another device) — don't spin forever.
+        <StatusMessage tone="info">{t.detail.eventGone}</StatusMessage>
       )}
     </Modal>
   )

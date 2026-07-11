@@ -88,7 +88,6 @@ export const FR = {
   departure: {
     title: 'Avant de partir',
     titleShort: 'Partir',
-    checklist: 'Liste de départ',
     lists: 'Listes de départ',
     open: 'Ouvrir l’écran de départ',
     today: 'Aujourd’hui',
@@ -96,8 +95,6 @@ export const FR = {
     bring: 'À apporter',
     bringAdd: 'Ajouter à cocher',
     allDay: 'Toute la journée',
-    noTemplate: 'Crée une liste « Avant de partir » dans Réglages ▸ À compléter pour la cocher ici.',
-    emptyList: 'Cette liste est vide.',
     emptyLists: 'Aucune liste de départ pour aujourd’hui — pige-en une ci-dessous.',
     noEvents: 'Rien de prévu aujourd’hui.',
   },
@@ -2970,6 +2967,9 @@ export const FR = {
     scopeGlobal: 'En tout temps',
     scopeToday: 'Aujourd’hui',
     scopeDate: 'Une date',
+    // Feuille ＋ : une LISTE piochée est toujours pour une journée (mig 0116) — sous
+    // « En tout temps » elle s’ajoute pour aujourd’hui, et cette ligne le dit.
+    templateDayHint: 'Une liste s’ajoute pour la journée — ici, aujourd’hui.',
     // Réglages ▸ À compléter (modèles de listes).
     templatesTitle: 'Listes à compléter',
     templatesHint:

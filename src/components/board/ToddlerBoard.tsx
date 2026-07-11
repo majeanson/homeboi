@@ -60,7 +60,8 @@ export function ToddlerBoard({
   // meal arrays themselves by this same visibility).
   const mealPrefs = useMealPrefs()
   // Which Grille cards this device shows (Réglages ▸ Affichage ▸ Disposition) —
-  // only `fil` is consulted here, for « Le fil du jour » toddler section.
+  // only `today` is consulted here: the toddler « Le fil du jour » sequence rides
+  // the same card that owns the day on the parent board (they merged into one).
   const boardCards = useBoardCards()
   // The picked face (« Aujourd'hui » row) — the same private-ish filter the parent
   // MotsCard / HabitudesCard use: a mot / habit for one child shows only when that
@@ -265,9 +266,9 @@ export function ToddlerBoard({
           </div>
           {/* « Le fil du jour », toddler lens — the hear-first day SEQUENCE (matin →
               midi → soir → dodo) the play space uses, so a pre-reader gets the same
-              "shape of the day" the parent ribbon gives. Honours the per-device 'fil'
-              toggle (Réglages ▸ Affichage ▸ Disposition). */}
-          {isCardVisible(boardCards, 'fil') && (
+              "shape of the day" the parent ribbon gives. Honours the per-device
+              « Aujourd'hui » toggle (Réglages ▸ Affichage ▸ Disposition). */}
+          {isCardVisible(boardCards, 'today') && (
             <section className="today-kid__section">
               <Sayable className="today-kid__h" text={t.board.fil} />
               <DayTimeline />

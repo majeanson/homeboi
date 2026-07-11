@@ -7,7 +7,7 @@ import { DEFAULT_SLOT_HOURS, DEFAULT_HERO } from './mealSlots'
 // it's unit-tested and the board just maps the result to one card's accent.
 //
 // Returned target → what the board emphasises:
-//   'day'     → the day's glance (« Le fil du jour » if shown, else « Aujourd'hui »)
+//   'day'     → the « Aujourd'hui » card (its agenda, or its « fil du jour » ribbon)
 //   'supper'  → the « Ce soir » hero-meal card (the hero meal is approaching)
 //   'evening' → « Aujourd'hui » (its bunched « Demain » prep) as the day winds down
 //   null      → quiet hours (late night / mid-morning lull): emphasise nothing

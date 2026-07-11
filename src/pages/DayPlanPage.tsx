@@ -19,6 +19,8 @@ import { PairPrompt } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
+import { eventMembers, memberFaces } from '../lib/eventPeople'
+import { type Member } from '../components/board/types'
 import { Fil } from '../components/board/Fil'
 import { EditField } from '../components/EditField'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
@@ -51,7 +53,7 @@ import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY } from '../li
 // recurring) and recurring-chore occurrences. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
   // "Projets & Entretien" (home_projects) landing on this day — read-only here
   // (managed in Réglages ▸ Corvées). null homeProjects = older payload → [].
@@ -102,7 +104,7 @@ export function DayPlanPage() {
   const leftoversQ = useLeftovers()
   const boardQ = useQuery({
     queryKey: BOARD_KEY,
-    queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
+    queryFn: () => api<{ list: { text: string }[]; members?: Member[] }>('board'),
     ...live,
   })
   // This day's events + recurring-chore occurrences (the calendar's day page plans
@@ -190,6 +192,12 @@ export function DayPlanPage() {
   const recipeForMeal = useRecipeForMeal(recipes)
   const memberName = (id: string | null | undefined) =>
     (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
+  // « Qui » faces for an event row — only when SEVERAL people share it (solo keeps its
+  // plain name; the edit sheet / peek lists everyone).
+  const eventFaces = (e: DayItemsData['events'][number]) => {
+    const f = memberFaces(eventMembers(e), boardQ.data?.members ?? [])
+    return f.length > 1 ? f : undefined
+  }
 
   // — the souper planning flow (type a title → AI staples → save) —
   const ai = useAiWake()
@@ -433,6 +441,7 @@ export function DayPlanPage() {
               : formatTime(e.at, lang)
       }
       who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
+      whoFaces={e.work ? undefined : eventFaces(e)}
       color={e.work ? e.color ?? undefined : e.business_colour ?? undefined}
       soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
       onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}

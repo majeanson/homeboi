@@ -1,8 +1,11 @@
 import { imgUrl } from '../lib/image'
+import { initialsFor } from '../lib/initials'
 
 // One place that knows how to draw a person: their photo if they have one, else
-// a coloured disc with their initial. Used wherever a member's face appears so
-// the colour/photo fallback logic lives once.
+// a coloured disc with their initial(s). Used wherever a member's face appears so
+// the colour/photo fallback logic lives once. Two people who share a first name
+// read apart via first+last initials ("Francis Cardin" → "FC"); the disc colour
+// is the final tiebreaker when even the initials collide.
 export function Avatar({
   kind,
   photo,
@@ -20,10 +23,13 @@ export function Avatar({
   if (kind === 'photo' && photo) {
     return <img className="avatar avatar--photo" src={imgUrl(photo)} alt={name ?? ''} style={dims} />
   }
+  const initials = initialsFor(name)
+  // Two letters need a smaller glyph so "FC" doesn't crowd the disc's edges.
+  const fontScale = initials.length > 1 ? 0.34 : 0.42
   return (
     <span className="avatar avatar--disc" style={{ ...dims, background: colour ?? 'var(--ink-faint)' }}>
-      <span className="avatar__initial" style={{ fontSize: Math.round(size * 0.42) }}>
-        {(name ?? '?').slice(0, 1).toUpperCase()}
+      <span className="avatar__initial" style={{ fontSize: Math.round(size * fontScale) }}>
+        {initials}
       </span>
     </span>
   )

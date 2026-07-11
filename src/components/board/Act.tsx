@@ -3,6 +3,8 @@ import { tintInk } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
+import { AvatarStack } from '../AvatarStack'
+import { type Face } from '../../lib/eventPeople'
 import { type HelpMode } from '../../lib/helpMode'
 import { SecLabel, CardMini, type CompactRow, type CornerAction } from './BoardCard'
 import { useCardLens } from './CardLens'
@@ -133,6 +135,7 @@ export function Act({
   title,
   when,
   who,
+  whoFaces,
   done,
   past,
   onCheck,
@@ -150,6 +153,7 @@ export function Act({
   title: string
   when?: string
   who?: string // a quiet sub-line under the title
+  whoFaces?: Face[] // several household faces (an event's « Qui ») — a small stack under the title, in place of the `who` text
   done?: boolean
   past?: boolean // meal/event whose time has passed → struck-through, faded
   onCheck?: () => void
@@ -211,7 +215,11 @@ export function Act({
       <span className="title" style={(done || past) ? undefined : { color: tintInk(spine) }}>
         {title}
       </span>
-      {who && <span className="who">{who}</span>}
+      {whoFaces && whoFaces.length > 0 ? (
+        <AvatarStack faces={whoFaces} size={18} className="act__pax" />
+      ) : (
+        who && <span className="who">{who}</span>
+      )}
       {soon && (
         <span className="act__soon mono">
           <Icon name="clock-bold" size={12} /> {t.board.soon}

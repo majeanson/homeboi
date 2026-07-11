@@ -126,6 +126,14 @@
   /* The grid `gap` is the one gutter now (see `--wg-gap`), so there is no column-gap to
      tighten and no per-tile bottom margin to trim. A phone is one column anyway. */
 }
+/* Small phones: trim the board's own top padding too, so the calendar / cards
+   climb higher and the bottom of the view (legend, ＋ FAB reach) stays in easy
+   thumb range. Pairs with the shared header tightening in today.css. */
+@media (max-width: 560px) {
+  .board-wall {
+    padding-top: 0.6rem;
+  }
+}
 
 /* Toddler heroes row (meals + weather) above the kid sections. */
 .today-kid__heroes {

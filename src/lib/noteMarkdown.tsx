@@ -188,7 +188,7 @@ export function plainText(md: string): string {
       l
         .replace(/^#{1,6}\s+/, '')
         .replace(/^>\s?/, '')
-        .replace(/^[-*]\s+\[[ xX]\]\s+/, '')
+        .replace(/^[-*]\s+\[[ xX]\]\s*/, '')
         .replace(/^[-*]\s+/, '')
         .replace(/^\d+\.\s+/, ''),
     )
@@ -212,7 +212,7 @@ export function toggleCheckAt(md: string, lineIndex: number): string {
   const lines = (md ?? '').replace(/\r\n/g, '\n').split('\n')
   const l = lines[lineIndex]
   if (l === undefined) return md
-  const m = /^([-*]\s+\[)([ xX])(\]\s+.*)$/.exec(l)
+  const m = /^([-*]\s+\[)([ xX])(\]\s*.*)$/.exec(l)
   if (!m) return md
   lines[lineIndex] = m[1] + (m[2].toLowerCase() === 'x' ? ' ' : 'x') + m[3]
   return lines.join('\n')

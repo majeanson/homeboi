@@ -11,12 +11,14 @@ export interface EventRow {
   title: string
   start_at: number
   all_day: number
-  member_id: string | null
+  member_id: string | null // the denormalized primary of « Qui » (= passengers[0]); back-compat single face
+  passengers?: string | null // « Qui » — all the household people this concerns (JSON id array); parse via eventMembers()
   contact_id?: string | null // #21: assigned to a « Le cercle » contact instead of a member
   contact_name?: string | null // the contact's first name, joined server-side, for the label
   business_id?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
   business_name?: string | null // the business name, joined server-side, for the label
   business_colour?: string | null // the business's own tint — colours the rendez-vous
+  bring_template_id?: string | null // #17/0077: the activity's bring-list (soft ref → todo_templates); « À apporter » on the departure card
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
   birthday?: boolean // a DERIVED birthday occurrence (from a person's birthday), not a stored event
   age?: number | null // the age turned, when the birth year is known

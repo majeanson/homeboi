@@ -41,15 +41,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, contact_id, business_id, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
+      'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
     )
       .bind(hh, from, to)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; contact_id: string | null; contact_name: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; bring_template_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; bring_template_id: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+      'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, recur_json, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
     )
       .bind(hh)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; contact_id: string | null; contact_name: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; recur_json: string; bring_template_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; recur_json: string; bring_template_id: string | null }>(),
     // Meals & day-notes are stored at LOCAL midnight; widen the SQL window a day
     // each side so an entry near the window edge still lands, then re-bucket by
     // local day below and clip back to [from, to).
@@ -175,6 +175,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     at: number
     all_day: number
     member_id: string | null
+    passengers?: string | null // « Qui » — the household people (JSON id array); member_id is passengers[0]
     contact_id?: string | null
     contact_name?: string | null
     business_id?: string | null
@@ -198,6 +199,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         at: e.start_at,
         all_day: e.all_day,
         member_id: e.member_id,
+        passengers: e.passengers,
         contact_id: e.contact_id,
         contact_name: e.contact_name,
         business_id: e.business_id,
@@ -217,6 +219,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         at,
         all_day: e.all_day,
         member_id: e.member_id,
+        passengers: e.passengers,
         contact_id: e.contact_id,
         contact_name: e.contact_name,
         business_id: e.business_id,
