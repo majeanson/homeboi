@@ -414,7 +414,9 @@ export function TodoSection({
           // add to today instead of « en tout temps », straight from this standing card.
           // Full label « Pour aujourd’hui » when the card is wide enough; a CSS container
           // query (todos.css) swaps to the short « Pour ajd » on a narrow card.
-          {...(scope === null
+          // NOT on the checklists surface (the departure card): everything there is for
+          // today by definition, so the global-vs-today choice is redundant noise.
+          {...(scope === null && show !== 'checklists'
             ? {
                 secondaryLabel: (
                   <>
