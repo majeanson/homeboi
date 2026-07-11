@@ -1,0 +1,11 @@
+-- « Avant de partir » split: a todo instantiated from a todo_templates checklist is its
+-- own concept — it leaves « À compléter » and lives on the departure card, day-pinned.
+-- source_template_id: soft ref -> todo_templates.id (no FK: deleting a template must
+-- never cascade instantiated rows). NULL = loose/manual todo; set = checklist-instance
+-- row. The ref IS the discriminator (a `kind` column would always be derivable from it,
+-- and per-template folding needs the id anyway); `section` (mig 0047) keeps the frozen
+-- DISPLAY title, so it survives a template rename/delete.
+-- Existing instantiated rows can't be back-marked (a plain template's rows are
+-- indistinguishable from manual adds) — they stay NULL / plain todos and clear
+-- naturally via « Effacer cochées ». Accepted.
+ALTER TABLE todos ADD COLUMN source_template_id TEXT;

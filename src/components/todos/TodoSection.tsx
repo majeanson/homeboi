@@ -123,20 +123,25 @@ export function TodoSection({
   // cache and the board cache up front — otherwise it only appears on the board after
   // a refetch (and never, offline). A day≠today add belongs only in its day cache; a
   // global add (scope null) already writes TODOS_KEY, since `key` === TODOS_KEY there.
-  async function add(text: string) {
+  // `dayFor` defaults to this section's scope; the board glance's « Pour ajd » button
+  // passes today explicitly to pin a standing-list card's add to the Aujourd’hui group.
+  async function add(text: string, dayFor: number | null = scope) {
     const value = text.trim()
     if (!value) return
     setAddText('')
     const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
-    const tmpRow: Todo = { id: tmpId, title: value, day: scope, member_id: null, done_at: null, position: 0, section: null }
+    const tmpRow: Todo = { id: tmpId, title: value, day: dayFor, member_id: null, done_at: null, position: 0, section: null, source_template_id: null }
     const insert = (d: TodosData | undefined): TodosData => (d ? { todos: [...d.todos, tmpRow] } : { todos: [tmpRow] })
     await createWithUndo({
       endpoint: 'todos',
-      body: { title: value, day: scope },
+      body: { title: value, day: dayFor },
       affectedKeys: [TODOS_KEY, MONTH_KEY],
       optimistic: (qc) => {
         qc.setQueryData<TodosData>(key, insert)
-        if (scope != null && scope === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
+        // On a day page (key ≠ TODOS_KEY) a today-pinned add also belongs on the
+        // board glance up front. On the board glance itself `key` IS TODOS_KEY, so
+        // the write above already covers it — don't double-insert.
+        if (scope != null && dayFor === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
       },
       // E-41: a queued follow-up (toggle done) on the tmp row gets rewritten to the
       // real id when this create replays.
@@ -359,6 +364,21 @@ export function TodoSection({
           }}
           submitLabel={t.common.add}
           submitLeadingIcon="plus-bold"
+          // Board glance only (scope null = global ∪ today): a second button pins the
+          // add to today instead of « en tout temps », straight from this standing card.
+          // Full label « Pour aujourd’hui » when the card is wide enough; a CSS container
+          // query (todos.css) swaps to the short « Pour ajd » on a narrow card.
+          {...(scope === null
+            ? {
+                secondaryLabel: (
+                  <>
+                    <span className="todo-addtoday__full">{t.todos.addToday}</span>
+                    <span className="todo-addtoday__short">{t.todos.addTodayShort}</span>
+                  </>
+                ),
+                onSecondary: (v: string) => void add(v, todayLocalDay()),
+              }
+            : {})}
           placeholder={t.todos.addPlaceholder}
           ariaLabel={t.todos.addPlaceholder}
         />

@@ -8,6 +8,8 @@ import {
   isOpen,
   isChecked,
   checkedIds,
+  isChecklistRow,
+  splitTodos,
   groupBySection,
   toStored,
   expandTemplate,
@@ -24,6 +26,7 @@ const todo = (over: Partial<Todo>): Todo => ({
   done_at: null,
   position: 0,
   section: null,
+  source_template_id: null,
   ...over,
 })
 
@@ -126,10 +129,10 @@ describe('expandSectioned (the instantiated, sectioned result)', () => {
     expect(out.filter((r) => r.label === 'Patate')).toEqual([{ label: 'Patate', section: 'E' }])
   })
 
-  it('a plain (un-composed) list instantiates flat + headless', () => {
+  it('a plain (un-composed) list ALSO carries the top title (0116: the departure fold needs a header)', () => {
     expect(expandSectioned([A], 'A')).toEqual([
-      { label: 'Patate', section: null },
-      { label: 'Passeports', section: null },
+      { label: 'Patate', section: 'Avant de partir' },
+      { label: 'Passeports', section: 'Avant de partir' },
     ])
   })
 
@@ -141,6 +144,47 @@ describe('expandSectioned (the instantiated, sectioned result)', () => {
       { label: 'a1', section: 'Valise' },
       { label: 'd1', section: 'Valise' },
     ])
+  })
+})
+
+describe('isChecklistRow / splitTodos (the « Avant de partir » split, mig 0116)', () => {
+  it('discriminates on source_template_id', () => {
+    expect(isChecklistRow(todo({}))).toBe(false)
+    expect(isChecklistRow(todo({ source_template_id: 'T1' }))).toBe(true)
+  })
+
+  it('splits loose rows from checklist groups, first-seen order, merged by template', () => {
+    const rows = [
+      todo({ id: 'l1' }),
+      todo({ id: 'a1', section: 'Avant de partir', source_template_id: 'T1' }),
+      todo({ id: 'b1', section: 'Sac de soccer', source_template_id: 'T2' }),
+      todo({ id: 'l2' }),
+      todo({ id: 'a2', section: 'Avant de partir', source_template_id: 'T1' }),
+    ]
+    const { loose, checklists } = splitTodos(rows)
+    expect(loose.map((t) => t.id)).toEqual(['l1', 'l2'])
+    expect(checklists.map((g) => [g.section, g.todos.map((t) => t.id)])).toEqual([
+      ['Avant de partir', ['a1', 'a2']],
+      ['Sac de soccer', ['b1']],
+    ])
+  })
+
+  it('a legacy sectioned row without the ref still folds under its section title', () => {
+    const rows = [todo({ id: 'x', section: 'Chez grand-papa' }), todo({ id: 'y', section: 'Chez grand-papa' })]
+    const { loose, checklists } = splitTodos(rows)
+    expect(loose).toEqual([])
+    expect(checklists).toHaveLength(1)
+    expect(checklists[0].section).toBe('Chez grand-papa')
+    expect(checklists[0].todos.map((t) => t.id)).toEqual(['x', 'y'])
+  })
+
+  it('a legacy-section group and a template group with the same title stay separate groups', () => {
+    const rows = [
+      todo({ id: 'a', section: 'Avant de partir', source_template_id: 'T1' }),
+      todo({ id: 'b', section: 'Avant de partir' }),
+    ]
+    const { checklists } = splitTodos(rows)
+    expect(checklists.map((g) => g.todos.map((t) => t.id))).toEqual([['a'], ['b']])
   })
 })
 

@@ -7,8 +7,12 @@ import { TODOS_KEY } from './queryKeys'
 // One todo. `day` null = global (a standing item); a number = local-midnight unix
 // second it's pinned to. `member_id` is the optional face (attribution only).
 // `done_at` null = open; a number = checked (marked in place, awaiting clear).
-// `section` (migration 0047) = the source sub-list's title when this todo came
-// from instantiating a COMPOSED template; null = a loose item / a manual add.
+// `section` (migration 0047) = the top template's title when this todo came from
+// instantiating a checklist (always set on new instances since mig 0116); null = a
+// loose item / a manual add. `source_template_id` (mig 0116) = soft ref to the
+// todo_templates row it was instantiated from (no FK — a deleted template never
+// cascades): null = loose « À compléter » todo; set = a departure checklist-instance
+// row (« Avant de partir »), always day-pinned server-side.
 export interface Todo {
   id: string
   title: string
@@ -17,6 +21,7 @@ export interface Todo {
   done_at: number | null
   position: number
   section: string | null
+  source_template_id: string | null
 }
 
 // A template item is EITHER a plain label OR a reference to another template
@@ -53,6 +58,38 @@ export const todosPath = (day?: number | null) => (day == null ? 'todos' : `todo
 
 export const isOpen = (t: Todo): boolean => t.done_at == null
 export const isChecked = (t: Todo): boolean => t.done_at != null
+
+// The « Avant de partir » discriminator: a row instantiated from a checklist
+// template (source_template_id set) vs a loose « À compléter » todo. Legacy
+// pre-0116 instances read as loose — accepted, they clear naturally.
+export const isChecklistRow = (t: Todo): boolean => t.source_template_id != null
+
+// Split a scope's rows into the two concepts: `loose` (« À faire »/« À compléter »)
+// and `checklists` — one group per instantiated template, keyed by
+// `source_template_id ?? section` (two instantiations of one template merge; a
+// legacy sectioned row without the ref still folds under its section title),
+// first-seen order. `section` is the group's display header (null only for
+// pathological legacy rows — callers fall back to a generic title).
+export interface ChecklistGroup {
+  key: string
+  section: string | null
+  todos: Todo[]
+}
+export function splitTodos(todos: Todo[]): { loose: Todo[]; checklists: ChecklistGroup[] } {
+  const loose: Todo[] = []
+  const groups = new Map<string, ChecklistGroup>()
+  for (const td of todos) {
+    if (!isChecklistRow(td) && td.section == null) {
+      loose.push(td)
+      continue
+    }
+    const key = td.source_template_id ?? `s:${td.section}`
+    const g = groups.get(key)
+    if (g) g.todos.push(td)
+    else groups.set(key, { key, section: td.section, todos: [td] })
+  }
+  return { loose, checklists: [...groups.values()] }
+}
 
 // The ids the bulk-clear should sweep: exactly the checked ones. Passed to the
 // deferred-undo clear so a tick made after scheduling the undo isn't removed.
@@ -117,11 +154,12 @@ export function expandTemplate(templates: TodoTemplate[], id: string, max = MAX_
 }
 
 // The instantiated, SECTIONED result of a (possibly composed) list. We always want
-// the TOP parent and all its todos: a COMPOSED list (one containing any sub-list ref,
-// at any depth) flattens to a SINGLE section titled after the top list — every label,
-// loose or pulled from a nested sub-list, lands under that one header (deduped across
-// the whole result). A PLAIN list (no refs) stays headless (section null). Intermediate
-// sub-list titles are not shown — only the top parent groups the board's expand/collapse.
+// the TOP parent and all its todos: EVERY instantiation (plain or composed) carries
+// `section` = the top list's title — the departure card folds each instance under
+// that header, so it must always exist (mig 0116; previously composed-only). A
+// COMPOSED list (one containing any sub-list ref, at any depth) still flattens to
+// that SINGLE section (deduped across the whole result); intermediate sub-list
+// titles are not shown. Kept in lockstep with functions/api/todos.ts.
 export function expandSectioned(
   templates: TodoTemplate[],
   id: string,
@@ -130,8 +168,7 @@ export function expandSectioned(
   const byId = new Map(templates.map((t) => [t.id, t]))
   const root = byId.get(id)
   if (!root) return []
-  const composed = root.items.some((it) => it.kind === 'ref')
-  const section = composed ? root.title : null
+  const section = root.title
   return expandTemplate(templates, id, max).map((label) => ({ label, section }))
 }
 

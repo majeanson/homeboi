@@ -8,10 +8,19 @@ import { profileMemberId } from '../_lib/profile'
 // todo is GLOBAL (day NULL) or pinned to one calendar DAY. "Done" is a mark in
 // place (done_at); "Effacer cochées" deletes the checked rows. Migration 0046.
 //
+// Two KINDS of row share the table (mig 0116): a LOOSE todo (« À compléter »,
+// source_template_id NULL) and a departure CHECKLIST INSTANCE (« Avant de partir »,
+// source_template_id = the todo_templates id it was instantiated from). An instance
+// is ALWAYS day-pinned — a template POST without a day defaults to today rather than
+// 400 (the offline outbox replays queued POSTs; a reject would strand them) — and
+// past-day instances are swept opportunistically on the next write (never in GET:
+// a guest GET must not write). A past day page may briefly show a stale instance
+// until that write lands — invisible on the board, calm-acceptable.
+//
 //   GET    /api/todos            -> board glance: global + today's todos
 //   GET    /api/todos?date=<sec> -> that day's todos
 //   POST   /api/todos            -> add one { title, day? } OR instantiate a
-//                                   template { templateId, day? }
+//                                   template { templateId, day? } (day-pinned)
 //   PATCH  /api/todos            -> toggle/edit { id, done? , title? } OR bulk
 //                                   clear { clearChecked: true, ids? }
 //   DELETE /api/todos            -> remove one { id }
@@ -24,9 +33,18 @@ interface TodoRow {
   done_at: number | null
   position: number
   section: string | null
+  source_template_id: string | null
 }
 
-const COLS = 'id, title, day, member_id, done_at, position, section, created_at'
+const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at'
+
+// The opportunistic roll-off: departure checklist instances pinned to a past day
+// are finished business — delete them so no Tuesday list lingers into Thursday.
+// Batched into every write path (POST both branches + clearChecked), never GET.
+const sweepStale = (db: D1Database, householdId: string, today: number) =>
+  db
+    .prepare('DELETE FROM todos WHERE household_id = ? AND source_template_id IS NOT NULL AND day IS NOT NULL AND day < ?')
+    .bind(householdId, today)
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const dateParam = new URL(ctx.request.url).searchParams.get('date')
@@ -57,15 +75,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const mid = profileMemberId(ctx.request)
   const ts = nowSec()
 
-  // Instantiate a template → a batch of real, independent todos (the departure
-  // checklist made concrete). We always want the TOP parent and all its todos: a
-  // COMPOSED template (one that includes other lists, at any depth) flattens to a
-  // SINGLE section titled after the top list — every label, loose or pulled from a
-  // nested sub-list, lands under that one `section` (deduped across the whole result).
-  // A plain list (no refs) has no section. Items keep their order via `position`
-  // (they share one created_at, so position breaks the tie). Cycle-safe + capped.
-  // Mirrors expandSectioned in src/lib/todos.ts.
+  // Instantiate a template → a batch of real, independent CHECKLIST-INSTANCE todos
+  // (the departure checklist made concrete; source_template_id marks each row, mig
+  // 0116). Always DAY-PINNED: no day in the body → today, so a « global avant de
+  // partir » cannot exist at the data level. Every row carries `section` = the top
+  // template's title (plain or composed — the departure card folds on it); a
+  // COMPOSED template (one that includes other lists, at any depth) still flattens
+  // to that SINGLE section (deduped across the whole result). Items keep their
+  // order via `position` (they share one created_at, so position breaks the tie).
+  // Cycle-safe + capped. Mirrors expandSectioned in src/lib/todos.ts.
+  const today = localDayStart(new Date())
   if (body?.templateId) {
+    const pinnedDay = day ?? today
     const rows = await ctx.env.DB.prepare('SELECT id, title, items_json FROM todo_templates WHERE household_id = ?')
       .bind(actor.householdId)
       .all<{ id: string; title: string; items_json: string }>()
@@ -85,21 +106,23 @@ export const onRequestPost = authed(async (ctx, actor) => {
     if (rows2.length === 0) return ok({ ok: true, n: 0 })
     const stmts = rows2.map((row, i) =>
       ctx.env.DB.prepare(
-        'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)',
-      ).bind(newId(), actor.householdId, row.label.slice(0, 200), day, mid, i, row.section, ts, ts),
+        'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)',
+      ).bind(newId(), actor.householdId, row.label.slice(0, 200), pinnedDay, mid, i, row.section, body.templateId, ts, ts),
     )
+    stmts.push(sweepStale(ctx.env.DB, actor.householdId, today))
     await ctx.env.DB.batch(stmts)
-    return ok({ ok: true, n: stmts.length })
+    return ok({ ok: true, n: stmts.length - 1 })
   }
 
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
-  await ctx.env.DB.prepare(
-    'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, ?, ?)',
-  )
-    .bind(id, actor.householdId, title.slice(0, 200), day, mid, ts, ts)
-    .run()
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare(
+      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?)',
+    ).bind(id, actor.householdId, title.slice(0, 200), day, mid, ts, ts),
+    sweepStale(ctx.env.DB, actor.householdId, today),
+  ])
   return ok({ ok: true, id })
 })
 
@@ -112,16 +135,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // clear to exactly the rows the UI ticked (so a check made after scheduling the
   // deferred undo isn't swept up); absent → every done row in the household.
   if (body?.clearChecked) {
+    const today = localDayStart(new Date())
     const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : null
     if (ids && ids.length > 0) {
       const ph = ids.map(() => '?').join(',')
-      await ctx.env.DB.prepare(`DELETE FROM todos WHERE household_id = ? AND id IN (${ph})`)
-        .bind(actor.householdId, ...ids)
-        .run()
+      await ctx.env.DB.batch([
+        ctx.env.DB.prepare(`DELETE FROM todos WHERE household_id = ? AND id IN (${ph})`).bind(actor.householdId, ...ids),
+        sweepStale(ctx.env.DB, actor.householdId, today),
+      ])
     } else if (!ids) {
-      await ctx.env.DB.prepare('DELETE FROM todos WHERE household_id = ? AND done_at IS NOT NULL')
-        .bind(actor.householdId)
-        .run()
+      await ctx.env.DB.batch([
+        ctx.env.DB.prepare('DELETE FROM todos WHERE household_id = ? AND done_at IS NOT NULL').bind(actor.householdId),
+        sweepStale(ctx.env.DB, actor.householdId, today),
+      ])
     }
     return ok({ ok: true })
   }
@@ -192,14 +218,15 @@ function flattenList(tpls: Tpls, id: string, max: number): string[] {
 }
 
 // The instantiated, SECTIONED result. We always want the TOP parent and all its
-// todos: a COMPOSED list (one containing any sub-list ref, at any depth) flattens to
-// a SINGLE section titled after the top list — every label, loose or from a nested
-// sub-list, under that one `section` (deduped across the whole result). A plain list
-// (no refs) is headless (section null). Intermediate sub-list titles are not shown.
+// todos: EVERY instantiation (plain or composed) carries `section` = the top list's
+// title — the departure card folds each instance under that header, so it must always
+// exist (mig 0116; previously composed-only). A COMPOSED list (one containing any
+// sub-list ref, at any depth) still flattens to that SINGLE section — every label,
+// loose or from a nested sub-list, under one header (deduped across the whole
+// result). Intermediate sub-list titles are not shown.
 function expandSectioned(tpls: Tpls, id: string, max = MAX_EXPAND): { label: string; section: string | null }[] {
   const root = tpls.get(id)
   if (!root) return []
-  const composed = root.items.some((it) => typeof it === 'object' && typeof it.ref === 'string' && it.ref.trim() !== '')
-  const section = composed ? root.title : null
+  const section = root.title
   return flattenList(tpls, id, max).map((label) => ({ label, section }))
 }
