@@ -109,9 +109,14 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     [noah, 'Noah', '#F2A03D', 1, null, null, '2019-11-30', 'm'],
   ]
 
-  // Recipes (media-free: image = NULL). ids referenced by the meals below.
+  // Recipes (media-free: image = NULL). ids referenced by the meals below. A small
+  // book — several dishes so the recipe list, collections, and « préféré » tag all
+  // read full, not a lonely pair.
   const rSpag = newId()
   const rTacos = newId()
+  const rPoulet = newId()
+  const rMuffins = newId()
+  const rSoupe = newId()
   const spagIngredients = [
     '400 g de pâtes',
     '1 pot de sauce tomate',
@@ -137,6 +142,44 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     'Cuire le poulet en dés avec les épices.',
     'Garnir les coquilles de poulet, tomate et laitue.',
   ]
+  const pouletIngredients = [
+    '1 poulet entier (environ 1,5 kg)',
+    '2 c. à soupe de beurre mou',
+    '1 citron',
+    '4 pommes de terre',
+    '3 carottes',
+    'Sel, poivre, thym',
+  ]
+  const pouletSteps = [
+    'Chauffer le four à 200 °C.',
+    'Frotter le poulet de beurre, sel, poivre et thym; glisser le citron dedans.',
+    'Entourer des légumes en morceaux et rôtir 1 h 15, en arrosant à mi-cuisson.',
+  ]
+  const muffinsIngredients = [
+    '3 bananes bien mûres',
+    '75 ml (1/3 tasse) de beurre fondu',
+    '150 g (3/4 tasse) de sucre',
+    '1 œuf',
+    '190 g (1 1/2 tasse) de farine',
+    '1 c. à thé de bicarbonate de soude',
+  ]
+  const muffinsSteps = [
+    'Écraser les bananes, mélanger au beurre, au sucre et à l’œuf.',
+    'Incorporer la farine et le bicarbonate.',
+    'Répartir dans les moules et cuire 20 min à 180 °C.',
+  ]
+  const soupeIngredients = [
+    'Restes de poulet cuit',
+    '1,5 L de bouillon de poulet',
+    '200 g de nouilles aux œufs',
+    '2 carottes',
+    '2 branches de céleri',
+    'Persil',
+  ]
+  const soupeSteps = [
+    'Faire mijoter le bouillon avec les carottes et le céleri 15 min.',
+    'Ajouter les nouilles et le poulet, cuire 8 min et parsemer de persil.',
+  ]
 
   // ── Extended demo: Le cercle (extended family + tree), a pet + its vet, a home
   // carnet with its upkeep, recipe hearts, a « mot », a trip — so a curious user
@@ -144,18 +187,36 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
   // hearts / carnet-content below can reference them. All media-free.
   const diane = newId() // grandmother (contact)
   const robert = newId() // grandfather (contact)
+  const sophie = newId() // aunt (contact — Maman's sister)
+  const emma = newId() // cousin (contact — Sophie's daughter)
   const moustache = newId() // the cat (pet)
+  const biscuit = newId() // the dog (pet)
   const vetBiz = newId() // the vet (business)
+  const plombier = newId() // the plumber (business)
+  const pharmacie = newId() // the pharmacy (business)
+  const dentisteBiz = newId() // the dental clinic (business)
+  const garageBiz = newId() // the garage / mechanic (business)
+  const ecoleBiz = newId() // the school (business)
+  const julie = newId() // the neighbour (contact)
+  const camille = newId() // the babysitter (contact)
   const maison = newId() // the home carnet
+  const auto = newId() // the car carnet
 
-  // Days, DST-aware, anchored to today.
+  // Days, DST-aware, anchored to today. A full week+ ahead so the plan / agenda /
+  // « À venir » all read like a real, busy household rather than a couple of rows.
   const d0 = localDayStart(new Date(ts * 1000))
   const d1 = addLocalDays(d0, 1)
+  const d2 = addLocalDays(d0, 2)
   const d3 = addLocalDays(d0, 3)
+  const d4 = addLocalDays(d0, 4)
   const d5 = addLocalDays(d0, 5)
+  const d6 = addLocalDays(d0, 6)
+  const d7 = addLocalDays(d0, 7)
   const d10 = addLocalDays(d0, 10)
   const d12 = addLocalDays(d0, 12)
   const at = (day: number, hours: number) => localTimeOnDay(day, hours * 3600)
+  // Half-hour helper for the many timed events below (16h30 = atHalf(d, 16, 30)).
+  const atHalf = (day: number, hours: number, mins: number) => localTimeOnDay(day, hours * 3600 + mins * 60)
 
   // Cercle relationship edges (polymorphic: kind ∈ member|contact|pet; no DB FK).
   // A small 3-generation tree — grandparents → Maman → the kids — plus Léa owns the
@@ -224,84 +285,182 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ts,
       S,
     ),
+    P(
+      `INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, prep_min, cook_min, notes, tags_json, lang, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'fr', ?, ?, ?)`,
+    ).bind(
+      rPoulet,
+      h,
+      'Poulet rôti aux légumes',
+      JSON.stringify(pouletIngredients),
+      JSON.stringify(pouletSteps),
+      4,
+      15,
+      75,
+      'Garde la carcasse pour la soupe du lendemain.',
+      JSON.stringify(['souper', 'préféré']),
+      ts,
+      ts,
+      S,
+    ),
+    P(
+      `INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, prep_min, cook_min, tags_json, lang, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'fr', ?, ?, ?)`,
+    ).bind(
+      rMuffins,
+      h,
+      'Muffins aux bananes',
+      JSON.stringify(muffinsIngredients),
+      JSON.stringify(muffinsSteps),
+      12,
+      10,
+      20,
+      JSON.stringify(['dessert', 'enfants']),
+      ts,
+      ts,
+      S,
+    ),
+    P(
+      `INSERT INTO recipes (id, household_id, title, ingredients_json, steps_json, servings, prep_min, cook_min, tags_json, lang, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'fr', ?, ?, ?)`,
+    ).bind(
+      rSoupe,
+      h,
+      'Soupe poulet et nouilles',
+      JSON.stringify(soupeIngredients),
+      JSON.stringify(soupeSteps),
+      6,
+      10,
+      25,
+      JSON.stringify(['réconfort']),
+      ts,
+      ts,
+      S,
+    ),
 
-    // meals — today's supper (2 rows), today's breakfast, tomorrow, and a
-    // kid-suggested one a few days out. `date` = local midnight; position 0-based
-    // per (date, slot). Spaghetti links its recipe so the peek → cook mode works.
-    P(
-      `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, recipe_id, position, created_at, is_sample)
-       VALUES (?, ?, ?, 'supper', ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, d0, 'Spaghetti maison', papa, rSpag, ts, S),
-    P(
-      `INSERT INTO meals (id, household_id, date, slot, title, position, created_at, is_sample)
-       VALUES (?, ?, ?, 'supper', ?, 1, ?, ?)`,
-    ).bind(newId(), h, d0, 'Salade César', ts, S),
-    P(
-      `INSERT INTO meals (id, household_id, date, slot, title, position, created_at, is_sample)
-       VALUES (?, ?, ?, 'breakfast', ?, 0, ?, ?)`,
-    ).bind(newId(), h, d0, 'Crêpes', ts, S),
-    P(
-      `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, recipe_id, position, created_at, is_sample)
-       VALUES (?, ?, ?, 'supper', ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, d1, 'Tacos au poulet', maman, rTacos, ts, S),
-    P(
-      `INSERT INTO meals (id, household_id, date, slot, title, suggested_by, position, created_at, is_sample)
-       VALUES (?, ?, ?, 'supper', ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, d3, 'Saumon & riz', lea, ts, S),
+    // meals — a full week's plan (déjeuner / dîner / souper), the way a busy household
+    // actually keeps it: a hero supper most nights, a couple of lunches + breakfasts,
+    // and two kid-suggested picks. `date` = local midnight; position 0-based per
+    // (date, slot). Several link a recipe so the peek → cook mode works.
+    ...[
+      // today
+      { day: d0, slot: 'breakfast', title: 'Crêpes' },
+      { day: d0, slot: 'lunch', title: 'Sandwichs au jambon' },
+      { day: d0, slot: 'supper', title: 'Spaghetti maison', cook: papa, recipe: rSpag },
+      { day: d0, slot: 'supper', title: 'Salade César', pos: 1 },
+      // tomorrow
+      { day: d1, slot: 'breakfast', title: 'Gruau et fruits' },
+      { day: d1, slot: 'supper', title: 'Tacos au poulet', cook: maman, recipe: rTacos },
+      // the week ahead
+      { day: d2, slot: 'lunch', title: 'Restes de tacos' },
+      { day: d2, slot: 'supper', title: 'Poulet rôti aux légumes', cook: papa, recipe: rPoulet },
+      { day: d3, slot: 'supper', title: 'Saumon & riz', suggested: lea },
+      { day: d4, slot: 'supper', title: 'Pâté chinois', cook: maman },
+      { day: d5, slot: 'supper', title: 'Pizza maison', suggested: lea },
+      { day: d6, slot: 'supper', title: 'Soupe poulet et nouilles', recipe: rSoupe },
+    ].map((m) =>
+      P(
+        `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, recipe_id, suggested_by, position, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(
+        newId(),
+        h,
+        m.day,
+        m.slot,
+        m.title,
+        (m as { cook?: string }).cook ?? null,
+        (m as { recipe?: string }).recipe ?? null,
+        (m as { suggested?: string }).suggested ?? null,
+        (m as { pos?: number }).pos ?? 0,
+        ts,
+        S,
+      ),
+    ),
 
-    // events — a couple today, one tomorrow, and an all-day birthday soon. Member-
-    // attributed (member_id set, contact/business null).
-    P(
-      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, lea, 'Garderie', at(d0, 9), ts, S),
-    P(
-      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, noah, 'Rendez-vous dentiste', at(d0, 15), ts, S),
-    P(
-      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, lea, 'Soccer', at(d1, 17), ts, S),
-    P(
-      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, maman, 'Souper chez Mamie et Papi', at(d3, 18), ts, S),
-    P(
-      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
-    ).bind(newId(), h, lea, 'Fête de Léa', d5, ts, S),
+    // events — a genuinely busy agenda: work, kids' activities, appointments, a couple
+    // of family get-togethers and an all-day birthday. Member-attributed (member_id set;
+    // contact/business null). Timed unless all_day.
+    ...(
+      [
+        // today
+        [lea, 'Garderie', at(d0, 9), 0],
+        [papa, 'Réunion d’équipe', at(d0, 10), 0],
+        [noah, 'Rendez-vous dentiste', at(d0, 15), 0],
+        [maman, 'Cours de yoga', at(d0, 19), 0],
+        // tomorrow
+        [lea, 'Soccer', at(d1, 17), 0],
+        [noah, 'Cours de natation', atHalf(d1, 18, 30), 0],
+        // the week ahead
+        [papa, 'Rendez-vous au garage', at(d2, 8), 0],
+        [lea, 'Pratique de soccer', at(d2, 17), 0],
+        [maman, 'Souper chez Mamie et Papi', at(d3, 18), 0],
+        [maman, 'Rendez-vous médecin', at(d4, 14), 0],
+        [lea, 'Cours de piano', at(d4, 16), 0],
+        [lea, 'Fête de Léa', d5, 1],
+        [maman, 'Brunch chez Papi et Mamie', at(d6, 10), 0],
+        [noah, 'Fête d’un ami', atHalf(d7, 13, 30), 0],
+      ] as [string, string, number, number][]
+    ).map(([mid, title, startAt, allDay]) =>
+      P(
+        `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, mid, title, startAt, allDay, ts, S),
+    ),
 
-    // list_items — the shared grocery list.
+    // list_items — a real, full grocery list. The first is attributed to Maman (added_by);
+    // the rest are plain manual rows.
     P(
       `INSERT INTO list_items (id, household_id, text, source, added_by, created_at, is_sample)
        VALUES (?, ?, ?, 'manual', ?, ?, ?)`,
     ).bind(newId(), h, 'Lait', maman, ts, S),
-    ...['Pain', 'Pommes', 'Couches'].map((text) =>
+    ...[
+      'Pain', 'Pommes', 'Bananes', 'Couches', 'Yogourt', 'Fromage', 'Poulet',
+      'Céréales', 'Jus d’orange', 'Pâtes', 'Sauce tomate', 'Carottes',
+      'Papier essuie-tout', 'Beurre d’arachide',
+    ].map((text) =>
       P(
         `INSERT INTO list_items (id, household_id, text, source, created_at, is_sample)
          VALUES (?, ?, ?, 'manual', ?, ?)`,
       ).bind(newId(), h, text, ts, S),
     ),
 
-    // tasks (chores) with a fair rotation (faces, never counts).
-    P(
-      `INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, created_at, is_sample)
-       VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
-    ).bind(newId(), h, 'Sortir les poubelles', JSON.stringify([maman, papa]), '#88A36F', ts, S),
-    P(
-      `INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, created_at, is_sample)
-       VALUES (?, ?, ?, ?, 1, ?, ?, ?)`,
-    ).bind(newId(), h, 'Vaisselle', JSON.stringify([papa, maman]), '#7BB0C9', ts, S),
+    // tasks (chores) with a fair rotation (faces, never counts). A household's real
+    // weekly chore board — parents share the heavy ones, the kids own a light one each.
+    ...(
+      [
+        ['Sortir les poubelles', [maman, papa], 0, '#88A36F'],
+        ['Vaisselle', [papa, maman], 1, '#7BB0C9'],
+        ['Lessive', [maman, papa], 0, '#B06A93'],
+        ['Passer l’aspirateur', [papa, maman], 1, '#5891AC'],
+        ['Nettoyer la salle de bain', [maman, papa], 0, '#88A36F'],
+        ['Tondre la pelouse', [papa], 0, '#88A36F'],
+        ['Litière du chat', [lea, noah], 0, '#F2A03D'],
+        ['Nourrir le chien', [noah, lea], 1, '#F2A03D'],
+      ] as [string, string[], number, string][]
+    ).map(([title, rotation, idx, colour]) =>
+      P(
+        `INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, ts, S),
+    ),
 
-    // notes — a fridge note, tinted to Maman.
-    P(
-      `INSERT INTO notes (id, household_id, text, member_id, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    ).bind(newId(), h, 'Bonne chance à ton examen !', maman, ts, S),
+    // notes — a few fridge notes, each tinted to whoever left it.
+    ...(
+      [
+        ['Bonne chance à ton examen !', maman],
+        ['Rappel : rendez-vous chez le dentiste jeudi', papa],
+        ['Merci d’avoir rangé le salon ❤️', maman],
+        ['Ne pas oublier de sortir le poulet du congélateur', papa],
+      ] as [string, string][]
+    ).map(([text, mid]) =>
+      P(
+        `INSERT INTO notes (id, household_id, text, member_id, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, text, mid, ts, S),
+    ),
 
     // pantry_low — "running low" flags (never a quantity — calm).
-    ...['Beurre', 'Café', 'Papier hygiénique'].map((item) =>
+    ...['Beurre', 'Café', 'Papier hygiénique', 'Lait', 'Œufs', 'Ketchup', 'Farine'].map((item) =>
       P(`INSERT INTO pantry_low (id, household_id, item, marked_at, is_sample) VALUES (?, ?, ?, ?, ?)`).bind(
         newId(),
         h,
@@ -321,111 +480,200 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
        VALUES (?, ?, ?, ?, ?, '[]', '[]', 'evening', ?, ?)`,
     ).bind(newId(), h, noah, 'Dodo', JSON.stringify(dodoCards), ts, S),
 
-    // todos (« À faire ») — one standing, one tied to Maman.
-    P(
-      `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, NULL, NULL, 0, ?, ?, ?)`,
-    ).bind(newId(), h, 'Clés + téléphone + portefeuille', ts, ts, S),
-    P(
-      `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, NULL, ?, 1, ?, ?, ?)`,
-    ).bind(newId(), h, 'Boîte à lunch des enfants', maman, ts, ts, S),
-    // a per-day todo pinned to TOMORROW (day = d1) — the night-before « À compléter »
-    // that surfaces on the « Demain » card (mini list + grown body), so the demo shows
-    // that checklist alive instead of an empty tomorrow tile.
-    P(
-      `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-    ).bind(newId(), h, 'Signer l’agenda de Léa', d1, lea, ts, ts, S),
+    // todos (« À compléter ») — standing items + a few pinned to a day. A busy family's
+    // running list of small things to remember. A per-day todo on TOMORROW (day = d1)
+    // surfaces on the « Demain » card (mini list + grown body), so the demo shows that
+    // night-before checklist alive instead of an empty tomorrow tile.
+    ...(
+      [
+        ['Clés + téléphone + portefeuille', null, null, 0],
+        ['Boîte à lunch des enfants', maman, null, 1],
+        ['Renouveler les passeports', null, null, 2],
+        ['Payer les frais de garderie', papa, null, 3],
+        ['Appeler le dentiste pour Noah', maman, d0, 0],
+        ['Signer l’agenda de Léa', lea, d1, 0],
+        ['Préparer le sac de soccer', lea, d1, 1],
+        ['Inscrire Léa au camp de jour', maman, d2, 0],
+      ] as [string, string | null, number | null, number][]
+    ).map(([title, mid, day, pos]) =>
+      P(
+        `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, day, mid, pos, ts, ts, S),
+    ),
 
     // ── Extended demo (parents before children for the FK batch) ──────────────
 
-    // businesses — the vet (referenced by the pet below, soft ref).
-    P(
-      `INSERT INTO businesses (id, household_id, name, category, phone, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(vetBiz, h, 'Clinique vétérinaire du coin', 'Vétérinaire', '514-555-0199', ts, ts, S),
+    // businesses — the household's little black book: the vet (referenced by the pets
+    // below, soft ref), the plumber, pharmacy, dentist, garage and the kids' school.
+    ...(
+      [
+        [vetBiz, 'Clinique vétérinaire du coin', 'Vétérinaire', '514-555-0199', '120 rue des Érables, Sherbrooke'],
+        [plombier, 'Plomberie Gagné', 'Plombier', '514-555-0143', null],
+        [pharmacie, 'Pharmacie du village', 'Pharmacie', '514-555-0177', '55 rue Principale, Sherbrooke'],
+        [dentisteBiz, 'Clinique dentaire Sourire', 'Dentiste', '514-555-0122', '18 boul. Jacques-Cartier'],
+        [garageBiz, 'Garage Auto Expert', 'Garage', '514-555-0188', '250 rue Industrielle'],
+        [ecoleBiz, 'École Saint-Joseph', 'École', '514-555-0100', '12 rue de l’École, Sherbrooke'],
+      ] as [string, string, string, string, string | null][]
+    ).map(([id, name, category, phone, address]) =>
+      P(
+        `INSERT INTO businesses (id, household_id, name, category, phone, address, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(id, h, name, category, phone, address, ts, ts, S),
+    ),
 
-    // contacts — extended family (grandparents). member_id NULL (they're not faces).
-    P(
-      `INSERT INTO contacts (id, household_id, first_name, last_name, nickname, birthday, gender, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(diane, h, 'Diane', 'Tremblay', 'Mamie', '1958-03-15', 'f', ts, ts, S),
-    P(
-      `INSERT INTO contacts (id, household_id, first_name, last_name, nickname, birthday, gender, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(robert, h, 'Robert', 'Tremblay', 'Papi', '1955-07-22', 'm', ts, ts, S),
+    // contacts — the extended family + close circle (grandparents, an aunt + cousin, a
+    // neighbour and the babysitter). member_id NULL (they're not household faces).
+    ...(
+      [
+        [diane, 'Diane', 'Tremblay', 'Mamie', '1958-03-15', 'f'],
+        [robert, 'Robert', 'Tremblay', 'Papi', '1955-07-22', 'm'],
+        [sophie, 'Sophie', 'Tremblay', 'Tata Sophie', '1990-11-08', 'f'],
+        [emma, 'Emma', 'Tremblay', null, '2016-02-19', 'f'],
+        [julie, 'Julie', 'Bergeron', 'La voisine', null, 'f'],
+        [camille, 'Camille', 'Roy', 'Gardienne', '2005-09-14', 'f'],
+      ] as [string, string, string, string | null, string | null, string][]
+    ).map(([id, first, last, nickname, birthday, gender]) =>
+      P(
+        `INSERT INTO contacts (id, household_id, first_name, last_name, nickname, birthday, gender, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(id, h, first, last, nickname, birthday, gender, ts, ts, S),
+    ),
 
-    // pets — the cat, with its vet (soft ref).
-    P(
-      `INSERT INTO pets (id, household_id, name, species, colour, birthday, vet_business_id, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(moustache, h, 'Moustache', 'Chat', '#8a8a8a', '2020-05-01', vetBiz, ts, ts, S),
+    // pets — the cat and the dog, both with the vet (soft ref).
+    ...(
+      [
+        [moustache, 'Moustache', 'Chat', '#8a8a8a', '2020-05-01'],
+        [biscuit, 'Biscuit', 'Chien', '#c08a4a', '2021-08-17'],
+      ] as [string, string, string, string, string][]
+    ).map(([id, name, species, colour, birthday]) =>
+      P(
+        `INSERT INTO pets (id, household_id, name, species, colour, birthday, vet_business_id, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(id, h, name, species, colour, birthday, vetBiz, ts, ts, S),
+    ),
 
-    // carnets — the home carnet (flat: parent_id NULL, so the clear sweep's single
-    // DELETE never hits the self-ref FK). Its content (care_log + upkeep) follows.
+    // carnets — the home + the car (both flat: parent_id NULL, so the clear sweep's
+    // single DELETE never hits the self-ref FK). Their content (care_log + upkeep)
+    // follows. The car carries make/model/year facts so its carnet reads complete.
     P(
       `INSERT INTO carnets (id, household_id, kind, name, colour, created_at, updated_at, is_sample)
        VALUES (?, ?, 'home', ?, ?, ?, ?, ?)`,
     ).bind(maison, h, 'La maison', '#8a6f5c', ts, ts, S),
-    // care_log — a past service on the home (→ carnets, so after it).
     P(
-      `INSERT INTO care_log (id, household_id, carnet_id, at, kind, title, created_at, updated_at, is_sample)
-       VALUES (?, ?, ?, ?, 'service', ?, ?, ?, ?)`,
-    ).bind(newId(), h, maison, addLocalDays(d0, -14), 'Changé le filtre de la fournaise', ts, ts, S),
-    // home_projects — a dated upkeep tied to the home carnet (surfaces on the board).
-    P(
-      `INSERT INTO home_projects (id, household_id, kind, title, colour, at, carnet_id, created_at, updated_at, is_sample)
-       VALUES (?, ?, 'upkeep', ?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(newId(), h, 'Nettoyer les gouttières', '#8a6f5c', d5, maison, ts, ts, S),
+      `INSERT INTO carnets (id, household_id, kind, name, colour, facts_json, created_at, updated_at, is_sample)
+       VALUES (?, ?, 'auto', ?, ?, ?, ?, ?, ?)`,
+    ).bind(auto, h, 'La Sienna', '#5891AC', JSON.stringify({ make: 'Toyota', model: 'Sienna', year: '2019' }), ts, ts, S),
+    // care_log — past services on each carnet (→ carnets, so after them).
+    ...(
+      [
+        [maison, addLocalDays(d0, -14), 'Changé le filtre de la fournaise'],
+        [maison, addLocalDays(d0, -60), 'Ramonage de la cheminée'],
+        [auto, addLocalDays(d0, -30), 'Changement d’huile'],
+        [auto, addLocalDays(d0, -120), 'Pneus d’hiver installés'],
+      ] as [string, number, string][]
+    ).map(([carnetId, atSec, title]) =>
+      P(
+        `INSERT INTO care_log (id, household_id, carnet_id, at, kind, title, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, 'service', ?, ?, ?, ?)`,
+      ).bind(newId(), h, carnetId, atSec, title, ts, ts, S),
+    ),
+    // home_projects — dated upkeep + a planned project (surface on the board's « Cette
+    // saison » / « Les carnets »). Tied to the home or the car carnet.
+    ...(
+      [
+        ['upkeep', 'Nettoyer les gouttières', d5, maison, '#8a6f5c'],
+        ['upkeep', 'Changer les piles des détecteurs de fumée', d7, maison, '#8a6f5c'],
+        ['upkeep', 'Rotation des pneus', d4, auto, '#5891AC'],
+        ['plan', 'Rénover la salle de bain', d12, maison, '#8a6f5c'],
+      ] as [string, string, number, string, string][]
+    ).map(([kind, title, atSec, carnetId, colour]) =>
+      P(
+        `INSERT INTO home_projects (id, household_id, kind, title, colour, at, carnet_id, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, kind, title, colour, atSec, carnetId, ts, ts, S),
+    ),
 
-    // cercle edges — a 3-generation tree + Léa owns the cat (no DB FK; polymorphic).
+    // cercle edges — a 3-generation tree (grandparents → their two children Maman +
+    // Sophie → the grandkids), the kids' pets, and a neighbour friendship. Polymorphic,
+    // no DB FK; reverse_type from lib/cercleRelations INVERSES.
     link(robert, 'contact', diane, 'contact', 'spouse', 'spouse'),
     link(diane, 'contact', maman, 'member', 'parent', 'child'),
+    link(diane, 'contact', sophie, 'contact', 'parent', 'child'),
+    link(sophie, 'contact', emma, 'contact', 'parent', 'child'),
     link(maman, 'member', lea, 'member', 'parent', 'child'),
     link(maman, 'member', noah, 'member', 'parent', 'child'),
     link(papa, 'member', lea, 'member', 'parent', 'child'),
     link(papa, 'member', noah, 'member', 'parent', 'child'),
     link(lea, 'member', moustache, 'pet', 'owner', 'pet'),
+    link(noah, 'member', biscuit, 'pet', 'owner', 'pet'),
+    link(maman, 'member', julie, 'contact', 'friend', 'friend'),
 
-    // recipe hearts (#21) — who loves the spaghetti (faces, never a count). Composite
+    // recipe hearts (#21) — which faces love which dish (faces, never a count). Composite
     // PK, no id column; → recipes + members, so after both (inserted first).
-    P(
-      `INSERT OR IGNORE INTO recipe_loves (household_id, recipe_id, member_id, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
-    ).bind(h, rSpag, maman, ts, S),
-    P(
-      `INSERT OR IGNORE INTO recipe_loves (household_id, recipe_id, member_id, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
-    ).bind(h, rSpag, papa, ts, S),
+    ...(
+      [
+        [rSpag, maman], [rSpag, papa], [rSpag, noah],
+        [rPoulet, papa], [rPoulet, lea],
+        [rMuffins, noah], [rMuffins, lea],
+        [rTacos, noah],
+      ] as [string, string][]
+    ).map(([recipeId, mid]) =>
+      P(
+        `INSERT OR IGNORE INTO recipe_loves (household_id, recipe_id, member_id, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
+      ).bind(h, recipeId, mid, ts, S),
+    ),
 
-    // a « mot » — Maman left a note waiting (unopened) on Léa's face. Media-free.
-    P(
-      `INSERT INTO mots (id, household_id, member_id, author_member_id, text, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(newId(), h, lea, maman, 'Je suis fière de toi ❤️', ts, S),
+    // « mots » — notes waiting (unopened) on a kid's face. Media-free.
+    ...(
+      [
+        [lea, maman, 'Je suis fière de toi ❤️'],
+        [noah, papa, 'Bravo pour ta lecture ! 📚'],
+        [lea, papa, 'Bonne partie de soccer aujourd’hui ⚽'],
+      ] as [string, string, string][]
+    ).map(([mid, author, text]) =>
+      P(
+        `INSERT INTO mots (id, household_id, member_id, author_member_id, text, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, mid, author, text, ts, S),
+    ),
 
-    // a trip (« Voyage ») — a weekend at the lake, the whole household.
-    P(
-      `INSERT INTO trips (id, household_id, title, destination, start_at, end_at, members, colour, position, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
-    ).bind(newId(), h, 'Chalet au lac', 'Lac Memphrémagog', d10, d12, JSON.stringify([maman, papa, lea, noah]), '#5891AC', ts, S),
+    // trips (« Voyage ») — a weekend at the lake soon, and a camping trip a bit further out.
+    ...(
+      [
+        ['Chalet au lac', 'Lac Memphrémagog', d10, d12, [maman, papa, lea, noah], '#5891AC', 0],
+        ['Camping au parc national', 'Parc national du Mont-Orford', addLocalDays(d0, 24), addLocalDays(d0, 26), [maman, papa, lea, noah], '#88A36F', 1],
+      ] as [string, string, number, number, string[], string, number][]
+    ).map(([title, dest, startAt, endAt, mem, colour, pos]) =>
+      P(
+        `INSERT INTO trips (id, household_id, title, destination, start_at, end_at, members, colour, position, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, dest, startAt, endAt, JSON.stringify(mem), colour, pos, ts, S),
+    ),
 
-    // an undated leftover (« À finir ») — a dish to eat first, no day chosen. No
-    // quantity (calm) — a dish name only.
-    P(
-      `INSERT INTO meal_leftovers (id, household_id, title, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
-    ).bind(newId(), h, 'Pâté chinois', ts, S),
+    // undated leftovers (« À finir ») — dishes to eat first, no day chosen. No quantity
+    // (calm) — dish names only.
+    ...['Pâté chinois', 'Soupe aux légumes', 'Poulet à la grecque'].map((title) =>
+      P(
+        `INSERT INTO meal_leftovers (id, household_id, title, created_at, is_sample) VALUES (?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, ts, S),
+    ),
 
-    // a work schedule window (« L'auto ») — Papa takes the car Mon–Fri 8h–17h, so the
-    // car card shows a real weekly backdrop instead of « libre toute la journée ».
-    // start/end are MINUTES from local midnight; recurrence is the shared weekly Recur
-    // rule (migration 0090 folded the old `weekdays` column into `recur_json`): weekdays
-    // 1..5 = Mon–Fri (0=Sun), every week.
+    // work schedule windows (« L'auto ») — Papa takes the car Mon–Fri 8h–17h (holds_car),
+    // Maman works Tue/Thu 9h–16h without it, so the car card shows a real weekly backdrop
+    // instead of « libre toute la journée ». start/end are MINUTES from local midnight;
+    // recurrence is the shared weekly Recur rule (migration 0090 folded the old `weekdays`
+    // column into `recur_json`): weekdays 1..5 = Mon–Fri (0=Sun), every week.
     P(
       `INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, recur_json, holds_car, colour, created_at, is_sample)
        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
     ).bind(newId(), h, papa, 'Travail', 8 * 60, 17 * 60, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [1, 2, 3, 4, 5] }), '#5891AC', ts, S),
+    P(
+      `INSERT INTO schedule_blocks (id, household_id, member_id, label, start_min, end_min, recur_json, holds_car, colour, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+    ).bind(newId(), h, maman, 'Travail', 9 * 60, 16 * 60, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [2, 4] }), '#B06A93', ts, S),
 
-    // habits (« Mes habitudes ») — one household-wide, one Maman's own. No history rows
+    // habits (« Mes habitudes ») — two household-wide, one Maman's own. No history rows
     // (habit_days): an un-touched habit reads as a neutral, un-checked today. anchor_at
     // = now so occurrences start today; recur_json NULL = every day.
     P(
@@ -433,24 +681,27 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
        VALUES (?, ?, NULL, ?, ?, ?, 'do', 'recur', ?, 0, ?, ?)`,
     ).bind(newId(), h, 'Marcher dehors', '🚶', '#88A36F', ts, ts, S),
     P(
+      `INSERT INTO habits (id, household_id, member_id, title, icon, colour, kind, cadence, anchor_at, position, created_at, is_sample)
+       VALUES (?, ?, NULL, ?, ?, ?, 'do', 'recur', ?, 1, ?, ?)`,
+    ).bind(newId(), h, 'Lire en famille', '📖', '#B06A93', ts, ts, S),
+    P(
       `INSERT INTO habits (id, household_id, member_id, title, icon, colour, kind, target, unit, cadence, anchor_at, position, created_at, is_sample)
-       VALUES (?, ?, ?, ?, ?, ?, 'count', 8, ?, 'recur', ?, 1, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, 'count', 8, ?, 'recur', ?, 2, ?, ?)`,
     ).bind(newId(), h, maman, 'Boire de l’eau', '💧', '#5891AC', 'verres', ts, ts, S),
 
-    // a family note (« Notes (cercle) ») — a durable Maisonnée note (member_id NULL),
-    // titled + lightweight Markdown body, attributed to Maman. Media-free.
-    P(
-      `INSERT INTO family_notes (id, household_id, member_id, author_member_id, title, text, created_at, updated_at, is_sample)
-       VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
-    ).bind(
-      newId(),
-      h,
-      maman,
-      'Gardienne',
-      'Numéro de la gardienne : 514-555-0176.\nCouché des enfants à 19 h 30.',
-      ts,
-      ts,
-      S,
+    // family notes (« Notes (cercle) ») — durable Maisonnée notes (member_id NULL),
+    // titled + lightweight Markdown body, attributed to whoever wrote it. Media-free.
+    ...(
+      [
+        ['Gardienne', 'Numéro de la gardienne : 514-555-0176.\nCoucher des enfants à 19 h 30.', maman],
+        ['Wifi', 'Réseau : **Maison-Tremblay**\nMot de passe : `pommeverte2024`', papa],
+        ['Numéros d’urgence', '- Poison : 1-800-463-5060\n- Voisine (Julie) : 514-555-0161\n- Mamie & Papi : 514-555-0134', maman],
+      ] as [string, string, string][]
+    ).map(([title, text, author]) =>
+      P(
+        `INSERT INTO family_notes (id, household_id, member_id, author_member_id, title, text, created_at, updated_at, is_sample)
+         VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, author, title, text, ts, ts, S),
     ),
   ]
 
