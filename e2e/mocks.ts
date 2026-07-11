@@ -398,12 +398,21 @@ const CAR = {
 }
 
 // « À compléter » (#17) — the real todos list, served at /api/todos (board glance =
-// global + today). The departure screen renders these via the shared TodoSection, so
-// it populates instead of sitting on its empty state. Two standing items.
+// global + today). Two standing LOOSE items (« À faire » card) plus an instantiated
+// « Avant de partir » checklist pinned to TODAY (source_template_id set, mig 0116 —
+// the departure card + scene render these; the « À faire » card must NOT).
+// `day: TODAY` is patched in at serve time below (mock day anchors are dynamic).
+const TODAY_DAY = (() => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return Math.floor(d.getTime() / 1000)
+})()
 const TODOS = {
   todos: [
-    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null },
-    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null },
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null },
+    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null },
+    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1' },
+    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1' },
   ],
 }
 
@@ -894,6 +903,15 @@ export async function mockApi(
     // list?view=history is a distinct shape (the add bar's typeahead haystack).
     if (path === 'list' && url.searchParams.get('view') === 'history') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(LIST_HISTORY) })
+      return
+    }
+
+    // events?id=<id> → the single event, looked up directly (no date window), like the
+    // server. The peek's edit modal uses this, so return just that row (not the whole list).
+    if (path === 'events' && url.searchParams.has('id')) {
+      const id = url.searchParams.get('id')
+      const events = EVENTS.events.filter((e) => e.id === id)
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ events }) })
       return
     }
 

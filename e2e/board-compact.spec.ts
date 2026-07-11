@@ -165,12 +165,13 @@ test.describe('board compact lens', () => {
   test('a chronological mini leads its rows with a time and shows a weather chip', async ({ page }) => {
     // Freeze to the fixture's anchor so today's timed events stay live (else lib/itemLife
     // folds them into « Déjà passé » vs the real clock and the today tile falls to its
-    // glance face with no rows to lead). Hide « Le fil du jour » so « Aujourd'hui » owns
-    // the day's timeline (when the fil is shown it carries the timed events instead).
+    // glance face with no rows to lead). « Aujourd'hui » owns the day's timeline now
+    // (the former « Le fil du jour » card folded into it), so its mini leads the timed
+    // rows with their hour on any busy day — no seed needed to force it.
     await page.clock.setFixedTime(new Date(BASE * 1000))
     await page.setViewportSize({ width: 360, height: 740 })
     await mockApi(page)
-    await seedState(page, { cardPrefs: { size: { today: 1 }, mode: { fil: 'never' } } })
+    await seedState(page, { cardPrefs: { size: { today: 1 } } })
     await page.goto('/board')
     await page.waitForSelector('.board-grid .wg-slot')
 
@@ -214,7 +215,7 @@ test.describe('board compact lens', () => {
     // Size every halvable grid card to a half, so the minis are contiguous and the rows
     // they form must pair up. (`reconcile` drops the ones that refuse a half.)
     await open(page, {
-      autoCard: 1, fil: 1, today: 1, routineNext: 1, habitudes: 1, tomorrow: 1, countdown: 1,
+      autoCard: 1, today: 1, departure: 1, routineNext: 1, habitudes: 1, tomorrow: 1, countdown: 1,
       toFinish: 1, todos: 1, upcoming: 1, cercleNotes: 1, voyage: 1, carnets: 1, seasonUpkeep: 1, photos: 1,
     })
     await page.waitForSelector('.board-grid .wg-slot .cardmini')

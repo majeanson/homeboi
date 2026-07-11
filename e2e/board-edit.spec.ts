@@ -315,7 +315,7 @@ test.describe('cross-zone cards keep rendering', () => {
       cardPrefs: {
         band: ['notes', 'heroes', 'mots', 'aRegler', 'today'],
         grid: [
-          'autoCard', 'fil', 'routineNext', 'habitudes', 'tomorrow', 'countdown', 'toFinish',
+          'autoCard', 'routineNext', 'habitudes', 'tomorrow', 'countdown', 'toFinish',
           'todos', 'upcoming', 'cercleNotes', 'voyage', 'carnets', 'seasonUpkeep', 'drawings',
           'photos', 'moments',
         ],
@@ -336,5 +336,61 @@ test.describe('cross-zone cards keep rendering', () => {
     await expect(today.locator('.sec-label')).toContainText('Aujourd’hui')
     await expect(today.locator('.wg-slot__placeholder')).toHaveCount(0)
     await expect(moments.locator('.wg-slot__placeholder')).toHaveCount(0)
+  })
+})
+
+// « Avant de partir » split (mig 0116): checklist instances live on the departure
+// card; « À faire » shows only the loose todos. The fixtures serve two loose
+// standing todos + an instantiated « Avant de partir » pinned to today.
+test.describe('the departure card owns the checklists', () => {
+  test('instances fold on « Avant de partir »; « À faire » stays loose-only', async ({ page }) => {
+    await open(page)
+
+    const dep = page.locator('.wg-slot[data-card="departure"]')
+    await dep.scrollIntoViewIfNeeded()
+    // The instantiated list folds under its title (collapsed Disclosure + count).
+    const fold = dep.locator('.todo-fold .disclosure__summary', { hasText: 'Avant de partir' })
+    await expect(fold).toBeVisible()
+    await expect(fold).toHaveAttribute('aria-expanded', 'false')
+    await fold.click()
+    await expect(dep.locator('.todo-row', { hasText: 'Vérifier les portes' })).toBeVisible()
+    // The door to the full departure scene rides the card on every day.
+    await expect(dep.locator('a[href$="/board/departure"]')).toBeVisible()
+
+    // « À faire » keeps the loose todos and must NOT show the instance rows or the
+    // template picker (instantiation is a departure gesture now — plain text add only).
+    const todos = page.locator('.wg-slot[data-card="todos"]')
+    await todos.scrollIntoViewIfNeeded()
+    await expect(todos.locator('.todo-row', { hasText: 'Clés + téléphone + portefeuille' })).toBeVisible()
+    await expect(todos.locator('.todo-row', { hasText: 'Vérifier les portes' })).toHaveCount(0)
+    await expect(todos.locator('.todo-fold')).toHaveCount(0)
+  })
+
+  test('picking a template on the departure card POSTs the instantiation', async ({ page }) => {
+    await open(page)
+    const dep = page.locator('.wg-slot[data-card="departure"]')
+    await dep.scrollIntoViewIfNeeded()
+    // Focus the add field → the template options open; picking one instantiates it
+    // (the server pins a day-less template POST to today — mig 0116).
+    await dep.locator('.edit-field input').click()
+    const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
+    await page.getByRole('option', { name: /Sac des enfants/ }).click()
+    const body = (await post).postDataJSON() as { templateId?: string }
+    expect(body.templateId).toBe('tpl2')
+  })
+
+  test('a read-only guest sees the card without any write control', async ({ page }) => {
+    await mockApi(page)
+    await seedState(page, {})
+    await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+
+    const dep = page.locator('.wg-slot[data-card="departure"]')
+    await dep.scrollIntoViewIfNeeded()
+    await expect(dep.locator('a[href$="/board/departure"]')).toBeVisible()
+    // No add field, no tappable checks — TodoSection's read-only path.
+    await expect(dep.locator('.edit-field')).toHaveCount(0)
+    await expect(dep.locator('button.todo-row__check')).toHaveCount(0)
   })
 })

@@ -46,6 +46,7 @@ const SAMPLE_TABLES = [
   'pantry_low',
   'routines',
   'todos',
+  'todo_templates', // soft-ref'd by events.bring_template_id + todos.source_template_id → after both (mig 0117 gave it is_sample)
   'recipes', // referenced by meals + recipe_loves → after them
   'members', // referenced by everyone → last
 ] as const
@@ -199,6 +200,8 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
   const ecoleBiz = newId() // the school (business)
   const julie = newId() // the neighbour (contact)
   const camille = newId() // the babysitter (contact)
+  const tplDepart = newId() // « Avant de partir » departure checklist (todo_templates)
+  const tplSoccer = newId() // « Sac de soccer » bring-list (todo_templates, ref'd by an event)
   const maison = newId() // the home carnet
   const auto = newId() // the car carnet
 
@@ -407,6 +410,13 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ).bind(newId(), h, mid, title, startAt, allDay, ts, S),
     ),
 
+    // …plus one TODAY activity that carries a bring-list (events.bring_template_id,
+    // mig 0077 → the « À apporter » preview on the departure card + scene).
+    P(
+      `INSERT INTO events (id, household_id, member_id, title, start_at, all_day, bring_template_id, created_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+    ).bind(newId(), h, lea, 'Soccer de Léa', at(d0, 17), tplSoccer, ts, S),
+
     // list_items — a real, full grocery list. The first is attributed to Maman (added_by);
     // the rest are plain manual rows.
     P(
@@ -500,6 +510,36 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
         `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(newId(), h, title, day, mid, pos, ts, ts, S),
+    ),
+
+    // todo_templates (« Avant de partir » split, mig 0116/0117) — the reusable
+    // departure checklists: the household's own leaving list + the soccer bring-list
+    // an activity references below (events.bring_template_id).
+    P(
+      `INSERT INTO todo_templates (id, household_id, title, items_json, position, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(tplDepart, h, 'Avant de partir', JSON.stringify(['Clés de la maison', 'Gourdes remplies', 'Manteaux selon la météo', 'Collations dans le sac']), 0, ts, ts, S),
+    P(
+      `INSERT INTO todo_templates (id, household_id, title, items_json, position, created_at, updated_at, is_sample)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(tplSoccer, h, 'Sac de soccer', JSON.stringify(['Souliers à crampons', 'Gourde', 'Chandail d’équipe', 'Protège-tibias']), 1, ts, ts, S),
+
+    // …an « Avant de partir » instance already on TODAY (one row ticked) so the
+    // departure board card reads alive: source_template_id marks each row as a
+    // checklist instance (day-pinned, rolls off tomorrow), section = the template's
+    // title (the fold header).
+    ...(
+      [
+        ['Clés de la maison', 0, ts],
+        ['Gourdes remplies', 1, null],
+        ['Manteaux selon la météo', 2, null],
+        ['Collations dans le sac', 3, null],
+      ] as [string, number, number | null][]
+    ).map(([title, pos, doneAt]) =>
+      P(
+        `INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at, is_sample)
+         VALUES (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, d0, pos, doneAt, 'Avant de partir', tplDepart, ts, ts, S),
     ),
 
     // ── Extended demo (parents before children for the FK batch) ──────────────

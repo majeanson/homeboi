@@ -393,8 +393,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le fil du jour', en: 'The day’s timeline' },
         detail: {
-          fr: 'Les rendez-vous, trajets et heures de travail du jour, dans l’ordre de l’heure, avec un repère « Maintenant ». Touche une ligne pour sa fiche.',
-          en: 'The day’s appointments, rides and work hours, in time order, with a “Now” marker. Tap a row for its card.',
+          fr: 'Les jours chargés, la carte « Aujourd’hui » se déplie en fil du jour : rendez-vous, trajets et heures de travail dans l’ordre de l’heure, avec un repère « Maintenant ». Touche une ligne pour sa fiche.',
+          en: 'On a busy day the “Today” card unfolds into the day’s timeline: appointments, rides and work hours in time order, with a “Now” marker. Tap a row for its card.',
         },
       },
       {
@@ -423,8 +423,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Avant de partir', en: 'Before you go' },
         detail: {
-          fr: 'Un seul écran de départ : ta liste à cocher, les rendez-vous du jour et la météo. Les coches repartent à zéro la prochaine fois.',
-          en: 'One leaving screen: your checklist, today’s events and the weather. The ticks reset next time.',
+          fr: 'Sa propre carte sur le babillard : tes listes de départ du jour (à cocher, réutilisables d’un geste), le « à apporter » des activités, et la porte vers l’écran de départ complet — météo, horaire, corvées, l’auto. Une liste de départ vit UN jour, puis s’efface d’elle-même.',
+          en: 'Its own board card: today’s leaving checklists (tickable, reusable in one gesture), each activity’s “what to bring”, and the door to the full departure screen — weather, schedule, chores, the car. A leaving checklist lives ONE day, then clears itself.',
         },
         route: '/board/departure',
       },
@@ -1115,8 +1115,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le défi du jour', en: 'Today’s challenge' },
         detail: {
-          fr: 'Un petit défi qui dure toute la journée — « porte du jaune », « salue une nouvelle personne ». Le matin, on en pige un (jusqu’à trois fois : la troisième est la bonne), puis chacun le coche quand il l’a tenu. Les visages qui l’ont relevé s’allument sur le babillard.',
-          en: 'A little challenge that lasts all day — “wear something yellow”, “greet someone new”. In the morning you draw one (up to three times: the third is the keeper), then each person checks it off once they’ve done it. The faces who took it on light up on the board.',
+          fr: 'Un petit défi qui dure toute la journée — « porte du jaune », « salue une nouvelle personne ». Le matin, on en pige un (jusqu’à trois fois : la troisième est la bonne) — ou on écrit (ou dicte) le sien —, puis chacun le coche quand il l’a tenu. Les visages qui l’ont relevé s’allument sur le babillard.',
+          en: 'A little challenge that lasts all day — “wear something yellow”, “greet someone new”. In the morning you draw one (up to three times: the third is the keeper) — or write (or dictate) your own — then each person checks it off once they’ve done it. The faces who took it on light up on the board.',
         },
         why: {
           fr: 'Une invitation, jamais un devoir : rien n’est compté, rien n’est classé, et un jour sans défi reste un jour tout à fait normal.',
@@ -1174,17 +1174,17 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'À faire & à compléter', en: 'To do & to complete' },
     what: {
-      fr: 'Sur le babillard, une seule carte « À faire » réunit deux choses : les p’tites tâches ponctuelles (souvent dictées — « appeler le dentiste »), et tes listes à cocher réutilisables (« À compléter »). Coche quand c’est fait, puis « Effacer cochées » nettoie.',
-      en: 'On the board, a single “À faire” card gathers two things: small one-off tasks (often dictated — “call the dentist”), and your reusable check-off lists (“À compléter”). Check them off when done, then “Clear checked” tidies up.',
+      fr: 'Sur le babillard, la carte « À faire » tient les p’tites tâches ponctuelles (souvent dictées — « appeler le dentiste ») et tes cochables du quotidien. Tes listes de départ réutilisables vivent à part, sur la carte « Avant de partir ». Coche quand c’est fait, puis « Effacer cochées » nettoie.',
+      en: 'On the board, the “À faire” card holds small one-off tasks (often dictated — “call the dentist”) and your everyday check-offs. Your reusable leaving checklists live apart, on the “Before you go” card. Check things off when done, then “Clear checked” tidies up.',
     },
     points: [
       {
-        label: { fr: '« À faire » ou « À compléter » ?', en: '“À faire” or “À compléter”?' },
+        label: { fr: '« À faire » ou une liste de départ ?', en: '“À faire” or a leaving checklist?' },
         detail: {
-          fr: '« À faire » : une chose ponctuelle — tu la dictes ou la captures, tu coches, c’est fini. « À compléter » : une liste qui revient (sac de piscine, avant de partir) — préparée une fois, réutilisable d’un tap. Les deux vivent dans la même carte du babillard, sous leurs étiquettes. En cas de doute, touche le « ? » du babillard puis le titre de la carte.',
-          en: '“À faire”: a one-off thing — dictate or capture it, tick it, done. “À compléter”: a recurring list (pool bag, before leaving) — set up once, reusable in one tap. Both live in the same board card under their labels. If unsure, tap the board’s “?” then the card title.',
+          fr: '« À faire » : une chose ponctuelle — tu la dictes ou la captures, tu coches, c’est fini. Une liste de départ (sac de piscine, avant de partir) : préparée une fois, réutilisable d’un tap — elle vit sur la carte « [[card:board|Avant de partir]] », un jour à la fois. En cas de doute, touche le « ? » du babillard puis le titre de la carte.',
+          en: '“À faire”: a one-off thing — dictate or capture it, tick it, done. A leaving checklist (pool bag, before leaving): set up once, reusable in one tap — it lives on the “[[card:board|Before you go]]” card, one day at a time. If unsure, tap the board’s “?” then the card title.',
         },
-        why: { fr: 'Une chose vite faite et une liste qu’on garde, ce n’est pas pareil — mais c’est au même endroit.', en: 'A quick one-off and a list you keep aren’t the same — but they’re in one place.' },
+        why: { fr: 'Une chose vite faite et une liste qu’on garde, ce n’est pas pareil — chacune a sa carte.', en: 'A quick one-off and a list you keep aren’t the same — each has its own card.' },
       },
       {
         label: { fr: 'Globale ou pour une journée', en: 'Global or for one day' },
@@ -1197,8 +1197,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Listes de départ', en: 'Departure lists' },
         detail: {
-          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables — un départ pressé devient moins stressant. Sur le babillard, l’écran « [[card:board|Avant de partir]] » montre ta vraie liste « À compléter » du jour (coche ici, c’est coché partout) avec la météo et le programme de la journée.',
-          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs — a hectic departure gets less stressful. On the board, the “[[card:board|Before you go]]” screen shows your real “To complete” list for the day (tick it here, it’s ticked everywhere) alongside the weather and the day’s plan.',
+          fr: 'Prépare des modèles réutilisables dans Réglages ▸ À compléter (ex. « Avant de partir », « Chez grand-papa »). D’un geste, tout le modèle s’ajoute en cochables POUR LA JOURNÉE — un départ pressé devient moins stressant, et la liste s’efface d’elle-même le lendemain. Elles vivent sur leur propre carte « [[card:board|Avant de partir]] » du babillard (coche ici, c’est coché partout), à part des choses « À faire » de tous les jours.',
+          en: 'Prep reusable templates in Settings ▸ To complete (e.g. “Before leaving”, “At grandpa’s”). One tap drops the whole list in as check-offs FOR THE DAY — a hectic departure gets less stressful, and the list clears itself the next day. They live on their own “[[card:board|Before you go]]” board card (tick it there, it’s ticked everywhere), apart from the everyday “To do” items.',
         },
         why: { fr: 'On y pense une fois, pas chaque fois qu’on court.', en: 'You think it through once, not every time you’re rushing out.' },
       },
@@ -2162,8 +2162,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Listes « À compléter »', en: '“To complete” lists' },
         detail: {
-          fr: 'Prépare ici tes listes à cocher réutilisables (sac de piscine, « Avant de partir »). Voir [[card:todos|À faire & à compléter]] : préparées une fois, elles s’ajoutent au babillard d’un seul geste.',
-          en: 'Build your reusable check-off lists here (pool bag, “Before leaving”). See [[card:todos|To do & to complete]]: set up once, they drop onto the board in one tap.',
+          fr: 'Prépare ici tes listes à cocher réutilisables (sac de piscine, « Avant de partir »). Préparées une fois, elles s’ajoutent d’un seul geste sur la carte « [[card:board|Avant de partir]] » du babillard, pour la journée.',
+          en: 'Build your reusable check-off lists here (pool bag, “Before leaving”). Set up once, they drop onto the board’s “[[card:board|Before you go]]” card in one tap, for the day.',
         },
       },
       {
@@ -2600,8 +2600,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Disposition du babillard', en: 'Board layout' },
         detail: {
-          fr: 'Choisis quelles cartes du babillard afficher (Le fil du jour, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre voulu. Propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
-          en: 'Choose which board cards show (The day’s timeline, The car, To do, Coming up, Drawings…) and drag them into the order you want. Specific to THIS device — the wall tablet and your phone keep their own layout.',
+          fr: 'Choisis quelles cartes du babillard afficher (Aujourd’hui, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre voulu. Propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
+          en: 'Choose which board cards show (Today, The car, To do, Coming up, Drawings…) and drag them into the order you want. Specific to THIS device — the wall tablet and your phone keep their own layout.',
         },
         why: {
           fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette glanceable, ton téléphone plus court.',

@@ -91,7 +91,8 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | --- | --------------------------------------- | ---------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------- | --------------------- |
 | F1  | Agenda & événements                     | events (0001+)                                 | events, month, year, this-week, day-notes | Board, DayPlanPage, EventFormPage, MomentScene, board/MonthView, YearView | EVENTS, MONTH, BOARD  |
 | F2  | À faire (corvées) + Projets & entretien | tasks, task_participants, home_projects (0074) | chores, chores-ledger, home-projects      | ChoreFormPage, HomeProjectFormPage, board cards, operator/chores          | CHORES, HOME_PROJECTS |
-| F3  | À compléter (todos)                     | todos, todo_templates (0046/0047)              | todos, todo-templates                     | todos/\*, TodoSection                                                     | TODOS, TODO_TEMPLATES |
+| F3  | À compléter (todos, loose)              | todos, todo_templates (0046/0047/0116)         | todos, todo-templates                     | todos/\*, TodoSection (`show='loose'`)                                    | TODOS, TODO_TEMPLATES |
+| F35 | Avant de partir (checklists + bring)    | todos.source_template_id (0116/0117), events.bring_template_id (0077) | todos, todo-templates                     | DepartureCard, DeparturePage, ActivityBring, TodoSection (`show='checklists'`) | TODOS, TODO_TEMPLATES, MONTH, WEATHER |
 | F4  | Notes frigo (texte/audio/dessin/photo)  | notes (0018, media trio 0043/0055)             | notes, note-media                         | board/Notes, MemoControls, DrawPad                                        | BOARD                 |
 | F5  | Mots (« Laisse un mot »)                | mots (0094/0095)                               | mots                                      | MotsCard, mots/\*                                                         | MOTS                  |
 | F6  | Mes habitudes (+ « Le défi du jour »)   | habits, habit_days (0112), habit_marks (0115)  | habits                                    | HabitudesPage, HabitFormPage, habits/\*, HabitudesCard, DefiBlock         | HABITS                |
@@ -266,7 +267,8 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
 | F1 Agenda                | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅³        | ➖¹       | ✅       | ✅      |
-| F3 Todos                 | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
+| F3 Todos (loose)         | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
+| F35 Avant de partir      | ✅⁵⁹    | ➖⁴     | ✅      | ✅         | ✅    | ➖⁶⁰      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁵⁹       | ➖¹       | ✅       | ✅⁶¹    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ➖²²       | ✅        | ✅       | ✅      |
 | F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F6 Habitudes             | ✅      | ➖⁵⁷    | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
@@ -454,6 +456,26 @@ Footnotes (verdicts recorded so far):
     and only the habits list navigates (`.habitudes-card__open`), so footnote 57's peek verdict
     stands. Calm test + 1446 unit tests + `e2e/defi.spec.ts` (3 tests) + habits/overflow sweeps
     green. Guide: merged a point into the `habits` card (`lib/guideContent.ts`). [F6×D1/D8/D12]
+
+59. **« Avant de partir » split SHIPPED 2026-07-10 (F35, migs 0116/0117)** — checklist
+    instances are their own concept: `todos.source_template_id` (soft ref, commented, no FK)
+    marks a row instantiated from a `todo_templates` checklist; instantiation is ALWAYS
+    day-pinned server-side (a day-less template POST defaults to today — no global departure
+    list can exist) and past-day instances are swept opportunistically on every todos write
+    (never in GET — a guest GET must not write). `section` = the top template's title on EVERY
+    instantiation (plain or composed) so the fold header always exists. Rides the existing
+    `/api/todos` end-to-end (authed handler, TABLE row, `todos` PATH_KEYS, useWrite/outbox,
+    deferred-removal undo) — no new endpoint. The new board card `departure` (key, grid,
+    `always`, spliced after `today` by `reconcile`) = `DepartureCard`: weather tip + folded
+    instances (TodoSection `show='checklists' foldSections`) + `ActivityBring` + the
+    key-door. Aujourd'hui/Demain became agglomerators (`foldAll`), « À faire » loose-only
+    (`show='loose' picker='plain'`). Pre-0116 instances of plain templates can't be
+    back-marked — they stay loose rows and clear naturally (accepted, noted in the migration).
+60. F35 D6 ➖: checklist instances are ephemeral one-day rows (roll off next day) — not
+    search-indexed by design; the TEMPLATES are reachable via Réglages ▸ À compléter.
+61. F35 D16: `e2e/board-edit.spec.ts` « the departure card owns the checklists » (fold +
+    split + instantiation POST + guest read-only) + the reconcile splice in
+    `src/lib/boardCards.test.ts` + `splitTodos`/`expandSectioned` units in `src/lib/todos.test.ts`.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

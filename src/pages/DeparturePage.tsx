@@ -6,6 +6,8 @@ import { live } from '../lib/query'
 import { type Weather, type DayOutlook, weatherIcon, weatherTint, weatherTip } from '../lib/weather'
 import { useBoardData } from '../lib/queryHooks'
 import { nameOf } from '../components/board/types'
+import { AvatarStack } from '../components/AvatarStack'
+import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { formatDayLong, capitalize } from '../lib/format'
 import { MONTH_KEY, WEATHER_KEY } from '../lib/queryKeys'
@@ -21,14 +23,15 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // #17 — departure mode: one calm "before you go" screen for a chosen day (today by
 // default, or ?day=<local-midnight sec> when reached from a specific Moments day).
-// It fuses the REAL « À compléter » list (the shared TodoSection), that day's
-// EVENTS + CORVÉES + fridge/day NOTE (read from /api/month, the same window the
-// calendar uses), and — for today — the WEATHER dressing tip and the « L'auto »
+// It fuses the day's departure CHECKLISTS (the shared TodoSection, checklist
+// instances only since the mig-0116 split — loose todos live on « À faire »), that
+// day's EVENTS + CORVÉES + fridge/day NOTE (read from /api/month, the same window
+// the calendar uses), and — for today — the WEATHER dressing tip and the « L'auto »
 // glance. Navigate-only: nothing is written on entry; tick a checklist item and it
 // syncs everywhere. Reuses board data + shared components — no new endpoint.
 
 interface DepMonth {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; bring_template_id?: string | null; day: number }[]
+  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; bring_template_id?: string | null; day: number }[]
   chores: { id: string; title: string; color: string | null; who: string | null; day: number }[]
   dayNotes: { id: string; text: string; member_id: string | null; day: number }[]
 }
@@ -99,10 +102,20 @@ export function DeparturePage() {
           </div>
         )}
 
-        {/* The REAL « À compléter » list — global + today for today's screen, or that
-            specific day's list otherwise. Tick one here and it syncs everywhere; add
-            a one-off or drop a saved checklist from its own field. */}
-        <TodoSection title={t.departure.checklist} members={members} day={isToday ? undefined : day} bento={false} />
+        {/* The day's departure CHECKLISTS (the « Avant de partir » split, mig 0116) —
+            checklist instances only, each folded under its title; the loose todos
+            live on « À faire ». Tick one here and it syncs everywhere; the picker
+            instantiates a saved checklist pinned to THIS day (today, or the ?day=
+            a « Demain » departure was opened for). */}
+        <TodoSection
+          title={t.departure.lists}
+          members={members}
+          day={isToday ? undefined : day}
+          bento={false}
+          show="checklists"
+          foldSections
+          emptyText={t.departure.emptyLists}
+        />
 
         {/* « À apporter » — the bring-lists for the day's activities (soccer cleats,
             instrument…). One tap promotes one into the checklist above. */}
@@ -121,13 +134,20 @@ export function DeparturePage() {
             <ul className="departure__agenda">
               {events.map((e) => {
                 const who = e.business_name ?? e.contact_name ?? nameOf(members, e.member_id)
+                // « Qui » — a face stack when several people share it (the peek + form
+                // list them all); a solo rendez-vous keeps its plain name.
+                const faces = memberFaces(eventMembers(e), members)
                 return (
                   <li key={e.id} className="departure__ev">
                     <span className="departure__ev-time mono">{timeLabel(e.at, e.all_day)}</span>
                     <span className="departure__ev-title">
                       {e.birthday && <InlineIcon name="cake-bold" size={14} />} {e.title}
                     </span>
-                    {who && <span className="departure__ev-who mono">{who}</span>}
+                    {faces.length > 1 ? (
+                      <AvatarStack faces={faces} size={18} />
+                    ) : (
+                      who && <span className="departure__ev-who mono">{who}</span>
+                    )}
                   </li>
                 )
               })}
