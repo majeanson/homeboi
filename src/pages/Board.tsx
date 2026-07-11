@@ -9,6 +9,7 @@ import { SampleBanner } from '../components/SampleBanner'
 import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
 import { HabitudesCard } from '../components/board/HabitudesCard'
+import { DepartureCard } from '../components/board/DepartureCard'
 import { CercleNotesCard } from '../components/board/CercleNotesCard'
 import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
@@ -53,6 +54,7 @@ import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { MonthView } from '../components/board/MonthView'
 import { YearView } from '../components/board/YearView'
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
+import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { SimpleBoard } from '../components/board/SimpleBoard'
 import { ToddlerBoard } from '../components/board/ToddlerBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
@@ -94,7 +96,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 // as the per-person lens; the card/section atoms live in src/components/board/*.
 import { BOARD_KEY, TODOS_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
-import { type TodosData, todosKey, todosPath } from '../lib/todos'
+import { type TodosData, todosKey, todosPath, isChecklistRow } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
 import { isGuest, isDisplay } from '../lib/device'
 import { Cluster } from '../components/Layout'
@@ -257,6 +259,10 @@ export function Board() {
   // + the "all clear" check. Open-only for the read-aloud kid view.
   const { data: todosData } = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos'), ...live })
   const openTodos = (todosData?.todos ?? []).filter((td) => td.done_at == null)
+  // The « Avant de partir » split (mig 0116): the « À faire » card shows only the
+  // LOOSE open todos; the TOTAL (`openTodos`) keeps feeding dayClear + the toddler
+  // tiles, so the all-clear hero can't contradict a pending departure checklist.
+  const openLoose = openTodos.filter((td) => !isChecklistRow(td))
 
   // Tomorrow's per-day À compléter todos — surfaced inside the Demain card so a
   // checklist pinned to tomorrow is visible there too. The À compléter card itself
@@ -282,6 +288,13 @@ export function Board() {
 
   const memberName = (id: string | null) => nameOf(data?.members ?? [], id)
   const memberColor = (id: string | null) => colorOf(data?.members ?? [], id)
+  // « Qui » — the faces of everyone an event concerns, for the row's face stack. Only
+  // when SEVERAL share it (a solo rendez-vous keeps its plain `who` name — calm, the
+  // board stays quiet); the peek always lists them all.
+  const eventFaces = (e: EventRow) => {
+    const f = memberFaces(eventMembers(e), data?.members ?? [])
+    return f.length > 1 ? f : undefined
+  }
   const slotLabel = (slot: string) => slotLabelFor(slot, t)
   // Per-slot meal colour + visibility (Réglages ▸ Repas). A meal's slot tints its
   // card here and everywhere it shows; a hidden slot drops off the glance.
@@ -359,7 +372,10 @@ export function Board() {
   const filTimed = model.fil.timed
   const filUntimed = model.fil.untimed
   const filWork = model.fil.work
-  const filShown = isCardVisible(boardCards, 'fil') && model.fil.eligible
+  // « Le fil du jour » is no longer its own card — it's the shape « Aujourd'hui »
+  // takes on a busy day. Active purely on content (≥2 timed things to place); the
+  // card body renders the ribbon when true, the flat agenda otherwise.
+  const filActive = model.fil.eligible
   const dayClear = model.dayClear
   const hasTomorrow = model.hasTomorrow
   // Time-aware emphasis (lib/momentFocus): the board gently leans toward what matters now —
@@ -367,8 +383,7 @@ export function Board() {
   // evening. Folded under the ambient toggle (Réglages ▸ Affichage): ambient on → the board
   // also leans by time; off → no emphasis. A soft accent, never a reshuffle.
   const focus = isDaypartAuto() ? momentFocus(Date.now(), mealPrefs.hours[heroSlot]) : null
-  const filNow = focus === 'day' && filShown
-  const todayNow = (focus === 'day' && !filShown) || focus === 'evening'
+  const todayNow = focus === 'day' || focus === 'evening'
 
   // What the adapters (components/detail/adapters) need to resolve faces + copy.
   // recipeFor lets a tapped meal jump straight to its recipe view (useOpenMeal).
@@ -517,8 +532,9 @@ export function Board() {
       title={e.title}
       when={eventWhen(e)}
       who={memberName(e.member_id) ?? undefined}
+      whoFaces={eventFaces(e)}
       color={memberColor(e.member_id) ?? undefined}
-      mine={!!profileId && e.member_id === profileId}
+      mine={!!profileId && eventMembers(e).includes(profileId)}
       soon={e.soon}
       // A TIMED rendez-vous crosses out once its time has passed (the same line-crossed
       // treatment meals get) — all-day events + birthdays have no time, so never strike.
@@ -844,50 +860,12 @@ export function Board() {
   nodes.moments = <MomentPeek />
   // « L'auto » glance — the car's status today + today's rides. #28
   nodes.autoCard = <AutoCard />
-  // « Le fil du jour » — the day's shape: timed events + L'auto rides + work
-  // windows on the axis; chores + all-day events pooled. Shown with ≥2 things
-  // to place; when on, the « Aujourd'hui » card below drops these same events +
-  // chores so nothing renders twice.
-  nodes.fil = filShown ? (
-    // Tint groups by meaning, not per-card novelty (NFR-CALM, fewer competing
-    // hues on the wall): « Le fil du jour » IS today's timeline, so it shares
-    // the warm marigold "today" family with « Aujourd'hui » below rather than
-    // asserting its own sky accent. Warm = today, cool sky = later (Demain / À
-    // venir), earthy = the task lists.
-    <Section
-      label={t.board.fil}
-      icon="clock-bold"
-      tint="var(--marigold)"
-      help={help}
-      helpKey="fil"
-      now={filNow}
-      // Compact: the day's things by name, in the order the ribbon places them — timed
-      // rows lead with their hour so the tile says WHEN, not just what.
-      compactItems={[
-        ...filTimed.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
-        ...filWork.map((w) => ({ lead: formatTime(w.at, lang), label: w.label || t.board.atWork })),
-        ...todayChores.map((c) => ({ label: c.title })),
-        ...filUntimed.map((e) => ({ label: e.title })),
-      ]}
-      compactHint={String(filTimed.length + filWork.length + todayChores.length + filUntimed.length)}
-    >
-      <Fil
-        timed={[
-          ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
-          ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
-        ]}
-        untimed={[
-          ...todayChores.map((c) => ({ id: c.id, node: choreAct(c) })),
-          ...filUntimed.map((e) => ({ id: e.id, node: eventAct(e) })),
-        ]}
-        anytimeLabel={t.board.anytime}
-        nowLabel={t.board.now}
-        freeLabel={t.board.free}
-        lang={lang}
-      />
-    </Section>
-  ) : null
-  // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda.
+  // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda, AND the day's
+  // shape. « Le fil du jour » used to be a card of its own; it's now the form this
+  // card takes on a busy day (`filActive` = ≥2 timed things): the timed events +
+  // L'auto rides + work windows read as a ribbon on a time axis, with chores +
+  // all-day events pooled under « À tout moment ». On a quieter day it's the plain
+  // agenda list. Either way it's ONE card — no more "which of these two is which".
   // One meal row (déjeuner/dîner/collation — souper is the « Ce soir » hero above),
   // extracted so a past-slot meal can fold into « Déjà passé » with the same anatomy.
   const mealAct = (m: (typeof otherMeals)[number]) => (
@@ -917,7 +895,10 @@ export function Board() {
   // record until midnight — see lib/itemLife). Only TIMED things fold: past-slot
   // meals + timed events whose moment has gone. Chores/todos/home + all-day events
   // are untimed → they never strike, so they always stay in the live list.
-  const shownEvents = !filShown ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
+  // When the ribbon is active it carries EVERY timed event (past ones dimmed in
+  // place, not folded), so the flat list + « Déjà passé » disclosure only run on a
+  // quiet day. `shownEvents` is therefore empty while `filActive`.
+  const shownEvents = !filActive ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
   const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
   const liveMeals = otherMeals.filter((m) => !m.past)
   const pastMeals = otherMeals.filter((m) => m.past)
@@ -930,8 +911,19 @@ export function Board() {
   const todayItems: CompactRow[] = [
     ...liveMeals.map((m) => ({ label: m.title })),
     // Timed events lead with their hour; meals/chores/home are untimed → a plain dot.
-    ...liveEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
-    ...(filShown ? [] : todayChores.map((c) => ({ label: c.title }))),
+    // When the ribbon is active the mini names the same things it places (timed events
+    // + work windows, then chores + all-day); otherwise it lists the flat agenda.
+    ...(filActive
+      ? [
+          ...filTimed.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+          ...filWork.map((w) => ({ lead: formatTime(w.at, lang), label: w.label || t.board.atWork })),
+          ...todayChores.map((c) => ({ label: c.title })),
+          ...filUntimed.map((e) => ({ label: e.title })),
+        ]
+      : [
+          ...liveEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+          ...todayChores.map((c) => ({ label: c.title })),
+        ]),
     ...todayHome.map((c) => ({ label: c.title })),
   ]
   const todayCount = todayItems.length
@@ -964,8 +956,8 @@ export function Board() {
 {/* « Prochainement » — the next timed thing today as a calm tappable
     headline above the full day list (the glance the « Maintenant » view
     used to give). Renders nothing once today's timed events are behind us.
-    Hidden when « Le fil du jour » is on screen — the ribbon shows the next-up in place. */}
-{!filShown && nextUpToday && (
+    Hidden while the ribbon is active — it shows the next-up in place. */}
+{!filActive && nextUpToday && (
   <button
     type="button"
     className="board-nextup"
@@ -1017,10 +1009,9 @@ export function Board() {
     <InlineIcon name="key-bold" size={16} /> {t.departure.title}
   </button>
 </div>
-{/* When « Le fil du jour » is on screen it carries today's events + chores, so
-    the day list shows only meals + home work here (no double render). The calm
-    "Rien de prévu" only stands in when the fil is OFF and nothing's planned. */}
-{!dayClear && !filShown && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
+{/* The calm "Rien de prévu" only stands in on a quiet day with nothing planned
+    (a busy day is never empty — `filActive` needs ≥2 timed things to begin with). */}
+{!dayClear && !filActive && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
   <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
 ) : (
   <>
@@ -1028,22 +1019,65 @@ export function Board() {
         "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
         Each carries its slot food icon so the slots read apart, like La cuisine. */}
     {liveMeals.map(mealAct)}
-    {/* Events + chores move to « Le fil du jour » when it's shown (see filShown).
-        The next-up event is the « Prochainement » headline above, so it's already
-        dropped (evtPast/shownEvents). Timed events past their moment fold below. */}
-    {liveEvents.map(eventAct)}
-    {/* Recurring chores due today — tap to check off (advances the turn). Untimed,
-        so they never fold — they leave by being done, not by a passing minute. */}
-    {!filShown && todayChores.map((c) => choreAct(c))}
+    {filActive ? (
+      /* « Le fil du jour » — a busy day read as a SHAPE: timed events + L'auto rides
+         + work windows placed on a time axis (past dimmed in place, a « maintenant »
+         marker), chores + all-day events pooled under « À tout moment ». Rows reuse
+         the card's own renderers, so a tap opens the same peek and a chore's check
+         still ticks. `home` tasks (untimed, family-wide) stay in the plain list below. */
+      <Fil
+        timed={[
+          ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
+          ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
+        ]}
+        untimed={[
+          ...todayChores.map((c) => ({ id: c.id, node: choreAct(c) })),
+          ...filUntimed.map((e) => ({ id: e.id, node: eventAct(e) })),
+        ]}
+        anytimeLabel={t.board.anytime}
+        nowLabel={t.board.now}
+        freeLabel={t.board.free}
+        lang={lang}
+      />
+    ) : (
+      <>
+        {/* A quiet day: the flat agenda. The next-up event is the « Prochainement »
+            headline above, so it's already dropped (evtPast/shownEvents); timed events
+            past their moment fold into « Déjà passé » below. */}
+        {liveEvents.map(eventAct)}
+        {/* Recurring chores due today — tap to check off (advances the turn). Untimed,
+            so they never fold — they leave by being done, not by a passing minute. */}
+        {todayChores.map((c) => choreAct(c))}
+      </>
+    )}
     {/* Projets & Entretien due today — tap to check off (stamps done). */}
     {todayHome.map((c) => homeAct(c))}
-    {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern). */}
+    {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern).
+        Empty while the ribbon is active — it dims past timed items in place. */}
     {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
   </>
 )}
+{/* Today's agglomerated to-dos, at the foot of the agenda — the loose « À
+    compléter » set and each departure checklist, every group under a collapsed
+    Disclosure (foldAll + foldSections) so the agenda keeps the room. Aujourd'hui
+    stays THE one place to see everything today; ticking here syncs everywhere,
+    adds live on « À faire » / the « Avant de partir » card (picker none). */}
+<TodoSection
+  title={t.todos.title}
+  members={data.members}
+  bento={false}
+  hideWhenEmpty
+  foldSections
+  foldAll
+  picker="none"
+/>
 
     </Section>
   )
+  // « Avant de partir » — the departure concept's home (mig 0116): today's
+  // checklists + bring-lists + the door to /board/departure. Mode `always` —
+  // the door + weather tip render every day, so it never sits slot-empty.
+  nodes.departure = <DepartureCard help={help} />
   // « Prochaine routine » — the routine that fits the moment, so routines
   // aren't siloed in their tab. Self-hides when no carded routine exists.
   nodes.routineNext = <RoutineNextCard />
@@ -1159,9 +1193,20 @@ export function Board() {
         />
       ))}
       {tomorrowEvents.map(eventAct)}
-      {/* À compléter pinned to tomorrow — its named sections collapse so a long
-          checklist stays a compact glance here; check/add stay functional. */}
-      <TodoSection day={tomorrowTodoDay} title={t.todos.title} members={data.members} bento={false} hideWhenEmpty />
+      {/* Tomorrow's agglomerated to-dos — loose todos AND departure checklists
+          pinned to tomorrow, each group under a collapsed Disclosure (foldAll +
+          foldSections) so however long they get they never take the full view.
+          Check/add stay functional: the picker instantiates a checklist pinned to
+          TOMORROW (the night-before « prépare le sac » gesture). */}
+      <TodoSection
+        day={tomorrowTodoDay}
+        title={t.todos.title}
+        members={data.members}
+        bento={false}
+        hideWhenEmpty
+        foldSections
+        foldAll
+      />
       {/* « Planifier demain » — the night-before "sortir le poulet" gesture. The mini
           carries it as a corner pencil; here it's a real labelled button so it stays
           reachable in the GROWN card too, whatever tomorrow already holds (Marc:
@@ -1211,12 +1256,12 @@ export function Board() {
       ))}
     </Section>
   ) : null
-  // « À faire » — the ONE to-do surface (UI merge of the two old todo cards;
-  // backends unchanged). Loose one-off tasks (data.todos, often dictated) sit
-  // under the « À faire » header; the reusable checklists (« À compléter »,
-  // todos table + departure templates) ride below via the embedded TodoSection's
-  // own header — two clearly-labelled groups in one card. The help "?" on the
-  // title explains the distinction.
+  // « À faire » — the LOOSE to-do home (the « Avant de partir » split, mig 0116).
+  // Loose one-off tasks (data.todos, often dictated) sit under the « À faire »
+  // header; the loose « À compléter » todos (global + pinned-to-today, plain text
+  // add + « Pour aujourd'hui ») ride below via the embedded TodoSection. The
+  // departure checklist instances and the template picker moved to the « Avant de
+  // partir » card — instantiation is a departure gesture now.
   // NFR-CALM: suppressed on a genuinely clear day (dayClear already requires
   // todayTodos + openTodos empty), so the reassuring all-clear hero isn't
   // contradicted by an empty card that can only ever offer an add affordance —
@@ -1228,18 +1273,16 @@ export function Board() {
       tint="var(--terracotta)"
       help={help}
       helpKey="todos"
-      // Compact: everything the card actually holds, by name — the loose one-off tasks
-      // AND the open « À compléter » checklist items (they were omitted before, so a card
-      // whose only to-dos were checklist items read as an empty « À faire »). Both are
-      // "things to do"; in a 142px glance, naming them beats a header that says which
-      // sub-list each belongs to (that distinction is still there once the card grows).
-      compactItems={[...todayTodos.map((c) => c.title), ...openTodos.map((td) => td.title)]}
+      // Compact: everything THIS card holds, by name — the loose one-off tasks AND
+      // the open loose « À compléter » todos. Checklist-instance rows belong to the
+      // « Avant de partir » card's mini, not this one.
+      compactItems={[...todayTodos.map((c) => c.title), ...openLoose.map((td) => td.title)]}
       compactHint={
-        todayTodos.length + openTodos.length > 0 ? String(todayTodos.length + openTodos.length) : undefined
+        todayTodos.length + openLoose.length > 0 ? String(todayTodos.length + openLoose.length) : undefined
       }
     >
       {todayTodos.map(todoAct)}
-      <TodoSection title={t.todos.title} members={data.members} bento={false} />
+      <TodoSection title={t.todos.title} members={data.members} bento={false} show="loose" picker="plain" />
     </Section>
   )
   // « À venir » — upcoming events/chores (null when none).

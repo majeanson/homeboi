@@ -50,6 +50,17 @@ describe('reconcile — canonical shape', () => {
     expect(p.grid.at(-1)).not.toBe('habitudes')
   })
 
+  it('splices « Avant de partir » right after « Aujourd’hui » into a pre-0116 layout', () => {
+    // A device that predates the departure card (mig 0116): v2 saved layout without it.
+    const saved = ALL.filter((id) => id !== 'departure')
+    const p = reconcile({ band: [], grid: saved })
+    expect(p.grid.indexOf('departure')).toBe(p.grid.indexOf('today') + 1)
+    // And a v1 {order,hidden} layout gets it too (mode default `always` survives).
+    const v1 = reconcile({ order: ['today', 'upcoming'], hidden: [] })
+    expect([...v1.band, ...v1.grid]).toContain('departure')
+    expect(cardMode(v1, 'departure')).toBe('always')
+  })
+
   it('preserves the RELATIVE order of saved cards (re-added ones interleave canonically)', () => {
     const p = reconcile({ band: [], grid: ['photos', 'today', 'autoCard'] })
     // Cards the device never saw are spliced in at their canonical spots, so the three
@@ -138,10 +149,12 @@ describe('reconcile — validation', () => {
 })
 
 describe('defaults reproduce the board we already ship', () => {
-  it('the three cards that never self-hid are `always`, the rest `auto`', () => {
+  it('the cards that never self-hide are `always`, the rest `auto`', () => {
+    // « Avant de partir » joined the set with mig 0116: its door + weather tip
+    // render on every day, so it never sits slot-empty.
     const p = fresh()
     const always = ALL.filter((id) => cardMode(p, id) === 'always')
-    expect(always.sort()).toEqual(['drawings', 'moments', 'today'])
+    expect(always.sort()).toEqual(['departure', 'drawings', 'moments', 'today'])
   })
 
   it('« À faire » is auto — it hides on a clear day, not on an empty list', () => {
@@ -157,11 +170,11 @@ describe('defaults reproduce the board we already ship', () => {
 
 describe('visibleCards', () => {
   it('mounts auto + always, and only drops never', () => {
-    const p = reconcile({ mode: { today: 'never', upcoming: 'auto', fil: 'always' } })
+    const p = reconcile({ mode: { today: 'never', upcoming: 'auto', tomorrow: 'always' } })
     const grid = visibleCards(p, 'grid')
     expect(grid).not.toContain('today')
     expect(grid).toContain('upcoming')
-    expect(grid).toContain('fil')
+    expect(grid).toContain('tomorrow')
   })
 
   it('returns each zone in its own order', () => {

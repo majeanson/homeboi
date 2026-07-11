@@ -18,8 +18,10 @@ import {
   todosKey,
   todosPath,
   isChecked,
+  splitTodos,
   checkedIds,
 } from '../../lib/todos'
+import { Disclosure } from '../Disclosure'
 import { CATS } from '../../lib/cats'
 import { tintInk, readableInk } from '../../lib/colors'
 import { Icon, type IconName } from '../Icon'
@@ -46,12 +48,32 @@ interface FaceMember {
 // nothing at all when there are no todos in scope — used where the section is
 // embedded inside another card (the board's Demain glance) and an empty add-frame
 // would just be clutter.
+//
+// The « Avant de partir » split (mig 0116) parameterizes WHICH rows a surface shows
+// and how they sit, so the one machinery serves both concepts without a fork:
+// - `show` — 'loose' (« À faire »: no checklist instances), 'checklists' (the
+//   departure card / scene: instances only), 'all' (day pages + the Aujourd'hui /
+//   Demain agglomerators).
+// - `foldSections` — each checklist instance folds under a collapsed Disclosure
+//   (title + open count) instead of an always-open header, so a long list stays a
+//   glance.
+// - `foldAll` — the agglomerator mode (Aujourd'hui / Demain): the loose group ALSO
+//   folds under one collapsed « À compléter » Disclosure — everything present,
+//   nothing taking the full view.
+// - `picker` — 'templates' (combobox add + checklist instantiation), 'plain' (text
+//   add only: « À faire », where instantiation no longer belongs), 'none' (the
+//   agglomerator glances: adds live on « À faire » and the departure card).
 export function TodoSection({
   day,
   title,
   members = [],
   bento = true,
   hideWhenEmpty = false,
+  show = 'all',
+  foldSections = false,
+  foldAll = false,
+  picker = 'templates',
+  emptyText,
   icon,
   tint,
 }: {
@@ -60,6 +82,13 @@ export function TodoSection({
   members?: FaceMember[]
   bento?: boolean
   hideWhenEmpty?: boolean
+  show?: 'all' | 'loose' | 'checklists'
+  foldSections?: boolean
+  foldAll?: boolean
+  picker?: 'templates' | 'plain' | 'none'
+  // A surface-specific "nothing here" line (the departure card's « Aucune liste de
+  // départ… ») — the generic t.todos.empty otherwise.
+  emptyText?: string
   // Subtle Pip identity (a coloured header glyph + a barely-there card wash), to match
   // the board's other tinted sections (Section / SubHead in board/Act).
   icon?: IconName
@@ -81,31 +110,24 @@ export function TodoSection({
     queryKey: TODO_TEMPLATES_KEY,
     queryFn: () => api<TemplatesData>('todo-templates'),
     ...live,
-    enabled: !ro,
+    enabled: !ro && picker === 'templates',
   })
 
   const [addText, setAddText] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
 
-  const all = removal.visible(data?.todos ?? [])
-  // De-fragment into buckets: every loose item (manual / global / today add) in
-  // ONE `loose` run, and each named section (a composed checklist instantiates "as
-  // a list with sections") merged by title into `sectionGroups`. We bucket across
-  // the WHOLE list rather than per contiguous run so a named section sitting
-  // between two batches of loose items can't split them into two "En tout temps"
-  // headers (or the same section into two headers). Section order = first-seen.
-  const loose: Todo[] = []
-  const sectionMap = new Map<string, Todo[]>()
-  for (const td of all) {
-    if (td.section == null) loose.push(td)
-    else {
-      const arr = sectionMap.get(td.section)
-      if (arr) arr.push(td)
-      else sectionMap.set(td.section, [td])
-    }
-  }
-  const sectionGroups = [...sectionMap.entries()]
+  // De-fragment into the two concepts (lib/todos splitTodos): every loose item
+  // (manual / global / today add) in ONE `loose` run, and each checklist instance
+  // (keyed by its source template — or its section title for legacy rows) as its
+  // own group, first-seen order. Bucketing across the WHOLE list means a checklist
+  // sitting between two batches of loose items can't split them into two "En tout
+  // temps" headers. `show` then keeps only this surface's concept — and everything
+  // downstream (counts, clear, empty) sees only the shown rows.
+  const split = splitTodos(removal.visible(data?.todos ?? []))
+  const loose = show === 'checklists' ? [] : split.loose
+  const checklistGroups = show === 'loose' ? [] : split.checklists
+  const all = [...loose, ...checklistGroups.flatMap((g) => g.todos)]
   const openCount = all.filter((todo) => !isChecked(todo)).length
   const checked = checkedIds(all)
   const faceOf = (id: string | null) => (id ? members.find((m) => m.id === id) : undefined)
@@ -115,7 +137,9 @@ export function TodoSection({
   // them into two headed groups ("En tout temps" / "Aujourd'hui") so a today-pinned
   // one (e.g. created from a day's meal plan) reads as its own ephemeral row, not a
   // twin of a global. Homogeneous lists + day pages stay headerless (no noise).
-  const showScope = scope === null && all.some((td) => td.day == null) && all.some((td) => td.day != null)
+  // (Scoped to the LOOSE set — a day-pinned checklist instance next to standing
+  // globals must not force the headers onto a list whose loose rows are homogeneous.)
+  const showScope = scope === null && loose.some((td) => td.day == null) && loose.some((td) => td.day != null)
 
   // — add (board glance → global; day page → that day) —
   // A today-pinned add (day page where date === today) is a row the board's
@@ -309,7 +333,7 @@ export function TodoSection({
       </div>
 
       {all.length === 0 && !ro ? (
-        <EmptyState tone="calm">{t.todos.empty}</EmptyState>
+        <EmptyState tone="calm">{emptyText ?? t.todos.empty}</EmptyState>
       ) : (
         <div className="todo-rows">
           {/* Loose items first. The board glance is the ONE place that mixes standing
@@ -317,46 +341,68 @@ export function TodoSection({
               two headed groups ("En tout temps" / "Aujourd'hui") rather than tagging
               each row (a per-row pill ate a phone row's width). Homogeneous lists +
               day pages stay headerless. Each batch is the WHOLE loose set, so there's
-              exactly one header per scope — never a duplicate. */}
+              exactly one header per scope — never a duplicate. In `foldAll` (the
+              Aujourd'hui / Demain agglomerators) the whole loose set collapses under
+              one « À compléter » Disclosure so it never takes the full view. */}
           {loose.length > 0 &&
-            (showScope
-              ? (
-                  <>
-                    {loose.some((td) => td.day == null) && (
-                      <div className="todo-group">
-                        <div className="todo-grouphead">{t.todos.scopeGlobal}</div>
-                        {loose.filter((td) => td.day == null).map(renderRow)}
-                      </div>
-                    )}
-                    {loose.some((td) => td.day != null) && (
-                      <div className="todo-group">
-                        <div className="todo-grouphead">{t.todos.scopeToday}</div>
-                        {loose.filter((td) => td.day != null).map(renderRow)}
-                      </div>
-                    )}
-                  </>
-                )
-              : (
-                  <div className="todo-group">{loose.map(renderRow)}</div>
-                ))}
-          {/* Then the named-section checklists (e.g. "Avant de partir"), each under
-              its own always-visible header — NOT a collapse. On the read surface we
-              want every todo listed at once; the expand/collapse belongs to the
-              Réglages template editor (configuring). */}
-          {sectionGroups.map(([section, rows]) => (
-            <div key={`sec-${section}`} className="todo-group">
-              <div className="todo-grouphead">{section}</div>
-              {rows.map(renderRow)}
-            </div>
-          ))}
+            (foldAll ? (
+              <Disclosure
+                label={t.todos.title}
+                count={loose.filter((td) => !isChecked(td)).length}
+                className="todo-fold"
+              >
+                <div className="todo-group">{loose.map(renderRow)}</div>
+              </Disclosure>
+            ) : showScope ? (
+              <>
+                {loose.some((td) => td.day == null) && (
+                  <div className="todo-group">
+                    <div className="todo-grouphead">{t.todos.scopeGlobal}</div>
+                    {loose.filter((td) => td.day == null).map(renderRow)}
+                  </div>
+                )}
+                {loose.some((td) => td.day != null) && (
+                  <div className="todo-group">
+                    <div className="todo-grouphead">{t.todos.scopeToday}</div>
+                    {loose.filter((td) => td.day != null).map(renderRow)}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="todo-group">{loose.map(renderRow)}</div>
+            ))}
+          {/* Then the checklist instances (« Avant de partir », « Sac de soccer »…),
+              one group per instantiated template. `foldSections` collapses each under
+              its own Disclosure (title + open count — the departure card and the
+              agglomerators); otherwise an always-visible header (the read surfaces
+              that want every todo listed at once). */}
+          {checklistGroups.map((g) =>
+            foldSections ? (
+              <Disclosure
+                key={g.key}
+                label={g.section ?? t.todos.title}
+                count={g.todos.filter((td) => !isChecked(td)).length}
+                className="todo-fold"
+              >
+                <div className="todo-group">{g.todos.map(renderRow)}</div>
+              </Disclosure>
+            ) : (
+              <div key={g.key} className="todo-group">
+                <div className="todo-grouphead">{g.section ?? t.todos.title}</div>
+                {g.todos.map(renderRow)}
+              </div>
+            ),
+          )}
         </div>
       )}
 
-      {!ro && (
+      {!ro && picker !== 'none' && (
         <EntityCombobox<TodoTemplate>
           value={addText}
           onChange={setAddText}
-          options={templateOptions(templates, t)}
+          // 'plain' (« À faire ») = text add only: instantiation lives on the
+          // departure card / scene now, so no template options are offered here.
+          options={picker === 'templates' ? templateOptions(templates, t) : []}
           onSubmit={(v) => add(v)}
           onPick={(opt) => {
             setAddText('')

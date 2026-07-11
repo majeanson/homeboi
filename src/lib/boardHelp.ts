@@ -27,13 +27,23 @@ export const BOARD_HELP = {
       en: 'The year: the horizon — holidays, birthdays, trips, upkeep. Tap a month to open it.',
     },
   },
-  // The « À faire » card holds two kinds of to-do, distinguished in place: loose one-off
-  // tasks (often dictated) up top, and reusable checklists (« À compléter ») below.
+  // The « À faire » card is the loose to-do home since the « Avant de partir » split
+  // (mig 0116): one-off things, standing or pinned to today. The reusable departure
+  // checklists live on their own card now.
   todos: {
     card: 'todos',
     body: {
-      fr: '« À faire » : des choses ponctuelles à cocher, puis c’est fini (souvent dictées). « À compléter » en dessous : tes listes qui reviennent — sac de piscine, avant de partir… — réutilisables d’un tap.',
-      en: '“À faire”: one-off things you tick off, then they’re done (often dictated). “À compléter” below: your recurring checklists — pool bag, before leaving… — reusable in one tap.',
+      fr: '« À faire » : des choses ponctuelles à cocher, puis c’est fini (souvent dictées) — en tout temps ou pour aujourd’hui. Tes listes qui reviennent (sac de piscine, avant de partir…) vivent sur la carte « Avant de partir ».',
+      en: '“À faire”: one-off things you tick off, then they’re done (often dictated) — standing or for today. Your recurring checklists (pool bag, before leaving…) live on the “Before you go” card.',
+    },
+  },
+  // « Avant de partir » — the departure card: today's checklists + bring-lists + the
+  // door to the full pre-departure screen. Deep-links to the board guide card.
+  departure: {
+    card: 'board',
+    body: {
+      fr: '« Avant de partir » : tes listes de départ du jour (à cocher, réutilisables d’un tap), le « à apporter » des activités, et la porte vers l’écran de départ complet — météo, horaire, corvées, l’auto.',
+      en: '“Before you go”: today’s leaving checklists (tickable, reusable in one tap), each activity’s “what to bring”, and the door to the full departure screen — weather, schedule, chores, the car.',
     },
   },
   // « Le défi du jour » — the day-long family défi on the Habitudes card. Deep-links to
@@ -42,8 +52,8 @@ export const BOARD_HELP = {
     card: 'habits',
     point: 0,
     body: {
-      fr: 'Le défi du jour : un petit défi qui dure toute la journée (« porte du jaune »). Pige-en un, essaie-le, puis chacun le coche quand il l’a tenu. Une invitation, jamais un devoir — rien n’est compté.',
-      en: 'Today’s challenge: a little challenge that lasts all day (“wear something yellow”). Draw one, try it, then each person checks it off once they’ve done it. An invitation, never a duty — nothing is counted.',
+      fr: 'Le défi du jour : un petit défi qui dure toute la journée (« porte du jaune »). Pige-en un — ou écris le tien —, essaie-le, puis chacun le coche quand il l’a tenu. Une invitation, jamais un devoir — rien n’est compté.',
+      en: 'Today’s challenge: a little challenge that lasts all day (“wear something yellow”). Draw one — or write your own — try it, then each person checks it off once they’ve done it. An invitation, never a duty — nothing is counted.',
     },
   },
   // « Laisse un mot » — the member-to-member inbox card. Deep-links to the `mots` guide.
@@ -59,16 +69,8 @@ export const BOARD_HELP = {
   today: {
     card: 'board',
     body: {
-      fr: 'Aujourd’hui : l’agenda du jour — repas, événements, corvées. « Demain » se range en dessous quand il y a quelque chose à préparer.',
-      en: 'Today: the day’s agenda — meals, events, chores. “Tomorrow” tucks in below when there’s something to prep.',
-    },
-  },
-  fil: {
-    card: 'board',
-    point: 2,
-    body: {
-      fr: 'Le fil du jour : tes rendez-vous, trajets et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant » et les plages « Libre ».',
-      en: 'The day’s timeline: your appointments, rides and work hours placed in time order, with a “Now” marker and “Free” stretches.',
+      fr: 'Aujourd’hui : l’agenda du jour — repas, événements, corvées. Les jours chargés, il se lit comme « le fil du jour » : rendez-vous, trajets et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant ». « Demain » se range en dessous quand il y a quelque chose à préparer.',
+      en: 'Today: the day’s agenda — meals, events, chores. On a busy day it reads as “the day’s timeline”: appointments, rides and work hours placed in time order, with a “Now” marker. “Tomorrow” tucks in below when there’s something to prep.',
     },
   },
   toFinish: {

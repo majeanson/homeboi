@@ -36,8 +36,8 @@ export type BoardCardId =
   | 'aRegler'
   | 'moments'
   | 'autoCard'
-  | 'fil'
   | 'today'
+  | 'departure'
   | 'routineNext'
   | 'habitudes'
   | 'tomorrow'
@@ -151,10 +151,16 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'mots', icon: 'envelope-bold', tint: 'var(--teal)', zone: 'band', size: 1, mode: 'auto' },
   { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
   { id: 'moments', icon: 'moon-stars-bold', tint: 'var(--berry-deep)', zone: 'band', size: 1, mode: 'always' },
-  // ── the masonry: car → the day's shape → the day → standing lists → upcoming → media ──
+  // ── the masonry: car → the day → standing lists → upcoming → media ──
+  // « Aujourd'hui » owns the whole day: its agenda AND — on a busy day (≥2 timed
+  // things) — the day's timeline (the « fil » ribbon, formerly a card of its own).
   { id: 'autoCard', icon: 'car-bold', tint: 'var(--sky-deep)', zone: 'grid', size: 'full', mode: 'auto', emptyTo: '/voiture' },
-  { id: 'fil', icon: 'clock-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'today', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'always' },
+  // « Avant de partir » — the departure concept's home (mig 0116): today's checklist
+  // instances + bring-lists + the door to /board/departure. `always` because the
+  // door + weather tip render on every day — leaving the house isn't conditional on
+  // the agenda — so the card never sits slot-empty.
+  { id: 'departure', icon: 'key-bold', tint: 'var(--marigold-deep)', zone: 'grid', size: 1, mode: 'always', emptyTo: '/board/departure' },
   { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/routines' },
   { id: 'habitudes', icon: 'repeat-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/board/habitudes' },
   { id: 'tomorrow', icon: 'sun-horizon-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },

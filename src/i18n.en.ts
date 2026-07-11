@@ -76,10 +76,13 @@ export const EN: typeof FR = {
     modeFile: 'File it',
     fileHint: 'Say or write what needs remembering — “spaghetti supper Thursday”, “we’re low on milk” — and the household files it in the right place.',
   },
-  // #17 — departure mode (a leaving-the-house screen).
+  // #17 — departure mode (a leaving-the-house screen) + its board card.
   departure: {
     title: 'Before you go',
+    titleShort: 'Go',
     checklist: 'Leaving checklist',
+    lists: 'Leaving checklists',
+    open: 'Open the departure screen',
     today: 'Today',
     chores: 'Chores',
     bring: 'What to bring',
@@ -87,6 +90,7 @@ export const EN: typeof FR = {
     allDay: 'All day',
     noTemplate: 'Make a “Before you go” list in Settings ▸ To-do lists to tick it off here.',
     emptyList: 'This list is empty.',
+    emptyLists: 'No leaving checklist for today — pick one below.',
     noEvents: 'Nothing planned today.',
   },
   habits: {
@@ -669,8 +673,8 @@ export const EN: typeof FR = {
     aRegler: 'To settle',
     moments: 'Moments',
     autoCard: 'The car',
-    fil: 'Day timeline',
     today: 'Today',
+    departure: 'Before you go',
     routineNext: 'Next routine',
     habitudes: 'My habits',
     tomorrow: 'Tomorrow',
@@ -2107,6 +2111,7 @@ export const EN: typeof FR = {
     carName: 'Vehicle name',
     carAdd: 'Add a vehicle…',
     carsEmpty: 'No vehicle — rides are carpooled.',
+    eventPeople: 'Who is it for?',
     eventTrajet: 'Ride',
     eventCarWho: 'Which car?',
     eventPassengers: 'Passengers',
@@ -2770,6 +2775,7 @@ export const EN: typeof FR = {
     empty: 'Nothing to complete. The little things to remember — a form, a phone call — land here.',
     addPlaceholder: 'Add something to complete…',
     addToday: 'For today',
+    addTodayShort: 'Today',
     check: 'Check',
     uncheck: 'Uncheck',
     clearChecked: 'Clear checked',
@@ -2844,6 +2850,7 @@ export const EN: typeof FR = {
     planTonight: 'Plan for tonight',
     shopRecipe: 'Add to list',
     makeRoutine: 'Make a kid routine',
+    eventGone: 'This event is no longer in the list.',
   },
   combo: {
     show: 'Show choices',

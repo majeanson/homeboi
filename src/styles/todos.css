@@ -4,6 +4,23 @@
 
 .todo-sec {
   margin-top: 0.5rem;
+  /* A size container so the board glance's « Pour aujourd’hui » add-button can drop
+     to its short label on a narrow card (see .todo-addtoday below). */
+  container: todo-sec / inline-size;
+}
+/* Responsive label for the board glance's second add-button: full « Pour aujourd’hui »
+   when the card is wide enough, the compact « Pour ajd » when it isn't. Default (and
+   the fallback where @container is unsupported) shows the full label. */
+.todo-addtoday__short {
+  display: none;
+}
+@container todo-sec (max-width: 360px) {
+  .todo-addtoday__full {
+    display: none;
+  }
+  .todo-addtoday__short {
+    display: inline;
+  }
 }
 /* Space the add bar off the last row / section so it doesn't crowd the list. */
 .todo-sec > .edit-field {
@@ -286,4 +303,42 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+/* ── « Avant de partir » split (mig 0116) ──────────────────────────────────────
+   The folded groups the agglomerators (Aujourd'hui / Demain) and the departure
+   card use: a Disclosure whose summary reads like a .todo-grouphead (same quiet
+   mono type), with the shared count chip riding it. */
+.todo-fold > .disclosure__summary {
+  font-family: var(--mono, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.todo-fold .todo-group {
+  margin-top: 0.25rem;
+}
+
+/* The departure board card: the dressing tip up top, the door row at the foot.
+   The checklist body + « À apporter » reuse .todo-sec / .departure__bring styles. */
+.depart-card__tip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+.depart-card__door {
+  display: flex;
+  margin-top: 0.6rem;
+}
+.depart-card__door .btn {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+/* Inside the card the embedded TodoSection is a body, not a nested card — drop its
+   own section chrome so the card header stays the one title. */
+.depart-card .todo-sec .sec-label {
+  margin-top: 0.35rem;
 }

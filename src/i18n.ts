@@ -83,10 +83,14 @@ export const FR = {
     modeFile: 'Classer',
     fileHint: 'Dis ou écris ce qu’il faut retenir — « souper spaghetti jeudi », « il manque du lait » — et la maison le classe à la bonne place.',
   },
-  // #17 — departure mode (a leaving-the-house screen).
+  // #17 — departure mode (a leaving-the-house screen) + its board card (mig 0116:
+  // the departure concept's home on the board — checklists + bring-lists + the door).
   departure: {
     title: 'Avant de partir',
+    titleShort: 'Partir',
     checklist: 'Liste de départ',
+    lists: 'Listes de départ',
+    open: 'Ouvrir l’écran de départ',
     today: 'Aujourd’hui',
     chores: 'Les corvées',
     bring: 'À apporter',
@@ -94,6 +98,7 @@ export const FR = {
     allDay: 'Toute la journée',
     noTemplate: 'Crée une liste « Avant de partir » dans Réglages ▸ À compléter pour la cocher ici.',
     emptyList: 'Cette liste est vide.',
+    emptyLists: 'Aucune liste de départ pour aujourd’hui — pige-en une ci-dessous.',
     noEvents: 'Rien de prévu aujourd’hui.',
   },
   // « Mes habitudes » — le point du jour. Ton doux : on note, on ne sermonne jamais.
@@ -756,8 +761,8 @@ export const FR = {
     aRegler: 'À régler',
     moments: 'Moments',
     autoCard: 'L’auto',
-    fil: 'Le fil du jour',
     today: 'Aujourd’hui',
+    departure: 'Avant de partir',
     routineNext: 'Prochaine routine',
     habitudes: 'Mes habitudes',
     tomorrow: 'Demain',
@@ -2250,6 +2255,7 @@ export const FR = {
     carName: 'Nom du véhicule',
     carAdd: 'Ajouter un véhicule…',
     carsEmpty: 'Aucun véhicule — les trajets se font en covoiturage.',
+    eventPeople: 'Pour qui ?',
     eventTrajet: 'Trajet',
     eventCarWho: 'Quelle auto ?',
     eventPassengers: 'Passagers',
@@ -2946,7 +2952,10 @@ export const FR = {
     addPlaceholder: 'Ajouter à compléter…',
     // Second add-button on the board glance: pin the new todo to today instead of
     // « en tout temps » — so it lands in the Aujourd’hui group and rolls off later.
-    addToday: 'Pour ajd',
+    // Full label when the card is wide enough; `addTodayShort` on a narrow card
+    // (CSS container query swaps them — see .todo-addtoday in todos.css).
+    addToday: 'Pour aujourd’hui',
+    addTodayShort: 'Pour ajd',
     check: 'Cocher',
     uncheck: 'Décocher',
     clearChecked: 'Effacer cochées',
@@ -3030,6 +3039,7 @@ export const FR = {
     planTonight: 'Planifier ce soir',
     shopRecipe: 'Ajouter à la liste',
     makeRoutine: 'En routine pour enfant',
+    eventGone: 'Ce rendez-vous n’est plus dans la liste.',
   },
   combo: {
     show: 'Voir les choix',
