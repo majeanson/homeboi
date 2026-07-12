@@ -258,6 +258,41 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setVisible(false)
   }, [clearTimer])
 
+  // Get the bar OUT OF THE WAY without touching anything it represents: hide it (and
+  // collapse the log) and cancel the auto-dismiss timer. Unlike clearAll this finalizes
+  // nothing itself — held writes keep their own timers and still commit, and the session
+  // log survives for Réglages ▸ Récents. This is the "I need to tap what's underneath"
+  // escape: the ✕ button and a double-tap on the bar both call it.
+  const dismiss = useCallback(() => {
+    if (dismissTimer.current) {
+      clearTimeout(dismissTimer.current)
+      dismissTimer.current = null
+    }
+    setExpanded(false)
+    setVisible(false)
+  }, [])
+
+  // Double-tap the bar to dismiss it. dblclick is unreliable on touch (browsers eat it
+  // for zoom), so track taps by hand: two pointerups within 300 ms, ignoring taps that
+  // land on a button (those have their own jobs — Annuler, Récents, ✕).
+  const lastTap = useRef(0)
+  const onBarPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if ((e.target as HTMLElement).closest('button')) {
+        lastTap.current = 0
+        return
+      }
+      const now = Date.now()
+      if (now - lastTap.current < 300) {
+        lastTap.current = 0
+        dismiss()
+      } else {
+        lastTap.current = now
+      }
+    },
+    [dismiss],
+  )
+
   // Collapse the expanded panel only when the session log itself is empty — there's
   // nothing left to show. (It used to collapse as soon as the live stack dropped to
   // one entry, but the expanded view shows the full session LOG now, which outlives
@@ -292,6 +327,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}${hintEligible && newest && !expanded ? ' undo-toast--first' : ''}`}
           data-surface={surface}
           role="status"
+          onPointerUp={onBarPointerUp}
         >
           {expanded ? (
             <>
@@ -370,6 +406,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <Icon name="clock-bold" size={16} />
               {t.undo.more(history.length)}
+            </button>
+          )}
+          {/* Compact states park over the UI — offer an explicit way out. The expanded
+              stack already has « Masquer » (collapse) + « Tout effacer », so no ✕ there. */}
+          {!expanded && (
+            <button
+              type="button"
+              className="undo-toast__dismiss"
+              onClick={dismiss}
+              aria-label={t.undo.dismiss}
+              title={t.undo.dismiss}
+            >
+              <Icon name="x-bold" size={15} />
             </button>
           )}
         </div>

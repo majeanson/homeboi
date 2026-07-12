@@ -10,6 +10,7 @@ import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { isGuest } from '../lib/device'
+import { useAuth } from '../lib/auth'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
@@ -33,7 +34,6 @@ import { CarnetForm } from '../components/cercle/CarnetForm'
 import { CarnetDocs } from '../components/cercle/CarnetDocs'
 import { CareLogForm } from '../components/cercle/CareLogForm'
 import { HomePinForm } from '../components/cercle/HomePinForm'
-import { HomeProjectForm } from '../components/forms/HomeProjectForm'
 
 type Seg = 'surveiller' | 'carnet'
 
@@ -50,6 +50,7 @@ export function CercleCarnetPage() {
   const write = useWrite()
   const confirm = useConfirm()
   const ro = isGuest()
+  const { signedIn } = useAuth()
   const c = t.carnets
 
   const { data } = useCarnets()
@@ -69,7 +70,6 @@ export function CercleCarnetPage() {
   const [addingChild, setAddingChild] = useState(false)
   const [addingLog, setAddingLog] = useState(false)
   const [editLog, setEditLog] = useState<CareLog | null>(null)
-  const [addingCare, setAddingCare] = useState(false)
   const [addingPin, setAddingPin] = useState(false)
   const [editPin, setEditPin] = useState<HomePin | null>(null)
   const logRemoval = useDeferredRemoval([...CARE_LOG_KEY, id])
@@ -381,7 +381,7 @@ export function CercleCarnetPage() {
                 <b>{c.entretien}</b>
                 <span className="ln" />
               </div>
-              {entretien.length === 0 && !addingCare ? (
+              {entretien.length === 0 ? (
                 <EmptyState>{c.noEntretien}</EmptyState>
               ) : (
                 entretien.map((p) => {
@@ -407,13 +407,20 @@ export function CercleCarnetPage() {
                   )
                 })
               )}
-              {!ro && (addingCare ? (
-                <HomeProjectForm kind="upkeep" carnetId={carnet.id} onSaved={() => setAddingCare(false)} onCancel={() => setAddingCare(false)} />
-              ) : (
-                <button type="button" className="btn btn--ghost" onClick={() => setAddingCare(true)}>
+              {/* Add = the shared /home-project/new scene (?carnet= files it back onto this
+                  carnet), not a form unfolded under the list — which is where it used to
+                  land, below the fold on a long carnet. Same create path as Réglages ▸
+                  Corvées and the board ＋ « Corvées ». Operator-only, like that scene
+                  (FormScene bounces an unsigned kiosk) — so a kiosk gets no dead button. */}
+              {!ro && signedIn && (
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  onClick={() => nav(`/home-project/new?kind=upkeep&carnet=${carnet.id}`)}
+                >
                   <InlineIcon name="plus-bold" size={16} /> {c.addCare}
                 </button>
-              ))}
+              )}
             </section>
 
             {/* En cas de pépin — the house map (home carnets only). */}

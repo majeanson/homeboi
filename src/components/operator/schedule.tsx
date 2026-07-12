@@ -10,6 +10,7 @@ import { SCHEDULE_KEY, BOARD_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { type Member } from '../../lib/members'
 import { isGuest } from '../../lib/device'
 import { Chip } from '../Chip'
+import { Modal } from '../Modal'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
@@ -132,22 +133,25 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
           )}
         </ul>
       )}
-      {!ro &&
-        (adding ? (
-          <BlockForm members={members} onSave={save} onCancel={() => setAdding(false)} />
-        ) : (
-          <button
-            type="button"
-            className="btn btn--primary operator__add"
-            onClick={() => {
-              setEditing(null)
-              setAdding(true)
-            }}
-            disabled={members.length === 0}
-          >
-            ＋ {t.operator.schedAdd}
-          </button>
-        ))}
+      {/* Add opens the form in a Modal, not unfolded under the list — a long schedule
+          pushed it below the fold, so the form you just asked for was off-screen. (Editing
+          stays in place on the row you tapped: it's anchored, not stranded.) */}
+      {!ro && (
+        <button
+          type="button"
+          className="btn btn--primary operator__add"
+          onClick={() => {
+            setEditing(null)
+            setAdding(true)
+          }}
+          disabled={members.length === 0}
+        >
+          ＋ {t.operator.schedAdd}
+        </button>
+      )}
+      <Modal open={adding} onClose={() => setAdding(false)} title={t.operator.schedAdd}>
+        {adding && <BlockForm members={members} onSave={save} onCancel={() => setAdding(false)} />}
+      </Modal>
     </OperatorSection>
   )
 }

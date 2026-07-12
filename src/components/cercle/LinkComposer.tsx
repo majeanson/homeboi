@@ -15,6 +15,7 @@ import {
   inferLinks,
 } from '../../lib/cercle'
 import { Icon } from '../Icon'
+import { Modal } from '../Modal'
 import { RowActions } from '../RowActions'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
@@ -201,7 +202,14 @@ export function LinkComposer({
         </div>
       )}
 
-      {adding ? (
+      <button type="button" className="btn btn--sm lc__add" onClick={() => setAdding(true)}>
+        <Icon name="plus-bold" size={14} /> {t.cercle.addRelationship}
+      </button>
+
+      {/* The composer is a Modal, not a panel unfolded under the links + suggestions —
+          it used to open at the very bottom of both lists, i.e. off-screen on anyone with
+          a few relatives. Short form, so an overlay (not a scene) per the convention. */}
+      <Modal open={adding} onClose={() => setAdding(false)} title={t.cercle.addRelationship}>
         <div className="lc__compose">
           {/* The sentence: "{cette personne} est [ lien ] de [ qui ]". */}
           <p className="lc__sentence">
@@ -244,11 +252,7 @@ export function LinkComposer({
             </button>
           </div>
         </div>
-      ) : (
-        <button type="button" className="btn btn--sm lc__add" onClick={() => setAdding(true)}>
-          <Icon name="plus-bold" size={14} /> {t.cercle.addRelationship}
-        </button>
-      )}
+      </Modal>
     </div>
   )
 }

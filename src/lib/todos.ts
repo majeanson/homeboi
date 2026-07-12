@@ -59,6 +59,15 @@ export const todosPath = (day?: number | null) => (day == null ? 'todos' : `todo
 export const isOpen = (t: Todo): boolean => t.done_at == null
 export const isChecked = (t: Todo): boolean => t.done_at != null
 
+// A reserved, non-template `source_template_id` for a FREE-TYPED « Avant de partir »
+// item (one typed directly into the departure card, not picked from a saved
+// checklist). It carries no real template — the sentinel just makes the row read as a
+// checklist instance (isChecklistRow) so it groups on the departure card, counts on
+// its mini, folds into the Aujourd'hui glance, and is swept once its day passes,
+// exactly like an instantiated one. Won't collide with a real template id (those are
+// random newId()s). MIRRORED in functions/api/todos.ts — keep the two in lockstep.
+export const DEPARTURE_ADHOC = 'departure-adhoc'
+
 // The « Avant de partir » discriminator: a row instantiated from a checklist
 // template (source_template_id set) vs a loose « À compléter » todo. Legacy
 // pre-0116 instances read as loose — accepted, they clear naturally.

@@ -159,6 +159,31 @@ body.is-recording .add-fab {
 .undo-toast__btn:active {
   transform: scale(0.96);
 }
+/* ✕ dismiss: get the bar out of the way to reach what's underneath (double-tapping
+   the bar does the same). Quiet round icon button — never competes with Undo. */
+.undo-toast__dismiss {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--paper);
+  opacity: 0.6;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.undo-toast__dismiss:hover,
+.undo-toast__dismiss:focus-visible {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.16);
+}
+.undo-toast__dismiss:active {
+  transform: scale(0.9);
+}
 /* "Récents (N)" / "Masquer" toggle — quieter than the Undo button. Generous tap
    target so it works on a wall tablet and in Toddler mode. */
 .undo-toast__more {

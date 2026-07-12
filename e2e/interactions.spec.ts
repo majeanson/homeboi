@@ -669,12 +669,30 @@ test.describe('add sheet', () => {
     await expect(tiles).toHaveCount(4)
     // Blank-slate chooser: pick the add-a-line tile (quick-add/flyer are
     // navigate-only, best-prices runs an action) to reveal the form that POSTs to list.
+    // Picking a tile DRILLS IN — the chooser is replaced by that tile's form (titled with
+    // the action, ← back to the tiles), so the form opens at the top of the sheet instead
+    // of below the fold. So the tiles are gone, not merely un-highlighted.
     await page.locator('.cat-pick', { hasText: 'Ajouter à la liste' }).click()
-    await expect(page.locator('.cat-pick', { hasText: 'Ajouter à la liste' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(tiles).toHaveCount(0)
+    await expect(page.locator('.sheet.show .sheet__title--back')).toHaveText(/Ajouter à la liste/)
     await page.locator('.addsheet__panel input.edit-field__input').fill('Beurre')
     await expectApi(page, 'POST', 'list', () =>
       page.locator('.addsheet__panel .edit-field__submit').click(),
     )
+  })
+
+  test('a drilled-in ＋ form goes back to the chooser', async ({ page }) => {
+    await APP('/liste')(page)
+    await settle(page, '.hub')
+    await page.locator('.add-fab').click()
+    const tiles = page.locator('.sheet > .cat-grid > .cat-pick')
+    await expect(tiles).toHaveCount(4)
+    await page.locator('.cat-pick', { hasText: 'Ajouter à la liste' }).click()
+    await expect(tiles).toHaveCount(0)
+    // ← returns to the tiles (the ✕ still closes the whole sheet from either level).
+    await page.locator('.sheet.show .sheet__back').click()
+    await expect(tiles).toHaveCount(4)
+    await expect(page.locator('.sheet.show .sheet__back')).toHaveCount(0)
   })
 
   test('the routines ＋ opens the routine builder directly', async ({ page }) => {

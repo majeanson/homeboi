@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { useAuth } from '../../lib/auth'
 import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
 import { HOME_PROJECTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
@@ -69,7 +71,8 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
   const t = useT()
   const { lang } = useLang()
   const ro = isGuest()
-  const [adding, setAdding] = useState(false)
+  const nav = useNavigate()
+  const { signedIn } = useAuth()
   const projectsQ = useQuery({
     queryKey: HOME_PROJECTS_KEY,
     queryFn: () => api<{ projects: HomeProject[] }>('home-projects'),
@@ -167,7 +170,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
           ))}
         </div>
       )}
-      {rows.length === 0 && !adding ? (
+      {rows.length === 0 ? (
         <EmptyState guide={{ card: 'set-chores', point: 8 }}>{emptyLabel}</EmptyState>
       ) : (
         <ul className="operator__list">
@@ -176,16 +179,25 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
           ))}
         </ul>
       )}
-      {/* In-section add (mirrors the cercle Business tab), not the ＋ FAB — creation
-          lives here in Réglages. Hidden for a read-only guest. */}
-      {!ro &&
-        (adding ? (
-          <HomeProjectForm kind={kind} onSaved={() => setAdding(false)} onCancel={() => setAdding(false)} />
-        ) : (
-          <button type="button" className="btn btn--primary operator__add" onClick={() => setAdding(true)}>
-            <InlineIcon name="plus-bold" /> {addLabel}
-          </button>
-        ))}
+      {/* Add = the full-screen /home-project/new scene, the SAME one the board ＋ « Corvées »
+          sub-choice opens. It used to unfold the form in place, at the bottom of the list —
+          so on a long list the form you just asked for opened below the fold. A many-field
+          form belongs in a scene anyway (FormScene: a height-capped sheet/section strands
+          its inputs under the mobile keyboard). Editing stays in place on its row — that's
+          anchored to what you tapped, not stranded at the end.
+          Hidden for a read-only guest AND for an unsigned kiosk: FormScene is operator-only
+          (it bounces an unsigned device to /board), so a kiosk would tap a button that just
+          throws it off the page. Creating this is an operator job anyway — the board ＋ already
+          hides « Corvées » from a kiosk (OPERATOR_MODES). */}
+      {!ro && signedIn && (
+        <button
+          type="button"
+          className="btn btn--primary operator__add"
+          onClick={() => nav(`/home-project/new?kind=${kind}`)}
+        >
+          <InlineIcon name="plus-bold" /> {addLabel}
+        </button>
+      )}
     </OperatorSection>
   )
 }

@@ -38,6 +38,13 @@ interface TodoRow {
 
 const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at'
 
+// Reserved, non-template `source_template_id` for a FREE-TYPED « Avant de partir »
+// item (typed into the departure card, not instantiated from a saved checklist). The
+// sentinel makes it read as a checklist instance so it groups on the departure card,
+// counts on its mini, folds into the Aujourd'hui glance, and is swept once its day
+// passes. MIRRORED in src/lib/todos.ts — keep in lockstep.
+const DEPARTURE_ADHOC = 'departure-adhoc'
+
 // The opportunistic roll-off: departure checklist instances pinned to a past day
 // are finished business — delete them so no Tuesday list lingers into Thursday.
 // Batched into EVERY write path (POST both branches, PATCH toggle + clearChecked,
@@ -72,7 +79,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ title?: string; day?: number | null; templateId?: string }>(ctx.request)
+  const body = await readJson<{ title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string }>(
+    ctx.request,
+  )
   const day = typeof body?.day === 'number' && Number.isFinite(body.day) ? body.day : null
   const mid = profileMemberId(ctx.request)
   const ts = nowSec()
@@ -124,6 +133,25 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
+
+  // A FREE-TYPED « Avant de partir » item (no template): a checklist-type row for the
+  // viewed day, FLOORED to today (leaving is a today-or-later thing, same reasoning as
+  // an instantiated one — an offline replay after midnight must not land on a gone
+  // day). The DEPARTURE_ADHOC sentinel + a shared `section` header make it group,
+  // count and sweep exactly like an instantiated checklist row. Mirrors the tmpRow in
+  // src/components/todos/TodoSection.tsx.
+  if (body?.departure) {
+    const pinnedDay = Math.max(day ?? today, today)
+    const section = typeof body.section === 'string' && body.section.trim() ? body.section.trim().slice(0, 120) : null
+    await ctx.env.DB.batch([
+      ctx.env.DB.prepare(
+        'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)',
+      ).bind(id, actor.householdId, title.slice(0, 200), pinnedDay, mid, section, DEPARTURE_ADHOC, ts, ts),
+      sweepStale(ctx.env.DB, actor.householdId, today),
+    ])
+    return ok({ ok: true, id })
+  }
+
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
       'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?)',

@@ -36,7 +36,6 @@ import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { Sheet } from './Sheet'
 import { Cluster } from './Layout'
-import { scrollBehavior } from '../lib/motion'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
 // section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
@@ -231,38 +230,25 @@ export function AddSheet({
     if (open) setMode(initialMode ?? defMode)
   }, [open, initialMode, defMode])
 
-  // When a tile is picked, its form renders BELOW the chooser grid — often below the
-  // fold on a phone, where it isn't obvious you have to scroll. So whenever the mode
-  // changes to an in-sheet form while a chooser is showing above it, bring that panel
-  // into view and move focus to it. We focus the panel WRAPPER (a tabindex'd div), not
-  // an input, on purpose: focusing an input would pop the mobile keyboard (see the
-  // modal conventions — never auto-open the keyboard).
+  // A picked tile REPLACES the chooser (a drill-down), it doesn't append its form under
+  // it: the old layout left the form below the fold on a phone, so you had to scroll to
+  // find the thing you'd just asked for. The form now opens at the top of the sheet with
+  // a ← back to the tiles. Reset the sheet's scroll (the chooser may have been scrolled)
+  // and move focus to the panel WRAPPER (a tabindex'd div) — never to an input, which
+  // would pop the mobile keyboard (see the modal conventions).
   const panelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    // tiles.length is read on purpose without being a dep: a chooser of >1 tiles is
-    // what puts the form below the fold. We only want to (re)scroll when the picked
-    // mode changes, not when an async query nudges the tile count mid-form.
-    if (!open || !mode || tiles.length <= 1) return
+    if (!open || !mode) return
     const panel = panelRef.current
     if (!panel) return
     const id = requestAnimationFrame(() => {
-      // Scroll ONLY within the bottom sheet, never the page behind it. A plain
-      // `scrollIntoView` walks every scroll ancestor including the document — on a
-      // tall desktop board that smooth-scrolls the whole page when the sheet opens
-      // (the "laggy scroll up"). Scope to the `.sheet` and only move when the panel
-      // is actually clipped out of its view (the -12 matches its scroll-margin).
-      const sheet = panel.closest('.sheet') as HTMLElement | null
-      if (sheet) {
-        const p = panel.getBoundingClientRect()
-        const s = sheet.getBoundingClientRect()
-        if (p.top < s.top || p.bottom > s.bottom) {
-          sheet.scrollTo({ top: sheet.scrollTop + (p.top - s.top) - 12, behavior: scrollBehavior() })
-        }
-      }
+      // Scroll ONLY within the bottom sheet, never the page behind it (a plain
+      // `scrollIntoView` walks every scroll ancestor, which smooth-scrolls the board
+      // behind the sheet on a tall desktop).
+      panel.closest('.sheet')?.scrollTo({ top: 0 })
       panel.focus({ preventScroll: true })
     })
     return () => cancelAnimationFrame(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, open])
 
   const [busy, setBusy] = useState(false)
@@ -704,9 +690,15 @@ export function AddSheet({
   // it in place instead of running it. Resets each time the sheet (re)opens.
   const help = useHelpMode(ADD_HELP, helpTitle, open)
 
+  // DRILLED — a tile was picked on a section that HAS a chooser, so the sheet is showing
+  // that one form instead of the tiles. (A chooser-less section pins its single mode from
+  // the start: no chooser to go back to, so it never reads as drilled.)
+  const drilled = mode !== null && tiles.length > 1
+
   // The sheet's title names what this section adds (the chooser-less sections
-  // would otherwise just say "Ajouter" over an unexplained form).
-  const title =
+  // would otherwise just say "Ajouter" over an unexplained form). Drilled in, it
+  // names the picked action instead — the ← beside it is what returns to the tiles.
+  const chooserTitle =
     shown.length > 1
       ? shown.includes('note')
         ? t.common.add
@@ -722,6 +714,7 @@ export function AddSheet({
         : mode === 'list-item'
           ? t.list.addTitle
           : t.common.add
+  const title = drilled && mode ? modeLabel(mode) : chooserTitle
 
   // « Note rapide ». Rendered EITHER at the top of the board chooser (noteAtTop — the
   // fast path) OR, for a chooser-less / kiosk-fallback sheet, in the picked-mode panel
@@ -805,59 +798,75 @@ export function AddSheet({
   return (
     <Sheet open={open} onClose={close} ariaLabel={title} className={help.active ? 'help-armed' : undefined}>
       {/* Contextual help toggle: arm it, then tap any tile to learn what it does
-          in place. Only in tutorial mode (experts hide every "?"). */}
-      {help.available && <HelpToggle className="sheet__help" active={help.active} onToggle={help.toggle} />}
-      <h3>{title}</h3>
+          in place. Only in tutorial mode (experts hide every "?"). Drilled into a
+          form there are no tiles left to explain, so it goes with them. */}
+      {help.available && !drilled && <HelpToggle className="sheet__help" active={help.active} onToggle={help.toggle} />}
+      <h3 className={drilled ? 'sheet__title--back' : undefined}>
+        {/* ← back to the tiles. Only exists when there IS a chooser behind us; the ✕
+            (Sheet's own) still closes the whole thing from either level. */}
+        {drilled && (
+          <button type="button" className="sheet__back" onClick={() => setMode(null)} aria-label={t.common.back}>
+            <Icon name="arrow-left-bold" size={18} />
+          </button>
+        )}
+        {title}
+      </h3>
 
-        {/* Help mode: a hint, then (once a tile is tapped) the in-place help box. */}
-        {help.hint && <HelpHint />}
-        {help.bubble}
+        {/* THE CHOOSER — tiles + the note fast-path + the kitchen-week actions. Picking
+            a tile swaps this whole block out for that tile's form (drilled), so the form
+            opens at the TOP of the sheet instead of below the fold. */}
+        {!drilled && (
+          <>
+            {/* Help mode: a hint, then (once a tile is tapped) the in-place help box. */}
+            {help.hint && <HelpHint />}
+            {help.bubble}
 
-        {/* Fast path: the note box rides ABOVE the chooser on the board, so a quick
-            note is one write-and-Add away (its tile is dropped from the grid below). */}
-        {noteAtTop && <div className="addsheet__lead" data-tour="add-note">{noteForm}</div>}
+            {/* Fast path: the note box rides ABOVE the chooser on the board, so a quick
+                note is one write-and-Add away (its tile is dropped from the grid below). */}
+            {noteAtTop && <div className="addsheet__lead" data-tour="add-note">{noteForm}</div>}
 
-        {/* The section's chooser — ONE grid with every action the section offers,
-            shown at once (no "Plus…" overflow). The recipe tile is navigate-only:
-            the recipe builder is a full overlay that lives on the kitchen page, not
-            in this sheet. Liste's auto-pick tile drops out when the list is empty
-            (nothing to price). On the board the note tile is hoisted out
-            (noteAtTop) — the rest stay here as explicit overrides. The grid
-            reflows (auto-fill) so any tile count stays even. */}
-        {tiles.length > 1 && gridTiles.length > 0 && (
-          <div className="cat-grid" data-tour="add-tiles">{gridTiles.map(renderTile)}</div>
+            {/* The section's chooser — ONE grid with every action the section offers,
+                shown at once (no "Plus…" overflow). The recipe tile is navigate-only:
+                the recipe builder is a full overlay that lives on the kitchen page, not
+                in this sheet. Liste's auto-pick tile drops out when the list is empty
+                (nothing to price). On the board the note tile is hoisted out
+                (noteAtTop) — the rest stay here as explicit overrides. The grid
+                reflows (auto-fill) so any tile count stays even. */}
+            {tiles.length > 1 && gridTiles.length > 0 && (
+              <div className="cat-grid" data-tour="add-tiles">{gridTiles.map(renderTile)}</div>
+            )}
+
+            {/* The kitchen week's actions (shop the week / AI ideas / book ideas /
+                use-up / vide-frigo) — offered on every parent kitchen sub-tab now.
+                Firing one jumps to Repas (where its result renders) behind the sheet. */}
+            {!noKitchenActions(kitchenActions.flags) && (
+              <div className="sheet__group" data-tour="add-week">
+                <p className="sheet__group-label mono">{t.kitchen.week}</p>
+                <div className="cat-grid">
+                  {KITCHEN_ACTIONS.filter((a) => a.show(kitchenActions.flags, help.active, aiEnabled)).map((a) => (
+                    <button
+                      key={a.key}
+                      type="button"
+                      className="cat-pick"
+                      disabled={a.disabled ? a.disabled(kitchenActions.flags, help.active) : undefined}
+                      title={a.title ? a.title(kitchenActions.flags, t) : undefined}
+                      onClick={help.pick(a.key, () => { kitchenActions.run(a.key); close() })}
+                    >
+                      <span className="ct" style={{ background: a.wash }}>
+                        <Icon name={a.icon} size={22} color={a.iconColour} />
+                      </span>
+                      <span>{a.label(t)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* The kitchen week's actions (shop the week / AI ideas / book ideas /
-            use-up / vide-frigo) — offered on every parent kitchen sub-tab now.
-            Firing one jumps to Repas (where its result renders) behind the sheet. */}
-        {!noKitchenActions(kitchenActions.flags) && (
-          <div className="sheet__group" data-tour="add-week">
-            <p className="sheet__group-label mono">{t.kitchen.week}</p>
-            <div className="cat-grid">
-              {KITCHEN_ACTIONS.filter((a) => a.show(kitchenActions.flags, help.active, aiEnabled)).map((a) => (
-                <button
-                  key={a.key}
-                  type="button"
-                  className="cat-pick"
-                  disabled={a.disabled ? a.disabled(kitchenActions.flags, help.active) : undefined}
-                  title={a.title ? a.title(kitchenActions.flags, t) : undefined}
-                  onClick={help.pick(a.key, () => { kitchenActions.run(a.key); close() })}
-                >
-                  <span className="ct" style={{ background: a.wash }}>
-                    <Icon name={a.icon} size={22} color={a.iconColour} />
-                  </span>
-                  <span>{a.label(t)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* The picked tile's form/panel. Wrapped so the mode-change effect can scroll
-            it into view + focus it (the chooser above can push it below the fold).
-            tabIndex -1 makes the wrapper programmatically focusable without being a
-            tab stop; outline is suppressed in CSS — the scroll-into-view is the cue. */}
+        {/* The picked tile's form/panel — the ONLY body once a tile is picked. tabIndex -1
+            makes the wrapper programmatically focusable (the mode effect lands focus here
+            without popping the keyboard) without being a tab stop; outline suppressed in CSS. */}
         <div ref={panelRef} tabIndex={-1} className="addsheet__panel">
         {/* When the note box is hoisted to the top (board), it isn't repeated
             here; a chooser-less / kiosk-fallback sheet still shows it in-panel. */}

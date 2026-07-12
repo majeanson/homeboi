@@ -20,6 +20,7 @@ import {
   isChecked,
   splitTodos,
   checkedIds,
+  DEPARTURE_ADHOC,
 } from '../../lib/todos'
 import { Disclosure } from '../Disclosure'
 import { CATS } from '../../lib/cats'
@@ -154,18 +155,37 @@ export function TodoSection({
     if (!value) return
     setAddText('')
     const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
-    const tmpRow: Todo = { id: tmpId, title: value, day: dayFor, member_id: null, done_at: null, position: 0, section: null, source_template_id: null }
+    // On a departure surface (show="checklists") a free-typed item is an « Avant de
+    // partir » item for the viewed day — FLOORED to today — NOT a loose todo: it
+    // carries the ad-hoc sentinel + a shared section so it groups with the day's
+    // checklists (stays visible here instead of vanishing as a filtered-out loose
+    // row), counts on the departure mini, folds into the Aujourd'hui glance, and is
+    // swept once its day passes. A loose add on any other surface is unchanged.
+    const asDeparture = show === 'checklists'
+    const pinnedDay = asDeparture ? Math.max(dayFor ?? todayLocalDay(), todayLocalDay()) : dayFor
+    const tmpRow: Todo = {
+      id: tmpId,
+      title: value,
+      day: pinnedDay,
+      member_id: null,
+      done_at: null,
+      position: 0,
+      section: asDeparture ? t.departure.adhocSection : null,
+      source_template_id: asDeparture ? DEPARTURE_ADHOC : null,
+    }
     const insert = (d: TodosData | undefined): TodosData => (d ? { todos: [...d.todos, tmpRow] } : { todos: [tmpRow] })
     await createWithUndo({
       endpoint: 'todos',
-      body: { title: value, day: dayFor },
+      body: asDeparture
+        ? { title: value, departure: true, section: t.departure.adhocSection, day: pinnedDay }
+        : { title: value, day: dayFor },
       affectedKeys: [TODOS_KEY, MONTH_KEY],
       optimistic: (qc) => {
         qc.setQueryData<TodosData>(key, insert)
         // On a day page (key ≠ TODOS_KEY) a today-pinned add also belongs on the
         // board glance up front. On the board glance itself `key` IS TODOS_KEY, so
         // the write above already covers it — don't double-insert.
-        if (scope != null && dayFor === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
+        if (scope != null && pinnedDay === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
       },
       // E-41: a queued follow-up (toggle done) on the tmp row gets rewritten to the
       // real id when this create replays.

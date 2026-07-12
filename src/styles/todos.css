@@ -320,22 +320,15 @@
   margin-top: 0.25rem;
 }
 
-/* The departure board card: the dressing tip up top, the door row at the foot.
-   The checklist body + « À apporter » reuse .todo-sec / .departure__bring styles. */
+/* The departure board card: the dressing tip up top, then the door in the shared
+   `.board-actions` pill row (views.css) like every grown card's actions. The
+   checklist body + « À apporter » reuse .todo-sec / .departure__bring styles. */
 .depart-card__tip {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin: 0 0 0.5rem;
   font-size: 0.85rem;
-}
-.depart-card__door {
-  display: flex;
-  margin-top: 0.6rem;
-}
-.depart-card__door .btn {
-  flex: 0 1 auto;
-  min-width: 0;
 }
 /* Inside the card the embedded TodoSection is a body, not a nested card — drop its
    own section chrome so the card header stays the one title. */

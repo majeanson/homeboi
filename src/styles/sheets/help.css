@@ -220,6 +220,31 @@
   font-size: 24px;
   margin: 0 0 4px;
 }
+/* Drilled-in sheet header: the picked action's name, with a ← back to the chooser.
+   The name is an anonymous flex item beside the arrow, so a long one wraps under the
+   sheet's floated ✕ rather than pushing the row past its right edge. */
+.sheet__title--back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sheet__back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.sheet__back:active {
+  transform: scale(0.94);
+}
 .sheet__hint {
   color: var(--ink-soft);
   font-size: 14px;

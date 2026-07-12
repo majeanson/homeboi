@@ -10,6 +10,7 @@ import {
   checkedIds,
   isChecklistRow,
   splitTodos,
+  DEPARTURE_ADHOC,
   toStored,
   expandTemplate,
   expandSectioned,
@@ -158,6 +159,20 @@ describe('isChecklistRow / splitTodos (the « Avant de partir » split, mig 0116
     expect(checklists).toHaveLength(1)
     expect(checklists[0].section).toBe('Chez grand-papa')
     expect(checklists[0].todos.map((t) => t.id)).toEqual(['x', 'y'])
+  })
+
+  it('a free-typed departure item (DEPARTURE_ADHOC sentinel) reads as a checklist row and folds into one group', () => {
+    const rows = [
+      todo({ id: 'l1' }), // a loose todo stays loose
+      todo({ id: 'd1', day: 100, section: 'À ne pas oublier', source_template_id: DEPARTURE_ADHOC }),
+      todo({ id: 'd2', day: 100, section: 'À ne pas oublier', source_template_id: DEPARTURE_ADHOC }),
+    ]
+    expect(isChecklistRow(rows[1])).toBe(true)
+    const { loose, checklists } = splitTodos(rows)
+    expect(loose.map((t) => t.id)).toEqual(['l1'])
+    expect(checklists).toHaveLength(1)
+    expect(checklists[0].section).toBe('À ne pas oublier')
+    expect(checklists[0].todos.map((t) => t.id)).toEqual(['d1', 'd2'])
   })
 
   it('a legacy-section group and a template group with the same title stay separate groups', () => {

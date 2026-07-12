@@ -63,6 +63,12 @@ export function DepartureCard({ help }: { help?: HelpMode }) {
       compactItems={openInstances.map((td) => td.title)}
       compactHint={openInstances.length ? String(openInstances.length) : undefined}
       compactTo={openInstances.length === 0 ? '/board/departure' : undefined}
+      // The door must survive the mini: with items, tapping the tile grows it, so the
+      // key rides the corner (its own tap target — the « Aujourd'hui » tile precedent).
+      // When empty the whole tile IS the door (compactTo above) — no corner needed.
+      compactCorner={
+        openInstances.length > 0 ? { to: '/board/departure', icon: 'key-bold', label: t.departure.open } : undefined
+      }
     >
       {/* The one dressing tip, where the key already is — a quiet line, never a nag. */}
       {weather && tip && (
@@ -70,6 +76,16 @@ export function DepartureCard({ help }: { help?: HelpMode }) {
           <InlineIcon name={weatherIcon(weather)} size={14} /> {t.weather.tip[tip]}
         </p>
       )}
+
+      {/* The door — the full pre-departure screen (weather + agenda + corvées +
+          L'auto). At the TOP like every grown card's action pills (the shared
+          `.board-actions` row « Aujourd'hui »/« Demain » use), on every day, clear
+          or not. */}
+      <div className="board-actions">
+        <Link to="/board/departure" className="btn btn--ghost mono">
+          <InlineIcon name="key-bold" size={16} /> {t.departure.open}
+        </Link>
+      </div>
 
       {/* Today's departure checklists — the shared todos machinery, checklist rows
           only, each instance folded under its title. Adding from the picker here
@@ -86,14 +102,6 @@ export function DepartureCard({ help }: { help?: HelpMode }) {
       {/* « À apporter » — today's activities that carry a bring-list (soccer cleats,
           instrument…); renders nothing when none do. */}
       <ActivityBring events={board?.today ?? []} day={today} />
-
-      {/* The door — the full pre-departure screen (weather + agenda + corvées +
-          L'auto). Kept on every day, clear or not. */}
-      <div className="depart-card__door">
-        <Link to="/board/departure" className="btn btn--ghost mono">
-          <InlineIcon name="key-bold" size={16} /> {t.departure.open}
-        </Link>
-      </div>
     </BoardCard>
   )
 }

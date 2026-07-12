@@ -1060,18 +1060,18 @@ export function Board() {
     {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
   </>
 )}
-{/* Today's agglomerated to-dos, at the foot of the agenda — the loose « À
-    compléter » set and each departure checklist, every group under a collapsed
-    Disclosure (foldAll + foldSections) so the agenda keeps the room. Aujourd'hui
-    stays THE one place to see everything today; ticking here syncs everywhere,
-    adds live on « À faire » / the « Avant de partir » card (picker none). */}
+{/* Today's « Avant de partir » checklists, at the foot of the agenda — each group
+    under its own collapsed Disclosure (foldSections) so the agenda keeps the room.
+    CHECKLISTS ONLY: the loose « À compléter » todos stay on their own « À faire »
+    card, so this agenda reminder is purely the day's departure lists. Ticking here
+    syncs everywhere; adds live on the « Avant de partir » card (picker none). */}
 <TodoSection
-  title={t.todos.title}
+  title={t.departure.title}
   members={data.members}
   bento={false}
   hideWhenEmpty
+  show="checklists"
   foldSections
-  foldAll
   picker="none"
 />
 
@@ -1151,6 +1151,19 @@ export function Board() {
           {tomorrowWx.highC}° / {tomorrowWx.lowC}°
         </div>
       )}
+      {/* « Planifier demain » — the night-before "sortir le poulet" gesture. The mini
+          carries it as a corner pencil; here it's a real labelled button, at the TOP
+          like every grown card's action pills, whatever tomorrow already holds
+          (Marc: always available, not mini-only). */}
+      <div className="board-actions">
+        <button
+          type="button"
+          className="btn btn--ghost mono board-action--plan"
+          onClick={() => nav(`/kitchen/day/${tomorrowDay}`)}
+        >
+          <InlineIcon name="pencil-simple-bold" size={16} /> {t.board.planTomorrow}
+        </button>
+      </div>
       {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
           tremper les haricots" — while there's still time to act on it. */}
       {data.tomorrowNote && (
@@ -1210,19 +1223,6 @@ export function Board() {
         foldSections
         foldAll
       />
-      {/* « Planifier demain » — the night-before "sortir le poulet" gesture. The mini
-          carries it as a corner pencil; here it's a real labelled button so it stays
-          reachable in the GROWN card too, whatever tomorrow already holds (Marc:
-          always available, not mini-only). */}
-      <div className="board-actions">
-        <button
-          type="button"
-          className="btn btn--ghost mono board-action--plan"
-          onClick={() => nav(`/kitchen/day/${tomorrowDay}`)}
-        >
-          <InlineIcon name="pencil-simple-bold" size={16} /> {t.board.planTomorrow}
-        </button>
-      </div>
     </Section>
   ) : null
   // « À finir » — leftovers + à-faire bunched (null when both empty).
