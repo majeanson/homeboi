@@ -1021,8 +1021,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Joindre un mémo, un dessin ou une photo', en: 'Clip on a memo, a drawing or a photo' },
         detail: {
-          fr: 'Le trombone 📎 dans le champ de texte joint un mémo vocal, un dessin ou une photo à ta note — sans effacer ce que tu as écrit. Un mémo tout seul est une note valide aussi.',
-          en: 'The 📎 in the text field clips a voice memo, a drawing or a photo onto your note — without erasing what you wrote. A memo on its own is a valid note too.',
+          fr: 'Le trombone 📎 dans le champ de texte joint un mémo vocal, un dessin ou une photo à ta note — sans effacer ce que tu as écrit. « Photo » attache la pic telle quelle, d’un geste; pour dessiner par-dessus, ouvre « Dessiner » et charge-la avec l’outil 🖼. Un mémo tout seul est une note valide aussi.',
+          en: 'The 📎 in the text field clips a voice memo, a drawing or a photo onto your note — without erasing what you wrote. “Photo” attaches the shot as-is, in one tap; to draw over it, open “Draw” and load it with the 🖼 tool. A memo on its own is a valid note too.',
+        },
+      },
+      {
+        label: { fr: 'Garder la photo (deux fois plutôt qu’une)', en: 'Keep the photo (twice, not once)' },
+        detail: {
+          fr: 'Une photo jointe à une note ne vivait que sur cette note-là : effacer la note l’emportait, et une pic prise dans l’app ne se rendait jamais dans la pellicule du téléphone. Sous la photo, deux petits choix : « Garder dans les photos » l’ajoute au cadre de la maison (elle dérive au babillard et en veille — [[card:screensaver|mode veille]]), et « Enregistrer sur l’appareil » te la redonne dans tes photos à toi. Chacune est une copie indépendante : effacer la note n’efface plus rien d’autre.',
+          en: 'A photo clipped to a note used to live only on that note: clearing the note took it away, and a shot snapped inside the app never reached the phone’s camera roll. Under the photo, two small choices: “Keep in the photos” adds it to the household frame (it drifts across the board and the screensaver — [[card:screensaver|idle mode]]), and “Save to my device” hands it back to your own photos. Each is an independent copy: clearing the note no longer erases anything else.',
         },
       },
       {
@@ -2622,8 +2629,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Photos de famille', en: 'Family photos' },
         detail: {
-          fr: 'Téléverse une ou plusieurs photos d’un coup (un compteur « 2/5 » suit le lot); elles dérivent doucement sur le babillard et en mode veille.',
-          en: 'Upload one or many photos at once (a “2/5” counter tracks the batch); they gently drift across the board and during idle mode.',
+          fr: 'Téléverse une ou plusieurs photos d’un coup (un compteur « 2/5 » suit le lot); elles dérivent doucement sur le babillard et en mode veille. Une photo jointe à une note ou à un mot peut aussi atterrir ici : touche « Garder dans les photos » sous la photo, au moment de l’écrire ([[card:capture|le trombone 📎]]).',
+          en: 'Upload one or many photos at once (a “2/5” counter tracks the batch); they gently drift across the board and during idle mode. A photo clipped to a note or a mot can land here too: tap “Keep in the photos” under the picture as you write it (the [[card:capture|📎 clip]]).',
         },
         why: {
           fr: 'Elles sont redimensionnées petites avant l’envoi, pour charger vite et rester gratuites.',

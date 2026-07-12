@@ -844,6 +844,12 @@ export async function mockApi(
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ key: 'nm_e2e', kind: 'drawing' }) })
         return
       }
+      // The photo frame takes a blob and creates a ROW: it answers with the id too, so
+      // « Garder dans les photos » can offer an undo that deletes exactly that row.
+      if (path === 'photos') {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'ph_e2e', key: 'ph_e2e' }) })
+        return
+      }
       // « Vide-frigo » (#5): step 'ideas' → dish names, step 'recipes' → full recipes.
       if (path === 'empty-fridge') {
         let step = ''

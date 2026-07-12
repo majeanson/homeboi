@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
@@ -9,6 +9,7 @@ import { useUndoableRemove } from '../../lib/undoRemove'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { isGuest } from '../../lib/device'
+import { usePhotos } from '../../lib/photoGallery'
 import { PHOTOS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
@@ -54,10 +55,7 @@ export function RecapSection({ help }: { help?: HelpMode }) {
 export function PhotosSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
-  const { data, isPending } = useQuery({
-    queryKey: PHOTOS_KEY,
-    queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
-  })
+  const { data, isPending } = usePhotos()
   const photos = data?.photos ?? []
   const undoableRemove = useUndoableRemove()
   // Read-only guest: photos are viewable, but no delete-per-tile and no upload.

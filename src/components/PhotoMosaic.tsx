@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../lib/api'
-import { live } from '../lib/query'
-import { PHOTOS_KEY } from '../lib/queryKeys'
 import { imgUrl } from '../lib/image'
 import { useAmbient } from '../lib/ambient'
 import { useGallery } from '../lib/drawingGallery'
+import { usePhotos } from '../lib/photoGallery'
 import { computeDayPart, type DayPart } from '../lib/timeofday'
 
 // Full-screen family-memory mosaic for the idle screensaver: tiles the whole
@@ -97,11 +94,7 @@ function pickBiased(images: Img[], used: Set<number>, current: number, drawWeigh
 
 export function PhotoMosaic() {
   const a = useAmbient()
-  const photosQ = useQuery({
-    queryKey: PHOTOS_KEY,
-    queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
-    ...live,
-  })
+  const photosQ = usePhotos({ poll: true })
   const drawingsQ = useGallery()
 
   // The blended pool, honouring the Mode veille toggles. Drawings are served by the

@@ -97,6 +97,9 @@ export const FR = {
     allDay: 'Toute la journée',
     emptyLists: 'Aucune liste de départ pour aujourd’hui — pige-en une ci-dessous.',
     noEvents: 'Rien de prévu aujourd’hui.',
+    // Header for free-typed departure items (not from a saved checklist) — grouped
+    // under one heading on the departure card, day-pinned to today.
+    adhocSection: 'À ne pas oublier',
   },
   // « Mes habitudes » — le point du jour. Ton doux : on note, on ne sermonne jamais.
   // Pas de série, pas de points, pas de classement (aucune comparaison entre membres).
@@ -577,6 +580,18 @@ export const FR = {
     editChoiceCopyHint: 'Une copie identique à retoucher — l’original reste.',
     editChoiceTrace: 'Calquer',
     editChoiceTraceHint: 'L’original en filigrane pour redessiner par-dessus — l’original reste.',
+    // La photo jointe : une pic prise vite, mise sur le babillard — puis gardée.
+    // « Photo » attache la photo telle quelle (un geste) ; pour dessiner par-dessus,
+    // l'outil 🖼 du pad la charge en filigrane.
+    photoAttach: 'Photo',
+    // Les deux « et garde-la » offerts sur la photo jointe : dans le cadre de la
+    // maison (Réglages ▸ Photos, l'écran de veille) et dans les photos du téléphone —
+    // une photo prise dans l'app ne se rend jamais toute seule dans la pellicule.
+    keepInPhotos: 'Garder dans les photos',
+    keptInPhotos: 'Gardée dans les photos',
+    savedToPhotos: 'Gardée dans les photos',
+    saveToDevice: 'Enregistrer sur l’appareil',
+    savedToDevice: 'Enregistrée',
     // #14b — dessiner par-dessus une photo en filigrane (calque-photo).
     drawPhoto: 'Sur une photo',
     photo: 'Photo',
@@ -2992,6 +3007,10 @@ export const FR = {
     more: (n: number) => `Récents (${n})`,
     hide: 'Masquer',
     clearAll: 'Tout effacer',
+    // Hide the toast bar from the screen (double-tap it, or this ✕) so you can reach
+    // what's underneath. Nothing is undone — held gestes finalisent normalement et
+    // « Récents » reste dans Réglages.
+    dismiss: 'Fermer',
     // One-time reassurance (per device) shown with the very first undoable action:
     // the app's promise that nothing here is fragile. A-6, bmad/08.
     firstHint: 'Tout se défait ici — tes derniers gestes restent dans « Récents ».',

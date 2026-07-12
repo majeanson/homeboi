@@ -28,8 +28,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'ph', maxBytes: MAX_BYTES })
   if ('error' in up) return up.error
   const key = up.key
+  // The row id comes back with the key: keeping a snapped photo into the frame is
+  // undoable (« Gardé dans les photos » → Annuler deletes it back), and the undo
+  // needs the id it just created — see lib/photoGallery.
+  const id = newId()
   await ctx.env.DB.prepare('INSERT INTO photos (id, household_id, media_key, created_at) VALUES (?, ?, ?, ?)')
-    .bind(newId(), actor.householdId, key, nowSec())
+    .bind(id, actor.householdId, key, nowSec())
     .run()
 
   // Keep only the most recent MAX_PHOTOS — drop older rows AND their R2 blobs so
@@ -43,7 +47,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     await deleteR2Blob(ctx.env.PHOTOS, row.r2_key)
     await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ? AND household_id = ?').bind(row.id, actor.householdId).run()
   }
-  return ok({ key })
+  return ok({ id, key })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {

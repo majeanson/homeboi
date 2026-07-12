@@ -113,7 +113,7 @@ for (const width of [360, 390]) {
     await assertClean(page, 'chooser grid, scrolled')
 
     // State 2 — open the « Note rapide » box's 📎, which unfolds a Cluster of three
-    // memo chips (Mémo vocal · Dessiner · Sur une photo). These were three full-width
+    // memo chips (Mémo vocal · Dessiner · Photo). These were three full-width
     // buttons; as a wrapped chip row they must still stay inside the sheet at 360px.
     await page.locator('.addsheet__lead .memo-attach__btn').click()
     await expect(page.locator('.memo-attach__picks')).toBeVisible()
@@ -139,6 +139,11 @@ for (const width of [360, 390]) {
       await page.locator('.addsheet__todo .combobox__caret').click()
       await expect(page.locator('.addsheet__todo .combobox__row-hint').first()).toBeVisible()
       await assertClean(page, 'todo template dropdown, item hints')
+
+      // Picking a tile DRILLS IN — the chooser is replaced by that one form. Go back to
+      // the tiles, or the next state's tile isn't on screen and its block silently skips.
+      await page.locator('.sheet.show .sheet__back').click()
+      await expect(page.locator('.cat-grid')).toBeVisible()
     }
 
     // State 5 — « Laisse un mot »: a face row, the composer field with its 📎, and

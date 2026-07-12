@@ -9,6 +9,9 @@ import { StatusMessage } from './StatusMessage'
 import { DrawPad } from './DrawPad'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
 import { useKeepInGalleryToast } from '../lib/drawingGallery'
+import { useKeepPhotoInGalleryToast } from '../lib/photoGallery'
+import { saveToDevice } from '../lib/saveToDevice'
+import { useOnline } from '../lib/online'
 
 // « Joindre » — the ONE way to hang a voice memo (#38), a drawing (#14) or a photo
 // (#13) onto whatever you're writing. It replaces `MemoControls`, which rendered a
@@ -39,6 +42,17 @@ import { useKeepInGalleryToast } from '../lib/drawingGallery'
 //
 // R2 unbound → `uploadMedia` 503s → `hidden` goes true and BOTH the 📎 and the panel
 // render nothing, so the text-only path keeps working (the long-standing contract).
+//
+// A PHOTO is one tap (`photoMode: 'direct'`, the default). It used to open the DrawPad
+// with the photo as a watermark — "draw over a photo" was the only door to "add a
+// photo", which put a pad between you and « je prends une pic vite, je la mets sur le
+// babillard ». The pad's own 🖼 tool still loads a photo, so nothing is lost.
+//
+// And a photo you attach can also be KEPT, two ways (both optional, both undoable /
+// harmless, offered on the staged chip): into the household frame (« Garder dans les
+// photos » → lib/photoGallery, an independent R2 copy so clearing the note never
+// takes it) and back onto the phone itself (« Enregistrer sur l'appareil » →
+// lib/saveToDevice — a pic snapped inside a web app never reaches the camera roll).
 const MAX_REC_MS = 30_000
 
 /** An uploaded-but-not-yet-committed memo. `body` turns this into POST fields. */
@@ -52,14 +66,18 @@ export interface MemoAttachOptions {
   mediaEndpoint?: string
   /** DrawPad autosave-draft slot; distinct per surface so drafts don't collide. */
   drawDraftId?: string
-  /** The photo action: draw OVER a chosen photo (the board default), or attach the
-   *  file straight (a guest's photo message, where there's no pad to open). */
+  /** The photo action: attach the file straight (the default — "quick pic → note" is
+   *  the common case and must cost one tap), or open the pad to draw OVER a chosen
+   *  photo. Drawing over a photo is NOT lost by the default: the pad's own 🖼 tool
+   *  loads a photo as the watermark layer, so it's one tap inside « Dessiner ». */
   photoMode?: 'draw' | 'direct'
   /** Offer a photo chip at all. Voyage says no: its « Joindre un document » chip
    *  (DocUploadButton) already takes images, so a second photo door would duplicate it. */
   photo?: boolean
-  /** Offer « Épingler dans mes dessins » / « En faire une routine » on the pad.
-   *  Household surfaces only — a guest's drawing is headed for a message. */
+  /** Offer the household's keep-it actions: « Épingler dans mes dessins » / « En faire
+   *  une routine » on the pad, and « Garder dans les photos » on an attached photo.
+   *  Household surfaces only — a guest's drawing/photo is headed for a message, and a
+   *  guest can't write to the household anyway. */
   gallery?: boolean
   /** Label override for the record chip (Postbox says « Enregistrer un mot »). */
   recordLabel?: string
@@ -87,7 +105,7 @@ export interface MemoAttachment {
 export function useMemoAttach({
   mediaEndpoint = 'note-media',
   drawDraftId = 'memo',
-  photoMode = 'draw',
+  photoMode = 'direct',
   photo = true,
   gallery = true,
   recordLabel,
@@ -102,11 +120,19 @@ export function useMemoAttach({
   const [drawPhoto, setDrawPhoto] = useState(false) // pad opened straight into the photo flow (#14b)
   const [hidden, setHidden] = useState(false) // R2 unbound (503) → no media here
   const [micDenied, setMicDenied] = useState(false) // getUserMedia rejected → say so, don't fail silent
+  const [kept, setKept] = useState(false) // this photo is now also in the frame (#K)
+  const [saved, setSaved] = useState(false) // …and/or handed back to the phone
+  const online = useOnline()
   const toRoutine = useDrawingToRoutine()
   const keepInGallery = useKeepInGalleryToast()
+  const keepPhoto = useKeepPhotoInGalleryToast()
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const photoRef = useRef<HTMLInputElement>(null)
+  // The ORIGINAL bytes behind the staged memo (the camera File / the drawn PNG), held
+  // so « Garder » and « Enregistrer sur l'appareil » work on the full-size shot rather
+  // than re-downloading the resized copy we just uploaded. Cleared with the draft.
+  const srcRef = useRef<Blob | null>(null)
 
   // While recording, flag the body so the shell drops the ＋ FAB: it floats
   // bottom-right OVER the composer, and you can't quick-add mid-record anyway.
@@ -136,6 +162,9 @@ export function useMemoAttach({
   // commits it, so the write rides useWrite's offline outbox.
   async function capture(kind: StagedMemo['kind'], blob: Blob, scene = '') {
     setBusy(true)
+    srcRef.current = blob
+    setKept(false)
+    setSaved(false)
     try {
       const key = await uploadMedia(mediaEndpoint, blob, { resize: kind === 'image' })
       // A drawing also persists its editable scene (#1) so it can be re-opened and
@@ -216,6 +245,35 @@ export function useMemoAttach({
   const reset = () => {
     setDraft(null)
     setOpen(false)
+    setKept(false)
+    setSaved(false)
+    srcRef.current = null
+  }
+
+  // « Garder dans les photos » — the snapped pic ALSO joins the household frame
+  // (Réglages ▸ Photos / the screensaver), as its own independent copy. Fires now
+  // rather than on submit, with an undo toast: the photo is worth keeping whether or
+  // not you go on to post the note, and « Annuler » takes it straight back out.
+  async function keepToPhotos() {
+    if (!draft || draft.kind !== 'image' || kept) return
+    setKept(true) // optimistic: the chip reads « Gardé » immediately
+    const id = await keepPhoto(srcRef.current ?? draft.key, () => setKept(false))
+    if (!id) setKept(false) // R2 unset / offline — put the offer back
+  }
+
+  // « Enregistrer sur l'appareil » — hand the shot back to the phone's own photos
+  // (share sheet → "Save image", or a download). Must run inside this tap: the Web
+  // Share API is gesture-gated, so no await may precede it. Hence srcRef — the bytes
+  // are already in hand and a photo attached in THIS composer never needs a fetch.
+  async function saveDeviceCopy() {
+    const blob = srcRef.current
+    if (!blob) return
+    try {
+      await saveToDevice(blob)
+      setSaved(true)
+    } catch {
+      /* the browser refused both paths — the note still carries the photo */
+    }
   }
 
   const body: Record<string, unknown> = draft
@@ -271,7 +329,7 @@ export function useMemoAttach({
                   onClick={() => photoRef.current?.click()}
                   disabled={busy || recording}
                 >
-                  <Icon name="camera-bold" size={16} /> {photoLabel ?? t.memo.drawPhoto}
+                  <Icon name="camera-bold" size={16} /> {photoLabel ?? t.memo.photoAttach}
                 </button>
                 <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => void onPhotoFile(e)} />
               </>
@@ -294,6 +352,7 @@ export function useMemoAttach({
       {/* What's attached, and the one way off it. Reads as a chip under the field —
           the note being composed is still the text box, not this. */}
       {draft && (
+        <>
         <div className="memo-attach__chip">
           {draft.kind === 'audio' ? (
             <button
@@ -319,6 +378,34 @@ export function useMemoAttach({
             <Icon name="x-bold" size={15} />
           </button>
         </div>
+
+        {/* Where else this picture should live. A photo joined to a note used to exist
+            ONLY on that note — clearing the note took it with it, and a shot snapped in
+            the app never reached the phone's own camera roll either. Two calm, optional
+            keeps, offered right where the picture is (Cluster wraps them at 360px). */}
+        {draft.kind !== 'audio' && (
+          <Cluster className="memo-attach__keeps">
+            {gallery && draft.kind === 'image' && (
+              <button
+                type="button"
+                className={'chip' + (kept ? ' is-on' : '')}
+                onClick={() => void keepToPhotos()}
+                // Keeping uploads a second copy — offline it would just fail. The note
+                // itself still posts (it rides the outbox); only this extra keep waits.
+                disabled={kept || !online}
+                aria-pressed={kept}
+              >
+                <Icon name={kept ? 'check-bold' : 'image-square-bold'} size={14} />{' '}
+                {kept ? t.memo.keptInPhotos : t.memo.keepInPhotos}
+              </button>
+            )}
+            <button type="button" className={'chip' + (saved ? ' is-on' : '')} onClick={() => void saveDeviceCopy()}>
+              <Icon name={saved ? 'check-bold' : 'download-simple-bold'} size={14} />{' '}
+              {saved ? t.memo.savedToDevice : t.memo.saveToDevice}
+            </button>
+          </Cluster>
+        )}
+        </>
       )}
 
       <DrawPad

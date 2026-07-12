@@ -89,6 +89,9 @@ export const EN: typeof FR = {
     allDay: 'All day',
     emptyLists: 'No leaving checklist for today — pick one below.',
     noEvents: 'Nothing planned today.',
+    // Header for free-typed departure items (not from a saved checklist) — grouped
+    // under one heading on the departure card, day-pinned to today.
+    adhocSection: 'Don’t forget',
   },
   habits: {
     title: 'My habits',
@@ -517,6 +520,13 @@ export const EN: typeof FR = {
     editChoiceCopyHint: 'An identical copy to edit — the original stays.',
     editChoiceTrace: 'Trace over',
     editChoiceTraceHint: 'The original faded as a guide to redraw over — the original stays.',
+    // A photo joined to a note: snap it, pin it — then keep it.
+    photoAttach: 'Photo',
+    keepInPhotos: 'Keep in the photos',
+    keptInPhotos: 'Kept in the photos',
+    savedToPhotos: 'Kept in the photos',
+    saveToDevice: 'Save to my device',
+    savedToDevice: 'Saved',
     // #14b — draw over a faint watermark photo (photo layer).
     drawPhoto: 'Over a photo',
     photo: 'Photo',
@@ -2806,6 +2816,7 @@ export const EN: typeof FR = {
     more: (n: number) => `Recent (${n})`,
     hide: 'Hide',
     clearAll: 'Clear all',
+    dismiss: 'Dismiss',
     firstHint: 'Everything here can be undone — your latest actions stay under “Recent”.',
     checked: (s: string) => `"${s}" checked off`,
     cleared: (s: string) => `"${s}" cleared`,

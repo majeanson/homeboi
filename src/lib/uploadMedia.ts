@@ -40,10 +40,17 @@ export interface UploadMediaOpts {
   filename?: string
 }
 
-// POST one media blob to /api/<endpoint> and return its stored R2 key. Throws
-// MediaUnavailableError on a 503 (R2 unbound) and MediaTooLargeError when an
-// un-shrinkable blob is over `maxBytes`; any other failure rethrows.
-export async function uploadMedia(endpoint: string, input: File | Blob, opts: UploadMediaOpts = {}): Promise<string> {
+// POST one media blob to /api/<endpoint> and return the endpoint's FULL reply.
+// Most callers only want the R2 key (`uploadMedia` below); an endpoint that also
+// creates a row hands back more — /api/photos returns `{ id, key }` so the keep can
+// be undone. Throws MediaUnavailableError on a 503 (R2 unbound) and
+// MediaTooLargeError when an un-shrinkable blob is over `maxBytes`; anything else
+// rethrows. The resize/cap/503 policy lives here once, whatever the reply shape.
+export async function uploadMediaRow<T extends { key: string }>(
+  endpoint: string,
+  input: File | Blob,
+  opts: UploadMediaOpts = {},
+): Promise<T> {
   const { resize = true, maxBytes, filename } = opts
   let blob: Blob = input
   if (resize !== false) {
@@ -53,12 +60,17 @@ export async function uploadMedia(endpoint: string, input: File | Blob, opts: Up
   }
   if (maxBytes != null && blob.size > maxBytes) throw new MediaTooLargeError()
   try {
-    const { key } = await api<{ key: string }>(endpoint, { method: 'POST', body: blob })
-    return key
+    return await api<T>(endpoint, { method: 'POST', body: blob })
   } catch (e) {
     if (isStatus(e, 503)) throw new MediaUnavailableError()
     throw e
   }
+}
+
+/** The common case: POST one media blob and return its stored R2 key. */
+export async function uploadMedia(endpoint: string, input: File | Blob, opts: UploadMediaOpts = {}): Promise<string> {
+  const { key } = await uploadMediaRow<{ key: string }>(endpoint, input, opts)
+  return key
 }
 
 export interface UseMediaUploadOpts extends UploadMediaOpts {

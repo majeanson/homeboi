@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../../lib/api'
-import { live } from '../../lib/query'
-import { PHOTOS_KEY } from '../../lib/queryKeys'
+import { usePhotos } from '../../lib/photoGallery'
 import { imgUrl } from '../../lib/image'
 import { useT } from '../../i18n'
 import { useReportEmpty } from '../../lib/useReportEmpty'
@@ -18,11 +15,7 @@ import { CardMini } from './BoardCard'
 export function PhotoFrame() {
   const t = useT()
   const lens = useCardLens()
-  const { data } = useQuery({
-    queryKey: PHOTOS_KEY,
-    queryFn: () => api<{ photos: { id: string; key: string }[] }>('photos'),
-    ...live,
-  })
+  const { data } = usePhotos({ poll: true })
   const photos = data?.photos ?? []
   const [idx, setIdx] = useState(0)
   useEffect(() => {

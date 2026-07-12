@@ -202,6 +202,13 @@
   object-fit: cover;
   border-radius: 50%;
 }
+/* Where else this picture should live (the household frame / the phone's own photos).
+   A Cluster of chips UNDER the staged chip — never inside the pill, which would push
+   the label off a 360px phone. Both are optional keeps, so they read as chips, not
+   as buttons competing with the note's own submit. */
+.memo-attach__keeps {
+  gap: 0.35rem;
+}
 .memo-attach__play {
   display: grid;
   place-items: center;
