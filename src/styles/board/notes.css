@@ -5,11 +5,33 @@
   margin: 0 0 0.75rem;
 }
 .notes__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-faint);
   margin-bottom: 0.5rem;
+}
+/* « Tout effacer » (tidy seam #1): a quiet header-corner action — the strip is
+   the content, not its controls. Inherits the head's small-caps look. */
+.notes__clear-all {
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.notes__clear-all:hover,
+.notes__clear-all:focus-visible {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
 .notes__grid {
   display: flex;

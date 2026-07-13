@@ -13,6 +13,7 @@ import { useKeepInGalleryToast, useKeepKeysInGalleryToast } from '../../lib/draw
 import { useDrawEdit } from '../../lib/drawEdit'
 import { Icon, InlineIcon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { DrawPad } from '../DrawPad'
 import { DrawEditChoice } from '../DrawEditChoice'
 import { ZoomableImg } from '../ZoomableImg'
@@ -71,7 +72,13 @@ export function Notes({
   const ro = isGuest()
   const colorOf = (id: string | null) => memberColorOf(members, id)
   const isDrawing = (n: NoteRow) => n.media_kind === 'drawing' && !!n.media_key
-  const shown = notes.filter((n) => (variant === 'drawings' ? isDrawing(n) : variant === 'notes' ? !isDrawing(n) : true))
+  // « Tout effacer » (tidy seam #1) rides the shared deferred-removal store: the
+  // batch hides NOW, the N dismiss writes wait behind ONE undo toast, and the
+  // board poll can't resurrect a note mid-undo. Keyed on BOARD_KEY like the list.
+  const removal = useDeferredRemoval(BOARD_KEY)
+  const shown = removal.visible(
+    notes.filter((n) => (variant === 'drawings' ? isDrawing(n) : variant === 'notes' ? !isDrawing(n) : true)),
+  )
   const title = variant === 'drawings' ? t.notes.drawings : t.notes.title
 
   // Persist a drawing: upload the PNG + editable scene (#1), then either PATCH an
@@ -121,6 +128,20 @@ export function Notes({
     if (id) setKept((s) => new Set(s).add(n.id))
   }
 
+  // Batch-dismiss every note this strip currently shows, as ONE undoable action
+  // (tidy seam #1 — the Sunday tidy was per-item labour, per-item confirms
+  // included). No confirm, even for media notes: unlike the per-item ✕ (whose
+  // write fires at once and frees the R2 blob), the held writes only run after
+  // the undo window closes — undo restores everything, blobs untouched.
+  function clearAll() {
+    const ids = shown.map((n) => n.id)
+    removal.remove(ids, t.notes.clearedN(ids.length), () =>
+      Promise.all(
+        ids.map((id) => write('notes', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] }).catch(() => {})),
+      ),
+    )
+  }
+
   async function dismiss(n: NoteRow) {
     // A media note frees its R2 blob on delete (the media-undo-blob rule: media rows
     // confirm, they don't undo) — so a parent's ✕ on a drawing/photo/voice memo confirms
@@ -154,8 +175,18 @@ export function Notes({
 
   return (
     <section className={'notes' + (toddler ? ' notes--kid' : '') + (variant === 'drawings' ? ' notes--drawings' : '')} aria-label={title}>
-      <div className="notes__head mono" aria-hidden="true">
-        <InlineIcon name={variant === 'drawings' ? 'paint-brush-bold' : 'push-pin-bold'} /> {title}
+      <div className="notes__head mono">
+        <span aria-hidden="true">
+          <InlineIcon name={variant === 'drawings' ? 'paint-brush-bold' : 'push-pin-bold'} /> {title}
+        </span>
+        {/* « Tout effacer » — one tap empties the strip, one toast undoes it.
+            Writes, so hidden from a guest; parent lens only (the toddler tap-to-
+            clear stays per-note); pointless under two notes. */}
+        {!ro && !toddler && shown.length > 1 && (
+          <button type="button" className="notes__clear-all" onClick={clearAll}>
+            <InlineIcon name="broom-bold" size={13} /> {t.notes.clearAll}
+          </button>
+        )}
       </div>
       <div className="notes__grid">
         {shown.map((n) => {
