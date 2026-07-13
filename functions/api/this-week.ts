@@ -27,7 +27,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const weekEnd = addLocalDays(today, 7)
   const weekStart = addLocalDays(today, -7)
 
-  const [members, blocks, mealsAhead, oneOff, recurring, projects, ledgerRows, routineRows, moodRows] = await Promise.all([
+  const [members, blocks, mealsAhead, oneOff, recurring, projects, ledgerRows, routineRows] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
@@ -95,19 +95,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, weekStart, weekEnd)
       .all<{ id: string; name: string; member_id: string | null; done_idx_json: string }>(),
-    // Week behind — the "week of moments" (#C): each routine finish where a feeling was
-    // tapped, with its optional selfie. By FACE + glyph, one row per routine per day —
-    // NO count, NO trend, NO score (the same calm rule as the chore ledger above).
-    ctx.env.DB.prepare(
-      `SELECT r.name, r.member_id, rr.date, rr.feeling, rr.feeling_photo
-         FROM routine_runs rr
-         JOIN routines r ON r.id = rr.routine_id
-        WHERE r.household_id = ? AND rr.date >= ? AND rr.date < ?
-          AND (rr.feeling IS NOT NULL OR rr.feeling_photo IS NOT NULL)
-        ORDER BY rr.date DESC`,
-    )
-      .bind(hh, weekStart, weekEnd)
-      .all<{ name: string; member_id: string | null; date: number; feeling: string | null; feeling_photo: string | null }>(),
   ])
 
   const memberById = new Map(members.results.map((m) => [m.id, m]))
@@ -201,21 +188,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .filter((p) => p.last_done_at != null && p.last_done_at >= weekStart && p.last_done_at < today)
     .map((p) => ({ title: p.title, color: p.color }))
 
-  // The "week of moments" (#C) — this week's routine feelings/selfies, by face + glyph,
-  // newest first. NOT a count/trend/streak: just which moments happened, whose.
-  const moods = moodRows.results.map((m) => ({
-    date: m.date,
-    name: nameOf(m.member_id),
-    face: faceOf(m.member_id),
-    feeling: m.feeling,
-    feelingPhoto: m.feeling_photo,
-  }))
-
   return ok({
     today,
     weekStart,
     weekEnd,
     ahead: { meals: mealsAhead.results, events, birthdays, work, projects: projectsAhead },
-    behind: { chores: choresDone, routines: routinesDone, projects: projectsDone, moods },
+    behind: { chores: choresDone, routines: routinesDone, projects: projectsDone },
   })
 }, 'operator')

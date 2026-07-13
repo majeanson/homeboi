@@ -343,17 +343,6 @@ a.ledger__chore--link {
   font-weight: 600;
   margin-right: 0.3rem;
 }
-/* #C — the "week of moments" mood glyph + optional selfie thumb (a moment, not a count). */
-.tweek__mood {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-.tweek__selfie {
-  width: 1.9rem;
-  height: 1.9rem;
-  object-fit: cover;
-  border-radius: 8px;
-}
 .tweek__spine {
   display: inline-block;
   width: 4px;

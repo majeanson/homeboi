@@ -15,10 +15,6 @@ import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
 import { isCompanion } from '../lib/companions'
-import { useMediaUpload } from '../lib/uploadMedia'
-import { FEELINGS, FEELING_EMOJI, type Feeling } from '../lib/feelings'
-import { Cluster } from './Layout'
-import { ZoomableImg } from './ZoomableImg'
 
 // The RUN of one routine — the calm "right now / then" picture story extracted
 // from KidView so it can play on EVERY surface, not just the locked toddler
@@ -60,10 +56,6 @@ export interface PlayerRoutine {
   // The owning member's chosen companion creature ('fox'|… , null = none). Purely
   // decorative company during the run; bound to time-of-day, never to progress.
   companion?: string | null
-  // #C — today's one-tap feeling ('sun'|'cloud'|'rain'|null) + optional selfie R2 key,
-  // tapped at the finish. Kept ~7 days as a "moment", never aggregated into a score.
-  feeling?: string | null
-  feelingPhoto?: string | null
 }
 // A running/just-finished timer is { endsAt } (the unix second it reaches zero);
 // a paused one is { left } (banked seconds). The player derives remaining from the
@@ -144,33 +136,6 @@ export function RoutinePlayer({
       }),
     }),
   })
-
-  // #C — the end-of-routine FEELING + optional daily SELFIE. Optimistic so the tap
-  // feels instant; writeWith queues it offline like the toggle. Picking again just
-  // overwrites (no history) — it's a moment of today, never a tally.
-  const setFeeling = useOptimisticMutation<
-    RoutinesData,
-    { routineId: string; feeling?: string | null; feelingPhoto?: string | null }
-  >({
-    queryKey: ROUTINES_KEY,
-    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: v }),
-    apply: (old, v) => ({
-      routines: old.routines.map((r) =>
-        r.id === v.routineId
-          ? {
-              ...r,
-              ...('feeling' in v ? { feeling: v.feeling } : {}),
-              ...('feelingPhoto' in v ? { feelingPhoto: v.feelingPhoto } : {}),
-            }
-          : r,
-      ),
-    }),
-  })
-  // The selfie blob upload (online-only — blobs can't ride the offline outbox). On
-  // success we PATCH its key onto today's run via setFeeling; R2 unset → the control
-  // hides (MediaUnavailableError) and the mood-only path still works.
-  const [selfieHidden, setSelfieHidden] = useState(false)
-  const selfie = useMediaUpload({ endpoint: 'routine-selfie', onUnavailable: () => setSelfieHidden(true) })
 
   // One continuous run, not a per-step start/stop: tap ▶ ONCE to begin (reads the
   // first step aloud), then → through each step, ✓ on the last. Each → laps the
@@ -369,67 +334,6 @@ export function RoutinePlayer({
                 ))}
               </div>
               {totalSecs > 0 && <div className="tdl-total mono">⏱ {clock(totalSecs)}</div>}
-              {/* #C — how did it go? A calm one-tap feeling (soleil/nuage/pluie) +
-                  an optional quick selfie. Optional and skippable; picking again just
-                  overwrites (a moment of today, never a score). A guest can't commit. */}
-              {!ro && (
-                <div className="tdl-feeling">
-                  <div className="tdl-feeling__prompt">{t.routines.feelingPrompt}</div>
-                  <Cluster>
-                    {FEELINGS.map((f) => (
-                      <button
-                        key={f}
-                        type="button"
-                        className={'tdl-feeling__opt' + (routine.feeling === f ? ' is-on' : '')}
-                        aria-pressed={routine.feeling === f}
-                        aria-label={t.routines.feeling[f]}
-                        title={t.routines.feeling[f]}
-                        onClick={() =>
-                          setFeeling.mutate({
-                            routineId: routine.id,
-                            // Tapping the chosen one again clears it — nothing is forced.
-                            feeling: routine.feeling === f ? null : (f as Feeling),
-                          })
-                        }
-                      >
-                        <span aria-hidden="true">{FEELING_EMOJI[f]}</span>
-                      </button>
-                    ))}
-                  </Cluster>
-                  {/* The optional daily selfie — hidden when R2 is unbound. */}
-                  {!selfieHidden &&
-                    (routine.feelingPhoto ? (
-                      <div className="tdl-selfie">
-                        <ZoomableImg src={imgUrl(routine.feelingPhoto)} alt="" className="tdl-selfie__img" />
-                        <button
-                          type="button"
-                          className="tdl-selfie__clear"
-                          onClick={() => setFeeling.mutate({ routineId: routine.id, feelingPhoto: '' })}
-                        >
-                          {t.routines.selfieRemove}
-                        </button>
-                      </div>
-                    ) : (
-                      <label className={'tdl-selfie__add' + (selfie.busy ? ' is-busy' : '')}>
-                        <InlineIcon name="camera-bold" /> {t.routines.selfieAdd}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="user"
-                          hidden
-                          disabled={selfie.busy}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0]
-                            e.target.value = ''
-                            if (!file) return
-                            const key = await selfie.upload(file)
-                            if (key) setFeeling.mutate({ routineId: routine.id, feelingPhoto: key })
-                          }}
-                        />
-                      </label>
-                    ))}
-                </div>
-              )}
               {/* A gentle, deliberate "do it again" — not a streak hook, just the
                   choice the calm STOP leaves open. A guest can't commit progress. */}
               {!ro && (

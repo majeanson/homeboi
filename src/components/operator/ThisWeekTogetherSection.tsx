@@ -10,8 +10,6 @@ import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { Icon } from '../Icon'
 import { colourFor } from '../../lib/things'
-import { FEELING_EMOJI, isFeeling } from '../../lib/feelings'
-import { imgUrl } from '../../lib/image'
 
 // "Cette semaine ensemble" — a calm, READ-ONLY weekly ritual surface (Réglages).
 // The week AHEAD (meals, who's at work, birthdays, events, projects) and the week
@@ -38,9 +36,6 @@ interface WeekData {
     chores: { date: number; choreTitle: string; choreColor: string | null; helpers: Face[] }[]
     routines: { name: string; who: string | null; face: Face }[]
     projects: { title: string; color: string | null }[]
-    // #C — the "week of moments": routine feelings/selfies this week, by face + glyph.
-    // feeling may be null when only a selfie was added (still a moment worth showing).
-    moods: { date: number; name: string | null; face: Face; feeling: string | null; feelingPhoto: string | null }[]
   }
 }
 
@@ -74,7 +69,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   const hasAhead =
     !!ahead && (ahead.meals.length || ahead.events.length || ahead.birthdays.length || ahead.work.length || ahead.projects.length)
   const hasBehind =
-    !!behind && (behind.chores.length || behind.routines.length || behind.projects.length || behind.moods.length)
+    !!behind && (behind.chores.length || behind.routines.length || behind.projects.length)
 
   return (
     <OperatorSection title={t.operator.thisWeekTitle} help={help}>
@@ -217,27 +212,6 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                       <div key={i} className="tweek__row">
                         <span className="tweek__spine" style={{ background: colourFor('project', p.color) }} aria-hidden="true" />
                         <span className="tweek__chore">{p.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {/* #C — the "week of moments": each routine finish where a feeling was
-                    tapped, by day + face + glyph (+ selfie thumb). No count, no trend. */}
-                {!!behind!.moods.length && (
-                  <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="smiley-bold" size={14} /> {t.operator.thisWeekMoods}</h4>
-                    {behind!.moods.map((m, i) => (
-                      <div key={i} className="tweek__row tweek__row--faces">
-                        <span className="tweek__when mono">{dayName(m.date)}</span>
-                        {faceChip(m.face, i)}
-                        {isFeeling(m.feeling) && (
-                          <span className="tweek__mood" title={t.routines.feeling[m.feeling]} aria-hidden="true">
-                            {FEELING_EMOJI[m.feeling]}
-                          </span>
-                        )}
-                        {m.feelingPhoto && (
-                          <img className="tweek__selfie" src={imgUrl(m.feelingPhoto)} alt="" aria-hidden="true" />
-                        )}
                       </div>
                     ))}
                   </div>

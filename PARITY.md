@@ -137,7 +137,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 
 | #   | Feature           | Tables                                      | Endpoints                                                   | Pages / components                                       | Query keys |
 | --- | ----------------- | ------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- | ---------- |
-| F28 | Routines & player | routines, routine_runs (0001+, timers 0079) | routines, routine-audio, routine-card-photo, routine-selfie | Routines, RoutineFormPage, RoutineRunPage, RoutinePlayer | ROUTINES   |
+| F28 | Routines & player | routines, routine_runs (0001+, timers 0079) | routines, routine-audio, routine-card-photo                 | Routines, RoutineFormPage, RoutineRunPage, RoutinePlayer | ROUTINES   |
 | F29 | Mur de collants   | routine_stickers (0105)                     | routine-stickers                                            | StickerWallPage                                          | STICKERS   |
 | F30 | Jouer             | —                                           | —                                                           | JouerPage, jouer/\*                                      | —          |
 
@@ -688,7 +688,7 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 
 17. [ ] 🟢 **D5 hygiene (F4/F9/F28/F33×D5)** — `SILENT_PATHS` carries a **dead
         `capture-classify`** entry (no route in `worker/routes.ts`) and omits
-        `note-media`, `routine-card-photo`, `routine-selfie`, `ask`, `place-import`,
+        `note-media`, `routine-card-photo`, `ask`, `place-import`,
         `guest/intake-media`, `guest/postbox-media`, `guest-links`, `guest/*-submit`,
         **`recipe-ocr`** — each over-broadcasts `[['board']]` (harmless superset).
         Cells stay ✅; add to `SILENT_PATHS` when a wave touches that file. **→ Wave D.**

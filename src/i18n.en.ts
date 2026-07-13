@@ -1758,12 +1758,6 @@ export const EN: typeof FR = {
     // Calm aria for the per-card progress ring — deliberately no number (the ring
     // shows position today, not a tally).
     progressAria: 'Where things stand today',
-    // #C — the end-of-routine feeling + optional daily selfie (kept ~7 days).
-    feelingPrompt: 'How did it go?',
-    feeling: { sun: 'Sun', cloud: 'Cloud', rain: 'Rain' },
-    selfieAdd: 'Take a photo',
-    selfieRemove: 'Remove photo',
-    finishedWith: (name: string, feeling: string) => `${name} finished with ${feeling}`,
     // The companion buddy: tap it to hear a warm line (on-device). Tap-initiated,
     // never a finish-cheer — presence + play, not a reward.
     companionTap: 'Tap your companion',
@@ -2268,7 +2262,6 @@ export const EN: typeof FR = {
     thisWeekProjects: 'Projects',
     thisWeekChores: 'Chores',
     thisWeekRoutines: 'Routines',
-    thisWeekMoods: 'The week in feelings',
     thisWeekAheadEmpty: 'Nothing planned this week.',
     thisWeekBehindEmpty: 'The week’s just starting — nothing to show yet.',
     thisWeekYears: (n: number) => `${n} yrs`,

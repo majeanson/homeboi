@@ -14,7 +14,6 @@ import { HubHead } from '../components/HubHead'
 import { SectionHeader } from '../components/SectionHeader'
 import { Avatar } from '../components/Avatar'
 import { RoutineRing } from '../components/RoutineRing'
-import { FEELING_EMOJI, isFeeling } from '../lib/feelings'
 import { SectionIntro } from '../components/SectionIntro'
 import { imgUrl } from '../lib/image'
 import { CATS } from '../lib/cats'
@@ -54,9 +53,6 @@ interface RoutineRow {
   // which EMPTIES nightly, NFR-CALM-4). Drives the calm "où on est rendu" ring:
   // proportion done today, NEVER a streak/count-over-time.
   doneIdx?: number[]
-  // #C — today's one-tap feeling ('sun'|'cloud'|'rain'|null), tapped at the finish.
-  // A moment of today, shown as a glyph on the card; never aggregated.
-  feeling?: string | null
 }
 
 // The four moment buckets the overview groups into: the three routine cues plus
@@ -188,21 +184,6 @@ function RoutinesParent() {
             {/* Today's progress ring, only once there are steps to track. */}
             {r.cards.length > 0 && (
               <RoutineRing done={doneCount} total={r.cards.length} tint={tint} label={t.routines.progressAria} />
-            )}
-            {/* Today's feeling, if the child tapped one at the finish (#C) — a glyph,
-                never a count. Cleared nightly with the rest of the run. */}
-            {isFeeling(r.feeling) && (
-              <span
-                className="routine-card__feeling"
-                title={
-                  r.memberName
-                    ? t.routines.finishedWith(r.memberName, t.routines.feeling[r.feeling])
-                    : t.routines.feeling[r.feeling]
-                }
-                aria-hidden="true"
-              >
-                {FEELING_EMOJI[r.feeling]}
-              </span>
             )}
             <span className="routine-card__count mono">{t.routines.stepsN(r.cards.length)}</span>
           </span>

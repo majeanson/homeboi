@@ -352,11 +352,6 @@
   color: var(--ink-soft);
   font-size: var(--text-sm);
 }
-/* Today's feeling glyph on the card foot (#C) — a moment, beside the ring. */
-.routine-card__feeling {
-  font-size: 1.15rem;
-  line-height: 1;
-}
 /* The card foot: the quiet step count on the left, the ▶ "Faire" run action on the
    right — a routine can now be done from any surface, not only the toddler kiosk. */
 .routine-card__foot {
