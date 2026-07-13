@@ -16,7 +16,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
-import { PairPrompt } from '../components/Fallback'
+import { Loading, PairPrompt } from '../components/Fallback'
 import { formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
@@ -169,10 +169,14 @@ export function Kitchen() {
   // weekDates steps by LOCAL calendar days (DST-safe) — see components/kitchen/week.ts,
   // shared with the Idées scene so the two never disagree about which days exist.
   const heroSlot = mealPrefs.hero
-  const week: WeekDay[] = weekDates(weekStart, windowDays).map((date) => ({
-    date,
-    meal: days.find((d) => d.date === date && d.slot === heroSlot),
-  }))
+  // No payload (cold load bails to <Loading/> below; a hard error with an empty
+  // cache lands here) → no grid rather than a week anchored at weekStart 0 (1970).
+  const week: WeekDay[] = !meals.data
+    ? []
+    : weekDates(weekStart, windowDays).map((date) => ({
+        date,
+        meal: days.find((d) => d.date === date && d.slot === heroSlot),
+      }))
   // The same window as `{date,label}` day chips — what the inline « Idées de repas »
   // pool plans onto. Same source and DST-safe stepping as the grid above.
   const weekLabeled = useWeekLabeled(weekStart, windowDays, lang)
@@ -292,6 +296,13 @@ export function Kitchen() {
   useEffect(() => () => registerKitchen(null, NO_KITCHEN_ACTIONS), [registerKitchen])
 
   if (unauth) return <PairPrompt />
+  // Plan seam #6 (friction audit): on a genuinely cold first paint there is no
+  // meals payload yet, so `weekStart ?? 0` anchored the grid at the epoch and the
+  // page flashed a January-1970 week. Hold the shared loading pattern until the
+  // real anchor arrives — the persisted cache restores it before first paint on a
+  // warm start, and a failed poll keeps the last good frame (TanStack), so this
+  // only ever shows on the true cold load the flash came from.
+  if (!meals.data && !meals.error) return <Loading />
 
   if (audience === 'toddler') {
     return (
