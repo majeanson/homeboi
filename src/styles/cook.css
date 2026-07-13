@@ -211,6 +211,18 @@
   background: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* Anchor the invisible halo below. */
+  position: relative;
+}
+/* Cook seam #7: the visible ~27px box is tapped by wet/floury fingers at arm's
+   length — grow an invisible ≥44px halo around it (the board edit badges'
+   ::before technique, 5c64b3e), visuals unchanged. The RIGHT inset stays small
+   on purpose: it leaves a dead gap before the read-aloud text zone, so a
+   near-miss lands on nothing rather than narrating instead of ticking. */
+.cook__ing-check::before {
+  content: '';
+  position: absolute;
+  inset: -9px -4px -9px -14px;
 }
 .cook__ing-box {
   display: inline-flex;
