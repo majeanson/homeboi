@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { useRecordUndo } from '../../lib/toast'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useSingleOpen } from '../Disclosure'
 import { isGuest } from '../../lib/device'
@@ -18,10 +17,9 @@ import { MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
 import { type Recipe } from '../../lib/recipes'
-import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, LEFTOVERS_KEY, MEALS_KEY } from './types'
-import { mealOptions } from './comboOptions'
-import { MealPool } from './MealPool'
+import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
 import { MealIdeas, usePlanIdea } from './MealIdeas'
+import { Leftovers } from './Leftovers'
 import { MealPlanPicker } from './MealPlanPicker'
 import { SubTabs } from '../SubTabs'
 import { Cluster } from '../Layout'
@@ -39,8 +37,10 @@ import { RowActions } from '../RowActions'
 //   ⭐ Favoris          — recipes the household loved (useLoves) — shows WHICH faces
 //                        loved it, never a count (calm — the chore-ledger rule).
 //   🧊 À écouler        — Restants (leftovers) to finish + a `rankUseSoon` shortlist
-//                        of recipes that use up what's about to spoil — was
-//                        Leftovers.tsx, plus the old "useup" suggestion source.
+//                        of recipes that use up what's about to spoil (the old "useup"
+//                        suggestion source). Restants is the SAME shared <Leftovers>
+//                        La cuisine ▸ Repas renders inline above « Idées de repas »,
+//                        so the two can't drift — same deal as <MealIdeas>.
 //   🤖 IA               — a fresh `useMealSuggest` AI batch, as rows (hides when AI
 //                        is off — degrade, never crash).
 //   👧 Proposé par      — `meal_ideas` rows a child suggested (`suggested_by` set);
@@ -98,7 +98,6 @@ export function IdeasDrawer({
 }) {
   const t = useT()
   const write = useWrite()
-  const recordUndo = useRecordUndo()
   const ro = isGuest()
 
   const { data: membersData } = useQuery({
@@ -108,35 +107,9 @@ export function IdeasDrawer({
   const members = membersData?.members ?? []
   const memberById = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
 
-  const recentOpts = mealOptions(recentMeals, t)
-
   // « Idées » — the kept, reusable pool. Planning an idea leaves it in the pool. The
   // 👧 chip's rows are meal_ideas rows too, so they plan through the same helper.
   const planIdea = usePlanIdea()
-
-  // « À écouler » — Restants: planning CONSUMES the pool row (it becomes a real,
-  // badged meal), so this carries a compensating undo (delete the meal AND
-  // re-insert the pool row) — mirrors the retired Leftovers.tsx exactly.
-  async function planLeftover(l: Leftover, date: number, slot: MealSlot) {
-    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY]
-    const res = await write<{ mealId?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { action: 'plan', id: l.id, date, slot },
-      affectedKeys: keys,
-    }).catch(() => null)
-    const mealId = res && !res.queued ? res.data?.mealId : undefined
-    recordUndo({
-      message: t.undo.leftoverPlanned(l.title),
-      onUndo: async () => {
-        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
-        await write('meal-leftovers', {
-          method: 'POST',
-          body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
-          affectedKeys: keys,
-        }).catch(() => {})
-      },
-    })
-  }
 
   // A recipe row (⭐ Favoris / the 🧊 use-soon shortlist) plans REUSABLY, like an
   // idea — nothing is consumed, so no undo bookkeeping is needed.
@@ -234,32 +207,7 @@ export function IdeasDrawer({
 
       {active === 'useSoon' && (
         <>
-          <MealPool<Leftover, MealRow>
-            items={leftovers}
-            queryKey={LEFTOVERS_KEY}
-            collectionKey="leftovers"
-            endpoint="meal-leftovers"
-            options={recentOpts}
-            buildAddBody={(title, picked) => ({ title, recipeId: picked?.data.recipe_id ?? null, sourceMealId: picked?.data.id ?? null })}
-            onPlan={planLeftover}
-            renderLead={() => <InlineIcon name="arrow-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />}
-            // A leftover born from a saved recipe: its picto opens that recipe (same
-            // tight icon-only link « Idées » uses). Tapping the chip still plans it.
-            leadTo={(l) => (l.recipe_id ? `/kitchen/recipe/${l.recipe_id}` : undefined)}
-            leadToLabel={t.recipes.open}
-            week={week}
-            helpKey="leftovers"
-            guide={{ card: 'kitchen', point: 8 }}
-            hideHeading
-            labels={{
-              heading: t.kitchen.leftovers,
-              addAria: t.kitchen.leftoversAdd,
-              addPlaceholder: t.kitchen.leftoversAdd,
-              empty: t.kitchen.leftoversEmpty,
-              removeLabel: t.kitchen.removeLeftover,
-              removedUndo: (title) => t.undo.leftoverRemoved(title),
-            }}
-          />
+          <Leftovers leftovers={leftovers} recentMeals={recentMeals} week={week} hideHeading />
           {useSoonShortlist.length > 0 && (
             <section className="ideas-drawer__shortlist">
               <p className="sheet__group-label mono">{t.kitchen.useSoon}</p>

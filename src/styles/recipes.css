@@ -660,6 +660,16 @@
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+/* …and the two halves take ONE height. Each only had `min-height: 40px`, so the icon
+   half (14px of content) sat at exactly 40 while the chip half grew with its title —
+   a wrapped name, or a bigger text-size preference — and the seam stepped: a short
+   icon box abutting a taller chip. Stretching BOTH to the row means whatever makes one
+   taller makes the other match, so the pill reads as one continuous control. Scoped to
+   the fused pair — a chip with no picto beside it is unaffected. */
+.kitchen__idea-open,
+.kitchen__idea-open + .kitchen__idea-name {
+  align-self: stretch;
+}
 .kitchen__idea-name {
   flex: 1;
   min-width: 0;

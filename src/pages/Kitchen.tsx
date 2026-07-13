@@ -32,6 +32,7 @@ import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
+import { Leftovers } from '../components/kitchen/Leftovers'
 import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { reschedule } from '../components/kitchen/mealMutations'
@@ -573,10 +574,23 @@ export function Kitchen() {
               DayPlanPage) — a row's pencil and the ＋ "Planifier un repas" day
               picker both navigate there. No in-page sheet to render here. */}
 
+          {/* « Restants » — its own section under the week grid, ABOVE the ideas pool:
+              what's already cooked and still to finish is read before what to cook
+              next. Same shared <Leftovers> the drawer's 🧊 « À écouler » source
+              renders, so the two can't drift. It owns the "leftovers" help bubble via
+              its heading (the old one-line hint beside « Plus d'idées » is gone — the
+              section itself IS the affordance now). */}
+          <Leftovers
+            leftovers={leftoversQ.data?.leftovers ?? []}
+            recentMeals={meals.data?.recent ?? []}
+            week={weekLabeled}
+            help={tabHelp}
+          />
+
           {/* The kept « Idées de repas » pool, back under the week grid where the
               week is read — the pool you add to daily shouldn't cost a scene. It is
               the SAME <MealIdeas> the drawer's first source renders, so the two can
-              never drift. C-14 moved the OTHER idea sources (⭐ 🧊 🤖 👧) away, not
+              never drift. C-14 moved the OTHER idea sources (⭐ 🤖 👧) away, not
               this one. The pool owns the "ideas" help bubble via its heading. */}
           <MealIdeas
             ideas={ideasQ.data?.ideas ?? []}
@@ -589,26 +603,14 @@ export function Kitchen() {
           />
 
           {/* C-14 — the ONE « Idées » drawer opener, reachable here AND from the ＋
-              Add sheet. It reads « Plus d'idées » beside the inline pool: the drawer
+              Add sheet. It reads « Plus d'idées » beside the inline pools: the drawer
               is where the OTHER sources live (⭐ Favoris, 🧊 À écouler, 🤖 IA, 👧
-              Proposé par). Restants keeps a slim one-line hint beside it (decided) —
-              the full list lives inside the drawer's 🧊 « À écouler » chip. */}
+              Proposé par). */}
           <Cluster className="kitchen__ideas-opener">
             <button type="button" className="btn btn--primary" onClick={() => openIdeas('ideas')}>
               <InlineIcon name="bowl-food-bold" /> {t.kitchen.ideasMore}
             </button>
-            {(leftoversQ.data?.leftovers?.length ?? 0) > 0 && (
-              <button
-                type="button"
-                className="kitchen__restants-hint mono"
-                onClick={tabHelp.pick('leftovers', () => openIdeas('useSoon'))}
-              >
-                <InlineIcon name="arrow-counter-clockwise-bold" size={14} />{' '}
-                {t.kitchen.ideasDrawer.restantsHint(leftoversQ.data!.leftovers.length)}
-              </button>
-            )}
           </Cluster>
-          {tabHelp.bubbleFor('leftovers')}
         </section>
         )}
 

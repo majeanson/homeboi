@@ -827,26 +827,12 @@
   gap: 0.5rem;
 }
 
-/* The grid-level « Idées » opener + the slim Restants hint beside it (C-14 —
-   Restants keeps a one-line teaser here; its full list lives in the drawer's 🧊
-   chip). Cluster wraps them on a narrow phone instead of clipping. */
+/* The grid-level « Idées » opener, under the two inline pools (Restants + Idées de
+   repas) — it leads to the OTHER sources (⭐ 🤖 👧 + the use-soon shortlist). Cluster
+   wraps on a narrow phone instead of clipping. */
 .kitchen__ideas-opener {
   margin-top: 1.4rem;
   align-items: center;
-}
-.kitchen__restants-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  border: none;
-  background: none;
-  color: var(--ink-soft);
-  padding: 0.3rem 0.2rem;
-  cursor: pointer;
-}
-.kitchen__restants-hint:hover,
-.kitchen__restants-hint:focus-visible {
-  color: var(--ink);
 }
 /* A child's suggestion on an otherwise-empty day tile — a small face + « Léa
    propose 🍕 », tapping opens the drawer on 👧 (never auto-plans). */
