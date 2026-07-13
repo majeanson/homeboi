@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { LinkComposer } from './LinkComposer'
 import { GroupForm, type GroupFormValue } from './GroupForm'
-import { api } from '../../lib/api'
+import { api, ApiError } from '../../lib/api'
 import { resizeImage, AVATAR_MAX } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
@@ -27,6 +27,7 @@ import { ContactPhotos } from './ContactPhotos'
 import { ContactFields, type ContactCoreValue } from './ContactFields'
 import { ReviewChecklist } from '../ReviewChecklist'
 import { FormFooter } from '../FormFooter'
+import { StatusMessage } from '../StatusMessage'
 import { Disclosure } from '../Disclosure'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon } from '../Icon'
@@ -91,6 +92,10 @@ export function ContactForm({
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  // The server refused the save/delete (4xx/5xx) — keep the form and say so, like
+  // the sibling forms (PetForm/BusinessForm/CarnetForm). Offline is not an error:
+  // useWrite queues it and resolves, so the form still closes.
+  const [err, setErr] = useState(false)
   // #44 — the multi-card .vcf picker: the parsed cards to choose from (null = closed)
   // and which indices are checked (all preselected). A mid-step before bulk import so
   // a phone's "export all" doesn't dump every contact in.
@@ -311,6 +316,7 @@ export function ContactForm({
   async function save() {
     if (!firstName.trim() || saving) return
     setSaving(true)
+    setErr(false)
     const address = buildAddress()
     const body = {
       firstName: firstName.trim(),
@@ -363,6 +369,9 @@ export function ContactForm({
       } else {
         onSaved() // offline: the create is queued with no id yet — just close
       }
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setSaving(false)
     }
@@ -380,9 +389,13 @@ export function ContactForm({
     })
     if (!okay) return
     setSaving(true)
+    setErr(false)
     try {
       await write('cercle', { method: 'DELETE', body: { id: value.id }, affectedKeys: [CERCLE_KEY, BOARD_KEY] })
       onSaved()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setSaving(false)
     }
@@ -592,6 +605,8 @@ export function ContactForm({
           <p className="cf__rels-empty mono">{t.cercle.saveFirstForLinks}</p>
         </div>
       )}
+
+      {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
 
       {/* Save is the VERY LAST thing in the form; a saved person can also be removed
           (cascades their links + group memberships). */}

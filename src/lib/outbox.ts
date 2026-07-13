@@ -133,6 +133,26 @@ export function rewriteTmpId(e: OutboxEntry, tmpId: string, realId: string): Out
   }
 }
 
+// A replay run dropped entries the server rejected (4xx). The ToastProvider
+// registers a notifier so the user hears about it ONCE per run (a calm line, not
+// per-entry spam) — before this, queued offline writes could vanish silently.
+let replayRejectedNotifier: ((count: number) => void) | null = null
+// The startup replay can finish before the provider mounts — hold the count and
+// flush it on registration so that first run's drops aren't silent either.
+let pendingRejected = 0
+export function setReplayRejectedNotifier(fn: ((count: number) => void) | null): void {
+  replayRejectedNotifier = fn
+  if (fn && pendingRejected > 0) {
+    const n = pendingRejected
+    pendingRejected = 0
+    fn(n)
+  }
+}
+function notifyReplayRejected(count: number): void {
+  if (replayRejectedNotifier) replayRejectedNotifier(count)
+  else pendingRejected += count
+}
+
 // Replay the queue in FIFO order. Stops (keeping order) on a transient failure so
 // it can resume next trigger; drops an entry the server rejects as moot (4xx — the
 // row's gone/forbidden/conflicting), since the live poll will reconcile the cache.
@@ -142,6 +162,7 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return
   replaying = true
   const touched = new Set<string>()
+  let rejected = 0
   try {
     const entries = await allEntries()
     for (let i = 0; i < entries.length; i++) {
@@ -172,6 +193,7 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
         }
         if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
           await remove(e.id) // moot write; cache reconciles on the next poll
+          rejected++
           e.affectedKeys.forEach((k) => touched.add(JSON.stringify(k)))
           continue
         }
@@ -181,6 +203,7 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
   } finally {
     replaying = false
     touched.forEach((k) => qc.invalidateQueries({ queryKey: JSON.parse(k) as QueryKey }))
+    if (rejected > 0) notifyReplayRejected(rejected)
   }
 }
 

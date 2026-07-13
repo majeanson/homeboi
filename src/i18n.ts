@@ -249,6 +249,9 @@ export const FR = {
     live: 'De nouveau en ligne',
     pending: 'en attente',
     unavailable: 'Indisponible hors-ligne',
+    // One calm line per replay run when the server refused some queued writes
+    // (4xx — the row's gone/forbidden). Never one toast per entry.
+    replayFailed: 'Certaines modifications hors ligne n’ont pas pu être enregistrées.',
   },
   audience: {
     parent: 'Parent',
@@ -478,6 +481,9 @@ export const FR = {
     record: 'Mémo vocal',
     stop: 'Arrêter',
     micDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
+    // Shared by every media composer: the blob didn't land (a non-503 failure —
+    // 503 hides the controls instead). The note/recipe text path still works.
+    uploadFailed: 'Le fichier n’a pas pu être envoyé — réessaie.',
     // The ONE attach affordance inside a field box (useMemoAttach). A mémo is
     // joined TO what you wrote — it never replaces it.
     attach: 'Joindre',
@@ -1323,6 +1329,10 @@ export const FR = {
     stepLabel: 'Étape',
     cookDone: 'Bon appétit !',
     deleteConfirm: 'Supprimer cette recette ?',
+    // Backdrop/Esc on an edited (dirty) recipe editor — a stray tap on the scrim
+    // must not silently discard the work.
+    discardConfirm: 'Fermer sans enregistrer ? Tes changements seront perdus.',
+    discardBtn: 'Fermer sans enregistrer',
     count: (n: number) => `${n} ingrédient${n > 1 ? 's' : ''}`,
     save: 'Enregistrer la recette',
     search: 'Chercher une recette…',

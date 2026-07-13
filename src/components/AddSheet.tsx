@@ -27,6 +27,7 @@ import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } fro
 import { Icon, type IconName } from './Icon'
 import { useMemoAttach } from './MemoAttach'
 import { EditField } from './EditField'
+import { StatusMessage } from './StatusMessage'
 import { MotComposer } from './mots/MotComposer'
 import { EntityCombobox } from './EntityCombobox'
 import { templateOptions } from './todos/comboOptions'
@@ -252,6 +253,15 @@ export function AddSheet({
   }, [mode, open])
 
   const [busy, setBusy] = useState(false)
+  // ONE shared "the server said no" line for every in-sheet submit (note / list /
+  // todo / checklist / pantry / réserve / restants). An ApiError used to be caught
+  // and shown NOTHING — the sheet just sat there with the text still in the box.
+  // Offline isn't this: useWrite queues + resolves, so the sheet still closes.
+  // Cleared on the next attempt and whenever the mode / open state changes.
+  const [err, setErr] = useState(false)
+  useEffect(() => {
+    setErr(false)
+  }, [mode, open])
 
   // — « Note rapide » (board) — a plain fridge note: a line and/or ONE clipped memo.
   // No AI here any more; the router moved to the header mic (AskSheet ▸ Classer).
@@ -485,6 +495,7 @@ export function AddSheet({
     const value = v.trim()
     if ((!value && !noteMemo.draft) || busy) return
     setBusy(true)
+    setErr(false)
     try {
       await write('notes', { method: 'POST', body: { text: value, ...noteMemo.body }, affectedKeys: [BOARD_KEY] })
       setText('')
@@ -492,6 +503,7 @@ export function AddSheet({
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -505,6 +517,7 @@ export function AddSheet({
     const value = listText.trim()
     if (!value || busy) return
     setBusy(true)
+    setErr(false)
     try {
       // Offline-aware (like the todo/reserve adds below): queues + replays offline,
       // then affectedKeys reconcile the board + the quick-add ghosts/history panel.
@@ -513,6 +526,7 @@ export function AddSheet({
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -529,6 +543,7 @@ export function AddSheet({
     // "Une date" with no date picked yet — nothing to file against.
     if (todoScope === 'date' && todoDaySec() == null) return
     setBusy(true)
+    setErr(false)
     try {
       await write('todos', {
         method: 'POST',
@@ -541,6 +556,7 @@ export function AddSheet({
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -556,6 +572,7 @@ export function AddSheet({
     if (busy) return
     if (todoScope === 'date' && todoDaySec() == null) return
     setBusy(true)
+    setErr(false)
     try {
       await write('todos', {
         method: 'POST',
@@ -567,6 +584,7 @@ export function AddSheet({
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -578,12 +596,14 @@ export function AddSheet({
     const value = pantryText.trim()
     if (!value || busy) return
     setBusy(true)
+    setErr(false)
     try {
       await write('pantry', { method: 'POST', body: { item: value }, affectedKeys: [PANTRY_KEY] })
       setPantryText('')
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -596,6 +616,7 @@ export function AddSheet({
     const value = reserveText.trim()
     if (!value || busy) return
     setBusy(true)
+    setErr(false)
     try {
       await write('reserve', {
         method: 'POST',
@@ -606,6 +627,7 @@ export function AddSheet({
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -618,12 +640,14 @@ export function AddSheet({
     const value = title.trim()
     if (!value || busy) return
     setBusy(true)
+    setErr(false)
     try {
       await write('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId }, affectedKeys: [LEFTOVERS_KEY] })
       setLeftoverText('')
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
+      setErr(true)
     } finally {
       setBusy(false)
     }
@@ -823,7 +847,12 @@ export function AddSheet({
 
             {/* Fast path: the note box rides ABOVE the chooser on the board, so a quick
                 note is one write-and-Add away (its tile is dropped from the grid below). */}
-            {noteAtTop && <div className="addsheet__lead" data-tour="add-note">{noteForm}</div>}
+            {noteAtTop && (
+              <div className="addsheet__lead" data-tour="add-note">
+                {noteForm}
+                {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
+              </div>
+            )}
 
             {/* The section's chooser — ONE grid with every action the section offers,
                 shown at once (no "Plus…" overflow). The recipe tile is navigate-only:
@@ -868,6 +897,9 @@ export function AddSheet({
             makes the wrapper programmatically focusable (the mode effect lands focus here
             without popping the keyboard) without being a tab stop; outline suppressed in CSS. */}
         <div ref={panelRef} tabIndex={-1} className="addsheet__panel">
+        {/* The shared submit-failed line for whichever form is in the panel (the
+            hoisted note box renders its own copy in the lead block above). */}
+        {err && (drilled || !noteAtTop) && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
         {/* When the note box is hoisted to the top (board), it isn't repeated
             here; a chooser-less / kiosk-fallback sheet still shows it in-panel. */}
         {!noteAtTop && mode === 'note' && noteForm}

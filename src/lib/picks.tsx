@@ -106,8 +106,8 @@ export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Prom
 }
 
 // Unstage: keep the grocery line, drop its deal (remove it from the cashier set).
+// Throws ApiError on a server rejection (offline still queues inside writeWith) so
+// the edit scene can say "not saved" instead of closing as if it worked.
 export async function unstageDeal(qc: QueryClient, itemId: string): Promise<void> {
-  await writeWith(qc, 'list', { method: 'PATCH', body: { id: itemId, deal: null }, affectedKeys: [BOARD_KEY] }).catch(
-    () => {},
-  )
+  await writeWith(qc, 'list', { method: 'PATCH', body: { id: itemId, deal: null }, affectedKeys: [BOARD_KEY] })
 }

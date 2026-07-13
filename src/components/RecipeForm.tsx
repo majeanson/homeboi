@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
+import { useWrite } from '../lib/write'
+import { useConfirm } from '../lib/confirm'
+import { StatusMessage } from './StatusMessage'
 import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
@@ -54,7 +57,8 @@ export function RecipeForm({
   onCancel: () => void
 }) {
   const t = useT()
-  const qc = useQueryClient()
+  const write = useWrite()
+  const confirm = useConfirm()
   // "Read a photo" is pure vision AI — hide it when AI is off. Import stays: it
   // works without AI (JSON-LD / microdata / the paste heuristic), only free-form
   // text falls back, so it's not an AI-only feature.
@@ -64,7 +68,6 @@ export function RecipeForm({
   const ocrEngine = useOcrEngine()
   const cloudOcrAvailable = useCloudOcrAvailable()
   const modalRef = useRef<HTMLDivElement>(null)
-  useModal(modalRef, onCancel)
   // Free the OCR worker's WASM heap when the editor closes — a cheap wall tablet
   // shouldn't hold megabytes after one read. Safe no-op if no read happened.
   useEffect(() => () => void disposeOcr(), [])
@@ -106,7 +109,31 @@ export function RecipeForm({
   // replaces it. Saved alongside the card so the sheet can show "the original".
   const [original, setOriginal] = useState<RecipeOriginal | null>(value?.original ?? null)
 
+  // Dirty guard: this is the one form in a scrim modal, so a stray tap on the
+  // backdrop (or Esc) mid-edit used to discard everything silently. Snapshot the
+  // saveable fields once on mount; backdrop/Esc closes freely while pristine and
+  // asks first once anything changed. The explicit Annuler / ✕ stay immediate.
+  const snap = () =>
+    JSON.stringify({ title, ingredients, steps, stepImages, servings, servingsUnit, prepMin, cookMin, totalMin, notes, readLang, tags, source, image, original })
+  const snapRef = useRef(snap)
+  snapRef.current = snap
+  const initialSnap = useRef<string | null>(null)
+  if (initialSnap.current === null) initialSnap.current = snap()
+  const requestClose = () => {
+    if (snapRef.current() === initialSnap.current) {
+      onCancel()
+      return
+    }
+    void confirm({ message: t.recipes.discardConfirm, confirmLabel: t.recipes.discardBtn, tone: 'default' }).then(
+      (ok) => ok && onCancel(),
+    )
+  }
+  useModal(modalRef, requestClose)
+
   const [busy, setBusy] = useState(false)
+  // The save answered 4xx/5xx — keep the filled form and say so (offline is NOT
+  // this: useWrite queues it and resolves, so the scene still closes calmly).
+  const [err, setErr] = useState(false)
   const [reading, setReading] = useState(false)
   // OCR progress (0..1) for the "Lecture… 60 %" label while transcribing on-device.
   const [readProgress, setReadProgress] = useState(0)
@@ -121,6 +148,9 @@ export function RecipeForm({
   const [confirming, setConfirming] = useState(false)
   const [importing, setImporting] = useState(false)
   const [uploading, setUploading] = useState(false)
+  // A photo upload (hero or step) failed for a NON-503 reason — say so once,
+  // shared line (503 keeps its own contract: hide the controls, stay quiet).
+  const [uploadErr, setUploadErr] = useState(false)
   const [readMsg, setReadMsg] = useState<string | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [importUrl, setImportUrl] = useState('')
@@ -483,10 +513,13 @@ export function RecipeForm({
 
   async function uploadPhoto(file: File) {
     setUploading(true)
+    setUploadErr(false)
     try {
       setImage(await uploadMedia('recipe-image', file))
-    } catch {
-      /* storage off / failure — leave the picture unset, never block the form */
+    } catch (e) {
+      // R2 unbound (503) stays quiet — the picture is simply unset and the form
+      // works on. Any other failure says so, instead of silently eating the pick.
+      if (!(e instanceof MediaUnavailableError)) setUploadErr(true)
     } finally {
       setUploading(false)
     }
@@ -501,13 +534,15 @@ export function RecipeForm({
   // never blocks the form.
   async function uploadStepPhoto(i: number, file: File) {
     setStepUploading(i)
+    setUploadErr(false)
     try {
       const key = await uploadMedia('recipe-step-image', file, { maxBytes: MAX_UPLOAD_BYTES })
       setStepImages((imgs) => sideSet(alignSide(imgs, steps.length), i, key))
     } catch (e) {
       if (e instanceof MediaUnavailableError) setStepPhotoOff(true)
-      /* other failure (incl. an un-shrinkable too-large blob) — leave the step
-         photo unset, never block the form */
+      // Other failure (incl. an un-shrinkable too-large blob) — leave the step
+      // photo unset and say so; never block the form.
+      else setUploadErr(true)
     } finally {
       setStepUploading(null)
     }
@@ -563,18 +598,27 @@ export function RecipeForm({
       original,
       lang: readLang,
     }
-    await api('recipes', {
-      method: value ? 'PATCH' : 'POST',
-      body: value ? { id: value.id, ...fields } : fields,
-    }).catch(() => {})
-    setBusy(false)
-    qc.invalidateQueries({ queryKey: RECIPES_KEY })
-    // A freshly typed tag becomes part of the pill offer next time.
-    qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY })
-    // A recipe's ingredients feed the « À régler » meal-low scan (a planned supper
-    // needing a running-low item), so refresh the card instead of waiting its 5-min poll.
-    qc.invalidateQueries({ queryKey: A_REGLER_KEY })
-    onSaved()
+    setErr(false)
+    try {
+      // useWrite: offline queues + replays instead of dropping the recipe, and the
+      // affected keys invalidate once the write lands. RECIPE_TAGS_KEY — a freshly
+      // typed tag becomes part of the pill offer next time; A_REGLER_KEY — a
+      // recipe's ingredients feed the « À régler » meal-low scan, so the card
+      // refreshes instead of waiting its 5-min poll (write.ts adds it for the
+      // `recipes` path anyway; listed here so the intent is visible).
+      await write('recipes', {
+        method: value ? 'PATCH' : 'POST',
+        body: value ? { id: value.id, ...fields } : fields,
+        affectedKeys: [RECIPES_KEY, RECIPE_TAGS_KEY, A_REGLER_KEY],
+      })
+      onSaved()
+    } catch {
+      // The server said no (4xx/5xx) — keep the filled form; closing here would
+      // discard the recipe as if it saved.
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const imgSrc = recipeImg(image)
@@ -783,7 +827,7 @@ export function RecipeForm({
 
   return (
     <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={value ? t.recipes.edit : t.recipes.new}>
-      <div className="recipe-modal__scrim" onClick={onCancel} aria-hidden="true" />
+      <div className="recipe-modal__scrim" onClick={requestClose} aria-hidden="true" />
       <form className="recipe-modal__card surface" onSubmit={save}>
         <div className="recipe-modal__bar">
           <h2>{value ? t.recipes.edit : t.recipes.new}</h2>
@@ -819,6 +863,9 @@ export function RecipeForm({
               </label>
             )}
           </div>
+          {/* One shared line for a failed photo upload (hero or step) — a non-503
+              failure used to eat the pick silently. 503 hides the controls instead. */}
+          {uploadErr && <StatusMessage tone="error">{t.memo.uploadFailed}</StatusMessage>}
 
           {/* No autoFocus: on a phone it would summon the keyboard over the
               just-opened form (hiding the photo/import helpers); autoComplete
@@ -1034,6 +1081,7 @@ export function RecipeForm({
         </div>
 
         <div className="recipe-modal__foot">
+          {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
           <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
             {t.common.cancel}
           </button>

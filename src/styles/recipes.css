@@ -136,6 +136,11 @@
   padding: 0.8rem 1.1rem;
   border-top: 1px solid var(--line);
 }
+/* The save-failed line rides its own row above the Annuler/Enregistrer pair. */
+.recipe-modal__foot .status-msg {
+  flex: 1 1 100%;
+  margin: 0;
+}
 .recipe-actions {
   justify-content: flex-start;
 }

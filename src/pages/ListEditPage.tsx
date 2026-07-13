@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { StatusMessage } from '../components/StatusMessage'
 import { useConfirm } from '../lib/confirm'
 import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
@@ -41,6 +42,10 @@ export function ListEditPage() {
   const [terms, setTerms] = useState<string[]>([])
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  // The server refused a save/unlink/delete (4xx/5xx). Offline is NOT this —
+  // useWrite queues it and resolves — so on err we keep the scene open and say so
+  // instead of navigating away as if it worked (CaptureForm's pattern).
+  const [err, setErr] = useState(false)
   useEffect(() => {
     if (item && !seeded) {
       setText(item.text)
@@ -80,14 +85,21 @@ export function ListEditPage() {
     const name = text.trim()
     if (!name || busy) return
     setBusy(true)
+    setErr(false)
     // Fold a still-typed term in rather than silently dropping it.
     const allTerms = draft.trim() ? [...terms, draft.trim()] : terms
-    await write('list', {
-      method: 'PATCH',
-      body: { id: itemId, text: name, search_terms: allTerms },
-      affectedKeys: [BOARD_KEY],
-    }).catch(() => {})
-    close()
+    try {
+      await write('list', {
+        method: 'PATCH',
+        body: { id: itemId, text: name, search_terms: allTerms },
+        affectedKeys: [BOARD_KEY],
+      })
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+      setErr(true)
+      setBusy(false)
+    }
   }
 
   // « Pas pressé » — buy it only if a good deal is on. Written the moment you pick
@@ -109,8 +121,15 @@ export function ListEditPage() {
 
   async function unlink() {
     setBusy(true)
-    await unstageDeal(qc, itemId)
-    close()
+    setErr(false)
+    try {
+      await unstageDeal(qc, itemId)
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+      setErr(true)
+      setBusy(false)
+    }
   }
 
   async function remove() {
@@ -118,8 +137,15 @@ export function ListEditPage() {
     // list row's own swipe) — confirm so a stray tap can't drop a grocery item silently.
     if (!(await confirm({ message: t.common.deleteConfirm, tone: 'danger' }))) return
     setBusy(true)
-    await write('list', { method: 'DELETE', body: { id: itemId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
-    close()
+    setErr(false)
+    try {
+      await write('list', { method: 'DELETE', body: { id: itemId }, affectedKeys: [BOARD_KEY] })
+      close()
+    } catch (e) {
+      if (!(e instanceof ApiError)) throw e
+      setErr(true)
+      setBusy(false)
+    }
   }
 
   if (!board) return <Loading />
@@ -241,6 +267,8 @@ export function ListEditPage() {
               <InlineIcon name="tag-bold" /> {t.list.unlinkDeal} · {deal.merchant} {money(deal.price)}
             </button>
           )}
+
+          {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
 
           <div className="li-edit__actions">
             <button type="button" className="btn btn--ghost li-edit__danger" onClick={remove} disabled={busy}>

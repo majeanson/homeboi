@@ -10,12 +10,15 @@
 //                    runs and the entry drops off.
 //   • compensating — the write already applied; onUndo runs a guarded INVERSE.
 //                    No timer: it lives until the cap pushes it off (or undo).
+//   • notice       — nothing to undo at all: a calm one-line FYI (e.g. "some
+//                    offline changes couldn't be saved") riding the same bar +
+//                    session log, with no Annuler button.
 //
 // Keeping eviction pure (it just REPORTS which deferred entries must commit) lets
 // the provider fire the side effects, so StrictMode's double-invoked reducers
 // can't double-commit a write.
 
-type UndoKind = 'deferred' | 'compensating'
+type UndoKind = 'deferred' | 'compensating' | 'notice'
 
 export interface UndoEntry {
   id: number

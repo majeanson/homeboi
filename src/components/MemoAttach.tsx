@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
-import { ApiError, isStatus } from '../lib/api'
+import { isStatus } from '../lib/api'
 import { imgUrl } from '../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { Icon } from './Icon'
@@ -120,6 +120,7 @@ export function useMemoAttach({
   const [drawPhoto, setDrawPhoto] = useState(false) // pad opened straight into the photo flow (#14b)
   const [hidden, setHidden] = useState(false) // R2 unbound (503) → no media here
   const [micDenied, setMicDenied] = useState(false) // getUserMedia rejected → say so, don't fail silent
+  const [uploadFail, setUploadFail] = useState(false) // non-503 upload failure → say so, don't fail silent
   const [kept, setKept] = useState(false) // this photo is now also in the frame (#K)
   const [saved, setSaved] = useState(false) // …and/or handed back to the phone
   const online = useOnline()
@@ -165,6 +166,7 @@ export function useMemoAttach({
     srcRef.current = blob
     setKept(false)
     setSaved(false)
+    setUploadFail(false)
     try {
       const key = await uploadMedia(mediaEndpoint, blob, { resize: kind === 'image' })
       // A drawing also persists its editable scene (#1) so it can be re-opened and
@@ -181,7 +183,9 @@ export function useMemoAttach({
       setOpen(false)
     } catch (e) {
       if (e instanceof MediaUnavailableError || isStatus(e, 503)) setHidden(true)
-      else if (!(e instanceof ApiError)) throw e
+      // Anything else (a 4xx/5xx, a transport drop — blobs can't ride the outbox):
+      // keep the composer and say "retry" instead of eating the capture silently.
+      else setUploadFail(true)
     } finally {
       setBusy(false)
     }
@@ -247,6 +251,7 @@ export function useMemoAttach({
     setOpen(false)
     setKept(false)
     setSaved(false)
+    setUploadFail(false)
     srcRef.current = null
   }
 
@@ -348,6 +353,7 @@ export function useMemoAttach({
 
       {recording && <StatusMessage tone="info">{t.memo.recording}</StatusMessage>}
       {micDenied && <StatusMessage tone="error">{t.memo.micDenied}</StatusMessage>}
+      {uploadFail && <StatusMessage tone="error">{t.memo.uploadFailed}</StatusMessage>}
 
       {/* What's attached, and the one way off it. Reads as a chip under the field —
           the note being composed is still the text box, not this. */}

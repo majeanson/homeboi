@@ -4,6 +4,7 @@ import { useSurface } from './surface'
 import { formatAgo } from './format'
 import { Icon } from '../components/Icon'
 import { findEntry, pushEntry, removeEntry, type UndoEntry } from './undoStack'
+import { setReplayRejectedNotifier } from './outbox'
 
 // The app's undo surface: a small BOUNDED stack of recent undoable actions —
 // newest shown as a pill, the rest reachable behind a "Récents (N)" toggle — so a
@@ -202,6 +203,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [add, commit],
   )
 
+  // A message-only line — nothing to undo (kind 'notice', no Annuler). Same bar,
+  // same session log, same auto-dismiss as the others; used by the outbox to say
+  // a replay run had to drop rejected writes.
+  const notice = useCallback(
+    (message: string) => {
+      const id = ++idRef.current
+      add({ id, message, onUndo: () => {}, kind: 'notice' })
+      timers.current.set(
+        id,
+        setTimeout(() => commit(id), DEFAULT_UNDO_MS),
+      )
+    },
+    [add, commit],
+  )
+
+  // The offline outbox is a plain module (no React) — hand it this provider's
+  // notice() so a replay that dropped 4xx-rejected writes surfaces ONE calm line.
+  const noticeRef = useRef(notice)
+  noticeRef.current = notice
+  const replayFailedMsg = t.offline.replayFailed
+  useEffect(() => {
+    setReplayRejectedNotifier(() => noticeRef.current(replayFailedMsg))
+    return () => setReplayRejectedNotifier(null)
+  }, [replayFailedMsg])
+
   const record = useCallback(
     (req: RecordRequest) => {
       const id = ++idRef.current
@@ -236,8 +262,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [apply, clearTimer, showBar],
   )
 
-  // Whether an action can still be taken back (its entry is still in the live stack).
-  const isLive = useCallback((id: number) => entriesRef.current.some((e) => e.id === id), [])
+  // Whether an action can still be taken back (its entry is still in the live
+  // stack). A 'notice' has nothing to undo, so it never reads as live.
+  const isLive = useCallback(
+    (id: number) => entriesRef.current.some((e) => e.id === id && e.kind !== 'notice'),
+    [],
+  )
 
   // "Tout effacer" from the expanded log: empty the whole session history. Clearing
   // is NOT an undo — any write still held commits (the action stands, like the timer
@@ -324,7 +354,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           bar just stops parking over the UI / mobile nav. */}
       {visible && (newest || history.length > 0) && (
         <div
-          className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}${hintEligible && newest && !expanded ? ' undo-toast--first' : ''}`}
+          className={`undo-toast${expanded ? ' undo-toast--stack' : ''}${!newest && !expanded ? ' undo-toast--log' : ''}${hintEligible && newest && newest.kind !== 'notice' && !expanded ? ' undo-toast--first' : ''}`}
           data-surface={surface}
           role="status"
           onPointerUp={onBarPointerUp}
@@ -387,10 +417,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 </button>
               )}
               <span className="undo-toast__msg">{newest.message}</span>
-              <button type="button" className="undo-toast__btn" onClick={() => undo(newest.id)}>
-                {t.undo.action}
-              </button>
-              {hintEligible && <span className="undo-toast__hint">{t.undo.firstHint}</span>}
+              {newest.kind !== 'notice' && (
+                <button type="button" className="undo-toast__btn" onClick={() => undo(newest.id)}>
+                  {t.undo.action}
+                </button>
+              )}
+              {hintEligible && newest.kind !== 'notice' && <span className="undo-toast__hint">{t.undo.firstHint}</span>}
             </>
           ) : (
             // No write is pending, but the session log isn't empty — keep a quiet
