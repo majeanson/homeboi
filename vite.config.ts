@@ -237,28 +237,36 @@ export default defineConfig({
         // build so they cache across deploys instead of re-downloading inside a
         // renamed index-*.js every time app code changes; i18n.ts (the FR dict —
         // EN lazy-loads separately, see src/i18n.ts) is sizeable and cache-worthy
-        // on its own. Everything else keeps Rollup's default automatic chunking.
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (/[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) return 'react-vendor'
-            if (/[\\/]perfect-freehand[\\/]/.test(id)) return 'drawpad'
-            return undefined
-          }
-          if (id.endsWith('/src/i18n.ts')) return 'i18n'
-          // fix(ci): the family draw pad (#14, ~50 KB incl. perfect-freehand) is
-          // reachable from BOTH the eager board (Notes/MemoControls' "Note rapide"
-          // composer) and several lazy-only pages (CardDeckEditor, RoutineFormPage,
-          // NoteEditor, DrawEditChoice, DrawingGalleryPage). Rollup's default
-          // automatic chunking is supposed to factor a module shared across
-          // multiple entry chunks into its own shared chunk rather than duplicating
-          // or inlining it — but that heuristic is graph-sensitive and quietly
-          // flipped after an unrelated refactor (C-13, bmad/10) landed DrawPad
-          // inside index-*.js instead, pushing combined eager JS 15 KB over the CI
-          // budget (run 28991809068) even though nothing about DrawPad's own
-          // reachability changed. Pin it explicitly rather than depend on Rollup's
-          // default heuristic staying stable across unrelated edits.
-          if (/[\\/]src[\\/](components[\\/]DrawPad\.tsx|lib[\\/](drawViewport|traceFont)\.ts)$/.test(id)) return 'drawpad'
-          return undefined
+        // on its own. Everything else keeps the bundler's automatic chunking.
+        //
+        // fix(ci): these were `manualChunks`, which under Vite 8 (Rolldown) is a
+        // COMPAT SHIM whose chunk alias Rolldown may fold into a neighbouring group.
+        // It quietly did: no i18n-*.js chunk was emitted at all, and the ~76 KB FR
+        // dict floated between index-*.js and drawpad-*.js from build to build with
+        // the module graph. Whenever it landed in index the eager entry sat AT its
+        // 320 KiB cap — which is why three unrelated commits went red on
+        // check:bundle within an hour without touching the shell. `advancedChunks`
+        // is Rolldown's AUTHORITATIVE grouping: a group here is binding, so each
+        // chunk is emitted every build and the entry can't flip-flop. It also
+        // REPLACES manualChunks wholesale — every group we rely on must be listed
+        // here, or it silently collapses back into the entry.
+        advancedChunks: {
+          groups: [
+            { name: 'react-vendor', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/ },
+            { name: 'i18n', test: /[\\/]src[\\/]i18n\.ts$/ },
+            // The family draw pad (#14, ~50 KB incl. perfect-freehand) is reachable
+            // from BOTH the eager board (Notes/MemoControls' "Note rapide" composer)
+            // and several lazy-only pages (CardDeckEditor, RoutineFormPage,
+            // NoteEditor, DrawEditChoice, DrawingGalleryPage). Automatic chunking is
+            // supposed to factor a module shared across entry chunks into its own
+            // shared chunk, but that heuristic is graph-sensitive and quietly flipped
+            // once before (C-13, bmad/10), landing DrawPad inside index-*.js and
+            // pushing eager JS 15 KB over budget (run 28991809068). Pin it.
+            {
+              name: 'drawpad',
+              test: /(node_modules[\\/]perfect-freehand[\\/]|[\\/]src[\\/](components[\\/]DrawPad\.tsx|lib[\\/](drawViewport|traceFont)\.ts)$)/,
+            },
+          ],
         },
       },
     },
