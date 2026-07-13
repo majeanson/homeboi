@@ -335,6 +335,16 @@
   opacity: 0.45;
   cursor: default;
 }
+/* The disabled tile says WHY in place (touch has no tooltip): one small muted
+   line under the label — e.g. « Magasiner la semaine » when no planned meal maps
+   to a recipe yet. Gone as soon as the tile is actionable. */
+.cat-pick .cat-pick__hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-faint);
+  line-height: 1.25;
+  text-align: center;
+}
 /* Wrapper around the picked tile's form/panel. When a tile is chosen its form
    renders below the chooser grid; the mode-change effect scrolls this into view and
    focuses it so it's obvious (it can otherwise sit below the fold on a phone). The

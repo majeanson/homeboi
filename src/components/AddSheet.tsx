@@ -178,9 +178,26 @@ type KitchenActionTile = {
   show: (f: KitchenActionFlags, helpActive: boolean, aiEnabled: boolean) => boolean
   disabled?: (f: KitchenActionFlags, helpActive: boolean) => boolean
   title?: (f: KitchenActionFlags, t: ReturnType<typeof useT>) => string | undefined
+  // A one-line in-tile explanation of WHY the tile is disabled — visible (touch has
+  // no tooltip), quiet, and gone the moment the tile is actionable.
+  hint?: (f: KitchenActionFlags, t: ReturnType<typeof useT>) => string | undefined
 }
 const KITCHEN_ACTIONS: KitchenActionTile[] = [
-  { key: 'shop', icon: 'shopping-bag-bold', iconColour: '#6B8A52', wash: 'var(--sage-wash)', label: (t) => t.kitchen.shopWeek, show: (f) => f.canShop },
+  // « Magasiner la semaine » used to VANISH when no planned meal mapped to a recipe
+  // (a free-text week) — silently, so the flow read as "the feature comes and goes"
+  // (friction audit, plan seam #3). It now stays put, disabled-with-why. In help
+  // mode it stays tappable so the "?" pick can still explain it.
+  {
+    key: 'shop',
+    icon: 'shopping-bag-bold',
+    iconColour: '#6B8A52',
+    wash: 'var(--sage-wash)',
+    label: (t) => t.kitchen.shopWeek,
+    show: () => true,
+    disabled: (f, helpActive) => !helpActive && !f.canShop,
+    title: (f, t) => (f.canShop ? undefined : t.kitchen.shopWeekWhy),
+    hint: (f, t) => (f.canShop ? undefined : t.kitchen.shopWeekWhy),
+  },
   { key: 'ideas', icon: 'bowl-food-bold', iconColour: '#D9842A', wash: 'var(--marigold-wash)', label: (t) => t.kitchen.ideas, show: () => true },
 ]
 
@@ -885,6 +902,9 @@ export function AddSheet({
                         <Icon name={a.icon} size={22} color={a.iconColour} />
                       </span>
                       <span>{a.label(t)}</span>
+                      {a.hint?.(kitchenActions.flags, t) && (
+                        <span className="cat-pick__hint">{a.hint(kitchenActions.flags, t)}</span>
+                      )}
                     </button>
                   ))}
                 </div>
