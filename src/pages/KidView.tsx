@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { useCalm } from '../lib/calm'
 import { isGuest } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { useSpeak } from '../lib/speak'
@@ -52,7 +51,6 @@ type RoutinesData = { routines: Routine[] }
 
 export function KidView() {
   const t = useT()
-  const { calm } = useCalm()
   // Read-only guest (toddler kiosk handed to a sitter): the player hides the
   // progress-committing controls when ro, so a guest can still browse + hear steps.
   const ro = isGuest()
@@ -72,21 +70,25 @@ export function KidView() {
   // After the "sweet dreams" recap, drift back to the face picker so the wall
   // tablet is ready for the next child — only when a picker was actually used
   // (pickedId set); a single auto-selected routine has no picker to return to.
+  // UNCONDITIONAL: this is KIOSK behaviour (leave the tablet ready for the next
+  // kid), not a calm concern. It used to short-circuit on `!calm`, which pinned a
+  // calm-OFF kiosk on one child's finished routine forever.
   useEffect(() => {
-    if (!pickedId || !calm) return
+    if (!pickedId) return
     const r = (data?.routines ?? []).find((x) => x.id === pickedId)
     if (!r || r.cards.length === 0 || r.doneIdx.length < r.cards.length) return
     const id = setTimeout(() => setPickedId(null), 20_000)
     return () => clearTimeout(id)
-  }, [data, pickedId, calm])
+  }, [data, pickedId])
 
   // Kids seam #1: a HALF-done routine used to pin the kiosk — the drift above only
   // arms on *finished*, and wandering off mid-story is the toddler norm. So any
-  // ~60 s without a tap drifts back to the picker too, whatever the progress (same
-  // calm gate as the finished-drift). Nothing is lost: the run state is
+  // ~60 s without a tap drifts back to the picker too, whatever the progress — and,
+  // like the finished-drift, whatever « Mode calme » says (the old calm gate silently
+  // neutered this idle-drift on a calm-OFF tablet). Nothing is lost: the run state is
   // server-side, so the returning kid re-picks their face and resumes in place.
   useEffect(() => {
-    if (!pickedId || !calm) return
+    if (!pickedId) return
     let id: ReturnType<typeof setTimeout>
     const arm = () => {
       clearTimeout(id)
@@ -100,7 +102,7 @@ export function KidView() {
       window.removeEventListener('pointerdown', arm)
       window.removeEventListener('keydown', arm)
     }
-  }, [pickedId, calm])
+  }, [pickedId])
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
   if (!data && !error) return <Loading />

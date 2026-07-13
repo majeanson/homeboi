@@ -1,10 +1,20 @@
-// "Calm mode" — the household's opt-out of the kid-routine completion friction.
-// Default ON: the routine finishes and STOPS (no redo), per the brief's calm
-// tenet. OFF: cards stay visible and re-tappable so a routine never dead-ends.
-// This only governs INTERACTION friction; the STRUCTURAL guarantees (no points,
-// no push, finite lists) are not toggleable and stay enforced. Same context
-// shape as Lang/Audience; localStorage for now (promote to households.calm_mode
-// when settings persist server-side — see bmad/04, OD-1).
+// "Calm mode" — the household's one toggle over the kid-routine REWARD.
+//
+// It governs exactly ONE thing, and this is the whole list:
+//   ON (default): a finished routine ends reward-free — the recap ("sweet dreams",
+//     the story again in pictures, the ⏱ total, a deliberate « Recommencer ») and
+//     nothing to collect. No sticker offer, and the sticker wall doesn't exist.
+//   OFF: the same recap, plus the child places ONE sticker on their wall
+//     (RoutinePlayer's picker, the Routines-tab entry, /routine/stickers).
+//
+// It is NOT "no redo" — « Recommencer » is always there, on both settings (it used
+// to claim otherwise in three places, while the code did the opposite). And it does
+// NOT unlock the STRUCTURAL calm guarantees: no points, no streaks, no badges, no
+// push, no inventory, finite lists — those are enforced in the schema by
+// functions/db/migrations/calm-tenets.test.ts and can't be toggled at all.
+//
+// Same context shape as Lang/Audience; localStorage for now (promote to
+// households.calm_mode when settings persist server-side — see bmad/04, OD-1).
 import { createContext, useContext } from 'react'
 
 export const CalmContext = createContext<{ calm: boolean; setCalm: (c: boolean) => void }>({

@@ -94,8 +94,8 @@ export const OPERATOR_HELP = {
     card: 'calm',
     point: 1,
     body: {
-      fr: `Adoucit le « refaire » de la routine d'enfant. Les garanties calme (pas de points, pas de notifications) restent verrouillées quoi qu'il arrive.`,
-      en: `Softens the kid routine's redo prompt. The calm guarantees (no points, no notifications) stay locked regardless.`,
+      fr: `Décide une seule chose : l'autocollant à la fin d'une routine d'enfant. Activé (par défaut), la routine se termine sans récompense. Les garanties calme (pas de points, pas de notifications) restent verrouillées quoi qu'il arrive.`,
+      en: `Decides one thing: the sticker at the end of a kid routine. On (the default), the routine ends reward-free. The calm guarantees (no points, no notifications) stay locked regardless.`,
     },
   },
   mealSlots: {

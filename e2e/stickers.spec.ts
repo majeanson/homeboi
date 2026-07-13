@@ -16,11 +16,9 @@ const CARDS = [
   { icon: '🎒', label: 'Sac à dos' },
 ]
 
-test('finishing a routine (calm off) places a sticker → POST', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  // r1 arrives ALREADY complete (every card done), so the completion sticker picker
-  // renders at once — no fragile step-by-step run against static mock data.
+// r1 arrives ALREADY complete (every card done), so the finish screen renders at
+// once — no fragile step-by-step run against static mock data.
+async function finishedRoutine(page: Parameters<typeof mockApi>[0]) {
   await page.route('**/api/routines**', (route) =>
     route.fulfill({
       status: 200,
@@ -35,9 +33,17 @@ test('finishing a routine (calm off) places a sticker → POST', async ({ page }
       }),
     }),
   )
+}
+
+test('finishing a routine (calm off) places a sticker → POST', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await finishedRoutine(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: false })
   await page.goto('/routine/r1/run')
-  // The picker only exists on completion + calm OFF (the opt-in reward).
+  // ONE finish screen: the recap renders whatever calm says…
+  await expect(page.locator('.tdl-recap')).toBeVisible()
+  // …and the sticker picker rides ON it, only when calm is OFF (the opt-in reward).
   const opt = page.locator('.tdl-sticker__opt').first()
   await expect(opt).toBeVisible()
   const [req] = await Promise.all([
@@ -51,6 +57,23 @@ test('finishing a routine (calm off) places a sticker → POST', async ({ page }
   expect(typeof body.sticker).toBe('string')
   // The placed sticker confirms in place (with a link to the wall).
   await expect(page.locator('.tdl-sticker__done')).toBeVisible()
+})
+
+// Calm's ONE meaning: no reward. The finish screen itself is unconditional — the
+// same recap + « Recommencer » a calm-off household sees, minus the sticker offer.
+test('finishing a routine (calm on) shows the same recap, reward-free', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await finishedRoutine(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true })
+  await page.goto('/routine/r1/run')
+  // The one finish screen: the picture recap + the deliberate « Recommencer ».
+  await expect(page.locator('.tdl-recap')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Recommencer' })).toBeVisible()
+  // No sticker anywhere — not the picker, not the wall entry on the Routines tab.
+  await expect(page.locator('.tdl-sticker')).toHaveCount(0)
+  await page.goto('/routines')
+  await expect(page.locator('.routines-sticker-link')).toHaveCount(0)
 })
 
 test('the sticker wall removes one behind the undo toast, and undo restores it', async ({ page }) => {

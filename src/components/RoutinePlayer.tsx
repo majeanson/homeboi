@@ -27,6 +27,13 @@ import { isCompanion } from '../lib/companions'
 // then the story moves on. When the day is done it ends on a handwritten "sweet
 // dreams" and STOPS — no auto-advance, no nag — but offers a quiet, deliberate
 // "Recommencer" so a redo is a choice, not a streak hook; the day resets server-side.
+//
+// ONE finish screen: the recap (sweet dreams + the picture story again + the ⏱ total
+// + « Recommencer ») renders whenever the routine is complete, whatever the settings.
+// « Mode calme » decides exactly ONE thing here — the sticker offer: calm ON (the
+// default) ends the routine reward-free; calm OFF lets the child place a sticker on
+// their wall. The STRUCTURAL calm tenets (no points, no streaks, no push) aren't
+// toggleable and never were.
 interface PlayerCard {
   icon: string
   label: string
@@ -199,9 +206,10 @@ export function RoutinePlayer({
     window.setTimeout(() => setBuddyTalking(false), 600)
   }
 
-  // Sticker wall (OPT-IN — only when calm mode is OFF). On finishing, the child places
-  // ONE sticker on their wall; local `awarded` state then shows it done (one per finish,
-  // no farming). Kept out of the default calm experience entirely by the !calm gate.
+  // Sticker wall (OPT-IN — the one thing « Mode calme » gates). On finishing, the child
+  // places ONE sticker on their wall; local `awarded` state then shows it done (one per
+  // finish, no farming). Calm ON → the offer doesn't exist, and neither does the wall
+  // (Routines' entry + StickerWallPage share the same !calm gate).
   const [awarded, setAwarded] = useState<string | null>(null)
   function placeSticker(sticker: string) {
     setAwarded(sticker)
@@ -246,10 +254,12 @@ export function RoutinePlayer({
   }
 
   const tint = colourFor('routine', routine.color)
+  // ONE finish screen, whatever the settings: a finished routine always ends on the
+  // "sweet dreams" recap (the picture story again + the ⏱ total + « Recommencer »).
+  // Calm used to fork this into a second, poorer ending ("sit on the last card") —
+  // two code paths saying the same thing badly. Calm now gates exactly ONE thing:
+  // the sticker offer below.
   const allDone = routine.cards.length > 0 && routine.doneIdx.length >= routine.cards.length
-  // Calm ON (default): finish and STOP on a calm "sweet dreams". Calm OFF: never
-  // dead-end — fall through to the last card, still re-tappable.
-  const showAllDone = allDone && calm
 
   // The story position: the first not-yet-done card (else the last).
   const firstUndone = routine.cards.findIndex((_, i) => !routine.doneIdx.includes(i))
@@ -305,7 +315,7 @@ export function RoutinePlayer({
         )}
 
         <div className="tdl-stage">
-          {showAllDone ? (
+          {allDone ? (
             <>
               <div className="tdl-illus" style={{ background: tint }} aria-hidden="true">
                 <span className="tdl-illus-emoji">✿</span>
@@ -334,6 +344,40 @@ export function RoutinePlayer({
                 ))}
               </div>
               {totalSecs > 0 && <div className="tdl-total mono">⏱ {clock(totalSecs)}</div>}
+
+              {/* The sticker reward — the ONE thing « Mode calme » decides. Calm ON
+                  (the default): the routine simply ends, no reward anywhere. Calm OFF:
+                  the child picks a sticker and places it on their wall (one per finish,
+                  no farming). A guest can't write. */}
+              {!ro && !calm && (
+                <div className="tdl-sticker">
+                  {awarded ? (
+                    <div className="tdl-sticker__done">
+                      <span className="tdl-sticker__got" aria-hidden="true">{awarded}</span>
+                      <span>{t.routines.stickerPlaced}</span>
+                      <Link to="/routine/stickers" className="tdl-sticker__wall">{t.routines.stickerWallLink}</Link>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="tdl-sticker__prompt">{t.routines.stickerPrompt}</div>
+                      <div className="tdl-sticker__grid">
+                        {STICKERS.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            className="tdl-sticker__opt"
+                            aria-label={t.routines.stickerPick}
+                            onClick={() => placeSticker(s)}
+                          >
+                            <span aria-hidden="true">{s}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* A gentle, deliberate "do it again" — not a streak hook, just the
                   choice the calm STOP leaves open. A guest can't commit progress. */}
               {!ro && (
@@ -437,46 +481,6 @@ export function RoutinePlayer({
                     <Icon name="play-bold" size={22} />
                   </button>
                 ))}
-
-              {/* The sticker reward (OPT-IN — this branch only renders on completion
-                  when « Mode calme » is OFF): pick a sticker to place on the wall. A
-                  guest can't write. Calm ON never reaches here (it shows the recap). */}
-              {!ro && allDone && (
-                <div className="tdl-sticker">
-                  {awarded ? (
-                    <div className="tdl-sticker__done">
-                      <span className="tdl-sticker__got" aria-hidden="true">{awarded}</span>
-                      <span>{t.routines.stickerPlaced}</span>
-                      <Link to="/routine/stickers" className="tdl-sticker__wall">{t.routines.stickerWallLink}</Link>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="tdl-sticker__prompt">{t.routines.stickerPrompt}</div>
-                      <div className="tdl-sticker__grid">
-                        {STICKERS.map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            className="tdl-sticker__opt"
-                            aria-label={t.routines.stickerPick}
-                            onClick={() => placeSticker(s)}
-                          >
-                            <span aria-hidden="true">{s}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-              {/* Calm OFF never shows the recap, so the routine "ends" on its last
-                  card with every step ✓. Offer the same deliberate restart here so a
-                  redo doesn't dead-end on a re-tappable last step. */}
-              {!ro && allDone && (
-                <button type="button" className="tdl-again" onClick={restart} style={{ color: tintInk(tint) }}>
-                  <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kid.again}
-                </button>
-              )}
             </>
           )}
         </div>

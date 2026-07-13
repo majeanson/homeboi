@@ -2072,7 +2072,7 @@ export const EN: typeof FR = {
     tutorialOff: 'Expert',
     calmTitle: 'Calm mode',
     calmHint:
-      'On: the child routine finishes and stops (no “do it again”). Off: cards stay visible and tappable.',
+      'On: the child’s routine ends reward-free — the picture recap, the time it took, and “Start over” if they want. Off: the child also places a sticker on their wall. The calm guarantees (no points, no badges, no notifications) can’t be touched either way.',
     calmOn: 'On',
     calmOff: 'Off',
     aiOn: 'AI: on',

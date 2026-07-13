@@ -2240,7 +2240,7 @@ export const FR = {
     tutorialOff: 'Expert',
     calmTitle: 'Mode calme',
     calmHint:
-      'Activé : la routine de l’enfant se termine et s’arrête (pas de refaire). Désactivé : les cartes restent visibles et tapables.',
+      'Activé : la routine de l’enfant se termine sans récompense — le récapitulatif en images, le temps, et « Recommencer » si l’enfant veut. Désactivé : en plus, l’enfant colle un autocollant sur son mur. Les garanties calme (pas de points, pas de pastilles, pas de notifications) ne se touchent pas, peu importe le réglage.',
     calmOn: 'Activé',
     calmOff: 'Désactivé',
     aiOn: 'IA : active',

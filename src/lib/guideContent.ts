@@ -1582,8 +1582,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode calme (option)', en: 'Calm mode (toggle)' },
         detail: {
-          fr: 'Le seul réglage : adoucir le « refaire » de la routine d’enfant. Le reste du calme ne se touche pas.',
-          en: 'The one toggle: soften the kid routine’s “redo”. The rest of the calm can’t be touched.',
+          fr: 'Le seul réglage, et il décide une seule chose : l’autocollant à la fin d’une routine d’enfant. Activé (par défaut), la routine se termine sans récompense; désactivé, l’enfant colle un autocollant sur son mur. Le reste du calme ne se touche pas.',
+          en: 'The one toggle, and it decides one thing: the sticker at the end of a kid routine. On (the default), the routine ends reward-free; off, the child places a sticker on their wall. The rest of the calm can’t be touched.',
         },
       },
       {
@@ -2658,12 +2658,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode calme — ce que ça change', en: 'Calm mode — what it changes' },
         detail: {
-          fr: 'Le seul réglage « anti-friction » (activé par défaut) : quand c’est activé, la routine d’enfant ne pousse pas à tout recommencer; elle se termine.',
-          en: 'The one “anti-friction” toggle (on by default): when on, the kid routine doesn’t push the child to start over; it just ends.',
+          fr: 'Une seule chose (activé par défaut) : l’autocollant à la fin d’une routine d’enfant. Activé, la routine se termine sans récompense — le récap en images, le temps, et « Recommencer » si l’enfant veut. Désactivé, l’enfant colle un autocollant sur son mur.',
+          en: 'One thing (on by default): the sticker at the end of a kid routine. On, the routine ends reward-free — the picture recap, the time it took, and “Start over” if they want. Off, the child places a sticker on their wall.',
         },
         why: {
-          fr: 'Pour finir sur du calme, sans relancer un enfant déjà prêt à passer à autre chose.',
-          en: 'To end on calm, without re-prompting a child who’s ready to move on.',
+          fr: 'Pour finir sur du calme, sans transformer le dodo en collection à entretenir.',
+          en: 'To end on calm, without turning bedtime into a collection to keep up.',
         },
       },
       {

@@ -557,10 +557,10 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
   )
 }
 
-// The "anti-addiction" opt-out. Default ON (the calm tenet holds); a parent can
-// switch it off to stop the kid routine from dead-ending. Only governs that
-// interaction friction — the structural guarantees aren't toggleable. Stored in
-// localStorage for now (see bmad/04, OD-1).
+// The "anti-addiction" opt-out. Default ON (the calm tenet holds); it decides ONE
+// thing — the sticker a child places on their wall at the end of a routine (calm ON:
+// the routine simply ends, reward-free). The structural guarantees (no points, no
+// push, finite lists) aren't toggleable. Stored in localStorage for now (bmad/04, OD-1).
 export function CalmSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { calm, setCalm } = useCalm()
