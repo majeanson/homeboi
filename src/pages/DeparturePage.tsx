@@ -114,7 +114,6 @@ export function DeparturePage() {
           bento={false}
           show="checklists"
           foldSections
-          emptyText={t.departure.emptyLists}
         />
 
         {/* « À apporter » — the bring-lists for the day's activities (soccer cleats,
