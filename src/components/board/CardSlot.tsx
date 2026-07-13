@@ -86,10 +86,12 @@ export function CardSlot({
   // The child→shell registration channel. Idempotent by construction: a report whose
   // value already matches is dropped, so an unstable caller is a harmless no-op rather
   // than a render loop (see lib/useReportEmpty, and the Kitchen→HubLayout freeze).
-  const [reported, setReported] = useState(false)
+  // `null` = the card hasn't reported YET — a self-fetching card renders nothing while
+  // its query is in flight, and the slot uses that to hold its place (see below).
+  const [reported, setReported] = useState<boolean | null>(null)
   const report = useCallback<EmptyReporter>((v) => setReported((prev) => (prev === v ? prev : v)), [])
 
-  const isEmpty = empty ?? reported
+  const isEmpty = empty ?? reported ?? false
   const mode = cardMode(prefs, id)
   const collapsed = mode === 'auto' && isEmpty
   // An `always` card that has nothing to draw still holds its place — the slot fills it
@@ -169,15 +171,25 @@ export function CardSlot({
   // So the lens stops asking. Every mini claims `WG_MINI_ROWS`, and `--wg-mini-h`
   // (widget-grid.css) sizes the tile to fill exactly that. Uniform by construction, which
   // is also what lets a mini spend its fixed height NAMING its rows (`CardMini`).
+  // LATE-RESOLVE HOLD. A self-fetching card (L'auto, Les carnets, Photo du jour…)
+  // renders NOTHING while its query is in flight, so its slot measured ~0 and the
+  // dense grid packed as if it weren't there — then its resolution (content OR an
+  // empty report → collapse) re-packed the whole masonry, minutes into the glance.
+  // Until the card resolves (an `empty` prop, a report, or real measured content),
+  // the slot claims the constant mini height instead of the ~0 measurement, so a
+  // late empty just fades a mini-sized hole closed rather than reshuffling rows.
+  const unresolved = empty === undefined && reported === null
+  const heldRows = unresolved && rows <= 1 ? WG_MINI_ROWS : rows
+
   const style = useMemo(
     () => ({
-      ['--wg-span-rows' as string]: isMini ? WG_MINI_ROWS : rows,
+      ['--wg-span-rows' as string]: isMini ? WG_MINI_ROWS : heldRows,
       ['--wg-span-cols' as string]: span,
       // The card's persona, for a card that never set `--sec-tint` itself — and for the
       // empty placeholder below, which has no card to ask. Never overrides one that did.
       ['--wg-tint' as string]: meta?.tint,
     }),
-    [isMini, rows, span, meta],
+    [isMini, heldRows, span, meta],
   )
 
   const dnd = grid?.dnd ?? null

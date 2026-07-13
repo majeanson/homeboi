@@ -132,6 +132,14 @@
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
 }
+/* Wall-tablet hit area: the badge stays a 26px visual, but its tap target grows to
+   ~44px via an invisible halo (the element is already absolutely positioned, so the
+   pseudo just extends what a finger can land on — no layout, no visual change). */
+.wg-slot__ctl::before {
+  content: '';
+  position: absolute;
+  inset: -9px;
+}
 .wg-slot__hide {
   left: -8px;
 }
@@ -203,6 +211,24 @@
   min-width: 0;
 }
 .board-edit__text .mono {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+/* The one-time "hold a card" discoverability line — the edit bar's quiet card
+   look, one line + its ✕. Its OWN class (not `.board-edit`): the e2e suite pins
+   `.board-edit` as "edit mode is armed", and this shows precisely when it isn't. */
+.board-edit-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.45rem 0.6rem 0.45rem 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.board-edit-hint > .mono {
   color: var(--ink-soft);
   font-size: var(--text-sm);
 }
@@ -287,6 +313,7 @@
 /* Card-tinted like the header disc; ≥30px so it stays touch-friendly without crowding the
    rows above it. */
 .wg-slot .cardmini__corner {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -300,6 +327,15 @@
 }
 .wg-slot .cardmini__corner:active {
   box-shadow: var(--shadow-press, var(--shadow-sm));
+}
+/* Same wall-tablet halo as the edit badges: a ~30px disc reads fine but is a hard
+   target from arm's length — grow the tap area to ~44px, visuals untouched. Two
+   discs' halos may overlap in the 5px gap; the nearer disc (DOM order) wins. */
+.wg-slot .cardmini__corner::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
 }
 /* In the list face the corner cluster sits over the bottom-right, where the LAST row ends —
    reserve room (scaled to the number of discs) so a long last row ellipsizes before them
@@ -446,6 +482,11 @@
   font-weight: 700;
   font-size: 0.76rem;
   white-space: nowrap;
+}
+/* The reserved (not-yet-resolved) chip slot: same box, nothing visible. Holds the
+   header's layout so a weather chip landing minutes later doesn't reflow the title. */
+.wg-slot .cardmini__headx--ghost {
+  visibility: hidden;
 }
 /* A row's leading time/day token (« 9 h », « sam ») — replaces the dot on a chronological
    card so it SAYS when. Fixed min-width so the labels line up in a column; tinted to the

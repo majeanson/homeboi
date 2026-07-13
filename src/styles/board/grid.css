@@ -89,6 +89,23 @@
    Column COUNT is computed in JS, so the kiosk's roomier 340px minimum travels as the
    `colMin` prop rather than a `columns:` override. */
 
+/* Cold-load skeleton: mini-height ghost tiles where the masonry will land, so the
+   first paint isn't one text line that pops into a full board at once. Same column
+   rhythm as the grid (auto-fill on the mobile colMin), same mini height as a
+   compact tile (--wg-mini-h's 152px), a calm wash — no shimmer (NFR-CALM). */
+.board-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 0.75rem;
+}
+.board-skeleton__tile {
+  height: 152px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  opacity: 0.55;
+}
+
 /* Each section is a calm bento tile. CHROME BELONGS TO THE CARD, never to whichever
    container happens to hold it. This used to be `.board-grid > .bento`, which meant a
    card only LOOKED like a card while it sat in the masonry: dropped into the status band

@@ -678,6 +678,12 @@ export const FR = {
     // The collapsed group that folds today's line-crossed (past) items so the board
     // stays on now + next; the day's record stays a tap away until midnight.
     pastToday: 'Déjà passé aujourd’hui',
+    // The grown « Aujourd'hui » card clamps a very full day past ~8 rows; the
+    // tail folds behind this quiet disclosure instead of stretching the wall.
+    moreN: (n: number) => `+${n} de plus`,
+    // One-time discoverability line for the long-press door into edit mode —
+    // dismissible, per-device, never auto-shown to a guest or the toddler lens.
+    editDiscover: 'Maintiens une carte pour réorganiser le babillard.',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'Tout est calme',
     // Shown inside a card the device asked to keep visible even when it has nothing

@@ -191,7 +191,16 @@ export function CardMini({
         </span>
       )}
       <b className="cardmini__title">{compactLabel ?? label}</b>
-      {head != null && head !== '' && <span className="cardmini__headx">{head}</span>}
+      {/* `''` = RESERVE the chip's slot without showing one: the weather query can
+          resolve minutes after first paint, and a chip that pops in later used to
+          reflow the title. The ghost holds the width; real content replaces it. */}
+      {head === '' ? (
+        <span className="cardmini__headx cardmini__headx--ghost" aria-hidden="true">
+          0°
+        </span>
+      ) : (
+        head != null && <span className="cardmini__headx">{head}</span>
+      )}
     </span>
   )
   const inner = body ?? (

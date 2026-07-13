@@ -603,6 +603,8 @@ export const EN: typeof FR = {
     // The collapsed group that folds today's line-crossed (past) items so the board
     // stays on now + next; the day's record stays a tap away until midnight.
     pastToday: 'Already done today',
+    moreN: (n: number) => `+${n} more`,
+    editDiscover: 'Hold a card to rearrange the board.',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     cardEmpty: 'Nothing right now.',

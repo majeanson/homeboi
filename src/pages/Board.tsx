@@ -34,6 +34,7 @@ import { isDaypartAuto } from '../lib/theme'
 import { momentFocus } from '../lib/momentFocus'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { newestFetchMs } from '../lib/online'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
 import { formatDay, formatDayMaybeYear, formatTime, weekdayShort } from '../lib/format'
@@ -200,6 +201,11 @@ export function Board() {
     if (d !== dayRef.current) {
       dayRef.current = d
       qc.invalidateQueries({ queryKey: BOARD_KEY })
+      // The todos payload is also day-bucketed server-side (global + TODAY, and
+      // « Avant de partir » checklists are day-pinned) — without this a checklist
+      // instantiated yesterday lingers on the departure card past midnight.
+      // TODOS_KEY prefix-matches the day pages (['todos', <day>]) too.
+      qc.invalidateQueries({ queryKey: TODOS_KEY })
     }
   }, [nowMs, qc])
   // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
@@ -235,6 +241,12 @@ export function Board() {
   const carnetById = new Map((carnetsData?.carnets ?? []).map((x) => [x.id, x]))
   const unauth = isUnauthorized(error)
   const stale = isError && !unauth && !!data
+  // "How old is what I'm looking at" — the newest successful fetch in the cache,
+  // same source + formatting as OfflineBanner's stamp. Only computed while stale.
+  const staleFetchMs = stale ? newestFetchMs(qc) : null
+  const staleStamp = staleFetchMs
+    ? new Date(staleFetchMs).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { hour: '2-digit', minute: '2-digit' })
+    : null
 
   // Weather is its own slow poll (15 min) off the render-critical board read, and
   // resolves to null when there's no postal / upstream is down → the chip hides.
@@ -441,6 +453,31 @@ export function Board() {
     onLongPress: () => setEditParam('1'),
   })
   useEscapeKey(exitEdit, editing)
+
+  // Discoverability: the long-press door into edit mode is unhinted — a one-time,
+  // dismissible line says it exists. Per-device (localStorage), never auto-shown to
+  // a guest (a demo visitor gets the marketing tour, not chrome) or the toddler
+  // lens (canEdit already excludes it). Entering edit mode by ANY door counts as
+  // "found it" and retires the hint for good.
+  const [editHintOpen, setEditHintOpen] = useState(() => {
+    try {
+      return localStorage.getItem('babillard-board-edit-hint-seen') !== '1'
+    } catch {
+      return false
+    }
+  })
+  const dismissEditHint = useCallback(() => {
+    setEditHintOpen(false)
+    try {
+      localStorage.setItem('babillard-board-edit-hint-seen', '1')
+    } catch {
+      /* private mode / storage full — it just offers itself again next session */
+    }
+  }, [])
+  useEffect(() => {
+    if (editing && editHintOpen) dismissEditHint()
+  }, [editing, editHintOpen, dismissEditHint])
+  const showEditHint = editHintOpen && canEdit && !editing && !ro
 
   // ONE drag session across BOTH zones — that is what makes dragging a card out of the
   // band and into the masonry a single gesture rather than two systems.
@@ -954,7 +991,10 @@ export function Board() {
       // The day's temperature, where the eye already is (a quiet frosted chip, never a
       // count). Degrees only — the weather GLYPH pushed the title to ellipsize in the tiny
       // header; the grown card shows the icon. The chip is small enough to keep the title.
-      compactHead={weather ? `${weather.tempC}°` : undefined}
+      // `''` while the weather query is still in flight = reserve the chip's slot
+      // (BoardCard renders a hidden ghost) so a chip landing minutes later doesn't
+      // reflow the title. A resolved "no weather" (binding unset) reserves nothing.
+      compactHead={weather ? `${weather.tempC}°` : wx === undefined ? '' : undefined}
     >
 {/* « Prochainement » — the next timed thing today as a calm tappable
     headline above the full day list (the glance the « Maintenant » view
@@ -1022,7 +1062,7 @@ export function Board() {
         "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
         Each carries its slot food icon so the slots read apart, like La cuisine. */}
     {liveMeals.map(mealAct)}
-    {filActive ? (
+    {filActive && (
       /* « Le fil du jour » — a busy day read as a SHAPE: timed events + L'auto rides
          + work windows placed on a time axis (past dimmed in place, a « maintenant »
          marker), chores + all-day events pooled under « À tout moment ». Rows reuse
@@ -1042,19 +1082,25 @@ export function Board() {
         freeLabel={t.board.free}
         lang={lang}
       />
-    ) : (
-      <>
-        {/* A quiet day: the flat agenda. The next-up event is the « Prochainement »
-            headline above, so it's already dropped (evtPast/shownEvents); timed events
-            past their moment fold into « Déjà passé » below. */}
-        {liveEvents.map(eventAct)}
-        {/* Recurring chores due today — tap to check off (advances the turn). Untimed,
-            so they never fold — they leave by being done, not by a passing minute. */}
-        {todayChores.map((c) => choreAct(c))}
-      </>
     )}
-    {/* Projets & Entretien due today — tap to check off (stamps done). */}
-    {todayHome.map((c) => homeAct(c))}
+    {(() => {
+      // The flat agenda rows (quiet-day events + chores, plus Projets & Entretien
+      // due today). On a very busy day the grown card used to stretch unbounded;
+      // clamp past ~8 rows behind a quiet « +N de plus » Disclosure (the same
+      // fold the past-items record below uses). The Fil above stays whole — its
+      // time axis IS the busy-day shape, and it dims the past in place.
+      const flat = filActive
+        ? todayHome.map((c) => homeAct(c))
+        : [...liveEvents.map(eventAct), ...todayChores.map((c) => choreAct(c)), ...todayHome.map((c) => homeAct(c))]
+      const MAX_FLAT = 8
+      if (flat.length <= MAX_FLAT) return flat
+      return (
+        <>
+          {flat.slice(0, MAX_FLAT)}
+          <Disclosure label={t.board.moreN(flat.length - MAX_FLAT)}>{flat.slice(MAX_FLAT)}</Disclosure>
+        </>
+      )
+    })()}
     {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern).
         Empty while the ribbon is active — it dims past timed items in place. */}
     {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
@@ -1124,7 +1170,8 @@ export function Board() {
       // Tomorrow's forecast in the mini header: just the daytime HIGH, no glyph — the full
       // high/low "18°/11°" plus a weather icon pushed « Demain » to ellipsize to « De… » in
       // a 142px tile. The high is the headline; the grown card shows both + the icon.
-      compactHead={tomorrowWx ? `${tomorrowWx.highC}°` : undefined}
+      // Same slot reservation as « Aujourd'hui »: '' while the query is in flight.
+      compactHead={tomorrowWx ? `${tomorrowWx.highC}°` : wx === undefined ? '' : undefined}
       // A pencil to « Planifier demain » (tomorrow's plan page) straight from the mini —
       // the night-before "sortir le poulet" gesture, one tap from the halved tile.
       compactCorner={{ to: `/kitchen/day/${tomorrowDay}`, icon: 'pencil-simple-bold', label: t.board.planTomorrow }}
@@ -1425,6 +1472,21 @@ export function Board() {
       {help.hint && <HelpHint />}
       {help.bubble}
 
+      {/* The board poll failed but we're still rendering the last good frame —
+          say so AT THE TOP with "how old" (the newest successful fetch), not as
+          a stampless footnote below every card. Calm: one quiet mono line. */}
+      {stale && (
+        <p className="board__synced mono" role="status">
+          {t.board.offline}
+          {staleStamp && (
+            <>
+              {' · '}
+              {t.offline.stale.toLowerCase()} {staleStamp}
+            </>
+          )}
+        </p>
+      )}
+
       {/* No board SectionIntro: the board is the home screen — the first-run tour
           already walks through it, and stacking a "what is the board" card here on
           top of the demo-explore banner (or the setup checklist) was part of the
@@ -1481,7 +1543,17 @@ export function Board() {
           a specific day's recap by tapping it → « Voir ce moment ».) */}
 
       {!data ? (
-        <p className="loading mono">{t.common.loading}</p>
+        <>
+          <p className="loading mono">{t.common.loading}</p>
+          {/* Reserve mini-height tiles where the masonry will land, so the first
+              paint isn't one text line that pops into a full board at once. Pure
+              placeholder: no data, no per-card logic, hidden from readers. */}
+          <div className="board-skeleton" aria-hidden="true">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="board-skeleton__tile" />
+            ))}
+          </div>
+        </>
       ) : view === 'month' ? (
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} initialOffset={monthJump} />
       ) : view === 'annee' ? (
@@ -1519,6 +1591,23 @@ export function Board() {
                   {t.board.editDone}
                 </button>
               </Cluster>
+            </div>
+          )}
+
+          {/* One-time discoverability line for the unhinted long-press door into edit
+              mode. Dismissed (or edit mode entered) → retired for this device. */}
+          {showEditHint && (
+            <div className="board-edit-hint" role="note">
+              <span className="mono">{t.board.editDiscover}</span>
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={dismissEditHint}
+                aria-label={t.common.close}
+                title={t.common.close}
+              >
+                <InlineIcon name="x-bold" size={14} />
+              </button>
             </div>
           )}
 
@@ -1591,7 +1680,6 @@ export function Board() {
       {/* The label that trails the finger during a card drag (portalled to <body>). */}
       <DragGhost ghost={cardDnd.ghost} />
 
-      {stale && <p className="board__synced mono">{t.board.offline}</p>}
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
       {!ro && <TodayChangesSheet open={sinceMorningOpen} onClose={() => setSinceMorningOpen(false)} />}
       {eventActions.node}
