@@ -328,3 +328,261 @@
 .cnotes-card__more:focus-visible {
   color: var(--ink);
 }
+
+/* === The full-screen rich-note EDITOR (components/cercle/NoteEditor) ========
+   Moved OUT of the lazy styles/cercle.css for the same reason as the .cnote rows
+   above: the board's « Notes (cercle) » card opens this editor, and on a session
+   that never visited Le cercle the lazy chunk has not loaded — the fixed, full-
+   screen dialog then paints as unstyled inline flow while useModal still locks the
+   page scroll, which reads as a frozen app. Uniquely-named .note-editor* / .ne-*
+   classes, so cascade position is immaterial. */
+/* Full-screen editor — mirrors DrawPad's shell (portal + useModal). */
+.note-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 140; /* below DrawPad (150) so attaching a drawing layers on top */
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+.note-editor__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: max(0.6rem, env(safe-area-inset-top)) 0.7rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.note-editor__back {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.note-editor__heading {
+  flex: 1;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.note-editor__toggle {
+  flex: none;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.note-editor__toggle.is-on {
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, var(--card));
+  color: var(--ink);
+}
+.note-editor__title {
+  margin: 0.6rem 0.8rem 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.note-editor__scope {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.55rem 0.8rem 0;
+}
+.note-editor__scopelabel {
+  font-size: 0.82rem;
+  color: var(--ink-soft, var(--muted));
+}
+.note-editor__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.8rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.note-editor__fmt {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  /* E-40: format buttons meet the shared 44px touch target. */
+  min-width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+.note-editor__fmt:active {
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 14%, var(--card));
+}
+/* Toolbar button lit when the caret sits in that format (the editor stays WYSIWYG). */
+.note-editor__fmt.is-on {
+  border-color: var(--teal-deep, #2a8f85);
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 18%, var(--card));
+  color: var(--ink);
+}
+.note-editor__glyph {
+  font-size: 1rem;
+  line-height: 1;
+}
+.note-editor__glyph--b {
+  font-weight: 800;
+}
+.note-editor__glyph--i {
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+}
+.note-editor__glyph--s {
+  text-decoration: line-through;
+}
+.note-editor__glyph--h {
+  font-weight: 800;
+}
+.note-editor__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 0 0.8rem;
+}
+/* The WYSIWYG surface — a contentEditable rendered ALWAYS formatted (no raw Markdown).
+   Each visual line is one top-level element (flat model in lib/noteHtml); lists look
+   like lists purely via CSS, so the editing surface matches the read view exactly. */
+.note-editor__body {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.55;
+  outline: none;
+  padding: 0.2rem 0 1rem;
+  counter-reset: ne;
+  /* Mirror the read view (.note-md): a long unbroken word/URL wraps instead of
+     overflowing — .note-editor is overflow:hidden, so an unwrapped line would be
+     silently clipped. `anywhere` also lets the flex list-rows (.ne-check/.ne-bullet/
+     .ne-number) shrink so their text can't push past the right edge. */
+  overflow-wrap: anywhere;
+}
+.note-editor__body[data-empty='true']::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+/* Formatted blocks inside the editor (mirror the read-view .note-md look). */
+.note-editor__body > h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0.2rem 0;
+}
+.note-editor__body > h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0.2rem 0;
+}
+.note-editor__body > .ne-quote {
+  padding-left: 0.7rem;
+  border-left: 3px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 40%, var(--line));
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.note-editor__body > .ne-bullet,
+.note-editor__body > .ne-number,
+.note-editor__body > .ne-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-left: 0.2rem;
+}
+.note-editor__body > .ne-bullet::before {
+  content: '•';
+  flex: none;
+  color: var(--teal-deep, #2a8f85);
+  font-weight: 800;
+}
+/* Numbered lines: a CSS counter that restarts after any non-number line. */
+.note-editor__body > :not(.ne-number) {
+  counter-reset: ne;
+}
+.note-editor__body > .ne-number {
+  counter-increment: ne;
+}
+.note-editor__body > .ne-number::before {
+  content: counter(ne) '.';
+  flex: none;
+  min-width: 1.1rem;
+  color: var(--teal-deep, #2a8f85);
+  font-variant-numeric: tabular-nums;
+}
+/* Checklist line: a tappable, non-editable checkbox widget + struck-through done text. */
+.ne-cb {
+  position: relative;
+  flex: none;
+  display: inline-block;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-top: 0.05rem;
+  border: 2px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 50%, var(--line));
+  border-radius: 6px;
+  background: var(--card);
+  cursor: pointer;
+  user-select: none;
+}
+.note-editor__body > .ne-check[data-checked='true'] .ne-cb {
+  background: var(--teal-deep, #2a8f85);
+  border-color: var(--teal-deep, #2a8f85);
+  text-decoration: none;
+}
+/* classic rotated-border check mark */
+.note-editor__body > .ne-check[data-checked='true'] .ne-cb::after {
+  content: '';
+  position: absolute;
+  left: 0.42rem;
+  top: 0.14rem;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+.note-editor__body > .ne-check[data-checked='true'] {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+.note-editor__media {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem max(0.7rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+.note-editor__attach {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.note-editor__attachimg {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.note-editor__attachdel {
+  color: var(--danger, #c2563a);
+}
