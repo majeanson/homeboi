@@ -396,18 +396,6 @@
   min-width: 10rem;
 }
 
-.habit-form__manage {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1.5px solid var(--line);
-}
-
-.habit-form__delete {
-  color: var(--warn);
-}
-
 /* --- Reminder times ------------------------------------------------------- */
 .reminders {
   display: flex;

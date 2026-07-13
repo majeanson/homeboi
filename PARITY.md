@@ -280,7 +280,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
 | F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | ✅⁵⁴    |
-| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
+| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅⁶³       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
 | F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖        | ✅       | ✅      |
 | F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | ✅⁵³     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
 | F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
@@ -494,6 +494,22 @@ Footnotes (verdicts recorded so far):
     F6 défi D7 now carries all three channels (guide point 0 + `boardHelp.defi` + a
     `defi` tour step, commit 6d18b23), defiDeck confirmed lazy-only (type-only + dynamic
     imports), toddler défi tile writes the mark for a picked face as designed.
+63. **UX fix-waves re-verify (2026-07-13, commits 6d9e18a→)** — the four-wave audit
+    pass. **One cell was a stale verdict: F15×D4** — scored ✅ on 07-10 but
+    `RecipeForm.save` was still a raw `api('recipes').catch(()=>{})` (no outbox, a
+    4xx closed the scene as if saved); TRUE as of wave 1 (`useWrite` + err +
+    dirty-guarded scrim dismiss). The same wave gave every remaining silent-failure
+    path its `StatusMessage` (AddSheet ×7, ListEditPage, ContactForm, MemoAttach,
+    outbox replay-drop notice via the toast's new message-only `notice` kind) —
+    error *surfacing* isn't a matrix column, so no other cells move. Wave 4
+    converged F6's form on the FormFooter primitive (Delete/Pause in the footer's
+    left cluster, busy+err on both) — D1/D3 were already ✅, uniformity only.
+    Wave 2's board findings and wave 3's toddler/a11y findings live outside the
+    matrix's dimensions (board glance integrity, is-speaking feedback, aiError
+    hold on non-parent lenses). Audit finding 12 (band 1-column @360px) verified
+    STALE — `WG_PHONE_COL_MIN` (89bd7b4) had already fixed it; finding 20
+    (SubTabs aria-controls) skipped as invasive per its own carve-out (19 call
+    sites; tablist roles/roving-tabindex/arrows already correct).
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

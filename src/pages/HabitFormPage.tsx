@@ -8,7 +8,11 @@ import { useHabits } from '../lib/habits'
 // /habitude/new + /habitude/:id/edit — « Mes habitudes » create/edit as a
 // full-screen scene (a tall form strands its inputs under the mobile keyboard in
 // a sheet; FORM_ROUTES is the convention). Operator-only + guest-bounced by
-// FormScene. Saving returns to the check-in scene, which is where a habit lives.
+// FormScene. Saving RETURNS WHERE YOU CAME FROM (FormScene's useSceneClose, like
+// EventFormPage) — the fallback is the check-in scene, so the common edit-from-
+// check-in path lands there anyway, while a deep-linked edit (a guide « Régler »,
+// a board card) no longer teleports to /board/habitudes. Deleting still goes to
+// the check-in scene: the habit's own context may not exist any more.
 export function HabitFormPage() {
   const t = useT()
   const nav = useNavigate()
@@ -26,7 +30,7 @@ export function HabitFormPage() {
           key={habit?.id ?? 'new'}
           faces={members.map(toFace)}
           value={habit}
-          onSaved={id ? back : close}
+          onSaved={close}
           onDeleted={back}
           onCancel={close}
         />

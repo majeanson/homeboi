@@ -135,7 +135,8 @@ export function CarnetForm({
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.namePh} aria-label={c.name} />
+      {/* autoFocus: match the family (ContactForm/GroupForm) — the form opens ready to type. */}
+      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.namePh} aria-label={c.name} autoFocus />
 
       <label className="recur__row mono">
         <span>{c.kindLabel}</span>

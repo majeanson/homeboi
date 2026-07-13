@@ -174,7 +174,8 @@ export function BusinessForm({
         </div>
       )}
 
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={bz.name} aria-label={bz.name} />
+      {/* autoFocus: match the family (ContactForm/GroupForm) — the form opens ready to type. */}
+      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={bz.name} aria-label={bz.name} autoFocus />
 
       {/* Category — free text, with a suggestion list (typeaheadOnly). */}
       <EntityCombobox<string>

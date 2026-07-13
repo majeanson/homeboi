@@ -129,25 +129,41 @@ export function HabitForm({
   }
 
   async function pause() {
-    if (!value) return
-    await write('habits', {
-      method: 'PATCH',
-      body: { id: value.id, archived: !value.archived },
-      affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY],
-    })
-    onSaved()
+    if (!value || busy) return
+    setBusy(true)
+    setErr(false)
+    try {
+      await write('habits', {
+        method: 'PATCH',
+        body: { id: value.id, archived: !value.archived },
+        affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY],
+      })
+      onSaved()
+    } catch {
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   async function remove() {
-    if (!value) return
+    if (!value || busy) return
     // A habit carries its history, so removing it is a heavy delete: confirm.
     if (!(await confirm({ message: fn.deleteConfirm(value.title), confirmLabel: t.common.delete, tone: 'danger' }))) return
-    await write('habits', {
-      method: 'DELETE',
-      body: { id: value.id },
-      affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY],
-    })
-    ;(onDeleted ?? onSaved)()
+    setBusy(true)
+    setErr(false)
+    try {
+      await write('habits', {
+        method: 'DELETE',
+        body: { id: value.id },
+        affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY],
+      })
+      ;(onDeleted ?? onSaved)()
+    } catch {
+      setErr(true)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -366,19 +382,23 @@ export function HabitForm({
       <ColorPicker value={colour} onChange={setColour} label={t.operator.colorLabel} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-      <FormFooter saveLabel={value ? t.common.save : fn.add} saveDisabled={!title.trim()} busy={busy} onCancel={onCancel} />
-
-      {/* Editing an existing habit: rest it (history kept) or remove it for good. */}
-      {value && (
-        <div className="habit-form__manage">
-          <button type="button" className="btn btn--ghost" onClick={pause}>
-            {value.archived ? fn.resume : fn.pause}
-          </button>
-          <button type="button" className="btn btn--ghost habit-form__delete" onClick={remove}>
-            {t.common.delete}
-          </button>
-        </div>
-      )}
+      {/* Delete rides FormFooter's own left-cluster slot like its siblings
+          (RoutineForm/PetForm) — never a bespoke row below the footer. Pause
+          (rest it, history kept) is the non-destructive `extra` beside it. */}
+      <FormFooter
+        saveLabel={value ? t.common.save : fn.add}
+        saveDisabled={!title.trim()}
+        busy={busy}
+        onCancel={onCancel}
+        onDelete={value ? remove : undefined}
+        extra={
+          value ? (
+            <button type="button" className="btn btn--ghost btn--sm" onClick={pause} disabled={busy}>
+              {value.archived ? fn.resume : fn.pause}
+            </button>
+          ) : undefined
+        }
+      />
     </form>
   )
 }
