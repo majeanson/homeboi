@@ -176,7 +176,12 @@ function RoutinesParent() {
             )}
           </div>
         ) : (
-          <div className="routine-card__steps routine-card__steps--empty mono">{t.routines.empty}</div>
+          // Kids seam #6: a card-less routine simply never appears on the kid
+          // surface — with no cue, that silence read as a bug. Name the state on
+          // the PARENT card: a calm « À compléter » chip + why (never a warning).
+          <div className="routine-card__steps routine-card__steps--empty mono">
+            <span className="chip routine-card__draft">{t.routines.draftBadge}</span> {t.routines.draftHint}
+          </div>
         )}
         <div className="routine-card__foot">
           <span className="routine-card__count-wrap">

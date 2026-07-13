@@ -44,6 +44,9 @@ export interface PlayerRoutine {
   memberId?: string | null
   memberName: string | null
   color: string | null
+  // The owning member's photo, when the caller has it (KidView) — drawn in the
+  // header's "whose routine?" face chip so a pre-reader can switch kids.
+  avatarPhoto?: string | null
   name: string
   cards: PlayerCard[]
   // Parallel parent-voice clip keys (feature #17 A), one per card ('' = none → TTS).
@@ -301,7 +304,24 @@ export function RoutinePlayer({
             <Icon name="arrow-right-bold" size={20} style={{ transform: 'rotate(180deg)' }} />
           </Link>
           <div className="tdl-name">{routine.memberName ? `${routine.memberName} · ${routine.name}` : routine.name}</div>
-          <div style={{ width: 44 }} />
+          {/* "Whose routine?" — a FACE chip (pre-reader friendly), always present
+              when the caller offers a way back (kids seam #4): tapping it returns
+              to the picker so kid B can reach their own routine, even on a kiosk
+              identified to kid A. Falls back to the 44px spacer that balanced the
+              header before. */}
+          {onBack ? (
+            <button type="button" className="tdl-face" onClick={onBack} aria-label={backLabel} title={backLabel}>
+              {routine.avatarPhoto ? (
+                <img className="tdl-face__img" src={imgUrl(routine.avatarPhoto)} alt="" />
+              ) : (
+                <span className="tdl-face__initial" style={{ background: tint }} aria-hidden="true">
+                  {(routine.memberName ?? routine.name).slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </button>
+          ) : (
+            <div style={{ width: 44 }} />
+          )}
         </div>
 
         {/* The companion buddy — a larger, present creature that keeps the child

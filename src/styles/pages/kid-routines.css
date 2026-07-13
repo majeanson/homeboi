@@ -255,6 +255,38 @@
   font: inherit;
   cursor: pointer;
 }
+/* Kids seam #4 — the "other kids" strip on an IDENTIFIED picker: the faces the
+   profile filter is hiding, one tap to show everyone. Faces, never words (a
+   pre-reader taps who they are). Overlapping discs read as "the others". */
+.kid__others {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.kid__others-face {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--card);
+}
+.kid__others-face + .kid__others-face {
+  margin-left: -10px;
+}
+.kid__others-face--initial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #fff;
+}
 .kid__none {
   text-align: center;
 }

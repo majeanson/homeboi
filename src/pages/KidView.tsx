@@ -56,7 +56,7 @@ export function KidView() {
   // Read-only guest (toddler kiosk handed to a sitter): the player hides the
   // progress-committing controls when ro, so a guest can still browse + hear steps.
   const ro = isGuest()
-  const { memberId: profileId } = useProfile()
+  const { memberId: profileId, setMemberId } = useProfile()
   const speak = useSpeak()
   const [pickedId, setPickedId] = useState<string | null>(null)
 
@@ -79,6 +79,28 @@ export function KidView() {
     const id = setTimeout(() => setPickedId(null), 20_000)
     return () => clearTimeout(id)
   }, [data, pickedId, calm])
+
+  // Kids seam #1: a HALF-done routine used to pin the kiosk — the drift above only
+  // arms on *finished*, and wandering off mid-story is the toddler norm. So any
+  // ~60 s without a tap drifts back to the picker too, whatever the progress (same
+  // calm gate as the finished-drift). Nothing is lost: the run state is
+  // server-side, so the returning kid re-picks their face and resumes in place.
+  useEffect(() => {
+    if (!pickedId || !calm) return
+    let id: ReturnType<typeof setTimeout>
+    const arm = () => {
+      clearTimeout(id)
+      id = setTimeout(() => setPickedId(null), 60_000)
+    }
+    arm()
+    window.addEventListener('pointerdown', arm)
+    window.addEventListener('keydown', arm)
+    return () => {
+      clearTimeout(id)
+      window.removeEventListener('pointerdown', arm)
+      window.removeEventListener('keydown', arm)
+    }
+  }, [pickedId, calm])
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
   if (!data && !error) return <Loading />
@@ -120,6 +142,13 @@ export function KidView() {
   // in the story. When identified (the device already knows the child) we skip the
   // avatar and the "Maya ·" prefix — every card is theirs (the operator's ask).
   const PREVIEW = 4
+  // Kids seam #4: on an identified kiosk the picker filters to ONE kid — kid B had
+  // no way to reach their own routine. Offer the other kids' FACES (pre-reader:
+  // faces, not words) as a quiet strip; tapping it clears the picked profile so
+  // the picker shows everyone. Deduped by member, so two routines = one face.
+  const others = identified
+    ? [...new Map(routines.filter((r) => r.memberId !== profileId).map((r) => [r.memberId ?? r.id, r])).values()]
+    : []
   const picked = visible.find((r) => r.id === pickedId) ?? (visible.length === 1 ? visible[0] : undefined)
   if (!picked) {
     return (
@@ -210,6 +239,20 @@ export function KidView() {
               )
             })}
           </div>
+          {others.length > 0 && (
+            <button type="button" className="kid__others" onClick={() => setMemberId(null)} aria-label={t.kid.pick} title={t.kid.pick}>
+              {others.map((r) => {
+                const tint = colourFor('routine', r.color)
+                return r.avatarPhoto ? (
+                  <img key={r.id} className="kid__others-face" src={imgUrl(r.avatarPhoto)} alt="" />
+                ) : (
+                  <span key={r.id} className="kid__others-face kid__others-face--initial" style={{ background: tint }} aria-hidden="true">
+                    {(r.memberName ?? '?').slice(0, 1).toUpperCase()}
+                  </span>
+                )
+              })}
+            </button>
+          )}
           <Link to="/board" className="kid__exit mono">
             {t.kid.exit}
           </Link>
@@ -218,16 +261,23 @@ export function KidView() {
     )
   }
 
-  // The RUN — the shared player. The bottom "← back to faces" link only when a
-  // picker was actually shown (several routines); a lone auto-selected routine
-  // has nowhere to go back to, so it leaves Kid Mode via the top-left exit only.
+  // The RUN — the shared player. The way back to the faces (kids seam #4) shows
+  // whenever there is anywhere to go back TO: several visible routines, or an
+  // IDENTIFIED kiosk (whose filter is exactly what hid kid B's routine — so the
+  // way back also clears the picked profile and the picker shows everyone). It
+  // renders both as the header face chip and the bottom link. Only a household
+  // with one routine total keeps the old exit-only header.
+  const backToFaces = () => {
+    setPickedId(null)
+    if (identified) setMemberId(null)
+  }
   return (
     <RoutinePlayer
       routine={picked as PlayerRoutine}
       ro={ro}
       exitTo="/board"
-      onBack={visible.length > 1 ? () => setPickedId(null) : undefined}
-      backLabel={identified ? t.kid.pickRoutine : t.kid.pick}
+      onBack={visible.length > 1 || (identified && routines.length > 1) ? backToFaces : undefined}
+      backLabel={t.kid.pick}
     />
   )
 }
