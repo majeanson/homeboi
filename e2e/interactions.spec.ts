@@ -1005,6 +1005,59 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
   await expect(page.locator('.tdl-recap__step')).toHaveCount(3)
 })
 
+// Going BACK — Marc's ask: a three-year-old taps → too fast, and the story had no
+// rewind. Two ways, both un-marking the step (the current one is DERIVED, so an
+// un-done step IS the story rewinding to it): the big ← beside the →, and a
+// hear-first two-tap on a done step in the filmstrip (BigTiles' arm pattern).
+test('a routine can go back: the ← un-does the last step, and a done strip step rewinds on the second tap', async ({ page }) => {
+  await APP('/routines', 'toddler')(page)
+  await settle(page, '.hub')
+  await page.locator('.kid__face', { hasText: 'Noah' }).click() // Dodo: 3 steps, none done
+  // Nothing is done yet → nowhere to go back to.
+  await expect(page.locator('.tdl-prev')).toHaveCount(0)
+  await page.locator('.tdl-start').click()
+  await page.locator('.tdl-finish').click() // → step 1 done, we're on step 2
+
+  // ← un-marks the step we just finished (PATCH done:false) and the ✓ leaves the strip.
+  const strip = page.locator('.tdl-step')
+  await expect(strip.nth(0).locator('.tdl-step__check')).toBeVisible()
+  const [back] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH' && new URL(r.url()).pathname.endsWith('/api/routines')),
+    page.locator('.tdl-prev').click(),
+  ])
+  expect(back.postDataJSON()).toMatchObject({ cardIdx: 0, done: false })
+  await expect(strip.nth(0).locator('.tdl-step__check')).toHaveCount(0)
+  await expect(page.locator('.tdl-prev')).toHaveCount(0) // back on step 1: nowhere behind
+
+  // The filmstrip: a DONE step is hear-first — tap 1 arms + speaks, tap 2 rewinds.
+  await page.locator('.tdl-finish').click() // step 1 done again
+  let patched = false
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH' && new URL(r.url()).pathname.endsWith('/api/routines')) patched = true
+  })
+  await strip.nth(0).click()
+  await expect(strip.nth(0)).toHaveClass(/is-armed/)
+  expect(patched).toBe(false) // the first tap only speaks — a wandering finger commits nothing
+  await strip.nth(0).click()
+  await expect(strip.nth(0)).not.toHaveClass(/is-armed/)
+  await expect(strip.nth(0).locator('.tdl-step__check')).toHaveCount(0)
+  expect(patched).toBe(true)
+
+  // A FUTURE step never jumps the story — it only speaks itself.
+  await strip.nth(2).click()
+  await expect(strip.nth(2).locator('.tdl-step__check')).toHaveCount(0)
+})
+
+// Picking a routine back up mid-day: the ▶ says « Continuer », not « Commencer »
+// (Léa's Matin arrives with step 1 already done in the mock).
+test('a half-done routine resumes: the ▶ reads « Continuer »', async ({ page }) => {
+  await APP('/routines', 'toddler')(page)
+  await settle(page, '.hub')
+  await page.locator('.kid__face', { hasText: 'Léa' }).click()
+  await expect(page.getByRole('button', { name: 'Continuer' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Commencer' })).toHaveCount(0)
+})
+
 // ──────────────────────────── shared list ──────────────────────────────
 
 // One active list: a check is a MARK (the row stays, struck through via

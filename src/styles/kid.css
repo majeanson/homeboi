@@ -203,15 +203,78 @@
   gap: clamp(8px, 1.6vw, 18px);
   max-width: min(60rem, 94vw);
 }
+/* Each step is a real BUTTON now (it was an aria-hidden span): tap a done one twice
+   to rewind the story to it, tap a future one to hear it. Button reset — the look is
+   unchanged, only the affordance is real. */
 .tdl-step {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition:
     transform var(--dur-base) var(--ease-soft),
     opacity var(--dur-base) var(--ease-soft);
+}
+.tdl-step:active {
+  transform: scale(0.94);
+}
+.tdl-step:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+  border-radius: 20px;
+}
+/* Armed (a done step heard « Revenir à … ? Tape encore ») — it comes forward and
+   wears the 👆 cue until the confirming tap, or until it melts back on its own. */
+.tdl-step.is-armed {
+  opacity: 1;
+  transform: scale(1.12);
+}
+.tdl-step.is-armed .tdl-step__pic {
+  box-shadow:
+    0 0 0 3px var(--accent),
+    var(--shadow-md);
+}
+.tdl-step__again {
+  position: absolute;
+  right: -6px;
+  top: -8px;
+  font-size: 18px;
+  line-height: 1;
+}
+/* "I heard you" — the pulse a tap gives while it's being read aloud (a missing
+   voice makes speak() silent, so the tap must still register visibly). Motion-safe. */
+.tdl-step.is-speaking .tdl-step__pic,
+.tdl-illus.is-speaking {
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent),
+    var(--shadow-md);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tdl-step.is-speaking .tdl-step__pic,
+  .tdl-illus.is-speaking {
+    animation: tdl-say 1.1s var(--ease-soft) infinite;
+  }
+}
+@keyframes tdl-say {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent),
+      var(--shadow-md);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9px color-mix(in srgb, var(--accent) 22%, transparent),
+      var(--shadow-md);
+  }
 }
 .tdl-step__pic {
   width: clamp(46px, 7vh, 70px);
@@ -332,6 +395,36 @@
   font-weight: 800;
   color: var(--ink);
   line-height: 1;
+}
+/* The advance controls as ONE row: the ← rewind (when there's a step behind us),
+   then the ▶ start / the running clock + →. Wraps on a narrow phone rather than
+   bleeding off the edge (no bespoke fixed-basis flex row — see CLAUDE.md). */
+.tdl-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 20px);
+}
+/* ← one step back: toddler-sized, quiet beside the forward action (it undoes, it
+   doesn't drive). Same press feedback as its siblings. */
+.tdl-prev {
+  min-width: 76px;
+  min-height: 76px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-fast) var(--ease-soft);
+}
+.tdl-prev:active {
+  transform: scale(0.95);
 }
 .tdl-sweet {
   font-family: var(--font-hand);

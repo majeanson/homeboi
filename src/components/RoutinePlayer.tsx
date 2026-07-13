@@ -64,6 +64,12 @@ export interface PlayerRoutine {
   // decorative company during the run; bound to time-of-day, never to progress.
   companion?: string | null
 }
+// How long an armed strip step waits for its confirming tap before melting back, and
+// the ceiling on the `is-speaking` pulse — both borrowed from BigTiles so the toddler
+// surfaces behave identically (hear-first, two taps, no wandering finger commits).
+const ARM_MS = 6000
+const SPEAK_FLASH_MAX_MS = 4000
+
 // A running/just-finished timer is { endsAt } (the unix second it reaches zero);
 // a paused one is { left } (banked seconds). The player derives remaining from the
 // clock, never a frozen counter — so it stays true after the app was closed.
@@ -190,12 +196,56 @@ export function RoutinePlayer({
     setTimes({})
   }, [routine.id])
 
+  // Which card is being read aloud right now (the `is-speaking` pulse on the hero +
+  // the tapped strip step). Same discipline as BigTiles: cleared by speak()'s onEnd
+  // when a voice actually runs, and by a ceiling timer when it can't (no installed
+  // FR-CA voice makes speak() a silent no-op — the tap must still visibly register).
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null)
+  const speakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (speakTimer.current) clearTimeout(speakTimer.current)
+      if (armTimer.current) clearTimeout(armTimer.current)
+    },
+    [],
+  )
+  function flashSpeaking(idx: number) {
+    setSpeakingIdx(idx)
+    if (speakTimer.current) clearTimeout(speakTimer.current)
+    speakTimer.current = setTimeout(() => setSpeakingIdx(null), SPEAK_FLASH_MAX_MS)
+  }
+  const endSpeaking = () => {
+    if (speakTimer.current) clearTimeout(speakTimer.current)
+    setSpeakingIdx(null)
+  }
+
   // Read a step aloud WITHOUT marking it done — hear what to do first, then do it.
   function readAloud(idx: number) {
     if (idx < 0 || idx >= routine.cards.length) return
     const text = routine.cards[idx].narration ?? routine.cards[idx].label
-    playNarration(routine.cardsNarration?.[idx], text, speak)
+    flashSpeaking(idx)
+    playNarration(routine.cardsNarration?.[idx], text, (raw) => speak(raw, undefined, { onEnd: endSpeaking }))
   }
+  // A short, gentle pulse when a step settles — the same one the step Countdown gives
+  // at zero, so the app feels the same in the hand. Guarded: no vibration API is fine.
+  function buzz() {
+    try {
+      navigator.vibrate?.(20)
+    } catch {
+      /* no vibration API — the ✓ + the spoken next step carry it */
+    }
+  }
+
+  // The strip's ACCESSIBLE name for one step — « Brosse tes dents, étape 3 de 5 · fait ».
+  // The TTS narration is not a screen reader: an AT user got pure silence out of this
+  // filmstrip (it was aria-hidden). `state` is the caller's, since after a tap the
+  // optimistic cache hasn't reached this render's `routine` yet.
+  const stepLabel = (idx: number, state: string) =>
+    routine.cards[idx] ? `${routine.cards[idx].label}, ${t.kid.stepOf(idx + 1, routine.cards.length)} · ${state}` : ''
+  // The polite live region under the strip: where the story just moved. Not the
+  // stopwatch (announcing it every second would flood a screen reader).
+  const [announce, setAnnounce] = useState('')
   // Tap the companion → it says a warm line on-device. A tiny wiggle plays via the
   // is-talking class. Tap-initiated (not a finish-triggered cheer), so it stays calm.
   const [buddyTalking, setBuddyTalking] = useState(false)
@@ -233,6 +283,7 @@ export function RoutinePlayer({
     setStartAt(nowSec()) // re-anchor the lap for the next step; the clock keeps running
     if (!routine.doneIdx.includes(idx)) setTimes((m) => ({ ...m, [idx]: taken }))
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: true })
+    buzz()
     if (isLast) {
       setRunning(false)
       // A pre-reader can't read the "sweet dreams" card — say it (the SAME gentle
@@ -240,7 +291,54 @@ export function RoutinePlayer({
       speak(t.kid.allDone)
     } else {
       readAloud(idx + 1)
+      // A screen reader gets nothing from the TTS narration (it isn't AT), so say
+      // where we are, politely, in the live region under the strip.
+      setAnnounce(stepLabel(idx + 1, t.kid.stepNow))
     }
+  }
+
+  // Go BACK to a step (the ← button, or a confirmed tap on a done step in the strip).
+  // The current step is DERIVED (first-undone), so un-marking `idx` is all it takes:
+  // the story rewinds to it and reads itself aloud. Anything after stays ✓ — nothing
+  // is lost if the kid steps forward again. Never a redo prompt, never a scold.
+  function goBack(idx: number) {
+    if (ro || idx < 0) return
+    setArmedIdx(null)
+    toggle.mutate({ routineId: routine.id, cardIdx: idx, done: false })
+    setStartAt(nowSec()) // the lap restarts on the step we came back to
+    setTimes((m) => {
+      const next = { ...m }
+      delete next[idx]
+      return next
+    })
+    buzz()
+    readAloud(idx)
+    setAnnounce(stepLabel(idx, t.kid.stepNow))
+  }
+
+  // The filmstrip's hear-first tap (BigTiles' arm/ARM_MS pattern, not a new one):
+  //   a DONE step   → tap 1 speaks « Revenir à … ? Tape encore », tap 2 rewinds to it;
+  //   a FUTURE step → speaks it, always. A preview, NEVER a jump (a wandering finger
+  //                   must not skip the story forward and tick steps nobody did);
+  //   the CURRENT   → speaks itself, like the hero card.
+  const [armedIdx, setArmedIdx] = useState<number | null>(null)
+  function tapStep(idx: number) {
+    const done = routine.doneIdx.includes(idx)
+    if (!done || ro) {
+      setArmedIdx(null)
+      readAloud(idx)
+      return
+    }
+    if (armedIdx === idx) {
+      goBack(idx)
+      return
+    }
+    const c = routine.cards[idx]
+    flashSpeaking(idx)
+    speak(t.kid.backTo(c.narration ?? c.label), undefined, { onEnd: endSpeaking })
+    setArmedIdx(idx)
+    if (armTimer.current) clearTimeout(armTimer.current)
+    armTimer.current = setTimeout(() => setArmedIdx(null), ARM_MS)
   }
 
   // Play it again: clear the day's ✓ and the session stopwatch so it starts at the
@@ -265,6 +363,19 @@ export function RoutinePlayer({
   const firstUndone = routine.cards.findIndex((_, i) => !routine.doneIdx.includes(i))
   const curIdx = firstUndone === -1 ? routine.cards.length - 1 : firstUndone
   const cur = routine.cards[curIdx]
+  // The step the ← rewinds to: the last DONE one before where we are. Normally
+  // curIdx - 1; computed rather than assumed, since a deck edit can leave doneIdx
+  // sparse (done [1] with 0 undone → we're on 0 and there is nothing behind it).
+  // -1 = nothing to go back to → the ← doesn't render (first step / nothing done).
+  let prevIdx = -1
+  for (let i = curIdx - 1; i >= 0; i--)
+    if (routine.doneIdx.includes(i)) {
+      prevIdx = i
+      break
+    }
+  // Picking a routine back up mid-day: the ▶ reads as « Continuer », not « Commencer »
+  // (and, as always, speaks the step it lands on).
+  const resuming = routine.doneIdx.length > 0
 
   // Time spent so far across steps finished this session (plus the running one) —
   // a quiet line on the recap (a parent's glance; the kid's recap is the pictures).
@@ -392,10 +503,10 @@ export function RoutinePlayer({
                   text; the picture + audio carry the meaning (NFR-KID-2). */}
               <button
                 type="button"
-                className="tdl-illus tdl-illus--tap"
+                className={'tdl-illus tdl-illus--tap' + (speakingIdx === curIdx ? ' is-speaking' : '')}
                 style={{ background: tint }}
                 onClick={() => readAloud(curIdx)}
-                aria-label={cur?.label}
+                aria-label={stepLabel(curIdx, t.kid.stepNow)}
               >
                 {routine.cardsPhoto?.[curIdx] ? (
                   <img className="tdl-illus-photo" src={imgUrl(routine.cardsPhoto[curIdx])} alt="" />
@@ -432,13 +543,30 @@ export function RoutinePlayer({
 
               {/* The whole routine as a picture filmstrip: every step in order, the
                   current one lifted + ringed ("you are here"), finished ones softened
-                  with a ✓. Non-interactive: a calm progress display, not a menu. */}
-              <div className="tdl-strip" aria-hidden="true">
+                  with a ✓. GENTLY INTERACTIVE (and no longer aria-hidden — the TTS
+                  narration is not a screen reader): tap a DONE step to hear « Revenir
+                  à … ? Tape encore » and, on a second tap, rewind the story to it; a
+                  FUTURE step only speaks itself (a preview, never a jump — a wandering
+                  finger must not tick steps nobody did); the current one speaks itself
+                  like the hero. Pictures + audio carry it; no reading required. */}
+              <div className="tdl-strip">
                 {routine.cards.map((c, k) => {
                   const done = routine.doneIdx.includes(k)
                   const state = done ? 'done' : k === curIdx ? 'on' : 'wait'
+                  const armed = armedIdx === k
+                  const word = done ? t.kid.stepDone : k === curIdx ? t.kid.stepNow : t.kid.stepTodo
                   return (
-                    <span key={k} className={`tdl-step tdl-step--${state}`}>
+                    <button
+                      key={k}
+                      type="button"
+                      className={
+                        `tdl-step tdl-step--${state}` +
+                        (armed ? ' is-armed' : '') +
+                        (speakingIdx === k ? ' is-speaking' : '')
+                      }
+                      onClick={() => tapStep(k)}
+                      aria-label={armed ? t.kid.backTo(c.label) : stepLabel(k, word)}
+                    >
                       <span className="tdl-step__pic">
                         {routine.cardsPhoto?.[k] ? (
                           <img src={imgUrl(routine.cardsPhoto[k])} alt="" />
@@ -446,41 +574,75 @@ export function RoutinePlayer({
                           <span className="tdl-step__emoji">{c.icon || '○'}</span>
                         )}
                       </span>
-                      {done && (
-                        <span className="tdl-step__check">
+                      {done && !armed && (
+                        <span className="tdl-step__check" aria-hidden="true">
                           <Icon name="check-bold" size={14} />
                         </span>
                       )}
-                    </span>
+                      {armed && (
+                        <span className="tdl-step__again" aria-hidden="true">
+                          👆
+                        </span>
+                      )}
+                    </button>
                   )
                 })}
               </div>
+              {/* Where the story just moved, said politely once — an AT user gets no
+                  meaning at all from the spoken narration. Never the stopwatch. */}
+              <span className="sr-only" aria-live="polite">
+                {announce}
+              </span>
 
-              {/* Start ONCE (▶), then advance with →, and ✓ on the last. A guest
-                  never sees these (they commit progress) — the tap-to-hear picture /
-                  label + the step timer above still work. */}
-              {!ro &&
-                (running ? (
-                  <div className="tdl-timer">
-                    {/* A glanceable count-up, not a status message — announcing it every
-                        second floods a screen reader, so keep it out of the live region. */}
-                    <span className="tdl-clock mono" aria-live="off">
-                      {clock(elapsed)}
-                    </span>
+              {/* Start ONCE (▶ — « Continuer » when today's run is already under way),
+                  then advance with →, and ✓ on the last. Beside them, a big ← that
+                  UN-does the last finished step so the story rewinds to it and reads
+                  itself aloud again (Marc's ask: a three-year-old taps → too fast).
+                  It hides on the first step and when nothing is done — there's nowhere
+                  to go back to. A guest never sees any of these (they commit progress);
+                  the tap-to-hear picture / label + the step timer still work for them. */}
+              {!ro && (
+                <div className="tdl-controls">
+                  {prevIdx >= 0 && (
                     <button
                       type="button"
-                      className="tdl-finish"
-                      onClick={() => advance(curIdx)}
-                      aria-label={curIdx >= routine.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
+                      className="tdl-prev"
+                      onClick={() => goBack(prevIdx)}
+                      aria-label={t.kid.prev}
+                      title={t.kid.prev}
                     >
-                      <Icon name={curIdx >= routine.cards.length - 1 ? 'check-bold' : 'arrow-right-bold'} size={34} />
+                      <Icon name="arrow-left-bold" size={30} />
                     </button>
-                  </div>
-                ) : (
-                  <button type="button" className="tdl-start" onClick={() => startStep(curIdx)} aria-label={t.kid.start}>
-                    <Icon name="play-bold" size={22} />
-                  </button>
-                ))}
+                  )}
+                  {running ? (
+                    <div className="tdl-timer">
+                      {/* A glanceable count-up, not a status message — announcing it every
+                          second floods a screen reader, so keep it out of the live region. */}
+                      <span className="tdl-clock mono" aria-live="off">
+                        {clock(elapsed)}
+                      </span>
+                      <button
+                        type="button"
+                        className="tdl-finish"
+                        onClick={() => advance(curIdx)}
+                        aria-label={curIdx >= routine.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
+                      >
+                        <Icon name={curIdx >= routine.cards.length - 1 ? 'check-bold' : 'arrow-right-bold'} size={34} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="tdl-start"
+                      onClick={() => startStep(curIdx)}
+                      aria-label={resuming ? t.kid.resume : t.kid.start}
+                      title={resuming ? t.kid.resume : t.kid.start}
+                    >
+                      <Icon name="play-bold" size={22} />
+                    </button>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

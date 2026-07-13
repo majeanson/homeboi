@@ -660,6 +660,13 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/jouer',
       },
+      {
+        label: { fr: 'Revenir en arrière', en: 'Going back' },
+        detail: {
+          fr: 'Un doigt trop rapide ? La ← à côté de la → défait la dernière étape : l’histoire recule et la carte se relit tout haut. Dans la pellicule d’étapes en bas, touche une étape déjà faite — elle demande « Revenir à … ? Tape encore » — et une étape à venir se contente de se dire (jamais de saut).',
+          en: 'A finger too quick? The ← beside the → un-does the last step: the story rewinds and the card reads itself aloud again. In the filmstrip below, tap a finished step — it asks “Go back to …? Tap again” — while a step still coming up only speaks itself (never a jump).',
+        },
+      },
     ],
   },
   {

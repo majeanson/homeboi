@@ -1464,7 +1464,20 @@ export const FR = {
     then: 'ensuite',
     tapNext: 'Suivant',
     start: 'Commencer',
+    // Reprendre une routine déjà entamée aujourd’hui : le ▶ dit « Continuer », pas
+    // « Commencer » — l’enfant reprend là où il était, la carte se relit tout haut.
+    resume: 'Continuer',
     finish: 'J’ai fini !',
+    // Revenir d’une étape : la ← à côté du → (elle « défait » la dernière étape faite).
+    prev: 'Étape d’avant',
+    // La pellicule d’étapes, maintenant tapable (hear-first en deux touches sur une
+    // étape faite). Étiquettes lues par un lecteur d’écran — la narration n’en est pas un.
+    stepOf: (i: number, n: number) => `étape ${i} de ${n}`,
+    stepDone: 'fait',
+    stepTodo: 'à venir',
+    stepNow: 'on est ici',
+    // Première touche sur une étape déjà faite : on annonce, on n’agit pas encore.
+    backTo: (label: string) => `Revenir à ${label} ? Tape encore.`,
     tapHear: 'Touche l’image pour l’écouter',
     allDone: 'C’est fini ! Bravo.',
     again: 'Recommencer',
