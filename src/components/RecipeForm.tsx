@@ -462,9 +462,12 @@ export function RecipeForm({
         source: string | null
         lang: 'fr' | 'en' | null
         empty?: boolean
+        reason?: 'blocked' | 'no-recipe'
       }>('recipe-import', { method: 'POST', body: text ? { text } : { url } })
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
-        setImportMsg(t.recipes.importFail)
+        // A site that refuses us is not the same failure as a page with no recipe on
+        // it — and neither is the AI being off. Say which one it was.
+        setImportMsg(r.reason === 'blocked' ? t.recipes.importBlocked : t.recipes.importFail)
       } else {
         applyDraft(r)
         if (r.image && !image) setImage(r.image)

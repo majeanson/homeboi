@@ -10,6 +10,7 @@ import {
   parsePastedRecipe,
   parseRecipeJsonLd,
   parseRecipeMicrodata,
+  recipeTextWindow,
   refineSteps,
   regroupIngredients,
 } from '../_lib/recipeImport'
@@ -39,6 +40,11 @@ interface DraftOut {
   // leaves its language on "Auto"). Set here so every import path fills it.
   lang: 'fr' | 'en' | null
   empty?: boolean
+  // Why we came back empty-handed, so the UI can say something true instead of one
+  // catch-all "rien trouvé":
+  //   'blocked'    — the page refused us (bot manager); pasting the text still works.
+  //   'no-recipe'  — we read the page fine, there was just no recipe on it.
+  reason?: 'blocked' | 'no-recipe'
 }
 
 const draft = (d: Partial<DraftOut>): DraftOut => {
@@ -85,6 +91,51 @@ function publicHttpUrl(raw: string): URL | null {
     return null
   }
   return u
+}
+
+// Some recipe sites sit behind a bot manager (Akamai, PerimeterX…) that refuses
+// any datacenter client outright: recettes.qc.ca 403s a Worker no matter what
+// user-agent it sends, so the page never even reaches the parsers below. When the
+// direct fetch is refused, retry once through a public reader that renders the
+// page and hands back its HTML. Deliberately a FALLBACK, not the default path —
+// it sends the URL to a third party, so it only runs on a page we couldn't fetch
+// ourselves, and if it's unavailable too the import just reports 'blocked' and the
+// UI points the cook at paste (which never left the house).
+const READER = 'https://r.jina.ai/'
+
+async function fetchPage(url: URL, lang: 'fr' | 'en'): Promise<string | null> {
+  const acceptLanguage = lang === 'en' ? 'en-CA' : 'fr-CA'
+  const cap = (s: string) => s.slice(0, 2_000_000) // cap a runaway page
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        accept: 'text/html,application/xhtml+xml',
+        'user-agent': 'Babillard/0.1 (+household planner)',
+        'accept-language': acceptLanguage,
+      },
+      redirect: 'follow',
+    })
+    if (res.ok) return cap(await res.text())
+  } catch {
+    // fall through to the reader
+  }
+  try {
+    const res = await fetch(READER + url.toString(), {
+      headers: {
+        // Ask for the page's own HTML rather than the reader's markdown, so the
+        // JSON-LD / microdata parsers below still get their shot on sites that
+        // publish structured data (the reader's markdown drops <script> tags).
+        'x-return-format': 'html',
+        'accept-language': acceptLanguage,
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(20_000),
+    })
+    if (res.ok) return cap(await res.text())
+  } catch {
+    // reader down / timed out — treat as blocked
+  }
+  return null
 }
 
 export const onRequestPost = authed(async (ctx, actor) => {
@@ -153,20 +204,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const url = publicHttpUrl(urlRaw)
   if (!url) return badRequest('Adresse invalide.')
 
-  let html: string
-  try {
-    const res = await fetch(url.toString(), {
-      headers: {
-        accept: 'text/html,application/xhtml+xml',
-        'user-agent': 'Babillard/0.1 (+household planner)',
-        'accept-language': lang === 'en' ? 'en-CA' : 'fr-CA',
-      },
-      redirect: 'follow',
-    })
-    if (!res.ok) return serviceUnavailable('Page indisponible.')
-    html = (await res.text()).slice(0, 2_000_000) // cap a runaway page
-  } catch {
-    return serviceUnavailable('Page indisponible.')
+  const html = await fetchPage(url, lang)
+  // Refused by the site AND by the reader — say so. This used to 503, which the
+  // form rendered as "l'IA est désactivée": a blocked page has nothing to do with
+  // the AI, and the wrong message sent the cook chasing a setting that was fine.
+  if (html === null) {
+    return ok(draft({ source: url.toString(), empty: true, reason: 'blocked' }))
   }
 
   // Structured data first — JSON-LD, then microdata. Reliable, no AI. The flat
@@ -179,9 +222,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
     )
   }
 
-  // No structured Recipe — try AI over the page text (best-effort).
+  // No structured Recipe — try AI over the page text (best-effort). Some sites ship
+  // a Recipe node that's a hollow shell (recettes.qc.ca declares recipeIngredient:[]
+  // and recipeInstructions:"") and no microdata at all, so this path carries pages
+  // the parsers above can't touch. Extract the WHOLE text, then window it onto the
+  // recipe — a head slice would hand the model the nav bar and stop short of the food.
   if (aiOn) {
-    const r = await structureRecipe(ctx.env, htmlToText(html), lang)
+    const r = await structureRecipe(ctx.env, recipeTextWindow(htmlToText(html, 200_000)), lang)
     if (r.ingredients.length || r.steps.length) {
       return ok(
         draft({
@@ -195,6 +242,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
     }
   }
 
-  // Couldn't extract anything usable — let the UI tell the user to paste instead.
-  return ok(draft({ title: parsed?.title ?? null, image: parsed?.image ?? null, source: url.toString(), empty: true }))
+  // We read the page fine, there was just no recipe in it (an article or a listicle
+  // — /recettes/article/… rather than /recettes/recette/… — lands here). Let the UI
+  // tell the user to paste instead.
+  return ok(
+    draft({
+      title: parsed?.title ?? null,
+      image: parsed?.image ?? null,
+      source: url.toString(),
+      empty: true,
+      reason: 'no-recipe',
+    }),
+  )
 })

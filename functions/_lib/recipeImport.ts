@@ -915,9 +915,38 @@ export function parseMarkdownRecipe(text: string): PastedRecipe {
   return parsePastedRecipe(flat)
 }
 
+// A recipe page is mostly NOT the recipe. Nav, cookie banner, ad rails and the
+// "more recipes" carousel routinely run longer than the model's whole input
+// budget, so slicing the head feeds it the menu bar and cuts off before the food:
+// on recettes.qc.ca the word "Ingrédients" first lands at char 6441 — 441 past the
+// 6000-char cap the AI fallback used to take. Window onto the recipe instead:
+// anchor on the ingredients heading (or, failing that, the preparation one) and
+// spend the budget from there, keeping a little of the lead-in because the title,
+// yield and times usually sit just above that heading.
+const HEADING_ANCHORS = [
+  /^[ \t]*(?:#{1,6}[ \t]*)?(?:ingr[ée]dients?)[ \t]*:?[ \t]*$/im,
+  /^[ \t]*(?:#{1,6}[ \t]*)?(?:pr[ée]paration|instructions?|directions?|m[ée]thode|method|[ée]tapes?|steps?)[ \t]*:?[ \t]*$/im,
+]
+// Loose fallback for pages that don't put the heading on its own line.
+const LOOSE_ANCHORS = [/ingr[ée]dients?/i, /pr[ée]paration|instructions?|directions?/i]
+
+export function recipeTextWindow(text: string, max = 6000): string {
+  if (text.length <= max) return text
+  const hit =
+    HEADING_ANCHORS.map((re) => re.exec(text)?.index).find((i) => i !== undefined) ??
+    LOOSE_ANCHORS.map((re) => re.exec(text)?.index).find((i) => i !== undefined)
+  if (hit === undefined) return text.slice(0, max) // no anchor — head slice is all we've got
+  const lead = Math.min(600, Math.floor(max * 0.1))
+  const start = Math.max(0, hit - lead)
+  return text.slice(start, start + max)
+}
+
 // Crude HTML→text for the AI fallback when there's no structured data: drop
 // scripts/styles, keep block boundaries as newlines (so the model — and the
 // paste parser — still sees the page's line structure), strip tags, collapse.
+// `max` defaults to the model budget, but a caller that intends to window the
+// result (see recipeTextWindow) passes a large max so the recipe isn't already
+// truncated away before the window can find it.
 export function htmlToText(html: string, max = 6000): string {
   return decodeEntities(
     html

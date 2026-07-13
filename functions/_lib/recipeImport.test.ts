@@ -11,6 +11,7 @@ import {
   normalizeInstructions,
   normalizeImage,
   htmlToText,
+  recipeTextWindow,
   refineSteps,
   healTruncatedSteps,
   MAX_STEP_LEN,
@@ -732,5 +733,36 @@ describe('htmlToText', () => {
   it('strips scripts/styles/tags, keeps block boundaries as newlines', () => {
     const html = '<style>.a{}</style><h1>Hi</h1><script>x()</script><p>there\n  friend</p>'
     expect(htmlToText(html)).toBe('Hi\nthere friend')
+  })
+})
+
+describe('recipeTextWindow', () => {
+  const NAV = 'Accueil Recettes Conversions Lexique Substitutions S’abonner Créer une recette '.repeat(90)
+  const RECIPE = 'Ingrédients\n2 tasses de farine\n1 c. à thé de sel\n\nPréparation\nÉtape 1\nMélanger.'
+
+  it('leaves short text alone', () => {
+    expect(recipeTextWindow('Ingrédients\nsel', 6000)).toBe('Ingrédients\nsel')
+  })
+
+  it('windows onto the recipe when nav chrome would eat the budget', () => {
+    const page = NAV + '\n' + RECIPE
+    // The regression: "Ingrédients" sits past the model's cap, so a head slice misses it.
+    expect(page.indexOf('Ingrédients')).toBeGreaterThan(6000)
+    const win = recipeTextWindow(page, 6000)
+    expect(win).toContain('Ingrédients')
+    expect(win).toContain('2 tasses de farine')
+    expect(win).toContain('Étape 1')
+    expect(win.length).toBeLessThanOrEqual(6000)
+  })
+
+  it('falls back to the preparation heading when there is no ingredients one', () => {
+    const win = recipeTextWindow(NAV + '\nPréparation\nÉtape 1\nMélanger.', 6000)
+    expect(win).toContain('Préparation')
+    expect(win).toContain('Mélanger.')
+  })
+
+  it('head-slices when no anchor is found at all', () => {
+    const plain = 'x'.repeat(9000)
+    expect(recipeTextWindow(plain, 6000)).toBe('x'.repeat(6000))
   })
 })
