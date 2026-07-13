@@ -128,6 +128,7 @@ describe('keysForPath', () => {
     for (const p of [
       'auth/login',
       'auth/me',
+      'demo/claim',
       'pair/start',
       'pair/poll',
       'transcribe',

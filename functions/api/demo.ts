@@ -37,8 +37,8 @@ import {
 // Known accepted costs, deliberately NOT gated here: a sandbox operator can call
 // the AI endpoints (capture/suggest/vide-frigo) and upload R2 media — both
 // bounded by the TTL + cap, and the sweep frees the blobs it can find
-// (demoHousehold.ts MEDIA_* inventory). A « garde ma maisonnée » claim flow
-// (convert a sandbox into a real account) is the natural next step — deferred.
+// (demoHousehold.ts MEDIA_* inventory). The « Garder ma maisonnée » claim flow
+// (convert a sandbox into a real account) lives in ./demo/claim.ts.
 
 const DEMO_EMAIL = 'demo@babillard.invalid' // the legacy read-only singleton
 const DEMO_NAME = 'La maisonnée démo'

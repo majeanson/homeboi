@@ -311,6 +311,23 @@ export const EN: typeof FR = {
     reset: 'Reset the examples',
     resetting: 'Resetting…',
   },
+  // « Garder ma maisonnée » — claim the demo sandbox into a real account.
+  claim: {
+    bannerTitle: 'This is your trial household',
+    bannerHint: 'Everything you try here is wiped after 24 hours. Keep it, and it all stays in place — for real.',
+    bannerCta: 'Keep my household',
+    title: 'Keep my household',
+    lead: 'An email, a password — and everything you tried stays in place.',
+    nameHint: 'Leave blank to keep the current name.',
+    confirm: 'Confirm the password',
+    submit: 'Keep my household',
+    claiming: 'Keeping it…',
+    mismatch: 'The two passwords don’t match.',
+    exists: 'An account already exists for this email.',
+    badInvite: 'Invalid invite code.',
+    error: 'Couldn’t keep the household. Try again.',
+    nextStep: 'Your trial household becomes yours — nothing is erased.',
+  },
   // Découvrir's calm discovery cards (bmad/08 B-11 + B-14).
   discover: {
     didYouKnow: 'Did you know?',

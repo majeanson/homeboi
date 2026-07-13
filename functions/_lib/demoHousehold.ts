@@ -35,6 +35,18 @@ export function sandboxEmail(householdId: string): string {
   return `${DEMO_SANDBOX_PREFIX}${householdId}${DEMO_SANDBOX_DOMAIN}`
 }
 
+// The pure mirror of SANDBOX_EMAIL_LIKE — "is this operator a sweepable sandbox?".
+// The sweep + cap query key on the operators.email LIKE pattern and NOTHING else
+// (no column, no household flag), so « Garder ma maisonnée » (demo/claim.ts)
+// converts a sandbox into a real account by rewriting that one email in place:
+// once it no longer matches, the household is invisible to the sweep and stops
+// counting against the cap. demoHousehold.test.ts pins that a claimed email
+// falls outside the pattern. The legacy singleton `demo@babillard.invalid`
+// (no dash) deliberately does not match either.
+export function isSandboxEmail(email: string): boolean {
+  return email.startsWith(DEMO_SANDBOX_PREFIX) && email.endsWith(DEMO_SANDBOX_DOMAIN)
+}
+
 // One afternoon of real use; after this the next mint sweeps the household away.
 export const DEMO_SANDBOX_TTL = 24 * 3600
 // Alive-sandbox ceiling: past it new visitors get the read-only singleton

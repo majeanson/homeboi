@@ -14,6 +14,9 @@ import { Board } from './pages/Board'
 
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Signup })))
+// « Garder ma maisonnée » — a demo-sandbox session converts itself into a real
+// account (the board claim banner links here). Sandbox-only; others bounce home.
+const ClaimPage = lazy(() => import('./pages/ClaimPage').then((m) => ({ default: m.ClaimPage })))
 const Operator = lazy(() => import('./pages/Operator').then((m) => ({ default: m.Operator })))
 const Kitchen = lazy(() => import('./pages/Kitchen').then((m) => ({ default: m.Kitchen })))
 const Routines = lazy(() => import('./pages/Routines').then((m) => ({ default: m.Routines })))
@@ -221,6 +224,8 @@ export function AppRoutes() {
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        {/* « Garder ma maisonnée » — claim the demo sandbox into a real account. */}
+        <Route path="/garder" element={<ClaimPage />} />
 
         {/* Dev-only component gallery — unlinked, standalone (no hub chrome). */}
         <Route path="/dev/kit" element={<DevKit />} />

@@ -354,6 +354,24 @@ export const FR = {
     reset: 'Repartir les exemples à neuf',
     resetting: 'On repart à neuf…',
   },
+  // « Garder ma maisonnée » — claim the demo sandbox into a real account
+  // (the board claim banner + /garder, functions/api/demo/claim.ts).
+  claim: {
+    bannerTitle: 'C’est ta maisonnée d’essai',
+    bannerHint: 'Tout ce que tu essaies ici s’efface après 24 heures. Garde-la, pis tout reste en place — pour vrai.',
+    bannerCta: 'Garder ma maisonnée',
+    title: 'Garder ma maisonnée',
+    lead: 'Un courriel, un mot de passe — pis tout ce que tu as essayé reste en place.',
+    nameHint: 'Laisse vide pour garder le nom actuel.',
+    confirm: 'Confirme le mot de passe',
+    submit: 'Garder ma maisonnée',
+    claiming: 'On garde ça…',
+    mismatch: 'Les deux mots de passe ne concordent pas.',
+    exists: 'Un compte existe déjà pour ce courriel.',
+    badInvite: 'Code d’invitation invalide.',
+    error: 'Impossible de garder la maisonnée. Réessaie.',
+    nextStep: 'Ta maisonnée d’essai devient la tienne — rien ne s’efface.',
+  },
   // Découvrir's calm discovery cards (bmad/08 B-11 + B-14).
   discover: {
     didYouKnow: 'Le saviez-vous ?',

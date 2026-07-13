@@ -336,8 +336,12 @@ build-guarded by `demoHousehold.test.ts` — a new migration table MUST be added
 sets) and `DEMO_SANDBOX_CAP` (past it the endpoint falls back to the legacy behaviour:
 find-or-create the read-only singleton demo household, reseed if stale, mint a
 **4-hour read-only `showcase` guest token** → `/board?guest=<token>`). The sweep
-deleting the sandbox's `operators` row is the session kill switch. Deferred: a
-« garde ma maisonnée » claim flow converting a sandbox into a real account.
+deleting the sandbox's `operators` row is the session kill switch. **Shipped:** the
+« Garder ma maisonnée » claim flow — `POST /api/demo/claim` (sandbox-operator-only,
+signup-grade validation + invite gate) rewrites the operators row's email + password
+**in place**, so the household, its data and the session survive while the email-LIKE
+sweep/cap stop matching it; the board claim banner (`SampleBanner`'s sandbox face,
+`lib/demo.ts` `useSandbox()`) links to the `/garder` form.
 
 The fallback (and any operator-minted showcase link) is an ordinary guest, so
 **whatever a guest can't do, that fallback can't show** — `isGuest()` stays

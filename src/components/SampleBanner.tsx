@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useOnline } from '../lib/online'
 import { useConfirm } from '../lib/confirm'
+import { useSandbox } from '../lib/demo'
 import { useSampleStatus } from '../lib/sample'
 import { api } from '../lib/api'
 import { Icon } from './Icon'
@@ -15,21 +17,31 @@ import { Icon } from './Icon'
 // out: keep it (dismiss — explore, then add real data alongside — clearing later
 // never touches what you added, thanks to is_sample) or clear it now.
 //
+// In a demo SANDBOX session (« Essayer pour vrai » — lib/demo.ts), the SAME strip
+// wears its claim face instead: the household is a 24-hour throwaway, so the one
+// thing worth saying is « Garder ma maisonnée » (→ /garder, the claim form).
+// Clearing examples would be noise there — an emptied throwaway is still a
+// throwaway — and once claimed the session stops being a sandbox, so this very
+// banner flips back to the ordinary explore/clear face on its own.
+//
 // Operator-only: clearing is an operator action, and a wall kiosk (no session)
 // just shows the living demo until the operator clears it from their phone. Never
 // in the toddler lens. Dismissal persists like WelcomeCard's, so it won't nag.
 const KEY = 'babillard-sample-banner'
+// The claim strip's own dismissal — a visitor who dismissed the sample strip on
+// their real account earlier must still see the claim offer in a sandbox.
+const CLAIM_KEY = 'babillard-claim-banner'
 
-function isDismissed(): boolean {
+function isDismissed(key: string): boolean {
   try {
-    return localStorage.getItem(KEY) === '1'
+    return localStorage.getItem(key) === '1'
   } catch {
     return false
   }
 }
-function persistDismissed() {
+function persistDismissed(key: string) {
   try {
-    localStorage.setItem(KEY, '1')
+    localStorage.setItem(key, '1')
   } catch {
     /* noop */
   }
@@ -39,10 +51,12 @@ export function SampleBanner() {
   const t = useT()
   const { audience } = useAudience()
   const { signedIn } = useAuth()
+  const sandbox = useSandbox()
   const online = useOnline()
   const confirm = useConfirm()
   const qc = useQueryClient()
-  const [dismissed, setDismissed] = useState(isDismissed)
+  const [dismissed, setDismissed] = useState(() => isDismissed(KEY))
+  const [claimDismissed, setClaimDismissed] = useState(() => isDismissed(CLAIM_KEY))
   const [busy, setBusy] = useState(false)
 
   // Only the operator manages sample data (the shared hook gates its query to a
@@ -50,10 +64,46 @@ export function SampleBanner() {
   // "explore" act and this banner is the board's ONE onboarding card.
   const { hasSample } = useSampleStatus()
 
-  if (audience === 'toddler' || !signedIn || dismissed || !hasSample) return null
+  if (audience === 'toddler' || !signedIn) return null
+
+  // The sandbox claim face — not gated on hasSample: a visitor who cleared or
+  // outgrew the seed still deserves the way to keep what they built.
+  if (sandbox) {
+    if (claimDismissed) return null
+    return (
+      <aside className="sample-banner" aria-label={t.claim.bannerTitle}>
+        <span className="sample-banner__icon">
+          <Icon name="sparkle-bold" size={20} />
+        </span>
+        <div className="sample-banner__text">
+          <span className="sample-banner__title">{t.claim.bannerTitle}</span>
+          <span className="sample-banner__hint">{t.claim.bannerHint}</span>
+        </div>
+        <div className="sample-banner__actions">
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={() => {
+              persistDismissed(CLAIM_KEY)
+              setClaimDismissed(true)
+            }}
+          >
+            {t.sample.later}
+          </button>
+          {/* Primary: keep the household — a navigation, so it needs no online gate
+              (the claim form itself is the online-only auth step). */}
+          <Link to="/garder" className="btn btn--primary btn--sm">
+            {t.claim.bannerCta}
+          </Link>
+        </div>
+      </aside>
+    )
+  }
+
+  if (dismissed || !hasSample) return null
 
   const keep = () => {
-    persistDismissed()
+    persistDismissed(KEY)
     setDismissed(true)
   }
 

@@ -50,6 +50,7 @@ const SILENT_PATHS = new Set<string>([
   'ai-test',
   'capture-classify', // pure classifier; the follow-up write carries its own path
   'empty-fridge', // « vide-frigo » AI ideas/recipes; saving a result hits recipes
+  'demo/claim', // « Garder ma maisonnée » — rewrites the operator credential only; no polled cache changes
   'guest/start',
   'health',
   'pair/start',

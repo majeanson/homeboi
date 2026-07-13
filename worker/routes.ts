@@ -28,6 +28,7 @@ import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
 import * as demo from '../functions/api/demo'
+import * as demoClaim from '../functions/api/demo/claim'
 import * as drawings from '../functions/api/drawings'
 import * as emptyFridge from '../functions/api/empty-fridge'
 import * as events from '../functions/api/events'
@@ -157,6 +158,8 @@ const TABLE: Record<string, RouteMod> = {
   'day-notes': dayNotes,
   deals,
   demo,
+  // « Garder ma maisonnée » — convert a demo sandbox into a real account.
+  'demo/claim': demoClaim,
   drawings,
   'empty-fridge': emptyFridge,
   events,

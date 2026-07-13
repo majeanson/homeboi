@@ -147,7 +147,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | --- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------- |
 | F31 | Voyage (privé + partagé)                                                | trips + trip_notes/packing (0092), shared_trips + 3 (0101)                                    | trips, trip-_, shared-trip-_ (11)                                 | VoyagePage, SharedVoyagePage, DeparturePage, voyage/\*                                   | TRIPS*, SHARED_TRIP*                |
 | F32 | L'auto                                                                  | schedule_blocks (0069), car_day (0070), household cars                                        | car, car-day, schedule                                            | VoiturePage, AutoCard, operator/schedule                                                 | CAR, SCHEDULE                       |
-| F33 | Partager & invités (guest links, intake, postbox, partage public, demo) | guests (0098+), intake*\* (0075/0076), postbox*\* (0085), shares (0102), family_shares (0100) | guest\*, intake, postbox, share, share-public, family-share, demo | ShareModal, IntakeForm, Postbox, PartagePage, FamilyWindowPage, operator/guest + reviews | SHARES, guestWindowKey              |
+| F33 | Partager & invités (guest links, intake, postbox, partage public, demo + claim) | guests (0098+), intake*\* (0075/0076), postbox*\* (0085), shares (0102), family_shares (0100) | guest\*, intake, postbox, share, share-public, family-share, demo, demo/claim | ShareModal, IntakeForm, Postbox, PartagePage, FamilyWindowPage, operator/guest + reviews, SampleBanner (claim face), ClaimPage | SHARES, guestWindowKey              |
 | F34 | Réglages, appareils & veille                                            | devices, pairing_codes, household(+preferences 0106)                                          | pair/_, members, household, takeout, health, ai-_                 | Operator, Pair, Setup, operator/\* (~28 sections), lib/ambient                           | DEVICES, MEMBERS, HOUSEHOLD, HEALTH |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
@@ -298,7 +298,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | ✅⁵⁴    |
 | F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | ✅³        | ➖        | ✅       | ✅⁵⁴    |
-| F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅      |
+| F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅⁶⁴    |
 | F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | ✅²¹       | 🔶²³      | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
@@ -510,6 +510,31 @@ Footnotes (verdicts recorded so far):
     STALE — `WG_PHONE_COL_MIN` (89bd7b4) had already fixed it; finding 20
     (SubTabs aria-controls) skipped as invasive per its own carve-out (19 call
     sites; tablist roles/roving-tabindex/arrows already correct).
+
+64. **« Garder ma maisonnée » SHIPPED 2026-07-13 (F33, no new table)** — the demo-sandbox
+    claim flow (the piece demo.ts always deferred). `POST /api/demo/claim`
+    (`functions/api/demo/claim.ts`, `authed(…, 'operator')` + `worker/routes.ts` row +
+    `SILENT_PATHS` — credential-only write, no polled cache): sandbox-operator-only
+    (403 otherwise), signup-grade validation (same regex / 8-char floor / PBKDF2
+    `hashPassword` / `LOGIN_PASSWORD` invite gate / 409 on an existing email), then ONE
+    in-place `UPDATE operators SET email, password_hash` — the household id never moves, so
+    every row survives; the response re-issues session cookies for the new email so the
+    device stays signed in. **Sweep-skip verified against code:** the sweep + cap key
+    SOLELY on the `operators.email LIKE 'demo-%@babillard.invalid'` pattern
+    (`demoHousehold.ts` `SANDBOX_EMAIL_LIKE`, no column/flag), so a claimed row leaves the
+    sweepable set structurally; `isSandboxEmail` (new pure mirror, used by the handler +
+    `lib/demo.ts` client-side) is pinned by new `demoHousehold.test.ts` cases (claimed
+    email never matches; legacy `demo@` singleton never matches). Client: `useSandbox()`
+    reads the RFC-2606 email `auth/me` already exposes (no new flag), `SampleBanner`
+    wears a claim face in a sandbox (own dismiss key, replaces — never stacks on — the
+    sample face), `/garder` (`ClaimPage`) mirrors Signup's shell/fields + confirm field,
+    `StatusMessage` errors, `useOnline` disable (online-only auth action ➖¹², like
+    login/signup). Checklist ➖: no migration/entity (credential rewrite), no peek/search/
+    voice/media (not content), toddler never sees it (audience gate), no guide card —
+    the flow only exists inside a 24 h sandbox session and self-presents via the banner
+    (a permanent guide card would advertise a surface real households can never reach).
+    D16: `e2e/demo-claim.spec.ts` (banner face, POST fires, mismatch guard, non-sandbox
+    bounce). FR-CA first + EN mirror (`t.claim`).
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
