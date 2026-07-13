@@ -249,6 +249,28 @@
     0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
     var(--shadow-md);
 }
+/* "I heard you": the tapped tile pulses in its own tint while its narration plays
+   (BigTiles' is-speaking; cleared by speak()'s onEnd or a short ceiling). It shows
+   even when no matching voice is installed and the tap would otherwise be a total
+   no-op. The ring alone carries the meaning; the gentle icon breathe is motion-safe. */
+.bigtile.is-speaking {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--tint) 55%, transparent),
+    var(--shadow-md);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bigtile.is-speaking .bigtile__icon {
+    animation: bigtile-speak 0.7s ease-in-out infinite alternate;
+  }
+  @keyframes bigtile-speak {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.06);
+    }
+  }
+}
 .bigtile__again {
   position: absolute;
   top: 0.45rem;

@@ -218,9 +218,26 @@ export function hasVoiceFor(lang: Lang): boolean {
   return pickVoice(wantedTag(lang)) !== null
 }
 
+// The one parent-voice clip playing right now (playNarration below). Module-level
+// so a second tap PAUSES the first clip instead of stacking two voices — TTS
+// already had this guarantee via speechSynthesis.cancel(); clips didn't.
+let currentClip: HTMLAudioElement | null = null
+function stopClip(): void {
+  const clip = currentClip
+  currentClip = null
+  if (!clip) return
+  try {
+    clip.pause()
+  } catch {
+    /* nothing playing */
+  }
+}
+
 // Stop any in-progress narration immediately (toggling auto-read off, leaving a
-// narrated surface). A no-op where speech isn't supported; never throws.
+// narrated surface) — BOTH mouths: the TTS queue and a playing parent-voice clip.
+// A no-op where speech isn't supported; never throws.
 export function stopSpeaking(): void {
+  stopClip()
   if (!SUPPORTED) return
   try {
     window.speechSynthesis.cancel()
@@ -259,13 +276,18 @@ export function playNarration(
     return () => {}
   }
   try {
-    stopSpeaking() // a clip and TTS must never overlap (same rule as speak())
+    stopSpeaking() // a clip and TTS must never overlap — pauses a prior clip too
     const audio = new Audio(`/api/img/${audioKey}`)
+    currentClip = audio // so the NEXT narration (or stopSpeaking) can pause this one
     audio.onerror = () => speak(fallbackText) // clip unavailable → TTS
+    audio.onended = () => {
+      if (currentClip === audio) currentClip = null
+    }
     // play() rejects on a blocked autoplay / decode error — fall back then too.
     const p = audio.play()
     if (p && typeof p.catch === 'function') p.catch(() => speak(fallbackText))
     return () => {
+      if (currentClip === audio) currentClip = null
       try {
         audio.pause()
       } catch {

@@ -9,7 +9,7 @@ import type { FR } from './i18n'
 export const EN: typeof FR = {
   appName: 'Babillard',
   tagline: 'The calm family planner.',
-  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', cercle: 'The circle', hideMenu: 'Hide menu', showMenu: 'Show menu' },
+  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', cercle: 'The circle', hideMenu: 'Hide menu', showMenu: 'Show menu', sections: 'Sections' },
   // #30 — global search across recipes / people / events / the list.
   search: {
     title: 'Search everything',

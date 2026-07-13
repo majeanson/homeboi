@@ -46,25 +46,48 @@ const TILE_TINTS = ['#f2a03d', '#7bb0c9', '#b06a93', '#88a36f', '#e0724e', '#fbd
 // How long an armed tile waits for its confirming tap before melting back.
 const ARM_MS = 6000
 
+// The visible "I heard you" pulse never outstays the voice: cleared by speak()'s
+// own onEnd when TTS runs, by this ceiling when it can't (a missing FR-CA voice
+// makes speak() a silent no-op — the tap must still visibly register).
+const SPEAK_FLASH_MAX_MS = 4000
+
 export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
   const t = useT()
   const speak = useSpeak()
   const [armedKey, setArmedKey] = useState<string | null>(null)
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Which tile is being read aloud right now (`is-speaking` pulse). Without it a
+  // tap gave NO visual feedback — and with no installed voice, no feedback at all.
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null)
+  const speakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
     () => () => {
       if (armTimer.current) clearTimeout(armTimer.current)
+      if (speakTimer.current) clearTimeout(speakTimer.current)
     },
     [],
   )
 
+  // Light the tapped tile now; clear via speak()'s onEnd (the voice finished) or
+  // the ceiling timer (no voice ever spoke — clip path, missing voice, TTS off).
+  function flashSpeaking(key: string) {
+    setSpeakingKey(key)
+    if (speakTimer.current) clearTimeout(speakTimer.current)
+    speakTimer.current = setTimeout(() => setSpeakingKey(null), SPEAK_FLASH_MAX_MS)
+  }
+  const endSpeaking = () => {
+    if (speakTimer.current) clearTimeout(speakTimer.current)
+    setSpeakingKey(null)
+  }
+
   function tap(tile: Tile) {
     const said = tile.narration ?? tile.label
+    flashSpeaking(tile.key)
     if (!tile.onTap) {
       // Nothing to commit — just read it (the original contract). Prefer the
       // parent-voice clip when there is one; TTS otherwise / on any failure. The
       // TTS fallback reads in the tile's own language when set (e.g. a recipe).
-      playNarration(tile.audioKey, said, (raw) => speak(raw, tile.lang))
+      playNarration(tile.audioKey, said, (raw) => speak(raw, tile.lang, { onEnd: endSpeaking }))
       return
     }
     if (armedKey === tile.key) {
@@ -72,13 +95,13 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
       // word is UI copy, so it stays in the UI/global voice (no tile.lang).
       if (armTimer.current) clearTimeout(armTimer.current)
       setArmedKey(null)
-      speak(t.kid.okDone)
+      speak(t.kid.okDone, undefined, { onEnd: endSpeaking })
       tile.onTap?.()
       return
     }
     // First tap: say what this IS and what tapping again will do, then wait. The
     // content (the recipe name) leads, so read it in the tile's language.
-    speak(`${said}. ${tile.confirmHint ?? t.kid.tapAgain}`, tile.lang)
+    speak(`${said}. ${tile.confirmHint ?? t.kid.tapAgain}`, tile.lang, { onEnd: endSpeaking })
     setArmedKey(tile.key)
     if (armTimer.current) clearTimeout(armTimer.current)
     armTimer.current = setTimeout(() => setArmedKey(null), ARM_MS)
@@ -105,11 +128,12 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
         // from this in CSS (color-mix), so they follow day↔night automatically.
         const tint = tile.color ?? TILE_TINTS[i % TILE_TINTS.length]
         const armed = armedKey === tile.key && !!tile.onTap
+        const speaking = speakingKey === tile.key
         return (
           <button
             key={tile.key}
             type="button"
-            className={`bigtile${tile.done ? ' is-done' : ''}${armed ? ' is-armed' : ''}`}
+            className={`bigtile${tile.done ? ' is-done' : ''}${armed ? ' is-armed' : ''}${speaking ? ' is-speaking' : ''}`}
             style={{ '--tile-tint': tint } as CSSProperties}
             onClick={() => tap(tile)}
             aria-pressed={tile.onTap ? !!tile.done : undefined}

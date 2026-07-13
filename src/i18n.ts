@@ -13,7 +13,7 @@ export type Lang = 'fr' | 'en'
 export const FR = {
   appName: 'Babillard',
   tagline: 'Le planificateur familial calme.',
-  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu' },
+  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu', sections: 'Sections' },
   // #30 — global search across recipes / people / events / the list.
   search: {
     title: 'Chercher partout',

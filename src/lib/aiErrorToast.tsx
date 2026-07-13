@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { api } from './api'
+import { useAudience } from './audience'
 import { onAiError, type AiErrorEvent } from './aiErrorBus'
 
 // On-screen surfacing of AI failures. lib/api emits when a handler tagged a
@@ -14,6 +15,12 @@ import { onAiError, type AiErrorEvent } from './aiErrorBus'
 // a polling loop or a frustrated re-click doesn't stack ten copies.
 export function AiErrorProvider({ children }: { children: ReactNode }) {
   const t = useT()
+  // This notice is OPERATOR chrome: it needs reading and a deliberate "Accepter".
+  // On a toddler/simple lens (a locked kiosk, grandma's view) it would block the
+  // surface for someone who can't dismiss it — so it HOLDS while a non-parent
+  // audience is active and drains the queue when a parent view returns. Nothing
+  // is lost: events keep queueing (and coalescing) underneath.
+  const { audience } = useAudience()
   const [queue, setQueue] = useState<AiErrorEvent[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -28,7 +35,7 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const current = queue[0] ?? null
+  const current = audience === 'parent' ? (queue[0] ?? null) : null
 
   async function accept() {
     if (!current || saving) return

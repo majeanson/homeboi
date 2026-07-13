@@ -440,7 +440,7 @@ export function HubLayout() {
           <Icon name="caret-right-bold" size={20} />
         </button>
       )}
-      <nav className="hubnav" aria-label="sections" data-tour="hubnav">
+      <nav className="hubnav" aria-label={t.nav.sections} data-tour="hubnav">
         {tabs.map((tab) => (
           <NavLink
             key={tab.to}
