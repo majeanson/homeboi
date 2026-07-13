@@ -160,7 +160,9 @@ export function SearchPage() {
   // Wave S — five more persistent kinds that were dark to Recherche. Each reads a
   // warm cache (or its shared hook) so no page pays a new fetch on this scene.
   // « Mes habitudes » (live:false — a search scene shouldn't add to the poll cadence).
-  const habits = useHabits({ live: false }).data?.habits ?? []
+  // 'defi' is never an ordinary habit row (visibleHabits invariant) — the standing
+  // défi carrier must not surface as a searchable « habitude » either.
+  const habits = (useHabits({ live: false }).data?.habits ?? []).filter((h) => h.kind !== 'defi')
   // « Laisse un mot » — the whole inbox (scheduled-but-unsurfaced mots are still the
   // operator's own content, so they stay findable; media-only mots carry no text).
   const mots = useAllMots()

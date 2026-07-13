@@ -478,6 +478,22 @@ Footnotes (verdicts recorded so far):
 61. F35 D16: `e2e/board-edit.spec.ts` « the departure card owns the checklists » (fold +
     split + instantiation POST + guest read-only) + the reconcile splice in
     `src/lib/boardCards.test.ts` + `splitTodos`/`expandSectioned` units in `src/lib/todos.test.ts`.
+62. **Post-ship re-verify (2026-07-13)** — both fresh rows (F35 + the F6 défi) re-scored
+    against code after the ~15 polish commits that followed the 07-10 audit (parity-
+    before-sign-off is now the standing closing slice of every feature). **One real gap
+    found + FIXED: F6×D6** — `SearchPage.tsx` read raw `habits` without the
+    `kind !== 'defi'` filter every habit list applies (`visibleHabits` invariant), so the
+    standing défi carrier surfaced as a searchable « habitude »; now filtered at the read.
+    Two verdict-note corrections (no code change): **F35×D11** — `DepartureCard` does NOT
+    use `useReportEmpty`; it's a `mode:'always'` card that always has content (door + tip),
+    so there is no empty to report — correct by design, the old note misnamed the mechanism.
+    **F35×D9** — the phone-overflow coverage is `scenes.spec.ts` (`departure` @ 390px
+    docOverflow), not `screenshots.spec` `OVERFLOW_CASES`. Everything else on both rows
+    holds: F35 D1 day-floor+sweep intact post-polish (todos.ts), D4 zero raw writes, D7
+    guide card + `boardHelp.departure`, D16 board-edit suite survived the ea33baa fix;
+    F6 défi D7 now carries all three channels (guide point 0 + `boardHelp.defi` + a
+    `defi` tour step, commit 6d18b23), defiDeck confirmed lazy-only (type-only + dynamic
+    imports), toddler défi tile writes the mark for a picked face as designed.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
