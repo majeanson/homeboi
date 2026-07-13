@@ -124,7 +124,8 @@ for (const d of DEVICES) {
     // tile to pick); the liste ＋ opens a chooser — pick the text-add tile to reveal
     // its input.
     { name: 'liste-addsheet', path: '/liste', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: 'Ajouter à la liste' }).first().click() } },
-    { name: 'liste-item-sheet', path: '/liste', field: '.scene input', go: async (p) => void (await p.getByText('Pain', { exact: true }).first().click()) },
+    // The edit scene opens from the row's ✏️ now — the name/centre toggles the check.
+    { name: 'liste-item-sheet', path: '/liste', field: '.scene input', go: async (p) => void (await p.locator('.list-row', { hasText: 'Pain' }).locator('.list-row__edit .row-actions__btn').click()) },
     { name: 'quickadd', path: '/liste', field: '.scene input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: /Ajout rapide/ }).first().click() } },
     { name: 'deals-browser', path: '/liste', field: '.scene input', go: async (p) => { await p.locator('.add-fab').click(); await p.getByRole('dialog').getByRole('button', { name: /Parcourir les circulaires/ }).click() } },
     { name: 'board-addsheet', path: '/board', field: '.sheet.show input', go: async (p) => { await p.locator('.add-fab').click() } },

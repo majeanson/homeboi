@@ -105,7 +105,12 @@ export const BOARD = {
       helpers: [],
     },
   ],
-  notes: [{ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }],
+  // Two notes, so the strip's « Tout effacer » (shown only past one note) is
+  // exercised alongside the per-note tap-to-clear.
+  notes: [
+    { id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE },
+    { id: 'n2', text: 'Rendez-vous dentiste jeudi', member_id: 'm2', created_at: BASE },
+  ],
   // A recurring chore due today (Léa's turn) + one coming up later this week.
   choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa', who_id: 'm3' }],
   choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa', who_id: 'm2' }],

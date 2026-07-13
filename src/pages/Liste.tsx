@@ -23,6 +23,7 @@ import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
+import { RowActions } from '../components/RowActions'
 import { money } from '../lib/deals'
 import { cashierPicksFrom, useTillHiddenStores, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
@@ -76,11 +77,13 @@ type BoardListData = { list: ListRow[]; members?: ListMember[] }
 const LIST_SORT_KEY = 'liste-sort'
 
 // One list row, drawn the same way for every item. Three independent tap targets:
-// the picture opens the flyer/deals, the name opens the edit sheet, the check is
-// the toggle. A checked row keeps its place but reads as "got it" (struck, filled
-// check) until "Clear checked" removes it. Swiping the row LEFT deletes it
-// outright (Outlook-mobile style) — a plain remove, NOT logged as bought (that's
-// what the check + "Clear checked" is for).
+// the picture opens the flyer/deals, the whole row centre (the NAME) toggles the
+// check — the in-store gesture, so a mis-aim by a cart-pushing thumb still ticks
+// the item instead of yanking open the editor — and editing is the explicit ✏️
+// (the shared RowActions pencil) beside the check. A checked row keeps its place
+// but reads as "got it" (struck, filled check) until "Clear checked" removes it.
+// Swiping the row LEFT deletes it outright (Outlook-mobile style) — a plain
+// remove, NOT logged as bought (that's what the check + "Clear checked" is for).
 //
 // A « pas pressé » row (noRush) is drawn as one recognisable second class — pencilled
 // in rather than errand-bound — so the eye can skip the whole set of them when there's
@@ -129,8 +132,9 @@ function ListItemRow({
   // zone id and the drag id are both the index (a drop = "move dragged row here").
   dnd?: ReturnType<typeof usePointerDnd>
   index: number
-  // Read-only guest: no check toggle, no swipe-to-delete, no delete pane, no drag
-  // grip. The picture/name taps stay — they only navigate (open the flyer / detail).
+  // Read-only guest: no check toggle, no ✏️, no swipe-to-delete, no delete pane,
+  // no drag grip. The picture/name taps stay — for a guest the name NAVIGATES to
+  // the (read-only) detail instead of toggling a check it doesn't have.
   readOnly?: boolean
 }) {
   const t = useT()
@@ -201,7 +205,16 @@ function ListItemRow({
             </span>
           )}
         </button>
-        <button type="button" className="list-row__name act__text" onClick={onName} aria-label={nameLabel}>
+        {/* The row centre: the biggest target does the most frequent job — the
+            CHECK (same handler as the disc, deferred/pending behaviour intact).
+            Editing moved to the explicit ✏️ beside the check; a guest's name tap
+            still navigates (it has no check to toggle). */}
+        <button
+          type="button"
+          className="list-row__name act__text"
+          onClick={readOnly ? onName : onToggle}
+          aria-label={readOnly ? nameLabel : toggleLabel}
+        >
           {/* The tint is inline (it comes from CATS), so a « pas pressé » row has to
               soften it here — a stylesheet rule would lose to the inline colour. */}
           <span className="title" style={{ color: noRush ? 'var(--ink-soft)' : tintInk(CATS.list.color) }}>
@@ -227,6 +240,10 @@ function ListItemRow({
             {(adder.display_name?.[0] ?? '?').toUpperCase()}
           </span>
         )}
+        {/* The explicit edit affordance (mouse + keyboard reachable — never a
+            touch-only path): the shared pencil, opening the edit scene the name
+            tap used to. */}
+        <RowActions onEdit={onName} editLabel={nameLabel} readOnly={readOnly} className="list-row__edit" />
         {!readOnly && (
           <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
             <Icon name="check-bold" size={18} />

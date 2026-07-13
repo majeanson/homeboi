@@ -1009,12 +1009,13 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
 
 // One active list: a check is a MARK (the row stays, struck through via
 // .list-row__main.done) until "Clear checked" removes the ticked ones. Past /
-// predicted re-adds live behind the ⚡ Quick add panel. A row's check toggle is
-// its own button — the row body (image / name) taps open the flyer / editor — so
-// check via the toggle, not a click on the row.
+// predicted re-adds live behind the ⚡ Quick add panel. The row CENTRE (the name)
+// toggles the check — same handler as the far-right disc (the in-store gesture);
+// editing is the explicit ✏️ (RowActions pencil); the picture opens the flyer.
 const openList = (page: Page) => page.locator('.today-feed > .list-rows > .list-row')
 const checkedRows = (page: Page) => page.locator('.list-row__main.done')
 const checkOff = (row: ReturnType<Page['locator']>) => row.locator('.list-row__toggle').click()
+const editRow = (row: ReturnType<Page['locator']>) => row.locator('.list-row__edit .row-actions__btn').click()
 
 test.describe('list', () => {
   test.beforeEach(async ({ page }) => {
@@ -1031,6 +1032,18 @@ test.describe('list', () => {
     await expect(checkedRows(page)).toHaveCount(1)
   })
 
+  // The row CENTRE is the check too (shop seam #1): tapping the name toggles the
+  // mark — the big target does the frequent in-store job; the editor now waits
+  // behind the explicit ✏️ instead of ambushing a mis-aimed thumb.
+  test('tapping the row centre (the name) toggles the check', async ({ page }) => {
+    const rows = openList(page)
+    await expectApi(page, 'PATCH', 'list', () => rows.first().locator('.list-row__name').click())
+    await expect(checkedRows(page)).toHaveCount(1)
+    // Same target unchecks — a mis-tap costs one more tap, never an edit scene.
+    await rows.first().locator('.list-row__name').click()
+    await expect(checkedRows(page)).toHaveCount(0)
+  })
+
   // « Pas pressé »: an item we only buy on a good deal. ONE switch on the row's own
   // edit scene, off by default (an added item is always a real errand), written the
   // moment it's flipped. The row comes back to the list wearing its second class:
@@ -1039,9 +1052,9 @@ test.describe('list', () => {
   test('flagging an item « pas pressé » fades its row, names it, and sinks it', async ({ page }) => {
     const rows = openList(page)
     await expect(page.locator('.list-row--norush')).toHaveCount(0)
-    // The name is its own tap target (the picture opens deals, the check ticks).
+    // The ✏️ pencil opens the edit scene (the name/centre toggles the check now).
     const flagged = await rows.nth(1).locator('.title').innerText()
-    await rows.nth(1).locator('.list-row__name').click()
+    await editRow(rows.nth(1))
     const chip = page.getByRole('button', { name: 'Pas pressé' })
     // Off by default — the scene asks nothing of an ordinary grocery line.
     await expect(chip).toHaveAttribute('aria-pressed', 'false')
@@ -1058,7 +1071,7 @@ test.describe('list', () => {
   // The same switch is the way back — a mis-tap costs one tap, not a delete + re-add.
   test('the « pas pressé » switch turns the flag back off', async ({ page }) => {
     const rows = openList(page)
-    await rows.nth(1).locator('.list-row__name').click()
+    await editRow(rows.nth(1))
     const chip = page.getByRole('button', { name: 'Pas pressé' })
     await chip.click()
     await expect(chip).toHaveAttribute('aria-pressed', 'true')
@@ -1323,6 +1336,23 @@ test.describe('fridge notes', () => {
     await APP('/board', 'toddler')(page)
     await settle(page, '.kid__main')
     await expect(page.locator('.notes--kid .note-card', { hasText: 'examen' })).toBeVisible()
+  })
+
+  // Tidy seam #1: « Tout effacer » empties the whole strip as ONE undoable action —
+  // the notes hide at once, the writes wait behind the single undo toast, and
+  // « Annuler » brings every note back (nothing was deleted server-side yet).
+  test('« Tout effacer » batch-dismisses the strip behind one undo toast', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
+    // Scope to the fridge-notes strip — the DAY note (DayNote, .notes.day-note)
+    // wears .note-card too but is read-only and must survive the sweep.
+    const notes = page.locator('.notes:not(.day-note) .note-card')
+    await expect(notes).toHaveCount(2)
+    await page.getByRole('button', { name: 'Tout effacer' }).click()
+    await expect(notes).toHaveCount(0)
+    await expect(page.locator('.undo-toast')).toBeVisible()
+    await page.locator('.undo-toast__btn').click()
+    await expect(notes).toHaveCount(2)
   })
 })
 

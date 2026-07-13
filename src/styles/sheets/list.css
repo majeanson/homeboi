@@ -73,9 +73,10 @@
      delete pane. Only horizontal pans are delivered to useSwipeToDelete. */
   touch-action: pan-y;
 }
-/* The row is one card holding three INDEPENDENT tap targets — picture (→ deals),
-   name (→ edit sheet), and the check (→ toggle). So the card itself is an inert
-   container; only the inner buttons take taps. */
+/* The row is one card holding INDEPENDENT tap targets — picture (→ deals), the
+   row centre / name (→ check toggle, the in-store gesture), the ✏️ RowActions
+   pencil (→ edit sheet), and the check disc (→ toggle). So the card itself is an
+   inert container; only the inner buttons take taps. */
 .list-row__main {
   flex: 1 1 auto;
   min-width: 0;
@@ -282,12 +283,18 @@
   font-size: var(--text-xs);
   padding: 0.3rem 0.4rem;
 }
-/* The check is now the ONLY check-off target (the rest of the row edits / opens
-   deals), so give it a comfortable tap area — a 42px circle, not the old 30px.
+/* The check disc keeps its comfortable 42px circle (the row centre now toggles
+   too, but the disc stays the recognisable "tick" anchor on the right edge).
    Loaded after today.css, so this ties-and-wins over `.act .check`. */
 .list-row__toggle.check {
   width: 42px;
   height: 42px;
+}
+/* The explicit ✏️ (shared RowActions) between the name and the check: keep it
+   quiet and snug so the row doesn't read as a toolbar — the 44px hit box comes
+   from .row-actions__btn itself. */
+.list-row__edit {
+  margin-left: 0;
 }
 .list-row__name {
   flex: 1 1 auto;

@@ -91,10 +91,11 @@ for (const theme of ['day', 'night'] as Theme[]) {
     await shoot(page, `list-quick-add-phone${sfx}`, false)
   })
 
-  // Tap a row's NAME → the edit scene (rename / synonyms / unlink deal / delete).
+  // Tap a row's ✏️ → the edit scene (rename / synonyms / unlink deal / delete).
+  // The name/centre toggles the check now (shop seam #1).
   test(`list-item-sheet${sfx}`, async ({ page }) => {
     await boot(page, '/liste', { theme })
-    await page.locator('.list-row__name').first().click()
+    await page.locator('.list-row__edit .row-actions__btn').first().click()
     await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `list-item-sheet-phone${sfx}`, false)
