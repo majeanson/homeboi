@@ -5,6 +5,7 @@ import { useWrite } from '../../lib/write'
 import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
 import { useModal } from '../../lib/useModal'
+import { caretIntoView } from '../../lib/viewportVars'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
@@ -281,6 +282,10 @@ export function NoteEditor({
     if (!root) return
     root.setAttribute('data-empty', htmlToMd(root).trim() ? 'false' : 'true')
     updateActive()
+    // Every edit path funnels through here (typing, Enter-continues-the-list, a toolbar
+    // command, a checkbox toggle), so this is the one place that has to keep the line
+    // being written above the keyboard rather than letting it run off the bottom.
+    caretIntoView(root)
   }
   function inlineCmd(cmd: string) {
     if (!ensureSelection()) return

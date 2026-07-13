@@ -102,6 +102,65 @@ test('Enter continues a list and an empty item ends it', async ({ page }) => {
   await expect(body.locator('.ne-bullet')).toHaveCount(2)
 })
 
+test('the view follows the caret — a long note keeps the line being typed in view', async ({ page }) => {
+  // Bug (Marc, iOS): "si j'écris dans le bas de la page ça continue en dessous du clavier
+  // au lieu de déplacer l'écran". Two causes, both fixed: `.note-editor` was `inset: 0`,
+  // i.e. the LAYOUT viewport, so on iOS (where the keyboard overlays rather than shrinks
+  // it) the bottom of the editor — and the caret — sat under the keyboard while the
+  // browser saw it as perfectly "in view"; and nothing ever scrolled the caret inside the
+  // contentEditable. A real keyboard inset can't be synthesized here, so this drives the
+  // second half: type far past the body's own height and assert the caret line is still
+  // inside the scroller's visible band (it wasn't — the body never scrolled at all).
+  const body = await openEditor(page)
+  await body.click()
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.type(`ligne ${i}`)
+    await page.keyboard.press('Enter')
+  }
+  await page.keyboard.type('DERNIERE')
+
+  // The scroller actually moved…
+  expect(await body.evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+  // …and the last line sits inside the visible band, not below its bottom edge.
+  const visible = await body.evaluate((el) => {
+    const line = [...el.children].at(-1) as HTMLElement
+    const l = line.getBoundingClientRect()
+    const b = el.getBoundingClientRect()
+    return { text: line.textContent, below: l.bottom - b.bottom, above: b.top - l.top }
+  })
+  expect(visible.text).toBe('DERNIERE')
+  expect(visible.below).toBeLessThanOrEqual(0)
+  expect(visible.above).toBeLessThanOrEqual(0)
+})
+
+test('with the keyboard up, the editor shrinks to the visible band instead of hiding under it', async ({ page }) => {
+  // The other half of the same bug. On iOS the keyboard OVERLAYS the layout viewport, so
+  // an `inset: 0` editor keeps full height and its bottom third is simply behind the
+  // keyboard. viewportVars publishes the visible band as --vvt/--vvh + `.kb-open`; every
+  // other full-screen surface (.scene, .recipe-modal) binds to it and the editor didn't.
+  // Playwright can't raise a real keyboard, so we publish exactly what viewportVars would.
+  await openEditor(page)
+  const KB = 420
+  // Publish + measure in ONE evaluate: viewportVars re-measures the (keyboard-less) real
+  // viewport on a timer after any focus change and would clear `.kb-open` under us.
+  const m = await page.evaluate((kb) => {
+    const r = document.documentElement
+    const visible = window.innerHeight - kb
+    r.style.setProperty('--vvh', `${visible}px`)
+    r.style.setProperty('--vvt', '0px')
+    r.classList.add('kb-open')
+    const editor = document.querySelector('.note-editor')!.getBoundingClientRect()
+    const body = document.querySelector('.note-editor__body')!.getBoundingClientRect()
+    return { visible, editorH: editor.height, editorBottom: editor.bottom, bodyBottom: body.bottom, bodyH: body.height }
+  }, KB)
+
+  expect(Math.round(m.editorH)).toBe(m.visible) // clears the keyboard…
+  expect(m.editorBottom).toBeLessThanOrEqual(m.visible)
+  // …and the editing surface is still inside it (the toolbar/footer didn't eat the body).
+  expect(m.bodyBottom).toBeLessThanOrEqual(m.visible)
+  expect(m.bodyH).toBeGreaterThan(80)
+})
+
 test('a button works on a fresh note without first tapping the body', async ({ page }) => {
   // Bug: on a new note the title input is auto-focused, so the body has no caret. A
   // toolbar press must still land — it drops a caret on the empty line.

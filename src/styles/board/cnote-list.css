@@ -347,6 +347,17 @@
   overscroll-behavior: none;
   overflow: hidden;
 }
+/* Keyboard up: pin to the VISIBLE band, exactly like .scene / .recipe-modal. iOS
+   overlays the keyboard without shrinking the layout viewport, so an `inset: 0`
+   editor keeps its full height and its bottom — including the line being typed —
+   sits UNDER the keyboard. The caret never leaves the element's box, so nothing
+   scrolls it into view and the text just marches off-screen. Binding --vvt/--vvh
+   only while `.kb-open` avoids the stale-value trap the other scenes document. */
+.kb-open .note-editor {
+  top: var(--vvt, 0px);
+  bottom: auto; /* `inset: 0` set it — a height with bottom:0 pinned would fight it */
+  height: var(--vvh, 100dvh);
+}
 .note-editor__head {
   display: flex;
   align-items: center;

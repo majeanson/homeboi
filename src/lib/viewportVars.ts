@@ -11,6 +11,38 @@ import { scrollBehavior } from './motion'
 //
 // One module-level side effect (same shape as registerSw): call once at boot.
 // No-op where visualViewport is missing — the CSS fallbacks (dvh) take over.
+// Keep the CARET visible inside a scrolling contentEditable.
+//
+// The global focus-pin below scrolls the focused ELEMENT into view, which is right for
+// an <input>/<textarea> (small, one line of interest) but useless for a tall
+// contentEditable: the host already spans the whole editor, so it's "in view" while the
+// line you're typing sits far below the fold. Browsers normally keep the caret visible
+// themselves, but not reliably inside a fixed, keyboard-overlaid container on iOS — so
+// the editor drives it. Nudges the scroller only when the caret has actually left the
+// band (idempotent, so it can be called on every keystroke without fighting a manual
+// scroll). A collapsed range reports no client rect in some engines; fall back to the
+// containing element's rect.
+export function caretIntoView(scroller: HTMLElement, pad = 24): void {
+  const sel = document.getSelection()
+  if (!sel || sel.rangeCount === 0) return
+  const range = sel.getRangeAt(0)
+  if (!scroller.contains(range.startContainer)) return
+
+  let rect = range.getClientRects()[0] ?? range.getBoundingClientRect()
+  if (!rect || (rect.top === 0 && rect.bottom === 0)) {
+    const node = range.startContainer
+    const el = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement
+    if (!el) return
+    rect = el.getBoundingClientRect()
+  }
+
+  const box = scroller.getBoundingClientRect()
+  const below = rect.bottom - (box.bottom - pad)
+  const above = box.top + pad - rect.top
+  if (below > 0) scroller.scrollTop += below
+  else if (above > 0) scroller.scrollTop -= above
+}
+
 export function trackVisualViewport(): void {
   const vv = window.visualViewport
   if (!vv) return
