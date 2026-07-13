@@ -40,11 +40,14 @@ const PROMISES = ['promise1', 'promise2', 'promise3', 'promise4'] as const
 
 export function Home() {
   const t = useT()
-  // « Essaie sans peur » (bmad/08 A-8): POST /api/demo mints a short-lived
-  // READ-ONLY showcase token into the always-seeded demo household, then boots
-  // the app through the normal `?guest=` door (full reload so the guest latch in
-  // main.tsx runs before the first api() call). Zero fear, zero setup — the same
-  // watermarked read-only hub a babysitter link opens.
+  // « Essaie pour vrai » (bmad/08 A-8, interactive stage): POST /api/demo now
+  // mints a per-visitor throwaway SANDBOX household with a real operator session
+  // (cookies set by the response) — the visitor lands on /board able to actually
+  // USE the app; the sandbox is swept away within a day (functions/api/demo.ts).
+  // Past the sandbox cap the endpoint falls back to the legacy READ-ONLY
+  // showcase token into the shared demo household, booted through the normal
+  // `?guest=` door. Both paths full-reload so the boot latches (guest latch in
+  // main.tsx / the fresh session cookie) run before the first api() call.
   const [demoBusy, setDemoBusy] = useState(false)
   const [demoErr, setDemoErr] = useState(false)
   const tryDemo = async () => {
@@ -52,8 +55,9 @@ export function Home() {
     setDemoBusy(true)
     setDemoErr(false)
     try {
-      const r = await api<{ guestToken: string }>('demo', { method: 'POST' })
-      window.location.assign(`/board?guest=${encodeURIComponent(r.guestToken)}`)
+      const r = await api<{ sandbox?: boolean; guestToken?: string }>('demo', { method: 'POST' })
+      if (r.sandbox) window.location.assign('/board')
+      else window.location.assign(`/board?guest=${encodeURIComponent(r.guestToken ?? '')}`)
     } catch {
       setDemoErr(true)
       setDemoBusy(false)

@@ -325,15 +325,23 @@ build if the schema ever grows a `streak`/`points`/`badge`/`push_subscription` t
 or a pantry `quantity`/`stock_count` column. The anti-addiction, no-inventory stance
 can't drift in by accident. Keep it green.
 
-### The demo is a guest link
+### The demo is a sandbox household (guest link as fallback)
 
 There is no demo mode, route, or flag. `POST /api/demo` (`functions/api/demo.ts`,
-CSRF-exempt) find-or-creates a singleton demo household, reseeds it when its newest
-sample row ages past 24 h (so dates read as "today"), and mints a **4-hour read-only
-`showcase` guest token**. `/` sends the visitor to `/board?guest=<token>` and they are,
-from then on, an ordinary guest. So **whatever a guest can't do, the demo can't show.**
+CSRF-exempt) mints a **per-visitor throwaway SANDBOX**: a real seeded household with
+a real operator session (`demo-<id>@babillard.invalid`, RFC 2606), so the visitor can
+genuinely write — no new auth mode. Bounds: `DEMO_SANDBOX_TTL` (24 h; every mint runs
+a bounded sweep, `functions/_lib/demoHousehold.ts`, whose table inventory is
+build-guarded by `demoHousehold.test.ts` — a new migration table MUST be added to its
+sets) and `DEMO_SANDBOX_CAP` (past it the endpoint falls back to the legacy behaviour:
+find-or-create the read-only singleton demo household, reseed if stale, mint a
+**4-hour read-only `showcase` guest token** → `/board?guest=<token>`). The sweep
+deleting the sandbox's `operators` row is the session kill switch. Deferred: a
+« garde ma maisonnée » claim flow converting a sandbox into a real account.
 
-That makes `isGuest()` load-bearing for marketing, and it is easy to over-apply:
+The fallback (and any operator-minted showcase link) is an ordinary guest, so
+**whatever a guest can't do, that fallback can't show** — `isGuest()` stays
+load-bearing for marketing, and it is easy to over-apply:
 
 - **`isGuest()` means "can't write to the household."** Guard `/api/*` mutations with
   it (`writeWith` already refuses one structurally) and hide the controls that fire
@@ -358,10 +366,10 @@ That makes `isGuest()` load-bearing for marketing, and it is easy to over-apply:
 
 Guards: `e2e/guest-settings.spec.ts` and the guest cases in `e2e/board-edit.spec.ts`.
 
-**Still missing:** the demo is read-only because the demo household is a *singleton* —
-every visitor shares it, so writes would collide. An interactive demo needs a
-per-visitor ephemeral household (seed on mint, TTL-sweep on expiry), not a looser guard.
-`demo.ts` flags this as deferred.
+**Shipped 2026-07-13:** the interactive demo — per-visitor ephemeral household (seed
+on mint, bounded TTL-sweep on the next mint, cap → read-only fallback). Accepted,
+deliberately ungated costs: a sandbox can call AI endpoints and upload R2 media (both
+bounded by TTL + cap; the sweep frees the blobs its `MEDIA_*` inventory knows).
 
 ### PWA / offline
 

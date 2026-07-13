@@ -21,6 +21,27 @@ async function boot(page: Page, theme: Theme, format: { width: number; height: n
   await page.waitForTimeout(150)
 }
 
+// « Essayer pour vrai » — the demo door mints a per-visitor SANDBOX (POST
+// /api/demo → { sandbox: true } + session cookies) and lands on /board with no
+// ?guest= (the visitor is a real operator of a throwaway household). The legacy
+// read-only fallback ({ guestToken }) keeps the old ?guest= boot — asserted too.
+test('demo button: sandbox lands on /board, fallback keeps ?guest=', async ({ page }) => {
+  await boot(page, 'day', PHONE)
+  await page.route('**/api/demo', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sandbox: true, expiresAt: 9999999999 }) }),
+  )
+  await page.getByRole('button', { name: 'Essayer pour vrai' }).click()
+  await page.waitForURL('**/board')
+
+  // Fallback shape: past the sandbox cap the endpoint returns a guest token.
+  await boot(page, 'day', PHONE)
+  await page.route('**/api/demo', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ guestToken: 'tok_demo', expiresAt: 9999999999 }) }),
+  )
+  await page.getByRole('button', { name: 'Essayer pour vrai' }).click()
+  await page.waitForURL('**/board?guest=tok_demo')
+})
+
 for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
   test(`home-phone${sfx}`, async ({ page }) => {

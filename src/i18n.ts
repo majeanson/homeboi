@@ -291,9 +291,10 @@ export const FR = {
     ctaStart: 'Commencer',
     ctaReturning: 'J’ai déjà un compte',
     ctaSignup: 'Créer ma maisonnée',
-    // « Essaie sans peur » (bmad/08 A-8) — the read-only public demo.
-    ctaDemo: 'Essayer la démo',
-    demoOpening: 'On ouvre la démo…',
+    // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
+    // back to the read-only shared démo when the sandbox cap is hit).
+    ctaDemo: 'Essayer pour vrai',
+    demoOpening: 'On prépare ta maisonnée d’essai…',
     demoError: 'La démo n’est pas disponible pour le moment — réessaie tantôt.',
     login: 'Se connecter',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.

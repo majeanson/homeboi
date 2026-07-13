@@ -250,9 +250,10 @@ export const EN: typeof FR = {
     ctaStart: 'Get started',
     ctaReturning: 'I already have an account',
     ctaSignup: 'Create my household',
-    // « Essaie sans peur » (bmad/08 A-8) — the read-only public demo.
-    ctaDemo: 'Try the demo',
-    demoOpening: 'Opening the demo…',
+    // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
+    // back to the read-only shared demo when the sandbox cap is hit).
+    ctaDemo: 'Try it for real',
+    demoOpening: 'Setting up your trial household…',
     demoError: 'The demo isn’t available right now — try again in a bit.',
     login: 'Log in',
     // Skeleton welcome: a small "what it's for" strip + a short calm promise.

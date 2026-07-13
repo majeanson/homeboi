@@ -1,42 +1,109 @@
 import type { Env } from '../_lib/env'
 import { ok, serverError } from '../_lib/json'
-import { issueGuestToken } from '../_lib/auth'
+import { issueGuestToken, issueSession, sessionCookies } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { newId, nowSec } from '../_lib/ids'
 import { clearSampleData, countSampleData, seedSampleData } from '../_lib/sampleData'
+import {
+  DEMO_SANDBOX_CAP,
+  DEMO_SANDBOX_TTL,
+  countDemoSandboxes,
+  sandboxEmail,
+  sweepExpiredDemoSandboxes,
+} from '../_lib/demoHousehold'
 
-// « Essaie sans peur » (bmad/08 A-8) — the public demo. One PUBLIC endpoint the
-// marketing page calls: it lazily creates a singleton DEMO household (owned by a
-// sentinel operator no one can log into), keeps it seeded with the same Québécois
-// demo family every new signup gets, and mints a short-lived READ-ONLY 'showcase'
-// guest token into it. The visitor lands on the full hub, watermarked by the
-// existing guest banner (« Démo — lecture seule »), and can poke every surface
-// with zero fear and zero setup — the same door the babysitter link uses, so no
-// new access mode and no new privacy surface.
+// « Essaie pour vrai » (bmad/08 A-8, interactive stage) — the public demo. One
+// PUBLIC endpoint the marketing page calls. It now mints a per-visitor SANDBOX:
+// a throwaway seeded household with a real operator session, so the visitor can
+// genuinely USE the app — add a supper, check a list, leave a mot — instead of
+// window-shopping it. No new auth mode: the visitor IS an ordinary operator of
+// a household nobody else can reach, whose email (`demo-<id>@babillard.invalid`,
+// RFC 2606) can never collide with a signup and whose random password is never
+// stored anywhere readable. Lifetime is DEMO_SANDBOX_TTL: every mint sweeps a
+// couple of expired sandboxes (bounded, the todos sweepStale stance), and
+// deleting the operators row kills the session structurally.
 //
-// Deliberately unauthenticated (like auth/signup — add to CSRF_EXEMPT): a
-// first-time visitor has no cookie yet. Blast radius is bounded to the one demo
-// household: the token is read-only ('showcase' scope, enforced centrally in
-// worker/index.ts via guestScope), time-boxed, and the household only ever holds
-// fabricated is_sample rows.
+// The legacy READ-ONLY singleton (a 'showcase' guest token into one shared,
+// always-reseeded household) remains as the FALLBACK when the sandbox cap is
+// hit — free-tier polling budget — so the demo door never closes, it just
+// narrows. The response shape tells the SPA which door opened:
+//   { sandbox: true, expiresAt }            → session cookies set, go to /board
+//   { guestToken, expiresAt }               → legacy /board?guest=<token>
 //
-// A WRITABLE public sandbox (visitors editing the demo) is deferred — it needs
-// either throwaway operator sessions or a new writable guest scope; see the A-8
-// notes in bmad/08.
+// Deliberately unauthenticated (in CSRF_EXEMPT, like auth/signup): a first-time
+// visitor has no cookie yet. Blast radius stays bounded per visitor: their own
+// fabricated household, swept within a day.
+//
+// Known accepted costs, deliberately NOT gated here: a sandbox operator can call
+// the AI endpoints (capture/suggest/vide-frigo) and upload R2 media — both
+// bounded by the TTL + cap, and the sweep frees the blobs it can find
+// (demoHousehold.ts MEDIA_* inventory). A « garde ma maisonnée » claim flow
+// (convert a sandbox into a real account) is the natural next step — deferred.
 
-// `.invalid` is reserved (RFC 2606): this can never collide with a real signup
-// email, and the random password below is never stored anywhere readable — the
-// demo household has no human way in besides the read-only token.
-const DEMO_EMAIL = 'demo@babillard.invalid'
+const DEMO_EMAIL = 'demo@babillard.invalid' // the legacy read-only singleton
 const DEMO_NAME = 'La maisonnée démo'
-const DEMO_TTL = 4 * 3600 // one afternoon of poking
-// The seed anchors meals/events to "today"; a demo older than this reads dead
-// (last week's suppers), so clear + reseed before minting the next visit in.
+const DEMO_TTL = 4 * 3600 // read-only fallback: one afternoon of poking
+// The seed anchors meals/events to "today"; a singleton older than this reads
+// dead (last week's suppers), so clear + reseed before minting the next visit in.
 const DEMO_MAX_AGE = 24 * 3600
 
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   const now = nowSec()
 
+  // Amortized cleanup first — expired sandboxes die on the next visitor's mint.
+  try {
+    await sweepExpiredDemoSandboxes(ctx.env, now)
+  } catch {
+    /* best-effort; never blocks the mint */
+  }
+
+  // Cap check: past the ceiling, fall back to the shared read-only singleton.
+  let alive = DEMO_SANDBOX_CAP
+  try {
+    alive = await countDemoSandboxes(ctx.env)
+  } catch {
+    /* count failed → be conservative, use the fallback */
+  }
+  if (alive >= DEMO_SANDBOX_CAP) return mintShowcaseFallback(ctx, now)
+
+  // ---- The sandbox: household + throwaway operator + seed + session ---------
+  const householdId = newId()
+  const email = sandboxEmail(householdId)
+  try {
+    await ctx.env.DB.batch([
+      ctx.env.DB.prepare(
+        'INSERT INTO households (id, name, tier, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+      ).bind(householdId, DEMO_NAME, 'free', 'active', now, now),
+      ctx.env.DB.prepare(
+        'INSERT INTO operators (email, household_id, created_at, password_hash) VALUES (?, ?, ?, ?)',
+      ).bind(email, householdId, now, await hashPassword(newId() + newId())),
+    ])
+  } catch {
+    return serverError('Démo indisponible pour le moment.')
+  }
+  // Same seed a real signup gets — the board must read alive on first paint.
+  // Best-effort like signup: an empty sandbox is still a working sandbox.
+  try {
+    await seedSampleData(ctx.env, householdId, now)
+  } catch {
+    /* non-fatal */
+  }
+
+  try {
+    const { session, csrf } = await issueSession(ctx.env, email)
+    const headers = new Headers({ 'content-type': 'application/json; charset=utf-8' })
+    for (const c of sessionCookies(session, csrf)) headers.append('Set-Cookie', c)
+    return new Response(JSON.stringify({ sandbox: true, expiresAt: now + DEMO_SANDBOX_TTL }), {
+      status: 200,
+      headers,
+    })
+  } catch {
+    return serverError('Démo indisponible pour le moment.')
+  }
+}
+
+// ---- Legacy read-only fallback (the pre-sandbox behaviour, unchanged) --------
+async function mintShowcaseFallback(ctx: EventContext<Env, string, unknown>, now: number): Promise<Response> {
   // Find-or-create the singleton demo household (operators.email is the PK, so a
   // race between two first visitors resolves to one row — the loser re-reads).
   let row = await ctx.env.DB.prepare('SELECT household_id FROM operators WHERE email = ?')
