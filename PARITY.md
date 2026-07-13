@@ -535,6 +535,18 @@ Footnotes (verdicts recorded so far):
     (a permanent guide card would advertise a surface real households can never reach).
     D16: `e2e/demo-claim.spec.ts` (banner face, POST fires, mismatch guard, non-sandbox
     bounce). FR-CA first + EN mirror (`t.claim`).
+65. **Sandbox first-session guidance SHIPPED 2026-07-13 (F33, UI-only)** — the demo
+    visitor's "here's what to try" path. NOT a new card: `WelcomeCard` (the board's ONE
+    onboarding card) wears a **try-this face** in a sandbox (`useSandbox()`, footnote 64) —
+    its setup checklist (add family / meals / pair a tablet) is nonsense for a seeded
+    24 h throwaway, so the steps become five invitations tuned to the seed (cook mode,
+    a routine, the liste, move a board card, leave a mot), each a deep link through the
+    existing URL grammar (`/liste?plus=1`, `/board?edit=1`, `/board?plus=mot` —
+    DISCOVERY.md; the `?edit=1` link doubles as the mouse mirror of the hold gesture).
+    No completion tracking (calm — links, not a checklist to clear; calm-tenets green),
+    same dismiss key, FeatureMap + tour replay retained, toddler lens never sees it
+    (existing audience gate). FR-CA first + EN mirror (`t.welcome.demo*`). D16: the
+    try-this test in `e2e/demo-claim.spec.ts` pins the face swap + the deep-link hrefs.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

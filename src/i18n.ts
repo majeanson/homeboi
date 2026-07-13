@@ -337,6 +337,14 @@ export const FR = {
     later: 'Plus tard',
     discover: 'Tout ce que Babillard fait',
     replayTour: 'Revoir la visite guidée',
+    // The demo-sandbox try-this face (lib/demo.ts) — invitations, never a checklist.
+    demoTitle: 'Bienvenue ! Essaie-le pour vrai',
+    demoIntro: 'On a rempli le babillard pour toi. Quelques idées pour le sentir vivre :',
+    demoCook: 'Ouvre une recette, pars le mode cuisson',
+    demoRoutine: 'Fais une routine d’enfant, étape par étape',
+    demoListe: 'Ajoute quelque chose à la liste',
+    demoRearrange: 'Déplace une carte du babillard',
+    demoMot: 'Laisse un mot sur le frigo',
   },
   sample: {
     title: 'Des exemples pour explorer',

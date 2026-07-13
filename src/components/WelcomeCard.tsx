@@ -5,6 +5,7 @@ import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useTour } from '../lib/tour'
+import { useSandbox } from '../lib/demo'
 import { useSampleStatus } from '../lib/sample'
 import { api } from '../lib/api'
 import { useMeals } from '../lib/queryHooks'
@@ -18,6 +19,14 @@ import { featureMapRoute } from '../lib/guideContent'
 // a newcomer can also see — and jump into — everything the app does. Calm by
 // design: dismissible ("Plus tard"), auto-hides once every step is done, never
 // shown in the toddler lens. Replaces the old one-line "add your family" hint.
+//
+// In a demo SANDBOX session (lib/demo.ts) the SAME card wears a try-this face:
+// the setup checklist would be nonsense there (the household is seeded and
+// nobody pairs a tablet to a 24-hour throwaway), so the steps become a short
+// tour of things worth actually DOING with the seeded data — each a deep link
+// through the existing URL grammar (?plus=, ?edit=1 — see DISCOVERY.md), no
+// completion tracking (calm: links, not a checklist to clear). One card either
+// way — the sandbox never stacks a second onboarding card on the pile.
 //
 // Persistence mirrors SectionIntro's shape: one localStorage key holds {dismissed,
 // done[]} so the card never nags once it's been dismissed. Every STEP, though, is
@@ -64,10 +73,22 @@ const STEPS: { id: 'members' | 'meals' | 'pair'; to: string; icon: IconName }[] 
   { id: 'pair', to: '/settings?tab=settings&sub=tablets', icon: 'device-tablet-bold' },
 ]
 
+// The sandbox try-this list — tuned to the SEEDED data, every target a link the
+// guide already uses (?plus= opens the ＋ sheet, ?edit=1 the board edit mode), so
+// a mouse user gets the same door a touch gesture would (desktop reachability).
+const DEMO_STEPS: { id: 'demoCook' | 'demoRoutine' | 'demoListe' | 'demoRearrange' | 'demoMot'; to: string; icon: IconName }[] = [
+  { id: 'demoCook', to: '/kitchen', icon: 'cooking-pot-bold' },
+  { id: 'demoRoutine', to: '/routines', icon: 'smiley-bold' },
+  { id: 'demoListe', to: '/liste?plus=1', icon: 'shopping-bag-bold' },
+  { id: 'demoRearrange', to: '/board?edit=1', icon: 'stack-bold' },
+  { id: 'demoMot', to: '/board?plus=mot', icon: 'envelope-bold' },
+]
+
 export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const t = useT()
   const { audience } = useAudience()
   const { signedIn } = useAuth()
+  const sandbox = useSandbox()
   const { start } = useTour()
   const { hasSample, pending: samplePending } = useSampleStatus()
   const nav = useNavigate()
@@ -96,15 +117,21 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   // ("add your family") would be noise then, and its member/meal steps read as
   // already-done off the demo rows. It appears once the demo is cleared, on a real
   // empty household. `pending` guards the first paint so it never flashes then hides.
-  if (hasSample || samplePending) return null
+  // EXCEPT in a sandbox: there the seed IS the point, and this card's try-this face
+  // is the visitor's guidance (the claim strip above handles "keep it").
+  if (!sandbox && (hasSample || samplePending)) return null
 
   // Every step is data-driven: it ticks only when the real thing exists, so tapping
   // a link and backing out can never false-complete a step (it just won't be done).
+  // The sandbox try-this list never ticks — it's invitations, not a checklist.
   const isDone = (id: string) =>
-    (id === 'members' && members.length > 0) ||
-    (id === 'meals' && plannedMeals > 0) ||
-    (id === 'pair' && pairedDevices > 0)
-  if (STEPS.every((s) => isDone(s.id))) return null
+    !sandbox &&
+    ((id === 'members' && members.length > 0) ||
+      (id === 'meals' && plannedMeals > 0) ||
+      (id === 'pair' && pairedDevices > 0))
+  if (!sandbox && STEPS.every((s) => isDone(s.id))) return null
+
+  const steps = sandbox ? DEMO_STEPS : STEPS
 
   const dismiss = () =>
     setState((s) => {
@@ -119,15 +146,15 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
         <span className="welcome-card__icon">
           <Icon name="sparkle-bold" size={22} />
         </span>
-        <span className="welcome-card__title">{t.welcome.title}</span>
+        <span className="welcome-card__title">{sandbox ? t.welcome.demoTitle : t.welcome.title}</span>
         <button type="button" className="welcome-card__dismiss" onClick={dismiss}>
           <Icon name="x-bold" size={14} />
           <span>{t.welcome.later}</span>
         </button>
       </div>
-      <p className="welcome-card__intro">{t.welcome.intro}</p>
+      <p className="welcome-card__intro">{sandbox ? t.welcome.demoIntro : t.welcome.intro}</p>
       <ol className="welcome-card__steps">
-        {STEPS.map((s) => {
+        {steps.map((s) => {
           const done = isDone(s.id)
           return (
             <li key={s.id} className={'welcome-card__step' + (done ? ' is-done' : '')}>

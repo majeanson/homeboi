@@ -294,6 +294,14 @@ export const EN: typeof FR = {
     later: 'Later',
     discover: 'Everything Babillard does',
     replayTour: 'Replay the guided tour',
+    // The demo-sandbox try-this face (lib/demo.ts) — invitations, never a checklist.
+    demoTitle: 'Welcome! Try it for real',
+    demoIntro: 'We filled the board for you. A few ideas to feel it live:',
+    demoCook: 'Open a recipe, start cook mode',
+    demoRoutine: 'Run a kid routine, step by step',
+    demoListe: 'Add something to the list',
+    demoRearrange: 'Move a board card around',
+    demoMot: 'Leave a note on the fridge',
   },
   sample: {
     title: 'Sample data to explore',

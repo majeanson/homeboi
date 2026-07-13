@@ -81,6 +81,24 @@ test('mismatched passwords surface an error instead of posting', async ({ page }
   expect(posted).toBe(false)
 })
 
+test('the sandbox welcome card lists try-this deep links (never the setup checklist)', async ({ page }) => {
+  await bootSandbox(page)
+  const card = page.locator('.welcome-card')
+  await expect(card).toBeVisible()
+  await expect(card).toContainText('Essaie-le pour vrai')
+  // Deep links ride the existing URL grammar (DISCOVERY.md): ?plus= / ?edit=1.
+  await expect(card.getByRole('link', { name: 'Ajoute quelque chose à la liste' })).toHaveAttribute(
+    'href',
+    '/liste?plus=1',
+  )
+  await expect(card.getByRole('link', { name: 'Déplace une carte du babillard' })).toHaveAttribute(
+    'href',
+    '/board?edit=1',
+  )
+  // The real-household setup steps stay out of the sandbox face.
+  await expect(card.getByRole('link', { name: 'Jumeler une tablette (optionnel)' })).toHaveCount(0)
+})
+
 test('a regular (non-sandbox) session sees no claim banner and /garder bounces home', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(PHONE)
