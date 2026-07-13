@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useT, useLang } from '../../i18n'
-import { formatDay } from '../../lib/format'
+import { formatDay, formatDayTime } from '../../lib/format'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
@@ -165,7 +165,12 @@ export function NotesList({
           const css = { '--note-tint': tint } as React.CSSProperties
           const media = n.media_kind && n.media_key ? n.media_kind : null
           const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)
-          const when = formatDay(n.created_at, lang)
+          // Collapsed the row stays calm with the day alone; expanded it IS the note's
+          // detail view, so it reads the full moment (two notes of the same afternoon
+          // are otherwise indistinguishable).
+          const when = expandedIds.has(n.id)
+            ? formatDayTime(n.created_at, lang)
+            : formatDay(n.created_at, lang)
           const mediaLabel = media === 'audio' ? fn.memo : media === 'image' ? fn.photo : media === 'drawing' ? fn.drawing : ''
 
           // iOS row anatomy: a bold title line, then a quieter "date · preview" line.

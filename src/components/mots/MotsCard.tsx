@@ -9,7 +9,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { useMots, useAllMots, waitingMots, visibleMots, sentMots, isScheduled, type Mot } from '../../lib/mots'
-import { formatDay, formatTime } from '../../lib/format'
+import { formatDayTime } from '../../lib/format'
 import { CATS } from '../../lib/cats'
 import { type IconName } from '../Icon'
 import { Act, Section } from '../board/Act'
@@ -72,7 +72,7 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
   const sub = (m: Mot) =>
     [nameOf(m.author_member_id), m.member_id === null ? fn.forMaisonnee : fn.forYou].filter(Boolean).join(' · ')
   // A programmed « Plus tard » reads its target moment; a landed one is just seen/waiting.
-  const whenLabel = (sec: number) => `${formatDay(sec, lang)} ${formatTime(sec, lang)}`
+  const whenLabel = (sec: number) => formatDayTime(sec, lang)
   // The outbox subtitle: who it's for + its status (scheduled / seen / still waiting).
   const sentSub = (m: Mot) => {
     const to = m.member_id === null ? fn.forMaisonnee : fn.to(nameOf(m.member_id) ?? '?')

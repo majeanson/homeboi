@@ -36,6 +36,19 @@ export function formatDay(unixSec: number, lang: Lang): string {
   )
 }
 
+// A moment, not a day: "sam. 11 juill., 15 h 30". For anything stamped at an
+// instant (a mot, a note) shown in its detail view — a bare day can't tell two
+// messages of the same afternoon apart. Row/list surfaces keep formatDay.
+export function formatDayTime(unixSec: number, lang: Lang): string {
+  return new Intl.DateTimeFormat(LOCALE[lang], {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(unixSec * 1000)
+}
+
 // Like formatDay, but appends the year once the date is far out (more than ~11
 // months from `now`) so a long-horizon home project reads unambiguously across
 // the year boundary ("sam 4 mars 2028"). Near dates stay terse. `now` is

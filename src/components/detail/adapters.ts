@@ -10,7 +10,7 @@ import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, parseContactAddress, fullName } from '../../lib/cercle'
 import { type Business, BUSINESS_COLOUR } from '../../lib/businesses'
 import { KIND_EMOJI, type CarnetKind } from '../../lib/carnets'
-import { formatDay, formatDayMaybeYear, formatTime } from '../../lib/format'
+import { formatDay, formatDayMaybeYear, formatDayTime, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { type Recipe } from '../../lib/recipes'
 import { type Mot } from '../../lib/mots'
@@ -291,7 +291,7 @@ export function buildMot(
     title: firstLine || mediaLabel || fn.untitled,
     icon,
     accent: colorOf(members, m.author_member_id) ?? CATS.cercle.color,
-    when: opts?.whenOverride ?? `${formatDay(m.created_at, lang)} · ${m.member_id === null ? fn.forMaisonnee : fn.forYou}`,
+    when: opts?.whenOverride ?? `${formatDayTime(m.created_at, lang)} · ${m.member_id === null ? fn.forMaisonnee : fn.forYou}`,
     who: whoOf(members, m.author_member_id, fn.from),
     blocks,
     actions,
