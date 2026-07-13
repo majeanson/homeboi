@@ -230,6 +230,16 @@
   margin: 0.25rem 0 0.75rem;
 }
 
+/* A FAILED deal/flyer lookup (shop seam #3): its own face — an error line + a
+   « Réessayer » — distinct from the genuine "no deals" EmptyState. */
+.deal-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
 /* Deal store filter (Maxi / Super C …). */
 .deal-stores {
   display: flex;

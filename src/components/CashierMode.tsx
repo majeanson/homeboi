@@ -6,6 +6,7 @@ import { type Pick, money } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
+import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
 
 // "Show the cashier" mode. The user holds the phone (the cashier never does) and
@@ -92,6 +93,11 @@ export function CashierMode({
             <Icon name="x-bold" size={18} />
           </button>
         </div>
+
+        {/* The till IS the weak-signal spot (shop seam #2): the cashier scene lives
+            outside HubLayout, so it renders the shared offline/stale bar itself —
+            cached prices shown to a cashier must read as "not live". */}
+        <OfflineBanner />
 
         <div className="cashier__grid-wrap">
           <p className="cashier__hint mono">{t.shop.tapToShow}</p>

@@ -149,6 +149,9 @@ export function QuickAddPage() {
         card="liste"
         onClose={close}
         closeLabel={t.shop.close}
+        // In-store scene, outside HubLayout: the shared offline/stale bar rides
+        // along (shop seam #2) — it self-hides when online and fresh.
+        offline
       />
 
       <div className="scene__body qa">

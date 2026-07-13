@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { StatusMessage } from '../components/StatusMessage'
+import { InlineIcon } from '../components/Icon'
 import { Chip } from '../components/Chip'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
@@ -105,7 +107,9 @@ export function PriceMatchPage() {
 
   return (
     <div className="scene" aria-label={t.shop.proofTitle}>
-      <SceneHead title={t.shop.proofTitle} subtitle={query} card="cashier" onClose={close} closeLabel={t.shop.close} />
+      {/* In-store scene, outside HubLayout: opt into the shared offline/stale bar
+          (shop seam #2) — dead in-store signal must read as "not live", not "no deal". */}
+      <SceneHead title={t.shop.proofTitle} subtitle={query} card="cashier" onClose={close} closeLabel={t.shop.close} offline />
 
       <div className="scene__body">
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
@@ -119,7 +123,16 @@ export function PriceMatchPage() {
             </Link>
           </EmptyState>
         )}
-        {state === 'error' && <EmptyState>{t.shop.none}</EmptyState>}
+        {/* A FAILED lookup is not "no deals" (shop seam #3): say the check broke
+            and offer to run it again, instead of wearing the empty state's face. */}
+        {state === 'error' && (
+          <div className="deal-error">
+            <StatusMessage tone="error">{t.shop.error}</StatusMessage>
+            <button type="button" className="btn btn--ghost mono" onClick={() => void dealsQ.refetch()}>
+              <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.retry}
+            </button>
+          </div>
+        )}
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { HelpDot } from './HelpDot'
+import { OfflineBanner } from './OfflineBanner'
 import { useT } from '../i18n'
 
 // The shared header bar for every full-screen .scene route (quick-add, price
@@ -17,6 +18,7 @@ export function SceneHead({
   onClose,
   closeLabel,
   action,
+  offline,
 }: {
   title: ReactNode
   // A quiet line under the title — the thing the scene is acting on (the list
@@ -31,9 +33,17 @@ export function SceneHead({
   // Optional trailing control in the head cluster (sits before the "?" + close), e.g.
   // a scene-level mode toggle (the recipe view's "Original" toggle).
   action?: ReactNode
+  // Opt-in offline/stale awareness (shop seam #2): full-screen scenes render
+  // OUTSIDE HubLayout, so the hub's OfflineBanner never covers them — a cashier
+  // staring at cached prices in a dead-signal store aisle had no cue. Scenes used
+  // at the store (cashier, price-match, flyers, quick-add) pass `offline` and the
+  // shared banner rides above the head; it self-hides when online AND fresh.
+  offline?: boolean
 }) {
   const t = useT()
   return (
+    <>
+    {offline && <OfflineBanner />}
     <div className="scene__head">
       <div className="scene__head-titles">
         <h2 className="pm-sheet__title">
@@ -60,5 +70,6 @@ export function SceneHead({
         </button>
       </div>
     </div>
+    </>
   )
 }

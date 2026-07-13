@@ -47,7 +47,7 @@ export function CashierPage() {
     if (hadPicks.current) return null
     return (
       <div className="scene">
-        <SceneHead title={t.shop.cashierTitle} icon="receipt-bold" onClose={close} />
+        <SceneHead title={t.shop.cashierTitle} icon="receipt-bold" onClose={close} offline />
         <EmptyState guide={{ card: 'deals', point: 5 }}>{t.shop.cashierEmpty}</EmptyState>
       </div>
     )

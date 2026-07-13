@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from './EmptyState'
+import { StatusMessage } from './StatusMessage'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
 import { useWrite } from '../lib/write'
@@ -8,7 +9,7 @@ import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
 import { Chip } from './Chip'
-import { Icon } from './Icon'
+import { Icon, InlineIcon } from './Icon'
 import { SceneHead } from './SceneHead'
 import { SubTabs } from './SubTabs'
 import { type Deal, type FlyerSummary } from '../lib/deals'
@@ -16,6 +17,7 @@ import { BOARD_KEY } from '../lib/queryKeys'
 import { existingListId, stageDeal } from '../lib/picks'
 import { useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
+import { useOnline } from '../lib/online'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -64,6 +66,11 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [staged, setStaged] = useState<Set<string>>(new Set())
+  // The deal lookup is online-only (a live Flipp query, retry: false, nothing
+  // cached for an unseen term) — firing it offline is a doomed request that lands
+  // as a fake "no deals". Disable the submit + staple chips and say why instead
+  // (the same useOnline pattern the other online-only controls follow).
+  const online = useOnline()
   // Esc leaves the scene — but not while the full flyer is open over it (that
   // overlay owns Esc), so one keypress doesn't pop both layers.
   useEscapeKey(onClose, !flyer)
@@ -140,12 +147,15 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="scene" aria-label={t.shop.browseTitle}>
+      {/* In-store scene, outside HubLayout: opt into the shared offline/stale bar
+          (shop seam #2) so a dead in-store signal reads as "not live". */}
       <SceneHead
         title={t.shop.browseTitle}
         subtitle={t.shop.browseHint}
         card="deals"
         onClose={onClose}
         closeLabel={t.shop.close}
+        offline
       />
 
       <div className="scene__body">
@@ -179,14 +189,16 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             placeholder={t.shop.search}
             aria-label={t.shop.search}
           />
-          <button type="submit" className="btn" disabled={!input.trim()} aria-label={t.shop.search}>
+          <button type="submit" className="btn" disabled={!input.trim() || !online} aria-label={t.shop.search}>
             <Icon name="magnifying-glass-bold" size={18} />
           </button>
         </form>
+        {/* The quiet why, right where the disabled controls sit. */}
+        {!online && <StatusMessage>{t.shop.searchOffline}</StatusMessage>}
 
         <div className="deal-stores mono">
           {STAPLES[lang].map((s) => (
-            <Chip key={s} selected={query === s} onClick={() => search(s)}>
+            <Chip key={s} selected={query === s} onClick={() => search(s)} disabled={!online}>
               {s}
             </Chip>
           ))}
@@ -204,7 +216,16 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
             </Link>
           </EmptyState>
         )}
-        {state === 'error' && <EmptyState>{t.shop.none}</EmptyState>}
+        {/* A FAILED lookup is not "no deals" (shop seam #3): its own message + a
+            retry, so a store-aisle timeout never masquerades as an empty flyer week. */}
+        {state === 'error' && (
+          <div className="deal-error">
+            <StatusMessage tone="error">{t.shop.error}</StatusMessage>
+            <button type="button" className="btn btn--ghost mono" onClick={() => void dealsQ.refetch()}>
+              <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.retry}
+            </button>
+          </div>
+        )}
 
         {state === 'ok' && stores.length > 1 && (
           <div className="deal-stores mono">
@@ -241,20 +262,23 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
         {mode === 'store' && (
           <>
             {flyersQ.isLoading && <p className="loading mono">{t.shop.searching}</p>}
-            {flyersQ.error && (
-              <EmptyState>
-                {isStatus(flyersQ.error, 400) ? (
-                  <>
-                    {t.shop.noPostal}{' '}
-                    <Link to="/settings?tab=liste" className="btn btn--ghost mono">
-                      {t.shop.setPostal}
-                    </Link>
-                  </>
-                ) : (
-                  t.shop.none
-                )}
-              </EmptyState>
-            )}
+            {flyersQ.error &&
+              (isStatus(flyersQ.error, 400) ? (
+                <EmptyState>
+                  {t.shop.noPostal}{' '}
+                  <Link to="/settings?tab=liste" className="btn btn--ghost mono">
+                    {t.shop.setPostal}
+                  </Link>
+                </EmptyState>
+              ) : (
+                // Same honesty as the by-item tab: a broken lookup says so + retries.
+                <div className="deal-error">
+                  <StatusMessage tone="error">{t.shop.error}</StatusMessage>
+                  <button type="button" className="btn btn--ghost mono" onClick={() => void flyersQ.refetch()}>
+                    <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.retry}
+                  </button>
+                </div>
+              ))}
             {storeFlyers && storeFlyers.length === 0 && <EmptyState>{t.shop.none}</EmptyState>}
             {storeFlyers && storeFlyers.length > 0 && (
               <div className="flyer-stores">
