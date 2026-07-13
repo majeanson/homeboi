@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, BOARD } from './mocks'
 
 // N meals per slot + time ordering + the food slot icons. Frontend-only against
 // mocked /api/* (the mock returns {ok:true} for writes, so we assert the request
@@ -82,6 +82,30 @@ test('clearing one slot posts a clear with that slot', async ({ page }) => {
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === 'supper')
   await sheet.getByRole('button', { name: 'Vider ce repas' }).first().click()
   await clear
+})
+
+// Cook seam #1: 17h with no supper planned used to say NOTHING (the tile just
+// vanished while the weather kept the card alive). The hero now offers ONE calm
+// door — « Choisir un souper » → the Idées drawer.
+test('an empty « Ce soir » offers the door to the Idées drawer', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  // Registered AFTER mockApi so it wins: today has no supper, the rest stays.
+  await page.route('**/api/board', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ...BOARD, tonight: null, tonightMeals: [] }),
+    }),
+  )
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/board')
+  await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
+  const hero = page.locator('.now-card--supper-empty')
+  await expect(hero).toBeVisible()
+  await expect(hero).toContainText('Rien de prévu')
+  await hero.getByRole('link', { name: /Choisir un souper/ }).click()
+  await expect(page).toHaveURL(/\/kitchen\/idees/)
 })
 
 test('the board "Ce soir" lists every supper', async ({ page }) => {

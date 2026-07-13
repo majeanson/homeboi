@@ -502,6 +502,10 @@ export const FR = {
     drawings: 'Dessins',
     photo: 'Photo',
     dismissMediaConfirm: 'Retirer cette note ? Le média joint sera effacé.',
+    // « Tout effacer » : le grand ménage du frigo en UN geste, défaisable en un
+    // seul « Annuler » (les écritures attendent derrière le toast).
+    clearAll: 'Tout effacer',
+    clearedN: (n: number) => `${n} note${n > 1 ? 's' : ''} effacée${n > 1 ? 's' : ''}`,
   },
   memo: {
     record: 'Mémo vocal',
@@ -764,6 +768,10 @@ export const FR = {
     // the band rotates through (the shuffle button jumps between them).
     wonderKicker: { bing: 'Photo du jour', wiki: 'Image du jour', apod: 'Astronomie du jour', epic: 'La Terre aujourd’hui', mars: 'Un robot sur Mars' },
     shuffleWonder: 'Une autre image',
+    // « Ce soir » sans souper planifié : une porte calme vers les Idées — une
+    // ligne + un bouton, jamais une relance.
+    supperEmpty: 'Rien de prévu pour l’instant.',
+    chooseSupper: 'Choisir un souper',
     apodReadMore: 'Lire la suite',
     apodReadLess: 'Lire moins',
     apodHear: 'Écouter',
@@ -1236,6 +1244,9 @@ export const FR = {
     shopWeekAll: 'Tout cocher',
     shopWeekNone: 'Tout décocher',
     shopWeekEmpty: 'Rien à ajouter — déjà sur la liste.',
+    // Pourquoi la tuile « Magasiner » est grisée (aucun repas planifié ne pointe
+    // vers une recette) — visible sur la tuile même, pas juste en infobulle.
+    shopWeekWhy: 'Planifie une recette pour magasiner la semaine',
     useSoon: 'À utiliser bientôt',
     useSoonHint: 'Ce que tu as et veux finir — ça suggère des recettes, sans toucher à la liste.',
     useSoonAdd: 'Ajouter un aliment à finir',
@@ -1894,6 +1905,10 @@ export const FR = {
     parentEmpty: 'Aucune routine pour l’instant.',
     stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
     empty: 'Aucune carte',
+    // Une routine sans étapes n’apparaît JAMAIS côté enfant (le picker saute les
+    // coquilles vides) — le dire calmement sur la carte parent, jamais un avertissement.
+    draftBadge: 'À compléter',
+    draftHint: 'L’enfant la verra quand elle aura des étapes.',
     todLabel: 'Moment :',
     tod: { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', any: 'N’importe quand' },
     // Calm aria for the per-card progress ring — deliberately no number (the ring
@@ -2938,6 +2953,12 @@ export const FR = {
     none: 'Aucune circulaire trouvée pour cet article.',
     noPostal: 'Règle d’abord ton code postal dans les réglages.',
     setPostal: 'Régler le code postal',
+    // Une recherche qui ÉCHOUE n’est pas « aucune aubaine » : dis-le, offre de
+    // réessayer (shop seam #3 — l’erreur avait le même visage que le vide).
+    error: 'Impossible de vérifier les circulaires pour le moment.',
+    retry: 'Réessayer',
+    // Recherche d’aubaines hors ligne : le bouton se désactive, une ligne dit pourquoi.
+    searchOffline: 'Hors ligne — la recherche d’aubaines a besoin d’Internet.',
     was: 'avant',
     until: 'jusqu’au',
     dateRangeTo: 'au',

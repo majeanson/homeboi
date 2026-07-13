@@ -556,6 +556,16 @@
   top: auto;
   bottom: -26px;
 }
+/* Empty « Ce soir » (friction audit, cook seam #1): the hero shell stays, the body
+   is one quiet line + ONE door (« Choisir un souper » → the Idées drawer). Calm by
+   shape — no badge, no pulse; it simply disappears once a supper is planned. */
+.now-card--supper-empty .now-card__cta {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 8px;
+  /* Stay legible over the tinted wash whatever the household's supper colour. */
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+}
 /* Status-band cards — « À régler » (marigold heads-up) + « Moments » (berry recap) —
    styled as hero-style tiles so they read as peers of the supper/weather heroes just
    above them. Softer min-height than the photo card; both stretch to equal height in

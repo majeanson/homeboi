@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { wash, tintInk } from '../../lib/colors'
 import { CATS } from '../../lib/cats'
@@ -117,6 +118,27 @@ export function DayHeroes({
         >
           <Icon name="caret-up-bold" size={14} />
         </button>
+      )}
+      {suppers.length === 0 && (
+        // 17h with nothing planned used to say NOTHING (the supper tile just
+        // vanished while the weather kept the card alive) — the glance went silent
+        // at the decision moment (friction audit, cook seam #1). Offer ONE calm
+        // door instead: a quiet line + « Choisir un souper », deep-linking to the
+        // « Idées » drawer (/kitchen/idees — the same scene the ＋ tile and the
+        // grid opener use). Navigation only, so a read-only guest may tap it too.
+        <div className="now-card now-card--supper now-card--supper-empty" style={{ background: wash(supperColor), color: tintInk(supperColor) }}>
+          <div className="blob" style={{ background: supperColor }} />
+          <div className="label">{heroCardLabel(heroSlot, t)}</div>
+          <div className="now-card__meals">
+            <div className="who">{t.board.supperEmpty}</div>
+            <Link to="/kitchen/idees" className="btn btn--sm now-card__cta">
+              <InlineIcon name="bowl-food-bold" /> {t.board.chooseSupper}
+            </Link>
+          </div>
+          <div className="icn">
+            <Icon name={SLOT_ICON_NAME[heroSlot]} size={40} color={supperColor} />
+          </div>
+        </div>
       )}
       {suppers.length > 0 && (
         // « Ce soir » — every supper planned today agglomerates into ONE hero card, a
