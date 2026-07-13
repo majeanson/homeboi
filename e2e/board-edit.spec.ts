@@ -17,15 +17,27 @@ const open = async (page: Page) => {
 // `page.mouse` works in viewport coordinates and never scrolls, unlike `.click()`. The
 // board is a long inner scroller, so anything we press must be brought into view first —
 // otherwise boundingBox() hands back coordinates the pointer can't reach.
+//
 const boxOf = async (page: Page, sel: string) => {
   const loc = page.locator(sel)
   await loc.scrollIntoViewIfNeeded()
   return (await loc.boundingBox())!
 }
 
-/** Press and hold the top edge of a card, without moving (travel aborts the hold). */
+/** Press and hold the top edge of a card, without moving (travel aborts the hold).
+ *
+ * The press aims at the card's TOP edge, so that edge must be on screen — which
+ * `scrollIntoViewIfNeeded()` does NOT guarantee: it settles for the cheapest scroll, so a
+ * card TALLER THAN THE VIEWPORT gets aligned by its BOTTOM and its top lands ABOVE the
+ * viewport (y < 0). The pointer then presses off-screen, hits nothing, and edit mode never
+ * arms. That is what reddened this suite the day « Aujourd'hui » absorbed the day's
+ * timeline and grew past 1000px — the board itself was fine. `block: 'start'` pins the top
+ * edge in view. (Drags below keep scrollIntoViewIfNeeded: they aim at a grip, not an edge,
+ * and forcing a top-align there re-scrolls the target out from under the drop.) */
 async function hold(page: Page, card: string, ms = HOLD) {
-  const box = await boxOf(page, `.wg-slot[data-card="${card}"]`)
+  const sel = `.wg-slot[data-card="${card}"]`
+  await page.locator(sel).evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
+  const box = (await page.locator(sel).boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + 12)
   await page.mouse.down()
   await page.waitForTimeout(ms)
@@ -34,12 +46,26 @@ async function hold(page: Page, card: string, ms = HOLD) {
 
 /** Drag `from`'s grip onto `to`'s slot. */
 async function dragOnto(page: Page, from: string, to: string) {
-  // Scroll BOTH into view before reading either box: a scroll triggered while measuring
-  // the second one silently invalidates the first, and the press lands on stale pixels.
-  await page.locator(`.wg-slot[data-card="${to}"]`).scrollIntoViewIfNeeded()
-  await page.locator(`.wg-slot[data-card="${from}"]`).scrollIntoViewIfNeeded()
-  const grip = await boxOf(page, `.wg-slot[data-card="${from}"] .wg-slot__grip`)
-  const target = await boxOf(page, `.wg-slot[data-card="${to}"]`)
+  const fromSel = `.wg-slot[data-card="${from}"]`
+  const toSel = `.wg-slot[data-card="${to}"]`
+  // Scroll ONCE — bringing the HIGHER of the two cards to the top of the scroller — then
+  // measure both boxes without touching the scroll again. The old helper scrolled per
+  // measurement (scrollIntoViewIfNeeded inside boxOf, twice), and the second scroll
+  // silently invalidated the first box: the press then landed on stale pixels and the
+  // card dropped onto the wrong neighbour. Harmless while every card was short; once
+  // « Aujourd'hui » grew past 1000px, scrolling it into view pushed its drag partner
+  // clean off the screen. Anchoring the higher card at the top keeps the grip AND the
+  // drop target on screen together, whichever way the drag runs.
+  const higher = await page.evaluate(
+    ([a, b]) => {
+      const top = (s: string) => document.querySelector(s)!.getBoundingClientRect().top
+      return top(a) <= top(b) ? a : b
+    },
+    [fromSel, toSel],
+  )
+  await page.locator(higher).evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
+  const grip = (await page.locator(`${fromSel} .wg-slot__grip`).boundingBox())!
+  const target = (await page.locator(toSel).boundingBox())!
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
   await page.mouse.down()
   // Clear the 6px engage threshold, then land on the target.
@@ -330,10 +356,13 @@ test.describe('cross-zone cards keep rendering', () => {
     await expect(moments.locator('.now-card--moment')).toBeVisible()
     await expect(moments.getByRole('button', { name: 'Ce soir' })).toBeVisible()
 
-    // « Aujourd’hui » now lives in the BAND — full Section, not a placeholder.
+    // « Aujourd’hui » now lives in the BAND — full Section, not a placeholder. Its OWN
+    // label is the first: the card also folds today's « Avant de partir » checklists in
+    // at the foot of the agenda (a nested TodoSection with its own .sec-label), so a bare
+    // `.sec-label` here is no longer unique and trips strict mode.
     const today = page.locator('.board-band .wg-slot[data-card="today"]')
     await today.scrollIntoViewIfNeeded()
-    await expect(today.locator('.sec-label')).toContainText('Aujourd’hui')
+    await expect(today.locator('.sec-label').first()).toContainText('Aujourd’hui')
     await expect(today.locator('.wg-slot__placeholder')).toHaveCount(0)
     await expect(moments.locator('.wg-slot__placeholder')).toHaveCount(0)
   })

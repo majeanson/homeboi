@@ -148,9 +148,14 @@ test('board respects a custom card layout', async ({ page }) => {
   await page.goto('/board')
   await settle(page, '.hub')
   await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
-  // « À faire » (todos) is hidden → the unified to-do card (which embeds the TodoSection
-  // as a plain .todo-sec) is absent from the board.
-  expect(await page.locator('.todo-sec').count()).toBe(0)
+  // « À faire » (todos) is hidden → its card is absent from the board.
+  //
+  // Assert the SLOT, not `.todo-sec`. That class stopped being the todos card's alone when
+  // the « Avant de partir » split (mig 0116) embedded TodoSections elsewhere — the day card
+  // folds today's checklists in at the foot of its agenda, and the departure card is made of
+  // them — so counting `.todo-sec` now measures those, and could never reach 0 no matter how
+  // faithfully the layout hid the card it was meant to be testing.
+  await expect(page.locator('.wg-slot[data-card="todos"]')).toHaveCount(0)
   expect(errors, 'pageerror with custom layout').toEqual([])
   const overflow = await page.evaluate(() => {
     const b = document.querySelector('.hub__body')
@@ -174,7 +179,8 @@ test('board layout panel toggle hides a card', async ({ page }) => {
   await page.waitForTimeout(150)
   await page.goto('/board')
   await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
-  expect(await page.locator('.todo-sec').count()).toBe(0)
+  // The card itself is gone — see the note above on why `.todo-sec` no longer says that.
+  await expect(page.locator('.wg-slot[data-card="todos"]')).toHaveCount(0)
 })
 
 // The unified event form: ONE form with optional « Trajet » + « À apporter », and the

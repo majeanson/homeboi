@@ -163,28 +163,42 @@ test.describe('board compact lens', () => {
   // « Aujourd'hui » / « Demain » pin a quiet weather chip to the header. Both ride the same
   // fixed-height tile — this guards that they render without breaking the shelf.
   test('a chronological mini leads its rows with a time and shows a weather chip', async ({ page }) => {
-    // Freeze to the fixture's anchor so today's timed events stay live (else lib/itemLife
-    // folds them into « Déjà passé » vs the real clock and the today tile falls to its
-    // glance face with no rows to lead). « Aujourd'hui » owns the day's timeline now
-    // (the former « Le fil du jour » card folded into it), so its mini leads the timed
-    // rows with their hour on any busy day — no seed needed to force it.
+    // Freeze to the fixture's anchor so the timed events stay live (else lib/itemLife folds
+    // them into « Déjà passé » vs the real clock and the tile falls to its glance face with
+    // no rows to lead).
+    //
+    // « Demain » is the card under test, NOT « Aujourd'hui ». This asserted the today tile
+    // until « Aujourd'hui » absorbed the day's timeline: it now names the timed events, the
+    // work windows, the chores AND the all-day items, so the fixture's busy day runs past
+    // WG_MINI_MAX_ITEMS (5) and the tile shows a COUNT instead of rows — deliberately
+    // ("naming five of nine is a lie the count tells better", lib/widgetGrid). That is the
+    // glance face, so the list-face assertions below could never hold there again. « Demain »
+    // is the same chronological + weather-chipped tile with a day short enough to list, so it
+    // still guards exactly what this test is for. The today tile's count is asserted below.
     await page.clock.setFixedTime(new Date(BASE * 1000))
     await page.setViewportSize({ width: 360, height: 740 })
     await mockApi(page)
-    await seedState(page, { cardPrefs: { size: { today: 1 } } })
+    await seedState(page, { cardPrefs: { size: { today: 1, tomorrow: 1 } } })
     await page.goto('/board')
     await page.waitForSelector('.board-grid .wg-slot')
 
-    const tile = page.locator('.wg-slot[data-card="today"] .cardmini')
+    const tile = page.locator('.wg-slot[data-card="tomorrow"] .cardmini')
     await tile.scrollIntoViewIfNeeded()
     await expect(tile).toHaveClass(/cardmini--list/)
-    // A timed event row leads with its hour (the fixture's Garderie/Soccer are timed).
+    // A timed event row leads with its hour (the fixture's « Épicerie » is timed).
     await expect(tile.locator('.cardmini__lead').first()).toBeVisible()
     // The weather chip rides the header (the fixture stubs weather).
     await expect(tile.locator('.cardmini__headx')).toBeVisible()
     // Still one shelf tall — the extras must not spill past the fixed height.
     const spill = await tile.evaluate((el) => el.scrollHeight > el.clientHeight + 1)
     expect(spill, 'the list face must not overflow its fixed height').toBeFalsy()
+
+    // The other half of the contract: a day too full to name falls to the glance face and
+    // says HOW MANY — with the weather chip still pinned to its header.
+    const today = page.locator('.wg-slot[data-card="today"] .cardmini')
+    await expect(today).toHaveClass(/cardmini--glance/)
+    await expect(today.locator('.cardmini__hint')).toBeVisible()
+    await expect(today.locator('.cardmini__headx')).toBeVisible()
   })
 
   // The weather mini is a MEDIA tile (the wonder photo), but it keeps the full card's info

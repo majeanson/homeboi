@@ -913,10 +913,22 @@ export async function mockApi(
 
     // events?id=<id> → the single event, looked up directly (no date window), like the
     // server. The peek's edit modal uses this, so return just that row (not the whole list).
+    //
+    // Look across EVERY seeded event, not just EVENTS.events. On the server this endpoint
+    // is a primary-key read: any event that exists is findable, whichever list a client
+    // happened to meet it in. The mock only searched the agenda-list fixture, so the board's
+    // own rows (BOARD.today/tomorrow/upcoming — the dentist « e2 » among them) came back
+    // EMPTY and the peek's « Modifier » opened on « Ce rendez-vous n'est plus dans la
+    // liste. » The board renders them; by-id must find them.
     if (path === 'events' && url.searchParams.has('id')) {
       const id = url.searchParams.get('id')
-      const events = EVENTS.events.filter((e) => e.id === id)
-      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ events }) })
+      const pool = [...EVENTS.events, ...BOARD.today, ...BOARD.tomorrow, ...BOARD.upcoming]
+      const found = pool.find((e) => e.id === id)
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: serve({ events: found ? [found] : [] }),
+      })
       return
     }
 
