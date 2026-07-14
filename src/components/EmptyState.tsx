@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useHelp } from '../lib/help'
 import { useAudience } from '../lib/audience'
-import { Icon } from './Icon'
+import { InlineIcon } from './Icon'
 
 // The ONE "nothing here, and that's fine" line. Empty states were scattered across
 // ~7 class names (feed-empty, board__empty, *-empty…); this is the calm default —
@@ -43,7 +43,11 @@ export function EmptyState({
       {children}
       {to && (
         <Link className="empty-state__guide" to={to}>
-          {t.help.goToGuide} <Icon name="arrow-right-bold" size={12} />
+          {/* InlineIcon, not Icon: Icon hard-codes `display:block` as an INLINE style
+              (it beats any stylesheet), so the arrow formed its own block box and
+              landed on a line of its own under « Voir le guide » on every empty tab
+              (first-run pass, 2026-07-14). InlineIcon is exactly this case. */}
+          {t.help.goToGuide} <InlineIcon name="arrow-right-bold" size={12} />
         </Link>
       )}
     </p>

@@ -369,6 +369,20 @@ const DEVICES = {
   ],
 }
 
+// `fresh` (the brand-new household) empties every route's arrays but keeps its shape.
+// These routes are NOT household content — a new household still has an identity, a
+// working service, a sky, and this week's flyers — so they answer normally.
+const FRESH_EXEMPT = new Set(['auth/me', 'household', 'health', 'weather', 'wonder', 'flyer', 'flyers', 'deals', 'recipe-tags', 'todo-templates'])
+function emptyArrays(v: unknown): unknown {
+  if (Array.isArray(v)) return []
+  if (v && typeof v === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = emptyArrays(val)
+    return out
+  }
+  return v
+}
+
 // « L'auto » (#28) read model — the board AutoCard reads today, /voiture reads a
 // week. A populated model so the board's L'auto glance card and the /voiture editor
 // both render with real content. `today` MUST equal a days[].day or AutoCard finds
@@ -676,6 +690,9 @@ export async function mockApi(
     unauthorized?: boolean
     fresh?: boolean
     longText?: boolean
+    /** The demo SANDBOX session — a real operator whose email marks it throwaway
+     *  (lib/demo.ts). Drives the board's « Garder ma maisonnée » claim banner. */
+    sandbox?: boolean
     // Hold every data response this many ms so a page's <Loading/> frame is
     // capturable before data lands (auth/me + health stay instant so the shell
     // still boots signed-in).
@@ -889,7 +906,15 @@ export async function mockApi(
     }
 
     if (path === 'auth/me') {
-      const body = signedIn ? AUTH_ME : { signedIn: false }
+      // `sandbox` — the per-visitor throwaway household (functions/api/demo.ts). The
+      // ONLY thing that marks it is the operator's demo-<id>@babillard.invalid email,
+      // which /api/auth/me hands the SPA (lib/demo.ts useSandbox), so simulating the
+      // real thing needs nothing more than this address.
+      const body = opts.sandbox
+        ? { ...AUTH_ME, email: 'demo-abc123@babillard.invalid' }
+        : signedIn
+          ? AUTH_ME
+          : { signedIn: false }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
       return
     }
@@ -910,6 +935,18 @@ export async function mockApi(
     }
     if (opts.fresh && path === 'pair/devices') {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...DEVICES, devices: [] }) })
+      return
+    }
+    // …and a brand-new household has no recipes, no routines, no pantry, no cercle —
+    // NOTHING. Rather than list every endpoint (and forget one, which is exactly how
+    // the checklist came to read the seeded meals), empty the fixture GENERICALLY:
+    // keep each route's shape and its scalars (weekStart, windowDays…), empty every
+    // array. Config and non-household data are exempt — a new household still has a
+    // sky, a health check and an identity. Any page that can't cope with real
+    // emptiness now crashes the state-matrix instead of hiding behind a seeded row.
+    if (opts.fresh && !FRESH_EXEMPT.has(path) && Object.prototype.hasOwnProperty.call(ROUTES, path)) {
+      const body = emptyArrays((ROUTES as Record<string, unknown>)[path])
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
       return
     }
     if (opts.fresh && path === 'board') {

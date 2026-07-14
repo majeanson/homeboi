@@ -27,6 +27,9 @@
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
+  /* The trailing → must ride WITH the words: « Voir le guide » wrapped and left the
+     arrow alone on its own line (first-run pass, 2026-07-14). */
+  white-space: nowrap;
 }
 .empty-state__guide svg {
   display: inline-block;

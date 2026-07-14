@@ -4,7 +4,7 @@ import '../styles/cercle.css'
 // carnets.css's SubTab/scene bulk (« Les carnets » lives inside Le cercle too).
 import '../styles/carnets.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -793,9 +793,21 @@ function CercleParent() {
       {people.length === 0 ? (
         <>
           <SectionIntro card="cercle" />
+          {/* A brand-new circle used to be a DEAD END: two lines of prose and no door
+              — the only way forward was the ＋ FAB, which the words never mention
+              (first-run pass, 2026-07-14). It now reads like every other empty tab
+              (Routines is the model): the calm line, its guide link, and one warm
+              way in. Hidden for a read-only guest, who has nothing to add. */}
           <div className="feed-empty cercle-empty">
-            <p>{t.cercle.empty}</p>
+            <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState>
             <p className="mono">{t.cercle.emptyHint}</p>
+            {!isGuest() && (
+              // ?plus=person — the documented URL grammar (DISCOVERY.md): opens the ＋
+              // sheet on its « person » tile. The same door the FAB gives, just named.
+              <Link to="/cercle?plus=person" className="btn btn--primary cercle-empty__new">
+                <InlineIcon name="plus-bold" /> {t.cercle.add}
+              </Link>
+            )}
           </div>
         </>
       ) : (

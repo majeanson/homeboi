@@ -37,6 +37,10 @@ type Entry = {
   surface?: Surface
   longText?: boolean
   fresh?: boolean
+  /** A brand-new VISITOR: no session at all (the marketing door, the sign-up form). */
+  signedOut?: boolean
+  /** The demo sandbox session (the claim banner, the try-this card). */
+  sandbox?: boolean
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
   keyboard?: number
 }
@@ -82,7 +86,21 @@ const MATRIX: Entry[] = [
   { name: 'board-en', route: '/board', lang: 'en', themes: ['day'] },
   // — data extremes —
   { name: 'liste-longtext', route: '/liste', longText: true },
+  // — FIRST RUN: the whole walk a brand-new household takes. `fresh` empties every
+  //   household array (mocks.ts), so these are the screens a real first day shows —
+  //   the front door, the sign-up, then each tab with genuinely nothing in it. An
+  //   empty tab that dead-ends (no door, no words) is the bug this set exists to find.
+  { name: 'first-home', route: '/', signedOut: true, themes: ['day'] },
+  { name: 'first-signup', route: '/signup', signedOut: true, themes: ['day'] },
   { name: 'board-fresh', route: '/board', fresh: true, themes: ['day'] },
+  { name: 'first-kitchen', route: '/kitchen', fresh: true, themes: ['day'] },
+  { name: 'first-liste', route: '/liste', fresh: true, themes: ['day'] },
+  { name: 'first-cercle', route: '/cercle', fresh: true, themes: ['day'] },
+  { name: 'first-routines', route: '/routines', fresh: true, themes: ['day'] },
+  { name: 'first-settings', route: '/settings', fresh: true, themes: ['day'] },
+  // — THE DEMO: what a curious visitor actually gets. The sandbox is an ordinary
+  //   operator session marked by its email, so the board wears the claim banner.
+  { name: 'demo-board', route: '/board', sandbox: true, themes: ['day'] },
   // — keyboard-open states (the stub from kb.ts; setup must leave a field focused) —
   { name: 'note-editor-kb', route: '/cercle?section=notes', setup: openNoteEditor, scope: '.note-editor', keyboard: KB, themes: ['day'] },
   {
@@ -110,12 +128,20 @@ for (const entry of MATRIX) {
       await page.emulateMedia({ reducedMotion: 'reduce' })
       await page.setViewportSize({ width: vp.w, height: vp.h })
       if (entry.keyboard) await installVvStub(page)
-      await mockApi(page, { longText: entry.longText, fresh: entry.fresh })
+      await mockApi(page, {
+        longText: entry.longText,
+        fresh: entry.fresh,
+        sandbox: entry.sandbox,
+        signedIn: entry.signedOut ? false : undefined,
+      })
       await seedState(page, {
         theme,
         audience: entry.audience ?? 'parent',
         lang: entry.lang ?? 'fr',
-        surface: entry.surface ?? 'mobile',
+        // A brand-new VISITOR has chosen no surface — and `/` redirects straight to
+        // /board the moment one is stored (router Entry: `chosen || isPaired()`), so
+        // seeding it would have photographed the board and called it the front door.
+        surface: entry.signedOut ? undefined : (entry.surface ?? 'mobile'),
       })
       await page.goto(entry.route)
       await page
