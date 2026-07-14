@@ -6,6 +6,7 @@ import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
 import { useModal } from '../../lib/useModal'
 import { caretIntoView } from '../../lib/viewportVars'
+import { useHScroll } from '../../lib/hscroll'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
@@ -76,6 +77,7 @@ export function NoteEditor({
   const fn = t.cercle.familyNotes
   const write = useWrite()
   const online = useOnline()
+  const toolbarScroll = useHScroll<HTMLDivElement>()
 
   const rootRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<HTMLDivElement>(null)
@@ -458,7 +460,12 @@ export function NoteEditor({
         />
       </div>
 
-      <div className="note-editor__toolbar" role="group" aria-label={fn.format}>
+      {/* The format row hides its scrollbar and overflows on a phone (the ❝ quote
+          button was cut in half). useHScroll is the house rule for any such row: it
+          maps the mouse wheel onto it — without which the clipped buttons are
+          literally unreachable on a desktop — and its data-hs stamp fades the edge
+          so a phone can SEE that the row continues. */}
+      <div ref={toolbarScroll.ref} className="note-editor__toolbar" role="group" aria-label={fn.format}>
         {FORMATS.map((f) => (
           <button
             key={f.kind}
