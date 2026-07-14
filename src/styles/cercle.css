@@ -807,8 +807,21 @@
   margin-left: auto;
   opacity: 0.5;
 }
-.cercle-group__delete:hover {
+/* Full strength on hover AND focus — the twin pattern (undo-toast precedent): a
+   hover-only reveal is unreachable on touch and invisible to a keyboard user. */
+.cercle-group__delete:hover,
+.cercle-group__delete:focus-visible {
   opacity: 1;
+}
+.cercle-group__delete:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* On a touch screen there is no hover — never rest below legible strength. */
+@media (hover: none) {
+  .cercle-group__delete {
+    opacity: 0.8;
+  }
 }
 .cercle-group__empty {
   font-size: 0.82rem;

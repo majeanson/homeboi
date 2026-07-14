@@ -1498,7 +1498,10 @@ textarea.input {
 .btn:focus-visible,
 .tag--btn:focus-visible,
 .subtabs__opt:focus-visible,
-.board__list-item:focus-visible {
+.board__list-item:focus-visible,
+/* .chip is defined across kitchen/almanac/cercle — the shared ring lives HERE
+   (affordance audit 2026-07-14: chips are primary nav yet had no focus cue). */
+.chip:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

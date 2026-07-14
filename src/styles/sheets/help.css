@@ -283,6 +283,11 @@
   box-shadow: var(--shadow-sm);
   transition: border-color var(--dur-fast);
 }
+/* The ＋-sheet tiles are buttons — keyboard users get the shared ring. */
+.cat-pick:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 /* IA cue: a tile that LEAVES the sheet for a full-screen route (event / voyage /
    départ / the day-planner shortcuts) wears a quiet chevron top-right, so "takes
    you somewhere" reads apart from a tile that opens a field in place. Decorative

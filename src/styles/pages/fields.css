@@ -276,10 +276,16 @@
   cursor: pointer;
 }
 /* Keyboard-active and hover share one highlight, so arrow-keys and the pointer
-   point at the same row. */
+   point at the same row. :focus-visible hardens the direct-Tab fallback (the
+   normal keyboard path is aria-activedescendant → .is-active). */
 .combobox__row.is-active,
-.combobox__row:hover {
+.combobox__row:hover,
+.combobox__row:focus-visible {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.combobox__row:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
 }
 .combobox__row:active {
   transform: translateY(1px);

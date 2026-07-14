@@ -204,9 +204,14 @@
   opacity: 0.85;
   transition: opacity var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
-.photo-frame__shuffle:hover {
+.photo-frame__shuffle:hover,
+.photo-frame__shuffle:focus-visible {
   opacity: 1;
   background: rgb(0 0 0 / 0.58);
+}
+.photo-frame__shuffle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 /* The compact lens's way back (see widget-grid.css): once « Photo du jour » has grown
    from its media mini to full width, a reduce chip rides top-LEFT — the ⟳ shuffle

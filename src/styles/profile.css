@@ -147,6 +147,12 @@
   transform: translate(1px, 1px);
   box-shadow: var(--shadow-press);
 }
+/* The "who am I today" picker is a primary tap target — keyboard users get the
+   shared ring (core.css focus block). */
+.mswitch__opt:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 .mswitch__opt.is-on {
   border-color: var(--accent);
   background: var(--accent);
