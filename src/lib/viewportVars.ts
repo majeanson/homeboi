@@ -14,9 +14,11 @@ import { scrollBehavior } from './motion'
 
 // ── Keyboard state, shared module-wide ──────────────────────────────────────
 // KB_THRESHOLD: ignore tiny insets (browser chrome, accessory bar) — only a
-// real on-screen keyboard clears this. kbInset is written by apply() below and
-// read by the caret-follow helpers, so a caller outside trackVisualViewport's
-// closure (caretIntoView) sees the same truth.
+// real on-screen keyboard clears this. kbInset is the total viewport SHRINK
+// (innerHeight - vv.height) — the pan-independent "a keyboard exists" signal,
+// NOT the bottom occlusion (that's --kb; see apply()). Written by apply() below
+// and read by the caret-follow helpers, so a caller outside
+// trackVisualViewport's closure (caretIntoView) sees the same truth.
 const KB_THRESHOLD = 120
 let kbInset = 0
 
@@ -214,7 +216,10 @@ export function trackVisualViewport(): void {
     pinTimers.forEach(clearTimeout)
     pinTimers = []
     pinOnce(scrollBehavior())
-    for (const ms of [120, 280, 480]) pinTimers.push(setTimeout(() => pinOnce('auto'), ms))
+    // The 900ms tail: iOS's own caret-reveal scroll is an ANIMATION that can land
+    // after our 480ms retry and drag the caret back under the keyboard; one late,
+    // idempotent re-pin outlasts it.
+    for (const ms of [120, 280, 480, 900]) pinTimers.push(setTimeout(() => pinOnce('auto'), ms))
   }
 
   const apply = () => {
@@ -226,14 +231,27 @@ export function trackVisualViewport(): void {
     // latch --kb + `.kb-open` and come back with the tab bar and ＋ FAB hidden and a
     // parked sheet peeking over the bottom edge. Measure only what the user can see.
     if (document.hidden) return
-    kbInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
+    // "Is a keyboard up?" is the total viewport SHRINK — deliberately ignoring
+    // vv.offsetTop. In a standalone iOS app, focusing a caret near the BOTTOM of
+    // the screen makes iOS PAN the viewport (offsetTop jumps, sometimes by most of
+    // the keyboard's height — the "viewport push"). The old `inner - height -
+    // offsetTop` then read the keyboard as nearly gone: `.kb-open` dropped, the
+    // padding vanished, and every pin/follow gate disarmed — exactly when the user
+    // tapped the end of a long note and needed them most. The pan doesn't change
+    // whether a keyboard exists; only the shrink does.
+    kbInset = Math.max(0, Math.round(window.innerHeight - vv.height))
+    // What a fixed inset:0 surface must pad away at the BOTTOM is pan-aware
+    // geometry though: the pan moves part of the obscured band from the bottom
+    // (--kb) to the top (--vvt), and the two paddings together must equal the
+    // shrink or content drifts off the visible band.
+    const bottomInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
     root.setProperty('--vvh', `${Math.round(vv.height)}px`)
     root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`)
     const open = kbInset > KB_THRESHOLD
     // --kb means "how much keyboard covers the bottom", so it must agree with
     // `.kb-open` — publishing a sub-threshold inset (browser chrome, an accessory
     // bar) lifted every consumer off a keyboard that isn't there.
-    root.setProperty('--kb', `${open ? kbInset : 0}px`)
+    root.setProperty('--kb', `${open ? bottomInset : 0}px`)
     // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
     // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
     // field being edited for attention. `.kb-open` keys the CSS in hub.css.

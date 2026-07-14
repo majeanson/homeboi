@@ -36,11 +36,14 @@ function boot(device: { w: number; h: number }) {
 }
 
 // Slide the fake keyboard in (visual viewport loses `kb` px) AND paint a band so
-// the screenshot shows exactly what a keyboard would obscure.
-async function openKeyboard(page: Page, kb: number) {
-  await page.evaluate((kbH) => {
-    const stub = (window as unknown as { __vvStub: { height: number; dispatchEvent: (e: Event) => boolean } }).__vvStub
+// the screenshot shows exactly what a keyboard would obscure. `pan` simulates the
+// iOS standalone "viewport push": focusing a caret near the bottom makes iOS pan
+// the visual viewport (offsetTop > 0) by up to most of the keyboard's height.
+async function openKeyboard(page: Page, kb: number, pan = 0) {
+  await page.evaluate(({ kbH, pan }) => {
+    const stub = (window as unknown as { __vvStub: { height: number; offsetTop: number; dispatchEvent: (e: Event) => boolean } }).__vvStub
     stub.height = window.innerHeight - kbH
+    stub.offsetTop = pan
     stub.dispatchEvent(new Event('resize'))
     let el = document.getElementById('fake-kb')
     if (!el) {
@@ -49,7 +52,7 @@ async function openKeyboard(page: Page, kb: number) {
       document.body.appendChild(el)
     }
     el.style.cssText = `position:fixed;left:0;right:0;bottom:0;height:${kbH}px;z-index:99999;pointer-events:none;background:rgba(38,38,64,0.4);border-top:2px solid #6c7bff;`
-  }, kb)
+  }, { kbH: kb, pan })
   await page.waitForTimeout(450)
 }
 
@@ -260,6 +263,47 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
   // …and the title input stays inside the shell (was 1.6rem too wide).
   const title = await page.locator('.note-editor__title').boundingBox()
   expect(title!.x + title!.width, 'title inside the right edge').toBeLessThanOrEqual(d.w + 1)
+})
+
+// The iOS standalone "viewport push": focusing a caret near the BOTTOM makes iOS pan
+// the visual viewport (offsetTop jumps, here 260px of a 336px keyboard). The old
+// keyboard-presence gate (`inner - height - offsetTop`) then read the keyboard as
+// nearly gone: `.kb-open` dropped, the paddings vanished, and every pin/follow gate
+// disarmed — with the caret at the END of a long note the body sat at max scroll, so
+// nothing could ever reveal it, not even typing (Marc's exact report). Presence must
+// gate on the pan-independent SHRINK; only --kb keeps the pan-aware geometry.
+test('kb: the iOS viewport push does not disarm the keyboard machinery', async ({ page }) => {
+  const d = { w: 390, h: 844, kb: 336 }
+  const PAN = 260
+  const open = boot(d)
+  await open(page, '/cercle?section=notes')
+  await page.getByRole('button', { name: 'Nouvelle note' }).click()
+  const body = page.locator('.note-editor__body')
+  await body.click()
+  for (let i = 0; i < 30; i++) {
+    await page.keyboard.type(`ligne ${i}`)
+    await page.keyboard.press('Enter')
+  }
+  await page.keyboard.type('FIN')
+  await openKeyboard(page, d.kb, PAN)
+
+  // The machinery stayed armed…
+  await expect
+    .poll(() => page.evaluate(() => ({
+      open: document.documentElement.classList.contains('kb-open'),
+      kb: getComputedStyle(document.documentElement).getPropertyValue('--kb').trim(),
+    })), { message: 'kb-open latched despite the pan', timeout: 5000 })
+    .toEqual({ open: true, kb: `${d.kb - PAN}px` })
+
+  // …and the caret line sits inside the panned visible band [PAN, PAN + (h - kb)].
+  const last = body.locator(':scope > :last-child')
+  await expect(last).toHaveText('FIN')
+  await expect
+    .poll(async () => {
+      const b = await last.boundingBox()
+      return b ? b.y >= PAN - 1 && b.y + b.height <= PAN + (d.h - d.kb) + 1 : false
+    }, { message: 'caret line fully inside the panned visible band', timeout: 5000 })
+    .toBe(true)
 })
 
 // No keyboard at all — a short phone (or split-screen): the modal must still fit
