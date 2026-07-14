@@ -85,7 +85,7 @@ function renderKbDebug(): void {
     `visBottom=${Math.round(visibleBottom())} accessory=${accessoryPad()}`,
     `ae=${ae ? `${ae.tagName}.${String(ae.className).split(' ')[0]}` : 'none'} caretY=${caret}`,
     sc && scBox
-      ? `scroller=${String(sc.className).split(' ')[0]} top=${Math.round(scBox.top)} bottom=${Math.round(scBox.bottom)} sT=${Math.round(sc.scrollTop)} sH=${sc.scrollHeight} cH=${sc.clientHeight}`
+      ? `scroller=${String(sc.className).split(' ')[0]} top=${Math.round(scBox.top)} bottom=${Math.round(scBox.bottom)} sT=${Math.round(sc.scrollTop)} sH=${sc.scrollHeight} cH=${sc.clientHeight} slack=${getComputedStyle(sc).paddingBottom}`
       : 'scroller=none',
     ...kbDebugLog,
   ].join('\n')
