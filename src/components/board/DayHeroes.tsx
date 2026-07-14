@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { wash, tintInk } from '../../lib/colors'
@@ -27,6 +28,7 @@ export function DayHeroes({
   onShuffleWonder,
   supperNow,
   heroSlot,
+  onOpenSky,
 }: {
   suppers: DayMealRow[]
   supperColor: string
@@ -43,6 +45,10 @@ export function DayHeroes({
    *  Passed in rather than re-read from `useMealPrefs()`: the rows were filtered
    *  server-side, and the two can disagree for one poll after a hero change. */
   heroSlot: MealSlot
+  /** Tap the weather card → the « Dehors aujourd'hui » sheet (SkySheet): the wonder in
+   *  full, the source gallery, the day's weather story. Optional so DevKit's sample
+   *  render stays inert; when absent the card is not a button. */
+  onOpenSky?: () => void
 }) {
   const t = useT()
   const lens = useCardLens()
@@ -178,10 +184,26 @@ export function DayHeroes({
       )}
       {weather && (
         // The wonder picture is the card's BACKDROP; the weather sits on top in
-        // frosted chips so the temperature is legible over any image.
+        // frosted chips so the temperature is legible over any image. Tapping the
+        // card (anywhere but the ⟳) opens the « Dehors aujourd'hui » sheet — the
+        // same tap-the-hero idiom as the supper rows beside it.
         <div
-          className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}`}
+          className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}${onOpenSky ? ' now-card--tap' : ''}`}
           style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: CATS.event.wash, color: CATS.event.deep }}
+          {...(onOpenSky
+            ? {
+                role: 'button' as const,
+                tabIndex: 0,
+                'aria-label': t.board.sky.open,
+                onClick: onOpenSky,
+                onKeyDown: (e: KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onOpenSky()
+                  }
+                },
+              }
+            : {})}
         >
           {wonder ? (
             <>
@@ -189,7 +211,10 @@ export function DayHeroes({
               <button
                 type="button"
                 className="photo-frame__shuffle now-card__shuffle"
-                onClick={onShuffleWonder}
+                onClick={(e) => {
+                  e.stopPropagation() // the ⟳ shuffles; it must not ALSO open the sheet
+                  onShuffleWonder()
+                }}
                 aria-label={t.board.shuffleWonder}
                 title={t.board.shuffleWonder}
               >

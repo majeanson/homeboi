@@ -60,6 +60,7 @@ import { SimpleBoard } from '../components/board/SimpleBoard'
 import { ToddlerBoard } from '../components/board/ToddlerBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
 import { TodayChangesSheet } from '../components/board/TodayChangesSheet'
+import { SkySheet } from '../components/board/SkySheet'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, type DetailCtx } from '../components/detail/adapters'
 import { useOpenMeal } from '../components/detail/useOpenMeal'
@@ -163,6 +164,9 @@ export function Board() {
   const [profileOpen, setProfileOpen] = useState(false)
   // « Depuis ce matin » (A-3) — the greeting doubles as a pull-only peek trigger.
   const [sinceMorningOpen, setSinceMorningOpen] = useState(false)
+  // « Dehors aujourd'hui » (SkySheet) — tap the weather/wonder hero for the wonder in
+  // full, the source gallery, and the day's weather story. Read-only; guests may open it.
+  const [skyOpen, setSkyOpen] = useState(false)
   // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
   // + smart actions. Parent audience only; the toddler lens stays hear-first below.
   const detail = useEntityDetail()
@@ -263,7 +267,7 @@ export function Board() {
   // The daily-wonder picture (Bing / Wikipedia / NASA…) — used as the BACKDROP of
   // the weather card so the glance is a beautiful photo with the temperature read
   // clearly on top. Keeps its own last-good-frame + shuffle (lib ApodFrame).
-  const { wonder, shuffle: shuffleWonder } = useWonder()
+  const { wonder, shuffle: shuffleWonder, pick: pickWonder } = useWonder()
 
   // À compléter (todos, migration 0046) — its own light poll, separate from the
   // loose-chore "À faire" the board payload already carries (data.todos). The
@@ -891,6 +895,7 @@ export function Board() {
       onShuffleWonder={shuffleWonder}
       supperNow={focus === 'supper'}
       heroSlot={heroSlot}
+      onOpenSky={() => setSkyOpen(true)}
     />
   )
   // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
@@ -1682,6 +1687,16 @@ export function Board() {
 
       {surface === 'mobile' && <ProfilePicker open={profileOpen} onClose={() => setProfileOpen(false)} />}
       {!ro && <TodayChangesSheet open={sinceMorningOpen} onClose={() => setSinceMorningOpen(false)} />}
+      <SkySheet
+        open={skyOpen}
+        onClose={() => setSkyOpen(false)}
+        weather={weather}
+        hours={wxHours}
+        tomorrow={tomorrowWx}
+        wonder={wonder}
+        onShuffle={shuffleWonder}
+        onPick={pickWonder}
+      />
       {eventActions.node}
     </main>
   )

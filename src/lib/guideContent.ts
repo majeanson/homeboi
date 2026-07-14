@@ -1432,8 +1432,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La photo du jour', en: 'The picture of the day' },
         detail: {
-          fr: 'Derrière la météo, une belle photo change chaque jour (Bing, Wikipédia, la NASA). Le ⟳ en change; ça se cache dans Réglages ▸ Affichage.',
-          en: 'Behind the weather, a beautiful photo changes every day (Bing, Wikipedia, NASA). The ⟳ swaps it; hide it in Settings ▸ Display.',
+          fr: 'Derrière la météo, une belle photo change chaque jour (Bing, Wikipédia, la NASA). Le ⟳ en change; touche la carte pour l’histoire de l’image, toutes les images du jour et la météo en détail; ça se cache dans Réglages ▸ Affichage.',
+          en: 'Behind the weather, a beautiful photo changes every day (Bing, Wikipedia, NASA). The ⟳ swaps it; tap the card for the picture’s story, all of today’s pictures and the weather in detail; hide it in Settings ▸ Display.',
         },
       },
     ],

@@ -775,6 +775,16 @@ export const FR = {
     apodReadMore: 'Lire la suite',
     apodReadLess: 'Lire moins',
     apodHear: 'Écouter',
+    // « Dehors aujourd'hui » (SkySheet) — tap the weather/wonder hero for the story
+    // behind the glance: the wonder in full, the source gallery, the day's weather.
+    sky: {
+      title: 'Dehors aujourd’hui',
+      open: 'Voir la météo et l’image du jour',
+      now: 'En ce moment',
+      tomorrow: 'Demain',
+      gallery: 'Les images du jour',
+      pickImage: (source: string) => `Mettre « ${source} » sur le babillard`,
+    },
   },
   // A-5 (bmad/09) — « Le décompte », the one suggestion-driven countdown card.
   countdown: {

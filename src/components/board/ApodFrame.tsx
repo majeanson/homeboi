@@ -17,7 +17,8 @@ export type WonderSource = 'bing' | 'wiki' | 'apod' | 'epic' | 'mars'
 // /api/wonder endpoint falls back to a reliable source and returns whatever IS
 // available, so asking for a down feed (NASA's APOD often 503s, Mars is often dead)
 // still yields a working picture — labelled by the source that answered.
-const SOURCES: WonderSource[] = ['bing', 'wiki', 'apod', 'epic', 'mars']
+export const WONDER_SOURCES: WonderSource[] = ['bing', 'wiki', 'apod', 'epic', 'mars']
+const SOURCES = WONDER_SOURCES
 
 export interface Wonder {
   source: WonderSource
@@ -120,7 +121,7 @@ export function WonderBand({ wonder, onShuffle }: { wonder: Wonder; onShuffle?: 
 // (WonderFrame, toddler board) AND the board's weather card backdrop (Board.tsx) off
 // the same once-a-day, last-frame-kept logic. `wonder` is null until the first
 // picture arrives or when the device opted out.
-export function useWonder(): { wonder: Wonder | null; shuffle: () => void } {
+export function useWonder(): { wonder: Wonder | null; shuffle: () => void; pick: (s: WonderSource) => void } {
   const enabled = useApodEnabled()
   const [source, setSource] = useState<WonderSource>('bing')
   const { data } = useQuery({
@@ -144,7 +145,9 @@ export function useWonder(): { wonder: Wonder | null; shuffle: () => void } {
     setSource(others[Math.floor(Math.random() * others.length)])
   }
 
-  return { wonder, shuffle }
+  // Direct pick — the « Dehors aujourd'hui » sheet's gallery taps a specific source,
+  // and the board backdrop follows (same state, same cached queries as shuffle).
+  return { wonder, shuffle, pick: setSource }
 }
 
 export function WonderFrame() {

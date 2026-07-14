@@ -674,6 +674,14 @@ export const EN: typeof FR = {
     apodReadMore: 'Read more',
     apodReadLess: 'Read less',
     apodHear: 'Listen',
+    sky: {
+      title: 'Outside today',
+      open: 'See the weather and today’s picture',
+      now: 'Right now',
+      tomorrow: 'Tomorrow',
+      gallery: 'Today’s pictures',
+      pickImage: (source: string) => `Put “${source}” on the board`,
+    },
   },
   // A-5 (bmad/09) — the one suggestion-driven countdown card.
   countdown: {

@@ -1260,3 +1260,125 @@
 .hub[data-surface='mobile'] .board-controls__clock {
   font-size: var(--text-md);
 }
+
+/* ── « Dehors aujourd'hui » (SkySheet) ─────────────────────────────────────────
+   Tap the weather/wonder hero → this bottom sheet: the day's weather told calmly
+   (now, a few hours ahead, tomorrow, the one dressing tip), the wonder band in
+   full (the same .apod chrome the toddler board renders), and a thumbnail gallery
+   of ALL of today's wonder sources to pick the wall's backdrop from. */
+.sky-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.sky-wx__now {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.sky-wx__read {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.sky-wx__temp {
+  font-size: 2.1rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.sky-wx__cond {
+  font-size: var(--text-lg);
+  color: var(--ink-soft);
+}
+.sky-wx__tip {
+  margin: 0.4rem 0 0;
+  color: var(--ink-soft);
+}
+/* The few-hours + tomorrow chips: same calm anatomy as the hero's strip, roomier.
+   Wraps (a Cluster shape), so it can never bleed off a narrow phone. */
+.sky-wx__ahead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+.sky-wx__chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 3.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  font-size: var(--text-sm);
+  line-height: 1.2;
+}
+.sky-wx__when {
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+.sky-wx__chip--tomorrow {
+  background: color-mix(in srgb, var(--sky) 22%, transparent);
+}
+/* The gallery: every source's picture at once, tap one to put it on the wall. A
+   grid (wraps by nature — no overflow risk), each thumb a cover image with the
+   source kicker riding a scrim; the showing one gets a check + accent ring. */
+.sky-gallery__label {
+  margin: 0 0 0.5rem;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sky-gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.6rem;
+}
+.sky-thumb {
+  position: relative;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md);
+  background-size: cover;
+  background-position: center;
+  background-color: color-mix(in srgb, var(--ink) 8%, transparent);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.sky-thumb.is-active {
+  outline: 3px solid var(--marigold);
+  outline-offset: 2px;
+}
+.sky-thumb__kicker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.9rem 0.5rem 0.35rem;
+  background: linear-gradient(rgb(0 0 0 / 0), rgb(0 0 0 / 0.55));
+  color: #fff;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sky-thumb__check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--marigold);
+  color: #fff;
+}
