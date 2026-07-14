@@ -302,6 +302,9 @@ export const FR = {
     // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
     // back to the read-only shared démo when the sandbox cap is hit).
     ctaDemo: 'Essayer pour vrai',
+    // The one line that removes the hesitation before the demo: nothing to fill, and
+    // it costs the visitor nothing — the same 24-hour truth the sandbox board tells.
+    demoHint: 'Sans inscription — une maisonnée d’essai, effacée après 24 heures.',
     demoOpening: 'On prépare ta maisonnée d’essai…',
     demoError: 'La démo n’est pas disponible pour le moment — réessaie tantôt.',
     login: 'Se connecter',

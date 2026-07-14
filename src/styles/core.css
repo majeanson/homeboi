@@ -860,6 +860,25 @@ textarea.input {
   margin-top: 1.5rem;
   flex-wrap: wrap;
 }
+/* « Essayer pour vrai » — the demo. Not the primary (that's creating a household),
+   but the clear SECOND path: an accented outline, so it reads as an invitation
+   rather than the ghost it was, without competing with the marigold CTA beside it. */
+.home__cta-demo {
+  border-color: var(--accent);
+  color: var(--accent-ink-on-paper, var(--ink));
+  font-weight: 700;
+}
+.home__cta-demo:hover,
+.home__cta-demo:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+}
+/* The line that makes it pressable: no sign-up, nothing to regret. */
+.home__demo-hint {
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  max-width: 52ch;
+}
 .home__values {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));

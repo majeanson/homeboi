@@ -87,19 +87,26 @@ export function Home() {
             <Link to="/signup" className="btn btn--primary">
               {t.home.ctaSignup}
             </Link>
+            {/* Try before signing up — a real household the visitor can actually USE
+                (the sandbox). It sat LAST and as a ghost, tied with "I already have an
+                account", which made the strongest thing we can offer a stranger — proof
+                — the quietest button on the page (first-run pass, 2026-07-14). It's now
+                the second path, and a real button: the visitor who isn't ready to sign
+                up should land in the app, not at a login. */}
+            <button type="button" className="btn home__cta-demo" onClick={tryDemo} disabled={demoBusy}>
+              {demoBusy ? t.home.demoOpening : t.home.ctaDemo}
+            </button>
             {/* Returning user / setting up a second device: the device-role fork
-                (→ /setup → login or pair) stays one tap away as the secondary. Labelled
+                (→ /setup → login or pair) stays one tap away as the quiet path. Labelled
                 "J'ai déjà un compte" so it reads as the path for someone who's NOT new,
                 rather than a second "start" competing with the primary create CTA. */}
             <Link to="/setup" className="btn btn--ghost">
               {t.home.ctaReturning}
             </Link>
-            {/* Try before signing up: a real, seeded household in read-only —
-                the door for the curious AND the sales demo (bmad/08 A-8). */}
-            <button type="button" className="btn btn--ghost" onClick={tryDemo} disabled={demoBusy}>
-              {demoBusy ? t.home.demoOpening : t.home.ctaDemo}
-            </button>
           </div>
+          {/* Says the two things that stop a stranger from pressing it: nothing to fill
+              in, and nothing to regret (the same 24-hour truth the sandbox board tells). */}
+          <p className="home__demo-hint">{t.home.demoHint}</p>
           {demoErr && <p className="home__privacy">{t.home.demoError}</p>}
         </section>
 

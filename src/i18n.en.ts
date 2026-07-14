@@ -255,6 +255,7 @@ export const EN: typeof FR = {
     // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
     // back to the read-only shared demo when the sandbox cap is hit).
     ctaDemo: 'Try it for real',
+    demoHint: 'No sign-up — a trial household, wiped after 24 hours.',
     demoOpening: 'Setting up your trial household…',
     demoError: 'The demo isn’t available right now — try again in a bit.',
     login: 'Log in',
