@@ -12,7 +12,10 @@ import { mockApi, seedState } from './mocks'
 //
 // The measurement that catches #2 is a per-element bounding-rect check: for every
 // visible descendant, its right edge must not exceed the sheet's right edge. That sees
-// through the clip, which `scrollWidth - clientWidth` cannot.
+// through the clip, which `scrollWidth - clientWidth` cannot. The check itself
+// (worstRightBleed/assertClean) lives in e2e/overflow.ts, shared with the
+// state-matrix suite.
+import { assertClean } from './overflow'
 
 async function boot(page: Page, width = 390) {
   await page.setViewportSize({ width, height: 844 })
@@ -25,69 +28,6 @@ async function boot(page: Page, width = 390) {
   })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
-// The largest amount (px) by which any VISIBLE descendant of `.sheet` runs past the
-// sheet's right edge. Sees through `overflow-x:hidden` (unlike scrollWidth), plus the
-// classic sheet-level sideways-pan number for good measure. <= 1 = clean (sub-pixel).
-// `selector` narrows WHICH sheet — several `.sheet`s stay always-mounted at once, so
-// a page with more than one needs the OPEN one's own modifier class, not the bare
-// '.sheet' (which would grab whichever mounted first, not the one under test). It
-// also aims the guard at a routed `.scene`'s scroll box (the Idées scene), whose
-// right edge is likewise the box content must not pass.
-async function worstRightBleed(
-  page: Page,
-  selector = '.sheet',
-): Promise<{ bleed: number; pan: number; culprit: string }> {
-  return page.evaluate((sel) => {
-    const sheet = document.querySelector(sel) as HTMLElement | null
-    if (!sheet) return { bleed: -1, pan: -1, culprit: `no ${sel}` }
-    const edge = sheet.getBoundingClientRect().right
-    // A `.rail` (lib/Layout.tsx) is a SANCTIONED horizontal scroller — content
-    // wider than it legitimately extends past its own visible edge, scrollable,
-    // never clipped-and-lost the way an un-wrapped Cluster row would be. Skip any
-    // element whose nearest scrollable ancestor (up to the sheet) sets its own
-    // `overflow-x: auto`/`scroll` — its "bleed" past the SHEET edge is contained
-    // by that ancestor's own scrollbar, not a hidden clip bug.
-    const insideOwnScroller = (el: HTMLElement): boolean => {
-      let p = el.parentElement
-      while (p && p !== sheet) {
-        const ox = getComputedStyle(p).overflowX
-        if (ox === 'auto' || ox === 'scroll') return true
-        p = p.parentElement
-      }
-      return false
-    }
-    let bleed = 0
-    let culprit = ''
-    for (const el of Array.from(sheet.querySelectorAll<HTMLElement>('*'))) {
-      const r = el.getBoundingClientRect()
-      if (r.width === 0 || r.height === 0) continue // hidden / collapsed — ignore
-      if (insideOwnScroller(el)) continue
-      const over = r.right - edge
-      if (over > bleed) {
-        bleed = over
-        culprit = (el.className || el.tagName).toString().slice(0, 80)
-      }
-    }
-    return { bleed, pan: sheet.scrollWidth - sheet.clientWidth, culprit }
-  }, selector)
-}
-
-// `clip` — which cross-axis containment the box must declare. A `.sheet` explicitly
-// sets `overflow-x:hidden`. A `.scene__body` only sets `overflow-y:auto`, which CSS
-// computes to `overflow-x:auto` (the pair can't mix `visible` with a scroll value);
-// the pan assertion above is what actually proves the scene never scrolls sideways.
-async function assertClean(page: Page, label: string, selector = '.sheet', clip: 'hidden' | 'auto' = 'hidden') {
-  const { bleed, pan, culprit } = await worstRightBleed(page, selector)
-  expect(pan, `${label}: sheet pans sideways`).toBeLessThanOrEqual(1)
-  expect(bleed, `${label}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)
-  // The sheet must explicitly clip the cross axis regardless.
-  const overflowX = await page.evaluate((sel) => {
-    const s = document.querySelector(sel) as HTMLElement | null
-    return s ? getComputedStyle(s).overflowX : ''
-  }, selector)
-  expect(overflowX, `${label}: sheet overflow-x`).toBe(clip)
 }
 
 // Checked at both phone widths — content is tightest at 360.
