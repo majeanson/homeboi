@@ -193,6 +193,11 @@ export function trackVisualViewport(): void {
     if (!isEditable(el) || !el.isConnected) return
     const action = actionBelow(el)
     if (action) action.scrollIntoView({ block: 'nearest', behavior })
+    // A tall contentEditable host is already "in view" while the caret the user
+    // just placed (tap at the end of a long note) sits under the keyboard —
+    // scrollIntoView on the ELEMENT would no-op. Pin the CARET instead; the
+    // input-driven follow takes over from the first keystroke either way.
+    else if (el.isContentEditable) followCaret(el)
     else el.scrollIntoView({ block: 'start', behavior })
   }
 

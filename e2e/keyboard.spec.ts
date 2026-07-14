@@ -199,6 +199,52 @@ for (const d of DEVICES) {
   })
 }
 
+// The keyboard RISING must pin the CARET, not just the focused element. Re-opening a
+// long note and tapping its last line places the caret far below the fold of the tall
+// contentEditable host — the host's TOP is already in view, so an element-level
+// scrollIntoView no-ops and the caret sits under the keyboard until the first
+// keystroke (whose input-driven follow then rescues it). pinOnce must route
+// contentEditables through followCaret. Also guards the two editor chrome rules:
+// the attach footer hides while typing, and the title never overflows on X.
+test('kb: opening the keyboard with the caret at the end of a long note reveals the caret', async ({ page }) => {
+  const d = { w: 390, h: 844, kb: 336 }
+  const open = boot(d)
+  const VISIBLE = d.h - d.kb
+  await open(page, '/cercle?section=notes')
+  await page.getByRole('button', { name: 'Nouvelle note' }).click()
+  const body = page.locator('.note-editor__body')
+  await body.click()
+  // Build a long note with the caret left at the very end — keyboard still closed,
+  // so neither the focus-pin nor the input-follow has fired yet.
+  for (let i = 0; i < 30; i++) {
+    await page.keyboard.type(`ligne ${i}`)
+    await page.keyboard.press('Enter')
+  }
+  await page.keyboard.type('FIN')
+  // Strand the caret: scroll the body back to the top (what a re-opened note shows)
+  // while the selection stays on the last line.
+  await body.evaluate((el) => (el.scrollTop = 0))
+  await openKeyboard(page, d.kb)
+
+  const last = body.locator(':scope > :last-child')
+  await expect(last).toHaveText('FIN')
+  // Poll rather than a fixed wait: the pin re-fires across a ~½s settle window
+  // (120/280/480ms retries), which a loaded CI worker can stretch.
+  await expect
+    .poll(async () => {
+      const b = await last.boundingBox()
+      return b ? b.y >= -1 && b.y + b.height <= VISIBLE + 1 : false
+    }, { message: 'caret line fully inside the visible band', timeout: 5000 })
+    .toBe(true)
+  await page.screenshot({ path: 'e2e/screenshots/kb-phone-note-caret-end.png', fullPage: false })
+
+  // Chrome rules: the Photo/Dessin footer yields to the keyboard…
+  await expect(page.locator('.note-editor__media')).toBeHidden()
+  // …and the title input stays inside the shell (was 1.6rem too wide).
+  const title = await page.locator('.note-editor__title').boundingBox()
+  expect(title!.x + title!.width, 'title inside the right edge').toBeLessThanOrEqual(d.w + 1)
+})
+
 // No keyboard at all — a short phone (or split-screen): the modal must still fit
 // and keep its footer reachable. Catches plain max-height regressions.
 test('recipe form fits a short viewport', async ({ page }) => {
