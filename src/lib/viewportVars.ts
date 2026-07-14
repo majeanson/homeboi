@@ -444,7 +444,11 @@ export function trackVisualViewport(): void {
     // surfaces with THIS; in-page scrollers (.hub__body) keep --kb.
     const focused = document.activeElement
     const shift = open && focused instanceof HTMLElement ? fixedShellShift(focused) : 0
-    root.setProperty('--kb-fixed', `${open ? Math.round(bottomInset - shift) : 0}px`)
+    // Set only while open; REMOVE when closed (never publish 0px): a defined 0
+    // would beat core.css's `var(--kb-fixed, var(--kb))` fallback and zero the
+    // fit padding for anything that publishes --kb by hand (e2e stubs do).
+    if (open) root.setProperty('--kb-fixed', `${Math.round(bottomInset - shift)}px`)
+    else root.removeProperty('--kb-fixed')
     // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
     // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
     // field being edited for attention. `.kb-open` keys the CSS in hub.css.
