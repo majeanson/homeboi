@@ -1,0 +1,37 @@
+name: State matrix (visual sweep)
+
+# The ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts under
+# e2e/sm.config.ts): screenshots + structural assertions across route × opened
+# state × theme × lens × keyboard, with a manifest.json built for review by a
+# Claude session. Deliberately NOT chained to pushes — run it from the Actions
+# tab (or locally via `npm run e2e:matrix`) when a sweep is wanted.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: state-matrix-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  matrix:
+    name: State matrix (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Playwright boots the Vite dev server itself (sm.config webServer) and
+      # stubs every /api/* call per-test — no wrangler/D1/secrets needed.
+      - run: npm run e2e:matrix
+      - name: Upload matrix screenshots + manifest
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: state-matrix
+          path: e2e/screenshots/matrix
+          retention-days: 14

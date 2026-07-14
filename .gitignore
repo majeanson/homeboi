@@ -21,6 +21,7 @@ e2e/report/
 e2e/test-results/
 e2e/test-results-realdata/
 e2e/test-results-sw/
+e2e/test-results-matrix/
 playwright-report/
 test-results/
 

@@ -9,7 +9,9 @@ export default defineConfig({
   // sw.spec.ts needs the built PROD bundle served by `vite preview` (the SW is a
   // build artifact + registers only in a PROD build) — it runs under its own harness
   // (e2e/sw.config.ts, `npm run e2e:sw`) and would fail against this DEV server.
-  testIgnore: '**/sw.spec.ts',
+  // state-matrix.spec.ts is the ON-DEMAND visual state sweep (e2e/sm.config.ts,
+  // `npm run e2e:matrix`) — kept out of the per-push run by design.
+  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // CI runs serially (workers:1 below) and is the authoritative, strict run.
