@@ -1464,6 +1464,43 @@ textarea.input {
   flex: 0 0 auto; /* never shrink — that's what makes it scroll, not squish */
 }
 
+/* ==== "This row continues" — the edge fade =================================
+   Every side-scrolling row here hides its scrollbar (calm), and the ‹ › chevrons
+   only appear on a fine pointer — so on a PHONE a cut-off rail looked like a rail
+   that simply ended: the Réglages tab rail hid five tabs, and a sort chip read as
+   the meaningless « R… » (UX review 2026-07-14). A soft fade at whichever edge has
+   more content is the quiet, universal cue that there IS more.
+
+   Driven purely by the attributes `useHScroll` stamps (lib/hscroll.ts), so any row
+   that adopts the hook gets this for free — `.rail`, `.subtabs`, the Réglages tab
+   rail, DrawPad's tool rows. No layout change: a mask only paints. */
+[data-hs] {
+  --hs-fade: 28px;
+  /* Both edges start opaque; the two rules below open whichever side can scroll. */
+  --hs-l: 0px;
+  --hs-r: 0px;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--hs-l),
+    #000 calc(100% - var(--hs-r)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--hs-l),
+    #000 calc(100% - var(--hs-r)),
+    transparent 100%
+  );
+}
+[data-hs-start] {
+  --hs-l: var(--hs-fade); /* content is hidden to the LEFT */
+}
+[data-hs-end] {
+  --hs-r: var(--hs-fade); /* …and/or to the RIGHT */
+}
+
 .kitchen__day-empty {
   font-size: var(--text-md);
   opacity: 0.7;

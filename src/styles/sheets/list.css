@@ -138,6 +138,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* WRAPS (the Cluster rule): the segmented control is fixed-width, so on a phone
+     « Ranger par allée » had nowhere to go and shrank to a meaningless « R… »
+     (UX review 2026-07-14). It now drops to its own line with its words intact. */
+  flex-wrap: wrap;
   gap: 8px;
   margin: 6px 0 10px;
 }
@@ -146,7 +150,8 @@
   flex: none;
 }
 .list-sortbar__apply {
-  flex: 0 1 auto;
+  /* Never squeezed — it wraps instead (see above). */
+  flex: 0 0 auto;
   min-width: 0;
   font-size: var(--text-xs);
   padding-inline: 0.6rem;

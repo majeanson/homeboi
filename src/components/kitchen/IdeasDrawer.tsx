@@ -190,15 +190,23 @@ export function IdeasDrawer({
       />
 
       {active === 'ideas' && (
-        <MealIdeas
-          ideas={ideas}
-          recipes={recipes}
-          week={week}
-          lowItems={lowItems}
-          listItems={listItems}
-          profileId={profileId}
-          hideHeading
-        />
+        <>
+          {/* Say what this drawer IS. It opened on a bare list of rows wearing a
+              caret, a pencil and a bin, and nothing stated that picking one puts
+              supper on a day (UX review 2026-07-14) — a first-timer read it as a
+              settings list. The line already existed in both languages and was
+              rendered nowhere. */}
+          <p className="lead ideas-drawer__lead">{t.kitchen.ideasHint}</p>
+          <MealIdeas
+            ideas={ideas}
+            recipes={recipes}
+            week={week}
+            lowItems={lowItems}
+            listItems={listItems}
+            profileId={profileId}
+            hideHeading
+          />
+        </>
       )}
 
       {active === 'favorites' && (

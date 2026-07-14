@@ -52,6 +52,14 @@ export function useHScroll<T extends HTMLElement = HTMLDivElement>(): HScroll<T>
     // 1px slack: sub-pixel layout rounding otherwise reports a permanent 0.5px
     // overflow and pins `atEnd` false forever.
     const next = { overflowing: max > 1, atStart: el.scrollLeft <= 1, atEnd: el.scrollLeft >= max - 1 }
+    // Stamp the state onto the DOM so CSS can draw the EDGE FADE — the cue that
+    // says "this row continues". The chevrons only show on a fine pointer, so a
+    // phone had no hint at all that a rail was cut off (UX review 2026-07-14: the
+    // Réglages tab rail hid five tabs, a sort chip read as « R… »). Every row that
+    // adopts this hook gets the cue for free — nothing to wire per caller.
+    el.toggleAttribute('data-hs', next.overflowing)
+    el.toggleAttribute('data-hs-start', next.overflowing && !next.atStart)
+    el.toggleAttribute('data-hs-end', next.overflowing && !next.atEnd)
     setState((prev) =>
       prev.overflowing === next.overflowing && prev.atStart === next.atStart && prev.atEnd === next.atEnd
         ? prev

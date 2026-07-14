@@ -754,6 +754,10 @@
   font-weight: 400;
   opacity: 0.65;
   margin-left: 0.1rem;
+  /* A one-word badge must never break mid-word — « Maisonnée » wrapped to
+     « Maisonné / e » in the pill (UX review 2026-07-14). */
+  white-space: nowrap;
+  flex: none;
 }
 /* Connect two people / families at a single junction (relationship closure does
    the rest). A stacked form + a calm, gendered preview line. */

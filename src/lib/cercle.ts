@@ -468,7 +468,19 @@ export function relationsOf(key: string, links: ContactLink[], byKey: Map<string
     // Most salient tie first (immediate family → extended → social), so a one-line
     // row surfaces "Enfant · Jérémie" over a derived cousin.
     .sort((a, b) => relPriority(a.rel) - relPriority(b.rel))
-    .map((r) => `${genderedRelLabel(r.rel, subjectGender, lang)} · ${byKey.get(r.other)?.name ?? '—'}`)
+    // « Fille de Maman », not « Fille · Maman »: the middot left the row ambiguous —
+    // is she Maman's daughter, or are those two separate facts about her? (UX review
+    // 2026-07-14.) The possessive phrasing is what the rest of the app already uses
+    // (CompleteFamilies: « Sœur de Jérémie »), so the directory now matches it.
+    .map((r) => relPhrase(genderedRelLabel(r.rel, subjectGender, lang), byKey.get(r.other)?.name ?? '—', lang))
+}
+
+// "Fille" + "Maman" → « Fille de Maman » / "Daughter of Maman". French elides before
+// a vowel sound (« Fille d'Alice »), which a bare "de " would get wrong.
+export function relPhrase(rel: string, name: string, lang: 'fr' | 'en'): string {
+  if (lang !== 'fr') return `${rel} of ${name}`
+  const elide = /^[aeiouyàâäéèêëîïôöûüh]/i.test(name)
+  return `${rel} ${elide ? `d’${name}` : `de ${name}`}`
 }
 
 // `fromKey`'s role TOWARD `toKey`, as ONE gendered label ("Fille", "Cousin", …) —
