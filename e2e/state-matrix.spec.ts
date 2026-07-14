@@ -140,6 +140,11 @@ for (const entry of MATRIX) {
       // and on disk — a red test with no evidence is exactly what this suite
       // exists to avoid.
       const textLen = await page.evaluate(() => (document.body.innerText ?? '').trim().length)
+      // …and neither may the CRASH SCREEN pass. React's error boundary renders a
+      // calm "Oups — un pépin" card: plenty of painted text, no pageerror (it was
+      // caught) — so a state that blew up photographed green. It is the loudest
+      // possible failure; assert it explicitly.
+      const crashed = await page.locator('.errboundary').count()
       const { bleed, culprit } = await worstRightBleed(page, entry.scope ?? '#root')
       let focusedBottom: number | null = null
       if (entry.keyboard) {
@@ -171,11 +176,13 @@ for (const entry of MATRIX) {
             bleedCulprit: bleed > 1 ? culprit : undefined,
             focusedAboveKeyboard: entry.keyboard ? kbOk : undefined,
             paintedChars: textLen,
+            crashed: crashed > 0 || undefined,
           },
-          pass: errors.length === 0 && bleed <= 1 && kbOk && textLen >= 10,
+          pass: errors.length === 0 && bleed <= 1 && kbOk && textLen >= 10 && crashed === 0,
         }),
       )
 
+      expect(crashed, `${id}: the error boundary rendered — this state crashed`).toBe(0)
       expect(textLen, `${id}: the page painted nothing (blank capture)`).toBeGreaterThanOrEqual(10)
       expect(errors, `${id}: page errors`).toEqual([])
       expect(bleed, `${id}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)

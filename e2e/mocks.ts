@@ -898,6 +898,20 @@ export async function mockApi(
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ members: [] }) })
       return
     }
+    // A brand-new household has no MEALS and no paired TABLET either. `fresh` used to
+    // empty only members + board, so the welcome checklist — whose steps are data-driven
+    // (a step ticks when the thing exists) — read the still-seeded meals/devices and
+    // showed 2 of its 3 setup steps already ✓ on a first-run screenshot: the fixture
+    // was teaching "skip these". Empty what a fresh household actually lacks.
+    // (Derived from the real fixtures — an invented shape crashed the board.)
+    if (opts.fresh && path === 'meals') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...MEALS, days: [] }) })
+      return
+    }
+    if (opts.fresh && path === 'pair/devices') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...DEVICES, devices: [] }) })
+      return
+    }
     if (opts.fresh && path === 'board') {
       const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tonightMeals: [], tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [], todos: [], leftovers: [] }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
