@@ -33,11 +33,15 @@
 .greet {
   font-family: var(--display);
   font-weight: 800;
-  font-size: 32px;
-  /* Truncate rather than wrap/overflow when space is tight (mobile). */
+  /* The FIRST words a household reads, and on a phone they never fit beside the
+     header's four round buttons: at a fixed 32px it ellipsized to « Bon apr… » on
+     every load (UX review 2026-07-14). It now SCALES to the room it has, so the
+     greeting reads whole on one line — letting it wrap instead just split
+     « après-midi » across three lines, which is worse than the cut it fixed. */
+  font-size: clamp(16px, 4.4vw, 32px);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; /* last-resort safety on a truly tiny screen */
   min-width: 0;
   line-height: 1.05;
   letter-spacing: -0.01em;
@@ -51,6 +55,8 @@
   display: inline-block;
   max-width: 100%;
   cursor: pointer;
+  /* Truncation lives on .greet (which now scales to fit); this wrapper just must
+     not impose a SECOND, fixed-size clip of its own. */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -119,9 +125,8 @@
   .app-head {
     margin-bottom: 10px;
   }
-  .greet {
-    font-size: 27px;
-  }
+  /* (The greeting's size is fluid now — see .greet's clamp(); a fixed override
+     here would put « Bon après-midi » back over the phone's available width.) */
 }
 /* The contextual help "?" beside a section title (HelpDot). Quiet by default,
    a soft ring on hover/focus — discoverable without shouting (calm). Hidden in

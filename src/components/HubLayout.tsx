@@ -457,7 +457,13 @@ export function HubLayout() {
             {({ isActive }) => (
               <>
                 <Icon name={tab.icon} size={22} color={isActive ? 'var(--accent-ink)' : tab.color} />
-                <span>{t.nav[tab.key]}</span>
+                {/* Six tabs share a phone's width (~57px each), so the full section
+                    names ellipsized on every screen — « La cuisi… », « Aujourd… »
+                    (UX review 2026-07-14). The bottom bar uses SHORT names that fit
+                    whole; the kiosk rail, which has the room, keeps the real ones.
+                    The accessible name stays the full section name either way. */}
+                <span aria-hidden="true">{surface === 'mobile' ? t.navShort[tab.key] : t.nav[tab.key]}</span>
+                <span className="sr-only">{t.nav[tab.key]}</span>
                 {/* A-5 whisper-dot: something sleeps in Découvrir. Decorative —
                     the tab keeps its plain section name (no urgency semantics). */}
                 {tab.to === '/settings' && tourDot && <span className="hubnav__whisper" aria-hidden="true" />}

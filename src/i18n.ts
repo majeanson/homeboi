@@ -14,6 +14,11 @@ export const FR = {
   appName: 'Babillard',
   tagline: 'Le planificateur familial calme.',
   nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu', sections: 'Sections' },
+  // The phone's bottom bar gives each of the six tabs ~57px, where the full names
+  // ellipsize (« La cuisi… », « Aujourd… »). These are the same sections, named
+  // short enough to fit whole — the articles drop and « Aujourd'hui », one
+  // unbreakable word, abbreviates. The kiosk rail has room and keeps t.nav.
+  navShort: { today: 'Auj.', kitchen: 'Cuisine', list: 'Liste', cercle: 'Cercle', routines: 'Routines', operator: 'Réglages' },
   // #30 — global search across recipes / people / events / the list.
   search: {
     title: 'Chercher partout',

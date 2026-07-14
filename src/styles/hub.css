@@ -249,7 +249,10 @@
   min-height: 3.4rem;
   padding: 6px 4px;
   border-radius: 14px;
-  font-size: 0.72rem;
+  /* Six tabs share a phone's width (~57px each). The bar carries t.navShort, whose
+     names are cut to fit whole (« Auj. », « Cuisine », « Cercle ») — a hair of
+     fluid scaling absorbs the narrowest phones without ever ellipsizing again. */
+  font-size: clamp(0.66rem, 3.1vw, 0.72rem);
   background: transparent;
   box-shadow: none;
   text-align: center;

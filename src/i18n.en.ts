@@ -10,6 +10,7 @@ export const EN: typeof FR = {
   appName: 'Babillard',
   tagline: 'The calm family planner.',
   nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', cercle: 'The circle', hideMenu: 'Hide menu', showMenu: 'Show menu', sections: 'Sections' },
+  navShort: { today: 'Today', kitchen: 'Kitchen', list: 'List', cercle: 'Circle', routines: 'Routines', operator: 'Settings' },
   // #30 — global search across recipes / people / events / the list.
   search: {
     title: 'Search everything',
