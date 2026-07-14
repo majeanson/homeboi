@@ -82,8 +82,11 @@
   background: var(--accent);
   color: var(--accent-ink);
 }
-/* On a tight phone the labels would crowd the header — fall back to icon-only
-   there (the labels stay for tablets/kiosk where the discoverability matters). */
+/* On a tight phone all three labels would crowd the header — but three same-shaped
+   calendar glyphs in a pill are unguessable (UX review 2026-07-14: "three grey
+   icons, no way to know what they switch"). So the SELECTED option keeps its
+   label and the other two fall back to their icon: the control always says what
+   it currently shows, and still fits. Tablets/kiosk keep all three labels. */
 @media (max-width: 520px) {
   .boardview__opt {
     width: 40px;
@@ -91,6 +94,13 @@
   }
   .boardview__label {
     display: none;
+  }
+  .boardview__opt.is-on {
+    width: auto;
+    padding: 0 0.7rem;
+  }
+  .boardview__opt.is-on .boardview__label {
+    display: inline;
   }
 }
 

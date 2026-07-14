@@ -8,8 +8,14 @@ import { useAudience } from '../lib/audience'
 // When tutorial help is on (and we're in the parent lens) the WHOLE disc is a
 // quiet deep-link into the Guide at this section's card — folding the old "?"
 // HelpDot into the icon itself, so one calm target both names the section and
-// teaches it (a small "?" pip in the corner says "tap me to learn"). Outside
-// tutorial mode (or in the toddler lens) it's a plain, non-interactive glyph.
+// teaches it. Outside tutorial mode (or in the toddler lens) it's a plain,
+// non-interactive glyph.
+//
+// NO "?" pip: the header already carries the help-mode "?" button right beside
+// this disc, and a second "?" badge stuck on the glyph read as two competing
+// help affordances — and, overlapping the icon, as a rendering glitch (UX review
+// 2026-07-14). One visible "?" per header; the disc stays a link (title +
+// aria-label say so) without advertising itself with a rival mark.
 export function SectionAvatar({
   icon,
   iconColor,
@@ -41,9 +47,6 @@ export function SectionAvatar({
       title={t.help.learnMore}
     >
       {glyph}
-      <span className="avatar__help" aria-hidden="true">
-        ?
-      </span>
     </Link>
   )
 }

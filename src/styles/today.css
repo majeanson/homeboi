@@ -448,12 +448,6 @@
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--dur-fast, 0.15s) ease, box-shadow var(--dur-fast, 0.15s) ease;
 }
-/* Beat photos.css `.avatar { overflow: hidden }` (same-specificity tie would
-   otherwise hinge on @import order — never reorder styles.css) so the corner pip
-   isn't clipped by the round disc. */
-.avatar.avatar--help {
-  overflow: visible;
-}
 .avatar--help:hover,
 .avatar--help:focus-visible {
   transform: translateY(-1px);
@@ -476,24 +470,6 @@
 .avatar-stack > .avatar:first-child {
   margin-inline-start: 0;
 }
-.avatar__help {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--card);
-  border: 1.5px solid var(--line);
-  color: var(--ink-soft);
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 1;
-}
-
 /* "Up next" — the one thing surfaced, tinted to its category. */
 .now-card {
   border-radius: var(--radius-xl);

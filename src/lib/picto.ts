@@ -117,10 +117,27 @@ const MAP: [string, string[]][] = [
   ['🌱', ['jardin', 'garden', 'planter']],
 ]
 
+// A key matches a WHOLE WORD (a trailing plural « s » allowed), never a fragment.
+// Plain `includes` made « Spaghetti maison » land on 🌽 — « ma-IS-on » contains the
+// corn key « mais », and corn is listed before pasta — so a pre-reader in the
+// toddler lens, who trusts only the picture, was told tonight is corn. (The old
+// `'vol '` key, padded by hand, was the same bug patched once at the call site.)
+// Cached: the MAP is static, and pictoFor runs per row on every board render.
+const WORD_RE = new Map<string, RegExp>()
+function keyRe(k: string): RegExp {
+  let re = WORD_RE.get(k)
+  if (!re) {
+    const esc = k.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    re = new RegExp(`(^|[^\\p{L}])${esc}s?([^\\p{L}]|$)`, 'iu')
+    WORD_RE.set(k, re)
+  }
+  return re
+}
+
 export function pictoFor(label: string, fallback = '•'): string {
-  const s = ` ${label.toLowerCase()} `
+  const s = label.toLowerCase()
   for (const [emoji, keys] of MAP) {
-    if (keys.some((k) => s.includes(k))) return emoji
+    if (keys.some((k) => keyRe(k).test(s))) return emoji
   }
   return fallback
 }
