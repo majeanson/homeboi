@@ -187,6 +187,14 @@ export const OPERATOR_HELP = {
       en: `Tests the mic on this device and generates a diagnostic report to share if dictation isn't working.`,
     },
   },
+  kbDebug: {
+    // Same home as micTest — the settings card hosts the device diagnostics.
+    card: 'settings',
+    body: {
+      fr: `Affiche les mesures du clavier en direct sur cet appareil — pour diagnostiquer un champ qui se cache derrière le clavier. S'éteint tout seul à la fermeture de l'app.`,
+      en: `Shows live keyboard measurements on this device — to diagnose a field hiding behind the keyboard. Turns itself off when the app closes.`,
+    },
+  },
   aiTest: {
     // Was 'set-ailog' — never a GUIDE id; the AI card is the home for diagnostics.
     card: 'ai',

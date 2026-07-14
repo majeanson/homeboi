@@ -35,6 +35,7 @@ import { BuildInfoSection } from '../components/operator/buildInfo'
 import { HealthSection } from '../components/operator/healthCard'
 import { TakeoutSection } from '../components/operator/takeout'
 import { MicSelfTest } from '../components/operator/micTest'
+import { KbDebugSection } from '../components/operator/kbDebug'
 import { DiscoverSection, ComprendrePanel, resolveGuideCard } from '../components/operator/guide'
 import { SECTION_TINT, THEME_ALIAS, cardHomeTab, type SectionKey } from '../lib/guideContent'
 import { InlineIcon, type IconName } from '../components/Icon'
@@ -283,6 +284,7 @@ export function Operator() {
       recap: t.operator.recapTitle,
       photos: t.operator.photos,
       micTest: t.operator.micTestTitle,
+      kbDebug: t.operator.kbDebugTitle,
       aiTest: t.operator.aiTestTitle,
       aiLog: t.operator.aiLogTitle,
       ai: t.operator.aiTitle,
@@ -414,6 +416,7 @@ export function Operator() {
             <BuildInfoSection />
             <TakeoutSection />
             <MicSelfTest help={operatorHelp} />
+            <KbDebugSection help={operatorHelp} />
             {aiEnabled && <AiErrorLogSection help={operatorHelp} />}
           </>
         ),

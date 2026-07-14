@@ -2477,6 +2477,7 @@ export const FR = {
     buildTitle: 'Version',
     buildBuilt: 'Dernière mise à jour',
     buildNever: 'Inconnue',
+    kbDebugTitle: 'Diagnostic clavier',
     kbDebugOn: 'Activer le diagnostic clavier',
     kbDebugOff: 'Désactiver le diagnostic clavier',
     kbDebugHint: 'Affiche les mesures du clavier à l’écran (pour déboguer un champ caché).',

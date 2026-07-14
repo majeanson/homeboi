@@ -2301,6 +2301,7 @@ export const EN: typeof FR = {
     buildTitle: 'Version',
     buildBuilt: 'Last updated',
     buildNever: 'Unknown',
+    kbDebugTitle: 'Keyboard diagnostics',
     kbDebugOn: 'Enable keyboard diagnostics',
     kbDebugOff: 'Disable keyboard diagnostics',
     kbDebugHint: 'Shows live keyboard measurements on screen (to debug a hidden field).',
