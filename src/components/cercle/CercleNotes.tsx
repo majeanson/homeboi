@@ -57,15 +57,17 @@ export function CercleNotes({
 }) {
   const t = useT()
   const write = useWrite()
-  const { memberId: profileId } = useProfile()
   const { surface } = useSurface()
   const ro = isGuest()
 
   // The acting face for the section: whose notes to show, and the scope for a new note.
-  // Seeded from the device profile (null = Maisonnée). A specific face also surfaces the
-  // Maisonnée notes beneath their own (visibleNotes). The note scope follows the face —
-  // a member → a personal ('self') note, Maisonnée → a family-wide one (no toggle).
-  const [face, setFace] = useState<string | null>(profileId)
+  // It IS the device profile (lib/profile), shared with the board's « Aujourd'hui » row
+  // and the cercle's focus lens — "who am I today" is picked once and remembered
+  // everywhere, not re-answered per surface. null = Maisonnée. A specific face also
+  // surfaces the Maisonnée notes beneath their own (visibleNotes). The note scope
+  // follows the face — a member → a personal ('self') note, Maisonnée → a family-wide
+  // one (no toggle).
+  const { memberId: face, setMemberId: setFace } = useProfile()
   const effScope: NoteScope = face ? 'self' : 'family'
 
   // iOS-Notes-style live search across the visible list (title + body + author name).
@@ -115,8 +117,12 @@ export function CercleNotes({
     if (!focusId) return
     const n = all.find((x) => x.id === focusId)
     if (!n) return // not loaded yet (or gone) — wait for the next poll
+    // The face is the device profile now, so only move it when the note is genuinely
+    // out of reach: a Maisonnée note already shows under any picked face, and switching
+    // for it would silently re-answer "who am I today" (and re-attribute writes).
+    if (visibleNotes(all, face).some((x) => x.id === focusId)) return
     setFace(n.member_id) // null → Maisonnée (family-wide); a member → their list
-  }, [focusId, all])
+  }, [focusId, all, face, setFace])
 
   const scopeBody = useMemo(
     () => (s: NoteScope) => ({ scope: s, member_id: s === 'self' ? face : null }),

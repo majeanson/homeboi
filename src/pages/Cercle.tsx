@@ -53,6 +53,7 @@ import type { IntakeSubmission } from '../lib/intake'
 import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
+import { useProfile } from '../lib/profile'
 import { Modal } from '../components/Modal'
 import { imgUrl } from '../lib/image'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
@@ -146,7 +147,12 @@ function CercleParent() {
   // Notes) to re-read every relationship FROM their perspective — Léa's row becomes
   // "Fille" when Marc is focused. null = Maisonnée (each person's own relations, the
   // default). Drives both the Liste subtitles and the Liens (ego) centre.
-  const [focusId, setFocusId] = useState<string | null>(null)
+  //
+  // It IS the device profile (lib/profile), not a page-local pick: "who am I today"
+  // is answered ONCE — on the board's « Aujourd'hui » row, in Le cercle, in Les
+  // notes — and every surface remembers it. Arriving here with a face already picked
+  // reads the cercle from that face, and picking one here follows you back out.
+  const { memberId: focusId, setMemberId: setFocusId } = useProfile()
   const [addingGroup, setAddingGroup] = useState(false)
   // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
   // group/connect modals) so it works from ANY cercle subtab, not just Business.

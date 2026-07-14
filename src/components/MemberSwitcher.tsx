@@ -7,8 +7,10 @@ import { Icon } from './Icon'
 // re-tap of the active face returns to Maisonnée.
 //
 // CONTROLLED + identity-agnostic: callers pass a normalized `faces` list + `value`/
-// `onChange`, so it works both for the device profile (board → `useProfile`) AND for
-// a surface's own local pick (Le cercle's Notes "whose notes" face). Map your member
+// `onChange`. Every "who am I today" LENS wires it to the ONE device profile
+// (`useProfile` — board « Aujourd'hui », Le cercle's focus lens + Notes face), so the
+// pick is remembered across the app; only a genuine VALUE picker (a mot's recipient,
+// a habit's owner, a voyage assignment) passes local state. Map your member
 // shape (snake_case `lib/members` OR camelCase `lib/cercle`) to `MemberFace` at the
 // call site — resolve the photo URL there (`imgUrl`) so this stays presentational.
 

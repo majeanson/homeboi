@@ -73,7 +73,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
 | "Everything the app does" themed map / feature discovery | **`FeatureMap`** (the ONE taxonomy: `CONCEPT_THEMES`/`FEATURE_MAP_TILES` in `lib/guideContent`) | `components/FeatureMap.tsx` (reused by the Guide jump-grid, the Board `WelcomeCard`, DevKit — extend the taxonomy, don't fork a list) |
 | Person photo/initial, mic, icon, image | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`** | `components/*` (pass a family/group `colour` so a photo-less member's initials disc takes the group colour) |
-| Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; board wraps it to `useProfile`, Le cercle picks locally) |
+| Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; every "who am I today" **lens** — board « Aujourd'hui », Le cercle's focus lens + Notes face — wires it to the ONE device profile `useProfile`, so the pick is remembered app-wide. Only a **value** picker (a mot's recipient, a habit's owner) holds local state) |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
 | A press-and-hold gesture | **`useLongPress`** | `lib/useLongPress.ts` (aborts on travel, kills the context menu, swallows the trailing click) |
