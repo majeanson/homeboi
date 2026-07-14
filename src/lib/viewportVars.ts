@@ -63,7 +63,9 @@ let kbDebugEl: HTMLElement | null = null
 const kbDebugLog: string[] = []
 function kbDebug(line: string): void {
   if (!kbDebugEl) return
-  kbDebugLog.push(line)
+  // Timestamp every decision — the overlay renders the LAST 5, and without a clock
+  // a stale entry (from an earlier keystroke) reads as the current truth.
+  kbDebugLog.push(`${(performance.now() / 1000).toFixed(1)} ${line}`)
   if (kbDebugLog.length > 5) kbDebugLog.shift()
 }
 function renderKbDebug(): void {
@@ -74,8 +76,20 @@ function renderKbDebug(): void {
   const sel = document.getSelection()
   let caret = 'none'
   if (sel && sel.rangeCount) {
-    const r = sel.getRangeAt(0).getBoundingClientRect()
-    caret = `${Math.round(r.top)}..${Math.round(r.bottom)}`
+    // Mirror caretIntoView's ACTUAL measurement (clientRects[0] → bounding rect →
+    // line-element fallback), and name the container@offset — a bare 0..0 told us
+    // the range had no rect but not what the follow logic did about it.
+    const range = sel.getRangeAt(0)
+    const r = range.getClientRects()[0] ?? range.getBoundingClientRect()
+    const c = range.startContainer
+    const host = c.nodeType === Node.ELEMENT_NODE ? (c as HTMLElement) : c.parentElement
+    caret = `${Math.round(r.top)}..${Math.round(r.bottom)} in=${host ? `${host.tagName}.${String(host.className).split(' ')[0]}` : '?'}@${range.startOffset}`
+    const sc0 = ae ? scrollersUp(ae)[0] : null
+    const line = sc0 ? caretLineEl(range, sc0) : null
+    if (line) {
+      const lr = line.getBoundingClientRect()
+      caret += ` line=${line.tagName}.${String(line.className).split(' ')[0]} ${Math.round(lr.top)}..${Math.round(lr.bottom)}`
+    }
   }
   const sc = ae ? scrollersUp(ae)[0] : null
   const scBox = sc?.getBoundingClientRect()
@@ -120,12 +134,24 @@ export function caretIntoView(scroller: HTMLElement, pad = 24): void {
   const range = sel.getRangeAt(0)
   if (!scroller.contains(range.startContainer)) return
 
+  let src = 'r'
   let rect = range.getClientRects()[0] ?? range.getBoundingClientRect()
+  // The LINE the caret lives on — the top-level block under the scroller. This is
+  // the ground truth the caret rect must agree with: WebKit reports NO rect for a
+  // collapsed range whose container is an element (exactly what caretToEnd leaves
+  // on the empty line Enter just created), and can report a STALE rect (a line
+  // above) right after a DOM edit — both let the line being typed sink under the
+  // keyboard while the follow believes below=0 (Marc's iOS checklist capture).
+  const line = caretLineEl(range, scroller)
+  const lineBox = line?.getBoundingClientRect()
   if (!rect || (rect.top === 0 && rect.bottom === 0)) {
-    const node = range.startContainer
-    const el = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement
-    if (!el) return
-    rect = el.getBoundingClientRect()
+    if (!lineBox) return
+    rect = lineBox
+    src = 'line'
+  } else if (lineBox && (rect.bottom < lineBox.top - 1 || rect.top > lineBox.bottom + 1)) {
+    // A caret rect OUTSIDE its own line's box is a lie — measure the line instead.
+    rect = lineBox
+    src = 'line!'
   }
 
   const box = scroller.getBoundingClientRect()
@@ -143,11 +169,34 @@ export function caretIntoView(scroller: HTMLElement, pad = 24): void {
     // still extends under the keyboard) — spill the remainder to its ancestors.
     const left = below - (scroller.scrollTop - before)
     if (left > 0.5) nudgeBy(scroller, left)
-    kbDebug(`civ below=${Math.round(below)} moved=${Math.round(scroller.scrollTop - before)} left=${Math.round(left)}`)
+    kbDebug(`civ ${src} b=${Math.round(rect.bottom)}/${Math.round(bottomEdge)} below=${Math.round(below)} moved=${Math.round(scroller.scrollTop - before)} left=${Math.round(left)}`)
   } else if (above > 0) {
     scroller.scrollTop -= above
-    kbDebug(`civ above=${Math.round(above)}`)
+    kbDebug(`civ ${src} above=${Math.round(above)}`)
+  } else {
+    kbDebug(`civ ${src} ok b=${Math.round(rect.bottom)}/${Math.round(bottomEdge)}`)
   }
+}
+
+// The top-level line block the caret sits on: the direct child of the contentEditable
+// HOST holding the caret (the host IS the scroller in the note editor, but can be a
+// smaller editable inside a big sheet scroller — a line must never resolve to a whole
+// form section). A collapsed range can also sit BETWEEN blocks (container = the host
+// itself, e.g. caretToEnd on the line Enter just made, or iOS restoring a selection) —
+// resolve that to the adjacent child rather than measuring the whole host, whose rect
+// would demand a bogus scroll.
+function caretLineEl(range: Range, scroller: HTMLElement): HTMLElement | null {
+  let node: Node | null = range.startContainer
+  const el = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement
+  let host: HTMLElement | null = el && el.isContentEditable ? el : null
+  while (host?.parentElement?.isContentEditable) host = host.parentElement
+  const root = host && scroller.contains(host) ? host : scroller
+  if (node === root) {
+    const kids = root.childNodes
+    node = kids.length ? kids[Math.min(range.startOffset, kids.length - 1)] : null
+  }
+  while (node && node.parentNode && node.parentNode !== root) node = node.parentNode
+  return node && node.parentNode === root && node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : null
 }
 
 // Every scrollable ancestor of `from` (itself included — the NoteEditor body is
