@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -8,6 +8,7 @@ import { useOnline } from '../lib/online'
 import { useConfirm } from '../lib/confirm'
 import { useSandbox } from '../lib/demo'
 import { useSampleStatus } from '../lib/sample'
+import { welcomeDismissed } from './WelcomeCard'
 import { api } from '../lib/api'
 import { Icon } from './Icon'
 
@@ -58,6 +59,14 @@ export function SampleBanner() {
   const [dismissed, setDismissed] = useState(() => isDismissed(KEY))
   const [claimDismissed, setClaimDismissed] = useState(() => isDismissed(CLAIM_KEY))
   const [busy, setBusy] = useState(false)
+  // Whether the WelcomeCard (which hosts the claim offer in a sandbox) is gone — it's
+  // a sibling, so it announces its dismissal rather than us polling localStorage.
+  const [welcomeGone, setWelcomeGone] = useState(welcomeDismissed)
+  useEffect(() => {
+    const onGone = () => setWelcomeGone(true)
+    window.addEventListener('bb:welcome-dismissed', onGone)
+    return () => window.removeEventListener('bb:welcome-dismissed', onGone)
+  }, [])
 
   // Only the operator manages sample data (the shared hook gates its query to a
   // signed-in session). hasSample ⇒ the demo is still present ⇒ we're in the
@@ -68,8 +77,14 @@ export function SampleBanner() {
 
   // The sandbox claim face — not gated on hasSample: a visitor who cleared or
   // outgrew the seed still deserves the way to keep what they built.
+  //
+  // But it stands down while the WelcomeCard's try-this card is up: that card now
+  // carries the claim offer itself. Otherwise the demo board opened on TWO stacked
+  // banners about the demo and showed no actual board (first-run pass, 2026-07-14).
+  // The offer is therefore on screen exactly once — inside the card, then here once
+  // the card is dismissed.
   if (sandbox) {
-    if (claimDismissed) return null
+    if (claimDismissed || !welcomeGone) return null
     return (
       <aside className="sample-banner" aria-label={t.claim.bannerTitle}>
         <span className="sample-banner__icon">

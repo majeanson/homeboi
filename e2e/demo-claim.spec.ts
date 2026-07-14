@@ -29,6 +29,11 @@ async function bootSandbox(page: Page, path = '/board') {
 
 test('the claim banner shows for a sandbox session and leads to /garder', async ({ page }) => {
   await bootSandbox(page)
+  // The claim offer opens INSIDE the welcome card (one card, not two banners about
+  // the demo — see e2e/demo-sandbox.spec.ts); the strip takes it over once that card
+  // is dismissed. This test owns the strip's own face + its route to /garder.
+  await page.locator('.welcome-card__dismiss').click()
+
   const banner = page.locator('.sample-banner')
   await expect(banner).toBeVisible()
   await expect(banner).toContainText('C’est ta maisonnée d’essai')

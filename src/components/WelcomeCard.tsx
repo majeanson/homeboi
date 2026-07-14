@@ -56,6 +56,14 @@ function persist(s: State) {
   }
 }
 
+// Has the visitor put this card away? SampleBanner's sandbox (claim) face asks,
+// because the two must never both be on the board: the claim CTA lives INSIDE this
+// card while it's up, and the strip takes over once it's gone — so the offer is
+// always exactly once on screen, never twice and never zero times.
+export function welcomeDismissed(): boolean {
+  return read().dismissed
+}
+
 // Bring the first-run checklist back (Réglages ▸ Guide ▸ Première fois ▸ « Revoir
 // l'accueil »): drop the dismissed/done record so the card shows again. It re-reads
 // localStorage on its next mount, so the caller navigates to /board afterwards.
@@ -133,12 +141,17 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
 
   const steps = sandbox ? DEMO_STEPS : STEPS
 
-  const dismiss = () =>
+  const dismiss = () => {
     setState((s) => {
       const next = { ...s, dismissed: true }
       persist(next)
       return next
     })
+    // Hand the claim offer over to SampleBanner's strip in the same beat — it lives
+    // in a sibling component, so a plain state update would leave the board with no
+    // claim CTA at all until the next navigation.
+    window.dispatchEvent(new Event('bb:welcome-dismissed'))
+  }
 
   return (
     <aside className="welcome-card" aria-label={t.welcome.title}>
@@ -169,6 +182,21 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
           )
         })}
       </ol>
+      {/* The sandbox's ONE card carries the claim too. The demo board used to open on
+          TWO stacked banners — this try-this card AND the claim strip — so a visitor
+          who came to SEE the app got a screen and a half of chrome about the demo and
+          no board (first-run pass, 2026-07-14). Both messages matter (the 24-hour
+          disclosure is an honesty thing), so they share one card: the offer, with its
+          expiry, right where the visitor already is. SampleBanner stands down while
+          this shows (see its sandbox face). */}
+      {sandbox && (
+        <div className="welcome-card__claim">
+          <p className="welcome-card__claim-hint">{t.claim.bannerHint}</p>
+          <Link to="/garder" className="btn btn--primary btn--sm">
+            {t.claim.bannerCta}
+          </Link>
+        </div>
+      )}
       <h3 className="welcome-card__discover">{t.welcome.discover}</h3>
       {/* Tiles open the LIVE section now (alive, since a fresh account is seeded),
           not the Guide — discovery by doing. The Guide stays the explanation layer
