@@ -611,8 +611,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le mur d’autocollants (optionnel)', en: 'The sticker wall (optional)' },
         detail: {
-          fr: 'Si tu désactives le « Mode calme », l’enfant place un autocollant en finissant sa routine. Par défaut, il n’existe pas — c’est une récompense volontaire, jamais un classement.',
-          en: 'If you turn OFF “Calm mode”, the child places a sticker on finishing a routine. By default it doesn’t exist — an opt-in reward, never a ranking.',
+          fr: 'Si tu désactives le « Mode calme », l’enfant place un autocollant en finissant sa routine. Le choix offert change de jour en jour (et d’une routine à l’autre), donc la collection se renouvelle sans jamais grossir l’écran. Par défaut, il n’existe pas — c’est une récompense volontaire, jamais un classement.',
+          en: 'If you turn OFF “Calm mode”, the child places a sticker on finishing a routine. The handful on offer changes from day to day (and from one routine to the next), so the collection stays fresh without the screen ever growing. By default it doesn’t exist — an opt-in reward, never a ranking.',
         },
         route: '/routine/stickers',
       },

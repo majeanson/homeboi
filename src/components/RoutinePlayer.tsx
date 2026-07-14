@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -10,7 +10,8 @@ import { imgUrl } from '../lib/image'
 import { writeWith } from '../lib/write'
 import { useOptimisticMutation } from '../lib/optimistic'
 import { ROUTINES_KEY, STICKERS_KEY } from '../lib/queryKeys'
-import { STICKERS } from '../lib/stickers'
+import { stickersFor } from '../lib/stickers'
+import { todayLocalDay } from '../lib/localDay'
 import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
@@ -261,6 +262,11 @@ export function RoutinePlayer({
   // finish, no farming). Calm ON → the offer doesn't exist, and neither does the wall
   // (Routines' entry + StickerWallPage share the same !calm gate).
   const [awarded, setAwarded] = useState<string | null>(null)
+  // The grid is always the same SIZE, but the glyphs in it are drawn from the wide
+  // catalog per (local day, routine): today's brushing-teeth handful differs from
+  // today's bedtime handful, and from tomorrow's. Deterministic, so a redo of the same
+  // routine on the same day re-offers the same stickers — nothing to farm or reroll.
+  const offer = useMemo(() => stickersFor(todayLocalDay(), routine.id), [routine.id])
   function placeSticker(sticker: string) {
     setAwarded(sticker)
     writeWith(qc, 'routine-stickers', {
@@ -472,7 +478,7 @@ export function RoutinePlayer({
                     <>
                       <div className="tdl-sticker__prompt">{t.routines.stickerPrompt}</div>
                       <div className="tdl-sticker__grid">
-                        {STICKERS.map((s) => (
+                        {offer.map((s) => (
                           <button
                             key={s}
                             type="button"

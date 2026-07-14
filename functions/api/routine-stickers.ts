@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import { STICKERS } from '../../src/lib/stickers'
 
 // Routine sticker wall (feature: opt-in reward, only surfaced when « Mode calme » is
 // OFF client-side). A child places a sticker here when they finish a routine; the wall
@@ -8,10 +9,12 @@ import { newId, nowSec } from '../_lib/ids'
 //
 // Deliberately count-free: we return the rows, the client renders a grid — no tally,
 // no ranking between children. The closed sticker set is validated here so the column
-// can't hold arbitrary text.
-const STICKERS = ['⭐', '🌈', '🦊', '🐱', '🐻', '🐢', '🦋', '🌟', '🌸', '🍓', '🍊', '❤️', '🌞', '🌙', '☁️', '🚀', '🎈', '🏆']
+// can't hold arbitrary text — and it is the SAME list the client offers from
+// (src/lib/stickers.ts, imported rather than mirrored: a drift between the two lists
+// would 400 a child's tap silently). The client only OFFERS a rotating slice of the
+// catalog per (day, routine) (`stickersFor`); the whitelist stays the whole catalog.
 const stickerOrNull = (v: unknown): string | null =>
-  typeof v === 'string' && STICKERS.includes(v) ? v : null
+  typeof v === 'string' && (STICKERS as readonly string[]).includes(v) ? v : null
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
