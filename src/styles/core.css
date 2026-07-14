@@ -690,7 +690,12 @@ textarea,
 .kb-open .note-editor,
 .kb-open .vv-fit {
   padding-top: var(--vvt, 0px);
-  padding-bottom: var(--kb, 0px);
+  /* --kb-fixed, not --kb: iOS can GLUE a full-screen fixed layer to the visual
+     viewport during the keyboard pan (lib/viewportVars fixedShellShift) — the pan
+     then stops relieving the layer's bottom, and the true occlusion is the full
+     shrink. --kb-fixed folds that in (and equals --kb whenever nothing is glued);
+     in-page scrollers (.hub__body) are never glued and keep --kb. */
+  padding-bottom: var(--kb-fixed, var(--kb, 0px));
 }
 .kb-open .scene__body,
 .kb-open .recipe-modal__body,

@@ -99,6 +99,11 @@ function renderKbDebug(): void {
   const vv = window.visualViewport
   const cs = getComputedStyle(document.documentElement)
   const ae = document.activeElement as HTMLElement | null
+  // Markers are plain fixed elements (layout-anchored: painted = CSS top − vvT),
+  // while glued-shell content paints at its client coords — so a marker naming a
+  // shell-space coordinate y must be drawn at CSS top y − shift to land on the
+  // PAINTED spot. If the red box hugs the painted caret line, the model holds.
+  const mShift = ae ? fixedShellShift(ae) : 0
   const sel = document.getSelection()
   let caret = 'none'
   if (sel && sel.rangeCount) {
@@ -115,7 +120,7 @@ function renderKbDebug(): void {
     if (line) {
       const lr = line.getBoundingClientRect()
       caret += ` line=${line.tagName}.${String(line.className).split(' ')[0]} ${Math.round(lr.top)}..${Math.round(lr.bottom)}`
-      kbMark('caret-line', '#ff3b30', lr.top, lr.height)
+      kbMark('caret-line', '#ff3b30', lr.top - mShift, lr.height)
     }
   }
   const sc = ae ? scrollersUp(ae)[0] : null
@@ -126,12 +131,12 @@ function renderKbDebug(): void {
   const shell = ae?.closest<HTMLElement>('.note-editor, .scene, .recipe-modal, .cashier, .vv-fit') ?? null
   const shBox = shell?.getBoundingClientRect()
   const shCs = shell ? getComputedStyle(shell) : null
-  kbMark('visB', '#ff9500', visibleBottom())
-  if (scBox) kbMark('scroller', '#00c7be', scBox.top, scBox.height)
+  kbMark('visB', '#ff9500', visibleBottom(sc) - mShift)
+  if (scBox) kbMark('scroller', '#00c7be', scBox.top - mShift, scBox.height)
   kbDebugEl.textContent = [
     `inner=${window.innerHeight} vvH=${vv ? Math.round(vv.height) : '-'} vvT=${vv ? Math.round(vv.offsetTop) : '-'} scale=${vv?.scale ?? '-'}`,
-    `kbInset=${kbInset} open=${document.documentElement.classList.contains('kb-open')} --kb=${cs.getPropertyValue('--kb').trim()} --vvt=${cs.getPropertyValue('--vvt').trim()}`,
-    `visBottom=${Math.round(visibleBottom())} accessory=${accessoryPad()}`,
+    `kbInset=${kbInset} open=${document.documentElement.classList.contains('kb-open')} --kb=${cs.getPropertyValue('--kb').trim()} --kbF=${cs.getPropertyValue('--kb-fixed').trim()} --vvt=${cs.getPropertyValue('--vvt').trim()}`,
+    `visBottom=${Math.round(visibleBottom())} eff=${sc ? Math.round(visibleBottom(sc)) : '-'} shift=${ae ? fixedShellShift(ae) : 0} accessory=${accessoryPad()}`,
     shell && shBox && shCs
       ? `shell=${String(shell.className).split(' ')[0]} ${Math.round(shBox.top)}..${Math.round(shBox.bottom)} padT=${shCs.paddingTop} padB=${shCs.paddingBottom}`
       : 'shell=none',
@@ -143,16 +148,38 @@ function renderKbDebug(): void {
   ].join('\n')
 }
 
-// Bottom of the area the user can actually SEE, in layout-viewport (client-rect)
-// coordinates: the visual viewport's bottom edge, minus the floating accessory
-// pill's band while the keyboard is up. Every "is the caret hidden?" decision
-// must compare against THIS, never against an element's own box — a fixed
-// full-screen surface keeps its full layout height under the keyboard, so its
-// box.bottom lies about what's visible.
-function visibleBottom(): number {
+// iOS standalone can GLUE a full-screen `position:fixed` layer to the VISUAL
+// viewport during the keyboard pan: the layer's painted position stops matching
+// its client rects — content at client y paints at visual y, not visual y−vvT.
+// Marc's marker captures (2026-07-14) proved it: rulers drawn at reported client
+// coords landed one full pan (136px) above the painted rows they named. The one
+// measurable tell is the layer's own rect: iOS expands it upward by exactly the
+// pan, so an inset:0 shell reads top = −vv.offsetTop while glued (and 0 when
+// not). That top IS the correction, self-calibrating per device and per state:
+// every band decision for content inside a fixed layer must shift by it.
+function fixedShellShift(from: HTMLElement | null): number {
+  const vv = window.visualViewport
+  if (!vv || vv.offsetTop < 1) return 0
+  for (let el = from; el; el = el.parentElement) {
+    if (getComputedStyle(el).position === 'fixed') {
+      return Math.max(-vv.offsetTop, Math.min(0, el.getBoundingClientRect().top))
+    }
+  }
+  return 0
+}
+
+// Bottom of the area the user can actually SEE, in `el`'s own client-rect
+// coordinates: the visual viewport's bottom edge, shifted into the fixed layer's
+// glued space when iOS dragged one (fixedShellShift), minus the floating
+// accessory pill's band while the keyboard is up. Every "is the caret hidden?"
+// decision must compare against THIS, never against an element's own box — a
+// fixed full-screen surface keeps its full layout height under the keyboard, so
+// its box.bottom lies about what's visible.
+function visibleBottom(el?: HTMLElement | null): number {
   const vv = window.visualViewport
   const bottom = vv ? vv.offsetTop + vv.height : window.innerHeight
-  return bottom - (kbInset > KB_THRESHOLD ? accessoryPad() : 0)
+  const shift = el ? fixedShellShift(el) : 0
+  return bottom + shift - (kbInset > KB_THRESHOLD ? accessoryPad() : 0)
 }
 
 // Keep the CARET visible inside a scrolling contentEditable.
@@ -197,7 +224,7 @@ export function caretIntoView(scroller: HTMLElement, pad = 24): void {
   // bottom can sit under the keyboard (a fixed surface whose .kb-open pin hasn't
   // settled yet) and under the iOS floating accessory pill either way. Scrolling
   // is still able to lift the caret above both — the box is just a window.
-  const bottomEdge = Math.min(box.bottom, visibleBottom())
+  const bottomEdge = Math.min(box.bottom, visibleBottom(scroller))
   const below = rect.bottom - (bottomEdge - pad)
   const above = box.top + pad - rect.top
   if (below > 0) {
@@ -277,7 +304,7 @@ function followCaret(el: HTMLElement): void {
   // control, but every one of ours is a few rems tall and scrolls internally —
   // the browser keeps the caret visible WITHIN the control, so revealing the
   // control's bottom edge is enough.
-  const over = el.getBoundingClientRect().bottom - (visibleBottom() - 24)
+  const over = el.getBoundingClientRect().bottom - (visibleBottom(el) - 24)
   if (over > 0) nudgeBy(el, over)
 }
 
@@ -409,6 +436,15 @@ export function trackVisualViewport(): void {
     // `.kb-open` — publishing a sub-threshold inset (browser chrome, an accessory
     // bar) lifted every consumer off a keyboard that isn't there.
     root.setProperty('--kb', `${open ? bottomInset : 0}px`)
+    // The FIXED-layer bottom inset. When iOS glues a full-screen fixed shell to
+    // the visual viewport (fixedShellShift < 0 — see its comment), the pan no
+    // longer relieves that shell's bottom: content inside it paints at its client
+    // coords, so the true occlusion is the pan-reduced inset PLUS the glue shift
+    // (= the full shrink when fully glued). core.css « Keyboard fit » pads fixed
+    // surfaces with THIS; in-page scrollers (.hub__body) keep --kb.
+    const focused = document.activeElement
+    const shift = open && focused instanceof HTMLElement ? fixedShellShift(focused) : 0
+    root.setProperty('--kb-fixed', `${open ? Math.round(bottomInset - shift) : 0}px`)
     // While the keyboard is up, hide the bottom chrome (the mobile tab bar + the
     // ＋ FAB) — it otherwise floats in the gap above the keyboard, fighting the
     // field being edited for attention. `.kb-open` keys the CSS in hub.css.
@@ -472,6 +508,9 @@ export function trackVisualViewport(): void {
   // chance to scroll.
   document.addEventListener('focusin', (e) => {
     if (!isEditable(e.target)) return
+    // --kb-fixed is derived from the FOCUSED field's fixed shell — recompute when
+    // focus moves (keyboard already up = no viewport event will do it for us).
+    schedule()
     pinFocused()
   })
 
