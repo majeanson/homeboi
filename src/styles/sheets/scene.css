@@ -34,6 +34,13 @@
   padding-top: var(--vvt, 0px);
   padding-bottom: var(--kb, 0px);
 }
+/* Trailing scroll slack for a field at the very END of the scene's scroller —
+   at max scroll it sits flush with the keyboard top, under the iOS floating
+   accessory pill; without slack no amount of scrolling can lift it (see
+   .note-editor__body, board/cnote-list.css). */
+.kb-open .scene__body {
+  padding-bottom: 120px;
+}
 .scene__head {
   flex: 0 0 auto;
   display: flex;

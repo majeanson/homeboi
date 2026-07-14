@@ -361,6 +361,16 @@
   padding-top: var(--vvt, 0px);
   padding-bottom: var(--kb, 0px);
 }
+/* Keyboard up: trailing scroll SLACK inside the body. Without it the last line of
+   the note sits flush with the box bottom at max scroll — i.e. exactly at the
+   keyboard top — while the iOS floating accessory pill (~64px) hovers INSIDE the
+   visible band right above it: revealing the caret demands ~90px of scroll the
+   scroller physically doesn't have (kbdebug on device: `civ below=72 moved=0
+   left=72`, steady across every retry — no road left). Slack IS the road; the
+   same cure as hub.css (--kb on .hub__body) and help.css (sheet slack). */
+.kb-open .note-editor__body {
+  padding-bottom: 120px;
+}
 .note-editor__head {
   display: flex;
   align-items: center;

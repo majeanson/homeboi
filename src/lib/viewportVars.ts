@@ -209,7 +209,9 @@ export function trackVisualViewport(): void {
     }
     kbDebugEl = document.createElement('div')
     kbDebugEl.style.cssText =
-      'position:fixed;top:4px;left:4px;right:4px;z-index:99999;background:rgba(0,0,0,.78);color:#7CFC98;' +
+      // top tracks --vvt: iOS pans the layout viewport when the keyboard opens,
+      // which pushed a plain top:4px overlay right off the screen (Marc's shot).
+      'position:fixed;top:calc(var(--vvt, 0px) + 4px);left:4px;right:4px;z-index:99999;background:rgba(0,0,0,.78);color:#7CFC98;' +
       'font:11px/1.4 ui-monospace,monospace;padding:6px 8px;pointer-events:none;white-space:pre-wrap;border-radius:8px;'
     document.body.appendChild(kbDebugEl)
     setInterval(renderKbDebug, 250)

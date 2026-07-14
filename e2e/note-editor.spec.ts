@@ -153,10 +153,17 @@ test('with the keyboard up, the content fits the visible band but the shell stil
     r.style.setProperty('--kb', `${kb}px`)
     r.classList.add('kb-open')
     const editor = document.querySelector('.note-editor')!.getBoundingClientRect()
-    const body = document.querySelector('.note-editor__body')!.getBoundingClientRect()
+    const bodyEl = document.querySelector('.note-editor__body') as HTMLElement
+    const body = bodyEl.getBoundingClientRect()
     // What actually receives a touch in the middle of the keyboard-covered strip?
     const behind = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - kb / 2)
+    // Trailing scroll SLACK: with the caret on the LAST line, the line sits flush
+    // with the box bottom at max scroll — exactly at the keyboard top, under the
+    // iOS floating accessory pill. Without slack no scroll can lift it (on-device
+    // kbdebug: civ below=72 moved=0). The slack IS the scroll room.
+    const slack = parseFloat(getComputedStyle(bodyEl).paddingBottom)
     return {
+      slack,
       visible,
       full: window.innerHeight,
       editorH: editor.height,
@@ -174,6 +181,9 @@ test('with the keyboard up, the content fits the visible band but the shell stil
   // …while the editing surface fits inside the visible band (the toolbar/footer didn't eat it).
   expect(m.bodyBottom).toBeLessThanOrEqual(m.visible)
   expect(m.bodyH).toBeGreaterThan(80)
+  // …and the body has trailing scroll slack, so a caret on the LAST line can still
+  // be lifted above the keyboard + the iOS accessory pill (≥ 64 + 24 + margin).
+  expect(m.slack).toBeGreaterThanOrEqual(100)
 })
 
 test('a button works on a fresh note without first tapping the body', async ({ page }) => {

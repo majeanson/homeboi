@@ -90,6 +90,11 @@
   padding-top: var(--vvt, 0px);
   padding-bottom: var(--kb, 0px);
 }
+/* Trailing scroll slack for a field at the very END of the form's scroller (the
+   notes textarea) — see .note-editor__body (board/cnote-list.css). */
+.kb-open .recipe-modal__body {
+  padding-bottom: 120px;
+}
 /* No backdrop on a full-screen route — the card IS the screen. (Still rendered by
    the recipe EDITOR, RecipeForm, which keeps the bespoke bar below; the recipe VIEW
    now uses the shared SceneHead instead.) */
