@@ -1157,6 +1157,8 @@ export const FR = {
     title: 'La cuisine',
     week: 'La semaine',
     planShort: 'À planifier',
+    // The inline planner that an empty day cell opens (no full-screen scene needed).
+    planPlaceholder: 'Ex. : spaghetti',
     // Concise relative tags for the week-grid date badge (the badge is tiny).
     todayShort: 'Auj.',
     tomorrowShort: 'Dem.',

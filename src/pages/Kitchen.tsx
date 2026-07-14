@@ -35,7 +35,9 @@ import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers } from '../components/kitchen/Leftovers'
 import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { reschedule } from '../components/kitchen/mealMutations'
+import { reschedule, planMeal } from '../components/kitchen/mealMutations'
+import { EditField } from '../components/EditField'
+import { isGuest } from '../lib/device'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildDay } from '../components/detail/adapters'
 import { SLOT_ICON_NAME } from '../lib/mealSlots'
@@ -246,6 +248,37 @@ export function Kitchen() {
   // (a glance chip never commits a plan — it just lands on that source).
   const openIdeas = (chip: IdeasChip = 'ideas') =>
     nav(chip === 'ideas' ? '/kitchen/idees' : `/kitchen/idees?tab=${chip}`)
+  // Inline day planning (plan seam #8): an empty day cell IS the field. One open at
+  // a time (the grid stays a calm glance, not seven input boxes); the day scene keeps
+  // everything else. A read-only guest sees the plain « À planifier » cue instead.
+  const planRo = isGuest()
+  const [planDate, setPlanDate] = useState<number | null>(null)
+  const [planText, setPlanText] = useState('')
+  const [planBusy, setPlanBusy] = useState(false)
+  const openPlan = (date: number) => {
+    setPlanDate(date)
+    setPlanText('')
+  }
+  const closePlan = () => {
+    setPlanDate(null)
+    setPlanText('')
+  }
+  async function commitPlan(date: number) {
+    const v = planText.trim()
+    if (!v || planBusy) {
+      if (!v) closePlan() // an empty commit (or a blur with nothing typed) just closes
+      return
+    }
+    setPlanBusy(true)
+    try {
+      await planMeal(qc, date, heroSlot, v)
+      closePlan()
+    } catch {
+      /* keep the typed title so it can be retried (same rule as the grocery bar) */
+    } finally {
+      setPlanBusy(false)
+    }
+  }
   const [scrollTick, setScrollTick] = useState(0)
   const requestScroll = () => setScrollTick((n) => n + 1)
   useEffect(() => {
@@ -476,6 +509,27 @@ export function Kitchen() {
                     DayManageSheet so two days still fit a phone. */}
                 <div className="kitchen__day-body">
                   <div className="kitchen__day-top">
+                    {planDate === date && !planRo ? (
+                      // Plan the day's hero meal RIGHT HERE. Filling a week used to
+                      // cost seven full-screen day scenes (friction audit, plan seam
+                      // #8); the scene still owns the rest (sides, note, recipe, cook).
+                      // The shared EditField, so voice/clear/Enter/IME all behave.
+                      <EditField
+                        className="kitchen__day-add"
+                        value={planText}
+                        onChange={setPlanText}
+                        onSubmit={() => commitPlan(date)}
+                        onCancel={closePlan}
+                        commitOnBlur
+                        autoFocus
+                        busy={planBusy}
+                        submitLabel={t.common.add}
+                        submitLeadingIcon="plus-bold"
+                        submitVariant="primary"
+                        placeholder={t.kitchen.planPlaceholder}
+                        ariaLabel={`${t.kitchen.planShort} · ${formatDay(date, lang)}`}
+                      />
+                    ) : (
                     <span
                       className={
                         'kitchen__day-sum-main kitchen__day-sum-tap' +
@@ -491,17 +545,25 @@ export function Kitchen() {
                       onClick={(e) => {
                         const d = tapDownRef.current
                         if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
-                        openDayPeek(date)
+                        // An EMPTY day opens the inline planner (its cue literally
+                        // says « À planifier ») — a planned one opens the peek.
+                        if (!showSupper && !planRo) openPlan(date)
+                        else openDayPeek(date)
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()
-                          openDayPeek(date)
+                          if (!showSupper && !planRo) openPlan(date)
+                          else openDayPeek(date)
                         }
                       }}
                       role="button"
                       tabIndex={0}
-                      aria-label={`${t.detail.openDay} · ${formatDay(date, lang)}`}
+                      aria-label={
+                        !showSupper && !planRo
+                          ? `${t.kitchen.planShort} · ${formatDay(date, lang)}`
+                          : `${t.detail.openDay} · ${formatDay(date, lang)}`
+                      }
                       title={showSupper ? t.kitchen.dragDay : undefined}
                     >
                       {showSupper ? (
@@ -527,9 +589,12 @@ export function Kitchen() {
                           )}
                         </>
                       ) : (
-                        <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
+                        <span className="kitchen__day-sum-empty mono">
+                          {!planRo && <InlineIcon name="plus-bold" size={12} />} {t.kitchen.planShort}
+                        </span>
                       )}
                     </span>
+                    )}
                     {/* A small, icon-only edit button — the lone tap target that
                         opens the day's editor. No "Gérer" label: the pencil says it
                         and keeps the pill tiny so meal info keeps the width. */}

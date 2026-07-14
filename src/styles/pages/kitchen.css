@@ -284,6 +284,12 @@
   justify-content: space-between;
   gap: 0.5rem;
 }
+/* The inline day planner (an empty cell IS the field — plan seam #8). Takes the
+   summary's place in the row, so the cell keeps its height and the pencil stays put. */
+.kitchen__day-add {
+  flex: 1;
+  min-width: 0;
+}
 .kitchen__day-sum-main {
   flex: 1;
   min-width: 0;

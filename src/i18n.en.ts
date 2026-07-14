@@ -1017,6 +1017,7 @@ export const EN: typeof FR = {
     title: 'Kitchen',
     week: 'The week',
     planShort: 'To plan',
+    planPlaceholder: 'E.g. spaghetti',
     // Concise relative tags for the week-grid date badge (the badge is tiny).
     todayShort: 'Today',
     tomorrowShort: 'Tom.',

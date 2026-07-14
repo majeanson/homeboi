@@ -7,6 +7,21 @@ import { MEALS_KEY, type MealRow, type MealsData } from './types'
 // (DayPlanPage). Pure functions over the query client — no component state — so
 // the grid's day-to-day drag and the editor's cross-slot drag call the same code.
 
+// Plan ONE meal into a day+slot, straight from the week grid's empty cell — the
+// common case ("mardi: spaghetti") no longer costs a full-screen day scene (7 of
+// them to fill a week; friction audit, plan seam #8). The day scene stays the
+// place for the rest (sides, notes, a recipe link, who cooks). Same endpoint and
+// keys as every other meal write, so offline/undo/realtime behave identically.
+export async function planMeal(qc: QueryClient, date: number, slot: string, title: string) {
+  const v = title.trim()
+  if (!v) return
+  await writeWith(qc, 'meals', {
+    method: 'POST',
+    body: { date, slot, title: v },
+    affectedKeys: [MEALS_KEY, BOARD_KEY],
+  })
+}
+
 // Drag-to-move: drop a meal on another day (slot kept) or another slot (same day).
 // The server appends it to the tail of the target slot; `slot` omitted preserves
 // the meal's current slot (a day→day drag). Optimistic so the row jumps at once,
