@@ -11,6 +11,56 @@ import { scrollBehavior } from './motion'
 //
 // One module-level side effect (same shape as registerSw): call once at boot.
 // No-op where visualViewport is missing — the CSS fallbacks (dvh) take over.
+
+// ── Keyboard state, shared module-wide ──────────────────────────────────────
+// KB_THRESHOLD: ignore tiny insets (browser chrome, accessory bar) — only a
+// real on-screen keyboard clears this. kbInset is written by apply() below and
+// read by the caret-follow helpers, so a caller outside trackVisualViewport's
+// closure (caretIntoView) sees the same truth.
+const KB_THRESHOLD = 120
+let kbInset = 0
+
+// An editable target whose caret/focus should be kept above the keyboard. We
+// track text-ish <input>s, every <textarea>, and any contentEditable host.
+// Buttons, checkboxes, date/colour pickers, etc. are deliberately excluded.
+const TEXT = /^(|text|search|email|url|tel|password|number)$/i
+function isEditable(el: EventTarget | null): el is HTMLElement {
+  return (
+    el instanceof HTMLElement &&
+    (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && TEXT.test((el as HTMLInputElement).type)))
+  )
+}
+
+// In an iOS HOME-SCREEN app, the keyboard carries no attached accessory bar —
+// instead a floating ▲▼✓ pill hovers INSIDE the visual viewport, ~10px above the
+// keyboard top. visualViewport knows nothing about it, so "just above the
+// keyboard" is exactly where that pill covers the caret. Reserve its band on
+// that platform only (Safari-tab iOS and Android put the bar inside the
+// keyboard, below vv's bottom edge). Lazy + memoized so importing this module
+// in a test runner without a DOM stays safe.
+let accessoryPx: number | null = null
+function accessoryPad(): number {
+  if (accessoryPx !== null) return accessoryPx
+  if (typeof navigator === 'undefined') return (accessoryPx = 0)
+  const nav = navigator as Navigator & { standalone?: boolean }
+  const ios = /iP(hone|ad|od)/.test(nav.userAgent) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1)
+  const standalone = nav.standalone === true || (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches)
+  accessoryPx = ios && standalone ? 64 : 0
+  return accessoryPx
+}
+
+// Bottom of the area the user can actually SEE, in layout-viewport (client-rect)
+// coordinates: the visual viewport's bottom edge, minus the floating accessory
+// pill's band while the keyboard is up. Every "is the caret hidden?" decision
+// must compare against THIS, never against an element's own box — a fixed
+// full-screen surface keeps its full layout height under the keyboard, so its
+// box.bottom lies about what's visible.
+function visibleBottom(): number {
+  const vv = window.visualViewport
+  const bottom = vv ? vv.offsetTop + vv.height : window.innerHeight
+  return bottom - (kbInset > KB_THRESHOLD ? accessoryPad() : 0)
+}
+
 // Keep the CARET visible inside a scrolling contentEditable.
 //
 // The global focus-pin below scrolls the focused ELEMENT into view, which is right for
@@ -18,8 +68,8 @@ import { scrollBehavior } from './motion'
 // contentEditable: the host already spans the whole editor, so it's "in view" while the
 // line you're typing sits far below the fold. Browsers normally keep the caret visible
 // themselves, but not reliably inside a fixed, keyboard-overlaid container on iOS — so
-// the editor drives it. Nudges the scroller only when the caret has actually left the
-// band (idempotent, so it can be called on every keystroke without fighting a manual
+// we drive it. Nudges the scroller only when the caret has actually left the band
+// (idempotent, so it can be called on every keystroke without fighting a manual
 // scroll). A collapsed range reports no client rect in some engines; fall back to the
 // containing element's rect.
 export function caretIntoView(scroller: HTMLElement, pad = 24): void {
@@ -37,10 +87,58 @@ export function caretIntoView(scroller: HTMLElement, pad = 24): void {
   }
 
   const box = scroller.getBoundingClientRect()
-  const below = rect.bottom - (box.bottom - pad)
+  // Clamp to what's actually VISIBLE: with the keyboard up, the scroller's own
+  // bottom can sit under the keyboard (a fixed surface whose .kb-open pin hasn't
+  // settled yet) and under the iOS floating accessory pill either way. Scrolling
+  // is still able to lift the caret above both — the box is just a window.
+  const bottomEdge = Math.min(box.bottom, visibleBottom())
+  const below = rect.bottom - (bottomEdge - pad)
   const above = box.top + pad - rect.top
   if (below > 0) scroller.scrollTop += below
   else if (above > 0) scroller.scrollTop -= above
+}
+
+// Every scrollable ancestor of `from` (itself included — the NoteEditor body is
+// its own scroller), nearest first. #root, the document-level scroller, is an
+// ancestor of everything, so the walk always ends at a scroller that can move.
+function scrollersUp(from: HTMLElement | null): HTMLElement[] {
+  const out: HTMLElement[] = []
+  for (let el = from; el; el = el.parentElement) {
+    if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) out.push(el)
+  }
+  return out
+}
+
+// Scroll `from`'s ANCESTORS down by dy px, nearest scroller first, spilling the
+// remainder outward until absorbed. Never scrolls `from` itself — for a
+// <textarea> that would scroll its own text away from the caret.
+function nudgeBy(from: HTMLElement, dy: number): void {
+  for (const sc of scrollersUp(from.parentElement)) {
+    if (dy <= 0.5) return
+    const before = sc.scrollTop
+    sc.scrollTop += dy
+    dy -= sc.scrollTop - before
+  }
+}
+
+// The GENERAL caret-follow, run on every input/selection change while the
+// keyboard is up (wired in trackVisualViewport). The focus-time pin only fires
+// once; typing can push the caret back under the keyboard afterwards — a new
+// line in a contentEditable, wrapped text growing a field, layout settling, the
+// user scrolling to peek and then resuming. This is the version of what
+// NoteEditor wires by hand (afterInput → caretIntoView), for EVERY field.
+function followCaret(el: HTMLElement): void {
+  if (el.isContentEditable) {
+    const scroller = scrollersUp(el)[0]
+    if (scroller) caretIntoView(scroller)
+    return
+  }
+  // <input>/<textarea>: the Selection API can't see the caret inside a form
+  // control, but every one of ours is a few rems tall and scrolls internally —
+  // the browser keeps the caret visible WITHIN the control, so revealing the
+  // control's bottom edge is enough.
+  const over = el.getBoundingClientRect().bottom - (visibleBottom() - 24)
+  if (over > 0) nudgeBy(el, over)
 }
 
 export function trackVisualViewport(): void {
@@ -55,22 +153,11 @@ export function trackVisualViewport(): void {
   //      frame, and writing the shrunken vv.height would squash overlays sized
   //      with --vvh and make them shimmer through the gesture.
   //   2. rAF-coalesce bursts so we set the vars at most once per frame.
-  // Tracks the current keyboard inset so the focus-scroll below only nudges on a
-  // device whose keyboard is actually up (0 on desktop → no jump on click).
-  // KB_THRESHOLD: ignore tiny insets (browser chrome, accessory bar) — only a
-  // real on-screen keyboard clears this.
-  const KB_THRESHOLD = 120
-  let kbInset = 0
+  // The current keyboard inset (module-level kbInset) gates the focus-scroll and
+  // caret-follow below, so they only nudge on a device whose keyboard is
+  // actually up (0 on desktop → no jump on click).
   let kbOpen = false
   let queued = false
-
-  // An editable target whose focus should be kept above the keyboard. We pin
-  // text-ish <input>s, every <textarea>, and any contentEditable host. Buttons,
-  // checkboxes, date/colour pickers, etc. are deliberately excluded.
-  const TEXT = /^(|text|search|email|url|tel|password|number)$/i
-  const isEditable = (el: EventTarget | null): el is HTMLElement =>
-    el instanceof HTMLElement &&
-    (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && TEXT.test((el as HTMLInputElement).type)))
 
   // OPT-IN exception: a few compact panels (e.g. the recipe import panel's
   // "Importer", which follows the URL input + paste box) want the action button
@@ -207,6 +294,29 @@ export function trackVisualViewport(): void {
     if (!isEditable(e.target)) return
     pinFocused()
   })
+
+  // Typing FOLLOWS the caret — the focus-time pin above fires once, but a new
+  // line, wrapped text, or settling layout can push the caret back under the
+  // keyboard afterwards (Marc, iOS Notes du cercle: « ça continue en dessous du
+  // clavier »). 'input' catches typing; 'selectionchange' catches caret moves
+  // without input (arrow keys on a tablet's hardware keyboard) and fires on
+  // every keystroke too, so both funnel into one rAF-coalesced pass. followCaret
+  // only acts when the caret has actually left the visible band, so a manual
+  // scroll-to-peek while typing is never fought, and desktop (kbInset 0) is a
+  // constant-time no-op.
+  let followQueued = false
+  const follow = () => {
+    if (followQueued || kbInset <= KB_THRESHOLD) return
+    followQueued = true
+    requestAnimationFrame(() => {
+      followQueued = false
+      if (kbInset <= KB_THRESHOLD) return
+      const el = document.activeElement
+      if (isEditable(el) && el.isConnected) followCaret(el)
+    })
+  }
+  document.addEventListener('input', follow)
+  document.addEventListener('selectionchange', follow)
 
   // A field blurring usually means the keyboard is closing. Some browsers don't
   // fire a visualViewport 'resize' on dismiss, which would leave --vvh/--kb (and

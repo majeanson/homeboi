@@ -116,6 +116,35 @@ for (const d of DEVICES) {
     await expectAbove(nom, VISIBLE, 'settings Nom input')
   })
 
+  // --- Typing follows the caret. The focus-time pin fires once; after it, layout
+  // settling, a growing field, or the user scrolling to peek can leave the field
+  // back under the keyboard with no focus event to re-pin it. The input-driven
+  // follow in viewportVars (the general version of NoteEditor's caret-follow) must
+  // pull ANY stranded field back above the keyboard on the next keystroke. ---
+  test(`kb ${d.name}: typing pulls a stranded field back above the keyboard`, async ({ page }) => {
+    await open(page, '/board')
+    const add = page.getByPlaceholder('Ajouter à compléter…').first()
+    await add.scrollIntoViewIfNeeded()
+    await add.focus()
+    await openKeyboard(page, d.kb)
+    await page.waitForTimeout(600) // let the focus-pin retries settle
+    // Strand it: scroll the page scroller back up so the field sits fully inside
+    // the keyboard band again (what a scroll-to-peek or a late layout shift does).
+    const stranded = await page.evaluate((vis) => {
+      const el = document.activeElement as HTMLElement
+      let sc: HTMLElement | null = el.parentElement
+      while (sc && !(sc.scrollHeight > sc.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(sc).overflowY))) sc = sc.parentElement
+      if (!sc) return false
+      sc.scrollTop = Math.max(0, sc.scrollTop - (vis + 20 - el.getBoundingClientRect().top))
+      return el.getBoundingClientRect().top >= vis
+    }, VISIBLE)
+    test.skip(!stranded, 'not enough scroll room to strand the field on this device')
+    await page.keyboard.type('lait')
+    await page.waitForTimeout(300) // follow is rAF-coalesced
+    await page.screenshot({ path: png('type-follow'), fullPage: false })
+    await expectAbove(add, VISIBLE, 'typed field followed back above the keyboard')
+  })
+
   // --- Overlays/scenes whose field must stay above the keyboard. `field` is scoped
   // to the VISIBLE surface (.sheet.show overlay / .scene route) so it never matches
   // the always-mounted, off-screen <AddSheet> (a plain .sheet) sitting behind. ---
