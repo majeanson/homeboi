@@ -23,10 +23,16 @@
   display: flex;
   flex-direction: column;
 }
-/* Keyboard up: pin to the visible band so the focused field clears it. */
+/* Keyboard up: fit the CONTENT into the visible band so the focused field clears
+   it — via padding, NOT by shrinking the shell (top: --vvt; height: --vvh, the
+   old form): a shrunken shell un-covers the strip the keyboard overlays, turning
+   it into a live, scrollable window onto the page behind whenever iOS pans the
+   viewport. The full-size opaque shell keeps covering (and swallowing touches
+   on) everything behind; border-box means the padding carves the flex column
+   down to exactly the visible band. See .note-editor (board/cnote-list.css). */
 .kb-open .scene {
-  top: var(--vvt, 0px);
-  height: var(--vvh, 100dvh);
+  padding-top: var(--vvt, 0px);
+  padding-bottom: var(--kb, 0px);
 }
 .scene__head {
   flex: 0 0 auto;

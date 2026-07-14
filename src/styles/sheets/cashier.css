@@ -19,9 +19,11 @@
   display: flex;
   flex-direction: column;
 }
+/* Keyboard up: padding, not a shrunken shell — a shrunken shell un-covers the
+   keyboard strip and shows/scrolls the page behind. See .scene (sheets/scene.css). */
 .kb-open .cashier {
-  top: var(--vvt, 0px);
-  height: var(--vvh, 100dvh);
+  padding-top: var(--vvt, 0px);
+  padding-bottom: var(--kb, 0px);
 }
 .cashier__bar {
   flex: 0 0 auto;

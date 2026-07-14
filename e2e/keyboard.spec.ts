@@ -171,6 +171,16 @@ for (const d of DEVICES) {
       await openKeyboard(page, d.kb)
       await page.screenshot({ path: png(s.name), fullPage: false })
       await expectAbove(field, VISIBLE, `${s.name} field`)
+      // A full-screen scene must keep COVERING the strip the keyboard overlays —
+      // shrinking the shell to the visible band turned that strip into a live,
+      // scrollable window onto the page behind (the note-editor bug, same CSS).
+      if (s.field.startsWith('.scene')) {
+        const owner = await page.evaluate(
+          ({ w, h, kb }) => document.elementFromPoint(w / 2, h - kb / 2)?.closest('.scene') ? 'scene' : 'page-behind',
+          { w: d.w, h: d.h, kb: d.kb },
+        )
+        expect(owner, `${s.name} keyboard strip belongs to the scene`).toBe('scene')
+      }
     })
   }
 
@@ -184,6 +194,13 @@ for (const d of DEVICES) {
     await page.screenshot({ path: png('recipe-form'), fullPage: false })
     await expectAbove(page.locator('.recipe-modal__foot .btn--primary'), VISIBLE, 'recipe Enregistrer')
     await expectAbove(page.locator('.recipe-modal__bar button').last(), VISIBLE, 'recipe ✕')
+    // The modal keeps covering the keyboard strip (padding shrinks the content,
+    // never the shell — see .scene / .note-editor).
+    const owner = await page.evaluate(
+      ({ w, h, kb }) => document.elementFromPoint(w / 2, h - kb / 2)?.closest('.recipe-modal') ? 'modal' : 'page-behind',
+      { w: d.w, h: d.h, kb: d.kb },
+    )
+    expect(owner, 'recipe keyboard strip belongs to the modal').toBe('modal')
   })
 
   // --- Recipe sheet: read view, actions stay reachable ---
