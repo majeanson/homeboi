@@ -512,6 +512,27 @@ can draw an affordance. It adds no DOM and no layout, so it's safe on any existi
 overflows, on a fine pointer only, and keeps the selected tab in view). Attach it by hand
 to any other hidden-scrollbar row. Guard: `e2e/hscroll.spec.ts`.
 
+**A full-screen surface where the user types → the "Keyboard fit" block (`core.css`) +
+`lib/viewportVars.ts`.** iOS overlays the keyboard without shrinking the layout viewport
+(and PANS it — vv.offsetTop — to reveal a caret near the bottom), so a fixed surface needs
+two things, both learned from real on-device failures (July 2026, kbdebug screenshots):
+(1) **fit** — the shell keeps `inset: 0` (full-size + opaque, covering the page behind)
+and its CONTENT is padded into the visible band with `--vvt`/`--kb`; `height: var(--vvh)`
+under `.kb-open` is the BANNED shell-shrink form — it un-covers the keyboard strip, a
+live scrollable window onto the page behind. (2) **slack** — the surface's editing
+scroller gets 120px trailing padding under `.kb-open`, because a caret on the LAST line
+sits flush with the box bottom at max scroll (under the iOS floating accessory pill) and
+otherwise has no room to rise: `civ below=72 moved=0`. A new surface should just BE a
+`.scene` (FormScene); one that can't be adds `.vv-fit` on the shell + `.vv-slack` on the
+scroller — never a new name forked into a new rule. The caret-follow itself (pin on
+keyboard-rise + follow on input/selectionchange) is global in `lib/viewportVars.ts`,
+nothing to wire per field. On-device diagnosis: Réglages ▸ Système ▸ Version — « Activer
+le diagnostic clavier » (or `?kbdebug=1`). Guards: `src/styles/keyboard-fit.test.ts`
+(build — bans the shrink, enforces the one definition), `e2e/keyboard.spec.ts`
+(strip-ownership probes, stranded-field follow, viewport-push pan), and
+`e2e/note-editor.spec.ts` (shell coverage + slack ≥ 100px). Demoed in `/dev/kit`
+▸ Fondations ▸ *Clavier (keyboard fit)*.
+
 ---
 
 ## Kit primitives (built — adopt incrementally)

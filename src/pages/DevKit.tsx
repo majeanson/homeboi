@@ -1421,6 +1421,52 @@ export function DevKit() {
     },
     {
       cat: 'Fondations',
+      name: 'Clavier (keyboard fit)',
+      file: 'styles/core.css (« Keyboard fit ») + lib/viewportVars.ts',
+      kw: 'clavier keyboard osk caché hidden derrière behind caret curseur vvt vvh kb slack scene scène fixe fixed viewport suivi follow pin',
+      render: () => (
+        <>
+          <Demo label="Le contrat — toute surface plein-écran où l’on tape">
+            <ul className="lead" style={{ margin: 0, paddingLeft: '1.1rem', display: 'grid', gap: '0.35rem' }}>
+              <li>
+                Être une <code>.scene</code> (FormScene / SceneHead) — sinon poser <code>.vv-fit</code> sur la coquille fixe et{' '}
+                <code>.vv-slack</code> sur son défileur.
+              </li>
+              <li>
+                La coquille garde <code>inset: 0</code> ; le contenu rentre dans la bande visible via <code>--vvt</code>/<code>--kb</code>{' '}
+                (padding). <code>height: var(--vvh)</code> sous <code>.kb-open</code> est BANNI — la page derrière apparaît dans la bande du
+                clavier (keyboard-fit.test.ts le refuse au build).
+              </li>
+              <li>
+                Le défileur reçoit 120px de marge de fin sous <code>.kb-open</code> — sans elle, un curseur sur la DERNIÈRE ligne n’a
+                physiquement aucune place pour monter au-dessus du clavier.
+              </li>
+              <li>Le suivi du curseur (pin à l’ouverture + follow à la frappe) est global — lib/viewportVars, rien à câbler par champ.</li>
+              <li>Diagnostic sur appareil : Réglages ▸ Système ▸ Version — « Activer le diagnostic clavier » (ou ?kbdebug=1).</li>
+            </ul>
+          </Demo>
+          <Demo label="Simuler le clavier (5 s) — pose .kb-open + --kb: 336px sur toute l’app">
+            <button
+              type="button"
+              className="btn btn--sm"
+              onClick={() => {
+                const r = document.documentElement
+                r.classList.add('kb-open')
+                r.style.setProperty('--kb', '336px')
+                setTimeout(() => {
+                  r.classList.remove('kb-open')
+                  r.style.removeProperty('--kb')
+                }, 5000)
+              }}
+            >
+              Simuler .kb-open
+            </button>
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Fondations',
       name: 'Chip · ChipGroup',
       file: 'components/Chip.tsx',
       kw: 'chip tag pill pastille filtre toggle',

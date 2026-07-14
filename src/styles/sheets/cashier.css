@@ -19,12 +19,8 @@
   display: flex;
   flex-direction: column;
 }
-/* Keyboard up: padding, not a shrunken shell — a shrunken shell un-covers the
-   keyboard strip and shows/scrolls the page behind. See .scene (sheets/scene.css). */
-.kb-open .cashier {
-  padding-top: var(--vvt, 0px);
-  padding-bottom: var(--kb, 0px);
-}
+/* Keyboard up: the fit + trailing slack live in core.css — the ONE
+   "Keyboard fit" block (shared with .scene / .recipe-modal / .note-editor). */
 .cashier__bar {
   flex: 0 0 auto;
   display: flex;

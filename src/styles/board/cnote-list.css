@@ -347,30 +347,9 @@
   overscroll-behavior: none;
   overflow: hidden;
 }
-/* Keyboard up: fit the CONTENT into the visible band, but keep the SHELL at
-   `inset: 0`. An earlier version shrank the whole fixed shell (top: --vvt;
-   height: --vvh) — that un-covered the strip the keyboard overlays, turning it
-   into a live window onto the cercle page behind: visible AND scrollable while
-   editing (Marc's screenshot). Padding shrinks the flex column to the same
-   visible band while the full-size, opaque shell keeps covering (and swallowing
-   touches on) everything behind it. --vvt above tracks iOS panning the layout
-   viewport to reveal the caret; --kb below is the keyboard's own height.
-   Binding only while `.kb-open` avoids the stale-value trap the other scenes
-   document. */
-.kb-open .note-editor {
-  padding-top: var(--vvt, 0px);
-  padding-bottom: var(--kb, 0px);
-}
-/* Keyboard up: trailing scroll SLACK inside the body. Without it the last line of
-   the note sits flush with the box bottom at max scroll — i.e. exactly at the
-   keyboard top — while the iOS floating accessory pill (~64px) hovers INSIDE the
-   visible band right above it: revealing the caret demands ~90px of scroll the
-   scroller physically doesn't have (kbdebug on device: `civ below=72 moved=0
-   left=72`, steady across every retry — no road left). Slack IS the road; the
-   same cure as hub.css (--kb on .hub__body) and help.css (sheet slack). */
-.kb-open .note-editor__body {
-  padding-bottom: 120px;
-}
+/* Keyboard up: the fit (--vvt/--kb content padding, NEVER a shrunken shell) and
+   the trailing scroll slack live in core.css — the ONE "Keyboard fit" block
+   (shared with .scene / .recipe-modal / .cashier). */
 .note-editor__head {
   display: flex;
   align-items: center;

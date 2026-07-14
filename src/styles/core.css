@@ -660,6 +660,46 @@ textarea,
 [contenteditable] {
   scroll-margin-top: 12px;
 }
+
+/* ==== Keyboard fit (THE one definition — see lib/viewportVars.ts) ============
+   How a full-screen fixed surface survives the on-screen keyboard. Two halves,
+   both required, both learned from real on-device failures (July 2026):
+
+   1. FIT — the shell keeps `inset: 0` (full-size, opaque, swallowing touches on
+      everything behind it) and shrinks its CONTENT into the visible band with
+      padding: --vvt above (iOS pans the layout viewport to reveal the caret),
+      --kb below (the keyboard's own height). NEVER shrink the shell itself
+      (`top: var(--vvt); height: var(--vvh)` is the BANNED form — it un-covers
+      the strip the keyboard overlays, a live scrollable window onto the page
+      behind). keyboard-fit.test.ts enforces the ban.
+
+   2. SLACK — the surface's editing scroller gets trailing padding while the
+      keyboard is up. Without it a caret on the LAST line has no road: at max
+      scroll that line sits flush with the box bottom — exactly at the keyboard
+      top — under the iOS floating accessory pill (~64px, which hovers INSIDE
+      the visual viewport in a home-screen app). 120px = pill + caret pad +
+      breathing room. (.hub__body gets var(--kb) in hub.css and sheets get the
+      help.css slack — same cure, theirs predates this block.)
+
+   A NEW full-screen surface should BE a `.scene` (FormScene / SceneHead — the
+   reuse rule). One that can't be gets `.vv-fit` on its fixed shell and
+   `.vv-slack` on its scroller instead of a new name in these lists. */
+.kb-open .scene,
+.kb-open .recipe-modal,
+.kb-open .cashier,
+.kb-open .note-editor,
+.kb-open .vv-fit {
+  padding-top: var(--vvt, 0px);
+  padding-bottom: var(--kb, 0px);
+}
+.kb-open .scene__body,
+.kb-open .recipe-modal__body,
+.kb-open .cashier__grid-wrap,
+.kb-open .cashier__stage,
+.kb-open .note-editor__body,
+.kb-open .vv-slack {
+  padding-bottom: 120px;
+}
 .input {
   width: 100%;
   padding: 0.6rem 0.8rem;

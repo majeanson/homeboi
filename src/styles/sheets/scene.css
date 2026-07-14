@@ -23,24 +23,9 @@
   display: flex;
   flex-direction: column;
 }
-/* Keyboard up: fit the CONTENT into the visible band so the focused field clears
-   it — via padding, NOT by shrinking the shell (top: --vvt; height: --vvh, the
-   old form): a shrunken shell un-covers the strip the keyboard overlays, turning
-   it into a live, scrollable window onto the page behind whenever iOS pans the
-   viewport. The full-size opaque shell keeps covering (and swallowing touches
-   on) everything behind; border-box means the padding carves the flex column
-   down to exactly the visible band. See .note-editor (board/cnote-list.css). */
-.kb-open .scene {
-  padding-top: var(--vvt, 0px);
-  padding-bottom: var(--kb, 0px);
-}
-/* Trailing scroll slack for a field at the very END of the scene's scroller —
-   at max scroll it sits flush with the keyboard top, under the iOS floating
-   accessory pill; without slack no amount of scrolling can lift it (see
-   .note-editor__body, board/cnote-list.css). */
-.kb-open .scene__body {
-  padding-bottom: 120px;
-}
+/* Keyboard up: the fit (--vvt/--kb content padding, NEVER a shrunken shell) and
+   the trailing scroll slack both live in core.css — the ONE "Keyboard fit"
+   block, shared with .recipe-modal / .cashier / .note-editor / .vv-fit. */
 .scene__head {
   flex: 0 0 auto;
   display: flex;

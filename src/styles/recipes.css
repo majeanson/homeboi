@@ -82,19 +82,8 @@
   justify-content: center;
   padding: 0;
 }
-/* Keyboard up: fit the CONTENT into the visible band so the footer buttons clear
-   it — via padding, NOT by shrinking the shell: a shrunken shell un-covers the
-   keyboard strip and turns it into a live, scrollable window onto the page
-   behind. See .scene (sheets/scene.css) / .note-editor (board/cnote-list.css). */
-.kb-open .recipe-modal {
-  padding-top: var(--vvt, 0px);
-  padding-bottom: var(--kb, 0px);
-}
-/* Trailing scroll slack for a field at the very END of the form's scroller (the
-   notes textarea) — see .note-editor__body (board/cnote-list.css). */
-.kb-open .recipe-modal__body {
-  padding-bottom: 120px;
-}
+/* Keyboard up: the fit + trailing slack live in core.css — the ONE
+   "Keyboard fit" block (shared with .scene / .cashier / .note-editor). */
 /* No backdrop on a full-screen route — the card IS the screen. (Still rendered by
    the recipe EDITOR, RecipeForm, which keeps the bespoke bar below; the recipe VIEW
    now uses the shared SceneHead instead.) */
