@@ -51,6 +51,46 @@ function accessoryPad(): number {
   return accessoryPx
 }
 
+// ── On-device keyboard diagnostics (?kbdebug=1) ─────────────────────────────
+// The keyboard machinery is exercised by e2e against a stubbed visualViewport,
+// but the failures Marc reports are iOS-only (viewport push, momentum reveal,
+// spurious selectionchange) and can't be reproduced in Chromium. This overlay
+// paints the live numbers on the device itself — visual viewport, gates,
+// scroller geometry, and the last few pin/follow decisions — so a screenshot
+// replaces a guess. Enable by adding ?kbdebug=1 to any URL (sticks for the
+// session); zero cost when off.
+let kbDebugEl: HTMLElement | null = null
+const kbDebugLog: string[] = []
+function kbDebug(line: string): void {
+  if (!kbDebugEl) return
+  kbDebugLog.push(line)
+  if (kbDebugLog.length > 5) kbDebugLog.shift()
+}
+function renderKbDebug(): void {
+  if (!kbDebugEl) return
+  const vv = window.visualViewport
+  const cs = getComputedStyle(document.documentElement)
+  const ae = document.activeElement as HTMLElement | null
+  const sel = document.getSelection()
+  let caret = 'none'
+  if (sel && sel.rangeCount) {
+    const r = sel.getRangeAt(0).getBoundingClientRect()
+    caret = `${Math.round(r.top)}..${Math.round(r.bottom)}`
+  }
+  const sc = ae ? scrollersUp(ae)[0] : null
+  const scBox = sc?.getBoundingClientRect()
+  kbDebugEl.textContent = [
+    `inner=${window.innerHeight} vvH=${vv ? Math.round(vv.height) : '-'} vvT=${vv ? Math.round(vv.offsetTop) : '-'} scale=${vv?.scale ?? '-'}`,
+    `kbInset=${kbInset} open=${document.documentElement.classList.contains('kb-open')} --kb=${cs.getPropertyValue('--kb').trim()} --vvt=${cs.getPropertyValue('--vvt').trim()}`,
+    `visBottom=${Math.round(visibleBottom())} accessory=${accessoryPad()}`,
+    `ae=${ae ? `${ae.tagName}.${String(ae.className).split(' ')[0]}` : 'none'} caretY=${caret}`,
+    sc && scBox
+      ? `scroller=${String(sc.className).split(' ')[0]} top=${Math.round(scBox.top)} bottom=${Math.round(scBox.bottom)} sT=${Math.round(sc.scrollTop)} sH=${sc.scrollHeight} cH=${sc.clientHeight}`
+      : 'scroller=none',
+    ...kbDebugLog,
+  ].join('\n')
+}
+
 // Bottom of the area the user can actually SEE, in layout-viewport (client-rect)
 // coordinates: the visual viewport's bottom edge, minus the floating accessory
 // pill's band while the keyboard is up. Every "is the caret hidden?" decision
@@ -96,8 +136,18 @@ export function caretIntoView(scroller: HTMLElement, pad = 24): void {
   const bottomEdge = Math.min(box.bottom, visibleBottom())
   const below = rect.bottom - (bottomEdge - pad)
   const above = box.top + pad - rect.top
-  if (below > 0) scroller.scrollTop += below
-  else if (above > 0) scroller.scrollTop -= above
+  if (below > 0) {
+    const before = scroller.scrollTop
+    scroller.scrollTop += below
+    // The scroller can run out of road (content ends at the caret while the box
+    // still extends under the keyboard) — spill the remainder to its ancestors.
+    const left = below - (scroller.scrollTop - before)
+    if (left > 0.5) nudgeBy(scroller, left)
+    kbDebug(`civ below=${Math.round(below)} moved=${Math.round(scroller.scrollTop - before)} left=${Math.round(left)}`)
+  } else if (above > 0) {
+    scroller.scrollTop -= above
+    kbDebug(`civ above=${Math.round(above)}`)
+  }
 }
 
 // Every scrollable ancestor of `from` (itself included — the NoteEditor body is
@@ -132,6 +182,7 @@ function nudgeBy(from: HTMLElement, dy: number): void {
 function followCaret(el: HTMLElement): void {
   if (el.isContentEditable) {
     const scroller = scrollersUp(el)[0]
+    kbDebug(`follow ce scroller=${scroller ? String(scroller.className).split(' ')[0] : 'NONE'}`)
     if (scroller) caretIntoView(scroller)
     return
   }
@@ -147,6 +198,22 @@ export function trackVisualViewport(): void {
   const vv = window.visualViewport
   if (!vv) return
   const root = document.documentElement.style
+
+  // ?kbdebug=1 anywhere in the URL → live diagnostics overlay (sticks for the
+  // session so in-app navigation keeps it; kill it by closing the app).
+  if (/[?&]kbdebug=1/.test(location.search) || sessionStorage.getItem('bbKbDebug') === '1') {
+    try {
+      sessionStorage.setItem('bbKbDebug', '1')
+    } catch {
+      /* private mode — the overlay still works for this page */
+    }
+    kbDebugEl = document.createElement('div')
+    kbDebugEl.style.cssText =
+      'position:fixed;top:4px;left:4px;right:4px;z-index:99999;background:rgba(0,0,0,.78);color:#7CFC98;' +
+      'font:11px/1.4 ui-monospace,monospace;padding:6px 8px;pointer-events:none;white-space:pre-wrap;border-radius:8px;'
+    document.body.appendChild(kbDebugEl)
+    setInterval(renderKbDebug, 250)
+  }
 
   // Browser zoom is locked (viewport user-scalable=no + touch-action in
   // core.css), but iOS Safari ignores user-scalable=no in a plain browser tab,
@@ -193,6 +260,7 @@ export function trackVisualViewport(): void {
     if (kbInset <= KB_THRESHOLD) return
     const el = document.activeElement
     if (!isEditable(el) || !el.isConnected) return
+    kbDebug(`pin ${el.tagName}${el.isContentEditable ? '/ce' : ''}`)
     const action = actionBelow(el)
     if (action) action.scrollIntoView({ block: 'nearest', behavior })
     // A tall contentEditable host is already "in view" while the caret the user
@@ -339,7 +407,28 @@ export function trackVisualViewport(): void {
     })
   }
   document.addEventListener('input', follow)
-  document.addEventListener('selectionchange', follow)
+  // iOS fires SPURIOUS selectionchange events while the user merely SCROLLS a
+  // contentEditable holding a caret — following those yanks the scroll straight
+  // back to the caret, fighting the finger (felt as jank / "I can't scroll away").
+  // Only follow when the selection has actually MOVED; a same-place repeat is a
+  // scroll artefact, not a caret move.
+  let lastA: Node | null = null
+  let lastF: Node | null = null
+  let lastAO = -1
+  let lastFO = -1
+  document.addEventListener('selectionchange', () => {
+    const s = document.getSelection()
+    const a = s?.anchorNode ?? null
+    const f = s?.focusNode ?? null
+    const ao = s?.anchorOffset ?? -1
+    const fo = s?.focusOffset ?? -1
+    if (a === lastA && f === lastF && ao === lastAO && fo === lastFO) return
+    lastA = a
+    lastF = f
+    lastAO = ao
+    lastFO = fo
+    follow()
+  })
 
   // A field blurring usually means the keyboard is closing. Some browsers don't
   // fire a visualViewport 'resize' on dismiss, which would leave --vvh/--kb (and
