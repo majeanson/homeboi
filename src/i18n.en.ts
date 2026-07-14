@@ -385,7 +385,7 @@ export const EN: typeof FR = {
     // The contextual ＋ sheet (Liste section).
     addTitle: 'Add to the list',
     addPlaceholder: 'Add to the list… (e.g. milk)',
-    addPlaceholderShort: 'Add… (e.g. milk)',
+    addPlaceholderShort: 'E.g. milk, bread…',
     check: 'Check off',
     uncheck: 'Uncheck',
     clearChecked: 'Clear checked',
@@ -414,7 +414,7 @@ export const EN: typeof FR = {
     voiceUnsupported: 'Voice recognition isn’t available on this device.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Quick add',
-    quickAddShort: 'Add',
+    quickAddShort: 'Bought before',
     quickAddTitle: 'Bought before',
     quickSearch: 'Search or add…',
     quickSortAlpha: 'Alphabetical order',
@@ -439,7 +439,7 @@ export const EN: typeof FR = {
   },
   notes: {
     title: 'Notes',
-    addPlaceholder: 'Write a note for the board…',
+    addPlaceholder: 'Write or dictate a note…',
     clear: 'Clear',
     memo: 'Voice memo',
     drawing: 'Drawing',

@@ -339,6 +339,78 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* `.act__text` (today.css) is a BASELINE row; this column reuses the class, and
+     an inherited `align-items: baseline` sizes children to their content instead
+     of stretching them — the title then painted at its max-content width, right
+     across the pencil and the check disc. Stretch pins every line to the column. */
+  align-items: stretch;
+}
+/* The title WRAPS at word boundaries and stops at three lines. `.act__text` sets
+   `overflow-wrap: anywhere` for unbreakable strings; on a narrow row that let a
+   real grocery name break mid-word into a screen-tall stack ("bologna / ise").
+   `break-word` still rescues a genuinely unbreakable string (a long URL) but
+   never splits an ordinary word, and the clamp bounds the row's height. */
+.list-row .list-row__name .title {
+  /* WIDTH FIRST: a clamped `-webkit-box` does not take its flex parent's stretch,
+     so without this the title laid out at its max-content width (measured: 240px
+     inside a 116px column) and painted straight across the pencil and the check
+     disc. Pin it to the column, then wrap and clamp inside it. */
+  width: 100%;
+  max-width: 100%;
+  /* `.act .title` sets `overflow-wrap: anywhere`, which on this narrow column
+     broke real grocery names mid-word ("bologna / ise"). `break-word` still
+     rescues a genuinely unbreakable string but never splits an ordinary word. */
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+/* The row's quiet second line: who added it · its deal · its aisle. One wrapping
+   row of chips, so none of them widens (or squeezes) the title above. */
+.list-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  /* Chips are `nowrap` (below), so a wide one would otherwise paint out of the
+     name column and slide under the ✏️ / check disc. Clip to the column. */
+  overflow: hidden;
+}
+.list-row__meta:empty {
+  display: none;
+}
+/* Chips on that line never break mid-word — « Super C · 4,99 $ » wrapped to three
+   lines when the column was starved — but they DO give way (ellipsis) rather than
+   run under the row's controls. */
+.list-row__meta > * {
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* …except the « who added it » disc, which is a fixed circle, not text. */
+.list-row__meta > .list-row__by {
+  flex: none;
+}
+/* A phone row must spend its width on the NAME, not on furniture. At 390px the
+   grip + picto + pencil + check + gaps already claim most of the card, so trim
+   each of them to its comfortable minimum (the check disc — the primary target —
+   keeps its full size). */
+@media (max-width: 480px) {
+  .list-row__main {
+    gap: 8px;
+  }
+  .list-row__grip {
+    min-width: 20px;
+  }
+  .list-row__main .tile {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
 }
 /* The item's own picture in the tile slot (emoji, not a Phosphor glyph). */
 .list-row__pic {

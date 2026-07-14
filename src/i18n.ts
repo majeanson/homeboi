@@ -435,9 +435,11 @@ export const FR = {
     // The contextual ＋ sheet (Liste section).
     addTitle: 'Ajouter à la liste',
     addPlaceholder: 'Ajouter à la liste… (ex. lait)',
-    // Narrow phone input: the full hint truncates mid-word, so a shorter form that
-    // keeps the verb + the example. The wall keeps the roomier addPlaceholder.
-    addPlaceholderShort: 'Ajouter… (ex. lait)',
+    // Narrow phone input: the field sits BESIDE its own « Ajouter » button, so a
+    // placeholder that repeats the verb both truncates mid-word (« Ajouter… (ex. l »)
+    // and says nothing new. Teach by example instead — it fits, and it shows what
+    // a line looks like. The wall keeps the roomier addPlaceholder.
+    addPlaceholderShort: 'Ex. : lait, pain…',
     check: 'Cocher',
     uncheck: 'Décocher',
     clearChecked: 'Vider les cochés',
@@ -468,7 +470,11 @@ export const FR = {
     voiceUnsupported: 'La reconnaissance vocale n’est pas dispo sur cet appareil.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Ajout rapide',
-    quickAddShort: 'Ajout',
+    // The ⚡ button sits right under the field's own « Ajouter » submit — « Ajout »
+    // beside « Ajouter » is two near-identical CTAs and a first-timer can't tell
+    // which one adds. Name it after what it OPENS (the same words as its scene
+    // title, quickAddTitle) so the two buttons can't be confused.
+    quickAddShort: 'Déjà acheté',
     quickAddTitle: 'Déjà acheté',
     quickSearch: 'Chercher ou ajouter…',
     quickSortAlpha: 'Ordre alphabétique',
@@ -495,7 +501,9 @@ export const FR = {
   },
   notes: {
     title: 'Notes',
-    addPlaceholder: 'Écris une note pour le babillard…',
+    // Short enough to survive a 390px field that also carries the mic + 📎 icons —
+    // « Écris une note pour le babillard… » truncated to « Écris une n ».
+    addPlaceholder: 'Écris ou dicte une note…',
     clear: 'Effacer',
     memo: 'Mémo vocal',
     drawing: 'Dessin',

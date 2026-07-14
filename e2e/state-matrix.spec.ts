@@ -127,9 +127,19 @@ for (const entry of MATRIX) {
       if (entry.keyboard) await openKeyboard(page, entry.keyboard)
       await page.waitForTimeout(300) // settle animations/late paints
 
+      // A BLANK capture must never pass. An empty page still has #root, so the
+      // bleed check reads 0 and every other assertion holds — a cold-compile race
+      // silently shipped white PNGs that looked like green states. Demand real
+      // painted text before we believe (and photograph) the state.
+      const painted = await page.evaluate(() => (document.body.innerText ?? '').trim().length)
+      if (painted < 10) {
+        await page.waitForTimeout(1200) // one grace period for a slow first paint
+      }
+
       // Measure BEFORE asserting so a failing state still lands in the manifest
       // and on disk — a red test with no evidence is exactly what this suite
       // exists to avoid.
+      const textLen = await page.evaluate(() => (document.body.innerText ?? '').trim().length)
       const { bleed, culprit } = await worstRightBleed(page, entry.scope ?? '#root')
       let focusedBottom: number | null = null
       if (entry.keyboard) {
@@ -160,11 +170,13 @@ for (const entry of MATRIX) {
             bleedPx: Math.round(bleed * 10) / 10,
             bleedCulprit: bleed > 1 ? culprit : undefined,
             focusedAboveKeyboard: entry.keyboard ? kbOk : undefined,
+            paintedChars: textLen,
           },
-          pass: errors.length === 0 && bleed <= 1 && kbOk,
+          pass: errors.length === 0 && bleed <= 1 && kbOk && textLen >= 10,
         }),
       )
 
+      expect(textLen, `${id}: the page painted nothing (blank capture)`).toBeGreaterThanOrEqual(10)
       expect(errors, `${id}: page errors`).toEqual([])
       expect(bleed, `${id}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)
       if (entry.keyboard) {

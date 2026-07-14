@@ -227,19 +227,27 @@ function ListItemRow({
               <InlineIcon name="hourglass-high-bold" size={12} /> {t.list.rushNone}
             </span>
           )}
-          {dealLabel}
-          {aisleTag}
-        </button>
-        {adder && (
-          <span
-            className="list-row__by"
-            style={{ background: adder.colour }}
-            title={adder.display_name}
-            aria-label={adder.display_name}
-          >
-            {(adder.display_name?.[0] ?? '?').toUpperCase()}
+          {/* The name column carries the row's SECOND line — the quiet facts about
+              the item (who added it, its deal, its aisle). They belong to the text,
+              not to the row's furniture: measured at 390px, keeping the « who »
+              disc as its own column left the title 55px — nine characters — and a
+              long grocery name ("Lait à la bolognaise maison…") broke mid-word into
+              a screen-tall row. Here it costs the title nothing. */}
+          <span className="list-row__meta">
+            {adder && (
+              <span
+                className="list-row__by"
+                style={{ background: adder.colour }}
+                title={adder.display_name}
+                aria-label={adder.display_name}
+              >
+                {(adder.display_name?.[0] ?? '?').toUpperCase()}
+              </span>
+            )}
+            {dealLabel}
+            {aisleTag}
           </span>
-        )}
+        </button>
         {/* The explicit edit affordance (mouse + keyboard reachable — never a
             touch-only path): the shared pencil, opening the edit scene the name
             tap used to. */}
