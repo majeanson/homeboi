@@ -149,6 +149,9 @@ export function EditField({
   // preventDefault() also cancels the host composite <form>'s implicit submit (which
   // would otherwise fire on the FIRST Enter). Multiline keeps Enter = newline.
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Mid-IME-composition Enter confirms the composition, not the field — commit
+    // only on the real keystroke (keyCode 229 = the legacy IME signal).
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
     if (isForm || multiline) return
     if (e.key === 'Enter') {
       e.preventDefault()

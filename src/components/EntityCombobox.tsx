@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useDeferredValue, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { fold } from '../lib/normalize'
@@ -171,14 +171,21 @@ export function EntityCombobox<T>({
   }, [options, frequentsKey])
 
   // Filter on the typed value; keep the caller's order (recipes arrive ranked) —
-  // frequents only shape the resting list, never the search results.
+  // frequents only shape the resting list, never the search results. The needle
+  // is DEFERRED so a keystroke paints the input immediately and the (possibly
+  // large) list re-filter rides a lower-priority render — the dropdown lags a
+  // frame behind fast typing instead of the caret lagging.
+  const deferredValue = useDeferredValue(value)
   const shown = useMemo(() => {
-    const needle = fold(value.trim())
+    const needle = fold(deferredValue.trim())
     if (!needle) return ranked
     return options.filter(
       (o) => fold(o.label).includes(needle) || (o.keywords ?? []).some((k) => fold(k).includes(needle)),
     )
-  }, [options, ranked, value])
+  }, [options, ranked, deferredValue])
+  // The active highlight indexes into a list that can lag the input — clamp so
+  // Enter can never pick past the end of the freshly-shrunk list.
+  const activeIdx = active < shown.length ? active : -1
 
   const commit = () => {
     if (!onSubmit || disabled || busy) return
@@ -207,6 +214,10 @@ export function EntityCombobox<T>({
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Mid-IME-composition keys steer the composition, not the dropdown — Enter
+    // here confirms the composed text, never a pick/commit (keyCode 229 = the
+    // legacy IME signal).
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       if (!open) {
@@ -220,7 +231,7 @@ export function EntityCombobox<T>({
     } else if (e.key === 'Enter') {
       // A highlighted option links it; otherwise Enter keeps the free text.
       e.preventDefault()
-      if (open && active >= 0 && active < shown.length) pick(shown[active])
+      if (open && activeIdx >= 0) pick(shown[activeIdx])
       else commit()
     } else if (e.key === 'Escape') {
       // First Esc closes the dropdown; if it's already closed, let the editor cancel.
@@ -276,7 +287,7 @@ export function EntityCombobox<T>({
             aria-expanded={listOpen}
             aria-controls={listId}
             aria-autocomplete="list"
-            aria-activedescendant={active >= 0 && shown[active] ? `${listId}-${shown[active].id}` : undefined}
+            aria-activedescendant={activeIdx >= 0 && shown[activeIdx] ? `${listId}-${shown[activeIdx].id}` : undefined}
             value={value}
             onChange={(e) => {
               onChange(e.target.value)
@@ -388,8 +399,8 @@ export function EntityCombobox<T>({
                     type="button"
                     id={`${listId}-${o.id}`}
                     role="option"
-                    aria-selected={i === active}
-                    className={'combobox__row' + (i === active ? ' is-active' : '')}
+                    aria-selected={i === activeIdx}
+                    className={'combobox__row' + (i === activeIdx ? ' is-active' : '')}
                     onPointerEnter={() => setActive(i)}
                     // Keep the input focused on press so the wrapper's onBlur
                     // never fires (relatedTarget is null on touch / Safari when a

@@ -316,7 +316,27 @@ export function NoteEditor({
     if (last) caretToEnd(last)
     afterInput()
   }
+  function onEditorPaste(e: React.ClipboardEvent) {
+    // Rich clipboard HTML would land as arbitrary live DOM (foreign tags, inline
+    // styles, <img> with event attributes) that the flat line-block model can't
+    // represent — htmlToMd drops it all on save, but the transient DOM shouldn't
+    // hold it either. Force plain text through the caret: behaves like fast
+    // typing (native undo, caret follows, \n becomes <br> which htmlToMd already
+    // splits back into lines).
+    e.preventDefault()
+    const text = e.clipboardData.getData('text/plain')
+    if (!text) return
+    try {
+      document.execCommand('insertText', false, text)
+    } catch {
+      /* execCommand unsupported — drop the paste rather than inject raw HTML */
+    }
+    afterInput()
+  }
   function onEditorKeyDown(e: React.KeyboardEvent) {
+    // Mid-IME-composition Enter commits the composition, not the line — let the
+    // editor see only the real keystroke (keyCode 229 = the legacy IME signal).
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
     if (e.key !== 'Enter' || e.shiftKey) return
     const cur = selectedBlocks()[0]
     if (!cur) return
@@ -469,6 +489,7 @@ export function NoteEditor({
           data-empty="true"
           onInput={afterInput}
           onKeyDown={onEditorKeyDown}
+          onPaste={onEditorPaste}
           onClick={onEditorClick}
         />
       </div>

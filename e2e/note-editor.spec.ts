@@ -86,6 +86,27 @@ test('checklist button adds a tappable checkbox that toggles', async ({ page }) 
   await expect(line).toHaveAttribute('data-checked', 'false')
 })
 
+test('pasting rich HTML lands as plain text — no foreign tags in the live DOM', async ({ page }) => {
+  const body = await openEditor(page)
+  await body.click()
+  await page.keyboard.type('before ')
+  // Synthetic paste with a rich text/html payload (the real clipboard needs OS
+  // permission). The onPaste guard must take text/plain and drop the HTML.
+  await body.evaluate((el) => {
+    const dt = new DataTransfer()
+    dt.setData('text/plain', 'pasted line one\npasted line two')
+    dt.setData('text/html', '<div style="color:red"><img src=x onerror="window.__pwned=1"><b>rich</b> <a href="https://evil">link</a></div>')
+    el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }))
+  })
+  // Plain text arrived…
+  await expect(body).toContainText('pasted line one')
+  await expect(body).toContainText('pasted line two')
+  // …and none of the rich payload did.
+  await expect(body.locator('img, a, [style]')).toHaveCount(0)
+  await expect(body.locator('b, strong')).toHaveCount(0)
+  expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined()
+})
+
 test('Enter continues a list and an empty item ends it', async ({ page }) => {
   const body = await openEditor(page)
   await body.click()
@@ -151,6 +172,7 @@ test('with the keyboard up, the content fits the visible band but the shell stil
     r.style.setProperty('--vvh', `${visible}px`)
     r.style.setProperty('--vvt', '0px')
     r.style.setProperty('--kb', `${kb}px`)
+    r.style.setProperty('--kb-fixed', `${kb}px`) // what viewportVars publishes for fixed shells (unglued: = --kb)
     r.classList.add('kb-open')
     const editor = document.querySelector('.note-editor')!.getBoundingClientRect()
     const bodyEl = document.querySelector('.note-editor__body') as HTMLElement
