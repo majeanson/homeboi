@@ -132,6 +132,11 @@ npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — 
 npm run e2e:sw         # SW offline-shell e2e ONLY (own harness: vite build + preview the PROD
                        #   bundle, since the service worker registers only in a PROD build).
                        #   sw.spec.ts is testIgnore'd from the default `npm run e2e`.
+npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts, own harness):
+                       #   route × opened state × theme × lens × fake keyboard → screenshots +
+                       #   structural assertions + screenshots/matrix/manifest.json, built for a
+                       #   Claude review pass (read the manifest, open flagged PNGs). Never runs
+                       #   per-push; CI twin = Actions ▸ "State matrix" (workflow_dispatch).
 npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
 ```
 
