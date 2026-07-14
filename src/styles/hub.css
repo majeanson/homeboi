@@ -664,6 +664,20 @@
   display: contents;
 }
 
+/* « Le truc » — the trick the companion says for this step. A full-width field, so it
+   gets its OWN row under the control pills (sharing the same 56px indent) rather than
+   being wedged into that wrapping button row. Its placeholder is the built-in trick for
+   the card's picture: the parent reads what the fox would say, and overrides only when
+   they know better. */
+.deck__tip {
+  margin: 0 0 6px 56px;
+}
+.deck__tip-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
 /* ---- Colour picker (per-person, per-task) -------------------------------- */
 .colorpick {
   display: flex;

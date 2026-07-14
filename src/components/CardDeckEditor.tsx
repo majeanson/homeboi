@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { type DeckCard } from '../lib/routineTemplates'
 import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
-import { useT } from '../i18n'
+import { useT, useLang } from '../i18n'
+import { suggestedTip } from '../lib/routineTips'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { useOnline } from '../lib/online'
 import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
@@ -48,7 +49,12 @@ export function CardDeckEditor({
   onPhotoChange?: (photo: string[]) => void
 }) {
   const t = useT()
+  const { lang } = useLang()
   const [paletteFor, setPaletteFor] = useState<number | null>(null)
+  // Which card's « truc » field is open. A card that already HAS one shows it without
+  // being asked (you can't edit what you can't see); this state is only what opens an
+  // empty one. 0 is a valid index, so guard on !== null.
+  const [tipFor, setTipFor] = useState<number | null>(null)
   // R2 audio storage off (the upload 503'd once) → hide every clip control for
   // the rest of this edit, the same way PhotosSection hides on a 503. The kid
   // view already falls back to TTS, so nothing breaks — the control just isn't
@@ -173,6 +179,20 @@ export function CardDeckEditor({
               seconds={card.seconds}
               onChange={(s) => update(i, { seconds: s || undefined })}
             />
+            {/* « Le truc » — what the companion says for this step when the child taps
+                it. Like the timer, it lives ON the card (no R2, no parallel array), so
+                every household gets it. Toggling it open reveals a field whose
+                PLACEHOLDER is the built-in trick for this card's picture: the parent
+                sees what the fox would say anyway, and types over it only when they
+                know a better one — which, for their own kid, they usually do. */}
+            <button
+              type="button"
+              className={'deck__clip-btn' + (card.tip ? ' is-on' : '')}
+              onClick={() => setTipFor(tipFor === i ? null : i)}
+              aria-expanded={tipFor === i || !!card.tip}
+            >
+              <InlineIcon name="lightbulb-bold" size={15} /> {t.routines.tip}
+            </button>
             {clips && !audioOff && (
                 <ClipControl
                   clipKey={clips[i]}
@@ -194,6 +214,26 @@ export function CardDeckEditor({
                 />
               )}
             </div>
+          {/* The tip field sits on its OWN row under the controls, not inside them: it's
+              a full-width text box, and stuffing it into the wrapping button row is
+              exactly the hand-rolled-flex-row overflow this codebase keeps re-learning. */}
+          {(tipFor === i || card.tip) && (
+            <div className="deck__tip">
+              <EditField
+                // `as="div"` — the deck lives INSIDE RoutineForm's <form>, and nesting a
+                // <form> is invalid HTML (Enter would submit the wrong one). The routine
+                // keeps its single bottom submit.
+                as="div"
+                value={card.tip ?? ''}
+                onChange={(v) => update(i, { tip: v || undefined })}
+                placeholder={suggestedTip(card, lang) ?? t.routines.tipPlaceholder}
+                ariaLabel={t.routines.tip}
+                onDelete={card.tip ? () => update(i, { tip: undefined }) : undefined}
+                deleteLabel={t.routines.tipOff}
+              />
+              <p className="deck__tip-hint">{t.routines.tipHint}</p>
+            </div>
+          )}
         </div>
       ))}
       <button type="button" className="btn btn--ghost mono deck__add" onClick={add}>

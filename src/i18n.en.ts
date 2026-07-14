@@ -1780,6 +1780,30 @@ export const EN: typeof FR = {
     // never a finish-cheer — presence + play, not a reward.
     companionTap: 'Tap your companion',
     companionSays: ['Hi there!', 'Keep going!', 'You’ve got this!', 'I’m with you.', 'Let’s go!', 'Nice work!'],
+    companionVoices: {
+      fox: ['I’ve got a trick for you.', 'Psst — come see this.'],
+      owl: ['I’m watching over you.', 'Hoo hoo! I’m right here.'],
+      cat: ['Purr… I’m following you.', 'I’ll stretch along with you.'],
+      bunny: ['Hop! One step at a time.', 'Little hops get us there.'],
+      bear: ['A big bear hug.', 'Nice and steady, like a bear.'],
+      turtle: ['We’ll take our time.', 'Slowly still counts.'],
+      star: ['I’m shining just for you.', 'You’re sparkling too.'],
+      cloud: ['Light as a cloud.', 'I’m floating right beside you.'],
+    },
+    companionMoments: {
+      start: ['Let’s start together.', 'First picture — here we go.'],
+      mid: ['I’m right here.', 'Keep going, at your own pace.'],
+      last: ['The last picture!', 'We’re almost there.'],
+    },
+    companionTones: {
+      early: ['Good morning! Let’s wake up gently.', 'The day is starting with you.'],
+      day: ['Lovely day, isn’t it?', 'Enjoying the middle of the day.'],
+      evening: ['Shhh… it’s nearly bedtime.', 'The house is settling, and so are we.'],
+    },
+    tip: 'The trick',
+    tipOff: 'Remove the trick',
+    tipPlaceholder: 'Write your own trick…',
+    tipHint: 'Your companion will say it when the child taps them.',
     // The sticker wall (opt-in — visible only when Calm mode is OFF).
     stickerPrompt: 'Pick your sticker',
     stickerPick: 'Place this sticker',

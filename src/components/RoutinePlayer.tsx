@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useT } from '../i18n'
+import { useT, useLang } from '../i18n'
 import { useCalm } from '../lib/calm'
 import { useSpeak, playNarration } from '../lib/speak'
 import { Icon, InlineIcon } from './Icon'
@@ -15,7 +15,9 @@ import { todayLocalDay } from '../lib/localDay'
 import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
-import { isCompanion } from '../lib/companions'
+import { companionPool, companionTone, isCompanion, type CompanionMoment } from '../lib/companions'
+import { computeDayPart } from '../lib/timeofday'
+import { tipFor } from '../lib/routineTips'
 
 // The RUN of one routine — the calm "right now / then" picture story extracted
 // from KidView so it can play on EVERY surface, not just the locked toddler
@@ -42,6 +44,11 @@ interface PlayerCard {
   // Optional per-step countdown (e.g. 120 = a 2-minute teeth brush). When set, the
   // step grows a tap-to-start countdown ring (calm: never force-advances).
   seconds?: number
+  // Optional « truc » — the trick the companion says for THIS step when the child taps
+  // it. Typed by the parent in the deck editor; beats the built-in catalog keyed on the
+  // card's emoji (lib/routineTips), because a parent knows the real one. Stored inline
+  // in cards_json, like `seconds` — no migration.
+  tip?: string
 }
 export interface PlayerRoutine {
   id: string
@@ -98,6 +105,7 @@ export function RoutinePlayer({
   backLabel?: string
 }) {
   const t = useT()
+  const { lang } = useLang()
   const { calm } = useCalm()
   const speak = useSpeak()
   const qc = useQueryClient()
@@ -247,15 +255,15 @@ export function RoutinePlayer({
   // The polite live region under the strip: where the story just moved. Not the
   // stopwatch (announcing it every second would flood a screen reader).
   const [announce, setAnnounce] = useState('')
-  // Tap the companion → it says a warm line on-device. A tiny wiggle plays via the
-  // is-talking class. Tap-initiated (not a finish-triggered cheer), so it stays calm.
+  // Tap the companion → it speaks on-device, and a tiny wiggle plays via the is-talking
+  // class. Tap-initiated (never a finish-triggered cheer), so it stays calm. What it
+  // says is decided in sayCompanion() below, once the current card is known.
   const [buddyTalking, setBuddyTalking] = useState(false)
-  function sayCompanion() {
-    const lines = t.routines.companionSays
-    speak(lines[Math.floor(Math.random() * lines.length)])
-    setBuddyTalking(true)
-    window.setTimeout(() => setBuddyTalking(false), 600)
-  }
+  // The line it just said, shown in a speech bubble beside it. A pre-reader hears it;
+  // the parent standing there READS it — which is how a trick ("top, bottom, and your
+  // tongue too") reaches the grown-up who has to repeat it tomorrow morning.
+  const [buddyLine, setBuddyLine] = useState<string | null>(null)
+  const buddyTimers = useRef<number[]>([])
 
   // Sticker wall (OPT-IN — the one thing « Mode calme » gates). On finishing, the child
   // places ONE sticker on their wall; local `awarded` state then shows it done (one per
@@ -369,6 +377,57 @@ export function RoutinePlayer({
   const firstUndone = routine.cards.findIndex((_, i) => !routine.doneIdx.includes(i))
   const curIdx = firstUndone === -1 ? routine.cards.length - 1 : firstUndone
   const cur = routine.cards[curIdx]
+
+  // ── What the companion says when the child taps it ─────────────────────────
+  //
+  // The cascade, tricks before chatter:
+  //   1. the parent's own « truc » on this card, if they typed one;
+  //   2. the built-in trick for this card's PICTURE (lib/routineTips);
+  //   3. only if neither exists — a warm line, pooled from the creature's own
+  //      personality, where the story is, and the time of day.
+  //
+  // So the tap is USEFUL first and friendly second. A creature that only ever says
+  // "keep going!" gets tapped once; one that knows how you put a coat on gets tapped
+  // every morning. None of this is fed progress — see the note in lib/companions.ts.
+  function sayCompanion() {
+    if (!isCompanion(routine.companion)) return
+    // No current card at the finish (the recap is up) → no trick to give, and
+    // deliberately no "you did it!" either: the pool drops its story-position lines.
+    const trick = allDone || !cur ? null : tipFor(cur, lang)
+    const moment: CompanionMoment | null = allDone
+      ? null
+      : routine.doneIdx.length === 0
+        ? 'start'
+        : curIdx >= routine.cards.length - 1
+          ? 'last'
+          : 'mid'
+    const line =
+      trick ??
+      (() => {
+        const pool = companionPool(
+          {
+            says: t.routines.companionSays,
+            voices: t.routines.companionVoices,
+            moments: t.routines.companionMoments,
+            tones: t.routines.companionTones,
+          },
+          { companion: routine.companion, moment, tone: companionTone(computeDayPart(Date.now())) },
+        )
+        return pool[Math.floor(Math.random() * pool.length)]
+      })()
+    speak(line)
+    setBuddyLine(line)
+    setBuddyTalking(true)
+    // The wiggle is brief; the bubble lingers long enough to READ a trick (they run
+    // longer than "Allô !"), then fades on its own — never a thing to dismiss.
+    buddyTimers.current.forEach(clearTimeout)
+    buddyTimers.current = [
+      window.setTimeout(() => setBuddyTalking(false), 600),
+      window.setTimeout(() => setBuddyLine(null), Math.min(3500 + line.length * 55, 9000)),
+    ]
+  }
+  // Never leave a timer running into an unmounted component (the kid tapped ✕ mid-line).
+  useEffect(() => () => buddyTimers.current.forEach(clearTimeout), [])
   // The step the ← rewinds to: the last DONE one before where we are. Normally
   // curIdx - 1; computed rather than assumed, since a deck edit can leave doneIdx
   // sparse (done [1] with 0 undone → we're on 0 and there is nothing behind it).
@@ -417,18 +476,28 @@ export function RoutinePlayer({
         </div>
 
         {/* The companion buddy — a larger, present creature that keeps the child
-            company through the run. Tap it to hear a warm line (on-device speech,
-            like tapping any card). It's TAP-initiated + daypart-bound (dozes at
-            night): presence + play, never a grade — it doesn't cheer at a finish. */}
+            company through the run. Tap it and it says the trick for the step they're
+            ON (the parent's own, or the one for the card's picture), falling back to a
+            warm line. It's TAP-initiated + daypart-bound (dozes at night): presence,
+            help and play — never a grade, and it doesn't cheer at a finish.
+            The bubble carries the words for the grown-up in the room; the speech
+            carries them for the pre-reader, who can't read either. */}
         {isCompanion(routine.companion) && (
-          <button
-            type="button"
-            className={'tdl-buddy' + (buddyTalking ? ' is-talking' : '')}
-            onClick={sayCompanion}
-            aria-label={t.routines.companionTap}
-          >
-            <Companion companion={routine.companion} size={72} />
-          </button>
+          <div className="tdl-buddy-wrap">
+            {buddyLine && (
+              <div className="tdl-buddy__bubble" role="status">
+                {buddyLine}
+              </div>
+            )}
+            <button
+              type="button"
+              className={'tdl-buddy' + (buddyTalking ? ' is-talking' : '')}
+              onClick={sayCompanion}
+              aria-label={t.routines.companionTap}
+            >
+              <Companion companion={routine.companion} size={72} />
+            </button>
+          </div>
         )}
 
         <div className="tdl-stage">

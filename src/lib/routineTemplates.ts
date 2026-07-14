@@ -10,6 +10,11 @@ export interface DeckCard {
   // Optional per-step countdown in seconds — the player offers a tap-to-start
   // timer on this step (e.g. 120 = a 2-minute teeth brush). Absent/0 = no timer.
   seconds?: number
+  // Optional « truc » — what the child's companion says for this step when they tap
+  // it. Absent → the built-in trick for the card's picture (lib/routineTips), then a
+  // warm line. Templates leave it unset on purpose: the catalog already covers 🪥 and
+  // 🛁 better than a duplicate string here would, and it stays in ONE place.
+  tip?: string
 }
 
 interface RawTemplate {

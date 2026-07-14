@@ -204,6 +204,10 @@ const ROUTINES = {
       timeOfDay: 'morning',
       cards: ROUTINE_CARDS,
       doneIdx: [0],
+      // Léa picked the fox. Without a companion the buddy simply doesn't render, so
+      // the fixture has to carry one for any spec that drives « le truc » (or the
+      // creature at all) to have something to tap.
+      companion: 'fox',
     },
     {
       id: 'r2',

@@ -438,14 +438,50 @@
   color: var(--ink-soft);
 }
 /* The companion buddy — a present, tappable creature that keeps the child company
-   through the run, anchored in a bottom corner of the stage. Tap → it speaks + does a
-   quick wiggle (.is-talking). Bigger than the old corner glyph; the base bob/dozing
-   comes from .companion (routines-overview.css). */
-.tdl-buddy {
+   through the run, anchored in a bottom corner of the stage. Tap → it speaks its
+   « truc » (or a warm line) + does a quick wiggle (.is-talking). Bigger than the old
+   corner glyph; the base bob/dozing comes from .companion (routines-overview.css).
+   The WRAP owns the corner anchor so the speech bubble can stack above the creature
+   and grow leftward without either one leaving the stage. */
+.tdl-buddy-wrap {
   position: absolute;
   right: clamp(10px, 3vw, 26px);
   bottom: clamp(10px, 3vh, 28px);
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+/* What the creature just said. Anchored right, but capped so a long trick wraps onto
+   several lines INSIDE the stage instead of bleeding off the left edge of a 360px
+   phone (the standing no-horizontal-overflow rule). */
+.tdl-buddy__bubble {
+  max-width: min(30ch, calc(100vw - 2.5rem));
+  padding: 8px 12px;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--surface, #fff);
+  color: var(--ink, #222);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.16);
+  font-size: var(--text-md);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: right;
+  text-wrap: pretty;
+  animation: buddy-bubble-in 0.22s var(--ease-soft, ease);
+}
+@keyframes buddy-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tdl-buddy__bubble {
+    animation: none;
+  }
+}
+.tdl-buddy {
   padding: 6px;
   border: 0;
   background: transparent;

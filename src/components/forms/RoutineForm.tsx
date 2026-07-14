@@ -34,7 +34,7 @@ export interface RoutineInit {
   id: string
   name: string
   timeOfDay: string | null
-  cards?: { icon: string; label: string; narration?: string; seconds?: number }[]
+  cards?: { icon: string; label: string; narration?: string; seconds?: number; tip?: string }[]
   // Parallel parent-voice clip keys (feature #17 A), one R2 key per card
   // ('' = none). Same length as cards; prefills the deck's recorded clips on edit.
   cardsNarration?: string[]
@@ -77,7 +77,11 @@ export function RoutineForm({
   const [memberIds, setMemberIds] = useState<string[]>([])
   const [name, setName] = useState(value?.name ?? seed?.name ?? '')
   const [cards, setCards] = useState<DeckCard[]>(
-    value?.cards?.map((c) => ({ icon: c.icon, label: c.label, seconds: c.seconds })) ?? seed?.cards ?? [],
+    // Field-by-field, so every per-card aid stored inline in cards_json (the timer, the
+    // « truc ») survives an edit. A field left out here is a field the next save drops.
+    value?.cards?.map((c) => ({ icon: c.icon, label: c.label, seconds: c.seconds, tip: c.tip })) ??
+      seed?.cards ??
+      [],
   )
   // Parallel parent-voice clip keys (feature #17 A), kept rigorously the SAME
   // length as `cards` — CardDeckEditor mutates both arrays together on every
@@ -127,6 +131,7 @@ export function RoutineForm({
         icon: c.icon,
         label: c.label.trim(),
         seconds: c.seconds,
+        tip: c.tip?.trim(),
         clip: cardsNarration[i] ?? '',
         photo: cardsPhoto[i] ?? '',
       }))
@@ -135,9 +140,12 @@ export function RoutineForm({
       icon: c.icon,
       label: c.label || c.icon,
       narration: c.label || c.icon,
-      // Carry the per-step timer through (server clamps/validates it); omit the
-      // key entirely when there's none so a timer-less card stays clean.
+      // Carry the per-step aids through (the server clamps/validates both); omit the
+      // key entirely when there's none so a card without them stays clean. This payload
+      // is rebuilt field-by-field, so anything stored inline on the card and NOT listed
+      // here is silently dropped on save — the timer, and now the « truc ».
       ...(c.seconds ? { seconds: c.seconds } : {}),
+      ...(c.tip ? { tip: c.tip } : {}),
     }))
     const narrationPayload = kept.map((c) => c.clip)
     const photoPayload = kept.map((c) => c.photo)

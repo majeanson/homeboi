@@ -1959,6 +1959,37 @@ export const FR = {
     // never a finish-cheer — presence + play, not a reward.
     companionTap: 'Touche ton compagnon',
     companionSays: ['Allô !', 'On continue !', 'T’es capable !', 'Je suis avec toi.', 'On y va !', 'Beau travail !'],
+    // Les lignes chaudes, élargies (companionPool) : la personnalité de la créature, où
+    // en est l’histoire, et l’heure qu’il est. Jamais la performance de l’enfant — et
+    // aucune ligne de « fin », féliciter serait une récompense.
+    companionVoices: {
+      fox: ['J’ai un truc pour toi.', 'Petit malin, viens voir.'],
+      owl: ['Je veille sur toi.', 'Hou hou ! Je regarde.'],
+      cat: ['Ronron… je te suis.', 'Je m’étire avec toi.'],
+      bunny: ['Hop ! Une étape à la fois.', 'On avance à petits bonds.'],
+      bear: ['Un gros câlin d’ourson.', 'Tranquille, comme un ours.'],
+      turtle: ['On prend notre temps.', 'Doucement, ça compte pareil.'],
+      star: ['Je brille juste pour toi.', 'Tu scintilles aussi.'],
+      cloud: ['Léger comme un nuage.', 'Je flotte à côté de toi.'],
+    },
+    // Où en est l’histoire — une POSITION, pas une note.
+    companionMoments: {
+      start: ['On commence ensemble.', 'La première image, c’est parti.'],
+      mid: ['Je suis juste ici.', 'On continue, à ton rythme.'],
+      last: ['La dernière image !', 'On y est presque.'],
+    },
+    // L’heure qu’il est — clair le matin, feutré le soir.
+    companionTones: {
+      early: ['Bonjour ! On se réveille tranquillement.', 'Le jour commence avec toi.'],
+      day: ['Belle journée, hein ?', 'On profite du milieu du jour.'],
+      evening: ['Chut… c’est bientôt le dodo.', 'La maison se calme, nous aussi.'],
+    },
+    // « Le truc du compagnon » — le conseil par pictogramme (lib/routineTips), et le
+    // champ où un parent écrit le SIEN (il gagne toujours sur le catalogue).
+    tip: 'Le truc',
+    tipOff: 'Enlever le truc',
+    tipPlaceholder: 'Écris ton truc à toi…',
+    tipHint: 'Ton compagnon le dira quand l’enfant le touchera.',
     // The sticker wall (opt-in — visible only when « Mode calme » est désactivé).
     stickerPrompt: 'Choisis ton autocollant',
     stickerPick: 'Placer cet autocollant',

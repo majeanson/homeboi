@@ -20,20 +20,33 @@ interface Card {
   // The player offers a tap-to-start timer; it's a calm aid, never a gate. A
   // missing/0 value means "no timer". Stored inline in cards_json (no migration).
   seconds?: number
+  // Optional « truc » — the trick the child's companion speaks for this step when
+  // tapped. The parent's own words; beats the built-in catalog keyed on the card's
+  // emoji (src/lib/routineTips). Absent = fall back to that catalog, then to a warm
+  // line. Stored inline in cards_json, exactly like `seconds` — no migration.
+  tip?: string
 }
 
 const isNumber = (v: unknown): v is number => typeof v === 'number'
 
-// Cards are stored as the client sends them, but the one numeric field a bad
-// payload could wedge the countdown UI with is the per-step timer — clamp it to a
-// whole number of seconds in a calm range, or drop the key. Every other field
-// (icon / label / narration) passes through unchanged, as it always has.
+// Cards are stored as the client sends them, EXCEPT the two fields a bad payload
+// could wedge a surface with: the per-step timer (clamped to a whole number of
+// seconds in a calm range, or dropped) and the per-step tip (trimmed + length-capped,
+// or dropped — it gets SPOKEN aloud and drawn in a bubble, so an unbounded string is
+// both a wall of text on a tablet and a very long thing to say to a three-year-old).
+// Every other field (icon / label / narration) passes through unchanged, as it always has.
 const MAX_TIMER = 3600 // an hour: a sane ceiling — no routine step needs more
+const MAX_TIP = 200 // a trick is one sentence a child can hold, not a paragraph
 function sanitizeCards(cards: Card[]): Card[] {
   return cards.map((c) => {
-    const { seconds, ...rest } = c ?? ({} as Card)
-    const ok = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0
-    return ok ? { ...rest, seconds: Math.min(Math.round(seconds as number), MAX_TIMER) } : rest
+    const { seconds, tip, ...rest } = c ?? ({} as Card)
+    const okSecs = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0
+    const trimmed = typeof tip === 'string' ? tip.trim().slice(0, MAX_TIP) : ''
+    return {
+      ...rest,
+      ...(okSecs ? { seconds: Math.min(Math.round(seconds as number), MAX_TIMER) } : {}),
+      ...(trimmed ? { tip: trimmed } : {}),
+    }
   })
 }
 // Per-step countdown timer state, persisted on today's run row so a tap-to-start

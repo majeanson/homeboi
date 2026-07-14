@@ -45,6 +45,12 @@ interface RoutineCard {
   icon: string
   label: string
   narration?: string
+  // Per-step aids stored inline in cards_json (no migration): the tap-to-start
+  // countdown, and the « truc » the companion speaks for this step. Both must survive
+  // a round-trip through the edit form — a field the prefill type doesn't know about
+  // is a field the next save silently drops.
+  seconds?: number
+  tip?: string
 }
 export interface Routine {
   id: string

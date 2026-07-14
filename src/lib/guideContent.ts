@@ -617,6 +617,14 @@ export const GUIDE: GuideEntry[] = [
         route: '/routine/stickers',
       },
       {
+        label: { fr: 'Le truc du compagnon', en: 'Your companion’s trick' },
+        detail: {
+          fr: 'L’enfant touche sa créature pendant la routine : elle dit le truc de l’étape où il est rendu — « en haut, en bas… et la langue aussi ! » pour 🪥, « les deux souliers font un cœur » pour 👟. Chaque pictogramme a le sien. Dans Réglages ▸ Routines, 💡 « Le truc » te laisse écrire le tien sur une carte : c’est lui qui sera dit. La créature ne parle que si on la touche, et ne commente jamais si l’étape a été faite — elle tient compagnie et donne un coup de main, elle ne note pas.',
+          en: 'The child taps their creature during a routine: it says the trick for the step they’re on — “top teeth, bottom teeth… and your tongue too!” for 🪥, “your shoes make a heart shape” for 👟. Every pictogram has its own. In Settings ▸ Routines, 💡 “The trick” lets you write your own on a card, and that’s what gets said. The creature only speaks when tapped, and never comments on whether a step got done — it keeps company and lends a hand, it doesn’t grade.',
+        },
+        route: '/settings?tab=routines&sub=routines',
+      },
+      {
         label: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
         detail: {
           fr: 'Donne une durée à une étape (2 minutes pour les dents) : l’enfant part l’anneau, un petit son joue à la fin. Un repère calme, pas un chrono.',
