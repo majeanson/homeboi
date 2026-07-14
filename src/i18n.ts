@@ -2477,6 +2477,9 @@ export const FR = {
     buildTitle: 'Version',
     buildBuilt: 'Dernière mise à jour',
     buildNever: 'Inconnue',
+    kbDebugOn: 'Activer le diagnostic clavier',
+    kbDebugOff: 'Désactiver le diagnostic clavier',
+    kbDebugHint: 'Affiche les mesures du clavier à l’écran (pour déboguer un champ caché).',
     // État des services (E-34, bmad/08): each optional binding, its state, and one
     // plain line on what quietly hides when it's absent — so a missing mic/photo
     // button reads as "not configured", never as a mystery bug.

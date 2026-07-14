@@ -2301,6 +2301,9 @@ export const EN: typeof FR = {
     buildTitle: 'Version',
     buildBuilt: 'Last updated',
     buildNever: 'Unknown',
+    kbDebugOn: 'Enable keyboard diagnostics',
+    kbDebugOff: 'Disable keyboard diagnostics',
+    kbDebugHint: 'Shows live keyboard measurements on screen (to debug a hidden field).',
     healthTitle: 'Service status',
     healthHint:
       'What is wired up on this install. When a service is absent, the features that need it hide — everything else works as usual.',
