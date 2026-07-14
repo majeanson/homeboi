@@ -269,8 +269,10 @@ function QaChip({
       </button>
       {/* The aisle for this recurrent item — outside the add button (a select can't
           nest in a button), keyed by the item's name so it's the SAME override the
-          list line uses. Set it once here on "Oeuf" and it sticks for the line too. */}
-      {!isGuest() && <AislePicker text={item.label} className="qa__aisle" />}
+          list line uses. Set it once here on "Oeuf" and it sticks for the line too.
+          `compact`: icon-only, so the name (the thing you're scanning for) keeps the
+          row and the aisle is a glyph you tap, not a sentence you re-read 12 times. */}
+      {!isGuest() && <AislePicker text={item.label} compact className="qa__aisle" />}
       {!isAdded && (
         <RowActions onDelete={onRemove} deleteLabel={t.list.quickRemove(item.label)} size={16} />
       )}

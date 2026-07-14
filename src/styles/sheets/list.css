@@ -273,15 +273,51 @@
 .aisle-pick {
   max-width: 22rem;
 }
-/* Compact aisle select on a quick-add row — a secondary control beside the big add
-   button, narrow so the label keeps the room. */
-.qa__aisle {
+/* Icon-only aisle picker (quick-add rows). "Automatique — 🥛" repeated down a
+   dense column ate half the row and said nothing new, so the collapsed face is
+   the aisle emoji alone: a real <select> laid transparent over it keeps the tap
+   target, the native dropdown (full labels), focus and the keyboard. */
+.aisle-pip {
+  position: relative;
   flex: none;
-  width: auto;
-  max-width: 8.5rem;
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
   align-self: center;
-  font-size: var(--text-xs);
-  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2, transparent);
+}
+/* An untouched (auto-guessed) aisle stays quiet; a deliberate override reads as set. */
+.aisle-pip.is-auto {
+  border-style: dashed;
+  opacity: 0.75;
+}
+.aisle-pip__emoji {
+  font-size: 1.05rem;
+  line-height: 1;
+  pointer-events: none;
+}
+.aisle-pip__sel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.aisle-pip__sel:disabled {
+  cursor: default;
+}
+/* Keyboard focus lands on the invisible select — put the ring on the visible pip. */
+.aisle-pip:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 /* The check disc keeps its comfortable 42px circle (the row centre now toggles
    too, but the disc stays the recognisable "tick" anchor on the right edge).

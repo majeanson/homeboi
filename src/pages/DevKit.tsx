@@ -785,8 +785,8 @@ export function DevKit() {
           <Demo label="set a grocery item's store aisle (override, keyed by item name)">
             <AislePicker text="Lait 2%" />
           </Demo>
-          <Demo label="compact (quick-add row)">
-            <AislePicker text="Pain tranché" className="qa__aisle" />
+          <Demo label="compact — icon-only face (quick-add row); tap the pip for the full list">
+            <AislePicker text="Pain tranché" compact className="qa__aisle" />
           </Demo>
         </>
       ),
