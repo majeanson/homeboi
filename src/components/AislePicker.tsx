@@ -53,7 +53,7 @@ export function AislePicker({
       : `${t.list.aisleLabel} · ${shown.label[lang]}`
   const select = (
     <select
-      className={compact ? 'aisle-pick__sel' : 'input aisle-pick' + (className ? ` ${className}` : '')}
+      className={compact ? 'aisle-pip__sel' : 'input aisle-pick' + (className ? ` ${className}` : '')}
       value={current}
       onChange={(e) => set(e.target.value)}
       disabled={isGuest()}

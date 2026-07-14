@@ -60,6 +60,23 @@ test('the invisible swipe pane does not swallow clicks on the rest of the row', 
   expect(hits).toEqual({ aisle: 'self', del: 'self' })
 })
 
+// The compact aisle picker is an emoji pip with a REAL <select> laid transparent over
+// it. The two halves are joined by a class name only, so a typo (the select rendered
+// `aisle-pick__sel` while the CSS styled `.aisle-pip__sel`) drops every rule at once:
+// the native box reappears, opaque, on top of the pip and spills out of the row. Assert
+// the collapsed face is what actually paints — the pip's emoji, not a labelled box.
+test('the quick-add aisle picker collapses to a transparent pip, not a native select', async ({ page }) => {
+  await boot(page, DESKTOP)
+  const pip = page.locator('.aisle-pip').first()
+  await expect(pip).toBeVisible()
+  const sel = page.locator('.aisle-pip__sel').first()
+  expect(await sel.evaluate((e) => getComputedStyle(e).opacity), 'the select must not paint').toBe('0')
+  // …but it is still a real control: it covers the pip (tappable) and takes focus.
+  const [selBox, pipBox] = [await sel.boundingBox(), await pip.boundingBox()]
+  expect(selBox!.width).toBeGreaterThan(pipBox!.width * 0.8)
+  expect(await sel.evaluate((e) => (e as HTMLSelectElement).disabled)).toBe(false)
+})
+
 test('the quick-add row does not overflow a phone once it carries a delete', async ({ page }) => {
   await boot(page, PHONE)
   // Per-child bounds check, not scrollWidth: the ancestors set overflow-x:hidden, so a
