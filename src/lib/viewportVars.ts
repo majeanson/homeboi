@@ -68,6 +68,32 @@ function kbDebug(line: string): void {
   kbDebugLog.push(`${(performance.now() / 1000).toFixed(1)} ${line}`)
   if (kbDebugLog.length > 5) kbDebugLog.shift()
 }
+// Painted-space RULERS. The overlay's numbers are DOM truth (getBoundingClientRect,
+// scrollTop) — but Marc's second capture showed the PAINTED rows sitting ~100px below
+// where those rects claim, i.e. the compositor and the DOM disagree (iOS keyboard-pan
+// territory). Rects can never reveal that from inside JS: every API answers from the
+// same DOM-side geometry. So we draw fixed markers AT the reported coordinates — if
+// paint agrees with DOM, the red box hugs the caret's line on screen; any visible gap
+// between a marker and the row it names IS the divergence, measured by the screenshot.
+const kbMarks: Record<string, HTMLElement> = {}
+function kbMark(name: string, colour: string, top: number, height = 0): void {
+  let m = kbMarks[name]
+  if (!m) {
+    m = document.createElement('div')
+    m.style.cssText =
+      'position:fixed;left:0;right:0;z-index:99998;pointer-events:none;' +
+      'border-top:2px solid;font:10px/1 ui-monospace,monospace;text-align:right;padding-right:2px;'
+    kbMarks[name] = m
+    document.body.appendChild(m)
+  }
+  m.style.top = `${top}px`
+  m.style.height = `${Math.max(height, 10)}px`
+  m.style.borderColor = colour
+  m.style.color = colour
+  m.style.borderBottom = height > 0 ? `2px solid ${colour}` : 'none'
+  m.textContent = name
+}
+
 function renderKbDebug(): void {
   if (!kbDebugEl) return
   const vv = window.visualViewport
@@ -89,14 +115,26 @@ function renderKbDebug(): void {
     if (line) {
       const lr = line.getBoundingClientRect()
       caret += ` line=${line.tagName}.${String(line.className).split(' ')[0]} ${Math.round(lr.top)}..${Math.round(lr.bottom)}`
+      kbMark('caret-line', '#ff3b30', lr.top, lr.height)
     }
   }
   const sc = ae ? scrollersUp(ae)[0] : null
   const scBox = sc?.getBoundingClientRect()
+  // The fixed surface hosting the field — its own rect + the COMPUTED fit paddings,
+  // so "the .kb-open padding never applied" and "it applied but paint disagrees"
+  // stop being indistinguishable theories.
+  const shell = ae?.closest<HTMLElement>('.note-editor, .scene, .recipe-modal, .cashier, .vv-fit') ?? null
+  const shBox = shell?.getBoundingClientRect()
+  const shCs = shell ? getComputedStyle(shell) : null
+  kbMark('visB', '#ff9500', visibleBottom())
+  if (scBox) kbMark('scroller', '#00c7be', scBox.top, scBox.height)
   kbDebugEl.textContent = [
     `inner=${window.innerHeight} vvH=${vv ? Math.round(vv.height) : '-'} vvT=${vv ? Math.round(vv.offsetTop) : '-'} scale=${vv?.scale ?? '-'}`,
     `kbInset=${kbInset} open=${document.documentElement.classList.contains('kb-open')} --kb=${cs.getPropertyValue('--kb').trim()} --vvt=${cs.getPropertyValue('--vvt').trim()}`,
     `visBottom=${Math.round(visibleBottom())} accessory=${accessoryPad()}`,
+    shell && shBox && shCs
+      ? `shell=${String(shell.className).split(' ')[0]} ${Math.round(shBox.top)}..${Math.round(shBox.bottom)} padT=${shCs.paddingTop} padB=${shCs.paddingBottom}`
+      : 'shell=none',
     `ae=${ae ? `${ae.tagName}.${String(ae.className).split(' ')[0]}` : 'none'} caretY=${caret}`,
     sc && scBox
       ? `scroller=${String(sc.className).split(' ')[0]} top=${Math.round(scBox.top)} bottom=${Math.round(scBox.bottom)} sT=${Math.round(sc.scrollTop)} sH=${sc.scrollHeight} cH=${sc.clientHeight} slack=${getComputedStyle(sc).paddingBottom}`
