@@ -133,11 +133,13 @@ test('the view follows the caret — a long note keeps the line being typed in v
   expect(visible.above).toBeLessThanOrEqual(0)
 })
 
-test('with the keyboard up, the editor shrinks to the visible band instead of hiding under it', async ({ page }) => {
+test('with the keyboard up, the content fits the visible band but the shell still covers the page', async ({ page }) => {
   // The other half of the same bug. On iOS the keyboard OVERLAYS the layout viewport, so
   // an `inset: 0` editor keeps full height and its bottom third is simply behind the
-  // keyboard. viewportVars publishes the visible band as --vvt/--vvh + `.kb-open`; every
-  // other full-screen surface (.scene, .recipe-modal) binds to it and the editor didn't.
+  // keyboard. viewportVars publishes the visible band as --vvt/--kb + `.kb-open`; the
+  // editor's CONTENT must fit that band — but the SHELL must stay full-size: an earlier
+  // fix shrank the whole fixed shell, which un-covered the keyboard's strip and turned it
+  // into a live, scrollable window onto the cercle page behind.
   // Playwright can't raise a real keyboard, so we publish exactly what viewportVars would.
   await openEditor(page)
   const KB = 420
@@ -148,15 +150,28 @@ test('with the keyboard up, the editor shrinks to the visible band instead of hi
     const visible = window.innerHeight - kb
     r.style.setProperty('--vvh', `${visible}px`)
     r.style.setProperty('--vvt', '0px')
+    r.style.setProperty('--kb', `${kb}px`)
     r.classList.add('kb-open')
     const editor = document.querySelector('.note-editor')!.getBoundingClientRect()
     const body = document.querySelector('.note-editor__body')!.getBoundingClientRect()
-    return { visible, editorH: editor.height, editorBottom: editor.bottom, bodyBottom: body.bottom, bodyH: body.height }
+    // What actually receives a touch in the middle of the keyboard-covered strip?
+    const behind = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - kb / 2)
+    return {
+      visible,
+      full: window.innerHeight,
+      editorH: editor.height,
+      editorBottom: editor.bottom,
+      bodyBottom: body.bottom,
+      bodyH: body.height,
+      stripOwner: behind?.closest('.note-editor') ? 'editor' : (behind?.className ?? 'nothing'),
+    }
   }, KB)
 
-  expect(Math.round(m.editorH)).toBe(m.visible) // clears the keyboard…
-  expect(m.editorBottom).toBeLessThanOrEqual(m.visible)
-  // …and the editing surface is still inside it (the toolbar/footer didn't eat the body).
+  // The shell keeps covering the WHOLE page — the strip under the keyboard included…
+  expect(Math.round(m.editorH)).toBe(m.full)
+  expect(m.editorBottom).toBeGreaterThanOrEqual(m.full - 1)
+  expect(m.stripOwner, 'the keyboard strip belongs to the editor, not the page behind').toBe('editor')
+  // …while the editing surface fits inside the visible band (the toolbar/footer didn't eat it).
   expect(m.bodyBottom).toBeLessThanOrEqual(m.visible)
   expect(m.bodyH).toBeGreaterThan(80)
 })
