@@ -56,6 +56,28 @@ test('a card with no trick falls back to a warm line — never an empty bubble',
   await expect(bubble).not.toHaveText('')
 })
 
+test('the companion never covers the advance/back controls on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 720 })
+  await openRun(page)
+  // Start the run so the → advance button is present (it replaces the ▶ start).
+  await page.locator('.tdl-start').click()
+
+  const buddy = await page.locator('.tdl-buddy').boundingBox()
+  // The primary action (→ / ✓) and the ← rewind must both be clear of the creature —
+  // at kiosk size in the bottom corner the fox sat ON TOP of the → and ate the tap.
+  for (const sel of ['.tdl-finish', '.tdl-prev']) {
+    const ctrl = await page.locator(sel).boundingBox()
+    if (!ctrl) continue // ← only shows once a step is behind us
+    const overlap = !(
+      buddy!.x + buddy!.width <= ctrl.x ||
+      ctrl.x + ctrl.width <= buddy!.x ||
+      buddy!.y + buddy!.height <= ctrl.y ||
+      ctrl.y + ctrl.height <= buddy!.y
+    )
+    expect(overlap, `${sel} must not be covered by the companion`).toBe(false)
+  }
+})
+
 test('the bubble stays inside the stage on a 360px phone (no horizontal bleed)', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
   await openRun(page)

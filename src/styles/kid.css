@@ -453,6 +453,15 @@
   align-items: flex-end;
   gap: 6px;
 }
+/* On a phone the creature is smaller (size prop) AND lifted well above the advance
+   controls: at kiosk size + the bottom corner it sat ON TOP of the → button and blocked
+   the tap. Anchored to the RIGHT EDGE, mid-height, so it's clear of the bottom → / ←
+   row whatever way that row wraps, and of the top header + illustration. The bubble
+   still opens upward from here. Guard: e2e/routine-tips.spec.ts asserts no overlap. */
+.tdl-buddy-wrap--phone {
+  bottom: clamp(120px, 26vh, 220px);
+  right: clamp(6px, 2vw, 14px);
+}
 /* What the creature just said. Anchored right, but capped so a long trick wraps onto
    several lines INSIDE the stage instead of bleeding off the left edge of a 360px
    phone (the standing no-horizontal-overflow rule). */

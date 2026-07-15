@@ -15,6 +15,7 @@ import { todayLocalDay } from '../lib/localDay'
 import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
+import { useSurface } from '../lib/surface'
 import { companionPool, companionTone, isCompanion, type CompanionMoment } from '../lib/companions'
 import { computeDayPart } from '../lib/timeofday'
 import { tipFor } from '../lib/routineTips'
@@ -107,8 +108,14 @@ export function RoutinePlayer({
   const t = useT()
   const { lang } = useLang()
   const { calm } = useCalm()
+  const { surface } = useSurface()
   const speak = useSpeak()
   const qc = useQueryClient()
+  // The buddy is big + glanceable on a wall tablet (kiosk), but on a phone the same
+  // 72px creature overlapped the → advance button in the bottom corner and blocked the
+  // tap. On mobile it's smaller AND lifted clear of the controls (.kid--phone in CSS).
+  const onPhone = surface === 'mobile'
+  const buddySize = onPhone ? 46 : 72
 
   // Toggle one card done for today. Optimistic so the tap feels instant on a cheap
   // tablet; on failure the shared hook rolls back and resyncs. Owns the mutation
@@ -483,7 +490,7 @@ export function RoutinePlayer({
             The bubble carries the words for the grown-up in the room; the speech
             carries them for the pre-reader, who can't read either. */}
         {isCompanion(routine.companion) && (
-          <div className="tdl-buddy-wrap">
+          <div className={'tdl-buddy-wrap' + (onPhone ? ' tdl-buddy-wrap--phone' : '')}>
             {buddyLine && (
               <div className="tdl-buddy__bubble" role="status">
                 {buddyLine}
@@ -495,7 +502,7 @@ export function RoutinePlayer({
               onClick={sayCompanion}
               aria-label={t.routines.companionTap}
             >
-              <Companion companion={routine.companion} size={72} />
+              <Companion companion={routine.companion} size={buddySize} />
             </button>
           </div>
         )}
