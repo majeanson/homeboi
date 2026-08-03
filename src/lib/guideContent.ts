@@ -1188,6 +1188,13 @@ export const GUIDE: GuideEntry[] = [
           en: 'A habit belongs to one face or to the whole household. Yours only show once your face is picked — the board then names what’s left (“0 of 2 glasses”), and never anyone else’s habits.',
         },
       },
+      {
+        label: { fr: 'Modifier une habitude', en: 'Edit a habit' },
+        detail: {
+          fr: 'Touche l’habitude sur la carte du babillard : sa petite fiche s’ouvre, avec « Modifier ». Ou passe par le ＋ ▸ Mes habitudes — toutes les habitudes y sont listées, même celles qui ne reviennent pas aujourd’hui et celles en pause.',
+          en: 'Tap the habit on the board card: its little sheet opens, with “Edit”. Or go through ＋ ▸ My habits — every habit is listed there, including ones not due today and paused ones.',
+        },
+      },
     ],
   },
   {

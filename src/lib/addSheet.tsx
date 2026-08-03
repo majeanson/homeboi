@@ -97,6 +97,12 @@ export type AddSheetMode =
   // hold). Navigate-only to /habitude/new: it's a tall form (kind, cadence, target,
   // reminder times), so a scene rather than an in-sheet composer.
   | 'habit'
+  // The board ＋ « Mes habitudes » tile opens a small in-sheet picker (the
+  // routine-pick shape): a "new habit" button plus EVERY existing habit — non-due
+  // and paused ones included — each tappable to edit. This is the manage door the
+  // check-in scene can't be (it only rows habits still asking today). `habit`
+  // stays the create-only nav used by deep-links and the check-in scene's button.
+  | 'habit-pick'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -118,7 +124,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // creates + manages them), so offering "add a routine" from the board too was a
   // redundant second door. Add routines from Routines; the board ＋ stays the
   // glance-surface quick-adds that have no section of their own.
-  board: ['note', 'event', 'chores-pick', 'todo', 'mot', 'habit', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
+  board: ['note', 'event', 'chores-pick', 'todo', 'mot', 'habit-pick', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
@@ -145,7 +151,8 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
 // `habit` is here because its form is a FormScene, which bounces any device that
 // isn't signed in — showing the tile to an unsigned kiosk would lead to a dead
 // bounce. (Marking a habit done on the check-in scene needs no session.)
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit'])
+// `habit-pick` rides along with `habit`: both of its doors land on the FormScene.
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit', 'habit-pick'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
@@ -205,6 +212,7 @@ const ALL_MODES = {
   voyage: 1,
   mot: 1,
   habit: 1,
+  'habit-pick': 1,
 } as const satisfies Record<AddSheetMode, 1>
 export const ADD_MODES = Object.keys(ALL_MODES) as readonly AddSheetMode[]
 

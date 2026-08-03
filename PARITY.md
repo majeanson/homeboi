@@ -271,7 +271,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | F35 Avant de partir      | ✅⁵⁹    | ➖⁴     | ✅      | ✅         | ✅    | ➖⁶⁰      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁵⁹       | ➖¹       | ✅       | ✅⁶¹    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ➖²²       | ✅        | ✅       | ✅      |
 | F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F6 Habitudes             | ✅      | ➖⁵⁷    | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
+| F6 Habitudes             | ✅⁵⁷    | ✅⁵⁷    | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
 | F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
 | F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | ✅⁵³     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
@@ -435,8 +435,17 @@ Footnotes (verdicts recorded so far):
     there's no per-habit entity to peek — a sheet would be a redundant menu in front of the
     page. Same "tap the thing, get the thing" rule as `buildRoutine`/`buildRecipe`/recipe-
     meal; recorded in that NOTE block in `adapters.ts`. No code behaviour change (a comment +
-    the matrix verdict); typecheck + 1436 unit tests green. **D2 now carries zero ❌ — every
-    peek cell is a ✅ or a written ➖.** [F6×D2]
+    the matrix verdict); typecheck + 1436 unit tests green.
+    **REVISED 2026-08-03 (Marc: "a way to edit habits that is more accessible") — the ➖ is
+    now a ✅.** The premise flipped: the card's rows ARE tappable now, each opening a
+    `buildHabit` peek (today's reading via `habitReading`, the gentle `weekDone` count, the
+    owner face) whose « Modifier » is the reachable edit door — the check-in scene buried it
+    two taps deep, and a habit not due today had NO edit door at all. « Le point du jour »
+    keeps an explicit link on the card and stays the only marking surface (the peek grows no
+    write path). The board ＋ « Mes habitudes » tile also became **`habit-pick`** (the
+    `routine-pick` shape): « Nouvelle habitude » + every existing habit (non-due + paused
+    included) one tap from its edit form, using the previously-orphaned `t.habits.manage`
+    string as the group label. [F6×D2, F6×D1]
 58. **« Le défi du jour » SHIPPED 2026-07-10** — a day-long family défi (« porte du jaune »,
     « salue une nouvelle personne ») added to F6, front of `HabitudesCard` + « Le point du
     jour » + the toddler board, via the shared **`DefiBlock`** (one surface, two mounts). It
@@ -789,6 +798,8 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
       thing to peek — a sheet would be a redundant menu in front of the page. Recorded in
       `adapters.ts`'s "tap the thing, get the thing" NOTE beside `buildRoutine`/
       `buildRecipe`. Cell ❌→➖ (footnote 57). **D2 now has zero ❌.**
+      **SUPERSEDED 2026-08-03**: the card's rows became tappable → `buildHabit` peek
+      shipped (edit-accessibility ask); the ➖ is a ✅ now. See footnote 57's revision.
 - [ ] **Wave D — Schema/media convergence (opportunistic only)** _(entries 12–17;
       never a churn-only wave)_. When another wave touches one of these tables, fold
       in its convergence. **Reconciled 2026-07-10: the two scalar-rename items below

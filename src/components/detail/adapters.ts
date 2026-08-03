@@ -14,6 +14,7 @@ import { formatDay, formatDayMaybeYear, formatDayTime, formatTime } from '../../
 import { localDayStart } from '../../lib/localDay'
 import { type Recipe } from '../../lib/recipes'
 import { type Mot } from '../../lib/mots'
+import { type Habit, type HabitDay, habitStatusOn, habitReading, deriveProgress } from '../../lib/habits'
 import { type NextRdv } from '../../lib/nextRdv'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
@@ -322,6 +323,44 @@ export function buildChore(
   }
 }
 
+// — A habit (« Mes habitudes ») — the board card's per-habit peek. Content, not a
+// menu: where today stands (the same quiet reading the check-in rows use), the
+// rhythm's gentle week count, the owner face. « Modifier » is the reachable edit
+// door the check-in scene buried two taps deep — and the ONLY door for a habit
+// that isn't due today (no row on the scene = no pencil). « Le point du jour »
+// stays the marking surface; the peek never grows its own write path (calm). —
+export function buildHabit(
+  h: Habit,
+  ctx: DetailCtx,
+  opts: { days: HabitDay[]; today: number; canEdit?: boolean },
+): DetailModel {
+  const { t, members } = ctx
+  const fn = t.habits
+  const status = habitStatusOn(h, opts.days, opts.today)
+  const reading = habitReading(h, status, fn)
+  const progress = deriveProgress(h, opts.days, opts.today)
+  const blocks: DetailBlock[] = []
+  if (reading) blocks.push({ kind: 'text', text: reading })
+  if (progress.weekDone > 0) blocks.push({ kind: 'text', text: fn.weekDone(progress.weekDone) })
+  if (h.archived) blocks.push({ kind: 'text', text: fn.paused })
+  const actions: DetailAction[] = [
+    ...(opts.canEdit
+      ? [{ key: 'edit', label: t.common.edit, icon: 'pencil-simple-bold' as const, primary: true, href: `/habitude/${h.id}/edit` }]
+      : []),
+    { key: 'checkin', label: fn.checkin, icon: 'repeat-bold', href: '/board/habitudes' },
+  ]
+  return {
+    kind: 'habit',
+    title: h.title,
+    emoji: h.icon || undefined,
+    icon: 'repeat-bold',
+    accent: h.colour ?? CATS.chore.color,
+    who: whoOf(members, h.member_id),
+    blocks,
+    actions,
+  }
+}
+
 // — An undated leftover to finish ("Restants à finir") —
 export function buildLeftover(
   l: { id: string; title: string },
@@ -432,11 +471,11 @@ export function buildDay(
 //     (/routine/:id/run); the card itself already carries one-tap ✎ and ▶, and
 //     « Partager » moved onto the routine's own scene (/routine/:id).
 //   · a recipe-linked MEAL → useOpenMeal navigates to the recipe view too.
-//   · a HABIT (« Mes habitudes ») → the board `HabitudesCard` is ONE `<BoardCard
-//     to="/board/habitudes">`; tapping it opens « Le point du jour » (HabitudesPage),
-//     where check-in (HabitRow), history (HabitHistory) and edit already live. The
-//     individual habit rows aren't independently tappable, so there's no per-habit peek
-//     to build — a sheet would be a redundant menu in front of the page. (PARITY F6×D2 ➖.)
+//   · a HABIT peek used to be rejected here on "the rows aren't tappable" grounds —
+//     that changed (Marc, Aug 2026): the board card's rows now open `buildHabit`
+//     (above), which passes the content bar (today's reading + week count + owner),
+//     and whose « Modifier » is the ONE reachable edit door for a habit not due
+//     today. « Le point du jour » remains the marking surface. (PARITY F6×D2 ✅.)
 // What's left below are peeks that are CONTENT, not menus: an event, a chore, a mot
 // (it plays the voice clip), a day, a contact — none of them has a page to jump to,
 // so the sheet IS the destination.

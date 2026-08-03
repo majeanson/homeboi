@@ -19,6 +19,7 @@ type DetailKind =
   | 'leftover'
   | 'note'
   | 'mot' // « Laisse un mot » — a member-to-member message (text / voice / drawing / photo)
+  | 'habit' // « Mes habitudes » — a board-card habit row (today's reading + the edit door)
   | 'contact'
 
 // One block of body content. The sheet renders these top-to-bottom.

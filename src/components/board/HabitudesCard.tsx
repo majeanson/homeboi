@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom'
-import { useT } from '../../i18n'
+import { useT, useLang } from '../../i18n'
+import { useAuth } from '../../lib/auth'
 import { isGuest } from '../../lib/device'
 import { useProfile } from '../../lib/profile'
 import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi } from '../../lib/habits'
+import { useBoardData } from '../../lib/queryHooks'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { type HelpMode } from '../../lib/helpMode'
 import { BoardCard } from './BoardCard'
 import { DefiBlock } from '../habits/DefiBlock'
+import { useEntityDetail } from '../detail/DetailProvider'
+import { buildHabit, type DetailCtx } from '../detail/adapters'
 
 // The board's « Mes habitudes » glance — now fronted by « Le défi du jour » (the
 // day-long family défi anyone can try), with the habits still asking today below it.
@@ -22,7 +26,15 @@ import { DefiBlock } from '../habits/DefiBlock'
 export function HabitudesCard({ help }: { help?: HelpMode }) {
   const t = useT()
   const fn = t.habits
+  const { lang } = useLang()
   const { memberId: face } = useProfile()
+  const { signedIn } = useAuth()
+  // Per-habit peek (buildHabit): today's reading + week count + the edit door —
+  // the one place a habit can be MODIFIED without hunting the check-in scene's
+  // buried pencil. Members for the owner face ride the already-polled board read.
+  const detail = useEntityDetail()
+  const members = useBoardData().data?.members ?? []
+  const detailCtx: DetailCtx = { t, lang, members }
   // Non-polling: a default-on board card must not add /api/habits to the board
   // poll (the free-tier lever). Realtime nudges refresh it on another device's tap.
   const { data } = useHabits({ live: false })
@@ -59,26 +71,35 @@ export function HabitudesCard({ help }: { help?: HelpMode }) {
           a Link (a nested <button> inside <Link> is invalid). */}
       <DefiBlock payload={data} today={today} help={help} />
 
-      {/* The habits still asking today. Wrapped in its own Link so tapping the list
-          still opens « Le point du jour » — the défi block above keeps its buttons. */}
+      {/* The habits still asking today. Each row opens its own peek (buildHabit:
+          today's reading, the week, the owner — and the « Modifier » door), the
+          same tap-the-thing pattern as every other board row. « Le point du jour »
+          keeps its explicit door below, so marking stays one tap from the board. */}
       {due.length > 0 && (
-        <Link to="/board/habitudes" className="habitudes-card__open" aria-label={fn.checkin}>
-          <ul className="habitudes-card__list">
-            {due.map((h) => {
-              const reading = habitReading(h, habitStatusOn(h, days, today), fn)
-              return (
-                <li key={h.id} className="habitudes-card__row">
+        <ul className="habitudes-card__list">
+          {due.map((h) => {
+            const reading = habitReading(h, habitStatusOn(h, days, today), fn)
+            return (
+              <li key={h.id}>
+                <button
+                  type="button"
+                  className="habitudes-card__row"
+                  onClick={() => detail.open(buildHabit(h, detailCtx, { days, today, canEdit: signedIn && !isGuest() }))}
+                >
                   <span className="habitudes-card__ico" aria-hidden="true">
                     {h.icon || '•'}
                   </span>
                   <span className="habitudes-card__title">{h.title}</span>
                   {reading && <span className="habitudes-card__sub mono">{reading}</span>}
-                </li>
-              )
-            })}
-          </ul>
-        </Link>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
       )}
+      <Link to="/board/habitudes" className="habitudes-card__open" aria-label={fn.checkin}>
+        {fn.checkin}
+      </Link>
     </BoardCard>
   )
 }

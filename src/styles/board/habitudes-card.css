@@ -26,11 +26,24 @@
   list-style: none;
 }
 
+/* A row is a BUTTON now: tapping it opens the habit's own peek (today's reading,
+   the week, the « Modifier » door). Reset the button chrome to card text; keep a
+   touch-worthy hit height without visually bulking the glance list. */
 .habitudes-card__row {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
   min-width: 0;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 0.6rem);
 }
 
 .habitudes-card__ico {
@@ -61,13 +74,20 @@
   text-overflow: ellipsis;
 }
 
-/* The whole-list link inside the card. The défi block keeps its own buttons, so
-   the card no longer wraps everything in one Link — only the habits list navigates
-   to « Le point du jour ». Reset it to plain card text. */
+/* « Le point du jour » — the card's explicit check-in door (the rows open their
+   own peeks now, so this quiet trailing link keeps marking one tap away). */
 .habitudes-card__open {
-  display: block;
-  color: inherit;
+  display: inline-block;
+  margin-top: 0.45rem;
+  min-height: 1.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--sec-tint, var(--sage-deep));
   text-decoration: none;
+}
+
+.habitudes-card__open:hover {
+  text-decoration: underline;
 }
 
 /* « Le défi du jour » — the day-long family défi, fronted on the card and reused in

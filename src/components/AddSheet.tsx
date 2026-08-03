@@ -18,7 +18,8 @@ import { recipeImg } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions, type KitchenAction, type KitchenActionFlags } from '../lib/kitchenActions'
-import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY, GHOSTS_KEY, HISTORY_KEY, HABITS_KEY } from '../lib/queryKeys'
+import { type HabitsPayload } from '../lib/habits'
 import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
@@ -115,6 +116,8 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   // « Mes habitudes » — a rhythm you keep (the repeat glyph); navigate-only to the
   // habit form (kind + cadence + reminder times don't fit an in-sheet composer).
   habit: { cat: 'chore', icon: 'repeat-bold' },
+  // The board tile: new habit + edit-existing picker (the routine-pick shape).
+  'habit-pick': { cat: 'chore', icon: 'repeat-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -417,6 +420,19 @@ export function AddSheet({
   })
   const routinePick = routinesData?.routines ?? []
 
+  // « Mes habitudes » ＋ picker (the board): EVERY habit — non-due and paused ones
+  // included, which the check-in scene never rows — so each is one tap from its
+  // edit form. Same HABITS_KEY cache the card/scene already share.
+  const wantsHabitPick = shown.includes('habit-pick')
+  const { data: habitsData } = useQuery({
+    queryKey: HABITS_KEY,
+    queryFn: () => api<HabitsPayload>('habits'),
+    enabled: open && wantsHabitPick,
+  })
+  const habitPick = (habitsData?.habits ?? [])
+    .filter((h) => h.kind !== 'defi') // the standing défi habit is system-owned
+    .sort((a, b) => a.position - b.position)
+
   // Liste's "Meilleurs prix" tile (auto-pick): stages the best flyer deal onto
   // each grocery line, then jumps to the cashier. Needs the current list, fetched
   // only while the sheet's open on Liste. An empty list ⇒ nothing to price-match,
@@ -718,6 +734,7 @@ export function AddSheet({
       voyage: t.voyage.captureTile,
       mot: t.mots.tile,
       habit: t.habits.add,
+      'habit-pick': t.habits.title,
     }
     return labels[m]
   }
@@ -1294,6 +1311,55 @@ export function AddSheet({
                       onActivate={() => {
                         close()
                         nav(`/routine/${r.id}`)
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* « Mes habitudes » ＋ (board): build a new habit OR modify an existing
+            one — the routine-pick shape. Listing EVERY habit here (non-due and
+            paused included) is the manage door: the check-in scene only rows what
+            is still asking today, so a Monday-only habit seen on a Thursday had no
+            other reachable edit. Both doors land on the full-screen habit form. */}
+        {mode === 'habit-pick' && (
+          <div className="addsheet__cook">
+            <button
+              type="button"
+              className="btn btn--primary btn--block"
+              onClick={() => {
+                close()
+                nav('/habitude/new')
+              }}
+            >
+              <Icon name="plus-bold" size={20} />
+              {t.habits.add}
+            </button>
+            {habitPick.length > 0 && (
+              <>
+                <p className="sheet__group-label mono">{t.habits.manage}</p>
+                <div className="addsheet__cooklist">
+                  {habitPick.map((h) => (
+                    <Act
+                      key={h.id}
+                      cat="chore"
+                      color={h.colour ?? undefined}
+                      icon="repeat-bold"
+                      title={h.icon ? `${h.icon} ${h.title}` : h.title}
+                      who={[
+                        h.member_id
+                          ? members.find((m) => m.id === h.member_id)?.display_name
+                          : t.profile.household,
+                        h.archived ? t.habits.paused : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      onActivate={() => {
+                        close()
+                        nav(`/habitude/${h.id}/edit`)
                       }}
                     />
                   ))}

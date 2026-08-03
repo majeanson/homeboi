@@ -336,6 +336,35 @@ test.describe('the board card + the calendar', () => {
     await expect(card.locator('.habitudes-card__row', { hasText: 'Cigarettes' }).locator('.habitudes-card__sub')).toHaveText('0 de 5')
   })
 
+  test('tapping a card row opens the habit peek — « Modifier » is the edit door', async ({ page }) => {
+    // The accessible-edit ask (Marc, Aug 2026): a habit row on the board card opens
+    // its own peek (today's reading + the week + the owner), whose « Modifier »
+    // lands on the edit form — no more hunting the check-in scene's buried pencil.
+    await board(page)
+    const card = page.locator('.habitudes-card')
+    await card.locator('.habitudes-card__row', { hasText: 'Marcher dehors' }).click()
+    const sheet = page.locator('.detail-sheet')
+    await expect(sheet).toBeVisible()
+    await expect(sheet.locator('.detail-sheet__title')).toHaveText('Marcher dehors')
+    await sheet.getByRole('button', { name: 'Modifier' }).click()
+    // The edit form's title field ('exact' — the scene itself is labeled « Modifier l’habitude »).
+    await expect(page.getByRole('textbox', { name: 'L’habitude', exact: true })).toBeVisible()
+    expect(new URL(page.url()).pathname).toMatch(/^\/habitude\/.+\/edit$/)
+  })
+
+  test('the board ＋ « Mes habitudes » tile manages: new habit + edit-existing list', async ({ page }) => {
+    // The routine-pick shape: « Nouvelle habitude » leads, and EVERY habit —
+    // including one not due today — is one tap from its edit form.
+    await board(page)
+    await page.locator('.add-fab').click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Mes habitudes' }).click()
+    const sheet = page.getByRole('dialog')
+    await expect(sheet.getByRole('button', { name: 'Nouvelle habitude' })).toBeVisible()
+    await expect(sheet.locator('.sheet__group-label')).toHaveText('Gérer mes habitudes')
+    await sheet.locator('.act', { hasText: 'Marcher dehors' }).click()
+    expect(new URL(page.url()).pathname).toMatch(/^\/habitude\/.+\/edit$/)
+  })
+
   test('today’s day panel offers real marking controls, filtered by face', async ({ page }) => {
     await board(page, 'month')
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
