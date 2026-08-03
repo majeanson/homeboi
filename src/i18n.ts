@@ -1883,6 +1883,10 @@ export const FR = {
       fmtNumbered: 'Liste numérotée',
       fmtCheck: 'Case à cocher',
       fmtQuote: 'Citation',
+      // Le sélecteur d’éditeur BETA (TipTap) — un essai réversible, jamais un
+      // nouveau format : la note reste le même Markdown dans les deux éditeurs.
+      betaTry: 'Essayer le nouvel éditeur (bêta)',
+      betaBack: 'Revenir à l’éditeur classique',
       attachPhoto: 'Photo',
       attachDrawing: 'Dessin',
       attachRemove: 'Retirer',

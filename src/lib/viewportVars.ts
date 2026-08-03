@@ -197,6 +197,13 @@ export function caretIntoView(scroller: HTMLElement, pad = 24): void {
   const sel = document.getSelection()
   if (!sel || sel.rangeCount === 0) return
   const range = sel.getRangeAt(0)
+  // Caret-follow is for a CARET. An expanded range means the user is selecting —
+  // and its first client rect is the ANCHOR line (the top of the selection), not
+  // the handle being dragged. Following it scrolls the view back UP toward the
+  // anchor on every drag frame, fighting the finger dragging the lower handle
+  // down ("it keeps pulling me back up"). Typing into a selection collapses it
+  // first, so the next real caret move still follows.
+  if (!range.collapsed) return
   if (!scroller.contains(range.startContainer)) return
 
   let src = 'r'
@@ -559,6 +566,11 @@ export function trackVisualViewport(): void {
     lastF = f
     lastAO = ao
     lastFO = fo
+    // An EXPANDED selection is a drag-the-handles gesture, not a caret move —
+    // never follow it (caretIntoView would measure the anchor end and scroll the
+    // view back up under the user's finger). Skipping here also spares the rAF
+    // churn: a handle drag changes focusNode/focusOffset on every frame.
+    if (!s || !s.isCollapsed) return
     follow()
   })
 

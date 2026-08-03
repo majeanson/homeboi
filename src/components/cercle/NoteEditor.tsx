@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../i18n'
+import { createDeviceStore } from '../../lib/createDeviceStore'
 import { useWrite } from '../../lib/write'
 import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
@@ -53,6 +54,16 @@ type Fmt = { kind: string; label: string; inline?: boolean; block?: LineKind } &
   | { icon: IconName }
 )
 
+// « BETA » — the opt-in TipTap editing surface (NoteEditorTiptap), per device.
+// The note itself stays the same Markdown either way; this only picks which
+// surface edits it, so flipping back and forth is always safe. Lazy: only a
+// device that opts in ever downloads TipTap.
+const NoteEditorTiptapLazy = lazy(() => import('./NoteEditorTiptap'))
+const betaStore = createDeviceStore<boolean>('babillard-note-editor-beta', false, {
+  read: (raw) => raw === 'on',
+  write: (on) => (on ? 'on' : 'off'),
+})
+
 export function NoteEditor({
   open,
   note,
@@ -103,9 +114,30 @@ export function NoteEditor({
   const [drawOpen, setDrawOpen] = useState(false)
   const [active, setActive] = useState<Record<string, boolean>>({})
 
+  // « BETA » — which editing surface this device uses (see betaStore above). The
+  // in-progress body survives a flip: toggling snapshots the live Markdown into
+  // draftMdRef, and whichever surface mounts next seeds from it.
+  const beta = betaStore.use()
+  const tiptapMdRef = useRef<(() => string) | null>(null)
+  const draftMdRef = useRef<string | null>(null)
+
+  // The CURRENT body as Markdown, whichever surface is live. Falls back to the
+  // last flip snapshot, then the stored note (the beta surface may still be
+  // lazy-loading when a fast close commits).
+  function currentMd(): string {
+    if (beta) return tiptapMdRef.current?.() ?? draftMdRef.current ?? note?.text ?? ''
+    if (editorRef.current) return htmlToMd(editorRef.current)
+    return draftMdRef.current ?? note?.text ?? ''
+  }
+  function toggleBeta() {
+    draftMdRef.current = currentMd()
+    betaStore.set(!beta)
+  }
+
   // Seed from the note each time the editor opens (or the target note changes). The
   // contentEditable is uncontrolled — we set its HTML ONCE here and never from a render,
-  // so the caret is never disturbed by React updates.
+  // so the caret is never disturbed by React updates. (The body itself seeds in the
+  // effect below, which also re-runs on a BETA↔classic flip.)
   useEffect(() => {
     if (!open) return
     setTitle(note?.title ?? '')
@@ -116,21 +148,28 @@ export function NoteEditor({
     setMediaKey(mk ? note!.media_key : null)
     setSceneKey(mk === 'drawing' ? (note?.scene_key ?? null) : null)
     sessionKeysRef.current = new Set() // fresh editing session — nothing uploaded yet
-    const md = note?.text ?? ''
-    const root = editorRef.current
-    if (root) {
-      root.innerHTML = mdToHtml(md)
-      root.setAttribute('data-empty', md.trim() ? 'false' : 'true')
-    }
+    draftMdRef.current = null // a new session never inherits the last one's flip snapshot
     setActive({})
   }, [open, note, scope, memberId])
+
+  // Seed the CLASSIC body — on open, and again whenever the BETA flip hands the
+  // surface back (the contentEditable remounts empty then; the draft snapshot,
+  // else the stored note, refills it).
+  useEffect(() => {
+    if (!open || beta) return
+    const root = editorRef.current
+    if (!root) return
+    const md = draftMdRef.current ?? note?.text ?? ''
+    root.innerHTML = mdToHtml(md)
+    root.setAttribute('data-empty', md.trim() ? 'false' : 'true')
+  }, [open, note, beta])
 
   // Commit on close (auto-save). Held in a ref so the stable handleClose passed to
   // useModal always runs the latest state without re-subscribing the Esc handler.
   const commitRef = useRef<() => void>(() => {})
   commitRef.current = () => {
     const ti = title.trim()
-    const bo = editorRef.current ? htmlToMd(editorRef.current).trim() : (note?.text ?? '').trim()
+    const bo = currentMd().trim()
     const empty = !ti && !bo && !mediaKey
     // The "Pour qui" pick → wire scope: a member id = a personal note, null = Maisonnée.
     const effScope: NoteScope = forMember ? 'self' : 'family'
@@ -190,6 +229,30 @@ export function NoteEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Enter's SECOND door: mobile soft keyboards (GBoard, iOS) report keyCode 229 for
+  // every key, so the keydown guard below — there to protect real IME composition —
+  // swallows their Enter too, and the native insertParagraph then clones the current
+  // block, checkbox widget included. `beforeinput` fires reliably with a typed
+  // inputType on those keyboards; both doors funnel into the ONE handleEnter().
+  // Native listener (not React's onBeforeInput, which predates Input Events L2 and
+  // doesn't expose inputType everywhere). When keydown DID handle it, its
+  // preventDefault stops this event from ever firing — no double line.
+  useEffect(() => {
+    if (!open || beta) return // the BETA surface (ProseMirror) owns its own Enter
+    const el = editorRef.current
+    if (!el) return
+    const h = (e: InputEvent) => {
+      if (e.inputType !== 'insertParagraph') return
+      if (handleEnter()) {
+        e.preventDefault()
+        afterInput()
+      }
+    }
+    el.addEventListener('beforeinput', h)
+    return () => el.removeEventListener('beforeinput', h)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, beta])
+
   if (!open) return null
 
   // ── contentEditable helpers (flat line-block model) ───────────────────────────────
@@ -221,6 +284,19 @@ export function NoteEditor({
     const r = document.createRange()
     r.selectNodeContents(el)
     r.collapse(false)
+    sel.removeAllRanges()
+    sel.addRange(r)
+  }
+  // Caret to the START of a line's CONTENT — after the checkbox widget on a check
+  // line, never before it (text typed ahead of the box would render outside it).
+  function caretToContentStart(el: HTMLElement) {
+    const sel = window.getSelection()
+    if (!sel) return
+    const r = document.createRange()
+    const cb = el.querySelector(':scope > .ne-cb')
+    if (cb) r.setStartAfter(cb)
+    else r.setStart(el, 0)
+    r.collapse(true)
     sel.removeAllRanges()
     sel.addRange(r)
   }
@@ -277,7 +353,9 @@ export function NoteEditor({
     a.numbered = k === 'numbered'
     a.check = k === 'check'
     a.quote = k === 'quote'
-    setActive(a)
+    // selectionchange fires on EVERY frame of a selection-handle drag — bail on a
+    // no-op so the whole editor doesn't re-render 60×/s under the user's finger.
+    setActive((prev) => (Object.keys(a).every((key) => !!prev[key] === a[key]) && Object.keys(prev).length === Object.keys(a).length ? prev : a))
   }
   function afterInput() {
     const root = editorRef.current
@@ -335,26 +413,66 @@ export function NoteEditor({
     }
     afterInput()
   }
+  // The ONE Enter behaviour for list/check lines, shared by the keydown door
+  // (hardware keyboards) and the beforeinput door (mobile soft keyboards — see the
+  // effect above). Returns true when it handled the key (caller preventDefaults +
+  // afterInput); false lets the browser's native insertParagraph run (plain lines,
+  // headings, quotes).
+  function handleEnter(): boolean {
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0) return false
+    // Enter over an expanded selection replaces it — native behaviour we were
+    // suppressing before (the old handler preventDefaulted without deleting, so the
+    // selected text survived every Enter).
+    if (!sel.isCollapsed) sel.deleteFromDocument()
+    const cur = selectedBlocks()[0]
+    if (!cur) return false
+    const k = blockKindOf(cur)
+    if (k !== 'bullet' && k !== 'numbered' && k !== 'check') return false
+    // Intuitive list behaviour: Enter continues the list; Enter on an empty item ends it.
+    if (!(cur.textContent ?? '').trim()) {
+      const plain = makeLine('plain', '')
+      cur.replaceWith(plain)
+      caretToEnd(plain)
+      return true
+    }
+    // SPLIT at the caret: everything after it moves into the new same-kind line —
+    // Enter mid-sentence must carry the tail along ("reposition things"), not
+    // strand it on the old line while the caret jumps to an empty one below.
+    let tailHtml = ''
+    try {
+      const r = sel.getRangeAt(0)
+      const tail = document.createRange()
+      tail.setStart(r.startContainer, r.startOffset)
+      tail.setEnd(cur, cur.childNodes.length)
+      const frag = tail.extractContents()
+      const tmp = document.createElement('div')
+      tmp.appendChild(frag)
+      // A caret sitting BEFORE the checkbox widget would drag the original widget
+      // into the tail — the new makeLine brings its own; drop any stowaway.
+      tmp.querySelectorAll('.ne-cb').forEach((n) => n.remove())
+      tailHtml = tmp.innerHTML
+    } catch {
+      /* an odd range (e.g. anchored outside cur) — fall back to an empty new line */
+    }
+    // Re-normalize what's left of the current line (the extraction can leave it
+    // empty, or a check line without its widget when the caret sat at position 0).
+    const fixedCur = convertLine(cur, k)
+    cur.replaceWith(fixedCur)
+    const nl = makeLine(k, tailHtml) // a split check line continues UNCHECKED
+    fixedCur.after(nl)
+    caretToContentStart(nl)
+    return true
+  }
   function onEditorKeyDown(e: React.KeyboardEvent) {
     // Mid-IME-composition Enter commits the composition, not the line — let the
-    // editor see only the real keystroke (keyCode 229 = the legacy IME signal).
+    // editor see only the real keystroke (keyCode 229 = the legacy IME signal; on
+    // mobile soft keyboards that code covers EVERY key, which is exactly why the
+    // beforeinput door exists).
     if (e.nativeEvent.isComposing || e.keyCode === 229) return
     if (e.key !== 'Enter' || e.shiftKey) return
-    const cur = selectedBlocks()[0]
-    if (!cur) return
-    const k = blockKindOf(cur)
-    if (k === 'bullet' || k === 'numbered' || k === 'check') {
-      // Intuitive list behaviour: Enter continues the list; Enter on an empty item ends it.
+    if (handleEnter()) {
       e.preventDefault()
-      if (!(cur.textContent ?? '').trim()) {
-        const plain = makeLine('plain', '')
-        cur.replaceWith(plain)
-        caretToEnd(plain)
-      } else {
-        const nl = makeLine(k, '')
-        cur.after(nl)
-        caretToEnd(nl)
-      }
       afterInput()
     }
   }
@@ -436,6 +554,18 @@ export function NoteEditor({
           <Icon name="caret-left-bold" size={20} />
         </button>
         <span className="note-editor__heading">{note ? fn.editorEdit : fn.editorNew}</span>
+        {/* « BETA » — flip to the TipTap surface (and back). The body carries over;
+            the note stays the same Markdown either way. */}
+        <button
+          type="button"
+          className={'note-editor__toggle mono' + (beta ? ' is-on' : '')}
+          onClick={toggleBeta}
+          aria-pressed={beta}
+          aria-label={beta ? fn.betaBack : fn.betaTry}
+          title={beta ? fn.betaBack : fn.betaTry}
+        >
+          BETA
+        </button>
       </header>
 
       <input
@@ -460,46 +590,61 @@ export function NoteEditor({
         />
       </div>
 
-      {/* The format row hides its scrollbar and overflows on a phone (the ❝ quote
-          button was cut in half). useHScroll is the house rule for any such row: it
-          maps the mouse wheel onto it — without which the clipped buttons are
-          literally unreachable on a desktop — and its data-hs stamp fades the edge
-          so a phone can SEE that the row continues. */}
-      <div ref={toolbarScroll.ref} className="note-editor__toolbar" role="group" aria-label={fn.format}>
-        {FORMATS.map((f) => (
-          <button
-            key={f.kind}
-            type="button"
-            className={'note-editor__fmt' + (active[f.kind] ? ' is-on' : '')}
-            // Keep the editor's selection — a button mousedown must not steal focus.
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => runFmt(f)}
-            aria-label={f.label}
-            aria-pressed={!!active[f.kind]}
-            title={f.label}
-          >
-            {'icon' in f ? <Icon name={f.icon} size={18} /> : <span className={'note-editor__glyph' + (f.mod ? ' note-editor__glyph--' + f.mod : '')} aria-hidden="true">{f.glyph}</span>}
-          </button>
-        ))}
-      </div>
+      {beta ? (
+        // The BETA surface (TipTap) renders its own toolbar + body in the same
+        // chrome slots, so the keyboard-fit CSS applies unchanged. While the lazy
+        // chunk loads, an empty stage keeps the shell's layout stable.
+        <Suspense fallback={<div className="note-editor__stage" />}>
+          <NoteEditorTiptapLazy
+            initialMd={draftMdRef.current ?? note?.text ?? ''}
+            getMdRef={tiptapMdRef}
+            ariaLabel={note ? fn.editorEdit : fn.editorNew}
+          />
+        </Suspense>
+      ) : (
+        <>
+          {/* The format row hides its scrollbar and overflows on a phone (the ❝ quote
+              button was cut in half). useHScroll is the house rule for any such row: it
+              maps the mouse wheel onto it — without which the clipped buttons are
+              literally unreachable on a desktop — and its data-hs stamp fades the edge
+              so a phone can SEE that the row continues. */}
+          <div ref={toolbarScroll.ref} className="note-editor__toolbar" role="group" aria-label={fn.format}>
+            {FORMATS.map((f) => (
+              <button
+                key={f.kind}
+                type="button"
+                className={'note-editor__fmt' + (active[f.kind] ? ' is-on' : '')}
+                // Keep the editor's selection — a button mousedown must not steal focus.
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => runFmt(f)}
+                aria-label={f.label}
+                aria-pressed={!!active[f.kind]}
+                title={f.label}
+              >
+                {'icon' in f ? <Icon name={f.icon} size={18} /> : <span className={'note-editor__glyph' + (f.mod ? ' note-editor__glyph--' + f.mod : '')} aria-hidden="true">{f.glyph}</span>}
+              </button>
+            ))}
+          </div>
 
-      <div className="note-editor__stage">
-        <div
-          ref={editorRef}
-          className="note-editor__body note-md"
-          contentEditable
-          suppressContentEditableWarning
-          role="textbox"
-          aria-multiline="true"
-          aria-label={note ? fn.editorEdit : fn.editorNew}
-          data-placeholder={fn.placeholder}
-          data-empty="true"
-          onInput={afterInput}
-          onKeyDown={onEditorKeyDown}
-          onPaste={onEditorPaste}
-          onClick={onEditorClick}
-        />
-      </div>
+          <div className="note-editor__stage">
+            <div
+              ref={editorRef}
+              className="note-editor__body note-md"
+              contentEditable
+              suppressContentEditableWarning
+              role="textbox"
+              aria-multiline="true"
+              aria-label={note ? fn.editorEdit : fn.editorNew}
+              data-placeholder={fn.placeholder}
+              data-empty="true"
+              onInput={afterInput}
+              onKeyDown={onEditorKeyDown}
+              onPaste={onEditorPaste}
+              onClick={onEditorClick}
+            />
+          </div>
+        </>
+      )}
 
       {!mediaOff && (
         <div className="note-editor__media">

@@ -216,6 +216,44 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
   expect(title!.x + title!.width, 'title inside the right edge').toBeLessThanOrEqual(d.w + 1)
 })
 
+// Dragging a selection HANDLE downward (extending the selection) must never be
+// "followed": caretIntoView measures the FIRST client rect of an expanded range —
+// the ANCHOR line at the TOP of the selection, not the handle end being dragged —
+// so following scrolled the view back up toward the anchor on every drag frame,
+// fighting the finger (Marc: selecting with the keyboard up "keeps dragging us
+// back up"). An expanded selection is now skipped by both the selectionchange
+// follow and caretIntoView itself.
+test('kb: extending a selection with the keyboard open is never yanked back up', async ({ page }) => {
+  const d = { w: 390, h: 844, kb: 336 }
+  const open = boot(d)
+  await open(page, '/cercle?section=notes')
+  await page.getByRole('button', { name: 'Nouvelle note' }).click()
+  const body = page.locator('.note-editor__body')
+  await body.click()
+  for (let i = 0; i < 30; i++) {
+    await page.keyboard.type(`ligne ${i}`)
+    await page.keyboard.press('Enter')
+  }
+  await openKeyboard(page, d.kb)
+  await page.waitForTimeout(600) // let the focus-pin retries settle
+  // Anchor the selection on an early line, scroll it above the fold, then extend
+  // the focus end downward like a handle drag (each extend fires selectionchange).
+  const drift = await body.evaluate(async (el) => {
+    const lines = [...el.children] as HTMLElement[]
+    const sel = document.getSelection()!
+    sel.setBaseAndExtent(lines[2].firstChild ?? lines[2], 0, lines[20].firstChild ?? lines[20], 1)
+    el.scrollTop = el.scrollHeight // the anchor line now sits far above the visible band
+    const start = el.scrollTop
+    for (let i = 21; i < 28; i++) {
+      sel.extend(lines[i].firstChild ?? lines[i], 1)
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    }
+    await new Promise((r) => setTimeout(r, 200))
+    return start - el.scrollTop
+  })
+  expect(drift, 'the scroller was not pulled back up toward the selection anchor').toBe(0)
+})
+
 // The iOS standalone "viewport push": focusing a caret near the BOTTOM makes iOS pan
 // the visual viewport (offsetTop jumps, here 260px of a 336px keyboard). The old
 // keyboard-presence gate (`inner - height - offsetTop`) then read the keyboard as

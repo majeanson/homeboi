@@ -123,6 +123,92 @@ test('Enter continues a list and an empty item ends it', async ({ page }) => {
   await expect(body.locator('.ne-bullet')).toHaveCount(2)
 })
 
+test('mobile Enter (beforeinput insertParagraph) continues a checklist', async ({ page }) => {
+  // Mobile soft keyboards (GBoard, iOS) report keyCode 229 for EVERY key, so the
+  // keydown door never sees their Enter — the beforeinput door must handle it, or
+  // the native insertParagraph clones the .ne-check div, checkbox widget included
+  // (Marc: "enter to create new lines… just not working" on the phone).
+  const body = await openEditor(page)
+  await body.click()
+  await page.keyboard.type('lait')
+  await page.getByRole('button', { name: 'Case à cocher' }).click()
+  const handled = await body.evaluate((el) => {
+    // dispatchEvent returns false when a listener preventDefault'ed — i.e. handled.
+    return !el.dispatchEvent(
+      new InputEvent('beforeinput', { inputType: 'insertParagraph', bubbles: true, cancelable: true }),
+    )
+  })
+  expect(handled, 'the editor claimed the soft-keyboard Enter').toBe(true)
+  await expect(body.locator('.ne-check')).toHaveCount(2)
+  // The caret landed in the new line (after its widget) — typing goes there.
+  await page.keyboard.type('oeufs')
+  await expect(body.locator('.ne-check').nth(1)).toHaveText('oeufs')
+})
+
+test('Enter mid-line splits a checklist line at the caret', async ({ page }) => {
+  // Enter in the middle of a line must carry the tail into the new line — the old
+  // handler always appended an EMPTY item and left the whole text on the first
+  // line, which made "reposition things" impossible.
+  const body = await openEditor(page)
+  await body.click()
+  await page.keyboard.type('lait oeufs')
+  await page.getByRole('button', { name: 'Case à cocher' }).click()
+  await page.keyboard.press('End')
+  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowLeft') // caret before "oeufs"
+  await page.keyboard.press('Enter')
+  const lines = body.locator('.ne-check')
+  await expect(lines).toHaveCount(2)
+  await expect(lines.nth(0)).toHaveText(/^lait\s*$/)
+  await expect(lines.nth(1)).toHaveText('oeufs')
+})
+
+test('Enter over a selection inside a list deletes it before splitting', async ({ page }) => {
+  // The old handler preventDefault'ed without deleting — the selected text
+  // survived every Enter.
+  const body = await openEditor(page)
+  await body.click()
+  await page.keyboard.type('abcdef')
+  await page.getByRole('button', { name: 'Liste à puces' }).click()
+  await page.keyboard.press('Home')
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('ArrowRight')
+  await page.keyboard.press('Shift+ArrowRight')
+  await page.keyboard.press('Shift+ArrowRight') // "cd" selected
+  await page.keyboard.press('Enter')
+  const lines = body.locator('.ne-bullet')
+  await expect(lines).toHaveCount(2)
+  await expect(lines.nth(0)).toHaveText('ab')
+  await expect(lines.nth(1)).toHaveText('ef')
+})
+
+test('the BETA (TipTap) editor round-trips a checklist through the same Markdown', async ({ page }) => {
+  // The « BETA » chip flips to the TipTap surface; the note stays the classic
+  // grammar's Markdown, and flipping back carries the in-progress body over.
+  const body = await openEditor(page)
+  await body.click()
+  await page.getByRole('button', { name: 'Essayer le nouvel éditeur (bêta)' }).click()
+  const pm = page.locator('.note-editor .note-tiptap')
+  await expect(pm).toBeVisible()
+  await pm.click()
+  await page.keyboard.type('lait')
+  await page.getByRole('button', { name: 'Case à cocher' }).click()
+  await expect(page.locator('.note-tiptap ul[data-type="taskList"] > li')).toHaveCount(1)
+  await page.keyboard.press('Enter')
+  await page.keyboard.type('pain')
+  await expect(page.locator('.note-tiptap ul[data-type="taskList"] > li')).toHaveCount(2)
+
+  // Flip back to the classic editor: the draft carries over as the SAME Markdown.
+  await page.getByRole('button', { name: 'Revenir à l’éditeur classique' }).click()
+  await expect(body.locator('.ne-check')).toHaveCount(2)
+
+  // Closing saves that Markdown — identical to what a classic-only session stores.
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.url().includes('/api/family-notes') && r.method() === 'POST'),
+    page.getByRole('button', { name: 'Terminé' }).click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}').text).toBe('- [ ] lait\n- [ ] pain')
+})
+
 test('the view follows the caret — a long note keeps the line being typed in view', async ({ page }) => {
   // Bug (Marc, iOS): "si j'écris dans le bas de la page ça continue en dessous du clavier
   // au lieu de déplacer l'écran". Two causes, both fixed: `.note-editor` was `inset: 0`,

@@ -1708,6 +1708,8 @@ export const EN: typeof FR = {
       fmtNumbered: 'Numbered list',
       fmtCheck: 'Checklist',
       fmtQuote: 'Quote',
+      betaTry: 'Try the new editor (beta)',
+      betaBack: 'Back to the classic editor',
       attachPhoto: 'Photo',
       attachDrawing: 'Drawing',
       attachRemove: 'Remove',

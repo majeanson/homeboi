@@ -57,6 +57,10 @@ const ONLINE_ONLY = [
   // B-11 (bmad/10) — /dev/kit is a dev-only component gallery, never a kiosk
   // surface; accept no offline gallery rather than tax every install.
   { re: /^DevKit-/, cap: 90 * KB },
+  // The opt-in BETA note editor (TipTap/ProseMirror, ~380 KB): only beta devices
+  // ever load it, so it stays out of every install's precache; the classic
+  // editor remains the offline path. Keep in sync with vite.config.ts.
+  { re: /^NoteEditorTiptap-/, cap: 450 * KB },
 ]
 
 const sw = readFileSync(join(DIST, 'sw.js'), 'utf8')

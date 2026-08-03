@@ -374,6 +374,7 @@
   font-size: 1rem;
   color: var(--ink);
 }
+/* The header's « BETA » chip — flips the editing surface to TipTap and back. */
 .note-editor__toggle {
   flex: none;
   padding: 0.35rem 0.7rem;
@@ -606,4 +607,72 @@
 }
 .note-editor__attachdel {
   color: var(--danger, #c2563a);
+}
+
+/* ── The BETA (TipTap) editing surface ─────────────────────────────────────────
+   NoteEditorTiptap renders into the SAME .note-editor__body slot, so keyboard
+   fit + trailing slack (core.css) apply unchanged; ProseMirror's own
+   contenteditable (.note-tiptap) lives inside it. Mirrors the classic look. */
+.note-editor__body--tiptap {
+  display: flex;
+  flex-direction: column;
+}
+.note-editor__body--tiptap .note-tiptap {
+  flex: 1;
+  outline: none;
+  white-space: pre-wrap;
+}
+.note-tiptap p {
+  margin: 0.15rem 0;
+}
+.note-tiptap h1 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0.2rem 0;
+}
+.note-tiptap h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0.2rem 0;
+}
+.note-tiptap blockquote {
+  margin: 0.2rem 0;
+  padding-left: 0.7rem;
+  border-left: 3px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 40%, var(--line));
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.note-tiptap ul,
+.note-tiptap ol {
+  margin: 0.15rem 0;
+  padding-left: 1.4rem;
+}
+/* Task list: TipTap renders <ul data-type="taskList"><li><label><input…, so the
+   native checkbox replaces the classic .ne-cb widget. Same 1.2rem touch target. */
+.note-tiptap ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0;
+}
+.note-tiptap ul[data-type='taskList'] > li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.note-tiptap ul[data-type='taskList'] > li > label {
+  flex: none;
+}
+.note-tiptap ul[data-type='taskList'] input[type='checkbox'] {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--teal-deep, #2a8f85);
+  cursor: pointer;
+}
+.note-tiptap ul[data-type='taskList'] > li > div {
+  flex: 1;
+  min-width: 0;
+}
+.note-tiptap ul[data-type='taskList'] > li[data-checked='true'] > div {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--ink-soft) 60%, transparent);
 }
