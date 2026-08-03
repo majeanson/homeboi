@@ -41,6 +41,20 @@ const stepIngsStore = createDeviceStore<boolean>('babillard-cook-step-ings', tru
 export const setShowStepIngredients = stepIngsStore.set
 export const useShowStepIngredients = stepIngsStore.use
 
+// — auto read-aloud (device-wide, live) —
+// Whether a step reads itself aloud on arrival (the bar's 🔊/🔇 toggle). Default ON.
+// Live for the same reason as density: « Cuisiner ensemble » keeps every dish
+// MOUNTED (hidden, not unmounted), so a per-mount useState snapshot left the
+// hidden siblings on their stale value — muting dish A never silenced dish B
+// until a full reload. One store, every open cook view repaints at once.
+const autoReadStore = createDeviceStore<boolean>('babillard-cook-autoread', true, {
+  read: (raw) => raw !== 'off', // unset / anything-but-"off" = ON
+  write: (on) => (on ? 'on' : 'off'),
+})
+
+export const setCookAutoRead = autoReadStore.set
+export const useCookAutoRead = autoReadStore.use
+
 // — per-recipe view (read once on open, saved on change) —
 const VIEWS: CookView[] = ['step', 'full', 'split']
 const vkey = (recipeId: string) => `babillard-cook-view:${recipeId}`

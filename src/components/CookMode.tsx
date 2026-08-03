@@ -18,6 +18,8 @@ import {
   setCookDensity,
   useShowStepIngredients,
   setShowStepIngredients,
+  useCookAutoRead,
+  setCookAutoRead,
   loadCookView,
   saveCookView,
 } from '../lib/cookPrefs'
@@ -27,18 +29,6 @@ import { useModal } from '../lib/useModal'
 import { useCookTimers } from '../lib/cookTimers'
 import { useWakeLock } from '../lib/useWakeLock'
 import { TimerRail } from './cook/TimerRail'
-
-// Whether a step reads itself aloud on arrival. Default ON; an explicit opt-out
-// persists per device (same shape as the calm/lang prefs). OFF = narration only
-// when you tap the step or a pill — never auto-started.
-const AUTOREAD_KEY = 'babillard-cook-autoread'
-function loadAutoRead(): boolean {
-  try {
-    return localStorage.getItem(AUTOREAD_KEY) !== 'off'
-  } catch {
-    return true
-  }
-}
 
 // The three cooking layouts. The TODDLER lens is always locked to 'step' (the calm
 // one-thing-at-a-time stepper — its whole point). The PARENT lens picks among all
@@ -166,10 +156,12 @@ export function CookMode({
   // gesture browsers require for speech; tapping the step again repeats it. The
   // gather (ingredients) page stays silent — nothing to narrate there.
   //
-  // Auto-read is opt-out (the 🔊/🔇 toggle in the bar). We read the preference
-  // through a ref so flipping the toggle never itself triggers (or silences) a
-  // read — only arriving at a NEW step does, honouring the latest setting.
-  const [autoRead, setAutoRead] = useState(loadAutoRead)
+  // Auto-read is opt-out (the 🔊/🔇 toggle in the bar). Device-wide + live via
+  // lib/cookPrefs (like density) — every mounted cook view honours a flip at
+  // once, hidden « Cuisiner ensemble » siblings included. We read it through a
+  // ref so flipping the toggle never itself triggers (or silences) a read —
+  // only arriving at a NEW step does, honouring the latest setting.
+  const autoRead = useCookAutoRead()
   const autoReadRef = useRef(autoRead)
   autoReadRef.current = autoRead
   // A hidden sibling tab must stay silent — otherwise every dish in "Cuisiner
@@ -184,16 +176,9 @@ export function CookMode({
   }, [stepText, speak, recipe.lang])
 
   function toggleAutoRead() {
-    setAutoRead((on) => {
-      const next = !on
-      try {
-        localStorage.setItem(AUTOREAD_KEY, next ? 'on' : 'off')
-      } catch {
-        /* noop */
-      }
-      if (!next) stopSpeaking() // turning it off silences whatever's reading now
-      return next
-    })
+    const next = !autoRead
+    setCookAutoRead(next)
+    if (!next) stopSpeaking() // turning it off silences whatever's reading now
   }
 
   // Closing Cook mode (or unmounting) stops any narration still in progress.

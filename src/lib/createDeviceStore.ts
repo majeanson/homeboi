@@ -74,10 +74,21 @@ export function createDeviceStore<T>(
     return cache
   }
   const emit = () => listeners.forEach((l) => l())
+  // Cross-document liveness: `storage` fires only in OTHER documents sharing the
+  // origin (the installed PWA vs a browser tab, two open tabs). Without this, a
+  // pref flipped in one document stays stale in the rest until a full reload.
+  // Attached only while someone subscribes, so idle stores cost nothing.
+  const onStorage = (e: StorageEvent) => {
+    if (e.key !== null && e.key !== key) return // null = storage.clear()
+    loaded = false // drop the cache; the next get() re-reads localStorage
+    emit()
+  }
   const subscribe = (cb: () => void): (() => void) => {
+    if (listeners.size === 0) window.addEventListener('storage', onStorage)
     listeners.add(cb)
     return () => {
       listeners.delete(cb)
+      if (listeners.size === 0) window.removeEventListener('storage', onStorage)
     }
   }
 
