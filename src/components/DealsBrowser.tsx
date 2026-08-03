@@ -4,7 +4,6 @@ import { EmptyState } from './EmptyState'
 import { StatusMessage } from './StatusMessage'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
-import { useWrite } from '../lib/write'
 import { useLang, useT } from '../i18n'
 import { FlyerViewer } from './FlyerViewer'
 import { DealCard } from './DealCard'
@@ -13,8 +12,8 @@ import { Icon, InlineIcon } from './Icon'
 import { SceneHead } from './SceneHead'
 import { SubTabs } from './SubTabs'
 import { type Deal, type FlyerSummary } from '../lib/deals'
-import { BOARD_KEY } from '../lib/queryKeys'
-import { existingListId, stageDeal } from '../lib/picks'
+import { ensureListLine, stageDeal } from '../lib/picks'
+import { useBoardData } from '../lib/queryHooks'
 import { useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
 import { useOnline } from '../lib/online'
@@ -56,7 +55,11 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
-  const write = useWrite()
+  // This scene lives OUTSIDE HubLayout, so nothing else fills the ['board'] cache
+  // here. The add/stage paths dedupe against that cache (matchListItem) — on a
+  // cold start (opening /liste/circulaires directly) it would read an empty list
+  // and duplicate every add. Subscribing loads it before the first tap.
+  useBoardData()
   // Two ways to browse: by article (search) or by magasin (open a store's flyer).
   // Held in the URL (?view=) so the chosen tab survives a remount and is shareable.
   const [mode, setMode] = useTabParam('view', 'item', ['item', 'store'] as const)
@@ -124,12 +127,11 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
   async function addToList(name: string) {
     setAdded((prev) => new Set(prev).add(name))
-    const line = lineName(name)
-    // Don't duplicate a line that's already on the list (matched by name or synonym).
-    if (existingListId(qc, line)) return
-    // useWrite so a deal added to the list offline queues + replays (the list is the
-    // canonical offline-safe surface); it lives under BOARD_KEY.
-    await write('list', { method: 'POST', body: { text: line }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    // Reuse-not-duplicate: an existing line (by name, synonym, or the generic line
+    // contained in the flyer product name) is kept — a checked one comes back to
+    // buy — and only a true miss inserts. writeWith inside, so an offline add
+    // queues + replays; it lives under BOARD_KEY.
+    await ensureListLine(qc, lineName(name))
   }
 
   // Add a deal to the list in one tap — it attaches the deal to its grocery line

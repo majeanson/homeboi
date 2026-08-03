@@ -1255,6 +1255,26 @@ test.describe('list', () => {
     expect(JSON.parse(req.postData() || '{}')).toMatchObject({ text: 'fromage' })
   })
 
+  test('a store-flyer add links the SPECIFIC product name onto the generic line', async ({ page }) => {
+    // Browsing a whole store flyer has no search concept, so the add carries the
+    // raw product name ("Lait 2% 4L"). The matcher must still land it on the
+    // generic "Lait" line (whole-word containment) — before, every store-mode add
+    // spawned a specific-named duplicate that lost the line's saved synonyms.
+    await page.locator('.add-fab').click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
+    await page.getByRole('tab', { name: /Par magasin/ }).click()
+    await page.locator('.flyer-store', { hasText: 'Super C' }).click()
+    await page.getByRole('tab', { name: /Offres/ }).click()
+    await page.locator('.flyer-grid__cell').click()
+    const [req] = await Promise.all([
+      page.waitForRequest(isApi('PATCH', 'list')),
+      page.locator('.flyer-detail__add').click(),
+    ])
+    const body = JSON.parse(req.postData() || '{}')
+    expect(body).toMatchObject({ id: 'l1' })
+    expect(body.deal?.name).toBe('Lait 2% 4L')
+  })
+
   test('clearing a checked item drops its staged cashier deal', async ({ page }) => {
     // l1 (Lait) carries a staged deal → the cashier button shows with no mode to
     // switch into (the shopping tools are always available now).

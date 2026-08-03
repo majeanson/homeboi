@@ -121,6 +121,33 @@ async function settle(db: D1Database, householdId: string, id: string, where: 'b
   )
 }
 
+// Crude per-word singular fold, mirror of src/lib/picks.tsx: « pommes » still
+// finds « Pomme Gala 3 lb ». Trailing 's' on 4+ letter words only.
+function singularWords(key: string): string {
+  return key
+    .split(' ')
+    .map((w) => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w))
+    .join(' ')
+}
+
+// Does an existing line answer for this (flyer) name? Exact normalized name, exact
+// synonym, or the LINE's generic name contained whole-word in the specific product
+// name (one direction only — mirror of matchListItem's tiers 1–4, flattened; the
+// tier preference is approximated by the caller's open-before-checked ordering).
+function lineMatches(dealKey: string, line: { text: string; search_terms: string | null }): boolean {
+  const hay = ` ${singularWords(dealKey)} `
+  let terms: string[] = []
+  try {
+    const a = line.search_terms ? JSON.parse(line.search_terms) : []
+    terms = Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    /* malformed synonyms — match on the name alone */
+  }
+  return [normalizeItem(line.text), ...terms.map(normalizeItem)].some(
+    (k) => !!k && (k === dealKey || (k.length >= 3 && hay.includes(` ${singularWords(k)} `))),
+  )
+}
+
 export const onRequestPost = authed(async (ctx, actor) => {
   // `deal` optionally stages a flyer deal onto the new line (the cashier set lives
   // on the list now) — stored as JSON; absent for an ordinary grocery item.
@@ -133,6 +160,29 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const id = newId()
   const dealJson = body?.deal ? JSON.stringify(body.deal) : null
   const searchTerms = termsJson(body?.search_terms)
+  // Deal ↔ item backstop for a cold client cache: a deal-carrying add whose name
+  // already matches a line rides on THAT line (unchecked if it was ticked) instead
+  // of inserting a specific-named duplicate that loses the line's saved synonyms.
+  // Deal adds only — a plain POST may be a deliberate second line ("pommes" twice
+  // before a big party is the household's call, not ours).
+  if (dealJson) {
+    const dealKey = normalizeItem(text)
+    if (dealKey) {
+      const { results } = await ctx.env.DB.prepare(
+        // Open lines first, so a still-to-buy line wins over a ticked twin.
+        'SELECT id, text, search_terms FROM list_items WHERE household_id = ? ORDER BY checked_at IS NOT NULL, created_at',
+      )
+        .bind(actor.householdId)
+        .all<{ id: string; text: string; search_terms: string | null }>()
+      const hit = results.find((r) => lineMatches(dealKey, r))
+      if (hit) {
+        await ctx.env.DB.prepare('UPDATE list_items SET deal_json = ?, checked_at = NULL WHERE id = ? AND household_id = ?')
+          .bind(dealJson, hit.id, actor.householdId)
+          .run()
+        return ok({ id: hit.id, text: hit.text })
+      }
+    }
+  }
   await ctx.env.DB.prepare(
     'INSERT INTO list_items (id, household_id, text, source, added_by, deal_json, search_terms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
   )

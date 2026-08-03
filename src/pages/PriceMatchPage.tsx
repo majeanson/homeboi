@@ -14,7 +14,7 @@ import { SceneHead } from '../components/SceneHead'
 import { FlyerViewer } from '../components/FlyerViewer'
 import { DealCard } from '../components/DealCard'
 import { type Deal } from '../lib/deals'
-import { existingListId, parseDeal, parseTerms, type ListItem } from '../lib/picks'
+import { ensureListLine, parseDeal, parseTerms, type ListItem } from '../lib/picks'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
@@ -89,10 +89,11 @@ export function PriceMatchPage() {
   }, [board, item, close])
 
   // Drop an item straight onto the grocery list (from a deal card or the flyer).
+  // Reuse-not-duplicate: an existing line is kept (a checked one is unchecked),
+  // only a true miss inserts — see matchListItem in lib/picks.
   async function addToList(name: string) {
     setAdded(name)
-    if (existingListId(qc, name)) return // already on the list — no duplicate
-    await write('list', { method: 'POST', body: { text: name }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    await ensureListLine(qc, name)
   }
 
   // Distinct stores for the filter; the shown list respects the active store.

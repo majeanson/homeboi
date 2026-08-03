@@ -75,31 +75,85 @@ export function cashierPicksFrom(items: ListItem[], tillHidden: Set<string>): Pi
   return pickListFrom(items).filter((p) => !tillHidden.has(p.deal.merchant.trim().toLowerCase()))
 }
 
-// The id of an OPEN list item matching `name` (normalized), from the ['board']
-// cache — so staging reuses an existing line instead of inserting a duplicate.
-// Matches the item's own name first, then any of its saved flyer synonyms: a deal
-// searched as "eggs" lands on the recurring "Oeufs" line (synonym "eggs") rather
-// than spawning a specific-named duplicate. Keeps the household's items generic
-// and stable while the weekly deal that rides on them changes.
-export function existingListId(qc: QueryClient, name: string): string | null {
+// Crude per-word singular so « pommes » still finds « Pomme Gala 3 lb » (and the
+// reverse). Only a trailing 's' on 4+ letter words — anything smarter belongs in a
+// real stemmer, and short words ("mais"/"bas") are too noisy to fold.
+function singularWords(key: string): string {
+  return key
+    .split(' ')
+    .map((w) => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w))
+    .join(' ')
+}
+
+// The list line matching `name` — the ONE reuse-not-duplicate decision (deal ↔ item
+// doctrine: a flyer deal rides on the generic recurring line, never a specific-named
+// copy). Tiered, open lines before checked ones:
+//   1. exact name  — "oeufs" → the "Oeufs" line
+//   2. exact saved synonym — "eggs" → "Oeufs" (search_terms: ["eggs"])
+//   3. the LINE's name contained whole-word in the flyer product name —
+//      "Pommes Gala 3 lb" ⊇ "pommes" (store-mode / FlyerViewer adds pass the raw
+//      product name; before this tier those always spawned a duplicate). One
+//      direction only: a generic line inside a specific product name — a deal
+//      searched as "oeufs" must NOT land on an "Oeufs en chocolat" line.
+//   4. same containment against the line's synonyms.
+export function matchListItem(list: ListItem[], name: string): ListItem | null {
   const key = normKey(name)
   if (!key) return null
-  const list = qc.getQueryData<{ list?: ListItem[] }>(BOARD_KEY)?.list ?? []
-  return (
-    list.find((i) => normKey(i.text) === key)?.id ??
-    list.find((i) => parseTerms(i.search_terms).some((term) => normKey(term) === key))?.id ??
-    null
-  )
+  const hay = ` ${singularWords(key)} `
+  const contains = (lineKey: string) => lineKey.length >= 3 && hay.includes(` ${singularWords(lineKey)} `)
+  const tiers: ((i: ListItem) => boolean)[] = [
+    (i) => normKey(i.text) === key,
+    (i) => parseTerms(i.search_terms).some((term) => normKey(term) === key),
+    (i) => contains(normKey(i.text)),
+    (i) => parseTerms(i.search_terms).some((term) => contains(normKey(term))),
+  ]
+  const open = list.filter((i) => !i.checked_at)
+  const checked = list.filter((i) => i.checked_at)
+  for (const rows of [open, checked]) {
+    for (const match of tiers) {
+      const hit = rows.find(match)
+      if (hit) return hit
+    }
+  }
+  return null
+}
+
+// The cached ['board'] list (empty when the cache is cold — callers that add from
+// a scene outside HubLayout must subscribe to BOARD_KEY themselves, or every add
+// will look like a brand-new line; the server backstop in POST /api/list catches
+// the deal-carrying ones regardless).
+function cachedList(qc: QueryClient): ListItem[] {
+  return qc.getQueryData<{ list?: ListItem[] }>(BOARD_KEY)?.list ?? []
+}
+
+// Put `name` on the list without duplicating: an open match is already there (keep
+// its search_terms and hand position), a checked match comes back to buy (uncheck —
+// re-adding a ticked line must not spawn a twin beside the strike-through), and
+// only a true miss inserts a new line.
+export async function ensureListLine(qc: QueryClient, name: string): Promise<void> {
+  const existing = matchListItem(cachedList(qc), name)
+  if (existing) {
+    if (existing.checked_at)
+      await writeWith(qc, 'list', {
+        method: 'PATCH',
+        body: { id: existing.id, checked: false },
+        affectedKeys: [BOARD_KEY],
+      }).catch(() => {})
+    return
+  }
+  await writeWith(qc, 'list', { method: 'POST', body: { text: name }, affectedKeys: [BOARD_KEY] }).catch(() => {})
 }
 
 // Stage a deal: attach it to its grocery line, reusing an existing line or adding
-// one. Persists server-side and refreshes the board so every device sees it.
+// one. A checked match is unchecked too — the deal means "buy this again", so the
+// line comes back instead of gaining a twin. Persists server-side and refreshes
+// the board so every device sees it.
 export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<void> {
-  const existing = existingListId(qc, name)
+  const existing = matchListItem(cachedList(qc), name)
   if (existing) {
-    await writeWith(qc, 'list', { method: 'PATCH', body: { id: existing, deal }, affectedKeys: [BOARD_KEY] }).catch(
-      () => {},
-    )
+    const body: { id: string; deal: Deal; checked?: boolean } = { id: existing.id, deal }
+    if (existing.checked_at) body.checked = false
+    await writeWith(qc, 'list', { method: 'PATCH', body, affectedKeys: [BOARD_KEY] }).catch(() => {})
   } else {
     await writeWith(qc, 'list', { method: 'POST', body: { text: name, deal }, affectedKeys: [BOARD_KEY] }).catch(() => {})
   }
