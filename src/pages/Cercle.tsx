@@ -157,6 +157,9 @@ function CercleParent() {
   // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
   // group/connect modals) so it works from ANY cercle subtab, not just Business.
   const [addingBusiness, setAddingBusiness] = useState(false)
+  // A shared Google Maps link riding along (?add=business&import=<url>, from the
+  // /share page) — handed to BusinessForm, which runs the place-import on open.
+  const [businessImport, setBusinessImport] = useState<string | null>(null)
   // The ＋ "Nouveau carnet" tile opens the CarnetForm here too (page-level, works from
   // any subtab), so the Carnets tab no longer needs its own add button — same single-
   // entry pattern as the business modal.
@@ -211,12 +214,15 @@ function CercleParent() {
   useEffect(() => {
     if (params.get('connect') === '1') setConnect({})
     else if (params.get('add') === 'group') setAddingGroup(true)
-    else if (params.get('add') === 'business') setAddingBusiness(true)
-    else if (params.get('add') === 'carnet') setAddingCarnet(true)
+    else if (params.get('add') === 'business') {
+      setAddingBusiness(true)
+      setBusinessImport(params.get('import'))
+    } else if (params.get('add') === 'carnet') setAddingCarnet(true)
     else return
     const next = new URLSearchParams(params)
     next.delete('connect')
     next.delete('add')
+    next.delete('import')
     setParams(next, { replace: true })
   }, [params, setParams])
 
@@ -779,9 +785,14 @@ function CercleParent() {
       </Modal>
 
       {/* Add a household service / vendor — opened from the ＋ chooser (?add=business),
-          so a new business is reachable from any cercle subtab, not just Business. */}
-      <Modal open={addingBusiness} onClose={() => setAddingBusiness(false)} title={t.cercle.business.add}>
-        <BusinessForm onSaved={() => setAddingBusiness(false)} onCancel={() => setAddingBusiness(false)} />
+          so a new business is reachable from any cercle subtab, not just Business.
+          A shared Maps link (?import=, from /share) pre-fills the card on open. */}
+      <Modal open={addingBusiness} onClose={() => { setAddingBusiness(false); setBusinessImport(null) }} title={t.cercle.business.add}>
+        <BusinessForm
+          initialImportUrl={businessImport ?? undefined}
+          onSaved={() => { setAddingBusiness(false); setBusinessImport(null) }}
+          onCancel={() => { setAddingBusiness(false); setBusinessImport(null) }}
+        />
       </Modal>
 
       {/* Add a carnet (the house / the car / a thing) — opened from the ＋ chooser

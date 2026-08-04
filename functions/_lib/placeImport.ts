@@ -32,6 +32,37 @@ export function googleMapsUrl(raw: string): URL | null {
 
 const COORDS = /^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/
 
+// Google answers a DATACENTER fetch (Cloudflare egress IPs) with a 429 redirect to
+// its /sorry captcha page instead of the maps page. Two saving graces: the share
+// shortlink is expanded BEFORE the block (so the /sorry URL's `continue` param
+// carries the fully-resolved maps destination, q = "<Name>, <Address>"), and that's
+// all the URL parser needs. Recover it here — otherwise the /sorry URL passes the
+// google.com host check and its own `q` (an anti-bot token like "EgSinn_l…") gets
+// parsed as a garbage business name. Photo/category live in the page we were denied,
+// so an import under a block degrades to name + address, gracefully.
+export function googleSorryContinue(rawUrl: string): URL | null {
+  let u: URL
+  try {
+    u = new URL(rawUrl)
+  } catch {
+    return null
+  }
+  if (!GOOGLE_HOST.test(u.hostname.toLowerCase()) || !u.pathname.startsWith('/sorry')) return null
+  const cont = u.searchParams.get('continue')
+  return cont ? googleMapsUrl(cont) : null
+}
+
+// Is this URL Google's /sorry block page? (Whether or not `continue` survived —
+// never parse a block page's own query for place fields.)
+export function isGoogleSorry(rawUrl: string): boolean {
+  try {
+    const u = new URL(rawUrl)
+    return GOOGLE_HOST.test(u.hostname.toLowerCase()) && u.pathname.startsWith('/sorry')
+  } catch {
+    return false
+  }
+}
+
 // ---- Open Graph enrichment --------------------------------------------------
 // Google serves a RICH link-preview (the same card the Maps share sheet shows) to
 // social crawlers: og:title = "Name · 4.8★(123) · Category", og:description = the

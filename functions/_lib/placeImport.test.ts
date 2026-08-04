@@ -2,12 +2,42 @@ import { describe, it, expect } from 'vitest'
 import {
   googleMapsUrl,
   googleImageUrl,
+  googleSorryContinue,
+  isGoogleSorry,
   splitNameAddress,
   parseGoogleMapsUrl,
   parseMapsTitle,
   parsePlaceOg,
   metaContent,
 } from './placeImport'
+
+// The /sorry block URL Google actually 429-redirects a Cloudflare-egress fetch to
+// (Marc's Animalia link, Aug 2026) — `continue` = the RESOLVED maps destination,
+// `q` = an anti-bot token that must never be parsed as a place.
+const SORRY_URL =
+  'https://www.google.com/sorry/index?continue=https://maps.google.com/%3Fq%3DClinique%2BV%25C3%25A9t%25C3%25A9rinaire%2BAnimalia,%2B273%2BBd%2BSir-Wilfrid-Laurier,%2BMont-Saint-Hilaire,%2BQC%2BJ3H%2B0J1%26ftid%3D0x4cc9ab270301db01:0xca74d04d36e863d3%26entry%3Dgps&q=EgSinn_lGK7Ex9MGIi1R940CosSHg5f47Z84WgFD'
+
+describe('googleSorryContinue / isGoogleSorry (datacenter block recovery)', () => {
+  it('recovers the resolved maps URL from the block page, and it parses to the place', () => {
+    const cont = googleSorryContinue(SORRY_URL)
+    expect(cont).not.toBeNull()
+    const p = parseGoogleMapsUrl(cont!.toString())
+    expect(p.name).toBe('Clinique Vétérinaire Animalia')
+    expect(p.address).toBe('273 Bd Sir-Wilfrid-Laurier, Mont-Saint-Hilaire, QC J3H 0J1')
+  })
+  it('never parses the block URL itself as a place (its q is an anti-bot token)', () => {
+    expect(isGoogleSorry(SORRY_URL)).toBe(true)
+    // The guard the handler relies on: without the continue-recovery, this junk
+    // would have landed in the form as the business "name".
+    expect(parseGoogleMapsUrl(SORRY_URL).name).toMatch(/^EgS/) // documents the trap
+  })
+  it('rejects a continue pointing off Google (SSRF), and non-sorry URLs', () => {
+    expect(googleSorryContinue('https://www.google.com/sorry/index?continue=https://evil.com/maps')).toBeNull()
+    expect(googleSorryContinue('https://www.google.com/maps?q=x')).toBeNull()
+    expect(isGoogleSorry('https://maps.google.com/maps?q=x')).toBe(false)
+    expect(googleSorryContinue('gibberish')).toBeNull()
+  })
+})
 
 describe('googleMapsUrl (SSRF allowlist)', () => {
   it('accepts the share shortener and maps domains', () => {

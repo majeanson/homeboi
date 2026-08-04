@@ -2,7 +2,7 @@ import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
 import { putR2Blob } from '../_lib/r2'
-import { googleMapsUrl, googleImageUrl, parseGoogleMapsUrl, parsePlaceOg } from '../_lib/placeImport'
+import { googleMapsUrl, googleImageUrl, googleSorryContinue, isGoogleSorry, parseGoogleMapsUrl, parsePlaceOg } from '../_lib/placeImport'
 
 // « Le cercle » → Business: pre-fill a business card from a shared Google Maps link.
 // The browser can't follow the share-link redirects (CORS), so we do it server-side
@@ -56,8 +56,20 @@ export const onRequestPost = authed(async (ctx) => {
         'accept-language': lang === 'en' ? 'en-CA' : 'fr-CA',
       },
     })
-    if (googleMapsUrl(res.url)) finalUrl = res.url // re-check the destination is still Google
-    html = (await res.text()).slice(0, MAX_HTML)
+    // Datacenter block: Google 429s Cloudflare egress into its /sorry captcha page.
+    // The shortlink was already expanded, so the block URL's `continue` param IS the
+    // resolved maps destination — parse THAT and skip the page (it's a captcha shell;
+    // its own q= is an anti-bot token that would land in the form as a junk name).
+    const sorry = googleSorryContinue(res.url)
+    if (sorry) {
+      finalUrl = sorry.toString()
+    } else if (isGoogleSorry(res.url)) {
+      // Blocked AND no usable continue — nothing trustworthy to parse.
+      return ok({ name: null, address: null, category: null, photoKey: null, lat: null, lng: null, mapUrl: url.toString(), empty: true })
+    } else {
+      if (googleMapsUrl(res.url)) finalUrl = res.url // re-check the destination is still Google
+      html = (await res.text()).slice(0, MAX_HTML)
+    }
   } catch {
     return serviceUnavailable('Lien introuvable.')
   }

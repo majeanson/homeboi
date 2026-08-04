@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
@@ -19,10 +19,14 @@ import { Icon } from '../Icon'
 // through api() directly (blobs can't queue in the outbox).
 export function BusinessForm({
   value,
+  initialImportUrl,
   onSaved,
   onCancel,
 }: {
   value?: Business | null
+  /** A shared Google Maps link (from /share → ?add=business&import=): seeds the
+   *  import field and runs the lookup on open — the paste + tap is already done. */
+  initialImportUrl?: string
   onSaved: () => void
   onCancel?: () => void
 }) {
@@ -47,9 +51,16 @@ export function BusinessForm({
 
   // Import from a shared Google Maps link (new cards only) — the backend follows the
   // share-link redirects and reads the place's name + address off the resolved URL.
-  const [importUrl, setImportUrl] = useState('')
+  const [importUrl, setImportUrl] = useState(value ? '' : (initialImportUrl ?? ''))
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState<string | null>(null)
+
+  // Arrived with a link already in hand (shared via /share) → run the lookup at
+  // once instead of making the user tap « Importer » on a pre-filled field.
+  useEffect(() => {
+    if (!value && initialImportUrl?.trim()) void importLink()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- on-open only
+  }, [])
 
   async function importLink() {
     const url = importUrl.trim()

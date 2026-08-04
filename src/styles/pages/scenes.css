@@ -14,6 +14,7 @@
 }
 .share-page__actions {
   display: flex;
+  flex-wrap: wrap; /* three buttons on a narrow phone (a Maps share adds « business ») */
   justify-content: space-between;
   gap: 0.6rem;
 }

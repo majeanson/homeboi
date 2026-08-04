@@ -14,6 +14,13 @@ import { Icon } from '../components/Icon'
 // Never a silent auto-post; nothing shared → straight to the board. Standalone scene.
 const SHARE_CACHE = 'babillard-share'
 
+// A Google Maps place link in the shared text (the Maps app shares "Name · https://
+// maps.app.goo.gl/…"). When present, the page offers a THIRD path beside note/capture:
+// « Ajouter un business » → the cercle BusinessForm with ?import=<link>, whose
+// place-import pre-fills name + address server-side. Client-side detection only —
+// the SSRF allowlist lives server-side (functions/_lib/placeImport googleMapsUrl).
+const MAPS_LINK = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs|(?:www\.|maps\.)?google\.[a-z.]+\/maps)\S*/i
+
 export function SharePage() {
   const t = useT()
   const nav = useNavigate()
@@ -107,6 +114,8 @@ export function SharePage() {
     }
   }
 
+  const mapsLink = text.match(MAPS_LINK)?.[0] ?? null
+
   if (!ready) {
     return (
       <main className="narrow share-page">
@@ -149,6 +158,18 @@ export function SharePage() {
             <button type="button" className="btn btn--ghost" onClick={() => nav('/board', { replace: true })}>
               {t.common.cancel}
             </button>
+            {/* A shared Google Maps place → straight to a pre-filled business card
+                (the capture spine has no business type, so without this door a
+                shared vet/plumber link just became a note with a naked URL). */}
+            {!imageBlob && mapsLink && (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => nav(`/cercle?add=business&import=${encodeURIComponent(mapsLink)}`, { replace: true })}
+              >
+                <Icon name="storefront-bold" size={18} /> {t.cercle.business.add}
+              </button>
+            )}
             <button
               type="button"
               className="btn btn--primary"
