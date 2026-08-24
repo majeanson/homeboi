@@ -55,6 +55,34 @@ export interface ComboOption<T = unknown> {
   keywords?: string[]
 }
 
+// Type-to-filter with a two-tier rank: a needle found in the option's NAME beats
+// one found only in its keywords — searching « poulet » in the meal slot must lead
+// with the recipes *called* poulet, and let the ones that merely contain chicken
+// trail. Each tier keeps the caller's order (recipes arrive cookable-ranked), and
+// the partition runs within each contiguous group block so headings stay whole.
+// Pure + exported for the unit test.
+export function filterComboOptions<T>(options: ComboOption<T>[], rawNeedle: string): ComboOption<T>[] {
+  const needle = fold(rawNeedle.trim())
+  if (!needle) return options
+  const out: ComboOption<T>[] = []
+  let byName: ComboOption<T>[] = []
+  let byKeyword: ComboOption<T>[] = []
+  let group: string | undefined
+  const flush = () => {
+    out.push(...byName, ...byKeyword)
+    byName = []
+    byKeyword = []
+  }
+  options.forEach((o, i) => {
+    if (i > 0 && o.group !== group) flush()
+    group = o.group
+    if (fold(o.label).includes(needle)) byName.push(o)
+    else if ((o.keywords ?? []).some((k) => fold(k).includes(needle))) byKeyword.push(o)
+  })
+  flush()
+  return out
+}
+
 export interface EntityComboboxProps<T> {
   value: string
   onChange: (v: string) => void
@@ -170,18 +198,16 @@ export function EntityCombobox<T>({
     return out
   }, [options, frequentsKey])
 
-  // Filter on the typed value; keep the caller's order (recipes arrive ranked) —
-  // frequents only shape the resting list, never the search results. The needle
-  // is DEFERRED so a keystroke paints the input immediately and the (possibly
-  // large) list re-filter rides a lower-priority render — the dropdown lags a
-  // frame behind fast typing instead of the caret lagging.
+  // Filter on the typed value: name matches lead, keyword-only matches trail
+  // (filterComboOptions above) — frequents only shape the resting list, never
+  // the search results. The needle is DEFERRED so a keystroke paints the input
+  // immediately and the (possibly large) list re-filter rides a lower-priority
+  // render — the dropdown lags a frame behind fast typing instead of the caret
+  // lagging.
   const deferredValue = useDeferredValue(value)
   const shown = useMemo(() => {
-    const needle = fold(deferredValue.trim())
-    if (!needle) return ranked
-    return options.filter(
-      (o) => fold(o.label).includes(needle) || (o.keywords ?? []).some((k) => fold(k).includes(needle)),
-    )
+    if (!deferredValue.trim()) return ranked
+    return filterComboOptions(options, deferredValue)
   }, [options, ranked, deferredValue])
   // The active highlight indexes into a list that can lag the input — clamp so
   // Enter can never pick past the end of the freshly-shrunk list.
