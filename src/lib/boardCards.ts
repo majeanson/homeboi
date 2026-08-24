@@ -146,7 +146,9 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // `notes` is not `halvable`: a multi-card strip has no one-summary compact form.
   // `heroes` IS halvable — its mini is a MEDIA tile (the wonder photo + the
   // temperature, nothing else; DayHeroes.tsx), not the generic icon+title.
-  { id: 'notes', icon: 'push-pin-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', halvable: false },
+  // `emptyTo`: an empty notes card (mode 'always') taps straight into the ＋
+  // « Note rapide » sheet (?plus=note), mirroring the strip's own head ＋.
+  { id: 'notes', icon: 'push-pin-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', halvable: false, emptyTo: '/board?plus=note' },
   // `emptyTo`: a card-empty heroes tile (no supper AND no weather) only renders in
   // mode 'always' — its placeholder opens the « Idées » drawer, the same door the
   // in-card « Choisir un souper » CTA offers, so the board never goes silent at the

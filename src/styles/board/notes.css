@@ -15,9 +15,17 @@
   color: var(--ink-faint);
   margin-bottom: 0.5rem;
 }
-/* « Tout effacer » (tidy seam #1): a quiet header-corner action — the strip is
-   the content, not its controls. Inherits the head's small-caps look. */
-.notes__clear-all {
+/* The head's corner controls (« Tout effacer » + the ＋ add door) sit together
+   on the right; the head's space-between pushes the group to the corner. */
+.notes__head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+/* « Tout effacer » (tidy seam #1) and the ＋: quiet header-corner actions — the
+   strip is the content, not its controls. Inherit the head's small-caps look. */
+.notes__clear-all,
+.notes__add {
   border: 0;
   background: none;
   padding: 4px 6px;
@@ -28,8 +36,18 @@
   cursor: pointer;
   border-radius: var(--radius-sm);
 }
+.notes__add {
+  display: inline-flex;
+  align-items: center;
+  /* A comfortable thumb target for an icon-only control, without growing the head. */
+  min-height: 24px;
+  min-width: 24px;
+  justify-content: center;
+}
 .notes__clear-all:hover,
-.notes__clear-all:focus-visible {
+.notes__clear-all:focus-visible,
+.notes__add:hover,
+.notes__add:focus-visible {
   color: var(--ink);
   background: color-mix(in srgb, var(--ink) 7%, transparent);
 }

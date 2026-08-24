@@ -11,6 +11,7 @@ import { imgUrl } from '../../lib/image'
 import { useDrawingToRoutine } from '../../lib/drawingToRoutine'
 import { useKeepInGalleryToast, useKeepKeysInGalleryToast } from '../../lib/drawingGallery'
 import { useDrawEdit } from '../../lib/drawEdit'
+import { useAddSheet } from '../../lib/addSheet'
 import { Icon, InlineIcon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -46,6 +47,9 @@ export function Notes({
 }) {
   const t = useT()
   const write = useWrite()
+  // The widget's own add door (top-right ＋): opens the ONE « Note rapide » sheet
+  // (the same composer as the ＋ FAB tile) — never a parallel composer.
+  const addSheet = useAddSheet()
   const confirm = useConfirm()
   const qc = useQueryClient()
   const speak = useSpeak()
@@ -179,14 +183,30 @@ export function Notes({
         <span aria-hidden="true">
           <InlineIcon name={variant === 'drawings' ? 'paint-brush-bold' : 'push-pin-bold'} /> {title}
         </span>
-        {/* « Tout effacer » — one tap empties the strip, one toast undoes it.
-            Writes, so hidden from a guest; parent lens only (the toddler tap-to-
-            clear stays per-note); pointless under two notes. */}
-        {!ro && !toddler && shown.length > 1 && (
-          <button type="button" className="notes__clear-all" onClick={clearAll}>
-            <InlineIcon name="broom-bold" size={13} /> {t.notes.clearAll}
-          </button>
-        )}
+        <span className="notes__head-actions">
+          {/* « Tout effacer » — one tap empties the strip, one toast undoes it.
+              Writes, so hidden from a guest; parent lens only (the toddler tap-to-
+              clear stays per-note); pointless under two notes. */}
+          {!ro && !toddler && shown.length > 1 && (
+            <button type="button" className="notes__clear-all" onClick={clearAll}>
+              <InlineIcon name="broom-bold" size={13} /> {t.notes.clearAll}
+            </button>
+          )}
+          {/* Top-right ＋ — the widget's own reachable door to « Note rapide »
+              (writes, so guest-hidden; toddler adds nothing; the drawings strip
+              already has its own draw quick-add below). */}
+          {!ro && !toddler && variant === 'notes' && (
+            <button
+              type="button"
+              className="notes__add"
+              onClick={() => addSheet.open('note')}
+              aria-label={t.capture.quick}
+              title={t.capture.quick}
+            >
+              <Icon name="plus-bold" size={14} />
+            </button>
+          )}
+        </span>
       </div>
       <div className="notes__grid">
         {shown.map((n) => {
