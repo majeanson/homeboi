@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
+import { ActionMenu } from '../ActionMenu'
 import { EditField } from '../EditField'
 import { HeartButton } from '../HeartButton'
 import { type MealRow } from './types'
@@ -152,55 +153,31 @@ export function MealRows({
                       <Icon name="book-open-bold" size={16} />
                     </button>
                   )}
-                  {/* Reorder only makes sense once there's another meal to swap with. */}
-                  {!ro && meals.length > 1 && (
-                    <>
-                      <button
-                        type="button"
-                        className="kitchen__meal-btn"
-                        onClick={() => onMove(m.id, 'up')}
-                        disabled={i === 0}
-                        aria-label={t.kitchen.moveUp}
-                        title={t.kitchen.moveUp}
-                      >
-                        <Icon name="caret-up-bold" size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        className="kitchen__meal-btn"
-                        onClick={() => onMove(m.id, 'down')}
-                        disabled={i === meals.length - 1}
-                        aria-label={t.kitchen.moveDown}
-                        title={t.kitchen.moveDown}
-                      >
-                        <Icon name="caret-down-bold" size={16} />
-                      </button>
-                    </>
-                  )}
-                  {/* "Il en reste ?" — announce leftovers from this cooked meal. Not
-                      offered on a row that is itself already a leftover. */}
-                  {!ro && onLeftover && !m.is_leftover && (
-                    <button
-                      type="button"
-                      className="kitchen__meal-btn"
-                      onClick={() => onLeftover(m)}
-                      aria-label={t.kitchen.leftoversFromMeal}
-                      title={t.kitchen.leftoversFromMeal}
-                    >
-                      <Icon name="arrow-counter-clockwise-bold" size={15} />
-                    </button>
-                  )}
-                  {!ro && (
-                  <button
-                    type="button"
-                    className="kitchen__meal-btn kitchen__meal-remove"
-                    onClick={() => onRemove(m.id)}
-                    aria-label={t.kitchen.clearMeal}
-                    title={t.kitchen.clearMeal}
-                  >
-                    <Icon name="trash-bold" size={15} />
-                  </button>
-                  )}
+                  {/* ❤ and 📖 stay visible — they're what a planned meal row is READ
+                      for. The management verbs (reorder · leftovers · remove) fold into
+                      a per-row ⋯: six glyphs on one row left no room for the title on a
+                      phone. Empty for a guest → the menu hides itself. */}
+                  <ActionMenu
+                    items={
+                      ro
+                        ? []
+                        : [
+                            // Reorder only makes sense once there's another meal to swap with.
+                            ...(meals.length > 1
+                              ? [
+                                  { icon: 'caret-up-bold' as const, label: t.kitchen.moveUp, disabled: i === 0, onSelect: () => onMove(m.id, 'up') },
+                                  { icon: 'caret-down-bold' as const, label: t.kitchen.moveDown, disabled: i === meals.length - 1, onSelect: () => onMove(m.id, 'down') },
+                                ]
+                              : []),
+                            // "Il en reste ?" — announce leftovers from this cooked meal.
+                            // Not offered on a row that is itself already a leftover.
+                            ...(onLeftover && !m.is_leftover
+                              ? [{ icon: 'arrow-counter-clockwise-bold' as const, label: t.kitchen.leftoversFromMeal, onSelect: () => onLeftover(m) }]
+                              : []),
+                            { icon: 'trash-bold' as const, label: t.kitchen.clearMeal, tone: 'danger' as const, separated: true, onSelect: () => onRemove(m.id) },
+                          ]
+                    }
+                  />
                 </span>
               </>
             )}

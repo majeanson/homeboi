@@ -652,12 +652,14 @@
   position: relative;
   display: inline-flex;
 }
+/* Portaled to <body> and placed from the trigger's measured rect (see
+   ActionMenu.tsx): a scroller would otherwise clip it, and an ancestor stacking
+   context would swallow its clicks. `top`/`left` come from the component. */
 .action-menu__panel {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  z-index: 60;
+  position: fixed;
+  z-index: 1100;
   min-width: 13.5rem;
+  max-width: min(20rem, calc(100vw - 1rem));
   display: flex;
   flex-direction: column;
   padding: 0.3rem;

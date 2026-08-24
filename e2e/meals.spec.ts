@@ -59,7 +59,9 @@ test('removing one meal deletes just that row', async ({ page }) => {
   await boot(page)
   const sheet = await openManage(page)
   const del = waitMeals(page, 'DELETE', (b) => typeof b.id === 'string')
-  await sheet.locator('.kitchen__meal-row').first().getByRole('button', { name: 'Effacer le repas' }).click()
+  // A row's management verbs live behind its ⋯ overflow now (❤ + 📖 stay visible).
+  await sheet.locator('.kitchen__meal-row').first().locator('.action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Effacer le repas' }).click()
   await del
 })
 
@@ -68,7 +70,8 @@ test('reorder posts a move; clear-day posts a clear', async ({ page }) => {
   const sheet = await openManage(page)
   const move = waitMeals(page, 'POST', (b) => b.action === 'move' && b.dir === 'down')
   // Reorder needs a slot with ≥2 meals — the Souper section (Spaghetti + Salade).
-  await sheet.locator('.day-mng__sec', { hasText: 'Souper' }).locator('.kitchen__meal-row').first().getByRole('button', { name: 'Descendre' }).click()
+  await sheet.locator('.day-mng__sec', { hasText: 'Souper' }).locator('.kitchen__meal-row').first().locator('.action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Descendre' }).click()
   await move
 
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === undefined)
