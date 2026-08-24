@@ -236,8 +236,12 @@
     flex: 1 1 100%;
   }
 }
+/* One primary pill (« Ajouter à la liste ») + the ⋯ that carries the rest (voir
+   la circulaire · choisir ce prix · partager). align-items:center keeps the small
+   pill centred against the ⋯ trigger's full touch target. */
 .deal__actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 4px;

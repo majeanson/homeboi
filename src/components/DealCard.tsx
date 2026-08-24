@@ -3,6 +3,7 @@ import { type Deal, money } from '../lib/deals'
 import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { InlineIcon } from './Icon'
+import { ActionMenu } from './ActionMenu'
 
 // One flyer-deal card: clipping image, store (+ best-price star), name, valid
 // dates, price / unit-price / was-price, and a row of actions. Shared by the
@@ -64,13 +65,10 @@ export function DealCard({
         <span className="deal__name">{deal.name}</span>
         <span className="deal__dates mono">{deal.validTo ? `${t.shop.until} ${fmtDate(deal.validTo)}` : ''}</span>
         <span className="deal__actions">
-          {deal.flyerId != null && onViewFlyer && (
-            <button type="button" className="deal__flyer-btn mono" onClick={() => onViewFlyer(deal)}>
-              {t.shop.viewFlyer} <InlineIcon name="arrow-right-bold" size={13} />
-            </button>
-          )}
           {/* One "add to list" action: it links the deal for the cashier when it
-              can (onStage), else a plain add. No separate "show the cashier". */}
+              can (onStage), else a plain add. No separate "show the cashier". It's
+              the ONE thing a deal card is tapped for, so it stays a real button;
+              seeing the flyer, price-matching and sharing ride the ⋯ beside it. */}
           {ro ? null : onStage ? (
             <button
               type="button"
@@ -84,33 +82,32 @@ export function DealCard({
               <InlineIcon name={added ? 'check-bold' : 'plus-bold'} /> {t.shop.addToList}
             </button>
           ) : null}
-          {!ro && onChoose && (
-            <button
-              type="button"
-              className={`deal__choose mono${isChosen ? ' is-chosen' : ''}`}
-              onClick={() => onChoose(deal)}
-            >
-              {isChosen ? t.shop.chosen : t.shop.choose}
-            </button>
-          )}
-          {!!navigator.share && (
-            <button
-              type="button"
-              className="deal__flyer-btn mono"
-              onClick={() => {
-                const lines = [
-                  `${deal.name} — ${money(deal.price)}`,
-                  deal.merchant,
-                  deal.validTo ? `${t.shop.until} ${fmtDate(deal.validTo)}` : '',
-                ].filter(Boolean)
-                void navigator.share({ title: deal.name, text: lines.join('\n') })
-              }}
-              aria-label={t.shop.share}
-              title={t.shop.share}
-            >
-              <InlineIcon name="arrow-up-right-bold" size={13} /> {t.shop.share}
-            </button>
-          )}
+          <ActionMenu
+            items={[
+              ...(deal.flyerId != null && onViewFlyer
+                ? [{ icon: 'newspaper-bold' as const, label: t.shop.viewFlyer, onSelect: () => onViewFlyer(deal) }]
+                : []),
+              ...(!ro && onChoose
+                ? [{ icon: 'check-bold' as const, label: isChosen ? t.shop.chosen : t.shop.choose, onSelect: () => onChoose(deal) }]
+                : []),
+              ...(navigator.share
+                ? [
+                    {
+                      icon: 'arrow-up-right-bold' as const,
+                      label: t.shop.share,
+                      onSelect: () => {
+                        const lines = [
+                          `${deal.name} — ${money(deal.price)}`,
+                          deal.merchant,
+                          deal.validTo ? `${t.shop.until} ${fmtDate(deal.validTo)}` : '',
+                        ].filter(Boolean)
+                        void navigator.share({ title: deal.name, text: lines.join('\n') })
+                      },
+                    },
+                  ]
+                : []),
+            ]}
+          />
         </span>
       </div>
       <div className="deal__price">
