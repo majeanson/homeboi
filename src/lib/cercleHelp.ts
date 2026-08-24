@@ -15,8 +15,6 @@ export const CERCLE_HELP = {
   // Primary Social / Famille split (guide point 10, « Social / Famille + les notes »).
   family: { card: 'cercle', point: 10, body: { fr: 'Ta Maisonnée, tes familles et leurs notes partagées.', en: 'Your Household, your families and their shared notes.' } },
   social: { card: 'cercle', point: 10, body: { fr: 'Tes amis, collègues et autres groupes — et les personnes sans groupe.', en: 'Your friends, coworkers and other groups — and people in no group.' } },
-  // Famille → "Notes & recommandations".
-  notes: { card: 'cercle', point: 10, body: { fr: 'Des notes rapides — pour toi ou pour toute la Maisonnée — avec photo, dessin ou mémo vocal.', en: 'Quick notes — for you or the whole Household — with photo, drawing or voice memo.' } },
   // Business tab — services / vendors (guide point 11, isolated from the people graph).
   business: { card: 'cercle', point: 11, body: { fr: 'Tes commerces et services (vét, hôpital, plombier…) : joins-les vite, garde des notes, et prends-y rendez-vous. Pas lié à la famille. Astuce : colle un lien Google Maps partagé pour remplir le nom, l’adresse, la catégorie et la photo d’un coup.', en: 'Your businesses and services (vet, hospital, plumber…): reach them fast, keep notes, and book a rendez-vous there. Not tied to family. Tip: paste a shared Google Maps link to fill the name, address, category and photo at once.' } },
   // Les carnets tab — its own live GUIDE card.

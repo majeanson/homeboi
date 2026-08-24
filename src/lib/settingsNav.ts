@@ -14,8 +14,9 @@ export const SETTINGS_SUBS = {
   board: ['events', 'layout', 'thisweek'],
   kitchen: ['apparence', 'meals', 'reserve'],
   liste: ['shop', 'aisles', 'stores', 'history', 'ghost'],
-  cercle: ['members', 'cercle', 'cars', 'schedule', 'annee'],
-  routines: ['routines', 'chores', 'todos'],
+  // Maison merges the old cercle + routines tabs — its Comprendre-only sibling
+  // « Les notes » deliberately has no entry here (nothing to régler there yet).
+  maison: ['routines', 'chores', 'todos', 'members', 'cercle', 'cars', 'schedule', 'annee'],
   settings: ['tablets', 'guest', 'display', 'ambient', 'photos', 'ai', 'voice', 'calm', 'system'],
 } as const
 
@@ -56,13 +57,13 @@ export const SUB_GOTO: Record<string, string> = {
   'liste/stores': '/liste/circulaires',
   'liste/history': '/liste',
   'liste/ghost': '/liste',
-  'cercle/members': '/cercle',
-  'cercle/cercle': '/cercle',
-  'cercle/cars': '/voiture',
-  'cercle/schedule': '/voiture',
-  'routines/routines': '/routines',
-  'routines/chores': '/board',
-  'routines/todos': '/board',
+  'maison/routines': '/maison',
+  'maison/chores': '/board',
+  'maison/todos': '/board',
+  'maison/members': '/maison?section=family',
+  'maison/cercle': '/maison?section=family',
+  'maison/cars': '/voiture',
+  'maison/schedule': '/voiture',
   'settings/photos': '/board',
 }
 
@@ -73,8 +74,8 @@ export const SUB_GOTO: Record<string, string> = {
 export const ROUTE_PREFIXES: readonly string[] = [
   '/board',
   '/kitchen',
-  '/routines',
-  '/cercle',
+  '/maison',
+  '/notes',
   '/liste',
   '/settings',
   '/search',
@@ -90,4 +91,13 @@ export const ROUTE_PREFIXES: readonly string[] = [
   '/habitude',
   '/cast',
   '/share',
+  // The frozen /cercle/* scene paths — old family-share links out in the wild
+  // still point at these (person/family/pet builders, a carnet, Notre monde,
+  // the vCard import), even though the /cercle hub tab itself is gone.
+  '/cercle/person',
+  '/cercle/family',
+  '/cercle/pet',
+  '/cercle/carnet',
+  '/cercle/monde',
+  '/cercle/import',
 ]

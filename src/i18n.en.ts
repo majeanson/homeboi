@@ -9,8 +9,10 @@ import type { FR } from './i18n'
 export const EN: typeof FR = {
   appName: 'Babillard',
   tagline: 'The calm family planner.',
-  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', cercle: 'The circle', hideMenu: 'Hide menu', showMenu: 'Show menu', sections: 'Sections' },
-  navShort: { today: 'Today', kitchen: 'Kitchen', list: 'List', cercle: 'Circle', routines: 'Routines', operator: 'Settings' },
+  // 'cercle'/'routines' are KEPT even though the hub tabs retired them — the
+  // frozen /cercle/* and /routine/* scenes still use these words.
+  nav: { board: 'The board', kitchen: 'Kitchen', kid: 'Kid mode', operator: 'Settings', login: 'Sign in', logout: 'Sign out', today: 'Today', routines: 'Routines', list: 'The list', cercle: 'The circle', maison: 'Home', notes: 'Notes', hideMenu: 'Hide menu', showMenu: 'Show menu', sections: 'Sections' },
+  navShort: { today: 'Today', kitchen: 'Kitchen', list: 'List', cercle: 'Circle', routines: 'Routines', maison: 'Home', notes: 'Notes', operator: 'Settings' },
   // #30 — global search across recipes / people / events / the list.
   search: {
     title: 'Search everything',
@@ -1610,7 +1612,7 @@ export const EN: typeof FR = {
     familyLinkCount: (n: number) => ` · +${n} link${n > 1 ? 's' : ''}`,
     section: { social: 'Social', family: 'Family', notes: 'Notes', business: 'Business', carnets: 'Carnets' },
     sectionSocialHint: 'Friends, coworkers and other groups',
-    sectionFamilyHint: 'Your Household, your families and their notes',
+    sectionFamilyHint: 'Your Household and your families',
     sectionNotesHint: 'Notes & recommendations — for you or the Household',
     sectionBusinessHint: 'Your businesses and services — vet, hospital, plumber',
     business: {
@@ -1722,6 +1724,11 @@ export const EN: typeof FR = {
       attachDrawing: 'Drawing',
       attachRemove: 'Remove',
     },
+  },
+  // Maison — the merged tab (Routines · Family · Social · Business · Carnets).
+  // Minimal for now; the section's own copy still lives under t.cercle / t.routines.
+  maison: {
+    addTitle: 'Add to the home',
   },
   // « Laisse un mot » (#mots) — the household's internal answering machine on the fridge.
   mots: {

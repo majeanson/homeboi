@@ -109,8 +109,8 @@ export const TOURS: Tour[] = [
         card: 'first-time',
         title: { fr: 'Les six sections', en: 'The six sections' },
         body: {
-          fr: 'Tes six onglets : [[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:smiley-bold]] Routines (les enfants), [[icon:users-three-bold]] Le cercle (la famille et les amis), [[icon:sparkle-bold]] La liste (l’épicerie) et [[icon:gear-six-bold]] Réglages.',
-          en: 'Your six tabs: [[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:smiley-bold]] Routines (the kids), [[icon:users-three-bold]] the Circle (family and friends), [[icon:sparkle-bold]] the List (groceries) and [[icon:gear-six-bold]] Settings.',
+          fr: 'Tes six onglets : [[icon:sun-bold]] Le babillard (le coup d’œil), [[icon:carrot-bold]] La cuisine (soupers et recettes), [[icon:sparkle-bold]] La liste (l’épicerie), [[icon:file-text-bold]] Les notes (pour toi ou la Maisonnée), [[icon:house-bold]] Maison (routines, famille, amis, commerces, carnets) et [[icon:gear-six-bold]] Réglages.',
+          en: 'Your six tabs: [[icon:sun-bold]] the Board (the glance), [[icon:carrot-bold]] the Kitchen (suppers and recipes), [[icon:sparkle-bold]] the List (groceries), [[icon:file-text-bold]] Notes (for you or the Household), [[icon:house-bold]] Home (routines, family, friends, businesses, carnets) and [[icon:gear-six-bold]] Settings.',
         },
       },
       {
@@ -265,9 +265,39 @@ export const TOURS: Tour[] = [
       ]),
     ],
   },
+  // Maison's own tour (the merged tab, its Guide card names `tour: 'maison'`):
+  // intro, the five-sub-tab pill row, the default Routines section, then the
+  // merged ＋ chooser.
+  {
+    id: 'maison',
+    startRoute: '/maison',
+    steps: [
+      { icon: 'house-bold', card: 'maison', title: { fr: 'Maison', en: 'Home' }, body: guideWhat('maison') },
+      {
+        target: 'maison-sections',
+        icon: 'stack-bold',
+        card: 'maison',
+        title: { fr: 'Cinq sous-onglets', en: 'Five sub-tabs' },
+        body: guidePoint('maison', 'Cinq sous-onglets'),
+      },
+      {
+        target: 'routines-grid',
+        icon: 'smiley-bold',
+        title: { fr: 'Les routines des enfants', en: 'The kids’ routines' },
+        body: {
+          fr: 'Chaque routine en cartes-images, lue à voix haute. Touche-en une pour la voir ou la modifier.',
+          en: 'Each routine in picture cards, read aloud. Tap one to see or edit it.',
+        },
+      },
+      ...addSheetSteps('maison'),
+    ],
+  },
   {
     id: 'routines',
-    startRoute: '/routines',
+    // Routines lives under Maison now (the nav restructure merged the old
+    // Routines + Le cercle hub tabs); this tour still opens FROM the routines
+    // Guide card's "Faire le tour", so it lands on the tab where the anchors are.
+    startRoute: '/maison',
     steps: [
       { icon: 'smiley-bold', card: 'routines', title: { fr: 'Routines', en: 'Routines' }, body: guideWhat('routines') },
       {
@@ -291,33 +321,38 @@ export const TOURS: Tour[] = [
         title: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
         body: guidePoint('routines', 'Une minuterie sur une étape'),
       },
-      // Routines' ＋ opens the manage picker (no tile chooser), so its in-sheet
-      // step anchors the picker panel instead of the generic tiles grid.
+      // Maison's ＋ now offers a whole chooser (routines + the cercle add-set),
+      // not routines alone — so this closes on the generic add-sheet pair like
+      // every other section tour, with bodies pointing out the « Routines »
+      // tile specifically (it leads the chooser, the tab's default section).
       {
         target: 'add-fab',
         icon: 'plus-bold',
         title: { fr: 'Le bouton ＋', en: 'The ＋ button' },
         body: {
-          fr: 'Ici, le ＋ gère les routines. « Suivant » l’ouvre pour te montrer.',
-          en: 'Here, the ＋ manages the routines. “Next” opens it to show you.',
+          fr: 'Le ＋ de Maison ouvre un choix de tuiles — « Routines » est la première. « Suivant » l’ouvre pour te montrer.',
+          en: 'Maison’s ＋ opens a choice of tiles — “Routines” leads them. “Next” opens it to show you.',
         },
       },
       {
-        target: 'add-routines',
+        target: 'add-tiles',
         sheet: true,
         icon: 'plus-bold',
         card: 'routines',
         title: { fr: 'Créer ou modifier', en: 'Create or edit' },
         body: {
-          fr: '« Nouvelle routine » en bâtit une; touche une routine existante pour la modifier. Les étapes et les images se montent là.',
-          en: '“New routine” builds one; tap an existing routine to edit it. The steps and pictures are put together there.',
+          fr: 'Touche « Routines » : « Nouvelle routine » en bâtit une, ou touche une routine existante pour la modifier. Les étapes et les images se montent là.',
+          en: 'Tap “Routines”: “New routine” builds one, or tap an existing routine to edit it. The steps and pictures are put together there.',
         },
       },
     ],
   },
+  // The old « Le cercle » hub tab lives under Maison now (?section=family); this
+  // tour still opens from the cercle Guide card's "Faire le tour" and keeps that
+  // card's id/anchors — only the starting route moved.
   {
     id: 'cercle',
-    startRoute: '/cercle',
+    startRoute: '/maison?section=family',
     steps: [
       { icon: 'users-three-bold', card: 'cercle', title: { fr: 'Le cercle', en: 'The circle' }, body: guideWhat('cercle') },
       {

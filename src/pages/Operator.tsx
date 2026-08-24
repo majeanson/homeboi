@@ -66,8 +66,8 @@ const SECTIONS: { id: string; icon: IconName }[] = [
   { id: 'board', icon: 'sun-bold' }, //           events + layout + la semaine
   { id: 'kitchen', icon: 'carrot-bold' }, //      apparence (tags+pastilles+mesures) + repas + réserve
   { id: 'liste', icon: 'sparkle-bold' }, //       liste + allées + magasins + historique + ghost
-  { id: 'cercle', icon: 'users-three-bold' }, //  membres + groupes + autos + horaires
-  { id: 'routines', icon: 'smiley-bold' }, //     routines + corvées + à-compléter
+  { id: 'notes', icon: 'file-text-bold' }, //     Comprendre-only — les notes du cercle, aucun Régler
+  { id: 'maison', icon: 'house-bold' }, //        routines + corvées + à-compléter + membres + groupes + autos + horaires
   { id: 'settings', icon: 'gear-six-bold' }, //   Système: appareils + invités + affichage + veille + photos + IA + voix + calme + diagnostics
 ]
 
@@ -78,22 +78,22 @@ const SECTIONS: { id: string; icon: IconName }[] = [
 // stays within the base tab passes through useTabParam's valid-set untouched.
 const LEGACY_TAB: Record<string, { tab: string; sub?: string; bySub?: Record<string, { tab: string; sub: string }> }> = {
   guide: { tab: 'decouvrir' },
-  household: { tab: 'cercle', sub: 'members' },
+  household: { tab: 'maison', sub: 'members' },
   devices: { tab: 'settings', sub: 'tablets' },
   agenda: {
     tab: 'board',
     sub: 'events',
-    bySub: { cars: { tab: 'cercle', sub: 'cars' }, schedule: { tab: 'cercle', sub: 'schedule' } },
+    bySub: { cars: { tab: 'maison', sub: 'cars' }, schedule: { tab: 'maison', sub: 'schedule' } },
   },
-  chores: { tab: 'routines', sub: 'chores' },
+  chores: { tab: 'maison', sub: 'chores' },
   recipes: { tab: 'kitchen', sub: 'apparence' },
   shopping: { tab: 'liste', sub: 'shop' },
   display: { tab: 'settings', sub: 'display', bySub: { layout: { tab: 'board', sub: 'layout' } } },
   ai: { tab: 'settings', sub: 'ai', bySub: { thisweek: { tab: 'board', sub: 'thisweek' } } },
   // The previously-retired ids, re-pointed at their themed homes:
   guest: { tab: 'settings', sub: 'guest' },
-  auto: { tab: 'cercle', sub: 'cars' },
-  todos: { tab: 'routines', sub: 'todos' },
+  auto: { tab: 'maison', sub: 'cars' },
+  todos: { tab: 'maison', sub: 'todos' },
   meals: { tab: 'kitchen', sub: 'meals' },
   reserve: { tab: 'kitchen', sub: 'reserve' },
   ghost: { tab: 'liste', sub: 'ghost' },
@@ -101,9 +101,14 @@ const LEGACY_TAB: Record<string, { tab: string; sub?: string; bySub?: Record<str
   photos: { tab: 'settings', sub: 'photos' },
   week: { tab: 'board', sub: 'thisweek' },
   'ai-log': { tab: 'settings', sub: 'system' },
-  // 'cercle' and 'routines' graduated from alias to REAL tab ids: ?tab=routines
-  // lands on the routines tab (its namesake sub is first), ?tab=cercle on the
-  // cercle tab (members first — the old alias meant the groups sub; same theme).
+  // 'cercle' and 'routines' DEMOTED back from real tab ids to aliases by the nav
+  // restructure (Le cercle + Routines merged into Maison): no bySub needed here
+  // — every old cercle/routines sub id lives on verbatim inside maison, so a raw
+  // ?sub still in the valid set passes useTabParam untouched, and the sub named
+  // below is only the no-?sub fallback (members first for the old cercle alias —
+  // it used to mean the groups sub; routines first for the old routines alias).
+  cercle: { tab: 'maison', sub: 'members' },
+  routines: { tab: 'maison', sub: 'routines' },
 }
 
 // C-15 — retired ?sub= ids WITHIN a still-current tab (unlike LEGACY_TAB, whose
@@ -196,8 +201,8 @@ export function Operator() {
     board: t.operator.secBoard,
     kitchen: t.operator.secKitchen,
     liste: t.nav.list,
-    cercle: t.nav.cercle,
-    routines: t.nav.routines,
+    notes: t.nav.notes,
+    maison: t.nav.maison,
     settings: t.operator.secSystem,
   }
   const [params, setParams] = useSearchParams()
@@ -363,20 +368,22 @@ export function Operator() {
       history: { label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
       ghost: { label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
     },
-    cercle: {
+    // Maison merges the old cercle + routines tabs (nav restructure); sub ORDER
+    // follows SETTINGS_SUBS.maison — the namesake « routines » sub leads (also
+    // keeps legacy ?tab=routines landing here), then the old cercle subs. « Les
+    // notes » (the old Social/Famille notes point) moved out to its own
+    // Comprendre-only tab, so it has no body here.
+    maison: {
+      routines: { label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
+      chores: { label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
+      todos: { label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
       members: { label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
       cercle: { label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
-      // L'auto + per-member hours live in Le cercle's world (getting-around, teal).
+      // L'auto + per-member hours live in Maison's world (getting-around, berry).
       cars: { label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
       schedule: { label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
       // « La maison cette année » (B-8, bmad/09) — the house's diary, a read view.
       annee: { label: t.operator.diaryTab, node: <HouseDiarySection help={operatorHelp} /> },
-    },
-    routines: {
-      // The namesake sub leads (also keeps legacy ?tab=routines landing here).
-      routines: { label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
-      chores: { label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
-      todos: { label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
     },
     settings: {
       tablets: {
@@ -433,7 +440,7 @@ export function Operator() {
   // Kiosk gating, per-sub: member/group admin, tablet pairing and guest links are
   // operator-only — dropped from the pill row AND the valid ?sub set, so a deep
   // link folds to the tab's first visible sub instead of bypassing the gate.
-  const gatedSubs: Record<string, string[]> = fullAccess ? {} : { cercle: ['members', 'cercle'], settings: ['tablets', 'guest'] }
+  const gatedSubs: Record<string, string[]> = fullAccess ? {} : { maison: ['members', 'cercle'], settings: ['tablets', 'guest'] }
 
   // Guest gating, per-sub — an ALLOWLIST, not a denylist, because the safe set is the
   // small one and a sub added later must not silently open itself to the demo. These

@@ -29,21 +29,21 @@ export type Bi = { fr: string; en: string }
 // CATS families and every tab's HubHead already agree on it. The Guide mirrors
 // that SAME mapping so its feature-map tiles and themed concept blocks wear the
 // colour of the section they belong to (« Cuisine & épicerie » is La cuisine's
-// terracotta, « Se déplacer » is Le cercle's turquoise, …) rather than a flat
-// marigold. Both values are theme-aware CSS vars so they follow day↔night; `ink`
-// tints a glyph / accent, `wash` a pale fill. Keep in sync with HubLayout `TABS`.
-// `ink` resolves to the `--*-ink` TEXT tier (bmad/08 A-10): SECTION_TINT.ink also
-// lands on real text (the active Réglages tab label, guide accents), so it must
-// clear 4.5:1 on its wash in every theme — the brighter `--*-deep` tier stays for
-// glyph-only literals (3:1 bar).
-export type SectionKey = 'board' | 'kitchen' | 'routines' | 'cercle' | 'liste' | 'settings'
+// terracotta, « Maison » is Routines' old berry, « Les notes » is Le cercle's old
+// turquoise, …) rather than a flat marigold. Both values are theme-aware CSS vars
+// so they follow day↔night; `ink` tints a glyph / accent, `wash` a pale fill.
+// Keep in sync with HubLayout `TABS`. `ink` resolves to the `--*-ink` TEXT tier
+// (bmad/08 A-10): SECTION_TINT.ink also lands on real text (the active Réglages
+// tab label, guide accents), so it must clear 4.5:1 on its wash in every theme —
+// the brighter `--*-deep` tier stays for glyph-only literals (3:1 bar).
+export type SectionKey = 'board' | 'kitchen' | 'liste' | 'notes' | 'maison' | 'settings'
 export type Tint = { ink: string; wash: string }
 export const SECTION_TINT: Record<SectionKey, Tint> = {
   board: { ink: 'var(--marigold-ink)', wash: 'var(--marigold-wash)' }, // Le babillard
   kitchen: { ink: 'var(--terracotta-ink)', wash: 'var(--terracotta-wash)' }, // La cuisine
-  routines: { ink: 'var(--berry-ink)', wash: 'var(--berry-wash)' }, // Routines
-  cercle: { ink: 'var(--teal-ink)', wash: 'var(--teal-wash)' }, // Le cercle
   liste: { ink: 'var(--sky-ink)', wash: 'var(--sky-wash)' }, // La liste
+  notes: { ink: 'var(--teal-ink)', wash: 'var(--teal-wash)' }, // Les notes — inherited from Le cercle
+  maison: { ink: 'var(--berry-ink)', wash: 'var(--berry-wash)' }, // Maison — inherited from Routines
   settings: { ink: 'var(--sage-ink)', wash: 'var(--sage-wash)' }, // Réglages
 }
 
@@ -57,7 +57,7 @@ type GuidePoint = {
   detail: Bi
   why?: Bi
   // Where THIS point's action lives — a « Essayer » link right under the
-  // explanation (e.g. « Des liens entre les gens » → /cercle?connect=1, a ＋
+  // explanation (e.g. « Des liens entre les gens » → /maison?connect=1, a ＋
   // tile → /board?plus=mot). Only when the point names ONE concrete action;
   // guideLinks.test.ts validates every target.
   route?: string
@@ -112,7 +112,7 @@ export type GuideEntry = {
 // One bucket per hub section — the theme's `key` IS the SectionKey, so the
 // taxonomy, SECTION_TINT, the feature-map tiles and the Réglages themed tabs
 // (pages/Operator) all share one id space. Canonical order = importance order
-// (mirrors the hub nav): board → kitchen → liste → cercle → routines → settings.
+// (mirrors the hub nav): board → kitchen → liste → notes → maison → settings.
 export type ConceptTheme = { key: SectionKey; icon: IconName; label: Bi; ids: string[]; route: string; section: SectionKey }
 export const CONCEPT_THEMES: ConceptTheme[] = [
   {
@@ -141,21 +141,24 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     ids: ['deals', 'ghost'],
   },
   {
-    key: 'cercle',
-    icon: 'users-three-bold',
-    label: { fr: 'Le cercle', en: 'The circle' },
-    route: '/cercle',
-    // voyage / auto / carnets all live in Le cercle's world — wear its turquoise.
-    section: 'cercle',
-    ids: ['voyage', 'auto', 'carnets'],
+    key: 'notes',
+    icon: 'file-text-bold',
+    label: { fr: 'Les notes', en: 'Notes' },
+    route: '/notes',
+    section: 'notes',
+    // Deliberately empty: the `notes` SECTION card carries this bucket's whole
+    // content (there's no separate `group:'concepts'` card to list here).
+    ids: [],
   },
   {
-    key: 'routines',
-    icon: 'smiley-bold',
-    label: { fr: 'Routines', en: 'Routines' },
-    route: '/routines',
-    section: 'routines',
-    ids: ['todos'],
+    key: 'maison',
+    icon: 'house-bold',
+    label: { fr: 'Maison', en: 'Home' },
+    route: '/maison',
+    // routines / cercle / voyage / auto / carnets / todos all live in Maison's
+    // world now — wear its berry (inherited from the old Routines tab).
+    section: 'maison',
+    ids: ['routines', 'cercle', 'voyage', 'auto', 'carnets', 'todos'],
   },
   {
     key: 'settings',
@@ -197,9 +200,13 @@ export const THEME_ALIAS: Record<string, string> = {
   everyday: 'board',
   'kitchen-shop': 'kitchen',
   devices: 'settings',
-  'getting-around': 'cercle',
+  'getting-around': 'maison',
   'ai-calm': 'settings',
   sections: 'decouvrir',
+  // The nav restructure retired these two hub tabs into Maison — old
+  // ?theme=cercle / ?theme=routines bookmarks land there too.
+  cercle: 'maison',
+  routines: 'maison',
 }
 
 // Which of the 8 consolidated `set-*` cards ("the Réglages reference") lives on
@@ -208,10 +215,10 @@ export const THEME_ALIAS: Record<string, string> = {
 // one collapsed group. Keys are post-SETTINGS_CARD_ALIAS ids (guide.tsx resolves
 // retired card ids first).
 const SET_CARD_HOME: Record<string, string> = {
-  'set-household': 'cercle',
+  'set-household': 'maison',
   'set-devices': 'settings',
   'set-agenda': 'board',
-  'set-chores': 'routines',
+  'set-chores': 'maison',
   'set-recipes': 'kitchen',
   'set-shopping': 'liste',
   'set-display': 'settings',
@@ -577,9 +584,9 @@ export const GUIDE: GuideEntry[] = [
     id: 'routines',
     tour: 'routines',
     icon: 'smiley-bold',
-    group: 'sections',
-    route: '/routines',
-    settings: '/settings?tab=routines',
+    group: 'concepts',
+    route: '/maison',
+    settings: '/settings?tab=maison&sub=routines',
     title: { fr: 'Routines', en: 'Routines' },
     what: {
       fr: 'Des routines en cartes-images pour les enfants (matin, dodo…), lues à voix haute. Un pré-lecteur les fait seul.',
@@ -590,10 +597,10 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ ouvre le gestionnaire : créer une routine, ou toucher une routine existante pour la modifier.',
-          en: 'The ＋ opens the manager: create a routine, or tap an existing one to edit it.',
+          fr: 'Le ＋ de la maison ouvre le gestionnaire : créer une routine, ou toucher une routine existante pour la modifier — « Routines » est une tuile de son choix.',
+          en: 'The Maison tab’s ＋ opens the manager: create a routine, or tap an existing one to edit it — “Routines” is one tile in its chooser.',
         },
-        route: '/routines?plus=1',
+        route: '/maison?plus=1',
       },
       {
         label: { fr: 'Une étape à la fois', en: 'One step at a time' },
@@ -630,7 +637,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'L’enfant touche sa créature pendant la routine : elle dit le truc de l’étape où il est rendu — « en haut, en bas… et la langue aussi ! » pour 🪥, « les deux souliers font un cœur » pour 👟. Chaque pictogramme a le sien. Dans Réglages ▸ Routines, 💡 « Le truc » te laisse écrire le tien sur une carte : c’est lui qui sera dit. La créature ne parle que si on la touche, et ne commente jamais si l’étape a été faite — elle tient compagnie et donne un coup de main, elle ne note pas.',
           en: 'The child taps their creature during a routine: it says the trick for the step they’re on — “top teeth, bottom teeth… and your tongue too!” for 🪥, “your shoes make a heart shape” for 👟. Every pictogram has its own. In Settings ▸ Routines, 💡 “The trick” lets you write your own on a card, and that’s what gets said. The creature only speaks when tapped, and never comments on whether a step got done — it keeps company and lends a hand, it doesn’t grade.',
         },
-        route: '/settings?tab=routines&sub=routines',
+        route: '/settings?tab=maison&sub=routines',
       },
       {
         label: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
@@ -666,7 +673,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Les étapes et les images se montent dans Réglages ▸ Routines.',
           en: 'Steps and pictures are built in Settings ▸ Routines.',
         },
-        route: '/settings?tab=routines&sub=routines',
+        route: '/settings?tab=maison&sub=routines',
       },
       {
         label: { fr: 'Jouer', en: 'Play' },
@@ -689,10 +696,10 @@ export const GUIDE: GuideEntry[] = [
     id: 'cercle',
     tour: 'cercle',
     icon: 'users-three-bold',
-    group: 'sections',
+    group: 'concepts',
     title: { fr: 'Le cercle', en: 'The circle' },
-    route: '/cercle',
-    settings: '/settings?tab=cercle',
+    route: '/maison?section=family',
+    settings: '/settings?tab=maison&sub=members',
     what: {
       fr: 'Le carnet des proches : famille, amis et animaux, avec photo, fête, courriel et téléphone.',
       en: 'The directory of the people close to you: family, friends and pets, with photo, birthday, email and phone.',
@@ -705,7 +712,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Le ＋ ajoute : une personne, bâtir une famille, relier deux personnes, un groupe, un business (vétérinaire, plombier…), un animal, ou un carnet (maison, auto…).',
           en: 'The ＋ adds: a person, build a family, connect two people, a group, a business (vet, plumber…), a pet, or a carnet (home, car…).',
         },
-        route: '/cercle?plus=1',
+        route: '/maison?plus=1',
       },
       {
         label: { fr: 'Ta Maisonnée, ta famille', en: 'Your Household, your family' },
@@ -727,7 +734,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Dis « X est le parent de Y » : le lien inverse s’ajoute tout seul, et les familles se regroupent d’elles-mêmes. Les grands-parents, oncles et cousins se déduisent — relie le minimum, l’appli fait le reste.',
           en: 'Say “X is Y’s parent”: the reverse link is added for you, and families group themselves. Grandparents, uncles and cousins are inferred — link the minimum, the app does the rest.',
         },
-        route: '/cercle?connect=1',
+        route: '/maison?connect=1',
       },
       {
         label: { fr: 'Bâtir une famille d’un coup', en: 'Build a family at once' },
@@ -743,7 +750,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Choisis une personne de chaque côté, dis comment elles sont liées, et c’est tout — ce seul lien rattache la belle-famille au complet.',
           en: 'Pick a person on each side, say how they’re related, and that’s it — that one link attaches the whole in-law family.',
         },
-        route: '/cercle?connect=1',
+        route: '/maison?connect=1',
       },
       {
         label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
@@ -766,7 +773,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Crée des groupes nommés (Famille Tremblay, Collègues…) et range les gens dedans d’un toucher. Une fiche garde aussi l’adresse, des photos, et s’exporte ou s’importe (vCard). Cherche par prénom OU nom.',
           en: 'Create named groups (Tremblay family, Coworkers…) and drop people in with a tap. A card also keeps the address and photos, and exports or imports (vCard). Search by first OR last name.',
         },
-        route: '/settings?tab=cercle&sub=cercle',
+        route: '/settings?tab=maison&sub=cercle',
       },
       {
         label: { fr: 'Les fêtes, en douceur', en: 'Birthdays, gently' },
@@ -776,11 +783,12 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Social / Famille + les notes', en: 'Social / Family + the notes' },
+        label: { fr: 'Famille et Social, deux sous-onglets de la maison', en: 'Family and Social, two of the home’s sub-tabs' },
         detail: {
-          fr: 'Deux onglets : Famille (ta parenté) et Social (les amis et leurs familles à eux). Sous Famille, « Notes & recommandations » : des notes rapides pour toi ou toute la Maisonnée, avec photo, dessin ou mémo vocal.',
-          en: 'Two tabs: Family (your kin) and Social (friends and their own families). Under Family, “Notes & recommendations”: quick notes for you or the whole Household, with photo, drawing or voice memo.',
+          fr: 'Le cercle vit maintenant sous « Maison » aux côtés de Routines, Business et Carnets : Famille (ta parenté) et Social (les amis et leurs familles à eux). Les notes rapides pour toi ou toute la Maisonnée — photo, dessin, mémo vocal — ont maintenant leur propre onglet : [[card:notes|Les notes]].',
+          en: 'The circle now lives under “Maison” alongside Routines, Business and Carnets: Family (your kin) and Social (friends and their own families). Quick notes for you or the whole Household — photo, drawing, voice memo — now have their own tab: [[card:notes|Notes]].',
         },
+        route: '/notes',
       },
       {
         label: { fr: 'Business : tes services', en: 'Business: your services' },
@@ -795,7 +803,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'La maison relit son année, mois par mois : les soins, les corvées faites, les voyages, les dessins gardés. Des noms et des dates — jamais des comptes. Ça s’écrit tout seul.',
           en: 'The home rereads its year, month by month: the care, the chores done, the trips, the kept drawings. Names and dates — never counts. It writes itself.',
         },
-        route: '/settings?tab=cercle&sub=annee',
+        route: '/settings?tab=maison&sub=annee',
       },
     ],
   },
@@ -883,6 +891,103 @@ export const GUIDE: GuideEntry[] = [
     ],
   },
   {
+    id: 'notes',
+    icon: 'file-text-bold',
+    group: 'sections',
+    route: '/notes',
+    // No `settings` field on purpose — Les notes is a Comprendre-only Réglages
+    // tab, nothing to régler beyond the notes themselves. No `tour` either.
+    title: { fr: 'Les notes', en: 'Notes' },
+    what: {
+      fr: 'Des notes et des recommandations qui durent — pour toi ou pour toute la Maisonnée. Différent des « mots » du babillard : un mot attend une personne précise et se referme une fois lu, une note vit tant que tu la gardes.',
+      en: 'Notes and recommendations meant to last — for you or the whole Household. Different from the board’s “mots”: a mot waits for one person and closes once read, a note stays as long as you keep it.',
+    },
+    points: [
+      // ⚠ Registries index into this card — append only.
+      {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Le ＋ ouvre directement l’éditeur riche : une nouvelle note, prête à écrire.',
+          en: 'The ＋ opens the rich editor directly: a new note, ready to write.',
+        },
+        route: '/notes?plus=cnote',
+      },
+      {
+        label: { fr: 'Pour toi ou la Maisonnée', en: 'For you or the Household' },
+        detail: {
+          fr: 'La rangée de visages en haut décide qui voit quoi : un visage montre ses notes à lui, Maisonnée montre celles pour tout le monde — et une nouvelle note prend la portée du visage choisi.',
+          en: 'The face row up top decides who sees what: a face shows just their notes, Household shows the ones for everyone — and a new note takes on the picked face’s scope.',
+        },
+      },
+      {
+        label: { fr: 'La note riche', en: 'The rich note' },
+        detail: {
+          fr: 'Un titre, des listes à cocher, une photo ou un dessin — pas juste une ligne de texte.',
+          en: 'A title, checklists, a photo or a drawing — not just a line of text.',
+        },
+      },
+      {
+        label: { fr: 'Un mémo vocal, un dessin, une photo', en: 'A voice memo, a drawing, a photo' },
+        detail: {
+          fr: 'Le 📎 sur la boîte à écrire rapide joint un mémo vocal, un dessin ou une photo à la note — sans effacer ce que tu as tapé.',
+          en: 'The 📎 on the one-line composer clips a voice memo, a drawing or a photo onto the note — without erasing what you typed.',
+        },
+      },
+      {
+        label: { fr: 'Chercher', en: 'Search' },
+        detail: {
+          fr: 'La recherche fouille le titre, le corps ET l’auteur — retrouve vite « la recommandation de plombier de mamie ».',
+          en: 'Search digs through the title, the body AND the author — quickly finds “grandma’s plumber recommendation”.',
+        },
+      },
+      {
+        label: { fr: 'Pour les tout-petits', en: 'For the little ones' },
+        detail: {
+          fr: 'En vue enfant, les notes se lisent à voix haute, et un mémo vocal joint se joue d’un toucher.',
+          en: 'In the kid view, notes read themselves aloud, and a clipped voice memo plays on tap.',
+        },
+      },
+    ],
+  },
+  {
+    id: 'maison',
+    icon: 'house-bold',
+    group: 'sections',
+    tour: 'maison',
+    route: '/maison',
+    settings: '/settings?tab=maison',
+    title: { fr: 'Maison', en: 'Home' },
+    what: {
+      fr: 'La maison au quotidien : les routines des enfants, ta famille et tes amis, tes commerces et tes carnets — cinq sous-onglets, une seule section.',
+      en: 'The everyday home: the kids’ routines, your family and friends, your businesses and your carnets — five sub-tabs, one section.',
+    },
+    points: [
+      {
+        label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
+        detail: {
+          fr: 'Le ＋ ouvre le choix fusionné de la maison : une nouvelle routine, une personne, bâtir une famille, un lien entre deux personnes, un groupe, un commerce, un animal, un carnet, ou importer une fiche.',
+          en: 'The ＋ opens the home’s merged chooser: a new routine, a person, build a family, a link between two people, a group, a business, a pet, a carnet, or import a card.',
+        },
+        route: '/maison?plus=1',
+      },
+      {
+        label: { fr: 'Cinq sous-onglets', en: 'Five sub-tabs' },
+        detail: {
+          fr: 'Routines (les cartes-images des enfants), Famille (ta parenté), Social (les amis et leurs familles à eux), Business (tes commerces) et Carnets (maison, auto…) — voir [[card:routines|Routines]], [[card:cercle|Le cercle]] et [[card:carnets|Les carnets]] pour le détail de chacun.',
+          en: 'Routines (the kids’ picture cards), Family (your kin), Social (friends and their own families), Business (your businesses) and Carnets (home, car…) — see [[card:routines|Routines]], [[card:cercle|The circle]] and [[card:carnets|The carnets]] for each one’s detail.',
+        },
+      },
+      {
+        label: { fr: 'Les réglages de la maison', en: 'The home’s settings' },
+        detail: {
+          fr: 'Toutes les sous-sections se règlent au même endroit — corvées, membres, l’auto, les horaires.',
+          en: 'Every sub-section is set up in one place — chores, members, the car, the schedules.',
+        },
+        route: '/settings?tab=maison',
+      },
+    ],
+  },
+  {
     id: 'settings',
     icon: 'gear-six-bold',
     group: 'sections',
@@ -900,7 +1005,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Ajoute les membres, leur couleur et leur photo — c’est ce qui peuple les visages partout dans l’app.',
           en: 'Add the members, their colour and photo — it’s what populates the faces everywhere in the app.',
         },
-        route: '/settings?tab=cercle&sub=members',
+        route: '/settings?tab=maison&sub=members',
       },
       {
         label: { fr: 'Appareils', en: 'Devices' },
@@ -916,7 +1021,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Monte la rotation des corvées et les routines d’enfants une fois; ça tourne ensuite tout seul.',
           en: 'Build the chore rotation and the kid routines once; they then run on their own.',
         },
-        route: '/settings?tab=routines&sub=chores',
+        route: '/settings?tab=maison&sub=chores',
       },
       {
         label: { fr: 'Réservé au parent', en: 'Parent-only' },
@@ -1257,7 +1362,7 @@ export const GUIDE: GuideEntry[] = [
     ],
     // The card lives on the board; its "À compléter" templates are the Régler side.
     route: '/board',
-    settings: '/settings?tab=routines&sub=todos',
+    settings: '/settings?tab=maison&sub=todos',
   },
   {
     id: 'voyage',
@@ -1325,11 +1430,11 @@ export const GUIDE: GuideEntry[] = [
     id: 'carnets',
     icon: 'book-open-bold',
     group: 'concepts',
-    route: '/cercle?section=carnets',
+    route: '/maison?section=carnets',
     title: { fr: 'Les carnets', en: 'The carnets' },
     what: {
-      fr: 'Dans Le cercle, tes choses dont on prend soin — la maison, l’auto… et le chauffe-eau ou la toiture à l’intérieur d’une maison. Chacune garde son carnet, comme un carnet d’entretien d’auto : son identité, ses factures, son entretien qui revient, et « le long jeu » (quand la remplacer).',
-      en: 'In Le cercle, your cared-for things — the house, the car… and the water heater or roof inside a house. Each keeps a carnet, like a car’s maintenance booklet: its identity, its invoices, its recurring upkeep, and “the long game” (when to replace it).',
+      fr: 'Dans Maison, tes choses dont on prend soin — la maison, l’auto… et le chauffe-eau ou la toiture à l’intérieur d’une maison. Chacune garde son carnet, comme un carnet d’entretien d’auto : son identité, ses factures, son entretien qui revient, et « le long jeu » (quand la remplacer).',
+      en: 'In Maison, your cared-for things — the house, the car… and the water heater or roof inside a house. Each keeps a carnet, like a car’s maintenance booklet: its identity, its invoices, its recurring upkeep, and “the long game” (when to replace it).',
     },
     points: [
       {
@@ -1338,7 +1443,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Ajoute la maison ou l’auto, puis ses choses à l’intérieur (le chauffe-eau, les pneus). Touche-en une pour l’ouvrir : « À surveiller » (ce qui s’en vient) et « Le carnet » (l’info, l’historique, ses choses).',
           en: 'Add the house or the car, then its things inside (the water heater, the tires). Tap one to open it: “To watch” (what’s coming) and “The carnet” (the info, the history, its things).',
         },
-        route: '/cercle?add=carnet',
+        route: '/maison?add=carnet',
       },
       {
         label: { fr: 'L’historique', en: 'The history' },
@@ -1957,7 +2062,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-household',
     icon: 'users-three-bold',
     group: 'settings',
-    settings: '/settings?tab=cercle&sub=members',
+    settings: '/settings?tab=maison&sub=members',
     title: { fr: 'La maisonnée', en: 'The household' },
     what: {
       fr: 'Qui fait partie de la famille, et le cercle autour d’elle. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
@@ -2100,7 +2205,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Entre une fois les heures récurrentes de chacun (travail, garderie) et coche « prend l’auto » au besoin; ça dit à [[card:auto|L’auto]] quand la voiture n’est pas là et façonne chaque journée tout seul.',
           en: 'Enter everyone’s recurring hours once (work, daycare) and tick “takes the car” where it applies; it tells [[card:auto|The car]] when the vehicle is away and shapes each day on its own.',
         },
-        route: '/settings?tab=cercle&sub=schedule',
+        route: '/settings?tab=maison&sub=schedule',
       },
       // Appended: the retired 'activities' card (alias base 5).
       {
@@ -2117,7 +2222,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-chores',
     icon: 'broom-bold',
     group: 'settings',
-    settings: '/settings?tab=routines&sub=chores',
+    settings: '/settings?tab=maison&sub=chores',
     title: { fr: 'Corvées & routines', en: 'Chores & routines' },
     what: {
       fr: 'Les tâches de la maison et leur horaire, les routines en images des enfants, et les listes « À compléter ». Les corvées tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
@@ -2711,7 +2816,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'key-bold',
     group: 'concepts',
     route: '/voiture',
-    settings: '/settings?tab=cercle&sub=cars',
+    settings: '/settings?tab=maison&sub=cars',
     title: { fr: 'L’auto', en: 'The car' },
     what: {
       fr: 'Une seule auto pour la maisonnée ? L’auto sait quand elle est prise, quand elle est libre, et qui reconduit qui — sans cinq fils de textos.',
@@ -2735,7 +2840,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Réglé une fois, ça façonne chaque journée tout seul — tu n’y reviens que pour une semaine différente.',
           en: 'Set once, it shapes every day on its own — you only return for an off week.',
         },
-        route: '/settings?tab=cercle&sub=schedule',
+        route: '/settings?tab=maison&sub=schedule',
       },
       {
         label: { fr: 'Visible partout', en: 'Visible everywhere' },

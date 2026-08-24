@@ -1,7 +1,10 @@
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
-// .cercle-*/.cf-* classes); load it whenever this page renders instead.
+// .cercle-*/.cf-* classes); load it whenever this page renders instead. « Maison »
+// merged the old Le cercle tab with Routines into ONE hub tab (Routines · Famille ·
+// Social · Business · Carnets) — the cercle-* class family + component tree stay
+// exactly as they were (no CSS churn); only the outer shell changed.
 import '../styles/cercle.css'
-// carnets.css's SubTab/scene bulk (« Les carnets » lives inside Le cercle too).
+// carnets.css's SubTab/scene bulk (« Les carnets » lives inside Maison too).
 import '../styles/carnets.css'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -41,7 +44,6 @@ import { CercleTree } from '../components/cercle/CercleTree'
 import { CercleWeb } from '../components/cercle/CercleWeb'
 import { GroupForm, type GroupFormValue } from '../components/cercle/GroupForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
-import { CercleNotes } from '../components/cercle/CercleNotes'
 import { BusinessesTab } from '../components/cercle/BusinessesTab'
 import { CarnetsTab } from '../components/cercle/CarnetsTab'
 import { CarnetForm } from '../components/cercle/CarnetForm'
@@ -58,6 +60,12 @@ import { Modal } from '../components/Modal'
 import { imgUrl } from '../lib/image'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
 import { CERCLE_HELP } from '../lib/cercleHelp'
+import { ROUTINES_HELP } from '../lib/routinesHelp'
+// Routines — self-contained (own ROUTINES_KEY query, own help.hint/HelpHint,
+// data-tour="routines-grid"), the SAME component the merged tab's default section
+// renders; the toddler picture-story run stays KidView (the original /kid surface).
+import { RoutinesTab } from '../components/maison/RoutinesTab'
+import { KidView } from './KidView'
 import {
   type Contact,
   type ContactLink,
@@ -84,7 +92,12 @@ import {
   relationTo,
 } from '../lib/cercle'
 
-const ACCENT = '#2A8F85' // the cercle tab's turquoise (matches CATS.cercle.deep + the nav)
+// The cercle-WORLD entity colour (matches CATS.cercle.deep + the retired cercle
+// nav pill) — deliberately NOT the Maison tab's berry chrome (HubHead below uses
+// the berry `#95527A`/`--berry-wash`, same as CATS.routine). This turquoise still
+// tints the people-graph itself (rows, groups, Liens/Arbre) so that visual language
+// doesn't churn just because the tab around it changed.
+const CERCLE_ACCENT = '#2A8F85'
 
 interface CercleData {
   contacts: Contact[]
@@ -100,32 +113,40 @@ const VIEW_ICON: Record<View, IconName> = { list: 'user-bold', links: 'users-thr
 // « Notre monde » is deliberately NOT a 4th view segment: it's a full-screen scene
 // (/cercle/monde), so it's surfaced as its own DISTINCT launch affordance beside the
 // segmented control (a context jump, not an in-page swap). See `viewSwitch`.
-// The primary split: Famille (Maisonnée + families) vs Social (friends/work/other
-// groups + ungrouped people) vs Notes (the durable quick-notes board, CercleNotes).
-// The list body partitions People by the first two; Notes owns its whole body; the
-// relationship views (Liens/Arbre) follow the same split — Famille shows the family
-// set, Social shows everyone outside it (see `sectionPeople`).
-type Section = 'social' | 'family' | 'notes' | 'business' | 'carnets'
+// The primary split, now FIVE-wide: Routines (the default) · Famille (Maisonnée +
+// families) · Social (friends/work/other groups + ungrouped people) · Business ·
+// Carnets. « Les notes » moved out to its own hub tab (/notes) — see pages/Notes.tsx.
+// The list body partitions People by Famille/Social; the relationship views
+// (Liens/Arbre) follow the same split — Famille shows the family set, Social shows
+// everyone outside it (see `sectionPeople`).
+type Section = 'routines' | 'family' | 'social' | 'business' | 'carnets'
 const SECTION_ICON: Record<Section, IconName> = {
+  routines: 'smiley-bold',
   family: 'users-three-bold',
   social: 'user-bold',
-  notes: 'file-text-bold',
   business: 'storefront-bold',
   carnets: 'book-open-bold',
 }
 
-// « Le cercle » — the household people directory + relationship views. Parent:
-// Liste (calm grouped directory, the default + accessible), Liens (tap-to-focus ego
-// view) and Arbre (generational family tree). Toddler: a faces grid, tap to hear
-// the name and see relationships. Members (the household faces) AND contacts are
-// unified "people".
-export function Cercle() {
+// « Maison » — the merged household tab: Routines (kid picture-card routines),
+// the people directory (Famille/Social — Liste/Liens/Arbre), Business (services/
+// vendors) and Les carnets (cared-for things). Toddler: Routines' default section
+// shows the picture-story run (KidView, the original /kid surface); any OTHER
+// section shows the faces grid (CircleKidView, the old toddler cercle lens) — so a
+// toddler landing on ?section=family/social/business/carnets still gets a toddler
+// surface instead of the parent directory. Parent: MaisonParent below, unchanged
+// from the old Cercle page plus the Routines sub-tab.
+export function Maison() {
   const { audience } = useAudience()
-  if (audience === 'toddler') return <CircleKidView />
-  return <CercleParent />
+  const [params] = useSearchParams()
+  if (audience === 'toddler') {
+    const section = params.get('section')
+    return section && section !== 'routines' ? <CircleKidView /> : <KidView />
+  }
+  return <MaisonParent />
 }
 
-function CercleParent() {
+function MaisonParent() {
   const t = useT()
   const { lang } = useLang()
   const nav = useNavigate()
@@ -140,22 +161,23 @@ function CercleParent() {
   // A guest is read-only: no drag-to-group affordance (every drop is a write).
   const ro = isGuest()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
-  // Distinct URL key so it composes with `view` (?section=family&view=list). Famille
-  // is the default — the Maisonnée is the heart of the cercle.
-  const [section, setSection] = useTabParam<Section>('section', 'family', ['social', 'family', 'notes', 'business', 'carnets'])
+  // Distinct URL key so it composes with `view` (?section=family&view=list). Routines
+  // is the default now (the merged tab's primary door — matches the toddler lens'
+  // own default) — Famille used to be, back when this page was just Le cercle.
+  const [section, setSection] = useTabParam<Section>('section', 'routines', ['routines', 'family', 'social', 'business', 'carnets'])
   // The "focus lens": pick a household member (the same MemberSwitcher as the board /
   // Notes) to re-read every relationship FROM their perspective — Léa's row becomes
   // "Fille" when Marc is focused. null = Maisonnée (each person's own relations, the
   // default). Drives both the Liste subtitles and the Liens (ego) centre.
   //
   // It IS the device profile (lib/profile), not a page-local pick: "who am I today"
-  // is answered ONCE — on the board's « Aujourd'hui » row, in Le cercle, in Les
+  // is answered ONCE — on the board's « Aujourd'hui » row, in Maison, in Les
   // notes — and every surface remembers it. Arriving here with a face already picked
   // reads the cercle from that face, and picking one here follows you back out.
   const { memberId: focusId, setMemberId: setFocusId } = useProfile()
   const [addingGroup, setAddingGroup] = useState(false)
   // The ＋ "Nouveau commerce" tile opens the BusinessForm here (page-level, like the
-  // group/connect modals) so it works from ANY cercle subtab, not just Business.
+  // group/connect modals) so it works from ANY subtab, not just Business.
   const [addingBusiness, setAddingBusiness] = useState(false)
   // A shared Google Maps link riding along (?add=business&import=<url>, from the
   // /share page) — handed to BusinessForm, which runs the place-import on open.
@@ -175,19 +197,26 @@ function CercleParent() {
   // shared EventForm pre-seeded with them as the "Avec" (businesses do the same from
   // their own peek inside BusinessesTab). Read-only guests never see the action.
   const [rdv, setRdv] = useState<EventSeedWith | null>(null)
-  // A global-search hit deep-links to a specific business / family note via
-  // ?item=<id> (§892 — land on the item, not just the section list). Captured below,
-  // stripped from the URL, and handed to the active section's tab so it opens/expands
-  // that exact row.
+  // A global-search hit deep-links to a specific business / carnet via ?item=<id>
+  // (§892 — land on the item, not just the section list). Captured below, stripped
+  // from the URL, and handed to the active section's tab so it opens/expands that
+  // exact row. Family notes now deep-link into /notes instead (pages/Notes.tsx).
   const [focusItem, setFocusItem] = useState<string | null>(null)
 
   // Contextual help (shared engine): arm the "?" then tap a button/title to learn
-  // what it does in place, with a deep-link into the `cercle` guide card.
+  // what it does in place, with a deep-link into the `cercle` guide card. Merges
+  // ROUTINES_HELP now that Routines is a sub-tab here — the two registries only
+  // both declare a `search` key (CERCLE_HELP's is the cercle's own person-search
+  // field, guide `cercle` point 8, currently unwired to any control on this page;
+  // ROUTINES_HELP's is the header magnifier, guide `board` point 4). The spread
+  // below lets ROUTINES_HELP.search win, which is harmless: the header magnifier
+  // here is wired to CERCLE_HELP's own separate `globalSearch` key (unaffected),
+  // and nothing on this page ever calls `pick('search', …)`.
   const helpLabel = (k: string): string =>
     ({
+      card: t.nav.routines,
       social: t.cercle.section.social,
       family: t.cercle.section.family,
-      notes: t.cercle.familyNotes.title,
       business: t.cercle.business.title,
       list: t.cercle.view.list,
       links: t.cercle.view.links,
@@ -206,9 +235,9 @@ function CercleParent() {
       others: t.cercle.others,
       globalSearch: t.search.title,
     })[k] ?? k
-  const help = useHelpMode(CERCLE_HELP, helpLabel)
+  const help = useHelpMode({ ...CERCLE_HELP, ...ROUTINES_HELP }, helpLabel)
 
-  // The ＋ chooser opens the connect / new-group flows by navigating to /cercle with
+  // The ＋ chooser opens the connect / new-group flows by navigating to /maison with
   // a ?param (connect/group can't be routes — they're page-local). Read + strip it.
   const [params, setParams] = useSearchParams()
   useEffect(() => {
@@ -561,7 +590,7 @@ function CercleParent() {
       const c = contactsById.get(p.id)
       if (!c) return
       const nextRdv = nextRdvFor(events, (e) => e.contact_id === c.id)
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: CERCLE_ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref }))
     } else {
       detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, onSchedule, buildFamilyHref }))
     }
@@ -717,28 +746,32 @@ function CercleParent() {
     </>
   )
 
-  // Primary Famille / Social / Notes split — the dominant control above the view switch.
-  // Uses the shared SubTabs (the `.subtabs` family) rather than a hand-rolled tablist:
-  // one calm pill row that scrolls cleanly on a phone, with help-mode wired via pick/armed.
+  // Primary Routines / Famille / Social / Business / Carnets split — the dominant
+  // control above everything else. Uses the shared SubTabs (the `.subtabs` family)
+  // rather than a hand-rolled tablist: one calm pill row that scrolls cleanly on a
+  // phone, with help-mode wired via pick/armed. Routines has no help ENTRY of its own
+  // here (RoutinesTab's internal 'card' target explains the routine cards themselves,
+  // once you're in that sub-tab) — tapping the Routines pill while help is armed is a
+  // known no-op (no bubble to show), same as any pill that isn't help-registered.
   const sectionSwitch = (
     <>
       <SubTabs
-        options={(['family', 'social', 'notes', 'business', 'carnets'] as Section[]).map((s) => ({
+        options={(['routines', 'family', 'social', 'business', 'carnets'] as Section[]).map((s) => ({
           key: s,
-          label: t.cercle.section[s],
+          label: s === 'routines' ? t.nav.routines : t.cercle.section[s],
           icon: SECTION_ICON[s],
         }))}
         value={section}
         onSelect={(s) => setSection(s)}
-        ariaLabel={t.nav.cercle}
+        ariaLabel={t.nav.maison}
         pick={help.pick}
         armed={help.active}
         trailing={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
+        tour="maison-sections"
       />
       {help.hint && <HelpHint />}
       {help.bubbleFor('social')}
       {help.bubbleFor('family')}
-      {help.bubbleFor('notes')}
       {help.bubbleFor('business')}
       {help.bubbleFor('carnets')}
     </>
@@ -747,14 +780,16 @@ function CercleParent() {
   return (
     <main className={'today-feed cercle' + (help.active ? ' help-armed' : '')}>
       <HubHead
-        title={t.nav.cercle}
-        icon="users-three-bold"
-        iconColor={ACCENT}
-        background="var(--teal-wash)"
-        card="cercle"
+        title={t.nav.maison}
+        icon="house-bold"
+        iconColor="#95527A"
+        background="var(--berry-wash)"
+        card="maison"
         searchPick={(run) => help.pick('globalSearch', run)}
       />
       {help.bubbleFor('globalSearch')}
+
+      <SectionIntro card="maison" />
 
       {/* « Planifier un rendez-vous » — the shared EventForm, seeded with the person /
           member from their peek's action. Businesses schedule from their own peek
@@ -785,8 +820,8 @@ function CercleParent() {
       </Modal>
 
       {/* Add a household service / vendor — opened from the ＋ chooser (?add=business),
-          so a new business is reachable from any cercle subtab, not just Business.
-          A shared Maps link (?import=, from /share) pre-fills the card on open. */}
+          so a new business is reachable from any subtab, not just Business. A shared
+          Maps link (?import=, from /share) pre-fills the card on open. */}
       <Modal open={addingBusiness} onClose={() => { setAddingBusiness(false); setBusinessImport(null) }} title={t.cercle.business.add}>
         <BusinessForm
           initialImportUrl={businessImport ?? undefined}
@@ -796,52 +831,40 @@ function CercleParent() {
       </Modal>
 
       {/* Add a carnet (the house / the car / a thing) — opened from the ＋ chooser
-          (?add=carnet), reachable from any cercle subtab, like the business modal. */}
+          (?add=carnet), reachable from any subtab, like the business modal. */}
       <Modal open={addingCarnet} onClose={() => setAddingCarnet(false)} title={t.carnets.add}>
         <CarnetForm defaultKind="home" onSaved={() => setAddingCarnet(false)} onCancel={() => setAddingCarnet(false)} />
       </Modal>
 
-      {people.length === 0 ? (
+      {sectionSwitch}
+
+      {/* « Notre monde » is reached from the distinct launch button in the view
+          row's trailing slot (a full-screen scene, /cercle/monde) — see `viewSwitch`. */}
+
+      {section === 'routines' ? (
+        /* Routines — self-contained (own query, own data-tour anchor), like
+           Business/Carnets below. Bubble ownership: RoutinesTab used to render its
+           own catch-all `help.bubble` internally, which double-rendered here — any
+           OTHER pill's bubble (e.g. tapping "Social" while help stayed armed and
+           Routines stayed mounted, since an armed pick never navigates) would show
+           via sectionSwitch's `bubbleFor('social')` AND, wrongly, via RoutinesTab's
+           catch-all too (same active `key`). RoutinesTab now renders no help chrome
+           of its own (no hint, no bubble) — its one target ('card') gets its bubble
+           HERE, the same per-key convention every other target on this page uses. */
         <>
-          <SectionIntro card="cercle" />
-          {/* A brand-new circle used to be a DEAD END: two lines of prose and no door
-              — the only way forward was the ＋ FAB, which the words never mention
-              (first-run pass, 2026-07-14). It now reads like every other empty tab
-              (Routines is the model): the calm line, its guide link, and one warm
-              way in. Hidden for a read-only guest, who has nothing to add. */}
-          <div className="feed-empty cercle-empty">
-            <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState>
-            <p className="mono">{t.cercle.emptyHint}</p>
-            {!isGuest() && (
-              // ?plus=person — the documented URL grammar (DISCOVERY.md): opens the ＋
-              // sheet on its « person » tile. The same door the FAB gives, just named.
-              <Link to="/cercle?plus=person" className="btn btn--primary cercle-empty__new">
-                <InlineIcon name="plus-bold" /> {t.cercle.add}
-              </Link>
-            )}
-          </div>
+          <RoutinesTab help={help} />
+          {help.bubbleFor('card')}
         </>
+      ) : section === 'business' ? (
+        /* Business — a standalone services/vendors directory, ISOLATED from the
+           people graph (no view switch, no focus lens, no relationships). */
+        <BusinessesTab help={help} focusId={section === 'business' ? focusItem : null} onFocused={() => setFocusItem(null)} />
+      ) : section === 'carnets' ? (
+        /* Les carnets — the cared-for-things directory (houses, cars). Its own
+           query/scene, never the people graph (like Business). */
+        <CarnetsTab help={help} />
       ) : (
         <>
-          {sectionSwitch}
-
-          {/* « Notre monde » is reached from the distinct launch button in the view
-              row's trailing slot (a full-screen scene, /cercle/monde) — see `viewSwitch`. */}
-
-          {section === 'notes' ? (
-            /* The notes board owns its whole tab body — no people list, no view
-               switch (Liens/Arbre are about people, not notes). */
-            <CercleNotes members={members} help={help} focusId={section === 'notes' ? focusItem : null} onFocused={() => setFocusItem(null)} />
-          ) : section === 'business' ? (
-            /* Business — a standalone services/vendors directory, ISOLATED from the
-               people graph (no view switch, no focus lens, no relationships). */
-            <BusinessesTab help={help} focusId={section === 'business' ? focusItem : null} onFocused={() => setFocusItem(null)} />
-          ) : section === 'carnets' ? (
-            /* Les carnets — the cared-for-things directory (houses, cars). Its own
-               query/scene, never the people graph (like Business). */
-            <CarnetsTab help={help} />
-          ) : (
-          <>
           {viewSwitch}
 
           {/* Social shows the WHOLE web at once — the single-focus ego view would only
@@ -893,12 +916,32 @@ function CercleParent() {
             />
           ) : (
             <>
-              <SectionIntro card="cercle" />
-
+              {/* A brand-new circle used to be a DEAD END: two lines of prose and no door
+                  — the only way forward was the ＋ FAB, which the words never mention
+                  (first-run pass, 2026-07-14). It now reads like every other empty tab
+                  (Routines is the model): the calm line, its guide link, and one warm
+                  way in. Hidden for a read-only guest, who has nothing to add. Replaces
+                  the whole people list — Routines/Business/Carnets stay reachable via
+                  the section pills above regardless (unlike the old Cercle tab, an
+                  empty circle no longer hides the rest of the merged Maison tab). */}
+              {people.length === 0 ? (
+                <div className="feed-empty cercle-empty">
+                  <EmptyState guide={{ card: 'cercle' }}>{t.cercle.empty}</EmptyState>
+                  <p className="mono">{t.cercle.emptyHint}</p>
+                  {!isGuest() && (
+                    // ?plus=person — the documented URL grammar (DISCOVERY.md): opens the
+                    // ＋ sheet on its « person » tile. The same door the FAB gives, named.
+                    <Link to="/maison?plus=person" className="btn btn--primary cercle-empty__new">
+                      <InlineIcon name="plus-bold" /> {t.cercle.add}
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <>
               {section === 'family' && birthdays.length > 0 && (
                 <section className="cercle-bdays">
                   <HelpTitle help={help} k="birthdays" className="cercle-section__label">
-                    <InlineIcon name="cake-bold" size={16} color={ACCENT} /> {t.cercle.birthdaysSoon}
+                    <InlineIcon name="cake-bold" size={16} color={CERCLE_ACCENT} /> {t.cercle.birthdaysSoon}
                   </HelpTitle>
                   {help.bubbleFor('birthdays')}
                   {/* Hidden scrollbar + fixed-width tiles: without useHScroll a mouse
@@ -935,7 +978,7 @@ function CercleParent() {
                   {section === 'family' && householdPeople.length > 0 && (
                     <section className="cercle-group cercle-group--named cercle-group--household">
                       <h2 className="cercle-section__label">
-                        <span className="cercle-group__dot" style={{ background: ACCENT }} />
+                        <span className="cercle-group__dot" style={{ background: CERCLE_ACCENT }} />
                         {help.active ? (
                           <button type="button" className="help-title" onClick={help.pick('household', () => {})}>
                             {householdName}
@@ -1000,7 +1043,7 @@ function CercleParent() {
                         />
                       ) : (
                         <h2 className="cercle-section__label">
-                          <span className="cercle-group__dot" style={{ background: g.colour ?? ACCENT }} />
+                          <span className="cercle-group__dot" style={{ background: g.colour ?? CERCLE_ACCENT }} />
                           {help.active ? (
                             <button type="button" className="help-title" onClick={help.pick('namedGroup', () => {})}>
                               {g.name}
@@ -1081,7 +1124,7 @@ function CercleParent() {
                   {familyGroups.map((g) => (
                       <section key={g.id} className="cercle-group">
                         <HelpTitle help={help} k="familyAuto" className="cercle-section__label">
-                          <InlineIcon name="users-three-bold" size={16} color={ACCENT} /> {g.name}
+                          <InlineIcon name="users-three-bold" size={16} color={CERCLE_ACCENT} /> {g.name}
                         </HelpTitle>
                         {help.bubbleFor('familyAuto')}
                         {[...g.memberKeys]
@@ -1110,7 +1153,8 @@ function CercleParent() {
 
                   {/* This section is empty — a calm pointer to the ＋ chooser. (Famille
                       with members shows the Maisonnée card, so this only fires for the
-                      Social tab, or a brand-new circle.) */}
+                      Social tab.) Distinct from the whole-circle empty state above:
+                      here Famille itself has people, just none unassigned to a card. */}
                   {others.length === 0 && sectionNamedGroups.length === 0 && familyGroups.length === 0 &&
                     (section === 'social' || householdPeople.length === 0) && (
                     <EmptyState guide={{ card: 'cercle' }}>
@@ -1120,6 +1164,8 @@ function CercleParent() {
                   {/* Creation actions (add person / family / connect / new group) all
                       live on the ＋ chooser now — no in-page add buttons here. */}
                 </>
+                </>
+              )}
             </>
           )}
           </>
@@ -1131,8 +1177,6 @@ function CercleParent() {
               friends'). Mobile only, self-hides under 2 eligible reach-outs and for a
               read-only guest. Businesses get their own rail in the Business tab. */}
           <JoindreRail people={sectionJoindre} businesses={[]} />
-          </>
-          )}
         </>
       )}
       {/* One floating drag label for the page (person → group). */}
@@ -1144,7 +1188,9 @@ function CercleParent() {
 // Toddler lens: a faces grid of EVERYONE (members + contacts + pets). Tap a face →
 // hear the name AND flip to a relationship panel showing their direct connections.
 // Pets are part of "who's who" a toddler learns (the family dog reads its owner as
-// « Propriétaire »). No view switch, no add/edit (one-way door).
+// « Propriétaire »). No view switch, no add/edit (one-way door). Reached on the
+// Maison tab whenever a toddler lands on any section OTHER than Routines — Routines
+// itself keeps the picture-story run (KidView), unchanged from the old /kid surface.
 function CircleKidView() {
   const t = useT()
   const { lang } = useLang()
@@ -1212,7 +1258,7 @@ function CircleKidView() {
                   <Avatar kind={other.avatarKind} photo={other.avatarRef} colour={other.colour} name={other.firstName} size={80} />
                   <span className="cercle-kid__rel-name">{other.firstName}</span>
                   <span className="cercle-kid__rel-label mono">{genderedRelLabel(rel, other.gender, lang)}</span>
-                  <Icon name="speaker-high-bold" size={16} color={ACCENT} />
+                  <Icon name="speaker-high-bold" size={16} color={CERCLE_ACCENT} />
                 </button>
               ))}
             </div>
@@ -1235,7 +1281,7 @@ function CircleKidView() {
           {/* « Notre monde » — a big friendly button into the narrated overview map,
               so a toddler can see ALL the families and how they connect, read aloud. */}
           <button type="button" className="cercle-kid__world" onClick={() => nav('/cercle/monde')}>
-            <Icon name="sparkle-bold" size={28} color={ACCENT} />
+            <Icon name="sparkle-bold" size={28} color={CERCLE_ACCENT} />
             <span>{t.cercle.world.title}</span>
           </button>
           <div className="cercle-kid__grid">
@@ -1243,7 +1289,7 @@ function CircleKidView() {
               <button type="button" key={p.key} className="cercle-kid__card" onClick={() => tap(p)}>
                 <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={120} />
                 <span className="cercle-kid__name">{p.firstName}</span>
-                <Icon name="speaker-high-bold" size={20} color={ACCENT} />
+                <Icon name="speaker-high-bold" size={20} color={CERCLE_ACCENT} />
               </button>
             ))}
           </div>

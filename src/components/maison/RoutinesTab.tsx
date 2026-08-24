@@ -15,7 +15,7 @@ import { RoutineRing } from '../RoutineRing'
 import { imgUrl } from '../../lib/image'
 import { isRoutineTod, todRank, TOD_ICON, TOD_TINT, type RoutineTod } from '../../lib/routineTod'
 import { timeOfDay } from '../../lib/timeofday'
-import { HelpHint, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 
 export interface RoutineRow {
   id: string
@@ -215,8 +215,18 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
         </button>
       )}
 
-      {help.hint && routines.length > 0 && <HelpHint />}
-      {help.bubble}
+      {/* No hint/bubble rendered HERE on purpose: this tab is embedded in Maison
+          (pages/Maison.tsx) as one of five section pills, where the page-level
+          sectionSwitch already renders the "tap to learn" hint (`help.hint`) for
+          EVERY section, and every other help target on that page renders its
+          bubble via a per-key `bubbleFor(k)` call. A catch-all `help.bubble` here
+          used to double-render: picking any OTHER pill's key while this tab stayed
+          mounted (an armed pick never navigates) showed that key's bubble both via
+          the page's own bubbleFor AND via this catch-all. The page now renders
+          `bubbleFor('card')` right after <RoutinesTab/> instead — this component
+          stays a plain data view with no help chrome of its own. (The standalone
+          /routines page predates the merge and no longer exists — Routines is only
+          ever reached through Maison now.) */}
 
       {/* The tour anchor wraps BOTH branches so the routines spotlight resolves
           even for a brand-new household with no routines yet (#32). */}

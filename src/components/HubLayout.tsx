@@ -3,7 +3,7 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate, useSearchParams } 
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
-import { BOARD_KEY, CERCLE_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, ROUTINES_KEY, FAMILY_NOTES_KEY } from '../lib/queryKeys'
 import { MEALS_KEY } from './kitchen/types'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -44,18 +44,18 @@ import {
 // page except the single ＋ (parent view only).
 // Order = the canonical importance order, mirrored by the themed Réglages tabs
 // (pages/Operator SECTIONS) and the guide taxonomy (CONCEPT_THEMES): board →
-// kitchen → liste → cercle → routines → settings.
+// kitchen → liste → notes → maison → settings.
 const TABS: {
   to: string
-  key: 'today' | 'kitchen' | 'routines' | 'list' | 'cercle' | 'operator'
+  key: 'today' | 'kitchen' | 'list' | 'notes' | 'maison' | 'operator'
   icon: IconName
   color: string
 }[] = [
   { to: '/board', key: 'today', icon: 'sun-bold', color: '#D9842A' }, // marigold
   { to: '/kitchen', key: 'kitchen', icon: 'carrot-bold', color: '#C2563A' }, // terracotta
   { to: '/liste', key: 'list', icon: 'sparkle-bold', color: '#5891AC' }, // sky
-  { to: '/cercle', key: 'cercle', icon: 'users-three-bold', color: '#2A8F85' }, // turquoise (matches CATS.cercle.deep + the page header)
-  { to: '/routines', key: 'routines', icon: 'smiley-bold', color: '#95527A' }, // berry
+  { to: '/notes', key: 'notes', icon: 'file-text-bold', color: '#2A8F85' }, // teal — inherited from Le cercle
+  { to: '/maison', key: 'maison', icon: 'house-bold', color: '#95527A' }, // berry — inherited from Routines
   { to: '/settings', key: 'operator', icon: 'gear-six-bold', color: '#6B8A52' }, // sage
 ]
 
@@ -67,8 +67,8 @@ const TAB_PREFETCH: Record<string, { key: string[]; path: string }> = {
   '/board': { key: BOARD_KEY, path: 'board' },
   '/liste': { key: BOARD_KEY, path: 'board' }, // La liste rides the board payload
   '/kitchen': { key: MEALS_KEY, path: 'meals' },
-  '/cercle': { key: CERCLE_KEY, path: 'cercle' },
-  '/routines': { key: ROUTINES_KEY, path: 'routines' },
+  '/maison': { key: ROUTINES_KEY, path: 'routines' }, // Routines is Maison's default section
+  '/notes': { key: FAMILY_NOTES_KEY, path: 'family-notes' },
 }
 
 export function HubLayout() {
@@ -515,18 +515,28 @@ export function HubLayout() {
           className="add-fab"
           data-tour="add-fab"
           onClick={() => {
+            // A section with exactly ONE mode skips the chooser and goes straight
+            // to it — mirrors the single-mode skip Routines used to have on its own
+            // tab: /notes has just 'cnote', so the ＋ jumps straight into the rich
+            // editor instead of showing a one-tile "chooser".
+            const only = sectionModes.length === 1 ? sectionModes[0] : null
+            if (only && FORM_ROUTES[only]) {
+              nav(FORM_ROUTES[only])
+              return
+            }
             // Every kitchen sub-tab (Recettes included) opens the same blank-slate
             // ＋ chooser — no tab jumps you straight into a blank new recipe (that
             // read as "auto-creating" one). Creating a recipe is now an explicit
             // tap on the "Ajouter une recette" tile (navigate-only → the builder).
-            // Le cercle: the ＋ opens the section chooser (person / family / connect /
-            // group) like the other tabs — all navigate-only tiles (SECTION_MODES.cercle).
-            // Routines: the ＋ opens the manage picker (new routine + edit an
+            // Maison: the ＋ opens the merged chooser (routine-pick / person / family /
+            // connect / group / business / pet / carnet / import) like the other
+            // tabs — all navigate-only or sheet tiles (SECTION_MODES.maison). The
+            // routine-pick tile opens the manage picker (new routine + edit an
             // existing one) in the sheet; each choice routes on to the full-screen
             // builder scene. An unsigned kiosk has no operator form, so the sheet
             // falls through to the capture box (OPERATOR_MODES drops routine-pick).
             // The sheet always opens on a blank chooser — no tile pre-selected,
-            // no form pre-shown — in every section (Marc's ask). The operator
+            // no form pre-shown — in every other section (Marc's ask). The operator
             // picks what to add, including the Garde-manger low-stock form.
             setAddMode(null)
             setAddModes(null)
@@ -540,10 +550,10 @@ export function HubLayout() {
           aria-label={
             section === 'kitchen'
               ? t.kitchen.addTitle
-              : section === 'routines'
-                ? t.nav.routines
-                : section === 'cercle'
-                  ? t.cercle.addTitle
+              : section === 'maison'
+                ? t.maison.addTitle
+                : section === 'notes'
+                  ? t.cercle.familyNotes.newNote
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.common.add
@@ -551,10 +561,10 @@ export function HubLayout() {
           title={
             section === 'kitchen'
               ? t.kitchen.addTitle
-              : section === 'routines'
-                ? t.nav.routines
-                : section === 'cercle'
-                  ? t.cercle.addTitle
+              : section === 'maison'
+                ? t.maison.addTitle
+                : section === 'notes'
+                  ? t.cercle.familyNotes.newNote
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.common.add

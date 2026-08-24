@@ -99,7 +99,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   flyer: { cat: 'meal', icon: 'magnifying-glass-bold' },
   'auto-pick': { cat: 'chore', icon: 'tag-bold' },
   share: { cat: 'list', icon: 'arrow-up-right-bold' },
-  // Le cercle's creation tiles — all the rose 'cercle' family, distinct glyphs.
+  // Maison's cercle-derived creation tiles — all the rose 'cercle' family, distinct glyphs.
   person: { cat: 'cercle', icon: 'user-bold' },
   family: { cat: 'cercle', icon: 'tree-bold' },
   connect: { cat: 'cercle', icon: 'users-three-bold' },
@@ -118,6 +118,9 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   habit: { cat: 'chore', icon: 'repeat-bold' },
   // The board tile: new habit + edit-existing picker (the routine-pick shape).
   'habit-pick': { cat: 'chore', icon: 'repeat-bold' },
+  // « Les notes » ＋ — navigate-only into the rich editor; teal, like the rest of
+  // the old cercle family it rode in on.
+  cnote: { cat: 'cercle', icon: 'file-text-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -131,15 +134,16 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   departure: '/board/departure',
   'quick-add': '/liste/quick',
   flyer: '/liste/circulaires',
-  // Le cercle: person + family + pet are scene routes; connect + group open on
-  // /cercle itself via a ?param the page reads (then strips).
+  // Person + family + pet stay frozen /cercle/* scene routes (family-share links
+  // out in the wild point at them); connect + group + business + carnet now open
+  // on /maison itself via a ?param the page reads (then strips).
   person: '/cercle/person/new',
   family: '/cercle/family/new',
   pet: '/cercle/pet/new',
-  connect: '/cercle?connect=1',
-  group: '/cercle?add=group',
-  business: '/cercle?add=business',
-  carnet: '/cercle?add=carnet',
+  connect: '/maison?connect=1',
+  group: '/maison?add=group',
+  business: '/maison?add=business',
+  carnet: '/maison?add=carnet',
   'family-import': '/cercle/import',
   ...FORM_ROUTES,
 }
@@ -235,7 +239,7 @@ export function AddSheet({
 
   // Per-action gating, same semantics the old signedIn-only chooser had: the
   // operator forms drop off for an unsigned kiosk; if nothing survives (a kiosk
-  // on /routines), fall back to quick capture — the AI router still sorts it.
+  // on /maison), fall back to quick capture — the AI router still sorts it.
   const allowed = signedIn ? modes : modes.filter((m) => !OPERATOR_MODES.has(m))
   const shown = allowed.length ? allowed : (['note'] as AddSheetMode[])
   // The ＋ sheet opens with NOTHING pre-selected whenever it offers a chooser: no
@@ -409,9 +413,10 @@ export function AddSheet({
   })
   const members = membersData?.members ?? []
 
-  // Routines ＋ picker (the /routines tab): the household's routines, so the sheet
-  // can offer "edit this one" alongside "build a new one". Fetched only while the
-  // sheet's open on that tab; the same ROUTINES_KEY the tab + Réglages already use.
+  // Routines ＋ picker (the /maison tab's default Routines section): the
+  // household's routines, so the sheet can offer "edit this one" alongside
+  // "build a new one". Fetched only while the sheet's open there; the same
+  // ROUTINES_KEY the section + Réglages already use.
   const wantsRoutinePick = shown.includes('routine-pick')
   const { data: routinesData } = useQuery({
     queryKey: ROUTINES_KEY,
@@ -735,6 +740,7 @@ export function AddSheet({
       mot: t.mots.tile,
       habit: t.habits.add,
       'habit-pick': t.habits.title,
+      cnote: t.cercle.familyNotes.newNote,
     }
     return labels[m]
   }
@@ -762,9 +768,11 @@ export function AddSheet({
         ? t.common.add
         : shown.includes('list-item')
           ? t.list.addTitle
-          : shown.includes('person')
-            ? t.cercle.addTitle
-            : t.kitchen.addTitle
+          : shown.includes('routine-pick')
+            ? t.maison.addTitle
+            : shown.includes('person')
+              ? t.cercle.addTitle
+              : t.kitchen.addTitle
       : mode === 'routine-pick'
         ? t.nav.routines
         : mode === 'routine'
@@ -1275,7 +1283,7 @@ export function AddSheet({
             </div>
           ))}
 
-        {/* Routines ＋ (the /routines tab): build a new routine OR edit an existing
+        {/* Routines ＋ (the /maison tab's default section): build a new routine OR edit an existing
             one. Both open the full-screen builder scene (its tall form strands
             inputs under a sheet's keyboard) — "new" at /routine/new, an edit at
             /routine/<id>. Listing the routines here is the "modify existing" ask:

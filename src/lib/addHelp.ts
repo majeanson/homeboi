@@ -197,4 +197,15 @@ export const ADD_HELP = {
     card: 'cercle',
     body: { fr: 'Ajoute un animal de la maisonnée : nom, photo, et les infos utiles (vétérinaire, soins).', en: 'Add a household pet: name, photo, and the useful info (vet, care).' },
   },
+  // The Maison tab's default section — build a new routine, or edit an existing one.
+  'routine-pick': {
+    card: 'routines',
+    body: { fr: 'Crée une routine, ou touche une routine existante pour la modifier.', en: 'Create a routine, or tap an existing one to edit it.' },
+  },
+  // « Les notes » ＋ — the tab's only tile, straight into the rich editor.
+  cnote: {
+    card: 'notes',
+    point: 2,
+    body: { fr: 'Ouvre une nouvelle note riche : un titre, des listes à cocher, une photo ou un dessin.', en: 'Open a new rich note: a title, checklists, a photo or a drawing.' },
+  },
 } satisfies Record<string, AddHelp>

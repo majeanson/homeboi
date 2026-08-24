@@ -5,6 +5,7 @@ import { BOARD_HELP } from './boardHelp'
 import { CERCLE_HELP } from './cercleHelp'
 import { KITCHEN_TAB_HELP } from './kitchenTabHelp'
 import { LISTE_HELP } from './listeHelp'
+import { NOTES_HELP } from './notesHelp'
 import { OPERATOR_HELP } from './operatorHelp'
 import { ROUTINES_HELP } from './routinesHelp'
 import { TOURS } from './tourContent'
@@ -28,6 +29,7 @@ const REGISTRIES: Record<string, Record<string, HelpEntry>> = {
   CERCLE_HELP,
   KITCHEN_TAB_HELP,
   LISTE_HELP,
+  NOTES_HELP,
   OPERATOR_HELP,
   ROUTINES_HELP,
 }

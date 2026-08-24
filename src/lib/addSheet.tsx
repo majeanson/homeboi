@@ -103,6 +103,10 @@ export type AddSheetMode =
   // check-in scene can't be (it only rows habits still asking today). `habit`
   // stays the create-only nav used by deep-links and the check-in scene's button.
   | 'habit-pick'
+  // « Les notes » ＋ — the ONLY tile on that tab: opens the full-screen rich note
+  // editor directly (navigate-only, like `recipe`/`voyage`). No chooser, since
+  // there's nothing else to add here.
+  | 'cnote'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -130,15 +134,16 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
   // adds to La réserve (freezer/back-of-pantry stash), the third Garde-manger list.
   kitchen: ['cook', 'recipe', 'book', 'meal', 'leftovers', 'pantry', 'reserve'],
-  // The Routines tab's ＋ is the manage picker (create new + edit existing),
-  // resolved in-sheet — see the `routine-pick` panel in AddSheet.
-  routines: ['routine-pick'],
   liste: ['list-item', 'quick-add', 'flyer', 'auto-pick', 'share'],
-  // Le cercle: add a person, build a family, connect two people, a new group, or a
-  // business — all navigate-only tiles (the page opens connect/group/business from a
-  // ?param). Every cercle subtab (Famille/Social/Notes/Business) offers the full set,
-  // so e.g. "create a business" is reachable from the ＋ on any of them.
-  cercle: ['person', 'family', 'connect', 'group', 'business', 'pet', 'carnet', 'family-import'],
+  // Maison merges the old Routines + Le cercle ＋ sets (nav restructure): the
+  // routine manager tile leads (Routines is the tab's default section), then the
+  // whole cercle add-set — a person, build a family, connect two people, a new
+  // group, a business — all navigate-only tiles (the page opens connect/group/
+  // business from a ?param). Every family/social/business/carnets sub-view offers
+  // the full set, so e.g. "create a business" is reachable from the ＋ on any of them.
+  maison: ['routine-pick', 'person', 'family', 'connect', 'group', 'business', 'pet', 'carnet', 'family-import'],
+  // Les notes: a single door straight into the rich editor — no chooser needed.
+  notes: ['cnote'],
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.
@@ -170,6 +175,9 @@ export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   routine: '/routine/new',
   voyage: '/voyage/new',
   habit: '/habitude/new',
+  // Navigate-only, not a form scene: the Notes page reads ?add=1 itself and
+  // opens the rich editor in place (no cross-route form to bounce back from).
+  cnote: '/notes?add=1',
 }
 
 // Every mode, as a runtime list — what validates a ?plus=<mode> deep-link
@@ -213,6 +221,7 @@ const ALL_MODES = {
   mot: 1,
   habit: 1,
   'habit-pick': 1,
+  cnote: 1,
 } as const satisfies Record<AddSheetMode, 1>
 export const ADD_MODES = Object.keys(ALL_MODES) as readonly AddSheetMode[]
 
