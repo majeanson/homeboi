@@ -190,7 +190,9 @@ test('« Partager en direct » promotes a private trip: confirm → POST {fromTr
   await stubShared(page, { promoteId: 'st1' })
   await page.goto('/voyage/trip1')
 
-  await page.getByRole('button', { name: 'Partager en direct' }).click()
+  // « Partager en direct » lives in the scene head's ⋯ overflow now.
+  await page.locator('.scene__head .action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Partager en direct' }).click()
   // The destructive confirm dialog (it's a MOVE, not undoable). Its confirm CTA is « Partager ».
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.method() === 'POST' && apiPath(r) === '/api/shared-trip', { timeout: 20_000 }),

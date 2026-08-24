@@ -18,6 +18,7 @@ import { useConfirm } from '../lib/confirm'
 import type { Member } from '../lib/members'
 import { PairPrompt } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
+import { ActionMenu } from '../components/ActionMenu'
 import { SubTabs } from '../components/SubTabs'
 import { Chip, ChipGroup } from '../components/Chip'
 import { Icon } from '../components/Icon'
@@ -157,19 +158,35 @@ function VoyageInner() {
         onClose={close}
         closeLabel={t.common.close}
         action={
-          // Album ⇄ editor, the recipe « Original » toggle pattern — only a
-          // finished trip earns it (an upcoming trip is just the editor).
-          finished ? (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => setShowEditor((v) => !v)}
-              aria-pressed={!album}
-            >
-              <Icon name={album ? 'pencil-simple-bold' : 'book-open-bold'} size={15} />{' '}
-              {album ? t.common.edit : t.voyage.albumBack}
-            </button>
-          ) : undefined
+          <>
+            {/* Album ⇄ editor, the recipe « Original » toggle pattern — only a
+                finished trip earns it (an upcoming trip is just the editor). */}
+            {finished && (
+              <button
+                type="button"
+                className="btn btn--ghost mono"
+                onClick={() => setShowEditor((v) => !v)}
+                aria-pressed={!album}
+              >
+                <Icon name={album ? 'pencil-simple-bold' : 'book-open-bold'} size={15} />{' '}
+                {album ? t.common.edit : t.voyage.albumBack}
+              </button>
+            )}
+            {/* The trip's two manage actions used to sit in a footer under the tabs,
+                where they competed with the itinerary for the screen. Same fold as the
+                recipe view: they ride the head ⋯, the body gets the whole scene.
+                (« Partager en direct » keeps its own confirm — it's a one-way MOVE.) */}
+            <ActionMenu
+              items={
+                album || isGuest()
+                  ? []
+                  : [
+                      { icon: 'pencil-simple-bold', label: t.voyage.editTrip, onSelect: () => setEditing(true) },
+                      { icon: 'users-three-bold', label: t.sharedVoyage.shareLive, onSelect: () => void shareLive() },
+                    ]
+              }
+            />
+          </>
         }
       />
       <div className="scene__body">
@@ -192,17 +209,6 @@ function VoyageInner() {
             {vue === 'infos' && <VoyageInfos trip={trip} notes={notes} faces={tripFaces} />}
             {vue === 'bagages' && <PackingList trip={trip} items={packing} faces={tripFaces} />}
             {vue === 'documents' && <VoyageDocuments trip={trip} notes={notes} />}
-
-            {!isGuest() && (
-              <div className="voyage__foot voyage-share__foot">
-                <button type="button" className="btn btn--ghost mono" onClick={() => setEditing(true)}>
-                  <Icon name="pencil-simple-bold" size={15} /> {t.voyage.editTrip}
-                </button>
-                <button type="button" className="btn btn--ghost mono" onClick={() => void shareLive()}>
-                  <Icon name="users-three-bold" size={15} /> {t.sharedVoyage.shareLive}
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>

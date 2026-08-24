@@ -190,7 +190,9 @@ test('adding an info note (after picking a category) posts to trip-notes', async
 test('editing the trip posts a PATCH', async ({ page }) => {
   await stubVoyage(page)
   await page.goto('/voyage/trip1')
-  await page.getByRole('button', { name: 'Modifier le voyage' }).click()
+  // The trip's manage actions live in the scene head's ⋯ overflow now.
+  await page.locator('.scene__head .action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Modifier le voyage' }).click()
   const name = page.getByLabel('Nom du voyage')
   await expect(name).toHaveValue('Vacances en Floride')
   await name.fill('Vacances en Floride 2026')
@@ -202,7 +204,9 @@ test('editing the trip posts a PATCH', async ({ page }) => {
 test('deleting the trip confirms then DELETEs', async ({ page }) => {
   await stubVoyage(page)
   await page.goto('/voyage/trip1')
-  await page.getByRole('button', { name: 'Modifier le voyage' }).click()
+  // The trip's manage actions live in the scene head's ⋯ overflow now.
+  await page.locator('.scene__head .action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Modifier le voyage' }).click()
   await page.getByRole('button', { name: 'Supprimer le voyage' }).click()
   // The heavy delete asks first via the confirm dialog; accept it → DELETE fires.
   await expectApi(page, 'DELETE', 'trips', () =>

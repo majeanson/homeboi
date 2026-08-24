@@ -95,10 +95,10 @@ test('« À surveiller » surfaces recent history entries', async ({ page }) => 
 test('deleting the carnet confirms then DELETEs', async ({ page }) => {
   await stubCarnet(page)
   await page.goto('/cercle/carnet/ca1')
-  // The Identité block carries the carnet's own edit/delete (log rows have their own,
-  // so scope to that block and match the delete verb exactly).
-  const identity = page.locator('.carnet-block', { hasText: 'Identité' })
-  await identity.getByRole('button', { name: 'Supprimer', exact: true }).click()
+  // The carnet's own edit/delete moved out of the Identité block (invisible from the
+  // « Surveiller » tab) into the scene head's ⋯ overflow — one tab-independent door.
+  await page.locator('.scene__head .action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Supprimer le carnet' }).click()
   // The heavy delete asks first (useConfirm, confirmLabel « Supprimer le carnet »).
   const isDelete = (r: Request) => r.method() === 'DELETE' && new URL(r.url()).pathname === '/api/carnets'
   await Promise.all([
