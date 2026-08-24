@@ -37,6 +37,7 @@ import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { Avatar } from '../components/Avatar'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
+import { ActionMenu } from '../components/ActionMenu'
 import { useSpeak } from '../lib/speak'
 import { downloadVCard } from '../lib/vcard'
 import { CercleEgo } from '../components/cercle/CercleEgo'
@@ -1052,55 +1053,52 @@ function MaisonParent() {
                             g.name
                           )}
                           <span className="mono cercle-group__kind">{t.cercle.groupKinds[g.kind]}</span>
-                          {g.kind === 'family' && (
-                            <>
-                              <button
-                                type="button"
-                                className="row-actions__btn"
-                                aria-label={t.cercle.familyEditBuilder}
-                                onClick={help.pick('groupBuilder', () => nav(`/cercle/family/${g.id}`))}
-                              >
-                                <InlineIcon name="tree-bold" size={12} />
-                              </button>
-                              {/* Connect this family to another person/family in one link. */}
-                              <button
-                                type="button"
-                                className="row-actions__btn"
-                                aria-label={t.cercle.connectTwo}
-                                onClick={help.pick('groupConnect', () => setConnect({}))}
-                              >
-                                <InlineIcon name="users-three-bold" size={12} />
-                              </button>
-                              {/* Share this family with a friend on their own account. */}
-                              {!ro && (
-                                <button
-                                  type="button"
-                                  className="row-actions__btn"
-                                  aria-label={t.familyShare.shareFamily}
-                                  title={t.familyShare.shareFamily}
-                                  onClick={() => openShare(g.memberKeys, g.name)}
-                                >
-                                  <InlineIcon name="link-bold" size={12} />
-                                </button>
-                              )}
-                            </>
-                          )}
-                          <button
-                            type="button"
-                            className="row-actions__btn"
-                            aria-label={t.cercle.editGroup}
-                            onClick={help.pick('editGroup', () => setEditingGroupId(g.id))}
-                          >
-                            <InlineIcon name="pencil-simple-bold" size={12} />
-                          </button>
-                          <button
-                            type="button"
-                            className="row-actions__btn cercle-group__delete"
-                            aria-label={t.cercle.deleteGroup}
-                            onClick={help.pick('deleteGroup', () => deleteGroup(g))}
-                          >
-                            <InlineIcon name="x-bold" size={12} />
-                          </button>
+                          {/* A group's five actions used to be five 12px glyphs crammed
+                              into this heading — unreadable, and un-hittable on a phone.
+                              One ⋯ holds them, danger last. The `help.pick` wrappers ride
+                              along so an armed « ? » still explains a row (one extra tap
+                              in help mode: open the menu, then tap the row). */}
+                          <ActionMenu
+                            items={[
+                              ...(g.kind === 'family'
+                                ? [
+                                    {
+                                      icon: 'tree-bold' as const,
+                                      label: t.cercle.familyEditBuilder,
+                                      onSelect: help.pick('groupBuilder', () => nav(`/cercle/family/${g.id}`)),
+                                    },
+                                    // Connect this family to another person/family in one link.
+                                    {
+                                      icon: 'users-three-bold' as const,
+                                      label: t.cercle.connectTwo,
+                                      onSelect: help.pick('groupConnect', () => setConnect({})),
+                                    },
+                                    // Share this family with a friend on their own account.
+                                    ...(!ro
+                                      ? [
+                                          {
+                                            icon: 'link-bold' as const,
+                                            label: t.familyShare.shareFamily,
+                                            onSelect: () => openShare(g.memberKeys, g.name),
+                                          },
+                                        ]
+                                      : []),
+                                  ]
+                                : []),
+                              {
+                                icon: 'pencil-simple-bold' as const,
+                                label: t.cercle.editGroup,
+                                separated: true,
+                                onSelect: help.pick('editGroup', () => setEditingGroupId(g.id)),
+                              },
+                              {
+                                icon: 'trash-bold' as const,
+                                label: t.cercle.deleteGroup,
+                                tone: 'danger' as const,
+                                onSelect: help.pick('deleteGroup', () => deleteGroup(g)),
+                              },
+                            ]}
+                          />
                         </h2>
                       )}
                       {help.bubbleFor('namedGroup')}
