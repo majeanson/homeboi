@@ -728,14 +728,12 @@
 .voiture__times .input {
   width: auto;
 }
-.voiture__editor-actions,
-.voiture__weekactions {
+/* (The week-wide actions row is gone — « Copier la semaine » + « Réinitialiser »
+   ride the scene head's ⋯ now.) */
+.voiture__editor-actions {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
-}
-.voiture__weekactions {
-  margin-top: 0.8rem;
 }
 /* Toddler "qui te reconduit" — one big face + name. */
 .voiture__kid-body {

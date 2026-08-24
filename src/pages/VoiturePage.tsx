@@ -13,6 +13,7 @@ import { useAudience } from '../lib/audience'
 import { todayLocalDay, addLocalDays, localDayOfWeek } from '../lib/localDay'
 import { formatWeekday, formatDay, formatTime } from '../lib/format'
 import { SceneHead } from '../components/SceneHead'
+import { ActionMenu } from '../components/ActionMenu'
 import { EmptyState } from '../components/EmptyState'
 import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
@@ -147,7 +148,22 @@ export function VoiturePage() {
 
   return (
     <div className="scene voiture" aria-label={t.auto.weekTitle}>
-      <SceneHead title={t.auto.weekTitle} subtitle={carName(primary?.id) ?? t.auto.car} onClose={close} />
+      {/* The two week-wide actions (copy last week · reset) used to sit in a footer
+          BELOW seven day rows — a scroll away from the week they act on. They ride
+          the head ⋯ now; reset keeps its danger tone + its own confirm. */}
+      <SceneHead
+        title={t.auto.weekTitle}
+        subtitle={carName(primary?.id) ?? t.auto.car}
+        onClose={close}
+        action={
+          <ActionMenu
+            items={[
+              { icon: 'repeat-bold', label: t.auto.copyLastWeek, onSelect: () => void copyLastWeek() },
+              { icon: 'arrow-counter-clockwise-bold', label: t.auto.resetWeek, tone: 'danger', separated: true, onSelect: () => void resetWeek() },
+            ]}
+          />
+        }
+      />
       <div className="scene__body voiture__body">
         <p className="voiture__hint mono">{t.auto.weekHint}</p>
 
@@ -197,14 +213,6 @@ export function VoiturePage() {
           {!car && <p className="loading mono">{t.common.loading}</p>}
         </div>
 
-        <div className="voiture__weekactions">
-          <button type="button" className="btn btn--ghost mono" onClick={copyLastWeek}>
-            {t.auto.copyLastWeek}
-          </button>
-          <button type="button" className="btn btn--ghost mono" onClick={resetWeek}>
-            {t.auto.resetWeek}
-          </button>
-        </div>
       </div>
     </div>
   )
@@ -397,7 +405,7 @@ function DayEditor({
         <label>{t.auto.to} <input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
       </div>
       <div className="voiture__editor-actions">
-        <button type="button" className="btn" onClick={save}>{t.common.save}</button>
+        <button type="button" className="btn btn--primary" onClick={save}>{t.common.save}</button>
         <button type="button" className="btn btn--ghost mono" onClick={() => onSave({ free: true })}>{t.auto.staysHome}</button>
         {d.override && <button type="button" className="btn btn--ghost mono" onClick={onClear}>{t.auto.resetWeek}</button>}
         <button type="button" className="btn btn--ghost mono" onClick={onAddRide}>＋ {t.auto.addRide}</button>
