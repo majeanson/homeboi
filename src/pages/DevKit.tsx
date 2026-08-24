@@ -913,11 +913,22 @@ export function DevKit() {
       cat: 'Saisie',
       name: 'ColorPicker',
       file: 'components/ColorPicker.tsx',
-      kw: 'couleur swatch pastille',
+      kw: 'couleur swatch pastille taken déjà utilisée distinct membre',
       render: () => (
-        <Demo label="palette dots">
-          <ColorPicker value={color} onChange={setColor} label="Couleur" />
-        </Demo>
+        <>
+          <Demo label="palette dots">
+            <ColorPicker value={color} onChange={setColor} label="Couleur" />
+          </Demo>
+          <Demo label="taken — colours worn by another member (plus the Maisonnée inks) show a hollow ring">
+            <ColorPicker
+              value={color}
+              onChange={setColor}
+              label="Couleur"
+              taken={[PALETTE[1], PALETTE[3]]}
+              takenLabel="déjà utilisée"
+            />
+          </Demo>
+        </>
       ),
     },
     {

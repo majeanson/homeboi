@@ -29,7 +29,6 @@ import { Icon, type IconName } from '../Icon'
 import { EditField } from '../EditField'
 import { EntityCombobox } from '../EntityCombobox'
 import { templateOptions } from './comboOptions'
-import { RowActions } from '../RowActions'
 
 interface FaceMember {
   id: string
@@ -271,10 +270,12 @@ export function TodoSection({
   // inside a collapsed section Disclosure.
   const renderRow = (todo: Todo) => {
     // The row's colour = the assigned member's face colour (falls back to the chore
-    // tint). It already tints the spine + the "by" avatar; when the row is checked we
-    // FILL the check disc with it (so a done todo reads as "who did it" instead of a
-    // generic green that clashes with the spine) and draw the tick in white or black —
-    // whichever contrasts — so it never blends into its own fill.
+    // tint). "Who" reads from the TITLE tint alone — no spine, no avatar disc: the
+    // row spends its width on the text (compact-rows pass). Member colours are kept
+    // distinct from the household fallbacks via nextFreeColour (lib/colors), so the
+    // tint stays a reliable signal. When the row is checked we FILL the check disc
+    // with it (so a done todo reads as "who did it") and draw the tick in white or
+    // black — whichever contrasts — so it never blends into its own fill.
     const rowColour = faceOf(todo.member_id)?.colour ?? CATS.chore.color
     const checkedStyle = { background: rowColour, borderColor: rowColour, color: readableInk(rowColour) }
     return editId === todo.id ? (
@@ -284,12 +285,18 @@ export function TodoSection({
         onChange={setEditText}
         onSubmit={(v) => rename(todo, v)}
         onCancel={() => setEditId(null)}
+        // Delete lives HERE now (the row keeps no always-on trash): tap the name to
+        // open this edit state, and the trash sits beside Save/Cancel.
+        onDelete={() => {
+          setEditId(null)
+          remove(todo)
+        }}
+        deleteLabel={`${t.common.delete} — ${todo.title}`}
         autoFocus
         ariaLabel={t.common.edit}
       />
     ) : (
       <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
-        <span className="spine" style={{ background: rowColour }} aria-hidden="true" />
         {!ro ? (
           <button
             type="button"
@@ -317,21 +324,14 @@ export function TodoSection({
           disabled={ro}
           aria-label={ro ? undefined : t.common.edit}
         >
-          <span className="title" style={isChecked(todo) ? undefined : { color: tintInk(rowColour) }}>
+          <span
+            className="title"
+            style={isChecked(todo) ? undefined : { color: tintInk(rowColour) }}
+            title={faceOf(todo.member_id)?.display_name}
+          >
             {todo.title}
           </span>
         </button>
-        {faceOf(todo.member_id) && (
-          <span
-            className="todo-row__by"
-            style={{ background: rowColour }}
-            title={faceOf(todo.member_id)!.display_name}
-            aria-label={faceOf(todo.member_id)!.display_name}
-          >
-            {(faceOf(todo.member_id)!.display_name[0] ?? '?').toUpperCase()}
-          </span>
-        )}
-        <RowActions onDelete={() => remove(todo)} deleteLabel={`${t.common.delete} — ${todo.title}`} />
       </div>
     )
   }

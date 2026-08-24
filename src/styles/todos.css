@@ -29,12 +29,12 @@
 .todo-rows {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 .todo-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 .todo-group + .todo-group {
   margin-top: 0.5rem;
@@ -52,8 +52,14 @@
   padding-left: 0.15rem;
 }
 
-/* The row IS an `.act` (spine + flex). Make the check + name read as peers, and
-   strike a done row like La liste's checked items. */
+/* The row IS an `.act` (flex card). Compact-rows pass: no spine, no avatar disc,
+   no always-on trash — "who" is the title's tint, delete lives in the tap-to-edit
+   state — so the padding shrinks to a text-first minimum and the row stays short. */
+.act.todo-row {
+  padding: 6px 10px;
+  gap: 8px;
+  margin-bottom: 0; /* .todo-rows / .todo-group own the (smaller) gap */
+}
 .todo-row__check {
   flex: none;
   display: inline-flex;
@@ -89,18 +95,6 @@
 .todo-row.done .title {
   text-decoration: line-through;
   color: var(--ink-faint);
-}
-.todo-row__by {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
 }
 
 /* Departure-checklist chips — one tap drops a whole list in. Lives inside a

@@ -23,7 +23,6 @@ import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
-import { RowActions } from '../components/RowActions'
 import { money } from '../lib/deals'
 import { cashierPicksFrom, useTillHiddenStores, parseDeal } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
@@ -77,13 +76,18 @@ type BoardListData = { list: ListRow[]; members?: ListMember[] }
 const LIST_SORT_KEY = 'liste-sort'
 
 // One list row, drawn the same way for every item. Three independent tap targets:
-// the picture opens the flyer/deals, the whole row centre (the NAME) toggles the
-// check — the in-store gesture, so a mis-aim by a cart-pushing thumb still ticks
-// the item instead of yanking open the editor — and editing is the explicit ✏️
-// (the shared RowActions pencil) beside the check. A checked row keeps its place
-// but reads as "got it" (struck, filled check) until "Clear checked" removes it.
-// Swiping the row LEFT deletes it outright (Outlook-mobile style) — a plain
-// remove, NOT logged as bought (that's what the check + "Clear checked" is for).
+// the picture opens the item's detail/edit sheet (rename, aisle, deals door,
+// delete — the row keeps NO always-on action buttons, compact-rows pass), the
+// whole row centre (the NAME) toggles the check — the in-store gesture, so a
+// mis-aim by a cart-pushing thumb still ticks the item instead of yanking open
+// the editor — and the check disc toggles too. "Who added it" reads from the
+// TITLE's tint (the adder's member colour; nextFreeColour keeps member colours
+// distinct from the marigold household fallback) instead of an avatar disc.
+// A checked row keeps its place but reads as "got it" (struck, filled check)
+// until "Clear checked" removes it. Swiping the row LEFT deletes it outright
+// (Outlook-mobile style) — a plain remove, NOT logged as bought (that's what
+// the check + "Clear checked" is for); the edit sheet keeps the mouse/keyboard
+// Delete mirror.
 //
 // A « pas pressé » row (noRush) is drawn as one recognisable second class — pencilled
 // in rather than errand-bound — so the eye can skip the whole set of them when there's
@@ -97,8 +101,6 @@ function ListItemRow({
   checked,
   noRush,
   toggleLabel,
-  onImage,
-  imageLabel,
   onName,
   nameLabel,
   onToggle,
@@ -118,8 +120,6 @@ function ListItemRow({
   // « Pas pressé »: only worth buying on a deal. Purely a presentation state.
   noRush?: boolean
   toggleLabel: string
-  onImage: () => void
-  imageLabel: string
   onName: () => void
   nameLabel: string
   onToggle: () => void
@@ -171,7 +171,6 @@ function ListItemRow({
         </span>
       )}
       <div ref={mainRef} className={`act list-row__main${checked ? ' done' : ''}`}>
-        <span className="spine" style={{ background: CATS.list.color }} aria-hidden="true" />
         {draggable && (
           // Press-and-hold the grip to reorder. It lives outside the swipe path
           // (data-dnd-grip makes useSwipeToDelete ignore it), so dragging the handle
@@ -187,7 +186,10 @@ function ListItemRow({
             ⠿
           </span>
         )}
-        <button type="button" className="list-row__img" onClick={onImage} aria-label={imageLabel}>
+        {/* The picture is the row's ONE door to the item sheet (edit/detail — where
+            the deals door, delete and the rest now live). Mouse+keyboard reachable,
+            so the swipe-delete keeps its non-touch mirror there. */}
+        <button type="button" className="list-row__img" onClick={onName} aria-label={nameLabel}>
           {dealImage ? (
             // A linked flyer deal with a clipping → show the product picture.
             <span className="tile list-row__thumb" aria-hidden="true">
@@ -215,9 +217,15 @@ function ListItemRow({
           onClick={readOnly ? onName : onToggle}
           aria-label={readOnly ? nameLabel : toggleLabel}
         >
-          {/* The tint is inline (it comes from CATS), so a « pas pressé » row has to
-              soften it here — a stylesheet rule would lose to the inline colour. */}
-          <span className="title" style={{ color: noRush ? 'var(--ink-soft)' : tintInk(CATS.list.color) }}>
+          {/* The tint is inline (adder colour, else the CATS list marigold — the
+              « Maisonnée » voice), so a « pas pressé » row has to soften it here —
+              a stylesheet rule would lose to the inline colour. The tint IS the
+              "who added it" signal now (the avatar disc is gone). */}
+          <span
+            className="title"
+            style={{ color: noRush ? 'var(--ink-soft)' : tintInk(adder?.colour ?? CATS.list.color) }}
+            title={adder?.display_name}
+          >
             {text}
           </span>
           {/* The fade alone would leave the row's second class to be inferred from
@@ -234,24 +242,10 @@ function ListItemRow({
               long grocery name ("Lait à la bolognaise maison…") broke mid-word into
               a screen-tall row. Here it costs the title nothing. */}
           <span className="list-row__meta">
-            {adder && (
-              <span
-                className="list-row__by"
-                style={{ background: adder.colour }}
-                title={adder.display_name}
-                aria-label={adder.display_name}
-              >
-                {(adder.display_name?.[0] ?? '?').toUpperCase()}
-              </span>
-            )}
             {dealLabel}
             {aisleTag}
           </span>
         </button>
-        {/* The explicit edit affordance (mouse + keyboard reachable — never a
-            touch-only path): the shared pencil, opening the edit scene the name
-            tap used to. */}
-        <RowActions onEdit={onName} editLabel={nameLabel} readOnly={readOnly} className="list-row__edit" />
         {!readOnly && (
           <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
             <Icon name="check-bold" size={18} />
@@ -672,8 +666,6 @@ export function Liste() {
                   checked={checked}
                   noRush={!!item.non_urgent}
                   toggleLabel={checked ? t.list.uncheck : t.list.check}
-                  onImage={() => nav(`/liste/deals/${item.id}`)}
-                  imageLabel={t.list.openFlyer}
                   onName={() => nav(`/liste/item/${item.id}`)}
                   nameLabel={t.common.edit}
                   onToggle={() => toggleChecked(item)}

@@ -702,6 +702,16 @@
   border-color: var(--card);
   outline: 2.5px solid var(--ink);
 }
+/* Worn by someone else (or reserved for the Maisonnée voice): a quiet hollow —
+   still pickable, but it reads as spoken for. The title tint is the one "who"
+   signal on the compact rows, so twin colours are worth flagging. */
+.colorpick__dot.is-taken {
+  border-color: var(--card);
+  box-shadow:
+    inset 0 0 0 8px var(--card),
+    var(--shadow-sm);
+  opacity: 0.75;
+}
 
 /* ---- Full-bleed hub pages -------------------------------------------------- */
 /* `.today-feed` is the shared hub-page column (today.css), deliberately capped to a

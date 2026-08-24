@@ -10,7 +10,7 @@ import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY, ROUTINES_KEY } from 
 import { isGuest } from '../../lib/device'
 import { colourFor } from '../../lib/things'
 import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
-import { PALETTE } from '../../lib/colors'
+import { nextFreeColour } from '../../lib/colors'
 import { AVATAR_MAX } from '../../lib/image'
 import { uploadMedia } from '../../lib/uploadMedia'
 import { Avatar } from '../Avatar'
@@ -31,9 +31,11 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   const [isChild, setIsChild] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
-  // Default each new person to the next unused palette colour, so a household
-  // fills out colour-distinct without anyone having to think about it.
-  const [color, setColor] = useState(PALETTE[members.length % PALETTE.length])
+  // Default each new person to the next UNUSED palette colour (nextFreeColour also
+  // keeps the Maisonnée fallback inks off the table), so a household fills out
+  // colour-distinct without anyone having to think about it. With the compact rows
+  // the title tint is the one "who" signal, so distinct actually matters now.
+  const [color, setColor] = useState(() => nextFreeColour(members.map((m) => m.colour)))
   const write = useWrite()
 
   async function add() {
@@ -51,7 +53,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       })
       setName('')
       setIsChild(false)
-      setColor(PALETTE[(members.length + 1) % PALETTE.length])
+      setColor(nextFreeColour([...members.map((m) => m.colour), color]))
     } catch {
       // Keep the typed name — a double-Enter or flaky wifi shouldn't eat it (and
       // must not create the member twice) — but SURFACE the failure instead of
@@ -110,7 +112,13 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       )}
       <ul className="member-cards">
         {members.map((m) => (
-          <MemberCard key={m.id} member={m} onChange={onChange} onRemove={() => remove(m)} />
+          <MemberCard
+            key={m.id}
+            member={m}
+            takenColours={members.filter((x) => x.id !== m.id).map((x) => x.colour)}
+            onChange={onChange}
+            onRemove={() => remove(m)}
+          />
         ))}
       </ul>
       {/* Adding a member is operator-only — EditField hides itself for a guest. */}
@@ -128,7 +136,13 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
               <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
               {t.operator.isChild}
             </label>
-            <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+            <ColorPicker
+              value={color}
+              onChange={setColor}
+              label={t.operator.colorLabel}
+              taken={members.map((m) => m.colour)}
+              takenLabel={t.operator.colourTaken}
+            />
           </>
         }
       />
@@ -256,10 +270,14 @@ function HouseholdNameField() {
 // contact, reached via "Fiche complète" → useOpenPersonSheet (find-or-create).
 function MemberCard({
   member,
+  takenColours,
   onChange,
   onRemove,
 }: {
   member: Member
+  /** The OTHER members' colours — marks their dots in the picker so this person
+   *  isn't recoloured into someone else's tint (the title tint is the "who" now). */
+  takenColours: string[]
   onChange: () => void
   onRemove: () => void
 }) {
@@ -359,7 +377,13 @@ function MemberCard({
                 <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
                 {t.operator.isChild}
               </label>
-              <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+              <ColorPicker
+                value={color}
+                onChange={setColor}
+                label={t.operator.colorLabel}
+                taken={takenColours}
+                takenLabel={t.operator.colourTaken}
+              />
             </>
           }
         />

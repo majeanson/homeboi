@@ -40,6 +40,7 @@ export function NotesList({
   faces,
   readOnly,
   canReorder = true,
+  compact = false,
   onEdit,
   focusId,
   onFocused,
@@ -53,8 +54,13 @@ export function NotesList({
   readOnly?: boolean
   /** Offer the drag grips (default true). Pass false while a search filters the list. */
   canReorder?: boolean
+  /** The board-card GLANCE face (compact-rows pass): no grip, no tint dot, no scope
+   *  chip, no pencil/trash — the row spends its whole width on the text ("who" is the
+   *  title's author tint). Read-only affordances stay: expand-to-read, audio play,
+   *  thumbnails, tappable checklists. Acting on a note lives in Le cercle ▸ Notes. */
+  compact?: boolean
   /** Open the caller's full-screen NoteEditor on this note (non-audio pencil). */
-  onEdit: (n: FamilyNote) => void
+  onEdit?: (n: FamilyNote) => void
   /** Deep-link focus (§892): when this note is in `notes`, expand + scroll + pulse it
    *  once, then signal onFocused so the caller clears its one-shot id. */
   focusId?: string | null
@@ -120,7 +126,7 @@ export function NotesList({
     },
     holdMs: DND_HOLD_MS,
   })
-  const grips = !ro && canReorder && shown.length > 1
+  const grips = !ro && !compact && canReorder && shown.length > 1
 
   const colorOf = (id: string | null) => faces.find((f) => f.id === id)?.colour ?? null
   const nameOf = (id: string | null) => faces.find((f) => f.id === id)?.name ?? null
@@ -159,7 +165,7 @@ export function NotesList({
 
   return (
     <>
-      <ul className="cnote-list">
+      <ul className={'cnote-list' + (compact ? ' cnote-list--compact' : '')}>
         {shown.map((n, idx) => {
           const tint = colorOf(n.author_member_id) ?? 'var(--teal-deep, #2a8f85)'
           const css = { '--note-tint': tint } as React.CSSProperties
@@ -207,10 +213,12 @@ export function NotesList({
               gripClassName="cnote__grip"
               style={css}
             >
-              {/* Visual notes show a tappable thumbnail; text/audio show a tint dot. */}
+              {/* Visual notes show a tappable thumbnail; text/audio show a tint dot.
+                  Compact drops the text-note dot (the title tint already says whose it
+                  is) but keeps the audio one — it's the row's only "this plays" cue. */}
               {media === 'drawing' || media === 'image' ? (
                 <ZoomableImg className="cnote__thumb" src={imgUrl(n.media_key!)} alt={title} />
-              ) : (
+              ) : compact && media !== 'audio' ? null : (
                 <span className="cnote__dot" aria-hidden="true">
                   {media === 'audio' ? <InlineIcon name="play-bold" size={14} /> : null}
                 </span>
@@ -246,9 +254,9 @@ export function NotesList({
                 </span>
               )}
 
-              <span className="cnote__chip mono">{scopeChip}</span>
+              {!compact && <span className="cnote__chip mono">{scopeChip}</span>}
 
-              {!ro && (
+              {!ro && !compact && (
                 <span className="cnote__actions">
                   {/* One pencil per note: an audio memo renames (caption = title); every
                       other note opens the full editor (title + body + attachment). */}
@@ -256,11 +264,11 @@ export function NotesList({
                     <button type="button" className="cnote__act" onClick={() => { setRenameId(n.id); setRenameVal(n.title) }} aria-label={fn.rename}>
                       <Icon name="pencil-simple-bold" size={15} />
                     </button>
-                  ) : (
+                  ) : onEdit ? (
                     <button type="button" className="cnote__act" onClick={() => onEdit(n)} aria-label={fn.edit}>
                       <Icon name="pencil-simple-bold" size={15} />
                     </button>
-                  )}
+                  ) : null}
                   <button type="button" className="cnote__act cnote__act--del" onClick={() => remove(n)} aria-label={fn.delete}>
                     <Icon name="trash-bold" size={15} />
                   </button>

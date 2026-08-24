@@ -106,20 +106,8 @@
   color: var(--accent);
   font-size: 0.9rem;
 }
-/* Who-added-it tint on a shared-list row. */
-.list-row__by {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
-  margin-left: 0.4rem;
-}
+/* (Who-added-it on a shared-list row is now the TITLE's tint — the `.list-row__by`
+   avatar disc was removed in the compact-rows pass.) */
 
 /* Kiosk member switcher: a calm one-tap face row (Maisonnée + each member). */
 .mswitch {

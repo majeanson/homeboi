@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
@@ -14,22 +14,25 @@ import { InlineIcon } from '../Icon'
 import { Section } from './Act'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { NotesList } from '../cercle/NotesList'
-import { NoteEditor } from '../cercle/NoteEditor'
 
 // « Notes (cercle) » — the durable Le cercle ▸ Notes, brought to the board's Grille and
 // LENSED BY THE PICKED FACE (the « Aujourd'hui » MemberSwitcher): a face sees THEIR
 // personal notes + the Maisonnée ones; « Maisonnée » sees only the family-wide list —
 // the exact visibleNotes rule the cercle section uses, driven by the board's own face
 // instead of a local picker. Same information, same place you'd look for the rest of
-// that face's day. The rows ARE the shared NotesList (multi-expand, drag-reorder,
-// pencil into the full NoteEditor); what stays in Le cercle is composing (the board's
-// door is the quiet footer link). Self-hides when the face has no notes (calm) — the
-// show/hide + order setting lives in Réglages ▸ Affichage ▸ Disposition like every
-// Grille card. NOT the fridge notes band (`notes` table) — these are the durable
-// family_notes.
+// that face's day. The rows ARE the shared NotesList in its COMPACT glance face
+// (compact-rows pass): reading only — expand in place, play a memo, tap a checklist —
+// with no grip / tint dot / chip / pencil / trash, so the card's width goes to the
+// text. Everything that ACTS on a note (edit, delete, reorder, compose) lives in
+// Le cercle ▸ Notes, behind the quiet footer link. Self-hides when the face has no
+// notes (calm) — the show/hide + order setting lives in Réglages ▸ Affichage ▸
+// Disposition like every Grille card. NOT the fridge notes band (`notes` table) —
+// these are the durable family_notes.
 export function CercleNotesCard({ members }: { members: Member[] }) {
   const t = useT()
   const { memberId: profileId } = useProfile()
+  // Still needed in compact: a guest's expanded checklists render INERT (a tick
+  // would 403), even though the action buttons are gone for everyone here.
   const ro = isGuest()
 
   // Non-polling (like CarnetsCard): durable notes change over days, a write anywhere
@@ -56,10 +59,6 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
     [members],
   )
 
-  // The full-screen editor for a row's pencil (same one the cercle section hosts).
-  const [editorOpen, setEditorOpen] = useState(false)
-  const [editorNote, setEditorNote] = useState<FamilyNote | null>(null)
-
   // Nothing for this face → no card (calm, like Mots / Voyage / Carnets). Composing
   // lives in Le cercle, so an empty list has nothing to offer on the glance surface.
   const empty = notes.length === 0
@@ -79,27 +78,12 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
       )}
       compactHint={String(notes.length)}
     >
-      <NotesList
-        notes={notes}
-        faces={faces}
-        readOnly={ro}
-        onEdit={(n) => {
-          setEditorNote(n)
-          setEditorOpen(true)
-        }}
-      />
-      {/* The door to the full section (composer, search, per-face browsing). */}
+      <NotesList notes={notes} faces={faces} readOnly={ro} compact />
+      {/* The door to the full section (composer, search, per-face browsing — and
+          every per-note action the compact rows deliberately don't carry). */}
       <Link to="/cercle?section=notes" className="cnotes-card__more mono">
         {t.cercle.familyNotes.seeAll} <InlineIcon name="caret-right-bold" size={12} />
       </Link>
-      <NoteEditor
-        open={editorOpen}
-        note={editorNote}
-        scope={profileId ? 'self' : 'family'}
-        memberId={profileId}
-        faces={faces}
-        onClose={() => setEditorOpen(false)}
-      />
     </Section>
   )
 }

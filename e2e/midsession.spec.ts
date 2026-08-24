@@ -76,7 +76,7 @@ test('ms: liste edit item sheet', async ({ page }) => {
   await open(page, '/liste')
   // The ✏️ pencil is the edit affordance now (the name/centre toggles the check);
   // it navigates to the edit scene /liste/item/:id.
-  await page.locator('.list-row', { hasText: 'Pain' }).locator('.list-row__edit .row-actions__btn').click()
+  await page.locator('.list-row', { hasText: 'Pain' }).locator('.list-row__img').click()
   await page.waitForTimeout(500)
   await shot(page, 'liste-item-sheet')
 })

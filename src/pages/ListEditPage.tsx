@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '../lib/api'
 import { useWrite } from '../lib/write'
@@ -29,6 +29,7 @@ export function ListEditPage() {
   const write = useWrite()
   const confirm = useConfirm()
   const { itemId = '' } = useParams()
+  const nav = useNavigate()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
 
@@ -267,6 +268,17 @@ export function ListEditPage() {
               <InlineIcon name="tag-bold" /> {t.list.unlinkDeal} · {deal.merchant} {money(deal.price)}
             </button>
           )}
+
+          {/* The per-item deals lookup lives HERE now: the list row's picture used
+              to open it directly, but the row's one door is this sheet (compact-rows
+              pass), so the flyer search gets its explicit button. */}
+          <button
+            type="button"
+            className="btn btn--ghost li-edit__row"
+            onClick={() => nav(`/liste/deals/${itemId}`)}
+          >
+            <InlineIcon name="tag-bold" /> {t.list.openFlyer}
+          </button>
 
           {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
 

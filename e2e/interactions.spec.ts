@@ -1066,11 +1066,12 @@ test('a half-done routine resumes: the ▶ reads « Continuer »', async ({ page
 // .list-row__main.done) until "Clear checked" removes the ticked ones. Past /
 // predicted re-adds live behind the ⚡ Quick add panel. The row CENTRE (the name)
 // toggles the check — same handler as the far-right disc (the in-store gesture);
-// editing is the explicit ✏️ (RowActions pencil); the picture opens the flyer.
+// the PICTURE opens the edit scene (compact-rows pass: no always-on pencil; the
+// per-item deals lookup moved inside that scene).
 const openList = (page: Page) => page.locator('.today-feed > .list-rows > .list-row')
 const checkedRows = (page: Page) => page.locator('.list-row__main.done')
 const checkOff = (row: ReturnType<Page['locator']>) => row.locator('.list-row__toggle').click()
-const editRow = (row: ReturnType<Page['locator']>) => row.locator('.list-row__edit .row-actions__btn').click()
+const editRow = (row: ReturnType<Page['locator']>) => row.locator('.list-row__img').click()
 
 test.describe('list', () => {
   test.beforeEach(async ({ page }) => {
@@ -1337,8 +1338,11 @@ test.describe('profile', () => {
   test('the shared list shows who added an item', async ({ page }) => {
     await APP('/liste')(page)
     await settle(page, '.today-feed')
-    // l1 (Lait) is seeded added_by m1 (Maman) → an "M" tint on that row.
-    await expect(page.locator('.list-row__by').first()).toBeVisible()
+    // l1 (Lait) is seeded added_by m1 (Maman, #B06A93) → since the compact-rows
+    // pass, "who" is the TITLE's tint (tintInk inlines the member hex), not an
+    // avatar disc.
+    const title = page.locator('.list-row', { hasText: 'Lait' }).locator('.title')
+    await expect(title).toHaveAttribute('style', /#B06A93/i)
   })
 
   test('kiosk switcher flips between a member and Maisonnée', async ({ page }) => {

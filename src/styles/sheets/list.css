@@ -17,7 +17,7 @@
 .list-rows {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   /* A small breath between the add bar and the first list item, so the input
      doesn't sit flush against the list. */
   margin-top: 10px;
@@ -260,10 +260,10 @@
 .list-row--norush .list-row__main {
   background: transparent;
   box-shadow: none;
-  /* `.act` sets border: 0 + padding: 14px — trade a pixel of padding for the
+  /* `.act` sets border: 0 + padding: 10px 12px — trade a pixel of padding for the
      border so a flagged row keeps the exact height of its neighbours. */
   border: 1px dashed var(--line);
-  padding: 13px;
+  padding: 9px 11px;
 }
 .list-row--norush .list-row__main .spine {
   opacity: 0.3;
@@ -271,8 +271,14 @@
 .list-row--norush .list-row__main .tile {
   opacity: 0.55;
 }
-/* The name's own colour is set INLINE from CATS.list (which a stylesheet can't
-   outrank), so the softened title ink is applied in Liste.tsx, not here. */
+/* The name's own colour is set INLINE (adder colour / CATS.list), so the softened
+   title ink is applied in Liste.tsx, not here. */
+/* Mobile parity with `.act`'s tighter 680px padding (7px 9px, minus the border). */
+@media (max-width: 680px) {
+  .list-row--norush .list-row__main {
+    padding: 6px 8px;
+  }
+}
 /* The shared aisle <select> (edit sheet, quick-add, detail peek). It's a plain
    .input; cap its width so it doesn't stretch edge-to-edge in roomy contexts. */
 .aisle-pick {
@@ -330,12 +336,6 @@
 .list-row__toggle.check {
   width: 42px;
   height: 42px;
-}
-/* The explicit ✏️ (shared RowActions) between the name and the check: keep it
-   quiet and snug so the row doesn't read as a toolbar — the 44px hit box comes
-   from .row-actions__btn itself. */
-.list-row__edit {
-  margin-left: 0;
 }
 .list-row__name {
   flex: 1 1 auto;
@@ -395,10 +395,6 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-/* …except the « who added it » disc, which is a fixed circle, not text. */
-.list-row__meta > .list-row__by {
-  flex: none;
 }
 /* A phone row must spend its width on the NAME, not on furniture. At 390px the
    grip + picto + pencil + check + gaps already claim most of the card, so trim

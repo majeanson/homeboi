@@ -20,6 +20,24 @@ export const PALETTE = [
   '#4F7C8C', // slate blue
 ]
 
+// The « Maisonnée » voice: with the compact rows (todo / liste / notes) the ONLY
+// "who" signal left is the title's tint, so the colours the household fallback
+// speaks in must never be a member's colour. These are the CATS inks the un-owned
+// rows tint with (list = marigold, chore = sage — keep in sync with lib/cats.ts;
+// both sit in PALETTE, hence this reserve list).
+export const HOUSEHOLD_INK_COLOURS = ['#F2A03D', '#88A36F']
+
+// First palette colour that is neither reserved for the Maisonnée voice nor worn
+// by anyone yet — so each new member lands colour-distinct without anyone having
+// to think about it. Every distinct colour taken → cycle the non-reserved set.
+export function nextFreeColour(used: string[]): string {
+  const taken = new Set([...used, ...HOUSEHOLD_INK_COLOURS].map((c) => c.toLowerCase()))
+  const open = PALETTE.filter((c) => !taken.has(c.toLowerCase()))
+  if (open.length > 0) return open[0]!
+  const pool = PALETTE.filter((c) => !HOUSEHOLD_INK_COLOURS.includes(c))
+  return pool[used.length % pool.length]!
+}
+
 // Translucent variants of a colour, as 8-digit hex alpha, for tinted fills and
 // borders (work over cream or dark). The ramp is named by intent so call sites
 // read as design, not magic hex. ONLY valid on a concrete #rrggbb — for a value

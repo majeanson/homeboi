@@ -234,6 +234,18 @@
   padding-left: 0.15rem;
   padding-right: 0.15rem;
 }
+/* COMPACT (the board glance, NotesList `compact`): no grip / text-dot / chip /
+   pencil / trash in the DOM, so the CSS side just shrinks the frame and moves the
+   author tint onto the TITLE (the same "who = text colour" rule as the todo and
+   liste rows — member colours stay distinct via nextFreeColour). */
+.cnote-list--compact .cnote {
+  gap: 0.45rem;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+.cnote-list--compact .cnote__title {
+  color: color-mix(in srgb, var(--note-tint) 62%, var(--ink) 38%);
+}
 /* Shared Markdown render (renderNoteBody) — the note rows' expanded view on BOTH the
    board card and Le cercle, plus the editor preview. Eager for the same reason as the
    rows above: the board expands a note before cercle.css's lazy chunk ever loads, and

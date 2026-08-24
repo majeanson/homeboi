@@ -75,7 +75,11 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
   test(`sheet-pricematch${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
+    // The row's picture opens the edit scene now (compact-rows pass); the per-item
+    // deals lookup is the « Voir les rabais » button inside it.
     await page.locator('.list-row__img').first().click()
+    await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
+    await page.getByRole('button', { name: 'Voir les rabais' }).click()
     await page.locator('.scene').waitFor({ state: 'visible' })
     await page.locator('.deal-list').waitFor({ state: 'visible' }).catch(() => {})
     await page.waitForTimeout(300)
