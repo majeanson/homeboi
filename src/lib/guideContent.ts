@@ -558,16 +558,16 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le tiroir « Idées »', en: 'The « Idées » drawer' },
         detail: {
-          fr: 'Un seul tiroir pour toutes les idées de repas : tes valeurs sûres, ⭐ les favoris, 🧊 à écouler, 🤖 l’IA, et 👧 ce qu’un enfant propose. Touche une idée pour la déposer sur un jour.',
-          en: 'One drawer for every meal idea: your go-tos, ⭐ favorites, 🧊 use-it-up, 🤖 AI, and 👧 what a child suggests. Tap an idea to drop it on a day.',
+          fr: 'Un seul tiroir pour toutes les idées de repas : tes valeurs sûres, ⭐ les favoris, 🕰 déjà mangé (tes classiques, avec la dernière fois), 🧊 à écouler, 🤖 l’IA, et 👧 ce qu’un enfant propose. Touche une idée pour la déposer sur un jour.',
+          en: 'One drawer for every meal idea: your go-tos, ⭐ favorites, 🕰 had before (your classics, with the last time), 🧊 use-it-up, 🤖 AI, and 👧 what a child suggests. Tap an idea to drop it on a day.',
         },
         route: '/kitchen/idees',
       },
       {
         label: { fr: 'L’historique des repas', en: 'The meal history' },
         detail: {
-          fr: 'Tout ce qui a été planifié depuis le début, du plus récent au plus ancien, mois par mois. Touche un jour pour le revoir ; le crayon corrige une vieille entrée. « On l’a mangé quand, ce pâté chinois ? » — la réponse est là.',
-          en: 'Everything ever planned, newest first, month by month. Tap a day to look back; the pencil fixes an old entry. “When did we last have shepherd’s pie?” — the answer lives here.',
+          fr: 'Tout ce qui a été planifié depuis le début, du plus récent au plus ancien, mois par mois. Touche un plat pour le remettre au menu, la date pour revoir le jour ; le crayon corrige une vieille entrée. « On l’a mangé quand, ce pâté chinois ? » — la réponse est là.',
+          en: 'Everything ever planned, newest first, month by month. Tap a dish to put it back on the menu, the date to look back at the day; the pencil fixes an old entry. “When did we last have shepherd’s pie?” — the answer lives here.',
         },
         route: '/kitchen?tab=history',
       },

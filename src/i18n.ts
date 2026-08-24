@@ -1178,6 +1178,7 @@ export const FR = {
     historyEmpty: 'Aucun repas passé encore — le plan d’aujourd’hui deviendra l’historique de demain.',
     historyMore: 'Voir plus loin',
     historyEnd: 'Le tout début de vos repas.',
+    planAgain: 'Remettre au menu',
     slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation', dessert: 'Dessert' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Ajouter à la cuisine',
@@ -1316,7 +1317,10 @@ export const FR = {
       chipUseSoon: 'À écouler',
       chipAi: 'IA',
       chipKid: 'Proposé par',
+      chipPast: 'Déjà mangé',
       emptyFavorites: 'Pas encore de favoris.',
+      emptyPast: 'Rien encore — planifie des repas et tes valeurs sûres apparaîtront ici.',
+      lastServedOn: (day: string) => `dernière fois : ${day}`,
       emptyAi: 'Touche pour demander des idées.',
       emptyKid: 'Aucune suggestion d’un enfant pour l’instant.',
       aiAsk: 'Demander des idées',

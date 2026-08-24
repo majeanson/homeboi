@@ -558,6 +558,14 @@ const ROUTES: Record<string, unknown> = {
       { id: 'mh3', date: MMID - 2 * DAY, slot: 'breakfast', title: 'Gruau', cook_member_id: null, position: 0, is_leftover: 0 },
     ],
     nextBefore: null,
+    // ?summary=1 (« Déjà mangé », the IdeasDrawer's 🕰 source) hits the SAME fixture
+    // (the harness matches on pathname, query stripped) — each consumer reads its
+    // own field, so `dishes` rides alongside the paged shape.
+    dishes: [
+      { title: 'Spaghetti maison', recipe_id: 'rc1', last_at: MMID },
+      { title: 'Tacos', recipe_id: null, last_at: MMID - DAY },
+      { title: 'Soupe poulet-nouilles', recipe_id: null, last_at: MMID - 2 * DAY },
+    ],
   },
   'meal-ideas': {
     ideas: [

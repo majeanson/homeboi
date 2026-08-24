@@ -76,6 +76,11 @@ export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number
 // meals ordered like the grid within a day) + the cursor for the next older page
 // (null = history exhausted). See functions/api/meal-history.ts.
 export type MealHistoryPage = { days: MealRow[]; nextBefore: number | null }
+// « Déjà mangé » (?summary=1 on the same endpoint): the household's distinct past
+// dishes, most-often-planned first — the ORDER is the rank, no count ships (calm).
+// `recipe_id`/`title` come from the most recent planning of the dish.
+export type PastDish = { title: string; recipe_id: string | null; last_at: number }
+export type MealHistorySummary = { dishes: PastDish[] }
 export type PantryData = { low: LowRow[] }
 
 // One slot of the planning grid: the day plus its planned meal, if any.
@@ -83,6 +88,9 @@ export type WeekDay = { date: number; meal: MealRow | undefined }
 
 export const MEALS_KEY = ['meals']
 export const MEAL_HISTORY_KEY = ['meal-history']
+// Prefix-invalidated by MEAL_HISTORY_KEY (TanStack fuzzy matching), so every meal
+// write that refreshes the Historique tab refreshes the « Déjà mangé » source too.
+export const MEAL_HISTORY_SUMMARY_KEY = ['meal-history', 'summary']
 export const DAY_NOTES_KEY = ['day-notes']
 export const MEAL_IDEAS_KEY = ['meal-ideas']
 export const LEFTOVERS_KEY = ['leftovers']

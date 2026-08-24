@@ -28,6 +28,26 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const before =
     Number.isFinite(rawBefore) && rawBefore > 0 ? Math.min(rawBefore, today + DAY) : today + DAY
 
+  // ── ?summary=1 — « Déjà mangé » (the IdeasDrawer's 🕰 source): the household's
+  // distinct past dishes, the most-often-planned first (recency breaks ties).
+  // The rank IS the order — no count ships to the client (calm: the drawer shows
+  // "dernière fois : …", never "12 fois"). Leftover rows are excluded (a replanned
+  // restant isn't a new "we make this" signal). SQLite guarantees the bare
+  // title/recipe_id come from the MAX(date) row of each group, so the casing and
+  // recipe link are the most recent spelling of the dish.
+  if (url.searchParams.get('summary') === '1') {
+    const { results } = await ctx.env.DB.prepare(
+      `SELECT title, recipe_id, COUNT(*) AS times, MAX(date) AS last_at
+       FROM meals WHERE household_id = ? AND date < ? AND is_leftover = 0
+       GROUP BY lower(trim(title))
+       ORDER BY times DESC, last_at DESC
+       LIMIT 24`,
+    )
+      .bind(hh, today + DAY)
+      .all<{ title: string; recipe_id: string | null; times: number; last_at: number }>()
+    return ok({ dishes: results.map(({ title, recipe_id, last_at }) => ({ title, recipe_id, last_at })) })
+  }
+
   // The distinct planned days of this page first (empty days simply don't
   // exist here), then every meal on them — sorted by the household's slot
   // order (Réglages ▸ Repas) so a day reads like the kitchen grid and the

@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useLang, useT } from '../../i18n'
+import { isGuest } from '../../lib/device'
 import { formatDay, formatMonthYear, weekdayShort, dayNum } from '../../lib/format'
 import { todayLocalDay } from '../../lib/localDay'
 import { useMealPrefs } from '../../lib/mealPrefs'
@@ -12,16 +13,22 @@ import { Icon, InlineIcon } from '../Icon'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '../EmptyState'
 import { Loading } from '../Fallback'
+import { useSingleOpen } from '../Disclosure'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildDay } from '../detail/adapters'
+import { MealPlanPicker } from './MealPlanPicker'
+import { usePlanIdea } from './MealIdeas'
 import { MEAL_HISTORY_KEY, type MealHistoryPage, type MealRow } from './types'
 
 // « Historique » — every planned meal since the household began, newest day at
-// the top, grouped by month. A calm, read-only record: the row's tap INFORMS
-// (the same day peek the week grid opens), the pencil edits (the same
-// /kitchen/day/:date scene — it takes any date, past included). Reuses the week
-// grid's whole `.kitchen__day` row family so the past reads exactly like the
-// plan, minus the drag/plan affordances.
+// the top, grouped by month. Reuses the week grid's whole `.kitchen__day` row
+// family so the past reads exactly like the plan, minus the drag affordances.
+// Three doors per row, echoing the grid's "tap informs, pencil edits" rule:
+//   · the DATE BADGE opens the informative day peek (who cooked, the whole day),
+//   · a MEAL CHIP is « Encore ? » — it reveals the shared MealPlanPicker and puts
+//     that dish (recipe link included) back onto an upcoming day, the same
+//     reusable plan flow every IdeasDrawer source uses (usePlanIdea),
+//   · the PENCIL edits (the /kitchen/day/:date scene takes any date, past too).
 //
 // Cold-path read (like « L'année », D-18): fetched when the tab opens, paged a
 // fortnight of planned days at a time (« Voir plus » walks older), never
@@ -31,10 +38,14 @@ import { MEAL_HISTORY_KEY, type MealHistoryPage, type MealRow } from './types'
 
 export function HistoryTab({
   members,
+  week,
 }: {
   // For the day peek's "who cooks" line — the board payload's member list the
   // Kitchen page already holds (no extra query).
   members: { id: string; display_name: string }[]
+  // The upcoming countdown window « Encore ? » plans onto — the same labeled
+  // days the grid and the IdeasDrawer use (useWeekLabeled in Kitchen).
+  week: { date: number; label: string }[]
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -42,6 +53,7 @@ export function HistoryTab({
   const detail = useEntityDetail()
   const mealPrefs = useMealPrefs()
   const today = todayLocalDay()
+  const ro = isGuest()
 
   const historyQ = useInfiniteQuery({
     queryKey: MEAL_HISTORY_KEY,
@@ -50,6 +62,16 @@ export function HistoryTab({
     initialPageParam: 0,
     getNextPageParam: (last) => last.nextBefore ?? undefined,
   })
+
+  // « Encore ? » — one open picker at a time across the whole tab (calm), keyed
+  // by the meal row id. Planning reuses the drawer's reusable plan flow: the
+  // dish (title + its recipe link) lands on the picked upcoming day + slot.
+  const { isOpen, toggle, close } = useSingleOpen()
+  const planIdea = usePlanIdea()
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  const heroSlot = mealPrefs.hero
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? heroSlot
 
   // Pages → one flat newest-first row list → grouped by day, then by month.
   // Server order is authoritative (newest day first; the household's slot order
@@ -115,6 +137,7 @@ export function HistoryTab({
             {month.days.map(({ date, meals }) => {
               const dow = new Date(date * 1000).getDay()
               const isToday = date === today
+              const openMeal = meals.find((m) => isOpen(m.id))
               return (
                 <li
                   key={date}
@@ -122,46 +145,57 @@ export function HistoryTab({
                     'surface kitchen__day' + (isToday ? ' is-today' : '') + (dow === 0 || dow === 6 ? ' is-weekend' : '')
                   }
                 >
-                  <span className="kitchen__day-date" aria-label={formatDay(date, lang)}>
+                  {/* The date badge IS the peek door here (the chips took the
+                      "tap the meal" gesture for « Encore ? »). */}
+                  <button
+                    type="button"
+                    className="kitchen__day-date kitchen__day-datebtn"
+                    onClick={() => openDayPeek(date, meals)}
+                    aria-label={`${t.detail.openDay} · ${formatDay(date, lang)}`}
+                    title={`${t.detail.openDay} · ${formatDay(date, lang)}`}
+                  >
                     {isToday && <span className="kitchen__day-rel mono">{t.kitchen.todayShort}</span>}
                     <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
                     <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
-                  </span>
+                  </button>
                   <div className="kitchen__day-body">
                     <div className="kitchen__day-top">
-                      {/* Tap informs (the day peek), the pencil edits — the week
-                          grid's rule, kept identical here. */}
-                      <span
-                        className="kitchen__day-sum-main kitchen__day-sum-tap"
-                        onClick={() => openDayPeek(date, meals)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            openDayPeek(date, meals)
-                          }
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${t.detail.openDay} · ${formatDay(date, lang)}`}
-                      >
+                      <div className="kitchen__day-sum-main">
                         <span className="kitchen__day-slots">
                           {meals.map((m) => {
                             const c = mealPrefs.color(m.slot as MealSlot) ?? 'var(--terracotta-deep)'
-                            return (
-                              <span
-                                key={m.id}
-                                className="meal-chip"
-                                style={{ color: tintInk(c), background: faint(c), borderColor: hairline(c) }}
-                              >
+                            const inner = (
+                              <>
                                 <InlineIcon name={SLOT_ICON_NAME[m.slot as MealSlot] ?? 'bowl-food-bold'} /> {m.title}
                                 {m.is_leftover ? (
                                   <InlineIcon name="arrow-counter-clockwise-bold" size={12} />
                                 ) : null}
+                              </>
+                            )
+                            const tint = { color: tintInk(c), background: faint(c), borderColor: hairline(c) }
+                            // « Encore ? » — the chip reveals the plan picker; a
+                            // read-only guest keeps the plain display chip.
+                            return ro ? (
+                              <span key={m.id} className="meal-chip" style={tint}>
+                                {inner}
                               </span>
+                            ) : (
+                              <button
+                                key={m.id}
+                                type="button"
+                                className="meal-chip kitchen__hist-chip"
+                                style={tint}
+                                onClick={() => toggle(m.id)}
+                                aria-expanded={isOpen(m.id)}
+                                title={`${t.kitchen.planAgain} · ${m.title}`}
+                              >
+                                {inner}
+                                <InlineIcon name="caret-down-bold" size={10} />
+                              </button>
                             )
                           })}
                         </span>
-                      </span>
+                      </div>
                       <button
                         type="button"
                         className="kitchen__day-manage"
@@ -172,6 +206,17 @@ export function HistoryTab({
                         <Icon name="pencil-simple-bold" size={16} />
                       </button>
                     </div>
+                    {openMeal && (
+                      <MealPlanPicker
+                        slot={planSlot}
+                        onSlot={setPlanSlot}
+                        week={week}
+                        onPickDay={(pickDate) => {
+                          close()
+                          planIdea({ title: openMeal.title, recipe_id: openMeal.recipe_id ?? null }, pickDate, planSlot)
+                        }}
+                      />
+                    )}
                   </div>
                 </li>
               )

@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
+import { formatPastDay } from '../../lib/format'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useSingleOpen } from '../Disclosure'
@@ -17,7 +18,17 @@ import { MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
 import { type Recipe } from '../../lib/recipes'
-import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './types'
+import {
+  type MealIdea,
+  type Leftover,
+  type MealRow,
+  type MealHistorySummary,
+  type PastDish,
+  MEAL_IDEAS_KEY,
+  MEALS_KEY,
+  MEAL_HISTORY_KEY,
+  MEAL_HISTORY_SUMMARY_KEY,
+} from './types'
 import { MealIdeas, usePlanIdea } from './MealIdeas'
 import { Leftovers } from './Leftovers'
 import { MealPlanPicker } from './MealPlanPicker'
@@ -59,9 +70,12 @@ import { RowActions } from '../RowActions'
 // a full 🤖 batch grew it from the bottom edge, so the whole panel — tabs included —
 // jumped up and down under the thumb. A scene's header is pinned; only the body
 // scrolls. Same reason DayManageSheet became /kitchen/day/:date.
-export type IdeasChip = 'ideas' | 'favorites' | 'useSoon' | 'ai' | 'kid'
+//   🕰 Déjà mangé      — the household's own record: distinct past dishes from the
+//                        full meal history (?summary=1), most-often-planned first
+//                        with a quiet "dernière fois : …" tag — never a count.
+export type IdeasChip = 'ideas' | 'favorites' | 'past' | 'useSoon' | 'ai' | 'kid'
 
-export const IDEAS_CHIPS = ['ideas', 'favorites', 'useSoon', 'ai', 'kid'] as const
+export const IDEAS_CHIPS = ['ideas', 'favorites', 'past', 'useSoon', 'ai', 'kid'] as const
 
 export function IdeasDrawer({
   chip,
@@ -171,6 +185,7 @@ export function IdeasDrawer({
   const CHIPS: { key: IdeasChip; icon: IconName; label: string }[] = [
     { key: 'ideas', icon: 'bowl-food-bold', label: t.kitchen.ideas },
     { key: 'favorites', icon: 'heart-bold', label: t.recipes.favorites },
+    { key: 'past', icon: 'clock-counter-clockwise-bold', label: t.kitchen.ideasDrawer.chipPast },
     { key: 'useSoon', icon: 'arrow-counter-clockwise-bold', label: t.kitchen.ideasDrawer.chipUseSoon },
     ...(aiEnabled ? [{ key: 'ai' as const, icon: 'sparkle-bold' as const, label: t.kitchen.ideasDrawer.chipAi }] : []),
     { key: 'kid', icon: 'baby-bold', label: t.kitchen.ideasDrawer.chipKid },
@@ -212,6 +227,8 @@ export function IdeasDrawer({
       {active === 'favorites' && (
         <FavoritesChip recipes={recipes} members={members} week={week} readOnly={ro} onPlan={planRecipe} />
       )}
+
+      {active === 'past' && <PastChip recipes={recipes} week={week} readOnly={ro} onPlan={planIdea} />}
 
       {active === 'useSoon' && (
         <>
@@ -384,6 +401,101 @@ function FavoritesChip({
         )
       }}
     />
+  )
+}
+
+// 🕰 « Déjà mangé » — the household's own record as an idea source: distinct past
+// dishes from the FULL meal history (/api/meal-history?summary=1), most-often-
+// planned first. Each row wears only a quiet "dernière fois : …" tag — the rank is
+// the order, no count ships (calm — the chore-ledger rule, applied to dishes).
+// A dish whose most recent planning linked a recipe keeps that link: the lead
+// picto opens the recipe, and planning it re-links the recipe. Cold-path: the
+// query mounts only while this source is active, and every meal write refreshes
+// it via the ['meal-history'] prefix invalidation.
+function PastChip({
+  recipes,
+  week,
+  readOnly,
+  onPlan,
+}: {
+  recipes: Recipe[]
+  week: { date: number; label: string }[]
+  readOnly: boolean
+  onPlan: (dish: Pick<PastDish, 'title' | 'recipe_id'>, date: number, slot: MealSlot) => void
+}) {
+  const t = useT()
+  const { lang } = useLang()
+  const summaryQ = useQuery({
+    queryKey: MEAL_HISTORY_SUMMARY_KEY,
+    queryFn: () => api<MealHistorySummary>('meal-history?summary=1'),
+  })
+  const { isOpen, toggle, close } = useSingleOpen()
+  // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
+  const heroSlot = useMealPrefs().hero
+  const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
+  const planSlot = planSlotPick ?? heroSlot
+  if (!summaryQ.data) return null // brief cold load — the empty line must not flash first
+  const dishes = summaryQ.data.dishes
+  if (dishes.length === 0) return <EmptyState>{t.kitchen.ideasDrawer.emptyPast}</EmptyState>
+  return (
+    <ul className="kitchen__ideas-list">
+      {dishes.map((dish) => {
+        // The dish's most recent planning may have linked a recipe that still
+        // exists — its picto then opens that recipe (the tight icon-only link
+        // every source uses); a bare title keeps a plain clock.
+        const recipe = dish.recipe_id ? recipes.find((r) => r.id === dish.recipe_id) : undefined
+        const key = dish.title.toLowerCase()
+        const sub = t.kitchen.ideasDrawer.lastServedOn(formatPastDay(dish.last_at, lang))
+        return (
+          <li key={key} className="kitchen__idea">
+            <div className="kitchen__idea-row">
+              {recipe ? (
+                <Link
+                  to={`/kitchen/recipe/${recipe.id}`}
+                  className="kitchen__idea-open"
+                  aria-label={t.recipes.open}
+                  title={t.recipes.open}
+                >
+                  <InlineIcon name="clock-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />
+                </Link>
+              ) : (
+                <InlineIcon name="clock-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />
+              )}
+              {readOnly ? (
+                <span className="chip kitchen__idea-name" aria-disabled="true">
+                  {dish.title}
+                  <span className="mono kitchen__suggestion-sub"> · {sub}</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className={'chip kitchen__idea-name' + (isOpen(key) ? ' is-open' : '')}
+                  onClick={() => toggle(key)}
+                  aria-expanded={isOpen(key)}
+                >
+                  {dish.title}
+                  <span className="mono kitchen__suggestion-sub"> · {sub}</span>
+                  <span className="kitchen__idea-caret" aria-hidden="true">
+                    <Icon name="caret-down-bold" size={12} />
+                  </span>
+                </button>
+              )}
+            </div>
+            {!readOnly && isOpen(key) && (
+              <MealPlanPicker
+                slot={planSlot}
+                onSlot={setPlanSlot}
+                week={week}
+                onPickDay={(date) => {
+                  close()
+                  onPlan(dish, date, planSlot)
+                }}
+              />
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 

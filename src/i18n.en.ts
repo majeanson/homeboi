@@ -1031,6 +1031,7 @@ export const EN: typeof FR = {
     historyEmpty: 'No past meals yet — today’s plan becomes tomorrow’s history.',
     historyMore: 'See further back',
     historyEnd: 'The very beginning of your meals.',
+    planAgain: 'Put it back on the menu',
     slots: { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack', dessert: 'Dessert' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Add to the kitchen',
@@ -1164,7 +1165,10 @@ export const EN: typeof FR = {
       chipUseSoon: 'Use it up',
       chipAi: 'AI',
       chipKid: 'Suggested by',
+      chipPast: 'Had before',
       emptyFavorites: 'No favorites yet.',
+      emptyPast: 'Nothing yet — plan meals and your go-tos will show up here.',
+      lastServedOn: (day: string) => `last had: ${day}`,
       emptyAi: 'Tap to ask for ideas.',
       emptyKid: 'No suggestions from a child yet.',
       aiAsk: 'Ask for ideas',

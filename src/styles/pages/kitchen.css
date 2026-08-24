@@ -866,3 +866,18 @@
   display: block;
   margin: 1rem auto 0;
 }
+/* The Historique date badge doubles as the day-peek door (the chips took the
+   meal-tap gesture for « Encore ? ») — a button wearing the badge's clothes. */
+.kitchen__day-datebtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+/* An « Encore ? » chip — a .meal-chip rendered as a BUTTON. The slot tint rides
+   the inline style like every meal chip; only the button chrome needs resetting. */
+.kitchen__hist-chip {
+  font-family: inherit;
+  cursor: pointer;
+}

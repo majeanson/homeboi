@@ -99,6 +99,18 @@ export function formatMonthYear(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { month: 'long', year: 'numeric' }).format(unixSec * 1000)
 }
 
+// "12 mars" (same year) / "12 mars 2025" — a compact past-date tag, for the
+// « Déjà mangé » "dernière fois : …" sub-label. Year only when it isn't this one.
+export function formatPastDay(unixSec: number, lang: Lang, now: number = Date.now()): string {
+  const d = new Date(unixSec * 1000)
+  const sameYear = d.getFullYear() === new Date(now).getFullYear()
+  return new Intl.DateTimeFormat(LOCALE[lang], {
+    day: 'numeric',
+    month: 'long',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(d)
+}
+
 // "vendredi 13 juin" / "Friday, June 13" — the month-view day-detail header.
 export function formatDayLong(unixSec: number, lang: Lang): string {
   return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long', day: 'numeric', month: 'long' }).format(

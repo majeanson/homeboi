@@ -708,8 +708,9 @@ export function Kitchen() {
         {kitTab === 'history' && (
           // « Historique » — every planned meal since the beginning, newest day
           // first, grouped by month. Cold-path paged read (its own query); the
-          // board members already on hand feed the day peek's cook names.
-          <HistoryTab members={boardMembers} />
+          // board members already on hand feed the day peek's cook names, and
+          // the labeled countdown window feeds the « Encore ? » plan picker.
+          <HistoryTab members={boardMembers} week={weekLabeled} />
         )}
 
         {kitTab === 'recipes' && (
