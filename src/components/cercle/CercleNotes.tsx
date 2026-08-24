@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -48,12 +48,16 @@ export function CercleNotes({
   // onFocused lets the parent clear its one-shot focus.
   focusId,
   onFocused,
+  // Open the rich editor composing a NEW note once on mount — the future ＋-FAB
+  // door (/notes?add=1) lands here.
+  composeOnMount,
 }: {
   members: Member[]
   // Optional shared help mode (the Cercle page's) so the section header is explainable.
   help?: HelpMode
   focusId?: string | null
   onFocused?: () => void
+  composeOnMount?: boolean
 }) {
   const t = useT()
   const write = useWrite()
@@ -162,6 +166,17 @@ export function CercleNotes({
     setEditorNote(n)
     setEditorOpen(true)
   }
+
+  // composeOnMount: open the composer for a new note once, on mount only — the
+  // future ＋-FAB door (/notes?add=1) lands here. Guarded with a ref so a later
+  // prop flip (e.g. a re-render with composeOnMount still true) never re-opens it.
+  const composedRef = useRef(false)
+  useEffect(() => {
+    if (!composeOnMount || composedRef.current) return
+    composedRef.current = true
+    openNew()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fn = t.cercle.familyNotes
 
