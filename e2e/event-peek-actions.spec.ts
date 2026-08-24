@@ -5,6 +5,10 @@ import { mockApi, seedState, BASE } from './mocks'
 // « Voir la journée ». Opened from a board activity row (.act__hit → .detail-sheet). We
 // assert the buttons render and that Delete confirms then fires DELETE /api/events, and
 // that Modify opens the pre-filled event form. (Matches BOARD's 'Rendez-vous dentiste' = e2.)
+//
+// Since the ⋯ fold, the peek splits its actions: « Voir la journée » + Modifier stay
+// visible in `.detail-sheet__actions`; Itinéraire / Partager / Supprimer live behind the
+// head's `.action-menu__btn` as `menuitem`s (same pattern as the recipe view).
 
 const json = (b: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
 
@@ -44,19 +48,26 @@ async function openEventPeek(page: import('@playwright/test').Page) {
   await page.locator('.detail-sheet').waitFor({ state: 'visible', timeout: 10_000 })
 }
 
+// Open the peek's ⋯ overflow (head corner) so its menuitems are clickable.
+const openPeekMenu = (page: import('@playwright/test').Page) =>
+  page.locator('.detail-sheet .action-menu__btn').click()
+
 test('the event peek offers Modify / Delete / Share; Delete confirms → DELETE /api/events', async ({ page }) => {
   await openEventPeek(page)
   const actions = page.locator('.detail-sheet__actions')
   await expect(actions.getByText('Voir la journée', { exact: true })).toBeVisible()
   await expect(actions.getByText('Modifier', { exact: true })).toBeVisible()
-  await expect(actions.getByText('Partager', { exact: true })).toBeVisible()
-  await expect(actions.getByText('Supprimer', { exact: true })).toBeVisible()
+  // Partager + Supprimer moved behind the ⋯ — the visible row no longer carries them.
+  await expect(actions.getByText('Partager', { exact: true })).toHaveCount(0)
+  await openPeekMenu(page)
+  await expect(page.getByRole('menuitem', { name: 'Partager' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Supprimer' })).toBeVisible()
 
   // Delete → the sheet closes, the danger confirm opens → confirm fires DELETE {id}.
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.method() === 'DELETE' && new URL(r.url()).pathname === '/api/events', { timeout: 20_000 }),
     (async () => {
-      await actions.getByText('Supprimer', { exact: true }).click()
+      await page.getByRole('menuitem', { name: 'Supprimer' }).click()
       await page.locator('.confirm__actions').getByRole('button', { name: 'Supprimer' }).click()
     })(),
   ])
@@ -83,18 +94,20 @@ test('« Itinéraire » opens Google Maps directions when the rendez-vous has an
     r.fulfill({ status: 200, contentType: 'text/html', body: '<title>maps</title>' }),
   )
   await openEventPeek(page)
+  await openPeekMenu(page)
   const [popup] = await Promise.all([
     page.waitForEvent('popup'),
-    page.locator('.detail-sheet__actions').getByText('Itinéraire', { exact: true }).click(),
+    page.getByRole('menuitem', { name: 'Itinéraire' }).click(),
   ])
   expect(popup.url()).toContain('google.com/maps/dir')
   expect(popup.url()).toContain(encodeURIComponent('18 boul. Jacques-Cartier, Sherbrooke'))
   await popup.close()
 
-  // No address → no button: the Garderie peek stays Itinéraire-free.
+  // No address → no menu row: the Garderie peek stays Itinéraire-free.
   await page.keyboard.press('Escape')
   await page.locator('.detail-sheet').waitFor({ state: 'hidden' })
   await page.locator('.act', { hasText: 'Garderie' }).first().click()
   await page.locator('.detail-sheet').waitFor({ state: 'visible' })
-  await expect(page.locator('.detail-sheet__actions').getByText('Itinéraire', { exact: true })).toHaveCount(0)
+  await openPeekMenu(page)
+  await expect(page.getByRole('menuitem', { name: 'Itinéraire' })).toHaveCount(0)
 })

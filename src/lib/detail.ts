@@ -50,6 +50,10 @@ export interface DetailAction {
   icon?: IconName
   primary?: boolean // the marigold filled CTA (e.g. "Modifier" on an event)
   tone?: 'danger' // a destructive action (e.g. "Effacer")
+  // This action lives in the sheet's ⋯ overflow menu (ActionMenu in the head),
+  // not the visible button row — set EXPLICITLY per action in the adapters (no
+  // heuristics): quick-reach + the primary stay visible, the long tail folds.
+  overflow?: boolean
   run?: () => void
   href?: string
 }

@@ -4,6 +4,7 @@ import { useT } from '../../i18n'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { Icon } from '../Icon'
 import { Sheet } from '../Sheet'
+import { ActionMenu } from '../ActionMenu'
 import { Avatar } from '../Avatar'
 import { AvatarStack } from '../AvatarStack'
 import { ZoomableImg } from '../ZoomableImg'
@@ -36,8 +37,29 @@ export function EntityDetailSheet({ model, onClose }: { model: DetailModel | nul
     if (a.href) nav(a.href)
   }
 
+  // The long tail of actions (adapters flag them `overflow`) folds into a ⋯ in
+  // the sheet's head corner, beside the ✕ — a drop-DOWN, deliberately: `.sheet`
+  // is the scroll container, so a drop-up from the footer row would hard-clip on
+  // a short peek, while downward overflow just scrolls (and useModal's focus
+  // pull brings the panel into view). Danger rows keep the RecipeSheet grammar
+  // (warn tone + a divider above). Zero overflow actions → the menu hides
+  // itself, so guest/toddler peeks (whose callers omit the gated opts) stay
+  // ⋯-free with no extra wiring.
+  const folded = (m?.actions ?? []).filter((a) => a.overflow)
+  const menu = folded.length > 0 && (
+    <ActionMenu
+      items={folded.map((a) => ({
+        icon: a.icon,
+        label: a.label,
+        tone: a.tone,
+        separated: a.tone === 'danger',
+        onSelect: () => runAction(a),
+      }))}
+    />
+  )
+
   return (
-    <Sheet open={open} onClose={onClose} ariaLabel={m?.title ?? t.detail.aria} className="detail-sheet">
+    <Sheet open={open} onClose={onClose} ariaLabel={m?.title ?? t.detail.aria} className="detail-sheet" action={menu || undefined}>
       {m && <DetailBody model={m} onAction={runAction} />}
     </Sheet>
   )
@@ -100,9 +122,11 @@ function DetailBody({ model, onAction }: { model: DetailModel; onAction: (a: Det
         <Block key={i} block={b} />
       ))}
 
-      {model.actions && model.actions.length > 0 && (
+      {/* Visible row = the quick-reach actions + the one primary; the `overflow`
+          ones render in the head ⋯ instead (EntityDetailSheet above). */}
+      {model.actions && model.actions.some((a) => !a.overflow) && (
         <div className="detail-sheet__actions">
-          {model.actions.map((a) => (
+          {model.actions.filter((a) => !a.overflow).map((a) => (
             <button
               key={a.key}
               type="button"

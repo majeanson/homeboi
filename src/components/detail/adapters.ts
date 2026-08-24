@@ -105,20 +105,22 @@ export function buildEvent(
     // Basic peek actions: see the day, Modify (the primary — opens the event form),
     // Share, Delete (danger). Modify/Delete/Share are opt-gated at the call site so a
     // guest/toddler peek stays read-only. Exactly one primary (edit when present).
+    // The long tail (`overflow`) rides the sheet's head ⋯ so the visible row stays
+    // two buttons: the day door + Modifier.
     actions: [
       { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` },
       // « Itinéraire » — turn-by-turn to the rendez-vous, one tap before the door.
       // Read-only navigation, so it stays for guests/kiosks (no opt gate needed).
       ...(mapsHref
-        ? [{ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold' as const, run: () => { window.open(mapsHref, '_blank', 'noopener') } }]
+        ? [{ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold' as const, overflow: true, run: () => { window.open(mapsHref, '_blank', 'noopener') } }]
         : []),
       ...(opts?.onEdit
         ? [{ key: 'edit', label: t.common.edit, icon: 'pencil-simple-bold' as const, primary: true, run: opts.onEdit }]
         : []),
       // « Partager » — a public link with just the title + when + who-label (no member ids leak).
-      ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, run: opts.onShare }] : []),
+      ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, overflow: true, run: opts.onShare }] : []),
       ...(opts?.onDelete
-        ? [{ key: 'delete', label: t.common.delete, icon: 'trash-bold' as const, tone: 'danger' as const, run: opts.onDelete }]
+        ? [{ key: 'delete', label: t.common.delete, icon: 'trash-bold' as const, tone: 'danger' as const, overflow: true, run: opts.onDelete }]
         : []),
     ],
   }
@@ -161,15 +163,17 @@ export function buildBusiness(
   const actions: DetailAction[] = []
   if (b.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${b.phone}` } })
   if (b.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { window.location.href = `mailto:${b.email}` } })
-  if (mapsHref) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', run: () => { window.open(mapsHref, '_blank', 'noopener') } })
+  // Reaching the vendor (call / write) stays a visible button; everything past that
+  // — directions, website, booking, delete — folds into the sheet's head ⋯.
+  if (mapsHref) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', overflow: true, run: () => { window.open(mapsHref, '_blank', 'noopener') } })
   if (b.website?.trim()) {
     const url = /^https?:\/\//.test(b.website.trim()) ? b.website.trim() : `https://${b.website.trim()}`
-    actions.push({ key: 'web', label: bz.website, icon: 'arrow-up-right-bold', run: () => { window.open(url, '_blank', 'noopener') } })
+    actions.push({ key: 'web', label: bz.website, icon: 'arrow-up-right-bold', overflow: true, run: () => { window.open(url, '_blank', 'noopener') } })
   }
   // « Planifier un rendez-vous » — a rendez-vous with this vendor (vet, plumber…),
   // opening the shared EventForm pre-seeded with this business as the "Avec".
-  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
-  if (opts?.onDelete) actions.push({ key: 'delete', label: bz.delete, icon: 'trash-bold', run: opts.onDelete })
+  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', overflow: true, run: opts.onSchedule })
+  if (opts?.onDelete) actions.push({ key: 'delete', label: bz.delete, icon: 'trash-bold', tone: 'danger', overflow: true, run: opts.onDelete })
   if (opts?.onEdit) actions.push({ key: 'edit', label: bz.edit, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
   return {
@@ -226,12 +230,14 @@ export function buildPet(
     blocks.push({ kind: 'togglechips', label: t.cercle.groups, options: opts.groupToggle.options, onToggle: opts.groupToggle.onToggle })
 
   const actions: DetailAction[] = []
-  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
-  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  // The two family-graph doors + delete fold into the head ⋯; the vet rendez-vous
+  // (the one thing an animal's card is usually opened FOR) and Modifier stay visible.
+  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', overflow: true, href: opts.buildFamilyHref })
+  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', overflow: true, run: opts.onConnect })
   // « Rendez-vous chez le vétérinaire » — seeds the pet's vet Business into the event
   // form (only offered when the pet has a vet on file, so there IS a counterpart).
   if (opts?.onSchedule) actions.push({ key: 'rdv', label: p.vetRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
-  if (opts?.onDelete) actions.push({ key: 'delete', label: p.delete, icon: 'trash-bold', run: opts.onDelete })
+  if (opts?.onDelete) actions.push({ key: 'delete', label: p.delete, icon: 'trash-bold', tone: 'danger', overflow: true, run: opts.onDelete })
   if (opts?.onEdit) actions.push({ key: 'edit', label: p.edit, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
   return {
@@ -528,18 +534,20 @@ export function buildContact(
   const actions: DetailAction[] = []
   if (c.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${c.phone}` } })
   if (c.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { window.location.href = `mailto:${c.email}` } })
+  // Everything past "reach this person" (call/write) folds into the sheet's head ⋯:
+  // a contact card could otherwise stack EIGHT same-weight buttons under the notes.
   // External Maps link — open in a new tab (the sheet feeds href to the SPA router,
   // which can't navigate an absolute URL, so route it through run/window.open).
-  if (maps) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', run: () => { window.open(maps, '_blank', 'noopener') } })
+  if (maps) actions.push({ key: 'nav', label: t.cercle.navigate, icon: 'map-pin-bold', overflow: true, run: () => { window.open(maps, '_blank', 'noopener') } })
   // "Bâtir sa famille" — open the family builder seeded with this person.
-  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
+  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', overflow: true, href: opts.buildFamilyHref })
   // "Relier à quelqu'un" — open the connector with this person as side A.
-  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', overflow: true, run: opts.onConnect })
   // « Planifier un rendez-vous » — a rendez-vous with this person, opening the
   // shared EventForm pre-seeded with them as the "Avec".
-  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
+  if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', overflow: true, run: opts.onSchedule })
   // "Exporter (vCard)" — download a .vcf to drop this person into any phone/Mac.
-  if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', run: opts.onExport })
+  if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', overflow: true, run: opts.onExport })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
   return {
@@ -574,14 +582,16 @@ export function buildMemberPerson(
   const actions: DetailAction[] = []
   if (opts?.onDetail)
     actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'users-three-bold', primary: true, run: opts.onDetail })
+  // The family-graph doors + the Réglages edit link fold into the head ⋯; « Fiche
+  // complète » (the primary) and the rendez-vous door stay visible.
   // "Bâtir sa famille" — open the family builder seeded with this member.
-  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', href: opts.buildFamilyHref })
+  if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', overflow: true, href: opts.buildFamilyHref })
   // "Relier à quelqu'un" — open the connector with this member as side A.
-  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', run: opts.onConnect })
+  if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', overflow: true, run: opts.onConnect })
   // « Planifier un rendez-vous » — an appointment concerning this member, opening
   // the shared EventForm with them pre-selected.
   if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
-  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', href: '/settings?tab=cercle&sub=members' })
+  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', overflow: true, href: '/settings?tab=cercle&sub=members' })
   return {
     kind: 'contact',
     title: p.name,

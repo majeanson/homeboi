@@ -25,6 +25,7 @@ export function Sheet({
    *  via the scrim / swipe / picking a face). */
   showClose = true,
   closeLabel,
+  action,
   children,
 }: {
   open: boolean
@@ -34,6 +35,10 @@ export function Sheet({
   className?: string
   showClose?: boolean
   closeLabel?: string
+  /** Optional control(s) beside the ✕ (e.g. the detail peek's ⋯ ActionMenu) —
+   *  rendered before it in a `.sheet__head-actions` cluster. Without it, the ✕
+   *  keeps its historical sticky-float markup untouched. */
+  action?: ReactNode
   children: ReactNode
 }) {
   const t = useT()
@@ -59,10 +64,23 @@ export function Sheet({
         aria-label={ariaLabel}
       >
         <div className="grab" aria-hidden="true" />
-        {showClose && (
-          <button type="button" className="sheet__close" onClick={onClose} aria-label={closeLabel ?? t.common.close}>
-            <Icon name="x-bold" size={18} />
-          </button>
+        {action ? (
+          // With an `action`, the cluster takes over the ✕'s sticky-float corner so
+          // both controls ride together (flex kills the ✕'s own float inside it).
+          <div className="sheet__head-actions">
+            {action}
+            {showClose && (
+              <button type="button" className="sheet__close" onClick={onClose} aria-label={closeLabel ?? t.common.close}>
+                <Icon name="x-bold" size={18} />
+              </button>
+            )}
+          </div>
+        ) : (
+          showClose && (
+            <button type="button" className="sheet__close" onClick={onClose} aria-label={closeLabel ?? t.common.close}>
+              <Icon name="x-bold" size={18} />
+            </button>
+          )
         )}
         {children}
       </div>
