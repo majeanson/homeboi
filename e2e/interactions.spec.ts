@@ -837,9 +837,11 @@ test.describe('recipes', () => {
   test('a recipe pushes its ingredients to the list and opens cook mode', async ({ page }) => {
     await page.locator('.recipe-card').first().click() // → recipe view directly (peek removed)
     const modal = page.locator('.recipe-modal')
-    // "Ajouter à la liste" now opens an ingredient PICKER (e40f990) with nothing
-    // pre-selected; pick all, then confirm — that's what posts recipe-to-list.
-    await modal.getByRole('button', { name: 'Ajouter à la liste' }).click()
+    // "Ajouter à la liste" lives in the header's ⋯ overflow now (the footer keeps
+    // only Cuisiner + Planifier). It opens an ingredient PICKER (e40f990) with
+    // nothing pre-selected; pick all, then confirm — that's what posts recipe-to-list.
+    await modal.locator('.action-menu__btn').click()
+    await modal.getByRole('menuitem', { name: 'Ajouter à la liste' }).click()
     await modal.locator('.recipe-list-pick__all').click() // Tout sélectionner
     await expectApi(page, 'POST', 'recipe-to-list', () =>
       modal.locator('.recipe-list-pick__actions .btn--primary').click(),

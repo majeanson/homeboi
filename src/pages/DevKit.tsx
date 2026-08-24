@@ -20,6 +20,7 @@ import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { RowActions } from '../components/RowActions'
+import { ActionMenu } from '../components/ActionMenu'
 import { DragPill } from '../components/DragPill'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
@@ -1624,6 +1625,26 @@ export function DevKit() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <span>Yogourt grec</span>
             <RowActions onEdit={() => {}} onDelete={() => {}} />
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'ActionMenu',
+      file: 'components/ActionMenu.tsx',
+      kw: 'overflow menu ⋯ dots trois points actions secondaires header entête dropdown déroulant',
+      render: () => (
+        <Demo label="header ⋯ overflow — a scene's secondary actions fold into one dropdown (danger + separated rows)">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: '14rem' }}>
+            <ActionMenu
+              items={[
+                { icon: 'shopping-bag-bold', label: 'Ajouter à la liste', onSelect: () => {} },
+                { icon: 'arrow-up-right-bold', label: 'Partager', onSelect: () => {} },
+                { icon: 'pencil-simple-bold', label: 'Modifier', onSelect: () => {}, separated: true },
+                { icon: 'trash-bold', label: 'Supprimer', tone: 'danger', onSelect: () => {} },
+              ]}
+            />
           </div>
         </Demo>
       ),

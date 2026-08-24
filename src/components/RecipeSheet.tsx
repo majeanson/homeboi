@@ -26,13 +26,14 @@ import { useConfirm } from '../lib/confirm'
 import { useAuth } from '../lib/auth'
 import { RecipeShareModal } from './RecipeShareModal'
 import { SceneHead } from './SceneHead'
+import { ActionMenu, type ActionMenuItem } from './ActionMenu'
 
-// Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method,
-// then a row of gentle actions —
-//   · Add ingredients to the shared list (one call, source 'recipe')
-//   · Plan a supper: reveals the week; tapping a day sets that supper's title
-//     (groceries stay a separate, deliberate choice — no surprise list dump)
-//   · Edit / Delete
+// Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method.
+// The footer holds ONLY the two primaries — Cuisiner + Planifier (reveals the
+// week; tapping a day sets that supper's title — groceries stay a separate,
+// deliberate choice, no surprise list dump). Every secondary action (add
+// ingredients to the list, make a kid routine, share, edit, delete) folds into
+// the header's ⋯ overflow (ActionMenu), so the recipe keeps its reading space.
 // `week` is the Kitchen's 7-day window so planning lands on a real date.
 export function RecipeSheet({
   recipe,
@@ -201,27 +202,59 @@ export function RecipeSheet({
     onClose()
   }
 
+  // The secondary actions fold into the header's ⋯ overflow (ActionMenu) so the
+  // footer keeps ONLY the two primaries (Cuisiner · Planifier) and stops eating
+  // the recipe's reading space. Same gating as before: write actions hide for a
+  // guest / the toddler lens (`ro`); « Partager » needs the signed-in operator.
+  // Modifier + Supprimer stay demoted below a divider (`separated`), delete in
+  // the warn tone — the old footer hierarchy, carried into the menu.
+  const menuItems: ActionMenuItem[] = []
+  if (!ro && recipe.ingredients.length > 0)
+    menuItems.push({
+      icon: 'shopping-bag-bold',
+      label: added ? t.recipes.addedToList : t.recipes.addToList,
+      disabled: added,
+      onSelect: () => (listPrompt ? setListPrompt(null) : openAddToList()),
+    })
+  // « En routine pour enfant » — turn the recipe into a toddler picture
+  // routine (#19). Parent-only (the toddler lens + guests are `ro`), so the
+  // one-way door stays closed.
+  if (!ro && recipe.steps.length > 0)
+    menuItems.push({ icon: 'baby-bold', label: t.detail.makeRoutine, onSelect: () => makeRoutine(recipe) })
+  // « Partager » — mint a real /partage/<id> link (photo + ingredients + steps)
+  // anyone can open, not an ugly text paste. A server write, so operator-only
+  // (hidden for guests/kiosk/toddler — the one-way door stays closed).
+  if (signedIn && audience !== 'toddler')
+    menuItems.push({ icon: 'arrow-up-right-bold', label: t.recipes.shareRecipe, onSelect: () => setSharing(true) })
+  if (!ro) {
+    menuItems.push({ icon: 'pencil-simple-bold', label: t.common.edit, onSelect: onEdit, separated: true })
+    menuItems.push({ icon: 'trash-bold', label: t.common.delete, tone: 'danger', onSelect: del })
+  }
+
   return (
     <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={recipe.title}>
       {/* Shared scene header (like every other full-screen scene) instead of a
           bespoke bar — a consistent title + Guide "?" + close ✕. The "Original"
-          mode toggle rides SceneHead's `action` slot. */}
+          mode toggle + the ⋯ overflow ride SceneHead's `action` slot. */}
       <div className="recipe-modal__card surface">
         <SceneHead
           title={recipe.title}
           card="recipes"
           onClose={onClose}
           action={
-            <button
-              type="button"
-              className={'btn btn--ghost mono recipe-original-toggle' + (showOriginal ? ' is-on' : '')}
-              onClick={() => setShowOriginal((s) => !s)}
-              aria-pressed={showOriginal}
-              title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
-              aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
-            >
-              <Icon name="scroll-bold" size={18} />
-            </button>
+            <>
+              <button
+                type="button"
+                className={'btn btn--ghost mono recipe-original-toggle' + (showOriginal ? ' is-on' : '')}
+                onClick={() => setShowOriginal((s) => !s)}
+                aria-pressed={showOriginal}
+                title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+                aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+              >
+                <Icon name="scroll-bold" size={18} />
+              </button>
+              <ActionMenu items={menuItems} />
+            </>
           }
         />
 
@@ -472,65 +505,28 @@ export function RecipeSheet({
           <MealPlanPicker band slot={planSlot} onSlot={setPlanSlot} week={week} onPickDay={planOn} />
         )}
 
-        {/* Actions read as a hierarchy: Cuisiner (the one prominent primary) leads,
-            then the non-destructive "do" actions (plan · add · share); Modifier +
-            Supprimer are demoted to their own quiet row below a divider, so a
-            destructive delete is never a same-weight peer of "cook this" (mis-tap
-            magnet on a phone). */}
-        <div className="recipe-modal__foot recipe-actions">
-          {canCook && (
-            <button type="button" className="btn btn--primary" onClick={() => onCook(factor)}>
-              <InlineIcon name="cooking-pot-bold" /> {t.recipes.cook}
-            </button>
-          )}
-          {!ro && (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => setPlanning((p) => !p)}
-              disabled={plannedDate != null}
-            >
-              {plannedDate != null ? t.recipes.planned : t.recipes.plan}
-            </button>
-          )}
-          {!ro && recipe.ingredients.length > 0 && (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => (listPrompt ? setListPrompt(null) : openAddToList())}
-              disabled={added}
-              aria-expanded={!!listPrompt}
-            >
-              {added ? t.recipes.addedToList : t.recipes.addToList}
-            </button>
-          )}
-          {/* « En routine pour enfant » — turn the recipe into a toddler picture
-              routine (#19). Parent-only (the toddler lens + guests are `ro`), so the
-              one-way door stays closed. */}
-          {!ro && recipe.steps.length > 0 && (
-            <button type="button" className="btn btn--ghost mono" onClick={() => makeRoutine(recipe)}>
-              <InlineIcon name="baby-bold" /> {t.detail.makeRoutine}
-            </button>
-          )}
-          {/* « Partager » — mint a real /partage/<id> link (photo + ingredients + steps)
-              anyone can open, not an ugly text paste. A server write, so operator-only
-              (hidden for guests/kiosk/toddler — the one-way door stays closed). */}
-          {signedIn && audience !== 'toddler' && (
-            <button type="button" className="btn btn--ghost mono" onClick={() => setSharing(true)}>
-              <InlineIcon name="arrow-up-right-bold" /> {t.recipes.shareRecipe}
-            </button>
-          )}
-          {!ro && (
-            <div className="recipe-actions__manage">
-              <button type="button" className="btn btn--ghost btn--sm mono" onClick={onEdit}>
-                {t.common.edit}
+        {/* The footer keeps ONLY the two primaries — Cuisiner leads, Planifier
+            beside it; everything else lives in the header's ⋯ overflow — so the
+            recipe body, not a wall of buttons, owns the screen. */}
+        {(canCook || !ro) && (
+          <div className="recipe-modal__foot recipe-actions">
+            {canCook && (
+              <button type="button" className="btn btn--primary" onClick={() => onCook(factor)}>
+                <InlineIcon name="cooking-pot-bold" /> {t.recipes.cook}
               </button>
-              <button type="button" className="btn btn--ghost btn--sm mono recipe-del" onClick={del}>
-                {t.common.delete}
+            )}
+            {!ro && (
+              <button
+                type="button"
+                className="btn btn--ghost mono"
+                onClick={() => setPlanning((p) => !p)}
+                disabled={plannedDate != null}
+              >
+                {plannedDate != null ? t.recipes.planned : t.recipes.plan}
               </button>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
       {signedIn && <RecipeShareModal recipe={recipe} open={sharing} onClose={() => setSharing(false)} />}
     </div>

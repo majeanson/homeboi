@@ -2844,7 +2844,7 @@ export const EN: typeof FR = {
     byStore: 'By store',
     share: 'Share',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', moreActions: 'More actions', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.' },
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',

@@ -31,11 +31,13 @@ test.beforeEach(async ({ page }) => {
 test('a recipe view « Partager » mints a /partage link: POST {kind,recipeId} → URL input + copy + QR', async ({ page }) => {
   await page.goto('/kitchen/recipe/rc1')
 
-  // The « Partager » foot button (operator + non-toddler) opens the sheet, which
-  // auto-mints the link on open (POST /api/share) — assert the request shape + the URL.
+  // « Partager » (operator + non-toddler) lives in the header's ⋯ overflow; it
+  // opens the sheet, which auto-mints the link on open (POST /api/share) —
+  // assert the request shape + the URL.
+  await page.locator('.action-menu__btn').click()
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/share', { timeout: 20_000 }),
-    page.getByRole('button', { name: 'Partager' }).click(),
+    page.getByRole('menuitem', { name: 'Partager' }).click(),
   ])
   expect(req.postDataJSON()).toMatchObject({ kind: 'recipe', recipeId: 'rc1' })
 
