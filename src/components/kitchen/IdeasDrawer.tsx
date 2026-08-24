@@ -17,7 +17,7 @@ import { MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
 import { type Recipe } from '../../lib/recipes'
-import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
+import { type MealIdea, type Leftover, type MealRow, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './types'
 import { MealIdeas, usePlanIdea } from './MealIdeas'
 import { Leftovers } from './Leftovers'
 import { MealPlanPicker } from './MealPlanPicker'
@@ -117,7 +117,7 @@ export function IdeasDrawer({
     void write('meals', {
       method: 'POST',
       body: { date, slot, title: r.title, recipeId: r.id, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
     }).catch(() => {})
   }
 
@@ -126,7 +126,7 @@ export function IdeasDrawer({
     void write('meals', {
       method: 'POST',
       body: { date, slot, title, recipeId: null, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
     }).catch(() => {})
   }
 

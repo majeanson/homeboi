@@ -57,6 +57,7 @@ import * as homeProjects from '../functions/api/home-projects'
 import * as household from '../functions/api/household'
 import * as list from '../functions/api/list'
 import * as meals from '../functions/api/meals'
+import * as mealHistory from '../functions/api/meal-history'
 import * as mealIdeas from '../functions/api/meal-ideas'
 import * as mealLeftovers from '../functions/api/meal-leftovers'
 import * as mealStaples from '../functions/api/meal-staples'
@@ -189,6 +190,7 @@ const TABLE: Record<string, RouteMod> = {
   household,
   list,
   meals,
+  'meal-history': mealHistory,
   'meal-ideas': mealIdeas,
   'meal-leftovers': mealLeftovers,
   'meal-staples': mealStaples,

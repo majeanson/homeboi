@@ -858,3 +858,11 @@
   color: var(--ink);
 }
 
+
+/* ── « Historique » (the past, month by month) ──────────────────────────────
+   The day rows reuse the whole .kitchen__day family above and each month heads
+   with the shared .section-header — only the pager needs a home here. */
+.kitchen__history-more {
+  display: block;
+  margin: 1rem auto 0;
+}

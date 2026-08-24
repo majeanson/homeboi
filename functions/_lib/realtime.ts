@@ -115,9 +115,12 @@ const PATH_KEYS: Record<string, string[][]> = {
   'shared-trip-join': [['shared-trips']],
   'shared-trip-leave': [['shared-trips'], ['trips'], ['board'], ['month']],
   // Meal plan: the kitchen week grid + the board's "ce soir"; an empty/low-ingredient
-  // supper feeds the « À régler » heads-up.
-  meals: [['meals'], ['board'], ['a-regler']],
-  'meal-leftovers': [['leftovers'], ['board']],
+  // supper feeds the « À régler » heads-up. ['meal-history'] rides along because a
+  // meal write can touch a today-or-past day (edit/clear from the day editor, an
+  // add for today), which the Historique tab reads.
+  meals: [['meals'], ['board'], ['a-regler'], ['meal-history']],
+  // Planning a leftover CREATES a meal row (possibly today's) → history too.
+  'meal-leftovers': [['leftovers'], ['board'], ['meal-history']],
   'meal-ideas': [['meal-ideas']],
   'meal-staples': [['meals']],
   // Per-day memo pinned to the meal week; today's shows on the board.
@@ -180,7 +183,7 @@ const PATH_KEYS: Record<string, string[][]> = {
   ghost: [['ghosts'], ['board']],
   // Capture routes a note to any of these targets, so refetch the lot (a new event /
   // meal / pantry-low item can all change the « À régler » heads-up).
-  capture: [['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler']],
+  capture: [['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler'], ['meal-history']],
   // Le cercle (people directory): a contact or relationship edit refreshes the
   // tab; a birthday edit also re-derives the board's "Anniversaires à venir" and the
   // « À régler » gift-idea heads-up.

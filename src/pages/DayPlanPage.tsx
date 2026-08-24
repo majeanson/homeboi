@@ -41,6 +41,7 @@ import {
   type MealsData,
   type DayNotesData,
   MEALS_KEY,
+  MEAL_HISTORY_KEY,
   DAY_NOTES_KEY,
   LEFTOVERS_KEY,
 } from '../components/kitchen/types'
@@ -226,7 +227,7 @@ export function DayPlanPage() {
       return
     }
     try {
-      await write('meals', { method: 'POST', body: { date: d, slot, title: v, recipeId }, affectedKeys: [MEALS_KEY, BOARD_KEY] })
+      await write('meals', { method: 'POST', body: { date: d, slot, title: v, recipeId }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] })
       // Only close the editor once the write lands (offline: queued) — a real
       // failure keeps the typed title so it can be retried (like the grocery bar).
       setEditSlot(null)
@@ -280,7 +281,7 @@ export function DayPlanPage() {
   async function clearMeal(id: string) {
     const meal = qc.getQueryData<MealsData>(MEALS_KEY)?.days.find((m) => m.id === id)
     try {
-      await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [MEALS_KEY, BOARD_KEY] })
+      await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] })
       setEditDate(null)
       setMealText('')
       setEditSlot(null)
@@ -293,7 +294,7 @@ export function DayPlanPage() {
 
   // Reorder one meal within its slot (↑/↓). The server renumbers the slot.
   async function moveMeal(id: string, dir: 'up' | 'down') {
-    await write('meals', { method: 'POST', body: { action: 'move', id, dir }, affectedKeys: [MEALS_KEY, BOARD_KEY] }).catch(() => {})
+    await write('meals', { method: 'POST', body: { action: 'move', id, dir }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] }).catch(() => {})
   }
   // Rename one meal in place (✏️) — keeps its slot/position/recipe link. Optimistic;
   // the board re-reads too (today's supper headline shows there).
@@ -303,7 +304,7 @@ export function DayPlanPage() {
     await write('meals', {
       method: 'PATCH',
       body: { id, title: v },
-      affectedKeys: [MEALS_KEY, BOARD_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
       optimistic: (c) =>
         c.setQueryData<MealsData>(MEALS_KEY, (d) =>
           d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
@@ -332,7 +333,7 @@ export function DayPlanPage() {
   // first so Annuler can put them back (compensating undo).
   async function clearSlotMeals(d: number, slot: string) {
     const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === d && m.slot === slot)
-    await write('meals', { method: 'POST', body: { action: 'clear', date: d, slot }, affectedKeys: [MEALS_KEY, BOARD_KEY] }).catch(
+    await write('meals', { method: 'POST', body: { action: 'clear', date: d, slot }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] }).catch(
       () => {},
     )
     if (removed.length) recordUndo({ message: t.undo.slotCleared, onUndo: () => restoreMeals(qc, removed) })
@@ -340,7 +341,7 @@ export function DayPlanPage() {
   // Clearing the whole day empties the editor — leave the scene back to the grid.
   async function clearDay(d: number) {
     const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === d)
-    await write('meals', { method: 'POST', body: { action: 'clear', date: d }, affectedKeys: [MEALS_KEY, BOARD_KEY] }).catch(() => {})
+    await write('meals', { method: 'POST', body: { action: 'clear', date: d }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] }).catch(() => {})
     if (removed.length) recordUndo({ message: t.undo.dayCleared, onUndo: () => restoreMeals(qc, removed) })
     close()
   }
@@ -363,7 +364,7 @@ export function DayPlanPage() {
     await write('meals', {
       method: 'POST',
       body: { date: d, slot, title: r.title, recipeId: r.id },
-      affectedKeys: [MEALS_KEY, BOARD_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
     }).catch(() => {})
   }
 

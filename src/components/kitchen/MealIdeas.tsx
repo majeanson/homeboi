@@ -8,7 +8,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { InlineIcon } from '../Icon'
 import { MealPool } from './MealPool'
 import { recipeOptions } from './comboOptions'
-import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY } from './types'
+import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './types'
 
 // « Idées de repas » — the kept, reusable pool: free text ("tacos") or a saved-recipe
 // shortcut. Planning an idea onto a day LEAVES it in the pool, so no compensating
@@ -30,7 +30,7 @@ export function usePlanIdea() {
     void write('meals', {
       method: 'POST',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
     }).catch(() => {})
   }
 }

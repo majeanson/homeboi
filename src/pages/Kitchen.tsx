@@ -23,6 +23,7 @@ import { pictoFor } from '../lib/picto'
 import { ideasForDay } from '../lib/mealIdeas'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
+import { HistoryTab } from '../components/kitchen/HistoryTab'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
@@ -107,7 +108,7 @@ export function Kitchen() {
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
-  const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes'] as const)
+  const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes', 'history'] as const)
   // Contextual "?" help mode for the WHOLE tab (shared hook): arm it once at the
   // sub-tab nav, then tap a tab OR any sub-section heading below (Idées de repas,
   // Restants, Il en manque, La réserve, Recettes, Collections) to learn what that
@@ -118,6 +119,7 @@ export function Kitchen() {
       meals: t.kitchen.tabMeals,
       pantry: t.kitchen.tabPantry,
       recipes: t.kitchen.tabRecipes,
+      history: t.kitchen.tabHistory,
       ideas: t.kitchen.ideas,
       leftovers: t.kitchen.leftovers,
       low: t.kitchen.low,
@@ -371,6 +373,7 @@ export function Kitchen() {
             { key: 'meals', label: t.kitchen.tabMeals },
             { key: 'pantry', label: t.kitchen.tabPantry },
             { key: 'recipes', label: t.kitchen.tabRecipes },
+            { key: 'history', label: t.kitchen.tabHistory },
           ]}
           value={kitTab}
           onSelect={setKitTab}
@@ -387,6 +390,7 @@ export function Kitchen() {
         {tabHelp.bubbleFor('meals')}
         {tabHelp.bubbleFor('pantry')}
         {tabHelp.bubbleFor('recipes')}
+        {tabHelp.bubbleFor('history')}
 
         {kitTab === 'meals' && (
         <section>
@@ -699,6 +703,13 @@ export function Kitchen() {
             help={tabHelp}
             between={<ReserveSection reserve={reserveQ.data?.reserve ?? []} help={tabHelp} />}
           />
+        )}
+
+        {kitTab === 'history' && (
+          // « Historique » — every planned meal since the beginning, newest day
+          // first, grouped by month. Cold-path paged read (its own query); the
+          // board members already on hand feed the day peek's cook names.
+          <HistoryTab members={boardMembers} />
         )}
 
         {kitTab === 'recipes' && (

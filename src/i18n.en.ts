@@ -1027,6 +1027,10 @@ export const EN: typeof FR = {
     tabMeals: 'Meals',
     tabPantry: 'Pantry',
     tabRecipes: 'Recipes',
+    tabHistory: 'History',
+    historyEmpty: 'No past meals yet — today’s plan becomes tomorrow’s history.',
+    historyMore: 'See further back',
+    historyEnd: 'The very beginning of your meals.',
     slots: { breakfast: 'Breakfast', lunch: 'Lunch', supper: 'Supper', snack: 'Snack', dessert: 'Dessert' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Add to the kitchen',
@@ -1941,6 +1945,7 @@ export const EN: typeof FR = {
     deleteEvent: 'Delete event',
     renameDevice: 'Rename tablet',
     colorLabel: 'Colour',
+    colourTaken: 'already used',
     sections: 'Sections',
     jumpAria: 'Sections in this tab',
     // Group labels that segment the section strip into calm clusters (findability).

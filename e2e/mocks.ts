@@ -546,6 +546,19 @@ const ROUTES: Record<string, unknown> = {
   wonder: { wonder: null }, // daily-wonder band hides in screenshots; set a {source,title,explanation,imgUrl} object to exercise it
   photos: { photos: [] },
   meals: MEALS,
+  // « Historique » (La cuisine ▸ Historique) — a short newest-first past, one page
+  // (nextBefore: null = no « Voir plus loin » button). Today rides along (the tab
+  // includes it), then two earlier days spanning a month boundary is overkill for
+  // a fixture — a same-month trio keeps the grouping assertion simple.
+  'meal-history': {
+    days: [
+      { id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0, is_leftover: 0 },
+      { id: 'mh1', date: MMID - DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0, is_leftover: 0 },
+      { id: 'mh2', date: MMID - 2 * DAY, slot: 'supper', title: 'Soupe poulet-nouilles', cook_member_id: null, position: 0, is_leftover: 1 },
+      { id: 'mh3', date: MMID - 2 * DAY, slot: 'breakfast', title: 'Gruau', cook_member_id: null, position: 0, is_leftover: 0 },
+    ],
+    nextBefore: null,
+  },
   'meal-ideas': {
     ideas: [
       { id: 'idea1', title: 'Soupe poulet-nouilles', recipe_id: null, suggested_by: null, created_at: BASE - DAY },

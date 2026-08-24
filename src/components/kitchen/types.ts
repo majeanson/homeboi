@@ -72,12 +72,17 @@ export type DayNotesData = { notes: DayNoteRow[] }
 // `recent`: the last few days of planned, non-leftover meals (newest first, deduped
 // by title) — the source for the Restants "Suggestions" quick-pick chips.
 export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number; recent: MealRow[] }
+// One « Historique » page: up to a fortnight of past planned days (newest first,
+// meals ordered like the grid within a day) + the cursor for the next older page
+// (null = history exhausted). See functions/api/meal-history.ts.
+export type MealHistoryPage = { days: MealRow[]; nextBefore: number | null }
 export type PantryData = { low: LowRow[] }
 
 // One slot of the planning grid: the day plus its planned meal, if any.
 export type WeekDay = { date: number; meal: MealRow | undefined }
 
 export const MEALS_KEY = ['meals']
+export const MEAL_HISTORY_KEY = ['meal-history']
 export const DAY_NOTES_KEY = ['day-notes']
 export const MEAL_IDEAS_KEY = ['meal-ideas']
 export const LEFTOVERS_KEY = ['leftovers']

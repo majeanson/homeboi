@@ -56,8 +56,8 @@ describe('keysForPath', () => {
   })
 
   it('maps the meal plan to meals + board + a-regler (empty/low supper heads-up)', () => {
-    expect(keysForPath('meals')).toEqual([['meals'], ['board'], ['a-regler']])
-    expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board']])
+    expect(keysForPath('meals')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history']])
+    expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board'], ['meal-history']])
   })
 
   // meals + month ride along because the meal ORDER/HERO are applied server-side, so
@@ -112,7 +112,7 @@ describe('keysForPath', () => {
   })
 
   it('maps capture to every target it can route a note to', () => {
-    expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler']])
+    expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler'], ['meal-history']])
   })
 
   it('maps sample-data seed/clear to a broad board-facing superset (not the bare board default)', () => {
@@ -153,7 +153,7 @@ describe('keysForPath', () => {
 
   it('normalizes leading slash, api/ prefix, query string and trailing slash', () => {
     expect(keysForPath('/api/list')).toEqual([['board'], ['ghosts'], ['list-history']])
-    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler']])
+    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history']])
     expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month']])
     // A full URL pathname (what route.ts passes) works too.
     expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month'], ['a-regler']])

@@ -7,7 +7,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { InlineIcon } from '../Icon'
 import { MealPool } from './MealPool'
 import { mealOptions } from './comboOptions'
-import { type Leftover, type MealRow, LEFTOVERS_KEY, MEALS_KEY } from './types'
+import { type Leftover, type MealRow, LEFTOVERS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './types'
 
 // « Restants » — the leftovers pool: what's already cooked and still to finish. Unlike
 // « Idées de repas », planning a leftover CONSUMES the pool row (it becomes a real,
@@ -27,7 +27,7 @@ export function usePlanLeftover() {
   const write = useWrite()
   const recordUndo = useRecordUndo()
   return async (l: Leftover, date: number, slot: MealSlot) => {
-    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY]
+    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id: l.id, date, slot },

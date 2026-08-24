@@ -563,6 +563,14 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/kitchen/idees',
       },
+      {
+        label: { fr: 'L’historique des repas', en: 'The meal history' },
+        detail: {
+          fr: 'Tout ce qui a été planifié depuis le début, du plus récent au plus ancien, mois par mois. Touche un jour pour le revoir ; le crayon corrige une vieille entrée. « On l’a mangé quand, ce pâté chinois ? » — la réponse est là.',
+          en: 'Everything ever planned, newest first, month by month. Tap a day to look back; the pencil fixes an old entry. “When did we last have shepherd’s pie?” — the answer lives here.',
+        },
+        route: '/kitchen?tab=history',
+      },
     ],
   },
   {

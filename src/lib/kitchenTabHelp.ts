@@ -36,6 +36,14 @@ export const KITCHEN_TAB_HELP = {
       en: 'Your recipe book: add, import and browse your recipes.',
     },
   },
+  history: {
+    card: 'kitchen',
+    point: 10,
+    body: {
+      fr: 'Tous les repas planifiés depuis le début, du plus récent au plus ancien, mois par mois.',
+      en: 'Every planned meal since the beginning, newest first, month by month.',
+    },
+  },
   // ── headings on the Repas tab ──
   // C-14 — sourced from the guide's appended drawer point instead of a hand-typed
   // restatement (P2-9): this opener and the IdeasDrawer explain the same concept.

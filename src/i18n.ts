@@ -1174,6 +1174,10 @@ export const FR = {
     tabMeals: 'Repas',
     tabPantry: 'Garde-manger',
     tabRecipes: 'Recettes',
+    tabHistory: 'Historique',
+    historyEmpty: 'Aucun repas passé encore — le plan d’aujourd’hui deviendra l’historique de demain.',
+    historyMore: 'Voir plus loin',
+    historyEnd: 'Le tout début de vos repas.',
     slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation', dessert: 'Dessert' },
     // The contextual ＋ sheet (kitchen section).
     addTitle: 'Ajouter à la cuisine',
@@ -2130,6 +2134,7 @@ export const FR = {
     deleteEvent: 'Supprimer le rendez-vous',
     renameDevice: 'Renommer la tablette',
     colorLabel: 'Couleur',
+    colourTaken: 'déjà utilisée',
     sections: 'Sections',
     jumpAria: 'Sections de cet onglet',
     // The themed Réglages tabs (one per hub section, same wording as the nav —
