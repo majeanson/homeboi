@@ -450,7 +450,7 @@ export function SearchPage() {
                 node: res!.businesses.items.length > 0 && (
               <Section key="businesses" label={t.search.businesses}>
                 {res!.businesses.items.map((b) => (
-                  <Link key={b.id} to={`/cercle?section=business&item=${b.id}`} className="search__row">
+                  <Link key={b.id} to={`/maison?section=business&item=${b.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: b.colour ?? BUSINESS_COLOUR }}>
                       <InlineIcon name="storefront-bold" />
                     </span>
@@ -491,7 +491,7 @@ export function SearchPage() {
                 {res!.projects.items.map((p) => (
                   <Link
                     key={p.id}
-                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=routines&sub=chores'}
+                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=maison&sub=chores'}
                     className="search__row"
                   >
                     <span className="search__pic" aria-hidden="true" style={{ color: p.color ?? undefined }}>
@@ -645,7 +645,7 @@ export function SearchPage() {
                 node: res!.groups.items.length > 0 && (
               <Section key="groups" label={t.search.groups}>
                 {res!.groups.items.map((g) => (
-                  <Link key={g.id} to={g.kind === 'family' ? `/cercle/family/${g.id}` : '/cercle?section=social'} className="search__row">
+                  <Link key={g.id} to={g.kind === 'family' ? `/cercle/family/${g.id}` : '/maison?section=social'} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: g.colour ?? CATS.cercle.deep }}>
                       <InlineIcon name="users-three-bold" />
                     </span>
@@ -799,7 +799,7 @@ export function SearchPage() {
                 node: res!.notes.items.length > 0 && (
               <Section key="notes" label={t.search.notes}>
                 {res!.notes.items.map((n) => (
-                  <Link key={n.id} to={`/cercle?section=notes&item=${n.id}`} className="search__row">
+                  <Link key={n.id} to={`/notes?item=${n.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name="file-text-bold" />
                     </span>

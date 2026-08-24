@@ -34,7 +34,7 @@ export function relatedFor(kind: AnswerKind, t: ReturnType<typeof useT>): { to: 
     board: { to: '/board', label: t.nav.board, icon: 'calendar-blank-bold' as IconName },
     kitchen: { to: '/kitchen', label: t.nav.kitchen, icon: 'fork-knife-bold' as IconName },
     liste: { to: '/liste', label: t.nav.list, icon: 'shopping-bag-bold' as IconName },
-    cercle: { to: '/cercle', label: t.nav.cercle, icon: 'users-three-bold' as IconName },
+    cercle: { to: '/maison?section=family', label: t.nav.cercle, icon: 'users-three-bold' as IconName },
     settings: { to: '/settings', label: t.nav.operator, icon: 'gear-six-bold' as IconName },
   }
   const guide = { to: '/settings?tab=decouvrir', label: t.search.guide, icon: 'book-open-bold' as IconName }

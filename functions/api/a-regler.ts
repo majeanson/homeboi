@@ -156,7 +156,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // — A birthday soon with no gift idea noted —
   for (const o of birthdayOccurrences(birthdayPeople, today, in2w)) {
     if (!o.giftIdeas || !o.giftIdeas.trim()) {
-      signals.push({ kind: 'birthday', key: o.id, label: o.name, at: o.at, href: '/cercle' })
+      signals.push({ kind: 'birthday', key: o.id, label: o.name, at: o.at, href: '/maison?section=family' })
     }
   }
 

@@ -65,7 +65,7 @@ export function buildEvent(
       whoLabel: e.age != null ? t.cercle.turnsN(e.age) : undefined,
       who: whoOf(members, e.member_id),
       blocks: gifts ? [{ kind: 'text', text: `🎁 ${t.cercle.giftIdeas} : ${gifts}` }] : undefined,
-      actions: [{ key: 'cercle', label: t.nav.cercle, icon: 'users-three-bold', primary: true, href: '/cercle' }],
+      actions: [{ key: 'cercle', label: t.nav.cercle, icon: 'users-three-bold', primary: true, href: '/maison?section=family' }],
     }
   }
   // The "who" of a rendez-vous: a member face if assigned, else the linked « Le
@@ -591,7 +591,7 @@ export function buildMemberPerson(
   // « Planifier un rendez-vous » — an appointment concerning this member, opening
   // the shared EventForm with them pre-selected.
   if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
-  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', overflow: true, href: '/settings?tab=cercle&sub=members' })
+  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', overflow: true, href: '/settings?tab=maison&sub=members' })
   return {
     kind: 'contact',
     title: p.name,

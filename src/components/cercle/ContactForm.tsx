@@ -196,7 +196,7 @@ export function ContactForm({
     } finally {
       setSaving(false)
       qc.invalidateQueries({ queryKey: CERCLE_KEY })
-      nav('/cercle', { replace: true })
+      nav('/maison?section=family', { replace: true })
     }
   }
 

@@ -29,7 +29,7 @@ export function CercleFormPage() {
   const qc = useQueryClient()
   const { id } = useParams()
   const editing = !!id
-  const close = useSceneClose('/cercle')
+  const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
   const { data } = useQuery({
@@ -37,12 +37,12 @@ export function CercleFormPage() {
     queryFn: () => api<CercleData>('cercle'),
   })
 
-  if (isGuest()) return <Navigate to="/cercle" replace />
+  if (isGuest()) return <Navigate to="/maison?section=family" replace />
 
   const contact = editing ? data?.contacts.find((c) => c.id === id) ?? null : null
   // Editing but the contact is gone (loaded + not found → deleted elsewhere) →
   // bounce; still loading → wait.
-  if (editing && !contact) return data ? <Navigate to="/cercle" replace /> : <Loading />
+  if (editing && !contact) return data ? <Navigate to="/maison?section=family" replace /> : <Loading />
 
   return (
     <div className="scene" aria-label={editing ? t.cercle.editPerson : t.cercle.newPerson}>

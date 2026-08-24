@@ -47,7 +47,7 @@ interface CercleData {
 export function CercleWorldPage() {
   const t = useT()
   const { audience } = useAudience()
-  const close = useSceneClose('/cercle')
+  const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
   const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })

@@ -47,12 +47,12 @@ export function RoutineFormPage() {
     <FormScene
       title={editing ? t.routines.editTitle : t.routines.add}
       icon={CATS.routine.icon}
-      fallback="/routines"
+      fallback="/maison"
     >
       {(members, close) => {
         // Still loading the routine to edit → wait; loaded but gone (deleted from
         // another device) → bounce back to the tab rather than show a blank form.
-        if (editing && !routine) return data ? <Navigate to="/routines" replace /> : <Loading />
+        if (editing && !routine) return data ? <Navigate to="/maison" replace /> : <Loading />
         // Delete from the same scene that edits it (no trip to Réglages ▸ Corvées).
         // A weighty confirm (useConfirm), then a DELETE via useWrite so an offline
         // tap queues to the outbox, then back to the tab.

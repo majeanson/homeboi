@@ -83,7 +83,7 @@ export function FamilyImportPage() {
   const { lang } = useLang()
   const nav = useNavigate()
   const qc = useQueryClient()
-  const close = useSceneClose('/cercle')
+  const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
   const [params] = useSearchParams()
@@ -116,7 +116,7 @@ export function FamilyImportPage() {
   const [done, setDone] = useState(false)
 
   // A read-only guest can't write into a household — bounce to the circle.
-  if (isGuest()) return <Navigate to="/cercle" replace />
+  if (isGuest()) return <Navigate to="/maison?section=family" replace />
   // Reading a shared family needs your OWN account (it's how you merge into it). A
   // signed-out visitor is sent to log in first (the link still works once signed in).
   if (isUnauthorized(error)) return <Navigate to="/login" replace />

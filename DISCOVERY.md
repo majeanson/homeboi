@@ -20,7 +20,7 @@ settings) are one tap back.** No dead-end prose.
 | Réglages shell | `src/pages/Operator.tsx` | Découvrir + 6 themed tabs, « Comprendre / Régler » lens, sub pill rows, `?focus=` landing, « Voir dans l'app » backlinks, `LEGACY_TAB`/`LEGACY_SUB` folding. |
 | Settings taxonomy | `src/lib/settingsNav.ts` | PLAIN DATA: `SETTINGS_SUBS` (sub ids + order, the one source), `SETTINGS_FOCUS` (focusable section anchors = operatorHelp helpKeys), `SUB_GOTO` (sub → live surface), `ROUTE_PREFIXES` (valid link targets, mirrors `router.tsx`). |
 | "?" help-mode | `src/lib/helpMode.tsx` + `HelpBubble`/`HelpDot` | Tap "?" then a control → in-place bubble + « Voir le guide » deep-link. |
-| Help registries | `src/lib/{board,liste,routines,kitchenTab,operator,add,cercle}Help.ts` | 7 maps of `{ body, card, point? }` — every hint names its guide card/point. |
+| Help registries | `src/lib/{board,liste,routines,kitchenTab,operator,add,cercle,notes}Help.ts` | 8 maps of `{ body, card, point? }` — every hint names its guide card/point. Maison merges two of them (`{...CERCLE_HELP, ...ROUTINES_HELP}`) since one page now hosts both worlds. |
 | Tours | `src/lib/tour.tsx`, `src/lib/tourContent.ts`, `components/tour/TourOverlay.tsx` | Spotlight walkthroughs; steps anchor `data-tour` keys, can end on a guide card. `guidePoint(id, frLabel)` reuses any guide point's detail verbatim as a step body (`guidePlusActions(id)` = the « ＋ » point). A step with `sheet: true` walks INSIDE the ＋ sheet — HubLayout holds the section chooser open for it (in-sheet anchors: `add-note`, `add-tiles`, `add-week`, `add-routines`). |
 | ＋ sheet | `src/lib/addSheet.tsx` + `components/AddSheet.tsx` | `SECTION_MODES` tiles; `ADD_MODES` (all modes, validates `?plus=`); tile explanations live in `ADD_HELP` + guide points, not on the tiles. |
 
@@ -50,12 +50,21 @@ and every Réglages sub with a live counterpart shows « Voir dans l'app »
 (`SUB_GOTO`). The board▸Disposition ↔ `/board?edit=1` mirror is the pattern,
 generalized.
 
-## The taxonomy (post-merge, 32 cards)
+## The taxonomy (post-merge, 34 cards)
 
-1 start (`first-time`) + 6 section cards + 17 concepts + 8 `set-*` reference
+1 start (`first-time`) + 6 section cards + 19 concepts + 8 `set-*` reference
 cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 `?card=&point=` link exact. **R** = « Ouvrir » (`route`), **S** = « Régler »
 (`settings`); points carry their own « Essayer » routes (see the file).
+
+> **The nav restructure DEMOTED, it did not retire.** When `/cercle` + `/routines`
+> became `/notes` + `/maison`, the `cercle` and `routines` cards stayed **live**
+> ids and kept every point at its exact index — they simply moved from
+> `group:'sections'` to `group:'concepts'` inside the new `maison` bucket. That is
+> why no `GUIDE_CARD_ALIAS` entry was added (aliasing a live id fails
+> `guideLinks.test.ts`) and why `CERCLE_HELP`/`ROUTINES_HELP`/`OPERATOR_HELP`/
+> `ADD_HELP` needed no index churn. Old `?tab=cercle`/`?tab=routines` links fold
+> through `LEGACY_TAB` instead, keeping a valid `?sub=` as-is.
 
 | Theme | Card (absorbed ids →) | R | S |
 | --- | --- | --- | --- |
@@ -71,21 +80,23 @@ cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 | liste | **liste** (section) | /liste | ?tab=liste |
 | liste | deals (+flyers, +cashier) | /liste/circulaires | liste▸shop |
 | liste | ghost | /liste | liste▸ghost |
-| cercle | **cercle** (section) | /cercle | ?tab=cercle |
-| cercle | voyage | /voyage/new | — |
-| cercle | auto | /voiture | cercle▸cars |
-| cercle | carnets | /cercle?section=carnets | — |
-| routines | **routines** (section) | /routines | ?tab=routines |
-| routines | todos | /board | routines▸todos |
+| notes | **notes** (section) | /notes | — (Comprendre-only) |
+| maison | **maison** (section) | /maison | ?tab=maison |
+| maison | routines (was a section card) | /maison | maison▸routines |
+| maison | cercle (was a section card) | /maison?section=family | maison▸members |
+| maison | voyage | /voyage/new | — |
+| maison | auto | /voiture | maison▸cars |
+| maison | carnets | /maison?section=carnets | — |
+| maison | todos | /board | maison▸todos |
 | settings | **settings** (section; +offline) | /settings | — |
 | settings | ai | — | settings▸ai |
 | settings | calm (+undo) | — | settings▸calm |
 | settings | audience (+surface) | — | settings▸display |
 | settings | screensaver (+apod) | — | settings▸ambient&focus=ambient |
 | settings | share-access (+share, +share-target) | — | settings▸guest |
-| set-* | set-household (+account) | — | cercle▸members |
+| set-* | set-household (+account) | — | maison▸members |
 | set-* | set-agenda (+activities) | — | board▸events |
-| set-* | set-chores (+home-projects) | — | routines▸chores |
+| set-* | set-chores (+home-projects) | — | maison▸chores |
 | set-* | set-shopping | — | liste▸shop |
 | set-* | set-recipes | — | kitchen▸apparence |
 | set-* | set-devices (+pairing, +cast-tv) | — | settings▸tablets |

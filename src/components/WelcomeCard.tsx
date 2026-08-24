@@ -76,7 +76,7 @@ export function resetWelcome(): void {
 }
 
 const STEPS: { id: 'members' | 'meals' | 'pair'; to: string; icon: IconName }[] = [
-  { id: 'members', to: '/settings?tab=cercle&sub=members', icon: 'users-three-bold' },
+  { id: 'members', to: '/settings?tab=maison&sub=members', icon: 'users-three-bold' },
   { id: 'meals', to: '/settings?tab=kitchen&sub=meals', icon: 'fork-knife-bold' },
   { id: 'pair', to: '/settings?tab=settings&sub=tablets', icon: 'device-tablet-bold' },
 ]
@@ -86,7 +86,7 @@ const STEPS: { id: 'members' | 'meals' | 'pair'; to: string; icon: IconName }[] 
 // a mouse user gets the same door a touch gesture would (desktop reachability).
 const DEMO_STEPS: { id: 'demoCook' | 'demoRoutine' | 'demoListe' | 'demoRearrange' | 'demoMot'; to: string; icon: IconName }[] = [
   { id: 'demoCook', to: '/kitchen', icon: 'cooking-pot-bold' },
-  { id: 'demoRoutine', to: '/routines', icon: 'smiley-bold' },
+  { id: 'demoRoutine', to: '/maison', icon: 'smiley-bold' },
   { id: 'demoListe', to: '/liste?plus=1', icon: 'shopping-bag-bold' },
   { id: 'demoRearrange', to: '/board?edit=1', icon: 'stack-bold' },
   { id: 'demoMot', to: '/board?plus=mot', icon: 'envelope-bold' },

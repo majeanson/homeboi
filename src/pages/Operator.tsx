@@ -183,7 +183,7 @@ export function Operator() {
   }, [loading, canEnter, nav])
 
   // Which settings tab is open, held in the URL (?tab=<id>). A deep link selects
-  // the matching tab (/settings?tab=routines) and the choice survives a refresh
+  // the matching tab (/settings?tab=maison) and the choice survives a refresh
   // or a return from elsewhere — unlike the old read-only hash. See tabParam.
   // "Still loading" counts as full access so an operator's deep link to a gated
   // sub-section survives the auth round-trip instead of snapping to the default.

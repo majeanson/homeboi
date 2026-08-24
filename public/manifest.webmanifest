@@ -42,7 +42,7 @@
     {
       "name": "Mes routines",
       "short_name": "Routines",
-      "url": "/routines",
+      "url": "/maison",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]

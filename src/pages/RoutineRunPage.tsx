@@ -11,7 +11,7 @@ import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
 // player through KidView's face-picker; this standalone scene is the door for a
 // parent on their phone (or any device) who taps ▶ "Faire la routine" on the
 // Routines tab. Same shared RoutinePlayer, same data, no audience lock — exits back
-// to the Routines tab rather than /board.
+// to La maison rather than /board.
 export function RoutineRunPage() {
   const ro = isGuest()
   const { id } = useParams()
@@ -26,7 +26,7 @@ export function RoutineRunPage() {
   const routine = data?.routines.find((r) => r.id === id) ?? null
   // Gone (deleted elsewhere) or an empty shell with no steps → nothing to run;
   // bounce back to the tab rather than show an empty stage.
-  if (!routine || routine.cards.length === 0) return <Navigate to="/routines" replace />
+  if (!routine || routine.cards.length === 0) return <Navigate to="/maison" replace />
 
-  return <RoutinePlayer routine={routine} ro={ro} exitTo="/routines" />
+  return <RoutinePlayer routine={routine} ro={ro} exitTo="/maison" />
 }

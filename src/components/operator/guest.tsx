@@ -138,11 +138,11 @@ const GUEST_LINKS_KEY = ['guest-links']
 // blocks minting — a link with gaps is still perfectly mintable, just emptier.
 // `null` means "scroll to the in-page ShareInfoEditor below" rather than navigate.
 const GAP_ROUTE: Record<HandoffGap, string | null> = {
-  emergency: '/cercle',
-  toKnow: '/settings?tab=cercle&sub=members',
-  bedtimeRoutines: '/routines',
+  emergency: '/maison?section=family',
+  toKnow: '/settings?tab=maison&sub=members',
+  bedtimeRoutines: '/maison',
   wifiSsid: null,
-  pins: '/cercle?section=carnets',
+  pins: '/maison?section=carnets',
 }
 const GAP_LABEL_KEY: Record<HandoffGap, 'missingEmergency' | 'missingToKnow' | 'missingBedtimeRoutines' | 'missingWifi' | 'missingPins'> = {
   emergency: 'missingEmergency',

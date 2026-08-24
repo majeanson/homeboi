@@ -30,12 +30,12 @@ export function CercleFamilyPage() {
   const qc = useQueryClient()
   const { groupId } = useParams()
   const [params] = useSearchParams()
-  const close = useSceneClose('/cercle')
+  const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
   const { data } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle') })
 
-  if (isGuest()) return <Navigate to="/cercle" replace />
+  if (isGuest()) return <Navigate to="/maison?section=family" replace />
   if (!data) return <Loading />
 
   // Collapse member + linked contact into one person, and remap links/group keys onto
@@ -45,7 +45,7 @@ export function CercleFamilyPage() {
   const unified = unifyCircle(data.contacts, data.members, data.links, data.groups ?? [], data.pets ?? [])
   const group = groupId ? unified.groups.find((g) => g.id === groupId) ?? null : null
   // Editing but the group is gone (loaded + not found) → bounce back to the directory.
-  if (groupId && !group) return <Navigate to="/cercle" replace />
+  if (groupId && !group) return <Navigate to="/maison?section=family" replace />
 
   // Building a NEW family "from" one or more people (a person's detail peek passes
   // ?seed=<key>; the Maisonnée card passes the whole household, comma-joined):

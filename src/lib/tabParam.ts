@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 // from a sub-tab (e.g. add a recipe from La cuisine → Recettes) and coming back.
 // useSceneClose pops history (nav(-1)), which restores this exact URL — including
 // the tab — instead of the page remounting to its default tab. Deep links
-// (/kitchen?tab=recipes, /settings?tab=routines) and the browser back/forward
+// (/kitchen?tab=recipes, /settings?tab=maison) and the browser back/forward
 // button work for free.
 //
 // Writes use { replace: true } so flipping between tabs doesn't pile entries into

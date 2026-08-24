@@ -49,7 +49,7 @@ export function useOpenPersonSheet() {
     const id = res.queued ? null : res.data?.id ?? null
     if (!id) {
       // Offline: the create is queued with no id yet — land on the directory.
-      nav('/cercle')
+      nav('/maison?section=family')
       return
     }
     // Seed the cache so the edit page finds the fresh contact at once — otherwise

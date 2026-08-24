@@ -36,9 +36,9 @@ Before implementing ANY change, do this first — it's faster than the rework it
 1. **Read how the section already works.** Open the page/section you're touching and
    the components it renders. Match its existing structure, naming, and idioms rather
    than inventing a parallel one. The hub tabs are `src/pages/{Board,Kitchen,Liste,
-   Cercle,Routines,Operator}.tsx` (Operator = Réglages); settings bodies live in
-   `src/components/operator/*`; kitchen sub-tabs in `src/components/kitchen/*`. Grep
-   the feature name first.
+   Notes,Maison,Operator}.tsx` (Operator = Réglages); settings bodies live in
+   `src/components/operator/*`; kitchen sub-tabs in `src/components/kitchen/*`; the
+   Maison sections in `src/components/{maison,cercle}/*`. Grep the feature name first.
 2. **Look for the primitive that already exists.** Check **`COMPONENTS.md`** (the
    living inventory + uniformization backlog) and open **`/dev/kit`**
    (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Système ▸ Affichage) — it renders
@@ -65,7 +65,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | "Tap an item → detail peek" | **`useEntityDetail()`** + adapters | `components/detail/*`, `lib/detail.ts` |
 | Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
 | Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
-| In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Le cercle) |
+| In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Maison) |
 | A horizontal row of buttons / chips / controls | **`Cluster`** (wraps) / **`Rail`** (scrolls one line) — never a hand-rolled flex row | `components/Layout.tsx` (`.cluster`/`.rail` in `core.css`; see [Horizontal overflow](#horizontal-overflow)) |
 | A row that scrolls sideways with a hidden scrollbar | **`useHScroll()`** — maps the mouse wheel onto it, reports `overflowing`/`atStart`/`atEnd` | `lib/hscroll.ts` (`Rail`/`SubTabs` wire it already; see [Horizontal overflow](#horizontal-overflow)) |
 | A dialog / bottom sheet | **`Modal`** + `useModal` / `useSwipeToDismiss` | `components/Modal.tsx`, `lib/useModal.ts` |
@@ -73,7 +73,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
 | "Everything the app does" themed map / feature discovery | **`FeatureMap`** (the ONE taxonomy: `CONCEPT_THEMES`/`FEATURE_MAP_TILES` in `lib/guideContent`) | `components/FeatureMap.tsx` (reused by the Guide jump-grid, the Board `WelcomeCard`, DevKit — extend the taxonomy, don't fork a list) |
 | Person photo/initial, mic, icon, image | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`** | `components/*` (pass a family/group `colour` so a photo-less member's initials disc takes the group colour) |
-| Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; every "who am I today" **lens** — board « Aujourd'hui », Le cercle's focus lens + Notes face — wires it to the ONE device profile `useProfile`, so the pick is remembered app-wide. Only a **value** picker (a mot's recipient, a habit's owner) holds local state) |
+| Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; every "who am I today" **lens** — board « Aujourd'hui », Maison's focus lens + the Notes face — wires it to the ONE device profile `useProfile`, so the pick is remembered app-wide. Only a **value** picker (a mot's recipient, a habit's owner) holds local state) |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
 | A press-and-hold gesture | **`useLongPress`** | `lib/useLongPress.ts` (aborts on travel, kills the context menu, swallows the trailing click) |
@@ -304,11 +304,17 @@ photo / routine-voice-clip / recipe-step-photo features hide. DO-unset → `/api
   out through the `RealtimeHub` DO; it's fire-and-forget (`waitUntil`, errors
   swallowed) and never touches the response.
 - **Routing** (`src/router.tsx`): `/` is a smart entry (marketing for a brand-new
-  visitor; otherwise → `/board`). The five themed tabs (`/board`, `/kitchen`,
-  `/routines`, `/liste`, `/settings`) render inside `HubLayout`. `/pair`, `/login`,
-  `/signup` are standalone. `/share` is the PWA **share-target** landing (#13:
-  manifest `share_target` → pre-fills the capture spine). `/kid` is legacy →
-  redirects to `/routines`.
+  visitor; otherwise → `/board`). The six themed tabs (`/board`, `/kitchen`,
+  `/liste`, `/notes`, `/maison`, `/settings`) render inside `HubLayout`. `/pair`,
+  `/login`, `/signup` are standalone. `/share` is the PWA **share-target** landing
+  (#13: manifest `share_target` → pre-fills the capture spine). Three **legacy hub
+  routes** live on as query-preserving redirects (`LegacyHubRedirect`, which the
+  plain `<Navigate>` isn't — it drops search params): `/routines` → `/maison`,
+  `/cercle` → `/maison` (but `?section=notes` → `/notes`, keeping `?item`), and
+  `/kid` → `/maison`. Every `/cercle/<segment>` **scene** path is frozen and
+  unchanged (`/cercle/person|family|pet/*`, `/cercle/carnet/:id`, `/cercle/monde`,
+  `/cercle/import` — that last one is in already-texted family-share links), as are
+  the `/routine/*` builder scenes.
 - **Two orthogonal presentation axes**, both React contexts persisted to
   localStorage, both overridable by URL param — **neither is a permission boundary;
   auth still gates writes server-side**:
@@ -425,8 +431,8 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 | **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, chores, upcoming. A **widget space**: every card lives in a zone (`band` on top, `grid` = the masonry), with a width and an empty-card mode. Hold a card → edit mode (`?edit=1`); Réglages ▸ Disposition is its accessible mirror. |
 | **Kitchen**  | `/kitchen`  | La cuisine   | Garde-manger: 7-day supper plan, recipes, "running low," meal suggestions, deals/flyers.     |
 | **Liste**    | `/liste`    | La liste     | The single active shared list (see below).                                                   |
-| **Cercle**   | `/cercle`   | Le cercle    | Family & contacts directory: people, pets, groups, businesses, links/tree.                   |
-| **Routines** | `/routines` | Routines     | Kid picture-card routines, read aloud on-device (absorbed the old `/kid` view).              |
+| **Notes**    | `/notes`    | Les notes    | The durable family-notes board (`family_notes`), for one member or the whole Maisonnée — rich notes, voice memos, drawings. Teal, inherited from Le cercle, where it used to be a sub-tab. Comprendre-only in Réglages (no settings subs). Distinct from the board's fridge **mots**. |
+| **Maison**   | `/maison`   | Maison       | Routines **and** the rest of Le cercle, behind five pills (`?section=`): **routines** (default) · family · social · business · carnets. Kid picture-card routines read aloud on-device (absorbed the old `/kid` view) + the family & contacts directory: people, pets, groups, businesses, links/tree. Berry, inherited from Routines. |
 | **Réglages** | `/settings` | Réglages     | Operator hub, rebuilt as **Découvrir + six colour-themed tabs** (one per hub section, same order/colours as the nav). Each themed tab has a **« Comprendre / Régler »** lens toggle: Comprendre = that theme's slice of the in-app guide (`ComprendrePanel`), Régler = its settings sub-sections (`?tab=<SectionKey>&lens=&sub=`; old ids fold via `LEGACY_TAB`). The sage « Système » tab holds device/household-wide machinery (pairing, guests, display, veille, photos, IA, voix, calme, diagnostics). Operator-only; a kiosk sees all tabs but the member-admin/pairing/guest subs drop (per-sub gating). |
 
 ### Domain concepts (carry specific meaning here — see project memory)

@@ -201,7 +201,7 @@ export function RoutineForm({
   if (!editing && children.length === 0)
     return (
       <EmptyState>
-        {t.operator.needChild} <Link to="/settings?tab=cercle&sub=members">{t.board.welcomeCta}</Link>
+        {t.operator.needChild} <Link to="/settings?tab=maison&sub=members">{t.board.welcomeCta}</Link>
       </EmptyState>
     )
 

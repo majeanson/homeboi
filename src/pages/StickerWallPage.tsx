@@ -31,7 +31,7 @@ interface MemberRow {
 export function StickerWallPage() {
   const t = useT()
   const { calm } = useCalm()
-  const close = useSceneClose('/routines')
+  const close = useSceneClose('/maison')
   useEscapeKey(close)
   const write = useWrite()
   const removal = useDeferredRemoval(STICKERS_KEY)
@@ -41,8 +41,8 @@ export function StickerWallPage() {
   const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: MemberRow[] }>('members') })
 
   // Calm mode ON → the wall doesn't exist; bounce back to the tab.
-  if (calm) return <Navigate to="/routines" replace />
-  if (!stickersQ.data || !membersQ.data) return stickersQ.isLoading || membersQ.isLoading ? <Loading /> : <Navigate to="/routines" replace />
+  if (calm) return <Navigate to="/maison" replace />
+  if (!stickersQ.data || !membersQ.data) return stickersQ.isLoading || membersQ.isLoading ? <Loading /> : <Navigate to="/maison" replace />
 
   const members = membersQ.data.members
   const memberById = new Map(members.map((m) => [m.id, m]))

@@ -165,7 +165,7 @@ export function SharePage() {
               <button
                 type="button"
                 className="btn btn--ghost"
-                onClick={() => nav(`/cercle?add=business&import=${encodeURIComponent(mapsLink)}`, { replace: true })}
+                onClick={() => nav(`/maison?add=business&import=${encodeURIComponent(mapsLink)}`, { replace: true })}
               >
                 <Icon name="storefront-bold" size={18} /> {t.cercle.business.add}
               </button>

@@ -26,7 +26,7 @@ export function CerclePetPage() {
   const qc = useQueryClient()
   const { id } = useParams()
   const editing = !!id
-  const close = useSceneClose('/cercle')
+  const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
   const { data } = useQuery({
@@ -34,12 +34,12 @@ export function CerclePetPage() {
     queryFn: () => api<CercleData>('cercle'),
   })
 
-  if (isGuest()) return <Navigate to="/cercle" replace />
+  if (isGuest()) return <Navigate to="/maison?section=family" replace />
 
   const pet = editing ? data?.pets?.find((p) => p.id === id) ?? null : null
   // Editing but the pet is gone (loaded + not found → deleted elsewhere) →
   // bounce; still loading → wait.
-  if (editing && !pet) return data ? <Navigate to="/cercle" replace /> : <Loading />
+  if (editing && !pet) return data ? <Navigate to="/maison?section=family" replace /> : <Loading />
 
   return (
     <div className="scene" aria-label={editing ? t.cercle.pet.edit : t.cercle.pet.add}>

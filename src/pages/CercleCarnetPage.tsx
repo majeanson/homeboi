@@ -24,6 +24,7 @@ import { faint } from '../lib/colors'
 import { useCarnets, useCareLog, useHomePins, carnetEmoji, replacementDate, warrantyExpiries, PIN_EMOJI, type CareLog, type HomePin } from '../lib/carnets'
 import type { HomeProject } from '../components/operator/types'
 import { SceneHead } from '../components/SceneHead'
+import { ActionMenu } from '../components/ActionMenu'
 import { Loading } from '../components/Fallback'
 import { SubTabs } from '../components/SubTabs'
 import { Modal } from '../components/Modal'
@@ -45,7 +46,7 @@ export function CercleCarnetPage() {
   const { lang } = useLang()
   const { id } = useParams()
   const nav = useNavigate()
-  const close = useSceneClose('/cercle?section=carnets')
+  const close = useSceneClose('/maison?section=carnets')
   useEscapeKey(close)
   const write = useWrite()
   const confirm = useConfirm()
@@ -77,8 +78,8 @@ export function CercleCarnetPage() {
 
   if (!data) return <Loading />
   const carnet = id ? data.carnets.find((x) => x.id === id) ?? null : null
-  if (id && !carnet) return <Navigate to="/cercle?section=carnets" replace />
-  if (!carnet) return <Navigate to="/cercle?section=carnets" replace />
+  if (id && !carnet) return <Navigate to="/maison?section=carnets" replace />
+  if (!carnet) return <Navigate to="/maison?section=carnets" replace />
 
   // Ancestor chain (root → this carnet) so a child thing shows where it lives —
   // 🏠 Maison › 🔥 Chauffe-eau — with each ancestor tappable to climb back up.
@@ -135,12 +136,33 @@ export function CercleCarnetPage() {
   async function removeCarnet() {
     if (!(await confirm({ message: c.deleteConfirm(carnet!.name), confirmLabel: c.delete }))) return
     await write('carnets', { method: 'DELETE', body: { id: carnet!.id }, affectedKeys: [CARNETS_KEY, BOARD_KEY] })
-    nav('/cercle?section=carnets')
+    nav('/maison?section=carnets')
   }
 
   return (
     <div className="scene carnet-scene" aria-label={carnet.name}>
-      <SceneHead title={carnet.name} icon="book-open-bold" card="cercle" onClose={close} />
+      {/* The carnet's own Modifier/Supprimer used to hide inside the « Identité »
+          section label — on the SECOND sub-tab, invisible from « Surveiller », so the
+          only door to editing a carnet depended on which tab you'd landed on. They
+          live in the head ⋯ now: tab-independent, one door. */}
+      <SceneHead
+        title={carnet.name}
+        icon="book-open-bold"
+        card="cercle"
+        onClose={close}
+        action={
+          <ActionMenu
+            items={
+              ro
+                ? []
+                : [
+                    { icon: 'pencil-simple-bold', label: c.edit, onSelect: () => setEditing(true) },
+                    { icon: 'trash-bold', label: c.delete, tone: 'danger', separated: true, onSelect: () => void removeCarnet() },
+                  ]
+            }
+          />
+        }
+      />
       <div className="scene__body">
         {/* Breadcrumb — only when this carnet sits inside another (a thing in a house).
             Emoji + name per level; ancestors tap to climb up, the last is the page. */}
@@ -274,7 +296,6 @@ export function CercleCarnetPage() {
                 <span className="sec-label__ico" aria-hidden="true"><Icon name="book-open-bold" size={16} /></span>
                 <b>{c.identity}</b>
                 <span className="ln" />
-                {!ro && <RowActions onEdit={() => setEditing(true)} onDelete={() => void removeCarnet()} />}
               </div>
               <dl className="carnet-facts mono">
                 {carnet.installedAt && (<><dt>{c.installed}</dt><dd>{formatDay(carnet.installedAt, lang)}</dd></>)}

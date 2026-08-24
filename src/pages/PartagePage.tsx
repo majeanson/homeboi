@@ -234,7 +234,7 @@ function RoutineImportFoot({
             await importRoutineShare(payload, [memberId])
             await qc.invalidateQueries({ queryKey: ROUTINES_KEY })
             await qc.invalidateQueries({ queryKey: BOARD_KEY })
-            return '/routines'
+            return '/maison'
           })
         }
       >
