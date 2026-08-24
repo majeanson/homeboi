@@ -42,6 +42,32 @@ test('the first-visit card explains the section and deep-links into the Guide', 
   await expect(target).toContainText('cuisine')
 })
 
+// The nav restructure split the old « Le cercle » welcome card into two: Maison
+// (routines/famille/social/business/carnets) and Les notes (Comprendre-only —
+// its Guide card carries no `settings` field, but « En savoir plus » still lands
+// on its own themed tab, not a fallback).
+test('the Maison first-visit card explains the merged section', async ({ page }) => {
+  await boot(page, '/maison')
+  const intro = page.locator('.section-intro')
+  await expect(intro).toBeVisible()
+  await expect(intro).toContainText('maison')
+  await intro.locator('.section-intro__more').click()
+  await expect(page).toHaveURL(/\/settings\?tab=maison&lens=comprendre$/)
+  const target = page.locator('.guide__card.is-target')
+  await expect(target).toBeVisible()
+})
+
+test('the Les notes first-visit card explains the split-out section', async ({ page }) => {
+  await boot(page, '/notes')
+  const intro = page.locator('.section-intro')
+  await expect(intro).toBeVisible()
+  await expect(intro).toContainText('notes')
+  await intro.locator('.section-intro__more').click()
+  await expect(page).toHaveURL(/\/settings\?tab=notes&lens=comprendre$/)
+  const target = page.locator('.guide__card.is-target')
+  await expect(target).toBeVisible()
+})
+
 test('dismissing the card hides it for good', async ({ page }) => {
   await boot(page, '/kitchen')
   const intro = page.locator('.section-intro')

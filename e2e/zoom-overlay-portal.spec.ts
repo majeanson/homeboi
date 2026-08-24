@@ -19,7 +19,7 @@ test('cercle drawing zoom overlay portals to body and closes', async ({ page }) 
   })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
 
-  await page.goto('/cercle?section=notes')
+  await page.goto('/notes')
   await expect(page.locator('.cercle-notes .cnote__thumb').first()).toBeVisible({ timeout: 15_000 })
 
   // Open the zoom viewer by tapping the drawing thumbnail.

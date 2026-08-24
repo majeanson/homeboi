@@ -157,11 +157,12 @@ test('signed-in: a shared routine renders its deck, then imports for a picked ch
   await expect(page.locator('.shared-routine__title')).toHaveText('Routine du dodo')
   await expect(page.getByText('Brosse les dents')).toBeVisible()
 
-  // Pick a child, then import → POST /api/routines with that member.
+  // Pick a child, then import → POST /api/routines with that member, landing on
+  // Maison (Routines is its default section now).
   await page.locator('.partage__foot select').selectOption('m3')
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/routines', { timeout: 20_000 }),
-    page.waitForURL(/\/routines/),
+    page.waitForURL(/\/maison/),
     page.getByRole('button', { name: 'Ajouter à mes routines' }).click(),
   ])
   expect(req.postDataJSON()).toMatchObject({ name: 'Routine du dodo', memberIds: ['m3'] })

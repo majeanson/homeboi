@@ -156,7 +156,7 @@ test('scene-add-chore', async ({ page }) => {
 })
 
 test('scene-add-routine', async ({ page }) => {
-  // The board ＋ no longer carries a routine tile (routines have their own hub
+  // The board ＋ no longer carries a routine tile (routines have their own Maison
   // section), so capture the add-routine scene by its route directly.
   await boot(page, '/routine/new')
   await page.locator('.scene .operator__routine-form').waitFor({ state: 'visible' })
@@ -165,9 +165,11 @@ test('scene-add-routine', async ({ page }) => {
 })
 
 // ── Settings interactive sub-states ────────────────────────────────────────
-// Section nav order: household(0) agenda(1) chores(2) routines(3) … — the
-// existing settings-sections.spec captures each section's DEFAULT; these are the
-// states that only appear after a click inside a section.
+// Themed-tab nav order: decouvrir(0) board(1) kitchen(2) liste(3) notes(4)
+// maison(5) settings(6) — Maison's own sub order is routines(0) chores(1)
+// todos(2) members(3) cercle(4) cars(5) schedule(6) annee(7). The existing
+// settings-sections.spec captures each section's DEFAULT; these are the states
+// that only appear after a click inside a section.
 
 // RecurPicker, weekly: the weekday chip row only renders once "weekly" is picked.
 // The EventForm is now EDIT-only in Réglages; adding navigates to the /event/new
@@ -184,12 +186,14 @@ test('settings-recur-weekly', async ({ page }) => {
 })
 
 // CardDeckEditor emoji palette — add a card, then open its emoji palette. The
-// RoutineForm is now reached from the routines tab's "Créer une routine" button,
+// RoutineForm is now reached from Maison's routines section's "Créer une routine" button,
 // which navigates to the /routine/new scene (Réglages no longer carries a blank
 // add form).
 test('settings-deck-palette', async ({ page }) => {
-  // Routines are their own sub-section under « Corvées & routines » — deep-link to it.
-  await boot(page, '/settings?tab=chores&sub=routines')
+  // Routines is its own sub-section under Maison (and its default) — deep-link to it.
+  // (?tab=chores is a legacy id that folds to Maison too, but names its OWN default
+  // sub, Corvées — ?tab=maison&sub=routines is the direct, unambiguous path.)
+  await boot(page, '/settings?tab=maison&sub=routines')
   await page.getByRole('button', { name: 'Créer une routine' }).click() // → /routine/new scene
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card

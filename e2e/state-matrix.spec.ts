@@ -65,8 +65,8 @@ const MATRIX: Entry[] = [
   { name: 'board', route: '/board' },
   { name: 'kitchen', route: '/kitchen' },
   { name: 'liste', route: '/liste' },
-  { name: 'cercle', route: '/cercle' },
-  { name: 'routines', route: '/routines' },
+  { name: 'notes', route: '/notes' },
+  { name: 'maison', route: '/maison' },
   { name: 'settings', route: '/settings' },
   // — signature opened states —
   { name: 'board-addsheet', route: '/board', setup: openAddSheet, scope: '.sheet.show' },
@@ -79,7 +79,7 @@ const MATRIX: Entry[] = [
     },
     scope: '.ideas-drawer .scene__body',
   },
-  { name: 'note-editor', route: '/cercle?section=notes', setup: openNoteEditor, scope: '.note-editor' },
+  { name: 'note-editor', route: '/notes', setup: openNoteEditor, scope: '.note-editor' },
   // — lenses —
   { name: 'board-toddler', route: '/board', audience: 'toddler' },
   { name: 'board-kiosk', route: '/board', surface: 'kiosk', viewport: WALL },
@@ -95,14 +95,14 @@ const MATRIX: Entry[] = [
   { name: 'board-fresh', route: '/board', fresh: true, themes: ['day'] },
   { name: 'first-kitchen', route: '/kitchen', fresh: true, themes: ['day'] },
   { name: 'first-liste', route: '/liste', fresh: true, themes: ['day'] },
-  { name: 'first-cercle', route: '/cercle', fresh: true, themes: ['day'] },
-  { name: 'first-routines', route: '/routines', fresh: true, themes: ['day'] },
+  { name: 'first-notes', route: '/notes', fresh: true, themes: ['day'] },
+  { name: 'first-maison', route: '/maison', fresh: true, themes: ['day'] },
   { name: 'first-settings', route: '/settings', fresh: true, themes: ['day'] },
   // — THE DEMO: what a curious visitor actually gets. The sandbox is an ordinary
   //   operator session marked by its email, so the board wears the claim banner.
   { name: 'demo-board', route: '/board', sandbox: true, themes: ['day'] },
   // — keyboard-open states (the stub from kb.ts; setup must leave a field focused) —
-  { name: 'note-editor-kb', route: '/cercle?section=notes', setup: openNoteEditor, scope: '.note-editor', keyboard: KB, themes: ['day'] },
+  { name: 'note-editor-kb', route: '/notes', setup: openNoteEditor, scope: '.note-editor', keyboard: KB, themes: ['day'] },
   {
     name: 'board-addsheet-kb',
     route: '/board',

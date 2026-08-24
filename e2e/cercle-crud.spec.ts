@@ -1,9 +1,11 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
-// Behavioural coverage for the « Le cercle » create flows. The ＋ FAB chooser
-// deep-links to /cercle?add=<mode> — the page reads the param and opens the matching
-// modal (group / business / carnet), page-level so it works from any cercle subtab.
+// Behavioural coverage for the « Le cercle » create flows, now hosted on Maison
+// (the nav restructure merged Le cercle + Routines into one /maison tab). The ＋
+// FAB chooser deep-links to /maison?add=<mode> — the page reads the param and opens
+// the matching modal (group / business / carnet), page-level so it works from any
+// Maison subtab.
 // Each test fills the form and asserts the CORRECT write fires (method + path), the
 // same discipline interactions.spec.ts uses (every mock write returns { ok:true }, so
 // we assert the request, not a refetched outcome). Closes the §424 gap: group /
@@ -24,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('creating a named group posts to cercle-groups', async ({ page }) => {
-  await page.goto('/cercle?add=group')
+  await page.goto('/maison?add=group')
   const dialog = page.locator('.kit-modal')
   await expect(dialog).toBeVisible()
   await dialog.getByPlaceholder('Nom du groupe').fill('Voisins')
@@ -35,7 +37,7 @@ test('creating a named group posts to cercle-groups', async ({ page }) => {
 })
 
 test('creating a business posts to businesses', async ({ page }) => {
-  await page.goto('/cercle?add=business')
+  await page.goto('/maison?add=business')
   const dialog = page.locator('.kit-modal')
   await expect(dialog).toBeVisible()
   await dialog.getByLabel('Nom', { exact: true }).fill('Garage Roy')
@@ -45,7 +47,7 @@ test('creating a business posts to businesses', async ({ page }) => {
 })
 
 test('creating a carnet posts to carnets', async ({ page }) => {
-  await page.goto('/cercle?add=carnet')
+  await page.goto('/maison?add=carnet')
   const dialog = page.locator('.kit-modal')
   await expect(dialog).toBeVisible()
   // defaultKind="home" → just a name is required to submit.

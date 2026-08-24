@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -48,16 +48,19 @@ export function CercleNotes({
   // onFocused lets the parent clear its one-shot focus.
   focusId,
   onFocused,
-  // Open the rich editor composing a NEW note once on mount — the future ＋-FAB
-  // door (/notes?add=1) lands here.
-  composeOnMount,
+  // The ＋-FAB door (/notes?add=1): open the rich editor composing a NEW note.
+  // A NONCE, not a boolean — every bump opens it once. A boolean read on mount
+  // only would work the first time and then go dead, because tapping ＋ while
+  // already ON /notes is a same-route navigation: the search param changes, the
+  // page never remounts. See the Notes page for the other half.
+  composeNonce = 0,
 }: {
   members: Member[]
   // Optional shared help mode (the Cercle page's) so the section header is explainable.
   help?: HelpMode
   focusId?: string | null
   onFocused?: () => void
-  composeOnMount?: boolean
+  composeNonce?: number
 }) {
   const t = useT()
   const write = useWrite()
@@ -167,16 +170,14 @@ export function CercleNotes({
     setEditorOpen(true)
   }
 
-  // composeOnMount: open the composer for a new note once, on mount only — the
-  // future ＋-FAB door (/notes?add=1) lands here. Guarded with a ref so a later
-  // prop flip (e.g. a re-render with composeOnMount still true) never re-opens it.
-  const composedRef = useRef(false)
+  // The ＋ door: each new nonce opens the composer exactly once. Keyed on the
+  // nonce (not mount), so tapping ＋ again — a same-route navigation that never
+  // remounts this component — opens it again. 0 is the "never asked" seed.
   useEffect(() => {
-    if (!composeOnMount || composedRef.current) return
-    composedRef.current = true
+    if (!composeNonce) return
     openNew()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [composeNonce])
 
   const fn = t.cercle.familyNotes
 

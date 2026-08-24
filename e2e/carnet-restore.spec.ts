@@ -50,13 +50,13 @@ test.beforeEach(async ({ page }) => {
 
 test('the Carnets tab lists top-level carnets', async ({ page }) => {
   await stubCarnets(page)
-  await page.goto('/cercle?section=carnets')
+  await page.goto('/maison?section=carnets')
   await expect(page.locator('.cercle-row__name', { hasText: 'Notre maison' })).toBeVisible()
 })
 
 test('restoring an archived carnet PATCHes restore:true', async ({ page }) => {
   await stubCarnets(page)
-  await page.goto('/cercle?section=carnets')
+  await page.goto('/maison?section=carnets')
   // The reversible-archive list is collapsed by default (calm) — expand it first.
   await page.getByRole('button', { name: /Carnets archivés/ }).click()
   await expect(page.locator('.cercle-row__name', { hasText: 'Ancienne Civic' })).toBeVisible()

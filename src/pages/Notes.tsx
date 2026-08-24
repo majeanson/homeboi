@@ -54,13 +54,11 @@ function NotesParent() {
   // '/notes?add=1' — open the rich editor composing a new note once).
   const [params, setParams] = useSearchParams()
   const [focusItem, setFocusItem] = useState<string | null>(null)
-  // composeNew is read SYNCHRONOUSLY at first render (a lazy initializer), not via
-  // an effect + setState: CercleNotes only opens its composer on its OWN mount-only
-  // effect (empty deps — see composedRef there), so `composeOnMount` must already
-  // be correct on CercleNotes' very first render. Setting it a render later (once
-  // an effect here noticed `?add=1`) would land one tick too late and the composer
-  // would never open. It never needs to change again, so no setter.
-  const [composeNew] = useState(() => params.get('add') === '1')
+  // A COUNTER, not a boolean: tapping ＋ while already on /notes navigates to the
+  // same route, so this page never remounts and a once-on-mount flag would fire
+  // the first time only, then silently go dead. Every `?add=1` bumps the nonce,
+  // and CercleNotes opens its composer on each new value.
+  const [composeNonce, setComposeNonce] = useState(0)
   // Both doors are one-shot: stripped from the URL so a reload/back doesn't replay
   // them — the same pattern the old Cercle page used for its own ?item door.
   useEffect(() => {
@@ -68,6 +66,7 @@ function NotesParent() {
     const add = params.get('add') === '1'
     if (!item && !add) return
     if (item) setFocusItem(item)
+    if (add) setComposeNonce((n) => n + 1)
     const next = new URLSearchParams(params)
     next.delete('item')
     next.delete('add')
@@ -109,7 +108,7 @@ function NotesParent() {
         help={help}
         focusId={focusItem}
         onFocused={() => setFocusItem(null)}
-        composeOnMount={composeNew}
+        composeNonce={composeNonce}
       />
     </main>
   )

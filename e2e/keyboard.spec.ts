@@ -181,7 +181,7 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
   const d = { w: 390, h: 844, kb: 336 }
   const open = boot(d)
   const VISIBLE = d.h - d.kb
-  await open(page, '/cercle?section=notes')
+  await open(page, '/notes')
   await page.getByRole('button', { name: 'Nouvelle note' }).click()
   const body = page.locator('.note-editor__body')
   await body.click()
@@ -226,7 +226,7 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
 test('kb: extending a selection with the keyboard open is never yanked back up', async ({ page }) => {
   const d = { w: 390, h: 844, kb: 336 }
   const open = boot(d)
-  await open(page, '/cercle?section=notes')
+  await open(page, '/notes')
   await page.getByRole('button', { name: 'Nouvelle note' }).click()
   const body = page.locator('.note-editor__body')
   await body.click()
@@ -265,7 +265,7 @@ test('kb: the iOS viewport push does not disarm the keyboard machinery', async (
   const d = { w: 390, h: 844, kb: 336 }
   const PAN = 260
   const open = boot(d)
-  await open(page, '/cercle?section=notes')
+  await open(page, '/notes')
   await page.getByRole('button', { name: 'Nouvelle note' }).click()
   const body = page.locator('.note-editor__body')
   await body.click()

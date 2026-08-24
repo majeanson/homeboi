@@ -12,7 +12,10 @@ import { mockApi, seedState } from './mocks'
 const TABS = [
   { href: '/board', marker: '.board-wall' },
   { href: '/kitchen', marker: '.kitchen' },
-  { href: '/routines', marker: '.routines-grid' },
+  // /maison (Routines is its default section — /cercle was deliberately absent
+  // from this list before the nav restructure; the merged tab now covers both).
+  { href: '/maison', marker: '.routines-grid' },
+  { href: '/notes', marker: '.cercle-notes' },
   { href: '/liste', marker: '.hub__body' },
   { href: '/settings', marker: '.operator' },
 ] as const

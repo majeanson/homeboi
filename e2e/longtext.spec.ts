@@ -51,43 +51,63 @@ async function noHOverflow(page: Page): Promise<string> {
   })
 }
 
-// All SIX hub tabs (« Le cercle » included — its long member/group names + graph
-// labels are a prime overflow risk and it's absent from every other long-text run).
-const SURFACES = ['/board', '/kitchen', '/routines', '/cercle', '/liste', '/settings']
+// All SIX hub tabs. « Le cercle » used to be one of them; the nav restructure
+// merged it into Maison (Routines · Famille · Social · Business · Carnets) and
+// split its notes board out into its own « Les notes » tab — both covered here.
+// Famille (?section=family) is the one with the long member/group names + graph
+// labels that are a prime overflow risk (the exemption below moves with it — bare
+// /maison lands on Routines by default, which never carried that risk).
+const SURFACES = [
+  { name: 'board', path: '/board' },
+  { name: 'kitchen', path: '/kitchen' },
+  { name: 'maison', path: '/maison' },
+  { name: 'maison-family', path: '/maison?section=family' },
+  { name: 'notes', path: '/notes' },
+  { name: 'liste', path: '/liste' },
+  { name: 'settings', path: '/settings' },
+]
+// The surface exempt from the no-horizontal-overflow rule (pan/zoom trees +
+// graphics legitimately scroll sideways there — a product decision, inherited
+// from the old « Le cercle » tab's Famille/Social section). Screenshot +
+// crash-smoke still run for it; every other surface stays guarded.
+const OVERFLOW_EXEMPT = '/maison?section=family'
 // The audience-aware tabs also render a TODDLER lens off the same (now long) data —
 // big tiles + faces wrap differently and must not overflow either. Settings is
 // parent-only.
-const TODDLER_SURFACES = ['/board', '/kitchen', '/routines', '/cercle', '/liste']
+const TODDLER_SURFACES = [
+  { name: 'board', path: '/board' },
+  { name: 'kitchen', path: '/kitchen' },
+  { name: 'maison', path: '/maison' },
+  { name: 'maison-family', path: '/maison?section=family' },
+  { name: 'notes', path: '/notes' },
+  { name: 'liste', path: '/liste' },
+]
 
 for (const f of FORMATS) {
-  for (const path of SURFACES) {
-    test(`lt ${f.name}: ${path.slice(1)}`, async ({ page }) => {
+  for (const { name, path } of SURFACES) {
+    test(`lt ${f.name}: ${name}`, async ({ page }) => {
       await page.setViewportSize({ width: f.w, height: f.h })
       await mockApi(page, { longText: true })
       await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: f.surface })
       await page.goto(path)
       await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
       await page.waitForTimeout(700)
-      await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${path.slice(1)}.png`, fullPage: false })
-      // « Le cercle » is exempt from the no-horizontal-overflow rule (pan/zoom trees +
-      // graphics legitimately scroll sideways — a product decision); keep its screenshot
-      // + crash-smoke but skip the overflow assertion. Every other surface stays guarded.
-      if (path !== '/cercle')
+      await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${name}.png`, fullPage: false })
+      if (path !== OVERFLOW_EXEMPT)
         await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
     })
   }
 
-  for (const path of TODDLER_SURFACES) {
-    test(`lt ${f.name}: ${path.slice(1)} (toddler)`, async ({ page }) => {
+  for (const { name, path } of TODDLER_SURFACES) {
+    test(`lt ${f.name}: ${name} (toddler)`, async ({ page }) => {
       await page.setViewportSize({ width: f.w, height: f.h })
       await mockApi(page, { longText: true })
       await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: f.surface })
       await page.goto(path)
       await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
       await page.waitForTimeout(700)
-      await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${path.slice(1)}-toddler.png`, fullPage: false })
-      // « Le cercle » exempt (see above): screenshot + crash-smoke only, no overflow guard.
-      if (path !== '/cercle')
+      await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${name}-toddler.png`, fullPage: false })
+      if (path !== OVERFLOW_EXEMPT)
         await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
     })
   }

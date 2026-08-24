@@ -27,18 +27,18 @@ const expectTab = (page: Page, id: string) =>
 const TAB_CASES: [string, string][] = [
   // the 9 old task-oriented tabs
   ['guide', 'decouvrir'],
-  ['household', 'cercle'],
+  ['household', 'maison'],
   ['devices', 'settings'],
   ['agenda', 'board'],
-  ['chores', 'routines'],
+  ['chores', 'maison'],
   ['recipes', 'kitchen'],
   ['shopping', 'liste'],
   ['display', 'settings'],
   ['ai', 'settings'],
-  // the 12 previously-retired ids (cercle + routines graduated to real tabs)
+  // the 12 previously-retired ids
   ['guest', 'settings'],
-  ['auto', 'cercle'],
-  ['todos', 'routines'],
+  ['auto', 'maison'],
+  ['todos', 'maison'],
   ['meals', 'kitchen'],
   ['reserve', 'kitchen'],
   ['ghost', 'liste'],
@@ -46,8 +46,10 @@ const TAB_CASES: [string, string][] = [
   ['photos', 'settings'],
   ['week', 'board'],
   ['ai-log', 'settings'],
-  ['cercle', 'cercle'],
-  ['routines', 'routines'],
+  // 'cercle' and 'routines' briefly graduated to real themed tabs, then were
+  // DEMOTED back to aliases by the nav restructure (merged into ONE Maison tab).
+  ['cercle', 'maison'],
+  ['routines', 'maison'],
 ]
 
 for (const [old, target] of TAB_CASES) {
@@ -58,9 +60,9 @@ for (const [old, target] of TAB_CASES) {
 }
 
 // The three old tabs whose subs SPLIT across themes: the raw ?sub picks the host.
-test('?tab=agenda&sub=cars lands on Le cercle with the vehicles sub', async ({ page }) => {
+test('?tab=agenda&sub=cars lands on Maison with the vehicles sub', async ({ page }) => {
   await boot(page, '/settings?tab=agenda&sub=cars')
-  await expectTab(page, 'cercle')
+  await expectTab(page, 'maison')
   await expect(page.locator('.subtabs').getByRole('tab', { name: 'Tes véhicules' })).toHaveAttribute('aria-selected', 'true')
 })
 

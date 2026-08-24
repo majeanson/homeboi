@@ -1,12 +1,14 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
 
-// Visual sweep for « Le cercle » — NOT covered by screenshots.spec.ts (which has no
-// /cercle stub). Shoots the populated people graph so the new family COLOURS + the
-// generational grouping are actually visible: the Liste directory, the Liens (ego)
-// graph, and the Arbre (tree). Famille (Maisonnée + Famille Tremblay) and Social
-// (Amis / Collègues / Autres), day + night, phone + wall. Writes PNGs to
-// e2e/screenshots/cercle-*.png for human/agent review.
+// Visual sweep for « Le cercle » — now Maison's Famille/Social sections (the nav
+// restructure merged the old standalone Le cercle tab into /maison) — NOT covered
+// by screenshots.spec.ts (which only visits /maison and /notes bare). Shoots the
+// populated people graph so the new family COLOURS + the generational grouping are
+// actually visible: the Liste directory, the Liens (ego) graph, and the Arbre
+// (tree). Famille (Maisonnée + Famille Tremblay) and Social (Amis / Collègues /
+// Autres), day + night, phone + wall. Writes PNGs to e2e/screenshots/cercle-*.png
+// for human/agent review.
 
 const THEMES: Theme[] = ['day', 'night']
 const FORMATS = [
@@ -33,11 +35,12 @@ async function settle(page: Page, ready: string) {
   await page.waitForTimeout(500)
 }
 
-// NOTE: « Le cercle » is deliberately EXEMPT from the app-wide no-horizontal-overflow
-// rule — its pan/zoom trees + graphics (Liens/Arbre/Web) and wide member/group rows are
-// allowed to scroll sideways here (a product decision). So these specs only capture
-// screenshots for review; the overflow guard stays enforced on every OTHER surface
-// (screenshots.spec.ts OVERFLOW_CASES, longtext.spec.ts).
+// NOTE: Maison's Famille/Social sections (ex-« Le cercle ») are deliberately EXEMPT
+// from the app-wide no-horizontal-overflow rule — its pan/zoom trees + graphics
+// (Liens/Arbre/Web) and wide member/group rows are allowed to scroll sideways here
+// (a product decision). So these specs only capture screenshots for review; the
+// overflow guard stays enforced on every OTHER surface (screenshots.spec.ts
+// OVERFLOW_CASES, longtext.spec.ts).
 
 for (const state of STATES) {
   for (const theme of THEMES) {
@@ -47,7 +50,7 @@ for (const state of STATES) {
         await page.setViewportSize({ width: format.width, height: format.height })
         await mockApi(page)
         await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface: format.surface })
-        await page.goto(`/cercle?${state.q}`)
+        await page.goto(`/maison?${state.q}`)
         await settle(page, state.ready)
         await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
       })
@@ -63,7 +66,7 @@ test('joindre rail — present on mobile with tel: hrefs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto('/cercle')
+  await page.goto('/maison?section=family')
   await settle(page, '.joindre')
   const items = page.locator('.joindre a.joindre__item')
   await expect(items.first()).toBeVisible()
@@ -77,7 +80,7 @@ test('joindre rail — absent on the kiosk wall', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
-  await page.goto('/cercle')
+  await page.goto('/maison?section=family')
   await settle(page, '.cercle-group')
   await expect(page.locator('.joindre')).toHaveCount(0)
 })
@@ -85,15 +88,16 @@ test('joindre rail — absent on the kiosk wall', async ({ page }) => {
 // Regression guard: the rail is a Rail (its own inner strip scrolls sideways on
 // overflow, per CLAUDE.md Horizontal overflow) but its OUTER wrapper must still sit
 // fully inside the viewport at the tightest phone widths — it must never be the
-// thing that forces the whole page to pan. Checked at both 360 and 390 (Le cercle
-// itself stays exempt from the app-wide guard for its pan/zoom trees; the rail is
-// not one of those, so it gets its own hard assertion here).
+// thing that forces the whole page to pan. Checked at both 360 and 390 (Maison's
+// Famille/Social sections themselves stay exempt from the app-wide guard for their
+// pan/zoom trees; the rail is not one of those, so it gets its own hard assertion
+// here).
 for (const width of [360, 390]) {
   test(`joindre rail never bleeds off the right edge @phone-${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-    await page.goto('/cercle')
+    await page.goto('/maison?section=family')
     await settle(page, '.joindre')
     await expect(page.locator('.joindre')).toBeVisible()
     const bleed = await page.evaluate(() => {
@@ -118,7 +122,7 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 900 })
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: width < 700 ? 'mobile' : 'kiosk' })
-    await page.goto('/cercle?section=social&view=links')
+    await page.goto('/maison?section=social&view=links')
     await settle(page, '.cercle-web .cercle-tree__svg')
 
     const worst = await page.evaluate(() => {
@@ -145,7 +149,7 @@ test('social links — each circle is its own named island, not one blob', async
   await page.setViewportSize({ width: 1280, height: 800 })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
-  await page.goto('/cercle?section=social&view=links')
+  await page.goto('/maison?section=social&view=links')
   await settle(page, '.cercle-web .cercle-tree__svg')
 
   // Famille Gagnon + Famille Roy (auto-detected) + Le hockey + Collègues + Autres.
@@ -163,7 +167,7 @@ test('social tree — families are framed, and friendships connect them', async 
   await page.setViewportSize({ width: 1280, height: 800 })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'kiosk' })
-  await page.goto('/cercle?section=social&view=tree')
+  await page.goto('/maison?section=social&view=tree')
   await settle(page, '.tree-frame__box')
 
   // Sophie's family and Thomas's family each get their own named frame…
@@ -194,7 +198,9 @@ for (const theme of THEMES) {
     await page.setViewportSize({ width: 390, height: 844 })
     await mockApi(page)
     await seedState(page, { theme, audience: 'toddler', lang: 'fr', calm: true, surface: 'mobile' })
-    await page.goto('/cercle')
+    // A bare toddler /maison renders KidView (Routines' picture-story run, the
+    // default section) — ?section=family is what shows the circle faces grid.
+    await page.goto('/maison?section=family')
     await settle(page, '.cercle-kid__grid')
     await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
   })

@@ -7,11 +7,15 @@ import { mockApi, seedState } from './mocks'
 
 const PHONE = { width: 390, height: 844 }
 const SECTIONS = [
-  // The themed tabs (one per hub section, canonical order) + Découvrir.
-  'decouvrir', 'board', 'kitchen', 'liste', 'cercle', 'routines', 'settings',
+  // The themed tabs (one per hub section, canonical order) + Découvrir. « Le
+  // cercle » and Routines merged into ONE Maison tab (the nav restructure); « Les
+  // notes » split out into its own Comprendre-only tab.
+  'decouvrir', 'board', 'kitchen', 'liste', 'notes', 'maison', 'settings',
   // Legacy ids, kept as alias regressions: each must still render a panel
   // (LEGACY_TAB folds them onto the themed tabs — see settings-aliases.spec).
-  'household', 'agenda', 'chores', 'shopping',
+  // 'cercle' and 'routines' themselves are now retired tab ids too, folding onto
+  // 'maison'.
+  'household', 'agenda', 'chores', 'shopping', 'cercle', 'routines',
   'recipes', 'ghost', 'devices', 'photos', 'week', 'display', 'calm', 'ai',
 ]
 

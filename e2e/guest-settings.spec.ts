@@ -17,7 +17,10 @@ const PHONE = { width: 390, height: 844 }
 // FR labels (t.operator.*): the themed tabs, then the sub pills.
 const DISCOVER_TAB = 'Découvrir'
 const BOARD_TAB = 'Le babillard'
-const CERCLE_TAB = 'Le cercle'
+// « Le cercle » and « Routines » merged into ONE « Maison » themed tab (the nav
+// restructure) — GUEST_SUBS has no 'maison' entry, so a guest still sees no
+// Régler pills there at all, same as the old cercle tab.
+const MAISON_TAB = 'Maison'
 const SYSTEM_TAB = 'Système'
 
 const LAYOUT_SUB = 'Disposition du babillard'
@@ -113,9 +116,10 @@ test('a guest can flip this device to English and to the toddler lens', async ({
 })
 
 test('a tab with no device-local sub drops the lens toggle and stands on the guide', async ({ page }) => {
-  // Le cercle configures only household things (members, groups, cars, hours), so a guest
-  // gets no Régler side at all — show Comprendre alone rather than an empty pill row.
-  await bootGuestSettings(page, 'cercle')
+  // Maison configures only household things (routines, chores, members, groups, cars,
+  // hours), so a guest gets no Régler side at all — show Comprendre alone rather than
+  // an empty pill row.
+  await bootGuestSettings(page, 'maison')
 
   await expect(page.locator('.operator__lens')).toHaveCount(0)
   await expect(page.locator('.guide__card').first()).toBeVisible()
@@ -138,6 +142,6 @@ test('the operator still sees every sub (the guest narrowing is not a global reg
   const mainTabs = page.locator('.operator__tabs')
   await expect(mainTabs.getByRole('tab', { name: DISCOVER_TAB, exact: true })).toBeVisible()
   await expect(mainTabs.getByRole('tab', { name: BOARD_TAB, exact: true })).toBeVisible()
-  await expect(mainTabs.getByRole('tab', { name: CERCLE_TAB, exact: true })).toBeVisible()
+  await expect(mainTabs.getByRole('tab', { name: MAISON_TAB, exact: true })).toBeVisible()
   await expect(mainTabs.getByRole('tab', { name: SYSTEM_TAB, exact: true })).toBeVisible()
 })

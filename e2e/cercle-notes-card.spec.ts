@@ -5,8 +5,9 @@ import { BASE, mockApi, seedState } from './mocks'
 // face (compact-rows pass): a reading surface — no drag grip, no tint dot, no scope
 // chip, no pencil/trash — where the row's whole width goes to the text and "who"
 // is the title's author tint. Acting on a note (edit/delete/reorder/compose) lives
-// in Le cercle ▸ Notes behind the footer link. Reading still works in place: this
-// guards both that the furniture is really gone AND that expand-to-read survives.
+// in « Les notes » (its own hub tab since the nav restructure split it out of Le
+// cercle) behind the footer link. Reading still works in place: this guards both
+// that the furniture is really gone AND that expand-to-read survives.
 // (Replaces note-editor-board.spec.ts — the board no longer opens the NoteEditor.)
 
 const NOTE = {
@@ -49,6 +50,7 @@ test('the board notes card is a compact reading surface — no row actions, expa
   await expect(row).toHaveClass(/cnote--expanded/)
   await expect(row.locator('.cnote__full')).toContainText('short en twill')
 
-  // The door to the acting surface is the footer link into Le cercle ▸ Notes.
+  // The door to the acting surface is the footer link into « Les notes ».
   await expect(page.locator('.cnotes-card__more')).toBeVisible()
+  await expect(page.locator('.cnotes-card__more')).toHaveAttribute('href', '/notes')
 })

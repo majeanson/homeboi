@@ -22,8 +22,10 @@ const SURFACES: Surface[] = [
   // post-reader/grandma glance, SimpleBoard.tsx) — before the view-model refactor.
   { name: 'board', path: '/board', audiences: ['parent', 'toddler', 'simple'], ready: '.hub' },
   { name: 'kitchen', path: '/kitchen', audiences: ['parent', 'toddler'], ready: '.hub' },
-  { name: 'routines', path: '/routines', audiences: ['parent', 'toddler'], ready: '.hub' },
-  { name: 'cercle', path: '/cercle', audiences: ['parent', 'toddler'], ready: '.hub' },
+  // « Le cercle » and Routines merged into Maison (Routines is its default
+  // section); « Le cercle »'s notes board split out into its own « Les notes » tab.
+  { name: 'maison', path: '/maison', audiences: ['parent', 'toddler'], ready: '.hub' },
+  { name: 'notes', path: '/notes', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'liste', path: '/liste', audiences: ['parent', 'toddler'], ready: '.hub' },
   { name: 'settings', path: '/settings', audiences: ['parent'], ready: '.hub' },
   { name: 'login', path: '/login', audiences: ['parent'], ready: 'form, .page' },
@@ -244,7 +246,8 @@ test('board renders household data', async ({ page }) => {
 test('toddler routines reaches the picture-card story', async ({ page }) => {
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr' })
-  await page.goto('/routines')
+  // Routines is Maison's default section — a bare /maison lands on it.
+  await page.goto('/maison')
   await expect(page.locator('.hub')).toBeVisible()
 })
 
@@ -252,7 +255,7 @@ test('toddler routines reaches the picture-card story', async ({ page }) => {
 // blanks a surface — the screenshot tests still "pass" because they only shoot a
 // frame. So assert every PARENT surface actually paints content and throws no
 // pageerror. This is what would have caught the blank-Kitchen regression.
-for (const path of ['/board', '/kitchen', '/routines', '/cercle', '/liste', '/settings']) {
+for (const path of ['/board', '/kitchen', '/maison', '/notes', '/liste', '/settings']) {
   test(`no blank surface (no render crash): ${path}`, async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (e) => errors.push(e.message))
@@ -277,9 +280,14 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   { path: '/board', audience: 'toddler', ready: '.hub' },
   { path: '/kitchen', audience: 'parent', ready: '.hub' },
   { path: '/kitchen', audience: 'toddler', ready: '.hub' },
-  { path: '/routines', audience: 'parent', ready: '.hub' },
-  // « Le cercle » is intentionally exempt from the no-horizontal-overflow guard (its
-  // pan/zoom trees + graphics legitimately scroll sideways — a product decision). Its
+  // Routines is Maison's default section — a bare /maison covers the old /routines case.
+  { path: '/maison', audience: 'parent', ready: '.hub' },
+  { path: '/maison', audience: 'toddler', ready: '.hub' },
+  { path: '/notes', audience: 'parent', ready: '.hub' },
+  { path: '/notes', audience: 'toddler', ready: '.hub' },
+  // « Famille » (?section=family, ex-« Le cercle ») is intentionally exempt from the
+  // no-horizontal-overflow guard (its pan/zoom trees + graphics legitimately scroll
+  // sideways — a product decision, inherited from the old cercle tab). Its
   // screenshots live in cercle-visual.spec.ts.
   { path: '/liste', audience: 'parent', ready: '.hub' },
   { path: '/liste', audience: 'toddler', ready: '.hub' },

@@ -37,7 +37,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // Every surface under a 500 AND a dropped connection: it must throw no pageerror
 // and paint *something* (a degraded shell), never a white screen. This is the
 // value beyond the existing 401 tests — a non-auth failure is a different path.
-const ERROR_SURFACES = ['/board', '/kitchen', '/liste', '/routines', '/cercle', '/settings']
+const ERROR_SURFACES = ['/board', '/kitchen', '/liste', '/maison', '/notes', '/settings']
 for (const kind of ['500', 'network'] as const) {
   for (const path of ERROR_SURFACES) {
     test(`deg error-${kind}: ${path.slice(1)}`, async ({ page }) => {

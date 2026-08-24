@@ -162,7 +162,9 @@ test('routine-story', async ({ page }) => {
   await page.setViewportSize(PHONE)
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto('/routines')
+  // Routines is Maison's default section — a bare /maison lands on the toddler
+  // picture-card story picker.
+  await page.goto('/maison')
   await page.locator('.kid__face').first().click() // pick a routine → the picture-card story
   await page.locator('.tdl-stage').waitFor({ state: 'visible' })
   await page.waitForTimeout(300)

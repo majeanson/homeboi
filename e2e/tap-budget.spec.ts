@@ -192,7 +192,8 @@ test('event: add a rendez-vous — 3 taps (＋ FAB + tile + save; typing is free
 test('routines: open a routine to run — 2 taps (tab + the card’s ▶ Faire)', async ({ page }) => {
   await boot(page)
   const { tap, count } = tapCounter()
-  await tap(page.locator('.hubnav a[href="/routines"]')) // 1 — the hub tab
+  // Routines is Maison's default section, so its hub tab lands straight on the grid.
+  await tap(page.locator('.hubnav a[href="/maison"]')) // 1 — the hub tab
   // .first(): the overview renders one grid per moment-of-day group.
   await expect(page.locator('.routines-grid').first()).toBeVisible({ timeout: 15_000 })
   // Measured: each routine card carries a direct ▶ « Faire » run button — the
@@ -206,7 +207,7 @@ test('routines: open a routine to run — 2 taps (tab + the card’s ▶ Faire)'
 test('routines: tapping the CARD runs it too — no peek in between', async ({ page }) => {
   await boot(page)
   const { tap, count } = tapCounter()
-  await tap(page.locator('.hubnav a[href="/routines"]')) // 1 — the hub tab
+  await tap(page.locator('.hubnav a[href="/maison"]')) // 1 — the hub tab (Routines is its default section)
   await expect(page.locator('.routines-grid').first()).toBeVisible({ timeout: 15_000 })
   // Tap the thing, get the thing. The card body used to open a peek whose buttons
   // were « Faire la routine » / « Modifier » — a menu about the card, when the card

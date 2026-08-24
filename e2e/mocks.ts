@@ -659,8 +659,8 @@ const ROUTES: Record<string, unknown> = {
     items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', left: 10, top: -10, right: 40, bottom: -40 }],
   },
   ghost: GHOSTS,
-  // « Le cercle » → Famille → "Notes & recommandations" (CercleNotes + global search).
-  // Empty is the normal calm state; an absent `notes` must never crash the section.
+  // « Les notes » (its own hub tab since the nav restructure — CercleNotes + global
+  // search). Empty is the normal calm state; an absent `notes` must never crash it.
   'family-notes': { notes: [] },
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
   // « À régler » cross-domain scan — empty by default (the card hides; calm). Set a
@@ -1161,7 +1161,9 @@ export async function seedState(page: Page, s: AppState) {
       // Pre-dismiss the per-section welcome cards unless a test opts in, so they
       // never sit on top of the content a screenshot/interaction spec is after.
       if (!state.intros) {
-        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste', 'cercle']))
+        // The nav restructure retired the 'routines'/'cercle' SectionIntro card ids —
+        // Maison (routines is its default section) and Les notes are the current ones.
+        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'liste', 'maison', 'notes']))
       }
       // Pre-mark the first-login guided tour seen unless a test opts in, so its
       // auto-started welcome card / spotlight never covers the elements a spec is

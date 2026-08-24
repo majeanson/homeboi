@@ -24,7 +24,8 @@ test.beforeEach(async ({ page }) => {
 })
 
 async function openEditor(page: import('@playwright/test').Page) {
-  await page.goto('/cercle?section=notes')
+  // « Les notes » split out of Le cercle into its own hub tab (the nav restructure).
+  await page.goto('/notes')
   await page.getByRole('button', { name: 'Nouvelle note' }).click()
   await expect(page.locator('.note-editor')).toBeVisible()
   return page.locator('.note-editor__body')

@@ -236,7 +236,8 @@ test.describe('guest link mint — sitter card gaps + reach-parent (D-19)', () =
     await page.goto('/settings?tab=settings&sub=guest')
     await expect(page.getByRole('button', { name: 'Contacts d’urgence — Compléter' })).toBeVisible()
     await page.getByRole('button', { name: 'Contacts d’urgence — Compléter' }).click()
-    await expect(page).toHaveURL(/\/cercle/)
+    // Emergency contacts live under Maison's Famille section now (the nav restructure).
+    await expect(page).toHaveURL(/\/maison\?section=family/)
   })
 
   test('a complete sitter card shows no gaps notice', async ({ page }) => {

@@ -64,7 +64,7 @@ test('a business hit deep-links to the item (opens its peek), not just the secti
   await page.goto('/search')
   await page.locator('.search__input').fill('vété')
 
-  const hit = page.locator('.search__row[href="/cercle?section=business&item=b1"]')
+  const hit = page.locator('.search__row[href="/maison?section=business&item=b1"]')
   await expect(hit).toBeVisible()
   await hit.click()
 
@@ -105,10 +105,10 @@ test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/m
   await page.locator('.search__input').fill('Soupe poulet')
   await expect(page.getByRole('heading', { name: 'Idées de repas' })).toBeVisible()
 
-  // A named group — « Le hockey » (friends kind → the /cercle social list).
+  // A named group — « Le hockey » (friends kind → Maison's social list).
   await page.locator('.search__input').fill('hockey')
   await expect(page.getByRole('heading', { name: 'Les groupes' })).toBeVisible()
-  await expect(page.locator('.search__row[href="/cercle?section=social"]').first()).toBeVisible()
+  await expect(page.locator('.search__row[href="/maison?section=social"]').first()).toBeVisible()
 
   // A trip — matched on its title, links to the trip notebook /voyage/:id.
   await page.locator('.search__input').fill('Gaspésie')
@@ -117,14 +117,16 @@ test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/m
 })
 
 test('a family-note hit deep-links to the note and expands it', async ({ page }) => {
+  // « Les notes » is its own hub tab now (split out of Le cercle) — the hit links
+  // straight to /notes?item=<id>.
   await page.goto('/search')
   await page.locator('.search__input').fill('tourtière')
 
-  const hit = page.locator('.search__row[href="/cercle?section=notes&item=n1"]')
+  const hit = page.locator('.search__row[href="/notes?item=n1"]')
   await expect(hit).toBeVisible()
   await hit.click()
 
-  await expect(page).toHaveURL(/section=notes/)
+  await expect(page).toHaveURL(/\/notes/)
   await expect(page).not.toHaveURL(/item=/)
   // Highlighted on arrival (transient — assert first), then expanded in place (persists).
   await expect(page.locator('.cnote.is-focus')).toBeVisible()

@@ -183,7 +183,7 @@ test.describe('board layout customization', () => {
 // one always-glanced surface a household shares. It's now `audience === 'parent' &&
 // !ro` — visible on a kiosk under the parent lens, still hidden for toddler/guest.
 
-const A_REGLER_SIGNAL = [{ kind: 'birthday', key: 'b1', label: 'Léa', at: BASE + 86400, href: '/cercle' }]
+const A_REGLER_SIGNAL = [{ kind: 'birthday', key: 'b1', label: 'Léa', at: BASE + 86400, href: '/maison?section=family' }]
 
 async function stubARegler(page: Page) {
   // Registered AFTER mockApi so this wins over the default empty-signals fixture.

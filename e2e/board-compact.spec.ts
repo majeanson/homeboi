@@ -278,11 +278,12 @@ test.describe('board compact lens', () => {
     await expect(tile).toHaveClass(/wg-slot__placeholder/)
     await expect(tile.locator('.cardmini__hint')).toHaveText('Rien')
 
-    // An empty pinned card with a natural "add one" page (« Les carnets » → Le cercle)
-    // taps STRAIGHT THERE instead of growing into a « Rien pour l'instant » shell: the tile
-    // is an anchor, not a grow-button (BOARD_CARDS[].emptyTo → CardSlot → compactTo).
+    // An empty pinned card with a natural "add one" page (« Les carnets » → Maison,
+    // Carnets section) taps STRAIGHT THERE instead of growing into a « Rien pour
+    // l'instant » shell: the tile is an anchor, not a grow-button (BOARD_CARDS[].emptyTo
+    // → CardSlot → compactTo).
     await expect(tile).toHaveJSProperty('tagName', 'A')
-    await expect(tile).toHaveAttribute('href', /\/cercle$/)
+    await expect(tile).toHaveAttribute('href', '/maison?section=carnets')
 
     const look = await slot.evaluate((el) => ({
       tint: getComputedStyle(el).getPropertyValue('--wg-tint').trim(),
@@ -315,7 +316,7 @@ test.describe('board compact lens', () => {
 // grow their own `.now-card__reduce` way-back chip since they have no shared `SecLabel`
 // to grow one for them. A regression here used to leave both squeezed at half-width with
 // no compact form and no escape hatch (the review finding this test guards).
-const A_REGLER_SIGNAL = [{ kind: 'birthday', key: 'b1', label: 'Léa', at: Math.floor(Date.now() / 1000) + 86400, href: '/cercle' }]
+const A_REGLER_SIGNAL = [{ kind: 'birthday', key: 'b1', label: 'Léa', at: Math.floor(Date.now() / 1000) + 86400, href: '/maison?section=family' }]
 
 async function stubARegler(page: Page) {
   // Registered AFTER mockApi so this wins over the default empty-signals fixture.

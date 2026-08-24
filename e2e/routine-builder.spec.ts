@@ -83,11 +83,13 @@ test('the edit scene can delete a routine (confirm → DELETE → back to the ta
   await form.getByRole('button', { name: 'Supprimer la routine' }).click()
   await expect(page.locator('.confirm')).toBeVisible()
 
-  // Confirming fires the DELETE and navigates back to /routines.
+  // Confirming fires the DELETE and navigates back to Maison (Routines' hub tab
+  // now — the scene's close() fallback, since a direct goto leaves no history to
+  // pop back into).
   const [req] = await Promise.all([
     page.waitForRequest(isApi('DELETE', 'routines'), { timeout: 20_000 }),
     page.locator('.confirm .btn--danger').click(),
   ])
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'r1' })
-  await expect(page).toHaveURL(/\/routines$/)
+  await expect(page).toHaveURL(/\/maison$/)
 })

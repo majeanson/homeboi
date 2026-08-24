@@ -10,7 +10,8 @@ import { mockApi, seedState, type Audience, type Lang, type Surface } from './mo
 // Both render the KIOSK surface (glance dashboard, left-column nav) whose column
 // counts and grids differ from the phone — a place layouts silently overflow or
 // split content onto an extra line. This sweep walks ALL SIX hub tabs (incl.
-// « Le cercle », absent from every other hard layout assertion) across those two
+// Famille — the old « Le cercle » tab's people graphs, absent from every other
+// hard layout assertion) across those two
 // formats, in parent + toddler, FR + EN on the wrap-prone tabs, and:
 //   1. asserts the surface actually painted content (not a blank/crashed frame),
 //   2. asserts NO horizontal overflow (document + the .hub__body scroller),
@@ -42,8 +43,13 @@ type Tab = { name: string; path: string; audiences: Audience[]; en: boolean }
 const TABS: Tab[] = [
   { name: 'board', path: '/board', audiences: ['parent', 'toddler'], en: true },
   { name: 'kitchen', path: '/kitchen', audiences: ['parent', 'toddler'], en: true },
-  { name: 'routines', path: '/routines', audiences: ['parent', 'toddler'], en: false },
-  { name: 'cercle', path: '/cercle', audiences: ['parent', 'toddler'], en: true },
+  // « Le cercle » + Routines merged into Maison (Routines is its default section —
+  // a bare /maison covers the old /routines case); Famille (?section=family, the
+  // old cercle tab's own default) still carries the member/group graphs, so it
+  // gets its own pass. « Les notes » split out of cercle into its own hub tab.
+  { name: 'maison', path: '/maison', audiences: ['parent', 'toddler'], en: false },
+  { name: 'maison-family', path: '/maison?section=family', audiences: ['parent', 'toddler'], en: true },
+  { name: 'notes', path: '/notes', audiences: ['parent', 'toddler'], en: true },
   { name: 'liste', path: '/liste', audiences: ['parent', 'toddler'], en: false },
   { name: 'settings', path: '/settings', audiences: ['parent'], en: true },
   // The Système themed tab carries the widest pill rows in Réglages (a 9-sub

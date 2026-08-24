@@ -4,7 +4,7 @@ import { mockApi, seedState } from './mocks'
 // F29 « Mur d'autocollants » — the first-ever e2e for the opt-in sticker wall
 // (PARITY Wave E, entry 4). Two happy paths: PLACING a sticker on finishing a
 // routine (POST), and REMOVING one from the wall (DELETE). Both need « Mode calme »
-// OFF — the wall doesn't exist otherwise (StickerWallPage bounces to /routines).
+// OFF — the wall doesn't exist otherwise (StickerWallPage bounces to /maison).
 // Frontend-only harness (mocked /api/**), like the other specs.
 
 // A per-test route override registered AFTER mockApi's catch-all wins (Playwright
@@ -70,9 +70,10 @@ test('finishing a routine (calm on) shows the same recap, reward-free', async ({
   // The one finish screen: the picture recap + the deliberate « Recommencer ».
   await expect(page.locator('.tdl-recap')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Recommencer' })).toBeVisible()
-  // No sticker anywhere — not the picker, not the wall entry on the Routines tab.
+  // No sticker anywhere — not the picker, not the wall entry on Maison's Routines
+  // section (its default).
   await expect(page.locator('.tdl-sticker')).toHaveCount(0)
-  await page.goto('/routines')
+  await page.goto('/maison')
   await expect(page.locator('.routines-sticker-link')).toHaveCount(0)
 })
 

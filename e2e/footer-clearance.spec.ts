@@ -14,14 +14,14 @@ type Case = { name: string; path: string; audience: Audience }
 const CASES: Case[] = [
   { name: 'board', path: '/board', audience: 'parent' },
   { name: 'kitchen', path: '/kitchen', audience: 'parent' },
-  { name: 'routines', path: '/routines', audience: 'parent' },
-  { name: 'cercle', path: '/cercle', audience: 'parent' },
+  { name: 'maison', path: '/maison', audience: 'parent' },
+  { name: 'notes', path: '/notes', audience: 'parent' },
   { name: 'liste', path: '/liste', audience: 'parent' },
   { name: 'settings', path: '/settings', audience: 'parent' },
   { name: 'board', path: '/board', audience: 'toddler' },
   { name: 'kitchen', path: '/kitchen', audience: 'toddler' },
-  { name: 'routines', path: '/routines', audience: 'toddler' },
-  { name: 'cercle', path: '/cercle', audience: 'toddler' },
+  { name: 'maison', path: '/maison', audience: 'toddler' },
+  { name: 'notes', path: '/notes', audience: 'toddler' },
   { name: 'liste', path: '/liste', audience: 'toddler' },
 ]
 

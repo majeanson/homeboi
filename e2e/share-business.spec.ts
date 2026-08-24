@@ -6,8 +6,9 @@ import { mockApi, seedState } from './mocks'
 //   • /share (the PWA share-target) offers « Ajouter un business » when the shared
 //     text carries a Maps link — before, the only path was the capture spine, which
 //     has no business type (the link became a note with a naked URL).
-//   • the button lands on /cercle with the BusinessForm open and the import ALREADY
-//     run (?add=business&import=<url> → place-import → name + address filled).
+//   • the button lands on /maison (Le cercle's business world merged into the Maison
+//     tab) with the BusinessForm open and the import ALREADY run (?add=business&
+//     import=<url> → place-import → name + address filled).
 // The server-side /sorry block recovery is unit-tested in placeImport.test.ts.
 
 const MAPS_URL = 'https://maps.app.goo.gl/hCpMvxRRDUhwLCPi9?g_st=ic'

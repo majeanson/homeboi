@@ -31,7 +31,7 @@ async function seed(context: BrowserContext) {
       localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
       // Same for the per-section first-visit welcome cards — pre-dismiss them so
       // the real-data sweep shoots the section content, not a first-run card.
-      localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste']))
+      localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'maison', 'liste']))
     } catch {
       /* noop */
     }
@@ -137,8 +137,8 @@ async function shoot(page: Page, name: string) {
 const SURFACES = [
   { name: 'board', path: '/board' },
   { name: 'kitchen', path: '/kitchen' },
-  { name: 'routines', path: '/routines' },
-  { name: 'cercle', path: '/cercle' },
+  { name: 'maison', path: '/maison' },
+  { name: 'notes', path: '/notes' },
   { name: 'liste', path: '/liste' },
   { name: 'settings', path: '/settings' },
 ]
@@ -297,32 +297,36 @@ test('real recipe + cook mode @phone', async ({ page, context }) => {
   }
 })
 
-// « Le cercle » under the real people graph — the directory, the colour-coded tree,
-// and the ego/web graphs are where real names + many links crowd or overflow. A
-// TALL phone-width viewport reveals the whole grouped list in one frame; the graph
-// views pan inside an SVG so a tall frame still shows the controls. Logged overflow
-// probe on each.
+// « Le cercle » (now Maison's Famille/Social/Business sections + its own « Les
+// notes » tab) under the real people graph — the directory, the colour-coded
+// tree, and the ego/web graphs are where real names + many links crowd or
+// overflow. A TALL phone-width viewport reveals the whole grouped list in one
+// frame; the graph views pan inside an SVG so a tall frame still shows the
+// controls. Logged overflow probe on each.
 test('real cercle sub-views @phone-tall', async ({ page, context }) => {
   await seed(context)
   await context.addInitScript(() => {
     try {
-      localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'routines', 'liste', 'cercle']))
+      localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'liste', 'maison', 'notes']))
     } catch {
       /* noop */
     }
   })
   await page.setViewportSize(PHONE_TALL)
   await login(page, context)
+  // Family/Social/Business live under /maison now; notes split out to its own
+  // /notes tab (a bare /maison?section=notes would just redirect there anyway —
+  // land on it directly so the deep-link matches what's actually reached).
   const views = [
-    { name: 'family-list', q: 'section=family&view=list' },
-    { name: 'family-tree', q: 'section=family&view=tree' },
-    { name: 'family-links', q: 'section=family&view=links' },
-    { name: 'social-list', q: 'section=social&view=list' },
-    { name: 'business', q: 'section=business' },
-    { name: 'notes', q: 'section=notes' },
+    { name: 'family-list', path: '/maison?section=family&view=list' },
+    { name: 'family-tree', path: '/maison?section=family&view=tree' },
+    { name: 'family-links', path: '/maison?section=family&view=links' },
+    { name: 'social-list', path: '/maison?section=social&view=list' },
+    { name: 'business', path: '/maison?section=business' },
+    { name: 'notes', path: '/notes' },
   ]
   for (const v of views) {
-    await page.goto(`/cercle?${v.q}`)
+    await page.goto(v.path)
     await settle(page)
     await page.waitForTimeout(500)
     await page.screenshot({ path: `e2e/screenshots/real-cercle-${v.name}.png`, fullPage: true })

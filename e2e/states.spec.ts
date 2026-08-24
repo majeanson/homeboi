@@ -98,7 +98,8 @@ async function kid(page: Page, path: string) {
 
 test('st: toddler routines — face picker → story → running', async ({ page }) => {
   await page.setViewportSize(WALL)
-  await kid(page, '/routines')
+  // Routines is Maison's default section — a bare /maison lands on it.
+  await kid(page, '/maison')
   await shot(page, 'toddler-routines-faces')
   await page.locator('.kid__face').first().click().catch(() => {})
   await page.waitForTimeout(500)

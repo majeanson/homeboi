@@ -100,7 +100,7 @@ test.describe('navigation', () => {
   test('hub nav switches every section and marks the active tab', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
-    for (const seg of ['kitchen', 'routines', 'liste', 'settings']) {
+    for (const seg of ['kitchen', 'maison', 'notes', 'liste', 'settings']) {
       await page.locator(`.hubnav a[href="/${seg}"]`).click()
       await expect(page).toHaveURL(new RegExp(`/${seg}$`))
       await expect(page.locator(`.hubnav a[href="/${seg}"]`)).toHaveClass(/is-active/)
@@ -215,8 +215,9 @@ test.describe('settings tabs', () => {
     const tabs = page.locator('.operator__tabs').getByRole('tab')
     const n = await tabs.count()
     // Découvrir (first/default) + the six themed tabs, one per hub section in the
-    // canonical order: Le babillard, La cuisine, La liste, Le cercle, Routines,
-    // Système. Each themed tab stacks its sections as sub-sections behind its
+    // canonical order: Le babillard, La cuisine, La liste, Les notes, Maison,
+    // Système (Le cercle + Routines merged into one Maison tab — still seven
+    // tabs total). Each themed tab stacks its sections as sub-sections behind its
     // « Régler » lens (so every section is still reachable).
     expect(n).toBe(7)
     for (let i = 0; i < n; i++) {
@@ -315,8 +316,10 @@ test.describe('settings forms', () => {
   })
 
   test('add a household member', async ({ page }) => {
-    // Members live under Le cercle now (its first sub, « La maisonnée »).
-    await page.locator('.operator__tabs').getByRole('tab', { name: 'Le cercle' }).click()
+    // Members live under Maison now (the merged Le cercle + Routines tab), on
+    // its « La maisonnée » sub — Routines (the tab's default section) shows first.
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Maison', exact: true }).click()
+    await page.locator('.subtabs').getByRole('tab', { name: 'La maisonnée', exact: true }).click()
     // The member-add box is now the shared EditField (form.edit-field), no longer a
     // hand-rolled operator__inline-form.
     const form = page.locator('.operator__panel form.edit-field')
@@ -341,8 +344,9 @@ test.describe('settings forms', () => {
   })
 
   test('add a chore', async ({ page }) => {
-    // Chores are the « Corvées » sub of the Routines themed tab now.
-    await page.locator('.operator__tabs').getByRole('tab', { name: 'Routines', exact: true }).click()
+    // Chores are the « Corvées » sub of the Maison themed tab now (Routines +
+    // Le cercle merged).
+    await page.locator('.operator__tabs').getByRole('tab', { name: 'Maison', exact: true }).click()
     await page.locator('.subtabs').getByRole('tab', { name: 'Corvées', exact: true }).click()
     // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
     // edit/remove only).
@@ -354,9 +358,9 @@ test.describe('settings forms', () => {
   })
 
   test('add a kid routine', async ({ page }) => {
-    // Routines live under « Corvées & routines » now, as their own sub-section —
-    // deep-link to it (?tab=chores&sub=routines) so the routines panel renders.
-    await APP('/settings?tab=chores&sub=routines')(page)
+    // Routines is Maison's own sub-section (and its default section) now —
+    // deep-link to it (?tab=maison&sub=routines) so the routines panel renders.
+    await APP('/settings?tab=maison&sub=routines')(page)
     await settle(page, '.operator__tabs')
     await page.locator('.operator__section', { hasText: 'Routines (mode enfant)' }).locator('.operator__add').click()
     await page.waitForURL(/\/routine\/new/)
@@ -696,11 +700,14 @@ test.describe('add sheet', () => {
   })
 
   test('the routines ＋ opens the routine builder directly', async ({ page }) => {
-    await APP('/routines')(page)
+    await APP('/maison')(page)
     await settle(page, '.hub')
-    // The routines ＋ opens a manage picker (new + edit existing routines); its
-    // "Nouvelle routine" goes to the full-screen routine scene.
+    // Maison's ＋ now opens the merged chooser (routines + the cercle add-set) —
+    // the "Routines" tile leads it and drills into the manage picker (new + edit
+    // existing routines) in place; its "Nouvelle routine" goes to the full-screen
+    // routine scene.
     await page.locator('.add-fab').click()
+    await page.getByRole('dialog').locator('.cat-pick[data-mode="routine-pick"]').click()
     await Promise.all([
       page.waitForURL(/\/routine\/new/),
       page.getByRole('dialog').getByRole('button', { name: 'Nouvelle routine' }).click(),
@@ -980,7 +987,7 @@ test('routines surface the current moment first (morning vs evening)', async ({ 
   // Freeze the clock so timeOfDay() is deterministic. 12:00Z = 8 AM in the
   // config's America/Toronto (June, UTC-4) → morning.
   await page.clock.setFixedTime(new Date('2026-06-08T12:00:00Z'))
-  await APP('/routines', 'toddler')(page)
+  await APP('/maison', 'toddler')(page)
   await settle(page, '.kid__faces')
   // Matin (Léa, timeOfDay: morning) leads in the morning…
   await expect(page.locator('.kid__face').first()).toContainText('Léa')
@@ -993,7 +1000,7 @@ test('routines surface the current moment first (morning vs evening)', async ({ 
 })
 
 test('a routine runs start → next → next → stop on one timer', async ({ page }) => {
-  await APP('/routines', 'toddler')(page)
+  await APP('/maison', 'toddler')(page)
   await settle(page, '.hub')
   await page.locator('.kid__face', { hasText: 'Noah' }).click() // Dodo: 3 steps, none done
   // ▶ start once, then advance through with the single → button, ✓ on the last.
@@ -1012,7 +1019,7 @@ test('a routine runs start → next → next → stop on one timer', async ({ pa
 // un-done step IS the story rewinding to it): the big ← beside the →, and a
 // hear-first two-tap on a done step in the filmstrip (BigTiles' arm pattern).
 test('a routine can go back: the ← un-does the last step, and a done strip step rewinds on the second tap', async ({ page }) => {
-  await APP('/routines', 'toddler')(page)
+  await APP('/maison', 'toddler')(page)
   await settle(page, '.hub')
   await page.locator('.kid__face', { hasText: 'Noah' }).click() // Dodo: 3 steps, none done
   // Nothing is done yet → nowhere to go back to.
@@ -1053,7 +1060,7 @@ test('a routine can go back: the ← un-does the last step, and a done strip ste
 // Picking a routine back up mid-day: the ▶ says « Continuer », not « Commencer »
 // (Léa's Matin arrives with step 1 already done in the mock).
 test('a half-done routine resumes: the ▶ reads « Continuer »', async ({ page }) => {
-  await APP('/routines', 'toddler')(page)
+  await APP('/maison', 'toddler')(page)
   await settle(page, '.hub')
   await page.locator('.kid__face', { hasText: 'Léa' }).click()
   await expect(page.getByRole('button', { name: 'Continuer' })).toBeVisible()
@@ -1378,7 +1385,7 @@ test.describe('recurring chores on the board', () => {
   })
 
   test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
-    // The legacy ?tab=chores deep-link folds to Routines ▸ Corvées directly (its
+    // The legacy ?tab=chores deep-link folds to Maison ▸ Corvées directly (its
     // panel opens on the Corvées SubTab), so no tab click is needed.
     await APP('/settings?tab=chores')(page)
     await settle(page, '.operator__tabs')
@@ -1456,7 +1463,7 @@ test('toddler board shows « Mes habitudes » due today, read-aloud not marked',
 })
 
 test('toddler reads a step aloud, then starts + finishes it', async ({ page }) => {
-  await APP('/routines', 'toddler')(page)
+  await APP('/maison', 'toddler')(page)
   await settle(page, '.kid')
   await page.locator('.kid__face').first().click()
   // Tapping the picture only reads it aloud — it must NOT mark the step done.

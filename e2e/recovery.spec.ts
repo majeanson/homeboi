@@ -64,11 +64,11 @@ test.describe('first-run welcome', () => {
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
     await page.goto('/board')
     // The first-run WelcomeCard: its first step ("Ajouter la famille") is the
-    // next action for a brand-new household and links to Réglages ▸ Le cercle ▸
+    // next action for a brand-new household and links to Réglages ▸ Maison ▸
     // La maisonnée (the members sub-section).
     await settle(page, '.welcome-card')
     await page.locator('.welcome-card__step a').first().click()
-    await expect(page).toHaveURL(/\/settings\?tab=cercle&sub=members$/)
+    await expect(page).toHaveURL(/\/settings\?tab=maison&sub=members$/)
     await settle(page, '.welcome-steps')
   })
 })
