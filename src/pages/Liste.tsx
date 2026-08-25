@@ -189,7 +189,7 @@ function ListItemRow({
         {/* The picture is the row's ONE door to the item sheet (edit/detail — where
             the deals door, delete and the rest now live). Mouse+keyboard reachable,
             so the swipe-delete keeps its non-touch mirror there. */}
-        <button type="button" className="list-row__img" onClick={onName} aria-label={nameLabel}>
+        <button type="button" className="list-row__img" onClick={onName} aria-label={`${nameLabel} — ${text}`}>
           {dealImage ? (
             // A linked flyer deal with a clipping → show the product picture.
             <span className="tile list-row__thumb" aria-hidden="true">
@@ -211,11 +211,19 @@ function ListItemRow({
             CHECK (same handler as the disc, deferred/pending behaviour intact).
             Editing moved to the explicit ✏️ beside the check; a guest's name tap
             still navigates (it has no check to toggle). */}
+        {/* NO aria-label here, deliberately: this button's content IS the row —
+            the item, « pas pressé », the staged deal, the aisle — and an aria-label
+            would REPLACE all of it with a bare « Cocher », which is what used to
+            happen (the note below about naming the second class on the row was
+            defeated by exactly that). `aria-pressed` carries the verb instead: the
+            control announces as a toggle with its state, and the two labelled
+            controls beside it (the picture, the check disc) still name the action
+            explicitly. */}
         <button
           type="button"
           className="list-row__name act__text"
           onClick={readOnly ? onName : onToggle}
-          aria-label={readOnly ? nameLabel : toggleLabel}
+          aria-pressed={readOnly ? undefined : checked}
         >
           {/* The tint is inline (adder colour, else the CATS list marigold — the
               « Maisonnée » voice), so a « pas pressé » row has to soften it here —
@@ -250,7 +258,7 @@ function ListItemRow({
             name rides into the accessible tree here rather than renaming a control. */}
         {adder && <span className="sr-only">{adder.display_name}</span>}
         {!readOnly && (
-          <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
+          <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={`${toggleLabel} — ${text}`}>
             <Icon name="check-bold" size={18} />
           </button>
         )}

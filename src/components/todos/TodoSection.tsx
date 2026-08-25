@@ -303,7 +303,7 @@ export function TodoSection({
             className="check todo-row__check"
             onClick={() => toggle(todo)}
             aria-pressed={isChecked(todo)}
-            aria-label={isChecked(todo) ? t.todos.uncheck : t.todos.check}
+            aria-label={`${isChecked(todo) ? t.todos.uncheck : t.todos.check} — ${todo.title}`}
             style={isChecked(todo) ? checkedStyle : undefined}
           >
             <Icon name="check-bold" size={18} />
@@ -322,7 +322,10 @@ export function TodoSection({
             setEditText(todo.title)
           }}
           disabled={ro}
-          aria-label={ro ? undefined : t.common.edit}
+          // « Modifier » alone was every row's whole name — this button's only
+          // content is the title, so naming the pair is what makes the row
+          // identifiable (see the check above).
+          aria-label={ro ? undefined : `${t.common.edit} — ${todo.title}`}
         >
           <span
             className="title"
