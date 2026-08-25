@@ -19,14 +19,20 @@ const PHONE = { width: 390, height: 844 }
 // Past the 900px breakpoint, where the calendar and the day sit side by side.
 const WIDE = { width: 1280, height: 900 }
 
-// Answer /api/month with two named things on the grid's FIRST cell, whatever window the
+// The cell to hang the fixture on. Deliberately mid-grid and therefore IN-month: tapping
+// an out-of-month cell moves the calendar to that month, which re-requests /api/month
+// with a new `from` — and since this stub is relative to `from`, the seeded things would
+// land somewhere else entirely and the assertions would chase a moving target.
+const SEED_IDX = 20
+// Answer /api/month with two named things on that cell, whatever window the
 // calendar asks for. The shared fixture's month rows sit on a frozen date that no longer
 // falls inside the live window, so it renders an empty grid — fine for the layout tests
 // above, useless for anything about what a cell SAYS. Registered after mockApi so it wins
 // (Playwright tries routes newest-first).
 const EVENT_TITLE = 'Dentiste'
 const MEAL_TITLE = 'Pâté chinois'
-async function seedMonthOnFirstCell(page: Page) {
+async function seedMonthOnCell(page: Page) {
+  const DAY = 86400
   await page.route('**/api/month**', async (route) => {
     const from = Number(new URL(route.request().url()).searchParams.get('from'))
     await route.fulfill({
@@ -34,9 +40,9 @@ async function seedMonthOnFirstCell(page: Page) {
       contentType: 'application/json',
       body: JSON.stringify({
         events: [
-          { id: 'ev1', title: EVENT_TITLE, at: from + 14 * 3600, all_day: 0, member_id: null, day: from },
+          { id: 'ev1', title: EVENT_TITLE, at: from + SEED_IDX * DAY + 14 * 3600, all_day: 0, member_id: null, day: from + SEED_IDX * DAY },
         ],
-        meals: [{ id: 'ml1', slot: 'souper', title: MEAL_TITLE, cook_member_id: null, day: from }],
+        meals: [{ id: 'ml1', slot: 'souper', title: MEAL_TITLE, cook_member_id: null, day: from + SEED_IDX * DAY }],
         chores: [],
         dayNotes: [],
         todos: [],
@@ -164,35 +170,40 @@ test.describe('Mois — the day panel', () => {
     await expect(page.locator('.monthv__day-fold')).toBeHidden()
   })
 
-  // ── Cell density ────────────────────────────────────────────────────────────────
-  // « Cases détaillées » names what is in the day instead of dotting it. Device-local,
-  // so it must survive a reload — and it must never widen the seven columns past the
-  // board (the recurring horizontal-overflow bug this repo keeps re-fighting).
-  test('the density toggle puts real words in the cells, and remembers itself', async ({ page }) => {
+  // ── The tapped day names its things ─────────────────────────────────────────────
+  // There is no view toggle any more: the grid is always a calm dotted glance, and the
+  // ONE day you tap opens in place and spells out what is in it. (A whole-grid
+  // « cases détaillées » mode put words in all 42 squares, which on a phone is 42
+  // columns of three clipped characters — and it needed a control in the header to
+  // explain itself.) The words must never widen the seven columns past the board —
+  // the recurring horizontal-overflow bug this repo keeps re-fighting.
+  test('the tapped day names its things in its own cell; the others stay dotted', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.setViewportSize(REPORTED)
     await mockApi(page)
-    await seedMonthOnFirstCell(page)
+    await seedMonthOnCell(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
     await page.goto('/board')
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
 
-    const firstCell = page.locator('.monthv__cell').first()
-    const toggle = page.locator('.monthv__density')
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-    // Compact: shapes only, no words.
-    await expect(firstCell.locator('.monthv__dots')).toBeVisible()
-    await expect(firstCell.locator('.monthv__lines')).toHaveCount(0)
+    // The control is gone for good — the grid explains itself by being tapped.
+    await expect(page.locator('.monthv__density')).toHaveCount(0)
 
-    await toggle.click()
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    // Détaillé: the same two things, NAMED — and the dots step aside rather than doubling up.
-    await expect(firstCell.locator('.monthv__lines')).toBeVisible()
-    await expect(firstCell.locator('.monthv__dots')).toHaveCount(0)
-    await expect(firstCell.getByText(EVENT_TITLE)).toBeVisible()
-    await expect(firstCell.getByText(MEAL_TITLE)).toBeVisible()
-    // The legend is redundant once the cells spell it out.
-    await expect(page.locator('.monthv__legend')).toBeHidden()
+    const seeded = page.locator('.monthv__cell').nth(SEED_IDX)
+    // Untapped: shapes only, no words.
+    await expect(seeded.locator('.monthv__dots')).toBeVisible()
+    await expect(seeded.locator('.monthv__lines')).toHaveCount(0)
+
+    await seeded.click()
+    // Tapped: the same two things, NAMED — and the dots step aside rather than doubling up.
+    await expect(seeded.locator('.monthv__lines')).toBeVisible()
+    await expect(seeded.locator('.monthv__dots')).toHaveCount(0)
+    await expect(seeded.getByText(EVENT_TITLE)).toBeVisible()
+    await expect(seeded.getByText(MEAL_TITLE)).toBeVisible()
+
+    // Only that one opened: every other cell keeps its dots.
+    const others = page.locator('.monthv__cell:not(.is-on) .monthv__lines')
+    await expect(others).toHaveCount(0)
 
     // No cell may push the grid wider than the board (per-child bounds, not scrollWidth:
     // the hub body clips overflow-x, so scrollWidth reads 0 — see CLAUDE.md).
@@ -201,10 +212,6 @@ test.describe('Mois — the day panel', () => {
       const b = await cell.boundingBox()
       if (b) expect(b.x + b.width, 'a cell bleeds past the grid').toBeLessThanOrEqual(gridBox.x + gridBox.width + 1)
     }
-
-    await page.reload()
-    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
-    await expect(page.locator('.monthv__density')).toHaveAttribute('aria-pressed', 'true')
   })
 
   // ── Where you are lives in the URL ──────────────────────────────────────────────
@@ -248,10 +255,11 @@ test.describe('Mois — the day panel', () => {
     expect(new URL(page.url()).searchParams.get('date')).toBe(picked)
   })
 
-  // A read-only guest gets no ⋯ (every entry is a write) but KEEPS the density toggle,
-  // which is a device-local preference and changes nothing for the household. Gating
-  // that on isGuest() is the mistake that hid board reordering from the public demo.
-  test('a read-only guest loses the add menu but keeps the density toggle', async ({ page }) => {
+  // A read-only guest gets no ⋯ (every entry is a write) but still READS the calendar
+  // fully: tapping a date still opens that day's cell and its panel. Reading is never
+  // gated on isGuest() — over-applying that guard is the mistake that hid board
+  // reordering and the whole in-app guide from the public demo.
+  test('a read-only guest loses the add menu but still opens a day', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.setViewportSize(REPORTED)
     await mockApi(page, { signedIn: false })
@@ -264,8 +272,10 @@ test.describe('Mois — the day panel', () => {
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
 
     await expect(page.locator('.monthv__day-tools button[aria-haspopup]')).toHaveCount(0)
-    await expect(page.locator('.monthv__density')).toBeVisible()
-    await page.locator('.monthv__density').click()
-    await expect(page.locator('.monthv__density')).toHaveAttribute('aria-pressed', 'true')
+    // Reading is untouched: a tapped date still opens in place.
+    const cell = page.locator('.monthv__cell').nth(20)
+    await cell.click()
+    await expect(cell).toHaveClass(/is-on/)
+    await expect(page.locator('.monthv__day-h')).toBeVisible()
   })
 })

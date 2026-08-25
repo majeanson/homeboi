@@ -133,24 +133,42 @@ test.describe('toddler lens split (Maison vs Les notes)', () => {
   })
 })
 
-test('the ＋ on /notes skips the chooser and opens the editor — every time, not just once', async ({ page }) => {
-  // /notes carries a single add-mode ('cnote' → FORM_ROUTES.cnote = '/notes?add=1'),
-  // so HubLayout's ＋ never shows a chooser sheet for it (SECTION_MODES.notes.length
-  // === 1) — unlike every other section.
+test('the ＋ on /notes drops straight into the quick composer — no chooser', async ({ page }) => {
+  // /notes carries a single add-mode ('cnote'), so the sheet has no tiles to choose
+  // between and opens ON the composer (AddSheet's defMode). The ＋ is also the one
+  // place that still carries the mic + 📎 attachment, now that the section's own
+  // composer is text-only (lib/notesMode — the lean default).
+  await boot(page)
+  await page.goto('/notes')
+  await page.locator('.add-fab').click()
+  const sheet = page.locator('.sheet.show')
+  await expect(sheet).toBeVisible()
+  await expect(sheet.locator('.cat-pick')).toHaveCount(0) // no chooser tiles
+  const field = sheet.locator('.edit-field__input').first()
+  await expect(field).toBeVisible()
+  // The mic + 📎 the page's lean composer no longer shows.
+  await expect(sheet.locator('.edit-field__box button')).not.toHaveCount(0)
+
+  // Enter writes the note and closes the sheet — the quickest path there is.
+  await field.fill('Rapport de la piscine')
+  await field.press('Enter')
+  await expect(sheet).toBeHidden()
+})
+
+test('/notes?add=1 still opens the rich editor — every time, not just once', async ({ page }) => {
+  // The rich-editor door survives as a URL (advanced mode's « Nouvelle note » and any
+  // deep-link out in the wild use it); the ＋ FAB just no longer routes through it.
   await boot(page)
   await page.goto('/notes?add=1')
-  await expect(page.locator('.sheet.show')).toHaveCount(0)
   await expect(page.locator('.note-editor')).toBeVisible()
   await expect(page).not.toHaveURL(/add=/) // the one-shot door strips it once opened
 
-  // The regression this guards: tapping ＋ while ALREADY on /notes is a same-route
+  // The regression this guards: asking again while ALREADY on /notes is a same-route
   // navigation, so the page never remounts. The door used to be read once at mount
-  // (a lazy `useState` initializer), which made the FAB work on a fresh arrival and
-  // then go silently dead for the rest of the session. It's a bumped nonce now, so
-  // the second ask opens the editor exactly like the first.
+  // (a lazy `useState` initializer), which made it work on a fresh arrival and then
+  // go silently dead for the rest of the session. It's a bumped nonce now.
   await page.locator('.note-editor__back').click()
   await expect(page.locator('.note-editor')).toHaveCount(0)
-  await page.locator('.add-fab').click()
-  await expect(page.locator('.sheet.show')).toHaveCount(0)
+  await page.goto('/notes?add=1')
   await expect(page.locator('.note-editor')).toBeVisible()
 })

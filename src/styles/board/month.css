@@ -65,26 +65,7 @@
   visibility: hidden;
   pointer-events: none;
 }
-/* Compact vs détaillé (lib/monthDensity): does a cell show dots, or NAME what is in the
-   day? A binary choice gets a button, not a menu. A notch smaller than the arrows so the
-   head still fits a narrow phone. Device-local — never gated on isGuest(). */
-.monthv__density {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--paper-deep);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.monthv__density[aria-pressed='true'] {
-  border-color: var(--accent);
-  color: var(--accent);
-}
+
 .monthv__grid {
   display: grid;
   /* minmax(0,1fr), not 1fr: a bare fr keeps a min-content floor, and in détaillé the cell
@@ -239,15 +220,17 @@
   gap: 0.32rem;
 }
 .monthv__more {
-  font-size: 0.6rem;
+  font-size: 0.62rem; /* same size as the lines it summarizes */
   color: var(--ink-faint);
   line-height: 1;
 }
-/* -- Détaillé: the cell NAMES its first few things -----------------------------------
-   Same list, same order as the dots and the day panel (one linesFor() builds all three),
-   just spelled out. A square cell cannot hold text, so the ratio and the height cap both
-   go and the row sizes to its content; the legend goes too — the words replaced it. */
-.monthv--detailed .monthv__cell {
+/* -- The TAPPED day names its things -------------------------------------------------
+   There is no view toggle: the grid stays a calm dotted glance and the ONE day you asked
+   about opens in place, spelling out the same list in the same order (one linesFor()
+   builds the dots, these words and the panel). A square cannot hold text, so the picked
+   cell alone drops the ratio and the height cap and sizes to its content — which lifts
+   its whole week row, and that is the intended "the square gets bigger". */
+.monthv__cell.is-on {
   aspect-ratio: auto;
   max-height: none;
   min-height: 4.4rem;
@@ -255,11 +238,8 @@
   gap: 0.15rem;
   padding: 0.25rem 0.25rem 0.3rem;
 }
-.monthv--detailed .monthv__num {
+.monthv__cell.is-on .monthv__num {
   align-self: center;
-}
-.monthv--detailed .monthv__legend {
-  display: none;
 }
 .monthv__lines {
   display: flex;
@@ -287,6 +267,10 @@
   flex: none;
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
+  /* The clock keeps the mono FAMILY (tabular digits line up down the column) but never
+     its size: `.mono` carries font-size 0.82rem, which made « 12:00 » tower over the
+     label beside it. Everything a cell says is one size. */
+  font-size: inherit;
 }
 /* The one part allowed to ellipsize; everything around it is flex:none. */
 .monthv__line-l {
@@ -306,22 +290,26 @@
    pickDay()'s scroll-into-view stays as the belt to this braces: it still does the right
    thing in the two-column layout below, where nothing is pinned. */
 .monthv__day {
-  position: sticky;
-  bottom: var(--hub-stick-bottom, 0px);
-  z-index: 2;
+  /* IN FLOW, below the grid — NOT pinned to the bottom edge.
+     It was sticky-bottom so the picked day stayed on screen while browsing. On a phone
+     that backfired completely: the pane's own 52dvh, pinned to the bottom, put its TOP
+     exactly on the grid's top, so an opaque pane covered the whole six-week calendar —
+     you could no longer see the dates you were picking between. Now the tapped CELL
+     itself opens and names its things, so the immediate feedback is up in the grid where
+     the tap happened, and this pane is the detail you scroll to. pickDay()'s
+     scroll-into-view still brings it up. (The two-column layout below re-pins it, where
+     there is a second column to pin it in and nothing to cover.) */
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  /* Its own scroller when the day is busy — the grid above must never be pushed off. */
-  max-height: 52dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
   padding: 0.7rem 0.75rem 0.8rem;
   border: 1px solid var(--line);
-  border-bottom: 0;
-  border-radius: var(--radius-md, 12px) var(--radius-md, 12px) 0 0;
+  border-radius: var(--radius-md, 12px);
   background: var(--card);
-  box-shadow: 0 -6px 18px rgb(0 0 0 / 9%);
+  /* A crisp hairline, not a lifted shadow. The grid still scrolls under this pane, and
+     a hard 1px edge is what actually reads as "this is a layer above" on a phone — a
+     soft drop shadow just muddies the paper. (iOS pins its toolbars the same way.) */
+  box-shadow: 0 -1px 0 var(--line);
   scroll-margin-top: 0.75rem;
 }
 /* Folded (the caret in the header): the header bar alone, so a busy day can be tucked
@@ -504,9 +492,14 @@
   .monthv__day {
     grid-column: 2;
     grid-row: 1 / -1;
+    /* Sticky lives HERE only: a side column has its own track to pin inside, so it
+       covers nothing (unlike the narrow layout, where it ate the grid). */
+    position: sticky;
     top: 0.5rem;
     bottom: auto;
     align-self: start;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     max-height: calc(100dvh - 5rem);
     /* A column, not a tray on the bottom edge: full border, no lifted shadow. */
     border: 1px solid var(--line);
@@ -852,4 +845,32 @@
   flex: 0 0 auto;
   font-size: 0.78rem;
   color: var(--ink-faint);
+}
+
+/* -- The picked day's pane: flat, tight, iOS-plain -----------------------------------
+   The pane stacks cards that were each designed to float on the board's paper — their
+   own padding, their own lift. Stacked inside a drawer that is ALREADY a card, that
+   reads as boxes inside boxes: a lot of margin spent on very little text.
+   So inside this pane only (the board itself is untouched): no lift on anything, one
+   tight rhythm, and rows separated by a hairline instead of by air. */
+.monthv__day {
+  gap: 0.35rem;
+  padding: 0.55rem 0.6rem 0.65rem;
+}
+.monthv__day-body {
+  gap: 0.15rem;
+}
+/* Nothing inside the drawer floats. `:where()` keeps this at zero specificity weight
+   over the components' own focus rings, which are outlines, not shadows. */
+.monthv__day :where(.act, .card, .auto-card, .habit-row, .day-plan__trip, .sec) {
+  box-shadow: none;
+}
+/* Rows sit directly on the pane: no card border, a hairline between them instead. */
+.monthv__day :where(.act, .habit-row) {
+  border-color: transparent;
+  border-radius: 0;
+  padding-inline: 0.15rem;
+}
+.monthv__day .monthv__day-body > :where(.act, .habit-row) + :where(.act, .habit-row) {
+  border-top: 1px solid var(--line);
 }

@@ -202,10 +202,13 @@ export const ADD_HELP = {
     card: 'routines',
     body: { fr: 'Crée une routine, ou touche une routine existante pour la modifier.', en: 'Create a routine, or tap an existing one to edit it.' },
   },
-  // « Les notes » ＋ — the tab's only tile, straight into the rich editor.
+  // « Les notes » ＋ — the tab's only tile: the quick composer, right here.
   cnote: {
     card: 'notes',
-    point: 2,
-    body: { fr: 'Ouvre une nouvelle note riche : un titre, des listes à cocher, une photo ou un dessin.', en: 'Open a new rich note: a title, checklists, a photo or a drawing.' },
+    point: 0,
+    body: {
+      fr: 'Écris une note et appuie sur Entrée — c’est noté. Le micro et le 📎 (mémo vocal, dessin, photo) vivent ici : la boîte de la page, elle, ne garde que le texte.',
+      en: 'Write a note and press Enter — it’s written. The mic and the 📎 (voice memo, drawing, photo) live here: the page’s own box keeps nothing but the text.',
+    },
   },
 } satisfies Record<string, AddHelp>

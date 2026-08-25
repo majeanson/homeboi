@@ -1246,46 +1246,77 @@
   border: 1px solid var(--line);
   box-shadow: var(--shadow-sm);
 }
-/* --- iOS-Notes-style list ----------------------------------------------------
-   The Notes subtab reads like the iOS Notes app, NOT the board's sticky-note wall:
-   a search field, then one rounded card of clean, scannable rows (bold first line +
-   a quiet "date · preview"), each easy to read, edit, and delete. */
-.cnote-search {
-  display: flex;
+/* LEAN composer (simple mode): no card frame, no padding of its own — the field IS
+   the composer, so every pixel of width goes to the text being typed. */
+.cercle-notes--lean .cercle-notes__composer {
+  margin-bottom: 0.7rem;
+  padding: 0;
+}
+/* AVANCÉ only — the door to the rich editor (title, formatting, attachment). Simple
+   mode reaches it through a row's pencil; the ＋ FAB writes the quick note. */
+.cercle-notes__new {
+  align-self: flex-start;
+  margin-bottom: 0.9rem;
+}
+
+/* --- The one control bar: whose notes (left) · loupe + mode (right) ----------- */
+/* A .cluster (Layout's Cluster), so it wraps on a narrow phone instead of bleeding
+   off the right edge — never a hand-rolled flex row. */
+.cercle-notes__bar {
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.7rem;
-  padding: 0.5rem 0.7rem;
-  background: var(--surface);
+  margin: 0.2rem 0 0.7rem;
+}
+/* Inside the bar the face control owns no margin of its own (the bar spaces it). */
+.cercle-notes__bar .cercle-notes__face,
+.cercle-notes__bar .mswitch {
+  margin: 0;
+}
+/* The kiosk face ROW (advanced) is wide: let it take the room it needs and push the
+   tools onto a second line rather than squeezing every face. */
+.cercle-notes__bar .mswitch {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+.cercle-notes__tools {
+  align-items: center;
+  gap: 0.4rem;
+}
+/* The section's SearchField (the shared primitive, collapsible in simple mode):
+   give the expanded field a sane width inside the tools cluster without letting it
+   push the mode chip off the row. */
+.cercle-notes__search.searchfield {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+}
+/* SIMPLE ↔ AVANCÉ — a quiet chip naming the face you're in, lit when advanced. */
+.notes-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
+  background: var(--card);
   color: var(--ink-soft);
-}
-.cnote-search__input {
-  flex: 1 1 auto;
-  min-width: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: var(--text-md);
-  color: var(--ink);
-  outline: none;
-}
-.cnote-search__input::placeholder {
-  color: var(--ink-faint);
-}
-.cnote-search__clear {
-  flex: none;
-  display: inline-grid;
-  place-items: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: var(--line);
-  color: var(--ink-soft);
+  font-size: 0.72rem;
   cursor: pointer;
 }
+.notes-mode:hover,
+.notes-mode:focus-visible {
+  color: var(--ink);
+}
+.notes-mode.is-on {
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, var(--card));
+  border-color: color-mix(in srgb, var(--teal-deep, #2a8f85) 34%, var(--line));
+  color: var(--ink);
+}
+/* --- iOS-Notes-style list ----------------------------------------------------
+   The Notes tab reads like the iOS Notes app, NOT the board's sticky-note wall: one
+   rounded card of clean, scannable rows (bold first line + a quiet "date · preview"),
+   each easy to read, edit, and delete. Its search box is the shared SearchField
+   (styles/kit.css .searchfield) — the hand-rolled .cnote-search family it used to
+   carry was that same control, drifting on its own. */
 /* The .cnote row family (list, rows, expand, actions) + the audio-memo rename
    dialog moved to the EAGER shell — styles/board/cnote-list.css — because the
    shared NotesList also renders on the board's « Notes (cercle) » glance card

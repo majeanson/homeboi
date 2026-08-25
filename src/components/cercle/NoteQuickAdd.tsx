@@ -26,6 +26,7 @@ export function NoteQuickAdd({
   drawDraftId = 'cercle-note',
   autoFocus,
   onSubmitted,
+  lean = false,
 }: {
   /** The acting face: a member id → a personal note, null → a Maisonnée note. */
   memberId: string | null
@@ -36,6 +37,11 @@ export function NoteQuickAdd({
   autoFocus?: boolean
   /** Fired after a note is actually written (the board card closes its composer). */
   onSubmitted?: () => void
+  /** LEAN (« Les notes » in simple mode): the box is nothing but text — no mic, no
+   *  📎, no « Ajouter » button. Enter writes the note. The mic and the attachment
+   *  didn't disappear: they moved to the ＋ FAB's composer (bottom right), which is
+   *  this same component WITHOUT `lean`. See lib/notesMode. */
+  lean?: boolean
 }) {
   const t = useT()
   const write = useWrite()
@@ -77,18 +83,21 @@ export function NoteQuickAdd({
         value={text}
         onChange={setText}
         onSubmit={submit}
-        submitLabel={t.common.add}
-        submitLeadingIcon="plus-bold"
+        // Lean: Enter IS the whole interaction (submitIcon null hides the button
+        // outright), so the box spends its entire width on the text.
+        submitLabel={lean ? undefined : t.common.add}
+        submitIcon={lean ? null : 'check-bold'}
+        submitLeadingIcon={lean ? undefined : 'plus-bold'}
         submitVariant="primary"
-        voice={voice}
-        placeholder={voice.listening ? t.capture.listening : fn.placeholder}
+        voice={lean ? undefined : voice}
+        placeholder={!lean && voice.listening ? t.capture.listening : fn.placeholder}
         ariaLabel={fn.addHint}
         busy={busy || memo.busy}
-        allowEmpty={!!memo.draft}
+        allowEmpty={!lean && !!memo.draft}
         autoFocus={autoFocus}
-        boxActions={memo.attachButton}
+        boxActions={lean ? undefined : memo.attachButton}
       >
-        {memo.panel}
+        {lean ? null : memo.panel}
       </EditField>
     </div>
   )

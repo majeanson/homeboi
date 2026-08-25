@@ -20,7 +20,7 @@ import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions, type KitchenAction, type KitchenActionFlags } from '../lib/kitchenActions'
 import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY, GHOSTS_KEY, HISTORY_KEY, HABITS_KEY } from '../lib/queryKeys'
 import { type HabitsPayload } from '../lib/habits'
-import { type TodoTemplate, type TemplatesData } from '../lib/todos'
+import { type TodoTemplate, type TemplatesData, TODO_TITLE_MAX } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
 import { type Deal } from '../lib/deals'
@@ -30,6 +30,8 @@ import { useMemoAttach } from './MemoAttach'
 import { EditField } from './EditField'
 import { StatusMessage } from './StatusMessage'
 import { MotComposer } from './mots/MotComposer'
+import { NoteQuickAdd } from './cercle/NoteQuickAdd'
+import { useProfile } from '../lib/profile'
 import { EntityCombobox } from './EntityCombobox'
 import { templateOptions } from './todos/comboOptions'
 import { Chip } from './Chip'
@@ -118,7 +120,7 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   habit: { cat: 'chore', icon: 'repeat-bold' },
   // The board tile: new habit + edit-existing picker (the routine-pick shape).
   'habit-pick': { cat: 'chore', icon: 'repeat-bold' },
-  // « Les notes » ＋ — navigate-only into the rich editor; teal, like the rest of
+  // « Les notes » ＋ — the quick composer, in the sheet; teal, like the rest of
   // the old cercle family it rode in on.
   cnote: { cat: 'cercle', icon: 'file-text-bold' },
 }
@@ -236,6 +238,9 @@ export function AddSheet({
   // here on any parent kitchen sub-tab; tapping one closes the sheet, jumps to the
   // Repas tab and runs the flow, whose result lands on the week grid behind us.
   const kitchenActions = useKitchenActions()
+  // The picked face (the board's « Aujourd'hui » lens) — scopes a note written from
+  // the ＋ exactly as the Notes section scopes one written on the page.
+  const { memberId: profileId } = useProfile()
 
   // Per-action gating, same semantics the old signedIn-only chooser had: the
   // operator forms drop off for an unsigned kiosk; if nothing survives (a kiosk
@@ -773,6 +778,8 @@ export function AddSheet({
             : shown.includes('person')
               ? t.cercle.addTitle
               : t.kitchen.addTitle
+      : mode === 'cnote'
+        ? t.cercle.familyNotes.newNote
       : mode === 'routine-pick'
         ? t.nav.routines
         : mode === 'routine'
@@ -1028,6 +1035,7 @@ export function AddSheet({
               ariaLabel={t.todos.title}
               voice={todoVoice}
               busy={busy}
+              limit={TODO_TITLE_MAX}
             />
             {/* A checklist is a DEPARTURE thing: always for one day. Under the global
                 scope the pick lands on today — say it, don't let the toggle lie. */}
@@ -1039,6 +1047,15 @@ export function AddSheet({
             line and/or clip a voice/drawing/photo memo onto it. Its own composer
             (recipient + EditField + useMemoAttach); closes the sheet on send. */}
         {mode === 'mot' && <MotComposer onDone={close} />}
+
+        {/* « Les notes » — the quickest path from a thought to a note: one box,
+            Enter writes it, the sheet closes. NOT lean here: this is where the mic
+            and the 📎 (voice memo / drawing / photo) live now that the section's own
+            composer is text-only. Scoped to the picked face, exactly like the
+            section's — a face → a personal note, « Maisonnée » → a family-wide one. */}
+        {mode === 'cnote' && (
+          <NoteQuickAdd memberId={profileId} drawDraftId="sheet-cnote" autoFocus onSubmitted={close} />
+        )}
 
         {mode === 'pantry' && (
           <EditField

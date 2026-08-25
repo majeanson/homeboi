@@ -15,6 +15,18 @@ export const NOTES_HELP = {
       en: 'The notes board: quick notes — for you or the whole Household — with a title, text, drawing, photo or voice memo. The ＋ writes a new one.',
     },
   },
+  // The SIMPLE ↔ AVANCÉ chip in the section's control bar (lib/notesMode). Anchored
+  // there in BOTH faces — in simple mode it's the one control that explains why the
+  // section looks lighter than it used to, and how to get the old one back.
+  mode: {
+    card: 'notes',
+    point: 6, // « Simple ou avancé » — appended to the notes card's points
+
+    body: {
+      fr: 'Simple (par défaut) : des rangées compactes et une seule boîte — écris, appuie sur Entrée, c’est noté. Le micro, le dessin et la photo vivent dans le ＋ en bas à droite. Avancé remet le titre de section, les rangées larges qu’on réordonne et l’éditeur complet.',
+      en: 'Simple (the default): compact rows and one plain box — type, press Enter, it’s written. The mic, drawing and photo live in the ＋ at the bottom right. Advanced brings back the section header, the roomy drag-to-reorder rows and the full editor.',
+    },
+  },
   // The header magnifier (A-9 soft icon label — armed help explains the loupe
   // in place instead of leaving the page). Same body/target as ROUTINES_HELP's
   // own `search` entry (the header magnifier is the SAME control everywhere).

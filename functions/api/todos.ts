@@ -25,6 +25,17 @@ import { profileMemberId } from '../_lib/profile'
 //                                   clear { clearChecked: true, ids? }
 //   DELETE /api/todos            -> remove one { id }
 
+// How long a todo's text may be, and how long the section header a checklist
+// instance carries may be. Deliberately GENEROUS: a todo is often a whole
+// sentence ("appeler la garderie pour le formulaire de Léa avant vendredi"), and
+// the old 200-char cap cut the tail SILENTLY, after the save — the row simply
+// came back shorter with nothing said. The client mirrors TITLE_MAX
+// (src/lib/todos.ts TODO_TITLE_MAX) and now WARNS before sending, so these slices
+// are a backstop against a legacy/hostile payload, not an everyday cut. SECTION_MAX
+// must stay >= todo-templates.ts TEMPLATE_TITLE_MAX (the section IS that title).
+const TITLE_MAX = 2000
+const SECTION_MAX = 200
+
 interface TodoRow {
   id: string
   title: string
@@ -123,7 +134,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     const stmts = rows2.map((row, i) =>
       ctx.env.DB.prepare(
         'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)',
-      ).bind(newId(), actor.householdId, row.label.slice(0, 200), pinnedDay, mid, i, row.section, body.templateId, ts, ts),
+      ).bind(newId(), actor.householdId, row.label.slice(0, TITLE_MAX), pinnedDay, mid, i, row.section, body.templateId, ts, ts),
     )
     stmts.push(sweepStale(ctx.env.DB, actor.householdId, today))
     await ctx.env.DB.batch(stmts)
@@ -142,11 +153,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // src/components/todos/TodoSection.tsx.
   if (body?.departure) {
     const pinnedDay = Math.max(day ?? today, today)
-    const section = typeof body.section === 'string' && body.section.trim() ? body.section.trim().slice(0, 120) : null
+    const section = typeof body.section === 'string' && body.section.trim() ? body.section.trim().slice(0, SECTION_MAX) : null
     await ctx.env.DB.batch([
       ctx.env.DB.prepare(
         'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)',
-      ).bind(id, actor.householdId, title.slice(0, 200), pinnedDay, mid, section, DEPARTURE_ADHOC, ts, ts),
+      ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), pinnedDay, mid, section, DEPARTURE_ADHOC, ts, ts),
       sweepStale(ctx.env.DB, actor.householdId, today),
     ])
     return ok({ ok: true, id })
@@ -155,7 +166,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
       'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?)',
-    ).bind(id, actor.householdId, title.slice(0, 200), day, mid, ts, ts),
+    ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), day, mid, ts, ts),
     sweepStale(ctx.env.DB, actor.householdId, today),
   ])
   return ok({ ok: true, id })
@@ -207,7 +218,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   if (typeof body?.title === 'string' && body.title.trim()) {
     await ctx.env.DB.prepare('UPDATE todos SET title = ?, updated_at = ? WHERE id = ? AND household_id = ?')
-      .bind(body.title.trim().slice(0, 200), ts, id, actor.householdId)
+      .bind(body.title.trim().slice(0, TITLE_MAX), ts, id, actor.householdId)
       .run()
   }
   return ok({ ok: true })

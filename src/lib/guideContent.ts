@@ -469,8 +469,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le mois : lire une journée, et y ajouter', en: 'The month: read a day, and add to it' },
         detail: {
-          fr: 'Dans la vue Mois, touche une date : la journée s’affiche et RESTE à l’écran pendant que tu navigues (à côté du calendrier sur grand écran, épinglée en bas sur un téléphone). Le ⋯ de la journée ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date-là. Le petit bouton à côté de « Aujourd’hui » fait écrire aux cases ce qu’il y a dedans, au lieu des points.',
-          en: 'In the Month view, tap a date: the day opens and STAYS on screen while you browse (beside the calendar on a big screen, pinned at the bottom on a phone). The day’s ⋯ adds an event, a chore, a meal or the day note to THAT date. The little button next to “Today” makes the cells spell out what is in them instead of dotting it.',
+          fr: 'Dans la vue Mois, touche une date : sa case s’agrandit et nomme ce qu’il y a dedans (les autres gardent leurs points), et le détail de la journée s’ouvre juste en dessous — à côté du calendrier sur grand écran. Le ⋯ de la journée ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date-là.',
+          en: 'In the Month view, tap a date: its cell grows and names what is in it (the others keep their dots), and the day’s detail opens right below — beside the calendar on a big screen. The day’s ⋯ adds an event, a chore, a meal or the day note to THAT date.',
         },
       },
     ],
@@ -907,30 +907,30 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ ouvre directement l’éditeur riche : une nouvelle note, prête à écrire.',
-          en: 'The ＋ opens the rich editor directly: a new note, ready to write.',
+          fr: 'Le ＋ ouvre la boîte à écrire tout de suite : une ligne, Entrée, c’est noté. C’est aussi là que vivent le micro et le 📎 (mémo vocal, dessin, photo).',
+          en: 'The ＋ opens the writing box right away: one line, Enter, it’s written. It’s also where the mic and the 📎 (voice memo, drawing, photo) live.',
         },
         route: '/notes?plus=cnote',
       },
       {
         label: { fr: 'Pour toi ou la Maisonnée', en: 'For you or the Household' },
         detail: {
-          fr: 'La rangée de visages en haut décide qui voit quoi : un visage montre ses notes à lui, Maisonnée montre celles pour tout le monde — et une nouvelle note prend la portée du visage choisi.',
-          en: 'The face row up top decides who sees what: a face shows just their notes, Household shows the ones for everyone — and a new note takes on the picked face’s scope.',
+          fr: 'Le petit visage en haut décide qui voit quoi : un visage montre ses notes à lui, Maisonnée montre celles pour tout le monde — et une nouvelle note prend la portée du visage choisi.',
+          en: 'The small face up top decides who sees what: a face shows just their notes, Household shows the ones for everyone — and a new note takes on the picked face’s scope.',
         },
       },
       {
         label: { fr: 'La note riche', en: 'The rich note' },
         detail: {
-          fr: 'Un titre, des listes à cocher, une photo ou un dessin — pas juste une ligne de texte.',
-          en: 'A title, checklists, a photo or a drawing — not just a line of text.',
+          fr: 'Le crayon d’une rangée ouvre l’éditeur complet : listes à cocher, gras, citations, une photo ou un dessin — pas juste une ligne de texte. Les premiers mots deviennent le titre.',
+          en: 'A row’s pencil opens the full editor: checklists, bold, quotes, a photo or a drawing — not just a line of text. The first words become the title.',
         },
       },
       {
         label: { fr: 'Un mémo vocal, un dessin, une photo', en: 'A voice memo, a drawing, a photo' },
         detail: {
-          fr: 'Le 📎 sur la boîte à écrire rapide joint un mémo vocal, un dessin ou une photo à la note — sans effacer ce que tu as tapé.',
-          en: 'The 📎 on the one-line composer clips a voice memo, a drawing or a photo onto the note — without erasing what you typed.',
+          fr: 'Le 📎 dans la boîte du ＋ (en bas à droite) joint un mémo vocal, un dessin ou une photo à la note — sans effacer ce que tu as tapé.',
+          en: 'The 📎 in the ＋ box (bottom right) clips a voice memo, a drawing or a photo onto the note — without erasing what you typed.',
         },
       },
       {
@@ -945,6 +945,13 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'En vue enfant, les notes se lisent à voix haute, et un mémo vocal joint se joue d’un toucher.',
           en: 'In the kid view, notes read themselves aloud, and a clipped voice memo plays on tap.',
+        },
+      },
+      {
+        label: { fr: 'Simple ou avancé', en: 'Simple or advanced' },
+        detail: {
+          fr: 'Par défaut la page est au plus simple : des rangées serrées, une seule boîte, la loupe repliée. La petite pastille « Avancé » remet le titre de section, les rangées larges qu’on réordonne, le micro dans la boîte et l’éditeur complet. C’est par appareil — ta tablette et ton téléphone peuvent différer.',
+          en: 'By default the page is as plain as it gets: tight rows, one box, the loupe folded away. The small « Advanced » chip brings back the section header, the roomy drag-to-reorder rows, the mic in the box and the full editor. It’s per device — your tablet and your phone can differ.',
         },
       },
     ],

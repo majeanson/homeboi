@@ -44,6 +44,16 @@ export interface TemplatesData {
   templates: TodoTemplate[]
 }
 
+// Length caps, MIRRORED from functions/api/todos.ts (TITLE_MAX / SECTION_MAX) and
+// functions/api/todo-templates.ts (ITEM_LABEL_MAX / TEMPLATE_TITLE_MAX) — keep in
+// lockstep; todos.test.ts fails the build if they drift. They are deliberately
+// generous: a todo is often a whole sentence, and the server slices what it gets.
+// Every field that writes one passes the matching cap as EditField/EntityCombobox's
+// `limit`, so a too-long text is WARNED about before the write instead of coming
+// back silently truncated after it.
+export const TODO_TITLE_MAX = 2000
+export const TODO_TEMPLATE_TITLE_MAX = 200
+
 // Cap on a single instantiation's flattened size — a backstop against a pathological
 // deep/wide composition. Mirrored server-side in functions/api/todos.ts.
 const MAX_EXPAND = 100

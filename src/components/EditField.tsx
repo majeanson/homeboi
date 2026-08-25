@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
 import { Icon, type IconName } from './Icon'
+import { StatusMessage } from './StatusMessage'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
 
 // The ONE add/edit text box. Every "type something, then act on it" spot in the
@@ -63,6 +64,16 @@ export interface EditFieldProps {
   /** Disables only the submit button (e.g. an in-flight save) — the input stays live. */
   busy?: boolean
   maxLength?: number
+  /** SOFT length cap, in characters — the honest answer to "my text got cut after
+   *  saving". `maxLength` is a HARD block (the browser silently eats every
+   *  keystroke past it), and a server-side cap isn't even that: it truncates
+   *  AFTER the write, so the loss is only discovered later. With `limit` the
+   *  field stays fully typable — paste a long line, dictate one — but the moment
+   *  the trimmed text passes the cap a warning appears under the field and the
+   *  submit refuses until it's shortened. Set it wherever the endpoint slices the
+   *  value, so the cut is announced BEFORE the write instead of found after.
+   *  (src/lib/todos.ts `TODO_TITLE_MAX` is the todos mirror of the server cap.) */
+  limit?: number
   /** Render a textarea instead of an input. Enter then inserts a newline (no submit). */
   multiline?: boolean
   /** Left of the field: an icon/emoji picker button or a drag handle. */
@@ -113,6 +124,7 @@ export function EditField({
   disabled,
   busy,
   maxLength,
+  limit,
   multiline,
   leading,
   reorder,
@@ -131,9 +143,17 @@ export function EditField({
   const hidden = readOnly ?? isGuest()
   const isForm = as === 'form'
 
+  // Soft cap: how far past `limit` the TRIMMED text runs (0 = fine) — trimmed,
+  // because that is exactly what the server measures before it slices.
+  const length = value.trim().length
+  const over = limit != null ? Math.max(0, length - limit) : 0
+
   const commit = () => {
     if (!onSubmit || disabled || busy) return
     if (!value.trim() && !allowEmpty) return
+    // Past the cap the warning line is already up — refuse rather than let the
+    // server silently truncate what was typed.
+    if (over > 0) return
     onSubmit(value)
   }
 
@@ -181,7 +201,7 @@ export function EditField({
   }
 
   const showIconSubmit = !submitLabel && submitIcon != null && !!onSubmit
-  const submitDisabled = disabled || busy || (!value.trim() && !allowEmpty)
+  const submitDisabled = disabled || busy || over > 0 || (!value.trim() && !allowEmpty)
 
   if (hidden) return null
 
@@ -311,6 +331,17 @@ export function EditField({
         )}
       </div>
 
+      {/* Past the soft cap. The SENTENCE is stable (it names the cap, not the
+          overage) so a screen reader announces it once instead of on every
+          keystroke; the live count rides along aria-hidden. */}
+      {over > 0 && limit != null && (
+        <StatusMessage tone="error" icon="warning-bold" className="edit-field__over">
+          {t.common.tooLong(limit)}{' '}
+          <span aria-hidden="true">
+            {length} / {limit}
+          </span>
+        </StatusMessage>
+      )}
       {secondaryActions && <div className="edit-field__secondary">{secondaryActions}</div>}
       {voice && <VoiceStatus voice={voice} />}
       {children}

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 import {
   type Todo,
@@ -15,6 +18,8 @@ import {
   expandTemplate,
   expandSectioned,
   wouldCycle,
+  TODO_TITLE_MAX,
+  TODO_TEMPLATE_TITLE_MAX,
 } from './todos'
 import { TODOS_KEY } from './queryKeys'
 
@@ -199,5 +204,37 @@ describe('wouldCycle', () => {
   it('allows an independent candidate', () => {
     const B = tpl('B', 'B', [item('b1')])
     expect(wouldCycle([A, D, B], 'A', 'B')).toBe(false)
+  })
+})
+
+// ── Length caps stay in lockstep with the server ──────────────────────────────
+// The whole point of TODO_TITLE_MAX / TODO_TEMPLATE_TITLE_MAX is that the FIELD
+// warns before the write using the same number the HANDLER slices with. If the two
+// drift, the warning lies and a todo silently comes back truncated again — exactly
+// the bug this replaced. So read the caps straight out of the handlers.
+describe('todo length caps mirror functions/api', () => {
+  const read = (rel: string) =>
+    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../functions/api', rel), 'utf8')
+  const capOf = (src: string, name: string) => {
+    const m = new RegExp(`const ${name} = ([0-9]+)`).exec(src)
+    expect(m, `${name} not found — did the handler rename it?`).toBeTruthy()
+    return Number(m![1])
+  }
+
+  it('a todo title uses the handler cap', () => {
+    expect(capOf(read('todos.ts'), 'TITLE_MAX')).toBe(TODO_TITLE_MAX)
+  })
+  it('a template item label shares the todo cap (it BECOMES a todo title)', () => {
+    expect(capOf(read('todo-templates.ts'), 'ITEM_LABEL_MAX')).toBe(TODO_TITLE_MAX)
+  })
+  it('a template title uses the template cap', () => {
+    expect(capOf(read('todo-templates.ts'), 'TEMPLATE_TITLE_MAX')).toBe(TODO_TEMPLATE_TITLE_MAX)
+  })
+  it("a checklist instance's section header can hold a whole template title", () => {
+    // The section IS the template's title — a shorter cap would cut the header.
+    expect(capOf(read('todos.ts'), 'SECTION_MAX')).toBeGreaterThanOrEqual(TODO_TEMPLATE_TITLE_MAX)
+  })
+  it('the caps are generous enough for a real sentence', () => {
+    expect(TODO_TITLE_MAX).toBeGreaterThanOrEqual(1000)
   })
 })

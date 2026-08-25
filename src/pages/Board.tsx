@@ -167,6 +167,9 @@ export function Board() {
   const [profileOpen, setProfileOpen] = useState(false)
   // « Depuis ce matin » (A-3) — the greeting doubles as a pull-only peek trigger.
   const [sinceMorningOpen, setSinceMorningOpen] = useState(false)
+  // « À faire » keeps its add box behind the card's header ＋ (the Notes-card idiom):
+  // open on tap, closed again the moment something is written.
+  const [addingTodo, setAddingTodo] = useState(false)
   // « Dehors aujourd'hui » (SkySheet) — tap the weather/wonder hero for the wonder in
   // full, the source gallery, and the day's weather story. Read-only; guests may open it.
   const [skyOpen, setSkyOpen] = useState(false)
@@ -1358,9 +1361,38 @@ export function Board() {
       compactHint={
         todayTodos.length + openLoose.length > 0 ? String(todayTodos.length + openLoose.length) : undefined
       }
+      // The add box lives behind the header ＋, exactly like the « Notes » card: a
+      // glance card shouldn't carry a permanently-open text field — it's the one thing
+      // on the board you can't scan past. Tap ＋, write, and it closes itself.
+      // Hidden for a read-only guest (the write would 403), and absent from the compact
+      // mini face like every other write affordance here.
+      action={
+        !ro ? (
+          <button
+            type="button"
+            className={'sec-label__actbtn' + (addingTodo ? ' is-on' : '')}
+            onClick={() => setAddingTodo((v) => !v)}
+            aria-expanded={addingTodo}
+            aria-label={t.common.add}
+            title={t.common.add}
+          >
+            <Icon name={addingTodo ? 'x-bold' : 'plus-bold'} size={14} />
+          </button>
+        ) : undefined
+      }
     >
       {todayTodos.map(todoAct)}
-      <TodoSection title={t.todos.title} members={data.members} bento={false} show="loose" picker="plain" />
+      <TodoSection
+        title={t.todos.title}
+        members={data.members}
+        bento={false}
+        show="loose"
+        // 'none' keeps the list read-only until the ＋ opens the field; 'plain' is the
+        // text-only add (template instantiation lives on the departure card).
+        picker={addingTodo ? 'plain' : 'none'}
+        addAutoFocus={addingTodo}
+        onAdded={() => setAddingTodo(false)}
+      />
     </Section>
   )
   // « À venir » — upcoming events/chores (null when none).

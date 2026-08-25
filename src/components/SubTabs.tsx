@@ -19,6 +19,10 @@ interface SubTabOption<K extends string> {
   label: ReactNode
   // Optional leading glyph (Phosphor, via the shared <Icon> set — never an emoji).
   icon?: IconName
+  // Accessible name + tooltip for a segment whose `label` carries no text (an
+  // icon-only tab, e.g. the recipe book's Collections toggle). Without it such a
+  // tab reaches AT as an unnamed button.
+  ariaLabel?: string
 }
 
 export function SubTabs<K extends string>({
@@ -149,6 +153,8 @@ export function SubTabs<K extends string>({
             aria-selected={value === o.key}
             tabIndex={value === o.key ? 0 : -1}
             className={'subtabs__opt' + (value === o.key ? ' is-on' : '')}
+            aria-label={o.ariaLabel}
+            title={o.ariaLabel}
             onClick={pick ? pick(o.key, () => onSelect(o.key)) : () => onSelect(o.key)}
           >
             {o.icon && <InlineIcon name={o.icon} size={15} />}

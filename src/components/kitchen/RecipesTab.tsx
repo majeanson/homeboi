@@ -13,7 +13,8 @@ import { withoutHeadings } from '../../lib/recipeSections'
 import { formatDuration } from '../../lib/duration'
 import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
-import { Icon, InlineIcon } from '../Icon'
+import { InlineIcon } from '../Icon'
+import { SearchField } from '../SearchField'
 import { SubTabs } from '../SubTabs'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
@@ -309,51 +310,40 @@ export function RecipesTab({
             (kitchen section → book, navigate-only to /kitchen/book). */}
       </div>
       {help?.bubbleFor('recipesBook')}
-      {/* Search on its own line, good width, with the #11 "Aa vs Collections"
-          view toggle beside it. The filter/sort PILLS get their own wrapping
-          row below so they agglomerate cleanly like the custom pills. */}
+      {/* One lean line: a magnifier that expands into the search field on tap, and
+          the #11 view toggle (Aa = flat list · ▤ = grouped by collection). The
+          filter/sort PILLS get their own wrapping row below so they agglomerate
+          cleanly like the custom pills. */}
       {(recipes.length > 3 || (recipes.length > 0 && tags.length > 0)) && (
         <div className="kitchen__recipe-searchbar">
           {recipes.length > 3 && (
-            <input
-              className="input kitchen__recipe-search"
+            <SearchField
+              collapsible
               value={recipeQuery}
-              onChange={(e) => setRecipeQuery(e.target.value)}
+              onChange={setRecipeQuery}
               placeholder={t.recipes.search}
-              aria-label={t.recipes.search}
+              ariaLabel={t.recipes.search}
             />
           )}
-          {recipes.length > 0 && (
+          {recipes.length > 0 && tags.length > 0 && (
             <div className="recipe-view-toggle">
-              {tags.length > 0 && (
-                <SubTabs
-                  size="mini"
-                  ariaLabel={t.recipes.arrange}
-                  value={groupView ? 'collections' : 'aa'}
-                  onSelect={(k) => setGroupView(k === 'collections')}
-                  options={[
-                    { key: 'aa', label: 'Aa' },
-                    { key: 'collections', label: t.recipes.collectionsTitle },
-                  ]}
-                  // Both tabs share the single 'collections' help entry, so pin it
-                  // (ignore the per-tab key) — otherwise the 'aa' tab would request a
-                  // non-existent help entry (a P2-9 orphan).
-                  pick={help ? (_k, run) => help.pick('collections', run) : undefined}
-                />
-              )}
-              {/* Straight to the toddler picture cookbook (#45) — the same read-aloud,
-                  swipeable book the kid kitchen opens, here as a one-tap shortcut that
-                  sits as a third segment of the Aa/Collections toggle pill (full-screen
-                  scene at /kitchen/book). */}
-              <button
-                type="button"
-                className="recipe-view-toggle__book"
-                onClick={() => nav('/kitchen/book')}
-                aria-label={t.recipes.bookTitle}
-                title={t.recipes.bookTitle}
-              >
-                <Icon name="book-open-bold" size={20} />
-              </button>
+              <SubTabs
+                size="mini"
+                ariaLabel={t.recipes.arrange}
+                value={groupView ? 'collections' : 'aa'}
+                onSelect={(k) => setGroupView(k === 'collections')}
+                options={[
+                  { key: 'aa', label: 'Aa' },
+                  // Icon-only: "Collections" spelled out cost a third of the row on
+                  // a phone. The glyph (stacked layers) + its aria-label/tooltip
+                  // carry the meaning, and the guide card still explains it.
+                  { key: 'collections', label: '', icon: 'stack-bold', ariaLabel: t.recipes.collectionsTitle },
+                ]}
+                // Both tabs share the single 'collections' help entry, so pin it
+                // (ignore the per-tab key) — otherwise the 'aa' tab would request a
+                // non-existent help entry (a P2-9 orphan).
+                pick={help ? (_k, run) => help.pick('collections', run) : undefined}
+              />
             </div>
           )}
         </div>
@@ -421,13 +411,10 @@ export function RecipesTab({
         </>
       ) : (
         <>
-          {/* #11 "Aa vs Collections" view toggle now lives up beside the search;
-              re-arranges only — pills/tags still filter. */}
-          {/* In Collections, the tag chips above pick which sections to show (a
-              union), not narrow the recipes — say so once so the change is clear. */}
-          {groupView && tags.length > 0 && (
-            <p className="mono recipe-collections-hint">{t.recipes.collectionsPickHint}</p>
-          )}
+          {/* The #11 "Aa vs Collections" view toggle lives up beside the search;
+              re-arranges only — pills/tags still filter. In Collections the tag
+              chips pick WHICH sections show (a union) rather than narrowing the
+              recipes; the section headings make that legible without a hint line. */}
           {recipeOrder.length === 0 ? (
             // The book has recipes — the FILTERS hid them all. Say so (instead of
             // the misleading "no recipes yet") and offer the one-tap way back.

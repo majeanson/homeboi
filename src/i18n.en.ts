@@ -959,10 +959,6 @@ export const EN: typeof FR = {
     legendChores: 'Chores',
     legendTodos: 'To complete',
     legendNotes: 'Notes',
-    // The cell-density toggle (lib/monthDensity) — device-local, so a guest may use it.
-    density: 'Cell detail',
-    densityCompact: 'Compact cells',
-    densityDetailed: 'Detailed cells',
     // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
     dayActions: 'Add to this day',
     // The pinned day panel on a phone: it opens as a one-line bar you tap to unfold.
@@ -1276,7 +1272,6 @@ export const EN: typeof FR = {
     usesN: (n: number) => `uses ${n}`,
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
-    collectionsPickHint: 'Tap tags to show only those collections.',
     arrange: 'View',
     ungrouped: 'Other',
     // Recipe-tab pills (migration 0045): the two new built-ins.
@@ -1724,6 +1719,11 @@ export const EN: typeof FR = {
       attachPhoto: 'Photo',
       attachDrawing: 'Drawing',
       attachRemove: 'Remove',
+      // SIMPLE ↔ ADVANCED (lib/notesMode) — this device's display preference for the
+      // section. Simple (the default): compact rows, one plain text box.
+      modeToggle: 'Display: simple or advanced',
+      modeSimple: 'Simple',
+      modeAdvanced: 'Advanced',
     },
   },
   // Maison — the merged tab (Routines · Family · Social · Business · Carnets).
@@ -2861,7 +2861,7 @@ export const EN: typeof FR = {
     byStore: 'By store',
     share: 'Share',
   },
-  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', moreActions: 'More actions', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.' },
+  common: { loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this?', saveFailed: 'Not saved — try again.', loadFailed: "Couldn't load — try again.", close: 'Close', moreActions: 'More actions', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiNone: 'No emoji', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.', tooLong: (max: number) => `Text too long — it would be cut at ${max} characters. Shorten it before saving.` },
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (event, list, meal, note).',

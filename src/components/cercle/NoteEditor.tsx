@@ -11,7 +11,8 @@ import { useHScroll } from '../../lib/hscroll'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
-import { type FamilyNote, type NoteScope } from '../../lib/familyNotes'
+import { useNotesAdvanced } from '../../lib/notesMode'
+import { type FamilyNote, type NoteScope, seedMd } from '../../lib/familyNotes'
 import type { MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import {
@@ -116,8 +117,11 @@ export function NoteEditor({
 
   // « BETA » — which editing surface this device uses (see betaStore above). The
   // in-progress body survives a flip: toggling snapshots the live Markdown into
-  // draftMdRef, and whichever surface mounts next seeds from it.
-  const beta = betaStore.use()
+  // draftMdRef, and whichever surface mounts next seeds from it. SIMPLE mode has no
+  // BETA chip, so it also has no way back out of the TipTap surface — pin it to the
+  // classic one there rather than stranding a device that had flipped it on.
+  const advanced = useNotesAdvanced()
+  const beta = betaStore.use() && advanced
   const tiptapMdRef = useRef<(() => string) | null>(null)
   const draftMdRef = useRef<string | null>(null)
 
@@ -140,7 +144,10 @@ export function NoteEditor({
   // effect below, which also re-runs on a BETA↔classic flip.)
   useEffect(() => {
     if (!open) return
-    setTitle(note?.title ?? '')
+    // Simple mode has no title FIELD: the note's first words are its title (iOS
+    // style), so the stored title folds into the body on open (see seedMd) and the
+    // save writes an empty one.
+    setTitle(advanced ? (note?.title ?? '') : '')
     // Editing → the note's own scope; new note → the picked face (scope/memberId props).
     setForMember(note ? note.member_id : scope === 'self' ? memberId : null)
     const mk = note && (note.media_kind === 'image' || note.media_kind === 'drawing') ? note.media_kind : null
@@ -150,7 +157,7 @@ export function NoteEditor({
     sessionKeysRef.current = new Set() // fresh editing session — nothing uploaded yet
     draftMdRef.current = null // a new session never inherits the last one's flip snapshot
     setActive({})
-  }, [open, note, scope, memberId])
+  }, [open, note, scope, memberId, advanced])
 
   // Seed the CLASSIC body — on open, and again whenever the BETA flip hands the
   // surface back (the contentEditable remounts empty then; the draft snapshot,
@@ -159,16 +166,20 @@ export function NoteEditor({
     if (!open || beta) return
     const root = editorRef.current
     if (!root) return
-    const md = draftMdRef.current ?? note?.text ?? ''
+    const md = draftMdRef.current ?? seedMd(note, advanced)
     root.innerHTML = mdToHtml(md)
     root.setAttribute('data-empty', md.trim() ? 'false' : 'true')
-  }, [open, note, beta])
+    // With no title field above it, the body IS the first thing you type into.
+    if (!advanced && !note) root.focus()
+  }, [open, note, beta, advanced])
 
   // Commit on close (auto-save). Held in a ref so the stable handleClose passed to
   // useModal always runs the latest state without re-subscribing the Esc handler.
   const commitRef = useRef<() => void>(() => {})
   commitRef.current = () => {
-    const ti = title.trim()
+    // Simple mode: the title is DERIVED (the rows already fall back to the body's
+    // first line), so it saves empty — the words you typed are the heading.
+    const ti = advanced ? title.trim() : ''
     const bo = currentMd().trim()
     const empty = !ti && !bo && !mediaKey
     // The "Pour qui" pick → wire scope: a member id = a personal note, null = Maisonnée.
@@ -555,28 +566,35 @@ export function NoteEditor({
         </button>
         <span className="note-editor__heading">{note ? fn.editorEdit : fn.editorNew}</span>
         {/* « BETA » — flip to the TipTap surface (and back). The body carries over;
-            the note stays the same Markdown either way. */}
-        <button
-          type="button"
-          className={'note-editor__toggle mono' + (beta ? ' is-on' : '')}
-          onClick={toggleBeta}
-          aria-pressed={beta}
-          aria-label={beta ? fn.betaBack : fn.betaTry}
-          title={beta ? fn.betaBack : fn.betaTry}
-        >
-          BETA
-        </button>
+            the note stays the same Markdown either way. Advanced only: simple mode
+            keeps the editor to one surface (lib/notesMode). */}
+        {advanced && (
+          <button
+            type="button"
+            className={'note-editor__toggle mono' + (beta ? ' is-on' : '')}
+            onClick={toggleBeta}
+            aria-pressed={beta}
+            aria-label={beta ? fn.betaBack : fn.betaTry}
+            title={beta ? fn.betaBack : fn.betaTry}
+          >
+            BETA
+          </button>
+        )}
       </header>
 
-      <input
-        className="input note-editor__title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder={fn.titlePlaceholder}
-        aria-label={fn.titlePlaceholder}
-        maxLength={120}
-        autoFocus={!note}
-      />
+      {/* The explicit title field is ADVANCED only. In simple mode the note's first
+          words are its title (iOS style) — one thing to write, not two. */}
+      {advanced && (
+        <input
+          className="input note-editor__title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={fn.titlePlaceholder}
+          aria-label={fn.titlePlaceholder}
+          maxLength={120}
+          autoFocus={!note}
+        />
+      )}
 
       {/* "Pour qui" — re-scope the note to a member ("Moi") or the whole Maisonnée. */}
       <div className="note-editor__scope">

@@ -17,6 +17,7 @@ import { Icon, InlineIcon } from '../components/Icon'
 import { EditField } from '../components/EditField'
 import { useMemoAttach } from '../components/MemoAttach'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
+import { SearchField } from '../components/SearchField'
 import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { RowActions } from '../components/RowActions'
@@ -557,6 +558,8 @@ export function DevKit() {
   const [text1, setText1] = useState('')
   const [text2, setText2] = useState('Macaroni chinois')
   const [text3, setText3] = useState('')
+  const [search1, setSearch1] = useState('')
+  const [search2, setSearch2] = useState('')
   const [comboVal, setComboVal] = useState('')
   const [cfDemo, setCfDemo] = useState<ContactCoreValue>(EMPTY_CONTACT_CORE)
   const [tagDemo, setTagDemo] = useState('')
@@ -727,6 +730,18 @@ export function DevKit() {
               }
             />
           </Demo>
+          <Demo label="limit (soft cap — type past 40 to see the warning; the submit waits)">
+            <EditField
+              value={text3}
+              onChange={setText3}
+              onSubmit={() => setText3('')}
+              submitLabel={t.common.add}
+              submitLeadingIcon="plus-bold"
+              submitVariant="primary"
+              limit={40}
+              placeholder="Écris une longue phrase…"
+            />
+          </Demo>
           <Demo label="row editor (leading + reorder + delete)">
             {cards.map((c, i) => (
               <EditField
@@ -795,6 +810,45 @@ export function DevKit() {
           <Demo label="compact — icon-only face (quick-add row); tap the pip for the full list">
             <AislePicker text="Pain tranché" compact className="qa__aisle" />
           </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'SearchField',
+      file: 'components/SearchField.tsx',
+      kw: 'search chercher recherche loupe magnifier filtre filter query collapsible',
+      render: () => (
+        <>
+          <Demo label="always open (the notes board — search IS the page's other job)">
+            <SearchField value={search1} onChange={setSearch1} placeholder="Chercher une note…" ariaLabel="Chercher une note" />
+          </Demo>
+          <Demo label="collapsible — a loupe until tapped, then the field takes the row (the recipe book)">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <SearchField
+                collapsible
+                value={search2}
+                onChange={setSearch2}
+                placeholder="Chercher une recette…"
+                ariaLabel="Chercher une recette"
+              />
+              <SubTabs
+                size="mini"
+                options={[
+                  { key: 'aa', label: 'Aa' },
+                  { key: 'coll', label: '', icon: 'stack-bold', ariaLabel: 'Collections' },
+                ]}
+                value={miniTab}
+                onSelect={setMiniTab}
+                ariaLabel="Démo affichage"
+              />
+            </div>
+          </Demo>
+          <p className="mono devkit__hint">
+            Collapsible collapses again only when it loses focus EMPTY — a live query always keeps the
+            field (and the reason the list below is narrowed) on screen. Escape clears + closes. The
+            collapsed face is a real button, so it's tab + Enter reachable, never tap-only.
+          </p>
         </>
       ),
     },
@@ -1242,12 +1296,15 @@ export function DevKit() {
       cat: 'Saisie',
       name: 'CercleNotes',
       file: 'components/cercle/CercleNotes.tsx',
-      kw: 'cercle famille notes recommandations iOS quick note moi maisonnée self family scope media',
+      kw: 'cercle famille notes recommandations iOS quick note moi maisonnée self family scope media simple avancé lean advanced',
       render: () => (
-        // « Le cercle » → Famille → "Notes & recommandations": iOS-Notes-style quick
-        // notes scoped to a member ("Moi") or the whole Maisonnée, with audio/drawing/
-        // photo. Reads the live family-notes query (empty here) + a face row to scope by.
-        <Demo label="Quick notes scoped to Moi / Maisonnée, with media">
+        // « Les notes »: iOS-Notes-style quick notes scoped to a member ("Moi") or the
+        // whole Maisonnée. Reads the live family-notes query (empty here) + the face
+        // control to scope by. The specimen renders in whichever face THIS device is
+        // set to (lib/notesMode) — flip it with the « Simple / Avancé » chip in the
+        // bar to see both: simple is the lean default (no header, compact rows, a
+        // text-only composer), advanced is the pre-lean tab.
+        <Demo label="Quick notes scoped to Moi / Maisonnée — simple (default) or advanced">
           <CercleNotes members={DEMO_MEMBERS} />
         </Demo>
       ),
@@ -1261,9 +1318,17 @@ export function DevKit() {
         // THE one-line family-notes composer (EditField + the 📎 memo attachment), shared by
         // « Les notes » and the board card's header ＋. The scope follows the face passed in:
         // a member id → a personal note, null → a Maisonnée one.
-        <Demo label="Quick « note rapide » composer (one write: text + memo)">
-          <NoteQuickAdd memberId={null} className="cercle-notes__composer card" />
-        </Demo>
+        <>
+          <Demo label="Quick « note rapide » composer (one write: text + memo)">
+            <NoteQuickAdd memberId={null} className="cercle-notes__composer card" />
+          </Demo>
+          {/* LEAN — « Les notes »' default composer: text alone, Enter writes it.
+              The mic + 📎 didn't vanish, they live in the ＋ FAB's sheet composer
+              (the un-leaned one above). */}
+          <Demo label="lean — text only, Enter commits (« Les notes » default)">
+            <NoteQuickAdd memberId={null} lean className="cercle-notes__composer" />
+          </Demo>
+        </>
       ),
     },
     {
@@ -1600,12 +1665,14 @@ export function DevKit() {
               ariaLabel="Démo sous-onglets texte"
             />
           </Demo>
-          <Demo label="mini variant (recipe book Aa · Collections)">
+          <Demo label="mini variant + an icon-only segment (the recipe book's Aa · Collections toggle)">
             <SubTabs
               size="mini"
               options={[
                 { key: 'aa', label: 'Aa' },
-                { key: 'coll', label: 'Collections' },
+                // A segment with no text label MUST carry ariaLabel — it's the
+                // tab's only accessible name (and its tooltip).
+                { key: 'coll', label: '', icon: 'stack-bold', ariaLabel: 'Collections' },
               ]}
               value={miniTab}
               onSelect={setMiniTab}

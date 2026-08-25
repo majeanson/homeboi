@@ -16,6 +16,8 @@ import {
   expandTemplate,
   expandSectioned,
   wouldCycle,
+  TODO_TITLE_MAX,
+  TODO_TEMPLATE_TITLE_MAX,
 } from '../../lib/todos'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
@@ -140,7 +142,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                     defaultValue={tpl.title}
                     onBlur={(e) => renameTemplate(tpl, e.target.value)}
                     aria-label={t.todos.templateName}
-                    maxLength={80}
+                    maxLength={TODO_TEMPLATE_TITLE_MAX}
                   />
                   <span className="todo-tpl__count mono">{t.todos.templateItemsCount(total)}</span>
                   <RowActions onDelete={() => removeTemplate(tpl)} deleteLabel={`${t.common.delete} — ${tpl.title}`} />
@@ -185,6 +187,9 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                           onCancel={() => setEditItem(null)}
                           autoFocus
                           ariaLabel={t.todos.templateItems}
+                          // An item label BECOMES a todo title on instantiation,
+                          // so it carries the todos cap, warned about up front.
+                          limit={TODO_TITLE_MAX}
                         />
                       </li>
                     ) : (
@@ -223,6 +228,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                     submitIcon="plus-bold"
                     placeholder={t.todos.addItem}
                     ariaLabel={t.todos.addItem}
+                    limit={TODO_TITLE_MAX}
                   />
                   {/* Include another list as a section (cyclic choices filtered out). */}
                   {candidates.length > 0 && (
@@ -269,6 +275,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
           submitLeadingIcon="plus-bold"
           placeholder={t.todos.templateNamePlaceholder}
           ariaLabel={t.todos.templateName}
+          limit={TODO_TEMPLATE_TITLE_MAX}
         />
       </div>
 

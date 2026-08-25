@@ -660,27 +660,32 @@
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 0.6rem;
-  margin-bottom: 0.8rem;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.3rem;
+  padding-bottom: 0.25rem;
   -webkit-overflow-scrolling: touch;
 }
-/* Search on its own line (full width), with the Aa/Collections toggle beside it. */
+/* One lean line: the collapsed magnifier (SearchField) at the left, the
+   Aa/Collections toggle at the right. Open, the field claims the free width and
+   pushes the toggle to the edge — the row height never changes (both faces are
+   2.5rem), so nothing below jumps when it expands. */
 .kitchen__recipe-searchbar {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.8rem;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
 }
-.kitchen__recipe-searchbar .kitchen__recipe-search {
+.kitchen__recipe-searchbar .searchfield {
   flex: 1 1 auto;
   min-width: 0;
   margin-bottom: 0;
 }
+/* margin-left:auto, not justify-content — the toggle must sit at the right edge
+   even when the search is absent (a book of 3 recipes or fewer has no field). */
 .kitchen__recipe-searchbar .recipe-view-toggle {
   flex: 0 0 auto;
-  margin: 0;
+  margin: 0 0 0 auto;
 }
 .kitchen__cook-filter,
 .kitchen__soon-filter,
@@ -690,8 +695,26 @@
   cursor: pointer;
   white-space: nowrap;
 }
-.kitchen__recipe-search {
-  margin-bottom: 0.8rem;
+/* The pills + tag chips are SECONDARY filters, not the page's primary navigation,
+   so they opt out of the .hub .chip thumb height (2.9rem / 1rem) that made the
+   two rows eat a third of the recipe view on a phone. Still a 34px target, still
+   the only thing on their line — just quieter. (cook.css is @imported after
+   pages/hub.css, so these win the specificity tie on source order.) */
+.kitchen__recipe-tools .chip,
+.kitchen__tag-filter .chip {
+  min-height: 2.15rem;
+  padding: 0.2rem 0.7rem;
+  font-size: var(--text-sm);
+  gap: 0.25rem;
+}
+/* …but a WALL TABLET is tapped at arm's length with a whole hand, and chips ARE
+   the kitchen's navigation there. Give the two rows back a comfortable target on
+   kiosk only — still leaner than the 2.9rem they wore on every surface. */
+.hub[data-surface='kiosk'] .kitchen__recipe-tools .chip,
+.hub[data-surface='kiosk'] .kitchen__tag-filter .chip {
+  min-height: 2.55rem;
+  padding: 0.3rem 0.9rem;
+  font-size: var(--text-md);
 }
 .recipe-card__ready {
   color: var(--sage-deep, #4f6b3a);
@@ -712,22 +735,24 @@
 /* #11 collections — an "Aa vs Collections" view toggle inside the recipe book.
    A compact 2-segment control (reuses .subtabs): "Aa" = flat alphabetical list,
    "Collections" = the same list clustered into per-tag sections below. */
-/* The toggle is ONE pill: the wrapper draws the paper-deep frame, and the Aa /
-   Collections segments plus the book shortcut sit bare inside it so they read as a
-   single segmented control (rather than a detached square box beside the toggle). */
+/* The toggle is ONE pill: the wrapper draws the paper-deep frame and the Aa /
+   Collections segments sit bare inside it, so they read as a single segmented
+   control rather than two detached boxes. (A third segment used to jump straight
+   to the toddler picture cookbook — removed: that book is the KID lens's door
+   (KidKitchen's « Mon livre » tile), plus the kitchen ＋ ▸ « Faire un livre ».) */
 .recipe-view-toggle {
   display: inline-flex;
   align-items: stretch;
   justify-content: flex-end;
   gap: 2px;
-  margin: 0 0 0.8rem;
-  padding: 3px;
+  margin: 0;
+  padding: 2px;
   border-radius: var(--radius-pill);
   background: var(--paper-deep);
   border: 1px solid var(--line);
 }
 /* Inside the shared frame the segment group goes frameless — the wrapper owns the
-   pill now, so Aa/Collections and the book sit flush as segments of one control. */
+   pill, so the Aa / Collections segments sit flush inside one control. */
 .recipe-view-toggle .subtabs--mini {
   margin: 0;
   padding: 0;
@@ -735,32 +760,10 @@
   background: none;
 }
 /* The shared <SubTabs> wraps the group in a `.subtabs-row` (with its own gap +
-   bottom margin) — make that wrapper layout-transparent here so the `.subtabs--mini`
-   and the book button stay direct flush segments of this unified pill (no extra row
-   gap / margin breaking the 3-segment control). */
+   bottom margin) — make that wrapper layout-transparent here so `.subtabs--mini`
+   sits flush inside this pill (no extra row gap / margin breaking the control). */
 .recipe-view-toggle .subtabs-row {
   display: contents;
-}
-/* One-tap shortcut to the toddler picture cookbook (#45) — a third segment in the
-   same pill, sized + shaped like the Aa/Collections options beside it. */
-.recipe-view-toggle__book {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  align-self: stretch;
-  width: 2.6rem;
-  min-height: 2.2rem;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.recipe-view-toggle__book:hover,
-.recipe-view-toggle__book:focus-visible {
-  color: var(--ink);
-  background: var(--paper);
 }
 .subtabs--mini {
   display: inline-flex;
@@ -768,16 +771,16 @@
 }
 .subtabs--mini .subtabs__opt {
   flex: 0 0 auto;
-  min-height: 2.2rem;
-  padding: 0 0.9rem;
-  font-size: 0.9rem;
+  min-height: 2.1rem;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
 }
-/* In Collections, the tag chips pick which sections show (a union) rather than
-   narrowing recipes — a one-line cue so that change of meaning is clear. */
-.recipe-collections-hint {
-  margin: -0.4rem 0 0.8rem;
-  color: var(--ink-faint);
-  font-size: var(--text-sm);
+/* An icon-only segment (Collections) has no text to set its width — give it the
+   same square footprint the labelled one gets from its padding. */
+.subtabs--mini .subtabs__opt:empty,
+.recipe-view-toggle .subtabs__opt:has(> svg:only-child) {
+  min-width: 2.4rem;
+  padding: 0 0.5rem;
 }
 /* A collection section: tag heading + its own recipe grid. */
 .recipe-group + .recipe-group {
@@ -805,8 +808,8 @@
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.8rem;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.7rem;
   -webkit-overflow-scrolling: touch;
 }
 .kitchen__tag-filter .chip {

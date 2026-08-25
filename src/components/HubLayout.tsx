@@ -523,8 +523,9 @@ export function HubLayout() {
           onClick={() => {
             // A section with exactly ONE mode skips the chooser and goes straight
             // to it — mirrors the single-mode skip Routines used to have on its own
-            // tab: /notes has just 'cnote', so the ＋ jumps straight into the rich
-            // editor instead of showing a one-tile "chooser".
+            // tab. /notes has just 'cnote', which is an IN-SHEET composer (not in
+            // FORM_ROUTES any more), so it falls through and AddSheet's defMode
+            // opens the sheet ON that composer — no one-tile "chooser".
             const only = sectionModes.length === 1 ? sectionModes[0] : null
             if (only && FORM_ROUTES[only]) {
               nav(FORM_ROUTES[only])

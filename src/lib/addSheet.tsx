@@ -103,9 +103,12 @@ export type AddSheetMode =
   // check-in scene can't be (it only rows habits still asking today). `habit`
   // stays the create-only nav used by deep-links and the check-in scene's button.
   | 'habit-pick'
-  // « Les notes » ＋ — the ONLY tile on that tab: opens the full-screen rich note
-  // editor directly (navigate-only, like `recipe`/`voyage`). No chooser, since
-  // there's nothing else to add here.
+  // « Les notes » ＋ — the ONLY tile on that tab, so the sheet drops straight into
+  // it with no chooser. An IN-SHEET composer (the shared NoteQuickAdd): type a line,
+  // Enter, done — and it's the one place that still carries the mic and the 📎
+  // attachment, which the section's own lean composer no longer shows. It used to
+  // navigate into the full-screen rich editor; that's now the row pencil (and, in
+  // advanced mode, « Nouvelle note » on the page itself).
   | 'cnote'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
@@ -144,7 +147,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // business from a ?param). Every family/social/business/carnets sub-view offers
   // the full set, so e.g. "create a business" is reachable from the ＋ on any of them.
   maison: ['routine-pick', 'person', 'family', 'connect', 'group', 'business', 'pet', 'carnet', 'family-import'],
-  // Les notes: a single door straight into the rich editor — no chooser needed.
+  // Les notes: a single door — the quick composer, opened in the sheet itself.
   notes: ['cnote'],
 }
 
@@ -177,9 +180,6 @@ export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   routine: '/routine/new',
   voyage: '/voyage/new',
   habit: '/habitude/new',
-  // Navigate-only, not a form scene: the Notes page reads ?add=1 itself and
-  // opens the rich editor in place (no cross-route form to bounce back from).
-  cnote: '/notes?add=1',
 }
 
 // Every mode, as a runtime list — what validates a ?plus=<mode> deep-link

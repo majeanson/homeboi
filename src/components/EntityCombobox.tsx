@@ -6,6 +6,7 @@ import { bumpFrequent, frequentScores } from '../lib/frequents'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
 import { Icon, InlineIcon, type IconName } from './Icon'
+import { StatusMessage } from './StatusMessage'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
 
 // The ONE "choose an existing thing, OR just type a new one" control. Across the
@@ -116,6 +117,12 @@ export interface EntityComboboxProps<T> {
   busy?: boolean
   disabled?: boolean
   maxLength?: number
+  /** SOFT length cap on the FREE TEXT, in characters — same contract as
+   *  EditField's: the box stays typable past it, but a warning appears under the
+   *  field and both commit buttons refuse until the text is shortened, so a
+   *  server-side slice can never quietly eat the tail of what was typed. Picking
+   *  an existing option is never gated by it (its label comes from the DB). */
+  limit?: number
   /** A control rendered above the option list (e.g. the supper "+ ingrédients" opt-in). */
   listHeader?: ReactNode
   /** Pure type-ahead: the dropdown ONLY appears while there's typed text that
@@ -157,6 +164,7 @@ export function EntityCombobox<T>({
   busy,
   disabled,
   maxLength,
+  limit,
   listHeader,
   typeaheadOnly,
   frequentsKey,
@@ -213,14 +221,18 @@ export function EntityCombobox<T>({
   // Enter can never pick past the end of the freshly-shrunk list.
   const activeIdx = active < shown.length ? active : -1
 
+  // Soft cap on the free text — trimmed, matching what the server measures.
+  const length = value.trim().length
+  const over = limit != null ? Math.max(0, length - limit) : 0
+
   const commit = () => {
-    if (!onSubmit || disabled || busy) return
+    if (!onSubmit || disabled || busy || over > 0) return
     if (!value.trim()) return
     onSubmit(value)
   }
 
   const commitSecondary = () => {
-    if (!onSecondary || disabled || busy) return
+    if (!onSecondary || disabled || busy || over > 0) return
     if (!value.trim()) return
     onSecondary(value)
   }
@@ -291,7 +303,7 @@ export function EntityCombobox<T>({
   }
 
   const showIconSubmit = !submitLabel && submitIcon != null && !!onSubmit
-  const submitDisabled = disabled || busy || !value.trim()
+  const submitDisabled = disabled || busy || over > 0 || !value.trim()
   // In type-ahead mode the list only exists while there's text to match against,
   // so an empty/focused field stays quiet (the chips above already show what's set).
   const canOpen = typeaheadOnly ? !!value.trim() : true
@@ -406,6 +418,16 @@ export function EntityCombobox<T>({
           </button>
         )}
       </div>
+
+      {/* Past the soft cap — stable sentence (announced once), live count aria-hidden. */}
+      {over > 0 && limit != null && (
+        <StatusMessage tone="error" icon="warning-bold" className="edit-field__over">
+          {t.common.tooLong(limit)}{' '}
+          <span aria-hidden="true">
+            {length} / {limit}
+          </span>
+        </StatusMessage>
+      )}
 
       {voice && <VoiceStatus voice={voice} />}
 

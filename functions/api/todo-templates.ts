@@ -19,6 +19,14 @@ interface TplRow {
   position: number
 }
 
+// Caps. An item label becomes a real todo's title on instantiation, so it shares
+// the todos cap (functions/api/todos.ts TITLE_MAX) — a label that survived here
+// only to be cut there would be the same silent truncation one step later. A
+// template title becomes the instance's `section` header, so it must stay <=
+// todos.ts SECTION_MAX. Both are mirrored client-side (src/lib/todos.ts).
+const ITEM_LABEL_MAX = 2000
+const TEMPLATE_TITLE_MAX = 200
+
 // The normalized item form the API serves (mirrors src/lib/todos.ts TemplateItem):
 // a plain label, or a reference to another template.
 type ApiItem = { kind: 'item'; label: string } | { kind: 'ref'; refId: string }
@@ -57,11 +65,11 @@ function sanitizeItems(items: unknown): (string | { ref: string })[] {
     if (out.length >= 50) break
     if (typeof x === 'string') {
       const s = x.trim()
-      if (s) out.push(s.slice(0, 200))
+      if (s) out.push(s.slice(0, ITEM_LABEL_MAX))
     } else if (x && typeof x === 'object') {
       const o = x as Record<string, unknown>
       if (typeof o.ref === 'string' && o.ref.trim()) out.push({ ref: o.ref.trim().slice(0, 32) })
-      else if (typeof o.label === 'string' && o.label.trim()) out.push(o.label.trim().slice(0, 200))
+      else if (typeof o.label === 'string' && o.label.trim()) out.push(o.label.trim().slice(0, ITEM_LABEL_MAX))
     }
   }
   return out
@@ -91,7 +99,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   await ctx.env.DB.prepare(
     'INSERT INTO todo_templates (id, household_id, title, items_json, position, created_at, updated_at) VALUES (?, ?, ?, ?, 0, ?, ?)',
   )
-    .bind(id, actor.householdId, title.slice(0, 80), JSON.stringify(sanitizeItems(body?.items)), ts, ts)
+    .bind(id, actor.householdId, title.slice(0, TEMPLATE_TITLE_MAX), JSON.stringify(sanitizeItems(body?.items)), ts, ts)
     .run()
   return ok({ ok: true, id })
 })
@@ -103,7 +111,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const ts = nowSec()
   if (typeof body?.title === 'string' && body.title.trim()) {
     await ctx.env.DB.prepare('UPDATE todo_templates SET title = ?, updated_at = ? WHERE id = ? AND household_id = ?')
-      .bind(body.title.trim().slice(0, 80), ts, id, actor.householdId)
+      .bind(body.title.trim().slice(0, TEMPLATE_TITLE_MAX), ts, id, actor.householdId)
       .run()
   }
   // `items` is replace-the-whole-array (the form owns the ordered list).

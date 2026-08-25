@@ -457,3 +457,68 @@
   margin: 0;
   font-size: 1.1rem;
 }
+
+/* ── SearchField (components/SearchField.tsx) ─────────────────────────────── */
+/* The ONE in-page search box. Two faces of the same control: `.searchfield` is
+   the open pill (magnifier · input · ✕), `.searchfield__open` the collapsed
+   icon-only button a lean row shows until it's tapped. Both are sized off the
+   same 2.5rem thumb target so the row doesn't jump when it expands. */
+.searchfield {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--ink-soft);
+}
+.searchfield__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-md);
+  color: var(--ink);
+  outline: none;
+}
+.searchfield__input::placeholder {
+  color: var(--ink-faint);
+}
+.searchfield__clear {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.searchfield__open {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.searchfield__open:hover,
+.searchfield__open:focus-visible {
+  color: var(--ink);
+}
+.searchfield__open:focus-visible,
+.searchfield__clear:focus-visible,
+.searchfield:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

@@ -132,6 +132,21 @@
   opacity: 0.35;
   cursor: default;
 }
+/* Past the soft length cap (EditField / EntityCombobox `limit`): the box stays
+   typable, THIS line says the save would cut the text, and the submit is off
+   until it's trimmed — instead of the server slicing the tail silently after the
+   write. .status-msg is a nowrap flex line by default; wrap it here so the live
+   count can drop to a second line on a phone rather than push the row wide
+   (no horizontal overflow — standing rule). */
+.edit-field__over {
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+.edit-field__over span[aria-hidden] {
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
 /* A thin wrapped row of secondary actions (Choisir une recette, Restants…) —
    quiet chips under the field, never the old full-width stacked buttons. */
 .edit-field__secondary {

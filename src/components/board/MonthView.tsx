@@ -23,7 +23,6 @@ import { useHabits, useMarkHabit, habitStatusOn, splitHabitsForDay } from '../..
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { ActionMenu, type ActionMenuItem } from '../ActionMenu'
-import { useMonthDensity, setMonthDensity } from '../../lib/monthDensity'
 import { Act } from './Act'
 import { Disclosure } from '../Disclosure'
 import { HabitRow } from '../habits/HabitRow'
@@ -86,9 +85,9 @@ interface Dot {
   slot?: MealSlot // set for meals → which slot icon to draw
   done?: boolean // habits: the day's intention was met (a filled ring, else hollow)
 }
-// The same marker, plus what it would SAY if the cell had room for words (the
-// « Cases détaillées » density, lib/monthDensity). `time` is the clock face for a timed
-// event and nothing for anything all-day; `label` is the title as the day panel prints it.
+// The same marker, plus what it SAYS once the cell has room for words — which is when
+// it is the tapped day (see the grid below). `time` is the clock face for a timed event
+// and nothing for anything all-day; `label` is the title as the day panel prints it.
 interface Line extends Dot {
   time?: string
   label: string
@@ -226,10 +225,7 @@ export function MonthView({
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     dayPanelRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
   }
-  // Does a cell show dots, or NAME its first few things? Device-local (lib/monthDensity),
-  // so a read-only guest may use it — it writes nothing to the household.
-  const density = useMonthDensity()
-  const detailed = density === 'detailed'
+
   // The pinned day drawer, folded away to read the grid under it. Narrow screens only —
   // the two-column layout has nothing to reclaim and hides the caret (month.css).
   const [folded, setFolded] = useState(false)
@@ -410,7 +406,7 @@ export function MonthView({
   const title = cap(formatMonthYear(grid.monthStart, lang))
 
   return (
-    <div className={'monthv' + (detailed ? ' monthv--detailed' : '')}>
+    <div className="monthv">
       <div className="monthv__head">
         <button type="button" className="monthv__nav" onClick={() => stepMonth(-1)} aria-label={t.monthView.prev}>
           <Icon name="caret-left-bold" size={20} />
@@ -431,21 +427,7 @@ export function MonthView({
         >
           {t.monthView.today}
         </button>
-        {/* Compact ↔ détaillé. A binary view choice gets one button, not a menu: pressed
-            = the cells spell out what is in the day. DEVICE-LOCAL, so it is deliberately
-            NOT gated on isGuest() — a demo visitor may read the calendar either way. The
-            name stays put across states (a toggle button's name must); the tooltip says
-            what the next tap does. */}
-        <button
-          type="button"
-          className="monthv__density"
-          aria-pressed={detailed}
-          aria-label={t.monthView.density}
-          title={detailed ? t.monthView.densityCompact : t.monthView.densityDetailed}
-          onClick={() => setMonthDensity(detailed ? 'compact' : 'detailed')}
-        >
-          <Icon name={detailed ? 'file-text-bold' : 'calendar-dots-bold'} size={18} />
-        </button>
+
         <button type="button" className="monthv__nav" onClick={() => stepMonth(1)} aria-label={t.monthView.next}>
           <Icon name="caret-right-bold" size={20} />
         </button>
@@ -459,7 +441,16 @@ export function MonthView({
         ))}
         {grid.days.map((d) => {
           const b = byDay.get(d)
-          const dots = linesFor(b, members, mealPrefs, t, lang)
+          // Habits are deliberately NOT cell markers. A daily intention (« boire assez
+          // d'eau ») paints a glyph on EVERY square, which is exactly the noise a month
+          // glance must not have: the eye is looking for the days that DIFFER. They keep
+          // their place in the day panel, where they're actionable — and the legend
+          // never listed them here in the first place.
+          const marks = linesFor(b, members, mealPrefs, t, lang).filter((l) => l.kind !== 'habit')
+          // The tapped day is the one that spells itself out. There is no view toggle:
+          // the calendar stays a calm dotted glance, and the ONE day you asked about
+          // grows to name its things. Everything else keeps its shape.
+          const open = d === selected
           const cls =
             'monthv__cell' +
             (inMonth(d, grid.month) ? '' : ' is-out') +
@@ -468,9 +459,9 @@ export function MonthView({
           return (
             <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => pickDay(d)}>
               <span className="monthv__num">{localYMD(d).day}</span>
-              {!detailed && dots.length > 0 && (
+              {!open && marks.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
-                  {dots.slice(0, 4).map((dot, i) =>
+                  {marks.slice(0, 4).map((dot, i) =>
                     dot.kind === 'meal' && dot.slot ? (
                       // Meal → its slot icon, tinted with the slot colour (Réglages ▸ Repas).
                       <span key={i} className="monthv__dot-icon">
@@ -491,12 +482,6 @@ export function MonthView({
                       <span key={i} className="monthv__dot-icon">
                         <Icon name="clock-bold" size={12} color={dot.color} />
                       </span>
-                    ) : dot.kind === 'habit' ? (
-                      // A derived habit → the repeat glyph in the habit's own tint,
-                      // softened while the day is still open (never a red "missed").
-                      <span key={i} className="monthv__dot-icon" style={{ opacity: dot.done ? 1 : 0.45 }}>
-                        <Icon name="repeat-bold" size={12} color={dot.color} />
-                      </span>
                     ) : (
                       <span
                         key={i}
@@ -506,7 +491,7 @@ export function MonthView({
                       />
                     ),
                   )}
-                  {dots.length > 4 && <span className="monthv__more mono">+{dots.length - 4}</span>}
+                  {marks.length > 4 && <span className="monthv__more">+{marks.length - 4}</span>}
                 </span>
               )}
               {/* « Cases détaillées » — the same list, spelled out. NOT aria-hidden (unlike
@@ -514,20 +499,24 @@ export function MonthView({
                   name, so a screen reader hears « 25 · 14 h Dentiste · Souper » instead of
                   a bare day number. Three lines is the ceiling — past that the day panel
                   is the right surface, and a taller cell would push the grid off screen. */}
-              {detailed && dots.length > 0 && (
+              {open && marks.length > 0 && (
                 <span className="monthv__lines">
-                  {dots.slice(0, 3).map((line, i) => (
+                  {marks.slice(0, 3).map((line, i) => (
                     <span key={i} className="monthv__line">
                       <span
                         className="monthv__line-chip"
                         aria-hidden="true"
-                        style={{ background: line.color, opacity: line.kind === 'habit' && !line.done ? 0.45 : 1 }}
+                        style={{ background: line.color }}
                       />
-                      {line.time && <span className="monthv__line-t mono">{line.time}</span>}
+                      {/* NO clock here. A phone column is ~50 px: « 14 h 00 » alone fills
+                          it and the title clips to nothing, so the cell showed the time
+                          and hid the thing — the opposite of what a name is for. The dot
+                          says which kind, the words say which thing, and the panel right
+                          below carries the hour. */}
                       <span className="monthv__line-l">{line.label}</span>
                     </span>
                   ))}
-                  {dots.length > 3 && <span className="monthv__more mono">+{dots.length - 3}</span>}
+                  {marks.length > 3 && <span className="monthv__more">+{marks.length - 3}</span>}
                 </span>
               )}
               {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so

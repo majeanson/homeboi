@@ -21,6 +21,7 @@ import {
   splitTodos,
   checkedIds,
   DEPARTURE_ADHOC,
+  TODO_TITLE_MAX,
 } from '../../lib/todos'
 import { Disclosure } from '../Disclosure'
 import { CATS } from '../../lib/cats'
@@ -73,6 +74,8 @@ export function TodoSection({
   foldSections = false,
   foldAll = false,
   picker = 'templates',
+  addAutoFocus,
+  onAdded,
   emptyText,
   icon,
   tint,
@@ -86,6 +89,11 @@ export function TodoSection({
   foldSections?: boolean
   foldAll?: boolean
   picker?: 'templates' | 'plain' | 'none'
+  // The host opens the add field behind its own header ＋ (the board's « À faire »,
+  // mirroring the Notes card): focus the box the moment it appears, and tell the host
+  // once something was actually written so it can close again.
+  addAutoFocus?: boolean
+  onAdded?: () => void
   // A surface-specific "nothing here" line (the departure card's « Aucune liste de
   // départ… ») — the generic t.todos.empty otherwise.
   emptyText?: string
@@ -191,6 +199,7 @@ export function TodoSection({
       tmpId,
       message: t.todos.added(value),
     })
+    onAdded?.()
   }
 
   // — toggle done (a MARK in place; optimistic flip, then resync) —
@@ -294,6 +303,9 @@ export function TodoSection({
         deleteLabel={`${t.common.delete} — ${todo.title}`}
         autoFocus
         ariaLabel={t.common.edit}
+        // The server slices the title — warn here rather than let a long rename
+        // come back quietly shortened (the cap is generous; see lib/todos.ts).
+        limit={TODO_TITLE_MAX}
       />
     ) : (
       <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
@@ -438,6 +450,7 @@ export function TodoSection({
           }}
           submitLabel={t.common.add}
           submitLeadingIcon="plus-bold"
+          autoFocus={addAutoFocus}
           // Board glance only (scope null = global ∪ today): a second button pins the
           // add to today instead of « en tout temps », straight from this standing card.
           // Full label « Pour aujourd’hui » when the card is wide enough; a CSS container
@@ -457,6 +470,7 @@ export function TodoSection({
             : {})}
           placeholder={t.todos.addPlaceholder}
           ariaLabel={t.todos.addPlaceholder}
+          limit={TODO_TITLE_MAX}
         />
       )}
 
