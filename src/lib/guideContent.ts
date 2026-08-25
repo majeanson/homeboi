@@ -1881,8 +1881,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Trouver une recette', en: 'Find a recipe' },
         detail: {
-          fr: 'Une recherche, des pastilles de filtre (Quoi cuisiner ?, Favoris…) et « Aa / Collections ». Touche une recette pour l’ouvrir ou la planifier comme repas.',
-          en: 'A search box, filter pills (What can I cook?, Favorites…) and “Aa / Collections”. Tap a recipe to open it or plan it as a meal.',
+          fr: 'Une loupe, un bouton « Filtrer » qui déplie les pastilles (Quoi cuisiner ?, Favoris…) et tes étiquettes, et « Aa / Collections ». Le livre s’ouvre sur les recettes, pas sur les filtres : le chiffre sur le bouton dit combien sont actifs. Touche une recette pour l’ouvrir ou la planifier comme repas.',
+          en: 'A magnifier, a « Filter » button that unfolds the pills (What can I cook?, Favorites…) and your tags, and “Aa / Collections”. The book opens on recipes, not on filters: the number on the button says how many are on. Tap a recipe to open it or plan it as a meal.',
         },
         route: '/kitchen',
       },

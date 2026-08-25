@@ -1427,6 +1427,8 @@ export const FR = {
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
     arrange: 'Affichage',
+    // Le bouton qui ouvre le panneau des pastilles + étiquettes (fermé par défaut).
+    filter: 'Filtrer',
     ungrouped: 'Autres',
     // Recipe-tab pills (migration 0045): the two new built-ins.
     favorites: 'Favoris',

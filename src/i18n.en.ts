@@ -1273,6 +1273,8 @@ export const EN: typeof FR = {
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
     collectionsTitle: 'Collections',
     arrange: 'View',
+    // The button that pops the pills + tag chips panel (closed by default).
+    filter: 'Filter',
     ungrouped: 'Other',
     // Recipe-tab pills (migration 0045): the two new built-ins.
     favorites: 'Favorites',

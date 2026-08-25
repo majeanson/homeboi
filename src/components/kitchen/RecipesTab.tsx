@@ -18,7 +18,7 @@ import { SearchField } from '../SearchField'
 import { SubTabs } from '../SubTabs'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 
 // The recipe book: search, tag chips, the configurable filter/sort PILLS, and the
 // #11 collections browse layer — all flat in one view (no second-level sub-tabs).
@@ -37,6 +37,10 @@ import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 // per-tag sections (untagged recipes fall under "Autres"), in the household's
 // curated tag order. The toggle only re-arranges, never filters.
 // `lastServed` (#12): recipe id → local-midnight day-seconds it was last cooked.
+// The filter panel's id — one constant, so the button's aria-controls and the panel
+// can't drift apart. Only ever ONE recipe book on screen, so a literal is honest.
+const FILTERS_ID = 'recipe-filters'
+
 export function RecipesTab({
   recipes,
   lowItems,
@@ -73,6 +77,12 @@ export function RecipesTab({
   // active FILTER pills (≤30 min / Favoris / custom — they stack, AND).
   const [sort, setSort] = useState<string | null>(null)
   const [filters, setFilters] = useState<Set<string>>(() => new Set())
+  // The pills + tag chips used to sit permanently under the search, two wrapping
+  // rows of chrome above the very recipes you came to look at. They're behind a
+  // « Filtrer » button now: closed by default (NFR-CALM-1 — nothing populates the
+  // page until you ask), and the button carries the count of what's active so a
+  // narrowed list never looks unexplained while the panel is shut.
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const { lovedSet: loved } = useLoves()
 
   const canFastFilter = useMemo(() => recipes.some((r) => recipeTotalMin(r) != null), [recipes])
@@ -301,20 +311,23 @@ export function RecipesTab({
     setSort(null)
     setFilters(new Set())
   }
+  // Anything to filter WITH? (No pills configured and no tags → no button.)
+  const hasFilterUi = shownPills.length > 0 || (recipes.length > 0 && tags.length > 0)
+  // …and how much is currently ON — the badge, so a shut panel still says WHY the
+  // grid below is short. The search query is deliberately not counted: it has its
+  // own visible field.
+  const activeFilters = filters.size + tagFilter.length + (activeSort ? 1 : 0)
 
   return (
     <section>
-      <div className="kitchen__head">
-        <HelpTitle help={help} k="recipesBook">{t.recipes.title}</HelpTitle>
-        {/* "Faire un livre" is NOT an on-page button — it's a ＋ quick-add action
-            (kitchen section → book, navigate-only to /kitchen/book). */}
-      </div>
-      {help?.bubbleFor('recipesBook')}
-      {/* One lean line: a magnifier that expands into the search field on tap, and
-          the #11 view toggle (Aa = flat list · ▤ = grouped by collection). The
-          filter/sort PILLS get their own wrapping row below so they agglomerate
-          cleanly like the custom pills. */}
-      {(recipes.length > 3 || (recipes.length > 0 && tags.length > 0)) && (
+      {/* No « Recettes » heading: the kitchen sub-tab above already says Recettes,
+          in the same word — a second one cost a whole line to repeat it. ("Faire un
+          livre" isn't an on-page button either — it's a ＋ quick-add action, kitchen
+          section → book, navigate-only to /kitchen/book.) */}
+      {/* One lean line: a magnifier that expands into the search field on tap, the
+          « Filtrer » button that pops the pills + tag chips open below, and the #11
+          view toggle (Aa = flat list · ▤ = grouped by collection). */}
+      {(recipes.length > 3 || hasFilterUi) && (
         <div className="kitchen__recipe-searchbar">
           {recipes.length > 3 && (
             <SearchField
@@ -324,6 +337,25 @@ export function RecipesTab({
               placeholder={t.recipes.search}
               ariaLabel={t.recipes.search}
             />
+          )}
+          {hasFilterUi && (
+            <button
+              type="button"
+              className={'recipe-filter' + (filtersOpen ? ' is-open' : '') + (activeFilters > 0 ? ' is-on' : '')}
+              onClick={
+                help
+                  ? help.pick('recipesBook', () => setFiltersOpen((v) => !v))
+                  : () => setFiltersOpen((v) => !v)
+              }
+              aria-expanded={filtersOpen}
+              aria-controls={FILTERS_ID}
+            >
+              <InlineIcon name="tag-bold" size={15} />
+              <span>{t.recipes.filter}</span>
+              {/* The count is the honest half: with the panel shut it's the only
+                  thing saying the grid below is narrowed, and by how much. */}
+              {activeFilters > 0 && <span className="recipe-filter__n mono">{activeFilters}</span>}
+            </button>
           )}
           {recipes.length > 0 && tags.length > 0 && (
             <div className="recipe-view-toggle">
@@ -348,7 +380,13 @@ export function RecipesTab({
           )}
         </div>
       )}
+      {help?.bubbleFor('recipesBook')}
       {help?.bubbleFor('collections')}
+      {/* The panel « Filtrer » pops: the sort/filter pills, then the tag chips, then
+          the one-tap way out of both. Closed by default — a book you just opened
+          shows recipes, not the machinery for narrowing them. */}
+      {hasFilterUi && filtersOpen && (
+      <div className="recipe-filters" id={FILTERS_ID}>
       {shownPills.length > 0 && (
         <div className="kitchen__recipe-tools">
           {shownPills.map((p) => {
@@ -399,6 +437,15 @@ export function RecipesTab({
             )
           })}
         </div>
+      )}
+      {/* Same exit the "the filters hid everything" empty state offers, available
+          before you hit that wall. */}
+      {activeFilters > 0 && (
+        <button type="button" className="btn btn--ghost mono recipe-filters__clear" onClick={clearAll}>
+          {t.recipes.clearFilters}
+        </button>
+      )}
+      </div>
       )}
       {recipes.length === 0 ? (
         <>

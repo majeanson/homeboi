@@ -687,6 +687,78 @@
   flex: 0 0 auto;
   margin: 0 0 0 auto;
 }
+/* …and the « Filtrer » button rides just before it. margin-left:auto here too, so
+   with no view toggle present it still lands at the right edge; when both show, the
+   toggle's own auto margin wins the far edge and this one sits beside it. */
+.recipe-filter {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  margin-left: auto;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.recipe-filter + .recipe-view-toggle {
+  margin-left: 0;
+}
+.recipe-filter:hover,
+.recipe-filter:focus-visible {
+  color: var(--ink);
+  background: var(--surface);
+}
+/* Open, or narrowing: the button is lit so a short grid is never unexplained. */
+.recipe-filter.is-open,
+.recipe-filter.is-on {
+  border-color: color-mix(in srgb, var(--marigold-deep, #d9842a) 40%, var(--line));
+  background: color-mix(in srgb, var(--marigold-deep, #d9842a) 14%, var(--card));
+  color: var(--ink);
+}
+/* How many filters are on — a count of CONTROLS, not of anything the household
+   does (no streak, no score): with the panel shut it's the only thing saying why
+   the grid below is short. */
+.recipe-filter__n {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  border-radius: var(--radius-pill);
+  background: var(--marigold-deep, #d9842a);
+  color: #fffcf5;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* The popped panel: the pill row, the tag row, and the way out of both. Inside it
+   the pills WRAP instead of side-scrolling — vertical room is free here, and a
+   wrapped row needs no hidden-scrollbar wheel handling to stay mouse-reachable. */
+.recipe-filters {
+  margin: 0 0 0.7rem;
+  padding: 0.6rem 0.7rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 14px);
+  background: var(--surface);
+}
+.recipe-filters .kitchen__recipe-tools {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  padding-bottom: 0;
+}
+.recipe-filters .kitchen__recipe-tools:last-child,
+.recipe-filters .kitchen__tag-filter:last-child {
+  margin-bottom: 0;
+}
+.recipe-filters__clear {
+  margin-top: 0.1rem;
+}
 .kitchen__cook-filter,
 .kitchen__soon-filter,
 .kitchen__neglect-filter,

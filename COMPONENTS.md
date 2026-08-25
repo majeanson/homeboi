@@ -220,7 +220,12 @@ kept notes through `TripNoteCard` with no handlers (= no RowActions), who-was-
 there faces; the `.voyage-album` CSS family mirrors `.recipe-original`; the
 editor stays one SceneHead `action` toggle away, and a `?vue=`/`?jour=` deep
 link still lands in the editor). #11 collections is now an "Aa vs Collections"
-view toggle inside the recipe book (`RecipesTab`): "Aa" = flat alphabetical list,
+view toggle inside the recipe book (`RecipesTab`, whose header is now ONE line — no
+« Recettes » heading, the collapsed **SearchField**, a **« Filtrer »** button that pops the
+sort/filter pills + tag chips into a `.recipe-filters` panel (shut by default, calm), and
+the view toggle; the button carries the COUNT of active filters, so a narrowed grid is never
+unexplained while the panel is folded away — guard: `e2e/recipes-lean-header.spec.ts`):
+"Aa" = flat alphabetical list,
 "Collections" = grouped-by-tag sections; "Quoi cuisiner?" is a pill filter — both
 flat in `RecipesTab`, no sub-tabs. `buildCollections` (in `CollectionPicker.tsx`,
 now just that helper) is still shared with the toddler `KidCollections` flow. The kitchen sub-tabs
