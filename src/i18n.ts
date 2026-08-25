@@ -1898,9 +1898,9 @@ export const FR = {
       attachRemove: 'Retirer',
       // SIMPLE ↔ AVANCÉ (lib/notesMode) — la préférence d'affichage de la section,
       // par appareil. Simple (défaut) : rangées compactes, une seule boîte de texte.
-      modeToggle: 'Affichage : simple ou avancé',
-      modeSimple: 'Simple',
-      modeAdvanced: 'Avancé',
+      // Le bouton ⚙ n'a pas d'étiquette : son nom dit ce que le PROCHAIN toucher fait.
+      modeToAdvanced: 'Passer au mode avancé (modifier, réordonner, éditeur complet)',
+      modeToSimple: 'Revenir au mode simple (lecture, plus de notes à l’écran)',
     },
   },
   // Maison — the merged tab (Routines · Famille · Social · Business · Carnets).

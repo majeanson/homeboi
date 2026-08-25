@@ -1721,9 +1721,9 @@ export const EN: typeof FR = {
       attachRemove: 'Remove',
       // SIMPLE ↔ ADVANCED (lib/notesMode) — this device's display preference for the
       // section. Simple (the default): compact rows, one plain text box.
-      modeToggle: 'Display: simple or advanced',
-      modeSimple: 'Simple',
-      modeAdvanced: 'Advanced',
+      // The ⚙ button carries no label: its name says what the NEXT tap does.
+      modeToAdvanced: 'Switch to advanced mode (edit, reorder, full editor)',
+      modeToSimple: 'Back to simple mode (reading, more notes on screen)',
     },
   },
   // Maison — the merged tab (Routines · Family · Social · Business · Carnets).

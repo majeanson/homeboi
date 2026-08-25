@@ -922,8 +922,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La note riche', en: 'The rich note' },
         detail: {
-          fr: 'Le crayon d’une rangée ouvre l’éditeur complet : listes à cocher, gras, citations, une photo ou un dessin — pas juste une ligne de texte. Les premiers mots deviennent le titre.',
-          en: 'A row’s pencil opens the full editor: checklists, bold, quotes, a photo or a drawing — not just a line of text. The first words become the title.',
+          fr: 'En mode avancé, le crayon d’une rangée ouvre l’éditeur complet : listes à cocher, gras, citations, une photo ou un dessin — pas juste une ligne de texte. Les premiers mots deviennent le titre.',
+          en: 'In advanced mode, a row’s pencil opens the full editor: checklists, bold, quotes, a photo or a drawing — not just a line of text. The first words become the title.',
         },
       },
       {
@@ -950,8 +950,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Simple ou avancé', en: 'Simple or advanced' },
         detail: {
-          fr: 'Par défaut la page est au plus simple : des rangées serrées, une seule boîte, la loupe repliée. La petite pastille « Avancé » remet le titre de section, les rangées larges qu’on réordonne, le micro dans la boîte et l’éditeur complet. C’est par appareil — ta tablette et ton téléphone peuvent différer.',
-          en: 'By default the page is as plain as it gets: tight rows, one box, the loupe folded away. The small « Advanced » chip brings back the section header, the roomy drag-to-reorder rows, the mic in the box and the full editor. It’s per device — your tablet and your phone can differ.',
+          fr: 'Par défaut la page ne fait que LIRE : des rangées serrées qui montrent plusieurs lignes de chaque note, une seule boîte, la loupe repliée — pas même un crayon ni une poubelle. Le petit ⚙ à côté de la loupe passe en Avancé : c’est là qu’on modifie, supprime et réordonne, avec le titre de section, le micro dans la boîte et l’éditeur complet. C’est par appareil — ta tablette et ton téléphone peuvent différer.',
+          en: 'By default the page only READS: tight rows showing several lines of each note, one box, the loupe folded away — not even a pencil or a bin. The small ⚙ beside the loupe switches to Advanced: that’s where you edit, delete and reorder, with the section header, the mic in the box and the full editor. It’s per device — your tablet and your phone can differ.',
         },
       },
     ],

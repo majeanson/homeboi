@@ -213,17 +213,19 @@ export function CercleNotes({
             />
           )}
 
-          {/* SIMPLE ↔ AVANCÉ. Device-local, so it's offered to a guest too. */}
+          {/* SIMPLE ↔ AVANCÉ — icon only, like the loupe beside it: the mode is a
+              rare, once-a-household choice, not a label worth a word on every visit.
+              Its state is the lit pill (aria-pressed for AT), and the tooltip/aria
+              name says which way the next tap goes. Device-local, so a guest gets it. */}
           <button
             type="button"
             className={'notes-mode' + (advanced ? ' is-on' : '')}
             onClick={help ? help.pick('mode', () => setNotesAdvanced(!advanced)) : () => setNotesAdvanced(!advanced)}
             aria-pressed={advanced}
-            aria-label={fn.modeToggle}
-            title={fn.modeToggle}
+            aria-label={advanced ? fn.modeToSimple : fn.modeToAdvanced}
+            title={advanced ? fn.modeToSimple : fn.modeToAdvanced}
           >
-            <Icon name="gear-six-bold" size={14} />
-            <span className="mono">{advanced ? fn.modeAdvanced : fn.modeSimple}</span>
+            <Icon name="gear-six-bold" size={16} />
           </button>
         </Cluster>
       </Cluster>
@@ -246,18 +248,17 @@ export function CercleNotes({
         </button>
       )}
 
-      {/* The rows. Simple wears the board card's COMPACT face — no grip, no tint dot,
-          no scope chip, the whole width on the text — but KEEPS the pencil/trash: this
-          is the page where a note is edited or deleted, and the compact glance drops
-          them only because the board has this page to hand off to. Grips drop while a
-          search narrows the list: reordering a filtered subset would scramble what the
-          drag pins. */}
+      {/* The rows. Simple wears the board card's COMPACT face outright — no grip, no
+          tint dot, no scope chip, and NO pencil/trash either: reading is the whole job,
+          so the row spends every pixel on the note itself (several lines of it). Acting
+          on a note — edit, delete, reorder — is what AVANCÉ is for, one tap away on the
+          ⚙ beside the loupe. Grips drop while a search narrows the list: reordering a
+          filtered subset would scramble what the drag pins. */}
       <NotesList
         notes={visible}
         faces={faces}
         readOnly={ro}
         compact={!advanced}
-        actions
         canReorder={query.trim() === ''}
         onEdit={openEdit}
         focusId={focusId}

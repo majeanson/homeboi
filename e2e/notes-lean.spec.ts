@@ -3,16 +3,18 @@ import { BASE, mockApi, seedState } from './mocks'
 
 // « Les notes » wears two faces, one device flag (src/lib/notesMode):
 //
-//   SIMPLE (the default) — maximum note per pixel. No section title/subtitle, a small
-//     face chip, a COLLAPSED loupe, one plain text box where Enter writes the note
-//     (no mic, no 📎, no « Ajouter » button — those live in the ＋ FAB's composer),
-//     and the board card's compact rows, keeping only the pencil/trash so a note can
-//     still be edited or deleted from the page that owns it.
-//   AVANCÉ — what the tab used to be: header, roomy rows with grip + scope chip,
-//     mic + attachment inline, « Nouvelle note » into the rich editor.
+//   SIMPLE (the default) — a READING page, maximum note per pixel. No section
+//     title/subtitle, a small face chip, a COLLAPSED loupe, an icon-only ⚙ mode
+//     button, and one plain text box where Enter writes the note (no mic, no 📎, no
+//     « Ajouter » button — those live in the ＋ FAB's composer). The rows are the
+//     board card's compact ones carrying NO pencil/trash either, spending the width
+//     and height that frees on three wrapped lines of the note itself.
+//   AVANCÉ — the ACTING face, and what the tab used to be: header, roomy rows with
+//     grip + scope chip + pencil/trash, mic + attachment inline, « Nouvelle note »
+//     into the rich editor.
 //
 // This guards the default face doesn't quietly grow its furniture back, and that the
-// toggle really returns the old one.
+// ⚙ really returns every door it drops.
 
 const NOTE = {
   id: 'n1',
@@ -41,7 +43,7 @@ async function openNotes(page: Page, advanced = false) {
   await expect(page.locator('.cercle-notes')).toBeVisible()
 }
 
-test('simple (default): no section header, compact rows that still edit + delete', async ({ page }) => {
+test('simple (default): no section header, and rows carrying nothing but the note', async ({ page }) => {
   await openNotes(page)
 
   // The header block is gone — the hub header above already says « Les notes ».
@@ -50,13 +52,20 @@ test('simple (default): no section header, compact rows that still edit + delete
 
   const row = page.locator('.cnote-list--compact .cnote', { hasText: 'Couture' })
   await expect(row).toBeVisible()
-  // Compact drops the furniture…
+  // EVERY piece of row furniture is gone — grip, tint dot, scope chip, pencil, trash.
   await expect(row.locator('.cnote__grip')).toHaveCount(0)
   await expect(row.locator('.cnote__chip')).toHaveCount(0)
   await expect(row.locator('.cnote__dot')).toHaveCount(0)
-  // …but NOT the two doors that act on a note: this is the page the board's glance
-  // card hands off to, so dropping them would leave no mouse/keyboard path at all.
-  await expect(row.locator('.cnote__act')).toHaveCount(2)
+  await expect(row.locator('.cnote__act')).toHaveCount(0)
+
+  // The room that frees goes to the note: the preview WRAPS now (it used to be one
+  // clipped line), so a row shows several lines of what the note actually says.
+  await expect(row.locator('.cnote__meta')).toHaveCSS('white-space', 'normal')
+
+  // The mode button carries no word — just the ⚙, named for what the next tap does.
+  const mode = page.locator('.notes-mode')
+  await expect(mode).toHaveText('')
+  await expect(mode).toHaveAttribute('aria-pressed', 'false')
 })
 
 test('simple: the composer is text only — Enter writes the note', async ({ page }) => {
@@ -102,19 +111,23 @@ test('simple: the loupe is a small button until you ask for it', async ({ page }
   await expect(loupe).toBeVisible()
 })
 
-test('the toggle brings the old face back — header, roomy rows, mic, rich-editor door', async ({ page }) => {
+test('the ⚙ brings the ACTING face back — header, row actions, mic, rich editor', async ({ page }) => {
   await openNotes(page)
 
   await page.locator('.notes-mode').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
+  await expect(page.locator('.notes-mode')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.cercle-notes__head')).toBeVisible()
   await expect(page.locator('.cnote-list--compact')).toHaveCount(0)
-  // The roomy row's own furniture is back…
-  await expect(page.locator('.cnote').first().locator('.cnote__chip')).toBeVisible()
+  // The roomy row's own furniture is back — the scope chip, and the pencil/trash the
+  // lean face deliberately doesn't carry (this toggle IS how you reach them).
+  const row = page.locator('.cnote', { hasText: 'Couture' })
+  await expect(row.locator('.cnote__chip')).toBeVisible()
+  await expect(row.locator('.cnote__act')).toHaveCount(2)
   // …the composer carries the mic + 📎 again…
   await expect(page.locator('.cercle-notes__composer button').first()).toBeVisible()
-  // …and « Nouvelle note » opens the rich editor (with its title field + BETA chip).
-  await page.locator('.cercle-notes__new').click()
+  // …and the row pencil opens the rich editor, title field + BETA chip included.
+  await row.locator('.cnote__act').first().click()
   await expect(page.locator('.note-editor')).toBeVisible()
   await expect(page.locator('.note-editor__title')).toBeVisible()
   await expect(page.locator('.note-editor__toggle')).toBeVisible()
@@ -123,14 +136,11 @@ test('the toggle brings the old face back — header, roomy rows, mic, rich-edit
 test('simple: the rich editor drops the title field and the BETA chip', async ({ page }) => {
   await openNotes(page)
 
-  // The row pencil is the editor door in simple mode.
-  await page.locator('.cnote', { hasText: 'Couture' }).locator('.cnote__act').first().click()
+  // Simple mode has no pencil — /notes?add=1 is its one editor door (a NEW note).
+  await page.goto('/notes?add=1')
   await expect(page.locator('.note-editor')).toBeVisible()
   await expect(page.locator('.note-editor__title')).toHaveCount(0)
   await expect(page.locator('.note-editor__toggle')).toHaveCount(0)
-  // The stored title folded into the body's first line — iOS style, nothing lost.
-  await expect(page.locator('.note-editor__body')).toContainText('Couture')
-  await expect(page.locator('.note-editor__body')).toContainText('short en twill')
 })
 
 test('the mode toggle is device-local — a read-only guest may flip it', async ({ page }) => {
@@ -148,10 +158,11 @@ test('the mode toggle is device-local — a read-only guest may flip it', async 
   await page.goto('/notes')
   await expect(page.locator('.cercle-notes')).toBeVisible()
 
-  // No composer, no row actions (those ARE household writes)…
+  // No composer, and no row actions even after the flip (those ARE household writes)…
   await expect(page.locator('.cercle-notes__composer')).toHaveCount(0)
   await expect(page.locator('.cnote__act')).toHaveCount(0)
   // …but the presentation flag is this browser's localStorage, not the household's.
   await page.locator('.notes-mode').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
+  await expect(page.locator('.cnote__act')).toHaveCount(0)
 })

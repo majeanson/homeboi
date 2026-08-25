@@ -1289,27 +1289,30 @@
   min-width: 0;
   margin: 0;
 }
-/* SIMPLE ↔ AVANCÉ — a quiet chip naming the face you're in, lit when advanced. */
+/* SIMPLE ↔ AVANCÉ — icon only, sized as the exact twin of the SearchField's
+   collapsed loupe beside it (2.5rem), so the two read as one pair of tools. Lit
+   when advanced; that lit state IS the label (the button's aria-name/tooltip say
+   what the next tap does). */
 .notes-mode {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--card);
   color: var(--ink-soft);
-  font-size: 0.72rem;
   cursor: pointer;
 }
 .notes-mode:hover,
 .notes-mode:focus-visible {
   color: var(--ink);
+  background: var(--surface);
 }
 .notes-mode.is-on {
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, var(--card));
-  border-color: color-mix(in srgb, var(--teal-deep, #2a8f85) 34%, var(--line));
-  color: var(--ink);
+  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 18%, var(--card));
+  border-color: color-mix(in srgb, var(--teal-deep, #2a8f85) 38%, var(--line));
+  color: var(--teal-deep, #2a8f85);
 }
 /* --- iOS-Notes-style list ----------------------------------------------------
    The Notes tab reads like the iOS Notes app, NOT the board's sticky-note wall: one

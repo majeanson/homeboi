@@ -23,8 +23,8 @@ export const NOTES_HELP = {
     point: 6, // « Simple ou avancé » — appended to the notes card's points
 
     body: {
-      fr: 'Simple (par défaut) : des rangées compactes et une seule boîte — écris, appuie sur Entrée, c’est noté. Le micro, le dessin et la photo vivent dans le ＋ en bas à droite. Avancé remet le titre de section, les rangées larges qu’on réordonne et l’éditeur complet.',
-      en: 'Simple (the default): compact rows and one plain box — type, press Enter, it’s written. The mic, drawing and photo live in the ＋ at the bottom right. Advanced brings back the section header, the roomy drag-to-reorder rows and the full editor.',
+      fr: 'Simple (par défaut) : on LIT. Des rangées serrées qui montrent plusieurs lignes de chaque note, et une seule boîte — écris, appuie sur Entrée, c’est noté. Le micro, le dessin et la photo vivent dans le ＋ en bas à droite. Ce ⚙ passe en Avancé : c’est là qu’on modifie, supprime et réordonne une note, avec l’éditeur complet.',
+      en: 'Simple (the default): you READ. Tight rows showing several lines of each note, and one plain box — type, press Enter, it’s written. The mic, drawing and photo live in the ＋ at the bottom right. This ⚙ switches to Advanced: that’s where a note is edited, deleted and reordered, with the full editor.',
     },
   },
   // The header magnifier (A-9 soft icon label — armed help explains the loupe

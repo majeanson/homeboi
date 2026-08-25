@@ -243,8 +243,47 @@
   padding-top: 0.4rem;
   padding-bottom: 0.4rem;
 }
+/* The notes PAGE gives its rows a touch more air than the board tile — they carry
+   three lines of note each now, not a one-line teaser. */
+.cercle-notes .cnote-list--compact .cnote {
+  padding-top: 0.55rem;
+  padding-bottom: 0.6rem;
+}
 .cnote-list--compact .cnote__title {
   color: color-mix(in srgb, var(--note-tint) 62%, var(--ink) 38%);
+}
+/* ON THE NOTES PAGE ONLY (`.cercle-notes`, simple mode): with no grip / dot /
+   chip / pencil / trash left, the row has width AND height to spare — so spend it
+   on the note. The preview stops being a single clipped line and WRAPS to three,
+   clamped so one long note still can't eat the list (tap it to read the rest in
+   place). Deliberately NOT on the board's glance card, which is a tile that must
+   stay a glance — there the one-line teaser is the point. */
+/* Same reasoning for the heading: a note with no explicit title borrows the body's
+   first line, and clipping that to one line hid the whole note behind an ellipsis.
+   Let it wrap to two, caret pinned to the first line. */
+.cercle-notes .cnote-list--compact .cnote__titlerow {
+  align-items: flex-start;
+}
+.cercle-notes .cnote-list--compact .cnote__title {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.cercle-notes .cnote-list--compact .cnote__caret {
+  margin-top: 0.15rem;
+}
+.cercle-notes .cnote-list--compact .cnote__meta {
+  white-space: normal;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  text-overflow: unset;
 }
 /* Shared Markdown render (renderNoteBody) — the note rows' expanded view on BOTH the
    board card and Le cercle, plus the editor preview. Eager for the same reason as the

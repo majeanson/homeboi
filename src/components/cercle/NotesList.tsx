@@ -41,7 +41,6 @@ export function NotesList({
   readOnly,
   canReorder = true,
   compact = false,
-  actions,
   onEdit,
   focusId,
   onFocused,
@@ -60,13 +59,6 @@ export function NotesList({
    *  title's author tint). Read-only affordances stay: expand-to-read, audio play,
    *  thumbnails, tappable checklists. Acting on a note lives in Le cercle ▸ Notes. */
   compact?: boolean
-  /** Force the per-row pencil/trash on or off. Defaults to `!compact` — the board
-   *  glance carries none. « Les notes » in its lean face passes `compact actions`:
-   *  it wants the tight rows, but it IS the page where a note is edited or deleted,
-   *  so dropping the actions there would leave both with no mouse/keyboard door at
-   *  all (CLAUDE.md — a touch gesture is never the only path). A guest still gets
-   *  none. */
-  actions?: boolean
   /** Open the caller's full-screen NoteEditor on this note (non-audio pencil). */
   onEdit?: (n: FamilyNote) => void
   /** Deep-link focus (§892): when this note is in `notes`, expand + scroll + pulse it
@@ -135,8 +127,11 @@ export function NotesList({
     holdMs: DND_HOLD_MS,
   })
   const grips = !ro && !compact && canReorder && shown.length > 1
-  // Pencil/trash: the caller's say, else "roomy rows have them, glance rows don't".
-  const rowActions = !ro && (actions ?? !compact)
+  // Pencil/trash ride the roomy rows only. Compact is a READING face — the board's
+  // glance card and « Les notes » in its lean mode both hand acting off elsewhere
+  // (the section, and AVANCÉ respectively), and both mirrors are real controls, not
+  // touch-only gestures.
+  const rowActions = !ro && !compact
 
   const colorOf = (id: string | null) => faces.find((f) => f.id === id)?.colour ?? null
   const nameOf = (id: string | null) => faces.find((f) => f.id === id)?.name ?? null
