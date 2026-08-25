@@ -7,6 +7,7 @@ import { wash } from '../../lib/colors'
 import { useReserveLocations } from '../../lib/reservePrefs'
 import { CheckRow } from '../CheckRow'
 import { EditField } from '../EditField'
+import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
@@ -35,6 +36,8 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   // EditField hides its own add/edit box for a read-only guest; CheckRow inside the
   // rows likewise hides its clear/edit.
   const [newItem, setNewItem] = useState('')
+  // The add box waits behind the section ＋ (SectionAdd) — see the header below.
+  const add = useSectionAdd()
   const [newLoc, setNewLoc] = useState<string>('')
   // The picked location, guarded against a stale choice — if the household removed
   // the location this field was on (or it hasn't been picked yet), fall back to the
@@ -113,13 +116,24 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
 
   return (
     <section>
-      <HelpTitle help={help} k="reserve">{t.kitchen.reserve}</HelpTitle>
+      {/* The add box waits behind the ＋, like the two lists around it — this
+          section sat between them with a THIRD always-open composer (plus its
+          location select), and the three together owned the whole first screen. */}
+      <div className="kitchen__head">
+        <HelpTitle help={help} k="reserve">{t.kitchen.reserve}</HelpTitle>
+        <SectionAdd open={add.open} onToggle={add.toggle} label={t.kitchen.reserveAdd} />
+      </div>
       {help?.bubbleFor('reserve')}
+      {add.open && (
       <EditField
         value={newItem}
         onChange={setNewItem}
-        onSubmit={() => addItem()}
+        onSubmit={() => {
+          addItem()
+          add.close()
+        }}
         submitLabel={t.common.add}
+        autoFocus={add.autoFocus}
         placeholder={t.kitchen.reserveAdd}
         ariaLabel={t.kitchen.reserveAdd}
         trailing={
@@ -139,6 +153,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
           ) : undefined
         }
       />
+      )}
       {rows.length === 0 ? (
         <EmptyState guide={{ card: 'reserve' }}>{t.kitchen.reserveEmpty}</EmptyState>
       ) : (

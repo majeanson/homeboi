@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
@@ -167,9 +168,9 @@ export function Board() {
   const [profileOpen, setProfileOpen] = useState(false)
   // « Depuis ce matin » (A-3) — the greeting doubles as a pull-only peek trigger.
   const [sinceMorningOpen, setSinceMorningOpen] = useState(false)
-  // « À faire » keeps its add box behind the card's header ＋ (the Notes-card idiom):
+  // « À faire » keeps its add box behind the card's header ＋ (the shared SectionAdd):
   // open on tap, closed again the moment something is written.
-  const [addingTodo, setAddingTodo] = useState(false)
+  const todoAdd = useSectionAdd()
   // « Dehors aujourd'hui » (SkySheet) — tap the weather/wonder hero for the wonder in
   // full, the source gallery, and the day's weather story. Read-only; guests may open it.
   const [skyOpen, setSkyOpen] = useState(false)
@@ -1366,20 +1367,7 @@ export function Board() {
       // on the board you can't scan past. Tap ＋, write, and it closes itself.
       // Hidden for a read-only guest (the write would 403), and absent from the compact
       // mini face like every other write affordance here.
-      action={
-        !ro ? (
-          <button
-            type="button"
-            className={'sec-label__actbtn' + (addingTodo ? ' is-on' : '')}
-            onClick={() => setAddingTodo((v) => !v)}
-            aria-expanded={addingTodo}
-            aria-label={t.common.add}
-            title={t.common.add}
-          >
-            <Icon name={addingTodo ? 'x-bold' : 'plus-bold'} size={14} />
-          </button>
-        ) : undefined
-      }
+      action={<SectionAdd open={todoAdd.open} onToggle={todoAdd.toggle} label={t.common.add} />}
     >
       {todayTodos.map(todoAct)}
       <TodoSection
@@ -1389,9 +1377,9 @@ export function Board() {
         show="loose"
         // 'none' keeps the list read-only until the ＋ opens the field; 'plain' is the
         // text-only add (template instantiation lives on the departure card).
-        picker={addingTodo ? 'plain' : 'none'}
-        addAutoFocus={addingTodo}
-        onAdded={() => setAddingTodo(false)}
+        picker={todoAdd.open ? 'plain' : 'none'}
+        addAutoFocus={todoAdd.autoFocus}
+        onAdded={todoAdd.close}
       />
     </Section>
   )

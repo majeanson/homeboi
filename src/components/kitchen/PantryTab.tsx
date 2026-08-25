@@ -4,6 +4,7 @@ import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { EditField } from '../EditField'
+import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { CheckRow } from '../CheckRow'
 import { EmptyState } from '../EmptyState'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
@@ -41,6 +42,13 @@ export function PantryTab({
   // CheckRow already hides its own check/rename/delete for a guest.
   const [newLow, setNewLow] = useState('')
   const [newSoon, setNewSoon] = useState('')
+  // …and each add box now waits behind its section's ＋ (SectionAdd). Three
+  // permanently-open composers — one per list, plus La réserve's between them —
+  // filled the whole first screen of the garde-manger with fields, pushing the two
+  // or three things actually running low below the fold. The ＋ is one tap and the
+  // section leads with its content again.
+  const soonAdd = useSectionAdd()
+  const lowAdd = useSectionAdd()
 
   // Add one low item. `viaVoice` skips the put-it-back-on-failure (the field is
   // already cleared by the voice path and the spoken word is gone anyway).
@@ -143,20 +151,27 @@ export function PantryTab({
   return (
     <>
       <section>
-        <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
+        <div className="kitchen__head">
+          <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
+          <SectionAdd open={soonAdd.open} onToggle={soonAdd.toggle} label={t.kitchen.useSoonAdd} />
+        </div>
         {help?.bubbleFor('useSoon')}
-        <EditField
-          value={newSoon}
-          onChange={setNewSoon}
-          onSubmit={(v) => {
-            setNewSoon('')
-            void postSoon(v)
-          }}
-          voice={soonVoice}
-          submitLabel={t.common.add}
-          placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
-          ariaLabel={t.kitchen.useSoonAdd}
-        />
+        {soonAdd.open && (
+          <EditField
+            value={newSoon}
+            onChange={setNewSoon}
+            onSubmit={(v) => {
+              setNewSoon('')
+              void postSoon(v)
+              soonAdd.close()
+            }}
+            voice={soonVoice}
+            submitLabel={t.common.add}
+            autoFocus={soonAdd.autoFocus}
+            placeholder={soonVoice.listening ? t.capture.listening : t.kitchen.useSoonAdd}
+            ariaLabel={t.kitchen.useSoonAdd}
+          />
+        )}
         {soonRemoval.visible(soon).length === 0 ? (
           <EmptyState>{t.kitchen.useSoonEmpty}</EmptyState>
         ) : (
@@ -177,20 +192,27 @@ export function PantryTab({
       {between}
 
       <section>
-        <HelpTitle help={help} k="low">{t.kitchen.low}</HelpTitle>
+        <div className="kitchen__head">
+          <HelpTitle help={help} k="low">{t.kitchen.low}</HelpTitle>
+          <SectionAdd open={lowAdd.open} onToggle={lowAdd.toggle} label={t.kitchen.lowAdd} />
+        </div>
         {help?.bubbleFor('low')}
-        <EditField
-          value={newLow}
-          onChange={setNewLow}
-          onSubmit={(v) => {
-            setNewLow('')
-            void postLow(v)
-          }}
-          voice={lowVoice}
-          submitLabel={t.common.add}
-          placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
-          ariaLabel={t.kitchen.lowAdd}
-        />
+        {lowAdd.open && (
+          <EditField
+            value={newLow}
+            onChange={setNewLow}
+            onSubmit={(v) => {
+              setNewLow('')
+              void postLow(v)
+              lowAdd.close()
+            }}
+            voice={lowVoice}
+            submitLabel={t.common.add}
+            autoFocus={lowAdd.autoFocus}
+            placeholder={lowVoice.listening ? t.capture.listening : t.kitchen.lowAdd}
+            ariaLabel={t.kitchen.lowAdd}
+          />
+        )}
         {lowRemoval.visible(low).length === 0 ? (
           <EmptyState>{t.kitchen.lowEmpty}</EmptyState>
         ) : (
@@ -199,7 +221,12 @@ export function PantryTab({
               <CheckRow
                 key={l.id}
                 item={l.item}
-                note={t.kitchen.addToList}
+                // No per-row « → ajouter à la liste » note: it repeated the same five
+                // words down every row and, on a 390px phone, wrapped straight over
+                // the item's own name. The check button already carries the action as
+                // its accessible name AND its tooltip (checkLabel below), and the
+                // section's "?" explains it once — the same "say who/what once, not
+                // per row" rule the note rows and the aisle tags follow.
                 onCheck={() => checkLowItem(l)}
                 checkLabel={t.kitchen.addToList}
                 onRename={(item) => renameLowItem(l, item)}

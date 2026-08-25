@@ -218,40 +218,28 @@
 .list-actions .btn {
   flex: 0 0 auto;
 }
-/* …but the browse/quick-add pair splits the full width 50/50 (half a button, half
-   the other), each carrying a short label beside its glyph. */
-.list-actions--split {
-  flex-wrap: nowrap;
+/* THE SHORTCUT ROW (browse flyers · quick-add · « Allées »). It used to stretch:
+   two solid primary buttons splitting the width 50/50 with the third wrapping
+   under them — three orange bars owning ~180px of a phone's first screen, above
+   the list they exist to fill. They're shortcuts, so they now look like shortcuts:
+   quiet ghost chips at their NATURAL width on one wrapping row (the Cluster rule —
+   basis auto, so they wrap honestly instead of overflowing). No stretch modifiers;
+   the base .list-actions .btn { flex: 0 0 auto } does the whole job. */
+.list-actions--quiet {
+  margin-top: 10px;
+  gap: 8px;
 }
-.list-actions--split .btn {
-  flex: 1 1 0;
-  min-width: 0; /* let the label ellipsis-truncate rather than overflow the half */
-}
-/* A THIRD shortcut joined the pair — « Allées » (the sort/aisle menu, folded out
-   of the list so the rows stop carrying it). Three labels don't fit one phone
-   line, so the trio WRAPS honestly (basis auto, the Cluster rule) rather than
-   ellipsizing each label into initials. */
-.list-actions--trio {
-  flex-wrap: wrap;
-}
-.list-actions--trio .btn {
-  flex: 1 1 auto;
-}
-/* The menu's WRAPPER is the flex child (ActionMenu renders .action-menu around
-   its trigger), so it takes the share and hands the full width to the button. */
+/* The menu's WRAPPER is the flex child (ActionMenu renders .action-menu around its
+   trigger) — it takes its trigger's width, nothing more. */
 .list-actions .action-menu {
-  flex: 1 1 auto;
-}
-.list-actions .action-menu > .btn {
-  width: 100%;
-  justify-content: center;
+  flex: 0 0 auto;
 }
 /* On a phone, the one prominent cashier action ("Montrer à la caisse") spans the
-   full width — an easy thumb target at the bottom of the list. Wider screens
-   keep it at its natural width. Scoped to the non-split bar so the 50/50
-   shortcut pair above keeps its halves. */
+   full width — an easy thumb target at the bottom of the list. Wider screens keep
+   it at its natural width. Scoped away from the quiet shortcut row above, whose
+   whole point is that its chips DON'T claim a line each. */
 @media (max-width: 520px) {
-  .list-actions:not(.list-actions--split) .btn {
+  .list-actions:not(.list-actions--quiet) .btn {
     flex: 1 1 100%;
   }
 }

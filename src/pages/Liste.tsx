@@ -9,6 +9,7 @@ import { EmptyState } from '../components/EmptyState'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT, useLang } from '../i18n'
+import { Cluster } from '../components/Layout'
 import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu'
 import { useAisleOrder, useAisleOverrides, useAisleTagsShown, setAisleTagsShown } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
@@ -593,9 +594,12 @@ export function Liste() {
       {/* The two frequent "fill the list" moves stay as visible one-tap shortcuts
           — not tucked behind the ＋ Add sheet: searching the week's flyers for an
           aubaine ("Parcourir les circulaires") and reopening past/predicted items
-          to restock ("Ajout rapide"). Kept compact (btn--sm) so they read as quick
-          shortcuts beneath the primary Add field rather than competing with it;
-          still split 50/50 (glyph + short label each), full text on aria-label. */}
+          to restock ("Ajout rapide"). They are SHORTCUTS, and now they look like it:
+          three solid full-width orange bars stacked 2+1 owned ~180px of the phone's
+          first screen — more than the list itself — and shouted louder than the
+          « Ajouter » field above them and the items below. Quiet ghost chips at
+          their natural width on one wrapping Cluster: same one tap, a tenth of the
+          voice. Full text on aria-label. */}
       {/* The third shortcut is the « Allées » MENU: the sort choice (Mon ordre /
           Par allée), the on-demand aisle tag and « Ranger par allée » used to sit
           in a permanent bar above the list, spelling out a view preference you set
@@ -603,10 +607,10 @@ export function Liste() {
           each item's own name into second place. Folded behind one button they're
           still one tap away, and the list is back to being the list. Only worth a
           button once there's more than one row to order. */}
-      <div className={'list-actions list-actions--split' + (list.length > 1 ? ' list-actions--trio' : '')}>
+      <Cluster className="list-actions list-actions--quiet">
         <button
           type="button"
-          className="btn btn--sm btn--primary help-pick"
+          className="btn btn--sm btn--ghost help-pick"
           aria-label={t.shop.browse}
           title={t.shop.browse}
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
@@ -615,7 +619,7 @@ export function Liste() {
         </button>
         <button
           type="button"
-          className="btn btn--sm btn--primary help-pick"
+          className="btn btn--sm btn--ghost help-pick"
           aria-label={t.list.quickAdd}
           title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}
@@ -628,13 +632,13 @@ export function Liste() {
           <ActionMenu
             triggerLabel={t.list.aisleMenu}
             triggerIcon="storefront-bold"
-            triggerClassName="btn btn--sm btn--primary help-pick"
+            triggerClassName="btn btn--sm btn--ghost help-pick"
             label={t.list.sortBy}
             pick={(open) => help.pick('aisles', open)}
             items={sortItems}
           />
         )}
-      </div>
+      </Cluster>
       {help.bubbleFor('flyer')}
       {help.bubbleFor('quick')}
       {help.bubbleFor('aisles')}

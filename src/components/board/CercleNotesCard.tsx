@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
@@ -10,7 +10,8 @@ import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, visibleNotes } from '../../lib/familyNotes'
 import type { Member } from '../../lib/members'
 import type { MemberFace } from '../MemberSwitcher'
-import { Icon, InlineIcon } from '../Icon'
+import { InlineIcon } from '../Icon'
+import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { Section } from './Act'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { NotesList } from '../cercle/NotesList'
@@ -38,9 +39,10 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
   // Still needed in compact: a guest's expanded checklists render INERT (a tick
   // would 403), even though the action buttons are gone for everyone here.
   const ro = isGuest()
-  // The header ＋: opens the quick composer in place. Transient (never persisted) —
-  // a card that reloads is a card at rest.
-  const [composing, setComposing] = useState(false)
+  // The header ＋: opens the quick composer in place (the shared SectionAdd, the
+  // same affordance the garde-manger's lists and « À faire » wear). Transient
+  // (never persisted) — a card that reloads is a card at rest.
+  const compose = useSectionAdd()
 
   // Non-polling (like CarnetsCard): durable notes change over days, a write anywhere
   // invalidates FAMILY_NOTES_KEY and realtime nudges it — so this default-on card
@@ -89,31 +91,18 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
       // The quick add — hidden for a read-only guest (the write would 403) and, like
       // every other write affordance here, absent from the compact mini face: that tile
       // is a glance, and it grows to this one with a tap.
-      action={
-        ro ? undefined : (
-          <button
-            type="button"
-            className={'sec-label__actbtn' + (composing ? ' is-on' : '')}
-            onClick={() => setComposing((v) => !v)}
-            aria-expanded={composing}
-            aria-label={t.cercle.familyNotes.quickAdd}
-            title={t.cercle.familyNotes.quickAdd}
-          >
-            <Icon name={composing ? 'x-bold' : 'plus-bold'} size={14} />
-          </button>
-        )
-      }
+      action={<SectionAdd open={compose.open} onToggle={compose.toggle} label={t.cercle.familyNotes.quickAdd} />}
     >
       {/* Opened in place, closed once the note is written — the card goes back to
           being a glance. The scope follows the board's picked face (`profileId`):
           a face → their own note, « Maisonnée » → a family-wide one. */}
-      {composing && (
+      {compose.open && (
         <NoteQuickAdd
           memberId={profileId}
           className="cnotes-card__composer"
           drawDraftId="board-cnote"
           autoFocus
-          onSubmitted={() => setComposing(false)}
+          onSubmitted={compose.close}
         />
       )}
       <NotesList notes={notes} faces={faces} readOnly={ro} compact />

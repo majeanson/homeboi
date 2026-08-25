@@ -45,6 +45,7 @@ import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { NoteEditor } from '../components/cercle/NoteEditor'
 import { NoteQuickAdd } from '../components/cercle/NoteQuickAdd'
+import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { MotComposer } from '../components/mots/MotComposer'
 import { ScheduleFields, todayDateStr } from '../components/mots/ScheduleFields'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
@@ -238,6 +239,40 @@ const DEMO_JOINDRE_PEOPLE: JoindreCandidate[] = [
 const DEMO_JOINDRE_BUSINESSES = [
   { id: 'b1', name: 'Vétérinaire Nord', phone: '514-555-0301', email: null, colour: null },
 ]
+
+// SectionAdd: a section header whose add box waits behind the ＋. The specimen is
+// the whole pattern — header row, toggle, the field that appears focused and folds
+// away once something is written.
+function SectionAddDemo() {
+  const add = useSectionAdd()
+  const [v, setV] = useState('')
+  return (
+    <div>
+      <div className="kitchen__head">
+        <h2>Ce qui s’achève</h2>
+        <SectionAdd open={add.open} onToggle={add.toggle} label="Ajouter un aliment" readOnly={false} />
+      </div>
+      {add.open && (
+        <EditField
+          value={v}
+          onChange={setV}
+          onSubmit={() => {
+            setV('')
+            add.close()
+          }}
+          autoFocus={add.autoFocus}
+          submitLabel="Ajouter"
+          placeholder="Ajouter un aliment"
+          ariaLabel="Ajouter un aliment"
+          readOnly={false}
+        />
+      )}
+      <p className="mono" style={{ color: 'var(--ink-soft)', marginTop: '0.5rem' }}>
+        Beurre · Café · Papier
+      </p>
+    </div>
+  )
+}
 
 // Stand-in household members for the CercleNotes specimen (the face row).
 const DEMO_MEMBERS: Member[] = [
@@ -1308,6 +1343,13 @@ export function DevKit() {
           <CercleNotes members={DEMO_MEMBERS} />
         </Demo>
       ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'SectionAdd',
+      file: 'components/SectionAdd.tsx',
+      kw: 'section add plus toggle composer header ajouter ＋ open close garde-manger notes todo carte',
+      render: () => <SectionAddDemo />,
     },
     {
       cat: 'Saisie',
