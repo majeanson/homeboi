@@ -9,7 +9,7 @@ import type { IconName } from '../components/Icon'
 // returns STRUCTURED signals; the localized sentence + icon are composed here so all
 // copy stays in i18n. Shared by the board card (ARegler) and the « Cette semaine »
 // block, so neither re-derives the rendering.
-export type FrictionKind = 'ride' | 'meal-empty' | 'meal-low' | 'birthday'
+export type FrictionKind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday'
 
 export interface Friction {
   kind: FrictionKind
@@ -43,6 +43,10 @@ export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: strin
   switch (f.kind) {
     case 'ride':
       return { icon: 'car-bold', text: t.aRegler.ride(f.label) }
+    case 'car-clash':
+      // `sub` is what already has the car (a work window's label), when known —
+      // « Épicerie : l'auto est déjà prise (Travail) ».
+      return { icon: 'warning-bold', text: t.aRegler.carClash(f.label, f.sub ?? '') }
     case 'meal-empty':
       // `sub` carries which day the empty hero meal is ('today' | 'tomorrow'); `label`
       // carries the hero SLOT, so a household whose headline is the dîner reads

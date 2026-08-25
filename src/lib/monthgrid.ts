@@ -34,3 +34,16 @@ export function monthGrid(year: number, month: number): MonthGrid {
 export function inMonth(day: number, month: number): boolean {
   return localYMD(day).month === month
 }
+
+// Walk a picked day `by` months (the calendar's ‹ › arrows), keeping the day-of-month
+// where the target month has one. The Mois view derives WHICH month it shows from the day
+// it has selected, so stepping has to move the day itself — and the naive "add a month"
+// lands on the 31st of a 30-day month, i.e. the 1st of the month after. Clamping to the
+// target's last day keeps ‹ › walking the calendar one month at a time, always.
+export function stepMonthDay(day: number, by: number): number {
+  const { year, month, day: dom } = localYMD(day)
+  const target = monthGrid(year, month + by)
+  // The day before the FOLLOWING month's 1st — i.e. how many days the target month has.
+  const lastDom = localYMD(addLocalDays(monthGrid(year, month + by + 1).monthStart, -1)).day
+  return addLocalDays(target.monthStart, Math.min(dom, lastDom) - 1)
+}

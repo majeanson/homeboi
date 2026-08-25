@@ -38,12 +38,46 @@ export type ActionMenuItem = {
   // Draws a quiet divider above this row — separates the "manage" rows
   // (Modifier / Supprimer) from the do-actions.
   separated?: boolean
+  // A STATEFUL row: the menu also SAYS what is currently on, so a view choice can
+  // live behind one button instead of a permanent bar of toggles (La liste's
+  // « Allées » menu carries the sort choice + the aisle-tag toggle). `checked`
+  // draws a ✓ — and reserves the ✓'s width when false, so every label still lines
+  // up — and exposes `aria-checked`.
+  checked?: boolean
+  // Says this row is ONE OF several mutually exclusive choices (menuitemradio,
+  // « Mon ordre » vs « Par allée ») rather than an independent on/off
+  // (menuitemcheckbox, the default whenever `checked` is set).
+  radio?: boolean
 }
 
 const GAP = 6 // px between the trigger and the panel
 const EDGE = 8 // px the panel keeps off the viewport edges
 
-export function ActionMenu({ items, label }: { items: ActionMenuItem[]; label?: string }) {
+export function ActionMenu({
+  items,
+  label,
+  triggerLabel,
+  triggerIcon,
+  triggerClassName,
+  pick,
+}: {
+  items: ActionMenuItem[]
+  label?: string
+  // A LABELLED trigger instead of the bare ⋯ — for a menu that sits in a row of
+  // ordinary buttons and must read as one of them (La liste's « Allées » beside
+  // Circulaires / Déjà acheté), not as a header's overflow. With a visible label
+  // the button's own text IS its accessible name (label-in-name), so nothing is
+  // written over it with aria-label; `label` then only names the panel.
+  triggerLabel?: string
+  triggerIcon?: IconName
+  triggerClassName?: string
+  // Contextual "?" help mode: wrap the trigger the way any other control is
+  // wrapped — pass `(open) => help.pick('key', open)` and an armed tap EXPLAINS
+  // the menu in place instead of opening it. Without it the trigger is an
+  // ordinary button, so a menu behind a help-picked control isn't a hole in the
+  // surface's "?" coverage.
+  pick?: (open: () => void) => () => void
+}) {
   const t = useT()
   const btnRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -130,7 +164,7 @@ export function ActionMenu({ items, label }: { items: ActionMenuItem[]; label?: 
   }, [open])
 
   if (items.length === 0) return null
-  const name = label ?? t.common.moreActions
+  const name = label ?? triggerLabel ?? t.common.moreActions
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
     e.preventDefault()
@@ -146,14 +180,20 @@ export function ActionMenu({ items, label }: { items: ActionMenuItem[]; label?: 
       <button
         ref={btnRef}
         type="button"
-        className="btn btn--ghost mono action-menu__btn"
+        className={triggerClassName ?? 'btn btn--ghost mono action-menu__btn'}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={name}
+        aria-label={triggerLabel ? undefined : name}
         title={name}
-        onClick={() => setOpen((o) => !o)}
+        onClick={pick ? pick(() => setOpen((o) => !o)) : () => setOpen((o) => !o)}
       >
-        <Icon name="dots-three-bold" size={18} />
+        {triggerLabel ? (
+          <>
+            <InlineIcon name={triggerIcon ?? 'dots-three-bold'} /> {triggerLabel}
+          </>
+        ) : (
+          <Icon name={triggerIcon ?? 'dots-three-bold'} size={18} />
+        )}
       </button>
       {open &&
         createPortal(
@@ -169,7 +209,8 @@ export function ActionMenu({ items, label }: { items: ActionMenuItem[]; label?: 
               <button
                 key={i}
                 type="button"
-                role="menuitem"
+                role={it.checked === undefined ? 'menuitem' : it.radio ? 'menuitemradio' : 'menuitemcheckbox'}
+                aria-checked={it.checked}
                 className={
                   'action-menu__item mono' +
                   (it.tone === 'danger' ? ' action-menu__item--danger' : '') +
@@ -181,6 +222,13 @@ export function ActionMenu({ items, label }: { items: ActionMenuItem[]; label?: 
                   it.onSelect()
                 }}
               >
+                {/* The ✓ column: rendered (empty) on every stateful row, so turning
+                    one on never shoves its own label sideways. */}
+                {it.checked !== undefined && (
+                  <span className="action-menu__check" aria-hidden="true">
+                    {it.checked && <InlineIcon name="check-bold" />}
+                  </span>
+                )}
                 {it.icon && <InlineIcon name={it.icon} />} {it.label}
               </button>
             ))}

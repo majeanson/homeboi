@@ -13,6 +13,8 @@ interface Ev {
   start_at: number
   all_day: number
   member_id: string | null
+  end_at?: number | null // optional « Jusqu'à » — the window's exclusive end (unix s); absent = a point
+  car_id?: string | null // « Prend l'auto »: set = this rendez-vous takes that household car
   passengers?: string | null // « Qui » — the household people this concerns (JSON id array); member_id is passengers[0]
   contact_id?: string | null // #21: a « Le cercle » contact instead of a member
   contact_name?: string | null // the contact's first name, for the board label
@@ -35,6 +37,8 @@ type EvRow = {
   title: string
   start_at: number
   all_day: number
+  end_at: number | null
+  car_id: string | null
   member_id: string | null
   passengers: string | null
   contact_id: string | null
@@ -85,19 +89,19 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealLayout = await householdMealLayout(ctx.env, hh)
   const heroSlot = mealLayout.hero
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes, scheduleRes] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes, scheduleRes, carDayRes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
       .bind(hh)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, bring_template_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, today, tomorrow)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, bring_template_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
+      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, tomorrow, dayAfter)
       .all(),
@@ -180,12 +184,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<ScheduleBlockRow>(),
+    // Today's per-date car adjustments. A day the car was reassigned (or kept home)
+    // must not still draw the template's car glyph here while /voiture shows it free
+    // — the board, the calendar and L'auto have to agree about one date.
+    ctx.env.DB.prepare('SELECT day FROM car_day WHERE household_id = ? AND day >= ? AND day < ?')
+      .bind(hh, today, tomorrow)
+      .all<{ day: number }>(),
   ])
 
   // "Up next" beyond tomorrow (rest of the week) — tomorrow has its own card, so
   // start the day after to avoid showing it twice.
   const upcoming = await ctx.env.DB.prepare(
-    'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, bring_template_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
+    'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
   )
     .bind(hh, dayAfter, weekEnd)
     .all()
@@ -194,7 +204,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // (today → week end) into concrete occurrences, then bucket into the same
   // day ranges as the one-off events above. See _lib/recur.
   const recurring = await ctx.env.DB.prepare(
-    'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, bring_template_id, recur_json, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+    'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, recur_json, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
   )
     .bind(hh)
     .all<{
@@ -202,6 +212,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       title: string
       start_at: number
       all_day: number
+      end_at: number | null
+      car_id: string | null
       member_id: string | null
       passengers: string | null
       contact_id: string | null
@@ -227,6 +239,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
         title: e.title,
         start_at: at,
         all_day: e.all_day,
+        // A recurring rendez-vous keeps its LENGTH, so shift the end with the occurrence.
+        end_at: e.end_at != null && e.end_at > e.start_at ? at + (e.end_at - e.start_at) : null,
+        car_id: e.car_id,
         member_id: e.member_id,
         passengers: e.passengers,
         contact_id: e.contact_id,
@@ -265,6 +280,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       title: r.title,
       start_at: r.start_at,
       all_day: r.all_day,
+      end_at: r.end_at,
+      car_id: r.car_id,
       member_id: r.member_id,
       passengers: r.passengers,
       contact_id: r.contact_id,
@@ -485,7 +502,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // weekly rota would flood À venir, so the calendar (month/day page) is where the
   // full forward schedule lives; here it's just "who's out today". Read-only.
   const scheduleBlocks: ScheduleBlock[] = scheduleRes.results.map(parseScheduleBlockRow)
-  const work = workOccurrencesInRange(scheduleBlocks, today, tomorrow).map((o) => ({
+  const work = workOccurrencesInRange(scheduleBlocks, today, tomorrow, carDayRes.results).map((o) => ({
     id: o.id,
     label: o.label,
     at: o.at,

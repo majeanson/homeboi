@@ -11,6 +11,8 @@ import {
   EVENT_CAP,
   BIRTHDAY_CAP,
   CARNET_CAP,
+  WORK_CAP,
+  workForPrompt,
   type AskSnapshot,
   type AskEventRow,
   type AskRecurEventRow,
@@ -33,6 +35,7 @@ const emptySnapshot: AskSnapshot = {
   contacts: [],
   businesses: [],
   carnetDues: [],
+  work: [],
 }
 
 describe('fmtDay / fmtDateTime — FR/EN formatting', () => {
@@ -258,5 +261,79 @@ describe('buildAskPromptLines — sections, FR/EN, omission of empty sections', 
     expect(text).toContain('À prévoir (entretien) :')
     expect(text).toContain('Chauffe-eau')
     expect(text).toContain('(dépassé)')
+  })
+})
+
+// The assistant used to answer "est-ce que Marc est libre jeudi ?" from events alone
+// and say yes while he was at work. The rota is derived onto dates, like birthdays.
+describe('workForPrompt — the derived work rota', () => {
+  const WED = d(2026, 5, 3) // Wed 2026-06-03
+  const BLOCK = {
+    id: 'b1',
+    member_id: 'm1',
+    label: 'Travail',
+    start_min: 8 * 60,
+    end_min: 17 * 60,
+    holds_car: 1,
+    color: null,
+    recur_json: JSON.stringify({ freq: 'weekly', weekdays: [1, 2, 3, 4, 5] }),
+    anchor_day: null,
+  }
+  const MEMBERS = [{ id: 'm1', display_name: 'Marc' }]
+
+  it('names the member and carries the window + car claim', () => {
+    const occ = workForPrompt([BLOCK], [], MEMBERS, WED, WED + 86400)
+    expect(occ).toHaveLength(1)
+    expect(occ[0].name).toBe('Marc')
+    expect(occ[0].holdsCar).toBe(true)
+    expect(occ[0].endAt).toBeGreaterThan(occ[0].at)
+  })
+
+  it('an adjusted date releases the car but keeps the work', () => {
+    const occ = workForPrompt([BLOCK], [{ day: WED }], MEMBERS, WED, WED + 86400)
+    expect(occ).toHaveLength(1)
+    expect(occ[0].holdsCar).toBe(false)
+  })
+
+  it('drops a window whose member no longer exists rather than printing a blank name', () => {
+    expect(workForPrompt([BLOCK], [], [], WED, WED + 86400)).toEqual([
+      // label falls back in for a nameless member, so this one still prints
+      expect.objectContaining({ name: 'Travail' }),
+    ])
+  })
+
+  it('prints an « Horaires » section naming who is away, with the car flagged', () => {
+    const lines = buildAskPromptLines(
+      { ...emptySnapshot, today: WED, work: workForPrompt([BLOCK], [], MEMBERS, WED, WED + 86400) },
+      'fr',
+    )
+    const text = lines.join('\n')
+    expect(text).toContain('Horaires (qui est absent)')
+    expect(text).toContain('Marc')
+    expect(text).toContain("[prend l'auto]")
+  })
+
+  it('omits the section entirely when the household keeps no schedule', () => {
+    expect(buildAskPromptLines(emptySnapshot, 'fr').join('\n')).not.toContain('Horaires')
+  })
+})
+
+describe('workForPrompt — cap', () => {
+  it('never floods the prompt with a long rota', () => {
+    const WED = d(2026, 5, 3)
+    const block = {
+      id: 'b1',
+      member_id: 'm1',
+      label: 'Travail',
+      start_min: 8 * 60,
+      end_min: 17 * 60,
+      holds_car: 1,
+      color: null,
+      recur_json: JSON.stringify({ freq: 'weekly', weekdays: [0, 1, 2, 3, 4, 5, 6] }),
+      anchor_day: null,
+    }
+    // 90 days of a daily block is far past the cap.
+    const occ = workForPrompt([block], [], [{ id: 'm1', display_name: 'Marc' }], WED, WED + 90 * 86400)
+    expect(occ).toHaveLength(WORK_CAP)
   })
 })

@@ -276,8 +276,9 @@ export const GUIDE_CARD_ALIAS: Record<string, { id: string; base: number }> = {
   'cast-tv': { id: 'set-devices', base: 7 },
   offline: { id: 'settings', base: 4 },
   search: { id: 'board', base: 4 },
-  moment: { id: 'board', base: 8 },
-  reminders: { id: 'board', base: 10 },
+  // `base` shifted 10 → 9 when the « Voir un moment » point (index 8) was trimmed off
+  // the board card as « Moments » was retired.
+  reminders: { id: 'board', base: 9 },
   leftovers: { id: 'kitchen', base: 8 },
   'home-projects': { id: 'set-chores', base: 8 },
 }
@@ -400,8 +401,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le fil du jour', en: 'The day’s timeline' },
         detail: {
-          fr: 'Les jours chargés, la carte « Aujourd’hui » se déplie en fil du jour : rendez-vous, trajets et heures de travail dans l’ordre de l’heure, avec un repère « Maintenant ». Touche une ligne pour sa fiche.',
-          en: 'On a busy day the “Today” card unfolds into the day’s timeline: appointments, rides and work hours in time order, with a “Now” marker. Tap a row for its card.',
+          fr: 'Les jours chargés, la carte « Aujourd’hui » se déplie en fil du jour : rendez-vous et heures de travail dans l’ordre de l’heure, avec un repère « Maintenant ». Touche une ligne pour sa fiche.',
+          en: 'On a busy day the “Today” card unfolds into the day’s timeline: appointments and work hours in time order, with a “Now” marker. Tap a row for its card.',
         },
       },
       {
@@ -443,14 +444,6 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Voir un moment', en: 'See a moment' },
-        detail: {
-          fr: '« Moments » rassemble tout ce qui s’en vient pour ce soir, demain, une date ou la semaine — avec sa liste à cocher. Parfait pour préparer demain ou briefer la gardienne.',
-          en: '“Moments” gathers everything coming up for tonight, tomorrow, a date or the week — with its checklist. Perfect to prep tomorrow or brief the sitter.',
-        },
-        route: '/moment',
-      },
-      {
         label: { fr: 'Personnaliser le babillard', en: 'Customize the board' },
         detail: {
           fr: 'Garde le doigt sur une carte : glisse-la, change sa largeur, ou retire-la. Chaque appareil garde SA disposition.',
@@ -472,6 +465,13 @@ export const GUIDE: GuideEntry[] = [
           en: 'Give the first day, the last day and the breaks once. “Tomorrow” can then say 🎒 “School tomorrow” or 🏖️ “Day off tomorrow” — never on an ordinary day.',
         },
         route: '/settings?tab=board&sub=events&focus=schoolYear',
+      },
+      {
+        label: { fr: 'Le mois : lire une journée, et y ajouter', en: 'The month: read a day, and add to it' },
+        detail: {
+          fr: 'Dans la vue Mois, touche une date : la journée s’affiche et RESTE à l’écran pendant que tu navigues (à côté du calendrier sur grand écran, épinglée en bas sur un téléphone). Le ⋯ de la journée ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date-là. Le petit bouton à côté de « Aujourd’hui » fait écrire aux cases ce qu’il y a dedans, au lieu des points.',
+          en: 'In the Month view, tap a date: the day opens and STAYS on screen while you browse (beside the calendar on a big screen, pinned at the bottom on a phone). The day’s ⋯ adds an event, a chore, a meal or the day note to THAT date. The little button next to “Today” makes the cells spell out what is in them instead of dotting it.',
+        },
       },
     ],
   },
@@ -883,8 +883,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Trier par allée', en: 'Sort by aisle' },
         detail: {
-          fr: 'Bascule sur « Par allée » : les articles se trient dans l’ordre de TON magasin. Tu règles cet ordre une fois dans Réglages ▸ Magasinage.',
-          en: 'Flip to “By aisle”: items sort in YOUR store’s order. You set that order once in Settings ▸ Shopping.',
+          fr: 'Le bouton « Allées », sous la boîte d’ajout, ouvre l’ordre de la liste : « Par allée » trie les articles dans l’ordre de TON magasin (réglé une fois dans Réglages ▸ Magasinage), et tu peux y afficher l’allée sous chaque article.',
+          en: 'The “Aisles” button under the add box opens the list’s order: “By aisle” sorts items in YOUR store’s order (set once in Settings ▸ Shopping), and you can show each item’s aisle under its name from there.',
         },
         route: '/settings?tab=liste&sub=aisles',
       },
@@ -2191,8 +2191,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'L’auto partagée', en: 'The shared car' },
         detail: {
-          fr: 'Donne un nom et une couleur à l’auto que la maisonnée se partage; les trajets s’y rattachent et un membre du cercle peut conduire en covoiturage. Voir [[card:auto|L’auto]] pour tout le détail.',
-          en: 'Name and colour the car the household shares; rides attach to it and a circle member can drive as a carpool. See [[card:auto|The car]] for the full detail.',
+          fr: 'Donne un nom et une couleur à l’auto que la maisonnée se partage; un rendez-vous qui coche « Prend l’auto » s’y rattache. Voir [[card:auto|L’auto]] pour tout le détail.',
+          en: 'Name and colour the car the household shares; an appointment that ticks “Takes the car” attaches to it. See [[card:auto|The car]] for the full detail.',
         },
         why: {
           fr: 'Un seul endroit pour savoir qui a l’auto et quand elle est libre — fini les cinq fils de textos.',
@@ -2826,8 +2826,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ton auto', en: 'Your car' },
         detail: {
-          fr: 'Donne un nom et une couleur à l’auto dans Réglages ▸ L’auto. Pas d’auto à toi ? Laisse la liste vide — les trajets se font alors en covoiturage.',
-          en: 'Name and colour the car in Settings ▸ The car. No car of your own? Leave the list empty — rides are then carpooled.',
+          fr: 'Donne un nom et une couleur à l’auto dans Réglages ▸ L’auto. Pas d’auto à toi ? Laisse la liste vide — « Prend l’auto » disparaît alors des rendez-vous.',
+          en: 'Name and colour the car in Settings ▸ The car. No car of your own? Leave the list empty — “Takes the car” then disappears from appointments.',
         },
       },
       {
@@ -2859,15 +2859,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Qui reconduit', en: 'Who drives' },
         detail: {
-          fr: 'Un trajet conduit par un membre prend votre auto ; choisis plutôt une personne du cercle et c’est elle qui conduit (covoiturage) — sans mobiliser la voiture. Ajoute les enfants comme passagers.',
-          en: 'A ride driven by a member takes your car; pick someone from the circle instead and they drive (carpool) — without tying up the vehicle. Add the kids as passengers.',
+          fr: 'Coche « Prend l’auto » et le rendez-vous occupe votre voiture : c’est la personne choisie dans « Pour qui ? » qui conduit. Quelqu’un d’autre vous reconduit ? Ne coche rien et nomme-le dans « Avec » — l’auto reste libre pour les autres.',
+          en: 'Tick “Takes the car” and the appointment occupies your vehicle: whoever is picked in “Who for?” drives. Someone else driving you? Leave it unticked and name them in “With” — the car stays free for everyone else.',
         },
       },
       {
         label: { fr: 'Quand ça se chevauche', en: 'When it clashes' },
         detail: {
-          fr: 'Si un trajet tombe pendant que l’auto est déjà prise (au travail, par exemple), une petite note ⚠ le signale — calme, jamais bloquant.',
-          en: 'If a ride lands while the car is already taken (at work, say), a small ⚠ note flags it — calm, never blocking.',
+          fr: 'Si un rendez-vous qui prend l’auto tombe pendant qu’elle est déjà prise (au travail, par exemple), une petite note ⚠ le signale — sur la carte ET dans « À régler ». Ajoute « Jusqu’à » au rendez-vous et l’avertissement devient exact plutôt qu’estimé.',
+          en: 'If an appointment that takes the car lands while it’s already taken (at work, say), a small ⚠ note flags it — on the card AND in “To sort out”. Add “Until” to the appointment and the warning becomes exact instead of estimated.',
         },
         why: {
           fr: 'C’est le piège du foyer à une auto : L’auto le voit pour toi au lieu de te laisser le découvrir à 17 h.',

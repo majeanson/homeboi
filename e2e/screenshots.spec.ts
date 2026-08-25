@@ -185,9 +185,11 @@ test('board layout panel toggle hides a card', async ({ page }) => {
   await expect(page.locator('.wg-slot[data-card="todos"]')).toHaveCount(0)
 })
 
-// The unified event form: ONE form with optional « Trajet » + « À apporter », and the
-// inline bring-list builder accepts typed items (no bounce to Réglages).
-test('event form: optional Trajet + À apporter with inline bring builder', async ({ page }) => {
+// The unified event form: ONE form — a rendez-vous — with optional « Prend l'auto »
+// + « À apporter », and an inline bring-list builder that accepts typed items (no
+// bounce to Réglages). There is no separate « Trajet » noun: taking the car is a
+// plain yes/no on the rendez-vous, so this asserts the checkbox label, not a mode.
+test('event form: optional « Prend l’auto » + À apporter with inline bring builder', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.setViewportSize({ width: 430, height: 1200 })
@@ -195,7 +197,7 @@ test('event form: optional Trajet + À apporter with inline bring builder', asyn
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/event/new')
   await page.locator('form').first().waitFor({ timeout: 15000 })
-  await expect(page.getByText('Trajet', { exact: true })).toBeVisible()
+  await expect(page.getByText('Prend l’auto', { exact: true })).toBeVisible()
   await expect(page.getByText('À apporter', { exact: true })).toBeVisible()
   await page.getByText('À apporter', { exact: true }).click()
   const item = page.getByPlaceholder('Ajoute un article')

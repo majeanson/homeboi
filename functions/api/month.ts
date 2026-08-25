@@ -36,7 +36,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // meals query can sort by it, exactly like /api/meals and the board.
   const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, hh)).order)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, carDayRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -44,15 +44,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // plain string, a contact's JSON — so a rendez-vous peek can offer « Itinéraire »
     // straight to Google Maps; same subselect pattern as contact_name).
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
+      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
     )
       .bind(hh, from, to)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; bring_template_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; end_at: number | null; car_id: string | null; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; bring_template_id: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, member_id, passengers, contact_id, business_id, recur_json, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, recur_json, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
     )
       .bind(hh)
-      .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; recur_json: string; bring_template_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; end_at: number | null; car_id: string | null; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; recur_json: string; bring_template_id: string | null }>(),
     // Meals & day-notes are stored at LOCAL midnight; widen the SQL window a day
     // each side so an entry near the window edge still lands, then re-bucket by
     // local day below and clip back to [from, to).
@@ -100,6 +100,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<ScheduleBlockRow>(),
+    // Per-date car adjustments across the window. The calendar derives work windows
+    // from the TEMPLATE, so without these it keeps drawing the car on a date whose
+    // car was reassigned or kept home — a third disagreeing answer next to /voiture
+    // and the board.
+    ctx.env.DB.prepare('SELECT day FROM car_day WHERE household_id = ? AND day >= ? AND day < ?')
+      .bind(hh, from, to)
+      .all<{ day: number }>(),
     // "Projets & Entretien" (home_projects, #home-projects) — DATED rows only;
     // recurring expand across the window, one-off land on their day. Like chores,
     // they ride the same calendar. Undated rows (at IS NULL) have no cell.
@@ -178,6 +185,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     at: number
     all_day: number
     member_id: string | null
+    end_at?: number | null // optional « Jusqu'à » — the rendez-vous' exclusive end (unix s)
+    car_id?: string | null // « Prend l'auto »: set = this rendez-vous takes that household car
     passengers?: string | null // « Qui » — the household people (JSON id array); member_id is passengers[0]
     contact_id?: string | null
     contact_name?: string | null
@@ -203,6 +212,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
         title: e.title,
         at: e.start_at,
         all_day: e.all_day,
+        end_at: e.end_at,
+        car_id: e.car_id,
         member_id: e.member_id,
         passengers: e.passengers,
         contact_id: e.contact_id,
@@ -225,6 +236,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
         title: e.title,
         at,
         all_day: e.all_day,
+        // A recurring rendez-vous keeps its LENGTH on every occurrence.
+        end_at: e.end_at != null && e.end_at > e.start_at ? at + (e.end_at - e.start_at) : null,
+        car_id: e.car_id,
         member_id: e.member_id,
         passengers: e.passengers,
         contact_id: e.contact_id,
@@ -248,7 +262,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Derived « L'auto » work windows — read-only (the client renders a clock + routes
   // the tap to /voiture, not an event editor). A span, so `end` rides along.
   const scheduleBlocks: ScheduleBlock[] = scheduleRes.results.map(parseScheduleBlockRow)
-  for (const o of workOccurrencesInRange(scheduleBlocks, from, to)) {
+  for (const o of workOccurrencesInRange(scheduleBlocks, from, to, carDayRes.results)) {
     events.push({ id: o.id, title: o.label ?? '', at: o.at, end: o.endAt, all_day: 0, member_id: o.memberId, day: dayOf(o.at), work: true, color: o.color, holds_car: o.holdsCar ? 1 : 0 })
   }
 

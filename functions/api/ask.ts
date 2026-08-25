@@ -5,11 +5,14 @@ import { aiUsable } from '../_lib/aiPref'
 import { localDayStart } from '../_lib/ids'
 import { fetchBirthdayPeople } from '../_lib/birthdays'
 import { fetchCarnetLifeItems } from '../_lib/carnetLife'
+
+import type { ScheduleBlockRow } from '../_lib/carResolve'
 import {
   buildAskPromptLines,
   expandAskEvents,
   birthdaysForPrompt,
   carnetDuesForPrompt,
+  workForPrompt,
   type AskEventRow,
   type AskRecurEventRow,
   type AskMealRow,
@@ -51,7 +54,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const rangeEnd = today + 30 * DAY
   const birthdayRangeEnd = today + 365 * DAY
 
-  const [meals, oneOffEvents, recurEvents, list, chores, notes, birthdayPeople, contacts, businesses, carnetItems] = await Promise.all([
+  const [meals, oneOffEvents, recurEvents, list, chores, notes, birthdayPeople, contacts, businesses, carnetItems, membersRes, scheduleRes, carDayRes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT title, date, slot, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date LIMIT 60',
     )
@@ -94,6 +97,21 @@ export const onRequestPost = authed(async (ctx, actor) => {
       .bind(hh)
       .all<AskBusinessRow>(),
     fetchCarnetLifeItems(ctx.env.DB, hh),
+    // « L'auto » — the household's names, the recurring work windows, and the
+    // per-date adjustments that release the car. Derived onto dates below, never
+    // event rows (like birthdays). Bounded: a two-week look-ahead, which is the
+    // horizon a "est-ce que X est libre …" question actually asks about.
+    ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
+      .bind(hh)
+      .all<{ id: string; display_name: string }>(),
+    ctx.env.DB.prepare(
+      'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ?',
+    )
+      .bind(hh)
+      .all<ScheduleBlockRow>(),
+    ctx.env.DB.prepare('SELECT day FROM car_day WHERE household_id = ? AND day >= ? AND day < ?')
+      .bind(hh, today, today + 14 * DAY)
+      .all<{ day: number }>(),
   ])
 
   const lines = buildAskPromptLines(
@@ -108,6 +126,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       contacts: contacts.results,
       businesses: businesses.results,
       carnetDues: carnetDuesForPrompt(carnetItems, today),
+      work: workForPrompt(scheduleRes.results, carDayRes.results, membersRes.results, today, today + 14 * DAY),
     },
     lang,
   )

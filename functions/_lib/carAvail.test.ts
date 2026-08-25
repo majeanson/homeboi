@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeSpans, freeGaps, busyAt, carStatusAt, rideConflicts, rideSpans, type CarSpan, type Ride } from './carAvail'
+import { mergeSpans, freeGaps, busyAt, carStatusAt, rideConflicts, rideSpans, rideWindow, RIDE_DEFAULT_SEC, type CarSpan, type Ride } from './carAvail'
 
 // All instants are plain unix seconds on one synthetic day so the math reads as
 // wall-clock hours. carAvail is timezone-agnostic, so a fixed base is enough — no TZ
@@ -158,26 +158,83 @@ describe('carStatusAt with ride spans folded in', () => {
 
 describe('rideConflicts', () => {
   const busy: CarSpan[] = [{ start: h(8), end: h(18), label: 'au travail' }]
+  const conflicts = (rides: Ride[]) => rideConflicts(busy, rides, DAY, DAY_END)
+
   it('flags a car-taking ride that lands while the car is committed', () => {
-    const rides: Ride[] = [{ id: 'r1', at: h(17), label: 'Épicerie', carId: 'car' }]
-    const conflicts = rideConflicts(busy, rides)
-    expect(conflicts).toHaveLength(1)
-    expect(conflicts[0].ride.id).toBe('r1')
-    expect(conflicts[0].span.label).toBe('au travail')
+    const found = conflicts([{ id: 'r1', at: h(17), label: 'Épicerie', carId: 'car' }])
+    expect(found).toHaveLength(1)
+    expect(found[0].ride.id).toBe('r1')
+    expect(found[0].span.label).toBe('au travail')
   })
 
-  it('does NOT flag a carpool ride (no car needed)', () => {
-    const rides: Ride[] = [{ id: 'r2', at: h(17), label: 'Soccer (Sophie conduit)', carId: null }]
-    expect(rideConflicts(busy, rides)).toEqual([])
+  it('does NOT flag a ride that never takes our car', () => {
+    expect(conflicts([{ id: 'r2', at: h(17), label: 'Soccer (Sophie conduit)', carId: null }])).toEqual([])
   })
 
   it('does NOT flag a car-taking ride that fits in a free gap', () => {
-    const rides: Ride[] = [{ id: 'r3', at: h(19), label: 'Épicerie', carId: 'car' }]
-    expect(rideConflicts(busy, rides)).toEqual([])
+    expect(conflicts([{ id: 'r3', at: h(19), label: 'Épicerie', carId: 'car' }])).toEqual([])
   })
 
   it('a ride exactly on the span end is fine (car just back)', () => {
-    const rides: Ride[] = [{ id: 'r4', at: h(18), label: 'Épicerie', carId: 'car' }]
-    expect(rideConflicts(busy, rides)).toEqual([])
+    expect(conflicts([{ id: 'r4', at: h(18), label: 'Épicerie', carId: 'car' }])).toEqual([])
+  })
+
+  // The whole WINDOW is tested, not just the start instant. Before this, a ride that
+  // began in a free gap and ran straight into a busy block slipped through silently.
+  it('flags a ride that STARTS free but runs into a committed block', () => {
+    const found = conflicts([{ id: 'r5', at: h(7), endAt: h(9.5), label: 'Rendez-vous', carId: 'car' }])
+    expect(found).toHaveLength(1)
+    expect(found[0].ride.id).toBe('r5')
+  })
+
+  it('flags a ride whose 2 h DEFAULT window runs into a committed block', () => {
+    // Starts at 7 h with no « Jusqu'à » → the default window reaches 9 h, inside 8–18.
+    expect(conflicts([{ id: 'r6', at: h(7), carId: 'car' }])).toHaveLength(1)
+  })
+
+  it('does NOT flag a ride that ENDS exactly when the block starts', () => {
+    expect(conflicts([{ id: 'r7', at: h(6), endAt: h(8), carId: 'car' }])).toEqual([])
+  })
+
+  it('an explicit « Jusqu’à » can clear a ride the 2 h default would have flagged', () => {
+    // 7 h → 7 h 30 is over before the 8 h block; the flat default would have said 9 h.
+    expect(conflicts([{ id: 'r8', at: h(7), endAt: h(7.5), carId: 'car' }])).toEqual([])
+  })
+
+  it('an all-day car ride collides with any block that day', () => {
+    expect(conflicts([{ id: 'r9', at: h(0), carId: 'car', allDay: true }])).toHaveLength(1)
+  })
+})
+
+// « Jusqu'à » (events.end_at) makes the occupied window exact instead of a flat guess.
+describe('rideWindow — explicit duration vs the default', () => {
+  it('an explicit end wins over the 2 h default', () => {
+    const w = rideWindow({ id: 'r1', at: h(16), endAt: h(19.5), carId: 'car' }, DAY, DAY_END)
+    expect(w).toEqual({ start: h(16), end: h(19.5), label: undefined, holderId: null })
+  })
+
+  it('falls back to the default window when no end is given', () => {
+    expect(rideWindow({ id: 'r2', at: h(16), carId: 'car' }, DAY, DAY_END).end).toBe(h(18))
+  })
+
+  it('ignores an end that is not after the start', () => {
+    expect(rideWindow({ id: 'r3', at: h(16), endAt: h(16), carId: 'car' }, DAY, DAY_END).end).toBe(h(18))
+  })
+
+  it('clamps an explicit end to the end of the day', () => {
+    expect(rideWindow({ id: 'r4', at: h(23), endAt: h(26), carId: 'car' }, DAY, DAY_END).end).toBe(DAY_END)
+  })
+
+  it('all-day still wins over an explicit end', () => {
+    const w = rideWindow({ id: 'r5', at: h(9), endAt: h(11), carId: 'car', allDay: true }, DAY, DAY_END)
+    expect(w.start).toBe(DAY)
+    expect(w.end).toBe(DAY_END)
+  })
+})
+
+describe('RIDE_DEFAULT_SEC — the shared fallback', () => {
+  it('is what rideWindow falls back to when a rendez-vous says no end', () => {
+    const w = rideWindow({ id: 'r1', at: h(10), carId: 'car' }, DAY, DAY_END)
+    expect(w.end - w.start).toBe(RIDE_DEFAULT_SEC)
   })
 })

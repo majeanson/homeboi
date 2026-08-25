@@ -5,6 +5,7 @@ import { type Weather, type DayOutlook, type HourOutlook, weatherIcon, weatherTi
 import { WonderBand, WONDER_SOURCES, type Wonder, type WonderSource } from './ApodFrame'
 import { Sheet } from '../Sheet'
 import { Icon } from '../Icon'
+import { SkyTonight } from './SkyTonight'
 
 // « Dehors aujourd'hui » — tap the board's weather/wonder hero for the story behind
 // the glance: the wonder picture in full (title, blurb, read-aloud — the same
@@ -105,6 +106,9 @@ function SkyBody({
           )}
         </section>
       )}
+      {/* « Ce soir dans le ciel » — the moon after the day's weather, before the picture.
+          Local + offline (lib/moonPhase); it moved here when « Moments » was retired. */}
+      <SkyTonight />
       {wonder && (
         <>
           {/* The full band the toddler board already renders: image (tap-to-zoom),

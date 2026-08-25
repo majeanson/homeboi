@@ -3,16 +3,15 @@ import { mockApi, seedState, BASE, BOARD, MMID } from './mocks'
 
 // Board customization + lens coverage — the §6 e2e gaps from AUJOURDHUI.md that the
 // static screenshot frames never exercise: the « Disposition du babillard » toggle UI
-// (only its rendered RESULT was covered), the Moments window chips → /moment scene, and
-// the board re-rendering under a picked face (the face lens, beyond the greeting).
+// (only its rendered RESULT was covered) and the board re-rendering under a picked face
+// (the face lens, beyond the greeting).
 // Same frontend-only harness as interactions.spec.ts: Vite + stubbed /api/**.
 
 async function board(page: Page, freezeClock = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   // Only the face-lens test freezes the clock (to the mock epoch) so the timed
   // Garderie event stays live and visible — the board lifecycle folds "past" items
-  // into a collapsed disclosure vs the real clock. Kept OFF for the Moments-chip
-  // tests, whose "lead window (Ce soir by day)" IS time-of-day dependent.
+  // into a collapsed disclosure vs the real clock.
   if (freezeClock) await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
@@ -20,25 +19,17 @@ async function board(page: Page, freezeClock = false) {
   await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
 }
 
-// ─────────────────────── Moments window chips ──────────────────────────
+// ─────────────────────── the retired « Moments » scene ─────────────────
 
-test.describe('Moments chips', () => {
-  test('a board Moments chip deep-links straight to that scope in the scene', async ({ page }) => {
-    await board(page)
-    // The MomentPeek hero lists its four windows as direct tap targets. Tapping
-    // « Cette semaine » must land on /moment?scope=week (not the default tomorrow).
-    const chip = page.locator('.moment-chip', { hasText: 'Cette semaine' })
-    await expect(chip).toBeVisible()
-    await Promise.all([page.waitForURL(/\/moment\?scope=week/), chip.click()])
-    // The scene's scope selector reflects the deep-linked window (urlSync).
-    await expect(page.locator('.moments .subtabs__opt[aria-selected="true"]')).toContainText('Cette semaine')
-  })
-
-  test('the lead window (Ce soir by day) opens its own scope', async ({ page }) => {
-    await board(page)
-    const chip = page.locator('.moment-chip', { hasText: 'Ce soir' })
-    await Promise.all([page.waitForURL(/\/moment\?scope=tonight/), chip.click()])
-    await expect(page.locator('.moments')).toBeVisible()
+test.describe('/moment is retired', () => {
+  test('an old /moment link lands on the board instead of a blank shell', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    // A texted link, a bookmark or a kiosk mid-navigation still hits this path.
+    await page.goto('/moment?scope=week')
+    await page.waitForURL('**/board')
+    await expect(page.locator('.hub')).toBeVisible()
   })
 })
 
@@ -90,29 +81,29 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.bento .sec-label b', { hasText: /^À venir$/ })).toHaveCount(1)
   })
 
-  test('a band card (Moments) hides too — and now drags, like every other card', async ({ page }) => {
+  test('a band card (Notes) hides too — and now drags, like every other card', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     await page.goto('/board')
     await page.locator('.hub').waitFor({ state: 'visible' })
-    await expect(page.locator('.now-card--moment')).toBeVisible()
+    await expect(page.locator('.wg-slot[data-card="notes"]')).toBeVisible()
 
     await openLayout(page)
-    // The band lists its five cards, and every one of them carries a drag grip: band
+    // The band lists its four cards, and every one of them carries a drag grip: band
     // cards used to be show/hide-only, pinned in place. That asymmetry is gone.
     const band = page.locator('.board-layout').first()
-    await expect(band.locator('.board-layout__row')).toHaveCount(5)
-    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(5)
+    await expect(band.locator('.board-layout__row')).toHaveCount(4)
+    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(4)
     // Each zone ends in a drop target, so a card can be moved into an emptied group.
     await expect(page.locator('.board-layout__end')).toHaveCount(2)
 
-    // « Moments » is a static launcher — it defaults to « Toujours », so reaching
-    // « Jamais » takes two clicks, not one.
-    await setNever(page, 'Moments')
+    // `setNever` clicks the tri-state until it reads « Jamais », whatever it started on.
+    // Exact label matters: « Notes (cercle) » is a row here too.
+    await setNever(page, 'Notes (frigo)')
     await page.goto('/board')
     await page.locator('.hub').waitFor({ state: 'visible' })
-    await expect(page.locator('.now-card--moment')).toHaveCount(0)
+    await expect(page.locator('.wg-slot[data-card="notes"]')).toHaveCount(0)
   })
 
   test('the width control resizes the card on the board', async ({ page }) => {
@@ -148,7 +139,9 @@ test.describe('board layout customization', () => {
 
     await page.goto('/board')
     await page.waitForSelector('.board-grid .wg-slot')
-    // v1 `hidden` → v2 `never`: neither card is mounted at all.
+    // v1 `hidden` → v2 `never`: the card isn't mounted at all. « moments » is a RETIRED
+    // id — `reconcile` drops what it doesn't recognise, so an upgraded device sheds it
+    // rather than rendering a ghost slot.
     await expect(page.locator('.wg-slot[data-card="todos"]')).toHaveCount(0)
     await expect(page.locator('.wg-slot[data-card="moments"]')).toHaveCount(0)
     // …and its chosen order survived (« À venir » was pulled ahead of « Aujourd'hui »).
@@ -159,9 +152,10 @@ test.describe('board layout customization', () => {
     // The band it never stored is reconstructed, canonically.
     await expect(page.locator('.board-band > .wg-slot[data-card="heroes"]')).toHaveCount(1)
 
-    // The panel reads the migrated value, not the raw one.
+    // The panel reads the migrated value, not the raw one. Read « À faire »: the other
+    // seeded id, « moments », is retired and has no row at all any more.
     await openLayout(page)
-    await expect(rowFor(page, 'Moments').locator('.board-layout__toggle')).toContainText('Jamais')
+    await expect(rowFor(page, 'À faire').locator('.board-layout__toggle')).toContainText('Jamais')
   })
 
   test('« Voir dans l’app » on the layout sub opens the board’s own editor', async ({ page }) => {

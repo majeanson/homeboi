@@ -33,11 +33,33 @@ const KB = 1024
 const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: drawpad ~134 KB)
 const EAGER_CHUNKS = [
   // name pattern → its own budget (all three load before first paint)
-  { re: /^index-/, cap: 360 * KB, label: 'eager entry' }, // today ~321 KB
+  { re: /^index-/, cap: 420 * KB, label: 'eager entry' }, // today ~386 KB
   { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
   { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' }, // today ~101 KB
 ]
-const EAGER_TOTAL_BUDGET = 700 * KB // combined index + react-vendor + i18n (today ~648 KB)
+const EAGER_TOTAL_BUDGET = 760 * KB // combined index + react-vendor + i18n (today ~718 KB)
+// fix(ci): re-based a SECOND time, for the same reason as the first — the number
+// moved because the accounting boundary moved, not because boot got heavier.
+// Retiring « Moments » deleted three lazy routes (MomentScene/MomentsView/MomentPeek),
+// which re-balanced Rolldown's shared-chunk grouping: 17 small chunks that the entry
+// was ALREADY importing statically got folded INTO index-*.js. Measured both ways,
+// building HEAD and the change side by side:
+//     entry alone            327 KB → 386 KB   (+59, what this guard sees)
+//     TRUE eager cost       1064 KB → 1065 KB  (+1, the transitive closure of the
+//                                               entry's STATIC imports — what a
+//                                               tablet actually downloads to boot)
+//     all JS emitted        3818 KB → 3810 KB  (-8)
+//     chunks                   185  →   167
+// So a slow kitchen tablet pays the same as before; ~59 KB simply moved from chunks
+// this guard never counted into the one it does.
+//
+// KNOWN GAP worth closing separately: `EAGER_CHUNKS` matches on FILENAME
+// (index-/react-vendor-/i18n-), so every OTHER chunk the entry statically imports —
+// write-*.js at 142 KB, drawpad, Modal, Layout, Avatar… — escapes the eager budget
+// entirely. That is why the honest boot figure (1065 KB) is far above the 718 KB
+// this file reports. Pinning a chunk out of the entry therefore "fixes" this guard
+// without making anything faster; don't. The real fix is to budget the static
+// closure instead of three filename patterns.
 // fix(ci): both numbers above were re-based on what the build ACTUALLY emits, after
 // two long-standing lies in this file cancelled each other out and then stopped:
 //   • the entry was never ~251 KB — it has been ~320.5 KiB for a while, i.e. sitting

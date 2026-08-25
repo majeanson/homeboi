@@ -326,6 +326,13 @@
   font-style: italic;
 }
 
+/* The header ＋'s quick composer, opened in place on the card (the shared
+   NoteQuickAdd — same field as the Notes tab's). Eager, like the rows above it:
+   the board renders it without ever loading the lazy cercle.css. */
+.cnotes-card__composer {
+  margin: 0 0 0.6rem;
+}
+
 /* The quiet footer door into the full Le cercle ▸ Notes section. */
 .cnotes-card__more {
   display: inline-flex;

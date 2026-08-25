@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays, nowSec } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
+import { fetchCarOccupancy, resolveCarRange } from '../_lib/occupancy'
 import { ingredientName } from '../_lib/ingredient'
 import { isSectionHeading } from '../_lib/recipeSections'
 import { householdMealLayout } from '../_lib/mealSlots'
@@ -22,7 +23,7 @@ import { householdMealLayout } from '../_lib/mealSlots'
 // We return STRUCTURED signals (kind + the entity data + a fix href); the frontend
 // (lib/aRegler) composes + localizes the sentence, so all copy stays in i18n.
 
-type Kind = 'ride' | 'meal-empty' | 'meal-low' | 'birthday'
+type Kind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday'
 interface Friction {
   kind: Kind
   key: string // stable id (React key / dedupe)
@@ -60,7 +61,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealLayout = await householdMealLayout(ctx.env, hh)
   const heroSlot = mealLayout.hero
 
-  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople] = await Promise.all([
+  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople, carOcc] = await Promise.all([
     // Driverless rides (a car-taking trip with nobody driving — no member, no carpool
     // contact) in the next week. One-offs by date…
     ctx.env.DB.prepare(
@@ -92,6 +93,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ item: string }>(),
     fetchBirthdayPeople(ctx.env.DB, hh),
+    // « L'auto » occupancy for the week — the schedule template, the per-date
+    // adjustments and the rendez-vous that take the car, resolved by the ONE shared
+    // resolver (_lib/occupancy) that /api/car uses. This is the friction the engine
+    // called "the one-car household's core warning" and that nothing ever showed:
+    // /api/car computed the clash for the L'auto card, but the mental-load surface
+    // scanned only for a driverless ride and never asked.
+    fetchCarOccupancy(ctx.env, hh, today, weekEnd),
   ])
 
   const signals: Friction[] = []
@@ -105,6 +113,25 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (!rule) continue
     const occ = expandRange(e.start_at, rule, now, weekEnd)[0]
     if (occ) signals.push({ kind: 'ride', key: e.id, label: e.title, at: occ, href: `/kitchen/day/${dayOf(occ)}` })
+  }
+
+  // — A rendez-vous that needs the car while it's already spoken for —
+  // « tu as prévu l'épicerie à 17 h, mais l'auto est au travail jusqu'à 18 h ». Only
+  // the ones still ahead: a clash that already happened is history, not friction.
+  // `sub` carries the blocking window's label (« Travail ») so the frontend can name
+  // what has the car. One signal per rendez-vous, deduped by occurrence instant.
+  for (const d of resolveCarRange(carOcc, today, weekEnd)) {
+    for (const r of d.rides) {
+      if (!r.conflict || r.at < now) continue
+      signals.push({
+        kind: 'car-clash',
+        key: `clash:${r.row.id}:${r.at}`,
+        label: r.row.title,
+        sub: d.spans.find((s) => s.label)?.label ?? undefined,
+        at: r.at,
+        href: '/voiture',
+      })
+    }
   }
 
   // — Empty hero meal today / tomorrow —

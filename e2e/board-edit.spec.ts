@@ -145,15 +145,15 @@ test.describe('board edit mode', () => {
     // Tall enough that the band and the first masonry card share a screen.
     await page.setViewportSize({ width: 1280, height: 1100 })
     await open(page)
-    await hold(page, 'moments')
-    expect(await zoneOf(page, 'moments')).toBe('band')
+    await hold(page, 'notes')
+    expect(await zoneOf(page, 'notes')).toBe('band')
 
-    await dragOnto(page, 'moments', 'autoCard')
-    expect(await zoneOf(page, 'moments')).toBe('grid')
+    await dragOnto(page, 'notes', 'autoCard')
+    expect(await zoneOf(page, 'notes')).toBe('grid')
 
     await page.reload()
-    await expect(page.locator('.wg-slot[data-card="moments"]')).toBeVisible()
-    expect(await zoneOf(page, 'moments')).toBe('grid')
+    await expect(page.locator('.wg-slot[data-card="notes"]')).toBeVisible()
+    expect(await zoneOf(page, 'notes')).toBe('grid')
   })
 
   const order = (page: Page) =>
@@ -335,26 +335,25 @@ test.describe('board edit mode', () => {
 // WidgetGrids; this guards it. (Seeded directly rather than dragged — moveCard's own
 // cross-zone behaviour is unit-tested; what regressed was the RENDER.)
 test.describe('cross-zone cards keep rendering', () => {
-  test('« Moments » in the masonry and « Aujourd’hui » in the band both render real content', async ({ page }) => {
+  test('« Notes (frigo) » in the masonry and « Aujourd’hui » in the band both render real content', async ({ page }) => {
     await mockApi(page)
     await seedState(page, {
       cardPrefs: {
-        band: ['notes', 'heroes', 'mots', 'aRegler', 'today'],
+        band: ['heroes', 'mots', 'aRegler', 'today'],
         grid: [
           'autoCard', 'routineNext', 'habitudes', 'tomorrow', 'countdown', 'toFinish',
           'todos', 'upcoming', 'cercleNotes', 'voyage', 'carnets', 'seasonUpkeep', 'drawings',
-          'photos', 'moments',
+          'photos', 'notes',
         ],
       },
     })
     await page.goto('/board')
     await page.waitForSelector('.board-grid .wg-slot')
 
-    // « Moments » now lives in the GRID — and still renders its four window chips.
-    const moments = page.locator('.board-grid .wg-slot[data-card="moments"]')
-    await moments.scrollIntoViewIfNeeded()
-    await expect(moments.locator('.now-card--moment')).toBeVisible()
-    await expect(moments.getByRole('button', { name: 'Ce soir' })).toBeVisible()
+    // « Notes (frigo) » now lives in the GRID — and still renders its real fridge notes.
+    const notes = page.locator('.board-grid .wg-slot[data-card="notes"]')
+    await notes.scrollIntoViewIfNeeded()
+    await expect(notes.locator('.notes__grid .note-card').first()).toBeVisible()
 
     // « Aujourd’hui » now lives in the BAND — full Section, not a placeholder. Its OWN
     // label is the first: the card also folds today's « Avant de partir » checklists in
@@ -364,7 +363,7 @@ test.describe('cross-zone cards keep rendering', () => {
     await today.scrollIntoViewIfNeeded()
     await expect(today.locator('.sec-label').first()).toContainText('Aujourd’hui')
     await expect(today.locator('.wg-slot__placeholder')).toHaveCount(0)
-    await expect(moments.locator('.wg-slot__placeholder')).toHaveCount(0)
+    await expect(notes.locator('.wg-slot__placeholder')).toHaveCount(0)
   })
 })
 

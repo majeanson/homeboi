@@ -227,6 +227,25 @@
   flex: 1 1 0;
   min-width: 0; /* let the label ellipsis-truncate rather than overflow the half */
 }
+/* A THIRD shortcut joined the pair — « Allées » (the sort/aisle menu, folded out
+   of the list so the rows stop carrying it). Three labels don't fit one phone
+   line, so the trio WRAPS honestly (basis auto, the Cluster rule) rather than
+   ellipsizing each label into initials. */
+.list-actions--trio {
+  flex-wrap: wrap;
+}
+.list-actions--trio .btn {
+  flex: 1 1 auto;
+}
+/* The menu's WRAPPER is the flex child (ActionMenu renders .action-menu around
+   its trigger), so it takes the share and hands the full width to the button. */
+.list-actions .action-menu {
+  flex: 1 1 auto;
+}
+.list-actions .action-menu > .btn {
+  width: 100%;
+  justify-content: center;
+}
 /* On a phone, the one prominent cashier action ("Montrer à la caisse") spans the
    full width — an easy thumb target at the bottom of the list. Wider screens
    keep it at its natural width. Scoped to the non-split bar so the 50/50

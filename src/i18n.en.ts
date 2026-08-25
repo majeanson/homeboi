@@ -201,6 +201,7 @@ export const EN: typeof FR = {
     empty: 'Everything is under control.',
     more: (n: number) => `+ ${n} more`,
     ride: (what: string) => `${what} — no one to drive`,
+    carClash: (what: string, who: string) => (who ? `${what} — the car is already taken (${who})` : `${what} — the car is already taken`),
     dayWord: { today: 'Today’s', tomorrow: 'Tomorrow’s' },
     mealEmpty: (meal: string, when: string) => `${when} ${meal.toLowerCase()} to plan`,
     mealLow: (meal: string, item: string) => `${meal}: out of ${item}`,
@@ -399,6 +400,13 @@ export const EN: typeof FR = {
     sortBy: 'Sort list',
     // "My order": one tap to seed it from the aisle walk, then tweak by hand (kept).
     sortApply: 'Arrange by aisle',
+    // The "Aisles" menu, beside Flyers / Already bought: the sort choice AND the
+    // on-demand aisle tag fold behind one button — a view preference you set once
+    // shouldn't hold a permanent bar above the list.
+    aisleMenu: 'Aisles',
+    // The on-demand aisle tag under each row's name (off by default — it's a detail
+    // worth knowing sometimes, never worth burying the item's own name under).
+    aisleTags: 'Show each item’s aisle',
     // Per-item aisle override (edit sheet): pick the aisle, or leave it automatic.
     aisleLabel: 'Aisle',
     aisleHint: 'Put this item in the right aisle — kept for next time.',
@@ -685,6 +693,30 @@ export const EN: typeof FR = {
       tomorrow: 'Tomorrow',
       gallery: 'Today’s pictures',
       pickImage: (source: string) => `Put “${source}” on the board`,
+      // « Ce soir dans le ciel » — tonight's moon phase, computed locally (lib/moonPhase).
+      tonight: {
+        title: 'In the sky tonight',
+        phase: {
+          new: 'New moon',
+          waxingCrescent: 'Waxing crescent',
+          firstQuarter: 'First quarter',
+          waxingGibbous: 'Waxing gibbous',
+          full: 'Full moon',
+          waningGibbous: 'Waning gibbous',
+          lastQuarter: 'Last quarter',
+          waningCrescent: 'Waning crescent',
+        },
+        heard: {
+          new: 'Tonight is a new moon.',
+          waxingCrescent: 'Tonight there’s a thin crescent moon.',
+          firstQuarter: 'Tonight is the first quarter moon.',
+          waxingGibbous: 'Tonight the moon is almost full.',
+          full: 'Tonight is a full moon.',
+          waningGibbous: 'Tonight the moon is still almost full.',
+          lastQuarter: 'Tonight is the last quarter moon.',
+          waningCrescent: 'Tonight there’s a thin crescent moon.',
+        },
+      },
     },
   },
   // A-5 (bmad/09) — the one suggestion-driven countdown card.
@@ -724,7 +756,6 @@ export const EN: typeof FR = {
     heroes: 'Tonight + weather',
     mots: 'Notes',
     aRegler: 'To settle',
-    moments: 'Moments',
     autoCard: 'The car',
     today: 'Today',
     departure: 'Before you go',
@@ -922,48 +953,21 @@ export const EN: typeof FR = {
     empty: 'Nothing planned',
     prev: 'Previous month',
     next: 'Next month',
-    openDay: 'Plan this day',
-    openMoment: 'See this moment',
     // Shape-key labels for the calendar dots (● event · ▪ meal · ◆ chore · ○ note).
     legendEvents: 'Events',
     legendMeals: 'Meals',
     legendChores: 'Chores',
     legendTodos: 'To complete',
     legendNotes: 'Notes',
-  },
-  // « Moments » (/moment) — the windowed recap + quick-handoff scene.
-  moment: {
-    title: 'Moments',
-    scope: { tonight: 'Tonight', tomorrow: 'Tomorrow', date: 'A date', week: 'This week' },
-    pickDate: 'Date:',
-    empty: 'Nothing planned for this moment.',
-    // The calm dusk card on the board that deep-links here (scope=tomorrow).
-    peek: 'Tomorrow at a glance',
-    // The sub-line on the board « Moments » card — the windows it opens onto.
-    windows: 'tonight · tomorrow · a date · the week',
-    sky: {
-      title: 'In the sky tonight',
-      phase: {
-        new: 'New moon',
-        waxingCrescent: 'Waxing crescent',
-        firstQuarter: 'First quarter',
-        waxingGibbous: 'Waxing gibbous',
-        full: 'Full moon',
-        waningGibbous: 'Waning gibbous',
-        lastQuarter: 'Last quarter',
-        waningCrescent: 'Waning crescent',
-      },
-      heard: {
-        new: 'Tonight is a new moon.',
-        waxingCrescent: 'Tonight there’s a thin crescent moon.',
-        firstQuarter: 'Tonight is the first quarter moon.',
-        waxingGibbous: 'Tonight the moon is almost full.',
-        full: 'Tonight is a full moon.',
-        waningGibbous: 'Tonight the moon is still almost full.',
-        lastQuarter: 'Tonight is the last quarter moon.',
-        waningCrescent: 'Tonight there’s a thin crescent moon.',
-      },
-    },
+    // The cell-density toggle (lib/monthDensity) — device-local, so a guest may use it.
+    density: 'Cell detail',
+    densityCompact: 'Compact cells',
+    densityDetailed: 'Detailed cells',
+    // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
+    dayActions: 'Add to this day',
+    // The pinned day panel on a phone: it opens as a one-line bar you tap to unfold.
+    expandDay: 'Unfold the day',
+    collapseDay: 'Fold the day away',
   },
   weather: {
     clear: 'Clear', cloud: 'Cloudy', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', snow: 'Snow', storm: 'Storm',
@@ -980,21 +984,17 @@ export const EN: typeof FR = {
   auto: {
     title: 'The car',
     car: 'The car',
-    free: 'Free',
     freeUntil: (t: string) => `Free until ${t}`,
     taken: 'Taken',
     withWho: (n: string) => `With ${n}`,
     backAround: (t: string) => `back ~${t}`,
     work: 'Work',
-    workToday: 'Today’s schedule',
     range: (a: string, b: string) => `${a}–${b}`,
     drives: (n: string) => `${n} drives`,
-    carpool: (n: string) => `${n} (carpool)`,
     conflict: 'The car is already taken then.',
     conflictShort: 'car taken',
     weekTitle: 'The car this week',
     weekHint: 'Tap a day to say who has the car — the schedule already fills it in.',
-    noRides: 'No rides',
     freeAllDay: 'Free all day',
     freeRestOfDay: 'Free — rest of the day',
     staysHome: 'Stays home',
@@ -1005,12 +1005,11 @@ export const EN: typeof FR = {
     prevWeek: 'Previous week',
     nextWeek: 'Next week',
     thisWeek: 'This week',
-    addRide: 'Add a ride',
+    addRide: 'Add an appointment',
     adjusted: 'Adjusted',
     whosHome: 'Home',
     nobodyHome: 'Nobody home',
     everyoneHome: 'Everyone is home',
-    out: (n: string) => `${n} is out`,
     toddlerWho: 'Who drives you today?',
     toddlerNobody: 'Nobody is driving you today',
     from: 'From',
@@ -1699,6 +1698,8 @@ export const EN: typeof FR = {
       collapse: 'Collapse note',
       // The board card's quiet footer door into the full section.
       seeAll: 'All notes',
+      // …and its header ＋, which opens the same quick composer right on the board.
+      quickAdd: 'Write a quick note',
       // #richnotes — full-screen rich editor (title + Markdown body + attachment).
       newNote: 'New note',
       untitled: 'Untitled note',
@@ -2210,11 +2211,10 @@ export const EN: typeof FR = {
     carDefaultName: 'The car',
     carName: 'Vehicle name',
     carAdd: 'Add a vehicle…',
-    carsEmpty: 'No vehicle — rides are carpooled.',
+    carsEmpty: 'No vehicle — “Takes the car” no longer shows on appointments.',
     eventPeople: 'Who is it for?',
-    eventTrajet: 'Ride',
+    eventTakesCar: 'Takes the car',
     eventCarWho: 'Which car?',
-    eventPassengers: 'Passengers',
     eventBring: 'What to bring',
     // Inline bring-list builder in the event form's bring section.
     bringAddItem: 'Add an item…',
@@ -2295,6 +2295,7 @@ export const EN: typeof FR = {
     eventAllDay: 'All day',
     eventDateLabel: 'Date',
     eventTimeLabel: 'Time (optional)',
+    eventUntilLabel: 'Until',
     noEvents: 'No upcoming events.',
     // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
     schoolYearTitle: 'School year',

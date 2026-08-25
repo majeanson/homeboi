@@ -19,6 +19,7 @@ export function Section({
   count,
   icon,
   tint,
+  action,
   help,
   helpKey,
   now,
@@ -39,6 +40,10 @@ export function Section({
   count?: number
   icon?: IconName
   tint?: string
+  /** One quiet control at the header's trailing edge — see `SecLabel.action`
+   *  (the « Notes (cercle) » card's ＋ quick composer). Full face only: the compact
+   *  mini has its own `compactCorner` affordances. */
+  action?: React.ReactNode
   // Time-aware emphasis (lib/momentFocus): a gentle accent on the card that matters at
   // this hour (the day ahead in the morning, tomorrow's prep in the evening). A soft lift
   // — never a reshuffle, never motion. Gated by the ambient toggle on the board side.
@@ -95,7 +100,7 @@ export function Section({
         />
       ) : (
         <>
-          <SecLabel label={label} count={count} icon={icon} help={help} helpKey={helpKey} />
+          <SecLabel label={label} count={count} icon={icon} action={action} help={help} helpKey={helpKey} />
           {children}
         </>
       )}

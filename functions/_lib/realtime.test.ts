@@ -17,7 +17,7 @@ describe('keysForPath', () => {
   })
 
   it('maps events to events + board + month + a-regler (driverless ride heads-up)', () => {
-    expect(keysForPath('events')).toEqual([['events'], ['board'], ['month'], ['a-regler']])
+    expect(keysForPath('events')).toEqual([['events'], ['board'], ['month'], ['a-regler'], ['car']])
   })
 
   it('maps trips to trips + board + month; trip-notes + packing to their keys; doc-media silent', () => {
@@ -102,8 +102,10 @@ describe('keysForPath', () => {
     expect(keysForPath('pets')).toEqual([['cercle']])
     expect(keysForPath('businesses')).toEqual([['businesses']])
     expect(keysForPath('family-notes')).toEqual([['family-notes']])
-    expect(keysForPath('schedule')).toEqual([['schedule'], ['board']])
-    expect(keysForPath('car-day')).toEqual([['car'], ['board']])
+    // Both « L'auto » write paths must also nudge ['car'] and ['month']: /api/car
+    // re-resolves availability, and work windows are DERIVED onto the calendar.
+    expect(keysForPath('schedule')).toEqual([['schedule'], ['board'], ['car'], ['month']])
+    expect(keysForPath('car-day')).toEqual([['car'], ['board'], ['month']])
     expect(keysForPath('drawings')).toEqual([['drawings']])
     // None of them should be the bare board default.
     for (const p of ['pets', 'businesses', 'family-notes', 'schedule', 'car-day', 'drawings', 'recipe-loves']) {
@@ -156,7 +158,7 @@ describe('keysForPath', () => {
     expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history']])
     expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month']])
     // A full URL pathname (what route.ts passes) works too.
-    expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month'], ['a-regler']])
+    expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month'], ['a-regler'], ['car']])
   })
 
   it('never throws and returns [] on empty input', () => {

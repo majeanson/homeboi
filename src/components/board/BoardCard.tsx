@@ -44,6 +44,7 @@ export function SecLabel({
   count,
   icon,
   iconNode,
+  action,
   help,
   helpKey,
 }: {
@@ -51,6 +52,11 @@ export function SecLabel({
   count?: number
   icon?: IconName
   iconNode?: ReactNode
+  /** One quiet control pinned to the header's trailing edge — a card's own ＋ (the
+   *  notes card's quick composer). Sits BEFORE the reduce chip so growing/shrinking a
+   *  card never moves it. Keep it to a single icon button: the header is a glance
+   *  label, not a toolbar. */
+  action?: ReactNode
   help?: HelpMode
   helpKey?: string
 }) {
@@ -86,6 +92,13 @@ export function SecLabel({
         )}
         <span className="ln" />
         {count ? <span className="ct">{count}</span> : null}
+        {/* Stop the click here: an expanded card's whole header collapses it, and the
+            action's own job is not "shrink me". */}
+        {action ? (
+          <span className="sec-label__act" onClick={(e) => e.stopPropagation()}>
+            {action}
+          </span>
+        ) : null}
         {reducible && (
           <button
             type="button"
@@ -287,6 +300,7 @@ export function BoardCard({
   count,
   icon,
   iconNode,
+  action,
   help,
   helpKey,
   // The compact lens (see `CardMini` above): the rows to NAME when they fit, a quiet
@@ -310,6 +324,8 @@ export function BoardCard({
   count?: number
   icon?: IconName
   iconNode?: ReactNode
+  /** A quiet trailing control in the header (see `SecLabel.action`). */
+  action?: ReactNode
   help?: HelpMode
   helpKey?: string
   compactItems?: readonly CompactRow[]
@@ -351,7 +367,7 @@ export function BoardCard({
   }
   const inner = (
     <>
-      <SecLabel label={label} count={count} icon={icon} iconNode={iconNode} help={help} helpKey={helpKey} />
+      <SecLabel label={label} count={count} icon={icon} iconNode={iconNode} action={action} help={help} helpKey={helpKey} />
       {children}
     </>
   )

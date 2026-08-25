@@ -12,6 +12,8 @@ export interface EventRow {
   start_at: number
   all_day: number
   member_id: string | null // the denormalized primary of « Qui » (= passengers[0]); back-compat single face
+  end_at?: number | null // optional « Jusqu'à » — the window's exclusive end (unix s); absent = a point
+  car_id?: string | null // « Prend l'auto »: set = this rendez-vous takes that household car (soft ref into households.cars)
   passengers?: string | null // « Qui » — all the household people this concerns (JSON id array); parse via eventMembers()
   contact_id?: string | null // #21: assigned to a « Le cercle » contact instead of a member
   contact_name?: string | null // the contact's first name, joined server-side, for the label

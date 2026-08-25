@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
-import { CAR_KEY, BOARD_KEY, MEMBERS_KEY } from '../lib/queryKeys'
+import { CAR_KEY, BOARD_KEY, MEMBERS_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { useCarWeek, type CarDay, type CarRide, type CarModel } from '../lib/car'
 import { useCars } from '../lib/carPrefs'
 import { type Member } from '../lib/members'
@@ -67,11 +67,11 @@ export function VoiturePage() {
   // Persist an override for one day (a window + holder, or "stays home"), or clear it
   // (revert that day to the template). Invalidates the car + board caches.
   async function saveDay(day: number, body: { free: boolean; holderId?: string | null; startMin?: number; endMin?: number }) {
-    await write('car-day', { method: 'POST', body: { carId, day, ...body }, affectedKeys: [CAR_KEY, BOARD_KEY] })
+    await write('car-day', { method: 'POST', body: { carId, day, ...body }, affectedKeys: [CAR_KEY, BOARD_KEY, MONTH_KEY] })
     setEditDay(null)
   }
   async function clearDay(day: number) {
-    await write('car-day', { method: 'DELETE', body: { carId, day }, affectedKeys: [CAR_KEY, BOARD_KEY] })
+    await write('car-day', { method: 'DELETE', body: { carId, day }, affectedKeys: [CAR_KEY, BOARD_KEY, MONTH_KEY] })
     setEditDay(null)
   }
   // Reset the whole visible week to the template (drop every override in it). This is a
@@ -81,7 +81,7 @@ export function VoiturePage() {
     const days = (car?.days ?? []).filter((d) => d.override)
     if (!days.length) return
     if (!(await confirm({ message: t.auto.resetWeekConfirm, tone: 'danger', confirmLabel: t.auto.resetWeek }))) return
-    for (const d of days) await write('car-day', { method: 'DELETE', body: { carId, day: d.day }, affectedKeys: [CAR_KEY, BOARD_KEY] })
+    for (const d of days) await write('car-day', { method: 'DELETE', body: { carId, day: d.day }, affectedKeys: [CAR_KEY, BOARD_KEY, MONTH_KEY] })
   }
   // Copy last week's adjustments onto this week (only the days that were overridden).
   async function copyLastWeek() {
@@ -100,7 +100,7 @@ export function VoiturePage() {
           startMin: d.override.startMin ?? undefined,
           endMin: d.override.endMin ?? undefined,
         },
-        affectedKeys: [CAR_KEY, BOARD_KEY],
+        affectedKeys: [CAR_KEY, BOARD_KEY, MONTH_KEY],
       })
     }
   }
@@ -108,7 +108,7 @@ export function VoiturePage() {
   // Who drives a ride (member = we drive · contact = carpool parent · business = dest).
   const driverLine = (r: CarRide): string => {
     if (r.memberId) return t.auto.drives(nameOf(r.memberId) ?? '')
-    if (r.contactId) return t.auto.carpool(r.contactName ?? '')
+    if (r.contactId) return r.contactName ?? ''
     if (r.businessId) return r.businessName ?? ''
     return ''
   }
@@ -207,7 +207,11 @@ export function VoiturePage() {
               onEdit={() => setEditDay(editDay === d.day ? null : d.day)}
               onSave={(b) => saveDay(d.day, b)}
               onClear={() => clearDay(d.day)}
-              onAddRide={() => nav(`/event/new?date=${d.day}`)}
+              // `ride=1` opens the form with « Prend l'auto » already answered and the
+              // household car picked — adding from L'auto means it takes the car. Without
+              // it this button opened a plain rendez-vous form, so the one thing the page
+              // exists for took three extra taps (and `defaultRide` had no caller at all).
+              onAddRide={() => nav(`/event/new?ride=1&date=${d.day}`)}
             />
           ))}
           {!car && <p className="loading mono">{t.common.loading}</p>}
@@ -256,10 +260,14 @@ function DayRow({
   onAddRide: () => void
 }) {
   const memberOf = (id: string | null | undefined) => (id ? members.find((m) => m.id === id) : undefined)
-  const busy = d.spans.length > 0
+  // A day is busy when ANYTHING claims the car — a work window, a per-date adjustment,
+  // or a rendez-vous that takes it. `carSpans` is that resolved answer; `d.spans` is
+  // only the schedule half, which is why this row used to print « Libre toute la
+  // journée » directly above the rendez-vous it was listing.
+  const busy = d.carSpans.length > 0
   // The face(s) shown on a busy day = the distinct people holding the car (most days
   // it's one). The accent colour follows the first holder, else the car's own colour.
-  const holderIds = [...new Set(d.spans.map((s) => s.holderId).filter((x): x is string => !!x))]
+  const holderIds = [...new Set(d.carSpans.map((s) => s.holderId).filter((x): x is string => !!x))]
   const tint = colorOf(holderIds[0]) ?? carColor
 
   return (
@@ -282,7 +290,7 @@ function DayRow({
                     return (
                       <span key={id} className="voiture__day-holder">
                         <Avatar kind={m?.avatar_kind} photo={m?.avatar_ref} colour={m?.colour ?? tint} name={m?.display_name} size={30} />
-                        <span className="voiture__day-holdername">{nameOf(id) ?? d.spans.find((s) => s.holderId === id)?.label ?? ''}</span>
+                        <span className="voiture__day-holdername">{nameOf(id) ?? d.carSpans.find((s) => s.holderId === id)?.label ?? ''}</span>
                       </span>
                     )
                   })
@@ -291,11 +299,11 @@ function DayRow({
                     <span className="voiture__day-caricon" style={{ color: tint }} aria-hidden="true">
                       <Icon name="car-bold" size={22} />
                     </span>
-                    <span className="voiture__day-holdername">{d.spans[0]?.label ?? t.auto.car}</span>
+                    <span className="voiture__day-holdername">{d.carSpans[0]?.label ?? t.auto.car}</span>
                   </span>
                 )}
               </span>
-              <span className="voiture__day-window mono">{d.spans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')}</span>
+              <span className="voiture__day-window mono">{d.carSpans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')}</span>
             </>
           ) : (
             <span className="voiture__day-free-label">{t.auto.freeAllDay}</span>
@@ -371,6 +379,9 @@ function DayEditor({
     const dt = new Date(at * 1000)
     return dt.getHours() * 60 + dt.getMinutes()
   }
+  // Deliberately the RAW schedule span, not `carSpans`: this editor writes a car_day
+  // override of the WORK window, so it must prefill from the template it replaces. A
+  // rendez-vous that takes the car is not something this form can edit.
   const seedSpan = d.spans[0]
   const [holderId, setHolderId] = useState<string | null>(d.override?.holderId ?? seedSpan?.holderId ?? null)
   const [start, setStart] = useState(minToHHMM(d.override?.startMin ?? (seedSpan ? minutesOfDay(seedSpan.start) : 8 * 60)))

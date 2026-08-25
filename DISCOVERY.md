@@ -69,7 +69,7 @@ cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 | Theme | Card (absorbed ids →) | R | S |
 | --- | --- | --- | --- |
 | — | first-time | — | — |
-| board | **board** (section; +search, +moment, +reminders as points) | /board | ?tab=board |
+| board | **board** (section; +search, +reminders as points) | /board | ?tab=board |
 | board | board-widgets | /board?edit=1 | board▸layout |
 | board | capture (+type-or-choose, +ask, +a-regler) | /board | settings▸ai |
 | board | mots (+drawings) | /board?plus=mot | — |

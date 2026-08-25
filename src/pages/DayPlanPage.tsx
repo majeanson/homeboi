@@ -17,6 +17,7 @@ import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } f
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
+import { Cluster } from '../components/Layout'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
@@ -45,7 +46,7 @@ import {
   DAY_NOTES_KEY,
   LEFTOVERS_KEY,
 } from '../components/kitchen/types'
-import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY } from '../lib/queryKeys'
+import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY, CAR_KEY } from '../lib/queryKeys'
 
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
@@ -54,7 +55,7 @@ import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY } from '../li
 // recurring) and recurring-chore occurrences. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
-  events: { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
+  events: { id: string; title: string; at: number; all_day: number; end_at?: number | null; car_id?: string | null; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
   // "Projets & Entretien" (home_projects) landing on this day — read-only here
   // (managed in Réglages ▸ Corvées). null homeProjects = older payload → [].
@@ -176,6 +177,7 @@ export function DayPlanPage() {
     qc.invalidateQueries({ queryKey: BOARD_KEY })
     qc.invalidateQueries({ queryKey: EVENTS_KEY })
     qc.invalidateQueries({ queryKey: MONTH_KEY })
+    qc.invalidateQueries({ queryKey: CAR_KEY }) // the rendez-vous may take the car
   }
   const afterChoreSave = () => {
     setChoreForm(null)
@@ -444,6 +446,10 @@ export function DayPlanPage() {
       who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
       whoFaces={e.work ? undefined : eventFaces(e)}
       color={e.work ? e.color ?? undefined : e.business_colour ?? undefined}
+      // 🚗 when this rendez-vous takes the shared car. A work window already gets
+      // its own glyph via `cat="work"`; this gives the same cue to a rendez-vous
+      // that ties up the vehicle, so the day page reads like the board.
+      icon={!e.work && e.car_id ? 'car-bold' : undefined}
       soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
       onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}
     />
@@ -482,6 +488,23 @@ export function DayPlanPage() {
               </span>
             )}
           </div>
+        )}
+
+        {/* « Avant de partir » — this day's calm "before you go" screen (its departure
+            checklists, that day's schedule + corvées, the weather tip, L'auto). It lived
+            on the retired « Moments » per-day block; the day page is its home now. Kept
+            near the top: it's a DOOR, and the meal editor below is long. Hidden for a
+            read-only guest — the checklist it opens onto writes. */}
+        {!ro && (
+          <Cluster className="day-plan__doors">
+            <button
+              type="button"
+              className="btn btn--ghost mono day-plan__add"
+              onClick={() => nav(`/board/departure?day=${date}`)}
+            >
+              <Icon name="key-bold" size={16} /> {t.departure.title}
+            </button>
+          </Cluster>
         )}
 
         {/* The day's free-text note as its HEADLINE — "what's today about", pulled up

@@ -22,7 +22,7 @@ import { InlineIcon } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // #17 — departure mode: one calm "before you go" screen for a chosen day (today by
-// default, or ?day=<local-midnight sec> when reached from a specific Moments day).
+// default, or ?day=<local-midnight sec> when reached from a specific day page).
 // It fuses the day's departure CHECKLISTS (the shared TodoSection, checklist
 // instances only since the mig-0116 split — loose todos live on « À faire »), that
 // day's EVENTS + CORVÉES + fridge/day NOTE (read from /api/month, the same window
@@ -56,7 +56,7 @@ export function DeparturePage() {
   const tip = weatherTip(weather)
 
   // That day's events + corvées + fridge note, from the same /api/month window the
-  // calendar + Moments use (DST-safe, recurring expanded server-side).
+  // calendar + the day page use (DST-safe, recurring expanded server-side).
   const data = useQuery({ queryKey: [...MONTH_KEY, day, addLocalDays(day, 1)], queryFn: () => api<DepMonth>(`month?from=${day}&to=${addLocalDays(day, 1)}`), ...live }).data
   const events = data?.events ?? []
   // The day's recurring rotation chores (whose turn it is) + today's one-off « À

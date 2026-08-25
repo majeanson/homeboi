@@ -18,8 +18,8 @@ import { CardMini } from './BoardCard'
 // can't do; the endpoint itself short-circuits to an empty scan for a guest actor.
 //
 // Two looks: `chip` (a compact one-liner — used inline, e.g. « Cette semaine ») and
-// `card` (a hero-style tile that sits in the board status band beside « Moments »,
-// matching the supper/weather heroes' card look + height).
+// `card` (a hero-style tile that sits in the board status band, matching the
+// supper/weather heroes' card look + height).
 export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; variant?: 'chip' | 'card' }) {
   const t = useT()
   const { data } = useARegler(enabled)

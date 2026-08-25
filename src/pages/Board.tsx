@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PairPrompt } from '../components/Fallback'
@@ -14,7 +14,6 @@ import { CercleNotesCard } from '../components/board/CercleNotesCard'
 import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { RoutineNextCard } from '../components/board/RoutineNextCard'
-import { MomentPeek } from '../components/board/MomentPeek'
 import { ARegler } from '../components/board/ARegler'
 import { MotsCard } from '../components/mots/MotsCard'
 import { DayHeroes } from '../components/board/DayHeroes'
@@ -225,12 +224,28 @@ export function Board() {
   // out of the rendered reminder at once so the live poll can't resurrect them
   // before the delete commits (same guard as pendingDone).
   const [pendingLeftover, setPendingLeftover] = useState<Set<string>>(new Set())
-  // « L'année » → « Mois » drill-down: a tapped mini-month lands the Mois view on
-  // that month. Transient navigation — the toggle resets it and it isn't saved,
-  // so a reload still opens the device's chosen view.
-  const [monthJump, setMonthJump] = useState(0)
+  // « L'année » → « Mois » drill-down: a tapped mini-month lands the Mois view on that
+  // month. It used to be a transient `monthJump` state threaded in as `initialOffset`;
+  // Mois now keeps where-you-are in the URL (`?date=<local-midnight secs>`), so the drill
+  // is just "set the date and switch the view" — and it survives a reload, a peek and a
+  // trip to the day page, which the old state did not. Switching views by hand clears it,
+  // so « Mois » always opens on today unless you asked for a specific date.
+  const [, setBoardParams] = useSearchParams()
+  const setMonthDate = useCallback(
+    (day: number | null) =>
+      setBoardParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (day == null) next.delete('date')
+          else next.set('date', String(day))
+          return next
+        },
+        { replace: true },
+      ),
+    [setBoardParams],
+  )
   function changeView(v: BoardView) {
-    setMonthJump(0)
+    setMonthDate(null)
     setView(v)
     saveBoardView(v)
   }
@@ -581,6 +596,11 @@ export function Board() {
       when={eventWhen(e)}
       who={memberName(e.member_id) ?? undefined}
       whoFaces={eventFaces(e)}
+      // 🚗 when this rendez-vous takes the shared car — the same cue a work window
+      // that holds it gets (workAct below), so "the car is spoken for" reads the same
+      // wherever it appears. Until now the agenda could not tell a plain rendez-vous
+      // from one that ties up the vehicle; only « L'auto » knew.
+      icon={e.car_id ? 'car-bold' : undefined}
       color={memberColor(e.member_id) ?? undefined}
       mine={!!profileId && eventMembers(e).includes(profileId)}
       soon={e.soon}
@@ -809,10 +829,10 @@ export function Board() {
     )
   }
 
-  // The status band: « À régler » + the « Moments » entry, both as calm cards that
-  // match the supper/weather heroes (same card look + height). It rides DIRECTLY
-  // UNDER the heroes in Grille only — so the day's two glance cards sit on top, the
-  // two heads-up cards just beneath. (Mois stays a clean calendar.)
+  // The status band: « À régler », a calm card that matches the supper/weather heroes
+  // (same card look + height). It rides DIRECTLY UNDER the heroes in Grille only — so
+  // the day's glance cards sit on top, the heads-up card just beneath. (Mois stays a
+  // clean calendar.)
   // Both band cards are per-device show/hide-able (« Disposition du babillard »), on top
   // of their own render conditions. When both are hidden the `.board-status:empty` rule
   // collapses the band.
@@ -841,9 +861,8 @@ export function Board() {
               : clearMoods[tod] // 'clear' or no weather → drift by daypart
   // A calm "all-clear" hero on a genuinely empty day — so a light day reads as
   // intentional, not broken. NOT a card: it has no id, no show/hide, no placement —
-  // it's a property of the day. It used to share `.board-status` with Mots / À régler /
-  // Moments; those three are now ordinary cards in the band zone, so this keeps the
-  // strip to itself. NFR-CALM: a reassurance, never a prompt to fill the day.
+  // it's a property of the day. It used to share `.board-status` with Mots / À régler;
+  // those are now ordinary cards in the band zone, so this keeps the strip to itself. NFR-CALM: a reassurance, never a prompt to fill the day.
   // A wall kiosk gets roomier columns — its cards are read from across the room. This
   // replaces the old `.hub[data-surface='kiosk'] .board-grid { columns: 340px }` override:
   // the column count is computed in JS now, so the minimum has to travel there too.
@@ -868,8 +887,8 @@ export function Board() {
   ) : null
 
   // ── ONE card registry for BOTH zones ──────────────────────────────────────────
-  // Built ONCE, before either WidgetGrid, so a card dragged across zones (« Moments »
-  // down into the masonry, « Photo du jour » up into the band) still finds its node.
+  // Built ONCE, before either WidgetGrid, so a card dragged across zones (« Mots » down
+  // into the masonry, « Photo du jour » up into the band) still finds its node.
   // The two zones used to build SEPARATE maps inside their own children, and a
   // cross-zone card looked itself up in the wrong one: `nodes[id]` came back
   // undefined, `slotEmpty` read that as "empty", and the card vanished (or lingered
@@ -907,7 +926,6 @@ export function Board() {
   // nothing for the picked face). Guests never see another face's mots.
   nodes.mots = ro ? null : <MotsCard help={help} />
   nodes.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
-  nodes.moments = <MomentPeek />
   // « L'auto » glance — the car's status today + today's rides. #28
   nodes.autoCard = <AutoCard />
   // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda, AND the day's
@@ -1548,9 +1566,9 @@ export function Board() {
           « À venir » card below as dated rows, so a second « Anniversaires à venir »
           band would just duplicate them. « Le cercle » still has its own faces view.) */}
 
-      {/* (« À régler » + « Moments » ride as the `statusBand` cards in GRILLE only —
-          directly under the heroes. The calendar (Mois) stays a clean grid; you reach
-          a specific day's recap by tapping it → « Voir ce moment ».) */}
+      {/* (« À régler » rides as a `statusBand` card in GRILLE only — directly under the
+          heroes. The calendar (Mois) stays a clean grid; you reach a specific day by
+          tapping it → « Voir la journée ».) */}
 
       {!data ? (
         <>
@@ -1565,16 +1583,16 @@ export function Board() {
           </div>
         </>
       ) : view === 'month' ? (
-        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} initialOffset={monthJump} />
+        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
       ) : view === 'annee' ? (
         <YearView
           lang={lang}
           t={t}
           todayDay={todayDay}
-          onOpenMonth={(i) => {
-            // Drill into Mois at that month WITHOUT persisting the view — the
+          onOpenMonth={(monthStart) => {
+            // Drill into Mois ON that month WITHOUT persisting the view — the
             // année stays this device's chosen glance across reloads.
-            setMonthJump(i)
+            setMonthDate(monthStart)
             setView('month')
           }}
         />
@@ -1622,10 +1640,10 @@ export function Board() {
           )}
 
           {/* THE BAND ZONE — the pinned glance strip. Fridge notes, the supper/weather
-              heroes, and the heads-up cards (Mots / À régler / Moments) are now ordinary
-              cards: each can be reordered, resized, hidden, or dragged down into the
-              masonry. It caps at 3 columns, which is what the old `.board-status` flex
-              row gave the three heads-up tiles. */}
+              heroes, and the heads-up cards (Mots / À régler) are now ordinary cards:
+              each can be reordered, resized, hidden, or dragged down into the masonry. It
+              caps at 3 columns, which is what the old `.board-status` flex row gave the
+              heads-up tiles. */}
           <WidgetGrid
             zone="band"
             maxCols={3}

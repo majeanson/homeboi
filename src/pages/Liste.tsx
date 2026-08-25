@@ -9,7 +9,8 @@ import { EmptyState } from '../components/EmptyState'
 import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT, useLang } from '../i18n'
-import { useAisleOrder, useAisleOverrides } from '../lib/aislePrefs'
+import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu'
+import { useAisleOrder, useAisleOverrides, useAisleTagsShown, setAisleTagsShown } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
 import { noRushStart, rushRank } from '../lib/listOrder'
 import { useAudience } from '../lib/audience'
@@ -306,6 +307,8 @@ export function Liste() {
   // there). Persisted to localStorage so a kiosk and a phone can each keep their own.
   const aislePrefs = useAisleOrder()
   const aisleOverrides = useAisleOverrides()
+  // Device-local: print each row’s aisle under its name, or not (default not).
+  const showAisleTags = useAisleTagsShown()
   const [sortMode, setSortMode] = useState<'mine' | 'aisle'>(() => {
     try {
       return localStorage.getItem(LIST_SORT_KEY) === 'aisle' ? 'aisle' : 'mine'
@@ -485,6 +488,38 @@ export function Liste() {
   // restarts where the « pas pressé » lines begin instead of swallowing the boundary.
   const groupOf = (i: ListRow) => `${rushRank(i)}:${aisleOf(i.text)}`
 
+  // Everything the « Allées » button opens. Two mutually exclusive sort rows
+  // (radio: one order is always in force), then — in Mon ordre only — the aisle
+  // tag toggle and the one-tap seed. « Par allée » drops both: its group headers
+  // already print each aisle, and the walk IS the order there, so there's nothing
+  // to seed. The tag is a DEVICE-local view preference (localStorage), so it is
+  // not gated by isGuest — it writes nothing to the household; the seed rewrites
+  // the household's row order, so it is.
+  const sortItems: ActionMenuItem[] = [
+    { icon: 'scroll-bold', label: t.list.sortMine, radio: true, checked: !byAisle, onSelect: () => chooseSort('mine') },
+    {
+      icon: 'storefront-bold',
+      label: t.list.sortAisle,
+      radio: true,
+      checked: byAisle,
+      onSelect: () => chooseSort('aisle'),
+    },
+    ...(byAisle
+      ? []
+      : [
+          {
+            icon: 'tag-bold' as const,
+            label: t.list.aisleTags,
+            checked: showAisleTags,
+            separated: true,
+            onSelect: () => setAisleTagsShown(!showAisleTags),
+          },
+          ...(isGuest()
+            ? []
+            : [{ icon: 'storefront-bold' as const, label: t.list.sortApply, onSelect: () => sortByAisleNow() }]),
+        ]),
+  ]
+
   // "Mon ordre" seed: write the list's positions to match the aisle walk right now,
   // so you START from aisle order and then hand-tweak from there — and it's kept
   // (persisted via the same reorder write). One tap; only meaningful in Mon ordre.
@@ -561,7 +596,14 @@ export function Liste() {
           to restock ("Ajout rapide"). Kept compact (btn--sm) so they read as quick
           shortcuts beneath the primary Add field rather than competing with it;
           still split 50/50 (glyph + short label each), full text on aria-label. */}
-      <div className="list-actions list-actions--split">
+      {/* The third shortcut is the « Allées » MENU: the sort choice (Mon ordre /
+          Par allée), the on-demand aisle tag and « Ranger par allée » used to sit
+          in a permanent bar above the list, spelling out a view preference you set
+          once a season — and the tag repeated an aisle on every single row, pushing
+          each item's own name into second place. Folded behind one button they're
+          still one tap away, and the list is back to being the list. Only worth a
+          button once there's more than one row to order. */}
+      <div className={'list-actions list-actions--split' + (list.length > 1 ? ' list-actions--trio' : '')}>
         <button
           type="button"
           className="btn btn--sm btn--primary help-pick"
@@ -582,42 +624,20 @@ export function Liste() {
               the primary Add button right above it. */}
           <InlineIcon name="lightning-bold" /> {t.list.quickAddShort}
         </button>
+        {list.length > 1 && (
+          <ActionMenu
+            triggerLabel={t.list.aisleMenu}
+            triggerIcon="storefront-bold"
+            triggerClassName="btn btn--sm btn--primary help-pick"
+            label={t.list.sortBy}
+            pick={(open) => help.pick('aisles', open)}
+            items={sortItems}
+          />
+        )}
       </div>
       {help.bubbleFor('flyer')}
       {help.bubbleFor('quick')}
-
-      {/* Sort toggle: keep the hand-dragged order ("Mon ordre") or auto-group by
-          store aisle ("Par allée", the order set in Réglages ▸ Magasinage). A quiet
-          per-device view choice; only worth showing once there's more than one row. */}
-      {list.length > 1 && (
-        <div className="list-sortbar">
-          <div className="list-sort" role="group" aria-label={t.list.sortBy}>
-            <button
-              type="button"
-              className={'list-sort__seg' + (!byAisle ? ' is-on' : '')}
-              aria-pressed={!byAisle}
-              onClick={() => chooseSort('mine')}
-            >
-              <InlineIcon name="scroll-bold" /> {t.list.sortMine}
-            </button>
-            <button
-              type="button"
-              className={'list-sort__seg' + (byAisle ? ' is-on' : '')}
-              aria-pressed={byAisle}
-              onClick={() => chooseSort('aisle')}
-            >
-              <InlineIcon name="storefront-bold" /> {t.list.sortAisle}
-            </button>
-          </div>
-          {/* In Mon ordre, seed the hand order from the aisle walk (then tweak). */}
-          {!byAisle && !isGuest() && (
-            <button type="button" className="btn btn--ghost btn--sm list-sortbar__apply" onClick={sortByAisleNow}>
-              <InlineIcon name="storefront-bold" />
-              <span className="list-sortbar__apply-label">{t.list.sortApply}</span>
-            </button>
-          )}
-        </div>
-      )}
+      {help.bubbleFor('aisles')}
 
       {list.length === 0 ? (
         <EmptyState guide={{ card: 'liste' }}>{t.board.listEmpty}</EmptyState>
@@ -656,9 +676,13 @@ export function Liste() {
                   index={index}
                   text={item.text}
                   picto={pic}
-                  // In Mon ordre, a small aisle tag on the row (Par allée uses headers).
+                  // The row's aisle, ON DEMAND (the « Allées » toggle in the sort bar,
+                  // off by default): on every row it repeated « Autres » down half the
+                  // list and pushed the item's own name into second place. « Par allée »
+                  // says the same thing in its group headers, so the tag never shows
+                  // there — it would repeat each header on every one of its own rows.
                   aisleTag={
-                    !byAisle ? (
+                    !byAisle && showAisleTags ? (
                       <span className="list-row__aisle">
                         <span aria-hidden="true">{aisleInfo.emoji}</span> {aisleInfo.label[lang]}
                       </span>

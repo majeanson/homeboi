@@ -34,7 +34,6 @@ export type BoardCardId =
   | 'heroes'
   | 'mots'
   | 'aRegler'
-  | 'moments'
   | 'autoCard'
   | 'today'
   | 'departure'
@@ -127,14 +126,16 @@ export interface BoardCardMeta {
 // release lands where it belongs on a device that already has a saved layout.
 //
 // The defaults are chosen to REPRODUCE today's board: the band renders notes and the
-// heroes full-width, then « Mots » / « À régler » / « Moments » three-across (the band
-// grid caps at 3 columns, which is what the old `.board-status` flex row did); the
+// heroes full-width, then « Mots » / « À régler » side by side (the band grid caps at 3
+// columns, which is what the old `.board-status` flex row did — a retired « Moments »
+// card was the third
+// until it was retired); the
 // masonry keeps its importance order with « L'auto », « Dessins » and « Photo du jour »
 // as full-width strips (they were the three `column-span: all` cards).
 //
-// `mode: 'always'` marks the three cards that deliberately do NOT self-hide: « Moments »
-// is a static launcher (never empty), « Dessins » keeps its gallery door open even with
-// zero drawings, and « Aujourd'hui » always holds the day. Everything else already
+// `mode: 'always'` marks the cards that deliberately do NOT self-hide: « Dessins » keeps
+// its gallery door open even with zero drawings, « Avant de partir » always offers its
+// door, and « Aujourd'hui » always holds the day. Everything else already
 // collapsed itself with `return null`, which is exactly `'auto'`.
 //
 // « À faire » is `auto` with a subtler emptiness than "no rows": it stays on a busy day
@@ -156,7 +157,6 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'heroes', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', emptyTo: '/kitchen/idees' },
   { id: 'mots', icon: 'envelope-bold', tint: 'var(--teal)', zone: 'band', size: 1, mode: 'auto' },
   { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
-  { id: 'moments', icon: 'moon-stars-bold', tint: 'var(--berry-deep)', zone: 'band', size: 1, mode: 'always' },
   // ── the masonry: car → the day → standing lists → upcoming → media ──
   // « Aujourd'hui » owns the whole day: its agenda AND — on a busy day (≥2 timed
   // things) — the day's timeline (the « fil » ribbon, formerly a card of its own).

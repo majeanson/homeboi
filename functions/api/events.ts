@@ -14,7 +14,7 @@ import { normalizeRecur } from '../_lib/recur'
 // the anchor; the board expands the series. See _lib/recur.
 // The columns the board/peek/editor all need — one source so ?id= and the list
 // return the identical row shape.
-const EVENT_COLS = `id, title, start_at, all_day, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id,
+const EVENT_COLS = `id, title, start_at, all_day, end_at, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id,
             (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
             (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name,
             (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour`
@@ -57,7 +57,8 @@ interface EventBody {
   businessId?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
   recur?: unknown // {freq,interval?,weekdays?} or null/absent for a one-off
   leadSeconds?: number | null // calm "Bientôt" lead window; null/absent = no reminder
-  carId?: string | null // « L'auto »: which household car this ride takes (null = carpool/none)
+  endAt?: unknown // optional « Jusqu'à » — the window's exclusive end (unix s); absent = a point
+  carId?: string | null // « L'auto »: which household car this rendez-vous takes (null = none)
   passengers?: unknown // « L'auto »: member ids riding along (JSON array)
   bringTemplateId?: string | null // « Activité »: the todo_templates id of its "what to bring" list
 }
@@ -87,6 +88,18 @@ const MAX_LEAD = 7 * 86400
 const leadSeconds = (v: unknown): number | null => {
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
+}
+
+// How long the rendez-vous lasts — the OPTIONAL « Jusqu'à ». Absolute unix seconds,
+// EXCLUSIVE. Rejected (→ null, "we don't know") unless it is finite, strictly after
+// the start, and within 24 h of it: a multi-day span is a « Voyage » (trips), not an
+// event. An all-day rendez-vous ignores it entirely — the day already IS the window.
+// When set it drives « L'auto »'s availability exactly instead of carAvail's 2 h guess.
+const MAX_SPAN = 24 * 3600
+const endAtOf = (v: unknown, startAt: number, allDay: boolean): number | null => {
+  if (allDay) return null
+  const n = Math.floor(Number(v))
+  return Number.isFinite(n) && n > startAt && n - startAt <= MAX_SPAN ? n : null
 }
 
 // « L'auto » ride fields. car_id is a free-form households.cars JSON id (not an FK):
@@ -123,7 +136,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // clears the others so the rendez-vous stays a single, unambiguous answer.
   const { businessId, contactId, memberId } = pickWho(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, recur_json, lead_seconds, car_id, passengers, bring_template_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, end_at, recur_json, lead_seconds, car_id, passengers, bring_template_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -134,6 +147,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       title,
       Math.floor(body.startAt),
       body.allDay ? 1 : 0,
+      endAtOf(body.endAt, Math.floor(body.startAt), !!body.allDay),
       recurJson(body.recur),
       leadSeconds(body.leadSeconds),
       carIdOf(body.carId),
@@ -151,12 +165,13 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
   const { businessId, contactId, memberId } = pickWho(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ?, bring_template_id = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, end_at = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ?, bring_template_id = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
       Math.floor(body.startAt),
       body.allDay ? 1 : 0,
+      endAtOf(body.endAt, Math.floor(body.startAt), !!body.allDay),
       memberId,
       contactId,
       businessId,

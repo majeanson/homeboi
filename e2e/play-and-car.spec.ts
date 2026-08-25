@@ -48,3 +48,34 @@ test('L’auto: setting a day posts a car-day', async ({ page }) => {
     page.getByRole('button', { name: 'Reste à la maison' }).first().click(),
   )
 })
+
+// REGRESSION (« L'auto » / Trajet / Rendez-vous, the one-engagement pass).
+//
+// A rendez-vous that takes the car makes the day BUSY, even when no work window does.
+// This used to fail in two independent places: /api/car folded rides into the live
+// "right now" status ONLY, so every other date fell back to the raw schedule spans —
+// and both /voiture's week rows and the board card's non-today branch read those.
+// The result was « Libre toute la journée » printed directly above the rendez-vous
+// that filled the day.
+//
+// The mock's third day is exactly that shape: no schedule span, one car-taking
+// « Rendez-vous dentiste » at 14 h.
+test('L’auto: a day held only by a rendez-vous is not « Libre toute la journée »', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/voiture')
+
+  // The day row that carries the dentist rendez-vous.
+  const day = page.locator('.voiture__day').filter({ hasText: 'Rendez-vous dentiste' })
+  await expect(day).toHaveCount(1)
+
+  // It must read as BUSY, not free…
+  await expect(day).toHaveClass(/voiture__day--busy/)
+  await expect(day).not.toHaveClass(/voiture__day--free/)
+  // …and must never print the free-all-day line above the outing it is listing.
+  await expect(day.locator('.voiture__day-free-label')).toHaveCount(0)
+  await expect(day).not.toContainText('Libre toute la journée')
+  // The window it shows is the rendez-vous' own (14 h → 14 h + the 2 h default).
+  await expect(day.locator('.voiture__day-window')).toContainText('14')
+})

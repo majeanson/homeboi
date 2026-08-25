@@ -8,8 +8,9 @@ import { type HelpEntry } from './helpMode'
 export const OPERATOR_HELP = {
   boardLayout: {
     card: 'board',
-    // 9 = « Personnaliser le babillard » (post-agglomeration board card).
-    point: 9,
+    // 8 = « Personnaliser le babillard » (was 9 until the « Voir un moment » point
+    // at index 8 was trimmed with « Moments »).
+    point: 8,
     body: {
       fr: `Choisis quelles cartes du babillard afficher, leur largeur et leur ordre — propre à CET appareil (la tablette murale et ton téléphone gardent chacun leur disposition). Glisse une poignée pour réordonner, ou même pour déplacer une carte d'un groupe à l'autre. Tu peux aussi garder le doigt sur une carte du babillard pour la réorganiser sur place.`,
       en: `Choose which board cards show, how wide they are, and in what order — specific to THIS device (the wall tablet and your phone keep their own layout). Drag a handle to reorder, or even to move a card from one group to the other. You can also press and hold a card on the board to rearrange it in place.`,
@@ -253,9 +254,10 @@ export const OPERATOR_HELP = {
     },
   },
   schoolYear: {
-    // « La rentrée » — the board card's school-year point (11).
+    // « La rentrée » — the board card's school-year point (10; was 11 before the
+    // « Voir un moment » point was trimmed with « Moments »).
     card: 'board',
-    point: 11,
+    point: 10,
     body: {
       fr: `La rentrée, le dernier jour et les relâches — une fois par année. Le babillard sait alors dire « école demain » ou « congé demain » sans que ce soit affiché tous les jours.`,
       en: `The first day, the last day, and any breaks — once a year. The board can then say "school tomorrow" or "day off tomorrow" without showing it every single day.`,

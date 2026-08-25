@@ -3,8 +3,7 @@ import { type HelpEntry } from './helpMode'
 // Help-mode copy for the board's view toggle (the two glance views: Grille ⟷ Mois).
 // Each points at the "Changer la vue" point of the board GUIDE card (index 7) so the
 // "→ Voir le guide" link lands on the exact line. The per-person lens (face picker)
-// and the « Moments » recap have their own help entries elsewhere. See lib/helpMode +
-// the board wiring in Board.tsx.
+// has its own help entry elsewhere. See lib/helpMode + the board wiring in Board.tsx.
 export const BOARD_HELP = {
   'view-bento': {
     card: 'board',
@@ -13,10 +12,13 @@ export const BOARD_HELP = {
   },
   'view-month': {
     card: 'board',
-    point: 7,
+    // Point 11, not 7 (« Changer la vue »): that one explains the three zooms, this one
+    // explains what the Mois view itself now does — the day stays on screen, the ⋯ adds
+    // to it, and the cells can spell themselves out.
+    point: 11,
     body: {
-      fr: 'Le mois : la vue d’ensemble ; touche une journée pour la planifier.',
-      en: 'The month: the big picture; tap a day to plan it.',
+      fr: 'Le mois : la vue d’ensemble. Touche une journée — elle reste à l’écran, et son ⋯ y ajoute un rendez-vous, une corvée, un repas ou une note.',
+      en: 'The month: the big picture. Tap a day — it stays on screen, and its ⋯ adds an event, a chore, a meal or a note to it.',
     },
   },
   'view-annee': {
@@ -69,8 +71,8 @@ export const BOARD_HELP = {
   today: {
     card: 'board',
     body: {
-      fr: 'Aujourd’hui : l’agenda du jour — repas, événements, corvées. Les jours chargés, il se lit comme « le fil du jour » : rendez-vous, trajets et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant ». « Demain » se range en dessous quand il y a quelque chose à préparer.',
-      en: 'Today: the day’s agenda — meals, events, chores. On a busy day it reads as “the day’s timeline”: appointments, rides and work hours placed in time order, with a “Now” marker. “Tomorrow” tucks in below when there’s something to prep.',
+      fr: 'Aujourd’hui : l’agenda du jour — repas, événements, corvées. Les jours chargés, il se lit comme « le fil du jour » : rendez-vous et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant ». « Demain » se range en dessous quand il y a quelque chose à préparer.',
+      en: 'Today: the day’s agenda — meals, events, chores. On a busy day it reads as “the day’s timeline”: appointments and work hours placed in time order, with a “Now” marker. “Tomorrow” tucks in below when there’s something to prep.',
     },
   },
   toFinish: {
@@ -83,7 +85,8 @@ export const BOARD_HELP = {
   },
   upcoming: {
     card: 'board',
-    point: 10,
+    // 10 → 9: the « Voir un moment » point (index 8) went with « Moments ».
+    point: 9,
     body: {
       fr: 'À venir : ce qui s’en vient cette semaine, avec « dans X jours » quand c’est proche.',
       en: 'Coming up: what’s ahead this week, with “in X days” when it’s close.',

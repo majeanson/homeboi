@@ -122,3 +122,49 @@ describe('membersOutAt — derived presence', () => {
     expect(membersOutAt(THU, BLOCKS, atOn(THU, 16))).toEqual(['marc'])
   })
 })
+
+// A per-date car adjustment must not make one date read three different ways across
+// /voiture, the board and the calendar (the one-engagement pass).
+describe('membersOutAt — with a per-date car adjustment', () => {
+  it('adds the adjustment’s holder for its window, on top of the template', () => {
+    // Sunday: nobody's template block runs, but the car was lent to Julie 13–16.
+    const ov: CarDayOverride = { carId: 'car', day: SUN, free: false, holderId: 'julie', startMin: min(13), endMin: min(16), label: null }
+    expect(membersOutAt(SUN, BLOCKS, atOn(SUN, 14), ov)).toEqual(['julie'])
+    expect(membersOutAt(SUN, BLOCKS, atOn(SUN, 12), ov)).toEqual([])
+  })
+
+  it('leaves presence alone when the car simply stays home', () => {
+    // « Reste à la maison » is a statement about the CAR, not about the people —
+    // Marc still worked Wednesday, he just didn't drive.
+    const ov: CarDayOverride = { carId: 'car', day: WED, free: true, holderId: null, startMin: null, endMin: null, label: null }
+    expect(membersOutAt(WED, BLOCKS, atOn(WED, 10), ov)).toEqual(['marc'])
+  })
+
+  it('never double-counts a holder who is already out on the template', () => {
+    const ov: CarDayOverride = { carId: 'car', day: WED, free: false, holderId: 'marc', startMin: min(9), endMin: min(12), label: null }
+    expect(membersOutAt(WED, BLOCKS, atOn(WED, 10), ov)).toEqual(['marc'])
+  })
+})
+
+describe('workOccurrencesInRange — an adjusted day releases the car', () => {
+  it('keeps the work window but drops holdsCar on an overridden date', () => {
+    const occs = workOccurrencesInRange(BLOCKS, WED, addLocalDays(WED, 1), [{ day: WED }])
+    const marc = occs.find((o) => o.memberId === 'marc')
+    // Still at work — the window is untouched…
+    expect(marc?.at).toBe(atOn(WED, 8))
+    expect(marc?.endAt).toBe(atOn(WED, 17))
+    // …but the car is no longer his that day, so the calendar must not draw it.
+    expect(marc?.holdsCar).toBe(false)
+  })
+
+  it('leaves other dates alone', () => {
+    const occs = workOccurrencesInRange(BLOCKS, WED, addLocalDays(WED, 2), [{ day: WED }])
+    expect(occs.find((o) => o.memberId === 'marc' && o.at === atOn(THU, 8))?.holdsCar).toBe(true)
+  })
+
+  it('is unchanged when no adjustments are passed (every existing caller)', () => {
+    expect(workOccurrencesInRange(BLOCKS, WED, addLocalDays(WED, 1))).toEqual(
+      workOccurrencesInRange(BLOCKS, WED, addLocalDays(WED, 1), []),
+    )
+  })
+})

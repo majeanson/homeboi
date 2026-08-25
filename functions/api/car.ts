@@ -1,10 +1,9 @@
 import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
-import { parseRecur, occurrenceOn } from '../_lib/recur'
-import { householdCars } from '../_lib/carPrefs'
-import { carBusySpansForDay, membersOutAt, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow, type CarDayOverride } from '../_lib/carResolve'
-import { carStatusAt, rideConflicts, rideSpans, type CarSpan, type Ride } from '../_lib/carAvail'
+import { membersOutAt, type CarDayOverride } from '../_lib/carResolve'
+import { carStatusAt, type CarSpan } from '../_lib/carAvail'
+import { fetchCarOccupancy, resolveCarRange, overrideFor } from '../_lib/occupancy'
 
 // « L'auto » read model — the resolved car picture, shared by the board glance card
 // (today) and the /voiture week view (a date range). One read so both surfaces see
@@ -16,20 +15,6 @@ import { carStatusAt, rideConflicts, rideSpans, type CarSpan, type Ride } from '
 //   GET /api/car                      -> today only (board card)
 //   GET /api/car?from=<day>&to=<day>  -> [from, to) local-midnight days (/voiture week)
 
-interface RideRow {
-  id: string
-  title: string
-  start_at: number
-  all_day: number
-  member_id: string | null
-  contact_id: string | null
-  contact_name: string | null
-  business_id: string | null
-  business_name: string | null
-  car_id: string | null
-  passengers: string | null
-  recur_json: string | null
-}
 
 interface RideOut {
   id: string
@@ -48,7 +33,8 @@ interface RideOut {
 
 interface DayOut {
   day: number
-  spans: CarSpan[]
+  spans: CarSpan[] // RAW schedule/override windows — what the /voiture day editor prefills from
+  carSpans: CarSpan[] // RESOLVED busy: spans + the day's car-taking rendez-vous. Read THIS to ask "is the car busy?"
   rides: RideOut[]
   override: CarDayOverride | null // the per-date override in effect (so the editor can prefill + badge "Ajusté")
 }
@@ -63,9 +49,6 @@ const parsePassengers = (raw: string | null): string[] => {
   }
 }
 
-// A ride is an event that touches the car: it takes a car OR names passengers.
-const isRide = (r: { car_id: string | null; passengers: string | null }) =>
-  r.car_id != null || (r.passengers != null && r.passengers !== '[]' && r.passengers !== '')
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
@@ -83,85 +66,20 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   const from = numParam('from', today)
   const to = numParam('to', addLocalDays(today, 1))
+  // ONE resolver, shared with every other surface that needs the same answer
+  // (_lib/occupancy): the schedule template, the per-date adjustments and the
+  // rendez-vous that take the car, resolved together. This endpoint used to own that
+  // logic privately, which is why « À régler » could not see a car clash /api/car had
+  // already computed.
+  const occ = await fetchCarOccupancy(ctx.env, hh, from, to)
+  const resolved = resolveCarRange(occ, from, to)
 
-  const cars = (await householdCars(ctx.env, hh)) ?? []
-  // v1: the schedule commits THE car; focus the resolved spans on the primary car.
-  // car_day overrides are matched to it. (Multi-car availability is a later pass.)
-  const primaryCarId = cars[0]?.id ?? 'car'
-
-  const [blocksRes, overridesRes, ridesRes] = await Promise.all([
-    ctx.env.DB.prepare(
-      'SELECT id, member_id, label, start_min, end_min, holds_car, colour AS color, recur_json, anchor_day FROM schedule_blocks WHERE household_id = ?',
-    )
-      .bind(hh)
-      .all<ScheduleBlockRow>(),
-    ctx.env.DB.prepare(
-      'SELECT car_id, day, free, holder_id, start_min, end_min, label FROM car_day WHERE household_id = ? AND day >= ? AND day < ?',
-    )
-      .bind(hh, from, to)
-      .all<{
-        car_id: string
-        day: number
-        free: number
-        holder_id: string | null
-        start_min: number | null
-        end_min: number | null
-        label: string | null
-      }>(),
-    // Every ride (one-off + recurring). One-offs are filtered to the window below;
-    // recurring series are expanded per day. Joins the carpool driver's name.
-    ctx.env.DB.prepare(
-      `SELECT id, title, start_at, all_day, member_id, contact_id, business_id, car_id, passengers, recur_json,
-              (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
-              (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name
-         FROM events
-        WHERE household_id = ? AND (car_id IS NOT NULL OR (passengers IS NOT NULL AND passengers != '[]'))`,
-    )
-      .bind(hh)
-      .all<RideRow>(),
-  ])
-
-  const blocks: ScheduleBlock[] = blocksRes.results.map(parseScheduleBlockRow)
-
-  const overrides: CarDayOverride[] = overridesRes.results.map((r) => ({
-    carId: r.car_id,
-    day: r.day,
-    free: r.free === 1,
-    holderId: r.holder_id,
-    startMin: r.start_min,
-    endMin: r.end_min,
-    label: r.label,
-  }))
-  const overrideFor = (day: number) => overrides.find((o) => o.day === day && o.carId === primaryCarId) ?? null
-
-  const rideRows = ridesRes.results.filter(isRide)
-
-  // The concrete ride instances that fall on a given local day (one-off match +
-  // recurring occurrence). Returns each with its computed start instant.
-  const ridesOnDay = (dayStart: number, nextDay: number): { row: RideRow; at: number }[] => {
-    const out: { row: RideRow; at: number }[] = []
-    for (const row of rideRows) {
-      if (!row.recur_json) {
-        if (row.start_at >= dayStart && row.start_at < nextDay) out.push({ row, at: row.start_at })
-      } else {
-        const rule = parseRecur(row.recur_json)
-        if (!rule) continue
-        const at = occurrenceOn(dayStart, row.start_at, rule)
-        if (at != null && at >= dayStart && at < nextDay) out.push({ row, at })
-      }
-    }
-    return out
-  }
-
-  const days: DayOut[] = []
-  for (let day = from; day < to; day = addLocalDays(day, 1)) {
-    const nextDay = addLocalDays(day, 1)
-    const spans = carBusySpansForDay(day, blocks, overrideFor(day))
-    const dayRides = ridesOnDay(day, nextDay)
-    const rideModels: Ride[] = dayRides.map(({ row, at }) => ({ id: row.id, at, carId: row.car_id }))
-    const conflictIds = new Set(rideConflicts(spans, rideModels).map((c) => c.ride.id))
-    const rides: RideOut[] = dayRides
-      .map(({ row, at }) => ({
+  const days: DayOut[] = resolved.map((d) => ({
+    day: d.day,
+    spans: d.spans,
+    carSpans: d.carSpans,
+    rides: d.rides
+      .map(({ row, at, conflict }) => ({
         id: row.id,
         title: row.title,
         at,
@@ -173,11 +91,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
         contactName: row.contact_name,
         businessId: row.business_id,
         businessName: row.business_name,
-        conflict: conflictIds.has(row.id),
+        conflict,
       }))
-      .sort((a, b) => a.allDay - b.allDay || a.at - b.at)
-    days.push({ day, spans, rides, override: overrideFor(day) })
-  }
+      .sort((a, b) => a.allDay - b.allDay || a.at - b.at),
+    override: d.override,
+  }))
 
   // "Now" block — only meaningful for today; the board card reads it. status = is
   // the car free right now / until when; membersOut = who's away (who's-home derive).
@@ -185,21 +103,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const todayInRange = today >= from && today < to
   const todayDay = days.find((d) => d.day === today)
   const dayEnd = addLocalDays(today, 1)
-  // Fold today's car-taking rides into the STATUS (not the returned spans, which stay
-  // the real schedule windows for /voiture + conflicts) so the glance answers "où est
-  // l'auto" truthfully: a ride in progress reads "Avec Camille · revient ~17 h", an
-  // upcoming one "Libre jusqu'à 14 h", a past one "le reste de la journée" — never
-  // "Libre toute la journée" while the car is out. Driver + all-day ride along.
-  const todayRides: Ride[] = todayDay
-    ? todayDay.rides.map((r) => ({ id: r.id, at: r.at, carId: r.carId, holderId: r.memberId, allDay: r.allDay === 1 }))
-    : []
-  const statusSpans = todayDay ? [...todayDay.spans, ...rideSpans(todayRides, today, dayEnd)] : []
-  const status = todayDay ? carStatusAt(statusSpans, now, dayEnd) : { free: true as const }
-  const membersOut = todayInRange ? membersOutAt(today, blocks, now) : []
+  // The live "right now" status reads the SAME resolved busy set every other surface
+  // reads (`carSpans` — schedule/override windows plus the car-taking rendez-vous), so
+  // the glance answers "où est l'auto" truthfully: a rendez-vous in progress reads
+  // "Avec Camille · revient ~17 h", an upcoming one "Libre jusqu'à 14 h", a past one
+  // "le reste de la journée" — never "Libre toute la journée" while the car is out.
+  // This used to be folded here and ONLY here, which is why every other date lied.
+  const status = todayDay ? carStatusAt(todayDay.carSpans, now, dayEnd) : { free: true as const }
+  const membersOut = todayInRange ? membersOutAt(today, occ.blocks, now, overrideFor(occ, today)) : []
 
   return ok({
-    cars,
-    hasSchedule: blocks.length > 0,
+    cars: occ.cars,
+    // Which car the resolved spans/conflicts are about. The client seeds a localized
+    // default car when the household never configured one (lib/carPrefs), so it must
+    // be told the id the server actually resolved against rather than inferring it.
+    primaryCarId: occ.primaryCarId,
+    hasSchedule: occ.hasSchedule,
     now,
     today,
     status,

@@ -567,13 +567,12 @@
   /* Stay legible over the tinted wash whatever the household's supper colour. */
   background: color-mix(in srgb, var(--card) 72%, transparent);
 }
-/* Status-band cards — « À régler » (marigold heads-up) + « Moments » (berry recap) —
-   styled as hero-style tiles so they read as peers of the supper/weather heroes just
-   above them. Softer min-height than the photo card; both stretch to equal height in
-   their row. The headline (.what) is smaller than a hero's 28px and clamps to 2 lines
-   so a long friction line never blows the card out. */
-.now-card--regler,
-.now-card--moment {
+/* The status-band card « À régler » (marigold heads-up), styled as a hero-style tile so
+   it reads as a peer of the supper/weather heroes just above it. Softer min-height than
+   the photo card; it stretches to its row's height. The headline (.what) is smaller than
+   a hero's 28px and clamps to 2 lines so a long friction line never blows the card out.
+   (« Moments » was its berry twin here until that concept was retired.) */
+.now-card--regler {
   display: block;
   width: 100%;
   min-height: 6.5rem;
@@ -582,8 +581,7 @@
   border: 0;
   cursor: pointer;
 }
-.now-card--regler .label,
-.now-card--moment .label {
+.now-card--regler .label {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -599,19 +597,8 @@
 .now-card--regler .blob {
   background: var(--marigold);
 }
-.now-card--moment {
-  background: var(--berry-wash);
-  color: var(--ink);
-}
-.now-card--moment .label,
-.now-card--moment .icn {
-  color: var(--berry-deep);
-}
-.now-card--moment .blob {
-  background: var(--berry);
-}
-/* The calm "all-clear" hero (an empty day) — a sage peer of the À régler / Moments
-   tiles, but static (not a button). Reassurance, never a prompt to fill the day. */
+/* The calm "all-clear" hero (an empty day) — a sage peer of the À régler tile,
+   but static (not a button). Reassurance, never a prompt to fill the day. */
 .now-card--clear {
   display: block;
   width: 100%;
@@ -648,8 +635,7 @@
     }
   }
 }
-.now-card--regler .what,
-.now-card--moment .what {
+.now-card--regler .what {
   font-size: 1.15rem;
   margin-top: 4px;
   display: -webkit-box;
@@ -657,17 +643,12 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.now-card--moment .who {
-  color: var(--ink-soft);
-  letter-spacing: 0.02em;
-}
-/* The compact lens's way back (see widget-grid.css) for « À régler » / « Moments »:
-   neither uses the shared `.sec-label` header (they're hero tiles), so once grown to
-   the zone's full width they grow their own reduce chip — reusing `.sec-label__reduce`
-   for the shared button chrome, positioned like the corner `.icn` these cards already
-   anchor. Only ever rendered while `lens.expanded`, i.e. inside a `CardSlot`. */
-.now-card--regler .now-card__reduce,
-.now-card--moment .now-card__reduce {
+/* The compact lens's way back (see widget-grid.css) for « À régler »: it doesn't use
+   the shared `.sec-label` header (it's a hero tile), so once grown to the zone's full
+   width it grows its own reduce chip — reusing `.sec-label__reduce` for the shared button
+   chrome, positioned like the corner `.icn` the card already anchors. Only ever rendered
+   while `lens.expanded`, i.e. inside a `CardSlot`. */
+.now-card--regler .now-card__reduce {
   position: absolute;
   z-index: 1;
   top: 12px;
@@ -684,55 +665,6 @@
   top: 0.5rem;
   right: 3.25rem;
 }
-/* The four windows as DIRECT tap targets — each deep-links to that scope of the
-   recap scene. Frosted berry pills on the berry-wash card; the contextually-relevant
-   one (tonight by day / tomorrow in the evening) is filled to suggest "look here now".
-   They sit above the decorative blob. */
-.now-card--moment__windows {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.55rem;
-}
-.now-card--moment .label {
-  position: relative;
-  z-index: 1;
-}
-.moment-chip {
-  border: 0;
-  cursor: pointer;
-  /* Keep a 44px tap target even when the height-matched hero card squeezes the row
-     (REVIEW-PASS): centre the label in a min-height box rather than relying on padding. */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0.34rem 0.72rem;
-  border-radius: var(--radius-pill);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--berry-deep);
-  background: color-mix(in srgb, var(--berry) 16%, var(--card));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--berry) 32%, transparent);
-  transition:
-    transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
-    background var(--dur-fast, 0.12s);
-}
-.moment-chip:hover {
-  transform: translateY(-1px);
-  background: color-mix(in srgb, var(--berry) 24%, var(--card));
-}
-.moment-chip:active {
-  transform: translateY(0);
-}
-.moment-chip.is-lead {
-  color: #fff;
-  background: var(--berry);
-  box-shadow: var(--shadow-sm);
-}
-
 /* The "today" zone: supper + weather as equal hero cards. They sit in their own
    flex row above the section grid so weather reads as a peer of supper, and they
    stack on a phone. */
@@ -896,6 +828,42 @@
 .sec-label__ico--sm {
   width: 1.3rem;
   height: 1.3rem;
+}
+/* One quiet control at the trailing edge of a board-card header (SecLabel `action`):
+   the « Notes (cercle) » card's ＋, which opens the shared quick composer in place.
+   Sized like the compact lens's reduce chip (.sec-label__reduce) so a header that
+   carries both reads as one row of small round chips; a pseudo-element widens the
+   thumb target to 44px without inflating the visual disc. It is NOT a toolbar —
+   one action per header. */
+.sec-label__act {
+  flex: none;
+  display: inline-flex;
+}
+.sec-label__actbtn {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--sec-tint, var(--line)) 45%, var(--line));
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: color-mix(in srgb, var(--sec-tint, var(--ink-soft)) 70%, var(--ink));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sec-label__actbtn::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+.sec-label__actbtn:active {
+  background: var(--line);
+}
+.sec-label__actbtn.is-on {
+  background: color-mix(in srgb, var(--sec-tint, var(--ink-faint)) 18%, var(--card));
 }
 /* A tinted bento: the card stays NEUTRAL (no background wash — the rows already carry
    the meaningful member/chore/meal colour), and gets its category identity from a thin

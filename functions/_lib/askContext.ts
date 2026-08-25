@@ -19,6 +19,7 @@ import { HOUSEHOLD_TZ } from './ids'
 import { parseRecur, expandRange } from './recur'
 import { birthdayOccurrences, type BirthdayPerson, type BirthdayOccurrence } from './birthdays'
 import { carnetLifeSoon, type CarnetLifeItem, type CarnetLifeSoon } from './carnetLife'
+import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlockRow } from './carResolve'
 
 // A short localized label per meal slot for the AI context.
 export const SLOT: Record<Lang, Record<string, string>> = {
@@ -36,15 +37,20 @@ export function fmtDay(unixSec: number, lang: Lang): string {
     month: 'long',
   }).format(new Date(unixSec * 1000))
 }
-export function fmtDateTime(unixSec: number, allDay: number, lang: Lang): string {
-  const day = fmtDay(unixSec, lang)
-  if (allDay) return day
-  const time = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', {
+// Wall-clock time in the household timezone. Shared by the dated event lines and the
+// work-hour windows so the prompt never mixes two time formats.
+function hhmm(unixSec: number, lang: Lang): string {
+  return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', {
     timeZone: HOUSEHOLD_TZ,
     hour: 'numeric',
     minute: '2-digit',
   }).format(new Date(unixSec * 1000))
-  return `${day} ${time}`
+}
+
+export function fmtDateTime(unixSec: number, allDay: number, lang: Lang): string {
+  const day = fmtDay(unixSec, lang)
+  if (allDay) return day
+  return `${day} ${hhmm(unixSec, lang)}`
 }
 
 // ── Events: one-off + recurring, expanded and merged ────────────────────────
@@ -103,6 +109,33 @@ export function carnetDuesForPrompt(items: CarnetLifeItem[], now: number): Carne
   return carnetLifeSoon(items, now).slice(0, CARNET_CAP)
 }
 
+// ── « L'auto »: the work rota, derived onto dates ────────────────────────────
+// The assistant used to see events only, so "est-ce que Marc est libre jeudi ?" was
+// answered from the calendar alone and said yes while he was at work 8 h–17 h. The
+// windows are DERIVED from the recurring template (never rows), exactly as the board
+// and the calendar derive them, and a date whose car was adjusted releases the car
+// without cancelling the work — same rule everywhere.
+export const WORK_CAP = 40
+
+export function workForPrompt(
+  blocks: ScheduleBlockRow[],
+  overrides: readonly { day: number }[],
+  members: { id: string; display_name: string }[],
+  rangeStart: number,
+  rangeEnd: number,
+): AskWorkOcc[] {
+  const nameOf = new Map(members.map((m) => [m.id, m.display_name]))
+  return workOccurrencesInRange(blocks.map(parseScheduleBlockRow), rangeStart, rangeEnd, overrides)
+    .map((o) => ({
+      name: nameOf.get(o.memberId) ?? o.label ?? '',
+      at: o.at,
+      endAt: o.endAt,
+      holdsCar: o.holdsCar,
+    }))
+    .filter((o) => o.name)
+    .slice(0, WORK_CAP)
+}
+
 // ── Le cercle: contacts + businesses (v1 broadening) ─────────────────────────
 export interface AskContactRow {
   first_name: string
@@ -141,6 +174,20 @@ export interface AskSnapshot {
   contacts: AskContactRow[]
   businesses: AskBusinessRow[]
   carnetDues: CarnetLifeSoon[] // already capped (carnetDuesForPrompt)
+  // « Horaires » — the recurring work windows, DERIVED per date (never event rows).
+  // Without these the assistant answered "est-ce que Marc est libre jeudi ?" from
+  // events alone and cheerfully said yes while he was at work 8 h–17 h. Already
+  // expanded + capped by the caller.
+  work: AskWorkOcc[]
+}
+
+// One derived work window, ready to print: who, when, and whether it ties up the
+// shared car (which is what makes "peut-on aller à l'épicerie ?" answerable).
+export interface AskWorkOcc {
+  name: string
+  at: number
+  endAt: number
+  holdsCar: boolean
 }
 
 // The pure composition: a bounded, dated, sectioned snapshot → the plain-text
@@ -160,6 +207,13 @@ export function buildAskPromptLines(s: AskSnapshot, lang: Lang): string[] {
   if (s.events.length) {
     lines.push('', lang === 'fr' ? 'Événements :' : 'Events:')
     for (const e of s.events) lines.push(`- ${fmtDateTime(e.start_at, e.all_day, lang)} : ${e.title}`)
+  }
+  if (s.work.length) {
+    lines.push('', lang === 'fr' ? 'Horaires (qui est absent) :' : 'Work hours (who is away):')
+    for (const w of s.work) {
+      const car = w.holdsCar ? (lang === 'fr' ? " [prend l'auto]" : ' [takes the car]') : ''
+      lines.push(`- ${fmtDay(w.at, lang)} ${hhmm(w.at, lang)}–${hhmm(w.endAt, lang)} : ${w.name}${car}`)
+    }
   }
   if (s.birthdays.length) {
     lines.push('', lang === 'fr' ? 'Anniversaires :' : 'Birthdays:')

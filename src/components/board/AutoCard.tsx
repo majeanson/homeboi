@@ -36,7 +36,7 @@ export function AutoCard() {
 export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   const t = useT()
   const { lang } = useLang()
-  const { name: carName, color: carColor, primary } = useCars()
+  const { name: carName, color: carColor, primary, hasCar } = useCars()
   const { data: membersData } = useQuery({
     queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: Member[] }>('members'),
@@ -52,7 +52,12 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   // Render whenever the household USES « L'auto » — a car configured, a work
   // schedule, or a ride on this day — even on an idle/free day, so the card always
   // answers "où est l'auto ?". Only a household that's set nothing up sees no card.
-  const empty = model.cars.length === 0 && !model.hasSchedule && rides.length === 0
+  // `model.cars` is the household's STORED list, which is empty until someone opens
+  // Réglages ▸ L'auto — while useCars() resolves the seeded default, so the rest of
+  // the app already believes there's a car. Ask the same source they do, or the card
+  // hides from exactly the households that never configured anything and would most
+  // benefit from seeing it.
+  const empty = !hasCar && !model.hasSchedule && rides.length === 0
   useReportEmpty(empty)
   if (empty) return null
 
@@ -83,7 +88,11 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
     }
     holder = busy ? memberOf(model.status.span?.holderId) : undefined
   } else {
-    const spans = carDay?.spans ?? []
+    // Another calendar date: no "now" to be live about, so summarize the day's
+    // RESOLVED busy windows — `carSpans`, which already folds in the rendez-vous that
+    // take the car. Reading the raw `spans` here is what made every non-today date say
+    // « Libre toute la journée » while listing that day's outings right underneath.
+    const spans = carDay?.carSpans ?? []
     if (spans.length > 0) {
       busy = true
       const hId = spans.find((s) => s.holderId)?.holderId ?? null
@@ -96,11 +105,13 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
     }
   }
 
-  // Who drives a ride: a member = we drive (our car); a cercle contact = a carpool
-  // parent drives (their car); a business = a rendez-vous destination.
+  // Every rendez-vous listed here TAKES our car, so the driver is the person it's
+  // for; a contact/business is the « Avec » — who we're going to see, not a carpool
+  // driver. (Naming a contact « covoiturage » here was left over from when a
+  // car-less outing also landed in this list; it no longer can.)
   const driverLine = (r: CarRide): string => {
     if (r.memberId) return t.auto.drives(nameOf(r.memberId) ?? '')
-    if (r.contactId) return t.auto.carpool(r.contactName ?? '')
+    if (r.contactId) return r.contactName ?? ''
     if (r.businessId) return r.businessName ?? ''
     return ''
   }

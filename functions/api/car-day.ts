@@ -7,57 +7,20 @@ import { newId, nowSec } from '../_lib/ids'
 // template is the default; a car_day row REPLACES it for one (car, date): a single
 // out-window, or "stays home" (free).
 //
-//   GET    /api/car-day?from=<day>&to=<day>  -> { overrides } in [from, to) (local-midnight unix s)
+// There is no GET: the resolved overrides ride inside /api/car's day model (via
+// _lib/occupancy), so a separate read had no caller and would have been a second,
+// drifting answer to the same question.
 //   POST   /api/car-day                      -> upsert one { carId, day, free?, holderId?, startMin?, endMin?, label? }
 //   DELETE /api/car-day                      -> remove one { carId, day } (revert that day to the template)
 //
 // Open to any authed actor (a parent-mode kiosk plans the week); guests blocked by authed().
 
-interface OverrideRow {
-  id: string
-  car_id: string
-  day: number
-  free: number
-  holder_id: string | null
-  start_min: number | null
-  end_min: number | null
-  label: string | null
-}
-
-const toClient = (r: OverrideRow) => ({
-  carId: r.car_id,
-  day: r.day,
-  free: r.free === 1,
-  holderId: r.holder_id,
-  startMin: r.start_min,
-  endMin: r.end_min,
-  label: r.label,
-})
 
 const MAX_MIN = 24 * 60
 const minute = (v: unknown): number | null => {
   const n = Number(v)
   return Number.isFinite(n) ? Math.min(Math.max(Math.floor(n), 0), MAX_MIN) : null
 }
-
-export const onRequestGet = authed(async (ctx, actor) => {
-  const url = new URL(ctx.request.url)
-  // Parse null/empty as NaN (not 0): `Number(null)` is 0, which would slip past the
-  // finite check below and silently query the [0, 0) window instead of 400-ing.
-  const num = (key: string): number => {
-    const raw = url.searchParams.get(key)
-    return raw == null || raw === '' ? NaN : Number(raw)
-  }
-  const from = num('from')
-  const to = num('to')
-  if (!Number.isFinite(from) || !Number.isFinite(to)) return badRequest('from + to requis.')
-  const { results } = await ctx.env.DB.prepare(
-    'SELECT id, car_id, day, free, holder_id, start_min, end_min, label FROM car_day WHERE household_id = ? AND day >= ? AND day < ? ORDER BY day',
-  )
-    .bind(actor.householdId, from, to)
-    .all<OverrideRow>()
-  return ok({ overrides: results.map(toClient) })
-})
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{

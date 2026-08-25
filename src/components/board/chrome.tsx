@@ -8,9 +8,8 @@ import { type Dict, type Member } from './types'
 
 // A tiny segmented control in the board header — three zoom levels on the same
 // household: « Grille » (today) · « Mois » (the calendar) · « L'année » (the
-// horizon of fixed points). The per-person split is the face picker beside it, the
-// windowed recap is the « Moments » button — neither is a layout here. Calm and
-// small; the choice is remembered per device.
+// horizon of fixed points). The per-person split is the face picker beside it — not a
+// layout here. Calm and small; the choice is remembered per device.
 export function BoardViewToggle({
   view,
   onChange,

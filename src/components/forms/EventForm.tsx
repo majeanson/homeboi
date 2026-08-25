@@ -4,7 +4,7 @@ import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY, EVENTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY, EVENTS_KEY, BOARD_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type TemplatesData } from '../../lib/todos'
 import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
 import { type Business } from '../../lib/businesses'
@@ -17,6 +17,7 @@ import { FormFooter } from '../FormFooter'
 import { MemberPicker } from '../MemberPicker'
 import { toFace } from '../FormScene'
 import { Disclosure } from '../Disclosure'
+import { Cluster } from '../Layout'
 import { InlineIcon } from '../Icon'
 import { useCars } from '../../lib/carPrefs'
 import { useOnline } from '../../lib/online'
@@ -44,7 +45,8 @@ export interface EventInit {
   business_name?: string | null // seed the "with" picker's text when editing
   recur_json?: string | null
   lead_seconds?: number | null
-  car_id?: string | null // « L'auto »: which household car this ride takes
+  end_at?: number | null // optional « Jusqu'à » — the window's exclusive end (unix s)
+  car_id?: string | null // « L'auto »: which household car this rendez-vous takes
   passengers?: string | null // « Qui »: the household people this concerns (JSON id array); member_id = passengers[0]
   bring_template_id?: string | null // « Activité »: the todo_templates id of its "what to bring" list
 }
@@ -95,6 +97,17 @@ export function EventForm({
     dateSeed ? `${dateSeed.getFullYear()}-${pad(dateSeed.getMonth() + 1)}-${pad(dateSeed.getDate())}` : '',
   )
   const [time, setTime] = useState(init && !value?.all_day ? `${pad(init.getHours())}:${pad(init.getMinutes())}` : '')
+  // Optional « Jusqu'à » — how long this rendez-vous lasts. Blank = a point in the day
+  // (what every event was until now). When set it drives « L'auto »'s availability
+  // exactly instead of the flat 2 h guess, and the calendar can draw a real span.
+  const endInit = value?.end_at && !value.all_day ? new Date(value.end_at * 1000) : null
+  const [endTime, setEndTime] = useState(endInit ? `${pad(endInit.getHours())}:${pad(endInit.getMinutes())}` : '')
+  // Clearing the start time makes it an all-day rendez-vous, whose window is the whole
+  // day — a leftover end would be a ghost the server drops anyway.
+  const setStartTime = (v: string) => {
+    setTime(v)
+    if (!v) setEndTime('')
+  }
   // « Qui » — the household people this rendez-vous concerns. ONE multi-select (calm:
   // pick each face once). Stored in `passengers`; `member_id` is written as the
   // denormalized primary (people[0]) — the single-car "qui a l'auto" holder and the
@@ -215,6 +228,9 @@ export function EventForm({
       businessId,
       recur,
       leadSeconds: lead,
+      // null (not undefined) so a PATCH that clears « Jusqu'à » actually clears the
+      // stored end rather than leaving the old one in place.
+      endAt: endTime ? Math.floor(new Date(`${date}T${endTime}`).getTime() / 1000) : null,
       carId,
       passengers: people,
       bringTemplateId: effectiveBring,
@@ -225,7 +241,10 @@ export function EventForm({
       await write('events', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...fields } : fields,
-        affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY],
+        // CAR_KEY too: a rendez-vous can take the car (« Prend l'auto »), so /api/car
+        // resolves from this very row. Without it the board glance and /voiture kept
+        // showing the pre-save answer until the next poll.
+        affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY, CAR_KEY],
       })
       onSaved()
     } catch {
@@ -267,10 +286,25 @@ export function EventForm({
           className="input"
           type="time"
           value={time}
-          onChange={(e) => setTime(e.target.value)}
+          onChange={(e) => setStartTime(e.target.value)}
           aria-label={t.operator.eventTimeLabel}
         />
       </label>
+      {/* Optional « Jusqu'à ». Only offered once a start time exists: an all-day
+          rendez-vous already spans the whole day. Blank stays the default — a point,
+          exactly as before — so nothing about an existing rendez-vous changes. */}
+      {time && (
+        <label className="recur__row mono">
+          <span>{t.operator.eventUntilLabel}</span>
+          <input
+            className="input"
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            aria-label={t.operator.eventUntilLabel}
+          />
+        </label>
+      )}
       {members.length > 0 && (
         <>
           <p className="mono event-transport__label">{t.operator.eventPeople}</p>
@@ -320,17 +354,25 @@ export function EventForm({
       {/* The event form is ONE form: a plain rendez-vous up top, then two OPTIONAL
           sections (calm: collapsed by default). They replace the old separate
           ＋ « Trajet » / « Activité » tiles — fill only what you need. */}
-      {/* « Trajet » — the optional ride layer: which household car this takes (tap
-          again to clear = no car / carpool). The people riding are « Qui » above.
-          Hidden when the household has no car. */}
+      {/* « Prend l'auto » — the optional transport answer, and the ONLY thing that
+          makes a rendez-vous occupy « L'auto ». Deliberately NOT called « Trajet »:
+          there is one noun in this app — un rendez-vous — and taking the car is a
+          plain yes/no on it, exactly like « À apporter » below. (A separate "trajet"
+          concept is what made a rendez-vous and a car booking read as two different
+          things while being one row.) Tap the active car again to clear = doesn't
+          take the car. The people riding are « Qui » above; a cercle person in
+          « Avec » still reads as someone else driving.
+          Hidden when the household explicitly has no car — nothing to take. */}
       {hasCar && (
         <Disclosure
-          label={t.operator.eventTrajet}
+          label={t.operator.eventTakesCar}
           defaultOpen={carId != null || !!defaultRide}
           className="event-transport"
         >
-          <p className="mono event-transport__label">{t.operator.eventCarWho}</p>
-          <div className="operator__rotation mono">
+          {/* With a single household car the chip IS the yes/no, so the extra
+              « Quelle auto ? » prompt would just repeat the Disclosure's own label. */}
+          {cars.length > 1 && <p className="mono event-transport__label">{t.operator.eventCarWho}</p>}
+          <Cluster>
             {cars.map((c) => (
               <button
                 key={c.id}
@@ -343,7 +385,7 @@ export function EventForm({
                 {c.name}
               </button>
             ))}
-          </div>
+          </Cluster>
         </Disclosure>
       )}
       {/* « À apporter » — the optional bring-list for an activity (« Soccer : souliers ·

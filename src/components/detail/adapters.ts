@@ -99,7 +99,13 @@ export function buildEvent(
     icon: CATS.event.icon,
     // Spine = the business colour, else the first person's, else the event default.
     accent: bizColour ?? whoStack[0]?.colour ?? CATS.event.color,
-    when: e.all_day ? t.board.allDay : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}`,
+    // A rendez-vous that says « Jusqu'à » shows a real range, not just a start —
+    // the same window « L'auto » uses to answer whether the car is free.
+    when: e.all_day
+      ? t.board.allDay
+      : `${formatDay(e.start_at, lang)} · ${formatTime(e.start_at, lang)}${
+          e.end_at && e.end_at > e.start_at ? `–${formatTime(e.end_at, lang)}` : ''
+        }`,
     who,
     whoStack: whoStack.length > 1 ? whoStack : undefined,
     // Basic peek actions: see the day, Modify (the primary — opens the event form),
@@ -109,6 +115,13 @@ export function buildEvent(
     // two buttons: the day door + Modifier.
     actions: [
       { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` },
+      // « L'auto » — only when this rendez-vous actually takes the car. It is the
+      // one thing the agenda side could never say: the peek showed the outing with
+      // no hint the vehicle was involved and no way through to the week that
+      // resolves it. Read-only navigation, so it stays for guests/kiosks.
+      ...(e.car_id
+        ? [{ key: 'car', label: t.auto.title, icon: 'car-bold' as const, overflow: true, href: '/voiture' }]
+        : []),
       // « Itinéraire » — turn-by-turn to the rendez-vous, one tap before the door.
       // Read-only navigation, so it stays for guests/kiosks (no opt gate needed).
       ...(mapsHref

@@ -79,7 +79,6 @@ export const ROUTE_PREFIXES: readonly string[] = [
   '/liste',
   '/settings',
   '/search',
-  '/moment',
   '/drawings',
   '/voyage',
   '/voiture',

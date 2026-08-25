@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { EventForm } from '../components/forms/EventForm'
 import { useT } from '../i18n'
-import { MONTH_KEY, BOARD_KEY, EVENTS_KEY } from '../lib/queryKeys'
+import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CAR_KEY } from '../lib/queryKeys'
 
 // /event/new — add a rendez-vous as a full-screen scene (was a sheet form; tall
 // forms strand under the mobile keyboard there). Editing an event still happens
@@ -33,6 +33,7 @@ export function EventFormPage() {
             qc.invalidateQueries({ queryKey: BOARD_KEY })
             qc.invalidateQueries({ queryKey: EVENTS_KEY })
             qc.invalidateQueries({ queryKey: MONTH_KEY }) // refresh the calendar + day page
+            qc.invalidateQueries({ queryKey: CAR_KEY }) // …and « L'auto », if it takes the car
             close()
           }}
         />

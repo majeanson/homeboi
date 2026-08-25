@@ -181,12 +181,6 @@ export const TOURS: Tour[] = [
         body: guidePoint('board', 'Changer la vue'),
       },
       {
-        icon: 'hourglass-high-bold',
-        card: 'board',
-        title: { fr: 'Voir un moment', en: 'See a moment' },
-        body: guidePoint('board', 'Voir un moment'),
-      },
-      {
         target: 'board-cards',
         icon: 'stack-bold',
         card: 'board-widgets',

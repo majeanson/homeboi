@@ -1,11 +1,11 @@
 // Tonight's moon phase, computed locally — NASA has no clean moon feed, and the
 // phase is a smooth function of time, so a tiny pure calculation beats a network
 // call (works offline, no key, no cache). Used by the « Ce soir dans le ciel »
-// line in Moments (board/MomentsView). Pure: the caller passes the timestamp, so
+// line (board/SkyTonight, inside « Dehors aujourd'hui »). Pure: the caller passes the timestamp, so
 // it's deterministic and unit-testable.
 
 // The eight named phases, in order from new moon. These keys match the i18n maps
-// `moment.sky.phase.*` and `moment.sky.heard.*` (src/i18n.ts).
+// `board.sky.tonight.phase.*` and `board.sky.tonight.heard.*` (src/i18n.ts).
 export type MoonPhaseKey =
   | 'new'
   | 'waxingCrescent'

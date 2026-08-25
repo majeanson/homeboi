@@ -242,6 +242,7 @@ export const FR = {
     empty: 'Tout est sous contrôle.',
     more: (n: number) => `+ ${n} autre${n > 1 ? 's' : ''}`,
     ride: (what: string) => `${what} — personne pour conduire`,
+    carClash: (what: string, who: string) => (who ? `${what} — l’auto est déjà prise (${who})` : `${what} — l’auto est déjà prise`),
     dayWord: { today: 'd’aujourd’hui', tomorrow: 'de demain' },
     mealEmpty: (meal: string, when: string) => `${meal} ${when} à planifier`,
     mealLow: (meal: string, item: string) => `${meal} : il manque ${item}`,
@@ -459,6 +460,13 @@ export const FR = {
     sortBy: 'Trier la liste',
     // "Mon ordre": one tap to seed it from the aisle walk, then tweak by hand (kept).
     sortApply: 'Ranger par allée',
+    // The « Allées » menu, beside Circulaires / Déjà acheté: the sort choice AND the
+    // on-demand aisle tag fold behind one button — a view preference you set once
+    // shouldn't hold a permanent bar above the list.
+    aisleMenu: 'Allées',
+    // The on-demand aisle tag under each row's name (off by default — it's a detail
+    // worth knowing sometimes, never worth burying the item's own name under).
+    aisleTags: 'Afficher l’allée de chaque article',
     // Per-item aisle override (edit sheet): pick the aisle, or leave it automatic.
     aisleLabel: 'Allée',
     aisleHint: 'Range cet article dans la bonne allée — gardé pour la prochaine fois.',
@@ -802,6 +810,32 @@ export const FR = {
       tomorrow: 'Demain',
       gallery: 'Les images du jour',
       pickImage: (source: string) => `Mettre « ${source} » sur le babillard`,
+      // « Ce soir dans le ciel » — tonight's moon phase, computed locally (lib/moonPhase).
+      // `phase` labels the line; `heard` is the full sentence read aloud (toddler-friendly).
+      // Lived under the retired `moment` namespace until « Moments » was folded away.
+      tonight: {
+        title: 'Ce soir dans le ciel',
+        phase: {
+          new: 'Nouvelle lune',
+          waxingCrescent: 'Premier croissant',
+          firstQuarter: 'Premier quartier',
+          waxingGibbous: 'Lune gibbeuse croissante',
+          full: 'Pleine lune',
+          waningGibbous: 'Lune gibbeuse décroissante',
+          lastQuarter: 'Dernier quartier',
+          waningCrescent: 'Dernier croissant',
+        },
+        heard: {
+          new: 'Ce soir, c’est la nouvelle lune.',
+          waxingCrescent: 'Ce soir, on voit un premier croissant de lune.',
+          firstQuarter: 'Ce soir, c’est le premier quartier de lune.',
+          waxingGibbous: 'Ce soir, la lune est presque pleine.',
+          full: 'Ce soir, c’est la pleine lune.',
+          waningGibbous: 'Ce soir, la lune est encore presque pleine.',
+          lastQuarter: 'Ce soir, c’est le dernier quartier de lune.',
+          waningCrescent: 'Ce soir, on voit un dernier croissant de lune.',
+        },
+      },
     },
   },
   // A-5 (bmad/09) — « Le décompte », the one suggestion-driven countdown card.
@@ -846,7 +880,6 @@ export const FR = {
     heroes: 'Ce soir + météo',
     mots: 'Mots',
     aRegler: 'À régler',
-    moments: 'Moments',
     autoCard: 'L’auto',
     today: 'Aujourd’hui',
     departure: 'Avant de partir',
@@ -1063,50 +1096,21 @@ export const FR = {
     empty: 'Rien de prévu',
     prev: 'Mois précédent',
     next: 'Mois suivant',
-    openDay: 'Planifier cette journée',
-    openMoment: 'Voir ce moment',
     // Shape-key labels for the calendar dots (● rendez-vous · ▪ repas · ◆ corvée · ○ note).
     legendEvents: 'Rendez-vous',
     legendMeals: 'Repas',
     legendChores: 'Corvées',
     legendTodos: 'À compléter',
     legendNotes: 'Notes',
-  },
-  // « Moments » (/moment) — the windowed recap + quick-handoff scene.
-  moment: {
-    title: 'Moments',
-    scope: { tonight: 'Ce soir', tomorrow: 'Demain', date: 'Une date', week: 'Cette semaine' },
-    pickDate: 'Date :',
-    empty: 'Rien de prévu pour ce moment.',
-    // The calm dusk card on the board that deep-links here (scope=tomorrow).
-    peek: 'Demain en bref',
-    // The sub-line on the board « Moments » card — the windows it opens onto.
-    windows: 'ce soir · demain · une date · la semaine',
-    // « Ce soir dans le ciel » — tonight's moon phase, computed locally. `phase`
-    // labels the chip; `heard` is the full sentence read aloud (toddler-friendly).
-    sky: {
-      title: 'Ce soir dans le ciel',
-      phase: {
-        new: 'Nouvelle lune',
-        waxingCrescent: 'Premier croissant',
-        firstQuarter: 'Premier quartier',
-        waxingGibbous: 'Lune gibbeuse croissante',
-        full: 'Pleine lune',
-        waningGibbous: 'Lune gibbeuse décroissante',
-        lastQuarter: 'Dernier quartier',
-        waningCrescent: 'Dernier croissant',
-      },
-      heard: {
-        new: 'Ce soir, c’est la nouvelle lune.',
-        waxingCrescent: 'Ce soir, on voit un premier croissant de lune.',
-        firstQuarter: 'Ce soir, c’est le premier quartier de lune.',
-        waxingGibbous: 'Ce soir, la lune est presque pleine.',
-        full: 'Ce soir, c’est la pleine lune.',
-        waningGibbous: 'Ce soir, la lune est encore presque pleine.',
-        lastQuarter: 'Ce soir, c’est le dernier quartier de lune.',
-        waningCrescent: 'Ce soir, on voit un dernier croissant de lune.',
-      },
-    },
+    // The cell-density toggle (lib/monthDensity) — device-local, so a guest may use it.
+    density: 'Détail des cases',
+    densityCompact: 'Cases compactes',
+    densityDetailed: 'Cases détaillées',
+    // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
+    dayActions: 'Ajouter à cette journée',
+    // The pinned day panel on a phone: it opens as a one-line bar you tap to unfold.
+    expandDay: 'Dérouler la journée',
+    collapseDay: 'Replier la journée',
   },
   weather: {
     clear: 'Dégagé', cloud: 'Nuageux', fog: 'Brouillard', drizzle: 'Bruine', rain: 'Pluie', snow: 'Neige', storm: 'Orage',
@@ -1124,22 +1128,18 @@ export const FR = {
   auto: {
     title: 'L’auto',
     car: 'L’auto',
-    free: 'Libre',
     freeUntil: (t: string) => `Libre jusqu’à ${t}`,
     taken: 'Prise',
     withWho: (n: string) => `Avec ${n}`,
     backAround: (t: string) => `revient ~${t}`,
     work: 'Travail',
-    workToday: 'Horaires du jour',
     range: (a: string, b: string) => `${a}–${b}`,
     drives: (n: string) => `${n} conduit`,
-    carpool: (n: string) => `${n} (covoiturage)`,
     conflict: 'L’auto est déjà prise à ce moment-là.',
     conflictShort: 'auto prise',
     // /voiture week scene
     weekTitle: 'L’auto cette semaine',
     weekHint: 'Touche un jour pour dire qui a l’auto — l’horaire le remplit déjà tout seul.',
-    noRides: 'Aucun trajet',
     freeAllDay: 'Libre toute la journée',
     freeRestOfDay: 'Libre — le reste de la journée',
     staysHome: 'Reste à la maison',
@@ -1150,12 +1150,11 @@ export const FR = {
     prevWeek: 'Semaine précédente',
     nextWeek: 'Semaine suivante',
     thisWeek: 'Cette semaine',
-    addRide: 'Ajouter un trajet',
+    addRide: 'Ajouter un rendez-vous',
     adjusted: 'Ajusté',
     whosHome: 'À la maison',
     nobodyHome: 'Personne à la maison',
     everyoneHome: 'Tout le monde est là',
-    out: (n: string) => `${n} est sorti·e`,
     toddlerWho: 'Qui te reconduit aujourd’hui ?',
     toddlerNobody: 'Personne ne te reconduit aujourd’hui',
     from: 'De',
@@ -1874,6 +1873,8 @@ export const FR = {
       collapse: 'Réduire la note',
       // The board card's quiet footer door into the full section.
       seeAll: 'Toutes les notes',
+      // …and its header ＋, which opens the same quick composer right on the board.
+      quickAdd: 'Écrire une note rapide',
       // #richnotes — full-screen rich editor (title + Markdown body + attachment).
       newNote: 'Nouvelle note',
       untitled: 'Note sans titre',
@@ -2410,11 +2411,10 @@ export const FR = {
     carDefaultName: 'L’auto',
     carName: 'Nom du véhicule',
     carAdd: 'Ajouter un véhicule…',
-    carsEmpty: 'Aucun véhicule — les trajets se font en covoiturage.',
+    carsEmpty: 'Aucun véhicule — « Prend l’auto » n’apparaît plus sur les rendez-vous.',
     eventPeople: 'Pour qui ?',
-    eventTrajet: 'Trajet',
+    eventTakesCar: 'Prend l’auto',
     eventCarWho: 'Quelle auto ?',
-    eventPassengers: 'Passagers',
     eventBring: 'À apporter',
     // Inline bring-list builder in the event form's « À apporter » section.
     bringAddItem: 'Ajoute un article…',
@@ -2495,6 +2495,7 @@ export const FR = {
     eventAllDay: 'Toute la journée',
     eventDateLabel: 'Date',
     eventTimeLabel: 'Heure (optionnel)',
+    eventUntilLabel: 'Jusqu’à',
     noEvents: 'Aucun rendez-vous à venir.',
     // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
     schoolYearTitle: 'Année scolaire',

@@ -6,7 +6,7 @@ import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
-import { SCHEDULE_KEY, BOARD_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
+import { SCHEDULE_KEY, BOARD_KEY, MEMBERS_KEY, CAR_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Member } from '../../lib/members'
 import { isGuest } from '../../lib/device'
 import { Chip } from '../Chip'
@@ -79,14 +79,14 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
     await write('schedule', {
       method: b.id ? 'PATCH' : 'POST',
       body: b,
-      affectedKeys: [SCHEDULE_KEY, BOARD_KEY],
+      affectedKeys: [SCHEDULE_KEY, BOARD_KEY, CAR_KEY, MONTH_KEY],
     })
     setEditing(null)
     setAdding(false)
   }
   function remove(b: ScheduleBlock) {
     removal.remove([b.id], t.undo.cleared(nameOf(b.memberId)), () =>
-      write('schedule', { method: 'DELETE', body: { id: b.id }, affectedKeys: [SCHEDULE_KEY, BOARD_KEY] }),
+      write('schedule', { method: 'DELETE', body: { id: b.id }, affectedKeys: [SCHEDULE_KEY, BOARD_KEY, CAR_KEY, MONTH_KEY] }),
     )
   }
 

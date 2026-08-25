@@ -43,6 +43,7 @@ import { PetForm } from '../components/cercle/PetForm'
 import { ConnectPeople } from '../components/cercle/ConnectPeople'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { NoteEditor } from '../components/cercle/NoteEditor'
+import { NoteQuickAdd } from '../components/cercle/NoteQuickAdd'
 import { MotComposer } from '../components/mots/MotComposer'
 import { ScheduleFields, todayDateStr } from '../components/mots/ScheduleFields'
 import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
@@ -112,6 +113,7 @@ import { MeasureScoops } from '../components/MeasureScoops'
 import { findMeasures } from '../lib/measure'
 import { ZoomableImg } from '../components/ZoomableImg'
 import { WonderBand } from '../components/board/ApodFrame'
+import { SkyTonight } from '../components/board/SkyTonight'
 import { PanZoom } from '../components/PanZoom'
 import { EntityDetailSheet } from '../components/detail/EntityDetailSheet'
 import { type DetailModel } from '../lib/detail'
@@ -585,6 +587,10 @@ export function DevKit() {
   const [memoText, setMemoText] = useState('')
   const memoDemo = useMemoAttach({ drawDraftId: 'devkit' })
   const [dragPills, setDragPills] = useState(['Rapide', 'Végé', 'Souper', 'Dessert'])
+  // Live state for the ActionMenu's stateful (radio / checkbox) rows, so the ✓
+  // column can be seen moving in the gallery rather than described.
+  const [menuByAisle, setMenuByAisle] = useState(false)
+  const [menuTags, setMenuTags] = useState(false)
   // CardDeckEditor specimen: a 3-card deck + parallel clip/photo arrays (#17 A/C),
   // kept length-locked to the deck by the editor itself (alignSide).
   const [deck, setDeck] = useState<DeckCard[]>([
@@ -1248,6 +1254,20 @@ export function DevKit() {
     },
     {
       cat: 'Saisie',
+      name: 'NoteQuickAdd',
+      file: 'components/cercle/NoteQuickAdd.tsx',
+      kw: 'note rapide quick add composer family notes famille board card plus header memo attach voice drawing photo scope face',
+      render: () => (
+        // THE one-line family-notes composer (EditField + the 📎 memo attachment), shared by
+        // « Les notes » and the board card's header ＋. The scope follows the face passed in:
+        // a member id → a personal note, null → a Maisonnée one.
+        <Demo label="Quick « note rapide » composer (one write: text + memo)">
+          <NoteQuickAdd memberId={null} className="cercle-notes__composer card" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
       name: 'NoteEditor',
       file: 'components/cercle/NoteEditor.tsx',
       kw: 'note editor rich text markdown bold italic strike heading bullet numbered checklist quote title full screen cercle famille attachment',
@@ -1644,20 +1664,55 @@ export function DevKit() {
       cat: 'Rangées & actions',
       name: 'ActionMenu',
       file: 'components/ActionMenu.tsx',
-      kw: 'overflow menu ⋯ dots trois points actions secondaires header entête dropdown déroulant',
+      kw: 'overflow menu ⋯ dots trois points actions secondaires header entête dropdown déroulant choix coché radio bascule',
       render: () => (
-        <Demo label="header ⋯ overflow — a scene's secondary actions fold into one dropdown (danger + separated rows)">
-          <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: '14rem' }}>
-            <ActionMenu
-              items={[
-                { icon: 'shopping-bag-bold', label: 'Ajouter à la liste', onSelect: () => {} },
-                { icon: 'arrow-up-right-bold', label: 'Partager', onSelect: () => {} },
-                { icon: 'pencil-simple-bold', label: 'Modifier', onSelect: () => {}, separated: true },
-                { icon: 'trash-bold', label: 'Supprimer', tone: 'danger', onSelect: () => {} },
-              ]}
-            />
-          </div>
-        </Demo>
+        <>
+          <Demo label="header ⋯ overflow — a scene's secondary actions fold into one dropdown (danger + separated rows)">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', minHeight: '14rem' }}>
+              <ActionMenu
+                items={[
+                  { icon: 'shopping-bag-bold', label: 'Ajouter à la liste', onSelect: () => {} },
+                  { icon: 'arrow-up-right-bold', label: 'Partager', onSelect: () => {} },
+                  { icon: 'pencil-simple-bold', label: 'Modifier', onSelect: () => {}, separated: true },
+                  { icon: 'trash-bold', label: 'Supprimer', tone: 'danger', onSelect: () => {} },
+                ]}
+              />
+            </div>
+          </Demo>
+          <Demo label="labelled trigger + STATEFUL rows — a view choice (radio) and a toggle (checkbox) fold behind one ordinary button, like La liste's « Allées »">
+            <div style={{ minHeight: '14rem' }}>
+              <ActionMenu
+                triggerLabel="Allées"
+                triggerIcon="storefront-bold"
+                triggerClassName="btn btn--sm btn--primary"
+                label="Trier la liste"
+                items={[
+                  {
+                    icon: 'scroll-bold',
+                    label: 'Mon ordre',
+                    radio: true,
+                    checked: !menuByAisle,
+                    onSelect: () => setMenuByAisle(false),
+                  },
+                  {
+                    icon: 'storefront-bold',
+                    label: 'Par allée',
+                    radio: true,
+                    checked: menuByAisle,
+                    onSelect: () => setMenuByAisle(true),
+                  },
+                  {
+                    icon: 'tag-bold',
+                    label: "Afficher l'allée de chaque article",
+                    checked: menuTags,
+                    separated: true,
+                    onSelect: () => setMenuTags((v) => !v),
+                  },
+                ]}
+              />
+            </div>
+          </Demo>
+        </>
       ),
     },
     {
@@ -2346,6 +2401,17 @@ export function DevKit() {
             }}
             onShuffle={() => {}}
           />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'SkyTonight',
+      file: 'components/board/SkyTonight.tsx',
+      kw: 'lune moon phase ciel soir nuit dehors aujourd’hui pleine lune croissant quartier astronomie écouter',
+      render: () => (
+        <Demo label="« Ce soir dans le ciel » — la phase de la lune, calculée localement (aucun réseau). Vit dans « Dehors aujourd'hui » (touche la carte météo du babillard). Parent : une ligne calme. Bambin : une grande tuile qui parle quand on la touche.">
+          <SkyTonight />
         </Demo>
       ),
     },

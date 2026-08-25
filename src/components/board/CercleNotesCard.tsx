@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
@@ -10,10 +10,11 @@ import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, visibleNotes } from '../../lib/familyNotes'
 import type { Member } from '../../lib/members'
 import type { MemberFace } from '../MemberSwitcher'
-import { InlineIcon } from '../Icon'
+import { Icon, InlineIcon } from '../Icon'
 import { Section } from './Act'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { NotesList } from '../cercle/NotesList'
+import { NoteQuickAdd } from '../cercle/NoteQuickAdd'
 
 // « Notes (cercle) » — the durable Les notes tab, brought to the board's Grille and
 // LENSED BY THE PICKED FACE (the « Aujourd'hui » MemberSwitcher): a face sees THEIR
@@ -23,8 +24,11 @@ import { NotesList } from '../cercle/NotesList'
 // that face's day. The rows ARE the shared NotesList in its COMPACT glance face
 // (compact-rows pass): reading only — expand in place, play a memo, tap a checklist —
 // with no grip / tint dot / chip / pencil / trash, so the card's width goes to the
-// text. Everything that ACTS on a note (edit, delete, reorder, compose) lives in
-// Les notes, behind the quiet footer link. Self-hides when the face has no
+// text. The ONE thing the card also DOES is add: the header ＋ opens the shared
+// `NoteQuickAdd` in place (same field, same 📎 memo attachment, same write as the
+// section's composer), scoped to the picked face — a quick note without leaving the
+// glance surface. Everything else that acts on a note (edit, delete, reorder, the
+// rich editor) still lives in Les notes, behind the quiet footer link. Self-hides when the face has no
 // notes (calm) — the show/hide + order setting lives in Réglages ▸ Affichage ▸
 // Disposition like every Grille card. NOT the fridge notes band (`notes` table) —
 // these are the durable family_notes.
@@ -34,6 +38,9 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
   // Still needed in compact: a guest's expanded checklists render INERT (a tick
   // would 403), even though the action buttons are gone for everyone here.
   const ro = isGuest()
+  // The header ＋: opens the quick composer in place. Transient (never persisted) —
+  // a card that reloads is a card at rest.
+  const [composing, setComposing] = useState(false)
 
   // Non-polling (like CarnetsCard): durable notes change over days, a write anywhere
   // invalidates FAMILY_NOTES_KEY and realtime nudges it — so this default-on card
@@ -59,8 +66,10 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
     [members],
   )
 
-  // Nothing for this face → no card (calm, like Mots / Voyage / Carnets). Composing
-  // lives in Les notes, so an empty list has nothing to offer on the glance surface.
+  // Nothing for this face → no card (calm, like Mots / Voyage / Carnets). The ＋ goes
+  // with it: on an empty board the ＋ FAB (mode 'cnote') is the door, and a card that
+  // shows nothing but its own add button is exactly the furniture the glance surface
+  // is meant to drop. « Toujours afficher » still holds the slot via CardSlot.
   const empty = notes.length === 0
   useReportEmpty(empty)
   if (empty) return null
@@ -77,7 +86,36 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
         (n) => n.title.trim() || n.text.split('\n')[0]!.trim() || t.cercle.familyNotes.untitled,
       )}
       compactHint={String(notes.length)}
+      // The quick add — hidden for a read-only guest (the write would 403) and, like
+      // every other write affordance here, absent from the compact mini face: that tile
+      // is a glance, and it grows to this one with a tap.
+      action={
+        ro ? undefined : (
+          <button
+            type="button"
+            className={'sec-label__actbtn' + (composing ? ' is-on' : '')}
+            onClick={() => setComposing((v) => !v)}
+            aria-expanded={composing}
+            aria-label={t.cercle.familyNotes.quickAdd}
+            title={t.cercle.familyNotes.quickAdd}
+          >
+            <Icon name={composing ? 'x-bold' : 'plus-bold'} size={14} />
+          </button>
+        )
+      }
     >
+      {/* Opened in place, closed once the note is written — the card goes back to
+          being a glance. The scope follows the board's picked face (`profileId`):
+          a face → their own note, « Maisonnée » → a family-wide one. */}
+      {composing && (
+        <NoteQuickAdd
+          memberId={profileId}
+          className="cnotes-card__composer"
+          drawDraftId="board-cnote"
+          autoFocus
+          onSubmitted={() => setComposing(false)}
+        />
+      )}
       <NotesList notes={notes} faces={faces} readOnly={ro} compact />
       {/* The door to the full section (composer, search, per-face browsing — and
           every per-note action the compact rows deliberately don't carry). */}

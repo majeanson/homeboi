@@ -41,8 +41,11 @@ export function YearView({
   lang: Lang
   t: Dict
   todayDay: number
-  // Tap a mini-month → the Mois view at that month offset (0 = this month).
-  onOpenMonth: (offset: number) => void
+  // Tap a mini-month → the Mois view on that month. Handed back as the month's FIRST
+  // local-midnight day (`monthGrid().monthStart`), because Mois now derives which month
+  // to show from the day it has selected (`?date=`) — an offset would have to be turned
+  // back into a date by the caller anyway, and could disagree with the pick.
+  onOpenMonth: (monthStart: number) => void
 }) {
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const { year: y0, month: m0 } = localYMD(todayDay)
@@ -115,7 +118,7 @@ export function YearView({
               key={g.monthStart}
               type="button"
               className="yearv__month"
-              onClick={() => onOpenMonth(i)}
+              onClick={() => onOpenMonth(g.monthStart)}
               aria-label={t.yearView.openMonth(label)}
             >
               <span className="yearv__mtitle mono">{label}</span>

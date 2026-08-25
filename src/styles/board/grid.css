@@ -114,9 +114,8 @@
    With the chrome here, a card carries its look wherever it is placed — which is the
    precondition for letting a card MOVE between board zones. Containers own flow
    (`break-inside`, margins, spans); cards own chrome.
-   Corollary: `.bento` outside a board container is now a real card too — `MomentsView`
-   consequently renders its day groups with `SecLabel` (header) instead of `Section`
-   (card). */
+   Corollary: `.bento` outside a board container is now a real card too, so a screen that
+   wants the shared header WITHOUT the card shell reaches for `SecLabel`, not `Section`. */
 .bento {
   background: var(--card);
   border-radius: var(--radius-lg);

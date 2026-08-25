@@ -7,8 +7,8 @@
 //              FIXED points (fêtes, birthdays, trips, upkeep, long jeu) — a
 //              horizon, not a planner; tap a month to open it in Mois.
 // The per-person split is the FACE PICKER beside the toggle (Maisonnée = everyone,
-// a face = just their items), not a separate layout; the windowed recap/handoff is
-// the « Moments » SCENE (/moment), reached by a button — not a third glance view.
+// a face = just their items), not a separate layout. A single day is the DAY PAGE
+// (/kitchen/day/:date), reached by tapping a date in Mois — not a glance view.
 // (The retired next/lanes/moment/jour layouts migrate to 'bento' below.)
 // Persisted to localStorage; the corner toggle on the board flips it.
 export type BoardView = 'bento' | 'month' | 'annee'

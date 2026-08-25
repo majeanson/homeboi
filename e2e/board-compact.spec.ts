@@ -311,11 +311,12 @@ test.describe('board compact lens', () => {
   })
 })
 
-// « À régler » and « Moments » are hero tiles (`.now-card`), not `Section`/`BoardCard` —
-// they read `useCardLens()` themselves rather than getting the compact form for free, and
-// grow their own `.now-card__reduce` way-back chip since they have no shared `SecLabel`
-// to grow one for them. A regression here used to leave both squeezed at half-width with
-// no compact form and no escape hatch (the review finding this test guards).
+// « À régler » is a hero tile (`.now-card`), not a `Section`/`BoardCard` — it reads
+// `useCardLens()` itself rather than getting the compact form for free, and grows its own
+// `.now-card__reduce` way-back chip since it has no shared `SecLabel` to grow one for it.
+// A regression here used to leave it squeezed at half-width with no compact form and no
+// escape hatch (the review finding this test guards). (« Moments » was the other such
+// tile until it was retired; single-open across cards is covered above.)
 const A_REGLER_SIGNAL = [{ kind: 'birthday', key: 'b1', label: 'Léa', at: Math.floor(Date.now() / 1000) + 86400, href: '/maison?section=family' }]
 
 async function stubARegler(page: Page) {
@@ -326,13 +327,13 @@ async function stubARegler(page: Page) {
 }
 
 test.describe('board compact lens — bespoke band cards', () => {
-  test('« À régler » and « Moments » render a mini tile when halved, and grow back via their own reduce chip', async ({
+  test('« À régler » renders a mini tile when halved, and grows back via its own reduce chip', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 740 })
     await mockApi(page)
     await stubARegler(page)
-    await seedState(page, { cardPrefs: { size: { aRegler: 1, moments: 1 } } })
+    await seedState(page, { cardPrefs: { size: { aRegler: 1 } } })
     await page.goto('/board')
     await page.waitForSelector('.board-band .wg-slot')
 
@@ -342,12 +343,6 @@ test.describe('board compact lens — bespoke band cards', () => {
     await expect(regler).toBeVisible()
     await expect(regler.locator('.cardmini__title')).toHaveText('À régler')
 
-    const momentsSlot = page.locator('.wg-slot[data-card="moments"]')
-    const moments = momentsSlot.locator('.cardmini')
-    await moments.scrollIntoViewIfNeeded()
-    await expect(moments).toBeVisible()
-    await expect(moments.locator('.cardmini__title')).toHaveText('Moments')
-
     // Tap grows « À régler » in place, same as every other compact card.
     await regler.click()
     await expect(reglerSlot).toHaveAttribute('data-expanded', '')
@@ -355,9 +350,6 @@ test.describe('board compact lens — bespoke band cards', () => {
     const reduce = reglerSlot.locator('.now-card__reduce')
     await expect(reduce).toBeVisible()
     await expect(reduce).toHaveAttribute('aria-expanded', 'true')
-
-    // Single-open still holds across these bespoke cards.
-    await expect(momentsSlot.locator('.cardmini')).toBeVisible()
 
     await reduce.click()
     await expect(reglerSlot).not.toHaveAttribute('data-expanded', /.*/)

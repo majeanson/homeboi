@@ -117,11 +117,28 @@ export function carBusySpansForDay(
 // Presence — the member ids who are OUT at instant `t` (ANY block, car-holding or
 // not, covering t). Powers the derived "who's home" glance (#30) for free off the
 // same schedule. Deduped (a member with two overlapping blocks counts once).
-export function membersOutAt(dayStart: number, blocks: ScheduleBlock[], t: number): string[] {
+//
+// `override` is the day's car adjustment, when there is one. It says nothing about
+// PRESENCE — only about the car — so the template's away-windows still stand under
+// one (a day the car stays home doesn't mean nobody left; they took the bus). What it
+// DOES add: an override naming a holder means that person took the car, so they are
+// out for its window. Passing it is what stops /voiture's presence line from
+// contradicting the day rows printed directly beneath it.
+export function membersOutAt(
+  dayStart: number,
+  blocks: ScheduleBlock[],
+  t: number,
+  override?: CarDayOverride | null,
+): string[] {
   const out = new Set<string>()
   for (const b of blocks) {
     if (b.endMin <= b.startMin || !blockActiveOn(b, dayStart)) continue
     if (t >= at(dayStart, b.startMin) && t < at(dayStart, b.endMin)) out.add(b.memberId)
+  }
+  if (override && !override.free && override.holderId && override.startMin != null && override.endMin != null) {
+    if (override.endMin > override.startMin && t >= at(dayStart, override.startMin) && t < at(dayStart, override.endMin)) {
+      out.add(override.holderId)
+    }
   }
   return [...out]
 }
@@ -145,7 +162,20 @@ export interface WorkOccurrence extends DerivedOccurrence {
 // rangeStart a local-midnight day boundary). Walks LOCAL calendar days (DST-safe,
 // like _lib/recur.expandRange) and emits a window per active weekday. Pure — the
 // caller fetches the blocks; this never touches D1 or the clock.
-export function workOccurrencesInRange(blocks: ScheduleBlock[], rangeStart: number, rangeEnd: number): WorkOccurrence[] {
+export function workOccurrencesInRange(
+  blocks: ScheduleBlock[],
+  rangeStart: number,
+  rangeEnd: number,
+  // Only the DAYS matter here, so this asks for the narrowest possible shape: a
+  // caller that just needs "which dates were adjusted" can select one column.
+  overrides?: readonly { day: number }[] | null,
+): WorkOccurrence[] {
+  // A per-date adjustment supersedes the template's CAR claim for that day — not the
+  // work itself: Marc is still at work on a day the car stayed home, he just took the
+  // bus. So an overridden day keeps its windows and flips `holdsCar` to false.
+  // Without this the calendar drew a car glyph on a day /voiture showed as free, and
+  // /voiture, /board and /mois each gave a different answer for one date.
+  const overridden = new Set((overrides ?? []).map((o) => o.day))
   const out: WorkOccurrence[] = []
   for (let day = localDayStart(new Date(rangeStart * 1000)); day < rangeEnd; day = addLocalDays(day, 1)) {
     for (const b of blocks) {
@@ -160,7 +190,7 @@ export function workOccurrencesInRange(blocks: ScheduleBlock[], rangeStart: numb
         label: b.label ?? null,
         at: startAt,
         endAt,
-        holdsCar: b.holdsCar,
+        holdsCar: b.holdsCar && !overridden.has(day),
         color: b.color ?? null,
       })
     }

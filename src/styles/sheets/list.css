@@ -130,70 +130,10 @@
   }
 }
 
-/* The sort bar: the Mon ordre/Par allée toggle, plus (in Mon ordre) a small
-   one-tap "Ranger par allée" that seeds the hand order from the aisle walk.
-   ONE line always — the apply button sits beside the toggle, never under it;
-   on a very narrow phone its LABEL ellipsizes rather than the row wrapping. */
-.list-sortbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  /* WRAPS (the Cluster rule): the segmented control is fixed-width, so on a phone
-     « Ranger par allée » had nowhere to go and shrank to a meaningless « R… »
-     (UX review 2026-07-14). It now drops to its own line with its words intact. */
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 6px 0 10px;
-}
-.list-sortbar .list-sort {
-  margin: 0;
-  flex: none;
-}
-.list-sortbar__apply {
-  /* Never squeezed — it wraps instead (see above). */
-  flex: 0 0 auto;
-  min-width: 0;
-  font-size: var(--text-xs);
-  padding-inline: 0.6rem;
-}
-.list-sortbar__apply-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* List sort toggle (Mon ordre / Par allée) — a small segmented pill above the list,
-   the same idiom as the cercle/recipe view switches. Per-device, quiet. */
-.list-sort {
-  display: inline-flex;
-  align-self: flex-start;
-  gap: 2px;
-  margin: 6px 0 10px;
-  padding: 3px;
-  /* An opaque segmented-control track (NOT the faint --surface-2 overlay) — keep it on
-     the card colour so the inset pill reads solid. */
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-}
-.list-sort__seg {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 0;
-  background: transparent;
-  color: var(--ink-faint);
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  padding: 0.4rem 0.85rem;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-}
-.list-sort__seg.is-on {
-  background: var(--sky-wash);
-  color: var(--sky-deep);
-}
+/* The sort bar that used to live here (.list-sortbar / .list-sort / .list-sort__seg)
+   is GONE: Mon ordre · Par allée · Ranger par allée · the aisle tag now fold into
+   the « Allées » ActionMenu beside Circulaires / Déjà acheté (Liste.tsx), so a view
+   preference set once a season no longer holds a permanent strip above the list. */
 /* Aisle group header inside the list ("Par allée"). Calm: a small emoji + name,
    never a count. */
 .list-aisle {

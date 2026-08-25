@@ -41,7 +41,14 @@ interface CarDayOverride {
 
 export interface CarDay {
   day: number
+  // RAW schedule/override windows — the /voiture day editor prefills its start/end
+  // from these, and the « Ajusté » badge reads the override beside them.
   spans: CarSpan[]
+  // RESOLVED busy: `spans` PLUS the rendez-vous that take the car that day. Anything
+  // asking "is the car busy on this day?" reads THIS. Reading `spans` instead is what
+  // made the board card (on any date but today) and every /voiture week row announce
+  // « Libre toute la journée » directly above the outings that filled the day.
+  carSpans: CarSpan[]
   rides: CarRide[]
   override: CarDayOverride | null
 }
@@ -58,6 +65,8 @@ interface CarStatus {
 
 export interface CarModel {
   cars: Car[]
+  // The car the server resolved spans/conflicts against (v1 = the first one).
+  primaryCarId: string
   hasSchedule: boolean
   now: number
   today: number

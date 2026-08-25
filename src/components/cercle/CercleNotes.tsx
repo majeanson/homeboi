@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { useWrite } from '../../lib/write'
 import { useProfile } from '../../lib/profile'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope, visibleNotes } from '../../lib/familyNotes'
@@ -14,10 +13,8 @@ import { imgUrl } from '../../lib/image'
 import { Icon, InlineIcon } from '../Icon'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
-import { EditField } from '../EditField'
-import { useMemoAttach } from '../MemoAttach'
-import { useVoiceInput } from '../../lib/useVoiceInput'
 import { NoteEditor } from './NoteEditor'
+import { NoteQuickAdd } from './NoteQuickAdd'
 import { NotesList } from './NotesList'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
@@ -31,10 +28,11 @@ import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 // A note now has an optional TITLE and a rich Markdown BODY (#richnotes): "Nouvelle note"
 // and the row pencil open the full-screen NoteEditor (one editor, reused for add + edit)
 // with bold/italic/strike, headings, bullets/numbered/checklists, quote, and one optional
-// photo/drawing attachment. The composer above the list is the SAME one-line field every
-// other surface uses (EditField + useMemoAttach): write a quick note and/or clip a voice
-// memo / drawing / photo onto it via the 📎, in ONE write. « Nouvelle note » stays as the
-// door to the rich editor.
+// photo/drawing attachment. The composer above the list is the shared `NoteQuickAdd`
+// (EditField + useMemoAttach): write a quick note and/or clip a voice memo / drawing /
+// photo onto it via the 📎, in ONE write — the SAME component the board's « Notes
+// (cercle) » card opens behind its header ＋, so a note written from the glance surface
+// is written identically. « Nouvelle note » stays as the door to the rich editor.
 //
 // The ROWS themselves (expand-to-read, multi-open, drag-reorder, pencil/trash, the audio
 // rename dialog) are the shared NotesList — the board's « Notes (cercle) » card renders
@@ -63,7 +61,6 @@ export function CercleNotes({
   composeNonce?: number
 }) {
   const t = useT()
-  const write = useWrite()
   const { surface } = useSurface()
   const ro = isGuest()
 
@@ -131,36 +128,6 @@ export function CercleNotes({
     setFace(n.member_id) // null → Maisonnée (family-wide); a member → their list
   }, [focusId, all, face, setFace])
 
-  const scopeBody = useMemo(
-    () => (s: NoteScope) => ({ scope: s, member_id: s === 'self' ? face : null }),
-    [face],
-  )
-
-  // The quick one-line composer (the rich editor is « Nouvelle note », below it).
-  const [quick, setQuick] = useState('')
-  const [quickBusy, setQuickBusy] = useState(false)
-  const quickVoice = useVoiceInput(setQuick)
-  const memo = useMemoAttach({ drawDraftId: 'cercle-note' })
-
-  // ONE write: /api/family-notes takes title/text/media together, so a note that is
-  // just a drawing is as valid as one that is just a line.
-  async function submitQuick(v: string) {
-    const value = v.trim()
-    if ((!value && !memo.draft) || quickBusy) return
-    setQuickBusy(true)
-    try {
-      await write('family-notes', {
-        method: 'POST',
-        body: { text: value, ...memo.body, ...scopeBody(effScope) },
-        affectedKeys: [FAMILY_NOTES_KEY],
-      })
-      setQuick('')
-      memo.reset()
-    } finally {
-      setQuickBusy(false)
-    }
-  }
-
   const openNew = () => {
     setEditorNote(null)
     setEditorOpen(true)
@@ -213,26 +180,7 @@ export function CercleNotes({
           composeNonce → openNew): this used to carry its OWN « Nouvelle note » button
           firing the very same openNew, so the page offered two identically-named
           buttons for one action once « Les notes » got its own tab and its own ＋. */}
-      {!ro && (
-        <div className="cercle-notes__composer card">
-          <EditField
-            value={quick}
-            onChange={setQuick}
-            onSubmit={submitQuick}
-            submitLabel={t.common.add}
-            submitLeadingIcon="plus-bold"
-            submitVariant="primary"
-            voice={quickVoice}
-            placeholder={quickVoice.listening ? t.capture.listening : fn.placeholder}
-            ariaLabel={fn.addHint}
-            busy={quickBusy || memo.busy}
-            allowEmpty={!!memo.draft}
-            boxActions={memo.attachButton}
-          >
-            {memo.panel}
-          </EditField>
-        </div>
-      )}
+      {!ro && <NoteQuickAdd memberId={face} className="cercle-notes__composer card" />}
 
       {/* Search — iOS-Notes style: one always-there field so any note is a couple of
           keystrokes away (title, body or author name). */}

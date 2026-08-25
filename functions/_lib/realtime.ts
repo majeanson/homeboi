@@ -91,7 +91,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   'home-pins': [['home-pins']],
   // Calendar events show on the board, the events list, and the month grid; a
   // driverless ride also feeds the « À régler » heads-up (functions/api/a-regler).
-  events: [['events'], ['board'], ['month'], ['a-regler']],
+  // ['car'] because a rendez-vous can take the car (« Prend l'auto ») and /api/car
+  // resolves availability straight off the events table — another device adding one
+  // has to move this device's L'auto glance, not wait for its next poll.
+  events: [['events'], ['board'], ['month'], ['a-regler'], ['car']],
   // « Voyage » (trips): a trip spans the month band + the board "Prochain voyage"
   // card; its notes/itinerary + per-member packing feed the trip scene (prefix keys
   // ['trip-notes', <id>] / ['trip-packing', <id>] invalidate via the bare prefix).
@@ -205,8 +208,10 @@ const PATH_KEYS: Record<string, string[][]> = {
   // « L'auto »: the weekly work-schedule template + per-day override both re-resolve
   // the car surfaces and the board glance (mirrors the client's [SCHEDULE_KEY/CAR_KEY,
   // BOARD_KEY]). /api/car itself is a GET-only resolved read model (no write path).
-  schedule: [['schedule'], ['board']],
-  'car-day': [['car'], ['board']],
+  // Both also carry ['month']: work windows are DERIVED onto the calendar
+  // (carResolve.workOccurrencesInRange), and an override changes what gets derived.
+  schedule: [['schedule'], ['board'], ['car'], ['month']],
+  'car-day': [['car'], ['board'], ['month']],
   // The kept-drawings gallery (GALLERY_KEY = ['drawings']).
   drawings: [['drawings']],
   // Sample/demo data (onboarding Phase 1): a seed or « Vider les exemples » touches

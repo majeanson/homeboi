@@ -351,27 +351,6 @@
 .wg-slot .cardmini.now-card--regler {
   --sec-tint: var(--marigold-deep);
 }
-.wg-slot .cardmini.now-card--moment {
-  --sec-tint: var(--berry-deep);
-}
-/* « Moments » mini: the four handoff windows as a 2×2 chip grid under the header, filling
-   the tile's remaining height so a half-width card is a working chooser, not a teaser. The
-   chips relax their 44px hero min-height to share the shelf evenly (grid-auto-rows: 1fr). */
-.wg-slot .cardmini--moments .cardmini__windows {
-  flex: 1 1 auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: 1fr;
-  gap: 5px;
-  min-width: 0;
-}
-.wg-slot .cardmini--moments .moment-chip {
-  min-height: 0;
-  height: 100%;
-  min-width: 0;
-  padding: 0.3rem;
-  font-size: 0.74rem;
-}
 .wg-slot .cardmini:active {
   box-shadow: var(--shadow-press, var(--shadow-sm));
 }

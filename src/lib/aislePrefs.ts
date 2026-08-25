@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
+import { createDeviceStore } from './createDeviceStore'
 import { HOUSEHOLD_KEY } from './queryKeys'
 import { DEFAULT_AISLE_ORDER, type AisleId, type AisleOverrides } from './aisle'
 
@@ -27,3 +28,22 @@ export function useAisleOverrides(): AisleOverrides {
   })
   return data?.aisleOverrides ?? {}
 }
+
+// Does « Mon ordre » print each row's aisle under its name? Default NO.
+//
+// The aisle is worth knowing sometimes, not always: on every row it repeats
+// « Autres » down half the list and pushes the item's own name — the one thing the
+// row exists to say — into second place. « Par allée » already answers "where is
+// this in the store" by grouping under headers; this is the way to ask the same
+// question WITHOUT regrouping, on demand.
+//
+// DEVICE-LOCAL (localStorage, not household data): a view preference the kiosk and
+// the phone each keep their own, and one a read-only guest may use — it writes
+// nothing to /api/*. Read through createDeviceStore's useSyncExternalStore so the
+// rows re-render the moment it's toggled, in every tab.
+const aisleTags = createDeviceStore<boolean>('babillard-liste-aisle-tags', false, {
+  read: (raw) => raw === '1',
+  write: (on) => (on ? '1' : '0'),
+})
+export const setAisleTagsShown = aisleTags.set
+export const useAisleTagsShown = aisleTags.use

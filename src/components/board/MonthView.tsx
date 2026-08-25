@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
@@ -7,12 +7,13 @@ import { useWrite } from '../../lib/write'
 import { useProfile } from '../../lib/profile'
 import { useUndoToast } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
+import { useAuth } from '../../lib/auth'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDayLong, weekdayShort, capitalize as cap } from '../../lib/format'
-import { monthGrid, inMonth } from '../../lib/monthgrid'
-import { localYMD, addLocalDays } from '../../lib/localDay'
+import { monthGrid, inMonth, stepMonthDay } from '../../lib/monthgrid'
+import { localYMD, addLocalDays, localDayStart } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
@@ -20,6 +21,9 @@ import { type Lang } from '../../i18n'
 import '../../styles/habits.css'
 import { useHabits, useMarkHabit, habitStatusOn, splitHabitsForDay } from '../../lib/habits'
 import { Icon } from '../Icon'
+import { Cluster } from '../Layout'
+import { ActionMenu, type ActionMenuItem } from '../ActionMenu'
+import { useMonthDensity, setMonthDensity } from '../../lib/monthDensity'
 import { Act } from './Act'
 import { Disclosure } from '../Disclosure'
 import { HabitRow } from '../habits/HabitRow'
@@ -38,7 +42,7 @@ const DAY = 86400
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; contact_address?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; business_address?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
+interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; contact_address?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; business_address?: string | null; end_at?: number | null; car_id?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
 interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
 interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 interface MNote { id: string; text: string; member_id: string | null; day: number }
@@ -82,34 +86,70 @@ interface Dot {
   slot?: MealSlot // set for meals → which slot icon to draw
   done?: boolean // habits: the day's intention was met (a filled ring, else hollow)
 }
+// The same marker, plus what it would SAY if the cell had room for words (the
+// « Cases détaillées » density, lib/monthDensity). `time` is the clock face for a timed
+// event and nothing for anything all-day; `label` is the title as the day panel prints it.
+interface Line extends Dot {
+  time?: string
+  label: string
+}
 
-// The markers a cell shows: one per dated thing, ordered the same way the detail
-// panel lists them (events first, by member colour, then meals, chores, notes).
-function dotsFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs): Dot[] {
+// EVERY dated thing on a day, in the order the detail panel lists them (events first,
+// by member colour, then meals, chores, home projects, todos, habits, notes).
+//
+// This is the ONE builder behind all three faces of a day — the cell's dots, the cell's
+// named lines, and the count under the panel header — so a thing can never show as a dot
+// but go missing from the words, or vice versa. The compact density simply ignores
+// `time`/`label` and draws the shape; keep it that way rather than forking a second walk.
+function linesFor(
+  b: DayBucket | undefined,
+  members: Member[],
+  meals: MealPrefs,
+  t: Dict,
+  lang: Lang,
+): Line[] {
   if (!b) return []
-  const out: Dot[] = []
+  const out: Line[] = []
   for (const e of b.events)
     out.push(
       e.birthday
-        ? { color: CATS.birthday.color, kind: 'birthday' }
+        ? { color: CATS.birthday.color, kind: 'birthday', label: e.title }
         : e.work
-          ? { color: e.color ?? colorOf(members, e.member_id) ?? CATS.work.color, kind: 'work' }
-          : { color: e.business_colour ?? colorOf(members, e.member_id) ?? CATS.event.color, kind: 'event' },
+          ? {
+              color: e.color ?? colorOf(members, e.member_id) ?? CATS.work.color,
+              kind: 'work',
+              time: formatTime(e.at, lang),
+              label: e.title || t.auto.work,
+            }
+          : {
+              color: e.business_colour ?? colorOf(members, e.member_id) ?? CATS.event.color,
+              kind: 'event',
+              // All-day rows carry no clock — the label alone, as on the panel.
+              time: e.all_day ? undefined : formatTime(e.at, lang),
+              label: e.title,
+            },
     )
   // Each shown meal gets its slot colour + icon (Réglages ▸ Repas); hidden slots = no marker.
   for (const m of b.meals)
     if (meals.isVisible(m.slot))
-      out.push({ color: meals.color(m.slot) ?? CATS.meal.color, kind: 'meal', slot: isMealSlot(m.slot) ? m.slot : undefined })
-  for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore' })
+      out.push({
+        color: meals.color(m.slot) ?? CATS.meal.color,
+        kind: 'meal',
+        slot: isMealSlot(m.slot) ? m.slot : undefined,
+        label: m.title,
+      })
+  for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore', label: c.title })
   // Projets & Entretien read as chore-shaped dots; the row's own colour sets them apart.
-  for (const h of b.home) out.push({ color: h.color ?? CATS.chore.color, kind: 'chore' })
+  for (const h of b.home) out.push({ color: h.color ?? CATS.chore.color, kind: 'chore', label: h.title })
   // À compléter todos → a check icon tinted with the member colour (drawn like the
   // meal slot icons), so they read apart from the filled chore/event dots.
-  for (const td of b.todos) out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo' })
+  for (const td of b.todos)
+    out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo', label: td.title })
   // « Mes habitudes » — a ring, hollow until the day's intention was met. Its own
   // shape so a habit never reads as a chore you owe someone.
-  for (const h of b.habits) out.push({ color: h.colour ?? CATS.routine.color, kind: 'habit', done: h.done })
-  b.notes.forEach(() => out.push({ color: CATS.list.color, kind: 'note' }))
+  for (const h of b.habits)
+    out.push({ color: h.colour ?? CATS.routine.color, kind: 'habit', done: h.done, label: h.title })
+  for (const n of b.notes) out.push({ color: CATS.list.color, kind: 'note', label: n.text })
   return out
 }
 
@@ -122,15 +162,11 @@ export function MonthView({
   lang,
   t,
   todayDay,
-  initialOffset = 0,
 }: {
   members: Member[]
   lang: Lang
   t: Dict
   todayDay: number
-  // Land on a month other than the current one (the year view's month tap
-  // drills in here). Read once at mount; the arrows own it after.
-  initialOffset?: number
 }) {
   const nav = useNavigate()
   // The picked face — the calendar applies the same private-ish habit filter the
@@ -149,20 +185,54 @@ export function MonthView({
   const eventActions = useEventPeekActions()
   // — chore `who` is a NAME on the month payload; recover its id for the face. —
   const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
-  // Which month is shown, as an offset (in months) from the real current one.
-  // Selected day drives the detail panel; it opens on today.
-  const [offset, setOffset] = useState(initialOffset)
-  const [selected, setSelected] = useState(todayDay)
-  // « Voir ce moment » → the Moments scene for that day, ADAPTED for the special cases:
-  // today opens its nicer « Ce soir » framing, tomorrow opens « Demain », any other
-  // date deep-links the « Une date » scope. So the scene never shows a generic date
-  // picker for today/tomorrow when a friendlier window exists.
-  const momentHref = (day: number) =>
-    day === todayDay
-      ? '/moment?scope=tonight'
-      : day === addLocalDays(todayDay, 1)
-        ? '/moment?scope=tomorrow'
-        : `/moment?scope=date&date=${day}`
+  // ── Where you are in the calendar lives in the URL (`?date=<local-midnight secs>`) ──
+  // It used to be two useStates, so a reload — or a hop to the day page and back, or an
+  // event added from the ⋯ below — snapped you to today and lost the month you were
+  // reading. One param drives BOTH the picked day and the month shown (the month is
+  // DERIVED from the date, so the two can never disagree), which also makes a calendar day
+  // a linkable place. Same contract as lib/tabParam: written with { replace: true } so
+  // browsing months doesn't stack history, and the default (today) is stored as NO param.
+  // `useTabParam` itself doesn't fit — it validates against a fixed list of strings.
+  const [params, setParams] = useSearchParams()
+  const dateParam = Number(params.get('date'))
+  const selected = Number.isFinite(dateParam) && dateParam > 0 ? localDayStart(new Date(dateParam * 1000)) : todayDay
+  const setSelected = (d: number) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (d === todayDay) next.delete('date')
+        else next.set('date', String(d))
+        return next
+      },
+      { replace: true },
+    )
+  // Months from the real current one — read off the picked day, never stored beside it.
+  const selYMD = localYMD(selected)
+  const nowYMD = localYMD(todayDay)
+  const offset = (selYMD.year - nowYMD.year) * 12 + (selYMD.month - nowYMD.month)
+  // Stepping a month keeps the day-of-month where it can (the 31st of a 30-day month
+  // lands on its last day), so ‹ › walk the calendar rather than resetting the pick.
+  // The arithmetic is pure and unit-tested in lib/monthgrid.
+  const stepMonth = (by: number) => setSelected(stepMonthDay(selected, by))
+  // The six-week grid is tall, so on a phone/tablet the day panel below it starts off
+  // screen — you'd tap a date and see nothing change. Below 900px the panel is PINNED to
+  // the bottom of the screen (month.css), which covers the normal case; this stays for the
+  // two-column layout, where nothing is pinned and the panel can sit above the fold.
+  // `block: 'nearest'` means it only moves when the panel is actually out of sight, so
+  // tapping a second date while already reading the panel does nothing jarring.
+  const dayPanelRef = useRef<HTMLDivElement>(null)
+  const pickDay = (d: number) => {
+    setSelected(d)
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    dayPanelRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+  }
+  // Does a cell show dots, or NAME its first few things? Device-local (lib/monthDensity),
+  // so a read-only guest may use it — it writes nothing to the household.
+  const density = useMonthDensity()
+  const detailed = density === 'detailed'
+  // The pinned day drawer, folded away to read the grid under it. Narrow screens only —
+  // the two-column layout has nothing to reclaim and hides the caret (month.css).
+  const [folded, setFolded] = useState(false)
   // À compléter todos marked done from the panel — DEFERRED behind the undo toast:
   // hidden at once so /api/month can't resurrect them before the PATCH commits, and
   // a tap of Annuler simply never marks it done (Liste's pendingClear pattern).
@@ -173,14 +243,15 @@ export function MonthView({
   // the same HABITS_KEY cache the check-in scene uses (`live: false`: this is a
   // slow browse read, never added to the board's own poll — the free-tier lever).
   const ro = isGuest()
+  // The event + chore forms are FormScenes, which bounce a device that isn't signed in —
+  // so an unsigned kiosk must not be offered them (the same gate AddSheet applies via
+  // OPERATOR_MODES). The day page is not a FormScene, so its two entries stay.
+  const { signedIn } = useAuth()
   const { data: habitsData } = useHabits({ live: false })
   const markHabit = useMarkHabit()
   const habitDays = habitsData?.days ?? []
 
-  const grid = useMemo(() => {
-    const { year, month } = localYMD(todayDay)
-    return monthGrid(year, month + offset)
-  }, [todayDay, offset])
+  const grid = useMemo(() => monthGrid(selYMD.year, selYMD.month), [selYMD.year, selYMD.month])
   const from = grid.days[0]
   const to = grid.days[grid.days.length - 1] + DAY
 
@@ -313,15 +384,35 @@ export function MonthView({
     ? splitHabitsForDay(habitsData?.habits ?? [], habitDays, face, selected)
     : { due: [], other: [] }
   const habitsPanelActive = habitsInteractive && dueOrMarkedHabits.length + otherHabits.length > 0
+  // The ⋯ « Ajouter à cette journée » items. Built here so the gating reads in one place:
+  // every entry is a WRITE, so a read-only guest gets none (and the ⋯ vanishes); the two
+  // FormScene routes additionally need a signed-in operator, exactly as the ＋ sheet's
+  // OPERATOR_MODES filter does, so an unsigned kiosk is never sent into a bounce.
+  const dayAdds: ActionMenuItem[] = ro
+    ? []
+    : [
+        ...(signedIn
+          ? ([
+              {
+                icon: 'calendar-blank-bold',
+                label: t.operator.addEvent,
+                onSelect: () => nav(`/event/new?date=${selected}`),
+              },
+              { icon: 'hand-heart-bold', label: t.operator.addChore, onSelect: () => nav(`/chore/new?start=${selected}`) },
+            ] as ActionMenuItem[])
+          : []),
+        { icon: 'fork-knife-bold', label: t.kitchen.planMeal, onSelect: () => nav(`/kitchen/day/${selected}`) },
+        { icon: 'pencil-simple-bold', label: t.kitchen.note, onSelect: () => nav(`/kitchen/day/${selected}`) },
+      ]
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
   const title = cap(formatMonthYear(grid.monthStart, lang))
 
   return (
-    <div className="monthv">
+    <div className={'monthv' + (detailed ? ' monthv--detailed' : '')}>
       <div className="monthv__head">
-        <button type="button" className="monthv__nav" onClick={() => setOffset((o) => o - 1)} aria-label={t.monthView.prev}>
+        <button type="button" className="monthv__nav" onClick={() => stepMonth(-1)} aria-label={t.monthView.prev}>
           <Icon name="caret-left-bold" size={20} />
         </button>
         <h2 className="monthv__title">{title}</h2>
@@ -336,14 +427,26 @@ export function MonthView({
           disabled={atToday}
           aria-hidden={atToday}
           tabIndex={atToday ? -1 : undefined}
-          onClick={() => {
-            setOffset(0)
-            setSelected(todayDay)
-          }}
+          onClick={() => setSelected(todayDay)}
         >
           {t.monthView.today}
         </button>
-        <button type="button" className="monthv__nav" onClick={() => setOffset((o) => o + 1)} aria-label={t.monthView.next}>
+        {/* Compact ↔ détaillé. A binary view choice gets one button, not a menu: pressed
+            = the cells spell out what is in the day. DEVICE-LOCAL, so it is deliberately
+            NOT gated on isGuest() — a demo visitor may read the calendar either way. The
+            name stays put across states (a toggle button's name must); the tooltip says
+            what the next tap does. */}
+        <button
+          type="button"
+          className="monthv__density"
+          aria-pressed={detailed}
+          aria-label={t.monthView.density}
+          title={detailed ? t.monthView.densityCompact : t.monthView.densityDetailed}
+          onClick={() => setMonthDensity(detailed ? 'compact' : 'detailed')}
+        >
+          <Icon name={detailed ? 'file-text-bold' : 'calendar-dots-bold'} size={18} />
+        </button>
+        <button type="button" className="monthv__nav" onClick={() => stepMonth(1)} aria-label={t.monthView.next}>
           <Icon name="caret-right-bold" size={20} />
         </button>
       </div>
@@ -356,16 +459,16 @@ export function MonthView({
         ))}
         {grid.days.map((d) => {
           const b = byDay.get(d)
-          const dots = dotsFor(b, members, mealPrefs)
+          const dots = linesFor(b, members, mealPrefs, t, lang)
           const cls =
             'monthv__cell' +
             (inMonth(d, grid.month) ? '' : ' is-out') +
             (d === todayDay ? ' is-today' : '') +
             (d === selected ? ' is-on' : '')
           return (
-            <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => setSelected(d)}>
+            <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => pickDay(d)}>
               <span className="monthv__num">{localYMD(d).day}</span>
-              {dots.length > 0 && (
+              {!detailed && dots.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
                   {dots.slice(0, 4).map((dot, i) =>
                     dot.kind === 'meal' && dot.slot ? (
@@ -404,6 +507,27 @@ export function MonthView({
                     ),
                   )}
                   {dots.length > 4 && <span className="monthv__more mono">+{dots.length - 4}</span>}
+                </span>
+              )}
+              {/* « Cases détaillées » — the same list, spelled out. NOT aria-hidden (unlike
+                  the dots, which are decoration): the words become the cell's accessible
+                  name, so a screen reader hears « 25 · 14 h Dentiste · Souper » instead of
+                  a bare day number. Three lines is the ceiling — past that the day panel
+                  is the right surface, and a taller cell would push the grid off screen. */}
+              {detailed && dots.length > 0 && (
+                <span className="monthv__lines">
+                  {dots.slice(0, 3).map((line, i) => (
+                    <span key={i} className="monthv__line">
+                      <span
+                        className="monthv__line-chip"
+                        aria-hidden="true"
+                        style={{ background: line.color, opacity: line.kind === 'habit' && !line.done ? 0.45 : 1 }}
+                      />
+                      {line.time && <span className="monthv__line-t mono">{line.time}</span>}
+                      <span className="monthv__line-l">{line.label}</span>
+                    </span>
+                  ))}
+                  {dots.length > 3 && <span className="monthv__more mono">+{dots.length - 3}</span>}
                 </span>
               )}
               {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so
@@ -458,13 +582,18 @@ export function MonthView({
         </span>
       </div>
 
-      <div className="monthv__day">
+      <div
+        className={'monthv__day' + (folded ? ' monthv__day--folded' : '')}
+        ref={dayPanelRef}
+        aria-label={cap(formatDayLong(selected, lang))}
+      >
         <div className="monthv__day-h">
           <b>{cap(formatDayLong(selected, lang))}</b>
-          <div className="monthv__day-actions">
-            {/* « Planifier cette journée » — into the full day editor (/kitchen/day/:date)
-                to add/modify that day's meals + rendez-vous + corvées + note. The action
-                surface next to « Voir ce moment »'s calm read. */}
+          <Cluster className="monthv__day-tools">
+            {/* « Voir la journée » — the calendar's ONE door into a specific day: the full
+                day page (/kitchen/day/:date), where that day's meals, rendez-vous, corvées,
+                à compléter and note are all editable. It used to sit beside a « Voir ce
+                moment » twin that opened the same day read-only; « Moments » is retired. */}
             <button
               type="button"
               className="btn btn--ghost btn--sm mono monthv__open-day"
@@ -472,18 +601,32 @@ export function MonthView({
             >
               {t.detail.openDay} <Icon name="caret-right-bold" size={14} />
             </button>
-            {/* « Voir ce moment » — open that date in « Moments » (its recap + handoff
-                list + a place to act on the day). The calendar's one way into a specific
-                day; deep-links via ?scope=date&date= so Moments lands on it. */}
+            {/* Everything you can ADD to the picked date, behind ONE ⋯. The calendar could
+                previously only READ a day — putting a rendez-vous on the 14th meant leaving
+                for the ＋ FAB and losing your place. Every target already exists and already
+                seeds itself from the date, so this wires no new form: /event/new?date= and
+                /chore/new?start= pre-fill (note the two param names differ), and the meal +
+                day-note both live on the day page. All four invalidate MONTH_KEY on save, so
+                coming back shows the new row. ActionMenu renders nothing on an empty list,
+                so the ⋯ simply disappears for a read-only guest. */}
+            <ActionMenu label={t.monthView.dayActions} items={dayAdds} />
+            {/* Fold the drawer away to read the grid under it. A real button, never a
+                swipe — and hidden outright in the two-column layout, where the day sits
+                beside the calendar and there is nothing to reclaim. */}
             <button
               type="button"
-              className="btn btn--ghost btn--sm mono monthv__open-day monthv__open-moment"
-              onClick={() => nav(momentHref(selected))}
+              className="monthv__day-fold"
+              aria-expanded={!folded}
+              aria-controls="monthv-day-body"
+              aria-label={folded ? t.monthView.expandDay : t.monthView.collapseDay}
+              title={folded ? t.monthView.expandDay : t.monthView.collapseDay}
+              onClick={() => setFolded((f) => !f)}
             >
-              {t.monthView.openMoment} <Icon name="caret-right-bold" size={14} />
+              <Icon name={folded ? 'caret-up-bold' : 'caret-down-bold'} size={16} />
             </button>
-          </div>
+          </Cluster>
         </div>
+        <div className="monthv__day-body" id="monthv-day-body">
         {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
             (today shows the live status; another date summarizes that day's windows). */}
         {car && <AutoCardView model={car} day={selected} />}
@@ -575,10 +718,14 @@ export function MonthView({
                   who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
                   whoFaces={eventFaces(e)}
                   color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
+                  // 🚗 when this rendez-vous takes the shared car — same cue as a
+                  // work window that holds it (the row just above), so the calendar
+                  // and the board say "the car is spoken for" the same way.
+                  icon={e.car_id ? 'car-bold' : undefined}
                   onOpen={() =>
                     detail.open(
                       buildEvent(
-                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, contact_address: e.contact_address, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, business_address: e.business_address, birthday: e.birthday, age: e.age },
+                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, end_at: e.end_at, car_id: e.car_id, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, contact_address: e.contact_address, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, business_address: e.business_address, birthday: e.birthday, age: e.age },
                         detailCtx,
                         eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
                       ),
@@ -622,7 +769,7 @@ export function MonthView({
                 who={td.section ?? undefined}
                 color={colorOf(members, td.member_id) ?? undefined}
                 onCheck={() => markTodoDone(td)}
-                onOpen={() => nav(momentHref(selected))}
+                onOpen={() => nav(`/kitchen/day/${selected}`)}
               />
             ))}
             {/* « Mes habitudes » landing on this day. TODAY/PAST (not a guest): real
@@ -680,6 +827,7 @@ export function MonthView({
             ))}
           </>
         )}
+        </div>
       </div>
       {eventActions.node}
     </div>

@@ -21,7 +21,7 @@ The board is built on a few orthogonal ideas. Keeping them clean is what keeps i
   - **Audience** — `parent` (reader, detail peeks) vs `toddler` (pre-reader, hear-first tiles). `lib/audience.ts`.
 - **One lens** — the **face picker** (Maisonnée = everyone · a person = their items + shared). `lib/profile.ts` + `MemberSwitcher`. This _is_ "Par personne" — a filter, not a layout.
 - **A two-tier visual system** (the colour decision):
-  - **Hero cards** (washed backgrounds): « Ce soir » supper, weather/photo, « À régler », « Moments ». The rich glance band on top.
+  - **Hero cards** (washed backgrounds): « Ce soir » supper, weather/photo, « À régler ». The rich glance band on top.
   - **Section cards** (thin coloured **outline + icon**, neutral background): Aujourd'hui, À finir, À compléter, À venir, L'auto. The colour that _carries meaning_ lives on the **rows** (member / meal-slot / chore colours, all user-customizable) — so the cards stay calm and never rainbowy.
 - **Per-device customization** — show/hide + reorder the section cards (`useBoardCards`, Réglages ▸ Affichage ▸ « Disposition du babillard »). A kiosk and a phone keep their own layout.
 - **Calm tenets** — no streaks/points/badges/push/inventory, schema- _and_ UI-enforced.
@@ -36,7 +36,6 @@ The board is built on a few orthogonal ideas. Keeping them clean is what keeps i
 | --------------------------------------- | --------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------- |
 | **DayHeroes** (`board/DayHeroes.tsx`)   | supper or weather exists          | `data.tonightMeals`, weather, wonder                 | tap a supper → detail peek; shuffle wonder                          |
 | **ARegler** (`board/ARegler.tsx`)       | parent **mobile** + signals exist | `useARegler()` (derived `/api/a-regler`)             | tap → the fix (1) or « Cette semaine » (N)                          |
-| **MomentPeek** (`board/MomentPeek.tsx`) | parent board                      | `timeOfDay()`                                        | 4 window chips → `/moment?scope=` (lead chip emphasized)            |
 | **AutoCard** (`board/AutoCard.tsx`)     | a car / schedule / ride exists    | `useCarToday()`                                      | tap → `/voiture`                                                    |
 | **Aujourd'hui** (`board/Fil.tsx` inside `today`) | always (`mode: always`)   | `data.today/choresToday/todos/todayMeals` + `data.work` | ONE card that owns the day. On a busy day (`filActive` = ≥2 timed things) its body renders **« Le fil du jour »** — events + L'auto rides + **work/job windows** on a time axis (gap-spaced, past dimmed, « maintenant » marker), **chores + all-day events** pooled under « À tout moment » — instead of the flat list; meals/home/pills stay, `Prochainement` hides. On a quiet day it's the plain agenda + « Prochainement » headline. Tap → peek; chore checks work. Toddler = `DayTimeline`. **The former standalone `Fil` card was merged in (2026-07-10) — no more "which of the two is which".** |
 | **Demain** (own card)                   | hidden if empty (`hasTomorrow`)   | tomorrow's meals/events/todos | split out of « Aujourd'hui » into its own bento; cool sky tint |
@@ -129,11 +128,11 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 
 - [x] **« Disposition du babillard » panel** — `board-customize.spec.ts` toggles « À venir » off in Réglages ▸ Affichage and asserts the bento leaves the Grille, then Reset brings it back. (Drag-reorder still untested.)
 - [ ] **Unified event form** — assert « Trajet » + « À apporter » sections render, and the inline bring-list builder creates + selects a list.
-- [x] **Moments chips** — `board-customize.spec.ts` taps a board Moments window chip → asserts `/moment?scope=week` + the scene's scope selector reflects it.
+- [x] ~~**Moments chips**~~ — **moot (2026-08-25): « Moments » is retired.** `board-customize.spec.ts` now asserts an old `/moment` link redirects to the board instead.
 - [x] **Face lens** — `board-customize.spec.ts` picks Papa and asserts the board re-renders: another member's event (Garderie / Léa) drops out while a shared row stays.
 - [ ] **Empty-state hiding** — no test empties a section and asserts the card/sub-group vanishes (Demain, À finir).
 - [ ] **Toddler board** — screenshot only; no interaction flow (tap-to-hear, all-clear).
-- [ ] **Calendar → « Voir ce moment »** — no flow taps a Mois day and lands on Moments-by-date (incl. the today→tonight / tomorrow→tomorrow special cases).
+- [x] ~~**Calendar → « Voir ce moment »**~~ — **moot (2026-08-25):** the calendar has ONE door now, « Voir la journée » → `/kitchen/day/:date`. `board-customize.spec.ts` covers the redirect; the day panel's single door is asserted in `month-day-panel.spec.ts`.
 - [x] **`seedState` `cardPrefs` option** — already present in `e2e/mocks.ts` (`AppState.cardPrefs` → seeds `babillard-card-prefs`); the new layout test toggles via the real UI instead.
 
 ---
@@ -143,9 +142,9 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 - **Registered + documented**: Act/Section/SubHead, MemberSwitcher, FaceSelect, TodoSection, BoardLayoutSection, WonderBand/useWonder.
 - **Documented (page-level, correctly not in the live gallery)**: DayHeroes, ARegler, AutoCard, Notes, PhotoFrame, ActivityBring.
 - **Gaps** (backlog):
-  - [ ] **MomentPeek** — a real board card, **not in DevKit and not in COMPONENTS.md**. Document it (and consider a gallery entry — it's self-contained).
+  - [x] ~~**MomentPeek**~~ — **moot (2026-08-25):** the card was deleted with « Moments ».
   - [ ] **DayNote** — undocumented in COMPONENTS.md (small, but should be listed).
-  - [ ] **MomentsView** — only its `SkyTonight` sub-component is documented; the parent view isn't catalogued.
+  - [x] ~~**MomentsView**~~ — **moot (2026-08-25):** the view was deleted with « Moments »; `SkyTonight` was extracted to its own file, is documented, and is now in DevKit.
 
 ---
 
@@ -163,6 +162,19 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 - ~~Should the customizable set include the **hero band** (heroes / status) and **notes**?~~ **Decided (2026-06-24): yes — the set is now exhaustive.** « Disposition du babillard » groups the fixed top band — « Notes (frigo) », « Ce soir + météo », « À régler », « Moments » — as show/hide-only ("Bandeau du haut (position fixe)"), and the grid cards below as show/hide **+** reorder. Every board card a household sees now has a setting. (Tiny auto-hiding strips — DayNote, CercleBirthdays, WelcomeCard — are deliberately left out: they already vanish when empty.)
 - Do we **merge** « À faire » + « À compléter » into one "things to do", or keep them distinct with clearer copy?
 - ~~Should « Le fil du jour » be its own card, or part of « Aujourd'hui »?~~ **Decided (2026-07-10): part of « Aujourd'hui ».** The two cards read as near-duplicates (same events/chores, warm "today" tint, deduped so only one showed the events anyway). Folded the ribbon INTO the `today` card body — it renders when `filActive` (≥2 timed things), the flat agenda otherwise. The `'fil'` board-card id, its layout toggle, its `boardCard.fil` label and its `boardHelp` entry were removed; the toddler `DayTimeline` now rides the `today` card's visibility. ONE functional card.
+- ~~Should « Moments » stay a separate windowed recap?~~ **Decided (2026-08-25): no — retired.**
+  Its four windows all duplicated something: `tonight` ≈ the « Aujourd'hui » + « Ce soir »
+  cards, `tomorrow` ≈ the « Demain » card, `date` ≈ the day page `/kitchen/day/:date` (which
+  the ＋ « Planifier un repas » tile and the calendar already opened), and the sitter/handoff
+  job ≈ `/board/departure` + the real sitter share link. The calendar's day panel carried two
+  near-identical doors, « Voir la journée » and « Voir ce moment »; it now carries one. Same
+  reasoning as « Le fil du jour » above: near-duplicates, ONE functional surface. Deleted:
+  `MomentScene` / `MomentsView` / `MomentPeek`, the `moments` board card, `t.moment.*`, the
+  guide point and the tour step; `/moment` lives on as a redirect to `/board`. Moved out
+  first: `SkyTonight` → « Dehors aujourd'hui » (`SkySheet`), and the per-day « Avant de
+  partir » door → the day page. **Knowingly given up:** the 7-day « Cette semaine » recap —
+  nothing else renders seven day-blocks with their checklists. If it's missed, the cheapest
+  revival is a « Semaine » face of Mois, not a new scene.
 - Kiosk **column cap** on very wide walls — worth it?
 
 ---
@@ -216,5 +228,5 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
   drifts with season + weather (winter snow) + day-part. Per-device opt-out, reduced-motion-safe.
 
 > Next session: remaining **P1** (Notes.tsx roles/labels), the **e2e gaps** still open (unified
-> event form, empty-state hiding, toddler-board flow, calendar→Moments, drag-reorder; **add a
-> `fil`-card frame**), and the remaining deferred contrast call (tintInk'd member-colour titles).
+> event form, empty-state hiding, toddler-board flow, drag-reorder; **add a `fil`-card
+> frame**), and the remaining deferred contrast call (tintInk'd member-colour titles).

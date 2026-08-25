@@ -5,6 +5,7 @@ import { Sayable } from '../BigTiles'
 import { Notes } from './Notes'
 import { formatTime } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
+import { todayLocalDay } from '../../lib/localDay'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { heroCardLabel } from '../../lib/mealSlots'
 import type { BoardModel } from '../../lib/boardModel'
@@ -12,7 +13,7 @@ import type { BoardData } from './types'
 
 // « Simple » board (bmad/08 A-1) — the post-reader/grandma glance: FOUR calm
 // zones instead of the parent's bento. Three giant door-tiles (Aujourd'hui →
-// the Moments recap, Souper → La cuisine, La liste → Liste) each answer their
+// today's day page, Souper → La cuisine, La liste → Liste) each answer their
 // question right on the tile (next thing today, tonight's supper, the first few
 // list items), and the fridge notes render inline as the fourth zone — a note
 // IS its content, there's nothing deeper to open. Reuses the toddler's
@@ -65,7 +66,9 @@ export function SimpleBoard({
   // Door tiles wear their hub section's nav colour (HubLayout TABS) so the tile
   // visually matches the tab it opens.
   const tiles = [
-    { key: 'today', to: '/moment?scope=tonight', icon: '📅', tint: '#D9842A', label: t.board.today, sub: todaySub },
+    // « Aujourd'hui » opens TODAY's day page — the one day door since « Moments » was
+    // retired (it used to deep-link that recap's `?scope=tonight` window).
+    { key: 'today', to: `/kitchen/day/${todayLocalDay()}`, icon: '📅', tint: '#D9842A', label: t.board.today, sub: todaySub },
     // The hero slot as the model resolved it (from the board payload), so the tile and
     // its meal always describe the same slot — and it's NAMED after that slot, so a
     // household whose headline is the dîner doesn't read « Ce soir » above a lunch.

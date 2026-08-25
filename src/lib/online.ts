@@ -146,7 +146,13 @@ export function useDataFreshness(): boolean {
     }
     check()
     const id = setInterval(check, CHECK_MS)
-    const unsub = qc.getQueryCache().subscribe(check)
+    // The query cache fires its events SYNCHRONOUSLY — including `observerAdded`, while the
+    // component that mounted the new query is STILL RENDERING. Calling setStale straight
+    // from there is a cross-component update during render (React logs "Cannot update a
+    // component while rendering a different component"); the calendar reaches it every time
+    // it changes month, since that remounts /api/month under a new key. Freshness is never
+    // urgent — a microtask hop lands the same value one tick later, outside anyone's render.
+    const unsub = qc.getQueryCache().subscribe(() => queueMicrotask(check))
     return () => {
       clearInterval(id)
       unsub()

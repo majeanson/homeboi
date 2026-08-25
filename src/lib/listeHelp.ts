@@ -24,6 +24,17 @@ export const LISTE_HELP = {
       en: 'Reopen your past or suggested items to restock the list in a few taps, carrying their flyer synonyms.',
     },
   },
+  // The « Allées » menu (the sort choice + the on-demand aisle tag) — the same
+  // guide point as Réglages ▸ Magasinage's aisle order, which is what « Par
+  // allée » follows.
+  aisles: {
+    card: 'liste',
+    point: 8,
+    body: {
+      fr: 'Choisis l’ordre de la liste : « Mon ordre » (le tien, à la main) ou « Par allée » (le parcours de ton magasin). Tu peux aussi afficher l’allée sous chaque article, ou ranger ta liste par allée d’un coup.',
+      en: 'Choose the list’s order: “My order” (yours, by hand) or “By aisle” (your store’s walk). You can also show each item’s aisle under its name, or arrange the whole list by aisle in one tap.',
+    },
+  },
   clear: {
     card: 'liste',
     point: 2,

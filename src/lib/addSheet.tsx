@@ -121,9 +121,11 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // Their dates are dynamic, so AddSheet resolves the target at click time (like
   // cook/auto-pick) rather than through the static NAV_TARGET table.
   // ONE « Événement » tile — the unified event form covers a plain rendez-vous AND its
-  // optional « Trajet » (car + passengers) / « À apporter » (bring-list) / recurrence,
-  // so we no longer split it into three tiles. `ride`/`activity` stay as deep-links
-  // (FORM_ROUTES, e.g. the L'auto card's quick "+ trajet") but aren't board ＋ tiles.
+  // optional « Prend l'auto » / « À apporter » (bring-list) / recurrence, so we no
+  // longer split it into three tiles — and there is no separate "trajet" noun any
+  // more: taking the car is a yes/no on the rendez-vous. `ride`/`activity` stay as
+  // deep-links (FORM_ROUTES — `ride=1` is what /voiture's add button opens, with
+  // « Prend l'auto » pre-answered) but aren't board ＋ tiles.
   // No `routine` tile here on purpose: routines have their OWN hub section (its ＋
   // creates + manages them), so offering "add a routine" from the board too was a
   // redundant second door. Add routines from Routines; the board ＋ stays the

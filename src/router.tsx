@@ -47,9 +47,6 @@ const ListEditPage = lazy(() => import('./pages/ListEditPage').then((m) => ({ de
 const QuickAddPage = lazy(() => import('./pages/QuickAddPage').then((m) => ({ default: m.QuickAddPage })))
 const DayPlanPage = lazy(() => import('./pages/DayPlanPage').then((m) => ({ default: m.DayPlanPage })))
 const IdeasPage = lazy(() => import('./pages/IdeasPage').then((m) => ({ default: m.IdeasPage })))
-// « Moments » — a read-only recap of a chosen time window (tonight / tomorrow / a
-// picked date / this week), with each day's « À compléter » handoff checklist inline.
-const MomentScene = lazy(() => import('./pages/MomentScene').then((m) => ({ default: m.MomentScene })))
 const DrawingGalleryPage = lazy(() => import('./pages/DrawingGalleryPage').then((m) => ({ default: m.DrawingGalleryPage })))
 const RecipeViewPage = lazy(() => import('./pages/RecipeViewPage').then((m) => ({ default: m.RecipeViewPage })))
 const RecipeFormPage = lazy(() => import('./pages/RecipeFormPage').then((m) => ({ default: m.RecipeFormPage })))
@@ -230,9 +227,10 @@ export function AppRoutes() {
         <Route path="/voyage/:id" element={<VoyagePage />} />
         {/* « Diffuser au salon » — the read-only living-room TV board (cast to a TV). */}
         <Route path="/cast" element={<CastPage />} />
-        {/* « Moments » — pick a window (tonight / tomorrow / date / week) → its recap
-            + handoff checklist. ?scope= deep-links a preset (the dusk board card uses it). */}
-        <Route path="/moment" element={<MomentScene />} />
+        {/* « Moments » is RETIRED — the day page (/kitchen/day/:date) is the one day door
+            now, and the board's own cards answer tonight/tomorrow. Kept as a redirect so a
+            bookmark, a texted link or a kiosk mid-navigation lands somewhere real. */}
+        <Route path="/moment" element={<Navigate to="/board" replace />} />
         <Route path="/share" element={<SharePage />} />
         {/* « Partager » — the public share page (no account needed; the id is the cap). */}
         <Route path="/partage/:id" element={<PartagePage />} />

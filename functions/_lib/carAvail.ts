@@ -24,33 +24,37 @@ export interface CarSpan {
 export interface Ride {
   id: string
   at: number // unix seconds — the ride's start instant
+  endAt?: number | null // the rendez-vous' own « Jusqu'à » (events.end_at); absent/null = unknown
   label?: string
-  carId?: string | null // only car-taking rides matter to availability; null = carpool/bus
+  carId?: string | null // only car-taking rides matter to availability; null = doesn't take our car
   holderId?: string | null // the driver (member) — becomes the synthetic span's holder
   allDay?: boolean // an all-day ride holds the car for the whole day, not a window
 }
 
-// A planned outing carries no end time (events store only a start), so a car-taking
-// ride holds the car for this default window — long enough that an in-progress trip
-// reads as "busy now · back ~X" instead of vanishing the instant it starts.
-const RIDE_DEFAULT_SEC = 2 * 3600
+// When a rendez-vous doesn't say how long it lasts, a car-taking one holds the car for
+// this default window — long enough that an outing in progress reads as "busy now ·
+// back ~X" instead of vanishing the instant it starts. Exported so tests and callers
+// share ONE default rather than each picking their own.
+export const RIDE_DEFAULT_SEC = 2 * 3600
+
+// The concrete [start, end) a ride occupies on a given local day. The SINGLE place
+// that decision is made — an explicit `endAt` wins, an all-day ride holds the whole
+// day, otherwise the default window applies. Both rideSpans() and rideConflicts()
+// read it, so a ride's footprint can never mean two different things depending on
+// which question you asked (it used to: one computed a window, the other a point).
+export function rideWindow(r: Ride, dayStart: number, dayEnd: number, defaultSec = RIDE_DEFAULT_SEC): CarSpan {
+  if (r.allDay) return { start: dayStart, end: dayEnd, label: r.label, holderId: r.holderId ?? null }
+  const end = r.endAt != null && r.endAt > r.at ? r.endAt : r.at + defaultSec
+  return { start: r.at, end: Math.min(end, dayEnd), label: r.label, holderId: r.holderId ?? null }
+}
 
 // Car-taking rides as synthetic BUSY spans so the status engine can treat an outing
-// like any other commitment: an in-progress ride is "busy now" (back ≈ start + the
-// default window), an upcoming one tightens "free until", a past one keeps the day
-// "committed". A timed ride spans [at, at+default] (clamped to the day); an all-day
-// ride holds the whole day. Carpool/bus rides (carId null) take someone else's car,
-// never ours, so they produce no span. The driver rides along as `holderId` so the
-// glance can show "Avec Camille".
+// like any other commitment: an in-progress ride is "busy now" (back ≈ its end), an
+// upcoming one tightens "free until", a past one keeps the day "committed". Rides
+// that don't take our car (carId null) produce no span. The driver rides along as
+// `holderId` so the glance can show "Avec Camille".
 export function rideSpans(rides: Ride[], dayStart: number, dayEnd: number, defaultSec = RIDE_DEFAULT_SEC): CarSpan[] {
-  return rides
-    .filter((r) => r.carId != null)
-    .map((r) => ({
-      start: r.allDay ? dayStart : r.at,
-      end: r.allDay ? dayEnd : Math.min(r.at + defaultSec, dayEnd),
-      label: r.label,
-      holderId: r.holderId ?? null,
-    }))
+  return rides.filter((r) => r.carId != null).map((r) => rideWindow(r, dayStart, dayEnd, defaultSec))
 }
 
 // Drop empty/inverted spans and merge overlapping or touching ones into a minimal
@@ -134,15 +138,27 @@ export interface RideConflict {
 
 // Rides that collide with a moment the car is already committed — the one-car
 // household's core warning ("you planned the groceries for 17 h but the car's at
-// work till 18 h"). Only car-taking rides (carId set) are tested; a carpool/bus ride
-// never needs our car, so it can never conflict. A ride sitting exactly on a span's
-// end instant is fine (the car is just back).
-export function rideConflicts(busy: CarSpan[], rides: Ride[]): RideConflict[] {
+// work till 18 h"). Only car-taking rides (carId set) are tested; one that doesn't
+// need our car can never conflict.
+//
+// Tests the ride's WHOLE WINDOW against the busy set, not just its start instant: an
+// errand from 7 h to 9 h 30 against an 8–17 work block starts while the car is free
+// and drives straight into it, and used to slip through silently. Both edges stay
+// half-open, so a ride ENDING exactly when a span starts — or starting exactly when
+// one ends — is fine (the car is just back).
+export function rideConflicts(
+  busy: CarSpan[],
+  rides: Ride[],
+  dayStart: number,
+  dayEnd: number,
+  defaultSec = RIDE_DEFAULT_SEC,
+): RideConflict[] {
   const merged = mergeSpans(busy)
   const out: RideConflict[] = []
   for (const ride of rides) {
     if (ride.carId == null) continue
-    const span = merged.find((s) => ride.at >= s.start && ride.at < s.end)
+    const w = rideWindow(ride, dayStart, dayEnd, defaultSec)
+    const span = merged.find((s) => w.start < s.end && s.start < w.end)
     if (span) out.push({ ride, span })
   }
   return out

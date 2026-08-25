@@ -145,6 +145,14 @@
      on a desktop classic-scrollbar browser. No-op on overlay-scrollbar (touch). */
   scrollbar-gutter: stable;
   position: relative;
+  /* How far above the scrollport's bottom edge a `position: sticky; bottom` child must
+     sit to clear the shell's own fixed furniture. The body's padding-bottom reserves
+     scroll room past the FAB / tab bar, but padding is INSIDE the scrollport, so a
+     sticky child pinned to `bottom: 0` still lands underneath them. Declared here (0 =
+     nothing floats over this surface) and raised per surface below, so a sticky pane
+     never has to re-derive the bar height itself. First user: the Mois day panel
+     (styles/board/month.css). */
+  --hub-stick-bottom: 0px;
 }
 /* Toddler Kitchen/Liste render a bare <main class="kid__main"> (a handful of big
    tiles) straight into the hub body. Without a height it clumps at the very top,
@@ -196,6 +204,8 @@
   .hub[data-audience='parent'] .hub__body {
     padding-bottom: 110px;
   }
+  /* No bottom bar in this branch — only the floating ＋. A sticky pane may sit at the
+     very bottom edge; it keeps its own inline-end padding clear of the FAB instead. */
 }
 
 /* ---- Mobile surface: sections become a thumb-reach bottom tab bar --------- */
@@ -208,6 +218,8 @@
 .hub[data-surface='mobile'] .hub__body {
   order: 1;
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  /* The fixed bottom tab bar — same 74px + inset the padding above reserves. */
+  --hub-stick-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
 /* Parent surfaces carry the ＋ FAB, which floats ~80px up and is ~56px tall — so
    74px (the bottom bar alone) leaves the last interactive row (a list check, a

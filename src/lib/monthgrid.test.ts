@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { monthGrid, inMonth } from './monthgrid'
-import { localYMD, localDayOfWeek } from './localDay'
+import { monthGrid, inMonth, stepMonthDay } from './monthgrid'
+import { localYMD, localDayOfWeek, addLocalDays } from './localDay'
 
 const DAY = 86400
 
@@ -59,5 +59,38 @@ describe('monthGrid', () => {
     const g = monthGrid(2026, 5) // June: the 1st is a Monday, so day[0] is in May
     expect(inMonth(g.days[0], g.month)).toBe(false)
     expect(inMonth(g.monthStart, g.month)).toBe(true)
+  })
+})
+
+describe('stepMonthDay', () => {
+  // A picked day, not an offset, is what the calendar stores — so ‹ › have to MOVE the
+  // day. These pin the two ways that goes wrong: overshooting a short month, and the
+  // year boundary.
+  const dayOf = (y: number, m: number, d: number) => addLocalDays(monthGrid(y, m).monthStart, d - 1)
+
+  it('keeps the day-of-month when the target month is long enough', () => {
+    expect(stepMonthDay(dayOf(2026, 7, 14), 1)).toBe(dayOf(2026, 8, 14)) // 14 Aug → 14 Sep
+    expect(stepMonthDay(dayOf(2026, 7, 14), -1)).toBe(dayOf(2026, 6, 14)) // 14 Aug → 14 Jul
+  })
+
+  it('clamps to the last day rather than overshooting into the next month', () => {
+    // 31 Aug + 1 month is 31 Sep — which does not exist. It must be 30 Sep, NOT 1 Oct,
+    // or one tap of › would skip a whole month.
+    expect(stepMonthDay(dayOf(2026, 7, 31), 1)).toBe(dayOf(2026, 8, 30))
+    // 31 Mar − 1 month → 28 Feb (2026 is not a leap year).
+    expect(stepMonthDay(dayOf(2026, 2, 31), -1)).toBe(dayOf(2026, 1, 28))
+    // …and 29 Feb exists in a leap year.
+    expect(stepMonthDay(dayOf(2028, 2, 31), -1)).toBe(dayOf(2028, 1, 29))
+  })
+
+  it('crosses the year boundary in both directions', () => {
+    expect(stepMonthDay(dayOf(2026, 11, 15), 1)).toBe(dayOf(2027, 0, 15)) // 15 Dec → 15 Jan
+    expect(stepMonthDay(dayOf(2026, 0, 15), -1)).toBe(dayOf(2025, 11, 15)) // 15 Jan → 15 Dec
+  })
+
+  it('walks a full year one step at a time without drifting', () => {
+    let d = dayOf(2026, 0, 15)
+    for (let i = 0; i < 12; i++) d = stepMonthDay(d, 1)
+    expect(d).toBe(dayOf(2027, 0, 15))
   })
 })

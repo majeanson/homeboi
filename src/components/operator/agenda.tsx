@@ -18,7 +18,7 @@ import { EmptyState } from '../EmptyState'
 import { ListRow } from '../ListRow'
 import { StatusMessage } from '../StatusMessage'
 import { Cluster } from '../Layout'
-import { MONTH_KEY, EVENTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { MONTH_KEY, EVENTS_KEY, BOARD_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
 import { type EventRow, type Member } from './types'
 import { eventMembers } from '../../lib/eventPeople'
@@ -54,7 +54,7 @@ export function EventsSection({
       id: ev.id,
       label: ev.title,
       commit: () =>
-        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY] }),
+        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY, CAR_KEY] }),
       after: onChange,
     })
   }

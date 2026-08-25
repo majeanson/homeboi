@@ -395,6 +395,7 @@ function emptyArrays(v: unknown): unknown {
 // model.days.find if it had mounted); the real shape is the safe, covered state.
 const CAR = {
   cars: [{ id: 'car1', name: 'La familiale', color: '#5891AC' }],
+  primaryCarId: 'car1',
   hasSchedule: true,
   now: BASE,
   today: MMID,
@@ -404,18 +405,29 @@ const CAR = {
     {
       day: MMID,
       spans: [{ start: MMID + 8 * 3600, end: MMID + 17 * 3600, label: 'Travail', holderId: 'm2' }],
+      // spans + the day's car-taking rendez-vous (ride1 at 18 h, 2 h default window).
+      carSpans: [
+        { start: MMID + 8 * 3600, end: MMID + 17 * 3600, label: 'Travail', holderId: 'm2' },
+        { start: MMID + 18 * 3600, end: MMID + 20 * 3600, label: 'Soccer de Léa', holderId: 'm1' },
+      ],
       rides: [{ id: 'ride1', title: 'Soccer de Léa', at: MMID + 18 * 3600, allDay: 0, carId: 'car1', passengers: ['m3'], memberId: 'm1', contactId: null, contactName: null, businessId: null, businessName: null, conflict: false }],
       override: null,
     },
     {
       day: MMID + DAY,
       spans: [{ start: MMID + DAY + 8 * 3600, end: MMID + DAY + 16 * 3600, label: 'Travail', holderId: 'm2' }],
+      // No rendez-vous takes the car, so the resolved busy set IS the schedule.
+      carSpans: [{ start: MMID + DAY + 8 * 3600, end: MMID + DAY + 16 * 3600, label: 'Travail', holderId: 'm2' }],
       rides: [],
       override: null,
     },
     {
       day: MMID + 2 * DAY,
+      // No work window at all — but a rendez-vous DOES take the car. This is the
+      // regression fixture: the day is busy 14–16 h even though `spans` is empty, and
+      // /voiture must not print « Libre toute la journée » above the rendez-vous below.
       spans: [],
+      carSpans: [{ start: MMID + 2 * DAY + 14 * 3600, end: MMID + 2 * DAY + 16 * 3600, label: 'Rendez-vous dentiste', holderId: 'm1' }],
       rides: [{ id: 'ride2', title: 'Rendez-vous dentiste', at: MMID + 2 * DAY + 14 * 3600, allDay: 0, carId: 'car1', passengers: ['m4'], memberId: 'm1', contactId: null, contactName: null, businessId: null, businessName: null, conflict: false }],
       override: null,
     },

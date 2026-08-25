@@ -22,7 +22,7 @@ const fresh = (): BoardCardPrefs => reconcile({})
 describe('reconcile — canonical shape', () => {
   it('an unset device gets every card, in canonical zones and order', () => {
     const p = fresh()
-    expect(p.band).toEqual(['notes', 'heroes', 'mots', 'aRegler', 'moments'])
+    expect(p.band).toEqual(['notes', 'heroes', 'mots', 'aRegler'])
     expect(p.grid[0]).toBe('autoCard')
     expect([...p.band, ...p.grid].sort()).toEqual([...ALL].sort())
   })
@@ -72,15 +72,25 @@ describe('reconcile — canonical shape', () => {
 
 describe('reconcile — v1 → v2 migration', () => {
   // The shape every already-shipped device has in localStorage['babillard-card-prefs'].
-  const V1 = { order: ['today', 'upcoming'], hidden: ['todos', 'moments'] }
+  const V1 = { order: ['today', 'upcoming'], hidden: ['todos', 'mots'] }
 
   it('turns the v1 hidden set into mode: never', () => {
     const p = reconcile(V1)
     expect(cardMode(p, 'todos')).toBe('never')
-    expect(cardMode(p, 'moments')).toBe('never')
+    expect(cardMode(p, 'mots')).toBe('never')
     expect(isCardVisible(p, 'todos')).toBe(false)
     // A band card could be hidden in v1 too — that must survive.
-    expect(cardZone(p, 'moments')).toBe('band')
+    expect(cardZone(p, 'mots')).toBe('band')
+  })
+
+  // Every already-shipped wall tablet may carry an id we have since RETIRED (« Moments »
+  // was one). `isId` drops what it doesn't recognise, so the device just sheds it and
+  // keeps the rest — no migration, no crash, no blank slot.
+  it('drops a card id that no longer exists, keeping the canonical set', () => {
+    const p = reconcile({ order: ['today'], hidden: ['moments'] })
+    expect([...p.band, ...p.grid].sort()).toEqual([...ALL].sort())
+    expect([...p.band, ...p.grid]).not.toContain('moments')
+    expect(Object.keys(p.mode)).not.toContain('moments')
   })
 
   it('keeps the v1 grid order and re-adds every card it never knew about', () => {
@@ -154,7 +164,7 @@ describe('defaults reproduce the board we already ship', () => {
     // render on every day, so it never sits slot-empty.
     const p = fresh()
     const always = ALL.filter((id) => cardMode(p, id) === 'always')
-    expect(always.sort()).toEqual(['departure', 'drawings', 'moments', 'today'])
+    expect(always.sort()).toEqual(['departure', 'drawings', 'today'])
   })
 
   it('« À faire » is auto — it hides on a clear day, not on an empty list', () => {
@@ -178,8 +188,10 @@ describe('visibleCards', () => {
   })
 
   it('returns each zone in its own order', () => {
-    const p = reconcile({ band: ['moments', 'notes'], grid: ['today'] })
-    expect(visibleCards(p, 'band').slice(0, 2)).toEqual(['moments', 'notes'])
+    // « À régler » is the LAST canonical band card, so nothing gets spliced ahead of it —
+    // the saved order is what comes back.
+    const p = reconcile({ band: ['aRegler', 'notes'], grid: ['today'] })
+    expect(visibleCards(p, 'band').slice(0, 2)).toEqual(['aRegler', 'notes'])
   })
 })
 
@@ -315,11 +327,11 @@ describe('moveCard', () => {
 
   it('moves a card across zones — the band/grid split is now just placement', () => {
     const p = fresh()
-    expect(cardZone(p, 'moments')).toBe('band')
-    const next = moveCard(p, 'moments', 'grid', p.grid[0]!)
-    expect(cardZone(next, 'moments')).toBe('grid')
-    expect(next.band).not.toContain('moments')
-    expect(next.grid[0]).toBe('moments')
+    expect(cardZone(p, 'mots')).toBe('band')
+    const next = moveCard(p, 'mots', 'grid', p.grid[0]!)
+    expect(cardZone(next, 'mots')).toBe('grid')
+    expect(next.band).not.toContain('mots')
+    expect(next.grid[0]).toBe('mots')
   })
 
   it('drags a grid card up into the band', () => {

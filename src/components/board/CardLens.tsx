@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react'
 // The per-CARD reading of the compact lens: is THIS slot rendered narrow enough to
 // warrant a compact form, and has the household tapped it open? One provider per
 // `CardSlot` (mirrors `useWidgetGrid`, which is per-ZONE) — a card rendered outside a
-// slot (DevKit, MomentsView) reads `null` and renders its full form, same as
+// slot (DevKit) reads `null` and renders its full form, same as
 // `useWidgetGrid` does there.
 //
 // PHASE 1 (this file, the seam): `CardSlot` computes `compact` for real — measured

@@ -109,7 +109,6 @@
 .cast .welcome-card,
 .cast .app-head__search,
 .cast .section-intro,    /* the per-section tutorial intro band (« Faire le tour ») */
-.cast .now-card--moment, /* the « Moments » band — removed from the TV board */
 .cast .sheet,            /* any bottom sheet (profile picker « Qui es-tu? », detail peek) */
 .cast .scrim {           /* …and its dimming backdrop — never on a passive TV board */
   display: none !important;

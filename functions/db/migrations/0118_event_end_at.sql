@@ -1,0 +1,34 @@
+-- Optional duration on a rendez-vous (the one-engagement pass).
+--
+-- An event stored only `start_at` — a POINT — so « L'auto » had to GUESS how long a
+-- rendez-vous holds the car (functions/_lib/carAvail RIDE_DEFAULT_SEC, a flat 2 h) and
+-- the calendar could only draw a dot where a work block draws a span. Four ways of
+-- saying "a window of time" coexist in this schema (instant · minutes-from-local-
+-- midnight · local-midnight day range · dated point + recurrence); this converges the
+-- FIRST onto a real window without touching the other three.
+--
+--   end_at  the window's EXCLUSIVE end, absolute unix seconds, on the same local day
+--           as start_at. NULL = duration unknown, and every reader falls back to
+--           today's behaviour: a rendez-vous that takes the car holds it for
+--           carAvail's 2 h default, a plain one stays a POINT. Ignored when
+--           all_day = 1 (the day already IS the window). A multi-day span is a
+--           « Voyage » (trips, migration 0092), never an event, so the writer caps
+--           end_at at start_at + 24 h.
+--
+-- Additive + nullable: every existing row stays valid, and every reader that does not
+-- know about it is unaffected. Forward-only, filename-locked.
+--
+-- While here, two notes that CANNOT be fixed at their source (0068 and 0069 are
+-- applied and filename-locked — never edit an applied migration):
+--   * 0068_event_ride.sql:12 defines `passengers` as "member ids riding along (which
+--     kids)". SUPERSEDED: that column was repurposed as « Qui » — the household people
+--     a rendez-vous concerns (src/lib/eventPeople.ts, the form's « Pour qui ? »). It
+--     carries NO car meaning. functions/api/car.ts used to treat a non-empty
+--     `passengers` as "this takes the car", so every ordinary rendez-vous naming a
+--     person was ingested by « L'auto » — and with car_id NULL it produced no busy
+--     span, so the glance listed the outing AND said « Libre toute la journée ».
+--     `car_id IS NOT NULL` is the whole test, and it is what « Prend l'auto » writes.
+--   * 0069_schedule_blocks.sql:4 claims work blocks "never appear as board Acts".
+--     SUPERSEDED: they are derived onto the board and the calendar as read-only rows
+--     (functions/_lib/carResolve.workOccurrencesInRange, functions/api/board.ts).
+ALTER TABLE events ADD COLUMN end_at INTEGER;
