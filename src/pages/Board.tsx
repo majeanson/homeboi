@@ -65,6 +65,10 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, type DetailCtx } from '../components/detail/adapters'
 import { useOpenMeal } from '../components/detail/useOpenMeal'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
+// The board writes meals too (« ce soir »): the same keys the kitchen's own
+// mutations refresh, so the week grid and « Historique » don't keep a row the
+// board just deleted (and « Déjà mangé » rides the meal-history prefix).
+import { MEALS_KEY, MEAL_HISTORY_KEY } from '../components/kitchen/types'
 import { useBoardData } from '../lib/queryHooks'
 import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
@@ -624,17 +628,18 @@ export function Board() {
   }
   // Remove a planned meal (compensating undo: re-add it at same day+slot).
   const removeMealFromPlan = async (id: string, title: string, slot: string, date: number) => {
-    await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY]
+    await write('meals', { method: 'DELETE', body: { id }, affectedKeys: keys }).catch(() => {})
     recordUndo({
       message: t.undo.mealRemoved(title),
       onUndo: () =>
-        write('meals', { method: 'POST', body: { date, slot, title }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+        write('meals', { method: 'POST', body: { date, slot, title }, affectedKeys: keys }).catch(() => {}),
     })
   }
   // Plan a pool leftover as tonight's supper (compensating undo: delete the
   // created meal + re-insert the pool row, exactly like Leftovers.tsx planLeftover).
   const planLeftoverTonight = async (id: string, title: string) => {
-    const keys = [BOARD_KEY]
+    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id, date: todayDay, slot: heroSlot },

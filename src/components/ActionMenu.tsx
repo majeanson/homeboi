@@ -23,8 +23,9 @@ import { useModal } from '../lib/useModal'
 // lets go once the trigger itself has scrolled out of view.
 //
 // Dismissal reuses `useModal` (Esc joins the shared esc-stack, so Esc closes
-// the MENU, not the scene underneath; focus is pulled onto the first item and
-// handed back to the ⋯ on close) plus an outside-tap listener. ↑/↓ move
+// the MENU, not the scene underneath; focus is handed back to the ⋯ on close)
+// plus an outside-tap listener. Focus goes onto the first item HERE, not in
+// useModal — its trap runs while the panel is still hidden for the measure pass. ↑/↓ move
 // between items; every item is a real button, so mouse + keyboard both work
 // (desktop-reachability rule).
 export type ActionMenuItem = {
@@ -78,6 +79,22 @@ export function ActionMenu({ items, label }: { items: ActionMenuItem[]; label?: 
     }
     place.current()
   }, [open, items.length])
+
+  // Pull focus into the panel once it is PLACED. useModal's focus trap fires a
+  // pass too early: the panel is still `visibility:hidden` while it's measured
+  // (see place()), and a visibility:hidden element cannot take focus — so that
+  // pull silently no-ops and the ⋯ keeps focus. Since the panel is portaled to the
+  // END of <body>, Tab from the trigger then walks the whole PAGE instead of the
+  // menu, and ↑/↓ never reach the panel's handler: the long-tail actions that only
+  // live behind a ⋯ become mouse-and-touch-only (e2e/action-menu-keys.spec.ts).
+  // Re-placement on scroll also lands here, so only pull when focus is elsewhere —
+  // otherwise following the anchor would yank focus back to the first row.
+  useEffect(() => {
+    if (!open || !pos) return
+    const el = panelRef.current
+    if (!el || el.contains(document.activeElement)) return
+    el.querySelector<HTMLButtonElement>('.action-menu__item:not(:disabled)')?.focus({ preventScroll: true })
+  }, [open, pos])
 
   useEffect(() => {
     if (!open) return

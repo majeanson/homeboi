@@ -31,3 +31,6 @@ test-results/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+# a *.code-workspace is a per-machine editor stub (it just names a folder to open)
+# — VS Code's "Save workspace as" drops one wherever the dialog happens to point.
+*.code-workspace

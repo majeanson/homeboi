@@ -3,7 +3,7 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate, useSearchParams } 
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
-import { BOARD_KEY, ROUTINES_KEY, FAMILY_NOTES_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, CERCLE_KEY } from '../lib/queryKeys'
 import { MEALS_KEY } from './kitchen/types'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -67,8 +67,14 @@ const TAB_PREFETCH: Record<string, { key: string[]; path: string }> = {
   '/board': { key: BOARD_KEY, path: 'board' },
   '/liste': { key: BOARD_KEY, path: 'board' }, // La liste rides the board payload
   '/kitchen': { key: MEALS_KEY, path: 'meals' },
-  '/maison': { key: ROUTINES_KEY, path: 'routines' }, // Routines is Maison's default section
-  '/notes': { key: FAMILY_NOTES_KEY, path: 'family-notes' },
+  // Maison and Les notes both BLOCK on the shared `cercle` read (each returns
+  // <Loading/> until it lands) and only then render their own section — so that,
+  // not the section's own query, is what a warm tab needs. Warming ROUTINES_KEY /
+  // FAMILY_NOTES_KEY instead left the spinner exactly as long as before: the
+  // nav restructure inherited those from the old /routines + /cercle rows, whose
+  // pages really did lead with them.
+  '/maison': { key: CERCLE_KEY, path: 'cercle' },
+  '/notes': { key: CERCLE_KEY, path: 'cercle' },
 }
 
 export function HubLayout() {

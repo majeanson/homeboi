@@ -21,6 +21,7 @@ import { Icon, InlineIcon } from './Icon'
 import { Chip } from './Chip'
 import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
+import { MEALS_KEY, MEAL_HISTORY_KEY } from './kitchen/types'
 import { useModal } from '../lib/useModal'
 import { useConfirm } from '../lib/confirm'
 import { useAuth } from '../lib/auth'
@@ -190,7 +191,9 @@ export function RecipeSheet({
     await write('meals', {
       method: 'POST',
       body: { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
-      affectedKeys: [['meals'], BOARD_KEY],
+      // MEAL_HISTORY_KEY: the picked day can be today, which « Historique » shows —
+      // and every dish planned here feeds « Déjà mangé » (same key prefix).
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
     }).catch(() => setPlannedDate(null))
   }
 

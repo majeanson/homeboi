@@ -248,7 +248,7 @@ export function AppRoutes() {
         {/* Legacy: kid view folded into Maison's Routines section (the toddler
             lens's own default — /maison with no ?section, or ?section=routines,
             renders the exact same KidView picture-story run /kid used to). */}
-        <Route path="/kid" element={<Navigate to="/maison" replace />} />
+        <Route path="/kid" element={<LegacyHubRedirect map={(p) => ({ path: '/maison', params: p })} />} />
 
         {/* Legacy: Routines is now Maison's default sub-tab — every other param
             (?plus=1, etc.) survives untouched. */}
