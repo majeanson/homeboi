@@ -332,6 +332,11 @@ export function TodoSection({
             {todo.title}
           </span>
         </button>
+        {/* The tint IS the "who" on screen — but colour alone says nothing to a
+            screen reader, and the span's `title` is shadowed by the button's
+            aria-label. This carries the name into the accessible tree without
+            renaming any control. */}
+        {faceOf(todo.member_id) && <span className="sr-only">{faceOf(todo.member_id)!.display_name}</span>}
       </div>
     )
   }

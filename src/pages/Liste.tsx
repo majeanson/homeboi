@@ -246,6 +246,9 @@ function ListItemRow({
             {aisleTag}
           </span>
         </button>
+        {/* Same as the todo row: the adder's tint is a colour-only signal, so the
+            name rides into the accessible tree here rather than renaming a control. */}
+        {adder && <span className="sr-only">{adder.display_name}</span>}
         {!readOnly && (
           <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={toggleLabel}>
             <Icon name="check-bold" size={18} />

@@ -35,7 +35,17 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   // keeps the Maisonnée fallback inks off the table), so a household fills out
   // colour-distinct without anyone having to think about it. With the compact rows
   // the title tint is the one "who" signal, so distinct actually matters now.
-  const [color, setColor] = useState(() => nextFreeColour(members.map((m) => m.colour)))
+  //
+  // DERIVED, not seeded: `members` arrives from Réglages' own fetch, so it is [] on
+  // the first render — a `useState(() => nextFreeColour(members…))` seed computed
+  // itself against nobody and never recomputed, handing the first add a colour
+  // someone already wore (the picker then drew that dot both selected AND taken).
+  // `pick` is only the operator's EXPLICIT choice; null follows the live suggestion.
+  // `used` carries the colours added this session until the refetch lands, so two
+  // quick adds in a row don't both get the same one.
+  const [pick, setPick] = useState<string | null>(null)
+  const [used, setUsed] = useState<string[]>([])
+  const color = pick ?? nextFreeColour([...members.map((m) => m.colour), ...used])
   const write = useWrite()
 
   async function add() {
@@ -53,7 +63,8 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
       })
       setName('')
       setIsChild(false)
-      setColor(nextFreeColour([...members.map((m) => m.colour), color]))
+      setPick(null)
+      setUsed((u) => [...u, color])
     } catch {
       // Keep the typed name — a double-Enter or flaky wifi shouldn't eat it (and
       // must not create the member twice) — but SURFACE the failure instead of
@@ -138,7 +149,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
             </label>
             <ColorPicker
               value={color}
-              onChange={setColor}
+              onChange={setPick}
               label={t.operator.colorLabel}
               taken={members.map((m) => m.colour)}
               takenLabel={t.operator.colourTaken}
