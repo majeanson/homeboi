@@ -971,20 +971,6 @@ function MaisonParent() {
                 </section>
               )}
 
-              {/* « Compléter les familles » — complete the WHOLE intertwined family, not
-                  just one named group: every named famille-kind group made 100% related
-                  AND every precise rung the hierarchy implies across the connected web
-                  (cousins, grandparent spans, in-laws…), behind a review checklist.
-                  Scoped to `sectionPeople` (like the tree/web views): Famille completes
-                  your family, Social a friend's — the section boundary is the family
-                  reach from the household, so the two stay distinct. */}
-                <CompleteFamilies
-                  people={sectionPeople}
-                  storedLinks={unified.links}
-                  groups={sectionCompleteGroups}
-                  disabled={ro}
-                />
-
               <>
                   {/* The Maisonnée — your one family, titled from Réglages. Always at
                       the top of Famille; badge is dropped per-row since the card IS it. */}
@@ -1171,6 +1157,27 @@ function MaisonParent() {
                       {section === 'social' ? t.cercle.socialEmpty : t.cercle.empty}
                     </EmptyState>
                   )}
+                  {/* « Compléter les familles » — complete the WHOLE intertwined family,
+                      not just one named group: every named famille-kind group made 100%
+                      related AND every precise rung the hierarchy implies across the
+                      connected web (cousins, grandparent spans, in-laws…), behind a
+                      review checklist. Scoped to `sectionPeople` (like the tree/web
+                      views): Famille completes your family, Social a friend's.
+
+                      AT THE FOOT of the list, not above it. It sat between the face
+                      chip and the first person — a full-width bordered bar (a ghost
+                      button stretched by the column's align-items) announcing a
+                      HOUSEKEEPING action over the directory you came to read, and it
+                      was the fourth control row before a single name. Down here it's
+                      still one tap, found exactly when you've finished reading who's
+                      who and might want the gaps filled — the same "the page leads
+                      with its content" move as the garde-manger's add boxes. */}
+                  <CompleteFamilies
+                    people={sectionPeople}
+                    storedLinks={unified.links}
+                    groups={sectionCompleteGroups}
+                    disabled={ro}
+                  />
                   {/* Creation actions (add person / family / connect / new group) all
                       live on the ＋ chooser now — no in-page add buttons here. */}
                 </>

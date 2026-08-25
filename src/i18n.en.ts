@@ -120,7 +120,9 @@ export const EN: typeof FR = {
     emptyHousehold: 'No household habits. Pick a person, or add one.',
     allSettled: 'Everything is settled for today.',
     alreadySettled: 'Already settled',
-    otherHabits: 'Other habits',
+    // The calendar reads a PAST day as often as today, so its panel line cannot say
+    // "today" — hence this neutral word beside doneToday ("Done today").
+    doneOnDay: 'Done',
     markDone: 'Done',
     doneToday: 'Done today',
     plusOne: 'One more',
@@ -960,7 +962,7 @@ export const EN: typeof FR = {
     legendTodos: 'To complete',
     legendNotes: 'Notes',
     // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
-    dayActions: 'Add to this day',
+    dayActions: 'Day actions',
     // The pinned day panel on a phone: it opens as a one-line bar you tap to unfold.
     expandDay: 'Unfold the day',
     collapseDay: 'Fold the day away',
@@ -1444,7 +1446,10 @@ export const EN: typeof FR = {
     changePhoto: 'Change photo',
     removePhoto: 'Remove photo',
     deletePerson: 'Remove from circle',
-    moreDetails: 'More details',
+    // ContactFields' fold: everything that comes AFTER the name and the birthday.
+    contactDetails: 'Contact & details',
+    // …and ContactForm's, named for what it holds so the two don't read as twins.
+    moreDetails: 'Gifts, tags and groups',
     deleteConfirm: (name: string) => `Remove ${name} from the circle? Their relationships will be deleted too.`,
     call: 'Call',
     write: 'Email',
@@ -2217,6 +2222,9 @@ export const EN: typeof FR = {
     eventPeople: 'Who is it for?',
     eventTakesCar: 'Takes the car',
     eventCarWho: 'Which car?',
+    // The event form's third fold: « Repeat » + « Show from », two settings that sit
+    // at their default on nearly every rendez-vous.
+    eventWhenMore: 'Repeat & reminder',
     eventBring: 'What to bring',
     // Inline bring-list builder in the event form's bring section.
     bringAddItem: 'Add an item…',

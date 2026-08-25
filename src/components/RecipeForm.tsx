@@ -5,6 +5,7 @@ import { api, isStatus } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { StatusMessage } from './StatusMessage'
+import { Disclosure } from './Disclosure'
 import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
@@ -837,6 +838,21 @@ export function RecipeForm({
         </div>
 
         <div className="recipe-modal__body">
+          {/* The NAME leads. It used to be the third thing on the form — under the
+              « Photo du plat » button and above a « Remplir vite » block three
+              controls and an explainer paragraph tall — so a recipe you were simply
+              going to type opened on everything except the field you had to fill.
+              No autoFocus: on a phone it would summon the keyboard over the
+              just-opened form; autoComplete off keeps iOS from offering contact
+              names for a recipe title. */}
+          <input
+            className="input recipe-title-input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t.recipes.titlePlaceholder}
+            autoComplete="off"
+          />
+
           {/* Photo */}
           <div className="recipe-photo">
             {imgSrc ? (
@@ -867,20 +883,15 @@ export function RecipeForm({
               failure used to eat the pick silently. 503 hides the controls instead. */}
           {uploadErr && <StatusMessage tone="error">{t.memo.uploadFailed}</StatusMessage>}
 
-          {/* No autoFocus: on a phone it would summon the keyboard over the
-              just-opened form (hiding the photo/import helpers); autoComplete
-              off keeps iOS from offering contact names for a recipe title. */}
-          <input
-            className="input recipe-title-input"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t.recipes.titlePlaceholder}
-            autoComplete="off"
-          />
-
           {/* Fast-fill helpers — distinct from the dish photo above: these READ a
-              recipe (scan a card / import a link) into the fields. */}
-          <span className="recipe-fill-label mono">{t.recipes.fillFrom}</span>
+              recipe (scan a card / import a link) into the fields. FOLDED: two
+              buttons, a label and a three-line explainer stood permanently between
+              the recipe's name and its first ingredient, explaining a path most
+              recipes don't take (they get typed). Behind « Remplir vite » they're
+              one tap away and the explainer arrives WITH the buttons it explains,
+              instead of before them. Opens itself when the link/paste panel is
+              already showing, so a half-finished import is never folded away. */}
+          <Disclosure label={t.recipes.fillFrom} defaultOpen={showImport} className="recipe-fill">
           <div className="recipe-helpers">
             {/* Read a photo is on-device OCR now — it works with AI OFF, so it's no
                 longer gated behind aiEnabled. `multiple`: a long recipe split over
@@ -949,6 +960,7 @@ export function RecipeForm({
               {importMsg && <p className="recipe-aioff mono">{importMsg}</p>}
             </div>
           )}
+          </Disclosure>
 
           {/* Ingredients */}
           <h3 className="recipe-sec-h">

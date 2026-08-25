@@ -349,10 +349,28 @@ export function EventForm({
           typeaheadOnly
         />
       )}
-      <RecurPicker value={recur} onChange={setRecur} />
-      <LeadPicker value={lead} onChange={setLead} />
-      {/* The event form is ONE form: a plain rendez-vous up top, then two OPTIONAL
-          sections (calm: collapsed by default). They replace the old separate
+      {/* « Répéter » and « Afficher dès » sat here as two permanently-open select
+          rows, and both are at their default on nearly every rendez-vous you write
+          (« Jamais » · « Au moment même ») — two lines of machinery between « Qui »
+          and the two optional sections below, answering questions almost nobody
+          asked. Folded into a third optional section, they read like what they are.
+          It opens itself the moment either carries a real answer, so EDITING a
+          repeating rendez-vous (or one with a lead time) never hides it.
+          NOTE, deliberately not cargo-culted: ChoreForm, HomeProjectForm and
+          HabitForm keep their RecurPicker inline. There it costs ONE row and it is
+          the point of the form — a chore's rotation and a habit's cadence ARE its
+          recurrence. Here it was two rows of optional detail on a form whose subject
+          is a single moment. */}
+      <Disclosure
+        label={t.operator.eventWhenMore}
+        defaultOpen={recur != null || lead != null}
+        className="event-when"
+      >
+        <RecurPicker value={recur} onChange={setRecur} />
+        <LeadPicker value={lead} onChange={setLead} />
+      </Disclosure>
+      {/* The event form is ONE form: a plain rendez-vous up top, then three OPTIONAL
+          sections (calm: collapsed by default). The last two replace the old separate
           ＋ « Trajet » / « Activité » tiles — fill only what you need. */}
       {/* « Prend l'auto » — the optional transport answer, and the ONLY thing that
           makes a rendez-vous occupy « L'auto ». Deliberately NOT called « Trajet »:

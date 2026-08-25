@@ -162,10 +162,8 @@
   font-weight: 700;
   font-size: var(--text-lg);
 }
-.recipe-fill-label {
-  color: var(--ink-faint);
-  margin: 0.2rem 0 -0.2rem;
-}
+/* .recipe-fill-label is gone: the « Remplir vite » Disclosure label replaced the
+   standalone caption that used to sit above the two helper buttons. */
 .recipe-helpers {
   display: flex;
   flex-wrap: wrap;

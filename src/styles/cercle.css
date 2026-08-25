@@ -1190,6 +1190,12 @@
 .cercle-focus .mswitch {
   margin: 0.1rem 0 0.4rem;
 }
+/* The collapsed chip (mobile) is a CHIP: a flex column stretches its children, which
+   is what rendered it as a full-width white bar across the top of the directory. The
+   kiosk face ROW (.mswitch above) genuinely wants the width, so target the chip. */
+.cercle-focus .profile-chip {
+  align-self: flex-start;
+}
 .cercle-focus__hint {
   margin: 0 0 0.9rem;
   color: var(--ink-soft);
@@ -1394,9 +1400,13 @@
   color: var(--ink-soft);
 }
 
-/* « Compléter les familles » — the smart-complete button above the family list. */
+/* « Compléter les familles » — the smart-complete button, at the FOOT of the family
+   list. align-self: a flex column stretches its children, which is what rendered this
+   `btn--sm btn--ghost` as a full-width bordered bar; it is a quiet chip, so let it be
+   its own width. */
 .cercle-complete {
-  margin: 0 0 0.6rem;
+  align-self: flex-start;
+  margin: 0.6rem 0 0.4rem;
 }
 .cercle-complete__n {
   margin-inline-start: 0.4rem;

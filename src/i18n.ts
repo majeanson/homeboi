@@ -139,10 +139,10 @@ export const FR = {
     emptyHousehold: 'Aucune habitude de la maisonnée. Choisis une personne, ou ajoutes-en une.',
     allSettled: 'Tout est réglé pour aujourd’hui.',
     alreadySettled: 'Déjà réglé',
-    // Le calendrier ▸ le panneau du jour : les habitudes dues ou déjà cochées ce
-    // jour-là passent en premier ; le reste (n'importe quelle habitude, pour
-    // rattraper un jour passé) se replie sous ce libellé.
-    otherHabits: 'Autres habitudes',
+    // Le calendrier lit un jour PASSÉ aussi souvent qu’aujourd’hui, alors la ligne du
+    // panneau ne peut pas dire « aujourd’hui » — d’où ce mot neutre, à côté de doneToday
+    // (« Fait aujourd’hui ») qui, lui, parle bien de la journée en cours.
+    doneOnDay: 'Fait',
     // do
     markDone: 'C’est fait',
     doneToday: 'Fait aujourd’hui',
@@ -1103,7 +1103,9 @@ export const FR = {
     legendTodos: 'À compléter',
     legendNotes: 'Notes',
     // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
-    dayActions: 'Ajouter à cette journée',
+    // Le ⋯ du panneau du jour : surtout des ajouts, plus la porte « Mes habitudes »
+    // (revoir et modifier) — donc un nom qui couvre les deux.
+    dayActions: 'Actions de la journée',
     // The pinned day panel on a phone: it opens as a one-line bar you tap to unfold.
     expandDay: 'Dérouler la journée',
     collapseDay: 'Replier la journée',
@@ -1606,7 +1608,10 @@ export const FR = {
     changePhoto: 'Changer la photo',
     removePhoto: 'Retirer la photo',
     deletePerson: 'Retirer du cercle',
-    moreDetails: 'Plus de détails',
+    // Le repli de ContactFields : tout ce qui vient APRÈS le nom et l'anniversaire.
+    contactDetails: 'Coordonnées et détails',
+    // …et celui de ContactForm, nommé par son contenu pour ne pas jumeler le précédent.
+    moreDetails: 'Cadeaux, étiquettes et groupes',
     deleteConfirm: (name: string) => `Retirer ${name} du cercle ? Ses liens seront effacés aussi.`,
     call: 'Appeler',
     write: 'Écrire',
@@ -2417,6 +2422,9 @@ export const FR = {
     eventPeople: 'Pour qui ?',
     eventTakesCar: 'Prend l’auto',
     eventCarWho: 'Quelle auto ?',
+    // Le troisième repli du formulaire de rendez-vous : « Répéter » + « Afficher dès »,
+    // deux réglages à leur valeur par défaut la plupart du temps.
+    eventWhenMore: 'Répétition et rappel',
     eventBring: 'À apporter',
     // Inline bring-list builder in the event form's « À apporter » section.
     bringAddItem: 'Ajoute un article…',
