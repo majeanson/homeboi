@@ -214,6 +214,55 @@ test.describe('Mois — the day panel', () => {
     }
   })
 
+  // The tile is WIDER than its column, so it can bleed off the board — the recurring
+  // horizontal-overflow bug — and, floating over its neighbours, it can swallow their
+  // taps. Both have already happened once: the side rules lost a specificity fight and
+  // the tile hung ~80 px past the right edge, and before `pointer-events: none` a tap on
+  // a covered date hit the open cell's own pane instead.
+  test('the popped tile stays inside the grid in every column, and never eats a neighbour’s tap', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize(PHONE)
+    await mockApi(page)
+    // One timed event on seven consecutive days = one per column of a week row.
+    await page.route('**/api/month**', async (route) => {
+      const from = Number(new URL(route.request().url()).searchParams.get('from'))
+      const DAY = 86400
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          events: Array.from({ length: 7 }, (_, k) => ({
+            id: `w${k}`,
+            title: 'Réunion parents-professeurs',
+            at: from + (14 + k) * DAY + 19 * 3600,
+            all_day: 0,
+            member_id: null,
+            day: from + (14 + k) * DAY,
+          })),
+          meals: [], chores: [], dayNotes: [], todos: [],
+          homeProjects: [], trips: [], tripPlans: [], habits: [],
+        }),
+      })
+    })
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
+    await page.goto('/board')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+
+    const grid = (await page.locator('.monthv__grid').boundingBox())!
+    for (let k = 0; k < 7; k++) {
+      // Clicking each in turn ALSO proves the previous tile didn't intercept this tap:
+      // Playwright fails the click outright if another element is over the target.
+      const cell = page.locator('.monthv__cell').nth(14 + k)
+      await cell.click()
+      await expect(cell).toHaveClass(/is-on/)
+      const tile = (await cell.locator('.monthv__lines').boundingBox())!
+      expect(tile.x, `column ${k}: the tile bleeds off the left of the grid`).toBeGreaterThanOrEqual(grid.x - 1)
+      expect(tile.x + tile.width, `column ${k}: the tile bleeds off the right of the grid`).toBeLessThanOrEqual(
+        grid.x + grid.width + 1,
+      )
+    }
+  })
+
   // ── Where you are lives in the URL ──────────────────────────────────────────────
   test('the picked day and month ride in ?date=, and survive a reload', async ({ page }) => {
     await mois(page)

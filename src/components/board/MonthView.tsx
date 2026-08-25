@@ -18,14 +18,10 @@ import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } 
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { type Lang } from '../../i18n'
-import '../../styles/habits.css'
-import { useHabits, useMarkHabit, habitStatusOn, splitHabitsForDay } from '../../lib/habits'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { ActionMenu, type ActionMenuItem } from '../ActionMenu'
 import { Act } from './Act'
-import { Disclosure } from '../Disclosure'
-import { HabitRow } from '../habits/HabitRow'
 import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
@@ -56,11 +52,12 @@ interface MTrip { id: string; title: string; colour: string; start_at: number; e
 // shown under the trip card on that exact day (not just the global trip band).
 interface MTripPlan { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }
 // « Mes habitudes » — a DERIVED occurrence, never a stored row (the birthdays
-// pattern), used for the grid DOTS only. A scheduled habit emits every due day; a
-// week-quota one only the days it was actually done (no fictional scheduling).
-// `done` = the intention was met. The tapped-day PANEL below reads the real habits
-// (useHabits) instead, so today/any past day can be marked right there — a future
-// day (or a guest) still just taps through to « Le point du jour ».
+// pattern). A scheduled habit emits every due day; a week-quota one only the days it
+// was actually done (no fictional scheduling). `done` = the intention was met, and it
+// is the ONE thing the calendar reads: the grid keeps habits out of its dots entirely
+// (linesFor's filter below) and the tapped-day panel names only the done ones. Marking,
+// backfilling and editing all live in « Le point du jour », one tap away — which is why
+// this view no longer touches the real habits (useHabits/useMarkHabit) at all.
 interface MHabit { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }
 export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[]; habits?: MHabit[] }
 
@@ -234,18 +231,11 @@ export function MonthView({
   // a tap of Annuler simply never marks it done (Liste's pendingClear pattern).
   const [pendingTodo, setPendingTodo] = useState<Set<string>>(new Set())
 
-  // « Mes habitudes » — the day panel can now CHECK a habit for today or any past
-  // day (backfill from the calendar), not just view the derived occurrence. Reads
-  // the same HABITS_KEY cache the check-in scene uses (`live: false`: this is a
-  // slow browse read, never added to the board's own poll — the free-tier lever).
   const ro = isGuest()
   // The event + chore forms are FormScenes, which bounce a device that isn't signed in —
   // so an unsigned kiosk must not be offered them (the same gate AddSheet applies via
   // OPERATOR_MODES). The day page is not a FormScene, so its two entries stay.
   const { signedIn } = useAuth()
-  const { data: habitsData } = useHabits({ live: false })
-  const markHabit = useMarkHabit()
-  const habitDays = habitsData?.days ?? []
 
   const grid = useMemo(() => monthGrid(selYMD.year, selYMD.month), [selYMD.year, selYMD.month])
   const from = grid.days[0]
@@ -363,25 +353,20 @@ export function MonthView({
   const selTrips = tripsByDay.get(selected) ?? []
   // The dated itinerary entries for the selected day, grouped under their trip below.
   const selTripPlans = (data?.tripPlans ?? []).filter((p) => p.day === selected)
+  // Habits the day actually SAW DONE — the only ones the calendar names (see the panel
+  // below). `sel.habits` is the derived per-day occurrence from /api/month (a scheduled
+  // habit emits every due day, a week-quota one only the days it was done), so filtering
+  // on `done` leaves exactly "what we did that day" for today, a past date and a future
+  // one alike — no read-only/guest fork, no second source of truth.
+  const selHabitsDone = (sel?.habits ?? []).filter((h) => h.done)
   const selCount =
-    (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.habits.length + sel.notes.length : 0) +
+    (sel ? sel.events.length + selMeals.length + sel.chores.length + selTodos.length + sel.home.length + sel.notes.length : 0) +
+    selHabitsDone.length +
     selTrips.length +
     selTripPlans.length
 
-  // Habits get REAL marking controls on today/past (backfill from the calendar);
-  // a future day, or a guest session, stays the read-only derived occurrence list
-  // (sel.habits, from /api/month) with its usual tap-through to the scene. Any
-  // face-visible habit is reachable for a past/today day, not just the due ones —
-  // splitHabitsForDay (lib/habits) puts due-or-already-marked first, the rest
-  // fold under « Autres habitudes » so the panel stays calm even for a household
-  // with many habits.
-  const habitsInteractive = selected <= todayDay && !ro
-  const { due: dueOrMarkedHabits, other: otherHabits } = habitsInteractive
-    ? splitHabitsForDay(habitsData?.habits ?? [], habitDays, face, selected)
-    : { due: [], other: [] }
-  const habitsPanelActive = habitsInteractive && dueOrMarkedHabits.length + otherHabits.length > 0
-  // The ⋯ « Ajouter à cette journée » items. Built here so the gating reads in one place:
-  // every entry is a WRITE, so a read-only guest gets none (and the ⋯ vanishes); the two
+  // The ⋯ items for the picked day. Built here so the gating reads in one place: every
+  // ADD is a write, so a read-only guest gets none (and the ⋯ vanishes); the two
   // FormScene routes additionally need a signed-in operator, exactly as the ＋ sheet's
   // OPERATOR_MODES filter does, so an unsigned kiosk is never sent into a bounce.
   const dayAdds: ActionMenuItem[] = ro
@@ -399,6 +384,16 @@ export function MonthView({
           : []),
         { icon: 'fork-knife-bold', label: t.kitchen.planMeal, onSelect: () => nav(`/kitchen/day/${selected}`) },
         { icon: 'pencil-simple-bold', label: t.kitchen.note, onSelect: () => nav(`/kitchen/day/${selected}`) },
+        // …and the one row that isn't an add: the door to « Le point du jour », where a
+        // habit is marked, edited (RowActions ▸ ✎) or created. The panel below only
+        // RECORDS what was done, so this is the calendar's way back to the habits
+        // themselves — `separated`, so it reads apart from the four adds above it.
+        {
+          icon: 'repeat-bold',
+          label: t.habits.manage,
+          separated: true,
+          onSelect: () => nav('/board/habitudes'),
+        },
       ]
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
@@ -439,7 +434,7 @@ export function MonthView({
             {cap(weekdayShort(d, lang))}
           </div>
         ))}
-        {grid.days.map((d) => {
+        {grid.days.map((d, i) => {
           const b = byDay.get(d)
           // Habits are deliberately NOT cell markers. A daily intention (« boire assez
           // d'eau ») paints a glyph on EVERY square, which is exactly the noise a month
@@ -449,13 +444,19 @@ export function MonthView({
           const marks = linesFor(b, members, mealPrefs, t, lang).filter((l) => l.kind !== 'habit')
           // The tapped day is the one that spells itself out. There is no view toggle:
           // the calendar stays a calm dotted glance, and the ONE day you asked about
-          // grows to name its things. Everything else keeps its shape.
+          // pops out. Everything else keeps its shape.
           const open = d === selected
+          // Which of the seven columns this cell sits in — the popped tile is WIDER than
+          // a column, so it has to know which way to open or it would hang off the board
+          // (the horizontal-overflow rule: nothing may bleed past the grid). Left third
+          // opens rightward, right third leftward, the middle straddles.
+          const col = i % 7
+          const side = col <= 1 ? ' monthv__cell--popstart' : col >= 5 ? ' monthv__cell--popend' : ''
           const cls =
             'monthv__cell' +
             (inMonth(d, grid.month) ? '' : ' is-out') +
             (d === todayDay ? ' is-today' : '') +
-            (d === selected ? ' is-on' : '')
+            (d === selected ? ' is-on' + side : '')
           return (
             <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => pickDay(d)}>
               <span className="monthv__num">{localYMD(d).day}</span>
@@ -501,22 +502,21 @@ export function MonthView({
                   is the right surface, and a taller cell would push the grid off screen. */}
               {open && marks.length > 0 && (
                 <span className="monthv__lines">
-                  {marks.slice(0, 3).map((line, i) => (
+                  {marks.slice(0, 5).map((line, i) => (
                     <span key={i} className="monthv__line">
                       <span
                         className="monthv__line-chip"
                         aria-hidden="true"
                         style={{ background: line.color }}
                       />
-                      {/* NO clock here. A phone column is ~50 px: « 14 h 00 » alone fills
-                          it and the title clips to nothing, so the cell showed the time
-                          and hid the thing — the opposite of what a name is for. The dot
-                          says which kind, the words say which thing, and the panel right
-                          below carries the hour. */}
+                      {/* The tile is WIDE, so the clock fits beside the name again — a
+                          column alone could only hold one of the two, and the name is the
+                          half worth keeping. */}
+                      {line.time && <span className="monthv__line-t mono">{line.time}</span>}
                       <span className="monthv__line-l">{line.label}</span>
                     </span>
                   ))}
-                  {marks.length > 3 && <span className="monthv__more">+{marks.length - 3}</span>}
+                  {marks.length > 5 && <span className="monthv__more">+{marks.length - 5}</span>}
                 </span>
               )}
               {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so
@@ -583,12 +583,18 @@ export function MonthView({
                 day page (/kitchen/day/:date), where that day's meals, rendez-vous, corvées,
                 à compléter and note are all editable. It used to sit beside a « Voir ce
                 moment » twin that opened the same day read-only; « Moments » is retired. */}
+            {/* Icon-only, like the ⋯ and the fold beside it: three little round buttons
+                reading as one row of controls, instead of one wide worded button that
+                made the header look like a form. The name lives on aria-label/title —
+                an icon button still has to SAY what it is to a screen reader. */}
             <button
               type="button"
-              className="btn btn--ghost btn--sm mono monthv__open-day"
+              className="monthv__day-btn monthv__open-day"
               onClick={() => nav(`/kitchen/day/${selected}`)}
+              aria-label={t.detail.openDay}
+              title={t.detail.openDay}
             >
-              {t.detail.openDay} <Icon name="caret-right-bold" size={14} />
+              <Icon name="calendar-blank-bold" size={16} />
             </button>
             {/* Everything you can ADD to the picked date, behind ONE ⋯. The calendar could
                 previously only READ a day — putting a rendez-vous on the 14th meant leaving
@@ -598,13 +604,13 @@ export function MonthView({
                 day-note both live on the day page. All four invalidate MONTH_KEY on save, so
                 coming back shows the new row. ActionMenu renders nothing on an empty list,
                 so the ⋯ simply disappears for a read-only guest. */}
-            <ActionMenu label={t.monthView.dayActions} items={dayAdds} />
+            <ActionMenu label={t.monthView.dayActions} items={dayAdds} triggerClassName="monthv__day-btn" />
             {/* Fold the drawer away to read the grid under it. A real button, never a
                 swipe — and hidden outright in the two-column layout, where the day sits
                 beside the calendar and there is nothing to reclaim. */}
             <button
               type="button"
-              className="monthv__day-fold"
+              className="monthv__day-btn monthv__day-fold"
               aria-expanded={!folded}
               aria-controls="monthv-day-body"
               aria-label={folded ? t.monthView.expandDay : t.monthView.collapseDay}
@@ -616,12 +622,9 @@ export function MonthView({
           </Cluster>
         </div>
         <div className="monthv__day-body" id="monthv-day-body">
-        {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
-            (today shows the live status; another date summarizes that day's windows). */}
-        {car && <AutoCardView model={car} day={selected} />}
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
-        ) : selCount === 0 && !habitsPanelActive ? (
+        ) : selCount === 0 ? (
           <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (
           <>
@@ -761,61 +764,42 @@ export function MonthView({
                 onOpen={() => nav(`/kitchen/day/${selected}`)}
               />
             ))}
-            {/* « Mes habitudes » landing on this day. TODAY/PAST (not a guest): real
-                per-kind marking rows — any face-visible habit is reachable for the
-                day (backfill), not just the ones due then; due-or-marked lead, the
-                rest fold under « Autres habitudes ». FUTURE (or a guest): stays the
-                read-only derived occurrence (like a birthday), tap → the scene. */}
-            {habitsInteractive ? (
-              habitsPanelActive && (
-                <div className="monthv__habits">
-                  {dueOrMarkedHabits.length > 0 && (
-                    <div className="habitudes__list">
-                      {dueOrMarkedHabits.map((h) => (
-                        <HabitRow
-                          key={h.id}
-                          habit={h}
-                          status={habitStatusOn(h, habitDays, selected)}
-                          onMark={(next) => markHabit(h, selected, next)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  {otherHabits.length > 0 && (
-                    <Disclosure label={t.habits.otherHabits} count={otherHabits.length} className="monthv__habits-other">
-                      <div className="habitudes__list">
-                        {otherHabits.map((h) => (
-                          <HabitRow
-                            key={h.id}
-                            habit={h}
-                            status={habitStatusOn(h, habitDays, selected)}
-                            onMark={(next) => markHabit(h, selected, next)}
-                          />
-                        ))}
-                      </div>
-                    </Disclosure>
-                  )}
-                </div>
-              )
-            ) : (
-              (sel?.habits ?? []).map((h) => (
-                <Act
-                  key={h.id}
-                  cat="routine"
-                  icon="repeat-bold"
-                  title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
-                  who={h.done ? t.habits.doneToday : undefined}
-                  done={h.done}
-                  color={h.colour ?? undefined}
-                  onOpen={() => nav('/board/habitudes')}
-                />
-              ))
-            )}
+            {/* « Mes habitudes » on this day — a RECORD, not a check-in: only the
+                habits actually DONE that day, read-only, exactly like a birthday or a
+                work window. The panel used to carry full per-kind marking rows for
+                today and any past day, which put « Encore un » / « C'est fait »
+                buttons under a date you were merely browsing, and named every
+                unfinished intention on every square you tapped — a calendar answers
+                "what happened", not "what do you still owe". Marking (and backfilling
+                a forgotten day, through the habit's own week of dots) lives in « Le
+                point du jour », one tap away through this row or through the ⋯ above. */}
+            {selHabitsDone.map((h) => (
+              <Act
+                key={h.id}
+                cat="routine"
+                icon="repeat-bold"
+                title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
+                // Day-neutral (« Fait », never « Fait aujourd'hui »): this same row
+                // renders for a date weeks back. Never a count, never a rank (calm).
+                who={t.habits.doneOnDay}
+                done
+                color={h.colour ?? undefined}
+                onOpen={() => nav('/board/habitudes')}
+              />
+            ))}
             {(sel?.notes ?? []).map((n) => (
               <DayNote key={n.id} note={n} members={members} />
             ))}
           </>
         )}
+        {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
+            (today shows the live status; another date summarizes that day's windows).
+            It sits at the FOOT of the panel, under the day's own things: the car is a
+            standing background answer ("is it free?"), not one of the day's entries, and
+            leading with it pushed the rendez-vous and meals you tapped the date FOR below
+            the fold. Outside the loading/empty branch on purpose — a day with nothing
+            planned still wants to say the car is free. */}
+        {car && <AutoCardView model={car} day={selected} />}
         </div>
       </div>
       {eventActions.node}

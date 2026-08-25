@@ -365,47 +365,56 @@ test.describe('the board card + the calendar', () => {
     expect(new URL(page.url()).pathname).toMatch(/^\/habitude\/.+\/edit$/)
   })
 
-  test('today’s day panel offers real marking controls, filtered by face', async ({ page }) => {
-    await board(page, 'month')
-    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
-
-    // Today's day panel names the household habit with a REAL per-kind row (not
-    // just the derived read-only card the future/guest path still uses).
-    const panel = page.locator('.monthv__day')
-    const walk = panel.locator('.habit-row', { hasText: 'Marcher dehors' })
-    await expect(walk).toBeVisible()
-    await expect(walk.getByRole('button', { name: 'C’est fait' })).toBeVisible()
-    // Maman's habit is not shown to whoever is standing at the tablet.
-    await expect(panel.locator('.habit-row', { hasText: 'Boire de l’eau' })).toHaveCount(0)
-
-    await pickFace(page, 'Maman')
-    await expect(panel.locator('.habit-row', { hasText: 'Boire de l’eau' })).toBeVisible()
-  })
-
-  test('marking a habit from the calendar day panel updates its state', async ({ page }) => {
+  // The calendar RECORDS, it does not check in (Marc, Aug 2026). The day panel used to
+  // mount full per-kind marking rows for today and any past day, which put « Encore un »
+  // / « C'est fait » buttons under a date you were merely browsing and named every
+  // unfinished intention on every square you tapped. Now it names only what the day
+  // actually saw done — and never mounts a .habit-row at all.
+  test('the day panel names only the habits the day actually SAW DONE', async ({ page }) => {
     await board(page, 'month')
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
 
     const panel = page.locator('.monthv__day')
-    const walk = panel.locator('.habit-row', { hasText: 'Marcher dehors' })
-    await walk.getByRole('button', { name: 'C’est fait' }).click()
-    await expect(walk).toHaveClass(/habit-row--done/)
-    // Survives the refetch the write triggers (HABITS_KEY + MONTH_KEY invalidate) —
-    // the mock's check-in read serves this session's marks back.
-    await expect(walk.getByRole('button', { name: 'Fait aujourd’hui' })).toBeVisible()
-  })
-
-  test('a future day’s panel stays read-only — the derived occurrence, tapping into the scene', async ({ page }) => {
-    await board(page, 'month')
-    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
-
-    // Tomorrow: the very next grid cell after « aujourd'hui ».
-    await page.locator('.monthv__cell.is-today + .monthv__cell').click()
-    const panel = page.locator('.monthv__day')
-    await expect(panel).toContainText('Marcher dehors')
-    // No interactive row, no check affordance — just the old derived nav card.
+    // Today's occurrence is done:false in the fixture — so today's panel says nothing
+    // about it, and offers no marking control anywhere.
+    await expect(panel).not.toContainText('Marcher dehors')
     await expect(panel.locator('.habit-row')).toHaveCount(0)
+    await expect(panel.getByRole('button', { name: 'C’est fait' })).toHaveCount(0)
+
+    // Yesterday's IS done — it is named, with the day-neutral « Fait » (never « Fait
+    // aujourd'hui »: this row renders for a date weeks back).
+    await page.locator('.monthv__cell:has(+ .monthv__cell.is-today)').click()
+    const walk = panel.locator('.act', { hasText: 'Marcher dehors' })
+    await expect(walk).toBeVisible()
+    await expect(walk).toContainText('Fait')
+    await expect(panel.locator('.habit-row')).toHaveCount(0)
+  })
+
+  test('the recorded habit is private-ish too, and taps through to « Le point du jour »', async ({ page }) => {
+    await board(page, 'month')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+    // Yesterday, where both the household habit and Maman's were done.
+    await page.locator('.monthv__cell:has(+ .monthv__cell.is-today)').click()
+    const panel = page.locator('.monthv__day')
+
+    // Maman's done habit is hers — never shown to whoever is standing at the tablet.
+    await expect(panel).not.toContainText('Boire de l’eau')
+    await pickFace(page, 'Maman')
+    await expect(panel).toContainText('Boire de l’eau')
+
+    // The row is a door, not a control: it lands on the check-in scene, where a habit
+    // is marked, backfilled and edited.
     await panel.locator('.act', { hasText: 'Marcher dehors' }).click()
+    expect(new URL(page.url()).pathname).toBe('/board/habitudes')
+  })
+
+  test('the day ⋯ carries the way back to the habits themselves', async ({ page }) => {
+    // Since the panel only RECORDS, the calendar needs an explicit door to where a
+    // habit is reviewed and edited — one row in the day's ⋯, below the four adds.
+    await board(page, 'month')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+    await page.locator('.monthv__day-tools button[aria-haspopup]').click()
+    await page.getByRole('menuitem', { name: 'Gérer mes habitudes' }).click()
     expect(new URL(page.url()).pathname).toBe('/board/habitudes')
   })
 })

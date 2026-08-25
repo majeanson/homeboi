@@ -317,25 +317,6 @@ export function visibleHabits(habits: Habit[], face: string | null): Habit[] {
   return base.filter((h) => !h.archived && h.kind !== 'defi').sort((a, b) => a.position - b.position)
 }
 
-// The calendar day panel's split (backfill from the calendar, task « n'importe
-// quelle habitude, n'importe quel jour »): habits due-or-already-marked for `day`
-// lead the panel; every other face-visible habit is still reachable, just folded
-// under « Autres habitudes » so the panel stays calm even for a household with
-// many habits. Pure (no day-in-the-future / read-only gate here — that's the
-// caller's call, since it also depends on who's looking).
-export function splitHabitsForDay(
-  habits: Habit[],
-  days: HabitDay[],
-  face: string | null,
-  day: number,
-): { due: Habit[]; other: Habit[] } {
-  const visible = visibleHabits(habits, face)
-  const due = visible.filter((h) => isDueOn(h, days, day) || isDayMarked(dayRow(days, h.id, day)))
-  const dueIds = new Set(due.map((h) => h.id))
-  const other = visible.filter((h) => !dueIds.has(h.id))
-  return { due, other }
-}
-
 // --- Derived history (the "fuller history" view) -----------------------------
 // Per-habit, gentle: how many days in a window this habit's intention was met.
 // Deliberately NOT a chain, NOT a percentage-as-grade, NOT cross-habit.

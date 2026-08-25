@@ -624,6 +624,7 @@ const ROUTES: Record<string, unknown> = {
       { id: 'hb1#1', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID - DAY, done: true },
       { id: 'hb1#2', habit_id: 'hb1', title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', member_id: null, day: MMID + DAY, done: false },
       { id: 'hb2#0', habit_id: 'hb2', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', member_id: 'm1', day: MMID, done: false },
+      { id: 'hb2#1', habit_id: 'hb2', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', member_id: 'm1', day: MMID - DAY, done: true },
     ],
   },
   members: { members: MEMBERS },

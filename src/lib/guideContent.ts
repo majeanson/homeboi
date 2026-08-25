@@ -469,8 +469,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le mois : lire une journée, et y ajouter', en: 'The month: read a day, and add to it' },
         detail: {
-          fr: 'Dans la vue Mois, touche une date : sa case s’agrandit et nomme ce qu’il y a dedans (les autres gardent leurs points), et le détail de la journée s’ouvre juste en dessous — à côté du calendrier sur grand écran. Le ⋯ de la journée ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date-là.',
-          en: 'In the Month view, tap a date: its cell grows and names what is in it (the others keep their dots), and the day’s detail opens right below — beside the calendar on a big screen. The day’s ⋯ adds an event, a chore, a meal or the day note to THAT date.',
+          fr: 'Dans la vue Mois, touche une date : sa case s’agrandit et nomme ce qu’il y a dedans (les autres gardent leurs points), et le détail de la journée s’ouvre juste en dessous — à côté du calendrier sur grand écran. Le ⋯ de la journée ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date-là, et mène à tes habitudes. Le calendrier RACONTE : il nomme les habitudes que la journée a vraiment faites — cocher, ça se passe au « point du jour ».',
+          en: 'In the Month view, tap a date: its cell grows and names what is in it (the others keep their dots), and the day’s detail opens right below — beside the calendar on a big screen. The day’s ⋯ adds an event, a chore, a meal or the day note to THAT date, and leads to your habits. The calendar RECORDS: it names the habits the day actually did — checking one off happens in the daily check-in.',
         },
       },
     ],

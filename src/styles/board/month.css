@@ -224,22 +224,82 @@
   color: var(--ink-faint);
   line-height: 1;
 }
-/* -- The TAPPED day names its things -------------------------------------------------
-   There is no view toggle: the grid stays a calm dotted glance and the ONE day you asked
-   about opens in place, spelling out the same list in the same order (one linesFor()
-   builds the dots, these words and the panel). A square cannot hold text, so the picked
-   cell alone drops the ratio and the height cap and sizes to its content — which lifts
-   its whole week row, and that is the intended "the square gets bigger". */
+/* -- The TAPPED day POPS OUT as a tile ------------------------------------------------
+   There is no view toggle: the grid stays a calm dotted glance and the ONE day you tap
+   opens, spelling out the same list in the same order (one linesFor() builds the dots,
+   these words and the panel).
+
+   The tile is deliberately WIDER than its column and only then taller. A calendar column
+   is ~50 px on a phone — enough for three clipped characters, which is a name in name
+   only. So the words are NOT laid out inside the square: the square keeps the grid's
+   shape and the tile floats out of it, about three columns across, where a title and its
+   hour both fit. Anything longer is what the day panel underneath is for. */
 .monthv__cell.is-on {
+  /* Grows a little too — the tile is anchored here, and a taller anchor means it covers
+     less of the weeks around it. */
   aspect-ratio: auto;
   max-height: none;
-  min-height: 4.4rem;
-  align-items: stretch;
+  min-height: 4.6rem;
+  /* The tile leaves the square, so this one cell must stop clipping — and sit above its
+     neighbours (and above the trip bands, which are z-index 1). */
+  overflow: visible;
+  z-index: 3;
   gap: 0.15rem;
   padding: 0.25rem 0.25rem 0.3rem;
 }
-.monthv__cell.is-on .monthv__num {
-  align-self: center;
+/* The floating tile itself. Anchored under the day number, opening toward whichever side
+   has room — `--pop-w` is ~3 columns, and the side classes keep it inside the grid so it
+   can never bleed past the board. */
+.monthv__cell.is-on .monthv__lines {
+  --pop-w: 13.5rem;
+  position: absolute;
+  top: 1.55rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--pop-w), 78vw);
+  gap: 3px;
+  padding: 0.4rem 0.5rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md, 12px);
+  background: var(--card);
+  /* The one lift in the calendar, and it earns it: this pane floats over the grid, so it
+     needs to read as ABOVE rather than as another cell. */
+  box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
+  text-align: start;
+  /* The tile floats OVER neighbouring days, so it must not swallow their taps: without
+     this, tapping a covered date hits this pane (which belongs to the already-open cell)
+     and the day underneath never opens. It is something to read — everything you can DO
+     with the day is in the panel below. Same rule as the list-row delete pane
+     (CLAUDE.md: an overlay that still takes hits eats the controls beneath it). */
+  pointer-events: none;
+}
+/* Near an edge the tile opens inward instead of straddling the cell.
+   NOTE the doubled class: these have to out-specify `.monthv__cell.is-on .monthv__lines`
+   above (0,3,0). Written as `.monthv__cell--popend .monthv__lines` (0,2,0) they LOSE, the
+   centring wins, and the tile hangs ~80 px off the right of the board — the horizontal
+   overflow this repo keeps re-fighting. e2e/month-day-panel guards it. */
+.monthv__cell.is-on.monthv__cell--popstart .monthv__lines {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+.monthv__cell.is-on.monthv__cell--popend .monthv__lines {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+/* Inside the tile there is room for the hour again, and for a real reading size. */
+.monthv__cell.is-on .monthv__line {
+  font-size: 0.72rem;
+  gap: 5px;
+}
+.monthv__cell.is-on .monthv__line-chip {
+  width: 6px;
+  height: 6px;
+}
+.monthv__cell.is-on .monthv__more {
+  font-size: 0.68rem;
+  padding-inline-start: 11px;
 }
 .monthv__lines {
   display: flex;
@@ -349,27 +409,70 @@
   justify-content: flex-end;
   padding-inline-end: 3.4rem;
 }
-.monthv__day-fold {
+/* The picked day's three controls — open the day page, ⋯ do something with it, fold the
+   pane — as one row of small round ICON buttons. They used to be a wide worded button
+   plus two round ones of two different sizes, which read as a form sitting on top of the
+   calendar rather than as a header. ONE class for all three (the ⋯ takes it through
+   ActionMenu's `triggerClassName`, which is why it no longer wears the generic
+   `.btn--ghost`), so they can't drift apart again. Same size + shape as the month arrows,
+   so the whole surface speaks one button language. The words survive as aria-label/title. */
+.monthv__day-btn {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  /* A round tap target, comfortably over the 44 px guideline once its 6 px gap is
+     counted, and identical across the three. */
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-pill);
   background: var(--paper-deep);
   color: var(--ink-soft);
   cursor: pointer;
+  /* The bit of softness the header was missing: a hairline inner highlight so the disc
+     reads as a raised pebble rather than a punched hole, and a press that actually
+     answers the finger. Colour only — no shadow, no bounce (calm). */
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
 }
-/* « Voir la journée » — the calendar's ONE link out of a day, into the day page. It sat
-   beside a « Voir ce moment » twin (in a `.monthv__day-actions` row) until « Moments » was
-   retired; a lone button needs no row, it just wraps under the date on a narrow phone. */
-.monthv__open-day {
+@media (hover: hover) {
+  .monthv__day-btn:hover {
+    border-color: var(--accent, var(--ink-soft));
+    color: var(--ink);
+    background: var(--card);
+  }
+}
+.monthv__day-btn:active {
+  transform: scale(0.94);
+}
+/* Reduced motion keeps the colour answer and drops the squeeze. */
+@media (prefers-reduced-motion: reduce) {
+  .monthv__day-btn {
+    transition: none;
+  }
+  .monthv__day-btn:active {
+    transform: none;
+  }
+}
+/* The ⋯ sits inside ActionMenu's own inline-flex wrapper, which would otherwise be the
+   flex child the Cluster sizes — give it the button's shape so the row gaps stay even. */
+.monthv__day-tools .action-menu {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+}
+/* While the menu is open the ⋯ stays lit, so it is obvious which of the three opened
+   the panel floating over the page. Scoped to the ActionMenu wrapper on purpose: the FOLD
+   button also carries aria-expanded (true whenever the pane is open, which is nearly
+   always), so an unscoped rule would leave it permanently highlighted. */
+.action-menu > .monthv__day-btn[aria-expanded='true'] {
+  background: var(--card);
+  border-color: var(--accent, var(--ink-soft));
+  color: var(--ink);
 }
 /* Day page: the weather glance strip above the meal planner (today/tomorrow only). */
 .day-plan__wx {
@@ -862,15 +965,48 @@
 }
 /* Nothing inside the drawer floats. `:where()` keeps this at zero specificity weight
    over the components' own focus rings, which are outlines, not shadows. */
-.monthv__day :where(.act, .card, .auto-card, .habit-row, .day-plan__trip, .sec) {
+.monthv__day :where(.act, .card, .auto-card, .day-plan__trip, .sec) {
   box-shadow: none;
 }
 /* Rows sit directly on the pane: no card border, a hairline between them instead. */
-.monthv__day :where(.act, .habit-row) {
+.monthv__day :where(.act) {
   border-color: transparent;
   border-radius: 0;
   padding-inline: 0.15rem;
 }
-.monthv__day .monthv__day-body > :where(.act, .habit-row) + :where(.act, .habit-row) {
+.monthv__day .monthv__day-body > :where(.act) + :where(.act) {
   border-top: 1px solid var(--line);
+}
+
+/* -- The picked day's header, lean ---------------------------------------------------
+   Date on the left, three small icon buttons on the right, one line. It used to be a
+   full-width worded button that pushed the ⋯ and the fold onto a second row and made the
+   pane's head taller than the day it introduces. Nothing wraps now, so no reservation is
+   needed for the ＋ FAB either — the controls no longer reach that corner. */
+.monthv__day-h {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.monthv__day-h > b {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.monthv__day-tools {
+  gap: 6px;
+  padding-inline-end: 0;
+}
+
+/* Legend, tightened to earn its line. It sits between the grid and the picked day, so
+   every wrapped row is height the day loses — and now that tapping a date NAMES its
+   things, the legend is a reference rather than the only key. Smaller and closer, so a
+   phone gets it on one line; it still wraps rather than clipping on a very narrow one. */
+.monthv__legend {
+  gap: 0.15rem 0.45rem;
+  margin-top: 0.25rem;
+  font-size: 0.62rem;
+}
+.monthv__legend-item {
+  gap: 0.25rem;
 }
