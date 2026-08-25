@@ -726,6 +726,9 @@ test.describe('kitchen', () => {
 
   test('add a running-low pantry item', async ({ page }) => {
     await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
+    // The add box waits behind its section's ＋ (SectionAdd) — three permanently-open
+    // composers used to own the garde-manger's whole first screen.
+    await page.getByRole('button', { name: 'Ajouter un aliment', exact: true }).click()
     const input = page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true })
     await input.fill('Lait')
     await expectApi(page, 'POST', 'pantry', () => input.press('Enter'))
@@ -816,7 +819,10 @@ test.describe('kitchen', () => {
 
   test('adding a use-soon item posts it (and never touches the list)', async ({ page }) => {
     await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
-    const input = page.getByLabel('Ajouter un aliment à finir', { exact: true })
+    await page.getByRole('button', { name: 'Ajouter un aliment à finir', exact: true }).click()
+    // getByRole, not getByLabel: the ＋ and the field it opens share one accessible
+    // name (they are the same action), so the generic label locator now matches both.
+    const input = page.getByRole('textbox', { name: 'Ajouter un aliment à finir', exact: true })
     await input.fill('Épinards')
     await expectApi(page, 'POST', 'use-soon', () => input.press('Enter'))
   })
@@ -873,7 +879,10 @@ test.describe('recipes', () => {
   })
 
   test('"quoi cuisiner?" toggles a cookability ranking with badges', async ({ page }) => {
-    // "Quoi cuisiner?" is now a filter pill (recipePills system), not a standalone toggle.
+    // "Quoi cuisiner?" is a filter pill (recipePills system), not a standalone toggle —
+    // and the pills now wait inside the « Filtrer » panel, shut by default so the book
+    // opens on recipes rather than on the machinery for narrowing them.
+    await page.locator('.recipe-filter').click()
     const toggle = page.locator('.kitchen__pill', { hasText: 'Quoi cuisiner' })
     await expect(toggle).toBeVisible() // pantry has out-of-stock items to rank against
     await toggle.click()
@@ -885,6 +894,8 @@ test.describe('recipes', () => {
   test('tag chips filter the recipe grid', async ({ page }) => {
     const cards = page.locator('.recipe-card')
     await expect(cards).toHaveCount(4)
+    // Tag chips share the « Filtrer » panel with the pills.
+    await page.locator('.recipe-filter').click()
     const prefere = page.locator('.kitchen__tag-filter .chip', { hasText: 'préféré' })
     const rapide = page.locator('.kitchen__tag-filter .chip', { hasText: 'rapide' })
     await prefere.click()

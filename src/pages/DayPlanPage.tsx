@@ -12,7 +12,7 @@ import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
 import { useRecordUndo } from '../lib/toast'
 import { formatDayLong, formatTime, capitalize } from '../lib/format'
-import { addLocalDays, daysUntilLocal } from '../lib/localDay'
+import { addLocalDays, daysUntilLocal, todayLocalDay } from '../lib/localDay'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
@@ -96,7 +96,15 @@ export function DayPlanPage() {
   useEscapeKey(close)
 
   const { date: dateParam } = useParams()
-  const date = Number(dateParam)
+  // A malformed :date (a stale link, an ISO string where day-seconds are expected)
+  // must not CRASH the page. The « bad date → back to the grid » guard lives at the
+  // bottom of this component, after the hooks — but the render above it already
+  // called daysUntilLocal(NaN), which throws RangeError inside Intl and hit the
+  // error boundary before the guard could ever run. Keep `bad` for the redirect and
+  // feed the render a real day, so the guard is the thing that decides, not a throw.
+  const parsed = Number(dateParam)
+  const bad = !Number.isFinite(parsed)
+  const date = bad ? todayLocalDay() : parsed
 
   // — server state (live-polled, same caches the Kitchen grid reads) —
   const meals = useMeals()
@@ -406,7 +414,7 @@ export function DayPlanPage() {
   const rescheduleMeal = (id: string, toDate: number, slot?: string) => void reschedule(qc, id, toDate, slot)
 
   // A bad date in the URL → back to the grid rather than an empty editor.
-  if (!Number.isFinite(date)) return <Navigate to="/kitchen" replace />
+  if (bad) return <Navigate to="/kitchen" replace />
   if (isUnauthorized(meals.error)) return <PairPrompt />
 
   // Read-only guest: DayEditor already gates its own controls; here the day-agenda

@@ -43,6 +43,9 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`kitchen-pantry${sfx}`, async ({ page }) => {
     await boot(page, '/kitchen', { theme })
     await page.locator('.subtabs__opt').nth(1).click()
+    // The three add boxes wait behind their section ＋ now; open the low list's so the
+    // frame still covers a composer, and wait on the ＋ itself for the tab to be ready.
+    await page.getByRole('button', { name: 'Ajouter un aliment', exact: true }).click()
     await page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true }).waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `kitchen-pantry-phone${sfx}`)
@@ -62,6 +65,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 test('kitchen-pantry-wall', async ({ page }) => {
   await boot(page, '/kitchen', { surface: 'kiosk', format: WALL })
   await page.locator('.subtabs__opt').nth(1).click()
+  await page.getByRole('button', { name: 'Ajouter un aliment', exact: true }).click()
   await page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true }).waitFor({ state: 'visible' })
   await page.waitForTimeout(250)
   await shoot(page, 'kitchen-pantry-wall')
@@ -178,6 +182,9 @@ test('settings-recur-weekly', async ({ page }) => {
   await boot(page, '/settings')
   await page.locator('.operator__tabs').getByRole('tab', { name: 'Le babillard' }).click() // events sub is first
   await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // → /event/new scene
+  // « Répéter » + « Afficher dès » are the form's third optional section now — both sit
+  // at their default on nearly every rendez-vous, so they wait behind a Disclosure.
+  await page.getByRole('button', { name: 'Répétition et rappel' }).click()
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
   await page.locator('.recur__days').waitFor({ state: 'visible' })
