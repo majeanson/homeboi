@@ -23,7 +23,7 @@
 // real boot cost a slow tablet pays before first paint. `i18n.en-*.js` (the EN
 // dict) is a SEPARATE lazy chunk — src/i18n.ts dynamic-import()s it only when
 // lang==='en' — so it's checked as an ordinary lazy chunk below, not eager.
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const DIST = 'dist'
@@ -94,6 +94,20 @@ for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
 
 if (eagerTotal > EAGER_TOTAL_BUDGET)
   failures.push(`combined eager JS (index + react-vendor + i18n) is ${Math.round(eagerTotal / KB)} KB > ${Math.round(EAGER_TOTAL_BUDGET / KB)} KB budget`)
+
+// 3. NO PHANTOMS — the mirror of check 2, and the half that was missing. Above we
+// walk the files and demand each is precached; nothing walked the precache and
+// demanded each entry is a real file. Four were not: a module whose only job is
+// `import './x.css'` leaves a JS chunk that vite:css-post extracts and DELETES,
+// and reading the bundle before that hook baked those never-emitted names into
+// the list (fixed by `order: 'post'` in vite.config.ts). A precache entry with no
+// file behind it is not harmless — under an SPA fallback it answers 200 text/html,
+// and an install that caches that has put HTML under a `.js` URL, which is the
+// grey-screen bug arriving through the install path instead of the fetch path.
+for (const u of [...(sw.match(/"\/assets\/[^"]+"/g) ?? [])].map((s) => s.slice(1, -1))) {
+  if (!existsSync(join(DIST, u.slice(1))))
+    failures.push(`${u} is in the sw.js precache but no such file was built — an SPA fallback answers it with HTML`)
+}
 
 console.log(`bundle: ${Math.round(total / KB)} KB of JS across dist/assets (${Math.round(eagerTotal / KB)} KB eager); sw.js precache checked.`)
 if (failures.length) {
