@@ -102,8 +102,13 @@ test('« Compléter les familles » sits under the directory, not over it', asyn
   const complete = page.locator('.cercle-complete')
   await expect(complete).toBeVisible()
 
-  // Below the last person, not between the face chip and the first one.
+  // Below the last person, not between the face chip and the first one. Wait for the
+  // row to PAINT before measuring: boundingBox() returns null on an unrendered
+  // locator, and under the full parallel suite this page is slower to settle than it
+  // is when the spec runs alone (how this test passed in isolation and failed in the
+  // suite — the exact reading error that let eight regressions through).
   const firstRow = page.locator('.cercle-row').first()
+  await expect(firstRow).toBeVisible()
   const rowY = (await firstRow.boundingBox())!.y
   const btnY = (await complete.boundingBox())!.y
   expect(btnY, 'the housekeeping action comes after the people').toBeGreaterThan(rowY)

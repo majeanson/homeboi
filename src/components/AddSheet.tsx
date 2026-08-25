@@ -745,7 +745,10 @@ export function AddSheet({
       mot: t.mots.tile,
       habit: t.habits.add,
       'habit-pick': t.habits.title,
-      cnote: t.cercle.familyNotes.newNote,
+      // The ＋ opens the QUICK composer (one line, Enter, done) — « Nouvelle note »
+      // names the page's rich-editor door in advanced mode, and two controls on one
+      // page must not share a name while doing different things.
+      cnote: t.cercle.familyNotes.quickAdd,
     }
     return labels[m]
   }
@@ -779,7 +782,7 @@ export function AddSheet({
               ? t.cercle.addTitle
               : t.kitchen.addTitle
       : mode === 'cnote'
-        ? t.cercle.familyNotes.newNote
+        ? t.cercle.familyNotes.quickAdd
       : mode === 'routine-pick'
         ? t.nav.routines
         : mode === 'routine'

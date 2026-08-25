@@ -61,6 +61,10 @@ test('photo import: read → verify dialog → apply draft to the form', async (
   await page.waitForTimeout(150) // let React apply cloudOcrAvailable=true
 
   // Trigger the read by handing the hidden OCR file input a photo.
+  // Scanner/Importer live inside the « Remplir vite » Disclosure now — two buttons and
+  // a three-line explainer no longer stand between the recipe's name and its first
+  // ingredient. Open it, then hand the file to the scanner.
+  await page.getByRole('button', { name: 'Remplir vite' }).click()
   await page.locator('.recipe-helpers input[type=file]').setInputFiles({
     name: 'carte.png',
     mimeType: 'image/png',

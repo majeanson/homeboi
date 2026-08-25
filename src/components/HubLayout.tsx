@@ -560,7 +560,7 @@ export function HubLayout() {
               : section === 'maison'
                 ? t.maison.addTitle
                 : section === 'notes'
-                  ? t.cercle.familyNotes.newNote
+                  ? t.cercle.familyNotes.quickAdd
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.common.add
@@ -571,7 +571,7 @@ export function HubLayout() {
               : section === 'maison'
                 ? t.maison.addTitle
                 : section === 'notes'
-                  ? t.cercle.familyNotes.newNote
+                  ? t.cercle.familyNotes.quickAdd
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.common.add

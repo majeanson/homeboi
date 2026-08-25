@@ -21,6 +21,10 @@ test.beforeEach(async ({ page }) => {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'new' }) })
   })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  // « Les notes » defaults to its LEAN face (lib/notesMode), where « Nouvelle note »,
+  // the title field and the BETA chip don't exist — that page is for reading. These
+  // specs are about the rich editor, which is advanced-mode chrome, so ask for it.
+  await page.addInitScript(() => localStorage.setItem('babillard-notes-advanced', '1'))
 })
 
 async function openEditor(page: import('@playwright/test').Page) {
