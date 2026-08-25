@@ -1630,27 +1630,6 @@
 }
 
 /* === Rich notes (#richnotes) ============================================== */
-/* A "Nouvelle note" button replaces the old inline one-line composer — it opens the
-   full-screen NoteEditor. Media quick-add (record/draw/photo) still sits below it. */
-.cercle-notes__new {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px dashed color-mix(in srgb, var(--teal-deep, #2a8f85) 45%, var(--line));
-  border-radius: var(--radius-md, 14px);
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 7%, var(--card));
-  color: var(--ink);
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.cercle-notes__new:active {
-  transform: scale(0.99);
-}
-
 /* The shared Markdown render (.note-md*) lives in styles/board/cnote-list.css — the
    board's « Notes (cercle) » card renders note bodies, so it must be eager. */
 

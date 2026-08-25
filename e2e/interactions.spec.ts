@@ -848,7 +848,9 @@ test.describe('recipes', () => {
     // only Cuisiner + Planifier). It opens an ingredient PICKER (e40f990) with
     // nothing pre-selected; pick all, then confirm — that's what posts recipe-to-list.
     await modal.locator('.action-menu__btn').click()
-    await modal.getByRole('menuitem', { name: 'Ajouter à la liste' }).click()
+    // The panel is PORTALED to <body>, so it is NOT a descendant of .recipe-modal —
+    // reach for it on the page, not inside the modal (ActionMenu.tsx).
+    await page.getByRole('menuitem', { name: 'Ajouter à la liste' }).click()
     await modal.locator('.recipe-list-pick__all').click() // Tout sélectionner
     await expectApi(page, 'POST', 'recipe-to-list', () =>
       modal.locator('.recipe-list-pick__actions .btn--primary').click(),

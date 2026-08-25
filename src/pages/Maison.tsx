@@ -521,12 +521,19 @@ function MaisonParent() {
     },
   })
 
-  if (isUnauthorized(error)) return <PairPrompt />
-  // A non-401 failure with no cached frame must NOT fall through to render an empty
-  // circle (reads as "you know nobody") — surface it. A stale-but-good `data` from a
-  // prior poll still renders (kept over the error), the calm live-poll behaviour.
-  if (error && !data) return <LoadError />
-  if (!data) return <Loading />
+  // ONLY the people-graph sections need the cercle payload. Routines (Maison's
+  // DEFAULT section, and a wall tablet's primary surface), Business and Carnets each
+  // carry their own query and their own guards — gating the whole tab on /api/cercle
+  // took all three down with it, which for routines is a regression on the old
+  // cercle-free /routines page: a D1 hiccup on contacts would blank the kid cards.
+  if (section === 'family' || section === 'social') {
+    if (isUnauthorized(error)) return <PairPrompt />
+    // A non-401 failure with no cached frame must NOT fall through to render an empty
+    // circle (reads as "you know nobody") — surface it. A stale-but-good `data` from a
+    // prior poll still renders (kept over the error), the calm live-poll behaviour.
+    if (error && !data) return <LoadError />
+    if (!data) return <Loading />
+  }
 
   async function deletePet(pet: Pet) {
     if (!(await confirm({ title: t.cercle.pet.delete, message: pet.name, tone: 'danger' }))) return
@@ -902,11 +909,16 @@ function MaisonParent() {
             )
           })()}
 
-          {showWeb ? (
+          {/* An EMPTY circle falls through to the last branch whatever the view is:
+              Liens / Arbre / Notre monde over zero people drew a blank body — no
+              empty state, no guide link, no ＋ hint — and the view switch above
+              stays offered while the circle is empty (a deep-linked ?view=tree
+              landed there too). The empty state lives in that last branch. */}
+          {people.length > 0 && showWeb ? (
             <CercleWeb people={sectionPeople} links={links} groups={sectionNamedGroups} familyClusters={familyGroups} onOpen={openPerson} />
-          ) : view === 'links' ? (
+          ) : people.length > 0 && view === 'links' ? (
             <CercleEgo people={sectionPeople} links={links} onOpen={openPerson} focusKey={focusKey} grouping={grouping} />
-          ) : view === 'tree' ? (
+          ) : people.length > 0 && view === 'tree' ? (
             <CercleTree
               people={sectionPeople}
               links={links}

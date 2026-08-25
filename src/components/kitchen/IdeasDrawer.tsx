@@ -37,6 +37,7 @@ import { Cluster } from '../Layout'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon, type IconName } from '../Icon'
 import { EmptyState } from '../EmptyState'
+import { LoadError } from '../Fallback'
 import { RowActions } from '../RowActions'
 
 // « Un seul tiroir d'idées-repas » (C-14, bmad/10) — the ONE place every source of
@@ -434,7 +435,11 @@ function PastChip({
   const heroSlot = useMealPrefs().hero
   const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
   const planSlot = planSlotPick ?? heroSlot
-  if (!summaryQ.data) return null // brief cold load — the empty line must not flash first
+  // A failed summary read would otherwise leave this source PERMANENTLY blank —
+  // the chip stays selected over nothing at all. Say it failed; the loading pass
+  // still renders nothing (the empty line must not flash before the data lands).
+  if (summaryQ.error && !summaryQ.data) return <LoadError />
+  if (!summaryQ.data) return null // brief cold load
   const dishes = summaryQ.data.dishes
   if (dishes.length === 0) return <EmptyState>{t.kitchen.ideasDrawer.emptyPast}</EmptyState>
   return (

@@ -174,10 +174,13 @@ export function CercleNotes({
   // nonce (not mount), so tapping ＋ again — a same-route navigation that never
   // remounts this component — opens it again. 0 is the "never asked" seed.
   useEffect(() => {
-    if (!composeNonce) return
+    // `ro` too: every other composer entry point on this page is behind {!ro},
+    // and /notes?add=1 is reachable by URL — a read-only guest was handed the full
+    // editor and a save that authed() would only 403 at the end.
+    if (!composeNonce || ro) return
     openNew()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [composeNonce])
+  }, [composeNonce, ro])
 
   const fn = t.cercle.familyNotes
 
@@ -204,9 +207,12 @@ export function CercleNotes({
         </div>
       )}
 
-      {/* Composer — one line to write, a 📎 to clip a voice memo / drawing / photo onto it,
-          and « Nouvelle note » for the full rich editor. The new note's scope follows the
-          picked face above. Hidden for guests. */}
+      {/* Composer — one line to write, plus a 📎 to clip a voice memo / drawing / photo
+          onto it. The new note's scope follows the picked face above. Hidden for guests.
+          The full rich editor is the tab's ＋ FAB (addSheet mode 'cnote' → ?add=1 →
+          composeNonce → openNew): this used to carry its OWN « Nouvelle note » button
+          firing the very same openNew, so the page offered two identically-named
+          buttons for one action once « Les notes » got its own tab and its own ＋. */}
       {!ro && (
         <div className="cercle-notes__composer card">
           <EditField
@@ -222,11 +228,6 @@ export function CercleNotes({
             busy={quickBusy || memo.busy}
             allowEmpty={!!memo.draft}
             boxActions={memo.attachButton}
-            secondaryActions={
-              <button type="button" className="cercle-notes__new" onClick={openNew}>
-                <Icon name="plus-bold" size={18} /> {fn.newNote}
-              </button>
-            }
           >
             {memo.panel}
           </EditField>
