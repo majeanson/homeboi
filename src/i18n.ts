@@ -2099,7 +2099,6 @@ export const FR = {
     retry: 'Réessayer',
   },
   operator: {
-    title: 'Réglages',
     members: 'La maisonnée',
     householdName: 'Nom de la maisonnée',
     householdNameHint: 'Le nom de ta famille / maisonnée, affiché un peu partout.',

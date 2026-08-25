@@ -48,7 +48,11 @@ settings) are one tap back.** No dead-end prose.
 
 and every Réglages sub with a live counterpart shows « Voir dans l'app »
 (`SUB_GOTO`). The board▸Disposition ↔ `/board?edit=1` mirror is the pattern,
-generalized.
+generalized. It rides the **Comprendre / Régler lens row** (`.operator__lensrow`),
+in the half those two pills leave empty — it used to own a whole line between the
+sub rail and the first setting. On a narrow phone the WORD hides and the ↗ glyph
+stands alone, named by `aria-label` + `title`; the label returns as soon as the
+row can hold it, so the control is never unnamed. Guard: `e2e/lean-forms.spec.ts`.
 
 ## The taxonomy (post-merge, 34 cards)
 

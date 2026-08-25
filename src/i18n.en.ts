@@ -1911,7 +1911,6 @@ export const EN: typeof FR = {
     retry: 'Try again',
   },
   operator: {
-    title: 'Settings',
     members: 'The household',
     householdName: 'Household name',
     householdNameHint: 'Your family / household name, shown throughout the app.',

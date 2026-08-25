@@ -1642,23 +1642,6 @@ export function Board() {
             </div>
           )}
 
-          {/* One-time discoverability line for the unhinted long-press door into edit
-              mode. Dismissed (or edit mode entered) → retired for this device. */}
-          {showEditHint && (
-            <div className="board-edit-hint" role="note">
-              <span className="mono">{t.board.editDiscover}</span>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={dismissEditHint}
-                aria-label={t.common.close}
-                title={t.common.close}
-              >
-                <InlineIcon name="x-bold" size={14} />
-              </button>
-            </div>
-          )}
-
           {/* THE BAND ZONE — the pinned glance strip. Fridge notes, the supper/weather
               heroes, and the heads-up cards (Mots / À régler) are now ordinary cards:
               each can be reordered, resized, hidden, or dragged down into the masonry. It
@@ -1718,6 +1701,29 @@ export function Board() {
               </CardSlot>
             ))}
           </WidgetGrid>
+
+          {/* One-time discoverability line for the unhinted long-press door into edit
+              mode. Dismissed (or edit mode entered by any door) → retired for this
+              device. AT THE FOOT of the board, not above it: this is an instruction
+              ABOUT the cards, and it used to displace them — a full-width note between
+              the day's chips and the first real card, on the one screen of the app
+              whose entire job is to be glanceable. Down here it's found the moment
+              you've read your board, which is exactly when "you can rearrange this"
+              becomes a thought worth having. */}
+          {showEditHint && (
+            <div className="board-edit-hint" role="note">
+              <span className="mono">{t.board.editDiscover}</span>
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={dismissEditHint}
+                aria-label={t.common.close}
+                title={t.common.close}
+              >
+                <InlineIcon name="x-bold" size={14} />
+              </button>
+            </div>
+          )}
         </>
       )}
 

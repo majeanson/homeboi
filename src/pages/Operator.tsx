@@ -489,10 +489,17 @@ export function Operator() {
 
   return (
     <main className="operator">
+      {/* No « Réglages » H1: the nav tab at the foot says the word and is the lit
+          one — the heading spent a whole line of a 844px phone repeating it, on a
+          page that already stacks three control rails (themed tabs · Comprendre /
+          Régler · subs) before its first setting. Same rule as « Les notes » and the
+          recipe book. `operator__head` is now the identity line alone. */}
+      {/* The heading survives for screen readers only: dropping it outright would
+          leave the page with no h1 at all, which is a real regression — every other
+          hub tab has one (HubHead renders it). Visually it is the lit nav tab that
+          says « Réglages ». */}
+      <h1 className="sr-only">{t.nav.operator}</h1>
       <div className="operator__head">
-        <div>
-          <h1>{t.operator.title}</h1>
-        </div>
         {/* A guest gets no household chrome: no household name to leak, no IA switch
             (that one's a write), no session to sign out of, and no « Se connecter »
             nudge — HubLayout's banner already says what this session is. */}
@@ -524,23 +531,12 @@ export function Operator() {
           ) : (
             <span className="tag tag--off">{t.operator.aiOff}</span>
           )}
-          {signedIn ? (
-            <button
-              type="button"
-              className="btn btn--ghost mono"
-              onClick={() => {
-                // Drop the picked face with the session — on a shared device the
-                // next family signing in must not inherit a ghost member id (the
-                // X-Profile header would mis-attribute their writes).
-                setMemberId(null)
-                signOut().then(() => nav('/'))
-              }}
-            >
-              {t.nav.logout}
-            </button>
-          ) : (
-            // A kiosk has no session to drop; offer the escalation to operator
-            // (needed for the two hidden tabs: Membres + Tablettes jumelées).
+          {/* Sign-IN stays up here: for a kiosk it is the ENABLING action — the
+              door to the operator-only subs, and the kioskNotice right below
+              explains why. Sign-OUT moved to the foot of the page (see below): it
+              is the rarest and most consequential thing here, and it was the second
+              thing you saw. */}
+          {!signedIn && (
             <button type="button" className="btn btn--ghost mono" onClick={() => nav('/login')}>
               {t.operator.kioskSignIn}
             </button>
@@ -621,18 +617,39 @@ export function Operator() {
                   drop the lens toggle rather than offer a pill that opens nothing, and
                   let the guide stand on its own. */}
               {subs && (
-                <SubTabs
-                  size="mini"
-                  className="operator__lens"
-                  options={[
-                    { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
-                    { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
-                  ]}
-                  value={lens}
-                  onSelect={setLens}
-                  ariaLabel={t.operator.lensAria}
-                  tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
-                />
+                <div className="operator__lensrow">
+                  <SubTabs
+                    size="mini"
+                    className="operator__lens"
+                    options={[
+                      { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
+                      { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
+                    ]}
+                    value={lens}
+                    onSelect={setLens}
+                    ariaLabel={t.operator.lensAria}
+                    tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
+                  />
+                  {/* « Voir dans l'app » — the way back to the live surface this sub
+                      configures (SUB_GOTO, the board▸Disposition mirror generalized).
+                      Subs that are pure machinery have no entry. It used to own a whole
+                      row between the sub rail and the first setting; it rides the lens
+                      row's empty right half instead, which is also where it belongs:
+                      Comprendre · Régler · go SEE it. The label hides on a narrow phone
+                      (the ↗ glyph + its aria-label/title carry it there) and returns the
+                      moment there's room — never an unnamed control. */}
+                  {lens === 'regler' && activeSub && SUB_GOTO[`${tab}/${activeSub.key}`] && (
+                    <Link
+                      className="operator__goto mono"
+                      to={SUB_GOTO[`${tab}/${activeSub.key}`]}
+                      aria-label={t.operator.gotoFeature}
+                      title={t.operator.gotoFeature}
+                    >
+                      <InlineIcon name="arrow-up-right-bold" size={14} />
+                      <span>{t.operator.gotoFeature}</span>
+                    </Link>
+                  )}
+                </div>
               )}
               {lens === 'regler' && subs ? (
                 <>
@@ -643,15 +660,6 @@ export function Operator() {
                     ariaLabel={t.operator.jumpAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
                   />
-                  {/* « Voir dans l'app » — the way back to the live surface this
-                      sub configures (SUB_GOTO, the board▸Disposition mirror
-                      generalized). Subs that are pure machinery have no entry. */}
-                  {activeSub && SUB_GOTO[`${tab}/${activeSub.key}`] && (
-                    <Link className="operator__goto mono" to={SUB_GOTO[`${tab}/${activeSub.key}`]}>
-                      <InlineIcon name="arrow-right-bold" size={14} />
-                      <span>{t.operator.gotoFeature}</span>
-                    </Link>
-                  )}
                   {activeSub?.node}
                 </>
               ) : (
@@ -661,6 +669,29 @@ export function Operator() {
           )}
         </div>
       </div>
+
+      {/* « Déconnexion » — at the FOOT, on every tab. It used to sit second from the
+          top, above the tab rail: the rarest action in the app, and the loudest thing
+          on the page after the heading. Down here it is still one scroll from
+          anywhere in Réglages and it stops competing with the settings you came for.
+          A guest has no session to drop (and no household chrome at all). */}
+      {!guest && signedIn && (
+        <div className="operator__signout">
+          <button
+            type="button"
+            className="btn btn--ghost mono"
+            onClick={() => {
+              // Drop the picked face with the session — on a shared device the next
+              // family signing in must not inherit a ghost member id (the X-Profile
+              // header would mis-attribute their writes).
+              setMemberId(null)
+              signOut().then(() => nav('/'))
+            }}
+          >
+            {t.nav.logout}
+          </button>
+        </div>
+      )}
     </main>
   )
 }

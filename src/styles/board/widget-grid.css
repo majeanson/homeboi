@@ -217,16 +217,18 @@
 /* The one-time "hold a card" discoverability line — the edit bar's quiet card
    look, one line + its ✕. Its OWN class (not `.board-edit`): the e2e suite pins
    `.board-edit` as "edit mode is armed", and this shows precisely when it isn't. */
+/* The one-time "hold a card to rearrange" line. It lives at the FOOT of the board
+   now (it used to sit above every card): quieter down there — no card shadow, just a
+   hairline — so the end of the board reads as the end of the board. */
 .board-edit-hint {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 0 0 1rem;
-  padding: 0.45rem 0.6rem 0.45rem 1rem;
+  margin: 1.25rem 0 0;
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
   border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
+  border: 1px dashed var(--line);
 }
 .board-edit-hint > .mono {
   color: var(--ink-soft);

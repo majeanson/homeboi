@@ -4,13 +4,25 @@
   margin: 0 auto;
   padding: 1.5rem 1.25rem 4rem;
 }
+/* The identity line (household · IA · a kiosk's « Se connecter »). It used to
+   also carry the page's H1 and the sign-out button, which is why it wrapped onto
+   two lines and cost ~130px before the tab rail even started. */
 .operator__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+/* « Déconnexion » at the foot: a quiet band under the settings, separated by a
+   hairline so it reads as "the end of the page", not as another setting. */
+.operator__signout {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
 }
 .operator__meta {
   display: flex;
@@ -79,11 +91,24 @@
 /* « Voir dans l'app » — the shared backlink from a Réglages sub to the live
    surface it configures (SUB_GOTO in lib/settingsNav): one calm pill between
    the sub row and its section card(s). */
+/* Comprendre / Régler on the left, « Voir dans l'app » on the right half the lens
+   pills leave empty. Wraps honestly when it can't fit (the Cluster rule). */
+.operator__lensrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.operator__lensrow .operator__lens {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .operator__goto {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  margin: 0.15rem 0 0.9rem;
+  margin: 0;
   padding: 0.45rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -92,6 +117,16 @@
   font-weight: 600;
   font-size: 0.85rem;
   text-decoration: none;
+}
+/* Narrow phone: the ↗ alone, named by its aria-label + title. The word returns as
+   soon as the row can hold it — never a permanently unnamed control. */
+@media (max-width: 30rem) {
+  .operator__goto {
+    padding: 0.45rem 0.55rem;
+  }
+  .operator__goto > span {
+    display: none;
+  }
 }
 .operator__goto:hover {
   border-color: var(--line-strong);

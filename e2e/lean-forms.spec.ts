@@ -132,3 +132,72 @@ test('the intake’s per-person card keeps Surnom + Genre inline — no empty-la
   await expect(page.getByText('Surnom', { exact: true })).toBeVisible()
   await expect(page.getByText('Genre', { exact: true })).toBeVisible()
 })
+
+// ── Réglages + le babillard ─────────────────────────────────────────────────────
+// Same pass, on the two surfaces you land on most. Réglages stacked a heading, an
+// identity line, a sign-out button and THREE control rails before its first setting
+// (~490px of a 844px phone); the board put a one-time "hold a card to rearrange"
+// note above every card on the one screen whose whole job is to be glanceable.
+
+test('Réglages has no « Réglages » heading and no sign-out at the top', async ({ page }) => {
+  await phone(page, '/settings?tab=board&lens=regler')
+  await expect(page.locator('.operator__tabs')).toBeVisible()
+
+  // The nav tab at the foot says the word, and it is the lit one — so the heading
+  // takes NO space, while still existing for a screen reader (dropping the page's
+  // only h1 would be a real regression, not a lean win).
+  const h1 = page.locator('.operator h1')
+  await expect(h1).toHaveCount(1)
+  await expect(h1).toHaveClass(/sr-only/)
+  // sr-only clips to a 1px box rather than display:none (that is what keeps it in
+  // the accessibility tree), so assert the SPACE it takes, which is the real claim.
+  expect((await h1.boundingBox())!.height).toBeLessThanOrEqual(1)
+  await expect(page.getByRole('link', { name: 'Réglages' })).toBeVisible()
+
+  // Sign-out is at the FOOT, under the settings — not second from the top.
+  const out = page.locator('.operator__signout')
+  await expect(out).toBeVisible()
+  const head = page.locator('.operator__head')
+  expect((await out.boundingBox())!.y).toBeGreaterThan((await head.boundingBox())!.y)
+  const firstCard = page.locator('.operator__section').first()
+  expect((await out.boundingBox())!.y).toBeGreaterThan((await firstCard.boundingBox())!.y)
+
+  // …and the first setting is now within the first screen.
+  expect((await firstCard.boundingBox())!.y).toBeLessThan(400)
+})
+
+test('« Voir dans l’app » rides the lens row, and keeps a name when its label hides', async ({ page }) => {
+  await phone(page, '/settings?tab=board&lens=regler')
+  const goto = page.locator('.operator__goto')
+  await expect(goto).toBeVisible()
+
+  // Same row as Comprendre / Régler — not a line of its own above the settings.
+  const lens = page.locator('.operator__lens')
+  const a = (await goto.boundingBox())!
+  const b = (await lens.boundingBox())!
+  expect(Math.abs(a.y - b.y), 'the goto shares the lens row').toBeLessThan(24)
+
+  // On a narrow phone the word hides; the control must NOT go unnamed.
+  await expect(goto.locator('span')).toBeHidden()
+  await expect(goto).toHaveAttribute('aria-label', 'Voir dans l’app')
+
+  // Wider: the word comes back.
+  await page.setViewportSize({ width: 900, height: 800 })
+  await expect(goto.locator('span')).toBeVisible()
+})
+
+test('the board’s edit hint sits under the cards, not over them', async ({ page }) => {
+  await phone(page, '/board')
+  const hint = page.locator('.board-edit-hint')
+  await expect(hint).toBeVisible()
+
+  // Below the grid it describes — it used to displace the first card.
+  const grid = page.locator('.board-grid')
+  expect((await hint.boundingBox())!.y).toBeGreaterThan((await grid.boundingBox())!.y)
+
+  // Still one-time + per-device: dismissing retires it.
+  await hint.getByRole('button').click()
+  await expect(page.locator('.board-edit-hint')).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('.board-edit-hint')).toHaveCount(0)
+})
