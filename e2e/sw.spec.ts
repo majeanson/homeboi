@@ -39,6 +39,28 @@ test('the service worker precaches the shell and reboots offline', async ({ page
   expect(precached).toContain('/')
   expect(precached!.some((p) => /\.js$/.test(p)), 'precache holds a hashed JS bundle').toBe(true)
 
+  // EVERY bundle this build promised, not merely "at least one .js". install() adds
+  // the entries with allSettled — deliberately, so one renamed public file can't
+  // take the whole shell down — which also means a JS bundle that failed to cache
+  // still lets the SW activate and claim the page. A hole there is invisible while
+  // the tablet is online and surfaces later as a blank screen on the first offline
+  // reboot; here it surfaced as a bare "'.hub' never appeared" timeout further down,
+  // with nothing pointing at the cause. Read the promise back out of /sw.js and
+  // check the cache actually kept it.
+  const promised = await page.evaluate(async () => {
+    const src = await fetch('/sw.js').then((r) => r.text())
+    const from = src.indexOf('[', src.indexOf('const PRECACHE ='))
+    const to = src.indexOf(']', from)
+    return from < 0 || to < 0 ? null : (JSON.parse(src.slice(from, to + 1)) as string[])
+  })
+  expect(promised, '/sw.js exposes the PRECACHE list it was built with').not.toBeNull()
+  const bundles = promised!.filter((u) => u.endsWith('.js'))
+  expect(bundles.length, 'the build baked hashed JS bundles into PRECACHE').toBeGreaterThan(0)
+  expect(
+    bundles.filter((u) => !precached!.includes(u)),
+    'every JS bundle in PRECACHE actually landed in the cache',
+  ).toEqual([])
+
   // Kill the network and reboot the tablet: the navigation can't reach the server, so
   // the SW must serve the cached shell — and the board still boots.
   await page.context().setOffline(true)
