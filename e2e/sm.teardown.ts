@@ -10,6 +10,25 @@ import { join } from 'node:path'
 // gets hoisted into a `review` block instead of sitting in a column.
 const LOW_CONTENT_CHARS = 200
 
+// …and the screens ALREADY understood to be sparse, with why. Reviewed 2026-08-26 by
+// opening every one of the 16 the flag first raised: none was a lean gap.
+//
+// This list is the difference between a signal and noise. A flag that fires 16 times
+// every single run gets scrolled past within a month — the same way aboveFoldChars
+// sat unread in the manifest while /notes was being measured on an empty page. So the
+// console names only the UNEXPLAINED ones; the rest are counted and kept in the
+// manifest. Adding a line here is a VERDICT: you opened the PNG and it is sparse by
+// design. Never add one to quieten something you have not looked at.
+const LOW_CONTENT_EXPECTED: { match: RegExp; why: string }[] = [
+  { match: /-toddler(-|$)/, why: 'toddler lens — big picture cards and audio, almost no text by design' },
+  { match: /^first-/, why: 'the first-run walk — these fixtures are deliberately empty' },
+  { match: /^note-editor/, why: 'a blank writing surface: toolbar + placeholder is all there is before you type' },
+  { match: /^kitchen-ideas/, why: 'the Idées drawer holds 2 ideas in the fixture; no budget on this entry (report-only)' },
+  { match: /^form-/, why: 'a form is fields, not prose — its first field sits at ~17px' },
+  { match: /^maison-carnets/, why: 'seeded with 2 carnet rows on purpose — enough to measure the row rhythm' },
+]
+const explain = (name: string) => LOW_CONTENT_EXPECTED.find((r) => r.match.test(name))?.why ?? null
+
 type State = {
   name: string
   pass: boolean
@@ -40,7 +59,13 @@ export default function mergeManifest() {
     // sparse (fine — say so) or its fixture is empty and any budget on it is a lie.
     lowContent: withChars
       .filter((s) => (s.assertions.aboveFoldChars ?? 0) < LOW_CONTENT_CHARS)
-      .map((s) => ({ name: s.name, aboveFoldChars: s.assertions.aboveFoldChars, contentTopPx: s.assertions.contentTopPx ?? null }))
+      .map((s) => ({
+        name: s.name,
+        aboveFoldChars: s.assertions.aboveFoldChars,
+        contentTopPx: s.assertions.contentTopPx ?? null,
+        // null = nobody has looked at this one yet. That is the whole signal.
+        expected: explain(s.name),
+      }))
       .sort((a, b) => (a.aboveFoldChars ?? 0) - (b.aboveFoldChars ?? 0)),
     // Budgeted entries that matched an empty state. The spec hard-fails these, so a
     // non-empty list here means the run is already red — it is listed for the reader.
@@ -73,8 +98,14 @@ export default function mergeManifest() {
 
   // Say it on the console too: a scheduled run's log is the only thing a human sees
   // when nothing failed, and "0 failing" is exactly when a silent lie survives.
-  if (review.lowContent.length) {
-    const names = review.lowContent.map((s) => `${s.name} (${s.aboveFoldChars})`).join(', ')
-    console.log(`[matrix] ${review.lowContent.length} screen(s) under ${LOW_CONTENT_CHARS} chars above the fold — check the fixture, not just the number: ${names}`)
+  const unexplained = review.lowContent.filter((s) => !s.expected)
+  if (unexplained.length) {
+    const names = unexplained.map((s) => `${s.name} (${s.aboveFoldChars})`).join(', ')
+    console.log(
+      `[matrix] ${unexplained.length} NEW screen(s) under ${LOW_CONTENT_CHARS} chars above the fold — ` +
+        `open the PNG and decide: sparse by design, or an empty fixture making its budget a lie? ${names}`,
+    )
+  } else if (review.lowContent.length) {
+    console.log(`[matrix] ${review.lowContent.length} sparse screen(s), all previously reviewed — nothing new to look at.`)
   }
 }
