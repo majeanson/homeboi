@@ -387,3 +387,33 @@ test('La liste: a staged deal with no price shows the store alone — no danglin
   await expect(deal).toHaveText(/Maxi/)
   await expect(deal).not.toHaveText(/·/)
 })
+
+// ── « Avant de partir » · « L'auto » ───────────────────────────────────────────
+
+test('« Avant de partir » keeps its add box behind the heading ＋', async ({ page }) => {
+  await phone(page, '/board/departure')
+  // .sec-label renders its title in a <b>, not a heading role.
+  await expect(page.locator('.todo-sec .sec-label', { hasText: 'Listes de départ' })).toBeVisible()
+
+  // A surface you open to READ what to grab on the way out should not lead with an
+  // add box. The picker waits behind the ＋ in the heading (shared SectionAdd, the
+  // slot TodoSection gained for this).
+  await expect(page.locator('.todo-sec .edit-field, .todo-sec .combo')).toHaveCount(0)
+  const plus = page.locator('.todo-sec .sec-label__actbtn')
+  await expect(plus).toBeVisible()
+  await expect(plus).toHaveAttribute('aria-expanded', 'false')
+
+  await plus.click()
+  await expect(plus).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.locator('.todo-sec .edit-field, .todo-sec .combo').first()).toBeVisible()
+})
+
+test('« L’auto » drops a subtitle that only echoes its title', async ({ page }) => {
+  await phone(page, '/voiture')
+  const head = page.locator('.scene__head-titles')
+  await expect(head).toBeVisible()
+  // An unrenamed car is seeded « L'auto », so under « L'auto cette semaine » the
+  // subtitle said the same word twice. A real name would still show.
+  await expect(head).toContainText('cette semaine')
+  await expect(page.locator('.scene__head-titles .scene__sub, .scene__subtitle')).toHaveCount(0)
+})

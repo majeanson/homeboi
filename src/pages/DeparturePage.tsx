@@ -14,6 +14,7 @@ import { MONTH_KEY, WEATHER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { TodoSection } from '../components/todos/TodoSection'
+import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { Act } from '../components/board/Act'
 import { AutoCard } from '../components/board/AutoCard'
 import { ActivityBring } from '../components/board/ActivityBring'
@@ -41,6 +42,9 @@ export function DeparturePage() {
   const { lang } = useLang()
   const close = useSceneClose('/board')
   useEscapeKey(close)
+  // The checklist picker waits behind the heading ＋ (shared SectionAdd) — see the
+  // TodoSection call below.
+  const listAdd = useSectionAdd()
 
   const [params] = useSearchParams()
   const today = todayLocalDay()
@@ -114,6 +118,15 @@ export function DeparturePage() {
           bento={false}
           show="checklists"
           foldSections
+          // The picker (« Ajouter à compléter… » + a solid « Ajouter ») sat open
+          // between the heading and the day's actual checklists — an add box on a
+          // surface you open to READ what to grab before walking out the door. It
+          // waits behind the heading's ＋ now (the shared SectionAdd), opens focused,
+          // and folds away once something is written.
+          picker={listAdd.open ? 'templates' : 'none'}
+          addAutoFocus={listAdd.autoFocus}
+          onAdded={listAdd.close}
+          action={<SectionAdd open={listAdd.open} onToggle={listAdd.toggle} label={t.todos.addPlaceholder} />}
         />
 
         {/* « À apporter » — the bring-lists for the day's activities (soccer cleats,

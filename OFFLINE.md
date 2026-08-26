@@ -36,9 +36,17 @@ Rules that keep it fixed:
   `success`/`error`/**`onblocked`** and a ~3s timeout, so a hung/blocked open resolves
   `null` instead of leaving a dangling promise. `open()` throwing (private mode) is
   caught → `null`. A `null` db degrades to "no persistence," never a hang.
-- **The service worker precaches entries independently** (`Promise.allSettled` +
-  `cache.add`, not atomic `addAll`): one renamed/missing public asset can't abort the
-  whole shell precache and leave the JS bundle uncached on a first install.
+- **The service worker precaches in TWO tiers** — and only one of them tolerates a
+  failure. `PRECACHE_OPTIONAL` (public/ files) stays best-effort (`allSettled`), so a
+  renamed icon can never take the shell down. `PRECACHE_CRITICAL` (the shell entry +
+  this build's hashed bundles) is **all-or-nothing with a retry** (`cacheOne(…, 3)`):
+  "they always exist for this build" is a BUILD-time fact, not a runtime one — the
+  fetch can still blip — and swallowing that used to activate a worker around a shell
+  with a hole in it, invisible until the tablet next rebooted offline. If a critical
+  entry still won't land, install FAILS, which is the safe outcome: the browser
+  retries later and the previous worker keeps serving.
+  *(This bullet used to describe the old `allSettled` + `cache.add` behaviour for BOTH
+  tiers — that is exactly the tolerance that was removed.)*
 
 Covered by `e2e/offline-boot.spec.ts` (hung open + unavailable open → app still mounts)
 and `e2e/sw.spec.ts` (shell reboots offline).

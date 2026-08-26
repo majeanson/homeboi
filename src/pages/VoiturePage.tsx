@@ -49,6 +49,11 @@ export function VoiturePage() {
   const write = useWrite()
   const confirm = useConfirm()
   const { name: carName, color: carColorOf, primary } = useCars()
+  // …and the subtitle only when the name adds something (see SceneHead below).
+  const carSub = (() => {
+    const n = carName(primary?.id)?.trim()
+    return n && !t.auto.weekTitle.includes(n) ? n : undefined
+  })()
   const carId = primary?.id ?? 'car'
   const carColor = colourFor('car', carColorOf(primary?.id))
   const { data: membersData } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), ...live })
@@ -153,7 +158,11 @@ export function VoiturePage() {
           the head ⋯ now; reset keeps its danger tone + its own confirm. */}
       <SceneHead
         title={t.auto.weekTitle}
-        subtitle={carName(primary?.id) ?? t.auto.car}
+        // The car's NAME — but only when it SAYS something the title has not. An
+        // unrenamed car is seeded « L'auto » (t.operator.carDefaultName), so under the
+        // title « L'auto cette semaine » the subtitle was the same word twice. A
+        // household that named theirs « La Civic » still gets it.
+        subtitle={carSub}
         onClose={close}
         action={
           <ActionMenu

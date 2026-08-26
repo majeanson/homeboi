@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '../EmptyState'
 import { api } from '../../lib/api'
@@ -74,6 +74,7 @@ export function TodoSection({
   foldSections = false,
   foldAll = false,
   picker = 'templates',
+  action,
   addAutoFocus,
   onAdded,
   emptyText,
@@ -89,6 +90,11 @@ export function TodoSection({
   foldSections?: boolean
   foldAll?: boolean
   picker?: 'templates' | 'plain' | 'none'
+  /** One quiet control at the heading's trailing edge — the same slot Section /
+   *  SecLabel carry, so a caller can put a **SectionAdd** ＋ here and drive
+   *  `picker` from its open state instead of leaving an add box permanently open
+   *  above the list. « Avant de partir » is the first user. */
+  action?: ReactNode
   // The host opens the add field behind its own header ＋ (the board's « À faire »,
   // mirroring the Notes card): focus the box the moment it appears, and tell the host
   // once something was actually written so it can close again.
@@ -370,6 +376,7 @@ export function TodoSection({
         <b>{title}</b>
         <span className="ln" />
         {openCount ? <span className="ct">{openCount}</span> : null}
+        {action ? <span className="sec-label__act">{action}</span> : null}
       </div>
 
       {all.length === 0 && !ro ? (
