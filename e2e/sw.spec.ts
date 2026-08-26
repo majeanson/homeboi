@@ -64,6 +64,14 @@ test('the service worker precaches the shell and reboots offline', async ({ page
     'every critical entry actually landed in the cache',
   ).toEqual([])
 
+  // Anything the offline boot logs — the only witness when the shell doesn't come
+  // back and there is no trace to open (see the throw below).
+  const consoleErrors: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text().slice(0, 200))
+  })
+  page.on('pageerror', (e) => consoleErrors.push('pageerror: ' + e.message.slice(0, 200)))
+
   // Kill the network and reboot the tablet: the navigation can't reach the server, so
   // the SW must serve the cached shell — and the board still boots.
   await page.context().setOffline(true)
@@ -75,11 +83,36 @@ test('the service worker precaches the shell and reboots offline', async ({ page
   // (src/lib/persist.ts, OFFLINE.md) — was left on Playwright's silent 5s default,
   // the only wait in this spec not already sized for CI (every other wait here is
   // an explicit 15–20s). Match that budget instead of the tool default.
-  // 15s was not enough on a loaded runner: this flaked TWICE at 16.1s and 16.4s
-  // (2026-08-25) while taking under a second locally, and a plain re-run of the same
-  // commit went green. The margin, not the code, was the problem — a real break here
-  // (no SW, no cached shell) still fails, it just takes longer to say so.
-  await expect(page.locator('.hub')).toBeVisible({ timeout: 30_000 })
+  // This is THE assertion of NFR-OFFLINE-1 ("a cheap always-on wall tablet reboots
+  // with no network and still boots the board"), and it fails intermittently on CI
+  // while passing 10/10 locally in ~2s each. Widening the wait (15s → 30s) did NOT
+  // fix it — it then failed at the full 30s — so the margin was never the cause.
+  //
+  // The harness gave us nothing to look at: this config uses the plain-list reporter and
+  // its own output folder (test-results-sw), which the e2e workflow did not upload, so a
+  // CI failure arrived as a bare "element(s) not found". Both halves are fixed — the
+  // workflow now uploads that folder, and this throw carries the state of the page
+  // into the log, which is the half that survives even when artifacts don't.
+  try {
+    await expect(page.locator('.hub')).toBeVisible({ timeout: 30_000 })
+  } catch (err) {
+    const diag = await page
+      .evaluate(async () => ({
+        url: location.href,
+        title: document.title,
+        controlled: navigator.serviceWorker.controller !== null,
+        rootChildren: document.getElementById('root')?.childElementCount ?? -1,
+        bodyText: (document.body?.innerText ?? '(no body)').replace(/\s+/g, ' ').slice(0, 300),
+        cacheNames: await caches.keys(),
+      }))
+      .catch((e) => ({ evaluateFailed: String(e).slice(0, 200) }))
+    throw new Error(
+      'offline reboot never rendered .hub\n' +
+        'page: ' + JSON.stringify(diag, null, 2) + '\n' +
+        'console: ' + JSON.stringify(consoleErrors.slice(0, 8), null, 2) + '\n' +
+        (err as Error).message,
+    )
+  }
   // Still SW-controlled after the offline reboot (the shell came from cache, not a
   // live server round-trip).
   expect(await page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)

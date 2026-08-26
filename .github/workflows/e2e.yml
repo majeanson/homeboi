@@ -58,4 +58,8 @@ jobs:
           path: |
             e2e/report
             e2e/screenshots
+            # The SW harness writes here (e2e/sw.config.ts outputDir + its own
+            # trace-on-first-retry). It was missing, so the one spec guarding the
+            # offline promise failed on CI with nothing to open.
+            e2e/test-results-sw
           retention-days: 7
