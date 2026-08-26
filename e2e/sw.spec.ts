@@ -72,6 +72,20 @@ test('the service worker precaches the shell and reboots offline', async ({ page
   })
   page.on('pageerror', (e) => consoleErrors.push('pageerror: ' + e.message.slice(0, 200)))
 
+  // …and WHICH requests failed. Chrome's console line ("status of 504") carries no
+  // URL, and the SW answers 504 for two different reasons — a cache miss whose
+  // network fallback died offline, and the « Stale asset » refusal (an HTML body
+  // under a .js URL, the grey-screen trap). Recording url+status here, and reading
+  // each one back against `promised` (the precache list this build baked in), says
+  // which of the two it is: a failing URL that IS precached means the cache lookup
+  // missed something it holds; one that is NOT means the shell references an asset
+  // the precache never covered — a very different bug, and check-bundle.mjs would
+  // be wrong about it.
+  const failed: { url: string; status: number; statusText: string }[] = []
+  page.on('response', (r) => {
+    if (r.status() >= 400) failed.push({ url: r.url(), status: r.status(), statusText: r.statusText() })
+  })
+
   // Kill the network and reboot the tablet: the navigation can't reach the server, so
   // the SW must serve the cached shell — and the board still boots.
   await page.context().setOffline(true)
@@ -106,9 +120,24 @@ test('the service worker precaches the shell and reboots offline', async ({ page
         cacheNames: await caches.keys(),
       }))
       .catch((e) => ({ evaluateFailed: String(e).slice(0, 200) }))
+    // Cross-reference every failed request against what this build promised to
+    // precache — that single column is what turns "something 504'd" into a cause.
+    const promisedSet = new Set(promised ?? [])
+    const failures = failed.slice(0, 12).map((f) => {
+      const path = (() => {
+        try {
+          return new URL(f.url).pathname
+        } catch {
+          return f.url
+        }
+      })()
+      return `${f.status} ${f.statusText || ''} ${path} ${promisedSet.has(path) ? '[PRECACHED]' : '[not in precache]'}`
+    })
     throw new Error(
       'offline reboot never rendered .hub\n' +
         'page: ' + JSON.stringify(diag, null, 2) + '\n' +
+        'failed requests: ' + JSON.stringify(failures, null, 2) + '\n' +
+        'precache held ' + (promised?.length ?? 0) + ' entries\n' +
         'console: ' + JSON.stringify(consoleErrors.slice(0, 8), null, 2) + '\n' +
         (err as Error).message,
     )
