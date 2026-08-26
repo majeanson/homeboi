@@ -169,6 +169,8 @@ describe('boardModel', () => {
       ['an event', { today: [ev()] }],
       ['a chore', { choresToday: [chore()] }],
       ['home upkeep', { homeToday: [chore({ id: 'h1' })] }],
+      // An owed entretien must keep the « À faire » card up (the carry-forward).
+      ['overdue upkeep', { homeOverdue: [{ ...chore({ id: 'ho1' }), overdueSince: 1 }] }],
       ['a non-supper meal', { todayMeals: [meal()] }],
       ['a supper', { tonightMeals: [meal({ slot: 'supper' })] }],
       ['a leftover', { leftovers: [{ id: 'l1', title: 'Restants' }] }],
@@ -332,6 +334,11 @@ describe('boardModel', () => {
       const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
       expect(model.today.home.map((c) => c.id)).toEqual(['h1'])
     })
+    it('overdue entretien is family-wide too — the carry-forward survives a focus', () => {
+      const data = mkData({ homeOverdue: [{ ...chore({ id: 'ho1', who_id: 'bob' }), overdueSince: 1 }] })
+      const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
+      expect(model.today.homeOverdue.map((c) => c.id)).toEqual(['ho1'])
+    })
   })
 
   describe('fêtes merge + sort', () => {
@@ -417,11 +424,13 @@ describe('boardModel', () => {
         choresToday: [chore({ id: 'ch1' })],
         todos: [chore({ id: 'td1' })],
         homeToday: [chore({ id: 'ho1' })],
+        homeOverdue: [{ ...chore({ id: 'hov1' }), overdueSince: 1 }],
       })
-      const model = buildBoardModel(baseInput({ data, pendingDone: new Set(['ch1', 'td1', 'ho1']) }))
+      const model = buildBoardModel(baseInput({ data, pendingDone: new Set(['ch1', 'td1', 'ho1', 'hov1']) }))
       expect(model.today.chores).toEqual([])
       expect(model.today.todos).toEqual([])
       expect(model.today.home).toEqual([])
+      expect(model.today.homeOverdue).toEqual([])
     })
     it('filters a leftover held behind its own undo toast', () => {
       const data = mkData({ leftovers: [{ id: 'lf1', title: 'Restants' }] })

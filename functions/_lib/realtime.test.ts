@@ -114,7 +114,17 @@ describe('keysForPath', () => {
   })
 
   it('maps capture to every target it can route a note to', () => {
-    expect(keysForPath('capture')).toEqual([['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler'], ['meal-history']])
+    // + home-projects/month since the `upkeep` intent routes to home_projects.
+    expect(keysForPath('capture')).toEqual([
+      ['board'],
+      ['meals'],
+      ['pantry'],
+      ['leftovers'],
+      ['a-regler'],
+      ['meal-history'],
+      ['home-projects'],
+      ['month'],
+    ])
   })
 
   it('maps sample-data seed/clear to a broad board-facing superset (not the bare board default)', () => {

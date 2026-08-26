@@ -6,6 +6,8 @@ import { classifyCapture, resolveLang, type Intent } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { parseWhen } from '../_lib/whenparse'
+import { normalizeRecur } from '../_lib/recur'
+import { parseRecurPhrase, seasonAnchorFor } from '../_lib/recurParse'
 import { profileMemberId } from '../_lib/profile'
 import { resolveMemberByName } from '../_lib/members'
 import { householdMealLayout } from '../_lib/mealSlots'
@@ -69,7 +71,7 @@ type Cleanup = { table: string; id: string }
 
 // Only these tables can be cleaned up, and only within the actor's household — so
 // a round-tripped ref grants no reach the actor doesn't already have.
-const CLEANUP_TABLES = new Set(['events', 'tasks', 'list_items', 'pantry_low', 'meals', 'meal_leftovers', 'notes'])
+const CLEANUP_TABLES = new Set(['events', 'tasks', 'list_items', 'pantry_low', 'meals', 'meal_leftovers', 'home_projects', 'notes'])
 
 async function applyCleanup(env: Env, hh: string, undo: Cleanup[]): Promise<void> {
   const dels = (Array.isArray(undo) ? undo : [])
@@ -209,6 +211,28 @@ async function routeIntent(
         .bind(id, hh, title, ts)
         .run()
       return { kind: 'leftover', label: title, cleanup: [{ table: 'meal_leftovers', id }] }
+    }
+    case 'upkeep': {
+      // A RECURRING entretien ("nettoyer les gouttières chaque automne") → a normal
+      // home_projects upkeep row, so it rides the whole existing machinery (board,
+      // season card, month/year, overdue carry-forward). The model's recur hint is
+      // re-validated (normalizeRecur); the raw words are the regex fallback
+      // (parseRecurPhrase — also THE path for the manual « Entretien » re-route,
+      // where no AI ran). Anchor priority: a season word → its season anchor; a
+      // stated date → that day; else today (recurrence needs an anchor).
+      const title = p.title || raw
+      const phrase = parseRecurPhrase(raw)
+      const recur = normalizeRecur(p.recur) ?? phrase?.recur ?? null
+      const seasonAnchor = seasonAnchorFor(p.season) ?? phrase?.seasonAnchor ?? null
+      const at =
+        seasonAnchor ?? (p.when ? localDayStart(new Date(parseWhen(p.when, Date.now()).startAt * 1000)) : localDayStart(new Date(ts * 1000)))
+      const id = newId()
+      await env.DB.prepare(
+        'INSERT INTO home_projects (id, household_id, kind, title, at, recur_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      )
+        .bind(id, hh, 'upkeep', title, at, recur ? JSON.stringify(recur) : null, ts, ts)
+        .run()
+      return { kind: 'upkeep', label: title, cleanup: [{ table: 'home_projects', id }] }
     }
     case 'note':
     default: {

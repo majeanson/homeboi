@@ -186,7 +186,7 @@ const PATH_KEYS: Record<string, string[][]> = {
   ghost: [['ghosts'], ['board']],
   // Capture routes a note to any of these targets, so refetch the lot (a new event /
   // meal / pantry-low item can all change the « À régler » heads-up).
-  capture: [['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler'], ['meal-history']],
+  capture: [['board'], ['meals'], ['pantry'], ['leftovers'], ['a-regler'], ['meal-history'], ['home-projects'], ['month']],
   // Le cercle (people directory): a contact or relationship edit refreshes the
   // tab; a birthday edit also re-derives the board's "Anniversaires à venir" and the
   // « À régler » gift-idea heads-up.

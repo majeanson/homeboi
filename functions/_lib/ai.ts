@@ -26,7 +26,7 @@ export function resolveLang(env: Env, request: Request): Lang {
   return 'fr'
 }
 
-type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' | 'leftover' | 'note'
+type IntentType = 'event' | 'task' | 'list-item' | 'pantry-low' | 'meal' | 'leftover' | 'upkeep' | 'note'
 
 export interface Intent {
   type: IntentType
@@ -39,6 +39,10 @@ export interface Intent {
     when?: string // natural-language date/time echo, e.g. "mardi 15h"
     slot?: string // meal slot
     person?: string // member name hint
+    // upkeep only — a recurrence hint ("chaque automne", "aux 3 mois"). The route
+    // re-validates through normalizeRecur / parseRecurPhrase; never trusted raw.
+    recur?: { freq?: string; interval?: number }
+    season?: string // season word echo ("automne") → the route derives the anchor
   }
   degraded?: boolean
 }
@@ -62,9 +66,10 @@ const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
 // mirrors the same six types and payload shape.
 const SYSTEM: Record<Lang, string> = {
   fr: `Tu classes une note de famille en JSON. Réponds UNIQUEMENT avec du JSON valide, rien d'autre.
-Types possibles: "event" (rendez-vous, activité, sortie, fête, anniversaire — avec une date/heure), "task" (corvée, tâche, ménage, « à faire »), "list-item" (article à acheter, épicerie, commission — « ajoute à la liste »), "pantry-low" (un aliment qui manque, achève ou qu'on n'a PLUS — « pus de », « manque de », « à racheter »), "meal" (un repas à cuisiner — souper, déjeuner, dîner, collation, dessert), "leftover" (des RESTES d'un plat déjà cuisiné qu'il faut finir — « il reste », « des restes de », « un restant de »), "note" (rappel, pense-bête, le reste).
+Types possibles: "event" (rendez-vous, activité, sortie, fête, anniversaire — avec une date/heure), "task" (corvée, tâche, ménage, « à faire »), "list-item" (article à acheter, épicerie, commission — « ajoute à la liste »), "pantry-low" (un aliment qui manque, achève ou qu'on n'a PLUS — « pus de », « manque de », « à racheter »), "meal" (un repas à cuisiner — souper, déjeuner, dîner, collation, dessert), "leftover" (des RESTES d'un plat déjà cuisiné qu'il faut finir — « il reste », « des restes de », « un restant de »), "upkeep" (un ENTRETIEN de la maison/auto qui REVIENT — « chaque automne », « aux 3 mois », « chaque année » : gouttières, filtre, pneus), "note" (rappel, pense-bête, le reste).
 Distinction importante: « pus de lait » = pantry-low (on n'en a plus, à acheter); « il reste du pâté chinois » = leftover (on en a encore, à manger); « souper tacos vendredi » = meal (à cuisiner).
-Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string}}.
+Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string, "recur"?: {"freq": "daily"|"weekly"|"monthly"|"yearly", "interval"?: number}, "season"?: string}}.
+"recur"/"season" servent seulement à "upkeep" : « aux 3 mois » -> {"freq":"monthly","interval":3}; « chaque automne » -> {"freq":"yearly"} + "season":"automne".
 Le champ "person" est le NOM de la personne CONCERNÉE (« pour Léa », « le rendez-vous de Marc », « c'est papa qui... »), pas qui parle. Mets-y le prénom seul. "when" accepte aussi « après-demain », « le 20 », « 20 juin », « lundi prochain ».
 Exemples:
 "dentiste mardi 15h" -> {"type":"event","payload":{"title":"dentiste","when":"mardi 15h"}}
@@ -78,11 +83,14 @@ Exemples:
 "gâteau au chocolat en dessert samedi" -> {"type":"meal","payload":{"title":"gâteau au chocolat","slot":"dessert","when":"samedi"}}
 "il reste de la lasagne" -> {"type":"leftover","payload":{"title":"lasagne"}}
 "des restes de poulet à finir" -> {"type":"leftover","payload":{"title":"poulet"}}
+"nettoyer les gouttières chaque automne" -> {"type":"upkeep","payload":{"title":"nettoyer les gouttières","recur":{"freq":"yearly"},"season":"automne"}}
+"changer le filtre de la fournaise aux 3 mois" -> {"type":"upkeep","payload":{"title":"changer le filtre de la fournaise","recur":{"freq":"monthly","interval":3}}}
 "penser à appeler maman" -> {"type":"note","payload":{"text":"appeler maman"}}`,
   en: `You sort a family note into JSON. Reply ONLY with valid JSON, nothing else.
-Possible types: "event" (appointment, activity, outing, party, birthday — with a date/time), "task" (a chore, task, cleanup, "to do"), "list-item" (something to buy, groceries, errand — "add to the list"), "pantry-low" (a food that's out, almost gone or you have NO more — "out of", "running low", "need more"), "meal" (a meal to cook — supper, breakfast, lunch, snack, dessert), "leftover" (LEFTOVERS from an already-cooked dish to finish — "there's leftover", "some X left", "rest of the"), "note" (reminder, memo, everything else).
+Possible types: "event" (appointment, activity, outing, party, birthday — with a date/time), "task" (a chore, task, cleanup, "to do"), "list-item" (something to buy, groceries, errand — "add to the list"), "pantry-low" (a food that's out, almost gone or you have NO more — "out of", "running low", "need more"), "meal" (a meal to cook — supper, breakfast, lunch, snack, dessert), "leftover" (LEFTOVERS from an already-cooked dish to finish — "there's leftover", "some X left", "rest of the"), "upkeep" (RECURRING home/car maintenance — "every fall", "every 3 months", "every year": gutters, filter, tires), "note" (reminder, memo, everything else).
 Important distinction: "out of milk" = pantry-low (none left, to buy); "there's leftover shepherd's pie" = leftover (still have some, to eat); "tacos for supper friday" = meal (to cook).
-Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string}}.
+Format: {"type": <type>, "payload": {"title"?: string, "item"?: string, "text"?: string, "when"?: string, "slot"?: string, "person"?: string, "recur"?: {"freq": "daily"|"weekly"|"monthly"|"yearly", "interval"?: number}, "season"?: string}}.
+"recur"/"season" are for "upkeep" only: "every 3 months" -> {"freq":"monthly","interval":3}; "every fall" -> {"freq":"yearly"} + "season":"fall".
 The "person" field is the NAME of the person the note is ABOUT ("for Léa", "Marc's appointment", "dad is..."), not who is speaking. Use the first name alone. "when" also accepts "day after tomorrow", "the 20th", "june 20", "next monday".
 Examples:
 "dentist tuesday 3pm" -> {"type":"event","payload":{"title":"dentist","when":"tuesday 3pm"}}
@@ -96,6 +104,8 @@ Examples:
 "chocolate cake for dessert saturday" -> {"type":"meal","payload":{"title":"chocolate cake","slot":"dessert","when":"saturday"}}
 "there's leftover lasagna" -> {"type":"leftover","payload":{"title":"lasagna"}}
 "leftover chicken to finish" -> {"type":"leftover","payload":{"title":"chicken"}}
+"clean the gutters every fall" -> {"type":"upkeep","payload":{"title":"clean the gutters","recur":{"freq":"yearly"},"season":"fall"}}
+"change the furnace filter every 3 months" -> {"type":"upkeep","payload":{"title":"change the furnace filter","recur":{"freq":"monthly","interval":3}}}
 "remember to call mom" -> {"type":"note","payload":{"text":"call mom"}}`,
 }
 
@@ -106,6 +116,7 @@ const VALID: ReadonlySet<IntentType> = new Set([
   'pantry-low',
   'meal',
   'leftover',
+  'upkeep',
   'note',
 ])
 

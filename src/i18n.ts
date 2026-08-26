@@ -427,7 +427,7 @@ export const FR = {
     listening: 'J’écoute…',
     routed: 'Ajouté :',
     pickType: 'C’était quoi ?',
-    types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', note: 'Note' },
+    types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', upkeep: 'Entretien', note: 'Note' },
     degraded: 'L’IA ne répond pas — choisis le type toi-même.',
     failed: 'La capture n’a pas fonctionné. Ton texte est gardé, réessaie.',
     // A-2 (bmad/10): offline (or a transport hiccup), the raw text is queued and
@@ -714,6 +714,9 @@ export const FR = {
     showAll: 'Tout voir',
     upcoming: 'À venir',
     soon: 'Bientôt',
+    // Entretien carry-forward — the calm « owed since » sub-line on a missed
+    // occurrence (muted date only; never a badge, count or « X jours de retard »).
+    lateSince: (d: string) => `En attente depuis le ${d}`,
     turn: 'C’est le tour de',
     done: 'Fait',
     helpedBy: 'Aidé par',
@@ -2209,6 +2212,18 @@ export const FR = {
       notesLabel: 'Notes',
       notesPlaceholder: 'Détails, devis, à déléguer…',
       dateLabel: 'Date (optionnel)',
+      // « À partir de la dernière fois » (recur_from='done', mig 0119) — the cycle
+      // re-anchors on the last check-off instead of the fixed date grid.
+      fromLastDone: 'À partir de la dernière fois',
+      fromLastDoneHint: 'La prochaine échéance se compte depuis la dernière coche, pas depuis la date fixe.',
+      fromLastDoneShort: 'depuis la dernière fois',
+      // Seasonal cadence presets (upkeep form) — one tap fills date + recurrence.
+      seasonLabel: 'Rythmes de saison :',
+      everySeason: 'Chaque saison',
+      everySpring: 'Chaque printemps',
+      everySummer: 'Chaque été',
+      everyAutumn: 'Chaque automne',
+      everyWinter: 'Chaque hiver',
       common: 'Courants :',
       done: 'Fait',
       // The ＋ « Corvées » sub-choice prompt (board AddSheet): chore vs the two

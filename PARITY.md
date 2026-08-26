@@ -266,7 +266,7 @@ Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 | Feature                  | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
 | ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
 | F1 Agenda                | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
-| F2 Corvées+Projets       | ✅      | ✅      | ✅      | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅³        | ➖¹       | ✅       | ✅      |
+| F2 Corvées+Projets       | ✅⁶⁶    | ✅      | ✅⁶⁶    | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅³        | ➖¹       | ✅       | ✅⁶⁶    |
 | F3 Todos (loose)         | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
 | F35 Avant de partir      | ✅⁵⁹    | ➖⁴     | ✅      | ✅         | ✅    | ➖⁶⁰      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁵⁹       | ➖¹       | ✅       | ✅⁶¹    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ➖²²       | ✅        | ✅       | ✅      |
@@ -556,6 +556,38 @@ Footnotes (verdicts recorded so far):
     same dismiss key, FeatureMap + tour replay retained, toddler lens never sees it
     (existing audience gate). FR-CA first + EN mirror (`t.welcome.demo*`). D16: the
     try-this test in `e2e/demo-claim.spec.ts` pins the face swap + the deep-link hrefs.
+
+66. **Entretiens saisonniers SHIPPED 2026-08-25 (F2, mig 0119 — one column, no new
+    table).** The yearly/seasonal-upkeep uniformization pass on `home_projects`
+    'upkeep', closing the audited cut corners: (a) **overdue carry-forward** — a
+    missed due date (recurring cycle or dated one-off) is derived on read
+    (`functions/_lib/upkeep.ts` `upkeepStatus.overdueSince`, backwards walk via the
+    new `recur.ts lastOccurrenceOnOrBefore`, 2-yr floor) and waits as a checkable
+    Act row on « À faire » (`board.homeOverdue`, blocks `dayClear`) + the season
+    card, wearing ONE muted « En attente depuis <date> » line — never a badge or
+    « X jours de retard » count (calm). (b) **completion-relative recurrence** —
+    `recur_from 'anchor'|'done'` (0119): « à partir de la dernière fois » re-anchors
+    the cycle on `last_done_at`'s day; form checkbox mirrors ChoreForm's
+    check+hint pattern. (c) **ONE expander** — `_lib/upkeep.ts`
+    (`upkeepOccurrences`/`upkeepStatus`) replaced the four per-endpoint
+    re-implementations (home-projects/board/month/year); calendars pass
+    `includeDone` (a cell records the day). (d) **seasonal vocabulary** — form
+    preset chips « Chaque printemps/été/automne/hiver/saison » compile to plain
+    `{freq:'yearly'|'monthly/3'}` + a `season.ts nextSeasonAnchorDate` anchor (NO
+    wire change; RecurPicker untouched — shared with EventForm); `SEASON_SEEDS`
+    grew 3→10 curated FR-CA rituals (same match/dismiss machinery, still plain
+    POSTs). (e) **capture** — new `upkeep` AI intent + `_lib/recurParse.ts` regex
+    backstop (« chaque automne », « aux 3 mois »; whenparse stays date-only) →
+    a normal upkeep row; `home_projects` joined `CLEANUP_TABLES` + the client
+    re-route tiles. Deliberate ➖: **no overdue paint on the month/year grid** (a
+    calendar cell is a fact of the day; the carry-forward lives on board + season
+    card), and **due-today stays on « Aujourd'hui »** (already a checkable row
+    there — À faire gets only the owed ones, no double-render). Guards:
+    `upkeep.test.ts`, `recurParse.test.ts`, `recur.test.ts` backwards-helper cases,
+    `boardModel.test.ts` (merge/pendingDone/dayClear), `season.test.ts` presets +
+    `seasonUpkeepItems` (the ONE board-card/Réglages-glance selection),
+    `e2e/upkeep-overdue.spec.ts` (renders + deferred-undo check + guest no-check).
+    [F2×D1/D3/D16; sibling of ³]
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

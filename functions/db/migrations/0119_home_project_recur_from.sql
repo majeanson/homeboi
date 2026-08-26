@@ -1,0 +1,12 @@
+-- « Entretiens saisonniers » — completion-relative recurrence for home_projects.
+--
+-- recur_from decides what a recurring row's cycle counts from:
+--   'anchor' — the fixed date grid anchored on `at` (default; the behaviour every
+--              existing row keeps). Right for date-fixed rituals: the tires go on
+--              in October whether or not last year's swap ran late.
+--   'done'   — « à partir de la dernière fois »: the cycle re-anchors on
+--              last_done_at's local day, so "filtre aux 3 mois" means 3 months
+--              after you actually did it. Falls back to the anchor grid until the
+--              first completion. Derived on read (functions/_lib/upkeep.ts) — no
+--              materialized occurrence rows, per the house on-read-expansion rule.
+ALTER TABLE home_projects ADD COLUMN recur_from TEXT NOT NULL DEFAULT 'anchor';

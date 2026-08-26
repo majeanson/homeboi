@@ -121,6 +121,22 @@ export function expandRange(anchorAt: number, r: Recur, rangeStart: number, rang
   return out
 }
 
+// The most recent occurrence of the series ON OR BEFORE `day` (a local-midnight
+// unix-s), or null. The backwards mirror of expandRange: walks by LOCAL calendar
+// days (DST-safe — never a -86400 step), bounded below by `floorDay` so a sparse
+// series (yearly, interval > 1) can't trigger an unbounded scan. Occurrences
+// never precede the anchor's day, so the anchor is an implicit floor too.
+// Used by _lib/upkeep to derive "the missed due date an entretien still owes".
+export function lastOccurrenceOnOrBefore(day: number, anchorAt: number, r: Recur, floorDay: number): number | null {
+  const anchorDay = localDayStart(new Date(anchorAt * 1000))
+  const floor = Math.max(anchorDay, localDayStart(new Date(floorDay * 1000)))
+  for (let d = localDayStart(new Date(day * 1000)); d >= floor; d = addLocalDays(d, -1)) {
+    const at = occurrenceOn(d, anchorAt, r)
+    if (at !== null) return at
+  }
+  return null
+}
+
 // Project a shared-chore rotation forward. A chore's stored `current_idx` is the
 // holder of the next PENDING occurrence — it advances by one only when someone
 // marks the chore done, never by the date passing. So to label FUTURE occurrences

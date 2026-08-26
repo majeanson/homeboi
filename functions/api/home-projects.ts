@@ -2,7 +2,8 @@ import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
-import { normalizeRecur, parseRecur, expandRange } from '../_lib/recur'
+import { normalizeRecur } from '../_lib/recur'
+import { upkeepStatus } from '../_lib/upkeep'
 
 // "Projets & Entretien" — the longer-horizon home work that lives under Corvées
 // but isn't a chore (see migration 0074). ONE table, `kind` ('plan'|'upkeep')
@@ -14,6 +15,10 @@ import { normalizeRecur, parseRecur, expandRange } from '../_lib/recur'
 // descriptive target only (no progress bar), no rotation, no counts.
 
 const kindOf = (v: unknown): 'plan' | 'upkeep' => (v === 'upkeep' ? 'upkeep' : 'plan')
+
+// What the recurrence counts from (migration 0119): the fixed anchor grid, or
+// « à partir de la dernière fois » (last_done_at re-anchors the cycle).
+const recurFromOf = (v: unknown): 'anchor' | 'done' => (v === 'done' ? 'done' : 'anchor')
 
 const recurJson = (recur: unknown): string | null => {
   const r = normalizeRecur(recur)
@@ -71,6 +76,7 @@ interface ProjectRow {
   color: string | null
   at: number | null
   recur_json: string | null
+  recur_from: string | null
   lead_seconds: number | null
   last_done_at: number | null
   carnet_id: string | null
@@ -78,20 +84,15 @@ interface ProjectRow {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<ProjectRow>()
-  // nextAt: the NEXT occurrence from today (recurring → expandRange; one-off → its own
-  // date, even if past = overdue). Lets the client group « cette saison » upkeep without
-  // re-implementing recurrence — the anchor `at` alone would mis-season a recurring row.
+  // Derived scheduling facts, from the ONE expander (_lib/upkeep): nextAt lets the
+  // client group « cette saison » without re-implementing recurrence; overdueSince /
+  // dueToday are the calm carry-forward the board and season card render.
   const today = localDayStart(new Date(nowSec() * 1000))
-  const horizon = today + 400 * 86400 // ~13 months — always covers the current season
-  const projects = results.map((p) => {
-    const r = parseRecur(p.recur_json)
-    const nextAt = r && p.at != null ? expandRange(p.at, r, today, horizon)[0] ?? null : p.at
-    return { ...p, nextAt }
-  })
+  const projects = results.map((p) => ({ ...p, ...upkeepStatus(p, today) }))
   return ok({ projects })
 })
 
@@ -104,6 +105,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     color?: string
     at?: unknown
     recur?: unknown
+    recurFrom?: unknown
     leadSeconds?: number | null
     carnetId?: string | null
   }>(ctx.request)
@@ -114,7 +116,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const at = atSec(body?.at)
   const carnetId = await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId)
   await ctx.env.DB.prepare(
-    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, at, recur_json, lead_seconds, carnet_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, at, recur_json, recur_from, lead_seconds, carnet_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -126,6 +128,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       hexColor(body?.color, '#88a36f'),
       at,
       recurJson(body?.recur),
+      recurFromOf(body?.recurFrom),
       at ? leadSeconds(body?.leadSeconds) : null, // a lead needs an occurrence date to anchor against
       carnetId,
       ts,
@@ -150,6 +153,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     color?: string
     at?: unknown
     recur?: unknown
+    recurFrom?: unknown
     leadSeconds?: number | null
     carnetId?: string | null
   }>(ctx.request)
@@ -162,6 +166,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.color !== undefined ||
     body.at !== undefined ||
     body.recur !== undefined ||
+    body.recurFrom !== undefined ||
     body.leadSeconds !== undefined ||
     body.carnetId !== undefined
   if (editsContent) {
@@ -190,6 +195,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (body.recur !== undefined) {
       sets.push('recur_json = ?')
       binds.push(recurJson(body.recur))
+    }
+    if (body.recurFrom !== undefined) {
+      sets.push('recur_from = ?')
+      binds.push(recurFromOf(body.recurFrom))
     }
     if (body.leadSeconds !== undefined) {
       sets.push('lead_seconds = ?')

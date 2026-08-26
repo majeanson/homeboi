@@ -2,6 +2,7 @@ import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
+import { upkeepOccurrences } from '../_lib/upkeep'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
@@ -111,10 +112,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // recurring expand across the window, one-off land on their day. Like chores,
     // they ride the same calendar. Undated rows (at IS NULL) have no cell.
     ctx.env.DB.prepare(
-      'SELECT id, kind, title, colour AS color, at, recur_json FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+      'SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
     )
       .bind(hh)
-      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null }>(),
+      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>(),
     // « Voyage » — trips overlapping the window. A trip is a multi-day BAND (the
     // client draws a bar across its days), not a per-day dot; the day page reads the
     // same rows to show its "Voyage — Jour N" header. Dated trips only (an undated
@@ -326,14 +327,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // so the client can tint/label projet vs entretien.
   const homeProjects: { id: string; kind: string; title: string; color: string | null; day: number }[] = []
   for (const h of homeRes.results) {
-    const r = parseRecur(h.recur_json)
-    if (r) {
-      for (const at of expandRange(h.at, r, from, to)) {
-        homeProjects.push({ id: `${h.id}#${at}`, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
-      }
-    } else {
-      const day = dayOf(h.at)
-      if (inRange(day)) homeProjects.push({ id: h.id, kind: h.kind, title: h.title, color: h.color, day })
+    // Shared expander (_lib/upkeep) so « à partir de la dernière fois » rows land on
+    // their true dates here too. includeDone: a calendar cell is a record of the day,
+    // so a completed one-off keeps its cell (past cells stay best-effort, like the
+    // chore rotation's history).
+    const recurring = parseRecur(h.recur_json) != null
+    for (const at of upkeepOccurrences(h, from, to, { includeDone: true })) {
+      homeProjects.push({ id: recurring ? `${h.id}#${at}` : h.id, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
     }
   }
 

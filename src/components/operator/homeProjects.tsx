@@ -14,7 +14,7 @@ import { fold } from '../../lib/normalize'
 import { useCarnets } from '../../lib/carnets'
 import { SEASON_SEEDS, nextAnchorSec, useHiddenSeeds, hideSeed, type SeasonSeed } from '../../lib/year'
 import { Cluster } from '../Layout'
-import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
+import { currentSeason, SEASON_EMOJI, seasonUpkeepItems } from '../../lib/season'
 import { formatDayMaybeYear } from '../../lib/format'
 import { formatMoney } from '../../lib/money'
 import { InlineIcon } from '../Icon'
@@ -111,10 +111,11 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
       affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']],
     })
   }
-  // « Cette saison » — for Entretien only, a calm glance of the upkeep due before the
-  // season turns over (derived from the server's nextAt). Read-only; the full editable
-  // list stays below. Same lens as the board card, so the two never drift.
-  const seasonItems = kind === 'upkeep' ? rows.filter((p) => isThisSeason(p.nextAt)) : []
+  // « Cette saison » — for Entretien only, a calm glance of the upkeep owed now or
+  // due before the season turns over. seasonUpkeepItems (lib/season) is the ONE
+  // selection the board card reads too, so the two never drift. Read-only; the
+  // full editable list stays below.
+  const seasonItems = kind === 'upkeep' ? seasonUpkeepItems(rows) : []
   const s = currentSeason()
 
   const c = kind === 'upkeep' ? t.operator.home.entretienTitle : t.operator.home.projetsTitle
@@ -142,7 +143,13 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
           </p>
           <ul className="season-glance__list">
             {seasonItems.map((p) => (
-              <li key={p.id} className="season-glance__item">{p.title}</li>
+              <li key={p.id} className="season-glance__item">
+                {p.title}
+                {/* The carry-forward, calmly: a muted date, never a count. */}
+                {p.overdueSince != null && (
+                  <span className="operator__hint mono"> · {t.board.lateSince(formatDayMaybeYear(p.overdueSince, lang))}</span>
+                )}
+              </li>
             ))}
           </ul>
         </div>
@@ -217,8 +224,12 @@ function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kin
     )
 
   const parts: string[] = []
-  if (project.recur_json) parts.push(recurLabel(project.recur_json, t))
-  else if (project.at) parts.push(formatDayMaybeYear(project.at, lang))
+  if (project.recur_json) {
+    parts.push(recurLabel(project.recur_json, t))
+    // « à partir de la dernière fois » (recur_from='done') — name the re-anchor mode
+    // so two same-cadence rows don't read identical when they schedule differently.
+    if (project.recur_from === 'done') parts.push(t.operator.home.fromLastDoneShort)
+  } else if (project.at) parts.push(formatDayMaybeYear(project.at, lang))
   const money = formatMoney(project.budget_cents, lang)
   if (money) parts.push(money)
   const subtitle = parts.filter(Boolean).join(' · ')

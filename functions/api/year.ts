@@ -2,6 +2,7 @@ import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
+import { upkeepOccurrences } from '../_lib/upkeep'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { fetchCarnetLifeItems, replacementAt } from '../_lib/carnetLife'
 
@@ -40,10 +41,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; recur_json: string }>(),
     ctx.env.DB.prepare(
-      'SELECT id, kind, title, colour AS color, at, recur_json FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+      'SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
     )
       .bind(hh)
-      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null }>(),
+      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>(),
     // « Le long jeu » — things with an install date + service life (carnetLife).
     fetchCarnetLifeItems(ctx.env.DB, hh),
     // Trips overlapping the window — household + shared, the /api/month pair.
@@ -82,14 +83,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // expanded, one-offs on their day), the same expansion /api/month does.
   const upkeep: { id: string; kind: string; title: string; color: string | null; day: number }[] = []
   for (const h of homeRes.results) {
-    const r = parseRecur(h.recur_json)
-    if (r) {
-      for (const at of expandRange(h.at, r, from, to)) {
-        upkeep.push({ id: `${h.id}#${at}`, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
-      }
-    } else {
-      const day = dayOf(h.at)
-      if (day >= from && day < to) upkeep.push({ id: h.id, kind: h.kind, title: h.title, color: h.color, day })
+    // Shared expander (_lib/upkeep); includeDone because a horizon, like the month
+    // grid, records the day — a completed one-off keeps its marker.
+    const recurring = parseRecur(h.recur_json) != null
+    for (const at of upkeepOccurrences(h, from, to, { includeDone: true })) {
+      upkeep.push({ id: recurring ? `${h.id}#${at}` : h.id, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
     }
   }
 

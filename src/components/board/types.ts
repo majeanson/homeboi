@@ -153,6 +153,10 @@ export interface BoardData {
   // Shares the ChoreInstance shape; no rotation (who/who_id null).
   homeToday?: ChoreInstance[]
   homeUpcoming?: ChoreInstance[]
+  // Missed entretien due dates (recurring cycles or dated one-offs) carried
+  // forward until checked — derived server-side (_lib/upkeep), rendered on
+  // « À faire ». `at` = the missed date; overdueSince repeats it explicitly.
+  homeOverdue?: (ChoreInstance & { overdueSince: number })[]
   notes: NoteRow[]
   // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: LeftoverRow[]

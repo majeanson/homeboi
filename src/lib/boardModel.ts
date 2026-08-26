@@ -94,6 +94,9 @@ export interface BoardModel {
     chores: ChoreInstance[]
     todos: ChoreInstance[]
     home: ChoreInstance[]
+    // Entretien carry-forward: missed due dates (server homeOverdue, _lib/upkeep)
+    // rendered on « À faire » until checked. Family-wide like `home`.
+    homeOverdue: ChoreInstance[]
     work: WorkRow[]
   }
   tomorrow: {
@@ -253,6 +256,9 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   // "Projets & Entretien" — family-wide (no rotation), so NOT personal-focus
   // filtered, unlike chores/todos above.
   const todayHome = (data?.homeToday ?? []).filter((c) => !pendingDone.has(c.id))
+  // Missed entretien due dates carried forward (calm: they just wait, no nagging).
+  // Same family-wide + pendingDone rules as todayHome.
+  const overdueHome = (data?.homeOverdue ?? []).filter((c) => !pendingDone.has(c.id))
   const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
   const upcomingHome = data?.homeUpcoming ?? []
   const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
@@ -305,6 +311,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     todayEvents.length === 0 &&
     todayChores.length === 0 &&
     todayHome.length === 0 &&
+    overdueHome.length === 0 && // an owed entretien must keep the « À faire » card up
     otherToday.length === 0 &&
     tonightAll.length === 0 &&
     leftovers.length === 0 &&
@@ -343,7 +350,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     tomorrowSchoolKind !== null
 
   return {
-    today: { events: todayEvents, chores: todayChores, todos: todayTodos, home: todayHome, work: filWork },
+    today: { events: todayEvents, chores: todayChores, todos: todayTodos, home: todayHome, homeOverdue: overdueHome, work: filWork },
     tomorrow: { events: tomorrowEvents },
     upcoming: { events: upcomingEvents, chores: upcomingChores, home: upcomingHome },
     leftovers,

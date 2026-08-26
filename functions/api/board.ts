@@ -2,6 +2,7 @@ import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
+import { upkeepStatus, upkeepOccurrences } from '../_lib/upkeep'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -437,7 +438,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
   // (who/team empty); the row's own colour + title emoji distinguish it.
   const homeRows = await ctx.env.DB.prepare(
-    'SELECT id, title, colour AS color, at, recur_json, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+    'SELECT id, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
   )
     .bind(hh)
     .all<{
@@ -446,12 +447,18 @@ export const onRequestGet = authed(async (ctx, actor) => {
       color: string | null
       at: number
       recur_json: string | null
+      recur_from: string | null
       lead_seconds: number | null
       last_done_at: number | null
       carnet_id: string | null
     }>()
   const homeToday: ChoreInst[] = []
   const homeUpcoming: ChoreInst[] = []
+  // The calm carry-forward: a missed due date (recurring cycle or dated one-off)
+  // stays on « À faire » until someone checks the row — derived by _lib/upkeep,
+  // never a materialized row. `at` carries the missed date so day labels / the
+  // detail peek reuse the ChoreInst shape unchanged.
+  const homeOverdue: (ChoreInst & { overdueSince: number })[] = []
   for (const h of homeRows.results) {
     const hinst = (at: number): ChoreInst => ({
       id: h.id,
@@ -464,24 +471,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
       team: [],
       carnet_id: h.carnet_id,
     })
-    const r = parseRecur(h.recur_json)
-    if (!r) {
-      // One-off dated row: a single occurrence at `at`. Show until it's marked done.
-      if (h.last_done_at != null) continue
-      if (h.at >= today && h.at < tomorrow) homeToday.push(hinst(today))
-      else if (h.at >= tomorrow && h.at < weekEnd) homeUpcoming.push(hinst(h.at))
-      continue
-    }
-    // The picked date `at` is the recurrence anchor (same role as a chore's recur_start).
-    if (occurrenceOn(today, h.at, r) !== null) {
-      const doneToday = h.last_done_at != null && h.last_done_at >= today
-      if (!doneToday) homeToday.push(hinst(today))
-    } else {
-      const next = expandRange(h.at, r, tomorrow, weekEnd)[0]
+    // ONE shared derivation (_lib/upkeep) — the same expansion month/year/GET use,
+    // so 'anchor' vs « à partir de la dernière fois » rows agree on every surface.
+    const st = upkeepStatus(h, today)
+    if (st.dueToday) homeToday.push(hinst(today))
+    else {
+      const next = upkeepOccurrences(h, tomorrow, weekEnd)[0]
       if (next != null) homeUpcoming.push(hinst(next))
+    }
+    // Suppressed while dueToday: checking today's occurrence stamps last_done_at,
+    // which covers the missed one too — showing both would double the same chore.
+    if (st.overdueSince != null && !st.dueToday) {
+      homeOverdue.push({ ...hinst(st.overdueSince), overdueSince: st.overdueSince })
     }
   }
   homeUpcoming.sort((a, b) => a.at - b.at)
+  homeOverdue.sort((a, b) => a.overdueSince - b.overdueSince)
 
   // Today's meals, in the household's slot order (Réglages ▸ Repas; déjeuner →
   // dîner → collation → souper → dessert out of the box) so the board reads
@@ -539,6 +544,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     choresUpcoming,
     homeToday,
     homeUpcoming,
+    homeOverdue,
     todos,
     notes: notes.results,
     leftovers: leftoversRes.results,

@@ -35,7 +35,10 @@ export interface HomeProject {
   color?: string
   at?: number | null // target/occurrence date OR recurrence anchor (unix sec); null = undated
   nextAt?: number | null // server-derived NEXT occurrence from today (recurring → expanded); drives « cette saison »
+  dueToday?: boolean // server-derived (_lib/upkeep): an occurrence lands today, not yet checked
+  overdueSince?: number | null // server-derived: most recent missed due date, carried until checked (calm)
   recur_json?: string | null
+  recur_from?: 'anchor' | 'done' | null // 0119: 'done' = « à partir de la dernière fois » re-anchors the cycle
   lead_seconds?: number | null
   last_done_at?: number | null
   carnet_id?: string | null // « Les carnets » link (migration 0082); null = household-level

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRecur, normalizeRecur, occurrenceOn, expandRange, rotationOffset } from './recur'
+import { parseRecur, normalizeRecur, occurrenceOn, expandRange, rotationOffset, lastOccurrenceOnOrBefore } from './recur'
 import { localDayStart, localDayOfWeek } from './ids'
 
 // Recurrence is HOUSEHOLD-LOCAL (America/Toronto). Anchor: Wed 2026-01-07 09:30
@@ -222,5 +222,51 @@ describe('occurrenceOn (DST — wall time held across the transition day)', () =
   })
   it('stays 09:00 the following EDT Sunday', () => {
     expect(localHour(occurrenceOn(d(2026, 2, 15), SUN_9AM, r) as number)).toBe(9)
+  })
+})
+
+// The backwards mirror of expandRange — "the most recent due date on or before
+// this day" — powering the calm overdue carry-forward (_lib/upkeep).
+describe('lastOccurrenceOnOrBefore', () => {
+  const FAR = d(2020, 0, 1) // a floor far below every scenario
+  it('finds the most recent weekly occurrence', () => {
+    const r = { freq: 'weekly' as const, weekdays: [3] } // Wednesdays
+    // From Tue Jan 20 back → Wed Jan 14.
+    expect(lastOccurrenceOnOrBefore(d(2026, 0, 20), WED, r, FAR)).toBe(occurrenceOn(d(2026, 0, 14), WED, r))
+  })
+  it('returns the day itself when it hits', () => {
+    const r = { freq: 'weekly' as const, weekdays: [3] }
+    expect(lastOccurrenceOnOrBefore(d(2026, 0, 14), WED, r, FAR)).toBe(occurrenceOn(d(2026, 0, 14), WED, r))
+  })
+  it('null before the anchor (the anchor is an implicit floor)', () => {
+    const r = { freq: 'weekly' as const, weekdays: [3] }
+    expect(lastOccurrenceOnOrBefore(d(2025, 11, 30), WED, r, FAR)).toBeNull()
+  })
+  it('respects the explicit floor', () => {
+    const r = { freq: 'weekly' as const, weekdays: [3] }
+    // Floor above the last hit → nothing.
+    expect(lastOccurrenceOnOrBefore(d(2026, 0, 20), WED, r, d(2026, 0, 15))).toBeNull()
+  })
+  it('monthly on the 31st skips short months backwards', () => {
+    // Anchor Sat 2026-01-31, local midnight.
+    const JAN31 = d(2026, 0, 31)
+    const r = { freq: 'monthly' as const }
+    // From Apr 15 back: no Feb 31 / no hit in March 1-31? March HAS a 31st → Mar 31.
+    expect(lastOccurrenceOnOrBefore(d(2026, 3, 15), JAN31, r, FAR)).toBe(occurrenceOn(d(2026, 2, 31), JAN31, r))
+    // From Mar 15 back: February has no 31st → falls through to the anchor itself.
+    expect(lastOccurrenceOnOrBefore(d(2026, 2, 15), JAN31, r, FAR)).toBe(JAN31)
+  })
+  it('yearly Feb-29 only lands in leap years', () => {
+    const FEB29 = d(2024, 1, 29)
+    const r = { freq: 'yearly' as const }
+    // From mid-2026 back with a wide floor: the only hit is 2024's Feb 29.
+    expect(lastOccurrenceOnOrBefore(d(2026, 5, 1), FEB29, r, d(2023, 0, 1))).toBe(FEB29)
+  })
+  it('walks cleanly across a DST transition', () => {
+    // Weekly Sundays anchored 2026-03-01; from the Saturday after spring-forward
+    // (2026-03-14) the most recent hit is the transition Sunday 2026-03-08.
+    const SUN = d(2026, 2, 1)
+    const r = { freq: 'weekly' as const, weekdays: [0] }
+    expect(lastOccurrenceOnOrBefore(d(2026, 2, 14), SUN, r, FAR)).toBe(occurrenceOn(d(2026, 2, 8), SUN, r))
   })
 })

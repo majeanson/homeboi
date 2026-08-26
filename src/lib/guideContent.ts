@@ -2318,8 +2318,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
         detail: {
-          fr: 'Sous les corvées, deux listes pour les plus gros sujets : les Projets (un jour, sans date, avec un budget-cible optionnel) et l’Entretien qui revient tout seul (« tous les 3 mois ») et s’affiche au babillard quand il a une date.',
-          en: 'Under chores, two lists for the bigger topics: Plans (someday, no date, with an optional target budget) and Maintenance that comes back on its own (“every 3 months”) and shows on the board when dated.',
+          fr: 'Sous les corvées, deux listes pour les plus gros sujets : les Projets (un jour, sans date, avec un budget-cible optionnel) et l’Entretien qui revient tout seul — « tous les 3 mois », ou d’un raccourci « Chaque automne / Chaque saison ». Un entretien manqué ne disparaît pas : il attend calmement sur « À faire » (et la carte de saison) jusqu’à sa coche. Et « À partir de la dernière fois » compte le prochain depuis ta dernière coche plutôt que depuis la date fixe.',
+          en: 'Under chores, two lists for the bigger topics: Plans (someday, no date, with an optional target budget) and Maintenance that comes back on its own — “every 3 months”, or an “Every fall / Every season” shortcut. A missed upkeep never vanishes: it waits calmly on “To do” (and the season card) until you check it. And “From the last time” counts the next one from your last check-off instead of the fixed date.',
         },
         route: '/home-project/new',
       },

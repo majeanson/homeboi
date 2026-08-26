@@ -401,6 +401,7 @@ export function Board() {
   const todayChores = model.today.chores
   const todayTodos = model.today.todos
   const todayHome = model.today.home
+  const overdueHome = model.today.homeOverdue
   const tomorrowEvents = model.tomorrow.events
   const upcomingEvents = model.upcoming.events
   const upcomingChores = model.upcoming.chores
@@ -815,7 +816,7 @@ export function Board() {
       },
     })
   }
-  const homeAct = (c: ChoreInstance, withDay?: boolean) => {
+  const homeAct = (c: ChoreInstance, withDay?: boolean, overdue?: boolean) => {
     // A carnet-scoped row wears its thing's emoji so « Le chauffe-eau · filtre » reads
     // at a glance — but it stays an ordinary checkable Entretien row in place.
     const carnet = c.carnet_id ? carnetById.get(c.carnet_id) : undefined
@@ -824,11 +825,13 @@ export function Board() {
       key={c.id}
       cat="chore"
       title={carnet ? `${carnetEmoji(carnet)} ${c.title}` : c.title}
-      when={withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
+      // Overdue carry-forward: a muted « owed since » date (c.at is the missed
+      // date) — calm, no badge/count. Otherwise the upcoming day label as before.
+      when={overdue ? t.board.lateSince(formatDayMaybeYear(c.at, lang)) : withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
       color={c.color ?? undefined}
       soon={c.soon}
       onCheck={withDay || ro ? undefined : () => markHomeDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay || ro ? undefined : () => markHomeDone(c) }))}
+      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, overdue, onDone: withDay || ro ? undefined : () => markHomeDone(c) }))}
     />
     )
   }
@@ -1358,9 +1361,11 @@ export function Board() {
       // Compact: everything THIS card holds, by name — the loose one-off tasks AND
       // the open loose « À compléter » todos. Checklist-instance rows belong to the
       // « Avant de partir » card's mini, not this one.
-      compactItems={[...todayTodos.map((c) => c.title), ...openLoose.map((td) => td.title)]}
+      compactItems={[...overdueHome.map((c) => c.title), ...todayTodos.map((c) => c.title), ...openLoose.map((td) => td.title)]}
       compactHint={
-        todayTodos.length + openLoose.length > 0 ? String(todayTodos.length + openLoose.length) : undefined
+        overdueHome.length + todayTodos.length + openLoose.length > 0
+          ? String(overdueHome.length + todayTodos.length + openLoose.length)
+          : undefined
       }
       // The add box lives behind the header ＋, exactly like the « Notes » card: a
       // glance card shouldn't carry a permanently-open text field — it's the one thing
@@ -1369,6 +1374,9 @@ export function Board() {
       // mini face like every other write affordance here.
       action={<SectionAdd open={todoAdd.open} onToggle={todoAdd.toggle} label={t.common.add} />}
     >
+      {/* Entretien carry-forward: missed due dates wait here, calmly, until
+          checked — above the day's loose to-dos so an owed thing reads first. */}
+      {overdueHome.map((c) => homeAct(c, false, true))}
       {todayTodos.map(todoAct)}
       <TodoSection
         title={t.todos.title}

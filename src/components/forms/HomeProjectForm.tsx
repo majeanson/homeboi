@@ -10,6 +10,7 @@ import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { homeProjectTemplates } from '../../lib/routineTemplates'
+import { nextSeasonAnchorDate, everySeasonAnchorDate, type Season } from '../../lib/season'
 import { parseMoney } from '../../lib/money'
 import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import type { HomeProject } from '../operator/types'
@@ -46,6 +47,9 @@ export function HomeProjectForm({
   // Empty = undated → the item rests in Réglages and never surfaces on the board.
   const [date, setDate] = useState(anchorSecToDate(value?.at))
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
+  // « À partir de la dernière fois » (recur_from, mig 0119) — the cycle re-anchors
+  // on the last check-off. Only meaningful with a recurrence.
+  const [fromDone, setFromDone] = useState(value?.recur_from === 'done')
   // Calm "Bientôt" lead — only meaningful with a date to anchor against.
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
@@ -68,6 +72,7 @@ export function HomeProjectForm({
       color,
       at: anchor,
       recur,
+      recurFrom: recur && fromDone ? 'done' : 'anchor',
       leadSeconds: anchor ? lead : null, // no date → no occurrence to remind about
       ...(carnetId !== undefined ? { carnetId } : {}),
     }
@@ -85,6 +90,7 @@ export function HomeProjectForm({
         setColor('#88A36F')
         setDate('')
         setRecur(null)
+        setFromDone(false)
         setLead(null)
       }
       onSaved()
@@ -140,7 +146,40 @@ export function HomeProjectForm({
         <span>{t.operator.home.dateLabel}</span>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </label>
+      {/* Seasonal cadence presets (Entretien only) — one tap fills date + recurrence;
+          no new wire format, just sugar over the shared RecurPicker value. */}
+      {kind === 'upkeep' && (
+        <div className="picker-chips mono">
+          <span className="picker-chips__label">{t.operator.home.seasonLabel}</span>
+          <Chip onClick={() => { setDate(everySeasonAnchorDate()); setRecur({ freq: 'monthly', interval: 3, weekdays: [] }) }}>
+            {t.operator.home.everySeason}
+          </Chip>
+          {(
+            [
+              ['spring', t.operator.home.everySpring],
+              ['summer', t.operator.home.everySummer],
+              ['autumn', t.operator.home.everyAutumn],
+              ['winter', t.operator.home.everyWinter],
+            ] as [Season, string][]
+          ).map(([s, label]) => (
+            <Chip key={s} onClick={() => { setDate(nextSeasonAnchorDate(s)); setRecur({ freq: 'yearly', interval: 1, weekdays: [] }) }}>
+              {label}
+            </Chip>
+          ))}
+        </div>
+      )}
       <RecurPicker value={recur} onChange={setRecur} />
+      {recur && (
+        <>
+          {/* « À partir de la dernière fois » — same check+hint pattern as
+              ChoreForm's « Annoncer la veille » (D-21). */}
+          <label className="operator__check mono">
+            <input type="checkbox" checked={fromDone} onChange={(e) => setFromDone(e.target.checked)} />
+            {t.operator.home.fromLastDone}
+          </label>
+          <p className="operator__seg-hint mono">{t.operator.home.fromLastDoneHint}</p>
+        </>
+      )}
       {(date || recur) && <LeadPicker value={lead} onChange={setLead} />}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter

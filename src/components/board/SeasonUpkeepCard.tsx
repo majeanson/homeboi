@@ -1,30 +1,60 @@
-import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { HOME_PROJECTS_KEY } from '../../lib/queryKeys'
-import { currentSeason, SEASON_EMOJI, isThisSeason } from '../../lib/season'
+import { useWrite } from '../../lib/write'
+import { useUndoableRemove } from '../../lib/undoRemove'
+import { HOME_PROJECTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { currentSeason, SEASON_EMOJI, seasonUpkeepItems } from '../../lib/season'
+import { formatDayMaybeYear } from '../../lib/format'
 import type { HomeProject } from '../operator/types'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
+import { Act } from './Act'
 
-// The board « Cette saison » glance — recurring upkeep (home_projects 'upkeep') whose
-// next occurrence falls before the season turns over: "🔥 changer le filtre", "🍂
-// gouttières". DERIVED from the server's nextAt (no rows), so a calm seasonal to-do a
-// calendar buries. Renders NOTHING when nothing's due this season (calm). Non-polling
-// (staleTime) so this default-on card never adds /api/home-projects to the board poll.
+// The board « Cette saison » glance — upkeep (home_projects 'upkeep') owed now
+// (overdueSince, the calm carry-forward) or due before the season turns over
+// (nextAt). The selection is seasonUpkeepItems (lib/season) — the SAME lens the
+// Réglages Entretien glance reads, so the two never drift. Rows are checkable
+// (the shared Act row: PATCH {id} stamps last_done_at, held behind the undo
+// toast; Act itself drops the check for a read-only guest); an owed row wears
+// the muted « en attente depuis » line — a date, never a count (NFR-CALM-1).
+// Renders NOTHING when nothing's due this season (calm). Non-polling (staleTime)
+// so this default-on card never adds /api/home-projects to the board poll.
 export function SeasonUpkeepCard() {
   const t = useT()
+  const { lang } = useLang()
+  const nav = useNavigate()
+  const qc = useQueryClient()
+  const write = useWrite()
+  const undoableRemove = useUndoableRemove()
   const { data } = useQuery({
     queryKey: HOME_PROJECTS_KEY,
     queryFn: () => api<{ projects: HomeProject[] }>('home-projects'),
     staleTime: 5 * 60_000,
   })
   const s = currentSeason()
-  const items = (data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === 'upkeep' && isThisSeason(p.nextAt))
+  const items = seasonUpkeepItems(data?.projects ?? [])
   const empty = items.length === 0
   useReportEmpty(empty)
   if (empty) return null
+
+  // Check = the board's markHomeDone semantics, via the Réglages undo pattern:
+  // the row leaves the cached list at once, the toast holds the PATCH, undo
+  // restores with zero round-trips; the refetch then re-derives nextAt/overdue.
+  const markDone = (p: HomeProject) =>
+    undoableRemove({
+      queryKey: HOME_PROJECTS_KEY,
+      listProp: 'projects',
+      id: p.id,
+      label: p.title,
+      message: t.undo.choreDone(p.title),
+      commit: () => write('home-projects', { method: 'PATCH', body: { id: p.id }, affectedKeys: [BOARD_KEY] }),
+      after: () => {
+        void qc.refetchQueries({ queryKey: HOME_PROJECTS_KEY })
+        void qc.refetchQueries({ queryKey: BOARD_KEY })
+      },
+    })
 
   return (
     <BoardCard
@@ -34,21 +64,17 @@ export function SeasonUpkeepCard() {
       compactItems={items.map((p) => p.title)}
       compactHint={String(items.length)}
     >
-      <ul className="carnets-card__list">
-        {items.map((p) =>
-          p.carnet_id ? (
-            <li key={p.id} className="carnets-card__row">
-              <Link to={`/cercle/carnet/${p.carnet_id}`} className="carnets-card__open">
-                <span className="carnets-card__name">{p.title}</span>
-              </Link>
-            </li>
-          ) : (
-            <li key={p.id} className="carnets-card__row">
-              <span className="carnets-card__name">{p.title}</span>
-            </li>
-          ),
-        )}
-      </ul>
+      {items.map((p) => (
+        <Act
+          key={p.id}
+          cat="chore"
+          title={p.title}
+          color={p.color ?? undefined}
+          when={p.overdueSince != null ? t.board.lateSince(formatDayMaybeYear(p.overdueSince, lang)) : undefined}
+          onCheck={() => markDone(p)}
+          onOpen={p.carnet_id ? () => nav(`/cercle/carnet/${p.carnet_id}`) : undefined}
+        />
+      ))}
     </BoardCard>
   )
 }

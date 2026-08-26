@@ -322,7 +322,7 @@ export function buildMot(
 export function buildChore(
   c: ChoreInstance,
   ctx: DetailCtx,
-  opts?: { onDone?: () => void; upcoming?: boolean; todo?: boolean },
+  opts?: { onDone?: () => void; upcoming?: boolean; todo?: boolean; overdue?: boolean },
 ): DetailModel {
   const { t, lang, members } = ctx
   const team = (c.team ?? []).map((id) => nameOf(members, id)).filter((n): n is string => !!n)
@@ -335,7 +335,8 @@ export function buildChore(
     title: c.title,
     icon: opts?.todo ? 'check-bold' : CATS.chore.icon,
     accent: c.color ?? CATS.chore.color,
-    when: opts?.upcoming ? formatDayMaybeYear(c.at, lang) : undefined,
+    // Overdue entretien: the calm « owed since » line (c.at carries the missed date).
+    when: opts?.overdue ? t.board.lateSince(formatDayMaybeYear(c.at, lang)) : opts?.upcoming ? formatDayMaybeYear(c.at, lang) : undefined,
     who: whoOf(members, c.who_id, t.detail.turn),
     blocks,
     actions,
