@@ -43,6 +43,11 @@ type Entry = {
   sandbox?: boolean
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
   keyboard?: number
+  /** Fixture overrides for this entry (see mockApi `overrides`). Use it when the
+   *  shared fixture is deliberately EMPTY: a budget measured against an empty state
+   *  guards the wrong screen — /notes was ratcheted at 209px while showing « Aucune
+   *  note pour l'instant », so the density the lean pass was FOR went unmeasured. */
+  api?: Record<string, unknown>
   /** The page's FIRST content item — the thing you came to this surface to see (a
    *  list row, a card, a form's first field). Its distance from the top of the
    *  scroller is `contentTopPx`: how much chrome you scroll past before the
@@ -54,6 +59,34 @@ type Entry = {
    *  hero simply carries a bigger number. Tighten it in the same commit as a lean
    *  pass; it only ever moves down. See LEAN.md. */
   budgetPx?: number
+}
+
+// « Les notes » ships with an EMPTY family-notes fixture (the behavioural specs want
+// it that way), so this entry seeds its own: the tab's whole lean brief was "maximum
+// note content per pixel", and an empty page cannot show whether we delivered it.
+const NOTE_SEED = (id: string, title: string, text: string, position: number, at = 1_700_000_000) => ({
+  id,
+  member_id: null,
+  author_member_id: null,
+  title,
+  text,
+  media_kind: null,
+  media_key: null,
+  scene_key: null,
+  position,
+  created_at: at,
+  updated_at: at,
+})
+const NOTES_FIXTURE = {
+  'family-notes': {
+    notes: [
+      // Two on one day, one on another: the rows must show the date ONCE per run of
+      // the same day, and print it again when the day changes.
+      NOTE_SEED('n1', 'Couture', 'kit été rouge : short en twill, doublure coton', 0),
+      NOTE_SEED('n2', 'Garderie', 'apporter les bottes de pluie lundi', 1),
+      NOTE_SEED('n3', 'Épicerie', 'la marque de yogourt que Léa mange est la bleue', 2, 1_700_000_000 - 2 * 86_400),
+    ],
+  },
 }
 
 const PHONE = { w: 390, h: 844 }
@@ -96,7 +129,7 @@ const MATRIX: Entry[] = [
   { name: 'board', route: '/board', content: '.wg-slot', budgetPx: 235 },
   { name: 'kitchen', route: '/kitchen', content: '.kitchen__meal-list, .kitchen__week', budgetPx: 160 },
   { name: 'liste', route: '/liste', content: '.list-rows > *', budgetPx: 218 },
-  { name: 'notes', route: '/notes', content: '.cnote, .cercle-notes__empty', budgetPx: 230 },
+  { name: 'notes', route: '/notes', content: '.cnote', budgetPx: 217, api: NOTES_FIXTURE },
   { name: 'maison', route: '/maison', content: '.routine-card, .cercle-row', budgetPx: 244 },
   { name: 'settings', route: '/settings', content: '.operator__section, .operator__tabs', budgetPx: 90 },
   // — signature opened states —
@@ -153,7 +186,7 @@ const MATRIX: Entry[] = [
   { name: 'board-toddler', route: '/board', audience: 'toddler', content: '.today-hero, .kid__main > *', budgetPx: 16 },
   { name: 'kitchen-toddler', route: '/kitchen', audience: 'toddler', content: '.kid-head, .kid-pick', budgetPx: 48, themes: ['day'] },
   { name: 'liste-toddler', route: '/liste', audience: 'toddler', content: '.bigtiles', budgetPx: 208, themes: ['day'] },
-  { name: 'notes-toddler', route: '/notes', audience: 'toddler', content: '.cercle-kid__grid, .cercle-kid > *', budgetPx: 32, themes: ['day'] },
+  { name: 'notes-toddler', route: '/notes', audience: 'toddler', content: '.cercle-kid__grid, .cercle-kid > *', budgetPx: 32, themes: ['day'], api: NOTES_FIXTURE },
   { name: 'maison-toddler', route: '/maison', audience: 'toddler', content: '.kid__faces, .kid__main > *', budgetPx: 238, themes: ['day'] },
 
   // board-kiosk (334px) and maison-toddler (216px) are the two biggest numbers in
@@ -165,7 +198,7 @@ const MATRIX: Entry[] = [
   { name: 'board-kiosk', route: '/board', surface: 'kiosk', viewport: WALL, content: '.wg-slot', budgetPx: 368 },
   { name: 'kitchen-wall', route: '/kitchen', surface: 'kiosk', viewport: WALL, content: '.kitchen__meal-list, .kitchen__week', budgetPx: 205, themes: ['day'] },
   { name: 'liste-wall', route: '/liste', surface: 'kiosk', viewport: WALL, content: '.list-rows > *', budgetPx: 264, themes: ['day'] },
-  { name: 'notes-wall', route: '/notes', surface: 'kiosk', viewport: WALL, content: '.cnote, .cercle-notes__empty', budgetPx: 277, themes: ['day'] },
+  { name: 'notes-wall', route: '/notes', surface: 'kiosk', viewport: WALL, content: '.cnote', budgetPx: 277, themes: ['day'], api: NOTES_FIXTURE },
   { name: 'maison-wall', route: '/maison', surface: 'kiosk', viewport: WALL, content: '.routine-card, .cercle-row', budgetPx: 291, themes: ['day'] },
   { name: 'settings-wall', route: '/settings', surface: 'kiosk', viewport: WALL, content: '.operator__section, .operator__tabs', budgetPx: 78, themes: ['day'] },
   { name: 'board-en', route: '/board', lang: 'en', themes: ['day'] },
@@ -218,6 +251,7 @@ for (const entry of MATRIX) {
         fresh: entry.fresh,
         sandbox: entry.sandbox,
         signedIn: entry.signedOut ? false : undefined,
+        overrides: entry.api,
       })
       await seedState(page, {
         theme,

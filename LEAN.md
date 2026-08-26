@@ -48,6 +48,16 @@ back down, or re-baseline **deliberately**, saying in the commit why the surface
 now needs more room. Silently raising a budget is the one thing this file exists to
 prevent.
 
+**Check the fixture before you trust a number.** Several shared fixtures in
+`e2e/mocks.ts` are deliberately EMPTY (the behavioural specs want them that way), so
+an entry can end up budgeting its own empty state — the screen nobody uses. `/notes`
+was ratcheted at 209px while showing « Aucune note pour l'instant »: the tab whose
+entire brief was *maximum note per pixel* had its density measured on a page with
+zero notes, and a low `aboveFoldChars` was the only tell. Entries pass `api:` (an
+`overrides` map, merged over the defaults) to seed the content they exist to
+measure. Seed the case that varies, too — the notes fixture carries two notes on one
+day and one on another precisely so the row rendering must handle both.
+
 **What pulls the ratchet.** The sweep is too slow to gate every push, so Actions ▸
 **State matrix** runs it **weekly (Mondays 06:00 UTC)** as well as on demand. That
 is a deliberate trade: chrome creeps back over weeks rather than inside one push,
@@ -75,7 +85,7 @@ Each has a fix that already exists — reach for the primitive, don't invent one
 | 3 | An always-open search field | **`SearchField`** `collapsible` (`components/SearchField.tsx`) — a loupe until asked for; never collapses while a query is live. |
 | 4 | Rarely-touched form fields, all expanded | **`Disclosure`** (`components/Disclosure.tsx`). See the invariants below. |
 | 5 | A housekeeping action camping above the content | Move it to the **foot** (« Compléter les familles », the board's edit hint). Found after you've read the thing, which is when the thought occurs. |
-| 6 | The same words repeated on every row | Say it once. A per-row « → ajouter à la liste » wrapped over the item's own name at 390px; the check button's accessible name already carried it. |
+| 6 | The same words repeated on every row | Say it once. A per-row « → ajouter à la liste » wrapped over the item's own name at 390px; the check button's accessible name already carried it. Also a **repeating date**: notes arrive in bursts, so « mar. 14 nov. · » led every row and pushed each preview onto a second line — now printed once per run of a day, and again when the day changes (the only place it said anything). |
 | 7 | A full-width primary CTA for a secondary action | Quiet chip, then icon. La liste's three shortcuts went bars → chips → glyphs. Keep the full name on `aria-label` + `title` — **nothing may end up unnamed**. |
 | 8 | Prose that duplicates the empty state below it | Delete the prose. |
 | 9 | A control stretched by its flex column | `align-self: flex-start`. This silently turned `btn--sm btn--ghost` into a full-width bar in **three** separate places — a flex column stretches its children by default. |

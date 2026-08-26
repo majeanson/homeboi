@@ -179,9 +179,24 @@ export function NotesList({
           // Collapsed the row stays calm with the day alone; expanded it IS the note's
           // detail view, so it reads the full moment (two notes of the same afternoon
           // are otherwise indistinguishable).
-          const when = expandedIds.has(n.id)
+          //
+          // A RUN of the same day says the date once. Notes arrive in bursts, so the
+          // identical « mar. 14 nov. » was repeating down every row and eating the
+          // front of each preview line — on the one page whose brief is "maximum note
+          // per pixel" (LEAN.md pattern 6: repeated per-row furniture, said once). The
+          // date still leads whenever the day CHANGES, which is the only place it
+          // carried information. An expanded row is a detail view and stays
+          // self-contained: it always prints its own full moment.
+          const expandedNow = expandedIds.has(n.id)
+          const sameDayAsAbove = idx > 0 && formatDay(shown[idx - 1].created_at, lang) === formatDay(n.created_at, lang)
+          const when = expandedNow
             ? formatDayTime(n.created_at, lang)
-            : formatDay(n.created_at, lang)
+            : sameDayAsAbove
+              ? ''
+              : formatDay(n.created_at, lang)
+          // Join only the halves that exist — « date · aperçu », « date », « aperçu »,
+          // or nothing. Never a dangling separator with nothing after it.
+          const metaOf = (p: string) => [when, p].filter(Boolean).join(' · ')
           const mediaLabel = media === 'audio' ? fn.memo : media === 'image' ? fn.photo : media === 'drawing' ? fn.drawing : ''
 
           // iOS row anatomy: a bold title line, then a quieter "date · preview" line.
@@ -234,7 +249,7 @@ export function NotesList({
               {media === 'audio' ? (
                 <button type="button" className="cnote__main" onClick={() => playClip(n.media_key!)} aria-label={fn.memo}>
                   <span className="cnote__title">{title}</span>
-                  <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
+                  {metaOf(preview) && <span className="cnote__meta mono">{metaOf(preview)}</span>}
                 </button>
               ) : expandable ? (
                 <button
@@ -250,12 +265,14 @@ export function NotesList({
                       <InlineIcon name={expanded ? 'caret-up-bold' : 'caret-down-bold'} size={14} />
                     </span>
                   </span>
-                  <span className="cnote__meta mono">{when}{!expanded && preview ? ` · ${preview}` : ''}</span>
+                  {metaOf(expanded ? '' : preview) && (
+                    <span className="cnote__meta mono">{metaOf(expanded ? '' : preview)}</span>
+                  )}
                 </button>
               ) : (
                 <span className="cnote__main cnote__main--static">
                   <span className="cnote__title">{title}</span>
-                  <span className="cnote__meta mono">{when}{preview ? ` · ${preview}` : ''}</span>
+                  {metaOf(preview) && <span className="cnote__meta mono">{metaOf(preview)}</span>}
                 </span>
               )}
 

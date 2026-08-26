@@ -740,6 +740,13 @@ export async function mockApi(
     // health stay healthy so we land on the signed-in surface and see ITS degraded
     // state, not the recovery/login flow.
     error?: '500' | 'network'
+    /** Per-call fixture overrides, keyed by the same route path as ROUTES
+     *  ('family-notes', 'liste', …). The state matrix uses this to photograph a
+     *  surface with CONTENT on it: several fixtures are deliberately empty for the
+     *  behavioural specs, which made the lean ratchet measure an empty state — i.e.
+     *  not the screen anyone actually uses. Merged over ROUTES, so an unlisted path
+     *  keeps its default. */
+    overrides?: Record<string, unknown>
   } = {},
 ) {
   const signedIn = opts.signedIn ?? true
@@ -775,6 +782,9 @@ export async function mockApi(
     }
   })
   const serve = (body: unknown) => JSON.stringify(opts.longText ? longify(body) : body)
+  // The fixture table this call serves from: the defaults, with any per-call
+  // override merged over the top.
+  const DATA: Record<string, unknown> = opts.overrides ? { ...ROUTES, ...opts.overrides } : ROUTES
   // A little server-side state so optimistic flows that DELETE then refetch read
   // back the change (else the board GET would resurrect a just-cleared note).
   const dismissedNotes = new Set<string>()
@@ -982,8 +992,8 @@ export async function mockApi(
     // array. Config and non-household data are exempt — a new household still has a
     // sky, a health check and an identity. Any page that can't cope with real
     // emptiness now crashes the state-matrix instead of hiding behind a seeded row.
-    if (opts.fresh && !FRESH_EXEMPT.has(path) && Object.prototype.hasOwnProperty.call(ROUTES, path)) {
-      const body = emptyArrays((ROUTES as Record<string, unknown>)[path])
+    if (opts.fresh && !FRESH_EXEMPT.has(path) && Object.prototype.hasOwnProperty.call(DATA, path)) {
+      const body = emptyArrays(DATA[path])
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
       return
     }
@@ -1081,12 +1091,12 @@ export async function mockApi(
     }
 
     // Longest-prefix match so 'pair/devices' wins over 'pair'.
-    const key = Object.keys(ROUTES)
+    const key = Object.keys(DATA)
       .filter((k) => path === k || path.startsWith(k + '/'))
       .sort((a, b) => b.length - a.length)[0]
 
     if (key) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: serve(ROUTES[key]) })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve(DATA[key]) })
       return
     }
 

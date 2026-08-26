@@ -166,3 +166,47 @@ test('the mode toggle is device-local — a read-only guest may flip it', async 
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
   await expect(page.locator('.cnote__act')).toHaveCount(0)
 })
+
+// A run of the same day says its date ONCE. Notes arrive in bursts, so the identical
+// « mar. 14 nov. · » was leading every row and pushing each preview onto a second
+// line — on the page whose whole brief is maximum note per pixel (LEAN.md pattern 6).
+// The date still prints when the day CHANGES, which is where it carried information,
+// and an expanded row always states its own full moment (it's a detail view).
+test('the date leads a day, not every row', async ({ page }) => {
+  const DAY = 1_700_000_000
+  const note = (id: string, title: string, at: number) => ({
+    ...NOTE,
+    id,
+    title,
+    text: `corps de ${title}`,
+    created_at: at,
+    updated_at: at,
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await page.route('**/api/family-notes**', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      // two the same day, then one two days earlier
+      body: JSON.stringify({ notes: [note('a', 'Un', DAY), note('b', 'Deux', DAY), note('c', 'Trois', DAY - 2 * 86_400)] }),
+    })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/notes')
+  await expect(page.locator('.cercle-notes')).toBeVisible()
+
+  const metas = page.locator('.cnote__meta')
+  const first = (await metas.nth(0).textContent()) ?? ''
+  const second = (await metas.nth(1).textContent()) ?? ''
+  const third = (await metas.nth(2).textContent()) ?? ''
+
+  // Row 1 opens the day; row 2 repeats neither the date nor a dangling separator.
+  expect(first).toMatch(/nov\./)
+  expect(second).not.toMatch(/nov\./)
+  expect(second.trim().startsWith('·')).toBe(false)
+  // Row 3 is a different day — the date comes back.
+  expect(third).toMatch(/nov\./)
+  expect(third).not.toBe(second)
+})
