@@ -1,0 +1,24 @@
+{
+  // The Playwright specs. They were in NO tsconfig project, so `npm run typecheck`
+  // never looked at them — a broken identifier in a spec surfaced only when that spec
+  // happened to RUN, and e2e/sw.spec.ts is testIgnore'd from the default suite, so it
+  // could hide for days. (Caught exactly that way: a call to a helper that did not
+  // exist sat in sw.spec.ts through a green typecheck.)
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    // DOM + node: a spec is node code that also evaluates browser code inside
+    // page.evaluate(), where `document`, `caches` and `location` are real.
+    "types": ["node"]
+  },
+  "include": ["e2e"]
+}

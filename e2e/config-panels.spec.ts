@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Request } from '@playwright/test'
+import { test, expect, type Request } from '@playwright/test'
 import { mockApi, seedState, BASE, MMID } from './mocks'
 
 // Behavioural coverage for two Réglages ▸ Cuisine config panels that were

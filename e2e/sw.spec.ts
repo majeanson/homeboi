@@ -120,6 +120,37 @@ test('the service worker precaches the shell and reboots offline', async ({ page
         cacheNames: await caches.keys(),
       }))
       .catch((e) => ({ evaluateFailed: String(e).slice(0, 200) }))
+    const base = new URL(page.url()).origin
+    // Ask the cache ITSELF about the asset that failed. caches.match(req) returning
+    // undefined for an entry the install-time check just verified is present is the
+    // whole mystery; these four lookups separate the possibilities — a key-shape
+    // mismatch (byString hits, byRequest doesn't), a Vary effect (ignoreVary hits
+    // where the others don't), or the entry genuinely being gone by now (none hit,
+    // and keysSample shows what IS there under that prefix).
+    const cacheProbe = await page
+      .evaluate(async (paths: string[]) => {
+        const name = (await caches.keys()).find((k) => k.startsWith('babillard-') && k !== 'babillard-share')
+        if (!name) return { noCache: true }
+        const c = await caches.open(name)
+        const keys = (await c.keys()).map((r) => r.url)
+        const out: Record<string, unknown> = { cache: name, entries: keys.length }
+        for (const p of paths) {
+          const abs = new URL(p, location.origin).href
+          const stored = await c.match(abs, { ignoreVary: true })
+          out[p] = {
+            byString: !!(await c.match(abs)),
+            byRequest: !!(await c.match(new Request(abs))),
+            ignoreVary: !!stored,
+            vary: stored?.headers.get('vary') ?? null,
+            contentType: stored?.headers.get('content-type') ?? null,
+            inKeys: keys.includes(abs),
+          }
+        }
+        out.keysSample = keys.filter((u) => u.includes('/assets/index-')).slice(0, 5)
+        return out
+      }, failed.map((f) => new URL(f.url)).filter((u) => u.origin === base).map((u) => u.pathname))
+      .catch((e) => ({ probeFailed: String(e).slice(0, 200) }))
+
     // Cross-reference every failed request against what this build promised to
     // precache — that single column is what turns "something 504'd" into a cause.
     const promisedSet = new Set(promised ?? [])
@@ -137,6 +168,7 @@ test('the service worker precaches the shell and reboots offline', async ({ page
       'offline reboot never rendered .hub\n' +
         'page: ' + JSON.stringify(diag, null, 2) + '\n' +
         'failed requests: ' + JSON.stringify(failures, null, 2) + '\n' +
+        'cache probe: ' + JSON.stringify(cacheProbe, null, 2) + '\n' +
         'precache held ' + (promised?.length ?? 0) + ' entries\n' +
         'console: ' + JSON.stringify(consoleErrors.slice(0, 8), null, 2) + '\n' +
         (err as Error).message,
@@ -152,6 +184,59 @@ test('the service worker precaches the shell and reboots offline', async ({ page
 // The retry that install() gained with SW_POLICY v3. A precache write can fail
 // transiently — a blip mid-install, a loaded server refusing one connection — and
 // the old code swallowed that (allSettled) and activated anyway, leaving a shell
+// PROPERTY: a cached response that carries Vary must still be SERVED.
+//
+// Written to reproduce the intermittent offline-boot failure and it did NOT — which
+// is the useful part. Run against the SW WITHOUT { ignoreVary: true } it still
+// passes, so Vary is not what missed: Accept-Encoding is a forbidden header name,
+// added by the network stack below the Cache API, so it is absent from both Requests
+// the Vary check compares and they match trivially.
+//
+// Kept as a property rather than deleted: the lookups are ignoreVary now, and this
+// pins that down, so a future Vary on a header that IS visible to the Cache API
+// (Accept, say) cannot silently reintroduce a blank board. It is NOT a guard for the
+// offline bug — that one is still open, and the reboot case above probes the cache
+// at the moment of failure to name it.
+test('a precached response carrying Vary is still served offline', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
+  await page.goto('/board')
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 20_000 })
+
+  // Re-store one real precached asset with the header a compressing origin adds.
+  // Same URL, same bytes — only the Vary header is new, which is the whole point.
+  const target = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((k) => k.startsWith('babillard-') && k !== 'babillard-share')
+    if (!name) return null
+    const cache = await caches.open(name)
+    const keys = await cache.keys()
+    const entry = keys.find((r) => /\/assets\/index-[^/]*\.js$/.test(r.url)) ?? keys.find((r) => r.url.endsWith('.js'))
+    if (!entry) return null
+    const stored = await cache.match(entry)
+    if (!stored) return null
+    const body = await stored.text()
+    const headers = new Headers(stored.headers)
+    headers.set('Vary', 'Accept-Encoding')
+    await cache.put(entry.url, new Response(body, { status: 200, headers }))
+    return { url: entry.url, bytes: body.length }
+  })
+  expect(target, 'a hashed JS entry to re-store').not.toBeNull()
+  expect(target!.bytes, 'the re-stored asset has a real body').toBeGreaterThan(0)
+
+  // Offline, ask for it exactly as the page would. Before the fix this answered 504
+  // (a cache miss, then a dead network); it must answer the cached bytes.
+  await page.context().setOffline(true)
+  const got = await page.evaluate(async (url) => {
+    const res = await fetch(url)
+    return { status: res.status, length: (await res.text()).length }
+  }, target!.url)
+  await page.context().setOffline(false)
+
+  expect(got.status, 'a Vary-carrying precached asset must not 504 offline').toBe(200)
+  expect(got.length, 'and it must come back with its body, not an empty 504 shell').toBe(target!.bytes)
+})
+
 // with a hole in it that nothing would notice until the tablet next rebooted
 // offline. Prove the recovery rather than trust it: fail one critical bundle's
 // FIRST request, let the second through, and require the entry to be in the cache.

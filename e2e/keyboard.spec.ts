@@ -1,5 +1,4 @@
-import { test, expect, type Page, type Locator } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect, type Page } from '@playwright/test'
 
 // Form action buttons + the focused field must stay visible when the on-screen
 // keyboard is up. iOS overlays the keyboard without resizing the layout viewport;

@@ -7,7 +7,11 @@ import { mockApi, seedState, type Audience, type Lang, type Surface, type Theme 
 //   npx playwright test
 // then look at e2e/screenshots/*.png.
 
-type Surface = {
+// A page to shoot. NOT the kiosk|mobile device role — that is `Surface` from
+// ./mocks, which this used to shadow (both were called Surface, so surfaceFor()
+// below was annotated with the page type and typechecked as fine because e2e/ was
+// in no tsconfig project at all).
+type Shot = {
   name: string
   path: string
   audiences: Audience[]
@@ -15,7 +19,7 @@ type Surface = {
   ready: string
 }
 
-const SURFACES: Surface[] = [
+const SURFACES: Shot[] = [
   { name: 'home', path: '/', audiences: ['parent'], ready: '.home__title' },
   { name: 'setup', path: '/setup', audiences: ['parent'], ready: '.setup__choices' },
   // C-12: baseline all three board lenses — parent, toddler, AND simple (the

@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Request } from '@playwright/test'
+import { test, expect, type Request } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
 // A-2 (bmad/10) — « La capture tient parole ». Capture used to be the ONE add-path

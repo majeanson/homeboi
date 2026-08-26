@@ -14,16 +14,9 @@ const open = async (page: Page) => {
   await page.waitForSelector('.board-grid .wg-slot')
 }
 
-// `page.mouse` works in viewport coordinates and never scrolls, unlike `.click()`. The
-// board is a long inner scroller, so anything we press must be brought into view first —
-// otherwise boundingBox() hands back coordinates the pointer can't reach.
-//
-const boxOf = async (page: Page, sel: string) => {
-  const loc = page.locator(sel)
-  await loc.scrollIntoViewIfNeeded()
-  return (await loc.boundingBox())!
-}
-
+// `page.mouse` works in viewport coordinates and never scrolls, unlike `.click()`, so
+// anything it presses must be brought into view first — the board is a long inner
+// scroller.
 /** Press and hold the top edge of a card, without moving (travel aborts the hold).
  *
  * The press aims at the card's TOP edge, so that edge must be on screen — which

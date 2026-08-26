@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState } from './mocks'
 
 // bmad/10 B-7 — "La ligne de vérité." The board must flag stale data even when
 // navigator.onLine still reads true — a captive portal, a dead uplink past the

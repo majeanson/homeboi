@@ -101,6 +101,42 @@ recipe-image uploads (Blob bodies), pairing, auth, the **postal save** (reads th
 server-normalized value back), and **recipe-tags** (uses the `useOptimisticMutation`
 wrapper). These need a live server round-trip, so queueing them adds no value.
 
+## The two service-worker cache traps
+
+Both are cheap to reintroduce and both fail the same way — a wall tablet reboots
+to a blank board — so they are written down rather than left to be rediscovered.
+The SW lives in `vite.config.ts` (`babillard-sw`, emitted as `dist/sw.js`).
+
+1. **HTML under a subresource URL (the grey-screen bug).** The origin serves the
+   SPA with `not_found_handling = "single-page-application"`, so a request for a
+   hashed chunk that no longer exists does NOT 404 — it answers **200 text/html**
+   with `index.html`. `res.ok` is true, so a naive cache-first handler writes HTML
+   under a `.js` URL, and being cache-first that entry then wins forever: the entry
+   module parses as HTML, React never mounts, blank page on every reload, online or
+   off. Guarded in two places — `cacheOne()` refuses to WRITE it at install, and the
+   fetch handler refuses to SERVE it (`isHtml && !wantsHtml` → 504 `Stale asset`,
+   plus it drops the cached shell so the next navigation must fetch fresh HTML).
+
+2. **Variant-sensitive lookups.** `cacheOne()` stores with `c.put(url, res)` — a
+   bare **string** URL — so the stored Request carries no headers, while every
+   lookup passes the browser's real Request. Any `Vary` on a header the Cache API
+   can see then turns "the entry is right there" into a miss, which offline means a
+   504 and a blank board. Every `caches.match` in the SW therefore passes
+   **`{ ignoreVary: true }`**: this SW keeps exactly ONE variant per URL and never
+   content-negotiates, so a Vary check can only ever produce a false miss.
+   *Caveat, measured:* `Vary: Accept-Encoding` specifically canNOT cause this —
+   Accept-Encoding is a forbidden header name added below the Cache API, so it is
+   absent from both Requests and matches trivially. `e2e/sw.spec.ts` pins that
+   property. The guard is for a Vary on a header that IS visible (`Accept`, …).
+
+**Open:** the offline reboot has failed intermittently on CI (~50%, never locally)
+with the entry module precached, missed by `caches.match`, 504, `#root` empty. The
+Vary hypothesis above was tested and disproved; the cause is not yet known.
+`e2e/sw.spec.ts` now probes the cache at the moment of failure (by string, by
+Request, ignoring Vary, plus the stored headers and the live key list) so the next
+failure names the mechanism. Note that `scripts/check-bundle.mjs` cannot catch
+this: it proves an entry is in the precache LIST, not that it is retrievable.
+
 ## Known limitations
 
 - **Temp-id chains — FIXED (bmad/08 E-41, 2026-07-07):** adding a row offline and
@@ -120,6 +156,12 @@ wrapper). These need a live server round-trip, so queueing them adds no value.
   lands. Self-corrects within one poll.
 - Persisted cache and outbox are wiped on any `401` so a revoked device leaves no
   household data on disk.
+- **Google Fonts on a first offline boot:** the `fonts.googleapis.com/css2`
+  stylesheet is cached as-it-is-fetched, never precached (cross-origin), so a
+  tablet that has never loaded it online 504s on it offline. Harmless by
+  construction — that handler resolves a real (degraded) Response rather than
+  leaving `respondWith` rejected, so nothing hangs, and type falls back to the
+  stack. Seen in the CI diagnostics beside the real failure; not the cause of it.
 
 ## Testing
 

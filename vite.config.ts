@@ -172,6 +172,26 @@ self.addEventListener('activate', (e) => {
   )
 })
 
+// EVERY cache lookup below passes { ignoreVary: true }. This SW stores exactly ONE
+// variant per URL and never content-negotiates, so a Vary check on a lookup can only
+// ever produce a FALSE miss — turning "the entry is right there" into "not found",
+// which offline means a 504 and a blank board.
+//
+// Honesty about what this is: HARDENING, not a diagnosed fix. It was written as the
+// suspected cause of the intermittent offline-boot failure (CI run 32971111746:
+// /assets/index-*.js precached, missed, 504, React never mounted) — and then
+// DISPROVED by the property test in e2e/sw.spec.ts, which stores a Vary-carrying
+// response and finds it served either way. The reason: Accept-Encoding is a
+// forbidden header name, added by the network stack BELOW the Cache API, so it is
+// absent from both Requests being compared and the Vary check trivially matches.
+//
+// It stays because it is strictly-more-permissive and costs nothing, and because a
+// future Vary (on a header that IS visible, e.g. Accept) would reintroduce exactly
+// this failure. The real cause of the offline miss is still open — the spec now
+// probes the cache at the moment of failure to name it.
+//
+// (Storing a synthetic new Request(url) instead would NOT help — its headers are
+// empty too, which is the half of the comparison that would fail.)
 self.addEventListener('fetch', (e) => {
   const req = e.request
   const url = new URL(req.url)
@@ -211,7 +231,7 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) {
     if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
       e.respondWith(
-        caches.match(req).then((hit) =>
+        caches.match(req, { ignoreVary: true }).then((hit) =>
           hit ?? fetch(req).then((res) => {
             const copy = res.clone()
             caches.open(CACHE).then((c) => c.put(req, copy))
@@ -231,7 +251,7 @@ self.addEventListener('fetch', (e) => {
   // unexpected error" and the <img> breaks with no clean failure.
   if (url.pathname.startsWith('/api/img/') || url.pathname.startsWith('/api/flyer-img')) {
     e.respondWith(
-      caches.match(req).then((hit) =>
+      caches.match(req, { ignoreVary: true }).then((hit) =>
         hit ?? fetch(req).then((res) => {
           if (res.ok) {
             const copy = res.clone()
@@ -250,7 +270,7 @@ self.addEventListener('fetch', (e) => {
   // App navigations: try the network (fresh HTML after a deploy), fall back to
   // the cached shell so an offline reboot still boots the board.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(() => caches.match('/')))
+    e.respondWith(fetch(req).catch(() => caches.match('/', { ignoreVary: true })))
     return
   }
 
@@ -271,7 +291,7 @@ self.addEventListener('fetch', (e) => {
   const wantsHtml = req.mode === 'navigate' || req.destination === 'document'
 
   e.respondWith(
-    caches.match(req).then((hit) =>
+    caches.match(req, { ignoreVary: true }).then((hit) =>
       hit ?? fetch(req).then((res) => {
         const isHtml = (res.headers.get('content-type') || '').includes('text/html')
         if (isHtml && !wantsHtml) {

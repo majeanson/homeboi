@@ -25,13 +25,22 @@ export default defineConfig({
   testMatch: /sw\.spec\.ts/,
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  // NO retries, unlike the main suite. This harness holds the one spec guarding
+  // NFR-OFFLINE-1, and an INTERMITTENT offline-boot failure is not a flake — a
+  // tablet that boots blank half the time is broken. With retries:1 the Vary bug
+  // below reported as "1 flaky" and the whole E2E workflow went GREEN while the
+  // board was failing to boot (run 32967650533). Two tests, ~7s: a re-run is cheap,
+  // a false green is not.
+  retries: 0,
   timeout: 60_000,
   reporter: [['list']],
   outputDir: 'test-results-sw',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
-    trace: 'on-first-retry',
+    // retain-on-failure, not on-first-retry: with retries:0 there IS no retry, so
+    // on-first-retry would capture nothing at all — and the e2e workflow now uploads
+    // this folder precisely so a failure is openable.
+    trace: 'retain-on-failure',
     navigationTimeout: 20_000,
     actionTimeout: 15_000,
     timezoneId: 'America/Toronto',
