@@ -75,7 +75,11 @@ test('the service worker precaches the shell and reboots offline', async ({ page
   // (src/lib/persist.ts, OFFLINE.md) — was left on Playwright's silent 5s default,
   // the only wait in this spec not already sized for CI (every other wait here is
   // an explicit 15–20s). Match that budget instead of the tool default.
-  await expect(page.locator('.hub')).toBeVisible({ timeout: 15_000 })
+  // 15s was not enough on a loaded runner: this flaked TWICE at 16.1s and 16.4s
+  // (2026-08-25) while taking under a second locally, and a plain re-run of the same
+  // commit went green. The margin, not the code, was the problem — a real break here
+  // (no SW, no cached shell) still fails, it just takes longer to say so.
+  await expect(page.locator('.hub')).toBeVisible({ timeout: 30_000 })
   // Still SW-controlled after the offline reboot (the shell came from cache, not a
   // live server round-trip).
   expect(await page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)

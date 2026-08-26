@@ -206,3 +206,47 @@ test('the board’s edit hint sits under the cards, not over them', async ({ pag
   await page.reload()
   await expect(page.locator('.board-edit-hint')).toHaveCount(0)
 })
+
+// ── La cuisine · Le cercle ──────────────────────────────────────────────────────
+
+test('Business + Carnets drop the heading their section pill already says', async ({ page }) => {
+  for (const [section, pill] of [['business', 'Business'], ['carnets', 'Carnets']] as const) {
+    await phone(page, `/maison?section=${section}`)
+    const body = page.locator('.hub__body')
+    await expect(body).toBeVisible()
+    // The lit pill names the section; the tab below it adds no second title and no
+    // lead paragraph. Exactly ONE thing on screen says the word.
+    await expect(page.locator('.cercle-section__label')).toHaveCount(0)
+    await expect(page.locator('.cercle-business__hint')).toHaveCount(0)
+    await expect(page.getByRole('tab', { name: pill })).toHaveAttribute('aria-selected', 'true')
+  }
+})
+
+test('arming « ? » on a section pill paints ONE bubble, not two', async ({ page }) => {
+  // The regression this locks: BusinessesTab/CarnetsTab each carried a HelpTitle for
+  // the same help key the section pill row already owns, and helpMode renders every
+  // bubbleFor(k) whose key matches — so an armed pick painted the bubble TWICE.
+  await phone(page, '/maison?section=business')
+  await page.locator('.hub__body').waitFor({ state: 'visible' })
+  await page.getByRole('button', { name: /Aide|aide|\?/ }).first().click()
+  await page.getByRole('tab', { name: 'Business' }).click()
+  await expect(page.locator('.help-bubble')).toHaveCount(1)
+})
+
+test('the pet form folds every secondary field — including the tail that hung below', async ({ page }) => {
+  await phone(page, '/cercle/pet/new')
+  await expect(page.getByPlaceholder('Nom')).toBeVisible()
+
+  // Vet, colour, notes and photo used to sit BELOW the « Détails / santé » fold,
+  // expanded — a disclosure with loose fields under it holds nothing worth opening.
+  const fold = page.getByRole('button', { name: 'Détails / santé' })
+  await expect(fold).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.locator('.pet-form__weight-add')).toHaveCount(0)
+  await expect(page.locator('input[type=file]')).toHaveCount(0)
+  await expect(page.getByText('Couleur', { exact: true })).toHaveCount(0)
+
+  await fold.click()
+  await expect(page.locator('.pet-form__weight-add')).toBeVisible()
+  await expect(page.getByText('Couleur', { exact: true })).toBeVisible()
+  await expect(page.locator('input[type=file]')).toHaveCount(1)
+})

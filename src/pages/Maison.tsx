@@ -866,11 +866,11 @@ function MaisonParent() {
       ) : section === 'business' ? (
         /* Business — a standalone services/vendors directory, ISOLATED from the
            people graph (no view switch, no focus lens, no relationships). */
-        <BusinessesTab help={help} focusId={section === 'business' ? focusItem : null} onFocused={() => setFocusItem(null)} />
+        <BusinessesTab focusId={section === 'business' ? focusItem : null} onFocused={() => setFocusItem(null)} />
       ) : section === 'carnets' ? (
         /* Les carnets — the cared-for-things directory (houses, cars). Its own
            query/scene, never the people graph (like Business). */
-        <CarnetsTab help={help} />
+        <CarnetsTab />
       ) : (
         <>
           {viewSwitch}

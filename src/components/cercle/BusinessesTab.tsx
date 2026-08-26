@@ -24,7 +24,6 @@ import { BusinessForm } from './BusinessForm'
 import { JoindreRail } from './JoindreRail'
 import { EventForm, type EventInit } from '../forms/EventForm'
 import { type FormMember } from '../FormScene'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { scrollBehavior } from '../../lib/motion'
 
 // « Le cercle » → Business tab: the household's services / vendors directory (vet,
@@ -32,13 +31,11 @@ import { scrollBehavior } from '../../lib/motion'
 // its own query/endpoint, never unified into contacts/members. Strictly quick reach
 // + notes + linking a rendez-vous (the EventForm "Avec" picker reads the same list).
 export function BusinessesTab({
-  help,
   // A global-search hit deep-links here with the business id (§892): open its peek +
   // scroll it into view, then call onFocused so the parent clears the one-shot focus.
   focusId,
   onFocused,
 }: {
-  help?: HelpMode
   focusId?: string | null
   onFocused?: () => void
 }) {
@@ -103,14 +100,17 @@ export function BusinessesTab({
     return () => clearTimeout(timer)
   }, [flashId])
 
+  // No heading, no lead line. The section PILL right above says « Business » and is the
+  // lit one — repeating it cost a title plus a three-line description before a single
+  // commerce, on a tab whose empty state already says what to put here (« Ajoute le
+  // vétérinaire, le plombier, la clinique… »).
+  //
+  // It also removes a DUPLICATE help anchor: pages/Maison wires the section pills with
+  // pick={help.pick} and renders help.bubbleFor('business') under that row, so this
+  // HelpTitle registered the same key a second time and arming « ? » painted the
+  // bubble TWICE. One anchor, on the pill that names the section.
   return (
     <section className="cercle-group cercle-business">
-      <HelpTitle help={help} k="business" className="cercle-section__label">
-        <InlineIcon name="storefront-bold" size={16} /> {bz.title}
-      </HelpTitle>
-      {help?.bubbleFor('business')}
-      <p className="cercle-business__hint mono">{bz.addHint}</p>
-
       {shown.length === 0 ? (
         <EmptyState>{bz.empty}</EmptyState>
       ) : (

@@ -269,13 +269,33 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
       )}
       <p className="pet-form__owner-hint mono">{p.ownerHint}</p>
 
-      {/* Secondary care details — microchip, feeding, sitter notes, and the dated weight
-          log — collapsed behind a « Détails / santé » disclosure so the identity fields
-          (name/species/breed/birthday/owner) lead and the form stays a calm glance
-          (NFR-CALM-1). Open by default when editing a pet that already carries any. */}
+      {/* EVERYTHING secondary — microchip, feeding, sitter notes, the dated weight log,
+          the vet, the colour, the notes and the photo — behind one « Détails / santé »
+          disclosure, so the identity fields (name/species/breed/birthday/owner) lead and
+          the form stays a calm glance (NFR-CALM-1).
+
+          The last four used to hang BELOW this fold, expanded: a disclosure with loose
+          fields under it reads as holding nothing worth opening, and that tail was still
+          ~350px of form — a colour swatch grid included — under a control that promised
+          the details were tucked away.
+
+          Opens itself when the pet already carries ANY of them, so editing never hides
+          filled data (the ContactFields rule). The colour is deliberately NOT part of that
+          test: it is seeded to PET_COLOUR for a brand-new pet, so counting it would mean
+          the fold is never actually folded. */}
       <Disclosure
         label={t.cercle.pet.detailsHealth}
-        defaultOpen={!!(microchip.trim() || feeding.trim() || sitterNotes.trim() || weights.length > 0)}
+        defaultOpen={
+          !!(
+            microchip.trim() ||
+            feeding.trim() ||
+            sitterNotes.trim() ||
+            weights.length > 0 ||
+            vetBusinessId ||
+            notes.trim() ||
+            photoKey
+          )
+        }
       >
         <input className="input" value={microchip} onChange={(e) => setMicrochip(e.target.value)} placeholder={p.microchip} aria-label={p.microchip} />
         <textarea className="input" value={feeding} onChange={(e) => setFeeding(e.target.value)} placeholder={p.feeding} aria-label={p.feeding} rows={2} />
@@ -301,47 +321,48 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
             <Icon name="plus-bold" size={14} /> {p.weightAdd}
           </button>
         </div>
+
+        {/* Vet — pick an existing Business (or type to filter). Stores vet_business_id. */}
+        <label className="cf__label">{p.vet}</label>
+        <EntityCombobox<Business>
+          value={vetQuery}
+          onChange={setVetQuery}
+          options={businesses.map((b): ComboOption<Business> => ({ id: b.id, label: b.name, badge: b.category ?? undefined, data: b, icon: 'storefront-bold' }))}
+          onPick={(opt) => {
+            setVetBusinessId(opt.data?.id ?? null)
+            setVetQuery('')
+          }}
+          placeholder={p.vetPick}
+          submitIcon={null}
+          typeaheadOnly
+        />
+        {vet && (
+          <p className="pet-form__vet mono">
+            <Icon name="storefront-bold" size={13} /> {vet.name}
+            <button type="button" className="btn btn--sm btn--ghost" onClick={() => setVetBusinessId(null)}>
+              {t.common.cancel}
+            </button>
+          </p>
+        )}
+
+        <label className="cf__label">{p.colour}</label>
+        <ColorPicker value={colour} onChange={setColour} label={p.colour} />
+
+        <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={p.notes} aria-label={p.notes} rows={2} />
+
+        {/* Optional photo (hidden gracefully if R2 is unset → upload fails). */}
+        <label className="business-form__photo">
+          {photo ? (
+            <img src={photo} alt="" className="business-form__photo-img" />
+          ) : (
+            <span className="business-form__photo-add">
+              <Icon name="smiley-bold" size={20} /> {uploading ? p.uploading : p.addPhoto}
+            </span>
+          )}
+          <input type="file" accept="image/*" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
+        </label>
       </Disclosure>
 
-      {/* Vet — pick an existing Business (or type to filter). Stores vet_business_id. */}
-      <label className="cf__label">{p.vet}</label>
-      <EntityCombobox<Business>
-        value={vetQuery}
-        onChange={setVetQuery}
-        options={businesses.map((b): ComboOption<Business> => ({ id: b.id, label: b.name, badge: b.category ?? undefined, data: b, icon: 'storefront-bold' }))}
-        onPick={(opt) => {
-          setVetBusinessId(opt.data?.id ?? null)
-          setVetQuery('')
-        }}
-        placeholder={p.vetPick}
-        submitIcon={null}
-        typeaheadOnly
-      />
-      {vet && (
-        <p className="pet-form__vet mono">
-          <Icon name="storefront-bold" size={13} /> {vet.name}
-          <button type="button" className="btn btn--sm btn--ghost" onClick={() => setVetBusinessId(null)}>
-            {t.common.cancel}
-          </button>
-        </p>
-      )}
-
-      <label className="cf__label">{p.colour}</label>
-      <ColorPicker value={colour} onChange={setColour} label={p.colour} />
-
-      <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={p.notes} aria-label={p.notes} rows={2} />
-
-      {/* Optional photo (hidden gracefully if R2 is unset → upload fails). */}
-      <label className="business-form__photo">
-        {photo ? (
-          <img src={photo} alt="" className="business-form__photo-img" />
-        ) : (
-          <span className="business-form__photo-add">
-            <Icon name="smiley-bold" size={20} /> {uploading ? p.uploading : p.addPhoto}
-          </span>
-        )}
-        <input type="file" accept="image/*" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
-      </label>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter

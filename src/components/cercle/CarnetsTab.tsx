@@ -8,10 +8,9 @@ import { imgUrl } from '../../lib/image'
 import { faint } from '../../lib/colors'
 import { useCarnets, carnetEmoji, type Carnet } from '../../lib/carnets'
 import { CARNETS_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import { Icon, InlineIcon } from '../Icon'
+import { Icon } from '../Icon'
 import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
 const ARCHIVED_CARNETS_KEY = [...CARNETS_KEY, 'archived']
 
@@ -22,7 +21,7 @@ const ARCHIVED_CARNETS_KEY = [...CARNETS_KEY, 'archived']
 // carnet is the ＋ FAB's job now (the cercle chooser's "Nouveau carnet" tile opens
 // the CarnetForm on /cercle via ?add=carnet), so this tab carries no add button of
 // its own — the same single-entry pattern as the Business tab.
-export function CarnetsTab({ help }: { help?: HelpMode }) {
+export function CarnetsTab() {
   const t = useT()
   const nav = useNavigate()
   const c = t.carnets
@@ -54,14 +53,12 @@ export function CarnetsTab({ help }: { help?: HelpMode }) {
   const childrenOf = (id: string) => (data?.carnets ?? []).filter((x) => x.parentId === id)
   const needsLook = (x: Carnet) => soonIds.has(x.id) || childrenOf(x.id).some((ch) => soonIds.has(ch.id))
 
+  // Same as the Business tab beside it: the lit section pill already says « Carnets »,
+  // the empty state already says what a carnet is for, and the pill row already owns
+  // the 'carnets' help anchor — this heading was a second one, which made an armed
+  // « ? » paint the bubble twice.
   return (
     <section className="cercle-group cercle-carnets">
-      <HelpTitle help={help} k="carnets" className="cercle-section__label">
-        <InlineIcon name="book-open-bold" size={16} /> {c.title}
-      </HelpTitle>
-      {help?.bubbleFor('carnets')}
-      <p className="cercle-business__hint mono">{c.hint}</p>
-
       {tops.length === 0 ? (
         <EmptyState guide={{ card: 'carnets' }}>{c.empty}</EmptyState>
       ) : (
