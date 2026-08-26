@@ -998,56 +998,93 @@ Gold-standard check (PARITY Part 6):
 
 ---
 
-## Appendix A — D7 discovery coverage, per channel (audited 2026-07-10)
+## Appendix A — D7 discovery coverage, per channel (audited 2026-07-10, re-verified 2026-08-26)
 
 Exact per-feature mapping of the three discovery channels. Sources:
-`src/lib/guideContent.ts` (32 GUIDE cards), the 7 `*Help.ts` registries,
-`src/lib/tourContent.ts` (6 tours: essentials/board/kitchen/routines/cercle/liste).
-Tour coverage is **deliberately narrow** — only main-surface moves get a step;
-a ❌ in the Tour column alone is not a gap.
+`src/lib/guideContent.ts` (32 GUIDE cards), the 8 `*Help.ts` registries, **plus the
+`SceneHead card=` / `HelpDot` channel** (see ᴰ), and `src/lib/tourContent.ts`
+(**7** tours: essentials/board/kitchen/**maison**/routines/cercle/liste).
+
+**Legend.** ✅ covered · 🔶 partial · ➖ deliberately not applicable (footnoted) ·
+❌ a real gap. There is **no bare ❌ left in this table**, and that is the point:
+
+- **➖ᵀ — no tour step, by design.** Tour coverage is deliberately narrow: a tour is a
+  short walk through a *section's* main moves, not a per-feature obligation
+  (`DISCOVERY.md` step 4 says a tour step is **optional**). 23 features carried a ❌
+  here purely for not being in a 7-step walkthrough, which read as 23 pieces of debt
+  the project never intended to owe — 36% of every gap in this file. Flipped to ➖ᵀ on
+  2026-08-26. Adding a step is a product decision, never a box to tick.
+- **➖ᵀᵒ — a toddler surface has no « ? ».** Help mode is a parent affordance; a
+  pre-reader gets picture + audio instead (F29, F30).
+- **ᴰ — reached by `SceneHead card=` (`HelpDot`), not by a `*Help.ts` registry.**
+  Both are the « ? » channel. Counting only the registries is what made F6, F8, F17,
+  F30 and F31 look dark; the Post-Wave-H note below said so on 2026-07-10, but the
+  CELLS were never updated, so anyone counting symbols kept reading debt this file
+  had already retracted in prose. Fixed 2026-08-26 — if you correct an audit, correct
+  the cells, not just the paragraph under them.
+- **ᴺ — Notes moved out of Le cercle**, so its « ? » lives in `notesHelp`
+  (`mode`/`search`); the old `cercle:notes` key no longer exists.
 
 | Feature                | Guide card                            | « ? » help entries                                                                                                                    | Tour step                                  |
 | ---------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| F1 Agenda              | ✅ `set-agenda` (+`board` pt 2)       | ✅ add:`event`; board:`today`,`fil`,`upcoming`; operator:`schoolYear`                                                                 | ❌                                         |
-| F2 Corvées+Projets     | ✅ `set-chores`                       | ✅ add:`chore`,`chores-pick`; operator:`choreLedger`,`homeProjets`,`homeEntretien`                                                    | ❌                                         |
-| F3 Todos               | ✅ `todos`                            | ✅ add:`todo`; board:`todos`; operator:`todoTemplates`                                                                                | ❌                                         |
+| F1 Agenda              | ✅ `set-agenda` (+`board` pt 2)       | ✅ add:`event`; board:`today`,`fil`,`upcoming`; operator:`schoolYear`                                                                 | ➖ᵀ                                         |
+| F2 Corvées+Projets     | ✅ `set-chores`                       | ✅ add:`chore`,`chores-pick`; operator:`choreLedger`,`homeProjets`,`homeEntretien`                                                    | ➖ᵀ                                         |
+| F3 Todos               | ✅ `todos`                            | ✅ add:`todo`; board:`todos`; operator:`todoTemplates`                                                                                | ➖ᵀ                                         |
 | F4 Notes frigo         | ✅ `capture` pt 1                     | ✅ add:`note`                                                                                                                         | ✅ board:`add-note`                        |
-| F5 Mots                | ✅ `mots`                             | ❌                                                                                                                                    | ❌                                         |
-| F6 Habitudes           | ✅ `habits`                           | 🔶 operator:`habits` only — nothing on the board/HabitudesPage surface                                                                | ❌                                         |
-| F7 Photos/cadre        | ✅ `screensaver` + `set-display`      | ✅ operator:`photos`,`ambient`,`display`                                                                                              | ❌                                         |
-| F8 Dessins galerie     | 🔶 via `mots` (alias `drawings`)      | ❌                                                                                                                                    | ❌                                         |
+| F5 Mots                | ✅ `mots`                             | ✅ board:`mots`                                                                                                                                    | ➖ᵀ                                         |
+| F6 Habitudes           | ✅ `habits`                           | ✅ operator:`habits`; board:`defi` (DefiBlock); HabitudesPage `card="habits"`ᴰ                                                                | ➖ᵀ                                         |
+| F7 Photos/cadre        | ✅ `screensaver` + `set-display`      | ✅ operator:`photos`,`ambient`,`display`                                                                                              | ➖ᵀ                                         |
+| F8 Dessins galerie     | 🔶 via `mots` (alias `drawings`)      | ✅ DrawingGalleryPage `card="drawings"`ᴰ                                                                                                                                    | ➖ᵀ                                         |
 | F9 Capture/AddSheet    | ✅ `capture`                          | ✅ the whole `addHelp` registry                                                                                                       | ✅ essentials:`add-fab`; board:`add-tiles` |
 | F10 Recherche          | ✅ `board` pts 4–5 (alias `search`)   | ✅ `search` key in board/kitchen/liste/cercle/routines registries                                                                     | ✅ board:`search`                          |
 | F11 Widget space       | ✅ `board-widgets`                    | ✅ operator:`boardLayout`                                                                                                             | ✅ board:`board-cards`                     |
 | F12 Plan des repas     | ✅ `kitchen` pt 1                     | ✅ add:`meal`; kitchenTab:`meals`; operator:`mealSlots`                                                                               | ✅ kitchen:plan-week                       |
 | F13 Idées de repas     | ✅ `kitchen` pt 9                     | ✅ add:`ideas`; kitchenTab:`ideas`                                                                                                    | ✅ kitchen:`add-week`                      |
-| F14 Restants           | ✅ `kitchen` pt 8 (alias `leftovers`) | ✅ add:`leftovers`; kitchenTab:`leftovers`,`useSoon`; board:`toFinish`                                                                | ❌                                         |
-| F15 Recettes           | ✅ `recipes`                          | ✅ add:`recipe`,`cook`; kitchenTab:`recipes`,`recipesBook`,`collections`; operator:`recipeTags`,`recipePills`,`measureColors`,`voice` | ❌                                         |
+| F14 Restants           | ✅ `kitchen` pt 8 (alias `leftovers`) | ✅ add:`leftovers`; kitchenTab:`leftovers`,`useSoon`; board:`toFinish`                                                                | ➖ᵀ                                         |
+| F15 Recettes           | ✅ `recipes`                          | ✅ add:`recipe`,`cook`; kitchenTab:`recipes`,`recipesBook`,`collections`; operator:`recipeTags`,`recipePills`,`measureColors`,`voice` | ➖ᵀ                                         |
 | F16 Garde-manger       | ✅ `kitchen` pt 2                     | ✅ add:`pantry`; kitchenTab:`pantry`,`low`                                                                                            | ✅ kitchen:running-low                     |
-| F17 Vide-frigo         | 🔶 `kitchen` pt 3 only                | ❌ (folded into `ideas`, no dedicated key)                                                                                            | ❌                                         |
-| F18 Circulaires        | ✅ `deals`                            | ✅ add:`flyer`; liste:`flyer`                                                                                                         | ❌                                         |
+| F17 Vide-frigo         | 🔶 `kitchen` pt 3 only                | ✅ IdeasPage `card="kitchen"`ᴰ — folded into « Idées » on purpose, no dedicated key                                                                                            | ➖ᵀ                                         |
+| F18 Circulaires        | ✅ `deals`                            | ✅ add:`flyer`; liste:`flyer`                                                                                                         | ➖ᵀ                                         |
 | F19 La liste           | ✅ `liste`                            | ✅ add:`list-item`,`quick-add`,`share`,`auto-pick`,`shop`; liste:`quick`,`clear`                                                      | ✅ liste:`liste-add`,sort-aisle            |
-| F20 Fantômes           | ✅ `ghost` (+`set-shopping`)          | ✅ operator:`ghost`                                                                                                                   | ❌                                         |
+| F20 Fantômes           | ✅ `ghost` (+`set-shopping`)          | ✅ operator:`ghost`                                                                                                                   | ➖ᵀ                                         |
 | F21 Personnes/familles | ✅ `cercle` + `set-household`         | ✅ add:`person`,`family`,`connect`; cercle: 12 keys (`family`,`household`,`tree`,`links`,`birthdays`…)                                | ✅ cercle:`cercle-views`,links             |
-| F22 Groupes            | ✅ `cercle` pt 8                      | ✅ add:`group`; cercle:`namedGroup`,`editGroup`,`deleteGroup`,`social`; operator:`cercleGroups`                                       | ❌                                         |
-| F23 Animaux            | ✅ `cercle` pt 1                      | ✅ add:`pet`                                                                                                                          | ❌                                         |
-| F24 Business           | ✅ `cercle` pt 11                     | ✅ add:`business`; cercle:`business`                                                                                                  | ❌                                         |
-| F25 Notes du cercle    | ✅ `cercle` pt 10                     | ✅ cercle:`notes`                                                                                                                     | ❌                                         |
-| F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets`                                                                                                                   | ❌                                         |
+| F22 Groupes            | ✅ `cercle` pt 8                      | ✅ add:`group`; cercle:`namedGroup`,`editGroup`,`deleteGroup`,`social`; operator:`cercleGroups`                                       | ➖ᵀ                                         |
+| F23 Animaux            | ✅ `cercle` pt 1                      | ✅ add:`pet`                                                                                                                          | ➖ᵀ                                         |
+| F24 Business           | ✅ `cercle` pt 11                     | ✅ add:`business`; cercle:`business`                                                                                                  | ➖ᵀ                                         |
+| F25 Notes du cercle    | ✅ `cercle` pt 10                     | ✅ notes:`mode`,`search`ᴺ                                                                                                                     | ➖ᵀ                                         |
+| F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets`                                                                                                                   | ➖ᵀ                                         |
 | F27 Notre monde        | ✅ `cercle` pt 7                      | ✅ cercle:`monde`                                                                                                                     | ✅ cercle:`cercle-world`                   |
 | F28 Routines           | ✅ `routines` + `set-chores`          | ✅ add:`routine`; routines:`card`; operator:`calm`                                                                                    | ✅ routines: 4 steps                       |
-| F29 Mur de collants    | 🔶 `routines` pt 4 only               | ❌                                                                                                                                    | ❌                                         |
-| F30 Jouer              | ❌                                    | ❌                                                                                                                                    | ❌                                         |
-| F31 Voyage             | ✅ `voyage`                           | ❌ (no help key anywhere)                                                                                                             | ❌                                         |
-| F32 L'auto             | ✅ `auto` + `set-agenda`              | ✅ add:`ride`; operator:`cars`,`schedule`                                                                                             | ❌                                         |
-| F33 Partager/invités   | ✅ `share-access` + `set-devices`     | ✅ add:`share`; operator:`guest`                                                                                                      | ❌                                         |
-| F34 Réglages/appareils | ✅ `settings` + `set-*` cards         | ✅ the whole `operatorHelp` registry                                                                                                  | ❌                                         |
+| F29 Mur de collants    | 🔶 `routines` pt 4 only               | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
+| F30 Jouer              | ✅ `routines` pt (post-Wave-H)        | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
+| F31 Voyage             | ✅ `voyage`                           | ✅ VoyagePage `card="voyage"`ᴰ                                                                                                             | ➖ᵀ                                         |
+| F32 L'auto             | ✅ `auto` + `set-agenda`              | ✅ add:`ride`; operator:`cars`,`schedule`                                                                                             | ➖ᵀ                                         |
+| F33 Partager/invités   | ✅ `share-access` + `set-devices`     | ✅ add:`share`; operator:`guest`                                                                                                      | ➖ᵀ                                         |
+| F34 Réglages/appareils | ✅ `settings` + `set-*` cards         | ✅ the whole `operatorHelp` registry                                                                                                  | ➖ᵀ                                         |
 
-**Reading (as audited Day 3):** only **F30 Jouer** was dark on all three channels.
-Guide-only (no « ? » on their live surface): **F5 Mots, F8 Dessins, F17 Vide-frigo,
-F29 Collants, F31 Voyage** (+ F6 Habitudes' help lives only in Réglages).
-Everything else has at least guide + help; tour steps exist for
-F4, F9–F13, F16, F19, F21, F27, F28 by design.
+**Reading (re-verified 2026-08-26, against code):** every feature now has a guide
+card and a « ? » on its live surface. Nothing is dark. What changed since the Day-3
+reading — all of it stale cells, not new work:
+
+- **F5 Mots** — `boardHelp` carries a real `mots` key. Was ❌; verified ✅.
+- **F6 Habitudes, F8 Dessins, F17 Vide-frigo, F31 Voyage** — all reached via ᴰ
+  (`HabitudesPage card="habits"`, `DrawingGalleryPage card="drawings"`,
+  `IdeasPage card="kitchen"`, `VoyagePage card="voyage"`). The prose below already
+  said this; the cells hadn't caught up.
+- **F25 Notes du cercle** — cited `cercle:notes`, a key that no longer exists (ᴺ).
+- **F29 / F30** — toddler surfaces, ➖ᵀᵒ by design, not gaps.
+
+Remaining genuine partials, both 🔶 and both about the GUIDE column, not help:
+**F8 Dessins** (covered only via the `mots` card's `drawings` alias) and **F17
+Vide-frigo** / **F29 Collants** (one guide point inside a bigger card). Merging is the
+house rule (~32-card ceiling), so these are candidates to *leave alone* unless a card
+is genuinely earning its own space.
+
+Tour steps exist for F4, F9–F13, F16, F19, F21, F27, F28 — by design; see ➖ᵀ.
+
+*Method note:* two of these cells were re-verified WRONG on the first pass, by
+grepping the registries alone and by reading `voyage`/`dessin` matches that turned
+out to be prose inside another entry's body. A key is a key only if it is a key.
 
 > **Post-Wave-H update (2026-07-10):** all seven are ✅ now (matrix D7, footnote 53).
 > The « ? » column above counted only the 7 help REGISTRIES; it undercounted the
