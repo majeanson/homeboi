@@ -82,10 +82,15 @@ const openNoteEditor = async (page: Page) => {
 // deliberate and said out loud in the commit — silently re-baselining is the exact
 // drift this exists to stop. See LEAN.md.
 //
-// Read them as a worklist, not a verdict: maison-family (540px) and maison-social
-// (392px) are the two worst and the obvious next targets — though Famille's height
-// is partly the « Anniversaires à venir » card, which is content, not chrome. The
-// number is a signal; the screenshot beside it is the judgement.
+// Read them as a worklist, not a verdict. maison-family and maison-social were the
+// two worst (540 / 392px); working them 2026-08-26 is what the distinction is FOR.
+// Famille lost 54px with nothing removed — « Anniversaires à venir » is content and
+// keeps its place at the top (a birthday is time-sensitive; the directory below it
+// is reference), so the tile was laid sideways instead of being cut or demoted.
+// Social was left alone at 392px: its three bands are the section pills, the view
+// switch and the focus lens — all controls, none removable without losing a door.
+// A number with nothing behind it gets ratcheted and left, never trimmed to look
+// good. The number is a signal; the screenshot beside it is the judgement.
 const MATRIX: Entry[] = [
   // — the six hub tabs at rest, phone, both themes —
   { name: 'board', route: '/board', content: '.wg-slot', budgetPx: 235 },
@@ -117,7 +122,7 @@ const MATRIX: Entry[] = [
   { name: 'kitchen-history', route: '/kitchen?tab=history', content: '.kitchen__history .kitchen__week, .empty-state', budgetPx: 200, themes: ['day'] },
 
   { name: 'maison-routines', route: '/maison?section=routines', content: '.routine-card', budgetPx: 244, themes: ['day'] },
-  { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 594, themes: ['day'] },
+  { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 535, themes: ['day'] },
   { name: 'maison-social', route: '/maison?section=social', content: '.cercle-row', budgetPx: 432, themes: ['day'] },
   { name: 'maison-business', route: '/maison?section=business', content: '.cercle-row, .empty-state', budgetPx: 194, themes: ['day'] },
   { name: 'maison-carnets', route: '/maison?section=carnets', content: '.cercle-row, .empty-state', budgetPx: 194, themes: ['day'] },

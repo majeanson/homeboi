@@ -203,33 +203,48 @@
 .cercle-bdays__row::-webkit-scrollbar {
   display: none;
 }
+/* One LINE per birthday, not a column. The tile used to be a 5.2rem-wide stack —
+   avatar over name over date — which forced « dans 8 jours » to wrap onto two lines
+   and cost ~100px of height to say one thing. Same content, laid sideways: the
+   avatar spans both text rows, the tile sizes to its text, and the strip drops to
+   ~53px. Measured 2026-08-26 (maison-family contentTopPx 540 → budgeted below). */
 .cercle-bday {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.5rem;
   align-items: center;
-  gap: 0.25rem;
   flex: 0 0 auto;
-  width: 5.2rem;
-  padding: 0.5rem 0.3rem;
+  max-width: 11rem;
+  padding: 0.4rem 0.65rem 0.4rem 0.4rem;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   cursor: pointer;
+  text-align: left;
+}
+/* The avatar holds the left column across both text rows. */
+.cercle-bday > .avatar {
+  grid-row: 1 / span 2;
 }
 .cercle-bday__name {
+  grid-column: 2;
+  align-self: end;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--ink);
-  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
 }
 .cercle-bday__when {
+  grid-column: 2;
+  align-self: start;
   font-size: 0.72rem;
   color: var(--ink-soft);
+  white-space: nowrap;
 }
+
 
 /* Wider screens: two columns for the directory rows */
 @media (min-width: 720px) {
