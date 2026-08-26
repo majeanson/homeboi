@@ -816,6 +816,31 @@ export function Board() {
       },
     })
   }
+  // « Reporter » — postpone an owed/due entretien without checking it: the row
+  // goes quiet and returns on its own (next week, or the next scheduled cycle).
+  // Same deferral shape as markHomeDone: hidden at once via pendingDone, the
+  // PATCH held behind the undo toast, offline-safe through useWrite.
+  const postponeHome = (c: ChoreInstance, mode: 'week' | 'cycle') => {
+    setPendingDone((s) => new Set(s).add(c.id))
+    undo({
+      message: t.undo.postponed(c.title),
+      onUndo: () =>
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        }),
+      onCommit: async () => {
+        await write('home-projects', { method: 'PATCH', body: { id: c.id, snooze: mode }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
+        setPendingDone((s) => {
+          const n = new Set(s)
+          n.delete(c.id)
+          return n
+        })
+      },
+    })
+  }
   const homeAct = (c: ChoreInstance, withDay?: boolean, overdue?: boolean) => {
     // A carnet-scoped row wears its thing's emoji so « Le chauffe-eau · filtre » reads
     // at a glance — but it stays an ordinary checkable Entretien row in place.
@@ -831,7 +856,20 @@ export function Board() {
       color={c.color ?? undefined}
       soon={c.soon}
       onCheck={withDay || ro ? undefined : () => markHomeDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, overdue, onDone: withDay || ro ? undefined : () => markHomeDone(c) }))}
+      onOpen={() =>
+        detail.open(
+          buildChore(c, detailCtx, {
+            upcoming: withDay,
+            overdue,
+            onDone: withDay || ro ? undefined : () => markHomeDone(c),
+            // « Reporter » rides the peek (actions live behind the detail door) —
+            // only on a due/owed row, never a read-only guest; « au prochain
+            // cycle » only when the row actually recurs.
+            onPostponeWeek: withDay || ro ? undefined : () => postponeHome(c, 'week'),
+            onPostponeCycle: withDay || ro || !c.recurring ? undefined : () => postponeHome(c, 'cycle'),
+          }),
+        )
+      }
     />
     )
   }

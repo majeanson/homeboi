@@ -3,7 +3,8 @@ import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
-import { upkeepStatus } from '../_lib/upkeep'
+import { upkeepStatus, nextCycleDay } from '../_lib/upkeep'
+import { addLocalDays } from '../_lib/ids'
 
 // "Projets & Entretien" — the longer-horizon home work that lives under Corvées
 // but isn't a chore (see migration 0074). ONE table, `kind` ('plan'|'upkeep')
@@ -79,12 +80,13 @@ interface ProjectRow {
   recur_from: string | null
   lead_seconds: number | null
   last_done_at: number | null
+  snoozed_until: number | null
   carnet_id: string | null
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<ProjectRow>()
@@ -138,12 +140,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
   return ok({ id, title })
 })
 
-// Two shapes (mirrors chores.ts):
-//   - edit:     any field present → update the row in place (the same form
-//               creates and edits). A parent-mode kiosk may edit too.
+// Three shapes (mirrors chores.ts, + « Reporter »):
+//   - edit:     any content field present → update the row in place (the same
+//               form creates and edits). A parent-mode kiosk may edit too.
+//   - snooze:   `{ id, snooze: 'week' | 'cycle' | null }` → postpone: the row
+//               goes quiet (no due, no owed) until the target day, then simply
+//               returns. 'week' = 7 local days from today; 'cycle' = the next
+//               scheduled occurrence (recurring rows; falls back to a week);
+//               null wakes it now. Kiosk-checkable like a complete.
 //   - complete: `id` alone → stamp last_done_at (mark this cycle done / archive
-//               a one-off). Kiosk + operator can both call this, so an upkeep
-//               occurrence is checkable straight off the board.
+//               a one-off) — and CLEAR any snooze, so a stale « reporté » can
+//               never mute the next cycle. Kiosk + operator can both call this,
+//               so an upkeep occurrence is checkable straight off the board.
 export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{
     id?: string
@@ -156,8 +164,35 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     recurFrom?: unknown
     leadSeconds?: number | null
     carnetId?: string | null
+    snooze?: unknown
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
+
+  if (body.snooze !== undefined) {
+    let until: number | null = null
+    if (body.snooze !== null) {
+      if (body.snooze !== 'week' && body.snooze !== 'cycle') return badRequest('snooze invalide.')
+      const today = localDayStart(new Date(nowSec() * 1000))
+      if (body.snooze === 'cycle') {
+        const row = await ctx.env.DB.prepare(
+          'SELECT at, recur_json, recur_from, last_done_at FROM home_projects WHERE id = ? AND household_id = ?',
+        )
+          .bind(body.id, actor.householdId)
+          .first<{ at: number | null; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>()
+        if (!row) return notFound('Introuvable.')
+        until = nextCycleDay(row, today) ?? addLocalDays(today, 7)
+      } else {
+        until = addLocalDays(today, 7)
+      }
+    }
+    const res = await ctx.env.DB.prepare(
+      'UPDATE home_projects SET snoozed_until = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    )
+      .bind(until, nowSec(), body.id, actor.householdId)
+      .run()
+    if (!res.meta.changes) return notFound('Introuvable.')
+    return ok({ ok: true, snoozedUntil: until })
+  }
 
   const editsContent =
     body.title !== undefined ||
@@ -221,9 +256,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 
   // Complete: stamp this cycle done. A recurring upkeep's next occurrence then
   // shows; a one-off drops from the active list (mirrors a chore's last_done_at).
+  // Also clears any « reporté » — done beats postponed.
   const ts = nowSec()
   const res = await ctx.env.DB.prepare(
-    'UPDATE home_projects SET last_done_at = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+    'UPDATE home_projects SET last_done_at = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ?',
   )
     .bind(ts, ts, body.id, actor.householdId)
     .run()

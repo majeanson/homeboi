@@ -2217,6 +2217,7 @@ export const FR = {
       fromLastDone: 'À partir de la dernière fois',
       fromLastDoneHint: 'La prochaine échéance se compte depuis la dernière coche, pas depuis la date fixe.',
       fromLastDoneShort: 'depuis la dernière fois',
+      snoozedUntil: (d: string) => `Reporté au ${d}`,
       // Seasonal cadence presets (upkeep form) — one tap fills date + recurrence.
       seasonLabel: 'Rythmes de saison :',
       everySeason: 'Chaque saison',
@@ -3198,6 +3199,7 @@ export const FR = {
     addedToList: (s: string) => `« ${s} » ajouté à la liste`,
     added: (s: string) => `« ${s} » ajouté`,
     choreDone: (s: string) => `« ${s} » fait`,
+    postponed: (s: string) => `« ${s} » reporté`,
     todoDone: (s: string) => `« ${s} » fait`,
     mealRemoved: (s: string) => `« ${s} » retiré du menu`,
     slotCleared: 'Repas effacés',
@@ -3224,6 +3226,9 @@ export const FR = {
   detail: {
     aria: 'Détails',
     markDone: 'Marquer fait',
+    // « Reporter » (entretien) — postpone without checking: quiet, then it returns.
+    postponeWeek: 'Reporter d’une semaine',
+    postponeCycle: 'Au prochain cycle',
     markEaten: 'Marquer mangé',
     deleteEvent: 'Supprimer ce rendez-vous ? Ceci le retire de partout.',
     openDay: 'Voir la journée',

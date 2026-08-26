@@ -322,14 +322,27 @@ export function buildMot(
 export function buildChore(
   c: ChoreInstance,
   ctx: DetailCtx,
-  opts?: { onDone?: () => void; upcoming?: boolean; todo?: boolean; overdue?: boolean },
+  opts?: {
+    onDone?: () => void
+    upcoming?: boolean
+    todo?: boolean
+    overdue?: boolean
+    // « Reporter » (entretien): postpone without checking — quiet, then it returns.
+    // Cycle only shows for a recurring row (c.recurring); week always pairs onDone.
+    onPostponeWeek?: () => void
+    onPostponeCycle?: () => void
+  },
 ): DetailModel {
   const { t, lang, members } = ctx
   const team = (c.team ?? []).map((id) => nameOf(members, id)).filter((n): n is string => !!n)
   const blocks: DetailBlock[] = team.length > 1 ? [{ kind: 'chips', label: t.detail.team, chips: team }] : []
-  const actions = opts?.onDone
+  const actions: DetailAction[] = opts?.onDone
     ? [{ key: 'done', label: t.detail.markDone, icon: 'check-bold' as IconName, primary: true, run: opts.onDone }]
     : []
+  if (opts?.onPostponeWeek)
+    actions.push({ key: 'postpone-week', label: t.detail.postponeWeek, icon: 'clock-bold', run: opts.onPostponeWeek })
+  if (opts?.onPostponeCycle)
+    actions.push({ key: 'postpone-cycle', label: t.detail.postponeCycle, icon: 'arrow-counter-clockwise-bold', run: opts.onPostponeCycle })
   return {
     kind: opts?.todo ? 'todo' : 'chore',
     title: c.title,

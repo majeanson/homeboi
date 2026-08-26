@@ -230,6 +230,9 @@ function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kin
     // so two same-cadence rows don't read identical when they schedule differently.
     if (project.recur_from === 'done') parts.push(t.operator.home.fromLastDoneShort)
   } else if (project.at) parts.push(formatDayMaybeYear(project.at, lang))
+  // « Reporté au … » — an active postpone is worth naming here, or a quiet row
+  // reads as mysteriously absent from the board.
+  if (project.snoozedUntil != null) parts.push(t.operator.home.snoozedUntil(formatDayMaybeYear(project.snoozedUntil, lang)))
   const money = formatMoney(project.budget_cents, lang)
   if (money) parts.push(money)
   const subtitle = parts.filter(Boolean).join(' · ')

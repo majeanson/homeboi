@@ -355,6 +355,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // turn — they can still do it; `who`/`who_id` say whose turn it currently is.
     team: string[]
     carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
+    // Home-project rows only: the row has a recurrence, so « Reporter » can offer
+    // « au prochain cycle » (a one-off has no cycle — the client offers only a week).
+    recurring?: boolean
     // D-21: this recurring chore's "evening before" board announce is on. Read by
     // src/lib/boardModel.ts against choresUpcoming's `at` to synthesize the
     // announce line the night before — see migration 0109.
@@ -438,7 +441,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
   // (who/team empty); the row's own colour + title emoji distinguish it.
   const homeRows = await ctx.env.DB.prepare(
-    'SELECT id, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+    'SELECT id, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
   )
     .bind(hh)
     .all<{
@@ -450,6 +453,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       recur_from: string | null
       lead_seconds: number | null
       last_done_at: number | null
+      snoozed_until: number | null
       carnet_id: string | null
     }>()
   const homeToday: ChoreInst[] = []
@@ -470,12 +474,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
       who_id: null,
       team: [],
       carnet_id: h.carnet_id,
+      recurring: parseRecur(h.recur_json) != null,
     })
     // ONE shared derivation (_lib/upkeep) — the same expansion month/year/GET use,
     // so 'anchor' vs « à partir de la dernière fois » rows agree on every surface.
     const st = upkeepStatus(h, today)
     if (st.dueToday) homeToday.push(hinst(today))
-    else {
+    else if (st.snoozedUntil != null) {
+      // « Reporté »: quiet until its return day — which previews on À venir when it
+      // lands within the week (never sooner; the whole point is the pause).
+      if (st.nextAt != null && st.nextAt >= tomorrow && st.nextAt < weekEnd) homeUpcoming.push(hinst(st.nextAt))
+    } else {
       const next = upkeepOccurrences(h, tomorrow, weekEnd)[0]
       if (next != null) homeUpcoming.push(hinst(next))
     }

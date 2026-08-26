@@ -26,6 +26,9 @@ export interface UpkeepRowLike {
   recur_json: string | null
   last_done_at: number | null
   recur_from?: string | null // 'anchor' (default) | 'done'
+  // « Reporter » (0120): quiet until this local day, then the row returns on its
+  // own. NULL/past = not postponed. Cleared by a complete.
+  snoozed_until?: number | null
 }
 
 // How far back the overdue scan may look. Two years bounds the backwards walk
@@ -82,7 +85,8 @@ export function upkeepOccurrences(row: UpkeepRowLike, from: number, to: number, 
 export interface UpkeepStatus {
   // Next occurrence on/after today (a one-off reports its own date, even past —
   // that's what lets the season card group an overdue one-off). Null when the
-  // row is undated or the next hit sits beyond the horizon.
+  // row is undated or the next hit sits beyond the horizon. While postponed,
+  // this is the day the row returns (snooze or the first occurrence past it).
   nextAt: number | null
   // An occurrence lands today and this cycle isn't checked off yet.
   dueToday: boolean
@@ -90,21 +94,36 @@ export interface UpkeepStatus {
   // completion — the calm carry-forward: it stays until someone checks the row
   // (which stamps last_done_at >= it, clearing this with zero bookkeeping).
   overdueSince: number | null
+  // « Reporter » in effect: the local day the row wakes back up (null when not
+  // postponed or the snooze already passed). While set, dueToday/overdueSince
+  // are suppressed — quiet, not gone.
+  snoozedUntil: number | null
+}
+
+// « Reporter »: while today < snooze day, the row is quiet — no due, no owed —
+// and nextAt reads as the day it comes back (the first scheduled occurrence on/
+// after the snooze, else the snooze itself, so a snoozed past one-off never
+// leaks onto the season card through a stale past nextAt).
+function applySnooze(row: UpkeepRowLike, today: number, st: Omit<UpkeepStatus, 'snoozedUntil'>): UpkeepStatus {
+  const day = row.snoozed_until != null ? localDayStart(new Date(row.snoozed_until * 1000)) : null
+  if (day == null || today >= day) return { ...st, snoozedUntil: null }
+  const nextAt = st.nextAt != null && st.nextAt >= day ? st.nextAt : day
+  return { nextAt, dueToday: false, overdueSince: null, snoozedUntil: day }
 }
 
 // `today` must be a local-midnight unix-s (localDayStart of now) so every
 // caller buckets on the same household-local day the board does.
 export function upkeepStatus(row: UpkeepRowLike, today: number, horizonDays = 400): UpkeepStatus {
-  if (row.at == null) return { nextAt: null, dueToday: false, overdueSince: null }
+  if (row.at == null) return { nextAt: null, dueToday: false, overdueSince: null, snoozedUntil: null }
   const r = parseRecur(row.recur_json)
   if (!r) {
     const done = row.last_done_at != null
     const day = localDayStart(new Date(row.at * 1000))
-    return {
+    return applySnooze(row, today, {
       nextAt: row.at,
       dueToday: !done && day === today,
       overdueSince: !done && day < today ? row.at : null,
-    }
+    })
   }
   const anchor = effectiveAnchor(row) as number
   const doneToday = row.last_done_at != null && row.last_done_at >= today
@@ -120,5 +139,16 @@ export function upkeepStatus(row: UpkeepRowLike, today: number, horizonDays = 40
   if (done != null) floor = Math.max(floor, done)
   const last = lastOccurrenceOnOrBefore(addLocalDays(today, -1), anchor, r, floor)
   const covered = last == null || (row.last_done_at != null && row.last_done_at >= last)
-  return { nextAt, dueToday, overdueSince: covered ? null : last }
+  return applySnooze(row, today, { nextAt, dueToday, overdueSince: covered ? null : last })
+}
+
+// The « Au prochain cycle » snooze target: the first scheduled occurrence
+// STRICTLY AFTER today (skipping today's due and the owed one), as a local day.
+// Null for a one-off / undated row — the client offers only the week option
+// there, and the PATCH falls back to a week if it's ever asked anyway.
+export function nextCycleDay(row: UpkeepRowLike, today: number, horizonDays = 400): number | null {
+  if (row.at == null || parseRecur(row.recur_json) == null) return null
+  const tomorrow = addLocalDays(today, 1)
+  const next = upkeepOccurrences(row, tomorrow, addLocalDays(tomorrow, horizonDays))[0]
+  return next != null ? localDayStart(new Date(next * 1000)) : null
 }

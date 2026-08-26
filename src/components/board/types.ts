@@ -106,6 +106,8 @@ export interface NoteRow {
 // (a "Maisonnée" task shown to everyone, surfaced even in a single-member focus).
 // `team` is everyone in the rotation — a shared chore stays visible (and doable)
 // to any teammate in personal focus, even when it's not their turn.
+// (home-project rows also carry `recurring` — see below — so « Reporter » knows
+// whether « au prochain cycle » exists.)
 export interface ChoreInstance {
   id: string
   title: string
@@ -116,6 +118,9 @@ export interface ChoreInstance {
   team?: string[]
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
   carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
+  // Home-project rows only: the row recurs, so « Reporter » may offer « au
+  // prochain cycle » (a one-off has no cycle — only the week option shows).
+  recurring?: boolean
   // D-21: this recurring chore's "evening before" board announce is on (migration
   // 0109) — only meaningful on `choresUpcoming` rows; boardModel.ts reads it there.
   announce_evening?: boolean

@@ -19,6 +19,7 @@ const OVERDUE = {
   who_id: null,
   team: [],
   carnet_id: null,
+  recurring: true,
   overdueSince: BOARD.syncedAt - 12 * DAY,
 }
 
@@ -59,6 +60,28 @@ test('checking it hides the row behind the undo toast, and undo brings it back',
   await r.locator('.act__checkbtn').click()
   await expect(r).toHaveCount(0)
   // The write is DEFERRED — nothing fired yet; the toast offers the way back.
+  const undoBtn = page.locator('.undo-toast__btn').first()
+  await expect(undoBtn).toBeVisible()
+  await undoBtn.click()
+  await expect(row(page)).toHaveCount(1)
+})
+
+test('« Reporter » lives behind the peek: postpone hides the row, undo brings it back', async ({ page }) => {
+  await boot(page)
+  const r = row(page)
+  await r.scrollIntoViewIfNeeded()
+  // Split row: the body opens the detail peek (actions behind the detail door).
+  await r.locator('.act__hit').click()
+  const sheet = page.locator('.detail-sheet')
+  await sheet.waitFor({ state: 'visible' })
+  const actions = sheet.locator('.detail-sheet__actions')
+  // Both postpone flavours show (the mock row recurs → « Au prochain cycle »).
+  await expect(actions.getByText('Reporter d’une semaine', { exact: true })).toBeVisible()
+  await expect(actions.getByText('Au prochain cycle', { exact: true })).toBeVisible()
+  await actions.getByText('Reporter d’une semaine', { exact: true }).click()
+  // Peek closes, row goes quiet at once; the PATCH waits behind the undo toast.
+  await expect(sheet).toBeHidden()
+  await expect(row(page)).toHaveCount(0)
   const undoBtn = page.locator('.undo-toast__btn').first()
   await expect(undoBtn).toBeVisible()
   await undoBtn.click()

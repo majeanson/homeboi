@@ -37,6 +37,8 @@ export interface HomeProject {
   nextAt?: number | null // server-derived NEXT occurrence from today (recurring → expanded); drives « cette saison »
   dueToday?: boolean // server-derived (_lib/upkeep): an occurrence lands today, not yet checked
   overdueSince?: number | null // server-derived: most recent missed due date, carried until checked (calm)
+  snoozedUntil?: number | null // server-derived: « Reporté » in effect — the day it wakes back up
+  snoozed_until?: number | null // the raw column (0120); status suppression reads it server-side
   recur_json?: string | null
   recur_from?: 'anchor' | 'done' | null // 0119: 'done' = « à partir de la dernière fois » re-anchors the cycle
   lead_seconds?: number | null

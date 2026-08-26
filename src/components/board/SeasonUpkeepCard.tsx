@@ -70,7 +70,13 @@ export function SeasonUpkeepCard() {
           cat="chore"
           title={p.title}
           color={p.color ?? undefined}
-          when={p.overdueSince != null ? t.board.lateSince(formatDayMaybeYear(p.overdueSince, lang)) : undefined}
+          when={
+            p.overdueSince != null
+              ? t.board.lateSince(formatDayMaybeYear(p.overdueSince, lang))
+              : p.snoozedUntil != null
+                ? t.operator.home.snoozedUntil(formatDayMaybeYear(p.snoozedUntil, lang))
+                : undefined
+          }
           onCheck={() => markDone(p)}
           onOpen={p.carnet_id ? () => nav(`/cercle/carnet/${p.carnet_id}`) : undefined}
         />

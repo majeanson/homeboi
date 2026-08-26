@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { effectiveAnchor, upkeepOccurrences, upkeepStatus } from './upkeep'
+import { effectiveAnchor, upkeepOccurrences, upkeepStatus, nextCycleDay } from './upkeep'
 import { localDayStart } from './ids'
 
 // Same convention as recur.test.ts: household-local (America/Toronto) midnights.
@@ -22,18 +22,18 @@ const YEARLY = '{"freq":"yearly"}'
 describe('upkeepStatus — one-off rows', () => {
   const today = d(2026, 5, 15)
   it('undated: nothing due, ever', () => {
-    expect(upkeepStatus(row({}), today)).toEqual({ nextAt: null, dueToday: false, overdueSince: null })
+    expect(upkeepStatus(row({}), today)).toEqual({ nextAt: null, dueToday: false, overdueSince: null, snoozedUntil: null })
   })
   it('future: nextAt is its date, not due, not overdue', () => {
     const at = d(2026, 5, 20)
-    expect(upkeepStatus(row({ at }), today)).toEqual({ nextAt: at, dueToday: false, overdueSince: null })
+    expect(upkeepStatus(row({ at }), today)).toEqual({ nextAt: at, dueToday: false, overdueSince: null, snoozedUntil: null })
   })
   it('today: dueToday', () => {
-    expect(upkeepStatus(row({ at: today }), today)).toEqual({ nextAt: today, dueToday: true, overdueSince: null })
+    expect(upkeepStatus(row({ at: today }), today)).toEqual({ nextAt: today, dueToday: true, overdueSince: null, snoozedUntil: null })
   })
   it('past + unchecked: carries forward as overdue (nextAt stays its own date)', () => {
     const at = d(2026, 5, 1)
-    expect(upkeepStatus(row({ at }), today)).toEqual({ nextAt: at, dueToday: false, overdueSince: at })
+    expect(upkeepStatus(row({ at }), today)).toEqual({ nextAt: at, dueToday: false, overdueSince: at, snoozedUntil: null })
   })
   it('past + checked: settled — no overdue, not due', () => {
     const at = d(2026, 5, 1)
@@ -158,5 +158,40 @@ describe('DST edges', () => {
     const r = row({ at: d(2026, 2, 1), recur_json: '{"freq":"weekly","weekdays":[0]}' })
     const st = upkeepStatus(r, d(2026, 2, 12)) // Thu after the Mar 8 transition Sunday
     expect(st.overdueSince).toBe(d(2026, 2, 8))
+  })
+})
+
+describe('« Reporter » (snoozed_until, mig 0120)', () => {
+  const anchor = d(2026, 2, 5) // monthly/3: Mar 5 / Jun 5 / Sep 5 / Dec 5
+  const base = row({ at: anchor, recur_json: MONTHLY3 })
+  it('an active snooze silences overdue AND dueToday, and names its return day', () => {
+    // Jun 5 missed, snoozed to Jun 20; on Jun 10 the row is quiet.
+    const st = upkeepStatus({ ...base, snoozed_until: d(2026, 5, 20) }, d(2026, 5, 10))
+    expect(st.overdueSince).toBeNull()
+    expect(st.dueToday).toBe(false)
+    expect(st.snoozedUntil).toBe(d(2026, 5, 20))
+  })
+  it('nextAt while snoozed = the return day, or the first occurrence past it', () => {
+    // Snooze past the Sep 5 occurrence → the row returns Sep 5 (the schedule wins)…
+    expect(upkeepStatus({ ...base, snoozed_until: d(2026, 5, 20) }, d(2026, 5, 10)).nextAt).toBe(d(2026, 8, 5))
+    // …a snoozed past ONE-OFF returns on the snooze day itself (never a stale past
+    // nextAt leaking onto the season card).
+    const oneOff = row({ at: d(2026, 4, 1), snoozed_until: d(2026, 5, 20) })
+    expect(upkeepStatus(oneOff, d(2026, 5, 10)).nextAt).toBe(d(2026, 5, 20))
+  })
+  it('an expired snooze changes nothing — the owed date returns on its own', () => {
+    const st = upkeepStatus({ ...base, snoozed_until: d(2026, 5, 8) }, d(2026, 5, 10))
+    expect(st.snoozedUntil).toBeNull()
+    expect(st.overdueSince).toBe(d(2026, 5, 5)) // back, calmly
+  })
+  it('the snooze-return day itself is live again (today >= snooze day)', () => {
+    const st = upkeepStatus({ ...base, snoozed_until: d(2026, 5, 20) }, d(2026, 5, 20))
+    expect(st.snoozedUntil).toBeNull()
+    expect(st.overdueSince).toBe(d(2026, 5, 5))
+  })
+  it('nextCycleDay: the first occurrence strictly after today; null for a one-off', () => {
+    expect(nextCycleDay(base, d(2026, 5, 5))).toBe(d(2026, 8, 5)) // due today → NEXT cycle
+    expect(nextCycleDay(base, d(2026, 5, 10))).toBe(d(2026, 8, 5))
+    expect(nextCycleDay(row({ at: d(2026, 5, 1) }), d(2026, 5, 10))).toBeNull()
   })
 })

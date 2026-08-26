@@ -588,6 +588,20 @@ Footnotes (verdicts recorded so far):
     `seasonUpkeepItems` (the ONE board-card/Réglages-glance selection),
     `e2e/upkeep-overdue.spec.ts` (renders + deferred-undo check + guest no-check).
     [F2×D1/D3/D16; sibling of ³]
+    **+ « Reporter » (2026-08-25, mig 0120, same commit family):** postpone an
+    owed/due entretien without checking — `snoozed_until` (one nullable column);
+    `upkeepStatus` suppresses dueToday/overdueSince until the return day
+    (`snoozedUntil` in the status; a snoozed past one-off's nextAt becomes the
+    return day so it can't leak onto the season card), then the row simply
+    returns — derived, no timer, no notification. PATCH gains
+    `{id, snooze: 'week'|'cycle'|null}` ('cycle' = `nextCycleDay`, recurring
+    only; complete clears the snooze so a stale « reporté » never mutes the
+    next cycle). UI: two peek actions (« Reporter d'une semaine » / « Au
+    prochain cycle », behind the detail door per the compact-rows rule, guest-
+    hidden), « Reporté au <date> » sub-lines on the Réglages row + season card,
+    the return day previews on « À venir » when it lands within the week.
+    Guards: snooze suite in `upkeep.test.ts`, the postpone case in
+    `e2e/upkeep-overdue.spec.ts`.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
