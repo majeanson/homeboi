@@ -4,17 +4,11 @@ import { type HelpEntry } from './helpMode'
 // as La liste / La cuisine / Maison. Arm it in the header, then tap the notes
 // board's title (or the search magnifier) to learn, in place, what it is instead
 // of leaving the page. Mirrors lib/routinesHelp.ts's shape exactly.
+// NOTE — there is no `notes` entry any more. It was anchored on CercleNotes'
+// section title, and that title is gone from BOTH faces (the hub header already
+// says « Les notes »). The explanation itself isn't lost: it's guide card « notes »
+// point 0, which the page's SectionIntro and HubHead `card="notes"` both open.
 export const NOTES_HELP = {
-  // CercleNotes reads this key directly (`HelpTitle help={help} k="notes"` +
-  // `help?.bubbleFor('notes')`) — the notes board's own header title.
-  notes: {
-    card: 'notes',
-    point: 0,
-    body: {
-      fr: 'Le babillard de notes : des notes rapides — pour toi ou pour toute la Maisonnée — avec titre, texte, dessin, photo ou mémo vocal. Le ＋ en écrit une nouvelle.',
-      en: 'The notes board: quick notes — for you or the whole Household — with a title, text, drawing, photo or voice memo. The ＋ writes a new one.',
-    },
-  },
   // The SIMPLE ↔ AVANCÉ chip in the section's control bar (lib/notesMode). Anchored
   // there in BOTH faces — in simple mode it's the one control that explains why the
   // section looks lighter than it used to, and how to get the old one back.

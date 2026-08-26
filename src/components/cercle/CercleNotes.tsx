@@ -11,7 +11,7 @@ import { isGuest } from '../../lib/device'
 import { useSurface } from '../../lib/surface'
 import { useNotesAdvanced, setNotesAdvanced } from '../../lib/notesMode'
 import { imgUrl } from '../../lib/image'
-import { Icon, InlineIcon } from '../Icon'
+import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { SearchField } from '../SearchField'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
@@ -19,7 +19,7 @@ import { FaceSelect } from '../FaceSelect'
 import { NoteEditor } from './NoteEditor'
 import { NoteQuickAdd } from './NoteQuickAdd'
 import { NotesList } from './NotesList'
-import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { type HelpMode } from '../../lib/helpMode'
 
 // « Les notes » — iOS-Notes-style notes scoped to ONE household member (the "Moi" list)
 // or the whole Maisonnée (family-wide). A picked face (the device profile) sees THEIR
@@ -28,15 +28,18 @@ import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 //
 // TWO FACES, one device flag (lib/notesMode) — the whole section leans on it:
 //
-//   SIMPLE (default) — maximum note per pixel. No section title/subtitle (the hub
-//     header already says « Les notes »), a small face CHIP on every surface, a
+//   SIMPLE (default) — maximum note per pixel. A small face CHIP on every surface, a
 //     collapsed 🔍 that expands on tap, one wide text box where Enter writes the note
 //     (no mic, no 📎, no « Ajouter » button — those live in the ＋ FAB's composer,
 //     bottom right), and the board card's COMPACT rows, keeping only the pencil/trash
 //     so a note can still be edited or deleted from here.
-//   AVANCÉ — what the tab used to be: the section header, the kiosk face ROW, the
-//     mic + attachment in the composer, « Nouvelle note » into the rich editor, and
-//     the roomy rows (grip + drag-reorder, tint dot, scope chip).
+//   AVANCÉ — what the tab used to be: the kiosk face ROW, the mic + attachment in the
+//     composer, « Nouvelle note » into the rich editor, and the roomy rows (grip +
+//     drag-reorder, tint dot, scope chip).
+//
+// NEITHER face carries a section title/subtitle: the hub header already says
+// « Les notes » with the same icon, and the old subtitle just restated the composer's
+// placeholder.
 //
 // The ROWS themselves are the shared NotesList — the board's « Notes (cercle) » card
 // renders the same list. This component keeps what's section-only: the face row, the
@@ -167,33 +170,32 @@ export function CercleNotes({
 
   return (
     <section className={'cercle-notes' + (advanced ? ' cercle-notes--advanced' : ' cercle-notes--lean')}>
-      {/* ADVANCED only — the section header. In simple mode the hub header above
-          already says « Les notes » with the same icon, and the subtitle repeated
-          what the empty composer's placeholder says anyway. */}
-      {advanced && (
-        <header className="cercle-notes__head">
-          <HelpTitle help={help} k="notes" className="cercle-notes__title">
-            <InlineIcon name="file-text-bold" size={18} /> {fn.title}
-          </HelpTitle>
-          <p className="cercle-notes__sub mono">{fn.addHint}</p>
-        </header>
-      )}
-      {advanced && help?.bubbleFor('notes')}
+      {/* No section header in EITHER face. The hub header above already says
+          « Les notes » with the same icon, and the subtitle only repeated what the
+          empty composer's placeholder says — so advanced was spending two lines
+          before a single note to say what the page already said. (The explanation
+          itself isn't lost: the guide card « notes » still carries it, reachable
+          from the page's SectionIntro / HubHead.) */}
 
-      {/* The one control bar: whose notes on the left, the tools on the right.
-          A Cluster (never a hand-rolled flex row) so it wraps instead of bleeding
-          off a narrow phone. */}
-      <Cluster className="cercle-notes__bar" justify="between">
+      {/* The one control bar: whose notes, then the tools right beside it — the face
+          and the loupe are the same "narrow what I'm looking at" pair, so they read
+          as one group instead of being pushed to opposite edges. A Cluster (never a
+          hand-rolled flex row) so it wraps instead of bleeding off a narrow phone. */}
+      <Cluster className="cercle-notes__bar">
         {/* Whose notes — Maisonnée + each member, driving the SAME device profile as
             the board's « Aujourd'hui » row. Advanced keeps the always-in-view face ROW
             on a kiosk wall; simple is the small chip everywhere (Marc's ask: "only a
             small toggle with faces"). This one control also decides a new note's scope:
             a face → a personal note, Maisonnée → family-wide. */}
+        {/* Named « Pour qui » (the existing key, same words the editor's scope picker
+            uses), not the old section title: with the header gone, that title was
+            still being announced here — and "Notes & recommandations" never described
+            a face picker anyway. */}
         {advanced && surface === 'kiosk' ? (
-          <MemberSwitcher faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.title} />
+          <MemberSwitcher faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.forWhom} />
         ) : (
           <div className="cercle-notes__face">
-            <FaceSelect faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.title} />
+            <FaceSelect faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.forWhom} />
           </div>
         )}
 

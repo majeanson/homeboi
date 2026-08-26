@@ -9,9 +9,9 @@ import { BASE, mockApi, seedState } from './mocks'
 //     « Ajouter » button — those live in the ＋ FAB's composer). The rows are the
 //     board card's compact ones carrying NO pencil/trash either, spending the width
 //     and height that frees on three wrapped lines of the note itself.
-//   AVANCÉ — the ACTING face, and what the tab used to be: header, roomy rows with
-//     grip + scope chip + pencil/trash, mic + attachment inline, « Nouvelle note »
-//     into the rich editor.
+//   AVANCÉ — the ACTING face, and what the tab used to be: roomy rows with grip +
+//     scope chip + pencil/trash, mic + attachment inline, « Nouvelle note » into the
+//     rich editor. NOT a header: neither face carries a section title/subtitle.
 //
 // This guards the default face doesn't quietly grow its furniture back, and that the
 // ⚙ really returns every door it drops.
@@ -48,6 +48,7 @@ test('simple (default): no section header, and rows carrying nothing but the not
 
   // The header block is gone — the hub header above already says « Les notes ».
   await expect(page.locator('.cercle-notes__head')).toHaveCount(0)
+  await expect(page.getByText('Notes & recommandations')).toHaveCount(0)
   await expect(page.locator('.cercle-notes--lean')).toBeVisible()
 
   const row = page.locator('.cnote-list--compact .cnote', { hasText: 'Couture' })
@@ -111,13 +112,32 @@ test('simple: the loupe is a small button until you ask for it', async ({ page }
   await expect(loupe).toBeVisible()
 })
 
-test('the ⚙ brings the ACTING face back — header, row actions, mic, rich editor', async ({ page }) => {
+test('the ⚙ opens Avancé WITHOUT stealing the caret into the search', async ({ page }) => {
+  await openNotes(page)
+
+  await page.locator('.notes-mode').click()
+  await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
+
+  // Avancé swaps the collapsed loupe for the always-open field. That expansion must
+  // NOT focus it: the ⚙ is a "show me the tools" tap, and landing the caret there
+  // pops the keyboard over a page nobody asked to type on. The field is present and
+  // usable — just not focused. (SearchField keys its focus to the loupe TAP, never
+  // to becoming expanded.)
+  const field = page.locator('.cercle-notes__search .searchfield__input')
+  await expect(field).toBeVisible()
+  await expect(field).not.toBeFocused()
+  // …and the ⚙ itself keeps the focus it was given by the click.
+  await expect(page.locator('.notes-mode')).toBeFocused()
+})
+
+test('the ⚙ brings the ACTING face back — row actions, mic, rich editor', async ({ page }) => {
   await openNotes(page)
 
   await page.locator('.notes-mode').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
   await expect(page.locator('.notes-mode')).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('.cercle-notes__head')).toBeVisible()
+  // Still no section header — the ⚙ brings back tools, not a second page title.
+  await expect(page.locator('.cercle-notes__head')).toHaveCount(0)
   await expect(page.locator('.cnote-list--compact')).toHaveCount(0)
   // The roomy row's own furniture is back — the scope chip, and the pencil/trash the
   // lean face deliberately doesn't carry (this toggle IS how you reach them).

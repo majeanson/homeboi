@@ -47,7 +47,10 @@ interface CercleData {
 
 function NotesParent() {
   const t = useT()
-  const help = useHelpMode(NOTES_HELP, (k) => (k === 'search' ? t.search.title : t.cercle.familyNotes.title))
+  // The label a help bubble wears. « Les notes » (the hub header's own words), not
+  // the old « Notes & recommandations » section title — that title is gone from the
+  // page, so announcing it here would name something the reader can't see.
+  const help = useHelpMode(NOTES_HELP, (k) => (k === 'search' ? t.search.title : t.nav.notes))
 
   // Doors in from elsewhere: ?item=<id> (a global-search hit, §892 — land on that
   // exact note) and ?add=1 (the ＋ FAB's "cnote" mode, FORM_ROUTES.cnote =

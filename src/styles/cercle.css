@@ -1222,29 +1222,8 @@
   flex-direction: column;
   gap: 0;
 }
-.cercle-notes__head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  margin-bottom: 0.6rem;
-}
-.cercle-notes__title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 1.12rem;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-}
-.cercle-notes__title svg {
-  color: var(--teal-deep, #2a8f85);
-}
-.cercle-notes__sub {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  opacity: 0.9;
-}
+/* No .cercle-notes__head/__title/__sub any more — the section carries no title or
+   subtitle in either face (the hub header above already says « Les notes »). */
 /* The "whose notes" picker is the shared MemberSwitcher (.mswitch) — same face row
    as the board's "Aujourd'hui" header. Just tighten its bottom gap in this context. */
 .cercle-notes .mswitch {
@@ -1280,9 +1259,12 @@
   margin-bottom: 0.9rem;
 }
 
-/* --- The one control bar: whose notes (left) · loupe + mode (right) ----------- */
-/* A .cluster (Layout's Cluster), so it wraps on a narrow phone instead of bleeding
-   off the right edge — never a hand-rolled flex row. */
+/* --- The one control bar: whose notes · loupe · mode, in that order ----------- */
+/* All three sit TOGETHER at the start of the row (no space-between pushing the face
+   away from the loupe): picking a face and typing a query are the same "narrow what
+   I'm looking at" job, so they read as one group. A .cluster (Layout's Cluster), so
+   it wraps on a narrow phone instead of bleeding off the right edge — never a
+   hand-rolled flex row. */
 .cercle-notes__bar {
   align-items: center;
   margin: 0.2rem 0 0.7rem;
@@ -1292,21 +1274,35 @@
 .cercle-notes__bar .mswitch {
   margin: 0;
 }
-/* The kiosk face ROW (advanced) is wide: let it take the room it needs and push the
-   tools onto a second line rather than squeezing every face. */
+/* The kiosk face ROW (advanced) is wide, but it must NOT grow into the leftover
+   space — growing is what pushed the loupe back to the far edge, away from the face
+   it belongs beside. Basis auto (it hugs its faces, wrapping them internally when
+   narrow), shrink allowed, grow OFF. */
 .cercle-notes__bar .mswitch {
-  flex: 1 1 16rem;
+  flex: 0 1 auto;
   min-width: 0;
 }
 .cercle-notes__tools {
   align-items: center;
   gap: 0.4rem;
 }
-/* The section's SearchField (the shared primitive, collapsible in simple mode):
-   give the expanded field a sane width inside the tools cluster without letting it
-   push the mode chip off the row. */
+/* Inside the bar the tools are ONE flex item beside the face, and a nested flex
+   container reports its max-content width — an <input>'s default ~20-character
+   preference — which on a 390px phone was wide enough to bump the whole group onto
+   a second line, under the face. An explicit small basis (it still grows into the
+   spare room) keeps the face and the loupe on the same line where they belong. */
+.cercle-notes__bar .cercle-notes__tools {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+/* The section's SearchField (the shared primitive, collapsible in simple mode): it
+   GROWS into whatever the row has spare, but its basis stays SMALL (6rem, not 12rem).
+   A wrapping flex row breaks the line on the items' basis — it never shrinks first to
+   avoid a wrap — so a 12rem basis dropped the whole tools group under the face chip on
+   a 390px phone, which is the very "face beside the loupe" pairing this bar exists to
+   keep. The input already carries min-width:0, so shrinking below the basis is safe. */
 .cercle-notes__search.searchfield {
-  flex: 1 1 12rem;
+  flex: 1 1 6rem;
   min-width: 0;
   margin: 0;
 }

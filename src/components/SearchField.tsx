@@ -42,14 +42,16 @@ export function SearchField({
   // WHY the list below is narrowed.
   const expanded = !collapsible || open || value !== ''
 
-  // Focus the field the moment it expands (a tap on the magnifier should land the
-  // caret — otherwise it costs two taps). Not on the first paint of an always-open
-  // field, which would steal focus from the page.
-  const wasExpanded = useRef(expanded)
+  // Focus the field the moment the USER opens it from the magnifier (a tap should
+  // land the caret — otherwise it costs two taps). Keyed on `open` — the tap itself
+  // — and deliberately NOT on `expanded`: the row also expands when `collapsible`
+  // flips off (the notes ⚙ turning Avancé on, which swaps the loupe for the
+  // always-open field) or when a query arrives from elsewhere. Focusing there stole
+  // the caret and popped the keyboard over a page nobody asked to type on. An
+  // always-open field focuses only when it explicitly asks via `autoFocus`.
   useEffect(() => {
-    if (expanded && !wasExpanded.current) inputRef.current?.focus()
-    wasExpanded.current = expanded
-  }, [expanded])
+    if (open) inputRef.current?.focus()
+  }, [open])
 
   if (!expanded) {
     return (

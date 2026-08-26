@@ -1857,7 +1857,8 @@ export const FR = {
     },
     // Famille → "Notes & recommandations" (durable quick notes; CercleNotes).
     familyNotes: {
-      title: 'Notes & recommandations',
+      // Pas de `title` ici : la section n'affiche plus de titre à elle (l'en-tête de
+      // l'onglet dit déjà « Les notes »). Pour nommer la section, c'est `nav.notes`.
       addHint: 'Une note rapide — pour toi ou pour la Maisonnée',
       placeholder: 'Écris une note…',
       empty: 'Aucune note pour l’instant.',

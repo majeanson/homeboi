@@ -1680,7 +1680,8 @@ export const EN: typeof FR = {
       none: 'No pets yet.',
     },
     familyNotes: {
-      title: 'Notes & recommendations',
+      // No `title` — the section carries no heading of its own (the tab header
+      // already says « Les notes »). Name the section with `nav.notes`.
       addHint: 'A quick note — for you or the Household',
       placeholder: 'Write a note…',
       empty: 'No notes yet.',
