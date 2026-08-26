@@ -125,25 +125,34 @@ The SW lives in `vite.config.ts` (`babillard-sw`, emitted as `dist/sw.js`).
    fetch handler refuses to SERVE it (`isHtml && !wantsHtml` → 504 `Stale asset`,
    plus it drops the cached shell so the next navigation must fetch fresh HTML).
 
-2. **Variant-sensitive lookups.** `cacheOne()` stores with `c.put(url, res)` — a
-   bare **string** URL — so the stored Request carries no headers, while every
-   lookup passes the browser's real Request. Any `Vary` on a header the Cache API
-   can see then turns "the entry is right there" into a miss, which offline means a
-   504 and a blank board. Every `caches.match` in the SW therefore passes
-   **`{ ignoreVary: true }`**: this SW keeps exactly ONE variant per URL and never
-   content-negotiates, so a Vary check can only ever produce a false miss.
-   *Caveat, measured:* `Vary: Accept-Encoding` specifically canNOT cause this —
-   Accept-Encoding is a forbidden header name added below the Cache API, so it is
-   absent from both Requests and matches trivially. `e2e/sw.spec.ts` pins that
-   property. The guard is for a Vary on a header that IS visible (`Accept`, …).
+2. **Variant-sensitive lookups — the blank-board bug (diagnosed 2026-08-26).**
+   `cacheOne()` stores with `c.put(url, res)` — a bare **string** URL — so the stored
+   Request carries no headers, while every lookup passes the browser's real Request.
+   The preview/origin sends **`Vary: Origin`** on assets; a `<script type="module">`
+   is fetched with CORS semantics and sends an `Origin` header, the stored request
+   does not, so the Cache Query algorithm compares them, differs, and reports **no
+   match for an entry that is right there**. Offline that means the SW falls through
+   to `fetch()`, answers its own 504, and `#root` stays empty: a wall tablet
+   rebooting to a blank board. Every `caches.match` in the SW therefore passes
+   **`{ ignoreVary: true }`** — correct rather than a workaround, since this SW keeps
+   exactly ONE variant per URL and never content-negotiates.
 
-**Open:** the offline reboot has failed intermittently on CI (~50%, never locally)
-with the entry module precached, missed by `caches.match`, 504, `#root` empty. The
-Vary hypothesis above was tested and disproved; the cause is not yet known.
-`e2e/sw.spec.ts` now probes the cache at the moment of failure (by string, by
-Request, ignoring Vary, plus the stored headers and the live key list) so the next
-failure names the mechanism. Note that `scripts/check-bundle.mjs` cannot catch
-this: it proves an entry is in the precache LIST, not that it is retrievable.
+   *Why it took three tries to name.* It failed ~50% on the Linux runner and never on
+   Windows (where the same lookup hits regardless — see `hitWithoutIgnoreVary` in the
+   log line below), so it read as a flake, and was twice treated as one — once by
+   widening a timeout that then failed at the wider value. The first property test used
+   `Vary: Accept-Encoding`, a **forbidden header name** added below the Cache API and
+   therefore absent from both sides of the comparison: the wrong header made a true
+   hypothesis look false, and the fix was wrongly labelled "hardening". What settled it
+   was reading the stored response's headers on the runner where the failure lived
+   (`[sw] entry module as stored` — logged on every run of `e2e/sw.spec.ts`) and then
+   20/20 green from the on-demand **SW offline repro** workflow, against ~50% before.
+
+   Guards: the property test in `e2e/sw.spec.ts` (a `Vary: Origin` response must still
+   be served offline), that always-on header log, and `.github/workflows/sw-repro.yml`
+   to force the coin flip on demand. Note `scripts/check-bundle.mjs` cannot catch this
+   class of bug: it proves an entry is in the precache LIST, not that it is retrievable
+   by a real request.
 
 ## Known limitations
 

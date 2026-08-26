@@ -64,6 +64,33 @@ test('the service worker precaches the shell and reboots offline', async ({ page
     'every critical entry actually landed in the cache',
   ).toEqual([])
 
+  // What the entry module was stored WITH — printed on EVERY run, asserted never.
+  // This is the line that finally named the blank-board bug: « vary: "Origin" ».
+  // The preview/origin sends Vary: Origin on assets; a <script type="module"> is
+  // fetched with CORS semantics and sends an Origin header, while cacheOne() stored
+  // the entry under a bare string URL whose Request has none — so the Cache Query
+  // algorithm compared that header, differed, and reported no match for an entry
+  // sitting right there. Keep it: it costs one log line and it is how anyone reading
+  // a future failure sees the variant the cache actually holds.
+  // (hitWithoutIgnoreVary is the platform tell — true on Windows, which is why this
+  // never reproduced locally while failing ~50% of the time on the Linux runner.)
+  const storedHeaders = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((k) => k.startsWith('babillard-') && k !== 'babillard-share')
+    if (!name) return null
+    const c = await caches.open(name)
+    const entry = (await c.keys()).find((r) => /\/assets\/index-[^/]*\.js$/.test(r.url))
+    if (!entry) return null
+    const res = await c.match(entry.url, { ignoreVary: true })
+    return {
+      url: new URL(entry.url).pathname,
+      vary: res?.headers.get('vary') ?? null,
+      contentEncoding: res?.headers.get('content-encoding') ?? null,
+      contentType: res?.headers.get('content-type') ?? null,
+      hitWithoutIgnoreVary: !!(await c.match(entry.url)),
+    }
+  })
+  console.log('[sw] entry module as stored: ' + JSON.stringify(storedHeaders))
+
   // Anything the offline boot logs — the only witness when the shell doesn't come
   // back and there is no trace to open (see the throw below).
   const consoleErrors: string[] = []
@@ -184,19 +211,25 @@ test('the service worker precaches the shell and reboots offline', async ({ page
 // The retry that install() gained with SW_POLICY v3. A precache write can fail
 // transiently — a blip mid-install, a loaded server refusing one connection — and
 // the old code swallowed that (allSettled) and activated anyway, leaving a shell
-// PROPERTY: a cached response that carries Vary must still be SERVED.
+// THE REGRESSION GUARD for the blank-board bug. A cached response that carries Vary
+// must still be SERVED.
 //
-// Written to reproduce the intermittent offline-boot failure and it did NOT — which
-// is the useful part. Run against the SW WITHOUT { ignoreVary: true } it still
-// passes, so Vary is not what missed: Accept-Encoding is a forbidden header name,
-// added by the network stack below the Cache API, so it is absent from both Requests
-// the Vary check compares and they match trivially.
+// The mechanism, finally named: the preview/origin sends **Vary: Origin** on assets
+// (read straight off the stored response — see the "[sw] entry module as stored" line
+// the reboot case logs). cacheOne() stores with c.put(url, res), a bare string URL,
+// so the STORED request has no Origin header; a <script type="module"> is fetched
+// with CORS semantics and DOES send one. The Cache Query algorithm compares that
+// header, finds them different, and reports no match for an entry sitting right
+// there — so the SW fell through to fetch(), which offline answered its own 504, and
+// React never mounted.
 //
-// Kept as a property rather than deleted: the lookups are ignoreVary now, and this
-// pins that down, so a future Vary on a header that IS visible to the Cache API
-// (Accept, say) cannot silently reintroduce a blank board. It is NOT a guard for the
-// offline bug — that one is still open, and the reboot case above probes the cache
-// at the moment of failure to name it.
+// Two honest corrections to what this comment used to say. It first claimed Vary was
+// NOT the cause: that conclusion came from a version of this test using
+// Accept-Encoding, a forbidden header name added below the Cache API and therefore
+// absent from both sides of the comparison — the wrong header, so a true hypothesis
+// looked false. And { ignoreVary: true } was labelled "hardening, not a fix": after
+// it, the reboot case went 20/20 on the Linux runner where it had been failing ~50%
+// of the time (workflow "SW offline repro"). It is the fix.
 test('a precached response carrying Vary is still served offline', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page)
@@ -217,7 +250,7 @@ test('a precached response carrying Vary is still served offline', async ({ page
     if (!stored) return null
     const body = await stored.text()
     const headers = new Headers(stored.headers)
-    headers.set('Vary', 'Accept-Encoding')
+    headers.set('Vary', 'Origin')
     await cache.put(entry.url, new Response(body, { status: 200, headers }))
     return { url: entry.url, bytes: body.length }
   })
@@ -233,7 +266,7 @@ test('a precached response carrying Vary is still served offline', async ({ page
   }, target!.url)
   await page.context().setOffline(false)
 
-  expect(got.status, 'a Vary-carrying precached asset must not 504 offline').toBe(200)
+  expect(got.status, 'a Vary: Origin precached asset must not 504 offline').toBe(200)
   expect(got.length, 'and it must come back with its body, not an empty 504 shell').toBe(target!.bytes)
 })
 
