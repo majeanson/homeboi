@@ -129,7 +129,8 @@ cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 ## Adding a feature's comprehension wiring (checklist)
 
 1. **Guide**: a point on an existing card (default) or — rarely — a new card in
-   `guideContent.ts` (merge-first: 32 cards is the ceiling, not a floor). Give
+   `guideContent.ts` (merge-first: ~32 cards is the ceiling, not a floor — and there
+   are **34** today, so the bar for a new one is higher, not lower). Give
    the card/point its `route`/`settings`; add a new concept id to its
    `CONCEPT_THEMES` bucket.
 2. **Help**: an entry in the section's help registry (`{ body, card, point }`)

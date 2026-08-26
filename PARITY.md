@@ -200,9 +200,11 @@ F6 is unfindable from Recherche. Pre-scored ❌.)_
 
 **D7 — Guide card + « ? » help + tour.** Three sub-scores: (a) a guide card in
 `src/lib/guideContent.ts` (32-card ceiling — **merge into an existing card
-first**, per `DISCOVERY.md`); (b) coverage by one of the 7 help registries
-(`addHelp/boardHelp/cercleHelp/kitchenTabHelp/listeHelp/operatorHelp/routinesHelp.ts`);
-(c) a tour step (`lib/tourContent.ts`, 6 tours). Guards:
+first**, per `DISCOVERY.md`); (b) coverage by one of the **8** help registries
+(`addHelp/boardHelp/cercleHelp/kitchenTabHelp/listeHelp/notesHelp/operatorHelp/routinesHelp.ts`)
+**or by the `SceneHead card=` / `HelpDot` channel** — counting registries alone is what
+made five features look dark in Appendix A for six weeks;
+(c) a tour step (`lib/tourContent.ts`, **7** tours; optional — see Appendix A ➖ᵀ). Guards:
 `helpRegistry.test.ts`, `guideLinks.test.ts`. Known candidates from exploration:
 Voyage, Mots, Carnets, Habitudes, L'auto, Dessins have thin/no help-mode
 coverage — verify per row. Read `DISCOVERY.md` before fixing anything here.
@@ -1001,7 +1003,7 @@ Gold-standard check (PARITY Part 6):
 ## Appendix A — D7 discovery coverage, per channel (audited 2026-07-10, re-verified 2026-08-26)
 
 Exact per-feature mapping of the three discovery channels. Sources:
-`src/lib/guideContent.ts` (32 GUIDE cards), the 8 `*Help.ts` registries, **plus the
+`src/lib/guideContent.ts` (**34** GUIDE cards), the 8 `*Help.ts` registries, **plus the
 `SceneHead card=` / `HelpDot` channel** (see ᴰ), and `src/lib/tourContent.ts`
 (**7** tours: essentials/board/kitchen/**maison**/routines/cercle/liste).
 
@@ -1022,6 +1024,11 @@ Exact per-feature mapping of the three discovery channels. Sources:
   CELLS were never updated, so anyone counting symbols kept reading debt this file
   had already retracted in prose. Fixed 2026-08-26 — if you correct an audit, correct
   the cells, not just the paragraph under them.
+- **🔶ᴳ — covered by a POINT inside a bigger guide card, not a card of its own.**
+  The three left (F8 Dessins, F17 Vide-frigo, F29 Collants) are partial only in that
+  sense, and the house rule says leave them: the guide is merge-first with a ~32-card
+  ceiling that 34 cards have already passed. Splitting one out needs it to earn its
+  own space — a 🔶 here is a deliberate resting state, not a to-do.
 - **ᴺ — Notes moved out of Le cercle**, so its « ? » lives in `notesHelp`
   (`mode`/`search`); the old `cercle:notes` key no longer exists.
 
@@ -1034,7 +1041,7 @@ Exact per-feature mapping of the three discovery channels. Sources:
 | F5 Mots                | ✅ `mots`                             | ✅ board:`mots`                                                                                                                                    | ➖ᵀ                                         |
 | F6 Habitudes           | ✅ `habits`                           | ✅ operator:`habits`; board:`defi` (DefiBlock); HabitudesPage `card="habits"`ᴰ                                                                | ➖ᵀ                                         |
 | F7 Photos/cadre        | ✅ `screensaver` + `set-display`      | ✅ operator:`photos`,`ambient`,`display`                                                                                              | ➖ᵀ                                         |
-| F8 Dessins galerie     | 🔶 via `mots` (alias `drawings`)      | ✅ DrawingGalleryPage `card="drawings"`ᴰ                                                                                                                                    | ➖ᵀ                                         |
+| F8 Dessins galerie     | 🔶ᴳ via `mots` (alias `drawings`)     | ✅ DrawingGalleryPage `card="drawings"`ᴰ                                                                                                                                    | ➖ᵀ                                         |
 | F9 Capture/AddSheet    | ✅ `capture`                          | ✅ the whole `addHelp` registry                                                                                                       | ✅ essentials:`add-fab`; board:`add-tiles` |
 | F10 Recherche          | ✅ `board` pts 4–5 (alias `search`)   | ✅ `search` key in board/kitchen/liste/cercle/routines registries                                                                     | ✅ board:`search`                          |
 | F11 Widget space       | ✅ `board-widgets`                    | ✅ operator:`boardLayout`                                                                                                             | ✅ board:`board-cards`                     |
@@ -1043,7 +1050,7 @@ Exact per-feature mapping of the three discovery channels. Sources:
 | F14 Restants           | ✅ `kitchen` pt 8 (alias `leftovers`) | ✅ add:`leftovers`; kitchenTab:`leftovers`,`useSoon`; board:`toFinish`                                                                | ➖ᵀ                                         |
 | F15 Recettes           | ✅ `recipes`                          | ✅ add:`recipe`,`cook`; kitchenTab:`recipes`,`recipesBook`,`collections`; operator:`recipeTags`,`recipePills`,`measureColors`,`voice` | ➖ᵀ                                         |
 | F16 Garde-manger       | ✅ `kitchen` pt 2                     | ✅ add:`pantry`; kitchenTab:`pantry`,`low`                                                                                            | ✅ kitchen:running-low                     |
-| F17 Vide-frigo         | 🔶 `kitchen` pt 3 only                | ✅ IdeasPage `card="kitchen"`ᴰ — folded into « Idées » on purpose, no dedicated key                                                                                            | ➖ᵀ                                         |
+| F17 Vide-frigo         | 🔶ᴳ `kitchen` pt 3 only               | ✅ IdeasPage `card="kitchen"`ᴰ — folded into « Idées » on purpose, no dedicated key                                                                                            | ➖ᵀ                                         |
 | F18 Circulaires        | ✅ `deals`                            | ✅ add:`flyer`; liste:`flyer`                                                                                                         | ➖ᵀ                                         |
 | F19 La liste           | ✅ `liste`                            | ✅ add:`list-item`,`quick-add`,`share`,`auto-pick`,`shop`; liste:`quick`,`clear`                                                      | ✅ liste:`liste-add`,sort-aisle            |
 | F20 Fantômes           | ✅ `ghost` (+`set-shopping`)          | ✅ operator:`ghost`                                                                                                                   | ➖ᵀ                                         |
@@ -1055,7 +1062,7 @@ Exact per-feature mapping of the three discovery channels. Sources:
 | F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets`                                                                                                                   | ➖ᵀ                                         |
 | F27 Notre monde        | ✅ `cercle` pt 7                      | ✅ cercle:`monde`                                                                                                                     | ✅ cercle:`cercle-world`                   |
 | F28 Routines           | ✅ `routines` + `set-chores`          | ✅ add:`routine`; routines:`card`; operator:`calm`                                                                                    | ✅ routines: 4 steps                       |
-| F29 Mur de collants    | 🔶 `routines` pt 4 only               | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
+| F29 Mur de collants    | 🔶ᴳ `routines` pt 4 only              | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
 | F30 Jouer              | ✅ `routines` pt (post-Wave-H)        | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
 | F31 Voyage             | ✅ `voyage`                           | ✅ VoyagePage `card="voyage"`ᴰ                                                                                                             | ➖ᵀ                                         |
 | F32 L'auto             | ✅ `auto` + `set-agenda`              | ✅ add:`ride`; operator:`cars`,`schedule`                                                                                             | ➖ᵀ                                         |

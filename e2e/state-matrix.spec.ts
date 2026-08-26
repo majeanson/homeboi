@@ -184,7 +184,7 @@ const MATRIX: Entry[] = [
   { name: 'kitchen-meals', route: '/kitchen?tab=meals', content: '.kitchen__meal-list, .kitchen__week', budgetPx: 160, themes: ['day'] },
   { name: 'kitchen-pantry', route: '/kitchen?tab=pantry', content: '.kitchen__soon li, .kitchen__low li', budgetPx: 249, themes: ['day'] },
   { name: 'kitchen-recipes', route: '/kitchen?tab=recipes', content: '.recipe-card', budgetPx: 214, themes: ['day'] },
-  { name: 'kitchen-history', route: '/kitchen?tab=history', content: '.kitchen__history .kitchen__week, .empty-state', budgetPx: 200, themes: ['day'] },
+  { name: 'kitchen-history', route: '/kitchen?tab=history', content: '.kitchen__history .kitchen__week', budgetPx: 200, themes: ['day'] },
 
   { name: 'maison-routines', route: '/maison?section=routines', content: '.routine-card', budgetPx: 244, themes: ['day'] },
   { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 535, themes: ['day'] },
