@@ -126,14 +126,14 @@ export function ChoreForm({
 
   return (
     <form className="operator__inline-form operator__chore-form" onSubmit={submit}>
-      <div className="picker-chips mono">
-        <span className="picker-chips__label">{t.operator.choreCommon}</span>
-        {presets.map((p) => (
-          <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
-            {p.icon} {p.label}
-          </Chip>
-        ))}
-      </div>
+      {/* The NAME leads, then the shortcuts that fill it. « Courantes » is seven
+          chips — ~340px, most of a phone screen — and it sat ABOVE this field, so a
+          form whose whole job is "type a chore" opened on a list of chores you might
+          not want and pushed the box below the fold (measured: contentTopPx 347 at
+          390px, the worst of any form in the state matrix). The chips are genuinely
+          one-tap useful, so they stay visible rather than folding away — just under
+          the thing they fill in, which is also the order you read them in: type it,
+          or tap one. Same move as the recipe builder's « Remplir vite ». */}
       <EditField
         as="div"
         value={title}
@@ -143,6 +143,14 @@ export function ChoreForm({
         placeholder={t.operator.addChore}
         ariaLabel={t.operator.addChore}
       />
+      <div className="picker-chips mono">
+        <span className="picker-chips__label">{t.operator.choreCommon}</span>
+        {presets.map((p) => (
+          <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
+            {p.icon} {p.label}
+          </Chip>
+        ))}
+      </div>
       {/* The round-robin rotation: tap faces in turn order; the ordinal badge shows
           who takes the first turn (the rotation is an ordered id array). */}
       <MemberPicker

@@ -523,6 +523,15 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
   `COMPONENTS.md` / `/dev/kit` for a shared primitive and `src/lib/*` for the
   governing helper BEFORE writing new code. Extend what exists; don't fork a parallel
   copy that we then have to refactor back. See [Build by reuse](#build-by-reuse--read-before-you-write-start-here).
+- **Keep the surface lean** (standing rule): a new heading, hint line, always-open
+  composer or search box needs to justify the screen it takes before the content.
+  Read **`LEAN.md`** — the nine recurring smells with the primitive that fixes each
+  (**SectionAdd** / **SearchField** / **Disclosure**), the three invariants (a fold
+  never hides a filled field; never delete an explanation nothing else carries;
+  don't cargo-cult a fix), and the method that actually finds them: **screenshot the
+  first screen at 390px and look — do not reason about it.** The state matrix
+  measures it (`npm run e2e:matrix` → `contentTopPx` per surface, ratchet-budgeted),
+  so a surface can't quietly regrow its chrome.
 - **Every UI change must be mobile-friendly**, every time (standing rule).
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
 - **No horizontal overflow** — any row of controls uses `Cluster`/`Rail`, not a

@@ -43,6 +43,17 @@ type Entry = {
   sandbox?: boolean
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
   keyboard?: number
+  /** The page's FIRST content item — the thing you came to this surface to see (a
+   *  list row, a card, a form's first field). Its distance from the top of the
+   *  scroller is `contentTopPx`: how much chrome you scroll past before the
+   *  content starts. Omit and the state is measured for text only, never budgeted. */
+  content?: string
+  /** Ceiling for `contentTopPx`. A RATCHET, not a taste judgement: every number
+   *  here was read off a real baseline run and given ~10% tolerance, so a surface
+   *  can never grow its chrome back — and a surface that legitimately leads with a
+   *  hero simply carries a bigger number. Tighten it in the same commit as a lean
+   *  pass; it only ever moves down. See LEAN.md. */
+  budgetPx?: number
 }
 
 const PHONE = { w: 390, h: 844 }
@@ -55,19 +66,34 @@ const openAddSheet = async (page: Page) => {
 }
 
 const openNoteEditor = async (page: Page) => {
-  await page.getByRole('button', { name: 'Nouvelle note' }).click()
+  // NOT « Nouvelle note »: that button is advanced-mode chrome (lib/notesMode), and
+  // Les notes defaults to its lean READING face. ?add=1 is the canonical door in
+  // both faces — the same one advanced's own button navigates to.
+  await page.goto('/notes?add=1')
   await expect(page.locator('.note-editor')).toBeVisible()
   await page.locator('.note-editor__body').click()
 }
 
+// CHROME BUDGETS (`budgetPx`) — baselined 2026-08-26 at 390px from a real run,
+// each set to its own measured `contentTopPx` + ~10% (min +16px) for font and
+// rounding drift. They are a RATCHET: a surface may never push its content further
+// down than the day its number was set, and the number only ever moves DOWN, in the
+// same commit as the lean pass that earns it. Raising one is allowed but must be
+// deliberate and said out loud in the commit — silently re-baselining is the exact
+// drift this exists to stop. See LEAN.md.
+//
+// Read them as a worklist, not a verdict: maison-family (540px) and maison-social
+// (392px) are the two worst and the obvious next targets — though Famille's height
+// is partly the « Anniversaires à venir » card, which is content, not chrome. The
+// number is a signal; the screenshot beside it is the judgement.
 const MATRIX: Entry[] = [
   // — the six hub tabs at rest, phone, both themes —
-  { name: 'board', route: '/board' },
-  { name: 'kitchen', route: '/kitchen' },
-  { name: 'liste', route: '/liste' },
-  { name: 'notes', route: '/notes' },
-  { name: 'maison', route: '/maison' },
-  { name: 'settings', route: '/settings' },
+  { name: 'board', route: '/board', content: '.wg-slot', budgetPx: 235 },
+  { name: 'kitchen', route: '/kitchen', content: '.kitchen__meal-list, .kitchen__week', budgetPx: 160 },
+  { name: 'liste', route: '/liste', content: '.list-rows > *', budgetPx: 218 },
+  { name: 'notes', route: '/notes', content: '.cnote, .cercle-notes__empty', budgetPx: 230 },
+  { name: 'maison', route: '/maison', content: '.routine-card, .cercle-row', budgetPx: 244 },
+  { name: 'settings', route: '/settings', content: '.operator__section, .operator__tabs', budgetPx: 90 },
   // — signature opened states —
   { name: 'board-addsheet', route: '/board', setup: openAddSheet, scope: '.sheet.show' },
   {
@@ -80,6 +106,36 @@ const MATRIX: Entry[] = [
     scope: '.ideas-drawer .scene__body',
   },
   { name: 'note-editor', route: '/notes', setup: openNoteEditor, scope: '.note-editor' },
+  // — THE SUB-SURFACES. The matrix used to stop at each hub tab's DEFAULT sub-tab,
+  //   which is why every one of the 2026-08 lean passes found its fat somewhere the
+  //   sweep had never looked: the garde-manger's three stacked composers, the recipe
+  //   book's permanent filter rows, the five Maison sections, and the heavy form
+  //   scenes. Phone + day only — these are measured for chrome, not for theming.
+  { name: 'kitchen-meals', route: '/kitchen?tab=meals', content: '.kitchen__meal-list, .kitchen__week', budgetPx: 160, themes: ['day'] },
+  { name: 'kitchen-pantry', route: '/kitchen?tab=pantry', content: '.kitchen__soon li, .kitchen__low li', budgetPx: 249, themes: ['day'] },
+  { name: 'kitchen-recipes', route: '/kitchen?tab=recipes', content: '.recipe-card', budgetPx: 214, themes: ['day'] },
+  { name: 'kitchen-history', route: '/kitchen?tab=history', content: '.kitchen__history .kitchen__week, .empty-state', budgetPx: 200, themes: ['day'] },
+
+  { name: 'maison-routines', route: '/maison?section=routines', content: '.routine-card', budgetPx: 244, themes: ['day'] },
+  { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 594, themes: ['day'] },
+  { name: 'maison-social', route: '/maison?section=social', content: '.cercle-row', budgetPx: 432, themes: ['day'] },
+  { name: 'maison-business', route: '/maison?section=business', content: '.cercle-row, .empty-state', budgetPx: 194, themes: ['day'] },
+  { name: 'maison-carnets', route: '/maison?section=carnets', content: '.cercle-row, .empty-state', budgetPx: 194, themes: ['day'] },
+
+  { name: 'settings-board', route: '/settings?tab=board&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
+  { name: 'settings-systeme', route: '/settings?tab=settings&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
+
+  // — THE FORM SCENES. Four of these opened as a wall of fields before the lean
+  //   pass; the budget is what keeps them from filling back up.
+  { name: 'form-event', route: '/event/new', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
+  { name: 'form-chore', route: '/chore/new', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
+  { name: 'form-person', route: '/cercle/person/new', content: '.cf__input', budgetPx: 156, themes: ['day'] },
+  { name: 'form-pet', route: '/cercle/pet/new', content: '.input', budgetPx: 32, themes: ['day'] },
+  { name: 'form-recipe', route: '/kitchen/recipe/new', content: '.recipe-title-input', budgetPx: 32, themes: ['day'] },
+  { name: 'form-habit', route: '/habitude/new', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
+  { name: 'departure', route: '/board/departure', content: '.todo-sec, .departure__wx', budgetPx: 32, themes: ['day'] },
+  { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
+
   // — lenses —
   { name: 'board-toddler', route: '/board', audience: 'toddler' },
   { name: 'board-kiosk', route: '/board', surface: 'kiosk', viewport: WALL },
@@ -172,6 +228,42 @@ for (const entry of MATRIX) {
       // possible failure; assert it explicitly.
       const crashed = await page.locator('.errboundary').count()
       const { bleed, culprit } = await worstRightBleed(page, entry.scope ?? '#root')
+
+      // HOW MUCH CHROME BEFORE THE CONTENT. The number this whole lean programme
+      // turns on: the distance from the top of the surface's scroller to the top of
+      // its first content item. It is exactly what I had been eyeballing on
+      // screenshots all along ("« Ce soir » at ~470px → ~380px"); as a manifest
+      // column it stops being taste and starts being something that can regress
+      // loudly. null when the entry declares no content selector.
+      const contentTopPx = entry.content
+        ? await page.evaluate((sel: string) => {
+            const el = document.querySelector(sel)
+            if (!el) return null
+            // Measure inside the SCROLLER, not the viewport: .hub__body (hub tabs)
+            // and .scene__body (scenes) are the app's real scroll containers, and a
+            // viewport-relative y would drift with whatever the page had scrolled to.
+            const scroller = el.closest('.hub__body, .scene__body, .recipe-modal__body') ?? document.body
+            const top = scroller.getBoundingClientRect().top - (scroller === document.body ? 0 : scroller.scrollTop)
+            return Math.round(el.getBoundingClientRect().top - top)
+          }, entry.content)
+        : null
+
+      // A taxonomy-free companion: how much REAL text the first screen shows. A
+      // leaner surface spends less of that screen on chrome, so this rises as
+      // contentTopPx falls. Reported, never asserted — it is a review signal.
+      const aboveFoldChars = await page.evaluate((foldY: number) => {
+        let n = 0
+        const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+        for (let node = walk.nextNode(); node; node = walk.nextNode()) {
+          const text = (node.textContent ?? '').trim()
+          if (!text) continue
+          const parent = node.parentElement
+          if (!parent) continue
+          const r = parent.getBoundingClientRect()
+          if (r.top < foldY && r.bottom > 0 && r.width > 0) n += text.length
+        }
+        return n
+      }, vp.h)
       let focusedBottom: number | null = null
       if (entry.keyboard) {
         const box = await page.locator(':focus').boundingBox()
@@ -203,8 +295,17 @@ for (const entry of MATRIX) {
             focusedAboveKeyboard: entry.keyboard ? kbOk : undefined,
             paintedChars: textLen,
             crashed: crashed > 0 || undefined,
+            contentTopPx,
+            contentBudgetPx: entry.budgetPx,
+            aboveFoldChars,
           },
-          pass: errors.length === 0 && bleed <= 1 && kbOk && textLen >= 10 && crashed === 0,
+          pass:
+            errors.length === 0 &&
+            bleed <= 1 &&
+            kbOk &&
+            textLen >= 10 &&
+            crashed === 0 &&
+            (entry.budgetPx == null || contentTopPx == null || contentTopPx <= entry.budgetPx),
         }),
       )
 
@@ -212,6 +313,19 @@ for (const entry of MATRIX) {
       expect(textLen, `${id}: the page painted nothing (blank capture)`).toBeGreaterThanOrEqual(10)
       expect(errors, `${id}: page errors`).toEqual([])
       expect(bleed, `${id}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)
+      // The ratchet. A surface that declares a budget may not push its content
+      // further down than the day the budget was set — the failure names both
+      // numbers so the fix (or a deliberate re-baseline) is obvious.
+      if (entry.budgetPx != null && contentTopPx != null) {
+        expect(
+          contentTopPx,
+          `${id}: ${contentTopPx}px of chrome before "${entry.content}" (budget ${entry.budgetPx}px). ` +
+            'Either lean it back down, or re-baseline the budget deliberately — see LEAN.md.',
+        ).toBeLessThanOrEqual(entry.budgetPx)
+      }
+      if (entry.content) {
+        expect(contentTopPx, `${id}: no element matched content selector "${entry.content}"`).not.toBeNull()
+      }
       if (entry.keyboard) {
         expect(focusedBottom, `${id}: a field is focused`).not.toBeNull()
         expect(focusedBottom!, `${id}: focused field above the keyboard`).toBeLessThanOrEqual(visible + 1)
