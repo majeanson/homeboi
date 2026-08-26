@@ -48,6 +48,15 @@ back down, or re-baseline **deliberately**, saying in the commit why the surface
 now needs more room. Silently raising a budget is the one thing this file exists to
 prevent.
 
+**A budget may not be measured against an empty state — the spec enforces this.**
+Every budgeted entry records whether its content selector landed on an empty state
+(any class containing `empty`, walked up to the scroller) and **hard-fails** if it
+did, naming the fix. It was written after the trap below cost a week of a
+meaningless budget, and it immediately caught two more entries — `maison-business`
+and `maison-carnets`, both budgeting « Aucun … pour l'instant ». Both sat at the
+*same* 176px as their real rows, which is precisely why looking at the number could
+never have found them.
+
 **Check the fixture before you trust a number.** Several shared fixtures in
 `e2e/mocks.ts` are deliberately EMPTY (the behavioural specs want them that way), so
 an entry can end up budgeting its own empty state — the screen nobody uses. `/notes`
@@ -57,6 +66,15 @@ zero notes, and a low `aboveFoldChars` was the only tell. Entries pass `api:` (a
 `overrides` map, merged over the defaults) to seed the content they exist to
 measure. Seed the case that varies, too — the notes fixture carries two notes on one
 day and one on another precisely so the row rendering must handle both.
+
+**Read `aboveFoldChars`, not just the pixels.** It is the only column that catches a
+screen showing nothing, and it sat unread in the manifest while `/notes` was
+mismeasured. The teardown now hoists every screen under 200 chars into a
+`review.lowContent` block (and prints it to the console, since a scheduled run's log
+is all a human sees when nothing failed). It is a **flag, not a failure**: a toddler
+lens and the deliberate first-run empties belong there. The question it asks is
+"sparse by design, or sparse because the fixture is empty?" — answer it, don't
+silence it.
 
 **What pulls the ratchet.** The sweep is too slow to gate every push, so Actions ▸
 **State matrix** runs it **weekly (Mondays 06:00 UTC)** as well as on demand. That

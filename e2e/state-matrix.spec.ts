@@ -89,6 +89,38 @@ const NOTES_FIXTURE = {
   },
 }
 
+// Business and Carnets both ship an EMPTY shared fixture (« calm default »), so both
+// were budgeting their own empty state until the guard below started refusing that.
+// Two rows each: enough for the row rhythm to be visible and measured, no more.
+const BUSINESS_FIXTURE = {
+  businesses: {
+    businesses: [
+      { id: 'b1', name: 'Clinique vétérinaire Papineau', category: 'veterinaire', phone: '514-555-0142', email: null, address: null, website: null, notes: null, photoKey: null, colour: null },
+      { id: 'b2', name: 'Plomberie Lachance', category: 'plombier', phone: '514-555-0188', email: null, address: null, website: null, notes: null, photoKey: null, colour: null },
+    ],
+  },
+}
+const CARNET = (id: string, name: string, kind: string, sort: number) => ({
+  id,
+  parentId: null,
+  kind,
+  name,
+  mediaKey: null,
+  color: '#8a7fd0',
+  facts: null,
+  installedAt: null,
+  lifespanMonths: null,
+  linkId: null,
+  notes: null,
+  sort,
+})
+const CARNETS_FIXTURE = {
+  carnets: {
+    carnets: [CARNET('c1', 'La maison', 'home', 0), CARNET('c2', "L'auto", 'auto', 1)],
+    soon: [],
+  },
+}
+
 const PHONE = { w: 390, h: 844 }
 const WALL = { w: 1280, h: 800 }
 const KB = 336
@@ -157,8 +189,8 @@ const MATRIX: Entry[] = [
   { name: 'maison-routines', route: '/maison?section=routines', content: '.routine-card', budgetPx: 244, themes: ['day'] },
   { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 535, themes: ['day'] },
   { name: 'maison-social', route: '/maison?section=social', content: '.cercle-row', budgetPx: 432, themes: ['day'] },
-  { name: 'maison-business', route: '/maison?section=business', content: '.cercle-row, .empty-state', budgetPx: 194, themes: ['day'] },
-  { name: 'maison-carnets', route: '/maison?section=carnets', content: '.cercle-row, .empty-state', budgetPx: 194, themes: ['day'] },
+  { name: 'maison-business', route: '/maison?section=business', content: '.cercle-row', budgetPx: 194, themes: ['day'], api: BUSINESS_FIXTURE },
+  { name: 'maison-carnets', route: '/maison?section=carnets', content: '.cercle-row', budgetPx: 194, themes: ['day'], api: CARNETS_FIXTURE },
 
   { name: 'settings-board', route: '/settings?tab=board&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
   { name: 'settings-systeme', route: '/settings?tab=settings&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
@@ -298,7 +330,7 @@ for (const entry of MATRIX) {
       // screenshots all along ("« Ce soir » at ~470px → ~380px"); as a manifest
       // column it stops being taste and starts being something that can regress
       // loudly. null when the entry declares no content selector.
-      const contentTopPx = entry.content
+      const probe = entry.content
         ? await page.evaluate((sel: string) => {
             const el = document.querySelector(sel)
             if (!el) return null
@@ -307,9 +339,27 @@ for (const entry of MATRIX) {
             // viewport-relative y would drift with whatever the page had scrolled to.
             const scroller = el.closest('.hub__body, .scene__body, .recipe-modal__body') ?? document.body
             const top = scroller.getBoundingClientRect().top - (scroller === document.body ? 0 : scroller.scrollTop)
-            return Math.round(el.getBoundingClientRect().top - top)
+            // Did we match an EMPTY STATE rather than content? Every empty state in
+            // this app carries a class with "empty" in it (.empty-state, .feed-empty,
+            // .cercle-empty, .routines-empty, …), so walk up to the scroller looking
+            // for one. Deliberately broad: a false positive costs one line to fix and
+            // says so in the failure, while a false NEGATIVE is the silent lie this
+            // exists to kill.
+            let emptyVia: string | null = null
+            for (let n: Element | null = el; n && n !== scroller; n = n.parentElement) {
+              const hit = Array.from(n.classList).find((c) => c.includes('empty'))
+              if (hit) {
+                emptyVia = hit
+                break
+              }
+            }
+            return { top: Math.round(el.getBoundingClientRect().top - top), emptyVia }
           }, entry.content)
         : null
+      const contentTopPx = probe ? probe.top : null
+      // Which empty-state class we landed on, if any — a manifest column so a review
+      // pass can see it, and a hard failure below when the entry carries a budget.
+      const contentEmptyVia = probe?.emptyVia ?? null
 
       // A taxonomy-free companion: how much REAL text the first screen shows. A
       // leaner surface spends less of that screen on chrome, so this rises as
@@ -360,6 +410,7 @@ for (const entry of MATRIX) {
             crashed: crashed > 0 || undefined,
             contentTopPx,
             contentBudgetPx: entry.budgetPx,
+            contentEmptyVia: contentEmptyVia ?? undefined,
             aboveFoldChars,
           },
           pass:
@@ -368,7 +419,8 @@ for (const entry of MATRIX) {
             kbOk &&
             textLen >= 10 &&
             crashed === 0 &&
-            (entry.budgetPx == null || contentTopPx == null || contentTopPx <= entry.budgetPx),
+            (entry.budgetPx == null || contentTopPx == null || contentTopPx <= entry.budgetPx) &&
+            !(entry.budgetPx != null && contentEmptyVia),
         }),
       )
 
@@ -376,6 +428,21 @@ for (const entry of MATRIX) {
       expect(textLen, `${id}: the page painted nothing (blank capture)`).toBeGreaterThanOrEqual(10)
       expect(errors, `${id}: page errors`).toEqual([])
       expect(bleed, `${id}: "${culprit}" bleeds off the right edge`).toBeLessThanOrEqual(1)
+      // A BUDGET MAY NOT BE MEASURED AGAINST AN EMPTY STATE. This is the guard for
+      // the trap that made /notes meaningless: the shared fixture served zero notes,
+      // the entry's selector fell back to the empty state, and the tab whose whole
+      // brief was "maximum note per pixel" had its density ratcheted on a page with
+      // nothing on it. The number looked perfectly reasonable, which is what made it
+      // dangerous. A budget must describe the screen people actually use.
+      if (entry.budgetPx != null) {
+        expect(
+          contentEmptyVia,
+          `${id}: "${entry.content}" matched an EMPTY STATE (.${contentEmptyVia}), so this ` +
+            'budget guards a screen nobody uses. Either seed the fixture for this entry ' +
+            '(`api:` — see the notes entry) or drop budgetPx and leave it reported-only. ' +
+            'See LEAN.md, "Check the fixture before you trust a number".',
+        ).toBeNull()
+      }
       // The ratchet. A surface that declares a budget may not push its content
       // further down than the day the budget was set — the failure names both
       // numbers so the fix (or a deliberate re-baseline) is obvious.
