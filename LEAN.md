@@ -48,6 +48,22 @@ back down, or re-baseline **deliberately**, saying in the commit why the surface
 now needs more room. Silently raising a budget is the one thing this file exists to
 prevent.
 
+**What pulls the ratchet.** The sweep is too slow to gate every push, so Actions ▸
+**State matrix** runs it **weekly (Mondays 06:00 UTC)** as well as on demand. That
+is a deliberate trade: chrome creeps back over weeks rather than inside one push,
+and a week-late red build still names the commit that did it. A budget nothing ever
+runs is a comment with a number in it.
+
+**Windows and the Linux runner agree — checked, not assumed.** The worry was that
+budgets baselined locally would be quietly loose or quietly red on CI, since font
+metrics differ. The first full CI sweep (2026-08-26, 64 states, 44 budgeted) came
+back with every entry at exactly its tolerance — the same numbers to the pixel.
+That is not luck: `contentTopPx` is a sum of BOX heights (padding, margins, fixed
+control heights), and only a value that wraps differently between platforms would
+move it. So a local baseline is trustworthy — but confirm a new batch of budgets
+with one CI sweep before relying on it, because the day that stops being true is a
+day of red builds nobody can reproduce locally.
+
 ## The nine patterns
 
 Each has a fix that already exists — reach for the primitive, don't invent one.

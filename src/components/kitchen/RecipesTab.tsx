@@ -350,7 +350,7 @@ export function RecipesTab({
               aria-expanded={filtersOpen}
               aria-controls={FILTERS_ID}
             >
-              <InlineIcon name="tag-bold" size={15} />
+              <InlineIcon name="funnel-bold" size={15} />
               <span>{t.recipes.filter}</span>
               {/* The count is the honest half: with the panel shut it's the only
                   thing saying the grid below is narrowed, and by how much. */}

@@ -3,11 +3,25 @@ name: State matrix (visual sweep)
 # The ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts under
 # e2e/sm.config.ts): screenshots + structural assertions across route × opened
 # state × theme × lens × keyboard, with a manifest.json built for review by a
-# Claude session. Deliberately NOT chained to pushes — run it from the Actions
-# tab (or locally via `npm run e2e:matrix`) when a sweep is wanted.
+# Claude session. Deliberately NOT chained to pushes — the sweep is slow and its
+# value is the manifest REVIEW, which is a batch activity, not a per-push gate.
+#
+# It runs on a weekly schedule anyway, because the spec now carries contentTopPx
+# BUDGETS (a ratchet: no surface may push its content further down than the day
+# its number was set — see LEAN.md). A budget nothing ever runs is a comment with
+# a number in it. Weekly is the deliberate trade: chrome creeps back over weeks,
+# not within one push, so a week-late red build still names the commit that did
+# it — and it costs one run instead of one per push.
+#
+# A red scheduled run means either a real regression (fix it) or a budget that was
+# always wrong (raise it, out loud, in a commit that says why). Do not silently
+# re-baseline: that is the exact drift the ratchet exists to stop.
 
 on:
   workflow_dispatch:
+  schedule:
+    # Mondays 06:00 UTC — a fresh sweep waiting at the start of the week.
+    - cron: '0 6 * * 1'
 
 concurrency:
   group: state-matrix-${{ github.sha }}

@@ -136,7 +136,8 @@ npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts,
                        #   route × opened state × theme × lens × fake keyboard → screenshots +
                        #   structural assertions + screenshots/matrix/manifest.json, built for a
                        #   Claude review pass (read the manifest, open flagged PNGs). Never runs
-                       #   per-push; CI twin = Actions ▸ "State matrix" (workflow_dispatch).
+                       #   per-push; CI twin = Actions ▸ "State matrix" (dispatch + WEEKLY,
+                       #   Mondays — the contentTopPx ratchet needs something to pull it).
 npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
 ```
 
