@@ -136,9 +136,33 @@ const MATRIX: Entry[] = [
   { name: 'departure', route: '/board/departure', content: '.todo-sec, .departure__wx', budgetPx: 32, themes: ['day'] },
   { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
 
-  // — lenses —
-  { name: 'board-toddler', route: '/board', audience: 'toddler' },
-  { name: 'board-kiosk', route: '/board', surface: 'kiosk', viewport: WALL },
+  // — THE TWO LENSES CLAUDE.md CALLS STANDING RULES, and which the sweep had only
+  //   ever seen on the board. « Every UI change must be tablet-friendly, especially
+  //   for Toddler mode » and « desktop-friendly too » — yet toddler and the 1280px
+  //   wall each had exactly ONE entry here. A pre-reader's screen and a wall tablet
+  //   read nothing like a phone: the toddler lens is picture-first with big targets
+  //   (so chrome costs it more), and the wall has room to spare (so chrome there is
+  //   cheap but bleed is not). Both get the same contentTopPx treatment as the rest.
+  //   Réglages is absent from the toddler set on purpose: the lens hides it and
+  //   /settings redirects (a locked kiosk is a one-way door).
+  { name: 'board-toddler', route: '/board', audience: 'toddler', content: '.today-hero, .kid__main > *', budgetPx: 16 },
+  { name: 'kitchen-toddler', route: '/kitchen', audience: 'toddler', content: '.kid-head, .kid-pick', budgetPx: 48, themes: ['day'] },
+  { name: 'liste-toddler', route: '/liste', audience: 'toddler', content: '.bigtiles', budgetPx: 208, themes: ['day'] },
+  { name: 'notes-toddler', route: '/notes', audience: 'toddler', content: '.cercle-kid__grid, .cercle-kid > *', budgetPx: 32, themes: ['day'] },
+  { name: 'maison-toddler', route: '/maison', audience: 'toddler', content: '.kid__faces, .kid__main > *', budgetPx: 238, themes: ['day'] },
+
+  // board-kiosk (334px) and maison-toddler (216px) are the two biggest numbers in
+  //   this table and NEITHER is fat: a wall tablet is read from across a room, so its
+  //   greeting is deliberately large type, and the toddler Maison is a centred
+  //   picture screen whose empty space IS the design for a pre-reader's thumb. Budgeted
+  //   so they cannot GROW; not cut. The number is a signal, the screenshot is the
+  //   judgement (LEAN.md).
+  { name: 'board-kiosk', route: '/board', surface: 'kiosk', viewport: WALL, content: '.wg-slot', budgetPx: 368 },
+  { name: 'kitchen-wall', route: '/kitchen', surface: 'kiosk', viewport: WALL, content: '.kitchen__meal-list, .kitchen__week', budgetPx: 205, themes: ['day'] },
+  { name: 'liste-wall', route: '/liste', surface: 'kiosk', viewport: WALL, content: '.list-rows > *', budgetPx: 264, themes: ['day'] },
+  { name: 'notes-wall', route: '/notes', surface: 'kiosk', viewport: WALL, content: '.cnote, .cercle-notes__empty', budgetPx: 277, themes: ['day'] },
+  { name: 'maison-wall', route: '/maison', surface: 'kiosk', viewport: WALL, content: '.routine-card, .cercle-row', budgetPx: 291, themes: ['day'] },
+  { name: 'settings-wall', route: '/settings', surface: 'kiosk', viewport: WALL, content: '.operator__section, .operator__tabs', budgetPx: 78, themes: ['day'] },
   { name: 'board-en', route: '/board', lang: 'en', themes: ['day'] },
   // — data extremes —
   { name: 'liste-longtext', route: '/liste', longText: true },

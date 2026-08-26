@@ -94,6 +94,17 @@ Swept and leaned in Aug 2026: Notes, Recettes, garde-manger, La liste, the four
 heavy forms (person / event / recipe / pet), Réglages, the board, Maison ▸
 Business + Carnets, Le mois, « Avant de partir », « L'auto ».
 
-**Not yet swept:** the toddler lens and the 1280px wall — both standing
-requirements in `CLAUDE.md`, neither ever measured. That is the obvious next
-increment.
+**The two lenses, now swept** (2026-08-26): the toddler lens and the 1280px wall
+were standing requirements in `CLAUDE.md` with exactly one matrix entry each, both
+on the board. Both now carry the five hub tabs with budgets.
+
+And the result is worth recording, because it is the case this file warns about:
+**the two biggest numbers in the table are not fat.** `board-kiosk` (334px) is read
+from across a room, so its greeting is deliberately large type; `maison-toddler`
+(216px) is a centred picture screen where the empty space IS the design for a
+pre-reader. Both were budgeted so they cannot grow, and neither was cut. A high
+`contentTopPx` asks a question; it does not answer one.
+
+The toddler lens is otherwise the leanest surface in the app (board 0px, notes 16,
+cuisine 32) — a useful reminder that the picture-first lens never accumulated the
+headings and composers the parent lens did.

@@ -1,0 +1,62 @@
+name: SW offline repro (hunt the intermittent)
+
+# ON-DEMAND hunt for the intermittent offline-boot failure.
+#
+# e2e/sw.spec.ts's reboot case fails roughly half the time on the Linux runner and
+# has NEVER reproduced locally (10/10 on Windows under CI=1, ~2s each). The shell
+# comes back from cache and the page is SW-controlled, but /assets/index-*.js — an
+# entry the install-time check just verified is precached — misses caches.match(),
+# falls through to a dead network, and answers the SW's own 504. #root stays empty:
+# a wall tablet rebooting to a blank board (NFR-OFFLINE-1).
+#
+# The Vary hypothesis was tested and DISPROVED (see e2e/sw.spec.ts's property test
+# and OFFLINE.md), so the cause is still open. The spec now probes the cache at the
+# moment of failure — by string, by Request, ignoring Vary, plus the stored headers
+# and the live key list — which separates every remaining hypothesis in one shot.
+#
+# Waiting for it to recur on a push costs days. This job forces the coin flip: run
+# the reboot case N times on the same runner the failure lives on. At ~50% and ~2s
+# a case, 20 iterations reproduce it with near-certainty and print the probe.
+#
+# Read the FAILURE, not the pass count — a green run here means "did not reproduce
+# this time", never "fixed".
+
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: 'How many times to run the offline-reboot case'
+        required: false
+        default: '20'
+
+concurrency:
+  group: sw-repro-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  repro:
+    name: SW offline reboot × N
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # sw.config.ts builds the PROD bundle and serves it via `vite preview` (the SW
+      # only registers in a prod build) — one webServer for the whole run, so the
+      # iterations share a single build. retries:0 there, so every failure is real
+      # and each one prints its own cache probe.
+      - name: Run the offline reboot case ${{ inputs.iterations || '20' }} times
+        run: npm run e2e:sw -- --repeat-each=${{ inputs.iterations || '20' }} -g "reboots offline"
+      # The harness writes here (outputDir + trace on failure). Uploaded whatever the
+      # outcome: a reproduction is the entire point of the run.
+      - name: Upload traces + screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: sw-repro
+          path: e2e/test-results-sw
+          retention-days: 7
