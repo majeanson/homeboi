@@ -575,9 +575,13 @@ export function Liste() {
         value={addText}
         onChange={setAddText}
         onSubmit={() => addItem()}
-        submitLabel={t.common.add}
-        submitLeadingIcon="plus-bold"
-        submitVariant="primary"
+        // Enter IS the whole interaction — the « Ajouter » button was a solid primary
+        // CTA taking a third of the row from the thing you're typing, on the app's
+        // most-used field (the Notes treatment). The mic STAYS: on La liste it is not
+        // dictation but hands-free adding — one breath of « lait, œufs pis pain »
+        // becomes three items at the counter — which is this page's headline flow, not
+        // furniture.
+        submitIcon={null}
         busy={adding}
         voice={voice}
         placeholder={
@@ -591,15 +595,14 @@ export function Liste() {
       />
       </div>
 
-      {/* The two frequent "fill the list" moves stay as visible one-tap shortcuts
-          — not tucked behind the ＋ Add sheet: searching the week's flyers for an
-          aubaine ("Parcourir les circulaires") and reopening past/predicted items
-          to restock ("Ajout rapide"). They are SHORTCUTS, and now they look like it:
-          three solid full-width orange bars stacked 2+1 owned ~180px of the phone's
-          first screen — more than the list itself — and shouted louder than the
-          « Ajouter » field above them and the items below. Quiet ghost chips at
-          their natural width on one wrapping Cluster: same one tap, a tenth of the
-          voice. Full text on aria-label. */}
+      {/* The three "fill the list" / "read the list" shortcuts — browse the week's
+          flyers, restock a past item, choose the aisle order — as three GLYPHS on one
+          line. They went from solid full-width orange bars stacked 2+1 (~180px of a
+          phone's first screen, more than the list itself) to quiet labelled chips, and
+          now to icons: they are shortcuts to other surfaces, and the list is what this
+          page is. Each keeps its full name on aria-label + title, so nothing here is an
+          unnamed control — and being one short row, they fit beside each other instead
+          of wrapping. */}
       {/* The third shortcut is the « Allées » MENU: the sort choice (Mon ordre /
           Par allée), the on-demand aisle tag and « Ranger par allée » used to sit
           in a permanent bar above the list, spelling out a view preference you set
@@ -610,30 +613,32 @@ export function Liste() {
       <Cluster className="list-actions list-actions--quiet">
         <button
           type="button"
-          className="btn btn--sm btn--ghost help-pick"
+          className="btn btn--sm btn--ghost list-actions__icon help-pick"
           aria-label={t.shop.browse}
           title={t.shop.browse}
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
         >
-          <InlineIcon name="magnifying-glass-bold" /> {t.shop.browseShort}
+          <InlineIcon name="magnifying-glass-bold" size={17} />
         </button>
         <button
           type="button"
-          className="btn btn--sm btn--ghost help-pick"
+          className="btn btn--sm btn--ghost list-actions__icon help-pick"
           aria-label={t.list.quickAdd}
           title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}
         >
-          {/* ⚡ not ＋: this is the FAST add (restock past items), distinct from
-              the primary Add button right above it. */}
-          <InlineIcon name="lightning-bold" /> {t.list.quickAddShort}
+          {/* ⚡ not ＋: this is the FAST add (restock past items), distinct from the
+              add field above it. */}
+          <InlineIcon name="lightning-bold" size={17} />
         </button>
         {list.length > 1 && (
+          // No triggerLabel → ActionMenu renders its icon alone and names itself from
+          // `label` (aria-label + title), the same contract the recipe book's icon-only
+          // Collections tab uses.
           <ActionMenu
-            triggerLabel={t.list.aisleMenu}
             triggerIcon="storefront-bold"
-            triggerClassName="btn btn--sm btn--ghost help-pick"
-            label={t.list.sortBy}
+            triggerClassName="btn btn--sm btn--ghost list-actions__icon help-pick"
+            label={t.list.aisleMenu}
             pick={(open) => help.pick('aisles', open)}
             items={sortItems}
           />
@@ -694,13 +699,23 @@ export function Liste() {
                   }
                   dealImage={staged?.image}
                   // A staged flyer deal: store + price, visible on the row itself.
-                  dealLabel={
-                    staged ? (
+                  // Store + price, joined only by what actually EXISTS. money() returns
+                  // '' for a null price, so the old fixed « {merchant} · {money} » drew
+                  // « Maxi · » — a separator with nothing after it — on any staged deal
+                  // that carries a store but no price. Build the parts, drop the empty
+                  // ones, and join; no part at all → no chip.
+                  dealLabel={(() => {
+                    if (!staged) return null
+                    const bits = [staged.merchant?.trim() || null, staged.price != null ? money(staged.price) : null].filter(
+                      (x): x is string => !!x,
+                    )
+                    if (bits.length === 0) return null
+                    return (
                       <span className="list-row__deal mono">
-                        <InlineIcon name="tag-bold" /> {staged.merchant} · {money(staged.price)}
+                        <InlineIcon name="tag-bold" /> {bits.join(' · ')}
                       </span>
-                    ) : null
-                  }
+                    )
+                  })()}
                   adder={adder}
                   checked={checked}
                   noRush={!!item.non_urgent}

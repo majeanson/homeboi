@@ -250,3 +250,140 @@ test('the pet form folds every secondary field — including the tail that hung 
   await expect(page.getByText('Couleur', { exact: true })).toBeVisible()
   await expect(page.locator('input[type=file]')).toHaveCount(1)
 })
+
+// ── Le mois : un jour se dé-tape ────────────────────────────────────────────────
+
+const mois = async (page: Page) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
+  await page.goto('/board')
+  await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+}
+
+test('a tapped calendar day can be UNTAPPED — the drawer closes, the grid stays', async ({ page }) => {
+  await mois(page)
+  const open = page.locator('.monthv__cell.is-on')
+  await expect(open).toHaveCount(1)
+  await expect(page.locator('.monthv__day')).toBeVisible()
+
+  // Tap the open day again → nothing is picked and the drawer is gone.
+  await open.click()
+  await expect(page.locator('.monthv__cell.is-on')).toHaveCount(0)
+  await expect(page.locator('.monthv__day')).toHaveCount(0)
+  // The calendar itself is untouched — untapping closes a drawer, it doesn't navigate.
+  await expect(page.locator('.monthv__cell')).not.toHaveCount(0)
+
+  // Tapping any day (the same one included) brings it back.
+  await page.locator('.monthv__cell').nth(20).click()
+  await expect(page.locator('.monthv__day')).toBeVisible()
+  await expect(page.locator('.monthv__cell.is-on')).toHaveCount(1)
+})
+
+test('a picked day keeps the grid’s shape — no pop-out tile', async ({ page }) => {
+  await mois(page)
+  // The wide floating tile is gone for good: the day PANEL says all of that, in full
+  // names, with everything you can do with the day.
+  await expect(page.locator('.monthv__lines')).toHaveCount(0)
+
+  // The lit cell is the same size as its neighbours (it used to grow and float over
+  // them, which changed the calendar's shape under the finger).
+  const on = page.locator('.monthv__cell.is-on')
+  const other = page.locator('.monthv__cell:not(.is-on)').nth(10)
+  const a = (await on.boundingBox())!
+  const b = (await other.boundingBox())!
+  expect(Math.abs(a.height - b.height), 'the picked cell does not grow').toBeLessThan(2)
+  expect(Math.abs(a.width - b.width), 'the picked cell does not widen').toBeLessThan(2)
+})
+
+// ── La liste, allégée ──────────────────────────────────────────────────────────
+
+test('La liste: the add field is text + mic, and Enter writes the line', async ({ page }) => {
+  await phone(page, '/liste')
+  await page.locator('.list-rows').waitFor({ state: 'visible' })
+
+  // No « Ajouter » CTA taking a third of the row from what you're typing…
+  await expect(page.getByRole('button', { name: 'Ajouter', exact: true })).toHaveCount(0)
+  // …but the mic stays: on this page it is hands-free ADDING, the headline flow.
+  await expect(page.locator('[data-tour="liste-add"] .edit-field__box button')).not.toHaveCount(0)
+
+  const field = page.locator('[data-tour="liste-add"] input').first()
+  await field.fill('céleri')
+  await Promise.all([
+    page.waitForRequest((r) => r.url().includes('/api/list') && r.method() === 'POST'),
+    field.press('Enter'),
+  ])
+})
+
+test('La liste: the three shortcuts are icons on one row', async ({ page }) => {
+  await phone(page, '/liste')
+  await page.locator('.list-rows').waitFor({ state: 'visible' })
+
+  const row = page.locator('.list-actions--quiet')
+  const icons = row.locator('.list-actions__icon')
+  await expect(icons).toHaveCount(3)
+
+  // One row: every chip shares the same top edge (they used to be three full-width
+  // orange bars stacked 2+1, then labelled chips wrapping onto two lines).
+  const tops: number[] = []
+  for (const b of await icons.all()) tops.push((await b.boundingBox())!.y)
+  expect(Math.max(...tops) - Math.min(...tops), 'all three on one line').toBeLessThan(4)
+
+  // Icon-only, but never unnamed.
+  for (const b of await icons.all()) {
+    await expect(b).toHaveText('')
+    expect(await b.getAttribute('aria-label')).toBeTruthy()
+  }
+})
+
+test('La liste: « Allées » rows all share one left margin', async ({ page }) => {
+  await phone(page, '/liste')
+  await page.locator('.list-rows').waitFor({ state: 'visible' })
+  await page.locator('.list-actions .action-menu > button').click()
+
+  const items = page.locator('.action-menu__item')
+  await expect(items).not.toHaveCount(0)
+  // The ✓ column is reserved on EVERY row now, stateful or not — « Ranger par allée »
+  // carries no state and used to sit ~15px left of the choices above it.
+  const lefts: number[] = []
+  for (const it of await items.all()) {
+    const icon = it.locator('svg').last()
+    lefts.push((await icon.boundingBox())!.x)
+  }
+  expect(Math.max(...lefts) - Math.min(...lefts), 'one column, one margin').toBeLessThan(2)
+})
+
+test('La liste: a staged deal with no price shows the store alone — no dangling « · »', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  // A deal that carries a merchant and NO price — money() renders '' for null, so the
+  // old fixed « {merchant} · {money} » drew « Maxi · » with nothing after it.
+  // The page reads only { list, members } off /api/board (BoardListData), so a
+  // minimal payload is enough — and route.fetch() cannot chain here: every /api/* is
+  // fulfilled synthetically, there is no backend behind the mocks to fetch from.
+  await page.route('**/api/board**', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    const body: { list: unknown[]; members: unknown[] } = { list: [], members: [] }
+    body.list = [
+      {
+        id: 'lp',
+        text: 'Beurre',
+        source: 'manual',
+        checked_at: null,
+        added_by: null,
+        position: 0,
+        non_urgent: 0,
+        deal_json: JSON.stringify({ id: 1, flyerId: 1, name: 'Beurre', price: null, merchant: 'Maxi', logo: null, image: null }),
+      },
+    ]
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true })
+  await page.goto('/liste')
+  const deal = page.locator('.list-row__deal')
+  await expect(deal).toBeVisible()
+  await expect(deal).toHaveText(/Maxi/)
+  await expect(deal).not.toHaveText(/·/)
+})

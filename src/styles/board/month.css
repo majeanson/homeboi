@@ -224,122 +224,14 @@
   color: var(--ink-faint);
   line-height: 1;
 }
-/* -- The TAPPED day POPS OUT as a tile ------------------------------------------------
-   There is no view toggle: the grid stays a calm dotted glance and the ONE day you tap
-   opens, spelling out the same list in the same order (one linesFor() builds the dots,
-   these words and the panel).
+/* The tapped day is simply the LIT one. It used to grow out of its square and float a
+   ~3-column tile over its neighbours, spelling its items out — which changed the grid's
+   shape under the finger, covered the days around it, needed edge-detection classes
+   (popstart/popend) so it couldn't hang off the board, and had to turn off pointer
+   events so it wouldn't swallow taps meant for the dates beneath. All of that for a
+   preview of what the day PANEL below already says, in full names, with everything you
+   can DO with the day. The cell keeps the grid's shape; .is-on (above) rings it. */
 
-   The tile is deliberately WIDER than its column and only then taller. A calendar column
-   is ~50 px on a phone — enough for three clipped characters, which is a name in name
-   only. So the words are NOT laid out inside the square: the square keeps the grid's
-   shape and the tile floats out of it, about three columns across, where a title and its
-   hour both fit. Anything longer is what the day panel underneath is for. */
-.monthv__cell.is-on {
-  /* Grows a little too — the tile is anchored here, and a taller anchor means it covers
-     less of the weeks around it. */
-  aspect-ratio: auto;
-  max-height: none;
-  min-height: 4.6rem;
-  /* The tile leaves the square, so this one cell must stop clipping — and sit above its
-     neighbours (and above the trip bands, which are z-index 1). */
-  overflow: visible;
-  z-index: 3;
-  gap: 0.15rem;
-  padding: 0.25rem 0.25rem 0.3rem;
-}
-/* The floating tile itself. Anchored under the day number, opening toward whichever side
-   has room — `--pop-w` is ~3 columns, and the side classes keep it inside the grid so it
-   can never bleed past the board. */
-.monthv__cell.is-on .monthv__lines {
-  --pop-w: 13.5rem;
-  position: absolute;
-  top: 1.55rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(var(--pop-w), 78vw);
-  gap: 3px;
-  padding: 0.4rem 0.5rem 0.45rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md, 12px);
-  background: var(--card);
-  /* The one lift in the calendar, and it earns it: this pane floats over the grid, so it
-     needs to read as ABOVE rather than as another cell. */
-  box-shadow: 0 6px 18px rgb(0 0 0 / 12%);
-  text-align: start;
-  /* The tile floats OVER neighbouring days, so it must not swallow their taps: without
-     this, tapping a covered date hits this pane (which belongs to the already-open cell)
-     and the day underneath never opens. It is something to read — everything you can DO
-     with the day is in the panel below. Same rule as the list-row delete pane
-     (CLAUDE.md: an overlay that still takes hits eats the controls beneath it). */
-  pointer-events: none;
-}
-/* Near an edge the tile opens inward instead of straddling the cell.
-   NOTE the doubled class: these have to out-specify `.monthv__cell.is-on .monthv__lines`
-   above (0,3,0). Written as `.monthv__cell--popend .monthv__lines` (0,2,0) they LOSE, the
-   centring wins, and the tile hangs ~80 px off the right of the board — the horizontal
-   overflow this repo keeps re-fighting. e2e/month-day-panel guards it. */
-.monthv__cell.is-on.monthv__cell--popstart .monthv__lines {
-  left: 0;
-  right: auto;
-  transform: none;
-}
-.monthv__cell.is-on.monthv__cell--popend .monthv__lines {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-/* Inside the tile there is room for the hour again, and for a real reading size. */
-.monthv__cell.is-on .monthv__line {
-  font-size: 0.72rem;
-  gap: 5px;
-}
-.monthv__cell.is-on .monthv__line-chip {
-  width: 6px;
-  height: 6px;
-}
-.monthv__cell.is-on .monthv__more {
-  font-size: 0.68rem;
-  padding-inline-start: 11px;
-}
-.monthv__lines {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0; /* a flex child defaults to min-content — without this the labels widen the cell */
-}
-.monthv__line {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  min-width: 0;
-  font-size: 0.62rem;
-  line-height: 1.25;
-  color: var(--ink-soft);
-  text-align: start;
-}
-.monthv__line-chip {
-  flex: none;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-}
-.monthv__line-t {
-  flex: none;
-  color: var(--ink-faint);
-  font-variant-numeric: tabular-nums;
-  /* The clock keeps the mono FAMILY (tabular digits line up down the column) but never
-     its size: `.mono` carries font-size 0.82rem, which made « 12:00 » tower over the
-     label beside it. Everything a cell says is one size. */
-  font-size: inherit;
-}
-/* The one part allowed to ellipsize; everything around it is flex:none. */
-.monthv__line-l {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 /* -- The picked day: a drawer PINNED to the bottom of the screen ---------------------
    The six-week grid is most of a phone screen, so a day panel that merely sat below it
    meant tapping a date, scrolling to read it, and scrolling back up to tap the next one.

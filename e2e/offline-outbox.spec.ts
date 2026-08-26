@@ -32,7 +32,8 @@ test('a list write made offline queues in the outbox, then replays on reconnect'
   await expect(page.locator('.offline-bar')).toBeVisible()
 
   await add.fill('Piles AA')
-  await page.locator('.edit-field button[type="submit"]').first().click()
+  // Enter commits — La liste's add bar dropped its « Ajouter » button (the lean pass).
+  await page.locator('.edit-field .input').first().press('Enter')
 
   // Queued to the outbox: the offline bar shows a pending count (useOutboxCount), and
   // nothing was sent over the wire.
@@ -88,7 +89,8 @@ test('a write that fails in transit and its outbox replay carry the SAME Idempot
   const add = page.locator('.edit-field .input').first()
   await expect(add).toBeVisible()
   await add.fill('Piles AAA')
-  await page.locator('.edit-field button[type="submit"]').first().click()
+  // Enter commits — La liste's add bar dropped its « Ajouter » button (the lean pass).
+  await page.locator('.edit-field .input').first().press('Enter')
 
   // The transport failure queues the write to the outbox (writeWith's catch).
   await expect.poll(() => idemKeys.length, { timeout: 10_000 }).toBe(1)

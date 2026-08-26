@@ -172,12 +172,19 @@ test.describe('Mois — the day panel', () => {
 
   // ── The tapped day names its things ─────────────────────────────────────────────
   // There is no view toggle any more: the grid is always a calm dotted glance, and the
-  // ONE day you tap opens in place and spells out what is in it. (A whole-grid
-  // « cases détaillées » mode put words in all 42 squares, which on a phone is 42
-  // columns of three clipped characters — and it needed a control in the header to
-  // explain itself.) The words must never widen the seven columns past the board —
-  // the recurring horizontal-overflow bug this repo keeps re-fighting.
-  test('the tapped day names its things in its own cell; the others stay dotted', async ({ page }) => {
+  // The tapped day is simply the LIT one. It used to grow out of its square and float a
+  // ~3-column tile over its neighbours, spelling its items out — and that tile brought
+  // two guards with it: it had to stay inside the grid (it once hung ~80px past the
+  // right edge when its side rules lost a specificity fight) and it had to stop
+  // swallowing taps meant for the dates underneath.
+  //
+  // Both guards are retired because the thing they guarded is gone (Marc, 2026-08-26).
+  // What replaced them is stricter and simpler: the cell never changes shape, so it can
+  // neither bleed nor cover anything. e2e/lean-forms.spec.ts holds that contract («a
+  // picked day keeps the grid's shape — no pop-out tile»); this one keeps the part that
+  // is still this file's job — the grid stays inside the board, and every day in a row
+  // is tappable in turn.
+  test('the tapped day lights up without changing the grid, and its neighbours stay tappable', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.setViewportSize(REPORTED)
     await mockApi(page)
@@ -186,24 +193,29 @@ test.describe('Mois — the day panel', () => {
     await page.goto('/board')
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
 
-    // The control is gone for good — the grid explains itself by being tapped.
+    // The density control is gone for good, and so are the in-cell words.
     await expect(page.locator('.monthv__density')).toHaveCount(0)
+    await expect(page.locator('.monthv__lines')).toHaveCount(0)
 
     const seeded = page.locator('.monthv__cell').nth(SEED_IDX)
-    // Untapped: shapes only, no words.
     await expect(seeded.locator('.monthv__dots')).toBeVisible()
-    await expect(seeded.locator('.monthv__lines')).toHaveCount(0)
-
     await seeded.click()
-    // Tapped: the same two things, NAMED — and the dots step aside rather than doubling up.
-    await expect(seeded.locator('.monthv__lines')).toBeVisible()
-    await expect(seeded.locator('.monthv__dots')).toHaveCount(0)
-    await expect(seeded.getByText(EVENT_TITLE)).toBeVisible()
-    await expect(seeded.getByText(MEAL_TITLE)).toBeVisible()
+    await expect(seeded).toHaveClass(/is-on/)
+    // Tapped or not, the cell still shows its dots and keeps its shape.
+    await expect(seeded.locator('.monthv__dots')).toBeVisible()
 
-    // Only that one opened: every other cell keeps its dots.
-    const others = page.locator('.monthv__cell:not(.is-on) .monthv__lines')
-    await expect(others).toHaveCount(0)
+    // The day PANEL is where the names live — that is the surface with room for them.
+    await expect(page.locator('.monthv__day')).toContainText(EVENT_TITLE)
+    await expect(page.locator('.monthv__day')).toContainText(MEAL_TITLE)
+
+    // Seven consecutive days, tapped in turn: Playwright fails a click outright if
+    // something covers the target, so this is also the proof that nothing floats over
+    // a neighbour any more.
+    for (let k = 0; k < 7; k++) {
+      const cell = page.locator('.monthv__cell').nth(14 + k)
+      await cell.click()
+      await expect(cell).toHaveClass(/is-on/)
+    }
 
     // No cell may push the grid wider than the board (per-child bounds, not scrollWidth:
     // the hub body clips overflow-x, so scrollWidth reads 0 — see CLAUDE.md).
@@ -211,55 +223,6 @@ test.describe('Mois — the day panel', () => {
     for (const cell of await page.locator('.monthv__cell').all()) {
       const b = await cell.boundingBox()
       if (b) expect(b.x + b.width, 'a cell bleeds past the grid').toBeLessThanOrEqual(gridBox.x + gridBox.width + 1)
-    }
-  })
-
-  // The tile is WIDER than its column, so it can bleed off the board — the recurring
-  // horizontal-overflow bug — and, floating over its neighbours, it can swallow their
-  // taps. Both have already happened once: the side rules lost a specificity fight and
-  // the tile hung ~80 px past the right edge, and before `pointer-events: none` a tap on
-  // a covered date hit the open cell's own pane instead.
-  test('the popped tile stays inside the grid in every column, and never eats a neighbour’s tap', async ({ page }) => {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.setViewportSize(PHONE)
-    await mockApi(page)
-    // One timed event on seven consecutive days = one per column of a week row.
-    await page.route('**/api/month**', async (route) => {
-      const from = Number(new URL(route.request().url()).searchParams.get('from'))
-      const DAY = 86400
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          events: Array.from({ length: 7 }, (_, k) => ({
-            id: `w${k}`,
-            title: 'Réunion parents-professeurs',
-            at: from + (14 + k) * DAY + 19 * 3600,
-            all_day: 0,
-            member_id: null,
-            day: from + (14 + k) * DAY,
-          })),
-          meals: [], chores: [], dayNotes: [], todos: [],
-          homeProjects: [], trips: [], tripPlans: [], habits: [],
-        }),
-      })
-    })
-    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
-    await page.goto('/board')
-    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
-
-    const grid = (await page.locator('.monthv__grid').boundingBox())!
-    for (let k = 0; k < 7; k++) {
-      // Clicking each in turn ALSO proves the previous tile didn't intercept this tap:
-      // Playwright fails the click outright if another element is over the target.
-      const cell = page.locator('.monthv__cell').nth(14 + k)
-      await cell.click()
-      await expect(cell).toHaveClass(/is-on/)
-      const tile = (await cell.locator('.monthv__lines').boundingBox())!
-      expect(tile.x, `column ${k}: the tile bleeds off the left of the grid`).toBeGreaterThanOrEqual(grid.x - 1)
-      expect(tile.x + tile.width, `column ${k}: the tile bleeds off the right of the grid`).toBeLessThanOrEqual(
-        grid.x + grid.width + 1,
-      )
     }
   })
 

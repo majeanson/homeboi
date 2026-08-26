@@ -1199,11 +1199,12 @@ test.describe('list', () => {
   })
 
   test('the add bar posts a new line straight to the list', async ({ page }) => {
-    // The list add bar is the shared EditField (form.edit-field) now.
-    await page.locator('.edit-field .input').fill('Bananes')
-    await expectApi(page, 'POST', 'list', () =>
-      page.locator('.edit-field button[type="submit"]').click(),
-    )
+    // The list add bar is the shared EditField (form.edit-field), and it has no
+    // « Ajouter » button any more — Enter IS the commit (the lean pass). The mic stays,
+    // so the box still has buttons; the SUBMIT is the keystroke.
+    const bar = page.locator('.edit-field .input').first()
+    await bar.fill('Bananes')
+    await expectApi(page, 'POST', 'list', () => bar.press('Enter'))
   })
 
   test('the quick-add panel re-adds a past item and stays open', async ({ page }) => {

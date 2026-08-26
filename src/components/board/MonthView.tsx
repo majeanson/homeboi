@@ -217,8 +217,22 @@ export function MonthView({
   // `block: 'nearest'` means it only moves when the panel is actually out of sight, so
   // tapping a second date while already reading the panel does nothing jarring.
   const dayPanelRef = useRef<HTMLDivElement>(null)
+  // A tapped day can be UNTAPPED. The pick used to be one-way: once a date was open
+  // there was no way back to a plain calendar except picking a different day, and the
+  // panel stayed pinned over the bottom of the grid for the rest of the visit.
+  //
+  // Kept as LOCAL state rather than another URL param: which day you're reading is a
+  // linkable place (?date=), but whether its drawer is open right now is not — a
+  // ?date= deep-link still lands with the day open, which is the whole point of the
+  // link. Picking any OTHER day re-opens it; tapping the open one closes it.
+  const [dayOpen, setDayOpen] = useState(true)
   const pickDay = (d: number) => {
+    if (d === selected && dayOpen) {
+      setDayOpen(false)
+      return
+    }
     setSelected(d)
+    setDayOpen(true)
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     dayPanelRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
   }
@@ -434,7 +448,7 @@ export function MonthView({
             {cap(weekdayShort(d, lang))}
           </div>
         ))}
-        {grid.days.map((d, i) => {
+        {grid.days.map((d) => {
           const b = byDay.get(d)
           // Habits are deliberately NOT cell markers. A daily intention (« boire assez
           // d'eau ») paints a glyph on EVERY square, which is exactly the noise a month
@@ -442,25 +456,23 @@ export function MonthView({
           // their place in the day panel, where they're actionable — and the legend
           // never listed them here in the first place.
           const marks = linesFor(b, members, mealPrefs, t, lang).filter((l) => l.kind !== 'habit')
-          // The tapped day is the one that spells itself out. There is no view toggle:
-          // the calendar stays a calm dotted glance, and the ONE day you asked about
-          // pops out. Everything else keeps its shape.
-          const open = d === selected
-          // Which of the seven columns this cell sits in — the popped tile is WIDER than
-          // a column, so it has to know which way to open or it would hang off the board
-          // (the horizontal-overflow rule: nothing may bleed past the grid). Left third
-          // opens rightward, right third leftward, the middle straddles.
-          const col = i % 7
-          const side = col <= 1 ? ' monthv__cell--popstart' : col >= 5 ? ' monthv__cell--popend' : ''
+          // EVERY cell keeps the grid's shape. The tapped day used to grow and float a
+          // wide tile over its neighbours, spelling its items out — which meant the
+          // calendar changed shape under the finger, the tile covered the days around
+          // it, and it needed edge-detection (popstart/popend) to avoid hanging off the
+          // board. The day PANEL below already says all of that, with room for the full
+          // names and with everything you can DO with the day. A tapped cell is simply
+          // the lit one now.
+          const on = d === selected && dayOpen
           const cls =
             'monthv__cell' +
             (inMonth(d, grid.month) ? '' : ' is-out') +
             (d === todayDay ? ' is-today' : '') +
-            (d === selected ? ' is-on' + side : '')
+            (on ? ' is-on' : '')
           return (
-            <button key={d} type="button" role="gridcell" aria-selected={d === selected} className={cls} onClick={() => pickDay(d)}>
+            <button key={d} type="button" role="gridcell" aria-selected={on} className={cls} onClick={() => pickDay(d)}>
               <span className="monthv__num">{localYMD(d).day}</span>
-              {!open && marks.length > 0 && (
+              {marks.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
                   {marks.slice(0, 4).map((dot, i) =>
                     dot.kind === 'meal' && dot.slot ? (
@@ -493,30 +505,6 @@ export function MonthView({
                     ),
                   )}
                   {marks.length > 4 && <span className="monthv__more">+{marks.length - 4}</span>}
-                </span>
-              )}
-              {/* « Cases détaillées » — the same list, spelled out. NOT aria-hidden (unlike
-                  the dots, which are decoration): the words become the cell's accessible
-                  name, so a screen reader hears « 25 · 14 h Dentiste · Souper » instead of
-                  a bare day number. Three lines is the ceiling — past that the day panel
-                  is the right surface, and a taller cell would push the grid off screen. */}
-              {open && marks.length > 0 && (
-                <span className="monthv__lines">
-                  {marks.slice(0, 5).map((line, i) => (
-                    <span key={i} className="monthv__line">
-                      <span
-                        className="monthv__line-chip"
-                        aria-hidden="true"
-                        style={{ background: line.color }}
-                      />
-                      {/* The tile is WIDE, so the clock fits beside the name again — a
-                          column alone could only hold one of the two, and the name is the
-                          half worth keeping. */}
-                      {line.time && <span className="monthv__line-t mono">{line.time}</span>}
-                      <span className="monthv__line-l">{line.label}</span>
-                    </span>
-                  ))}
-                  {marks.length > 5 && <span className="monthv__more">+{marks.length - 5}</span>}
                 </span>
               )}
               {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so
@@ -571,6 +559,9 @@ export function MonthView({
         </span>
       </div>
 
+      {/* Untapping the open day closes this drawer — the calendar goes back to being a
+          calendar. Tap any day (including the same one) to bring it back. */}
+      {dayOpen && (
       <div
         className={'monthv__day' + (folded ? ' monthv__day--folded' : '')}
         ref={dayPanelRef}
@@ -802,6 +793,7 @@ export function MonthView({
         {car && <AutoCardView model={car} day={selected} />}
         </div>
       </div>
+      )}
       {eventActions.node}
     </div>
   )

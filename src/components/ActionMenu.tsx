@@ -165,6 +165,12 @@ export function ActionMenu({
 
   if (items.length === 0) return null
   const name = label ?? triggerLabel ?? t.common.moreActions
+  // Does ANY row in this menu carry state? Then EVERY row gets the ✓ column — the
+  // plain actions included. It used to be per-row (checked !== undefined), so a menu
+  // mixing choices with a plain action (La liste’s « Allées »: two sort choices, a
+  // toggle, then « Ranger par allée ») indented the stateful rows and left the plain
+  // one hanging 15px to their left. One column, one margin, whatever the row is.
+  const stateful = items.some((i) => i.checked !== undefined)
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
     e.preventDefault()
@@ -224,7 +230,7 @@ export function ActionMenu({
               >
                 {/* The ✓ column: rendered (empty) on every stateful row, so turning
                     one on never shoves its own label sideways. */}
-                {it.checked !== undefined && (
+                {stateful && (
                   <span className="action-menu__check" aria-hidden="true">
                     {it.checked && <InlineIcon name="check-bold" />}
                   </span>

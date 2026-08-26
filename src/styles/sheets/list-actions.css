@@ -229,6 +229,18 @@
   margin-top: 10px;
   gap: 8px;
 }
+/* Icon-only shortcuts: a square-ish glyph button, so the three sit on ONE short row
+   beside each other. Their names live on aria-label + title (nothing here is unnamed).
+   .action-menu wraps its own trigger, so size that too or the third would be taller. */
+.list-actions__icon,
+.list-actions--quiet .action-menu > .list-actions__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  min-width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+}
 /* The menu's WRAPPER is the flex child (ActionMenu renders .action-menu around its
    trigger) — it takes its trigger's width, nothing more. */
 .list-actions .action-menu {
