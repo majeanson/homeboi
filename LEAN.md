@@ -205,9 +205,18 @@ monde », a carnet, the drawings wall, the postbox, « Jouer », the project for
 | `/search` | **246 → 151px** | « Demander à l'IA » camping over every result (a "not what I meant" thought comes *after* reading — LEAN #5) and a count line wearing the empty state's 1.4rem padding. One `Cluster justify="between"` row now. |
 | `/kitchen/recipe/:id` | **243 → 209px** | two scaling controls stacked: a portions stepper AND ×½ ×1 ×2 ×3. When a recipe states its servings the stepper reaches every amount and says it in portions; the presets stay whole for recipes that state none (invariant 3). |
 | `/cercle/carnet/:id` | 176px, four rows shorter | four full-width « ＋ Ajouter … » bars → the shared `SectionAdd` ＋ in each section header. The carnet now fits one screen. |
+| `/voyage/:id` ▸ Itinéraire | **~1400px → one screen** | the worst instance of pattern #2 anywhere in the app, and it took a screenshot to see it: the day composer was **open under every single day** — field + a full-width « ＋ Ajouter » + « Ajouter un document », ~180px each. An 8-day trip opened as eight stacked empty add boxes with the itinerary hidden between them. One ＋ per day header now; one composer at a time. |
 
-Three of those four were **the same shape as the day page**: a control taking a full
-row of its own where a chip in the header, or a place further down, would do.
+Four of those five were **the same shape as the day page**: a control taking a full
+row of its own where a chip in the header, or a place further down, would do. That
+shape now has one answer everywhere — `SecLabel`'s `action` slot holding a
+`SectionAdd` ＋ — and the ONE remaining question worth asking of a new section is
+"where does its composer live?" (answer: behind that ＋, opened focused).
+
+The Voyage row is also the clearest proof of this file's opening claim. Nothing in
+that code reads as fat: one composer per day is a perfectly reasonable line to write,
+and each is a *primitive we already share*. It is only when you photograph five of
+them stacked that the surface says what it is. **Screenshot it and look.**
 
 And two verdicts that are NOT cuts, recorded so nobody re-opens them: `habitudes`
 (288px) leads with the "who am I today" face row and « Le défi du jour » — a lens and

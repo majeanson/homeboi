@@ -153,6 +153,9 @@ test('attaching a PDF from a day composer uploads then posts a document note on 
   )
   await page.goto('/voyage/trip1')
   const day1 = page.locator('[data-jour="1"]')
+  // The day's composer waits behind the ＋ in its header now (it used to sit open under
+  // every day of the trip — see VoyageItinerary / LEAN.md). Open day 1's.
+  await day1.locator('.sec-label__actbtn').click()
   await expect(day1.getByRole('button', { name: 'Ajouter un document' })).toBeVisible()
 
   const post = page.waitForRequest(

@@ -151,6 +151,37 @@ const DAY_FIXTURE = {
   },
 }
 
+// « Voyage » — the shared `trips` route has no fixture at all (the behavioural specs
+// stub it per test), so this seeds one trip with a couple of infos: enough for the
+// scene to render its real body instead of its « aucun voyage » face.
+const TRIP_FIXTURE = {
+  trips: {
+    trips: [
+      {
+        id: 'tp1',
+        title: 'Gaspésie',
+        destination: 'Percé',
+        start_at: TODAY_MIDNIGHT + 20 * 86_400,
+        end_at: TODAY_MIDNIGHT + 27 * 86_400,
+        members: ['m1', 'm3'],
+        media_kind: null,
+        media_key: null,
+        colour: '#2a8f85',
+        notes: null,
+        position: 0,
+        created_at: 1_700_000_000,
+        updated_at: null,
+      },
+    ],
+  },
+  'trip-notes': {
+    notes: [
+      { id: 'tn1', trip_id: 'tp1', category: 'transport', label: 'Vol AC 8712', text: 'départ 7 h 40, porte B12', media_kind: null, media_key: null, scene_key: null, member_id: null, date: null, position: 0, created_at: 1_700_000_000, updated_at: null },
+      { id: 'tn2', trip_id: 'tp1', category: 'lodging', label: 'Chalet du phare', text: '2 chambres · arrivée après 16 h', media_kind: null, media_key: null, scene_key: null, member_id: null, date: null, position: 1, created_at: 1_700_000_000, updated_at: null },
+    ],
+  },
+}
+
 const PHONE = { w: 390, h: 844 }
 const WALL = { w: 1280, h: 800 }
 const KB = 336
@@ -311,6 +342,19 @@ const MATRIX: Entry[] = [
   { name: 'courrier', route: '/courrier', content: '.cf__field, .intake__h', budgetPx: 127, themes: ['day'] },
   { name: 'drawings', route: '/drawings', content: '.drawgallery__item', budgetPx: 89, themes: ['day'] },
   { name: 'jouer', route: '/jouer', content: '.play-door', budgetPx: 84, themes: ['day'] },
+  // …and the rest of the router's scenes, so "what this table does NOT list" is a
+  // question with a short answer. « Voyage » needs its own fixture (the shared trips
+  // route is empty); the others read caches the default fixture already fills.
+  { name: 'voyage', route: '/voyage/tp1', content: '.voyage-note, .voyage__day, .sec-label', themes: ['day'], api: TRIP_FIXTURE },
+  { name: 'price-match', route: '/liste/deals/l1', content: '.pm__deal, .bigcard, .scene__body > *', budgetPx: 32, themes: ['day'] },
+  { name: 'multicook', route: '/kitchen/cook/multi?r=rc1,rc2', content: '.mcook__step, .cook__full-ings li, .scene__body > *', budgetPx: 178, themes: ['day'] },
+  { name: 'person-edit', route: '/cercle/person/c1', content: '.cf__input', budgetPx: 156, themes: ['day'] },
+  { name: 'intake', route: '/intake', content: '.cf__input, .intake__h', budgetPx: 146, themes: ['day'] },
+  // « La fenêtre famille » and « Bienvenue » are GUEST-link scenes: with an ordinary
+  // operator fixture they land on their empty state, and the matrix's own guard refuses
+  // to budget one (rightly — see LEAN.md). Reported-only until a guest fixture exists.
+  { name: 'family-window', route: '/family', content: '.scene__body > *, .page > *', themes: ['day'] },
+  { name: 'welcome', route: '/welcome', content: '.scene__body > *, .page > *', themes: ['day'] },
   { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
 
   // — THE TWO LENSES CLAUDE.md CALLS STANDING RULES, and which the sweep had only

@@ -13,6 +13,9 @@ import { mockApi, seedState } from './mocks'
 //                       sit under it (159 → 17px, matching every other form scene).
 //   /cercle/carnet/:id  four full-width « ＋ Ajouter … » bars became the shared
 //                       SectionAdd ＋ in each section header (the day-page anatomy).
+//   /voyage/:id       the itinerary showed an OPEN composer under every single day —
+//                       an 8-day trip opened as ~1400px of empty add boxes. One ＋ per
+//                       day header now, one composer at a time.
 //   /liste/circulaires  the header subtitle that repeated the empty state is gone.
 //
 // See LEAN.md, and the budgets in e2e/state-matrix.spec.ts.
@@ -164,6 +167,65 @@ test('a read-only guest gets a carnet with no ＋ at all', async ({ page }) => {
   await page.goto('/cercle/carnet/c1')
   await expect(page.locator('.carnet-block').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.sec-label__actbtn')).toHaveCount(0)
+})
+
+// ── /voyage/:id ▸ Itinéraire ────────────────────────────────────────────────────
+
+const FUTURE = (() => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return Math.floor(d.getTime() / 1000) + 20 * 86_400
+})()
+const TRIP = {
+  trips: {
+    trips: [
+      {
+        id: 'tp1',
+        title: 'Gaspésie',
+        destination: 'Percé',
+        // A five-day trip, in the FUTURE (a finished trip opens on its album, not its
+        // itinerary): five composers is exactly the shape this fix is about.
+        start_at: FUTURE,
+        end_at: FUTURE + 4 * 86_400,
+        members: [],
+        media_kind: null,
+        media_key: null,
+        colour: '#2a8f85',
+        notes: null,
+        position: 0,
+        created_at: 1_700_000_000,
+        updated_at: null,
+      },
+    ],
+  },
+  'trip-notes': { notes: [] },
+}
+
+test('the itinerary shows ONE ＋ per day, not a composer under every day', async ({ page }) => {
+  await boot(page, TRIP)
+  await page.goto('/voyage/tp1')
+  const days = page.locator('.voyage-itin__day')
+  await expect(days).toHaveCount(5, { timeout: 15_000 })
+
+  // Five days, five ＋ chips, ZERO open composers. It used to be five open ones —
+  // field + a full-width « ＋ Ajouter » + « Ajouter un document » each, ~180px apiece.
+  await expect(page.locator('.voyage-itin__day .sec-label__actbtn')).toHaveCount(5)
+  await expect(page.locator('.trip-note-add')).toHaveCount(0)
+
+  // …so the whole itinerary fits where one day's composer used to sit.
+  const first = await days.first().boundingBox()
+  const last = await days.last().boundingBox()
+  expect(last!.y + last!.height - first!.y).toBeLessThan(400)
+
+  // The ＋ opens ONE day's composer, focused, and only that one.
+  await days.nth(2).locator('.sec-label__actbtn').click()
+  await expect(page.locator('.trip-note-add')).toHaveCount(1)
+  await expect(days.nth(2).locator('.trip-note-add input.input')).toBeFocused()
+
+  // Opening another day closes the first — one composer at a time.
+  await days.nth(0).locator('.sec-label__actbtn').click()
+  await expect(page.locator('.trip-note-add')).toHaveCount(1)
+  await expect(days.nth(0).locator('.trip-note-add')).toHaveCount(1)
 })
 
 // ── /liste/circulaires ──────────────────────────────────────────────────────────

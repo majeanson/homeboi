@@ -25,12 +25,19 @@ export function TripNoteAdd({
   date,
   memberId,
   placeholder,
+  autoFocus,
+  onAdded,
 }: {
   tripId: string
   category: TripCategory
   date?: number | null
   memberId?: string | null
   placeholder?: string
+  // Opened behind a header ＋ (the itinerary's per-day SectionAdd): land the caret the
+  // moment the field appears, and tell the host once something was actually written so
+  // it can fold away again. Same contract as TodoSection's addAutoFocus/onAdded.
+  autoFocus?: boolean
+  onAdded?: () => void
 }) {
   const t = useT()
   const write = useWrite()
@@ -55,6 +62,7 @@ export function TripNoteAdd({
       })
       setText('')
       memo.reset()
+      onAdded?.()
     } catch {
       /* keep the typed text so it can be retried (offline → it queued) */
     } finally {
@@ -72,6 +80,7 @@ export function TripNoteAdd({
         submitLeadingIcon="plus-bold"
         submitVariant="primary"
         voice={voice}
+        autoFocus={autoFocus}
         placeholder={placeholder ?? t.voyage.addInfo}
         ariaLabel={placeholder ?? t.voyage.addInfo}
         busy={busy || memo.busy}

@@ -11,6 +11,7 @@ import { DragPill } from '../DragPill'
 import { EmptyState } from '../EmptyState'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { TripNoteAdd } from './TripNoteAdd'
+import { SectionAdd } from '../SectionAdd'
 import { TripNoteCard } from './TripNoteCard'
 import { reorderPatches, tripDays, useVoyageApi, type Trip, type TripNote } from './voyage'
 import { scrollBehavior } from '../../lib/motion'
@@ -35,6 +36,10 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   const confirm = useConfirm()
   const voyageApi = useVoyageApi()
   const [who, setWho] = useState<string | null>(null)
+  // Which day's composer is open (its local-midnight stamp), or null. ONE at a time,
+  // like `useSingleOpen` — the itinerary is a thing you READ; writing into it is a
+  // deliberate act on one day. See the ＋ in each day header below.
+  const [addDay, setAddDay] = useState<number | null>(null)
   const affectedKey = voyageApi.notesKey(trip.id)
   const days = tripDays(trip.start_at, trip.end_at)
   const memberName = (id: string | null) => (id ? faces.find((f) => f.id === id)?.name ?? '' : '')
@@ -138,6 +143,20 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
               <b>{t.voyage.dayN(i + 1)}</b>
               <span className="voyage-itin__date mono">{cap(formatDayLong(d, lang))}</span>
               <span className="ln" />
+              {/* One ＋ per day, in its header — the shared SectionAdd, same as every
+                  other section in the app. The composer used to be OPEN under every
+                  single day: field + a full-width « ＋ Ajouter » + « Ajouter un
+                  document », ~180px each, so an 8-day trip opened as roughly 1400px
+                  of empty add boxes with the itinerary hiding between them (LEAN #2,
+                  at its worst anywhere in the app). One day at a time now, opened
+                  focused, folded away the moment something is written. */}
+              <span className="sec-label__act">
+                <SectionAdd
+                  open={addDay === d}
+                  onToggle={() => setAddDay(addDay === d ? null : d)}
+                  label={t.voyage.addDayPlan}
+                />
+              </span>
             </div>
             {dayNotes.map((n, j) => (
               <DragPill
@@ -158,7 +177,17 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                 />
               </DragPill>
             ))}
-            <TripNoteAdd tripId={trip.id} category="activity" date={d} memberId={who} placeholder={t.voyage.addDayPlan} />
+            {addDay === d && (
+              <TripNoteAdd
+                tripId={trip.id}
+                category="activity"
+                date={d}
+                memberId={who}
+                placeholder={t.voyage.addDayPlan}
+                autoFocus
+                onAdded={() => setAddDay(null)}
+              />
+            )}
           </section>
         )
       })}
