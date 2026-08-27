@@ -2865,6 +2865,7 @@ export const EN: typeof FR = {
     allStores: 'All',
     addToList: 'Add to list',
     addedTo: (item: string) => `On “${item}”`,
+    addedToList: 'Added to the list',
     noUnit: 'Size not listed',
     position: { top: 'top', middle: 'middle', bottom: 'bottom', left: 'left', center: 'center', right: 'right', col: 'column' },
     choose: 'Use this price',

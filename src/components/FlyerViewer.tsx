@@ -579,12 +579,18 @@ export function FlyerViewer({
             )}
             {/* One action: adding from the flyer links the deal for the cashier
                 too (store, price, image) — so the list row shows the ✓ + flyer
-                picture, and there's no separate "show the cashier" button here. */}
+                picture, and there's no separate "show the cashier" button here.
+                Once THIS item is added the button goes inert (same rule as
+                DealCard): a re-tap re-ran the match and could re-create a line
+                the household had deleted in between. The parent's per-name guard
+                backs this up for taps that land before the re-render. */}
             {!isGuest() && (onStage || onAddToList) && selected.name && (
               <button
                 type="button"
                 className="btn btn--primary mono flyer-detail__add"
+                aria-disabled={addedName === selected.name || undefined}
                 onClick={() => {
+                  if (addedName === selected.name) return
                   const nm = selected.name
                   setAddedTo(null)
                   // Whichever action this flyer was opened with answers with the
@@ -621,7 +627,7 @@ export function FlyerViewer({
               >
                 {addedName === selected.name ? (
                   <>
-                    <InlineIcon name="check-bold" /> {addedTo ? t.shop.addedTo(addedTo) : t.shop.addToList}
+                    <InlineIcon name="check-bold" /> {addedTo ? t.shop.addedTo(addedTo) : t.shop.addedToList}
                   </>
                 ) : (
                   <>

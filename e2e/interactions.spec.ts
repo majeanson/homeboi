@@ -1284,6 +1284,37 @@ test.describe('list', () => {
     expect(JSON.parse(req.postData() || '{}')).toMatchObject({ text: 'fromage', match: true })
   })
 
+  test('a deal add fires ONE write however fast you tap — and the done button is inert', async ({ page }) => {
+    // The double-tap bug: two taps = two concurrent adds racing to insert the
+    // same line; the label could flip « Ajouté à la liste » → « Sur « fromage » »
+    // depending on which answer landed last, and a later re-tap could re-CREATE a
+    // line the household had just deleted. Now: writes for one name serialize
+    // (lib/picks queuedByName), the caller answers a re-tap from memory, and the
+    // done button goes inert with an honest « Ajouté » label.
+    await page.locator('.add-fab').click()
+    await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
+    await page.locator('.deals-search input').fill('fromage') // not on the list yet
+    await page.locator('.deals-search button[type="submit"]').click()
+    await expect(page.locator('.deal').first()).toBeVisible()
+    const listWrites: string[] = []
+    page.on('request', (r) => {
+      if ((r.method() === 'POST' || r.method() === 'PATCH') && /\/api\/list(\?|$)/.test(r.url()))
+        listWrites.push(r.postData() ?? '')
+    })
+    const btn = page.locator('.deal').first().locator('.deal__choose')
+    await btn.click({ clickCount: 2, delay: 30 }) // a fast double-tap
+    // Honest done state: « Ajouté à la liste » (a NEW line), never the still-armed
+    // verb, and never « Sur « fromage » » from the second tap's re-match.
+    await expect(btn).toHaveText(/Ajouté à la liste/)
+    // A third, later tap is inert — no re-run of the match, no resurrection.
+    // (force: Playwright itself refuses an aria-disabled click, which is half the
+    // proof; the forced tap proves the handler is gone too, not just the ARIA.)
+    await btn.click({ force: true })
+    await page.waitForTimeout(400)
+    await expect(btn).toHaveText(/Ajouté à la liste/)
+    expect(listWrites).toHaveLength(1)
+  })
+
   test('a store-flyer add links the SPECIFIC product name onto the generic line', async ({ page }) => {
     // Browsing a whole store flyer has no search concept, so the add carries the
     // raw product name ("Lait 2% 4L"). The matcher must still land it on the

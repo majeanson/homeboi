@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from './EmptyState'
 import { StatusMessage } from './StatusMessage'
@@ -68,10 +68,20 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
   const [store, setStore] = useState<string | null>(null)
   // Product name → what the add did: the EXISTING line it rode on, or null when
-  // it made a new one. Keyed by the flyer's product name (what the card shows);
-  // the value is the list line, which is usually a DIFFERENT, generic word.
+  // it made a new one (or the add is still in flight). Keyed by the flyer's
+  // product name (what the card shows); the value is the list line, which is
+  // usually a DIFFERENT, generic word.
   const [added, setAdded] = useState<Map<string, AddedTo>>(new Map())
   const [staged, setStaged] = useState<Map<string, AddedTo>>(new Map())
+  // SYNCHRONOUS mirrors of the two maps, and the re-entry guard. setState is
+  // async: two taps in the same frame both read the pre-update map, so guarding
+  // on state alone still fires two writes. The refs are the source of truth; the
+  // state copies exist only to re-render. One add per product name per session —
+  // a re-tap answers from memory instead of re-running the match, which is what
+  // used to flip « Ajouté à la liste » into « Sur « pommes » » (and could even
+  // re-CREATE a line the household had just deleted).
+  const addedRef = useRef(new Map<string, AddedTo>())
+  const stagedRef = useRef(new Map<string, AddedTo>())
   // The deal lookup is online-only (a live Flipp query, retry: false, nothing
   // cached for an unseen term) — firing it offline is a doomed request that lands
   // as a fake "no deals". Disable the submit + staple chips and say why instead
@@ -129,14 +139,19 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const lineName = (productName: string) => (mode === 'item' && query.trim() ? query.trim() : productName)
 
   async function addToList(name: string): Promise<AddedTo> {
-    setAdded((prev) => new Map(prev).set(name, null))
+    // Re-tap (the button is inert once done, but a second tap can land before the
+    // re-render): the answer it already has, never a second write.
+    if (addedRef.current.has(name)) return addedRef.current.get(name) ?? null
+    addedRef.current.set(name, null)
+    setAdded(new Map(addedRef.current))
     // Reuse-not-duplicate: an existing line (by name, synonym, or the generic line
     // contained in the flyer product name) is kept — a checked one comes back to
     // buy — and only a true miss inserts. writeWith inside, so an offline add
     // queues + replays; it lives under BOARD_KEY. The server runs the same match
     // before inserting, so a cold cache can't duplicate either.
     const on = await ensureListLine(qc, lineName(name))
-    setAdded((prev) => new Map(prev).set(name, on))
+    addedRef.current.set(name, on)
+    setAdded(new Map(addedRef.current))
     return on
   }
 
@@ -145,9 +160,12 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   // it on the list row and flows it to the cashier. Persisted server-side, so it's
   // there on any device.
   async function stage(deal: Deal): Promise<AddedTo> {
-    setStaged((prev) => new Map(prev).set(deal.name, null))
+    if (stagedRef.current.has(deal.name)) return stagedRef.current.get(deal.name) ?? null
+    stagedRef.current.set(deal.name, null)
+    setStaged(new Map(stagedRef.current))
     const on = await stageDeal(qc, lineName(deal.name), deal)
-    setStaged((prev) => new Map(prev).set(deal.name, on))
+    stagedRef.current.set(deal.name, on)
+    setStaged(new Map(stagedRef.current))
     return on
   }
 

@@ -3111,6 +3111,9 @@ export const FR = {
     // → « Pommes ») — say WHICH line, or the ✓ reads as nothing having happened:
     // the flyer's product name is nowhere on the list.
     addedTo: (item: string) => `Sur « ${item} »`,
+    // …and when it DID make a new line, say so — the done state used to keep the
+    // verb (« ✓ Ajouter à la liste »), which read as a still-armed button.
+    addedToList: 'Ajouté à la liste',
     noUnit: 'Format non indiqué',
     position: { top: 'haut', middle: 'milieu', bottom: 'bas', left: 'gauche', center: 'centre', right: 'droite', col: 'colonne' },
     choose: 'Choisir ce prix',

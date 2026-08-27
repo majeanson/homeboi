@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
@@ -80,6 +80,11 @@ export function PriceMatchPage() {
   const [added, setAdded] = useState<string | null>(null)
   // The EXISTING list line the last add rode on (null = it made a new line).
   const [addedTo, setAddedTo] = useState<AddedTo>(null)
+  // Every name added this session, answered from memory on a re-tap — the
+  // synchronous guard state can't be (two taps in one frame both read the
+  // pre-update state). Same rule as DealsBrowser: one add per name, never a
+  // second write that re-runs the match.
+  const doneRef = useRef(new Map<string, AddedTo>())
   // Esc leaves the scene — but not while the full flyer is open over it (that
   // overlay owns Esc), so one keypress doesn't pop both layers.
   useEscapeKey(close, !flyer)
@@ -94,9 +99,17 @@ export function PriceMatchPage() {
   // Reuse-not-duplicate: an existing line is kept (a checked one is unchecked),
   // only a true miss inserts — see matchListItem in lib/picks.
   async function addToList(name: string): Promise<AddedTo> {
+    if (doneRef.current.has(name)) {
+      const on = doneRef.current.get(name) ?? null
+      setAdded(name)
+      setAddedTo(on)
+      return on
+    }
+    doneRef.current.set(name, null)
     setAdded(name)
     setAddedTo(null)
     const on = await ensureListLine(qc, name)
+    doneRef.current.set(name, on)
     setAddedTo(on)
     return on
   }

@@ -152,6 +152,29 @@ function cachedList(qc: QueryClient): ListItem[] {
 // as nothing having happened — the flyer's product name never appears on the list.
 export type AddedTo = string | null
 
+// One add per line-name AT A TIME. « Pommes » tapped twice fast is two concurrent
+// adds racing to insert the same line: both miss the cache, both POST, and the
+// server backstop can only match what's already committed — the loser inserts a
+// twin. So later calls for the same normalized name QUEUE behind the earlier one:
+// the second add then runs against a world where the first line exists, and the
+// match (client cache, or the server's `match: true` backstop) lands it on that
+// line instead. Different names never wait on each other. Module-level on
+// purpose — the race crosses components (a DealCard tap, the FlyerViewer's add
+// and AddSheet's auto-stage are three doors into the same list).
+const inflight = new Map<string, Promise<AddedTo>>()
+
+function queuedByName(name: string, run: () => Promise<AddedTo>): Promise<AddedTo> {
+  const key = normKey(name) || name
+  const prev = inflight.get(key)
+  const p = prev ? prev.then(run, run) : run()
+  inflight.set(key, p)
+  const settle = () => {
+    if (inflight.get(key) === p) inflight.delete(key)
+  }
+  void p.then(settle, settle)
+  return p
+}
+
 // The POST answer: the row it landed on, plus whether the server's backstop
 // matched an existing line (client cache cold / an offline replay).
 interface AddResult {
@@ -176,7 +199,11 @@ async function addLine(qc: QueryClient, body: Record<string, unknown>): Promise<
 // its search_terms and hand position), a checked match comes back to buy (uncheck —
 // re-adding a ticked line must not spawn a twin beside the strike-through), and
 // only a true miss inserts a new line. Returns the matched line's name, or null.
-export async function ensureListLine(qc: QueryClient, name: string): Promise<AddedTo> {
+export function ensureListLine(qc: QueryClient, name: string): Promise<AddedTo> {
+  return queuedByName(name, () => ensureListLineNow(qc, name))
+}
+
+async function ensureListLineNow(qc: QueryClient, name: string): Promise<AddedTo> {
   const existing = matchListItem(cachedList(qc), name)
   if (existing) {
     try {
@@ -200,7 +227,11 @@ export async function ensureListLine(qc: QueryClient, name: string): Promise<Add
 // one. A checked match is unchecked too — the deal means "buy this again", so the
 // line comes back instead of gaining a twin. Persists server-side and refreshes
 // the board so every device sees it.
-export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<AddedTo> {
+export function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<AddedTo> {
+  return queuedByName(name, () => stageDealNow(qc, name, deal))
+}
+
+async function stageDealNow(qc: QueryClient, name: string, deal: Deal): Promise<AddedTo> {
   const existing = matchListItem(cachedList(qc), name)
   if (existing) {
     const body: { id: string; deal: Deal; checked?: boolean } = { id: existing.id, deal }

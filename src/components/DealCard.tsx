@@ -73,20 +73,31 @@ export function DealCard({
           {/* One "add to list" action: it links the deal for the cashier when it
               can (onStage), else a plain add. No separate "show the cashier". It's
               the ONE thing a deal card is tapped for, so it stays a real button;
-              seeing the flyer, price-matching and sharing ride the ⋯ beside it. */}
+              seeing the flyer, price-matching and sharing ride the ⋯ beside it.
+              Once done it goes INERT (aria-disabled, no handler): a re-tap used to
+              re-run the whole match against a fresher cache — flipping « Ajouté à
+              la liste » into « Sur « pommes » », or re-CREATING a line the
+              household had deleted in between. The label is honest either way:
+              « Ajouté à la liste » for a new line, « Sur « X » » for a reuse. */}
           {ro ? null : onStage ? (
             <button
               type="button"
               className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
-              onClick={() => onStage(deal)}
+              aria-disabled={staged || undefined}
+              onClick={staged ? undefined : () => onStage(deal)}
             >
               <InlineIcon name={staged ? 'check-bold' : 'plus-bold'} />{' '}
-              {staged && addedTo ? t.shop.addedTo(addedTo) : t.shop.addToList}
+              {staged ? (addedTo ? t.shop.addedTo(addedTo) : t.shop.addedToList) : t.shop.addToList}
             </button>
           ) : onAddToList ? (
-            <button type="button" className="deal__choose mono" onClick={() => onAddToList(deal.name)}>
+            <button
+              type="button"
+              className="deal__choose mono"
+              aria-disabled={added || undefined}
+              onClick={added ? undefined : () => onAddToList(deal.name)}
+            >
               <InlineIcon name={added ? 'check-bold' : 'plus-bold'} />{' '}
-              {added && addedTo ? t.shop.addedTo(addedTo) : t.shop.addToList}
+              {added ? (addedTo ? t.shop.addedTo(addedTo) : t.shop.addedToList) : t.shop.addToList}
             </button>
           ) : null}
           <ActionMenu
