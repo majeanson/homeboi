@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
+import { LoadError } from '../LoadError'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
@@ -255,7 +256,7 @@ export function MonthView({
   const from = grid.days[0]
   const to = grid.days[grid.days.length - 1] + DAY
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: [...MONTH_KEY, from],
     queryFn: () => api<MonthData>(`month?from=${from}&to=${to}`),
     staleTime: 30_000,
@@ -442,6 +443,11 @@ export function MonthView({
         </button>
       </div>
 
+      {/* A data-less month whose fetch FAILED: the grid below draws with every
+          cell blank, which read as « long loading » / an empty month on flaky
+          wifi — say it once here, with the hand back. */}
+      {!data && isError && <LoadError onRetry={() => void refetch()} />}
+
       <div className="monthv__grid" role="grid" aria-label={title}>
         {grid.days.slice(0, 7).map((d) => (
           <div key={`h${d}`} className="monthv__dow mono" role="columnheader">
@@ -615,6 +621,10 @@ export function MonthView({
         <div className="monthv__day-body" id="monthv-day-body">
         {isLoading && !data ? (
           <p className="loading mono">{t.common.loading}</p>
+        ) : !data && isError ? (
+          // A month whose fetch FAILED is not an empty month — saying « rien »
+          // (or hanging on Chargement) lied on flaky wifi (2026-08-27).
+          <LoadError onRetry={() => void refetch()} />
         ) : selCount === 0 ? (
           <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (

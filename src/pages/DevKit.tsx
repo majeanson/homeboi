@@ -82,6 +82,7 @@ import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { EmptyState } from '../components/EmptyState'
 import { GuestExpired } from '../components/GuestExpired'
 import { StatusMessage } from '../components/StatusMessage'
+import { LoadError } from '../components/LoadError'
 import { Chip, ChipGroup } from '../components/Chip'
 import { QrCode } from '../components/QrCode'
 import { Disclosure } from '../components/Disclosure'
@@ -2636,6 +2637,17 @@ export function DevKit() {
             </div>
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'LoadError',
+      file: 'components/LoadError.tsx',
+      kw: 'load error retry réessayer chargement réseau network failed fetch',
+      render: () => (
+        <Demo label="a data-less read that ERRORED — never an eternal « Chargement… »">
+          <LoadError onRetry={() => {}} />
+        </Demo>
       ),
     },
     {

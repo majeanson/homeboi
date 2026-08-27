@@ -3163,6 +3163,13 @@ export const FR = {
     toAdvanced: 'Mode avancé — modifier et supprimer sur chaque ligne',
     toSimple: 'Mode simple — les rangées sans le crayon ni la poubelle',
   },
+  // Le visage honnête d'une lecture RATÉE sans données (components/LoadError) —
+  // « Chargement… » éternel mentait sur un wifi qui flanche: la requête avait déjà
+  // échoué, rien ne le disait, rien n'offrait de main. Une ligne + « Réessayer ».
+  load: {
+    failed: 'Le réseau n’a pas répondu.',
+    retry: 'Réessayer',
+  },
   // À compléter — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de
   // départ réutilisables. Voir src/lib/todos.ts + TodoSection.tsx.

@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
+import { LoadError } from '../components/LoadError'
 import { CAR_KEY, BOARD_KEY, MEMBERS_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { useCarWeek, type CarDay, type CarRide, type CarModel } from '../lib/car'
 import { useCars } from '../lib/carPrefs'
@@ -63,7 +64,8 @@ export function VoiturePage() {
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(todayLocalDay()))
   const weekEnd = addLocalDays(weekStart, 7)
-  const { data: car } = useCarWeek(weekStart, weekEnd)
+  const carQ = useCarWeek(weekStart, weekEnd)
+  const car = carQ.data
   const today = todayLocalDay()
   const [editDay, setEditDay] = useState<number | null>(null)
 
@@ -223,7 +225,15 @@ export function VoiturePage() {
               onAddRide={() => nav(`/event/new?ride=1&date=${d.day}`)}
             />
           ))}
-          {!car && <p className="loading mono">{t.common.loading}</p>}
+          {/* Loading is only loading while it's actually FETCHING — a week whose
+              fetch already failed (one-bar wifi) hung on « Chargement… » forever
+              with nothing to say and nothing to tap (2026-08-27). */}
+          {!car &&
+            (carQ.isError ? (
+              <LoadError onRetry={() => void carQ.refetch()} />
+            ) : (
+              <p className="loading mono">{t.common.loading}</p>
+            ))}
         </div>
 
       </div>

@@ -2912,6 +2912,10 @@ export const EN: typeof FR = {
     toAdvanced: 'Advanced mode — edit and delete on every row',
     toSimple: 'Simple mode — rows without the pencil and trash',
   },
+  load: {
+    failed: 'The network didn’t answer.',
+    retry: 'Try again',
+  },
   // To complete — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.
   todos: {
