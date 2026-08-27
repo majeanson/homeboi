@@ -54,10 +54,10 @@ sub rail and the first setting. On a narrow phone the WORD hides and the ↗ gly
 stands alone, named by `aria-label` + `title`; the label returns as soon as the
 row can hold it, so the control is never unnamed. Guard: `e2e/lean-forms.spec.ts`.
 
-## The taxonomy (post-merge, 34 cards)
+## The taxonomy (post-merge, 32 cards)
 
-1 start (`first-time`) + 6 section cards + 19 concepts + 8 `set-*` reference
-cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
+1 start (`first-time`) + 6 section cards + 17 concepts + 8 `set-*` reference
+cards. 25 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 `?card=&point=` link exact. **R** = « Ouvrir » (`route`), **S** = « Régler »
 (`settings`); points carry their own « Essayer » routes (see the file).
 
@@ -78,12 +78,10 @@ cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 | board | capture (+type-or-choose, +ask, +a-regler) | /board | settings▸ai |
 | board | mots (+drawings) | /board?plus=mot | — |
 | board | habits | /board/habitudes | settings▸ambient&focus=habits |
-| kitchen | **kitchen** (section; +leftovers as a point) | /kitchen | ?tab=kitchen |
+| kitchen | **kitchen** (section; +leftovers, +reserve as points) | /kitchen | ?tab=kitchen |
 | kitchen | recipes (+cookmode, +favorites) | /kitchen | kitchen▸apparence |
-| kitchen | reserve | /kitchen?plus=reserve | kitchen▸reserve |
-| liste | **liste** (section) | /liste | ?tab=liste |
+| liste | **liste** (section; +ghost as two points) | /liste | ?tab=liste |
 | liste | deals (+flyers, +cashier) | /liste/circulaires | liste▸shop |
-| liste | ghost | /liste | liste▸ghost |
 | notes | **notes** (section) | /notes | — (Comprendre-only) |
 | maison | **maison** (section) | /maison | ?tab=maison |
 | maison | routines (was a section card) | /maison | maison▸routines |
@@ -130,7 +128,7 @@ cards. 23 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 
 1. **Guide**: a point on an existing card (default) or — rarely — a new card in
    `guideContent.ts` (merge-first: ~32 cards is the ceiling, not a floor — and there
-   are **34** today, so the bar for a new one is higher, not lower). Give
+   are **32** today — at capacity — so the bar for a new one is higher, not lower). Give
    the card/point its `route`/`settings`; add a new concept id to its
    `CONCEPT_THEMES` bucket.
 2. **Help**: an entry in the section's help registry (`{ body, card, point }`)

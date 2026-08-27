@@ -120,6 +120,9 @@ test('a retired settings card id (+point) still lands on the exact card', async 
   await expect(page.locator('.guide__card.is-target')).toBeVisible()
 })
 
+// `ghost` became a GUIDE_CARD_ALIAS onto the liste card (guide merge 2026-08-27)
+// — the assertion is unchanged on purpose: the old bookmark must still land on
+// the liste tab with its host card highlighted.
 test('a concept card homes onto its bucket (ghost → La liste)', async ({ page }) => {
   await boot(page, '/settings?tab=guide&card=ghost')
   await expect(page).toHaveURL(/tab=liste&lens=comprendre/)

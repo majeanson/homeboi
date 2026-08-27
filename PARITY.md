@@ -1019,7 +1019,7 @@ Gold-standard check (PARITY Part 6):
 ## Appendix A — D7 discovery coverage, per channel (audited 2026-07-10, re-verified 2026-08-26)
 
 Exact per-feature mapping of the three discovery channels. Sources:
-`src/lib/guideContent.ts` (**34** GUIDE cards), the 8 `*Help.ts` registries, **plus the
+`src/lib/guideContent.ts` (**32** GUIDE cards), the 8 `*Help.ts` registries, **plus the
 `SceneHead card=` / `HelpDot` channel** (see ᴰ), and `src/lib/tourContent.ts`
 (**7** tours: essentials/board/kitchen/**maison**/routines/cercle/liste).
 

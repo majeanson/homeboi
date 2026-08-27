@@ -129,16 +129,18 @@ export const CONCEPT_THEMES: ConceptTheme[] = [
     label: { fr: 'La cuisine', en: 'The kitchen' },
     route: '/kitchen',
     section: 'kitchen',
-    ids: ['recipes', 'reserve'],
+    // `reserve` folded into the kitchen section card (point 11) 2026-08-27.
+    ids: ['recipes'],
   },
   {
     key: 'liste',
     icon: 'sparkle-bold',
     label: { fr: 'La liste', en: 'The list' },
     route: '/liste',
-    // deals / ghost ride the list-and-store world — sky.
+    // deals rides the list-and-store world — sky. (`ghost` folded into the
+    // liste section card, points 10–11, 2026-08-27.)
     section: 'liste',
-    ids: ['deals', 'ghost'],
+    ids: ['deals'],
   },
   {
     key: 'notes',
@@ -281,6 +283,11 @@ export const GUIDE_CARD_ALIAS: Record<string, { id: string; base: number }> = {
   reminders: { id: 'board', base: 9 },
   leftovers: { id: 'kitchen', base: 8 },
   'home-projects': { id: 'set-chores', base: 8 },
+  // Guide merge 2026-08-27 (back under the ~32 ceiling): the reserve card is one
+  // kitchen point, the ghost card two liste points (its « Toujours » point is
+  // liste base+1; old point 1–2 links land on the condensed base point).
+  reserve: { id: 'kitchen', base: 11 },
+  ghost: { id: 'liste', base: 10 },
 }
 
 export const GUIDE: GuideEntry[] = [
@@ -577,6 +584,22 @@ export const GUIDE: GuideEntry[] = [
           en: 'Everything ever planned, newest first, month by month. Tap a dish to put it back on the menu, the date to look back at the day; the pencil fixes an old entry. “When did we last have shepherd’s pie?” — the answer lives here.',
         },
         route: '/kitchen?tab=history',
+      },
+      // Absorbed: the old `reserve` card, condensed to one point (guide merge
+      // 2026-08-27, back under the ~32 ceiling). GUIDE_CARD_ALIAS `reserve`
+      // lands its old ?card=&point= links here; the kitchen▸reserve Réglages
+      // sub is unchanged.
+      {
+        label: { fr: 'La réserve', en: 'The stash' },
+        detail: {
+          fr: 'Ce qui dort au congélateur ou au fond du garde-manger, noté par endroit — un rappel, pas un inventaire (aucun chiffre à tenir). Quand tu le sors, retire-le ; s’il achève, le [[icon:shopping-bag-bold]] sur la rangée l’envoie direct à la liste.',
+          en: 'What sleeps in the freezer or at the back of the pantry, noted by spot — a reminder, not an inventory (no counts to keep). When you pull it out, clear it; if it’s running low, the [[icon:shopping-bag-bold]] on the row sends it straight to the list.',
+        },
+        why: {
+          fr: 'La réserve dit ce que tu as déjà ; « il en manque » dit ce qu’il faut racheter — les deux se complètent sans se mélanger.',
+          en: 'The stash says what you already have; “running low” says what to rebuy — the two complement each other without blurring.',
+        },
+        route: '/kitchen?plus=reserve',
       },
     ],
   },
@@ -897,6 +920,34 @@ export const GUIDE: GuideEntry[] = [
           en: 'By default the list SHOPS: a row is a picture, a name and a check — nothing else under your thumb in the aisle. Press and hold a row to edit it, tap the picture to open the flyer clipping. The small ⚙ beside the shortcuts switches to Advanced: the ✏️ and 🗑 come back on every row — the door for whoever tidies the list with a mouse. It’s per device: your tablet and your phone can differ.',
         },
         route: '/liste',
+      },
+      // Absorbed: the old `ghost` card, condensed to two points (guide merge
+      // 2026-08-27, back under the ~32 ceiling). GUIDE_CARD_ALIAS `ghost` lands
+      // its old ?card=&point= links here; the liste▸ghost Réglages sub is
+      // unchanged.
+      {
+        label: { fr: 'Suivi fantôme (achats)', en: 'Ghost tracking (purchases)' },
+        detail: {
+          fr: 'Suis un article à la main (acheter n’inscrit jamais rien tout seul) et il remonte dans l’Ajout rapide ⚡ quand sa date de rachat approche, marqué « bientôt » ou « dû » — un toucher le remet sur la liste. Réglages ▸ Suivi choisit quoi suivre et à quelle fréquence.',
+          en: 'Track an item by hand (buying never enrolls anything on its own) and it floats back up in Quick add ⚡ as its renewal date nears, marked “soon” or “due” — one tap puts it back on the list. Settings ▸ Tracking picks what to track and how often.',
+        },
+        why: {
+          fr: 'Pour ne plus oublier le lait juste parce que tu n’y as pas pensé en faisant la liste — sans notification ni badge : ça ne sort qu’ici.',
+          en: 'So you stop forgetting the milk just because it slipped your mind at list time — no notification, no badge: it only surfaces here.',
+        },
+        route: '/settings?tab=liste&sub=ghost',
+      },
+      {
+        label: { fr: '« Toujours » (essentiels)', en: '“Always” (staples)' },
+        detail: {
+          fr: 'Différent du fantôme : épingle un item [[icon:push-pin-bold]] « Toujours » dans Réglages ▸ Courses et il reste en tête de l’Ajout rapide en permanence. Le fantôme prédit une date ; « Toujours » ne devine pas.',
+          en: 'Different from the ghost: pin an item [[icon:push-pin-bold]] “Always” in Settings ▸ Shopping and it stays at the top of Quick add permanently. The ghost predicts a date; “Always” doesn’t guess.',
+        },
+        why: {
+          fr: 'Un tap à chaque épicerie pour les indispensables — et jamais d’ajout automatique : la liste se vide et reste vide.',
+          en: 'One tap each grocery run for the must-haves — and never auto-added: the list empties and stays empty.',
+        },
+        route: '/settings?tab=liste&sub=shop',
       },
     ],
   },
@@ -1917,111 +1968,6 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'Mets un ❤ sur les recettes que tu aimes : on voit QUI aime un plat (les frimousses), jamais un nombre. Les suggestions penchent vers les plats aimés.',
           en: 'Put a ❤ on recipes you love: you see WHO loves a dish (the little faces), never a number. Suggestions lean toward the loved dishes.',
-        },
-      },
-    ],
-  },
-  {
-    id: 'ghost',
-    icon: 'ghost-bold',
-    group: 'concepts',
-    route: '/liste',
-    settings: '/settings?tab=liste&sub=ghost',
-    title: { fr: 'Suivi fantôme (achats)', en: 'Ghost tracking (purchases)' },
-    what: {
-      fr: 'Un suivi discret de ce que tu rachètes souvent. Quand un article suivi approche de sa date de rachat, il remonte tout seul dans le panneau d’ajout rapide de La liste, marqué « bientôt » ou « dû » — un toucher le remet sur la liste. Toujours sur invitation, jamais imposé.',
-      en: 'A quiet track of what you restock often. When a tracked item nears its renewal date it floats back up in the quick-add panel on La liste, marked “soon” or “due” — one tap puts it back on the list. Always opt-in, never forced.',
-    },
-    points: [
-      {
-        label: { fr: 'Tu choisis', en: 'You choose' },
-        detail: {
-          fr: 'Acheter n’inscrit jamais un article tout seul; tu l’ajoutes au suivi à la main (voir Réglages ▸ Suivi).',
-          en: 'Buying never enrolls an item by itself; you add it to tracking by hand (see Settings ▸ Tracking).',
-        },
-        why: {
-          fr: 'Rien ne s’active sans que tu le demandes — pas de « l’app a deviné » dans ton dos. (« [[card:kitchen|Il en manque]] » est un drapeau manuel ; le fantôme, lui, prédit la date de rachat.)',
-          en: 'Nothing turns on unless you ask — no “the app guessed” behind your back. (“[[card:kitchen|Running low]]” is a manual flag; the ghost predicts the renewal date.)',
-        },
-      },
-      {
-        label: { fr: 'Où ça apparaît', en: 'Where it shows up' },
-        detail: {
-          fr: 'Sur La liste, dans le panneau d’ajout rapide (l’éclair ⚡) : tes fantômes « dûs » passent en tête, devant le reste de ton historique.',
-          en: 'On La liste, in the quick-add panel (the ⚡): your “due” ghosts jump to the top, ahead of the rest of your history.',
-        },
-        why: {
-          fr: 'C’est le seul endroit où ça sort — pas de notification, pas de badge ailleurs. Tu ne le vois que quand tu fais ta liste, au moment où c’est utile.',
-          en: 'That’s the only place it surfaces — no notification, no badge elsewhere. You only see it when you’re making your list, exactly when it helps.',
-        },
-      },
-      {
-        label: { fr: 'Pourquoi t’embêter', en: 'Why bother' },
-        detail: {
-          fr: 'Le fantôme garde aussi les synonymes de circulaire de l’article : remettre « Pain » réactive « baguette/bread » pour le pige-prix.',
-          en: 'The ghost also keeps the item’s flyer synonyms: re-adding “Pain” re-arms “baguette/bread” for price-matching.',
-        },
-        why: {
-          fr: 'Pour ne plus oublier le lait ou le café juste parce que tu n’y as pas pensé en faisant la liste — sans qu’une app te harcèle pour autant.',
-          en: 'So you stop forgetting the milk or the coffee just because it slipped your mind at list time — without an app nagging you for it.',
-        },
-      },
-      {
-        label: { fr: '« Toujours » (essentiels permanents)', en: '“Always” (permanent staples)' },
-        detail: {
-          fr: 'Différent du fantôme : épingle un item avec [[icon:push-pin-bold]] « Toujours » dans Réglages ▸ Courses et il reste en tête de l’Ajout rapide en permanence, sans deviner de date. Le fantôme prédit; « Toujours » ne devine pas.',
-          en: 'Different from the ghost: pin an item with [[icon:push-pin-bold]] “Always” in Settings ▸ Shopping and it stays at the top of Quick add permanently, no date guessing. The ghost predicts; “Always” doesn’t guess.',
-        },
-        why: {
-          fr: 'Pour les indispensables que tu rachètes sans faute — un tap à chaque épicerie, et jamais d’ajout automatique : la liste se vide et reste vide.',
-          en: 'For the must-haves you rebuy without fail — one tap each grocery run, and never auto-added: the list empties and stays empty.',
-        },
-      },
-    ],
-  },
-  {
-    id: 'reserve',
-    icon: 'cloud-snow-bold',
-    group: 'concepts',
-    route: '/kitchen?plus=reserve',
-    settings: '/settings?tab=kitchen&sub=reserve',
-    title: { fr: 'La réserve', en: 'The stash' },
-    what: {
-      fr: 'Ce que tu gardes au congélateur ou au fond du garde-manger, noté par endroit pour ne pas l’oublier — ni le racheter pour rien.',
-      en: 'What you keep in the freezer or at the back of the pantry, noted by spot so you don’t forget it — or buy it again for nothing.',
-    },
-    points: [
-      {
-        label: { fr: 'Rangé par endroit', en: 'Grouped by spot' },
-        detail: {
-          fr: 'Note un article et dis où il est : congélateur, garde-manger, sous-sol. La réserve les regroupe par endroit.',
-          en: 'Note an item and say where it is: freezer, pantry, basement. The stash groups them by spot.',
-        },
-        why: {
-          fr: 'Pour retrouver d’un coup d’œil ce qui dort au congélateur avant de planifier un souper.',
-          en: 'So you can spot at a glance what’s tucked in the freezer before planning a supper.',
-        },
-      },
-      {
-        label: { fr: 'Un rappel, pas un inventaire', en: 'A reminder, not an inventory' },
-        detail: {
-          fr: 'Tu notes ce qui vaut la peine d’être retenu — pas chaque boîte de conserve. Aucun chiffre à tenir à jour.',
-          en: 'You note what’s worth remembering — not every can. No numbers to keep current.',
-        },
-        why: {
-          fr: '« Un rappel, pas un inventaire » garde la cuisine calme : zéro corvée de comptage.',
-          en: '“A reminder, not an inventory” keeps the kitchen calm: zero counting chore.',
-        },
-      },
-      {
-        label: { fr: 'Sors-le quand tu l’utilises', en: 'Pull it when you use it' },
-        detail: {
-          fr: 'Quand tu sors un article de la réserve, retire-le. S’il achève, touche le [[icon:shopping-bag-bold]] sur la rangée pour l’ajouter direct à la liste — sans quitter la réserve (un « Annuler » te couvre).',
-          en: 'When you take an item out of the stash, clear it. If it’s running low, tap the [[icon:shopping-bag-bold]] on the row to send it straight to the list — without leaving the stash (an “Undo” has your back).',
-        },
-        why: {
-          fr: 'La réserve dit ce que tu as déjà; « [[card:kitchen|il en manque]] » dit ce qu’il faut racheter — les deux se complètent sans se mélanger.',
-          en: 'The stash says what you already have; “[[card:kitchen|running low]]” says what to rebuy — the two complement each other without blurring.',
         },
       },
     ],

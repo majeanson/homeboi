@@ -119,9 +119,11 @@ export const ADD_HELP = {
     body: { fr: 'Marque un article « il en manque » — un drapeau, jamais un inventaire.', en: 'Mark an item “running low” — a flag, never an inventory.' },
   },
   reserve: {
-    card: 'reserve',
-    point: 0,
-    body: helpFromGuide('reserve', 0),
+    // The reserve card merged into `kitchen` point 11 (2026-08-27) — registries
+    // name LIVE ids only (the `reserve` alias serves URLs, not registries).
+    card: 'kitchen',
+    point: 11,
+    body: helpFromGuide('kitchen', 11),
   },
   'list-item': {
     // The list has no dedicated "add a line" point — opening the liste card top

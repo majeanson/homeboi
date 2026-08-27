@@ -24,8 +24,9 @@ export const OPERATOR_HELP = {
     },
   },
   reserveLocations: {
-    card: 'reserve',
-    point: 0,
+    // The reserve card merged into `kitchen` point 11 (2026-08-27).
+    card: 'kitchen',
+    point: 11,
     body: {
       fr: `Les endroits de ta réserve (congélateur, garde-manger…) où les articles sont regroupés. Renomme-les, change leur couleur ou ajoute tes propres lieux.`,
       en: `Your stash spots (freezer, pantry…) where items are grouped. Rename them, change their colour, or add your own.`,
@@ -148,8 +149,10 @@ export const OPERATOR_HELP = {
     },
   },
   ghost: {
-    // Was 'set-ghost' — the real card is 'ghost' (orphan caught by helpRegistry.test.ts).
-    card: 'ghost',
+    // Was 'set-ghost', then 'ghost' — that card merged into `liste` point 10
+    // (2026-08-27); registries name LIVE ids only.
+    card: 'liste',
+    point: 10,
     body: {
       fr: `Configure le suivi opt-in : choisis quoi suivre, à quelle fréquence, et mets des articles en sourdine ou retire-les.`,
       en: `Configure opt-in tracking: choose what to track, how often, and mute or remove items.`,

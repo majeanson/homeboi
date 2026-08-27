@@ -78,8 +78,9 @@ export const KITCHEN_TAB_HELP = {
     },
   },
   reserve: {
-    card: 'reserve',
-    point: 0,
+    // The reserve card merged into `kitchen` point 11 (2026-08-27).
+    card: 'kitchen',
+    point: 11,
     body: {
       fr: 'La réserve : ce qui dort au congélateur ou au fond du garde-manger, rangé par endroit, pour que ça arrête d’être oublié. Cocher = utilisé / jeté.',
       en: 'The stash: what sleeps in the freezer or back of the pantry, grouped by spot, so it stops getting forgotten. Check = used / tossed.',

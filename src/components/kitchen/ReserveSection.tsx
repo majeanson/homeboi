@@ -161,7 +161,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
       />
       )}
       {rows.length === 0 ? (
-        <EmptyState guide={{ card: 'reserve' }}>{t.kitchen.reserveEmpty}</EmptyState>
+        <EmptyState guide={{ card: 'kitchen', point: 11 }}>{t.kitchen.reserveEmpty}</EmptyState>
       ) : (
         groups.map((g) => (
           <div key={g.id} className="kitchen__reserve-group">
