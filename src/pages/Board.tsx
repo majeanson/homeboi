@@ -259,7 +259,7 @@ export function Board() {
   // the last good frame when a poll fails, so on wifi loss we keep rendering it
   // and just flip the "offline" stamp. retry:false overrides the default → the
   // stale stamp appears promptly and the next poll recovers.
-  const { data, error, isError } = useBoardData({ retry: false })
+  const { data, error, isError, failureCount } = useBoardData({ retry: false })
   // « Les carnets » — map a carnet id → its thing, so a carnet-scoped Entretien row on
   // the board reads with its thing's emoji (🔥 Chauffe-eau · filtre) while staying
   // checkable in place. `live: false` shares the board card's non-polling observer (one
@@ -267,7 +267,12 @@ export function Board() {
   const { data: carnetsData } = useCarnets({ live: false })
   const carnetById = new Map((carnetsData?.carnets ?? []).map((x) => [x.id, x]))
   const unauth = isUnauthorized(error)
-  const stale = isError && !unauth && !!data
+  // TWO consecutive failed polls before claiming « Hors ligne » (failureCount only
+  // resets on a success): one blipped fetch on weak wifi self-heals within the next
+  // ~10 s tick, and stamping « Hors ligne · données de 08:44 » AT 8:44 while the
+  // phone is online read as the app lying (2026-08-27). Two misses ≈ 20+ s of
+  // genuinely unreachable — worth saying; one is noise.
+  const stale = isError && failureCount >= 2 && !unauth && !!data
   // "How old is what I'm looking at" — the newest successful fetch in the cache,
   // same source + formatting as OfflineBanner's stamp. Only computed while stale.
   const staleFetchMs = stale ? newestFetchMs(qc) : null

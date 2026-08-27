@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { useUndoToast } from './toast'
 import { onOutboxChange, outboxCount } from './outbox'
 
@@ -69,21 +69,55 @@ function unhideIds(scope: string, ids: string[]): void {
   emit()
 }
 
+// Un-hide `ids` only once a FRESH frame has actually arrived for the scope — not
+// merely once a refetch has SETTLED. `refetchQueries` resolves even when the fetch
+// ERRORED (Query keeps the last good frame), so un-hiding on settle alone repaints
+// the deleted row from the pre-delete frame on a flaky connection: the exact loop
+// behind « Pomme » being deleted three times while « Hors ligne » flickered
+// (2026-08-27) — the row was gone server-side after the first delete, but every
+// failed refetch un-hid it back out of stale cache. Freshness = every active query
+// under the scope has a successful dataUpdatedAt AFTER the commit; until then the
+// ids stay hidden and the ~10 s poll converges us. Bounded (90 s) so a row can
+// never be hidden forever if the connection stays dead — at that point the frame
+// is stale anyway and the next successful poll reconciles whichever way is true.
+function unhideWhenFresh(qc: QueryClient, scope: string, ids: string[], t0: number): void {
+  const cache = qc.getQueryCache()
+  const fresh = () =>
+    cache.findAll({ queryKey: [scope], type: 'active' }).every((q) => q.state.dataUpdatedAt >= t0)
+  if (fresh()) {
+    unhideIds(scope, ids)
+    return
+  }
+  let done = false
+  const finish = () => {
+    if (done) return
+    done = true
+    stop()
+    clearTimeout(cap)
+    unhideIds(scope, ids)
+  }
+  const stop = cache.subscribe(() => {
+    if (fresh()) finish()
+  })
+  const cap = setTimeout(finish, 90_000)
+}
+
 // Keep `ids` hidden until the offline outbox has fully drained (every queued write
 // replayed on reconnect), then refetch + un-hide. On a poor/no connection a deferred
 // delete is QUEUED, not yet on the server — un-hiding right away lets the next poll
 // (or the stale offline frame) flash the row back, the exact "delete it and it comes
 // back" glitch on a weak signal. Holding the un-hide until the write has actually
 // synced keeps a deleted row gone. Idempotent + self-unsubscribing.
-function unhideWhenSynced(scope: string, ids: string[], refetch: () => Promise<unknown>): void {
+function unhideWhenSynced(qc: QueryClient, scope: string, ids: string[], refetch: () => Promise<unknown>): void {
   let done = false
   const finish = () => {
     if (done) return
     done = true
     off()
+    const t0 = Date.now()
     void refetch()
       .catch(() => {})
-      .then(() => unhideIds(scope, ids))
+      .then(() => unhideWhenFresh(qc, scope, ids, t0))
   }
   const off = onOutboxChange(() => void outboxCount().then((n) => n === 0 && finish()))
   // It may already be drained (a replay beat us here) — check once now.
@@ -112,6 +146,11 @@ export function useDeferredRemoval(queryKey: QueryKey) {
       onUndo: () => unhideIds(scope, ids),
       onCommit: async () => {
         await commit()
+        // Freshness fence: only a scope frame fetched AFTER this instant proves the
+        // deletion reached the render data. (Captured after `commit`, so a fetch the
+        // write's own invalidate races in just misses the fence — the row then stays
+        // hidden one extra poll, which is harmless: it IS deleted.)
+        const t0 = Date.now()
         // Refetch EVERY mounted surface in this scope (the prefix [scope] matches both
         // the board glance ['todos'] and any day page ['todos', <day>]).
         const refetch = () => qc.refetchQueries({ queryKey: [scope], type: 'active' })
@@ -119,12 +158,13 @@ export function useDeferredRemoval(queryKey: QueryKey) {
         // instead of reaching the server, so a refetch can't reflect the deletion yet —
         // un-hiding now would flash the row back on the next poll. If anything is still
         // queued, hold the un-hide until the outbox drains and re-confirm. Online (empty
-        // outbox) we un-hide immediately after the refetch, exactly as before.
+        // outbox) we refetch now — and un-hide only once a FRESH frame landed (a
+        // refetch that ERRORED kept the pre-delete frame; see unhideWhenFresh).
         if ((await outboxCount()) > 0) {
-          unhideWhenSynced(scope, ids, refetch)
+          unhideWhenSynced(qc, scope, ids, refetch)
         } else {
           await refetch().catch(() => {})
-          unhideIds(scope, ids)
+          unhideWhenFresh(qc, scope, ids, t0)
         }
       },
     })
