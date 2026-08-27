@@ -5,6 +5,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > Note: a separate `CLAUDE.md` one level up documents the broader LAC ecosystem.
 > This file governs **Babillard** (the `PlannerOrSomething/` project) specifically.
 
+> **Asked "what should we work on?" — read [`STATE.md`](./STATE.md) first, not the
+> ledgers.** It is the one front door: current health numbers, which of the thirteen
+> markdown files still hold work and which are finished, and the whole remaining backlog
+> consolidated and ranked by user harm rather than by which document it lives in. It also
+> records the two counting traps that have burned a session each: `PARITY.md` and
+> `ACTIONS.md`'s unticked boxes are **per-feature checklist templates, not work**, and a
+> ledger entry is a verdict from a moment — **grep the claim in code before building on
+> it** (a third of the items picked up on 2026-08-27 were already done).
+>
+> This file (`CLAUDE.md`) stays the **law**: how to write code here. `STATE.md` is *what
+> to write next*. Update `STATE.md` in the same commit as the work it describes.
+
 ---
 
 ## What this is

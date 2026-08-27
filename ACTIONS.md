@@ -1,5 +1,10 @@
 # ACTIONS.md — action reachability: every action, every door
 
+> 🛑 **Counting warning.** The unticked `- [ ]` boxes in Part 5 are a **per-action
+> checklist template** — copied into the commit that adds or moves an action, and ticked
+> there. They are **not** pending work in this file. See [`STATE.md`](./STATE.md)
+> § *The document map*.
+
 > Companion to `PARITY.md` (cross-cutting **uniformity** — its **D17** points here),
 > `DISCOVERY.md` (**comprehension** ↔ action), `LEAN.md` (**chrome** before content)
 > and `bmad/11-friction-audit.md` (**flow** friction). This doc audits **doors**:

@@ -53,7 +53,6 @@ export type BoardCardId =
 
 /** The two ordered grids. `band` is the pinned glance strip; `grid` is the masonry. */
 export type CardZone = 'band' | 'grid'
-export const CARD_ZONES: readonly CardZone[] = ['band', 'grid'] as const
 
 /** Columns a card spans. `'full'` = every column, whatever the viewport gives us. */
 export type CardSize = 1 | 2 | 3 | 'full'
@@ -62,7 +61,6 @@ export const CARD_SIZES: readonly CardSize[] = [1, 2, 3, 'full'] as const
 
 /** What an empty card does. See the header. */
 export type CardMode = 'always' | 'auto' | 'never'
-export const CARD_MODES: readonly CardMode[] = ['always', 'auto', 'never'] as const
 
 export interface BoardCardPrefs {
   // Zone membership IS array membership — there's no separate `zone` field that could

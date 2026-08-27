@@ -1,5 +1,9 @@
 # UNIFORMIZING.md — app-wide reuse / generalization backlog
 
+> ✅ **CLOSED (2026-08-27) — zero open items; this file is now verdicts only.** Do not
+> re-mine it for work: every remaining entry records something reviewed and deliberately
+> kept, skipped or rejected, with the reasoning. See [`STATE.md`](./STATE.md).
+
 > A standing audit of where Babillard **fails to reuse** an existing primitive, helper,
 > class family, convention, or schema shape — and the concrete refactor that folds the
 > divergence back onto the canonical thing. Produced 2026-06-26 by a parallel sweep of

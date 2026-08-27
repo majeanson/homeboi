@@ -1,5 +1,13 @@
 # 11 · Friction audit — the five weekly flows (2026-07-13)
 
+> 🔴 **This is the highest-value unfixed pool in the repo, and it is blocked on a
+> decision — not on analysis.** Marc declined the proposed F1–F5 fix-wave *grouping* on
+> 2026-07-13; the **seams themselves were never disputed**, and nothing has changed about
+> them since. The five tier-1 entries below block real rituals or lose data (seam #2,
+> `/share` losing captures offline, was re-verified in code on 2026-08-27 and is still
+> live). Ask about them **individually** before executing anything. See
+> [`STATE.md`](../STATE.md) § 4-B.
+
 > Five parallel read-only audits walked the flows a real household runs weekly:
 > **plan the week · grocery run · cook tonight · kid mornings/bedtime ·
 > capture + Sunday tidy.** Every seam below was verified against code (file:line

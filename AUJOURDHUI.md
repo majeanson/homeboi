@@ -1,5 +1,11 @@
 # AUJOURD'HUI — the board (the main window): review & backlog
 
+> ✅ **Effectively closed (2026-08-27).** Every P1/P2/P3 item below is done or
+> verdict-closed except one, left open on purpose: the toddler tiles' 6-second arm
+> (`ARM_MS`), an empirical question about a real child rather than a code judgement.
+> Sections 1–4 remain a useful **current-state map** of the board. See
+> [`STATE.md`](./STATE.md).
+
 > The Aujourd'hui board (`/board`, the **Grille** view) is the app's **main window** —
 > the thing a household sees all day on the wall tablet and reaches for on a phone. This
 > document is the **current-state map + a prioritized backlog** to work on later. It was

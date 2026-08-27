@@ -1,5 +1,12 @@
 # PARITY.md — the feature-parity audit & uniformization playbook
 
+> 🛑 **Counting warning.** The unticked `- [ ]` boxes in Parts 5 and 6 are a
+> **per-feature checklist template** — you copy them into a new feature's commit and
+> tick them there. They are **not a to-do list for this file** and must never be
+> "closed". A naive count of open items across the repo reads them as ~35 pending
+> tasks; they are zero. See [`STATE.md`](./STATE.md) § *The document map* for what
+> genuinely holds work.
+
 > **What this is.** A standing, multi-day-executable playbook that maps every
 > user-facing feature of Babillard against every cross-cutting capability
 > dimension (UI/UX reach + DB/API reach), names the "most complete" features as

@@ -19,6 +19,10 @@ Workers AI, R2, and a Durable Object for realtime. Deployed to production;
 CI (typecheck → test → build) gates `db:migrate:prod` + deploy on every push
 to `main`.
 
+**Where the project stands right now** — health numbers, the map of which planning
+documents still hold work, and the remaining backlog consolidated and ranked — is
+[`STATE.md`](./STATE.md). Start there.
+
 The planning that drove it lives in [`bmad/`](./bmad/): the
 [brief](./bmad/01-brief.md), [PRD](./bmad/02-prd.md), and
 [architecture](./bmad/03-architecture.md). Day-to-day contributor guidance —

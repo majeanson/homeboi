@@ -1,5 +1,10 @@
 # REVIEW-PASS — a slow, section-by-section audit of the whole app
 
+> 📍 **31 findings still open here** (P2/P3, section debt — no data loss). For where they
+> rank against everything else in the repo, and what to do before picking one up, read
+> [`STATE.md`](./STATE.md) § 4. **Grep every claim in code first** — a third of the items
+> picked up on 2026-08-27 turned out to be already fixed and never ticked.
+
 > **Purpose.** One living plan to review **every section and every feature** of
 > Babillard for what's **missing**, what's **overlooked/redundant**, and what needs a
 > **UI/UX** pass — worked through **slowly, one section at a time**. Produced 2026-07-01
