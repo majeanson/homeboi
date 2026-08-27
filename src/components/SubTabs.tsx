@@ -44,7 +44,12 @@ export function SubTabs<K extends string>({
   ariaLabel: string
   // Optional help-mode integration (useHelpMode().pick). When armed, a tap explains
   // the tab instead of selecting it.
-  pick?: (k: string, run: () => void) => () => void
+  // Declared as a METHOD, not an arrow property, on purpose — the same reason
+  // HelpMode's own `pick`/`bubbleFor` are (see lib/helpMode.tsx). Method params are
+  // bivariant, so a surface's NARROW `useHelpMode(KITCHEN_HELP, …).pick` stays
+  // assignable here; as an arrow property, strictFunctionTypes rejected every caller
+  // the moment the key guard started working again.
+  pick?(k: string, run: () => void): () => void
   // Adds `.help-armed` to the row so armed tabs read as "tap to learn".
   armed?: boolean
   // A trailing control on the row, e.g. the help "?" <HelpToggle/>.

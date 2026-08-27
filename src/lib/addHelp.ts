@@ -211,4 +211,61 @@ export const ADD_HELP = {
       en: 'Write a note and press Enter — it’s written. The mic and the 📎 (voice memo, drawing, photo) live here: the page’s own box keeps nothing but the text.',
     },
   },
+  // ── The eight tiles that had no entry ──────────────────────────────────────
+  // Every AddSheet tile is wrapped in `help.pick(m, …)`, so a tile MISSING from this
+  // map was a live orphan: arming "?" and tapping it explained nothing. They shipped
+  // because `useHelpMode`'s key guard had quietly collapsed to `string` (see the
+  // `NoInfer` note in lib/helpMode.tsx); with the guard restored, a new tile without
+  // an entry here is now a tsc error rather than an empty bubble.
+  //
+  // Where the GUIDE card already says it, these source it via `helpFromGuide` — one
+  // prose to drift, not two.
+  activity: {
+    card: 'set-agenda',
+    point: 0,
+    body: {
+      fr: 'Une activité qui revient (soccer, piano) : l’horaire hebdo, qui conduit, qui embarque, et le « à apporter » qui ressort dans « Avant de partir ».',
+      en: 'A recurring commitment (soccer, piano): the weekly slot, who drives, who rides, and the “bring” list that resurfaces in “Before we go”.',
+    },
+  },
+  book: {
+    card: 'recipes',
+    body: {
+      fr: 'Prépare le petit livre à imprimer : les recettes et activités de l’enfant, en images, pour la table de cuisine.',
+      en: 'Build the printable little book: the toddler’s recipes and activities, in pictures, for the kitchen table.',
+    },
+  },
+  carnet: {
+    card: 'carnets',
+    body: helpFromGuide('carnets'),
+  },
+  'family-import': {
+    card: 'cercle',
+    body: {
+      fr: 'Le côté qui REÇOIT : colle le code qu’un proche t’a envoyé pour voir sa famille et la joindre à ton cercle.',
+      en: 'The RECEIVING side: paste the code a relative sent you to preview their family and merge it into your circle.',
+    },
+  },
+  voyage: {
+    card: 'voyage',
+    body: helpFromGuide('voyage'),
+  },
+  mot: {
+    card: 'mots',
+    body: {
+      fr: 'Laisse un mot à quelqu’un de la maison — écrit, dicté, dessiné ou en photo. Il attend sa face, et n’apparaît que pour elle.',
+      en: 'Leave a note for someone in the house — typed, spoken, drawn or a photo. It waits for their face, and shows up only for them.',
+    },
+  },
+  habit: {
+    card: 'habits',
+    body: helpFromGuide('habits'),
+  },
+  'habit-pick': {
+    card: 'habits',
+    body: {
+      fr: 'Crée une habitude, ou touche une habitude existante pour la modifier — celles en pause et celles qui ne sont pas dues aujourd’hui comprises.',
+      en: 'Create a habit, or tap an existing one to edit it — including paused ones and the ones not due today.',
+    },
+  },
 } satisfies Record<string, AddHelp>

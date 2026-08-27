@@ -19,7 +19,13 @@ export interface HelpEntry {
 
 export function useHelpMode<K extends string>(
   content: Record<K, HelpEntry>,
-  label: (key: K) => string,
+  // `NoInfer` is load-bearing, not decoration. Surfaces write their labeller as
+  // `(k: string) => …`, which was a SECOND inference site for `K` — TS took the wider
+  // candidate, `K` collapsed to `string`, and the guard advertised below silently
+  // accepted ANY key. That is exactly how `pick('mode', …)` shipped on La liste
+  // against a registry with no `mode` entry: a "?" target whose bubble renders
+  // nothing. Pinning `K` to the registry's keys makes that a tsc error again.
+  label: (key: NoInfer<K>) => string,
   // Optional: when this value changes, help mode resets (e.g. pass a sheet's `open`
   // so reopening starts fresh, or a scene's route id). Omit for always-mounted surfaces.
   resetKey?: unknown,

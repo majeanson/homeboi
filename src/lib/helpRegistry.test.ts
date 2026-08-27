@@ -10,11 +10,16 @@ import { OPERATOR_HELP } from './operatorHelp'
 import { ROUTINES_HELP } from './routinesHelp'
 import { TOURS } from './tourContent'
 import { WHATS_NEW } from './whatsNew'
-import type { HelpEntry } from './helpMode'
+import { type HelpEntry, useHelpMode } from './helpMode'
 
 // P2-9 (UNIFORMIZING) — the other half of the help-orphan kill. The COMPILE
-// half already exists: useHelpMode is generic over its registry's keys, so an
-// unregistered `pick('typo')` fails tsc. But every registry entry also carries
+// half is useHelpMode being generic over its registry's keys, so an unregistered
+// `pick('typo')` fails tsc — a claim that was quietly FALSE for a while (surfaces
+// type their labeller `(k: string) => …`, which was a second inference site, so K
+// collapsed to `string` and every key was accepted). It let La liste ship a ⚙ whose
+// help bubble rendered nothing, and left eight AddSheet tiles in the same state.
+// `NoInfer` in lib/helpMode.tsx restores it, and the last test below now HOLDS IT
+// to that claim instead of trusting it. But every registry entry also carries
 // a `card` (a GUIDE entry id) its « → Voir le guide » deep-link lands on — and
 // that id is a plain string, so a renamed/deleted guide card silently turns
 // the link into a dead end (the exact orphan bug the memory records shipping
@@ -88,5 +93,18 @@ describe('help/guide integrity (P2-9)', () => {
         expect(GUIDE_CARD_ALIAS[entry.card], `${name}.${key} → "${entry.card}" is a retired alias; point at "${GUIDE_CARD_ALIAS[entry.card]?.id}" with the precise point instead`).toBeUndefined()
       }
     }
+  })
+
+  // The COMPILE half, asserted rather than assumed. `probe` reproduces a real call
+  // site exactly — a registry plus the loose `(k: string)` labeller every surface
+  // writes — so this reads the key type TypeScript actually INFERS there, which is
+  // where the regression lived. Widen it back to `string` and `Exact` turns false,
+  // so the `true` below stops typechecking and `npm run typecheck` names this line.
+  it('an unregistered pick() key is still a tsc error (the guard regressed once)', () => {
+    const probe = () => useHelpMode(LISTE_HELP, (k: string) => k)
+    type PickKey = Parameters<ReturnType<typeof probe>['pick']>[0]
+    type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+    const narrow: Exact<PickKey, keyof typeof LISTE_HELP> = true
+    expect(narrow).toBe(true)
   })
 })
