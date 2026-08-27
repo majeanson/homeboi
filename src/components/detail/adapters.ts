@@ -532,7 +532,7 @@ export interface GroupToggle {
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onDelete?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#2A8F85'
@@ -579,6 +579,10 @@ export function buildContact(
   if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', overflow: true, run: opts.onSchedule })
   // "Exporter (vCard)" — download a .vcf to drop this person into any phone/Mac.
   if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', overflow: true, run: opts.onExport })
+  // « Supprimer » — the same confirm-then-DELETE the person form scene carries; a
+  // pet's peek already had this door, a contact's didn't (ACTIONS.md Wave D).
+  // Heavy tier (edges + memberships cascade), so the confirm lives in the caller.
+  if (opts?.onDelete) actions.push({ key: 'delete', label: t.cercle.deletePerson, icon: 'trash-bold', tone: 'danger', overflow: true, run: opts.onDelete })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })
 
   return {

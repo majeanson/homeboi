@@ -122,7 +122,7 @@ at all (❌).
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Routine · run / edit / create | ✅ card tap runs; ✎ on card | — | ➖ no peek (deliberate⁹) | ＋ `routine-pick` (in-sheet picker) | maison▸routines | — | ✅ |
 | Person (contact) · open / call / write | ✅ row tap → peek; `tel:`/`mailto:` icons on row AND in peek | — | ✅ `buildContact` (+ ⋯: itinéraire, relier, rdv, vCard) | ＋ `person` | — | — | ✅ |
-| Person · edit / delete | — | — | ✅ ✏️ → scene; ❌ delete only inside the form scene¹⁶ | — | member → Réglages▸Membres | confirm | ✅ |
+| Person · edit / delete | — | — | ✅ ✏️ → scene; ✅ delete in peek ⋯ (confirm — same door as a pet's)¹⁶ | — | member → Réglages▸Membres | confirm | ✅ |
 | Person · group membership | 🔶 drag ⠿ onto a group section | ✅ drag | ✅ `togglechips` in peek (the mirror) | ＋ `group` / `connect` | maison▸cercle | — | ✅ |
 | Pet · open / edit / delete | ✅ row tap | — | ✅ `buildPet` (delete in ⋯, confirm) | ＋ `pet` | — | confirm | ✅ |
 | Group · edit / delete / share / builder | ✅ section-head ⋯ (5 actions, danger last) | — | — | ＋ `group` | maison▸cercle | ❌ no undo¹⁷ | ✅ |
@@ -199,16 +199,16 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 - [x] `useSwipeToDelete`'s red pane → **`SwipeDeletePane`** (`components/SwipeDeletePane.tsx`) — the hook owns the behaviour, this owns the markup; both callers converted.
 - [ ] ¹³ reorder mirrors: Liste « Mon ordre » drag-only — still open: add ⋯ Monter/Descendre like meal rows, or record ➖ (aisle sort is the non-drag ordering). Decide next audit.
 
-### Wave D — ＋ sheet coverage 🟡
+### Wave D — ＋ sheet coverage 🟡 — **CLOSED 2026-08-26** (one fix, rest verdicted)
 
-- [ ] ¹² `SECTION_MODES` fallback: scene routes (`/voyage`, `/voiture`, `/habitude`, `/cercle/*`, `/liste/quick`…) get **board** tiles today — hide the FAB on scenes or map sensible modes (cheap correct slice now, rest recorded).
-- [ ] ¹¹ use-soon (« À utiliser ») has no ＋ tile — fold into the `pantry` tile as a second field/toggle, or record ➖ (SectionAdd suffices for a short list).
-- [ ] ² fêtes/announce rows: give `buildEvent`'s birthday-style peek (Le cercle door) or record ➖ static-by-design.
-- [ ] ⁹ recorded ➖ (keep): recipe/routine/day peeks retired under "tap the thing, get the thing" (`adapters.ts:503-518`); `buildDay` zero-actions; Maison in-page add (FAB-only).
-- [ ] ³ recorded ➖→🟡: chore/home-project edit from the board — peek stays Fait/Reporter (calm glance surface); the edit door is Réglages. Revisit only if Marc trips on it.
-- [ ] ¹⁶ contact delete only in form scene — align with pet (peek ⋯ confirm) or record ➖.
-- [ ] ¹⁷ group delete gets undo (deferred) or records ➖ (confirm is the tier — membership cascade).
-- [ ] ¹ event delete: ➖ confirm-no-undo is correct (series delete = heavy tier).
+- [x] ¹² ➖ **corrected on code-read**: the FAB exists only inside `HubLayout`, whose six routes are ALL explicitly keyed in `SECTION_MODES` (settings hides it) — every scene route (`/voyage`, `/voiture`, `/habitude`, `/cercle/*`, `/liste/quick`…) renders OUTSIDE `HubLayout` and never shows a FAB. The board fallback is defensive code, not a user-reachable state.
+- [x] ¹¹ ➖ use-soon keeps `SectionAdd` as its one add door for now: folding it into the `pantry` ＋ tile means widening `AddSheet`, which the parallel composer-layout pass is actively reshaping — revisit after that settles.
+- [x] ² ➖ fêtes/announce rows stay static: a fête is fully self-describing (name + date, both already on the row) — a peek would carry nothing the row doesn't ("the peek is CONTENT").
+- [x] ⁹ ➖ kept: recipe/routine/day peeks retired under "tap the thing, get the thing" (`adapters.ts`); `buildDay` zero-actions; Maison in-page add (FAB-only).
+- [x] ³ ➖→🟡 recorded: chore/home-project edit from the board — peek stays Fait/Reporter (calm glance surface); the edit door is Réglages. Revisit only if Marc trips on it.
+- [x] ¹⁶ **fixed**: contact delete now one peek ⋯ away (confirm-then-DELETE, same heavy tier and same door as a pet's — `buildContact.onDelete`, `Maison.deleteContact`).
+- [x] ¹⁷ ➖ group delete keeps confirm-no-undo: the membership cascade makes it the heavy tier.
+- [x] ¹ ➖ event delete: confirm-no-undo is correct (series delete = heavy tier).
 
 ---
 
