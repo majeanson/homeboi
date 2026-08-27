@@ -15,10 +15,18 @@
   gap: 0.4rem;
   align-items: center;
   flex-wrap: wrap;
+  /* The size container the CTA rule below queries — the ROW, never .edit-field
+     (see the block for why). */
+  container: edit-field / inline-size;
 }
 /* The box owns the border + focus ring; the input inside is borderless so the
    clear/mic buttons sit flush with the text as one field. */
 .edit-field__box {
+  /* A shrink-friendly basis for the ordinary row (box + one or two 44px icons).
+     A LABELED CTA overrides it to 100% under a narrow container — that pairing is
+     what used to squeeze the text; see « A labeled CTA never squeezes the text »
+     below, and src/styles/field-fit.test.ts, which forbids any OTHER host from
+     re-introducing a fixed basis here. */
   flex: 1 1 10rem;
   min-width: 0;
   display: flex;
@@ -48,12 +56,55 @@
 .edit-field__input.input:focus {
   outline: none;
 }
-/* Inside a narrow board card (.bento, ~300px column on a wall), the add-row input takes
-   a FULL line so its placeholder is never clipped (« Ajouter à compléter », not
-   « Ajouter à comp… ») — the submit button wraps neatly beneath it. Wider hosts
-   (settings forms) keep the inline box + button. */
-.bento .edit-field__box {
-  flex-basis: 100%;
+/* ── A labeled CTA never squeezes the text ────────────────────────────────────
+   The rule this file exists to state: a composer you deliberately OPENED spends
+   its width on content. Lean is about the chrome you scroll past on a browse
+   surface (LEAN.md); once a field is on screen because you asked for it, the
+   opposite applies — full width, the button underneath, room to read what you
+   typed.
+
+   It used to fail exactly the other way. A labeled submit rode BESIDE the box on
+   one line and could never wrap, because `flex: 1 1 10rem` under-reports the
+   box's width — the fixed-flex-basis trap CLAUDE.md names under « Horizontal
+   overflow ». On a 390px phone the ＋ sheet's « Restants » row spent ~178px on
+   « ＋ À finir bientôt », left the box on its 160px basis, and the mic + caret ate
+   ~90px of THAT: ~60px of typing width, placeholder clipped to « Ajouter un ».
+
+   So under 30rem of row the box takes the whole line and the CTA drops beneath it.
+   `flex: 1 1 10rem` on the button (not `width: 100%`) so it still shares that
+   second line with a trailing ✕ / 🔍 / a second CTA when they fit, and grows to
+   full width when it's alone. Wider hosts — a settings form, the 40rem kiosk
+   sheet — keep the compact inline row they were designed for.
+
+   The container is the ROW, not `.edit-field`: a row's width always comes from
+   its parent (it stretches inside the field's flex column), so inline-size
+   containment can never change the width it measures. Rows without a labeled CTA
+   (an icon-only ✓, the deck word row, an inline row editor) carry no `--cta` and
+   are untouched — they were never the problem.
+
+   This replaces `.bento .edit-field__box { flex-basis: 100% }`, the same fix
+   applied once by hand for board cards; every host now gets it by width. */
+@container edit-field (max-width: 30rem) {
+  .edit-field--cta .edit-field__box {
+    flex-basis: 100%;
+  }
+  .edit-field--cta .edit-field__submit {
+    flex: 1 1 10rem;
+  }
+}
+/* The in-box affordance budget. Every icon INSIDE the box — the clear ✕, the mic,
+   the 📎, the combobox caret — is a 44px touch target (a11y floor: never shrink
+   one), so three of them spend 132px of the field before a character is typed.
+   Once the box owns its whole line that is affordable; in a genuinely tight host
+   (a ~300px board card, a narrow phone) it isn't. The decorative leading glyph is
+   what goes: it is aria-hidden, the field's own aria-label carries the meaning,
+   and its ~29px is the difference between reading the placeholder and guessing at
+   it. Deliberately a smaller threshold than the stack above — it should fire only
+   where the width is actually scarce, not on every phone. */
+@container edit-field (max-width: 22rem) {
+  .edit-field__lead {
+    display: none;
+  }
 }
 /* The inline clear ✕ / icon submit / trash — a quiet icon button, mirroring
    the row-actions affordance so the whole app shares one look. Sized to the

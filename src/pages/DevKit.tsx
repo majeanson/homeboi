@@ -708,7 +708,10 @@ export function DevKit() {
       kw: 'input add edit voice mic champ ajouter',
       render: () => (
         <>
-          <Demo label="add (labeled submit)">
+          {/* A labeled submit makes the row a COMPOSER: under 30rem of container the
+              box takes the whole line and the button drops beneath it (fields.css,
+              « A labeled CTA never squeezes the text »). Narrow the window to see it. */}
+          <Demo label="add (labeled submit → its own line under 30rem)">
             <EditField
               value={text1}
               onChange={setText1}

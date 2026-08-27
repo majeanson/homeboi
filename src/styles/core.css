@@ -141,6 +141,13 @@
 
   /* ---- sizing ---- */
   --touch-target: 44px; /* min hit area for tappable controls (a11y) */
+  /* The side margin of a COMMITTED surface — a bottom sheet, a full-screen scene.
+     One number so the ＋ sheet, the scene head and the scene body can't drift
+     apart, and one place to buy content width back on a small phone: 22px each
+     side costs 44px of a 390px screen, which is most of a composer's clipped
+     placeholder. Browse surfaces (.hub__body and the pages inside it) keep their
+     own spacing — this is about the surfaces you open to DO something. */
+  --gutter: 22px;
 
   /* ---- elevation (warm offset "printed" shadows — never gray) ---- */
   --shadow-sm: 2px 3px 0 rgba(72, 54, 30, 0.08);
@@ -541,6 +548,14 @@ button {
   border: 0;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+}
+/* A 390px phone (and narrower) gives the gutter back to the content: 16px a side
+   instead of 22px is +12px of typing width in every sheet and scene — measured
+   against « Ajouter un… », the clipped placeholder that started this pass. */
+@media (max-width: 400px) {
+  :root {
+    --gutter: 16px;
+  }
 }
 .btn {
   display: inline-flex;

@@ -5,18 +5,10 @@
   color: #fff;
   opacity: 1;
 }
-/* Add-a-line bar at the top of the grocery list — type or speak it. */
-.list-add {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin: 0 0 1rem;
-  flex-wrap: wrap;
-}
-.list-add .input {
-  flex: 1 1 10rem;
-  min-width: 0;
-}
+/* The hand-rolled `.list-add` bar is gone — La liste's add row is an EditField
+   like every other composer, so the shell (and the `flex: 1 1 10rem` that used to
+   pin its input to a too-small basis) lives once in pages/fields.css. Only the
+   voice feedback line below kept its name: VoiceButton renders it app-wide. */
 /* Voice feedback line under the add form: a calm hint while listening, or a
    soft error so the mic never fails silently. */
 .list-add__voicemsg {

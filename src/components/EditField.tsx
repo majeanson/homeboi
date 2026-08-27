@@ -205,7 +205,11 @@ export function EditField({
 
   if (hidden) return null
 
-  const rootClass = 'edit-field' + (className ? ` ${className}` : '')
+  // A LABELED submit is what makes a row a composer rather than a bare field —
+  // and the one thing that can squeeze the text off the line. The modifier lets
+  // fields.css give it its own full-width line under a narrow container (see
+  // « le CTA ne rogne jamais le texte » there). An icon-only ✓ never gets it.
+  const rootClass = 'edit-field' + (submitLabel ? ' edit-field--cta' : '') + (className ? ` ${className}` : '')
   const body = (
     <>
       <div className="edit-field__row">

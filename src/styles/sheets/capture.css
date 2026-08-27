@@ -508,7 +508,7 @@ body.is-recording .add-fab {
   background: var(--paper);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-lg);
-  padding: 14px 22px calc(30px + env(safe-area-inset-bottom, 0px));
+  padding: 14px var(--gutter) calc(30px + env(safe-area-inset-bottom, 0px));
   transform: translateY(110%);
   /* Belt to the bottom:0 braces above: a parked sheet is INERT — unseen, untappable,
      out of the a11y tree — whatever a stale viewport var does to its geometry. The

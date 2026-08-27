@@ -117,6 +117,13 @@ non-obvious cells; paste Part 6's "Definition of Done" into the commit). A matri
 cell is a **verdict, not a fact** — re-verify it against code before relying on it,
 and flip a cell in the same commit that resolves it.
 
+**Action reachability:** **`ACTIONS.md`** is the door matrix — every user action ×
+every entry point (row furniture, ⋯ menus, gestures, peek actions, ＋ sheet tiles,
+Réglages mirrors, the ⚙ Simple↔Avancé faces), with the undo tier and the non-touch
+verdict per row. **When adding or moving ANY user action, pick its doors from that
+file's Part 1 taxonomy and walk its Part 5 checklist** — never invent a new entry
+channel or a fifth spelling of delete. PARITY's D17 points at it.
+
 ---
 
 ## Commands
@@ -488,6 +495,12 @@ reason it ships unnoticed is that `#root`, `.hub__body`, and `.sheet` all set
   content* under-reports the width so wrap never triggers. Basis `auto` (what
   `.cluster--fill` uses) tracks the content and wraps honestly. If you catch yourself
   writing `flex: 1 1 <rem>`, reach for `Cluster`/`Rail` instead.
+- **A labeled submit beside a field is the same trap wearing a suit.** `flex: 1 1
+  10rem` on `.edit-field__box` kept the CTA on one line forever; the field was
+  never allowed to wrap under it. It is now one container query in
+  `styles/pages/fields.css` (`.edit-field--cta` → box full line, button beneath),
+  inherited by every EditField/EntityCombobox — extend that, never re-pin a basis
+  on a host (`field-fit.test.ts` fails the build if you do).
 - **Never add `overflow-x:hidden` to *mask* a wide row** — that hides the bug from the
   eye and the guard both. The container clips are there to stop page-panning, not to
   paper over content that's too wide.
@@ -533,6 +546,15 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
   first screen at 390px and look — do not reason about it.** The state matrix
   measures it (`npm run e2e:matrix` → `contentTopPx` per surface, ratchet-budgeted),
   so a surface can't quietly regrow its chrome.
+- **…and generous once you're inside** (standing rule, the same file's other half):
+  lean governs a surface you SCAN; a composer you deliberately opened — the ＋
+  sheet's field, an expanded `SectionAdd`, a scene form — is the opposite case, and
+  it regressed the opposite way (« Restants » at 390px: a full-width « ＋ À finir
+  bientôt » left ~60px of typing width). A labeled CTA takes its own line **under**
+  a full-width field; the side margin of a sheet/scene is `var(--gutter)`, never a
+  hard-coded px. Guards: `e2e/composer-fit.spec.ts` (a typing-width FLOOR, which
+  only moves up, + « the placeholder must fit ») and `src/styles/field-fit.test.ts`
+  (the CSS invariants). See [Generous inside](./LEAN.md#generous-inside-the-other-ratchet).
 - **Every UI change must be mobile-friendly**, every time (standing rule).
 - **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
 - **No horizontal overflow** — any row of controls uses `Cluster`/`Rail`, not a
@@ -540,7 +562,8 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
 - **Every UI change must be desktop-friendly too** (standing rule): nothing may be
   reachable *only* by a touch gesture. A hidden-scrollbar side-scrolling row gets
   `useHScroll()`; a swipe or long-press gets a mouse/keyboard mirror. See
-  [A scrolling row must be reachable with a mouse](#a-scrolling-row-must-be-reachable-with-a-mouse-not-just-a-thumb).
+  [A scrolling row must be reachable with a mouse](#a-scrolling-row-must-be-reachable-with-a-mouse-not-just-a-thumb);
+  the full action × door matrix (with each gesture's mirror) is **`ACTIONS.md`**.
 - **A new Réglages setting merges into an existing sub, never a new pill**
   (standing rule, C-15). Réglages already counts 30-ish subs; find the themed
   tab + sub that already owns the concept (e.g. any kitchen colour/appearance
