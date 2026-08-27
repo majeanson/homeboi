@@ -1,6 +1,6 @@
 import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 
 // The ONE affordance every manageable row uses: icon-only edit + delete, the
 // same two Phosphor glyphs (pencil-simple-bold / trash-bold) everywhere, so the
@@ -16,6 +16,9 @@ export function RowActions({
   onDelete,
   editLabel,
   deleteLabel,
+  onExtra,
+  extraIcon,
+  extraLabel,
   size = 18,
   className,
   readOnly,
@@ -24,6 +27,12 @@ export function RowActions({
   onDelete?: () => void
   editLabel?: string
   deleteLabel?: string
+  /** Optional row-specific secondary action rendered BEFORE ✏️/🗑️ with the same
+   *  chrome — e.g. La réserve's 🛍 "→ add to the shopping list" (via CheckRow).
+   *  One slot, not a toolbar: a row keeps at most three compact icons. */
+  onExtra?: () => void
+  extraIcon?: IconName
+  extraLabel?: string
   size?: number
   className?: string
   /** Hide the edit/delete affordances entirely. Defaults to the read-only guest
@@ -34,6 +43,17 @@ export function RowActions({
   if (readOnly ?? isGuest()) return null
   return (
     <span className={'row-actions' + (className ? ` ${className}` : '')}>
+      {onExtra && extraIcon && (
+        <button
+          type="button"
+          className="row-actions__btn"
+          onClick={onExtra}
+          aria-label={extraLabel}
+          title={extraLabel}
+        >
+          <Icon name={extraIcon} size={size} />
+        </button>
+      )}
       {onEdit && (
         <button
           type="button"

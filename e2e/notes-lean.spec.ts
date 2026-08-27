@@ -57,7 +57,7 @@ test('simple (default): no section header, and rows carrying nothing but the not
   await expect(row.locator('.cnote__grip')).toHaveCount(0)
   await expect(row.locator('.cnote__chip')).toHaveCount(0)
   await expect(row.locator('.cnote__dot')).toHaveCount(0)
-  await expect(row.locator('.cnote__act')).toHaveCount(0)
+  await expect(row.locator('.row-actions__btn')).toHaveCount(0)
 
   // The room that frees goes to the note: the preview WRAPS now (it used to be one
   // clipped line), so a row shows several lines of what the note actually says.
@@ -143,11 +143,12 @@ test('the ⚙ brings the ACTING face back — row actions, mic, rich editor', as
   // lean face deliberately doesn't carry (this toggle IS how you reach them).
   const row = page.locator('.cnote', { hasText: 'Couture' })
   await expect(row.locator('.cnote__chip')).toBeVisible()
-  await expect(row.locator('.cnote__act')).toHaveCount(2)
+  // The pair is the shared RowActions now (Wave B) — same two glyphs, 44px targets.
+  await expect(row.locator('.row-actions__btn')).toHaveCount(2)
   // …the composer carries the mic + 📎 again…
   await expect(page.locator('.cercle-notes__composer button').first()).toBeVisible()
   // …and the row pencil opens the rich editor, title field + BETA chip included.
-  await row.locator('.cnote__act').first().click()
+  await row.locator('.row-actions__btn').first().click()
   await expect(page.locator('.note-editor')).toBeVisible()
   await expect(page.locator('.note-editor__title')).toBeVisible()
   await expect(page.locator('.note-editor__toggle')).toBeVisible()
@@ -180,11 +181,11 @@ test('the mode toggle is device-local — a read-only guest may flip it', async 
 
   // No composer, and no row actions even after the flip (those ARE household writes)…
   await expect(page.locator('.cercle-notes__composer')).toHaveCount(0)
-  await expect(page.locator('.cnote__act')).toHaveCount(0)
+  await expect(page.locator('.row-actions__btn')).toHaveCount(0)
   // …but the presentation flag is this browser's localStorage, not the household's.
   await page.locator('.mode-toggle').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
-  await expect(page.locator('.cnote__act')).toHaveCount(0)
+  await expect(page.locator('.row-actions__btn')).toHaveCount(0)
 })
 
 // A run of the same day says its date ONCE. Notes arrive in bursts, so the identical

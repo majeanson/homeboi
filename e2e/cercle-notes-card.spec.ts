@@ -42,7 +42,7 @@ test('the board notes card is a compact reading surface — no row actions, expa
   await expect(row).toBeVisible()
 
   // The compact row carries none of the acting furniture.
-  await expect(row.locator('.cnote__act')).toHaveCount(0)
+  await expect(row.locator('.row-actions__btn')).toHaveCount(0)
   await expect(row.locator('.cnote__grip')).toHaveCount(0)
   await expect(row.locator('.cnote__chip')).toHaveCount(0)
   await expect(row.locator('.cnote__dot')).toHaveCount(0)

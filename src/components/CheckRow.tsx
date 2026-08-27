@@ -104,21 +104,14 @@ export function CheckRow({
         <span className="checkrow__title">{item}</span>
         {note && <span className="kitchen__low-note mono">{note}</span>}
       </span>
-      {onExtra && extraIcon && (
-        <span className="row-actions">
-          <button
-            type="button"
-            className="row-actions__btn"
-            onClick={onExtra}
-            aria-label={extraLabel}
-            title={extraLabel}
-          >
-            <Icon name={extraIcon} size={18} />
-          </button>
-        </span>
-      )}
-      {(canEdit || onDelete) && (
+      {(canEdit || onDelete || (onExtra && extraIcon)) && (
+        // ONE RowActions carries the whole trailing cluster — the extra slot (La
+        // réserve's 🛍) rides its `onExtra`, so `.row-actions*` has a single owner
+        // instead of this row hand-rolling a lookalike span (ACTIONS.md Wave B).
         <RowActions
+          onExtra={onExtra}
+          extraIcon={extraIcon}
+          extraLabel={extraLabel}
           onEdit={
             canEdit
               ? () => {

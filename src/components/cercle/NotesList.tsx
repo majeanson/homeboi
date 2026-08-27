@@ -8,7 +8,8 @@ import { type FamilyNote, sortNotes } from '../../lib/familyNotes'
 import { reorderPatches } from '../../lib/reorder'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { imgUrl } from '../../lib/image'
-import { Icon, InlineIcon } from '../Icon'
+import { InlineIcon } from '../Icon'
+import { RowActions } from '../RowActions'
 import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
 import { Modal } from '../Modal'
@@ -279,22 +280,24 @@ export function NotesList({
               {!compact && <span className="cnote__chip mono">{scopeChip}</span>}
 
               {rowActions && (
-                <span className="cnote__actions">
-                  {/* One pencil per note: an audio memo renames (caption = title); every
-                      other note opens the full editor (title + body + attachment). */}
-                  {media === 'audio' ? (
-                    <button type="button" className="cnote__act" onClick={() => { setRenameId(n.id); setRenameVal(n.title) }} aria-label={fn.rename}>
-                      <Icon name="pencil-simple-bold" size={15} />
-                    </button>
-                  ) : onEdit ? (
-                    <button type="button" className="cnote__act" onClick={() => onEdit(n)} aria-label={fn.edit}>
-                      <Icon name="pencil-simple-bold" size={15} />
-                    </button>
-                  ) : null}
-                  <button type="button" className="cnote__act cnote__act--del" onClick={() => remove(n)} aria-label={fn.delete}>
-                    <Icon name="trash-bold" size={15} />
-                  </button>
-                </span>
+                // THE shared ✏️/🗑 pair (44px targets — the hand-rolled `.cnote__act`
+                // twins were 32px, under the touch-target rule). One pencil per note:
+                // an audio memo renames (caption = title); every other note opens the
+                // full editor (title + body + attachment).
+                <RowActions
+                  className="cnote__actions"
+                  size={15}
+                  onEdit={
+                    media === 'audio'
+                      ? () => { setRenameId(n.id); setRenameVal(n.title) }
+                      : onEdit
+                        ? () => onEdit(n)
+                        : undefined
+                  }
+                  editLabel={media === 'audio' ? fn.rename : fn.edit}
+                  onDelete={() => remove(n)}
+                  deleteLabel={fn.delete}
+                />
               )}
 
               {/* Expanded: the whole note rendered from Markdown, checklists tappable

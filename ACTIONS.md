@@ -181,14 +181,14 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 - [x] ➖ **corrected two pre-seeded targets on code-read**: Habitudes (RowActions already behind the row's peek + the « En pause » fold — `HabitudesPage.tsx:120`) and board todos (🗑 already inside the tap-to-edit state — `TodoSection.tsx:304`) need **no** ⚙; recorded in their Part 2 rows.
 - [x] ➖ Réglages surfaces stay always-managing (admin altitude).
 
-### Wave B — one delete grammar 🔴
+### Wave B — one delete grammar 🔴 — **DONE 2026-08-26**
 
-- [ ] ¹⁵ `NotesList.tsx:286` hand-rolled ✏️/🗑 → `RowActions size={15}` (audio-rename via `onEdit`).
-- [ ] `DrawingGalleryPage.tsx:134` bespoke trash → `RowActions` delete-only.
-- [ ] `CheckRow.tsx:107` raw `.row-actions__btn` extra slot → an `extra` slot ON `RowActions` (one owner of the class family).
-- [ ] ⁵ single fridge-note dismiss (`board/Notes.tsx:158`) → `useDeferredRemoval` (batch broom already has it). ➖ media-note keeps confirm (frees an R2 blob — heavy tier).
-- [ ] ⁶ mot's visible « Supprimer »: align to peek-⋯ **or** record ➖ (a mot is ephemeral by nature) — decide at code-read, footnote either way.
-- [ ] dead `'note'` arm in `DetailKind` (`lib/detail.ts:22`) — remove.
+- [x] ¹⁵ `NotesList` hand-rolled ✏️/🗑 → `RowActions size={15}` (audio-rename via `onEdit`; the 32px `.cnote__act` twins were also UNDER the 44px touch-target rule — retired, CSS tombstoned in `cnote-list.css`; `notes-lean`/`cercle-notes-card` specs re-anchored on `.row-actions__btn`).
+- [x] ➖ **corrected on code-read**: `DrawingGalleryPage`'s trash is an OVERLAY BADGE on a tile (paired with the 📌 pin badge), not a row — glyph + label already canonical (`trash-bold`, `t.common.delete`); converting would fight the positioning for no drift win. Keep.
+- [x] `CheckRow`'s raw `.row-actions__btn` extra slot → `RowActions`' own `onExtra`/`extraIcon`/`extraLabel` slot (one owner of the class family; renders before ✏️/🗑, same chrome).
+- [x] ⁵ single fridge-note dismiss (`board/Notes.tsx`): a TEXT note now rides `useDeferredRemoval` (same held clear as « Tout effacer » — undo cancels the held DELETE). ➖ media-note keeps confirm-then-immediate (frees an R2 blob — media rows confirm, they don't undo).
+- [x] ⁶ ➖ mot's visible « Supprimer » recorded deliberate: the mot peek's four actions ARE its whole interaction and it has no other overflow — hiding one of four behind a ⋯ would be a menu for a menu's sake. The "danger goes overflow" rule applies where a peek has a primary + a long tail.
+- [x] dead `'note'` arm in `DetailKind` removed (tombstone comment in `lib/detail.ts`).
 
 ### Wave C — non-touch doors + discoverability 🟡
 

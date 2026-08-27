@@ -145,30 +145,11 @@
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
+/* The ✏️/🗑 pair is the shared RowActions (`.row-actions`, styles/pages/operator.css
+   — 44px targets); this class only pins it in the flex row. The hand-rolled 32px
+   `.cnote__act` twins were retired for it (ACTIONS.md Wave B). */
 .cnote__actions {
   flex: none;
-  display: inline-flex;
-  gap: 0.15rem;
-}
-.cnote__act {
-  display: inline-grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.cnote__act:hover,
-.cnote__act:focus-visible {
-  background: var(--surface);
-  color: var(--ink);
-}
-.cnote__act--del:hover,
-.cnote__act--del:focus-visible {
-  color: var(--terracotta-deep, #a8442b);
 }
 /* Phone: the scope chip would crowd the row — drop it (the face picker / board face
    already says whose list you're in) so the title + actions keep room. */

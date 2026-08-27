@@ -149,19 +149,26 @@ export function Notes({
   async function dismiss(n: NoteRow) {
     // A media note frees its R2 blob on delete (the media-undo-blob rule: media rows
     // confirm, they don't undo) — so a parent's ✕ on a drawing/photo/voice memo confirms
-    // first, guarding an accidental tap from silently losing the attachment. Plain text
-    // notes stay a quick, friction-free clear (they're transient by design, and toddler
-    // tap-to-clear only ever hits text notes — the media ✕ is parent-only).
-    if (n.media_key && !(await confirm({ message: t.notes.dismissMediaConfirm, tone: 'danger' }))) return
-    // Optimistic: drop it from the cached board at once, then persist (queues
-    // offline and replays on reconnect — deleting a note by id is idempotent).
-    void write('notes', {
-      method: 'DELETE',
-      body: { id: n.id },
-      affectedKeys: [BOARD_KEY],
-      optimistic: (qc) =>
-        qc.setQueryData<BoardData>(BOARD_KEY, (d) => (d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d)),
-    }).catch(() => {})
+    // first, guarding an accidental tap from silently losing the attachment. Its write
+    // then fires at once (optimistic drop + persist; queues offline, idempotent).
+    if (n.media_key) {
+      if (!(await confirm({ message: t.notes.dismissMediaConfirm, tone: 'danger' }))) return
+      void write('notes', {
+        method: 'DELETE',
+        body: { id: n.id },
+        affectedKeys: [BOARD_KEY],
+        optimistic: (qc) =>
+          qc.setQueryData<BoardData>(BOARD_KEY, (d) => (d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d)),
+      }).catch(() => {})
+      return
+    }
+    // A TEXT note rides the same held, undoable clear as « Tout effacer » (ACTIONS.md
+    // Wave B: the single dismiss was the only board delete with NO undo tier — a
+    // toddler tap-to-clear or a parent mis-tap silently ate the note). Deferred, so
+    // no poll can flash it back mid-undo, and undo simply cancels the held DELETE.
+    removal.remove([n.id], t.notes.clearedN(1), () =>
+      write('notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+    )
   }
 
   // Nothing to show and nothing being edited — render nothing. The trailing
