@@ -46,11 +46,11 @@ export function VoyageShareModal({
       }}
     >
       {({ clearLink }) => (
-        <section className="cercle-share__list">
-          <h3 className="cercle-share__title">{t.sharedVoyage.households}</h3>
+        <section className="sharesheet__list">
+          <h3 className="sharesheet__title">{t.sharedVoyage.households}</h3>
           <ul className="review__list">
             {trip.members.map((m) => (
-              <li key={m.household_id} className="cercle-share__row">
+              <li key={m.household_id} className="sharesheet__row">
                 <Avatar kind={null} colour={m.colour} name={m.label} size={24} />
                 <span className="review__name">
                   {m.label}

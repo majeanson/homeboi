@@ -462,54 +462,62 @@
 }
 
 /* ── ShareModal (src/components/ShareModal.tsx) ────────────────────────────
-   The ONE share sheet's link block, factored out of styles/cercle.css (B-11,
+   The ONE share sheet's link block. Named `.sharesheet*` since 2026-08-27
+   (UNIFORMIZING CSS-2): it was `.cercle-share*` for historical reasons — the
+   family-share sheet was the first caller — but the family / voyage / recipe /
+   event / routine sheets ALL render through this one `ShareModal`, so the
+   `cercle-` prefix had become a lie. NOT `.share-*`: `.share-preview` and
+   `.share-page__*` already exist (handoff.css / SharePreviewBar, a different
+   thing), and a one-word family matches `.subtabs` / `.mswitch`.
+
+   Factored out of styles/cercle.css (B-11,
    bmad/10): ShareModal is a generic shared component reachable from the eager
    Board (EventPeekActions → EntityShareModal) as well as lazy pages
    (SharedVoyagePage, DayPlanPage, Routines, DevKit, RecipeViewPage) — it must
    stay in the eager shell rather than ride cercle.css out to a lazy chunk, or
-   any of those surfaces renders it unstyled. `.cercle-share-preview*` (the
+   any of those surfaces renders it unstyled. `.sharesheet-preview*` (the
    received-share preview on FamilyImportPage / SharedVoyageJoinPage) stays
    alongside it since it shares the first rule; those two pages already import
    cercle.css directly for their other `.cercle-*` classes, so this is additive
    there, not their only source of it. */
-.cercle-share,
-.cercle-share-preview {
+.sharesheet,
+.sharesheet-preview {
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 12px);
 }
-.cercle-share__link {
+.sharesheet__link {
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 8px);
   align-items: flex-start;
 }
-.cercle-share__link .input {
+.sharesheet__link .input {
   width: 100%;
 }
 /* Copy + « Partager via… » sit side by side under the link (the generic ShareModal). */
-.cercle-share__linkbtns {
+.sharesheet__linkbtns {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2, 8px);
 }
-.cercle-share__list {
+.sharesheet__list {
   margin-top: var(--space-4, 16px);
 }
-.cercle-share__title {
+.sharesheet__title {
   font-size: 0.95rem;
   margin: 0 0 var(--space-2, 8px);
 }
-.cercle-share__row {
+.sharesheet__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2, 8px);
 }
-.cercle-share-preview__from {
+.sharesheet-preview__from {
   color: var(--muted, #6b7280);
 }
-.cercle-share-preview__label {
+.sharesheet-preview__label {
   margin: 0;
   font-size: 1.1rem;
 }

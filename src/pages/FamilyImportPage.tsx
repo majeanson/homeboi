@@ -270,7 +270,7 @@ export function FamilyImportPage() {
         ) : notFound || !share ? (
           <EmptyState>{t.familyShare.notFound}</EmptyState>
         ) : progress ? (
-          <div className="cercle-share-preview">
+          <div className="sharesheet-preview">
             <p className="mono">{t.familyShare.adding}</p>
             <progress className="cercle-import__bar" value={progress.current} max={progress.total} />
             <p className="mono">{progress.current} / {progress.total}</p>
@@ -279,9 +279,9 @@ export function FamilyImportPage() {
           <StatusMessage tone="success">{t.familyShare.added}</StatusMessage>
         ) : (
           <>
-            <div className="cercle-share-preview">
-              <p className="cercle-share-preview__from mono">{t.familyShare.from(share.sourceName || t.cercle.memberBadge)}</p>
-              {share.label && <h3 className="cercle-share-preview__label">{share.label}</h3>}
+            <div className="sharesheet-preview">
+              <p className="sharesheet-preview__from mono">{t.familyShare.from(share.sourceName || t.cercle.memberBadge)}</p>
+              {share.label && <h3 className="sharesheet-preview__label">{share.label}</h3>}
               <p className="operator__hint mono">{t.familyShare.importIntro}</p>
               <p className="mono">
                 {t.familyShare.peopleN(1 + share.payload.household.length)}

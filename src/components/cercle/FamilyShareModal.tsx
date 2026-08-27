@@ -106,7 +106,7 @@ export function FamilyShareModal({
       title={t.familyShare.shareTitle}
     >
       {family && (
-        <div className="cercle-share">
+        <div className="sharesheet">
           <p className="operator__hint mono">{t.familyShare.shareIntro}</p>
           <p className="mono">
             {family.label ? `${family.label} · ` : ''}
@@ -118,7 +118,7 @@ export function FamilyShareModal({
           {trunc && <StatusMessage tone="info">{t.familyShare.truncated(trunc.shared, trunc.total)}</StatusMessage>}
 
           {url ? (
-            <div className="cercle-share__link">
+            <div className="sharesheet__link">
               <input className="input mono" readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label={t.familyShare.copyLink} />
               <button type="button" className="btn btn--sm btn--primary" onClick={() => void copy()}>
                 <Icon name={copied ? 'check-bold' : 'link-bold'} size={15} /> {copied ? t.familyShare.copied : t.familyShare.copyLink}
@@ -135,14 +135,14 @@ export function FamilyShareModal({
       )}
 
       {/* Active shares — revoke any early. */}
-      <section className="cercle-share__list">
-        <h3 className="cercle-share__title">{t.familyShare.activeShares}</h3>
+      <section className="sharesheet__list">
+        <h3 className="sharesheet__title">{t.familyShare.activeShares}</h3>
         {shares.length === 0 ? (
           <EmptyState>{t.familyShare.noShares}</EmptyState>
         ) : (
           <ul className="review__list">
             {shares.map((s) => (
-              <li key={s.id} className="cercle-share__row">
+              <li key={s.id} className="sharesheet__row">
                 <span className="review__name">{s.label || t.familyShare.importTitle}</span>
                 <button type="button" className="btn btn--sm btn--ghost" onClick={() => void revoke(s.id)}>
                   <Icon name="trash-bold" size={15} /> {t.familyShare.revoke}

@@ -105,9 +105,9 @@ export function SharedVoyageJoinPage() {
         ) : invalid || !preview ? (
           <EmptyState>{t.sharedVoyage.linkInvalid}</EmptyState>
         ) : (
-          <div className="cercle-share-preview">
-            <p className="cercle-share-preview__from mono">{t.sharedVoyage.joinInvited}</p>
-            <h3 className="cercle-share-preview__label">{preview.title}</h3>
+          <div className="sharesheet-preview">
+            <p className="sharesheet-preview__from mono">{t.sharedVoyage.joinInvited}</p>
+            <h3 className="sharesheet-preview__label">{preview.title}</h3>
             <p className="mono">
               {[preview.destination, dateLabel(preview, lang)].filter(Boolean).join(' · ')}
             </p>

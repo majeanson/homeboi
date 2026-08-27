@@ -6,7 +6,7 @@ import { Icon } from './Icon'
 import { StatusMessage } from './StatusMessage'
 
 // The ONE share sheet. Factors the identical link-block anatomy the family + voyage
-// share modals hand-rolled (Modal shell → intro → error → the `.cercle-share__link`
+// share modals hand-rolled (Modal shell → intro → error → the `.sharesheet__link`
 // block: a read-only input.mono, a copy button that flips link→check, an optional
 // « Partager via… » system-share button, a scannable QR) so every "share this" surface
 // looks + behaves the same. It owns the mint/copy/reset state; the caller supplies:
@@ -107,13 +107,13 @@ export function ShareModal({
 
   return (
     <Modal open={open} onClose={onClose} title={title}>
-      <div className="cercle-share">
+      <div className="sharesheet">
         {intro && <p className="operator__hint mono">{intro}</p>}
         {err && <StatusMessage tone="error">{err}</StatusMessage>}
         {notice && <StatusMessage tone="info">{notice}</StatusMessage>}
 
         {url ? (
-          <div className="cercle-share__link">
+          <div className="sharesheet__link">
             <input
               className="input mono"
               readOnly
@@ -121,7 +121,7 @@ export function ShareModal({
               onFocus={(e) => e.currentTarget.select()}
               aria-label={t.shareLink.copyLink}
             />
-            <div className="cercle-share__linkbtns">
+            <div className="sharesheet__linkbtns">
               <button type="button" className="btn btn--sm btn--primary" onClick={() => void copy()}>
                 <Icon name={copied ? 'check-bold' : 'link-bold'} size={15} /> {copied ? t.shareLink.copied : t.shareLink.copyLink}
               </button>

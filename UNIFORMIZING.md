@@ -29,11 +29,27 @@ shipped in the 2026-06-26 waves; the 2026-07-08 pass closed the last two
 
 **What deliberately remains (deferred-with-verdict, NOT a to-do list):**
 - P2-10's optional `ADD_HANDLERS` map — only if touching those forms.
-- P2-9's help-copy drift (bubbles pulling `GUIDE.what`) — next onboarding refresh.
-- CSS-2's `.cercle-share*` → `.share-*` rename — next CSS pass.
 - CSS-5's `--text-*` size-scale sweep — own pass, low value.
-- DB-1's parallel-array media junction — opportunistic, when in that code.
-- DB-6 `household_preferences` split — rule-only until a 5th pref column.
+- DB-1's parallel-array media junction — the drift risk is closed in code by
+  `lib/parallelArray.ts`; a junction table would now buy tidiness only.
+- P2-7's Phase 2 (server search index / guide-in-DB) — over-engineering at this scale.
+
+### Second pass — 2026-08-27
+
+Four of the six "deliberately remains" entries were re-verified and **closed**; the file
+had **zero** unticked boxes left afterwards. Two were shipped, two were stale:
+- ✅ **CSS-1** — `FamilyBuilder`'s `.cercle-viewswitch` → `<SubTabs>`; the whole bespoke
+  family deleted. (The "deliberately different, boxed not pill" note was wrong — same pill.)
+- ✅ **CSS-2** — `.cercle-share*` → **`.sharesheet*`** (not `.share-*`: that collides with
+  the existing `.share-preview` / `.share-page__*`).
+- ~ **P2-9 help-copy drift** — stale: `helpFromGuide()` ships and is used 18×, with the
+  restate-vs-explain-the-control rule written into both registries' headers.
+- ~ **Part D / DB-6** — the whole D.1 "use the migration window" list had **already
+  shipped** (migrations 0086–0090) and was never ticked here; the one real remainder,
+  the `household_preferences` retro-split, is **rejected on its merits** (41 SQL sites +
+  permanent indirection, which D.3 says the household count doesn't change).
+
+That leaves this file with no open work — only verdicts.
 
 **⚠ For the next auditor:** several findings here went stale between audits
 (FE adoption, LIB-4, D-30/E-39 in bmad/08 too) — **always verify a finding in
@@ -57,9 +73,14 @@ the shared `SubTabs` (COMPONENTS.md already flags deal/flyer/recipe-book as migr
   distort it — neutralized with one rule `.recipe-view-toggle .subtabs-row { display: contents }`, making the wrapper
   layout-transparent so the rendered classes (`subtabs subtabs--mini` / `subtabs__opt is-on`) and 3-segment layout are
   byte-identical to before. typecheck + build green.
-- [ ] `components/cercle/FamilyBuilder.tsx` (~L410, `.cercle-viewswitch`) → `<SubTabs>` if the API fits — **kept distinct
-  for now**: `.cercle-viewswitch__btn`/`.is-active` is a deliberately different (boxed, not pill) style; adopting SubTabs
-  restyles it. Revisit if we want it to match the pill family.
+- [x] ✅ `components/cercle/FamilyBuilder.tsx` (`.cercle-viewswitch`) → **`<SubTabs>`, DONE 2026-08-27.** The old
+  "kept distinct — boxed, not pill" note was **wrong on inspection**: `.cercle-viewswitch` was
+  `border-radius: var(--radius-pill)` on a `--surface` ground with a `--card` active segment — the same pill row
+  `.subtabs` draws. It was a one-use copy: Liste/Liens/Arbre had already adopted SubTabs, leaving FamilyBuilder's
+  Bandes/Liste toggle as the only caller. Converted, and the whole `.cercle-viewswitch` / `__btn` / `-row` family
+  **deleted** from cercle.css (a tombstone comment points at SubTabs). Real gain beyond tidiness: the primitive
+  brings `useHScroll` (wheel mapping + ‹ › chevrons), so the row can't become mouse-unreachable when it outgrows a
+  320px width. typecheck + 1748 tests green.
 - [~] **Reviewed 2026-06-26 — keep distinct (same call as FamilyBuilder above); no code change.** Both `.cook__sibling`
   and `.cook__split-tab` are styled for CookMode's **immersive full-screen surface** (large targets, follows the
   audience profile), not the app's light `.subtabs` pill chrome — adopting `<SubTabs>` would either restyle them or
@@ -165,11 +186,13 @@ Same class defined twice (cascade-order-dependent, fragile):
   - **`.kid`** — the ONE true redundancy. pages.css's bare `.kid{min-height:100vh; display:flex; flex-direction:
     column}` was **fully inert** (kid.css imports later → its `min-height:100%` won; the other two props identical).
     **Removed** (provably zero-visual-change), comment added pointing to kid.css as canonical. typecheck + build green.
-- [ ] 🟢 **`.cercle-share*` is now the GENERIC share-sheet family** (cercle.css) — the family/voyage/recipe/event/routine
-  share sheets all render through the shared **`ShareModal`** over these classes (`.cercle-share`, `.cercle-share__link`,
-  `.cercle-share__linkbtns`, `.cercle-share__list/__row/__title`). The `cercle-` prefix is now a misnomer; a rename to a
-  neutral `.share-*` family is a pure class-rename refactor (touch every share modal + cercle.css) — **deferred, not
-  urgent** (zero behaviour), recorded here so the next CSS pass renames instead of re-auditing.
+- [x] ✅ 🟢 **`.cercle-share*` → `.sharesheet*` — DONE 2026-08-27** (this was the "next CSS pass" this entry was
+  written for). 31 occurrences across kit.css + cercle.css + 5 components; zero behaviour, zero markup shape change.
+  **Not** renamed to `.share-*` as this entry proposed: `.share-preview` and `.share-page__*` already exist
+  (handoff.css / SharePreviewBar / SharePage) and mean something else, so `.share-*` would have collided on the
+  very first class. One-word `.sharesheet` matches the `.subtabs` / `.mswitch` family convention instead, with
+  `.sharesheet-preview*` for the received-share preview. The kit.css block header records both the why and the
+  collision so it isn't re-proposed.
 
 ### CSS-3 🟢 `pages.css` is a 3.7k-line kitchen sink (423 classes, 19% of all CSS)
 - [x] ✅ **DONE 2026-06-26.** Split `pages.css` (3709 lines) into **eleven contiguous per-topic slices** under
@@ -223,7 +246,7 @@ Same class defined twice (cascade-order-dependent, fragile):
   - [~] **`var(--accent, #…)` "wrong fallback" — premise moot, no action.** `--accent` IS always defined
     (core.css:54 + per-theme), so every `var(--accent, #2a8f85)` fallback is **dead text** that never renders — not a
     "wrong colour." Harmless; an optional cosmetic cleanup (drop ~10 dead fallbacks), not a bug. Left.
-- [ ] Add a `--text-xs…--text-lg` size scale; replace scattered `0.78/0.82/0.85/0.9rem`. **Deferred** — larger
+- [~] Add a `--text-xs…--text-lg` size scale; replace scattered `0.78/0.82/0.85/0.9rem`. **Deferred** — larger
   app-wide sweep, optional, low value; do as its own pass if ever touching typography broadly.
 
 ---
@@ -382,9 +405,13 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   `postbox_media.r2_key` → `media_key`. All backend-only (the API already maps these to camelCase; no src/ reader),
   SELECTs alias `media_key AS <old>` so row interfaces stay identical. **Deliberately NOT renamed:** `recipes.image`
   (holds a key OR a full `https://` URL — `media_key` would mislead). typecheck + 797 tests + build green.
-- [ ] **Opportunistic:** when next touching recipe-step-images / routine-card-audio, consider normalizing the
-  parallel arrays into a `(parent_id, position, media_key)` junction table. **Do not** mass-migrate working data
-  just for tidiness — high risk, low user value. *(Still deferred — out of Phase 2 scope.)*
+- [~] **Opportunistic: parallel arrays → a `(parent_id, position, media_key)` junction table** — **still deferred,
+  and now deliberately so (re-verified 2026-08-27).** The failure mode this table was meant to prevent — a side
+  array drifting out of index-lockstep with the array it annotates, so a parent's voice clip plays on the wrong
+  routine card — is instead solved in code by **`src/lib/parallelArray.ts`**: one pure, unit-tested set of sync
+  ops (`alignSide` + the insert/remove/move mutations) that BOTH editors (routine card deck ↔ `cardsNarration`,
+  recipe steps ↔ `stepImages`) call. The risk is closed without moving working data; a junction table would now
+  buy schema tidiness only. Keep the arrays; keep every mutation going through `parallelArray`.
 
 ### DB-2 🟡→CONVENTION `color` vs `colour` (10+ tables)
 - [x] ✅ **DONE (mig 0087).** New columns use `colour`. Renamed every `color` outlier — scalar columns
@@ -426,9 +453,12 @@ trio (notes/family_notes/postbox/drawings) is the most expressive — make it th
   soft refs get a one-line comment naming the intent). Existing columns left as-is. Pairs with P2-8 above.
 
 ### DB-6 🟢→CONVENTION Household-config bloat
-- [ ] `households` carries ~15 JSON/pref columns (meal slots, recipe pills, aisle order, cars, wifi, rules…).
-  Fine for now. **Rule:** if you'd add a 5th-plus new pref, create a `household_preferences` table instead of
-  another column on the tenant row.
+- [x] ✅ **Rule in force, table shipped (verified 2026-08-27).** `households` carries ~15 JSON/pref columns (meal
+  slots, recipe pills, aisle order, cars, wifi, rules…) and **keeps them** — see the D.1 rejection for why the
+  retro-migration is not worth 41 SQL sites. The rule fired as designed: « La rentrée » was the next preference
+  that didn't deserve a column, so **migration 0106** created `household_preferences (household_id, key, value)`
+  — one row per preference, so unrelated settings can't clobber each other on a concurrent write. **No new
+  `households` column has been added since 0081.** New household-wide preferences go in the keyed table.
 
 ### DB-7 🟢 Smaller items
 - [x] ✅ `idempotency_keys.status` → **`status_code`** (mig 0089) — it's an HTTP status int, not workflow state;
@@ -656,7 +686,7 @@ palette change means hunting multiple files.
   in the module header: **searchable = has a SEARCH_INDEX entry**. SearchPage's `pick()` now takes a
   `SearchFields<T>` entry (ranking/CAP/rendering unchanged); the GUIDE matcher stays bespoke on purpose (per-point
   deep-links + token stripping). typecheck + 1010 tests + search e2e (4 specs) green.
-- [ ] ❌ **Phase 2 (reject for now):** server-side search index, guide-moved-to-DB, ingredient index. Over-engineering
+- [~] ❌ **Phase 2 (reject for now):** server-side search index, guide-moved-to-DB, ingredient index. Over-engineering
   at ~15–30 households; client-side warm-cache search is a *feature* (offline). Revisit only if a household's set
   gets large enough to lag per-keystroke.
 
@@ -697,10 +727,13 @@ tours (`guideWhat`), `SectionIntro`, and `FeatureMap` all reuse. Two real gaps r
   cards ('routines', 'calm' pt 1, 'kitchen', 'ghost', 'ai' ×3, 'screensaver' pt 1, 'share-access'). The test walks
   the 7 registries + static TOURS + WHATS_NEW: card exists, `point` in range, GUIDE ids unique — the whole
   dead-link class now fails `npm test`. (Discovery probes had their own guard already, discovery.test.ts.)
-- [ ] **Drift:** `ADD_HELP`/`CERCLE_HELP` carry their **own** one-liners separate from `GUIDE.what`, so they can
-  diverge. Low priority: have help bubbles pull the summary from the guide entry (like tours already do via
-  `guideWhat`). The big "one FeatureExplainer registry feeding guide+help+tour+intro" is **deferred** — high churn,
-  the copy already exists; only worth it at the next onboarding refresh.
+- [~] **Drift: `ADD_HELP`/`CERCLE_HELP` carry their own one-liners** — **stale finding, resolved with a rule
+  (verified 2026-08-27).** `helpFromGuide()` exists and is used **18×** across `addHelp` (13), `cercleHelp` (2),
+  `kitchenTabHelp` (2) and `tourContent` (1). Both registries carry the policy in their header comment: an entry
+  whose body merely **restated** a GUIDE card's `what` sources it via `helpFromGuide` (one prose to drift, not
+  two); a **bespoke** body stays hand-written where the bubble explains the *control* rather than the guide's
+  *concept* — which is most entries, and where forcing `guideWhat` would make the bubble wrong, not consistent.
+  Nothing left to do. The big "one FeatureExplainer registry" stays **deferred** as written.
 - [~] **Adoption template — stale finding (verified 2026-07-08):** Board/Kitchen/Liste/Routines/Operator all wire
   help-mode now (BOARD_HELP/KITCHEN_TAB_HELP/LISTE_HELP/ROUTINES_HELP/OPERATOR_HELP registries exist and are used).
   Adoption happened organically; no scaffold doc needed.
@@ -717,7 +750,7 @@ The ＋ capture spine (`SECTION_MODES`/`NAV_TARGET`/`MODE_DRESS`/`FORM_ROUTES`, 
   `emptyFridge` was missing from `actionLabel`, so its help bubble fell through to `modeLabel`; it now gets its real
   title. typecheck + e2e (shop-the-week) + build green. (Left in AddSheet rather than `lib/addSheet`: the catalog
   carries view deps — `IconName`, colours, `t`-labels — that belong with the render, beside the other dress catalogs.)
-- [ ] (Optional, low priority) Share the inline-add submit handlers (`submitList`/`submitPantry`/`submitReserve`/…)
+- [~] (Optional, low priority) Share the inline-add submit handlers (`submitList`/`submitPantry`/`submitReserve`/…)
   via an `ADD_HANDLERS[mode] = {endpoint, formatBody, affectedKeys}` map — also de-forks ReserveSection's inline
   add. Medium risk (form variations), defer unless touching that code.
 
@@ -733,19 +766,35 @@ The ＋ capture spine (`SECTION_MODES`/`NAV_TARGET`/`MODE_DRESS`/`FORM_ROUTES`, 
 ### D.1 ✅ Now worth doing — the migration window is the whole reason they were deferred
 Do these **soon, while there's one row to migrate** (and a thin app to update). Each is still real *code* churn
 (every SQL reader), but that's a finite one-time cost on a young codebase, and it never gets cheaper than now.
-- [ ] **Part I DB-4 — converge recurrence onto `recur_json`.** The explicit blocker was "backfill `schedule_blocks`
-  + rewrite `carResolve`." Backfill is now trivial (or just drop/recreate the handful of rows). Worth it: it lets
-  `_lib/recur` serve every recurring entity and pairs with P2-2 `DerivedOccurrence`. **Upgraded from forward-only → do now.**
-- [ ] **Part I DB-2 (`color`→`colour`) + DB-3 (`sort_order`/`sort`→`position`).** Pure naming drift; the only reason
-  to defer was "rename touches every reader on live data." Data risk gone → do the renames now so the schema stops
-  carrying both spellings forever. (Still verify each query; it's code churn, just no data danger.) Also fix the
-  genuine `home_pins` `sort`+`position` redundancy.
-- [ ] **Part I DB-1 media columns — rename to the `media_kind`/`media_key`(+`scene_key`) convention** across the
-  single-column stragglers (`photo_key`/`r2_key`/`image`). Same logic: cheapest now. (This is the *column rename*,
-  NOT the polymorphic table — see D.3.)
-- [ ] **`household_preferences` split (Part I DB-6)** — copying ~15 JSON cols off the tenant row is a 1-row move
-  today. Modest value (tenancy vs prefs separation), low cost now. Bundle it with **P2-5** if you build
-  `useHouseholdListSetting`; skip if you're not touching settings anyway.
+
+> **CLOSED 2026-08-27 — the window was used.** Every rename on this list shipped in Part I within days of it being
+> written; these boxes were simply never ticked here, so the list read as open work for two months. Re-verified
+> against the migrations, not against Part I's prose. **The one remaining item is rejected below, on its merits.**
+
+- [x] **Part I DB-4 — converge recurrence onto `recur_json`.** ✅ **Shipped — migration 0090**
+  (`schedule_blocks`: `+recur_json`, `−weekdays`, `−week_interval`), `carResolve`'s `weekActive` deleted in favour
+  of `_lib/recur.occurrenceOn`. See Part I DB-4 for the full write-up. The `/api/schedule` contract was held
+  byte-stable, so `/voiture` never moved.
+- [x] **Part I DB-2 (`color`→`colour`) + DB-3 (`sort_order`/`sort`→`position`).** ✅ **Shipped — migrations 0087
+  and 0086.** 0087 renames `tasks`/`home_projects`/`schedule_blocks`/`carnets` `color`→`colour` plus the three
+  households JSON-pref columns; 0086 renames `members`/`contact_groups` `sort_order` and `carnets`/`home_pins`
+  `sort` → `position`. The "genuine `home_pins` `sort`+`position` redundancy" this list asked for **did not
+  exist** — inspection during 0086 found only `sort`. All SELECTs alias back to the old JSON keys, so no
+  frontend churn happened.
+- [x] **Part I DB-1 media columns — rename to the `media_kind`/`media_key`(+`scene_key`) convention.**
+  ✅ **Shipped — migration 0088**: `photos.r2_key`, `contacts`/`contact_photos`/`businesses`/`pets` `photo_key`,
+  `intake_media`/`postbox_media` `r2_key` → `media_key`. `recipes.image` deliberately kept (it holds a key **or**
+  a full `https://` URL, so `media_key` would mislead).
+- [x] ❌ **`household_preferences` split (Part I DB-6) — REJECTED 2026-08-27, and the rule it protects is already
+  in force.** The table exists (**migration 0106**, created for « La rentrée » precisely because DB-6's rule
+  fired) and the convention holds: **no new `households` column since 0081**, two years of preferences later.
+  What's left is only the *retro*-migration of the ~15 existing pref columns, and D.1's "1-row move, low cost"
+  framing was measuring the wrong thing. The data move is indeed one row; the cost is **41 SQL sites**
+  (23 `FROM households`, 18 `UPDATE households`) plus a permanent shape change — every settings read stops being
+  "one row = all settings" and becomes a row **plus** a keyed side-table to join and re-assemble. That is
+  *permanent code indirection*, which **D.3 itself says the household count does not change**; it was filed under
+  D.1 by mistake. CLAUDE.md's own rule agrees: *don't retro-churn a working table just to match a name.*
+  **Verdict: keep the existing columns, keep sending new preferences to `household_preferences`.**
 
 ### D.2 ✅ Promote regardless — was never really a data question
 - [~] **`attachmentsFor(kind,id)` / `deleteAttachments(kind,id)` helper** — **SKIPPED after verification: the

@@ -58,45 +58,12 @@
   gap: 0.4rem;
 }
 
-/* View switch row: the segmented control + the contextual-help "?" toggle. */
-.cercle-viewswitch-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  /* The row is nearly full-width; when a vertical scrollbar narrows the body the
-     "?" would poke a pixel past. Let it wrap rather than overflow (calm: only the
-     tight edge case wraps; normal widths stay one line). */
-  flex-wrap: wrap;
-}
-
-/* View switch (Liste / Liens / Arbre) — a calm segmented control */
-.cercle-viewswitch {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  align-self: flex-start;
-}
-.cercle-viewswitch__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.85rem;
-  border: 0;
-  background: transparent;
-  border-radius: var(--radius-pill);
-  font: inherit;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.cercle-viewswitch__btn.is-active {
-  background: var(--card);
-  color: var(--ink);
-  box-shadow: var(--shadow-sm);
-}
+/* The `.cercle-viewswitch*` family (a bespoke segmented control + its row) was
+   DELETED 2026-08-27 (UNIFORMIZING CSS-1). Liste/Liens/Arbre had already moved to
+   the shared `<SubTabs>`, and FamilyBuilder's Bandes/Liste toggle — its last
+   caller — moved with it. The two styles were never actually different: both were
+   the same pill row, so this was a one-use copy of `.subtabs` that also missed the
+   primitive's wheel-mapped horizontal scroll. Use `<SubTabs>`; don't re-add this. */
 
 /* "Maisonnée" badge marking a household member among the people */
 .cercle-row__badge {
@@ -1675,7 +1642,7 @@
    the keyframes must exist wherever a .cercle-row lands too. */
 
 /* « Partager une famille » (FamilyShareModal) + the recipient import preview
-   (FamilyImportPage) style themselves via `.cercle-share`/`.cercle-share-preview*` —
+   (FamilyImportPage) style themselves via `.sharesheet`/`.sharesheet-preview*` —
    moved to styles/kit.css (B-11 revue, bmad/10) so the generic ShareModal they're
    built on (src/components/ShareModal.tsx) stays styled from the eager Board
    (EventPeekActions → EntityShareModal) and every other lazy consumer, instead of

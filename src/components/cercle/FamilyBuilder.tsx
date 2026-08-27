@@ -3,6 +3,7 @@ import { useLang, useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { SubTabs } from '../SubTabs'
 import {
   type Person,
   type ContactLink,
@@ -20,7 +21,7 @@ import {
   dedupeNewLinks,
 } from '../../lib/cercle'
 import { Avatar } from '../Avatar'
-import { Icon, InlineIcon } from '../Icon'
+import { Icon } from '../Icon'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { THING_DEFAULTS } from '../../lib/things'
 
@@ -411,22 +412,25 @@ export function FamilyBuilder({
         <p className="cf__rels-empty mono">{t.cercle.familyEmpty}</p>
       ) : (
         <>
-          {/* Mode toggle */}
-          <div className="cercle-viewswitch" role="tablist" aria-label={t.cercle.familyMode}>
-            {(['bands', 'matrix'] as Mode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="tab"
-                aria-selected={mode === m}
-                className={'cercle-viewswitch__btn' + (mode === m ? ' is-active' : '')}
-                onClick={() => setMode(m)}
-              >
-                <InlineIcon name={m === 'bands' ? 'tree-bold' : 'file-text-bold'} size={15} />{' '}
-                {m === 'bands' ? t.cercle.familyModeBands : t.cercle.familyModeMatrix}
-              </button>
-            ))}
-          </div>
+          {/* Mode toggle — the shared `<SubTabs>`, not the bespoke
+              `.cercle-viewswitch` it used to hand-roll (UNIFORMIZING CSS-1,
+              2026-08-27). The old note said the two styles were deliberately
+              different; they weren't — both were the same pill row, and
+              `.cercle-viewswitch` had outlived its other caller (Liste/Liens/
+              Arbre moved to SubTabs long ago), so it was a one-use copy. Adopting
+              the primitive also buys the wheel-mapped horizontal scroll + ‹ ›
+              chevrons, which a hand-rolled row doesn't have: at 320px these two
+              segments could outgrow the width with no way to reach the second
+              one with a mouse. */}
+          <SubTabs
+            options={[
+              { key: 'bands', label: t.cercle.familyModeBands, icon: 'tree-bold' },
+              { key: 'matrix', label: t.cercle.familyModeMatrix, icon: 'file-text-bold' },
+            ]}
+            value={mode}
+            onSelect={setMode}
+            ariaLabel={t.cercle.familyMode}
+          />
 
           {mode === 'bands' ? (
             <div className="cercle-fam__bands">
