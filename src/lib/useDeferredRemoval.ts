@@ -138,5 +138,14 @@ export function useDeferredRemoval(queryKey: QueryKey) {
   }
 }
 
+// The ids currently held out of view for a scope, readable OUTSIDE React — for
+// code that matches against a raw query cache (lib/picks' deal↔item matcher): a
+// row mid-undo is still in the cache AND still on the server, but riding a deal
+// on it loses the deal the moment the held delete commits. Match against
+// `visible`-equivalent data, not the raw frame.
+export function heldIds(queryKey: QueryKey): ReadonlySet<string> {
+  return snapshot(scopeOf(queryKey))
+}
+
 // Exported for unit tests — the pure store, exercised without React.
 export const _deferredRemovalStore = { hideIds, unhideIds, snapshot, scopeOf, EMPTY }

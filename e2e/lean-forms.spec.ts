@@ -193,18 +193,25 @@ test('« Voir dans l’app » rides the lens row, and keeps a name when its labe
 
 test('the board’s edit hint sits under the cards, not over them', async ({ page }) => {
   await phone(page, '/board')
-  const hint = page.locator('.board-edit-hint')
+  const hint = page.locator('.board-edit-hint[role="note"]')
   await expect(hint).toBeVisible()
 
   // Below the grid it describes — it used to displace the first card.
   const grid = page.locator('.board-grid')
   expect((await hint.boundingBox())!.y).toBeGreaterThan((await grid.boundingBox())!.y)
 
-  // Still one-time + per-device: dismissing retires it.
+  // Still one-time + per-device: dismissing retires the INSTRUCTION — but its slot
+  // keeps a permanent quiet « Organiser » door (ACTIONS.md Wave C: the keyboard/
+  // discoverable mirror of the hold), which survives a reload and arms edit mode.
   await hint.getByRole('button').click()
-  await expect(page.locator('.board-edit-hint')).toHaveCount(0)
+  await expect(page.locator('.board-edit-hint[role="note"]')).toHaveCount(0)
+  const door = page.locator('.board-edit-hint--door')
+  await expect(door).toBeVisible()
   await page.reload()
-  await expect(page.locator('.board-edit-hint')).toHaveCount(0)
+  await expect(page.locator('.board-edit-hint[role="note"]')).toHaveCount(0)
+  await expect(page.locator('.board-edit-hint--door')).toBeVisible()
+  await page.locator('.board-edit-hint--door button').click()
+  await expect(page).toHaveURL(/edit=1/)
 })
 
 // ── La cuisine · Le cercle ──────────────────────────────────────────────────────

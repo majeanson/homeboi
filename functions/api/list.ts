@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
@@ -262,6 +262,17 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
 
   if (!body?.id) return badRequest('id requis.')
+
+  // The row must EXIST before any per-id mutation. Every UPDATE below is
+  // `WHERE id = ? AND household_id = ?` — against a stale id (the client staged a
+  // deal on a line its persisted cache still had, but « Vider les cochés » had
+  // already deleted) each one used to "succeed" having changed NOTHING, so a
+  // flyer add could report « Sur « Pommes » » while the deal landed nowhere.
+  // A 404 here lets stageDeal/ensureListLine fall back to creating the line.
+  const exists = await ctx.env.DB.prepare('SELECT 1 FROM list_items WHERE id = ? AND household_id = ?')
+    .bind(body.id, actor.householdId)
+    .first()
+  if (!exists) return notFound('Ligne introuvable.')
 
   // Rename the line in place (edit sheet). Trimmed; empty text is ignored rather
   // than blanking the row.

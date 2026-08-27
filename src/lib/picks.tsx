@@ -8,6 +8,7 @@ import { api } from './api'
 import { writeWith } from './write'
 import { type Deal, type Pick } from './deals'
 import { normKey } from './cookable'
+import { heldIds } from './useDeferredRemoval'
 import { BOARD_KEY, HOUSEHOLD_KEY } from './queryKeys'
 
 // A list row as it arrives in the ['board'] cache (deal_json = the staged deal).
@@ -137,8 +138,13 @@ export function matchListItem(list: ListItem[], name: string): ListItem | null {
 // a scene outside HubLayout should still subscribe to BOARD_KEY themselves so the
 // match happens before the round-trip; the server backstop in POST /api/list
 // re-runs the same decision on every `match: true` add regardless).
+// Rows mid-« Vider les cochés » (held by the undo toast) are EXCLUDED: they're
+// still in this frame and still on the server, but riding a deal on one loses the
+// deal the instant the held delete commits — match only against what's visible.
 function cachedList(qc: QueryClient): ListItem[] {
-  return qc.getQueryData<{ list?: ListItem[] }>(BOARD_KEY)?.list ?? []
+  const held = heldIds(BOARD_KEY)
+  const list = qc.getQueryData<{ list?: ListItem[] }>(BOARD_KEY)?.list ?? []
+  return held.size ? list.filter((i) => !held.has(i.id)) : list
 }
 
 // What a flyer add did: the text of the EXISTING line it rode on, or null when it
@@ -173,13 +179,19 @@ async function addLine(qc: QueryClient, body: Record<string, unknown>): Promise<
 export async function ensureListLine(qc: QueryClient, name: string): Promise<AddedTo> {
   const existing = matchListItem(cachedList(qc), name)
   if (existing) {
-    if (existing.checked_at)
-      await writeWith(qc, 'list', {
-        method: 'PATCH',
-        body: { id: existing.id, checked: false },
-        affectedKeys: [BOARD_KEY],
-      }).catch(() => {})
-    return existing.text
+    try {
+      if (existing.checked_at)
+        await writeWith(qc, 'list', {
+          method: 'PATCH',
+          body: { id: existing.id, checked: false },
+          affectedKeys: [BOARD_KEY],
+        })
+      return existing.text
+    } catch {
+      // The matched line no longer exists server-side (a stale persisted frame —
+      // PATCH now 404s instead of silently updating zero rows). Fall through and
+      // create the line for real rather than report a landing that never happened.
+    }
   }
   return addLine(qc, { text: name })
 }
@@ -193,8 +205,15 @@ export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Prom
   if (existing) {
     const body: { id: string; deal: Deal; checked?: boolean } = { id: existing.id, deal }
     if (existing.checked_at) body.checked = false
-    await writeWith(qc, 'list', { method: 'PATCH', body, affectedKeys: [BOARD_KEY] }).catch(() => {})
-    return existing.text
+    try {
+      await writeWith(qc, 'list', { method: 'PATCH', body, affectedKeys: [BOARD_KEY] })
+      return existing.text
+    } catch {
+      // The matched line is gone server-side (stale persisted frame — the PATCH
+      // 404s now instead of updating zero rows and "succeeding"). Fall through:
+      // the deal creates its line, instead of the button saying « Sur « X » »
+      // while the deal landed nowhere.
+    }
   }
   return addLine(qc, { text: name, deal })
 }
