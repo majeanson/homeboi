@@ -29,6 +29,8 @@ import { Loading } from '../components/Fallback'
 import { SubTabs } from '../components/SubTabs'
 import { Modal } from '../components/Modal'
 import { EmptyState } from '../components/EmptyState'
+import { SecLabel } from '../components/board/BoardCard'
+import { SectionAdd } from '../components/SectionAdd'
 import { Icon, InlineIcon } from '../components/Icon'
 import { RowActions } from '../components/RowActions'
 import { CarnetForm } from '../components/cercle/CarnetForm'
@@ -313,11 +315,11 @@ export function CercleCarnetPage() {
 
             {/* Ses choses (children + rooms) */}
             <section className="carnet-block">
-              <div className="sec-label">
-                <span className="sec-label__ico" aria-hidden="true"><Icon name="tag-bold" size={16} /></span>
-                <b>{c.sesChoses}</b>
-                <span className="ln" />
-              </div>
+              <SecLabel
+                label={c.sesChoses}
+                icon="tag-bold"
+                action={<SectionAdd open={addingChild} onToggle={() => setAddingChild(!addingChild)} label={c.addChild} readOnly={ro} />}
+              />
               {children.length === 0 ? (
                 <EmptyState>{c.noChoses}</EmptyState>
               ) : (
@@ -329,11 +331,6 @@ export function CercleCarnetPage() {
                     </button>
                   ))}
                 </div>
-              )}
-              {!ro && (
-                <button type="button" className="btn btn--ghost" onClick={() => setAddingChild(true)}>
-                  <InlineIcon name="plus-bold" size={16} /> {c.addChild}
-                </button>
               )}
             </section>
 
@@ -365,11 +362,11 @@ export function CercleCarnetPage() {
 
             {/* Historique (le carnet) */}
             <section className="carnet-block">
-              <div className="sec-label">
-                <span className="sec-label__ico" aria-hidden="true"><Icon name="receipt-bold" size={16} /></span>
-                <b>{c.historique}</b>
-                <span className="ln" />
-              </div>
+              <SecLabel
+                label={c.historique}
+                icon="receipt-bold"
+                action={<SectionAdd open={addingLog} onToggle={() => setAddingLog(!addingLog)} label={c.addEntry} readOnly={ro} />}
+              />
               {shownEntries.length === 0 ? (
                 <EmptyState>{c.noHistory}</EmptyState>
               ) : (
@@ -388,20 +385,30 @@ export function CercleCarnetPage() {
                   </div>
                 ))
               )}
-              {!ro && (
-                <button type="button" className="btn btn--ghost" onClick={() => setAddingLog(true)}>
-                  <InlineIcon name="plus-bold" size={16} /> {c.addEntry}
-                </button>
-              )}
             </section>
 
             {/* Entretien (reuses the Projets & Entretien form, scoped to this carnet) */}
             <section className="carnet-block">
-              <div className="sec-label">
-                <span className="sec-label__ico" aria-hidden="true"><Icon name="repeat-bold" size={16} /></span>
-                <b>{c.entretien}</b>
-                <span className="ln" />
-              </div>
+              <SecLabel
+                label={c.entretien}
+                icon="repeat-bold"
+                action={
+                  /* Add = the shared /home-project/new scene (?carnet= files it back
+                     onto this carnet), not a form unfolded under the list. Same create
+                     path as Réglages ▸ Corvées and the board ＋ « Corvées ».
+                     Operator-only, like that scene (FormScene bounces an unsigned
+                     kiosk) — so a kiosk gets no dead ＋. `open` is always false: this
+                     one LEAVES rather than unfolding, so the chip never becomes a ✕. */
+                  signedIn ? (
+                    <SectionAdd
+                      open={false}
+                      onToggle={() => nav(`/home-project/new?kind=upkeep&carnet=${carnet.id}`)}
+                      label={c.addCare}
+                      readOnly={ro}
+                    />
+                  ) : undefined
+                }
+              />
               {entretien.length === 0 ? (
                 <EmptyState>{c.noEntretien}</EmptyState>
               ) : (
@@ -428,30 +435,16 @@ export function CercleCarnetPage() {
                   )
                 })
               )}
-              {/* Add = the shared /home-project/new scene (?carnet= files it back onto this
-                  carnet), not a form unfolded under the list — which is where it used to
-                  land, below the fold on a long carnet. Same create path as Réglages ▸
-                  Corvées and the board ＋ « Corvées ». Operator-only, like that scene
-                  (FormScene bounces an unsigned kiosk) — so a kiosk gets no dead button. */}
-              {!ro && signedIn && (
-                <button
-                  type="button"
-                  className="btn btn--ghost"
-                  onClick={() => nav(`/home-project/new?kind=upkeep&carnet=${carnet.id}`)}
-                >
-                  <InlineIcon name="plus-bold" size={16} /> {c.addCare}
-                </button>
-              )}
             </section>
 
             {/* En cas de pépin — the house map (home carnets only). */}
             {carnet.kind === 'home' && (
               <section className="carnet-block">
-                <div className="sec-label">
-                  <span className="sec-label__ico" aria-hidden="true"><Icon name="key-bold" size={16} /></span>
-                  <b>{c.enCasDePepin}</b>
-                  <span className="ln" />
-                </div>
+                <SecLabel
+                  label={c.enCasDePepin}
+                  icon="key-bold"
+                  action={<SectionAdd open={addingPin} onToggle={() => setAddingPin(!addingPin)} label={c.addPin} readOnly={ro} />}
+                />
                 {shownPins.length === 0 ? (
                   <EmptyState>{c.noPins}</EmptyState>
                 ) : (
@@ -467,11 +460,6 @@ export function CercleCarnetPage() {
                       {!ro && <RowActions onEdit={() => setEditPin(p)} onDelete={() => removePin(p)} />}
                     </div>
                   ))
-                )}
-                {!ro && (
-                  <button type="button" className="btn btn--ghost" onClick={() => setAddingPin(true)}>
-                    <InlineIcon name="plus-bold" size={16} /> {c.addPin}
-                  </button>
                 )}
               </section>
             )}

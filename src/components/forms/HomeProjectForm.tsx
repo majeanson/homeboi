@@ -104,14 +104,6 @@ export function HomeProjectForm({
   const addLabel = kind === 'upkeep' ? t.operator.home.addEntretien : t.operator.home.addProjet
   return (
     <form className="operator__inline-form operator__chore-form" onSubmit={submit}>
-      <div className="picker-chips mono">
-        <span className="picker-chips__label">{t.operator.home.common}</span>
-        {presets.map((p) => (
-          <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
-            {p.icon} {p.label}
-          </Chip>
-        ))}
-      </div>
       {/* Title reuses EditField (clear ✕ + mic + Enter-commit), matching its sibling
           ChoreForm — this was the lone operator form still on a bare <input>. */}
       <EditField
@@ -123,6 +115,20 @@ export function HomeProjectForm({
         placeholder={addLabel}
         ariaLabel={addLabel}
       />
+      {/* The « Courants » presets FILL that field, so they belong under it, not over
+          it. They used to OPEN the form — four wrapped rows of chips before the name
+          you came to type — which left this the one form scene 159px from its first
+          field while every sibling (event / chore / habit / recipe / pet) leads with
+          its name at ~16px. Same chips, same one tap; the form just says what it is
+          first. */}
+      <div className="picker-chips mono">
+        <span className="picker-chips__label">{t.operator.home.common}</span>
+        {presets.map((p) => (
+          <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
+            {p.icon} {p.label}
+          </Chip>
+        ))}
+      </div>
       <label className="recur__row mono">
         <span>{t.operator.home.budgetLabel}</span>
         <input

@@ -34,6 +34,7 @@ import { type EventRow } from '../components/board/types'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
 import { Avatar } from '../components/Avatar'
+import { Cluster } from '../components/Layout'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { AskAnswerCard, type AnswerKind } from '../lib/askAnswer'
@@ -345,14 +346,6 @@ export function SearchPage() {
           enterKeyHint="search"
         />
 
-        {/* #12 — ask the AI the typed question (Enter does the same). Hidden when
-            AI is off (binding absent or household-disabled). */}
-        {q.trim() && aiEnabled && !aiOff && (
-          <button type="button" className="btn btn--sm search__ask" onClick={ask} disabled={asking}>
-            <Icon name="sparkle-bold" size={16} /> {t.search.ask}
-          </button>
-        )}
-
         {/* #12 — the shared answer card (src/lib/askAnswer.tsx): AskSheet (E-22,
             the board mic) renders the SAME card, so the two "ask" entry points
             never drift into two answer looks. */}
@@ -362,6 +355,31 @@ export function SearchPage() {
             status={asking ? 'asking' : answer ? 'answer' : aiOff ? 'off' : 'error'}
             answer={answer ? { text: answer.text, kind: answer.kind } : null}
           />
+        )}
+
+        {/* ONE line between the box and the first hit: how many were found, and the
+            door to « Demander à l'IA ». They used to be two full rows — the ask CTA
+            camping over every result before you had read one (LEAN #5: a "not what I
+            meant" thought comes AFTER reading), and a count line wearing the empty
+            state's 1.4rem padding. Together they cost ~95px above the first hit. The
+            count keeps `role="status"` (the grouped rows summarise nothing for a
+            screen reader) and the ask chip is now found exactly where the eye lands
+            after typing. Rendered only once something is typed. */}
+        {needle && (total > 0 || (q.trim() && aiEnabled && !aiOff)) && (
+          <Cluster justify="between" className="search__meta">
+            {total > 0 ? (
+              <p className="search__count mono" role="status">
+                {t.search.resultsCount(total)}
+              </p>
+            ) : (
+              <span />
+            )}
+            {q.trim() && aiEnabled && !aiOff && (
+              <button type="button" className="btn btn--sm search__ask" onClick={ask} disabled={asking}>
+                <Icon name="sparkle-bold" size={16} /> {t.search.ask}
+              </button>
+            )}
+          </Cluster>
         )}
 
         {!needle ? (
@@ -376,9 +394,6 @@ export function SearchPage() {
           )
         ) : (
           <>
-            {/* A concise, polite live count so a screen-reader user hears "3 résultats"
-                as the search settles — the grouped rows below give no such summary. */}
-            <p className="search__hint mono" role="status">{t.search.resultsCount(total)}</p>
             {/* Sections render best-hit-first: a section whose top row is NAMED
                 what you typed floats above sections that only contain it in a
                 body field (see the rank comment in the memo). Ties keep the

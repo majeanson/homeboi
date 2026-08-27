@@ -115,7 +115,6 @@
    it's about; a "not what you wanted?" chip row links into the related sections. */
 .search__ask {
   align-self: flex-start;
-  margin-bottom: 0.2rem;
 }
 .search__answer {
   display: flex;
@@ -809,4 +808,16 @@
 }
 .ask-sheet__replay {
   margin-left: auto;
+}
+
+/* Global search: the ONE line between the box and the first hit — the result count
+   and the « Demander à l'IA » door. They were two full rows (the CTA over every
+   result, and a count wearing `.search__hint`'s 1.4rem empty-state padding), ~95px
+   of chrome before anything you searched for. See SearchPage. */
+.search__meta {
+  margin: 0.1rem 0 0.2rem;
+}
+.search__count {
+  margin: 0;
+  color: var(--ink-soft);
 }

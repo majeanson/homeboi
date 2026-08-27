@@ -383,8 +383,15 @@ export function RecipeSheet({
                     </button>
                   </div>
                 )}
-                {/* Quick batch presets — work with or without a stated serving
-                    count. ×1 returns to the recipe as written. */}
+                {/* Quick batch presets — the WHOLE scaling control for a recipe that
+                    states no serving count. When it does state one, the stepper beside
+                    them already reaches every amount (and says it in portions, which is
+                    what you actually want to know), so the presets were a second row of
+                    controls saying the same thing above the ingredients on every read —
+                    ~50px of the 243 you scrolled past to reach « 400 g de pâtes ».
+                    Say it once (LEAN #6); the recipes that need them keep them whole
+                    (invariant 3 — this is not a fix to cargo-cult onto the other case). */}
+                {!baseServings && (
                 <div className="recipe-mult" role="group" aria-label={t.recipes.batch}>
                   {MULTS.map(([lbl, m]) => (
                     <button
@@ -398,6 +405,7 @@ export function RecipeSheet({
                     </button>
                   ))}
                 </div>
+                )}
               </div>
               {ingGroups.map((g, gi) => (
                 <Fragment key={gi}>

@@ -26,6 +26,15 @@ const LOW_CONTENT_EXPECTED: { match: RegExp; why: string }[] = [
   { match: /^kitchen-ideas/, why: 'the Idées drawer holds 2 ideas in the fixture; no budget on this entry (report-only)' },
   { match: /^form-/, why: 'a form is fields, not prose — its first field sits at ~17px' },
   { match: /^maison-carnets/, why: 'seeded with 2 carnet rows on purpose — enough to measure the row rhythm' },
+  // Reviewed 2026-08-26, the batch of scenes the sweep had never opened. Every PNG
+  // below was opened before its line was written here.
+  { match: /^routine-run/, why: 'the routine PLAYER — one big picture card for a pre-reader; the empty space IS the design (no budget)' },
+  { match: /^recipe-book/, why: '« Mon livre de cuisine » is a picture book COVER you turn, not a list (no budget)' },
+  { match: /^cashier/, why: 'the till surface centres its tiles; the shared list fixture stages exactly one deal (no budget)' },
+  { match: /^drawings/, why: 'a wall of drawings — two images and their dates; images carry no characters' },
+  { match: /^jouer/, why: '« Jouer » is a menu of four big doors, one word each' },
+  { match: /^quickadd/, why: '« Ajout rapide » is five short item names — that IS the surface' },
+  { match: /^circulaires/, why: 'measured on « Par magasin »: three flyer rows, a logo + a date range each' },
 ]
 const explain = (name: string) => LOW_CONTENT_EXPECTED.find((r) => r.match.test(name))?.why ?? null
 

@@ -92,6 +92,46 @@ move it. So a local baseline is trustworthy — but confirm a new batch of budge
 with one CI sweep before relying on it, because the day that stops being true is a
 day of red builds nobody can reproduce locally.
 
+## Generous inside (the other ratchet)
+
+Everything above measures a surface you are **scanning** — how much chrome you pass
+before the content. It says nothing about a surface you deliberately **opened to do
+one thing**: the ＋ sheet's composer, an expanded `SectionAdd` box, a scene form.
+There the field *is* the content, and the failure runs the other way.
+
+> **Lean outside, generous inside.** Chrome you scroll past has a ceiling that only
+> moves down. A composer you asked for has a **floor** that only moves up.
+
+It shipped, so it is not hypothetical. On a 390px phone the kitchen ＋ sheet's
+« Restants » row spent ~178px on « ＋ À finir bientôt », left the box on its 10rem
+basis, and the mic + caret ate ~90px of that — **~60px of typing width**, the
+placeholder clipped to « Ajouter un ». Every LEAN number on that screen was green:
+the sheet is not a browse surface, so nothing was measuring it.
+
+The fix was one rule at the primitive, not one per surface: under 30rem of row a
+labeled CTA drops **beneath** a full-width field (`.edit-field--cta`, pages/
+fields.css). ~55 call sites inherited it. The two guards:
+
+| | measures | direction |
+| --- | --- | --- |
+| `e2e/state-matrix.spec.ts` `budgetPx` | `contentTopPx` — chrome before content | ceiling, moves **down** |
+| `e2e/composer-fit.spec.ts` `floor` | the field's usable typing width, per composer | floor, moves **up** |
+| `src/styles/field-fit.test.ts` | the CSS invariants themselves (the row is the container; no host re-pins a fixed basis; `--gutter` owns every committed surface's side margin) | build gate |
+
+The floor's companion assertion is the one that actually reads like the bug: the
+field's own **placeholder, measured in the field's own font, must fit**. A number
+can drift past a reviewer; « Ajouter un… » cannot.
+
+Two things follow for any new composer:
+
+- **A labeled submit is a commitment to a full line.** If a field doesn't want one,
+  don't add one — La liste's add row and the lean Notes composer both dropped
+  theirs (Enter is the whole interaction) and spend the entire width on text.
+- **Count the 44px icons inside the box.** The clear ✕, the mic, the 📎, the
+  combobox caret are each a full touch target and none may shrink. Three is
+  affordable on a full line and nowhere else; under 22rem the decorative leading
+  glyph gets out of the way first.
+
 ## The nine patterns
 
 Each has a fix that already exists — reach for the primitive, don't invent one.
@@ -151,6 +191,29 @@ pills, an always-open todo composer, and a « Le fil du jour » heading over a
 
 The lesson generalizes: *check what the matrix does NOT list.* A budget guards a
 surface; the absence of an entry guards nothing, and reads exactly like a pass.
+
+**So the question was asked properly**, against `src/router.tsx`, and it turned up
+**seventeen more** unmeasured scenes — every one a door somebody opens weekly: the
+recipe you read, the book you pick it from, cook mode, the till, the flyer browser,
+the list-row editor, « Mes habitudes », the routine builder and its player, « Notre
+monde », a carnet, the drawings wall, the postbox, « Jouer », the project form and
+**global search**. All seventeen are in the table now. What four of them cost:
+
+| surface | before → after | what it was |
+| --- | --- | --- |
+| `/home-project/new` | **159 → 17px** | four wrapped rows of « Courants » preset chips ABOVE the name you came to type — while every sibling form scene leads with its name at ~17px. The chips FILL that field, so they belong under it. |
+| `/search` | **246 → 151px** | « Demander à l'IA » camping over every result (a "not what I meant" thought comes *after* reading — LEAN #5) and a count line wearing the empty state's 1.4rem padding. One `Cluster justify="between"` row now. |
+| `/kitchen/recipe/:id` | **243 → 209px** | two scaling controls stacked: a portions stepper AND ×½ ×1 ×2 ×3. When a recipe states its servings the stepper reaches every amount and says it in portions; the presets stay whole for recipes that state none (invariant 3). |
+| `/cercle/carnet/:id` | 176px, four rows shorter | four full-width « ＋ Ajouter … » bars → the shared `SectionAdd` ＋ in each section header. The carnet now fits one screen. |
+
+Three of those four were **the same shape as the day page**: a control taking a full
+row of its own where a chip in the header, or a place further down, would do.
+
+And two verdicts that are NOT cuts, recorded so nobody re-opens them: `habitudes`
+(288px) leads with the "who am I today" face row and « Le défi du jour » — a lens and
+a thing you do, both content; `cashier` is left **unbudgeted** because its tiles are
+vertically centred, so its `contentTopPx` measures how few deals the fixture stages,
+not how much chrome the surface spends.
 
 **The two lenses, now swept** (2026-08-26): the toddler lens and the 1280px wall
 were standing requirements in `CLAUDE.md` with exactly one matrix entry each, both

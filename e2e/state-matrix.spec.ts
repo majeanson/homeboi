@@ -260,6 +260,57 @@ const MATRIX: Entry[] = [
   // content too — they are what the budget deliberately allows for.
   { name: 'day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, content: '.day-plan__sec .act', budgetPx: 178, themes: ['day'], api: DAY_FIXTURE },
   { name: 'day-plan-wall', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'kiosk', viewport: WALL, content: '.day-plan__sec .act', budgetPx: 178, themes: ['day'], api: DAY_FIXTURE },
+
+  // — THE SCENES THE SWEEP HAD NEVER OPENED. `day-plan` was found by asking what this
+  //   table does NOT list (LEAN.md), and the same question turned up seventeen more:
+  //   the recipe you actually read, the book you pick it from, cook mode, the in-store
+  //   cashier surface, the flyer browser, the list-row editor, « Mes habitudes », the
+  //   routine builder and its player, « Notre monde », a carnet, the drawings wall,
+  //   the postbox, « Jouer », the home-project form and global search. Every one is a
+  //   door someone opens weekly; none had a number. Phone + day: measured for chrome.
+  { name: 'search', route: '/search?q=spag', content: '.search__row', budgetPx: 167, themes: ['day'] },
+  { name: 'recipe-view', route: '/kitchen/recipe/rc1', content: '.recipe-view__img, .recipe-view__ings li', budgetPx: 230, themes: ['day'] },
+    // « Mon livre de cuisine » is a picture BOOK — a designed cover page you turn, not
+  // a list with a first row; it is here for the screenshot + bleed + crash guards, and
+  // deliberately carries no contentTopPx (there is nothing to measure chrome against).
+  { name: 'recipe-book', route: '/kitchen/book', themes: ['day'] },
+  { name: 'cook', route: '/kitchen/recipe/rc1/cook', content: '.cook__full-ings li, .cook__ing-box', budgetPx: 140, themes: ['day'] },
+  // « À la caisse » is deliberately NOT budgeted: its tiles are vertically CENTRED (a
+  // thumb target at the till), so `contentTopPx` there measures how few staged deals
+  // the fixture holds — one — not how much chrome the surface spends. A budget read
+  // off that number would guard the fixture. Screenshot + bleed + crash guards only,
+  // until the shared list fixture stages more than a single deal.
+  { name: 'cashier', route: '/liste/cashier', content: '.cashier__tile, .bigcard', themes: ['day'] },
+  // « Les circulaires » opens on an EMPTY search (nothing to browse until you type),
+  // so measure the half that has rows: « Par magasin », the flyer list.
+  {
+    name: 'circulaires',
+    route: '/liste/circulaires',
+    setup: async (page) => {
+      await page.getByRole('tab', { name: /magasin/i }).click()
+      await expect(page.locator('.flyer-store').first()).toBeVisible()
+    },
+    content: '.flyer-store',
+    budgetPx: 104,
+    themes: ['day'],
+  },
+  { name: 'quickadd', route: '/liste/quick', content: '.list-row', budgetPx: 92, themes: ['day'] },
+  { name: 'list-item', route: '/liste/item/l1', content: '.li-edit__field, .li-edit__row', budgetPx: 40, themes: ['day'] },
+  // 288px, and NOT fat — the third case this table exists to distinguish. What sits
+  // above the first habit is the « qui es-tu aujourd'hui » face row (the lens the whole
+  // scene answers through) and « Le défi du jour » (a thing you DO today, drawn here as
+  // the morning ritual). Both are content. Budgeted so they can't grow; not cut.
+  { name: 'habitudes', route: '/board/habitudes', content: '.habitudes__item', budgetPx: 317, themes: ['day'] },
+  // The routine PLAYER is a pre-reader's picture screen (one big card, centred): the
+  // empty space IS the design, exactly like maison-toddler. Screenshot + guards only.
+  { name: 'routine-run', route: '/routine/r1/run', themes: ['day'] },
+  { name: 'routine-form', route: '/routine/r1', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
+  { name: 'form-home-project', route: '/home-project/new', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
+  { name: 'carnet', route: '/cercle/carnet/c1', content: '.carnet-block, .carnet-chose', budgetPx: 194, themes: ['day'], api: CARNETS_FIXTURE },
+  { name: 'monde', route: '/cercle/monde', content: '.scene__body > *', budgetPx: 16, themes: ['day'] },
+  { name: 'courrier', route: '/courrier', content: '.cf__field, .intake__h', budgetPx: 127, themes: ['day'] },
+  { name: 'drawings', route: '/drawings', content: '.drawgallery__item', budgetPx: 89, themes: ['day'] },
+  { name: 'jouer', route: '/jouer', content: '.play-door', budgetPx: 84, themes: ['day'] },
   { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
 
   // — THE TWO LENSES CLAUDE.md CALLS STANDING RULES, and which the sweep had only
