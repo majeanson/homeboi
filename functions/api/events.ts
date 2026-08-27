@@ -14,7 +14,7 @@ import { normalizeRecur } from '../_lib/recur'
 // the anchor; the board expands the series. See _lib/recur.
 // The columns the board/peek/editor all need — one source so ?id= and the list
 // return the identical row shape.
-const EVENT_COLS = `id, title, start_at, all_day, end_at, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id,
+const EVENT_COLS = `id, title, start_at, all_day, end_at, member_id, contact_id, business_id, recur_json, lead_seconds, car_id, passengers, bring_template_id, notes,
             (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name,
             (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name,
             (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour`
@@ -61,6 +61,7 @@ interface EventBody {
   carId?: string | null // « L'auto »: which household car this rendez-vous takes (null = none)
   passengers?: unknown // « L'auto »: member ids riding along (JSON array)
   bringTemplateId?: string | null // « Activité »: the todo_templates id of its "what to bring" list
+  notes?: string | null // free-text detail on the rendez-vous (migration 0121)
 }
 
 const recurJson = (recur: unknown): string | null => {
@@ -126,6 +127,18 @@ const bringTemplateOf = (v: unknown): string | null => {
   const s = typeof v === 'string' ? v.trim().slice(0, 40) : ''
   return s || null
 }
+// The rendez-vous' free-text note (migration 0121) — « apporter la carte d'assurance
+// maladie », « 3e étage ». Same normalizer as home_projects.notes (trim, empty →
+// null, one spelling for "free-text detail"), plus a hard cap: this rides in the
+// board/month payloads, and a runaway paste there costs every glance a slow poll.
+// EventForm's textarea carries the same number as `maxLength`, so the box refuses the
+// 2001st character rather than letting a save quietly slice the tail off.
+const EVENT_NOTES_MAX = 2000
+const notesOf = (v: unknown): string | null => {
+  if (typeof v !== 'string') return null
+  const s = v.trim().slice(0, EVENT_NOTES_MAX)
+  return s || null
+}
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<EventBody>(ctx.request)
@@ -136,7 +149,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // clears the others so the rendez-vous stays a single, unambiguous answer.
   const { businessId, contactId, memberId } = pickWho(body)
   await ctx.env.DB.prepare(
-    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, end_at, recur_json, lead_seconds, car_id, passengers, bring_template_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO events (id, household_id, member_id, contact_id, business_id, title, start_at, all_day, end_at, recur_json, lead_seconds, car_id, passengers, bring_template_id, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -153,6 +166,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       carIdOf(body.carId),
       passengersOf(body.passengers),
       bringTemplateOf(body.bringTemplateId),
+      notesOf(body.notes),
       nowSec(),
     )
     .run()
@@ -165,7 +179,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
   const { businessId, contactId, memberId } = pickWho(body)
   const res = await ctx.env.DB.prepare(
-    'UPDATE events SET title = ?, start_at = ?, all_day = ?, end_at = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ?, bring_template_id = ? WHERE id = ? AND household_id = ?',
+    'UPDATE events SET title = ?, start_at = ?, all_day = ?, end_at = ?, member_id = ?, contact_id = ?, business_id = ?, recur_json = ?, lead_seconds = ?, car_id = ?, passengers = ?, bring_template_id = ?, notes = ? WHERE id = ? AND household_id = ?',
   )
     .bind(
       title,
@@ -180,6 +194,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       carIdOf(body.carId),
       passengersOf(body.passengers),
       bringTemplateOf(body.bringTemplateId),
+      notesOf(body.notes),
       body.id,
       actor.householdId,
     )

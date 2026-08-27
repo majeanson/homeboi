@@ -2235,8 +2235,12 @@ export const EN: typeof FR = {
     eventPeople: 'Who is it for?',
     eventTakesCar: 'Takes the car',
     eventCarWho: 'Which car?',
-    // The event form's third fold: « Repeat » + « Show from », two settings that sit
-    // at their default on nearly every rendez-vous.
+    // The event form's « Note » fold (migration 0121): what to know, bring or ask —
+    // not the title, not the day's own note.
+    eventNote: 'Note',
+    eventNotePlaceholder: 'What to bring, which floor, what to ask…',
+    // The « Repeat » + « Show from » fold: two settings that sit at their default on
+    // nearly every rendez-vous.
     eventWhenMore: 'Repeat & reminder',
     eventBring: 'What to bring',
     // Inline bring-list builder in the event form's bring section.

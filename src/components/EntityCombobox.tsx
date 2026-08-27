@@ -313,7 +313,9 @@ export function EntityCombobox<T>({
 
   return (
     <div
-      className={'edit-field combobox' + (className ? ` ${className}` : '')}
+      // Same rule as EditField: a labeled CTA (primary and/or secondary) makes this
+      // a composer, and fields.css then gives the box its own full-width line.
+      className={'edit-field combobox' + (submitLabel || secondaryLabel ? ' edit-field--cta' : '') + (className ? ` ${className}` : '')}
       onBlur={handleBlur}
     >
       <div className="edit-field__row">
@@ -433,7 +435,27 @@ export function EntityCombobox<T>({
 
       {listOpen && (
         <div className="combobox__menu">
-          {listHeader}
+          {/* A header control (the souper « + ingrédients » opt-in) is a plain
+              <button>, and a plain button does NOT take focus on mousedown in Safari
+              or Firefox. Pressing it therefore fired the wrapper's blur with a null
+              relatedTarget; the deferred re-check found document.activeElement back on
+              <body> and shut the menu BETWEEN mousedown and click — so the tap toggled
+              nothing AND the dropdown vanished (« j'ouvre Ajouter un autre, je touche
+              Ajouter les ingrédients aussi, ça ferme »). Hold the caret in the input
+              while a header control is pressed, exactly like the option rows and the
+              caret toggle already do. Anything genuinely typable inside a future
+              header is left alone. */}
+          {listHeader && (
+            <div
+              className="combobox__header"
+              onMouseDown={(e) => {
+                if (!(e.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"]'))
+                  e.preventDefault()
+              }}
+            >
+              {listHeader}
+            </div>
+          )}
           {shown.length === 0 ? (
             <p className="combobox__empty mono">{noMatchLabel}</p>
           ) : (

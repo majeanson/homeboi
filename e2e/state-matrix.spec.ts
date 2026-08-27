@@ -121,6 +121,36 @@ const CARNETS_FIXTURE = {
   },
 }
 
+// « Planifier une journée » (/kitchen/day/:date) — the one screen where a whole day
+// is composed, and it was missing from this sweep entirely, which is how it grew four
+// hand-rolled headings and two full-width add bars unmeasured. The shared `month`
+// fixture is empty, so seed the day it exists to show: two TIMED rendez-vous (enough
+// for « Le fil du jour » to draw the ribbon, the busy-day shape), one of them carrying
+// a note (migration 0121), an all-day row for the bucket below the ribbon, and a
+// corvée. The todos fixture already pins two items to today.
+const TODAY_MIDNIGHT = (() => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return Math.floor(d.getTime() / 1000)
+})()
+const DAY_FIXTURE = {
+  month: {
+    events: [
+      { id: 'de1', title: 'Dentiste — Léa', at: TODAY_MIDNIGHT + 9 * 3600, all_day: 0, member_id: 'm3', day: TODAY_MIDNIGHT, notes: 'apporter la carte d’assurance maladie · 3e étage' },
+      { id: 'de2', title: 'Soccer', at: TODAY_MIDNIGHT + 18 * 3600, all_day: 0, member_id: 'm1', day: TODAY_MIDNIGHT },
+      { id: 'de3', title: 'Collecte des ordures', at: TODAY_MIDNIGHT, all_day: 1, member_id: null, day: TODAY_MIDNIGHT },
+    ],
+    meals: [],
+    chores: [{ id: 'dc1', title: 'Vider le lave-vaisselle', color: '#88A36F', who: 'Papa', day: TODAY_MIDNIGHT }],
+    dayNotes: [],
+    todos: [],
+    homeProjects: [],
+    trips: [],
+    tripPlans: [],
+    habits: [],
+  },
+}
+
 const PHONE = { w: 390, h: 844 }
 const WALL = { w: 1280, h: 800 }
 const KB = 336
@@ -128,6 +158,19 @@ const KB = 336
 const openAddSheet = async (page: Page) => {
   await page.locator('.add-fab').click()
   await expect(page.locator('.sheet.show')).toBeVisible()
+}
+
+// Drill the ＋ sheet into ONE composer — the « generous inside » states. The sweep
+// used to photograph the sheet's CHOOSER only, so the surfaces where a labeled CTA
+// squeezed the field down to ~60px of text were never in a picture. (The numeric
+// half of that guard is e2e/composer-fit.spec.ts's typing-width floor; these are
+// the states a review pass actually LOOKS at.)
+const openComposer = (mode: string) => async (page: Page) => {
+  await openAddSheet(page)
+  const tile = page.locator(`.sheet.show .cat-pick[data-mode="${mode}"]`)
+  await expect(tile).toHaveCount(1)
+  await tile.click()
+  await expect(page.locator('.sheet.show .addsheet__panel .edit-field__input').first()).toBeVisible()
 }
 
 const openNoteEditor = async (page: Page) => {
@@ -166,6 +209,12 @@ const MATRIX: Entry[] = [
   { name: 'settings', route: '/settings', content: '.operator__section, .operator__tabs', budgetPx: 90 },
   // — signature opened states —
   { name: 'board-addsheet', route: '/board', setup: openAddSheet, scope: '.sheet.show' },
+  // The composers themselves. « Restants » carries the app's longest CTA
+  // (« ＋ À finir bientôt ») and a combobox caret — the row that started the
+  // 2026-08-26 pass; « À compléter » adds a scope row and a second CTA under the
+  // same field.
+  { name: 'kitchen-composer-restants', route: '/kitchen', setup: openComposer('leftovers'), scope: '.sheet.show', themes: ['day'] },
+  { name: 'board-composer-todo', route: '/board', setup: openComposer('todo'), scope: '.sheet.show', themes: ['day'] },
   {
     name: 'kitchen-ideas',
     route: '/kitchen',
@@ -204,6 +253,13 @@ const MATRIX: Entry[] = [
   { name: 'form-recipe', route: '/kitchen/recipe/new', content: '.recipe-title-input', budgetPx: 32, themes: ['day'] },
   { name: 'form-habit', route: '/habitude/new', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
   { name: 'departure', route: '/board/departure', content: '.todo-sec, .departure__wx', budgetPx: 32, themes: ['day'] },
+  // « Planifier une journée » — the day scene. `content` is the day's first ACTUAL
+  // row (a rendez-vous, in the ribbon or the bucket below it), so the number answers
+  // the question that matters here: how far do you scroll before the day itself
+  // starts? The weather strip and the day's own note headline sit above it and are
+  // content too — they are what the budget deliberately allows for.
+  { name: 'day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, content: '.day-plan__sec .act', budgetPx: 178, themes: ['day'], api: DAY_FIXTURE },
+  { name: 'day-plan-wall', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'kiosk', viewport: WALL, content: '.day-plan__sec .act', budgetPx: 178, themes: ['day'], api: DAY_FIXTURE },
   { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
 
   // — THE TWO LENSES CLAUDE.md CALLS STANDING RULES, and which the sweep had only

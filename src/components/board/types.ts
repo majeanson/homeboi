@@ -23,6 +23,7 @@ export interface EventRow {
   business_colour?: string | null // the business's own tint — colours the rendez-vous
   business_address?: string | null // the business's plain address, joined server-side — « Itinéraire » on the peek
   bring_template_id?: string | null // #17/0077: the activity's bring-list (soft ref → todo_templates); « À apporter » on the departure card
+  notes?: string | null // 0121: the rendez-vous' free-text note (« apporter la carte d'assurance… ») — its detail peek + the day page row
   soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
   birthday?: boolean // a DERIVED birthday occurrence (from a person's birthday), not a stored event
   age?: number | null // the age turned, when the birth year is known

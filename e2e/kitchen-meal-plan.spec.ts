@@ -63,7 +63,7 @@ test('day editor lists slots chronologically (note is the headline)', async ({ p
   expect(order).toEqual(['Déjeuner', 'Dîner', 'Collation', 'Souper', 'Dessert'])
 
   // The add affordance shares the slot's header line (not a row of its own).
-  await expect(page.locator('.day-mng__sec-head-row .kitchen__slot-add').first()).toBeVisible()
+  await expect(page.locator('.day-mng__sec-head-row .sec-label__actbtn').first()).toBeVisible()
 })
 
 test('recipe builder fills the screen (no stale-keyboard dead space)', async ({ page }) => {

@@ -10,6 +10,7 @@ import { EditField } from '../EditField'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { Chip } from '../Chip'
+import { SectionAdd } from '../SectionAdd'
 import { MealRows } from './MealRows'
 import { mealPickOptions, type MealPick } from './comboOptions'
 import { type Leftover, type MealRow, type DayNoteRow } from './types'
@@ -24,7 +25,11 @@ import { type useMealPlanning } from './useMealPlanning'
 // — the page (DayPlanPage) owns the state + handlers and renders the .scene shell.
 //
 // Slots read CHRONOLOGICALLY (déjeuner → dîner → collation → souper, note last),
-// and each slot's "＋ Ajouter" sits on its header line, not a row of its own.
+// and each slot's add affordance sits on its header line, not a row of its own — the
+// shared `SectionAdd` ＋ chip, the same one the day page's sections carry, so every
+// "add something here" on that scene is the same round ＋ in the same place (it used
+// to be a dashed « ＋ Ajouter un autre » pill, one per slot, five of them down the
+// page). It flips to ✕ while its composer is open, which is also how you close it.
 type Plan = ReturnType<typeof useMealPlanning>
 
 export function DayEditor({
@@ -172,22 +177,24 @@ export function DayEditor({
             key={slot}
             data-dnd-zone={slot}
             className={'day-mng__sec' + (mealDnd.over === slot ? ' dnd-over' : '')}
+            // The slot's own colour drives its ＋ chip, exactly as the day page's
+            // section tints drive theirs — one add affordance, one colour language.
+            style={{ '--sec-tint': mealPrefs.color(slot) } as React.CSSProperties}
           >
             <div className="day-mng__sec-head-row">
               <p className="day-mng__sec-head mono">
                 <Icon name={SLOT_ICON_NAME[slot]} size={16} color={mealPrefs.color(slot)} /> {t.kitchen.slots[slot]}
               </p>
-              {!editing && !ro && (
-                <button
-                  type="button"
-                  className="kitchen__slot-add mono"
-                  onClick={() => {
-                    setEditSlot({ date, slot })
+              {!ro && (
+                <SectionAdd
+                  open={editing}
+                  onToggle={() => {
+                    setEditSlot(editing ? null : { date, slot })
                     setSlotText('')
                   }}
-                >
-                  <InlineIcon name="plus-bold" /> {addLabel(slotMeals.length)}
-                </button>
+                  label={`${addLabel(slotMeals.length)} — ${t.kitchen.slots[slot]}`}
+                  readOnly={ro}
+                />
               )}
             </div>
             <MealRows
@@ -236,22 +243,22 @@ export function DayEditor({
         key={hero}
         data-dnd-zone={hero}
         className={'day-mng__sec' + (mealDnd.over === hero ? ' dnd-over' : '')}
+        style={{ '--sec-tint': mealPrefs.color(hero) } as React.CSSProperties}
       >
         <div className="day-mng__sec-head-row">
           <p className="day-mng__sec-head mono">
             <Icon name={SLOT_ICON_NAME[hero]} size={16} color={mealPrefs.color(hero)} /> {t.kitchen.slots[hero]}
           </p>
-          {!supperEditing && !supperStaples && !ro && (
-            <button
-              type="button"
-              className="kitchen__slot-add mono"
-              onClick={() => {
-                setEditDate(date)
+          {!supperStaples && !ro && (
+            <SectionAdd
+              open={supperEditing}
+              onToggle={() => {
+                setEditDate(supperEditing ? null : date)
                 setMealText('')
               }}
-            >
-              <InlineIcon name="plus-bold" /> {addLabel(suppers.length)}
-            </button>
+              label={`${addLabel(suppers.length)} — ${t.kitchen.slots[hero]}`}
+              readOnly={ro}
+            />
           )}
         </div>
         {supperStaples && staplePrompt && !ro ? (

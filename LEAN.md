@@ -138,6 +138,20 @@ Swept and leaned in Aug 2026: Notes, Recettes, garde-manger, La liste, the four
 heavy forms (person / event / recipe / pet), Réglages, the board, Maison ▸
 Business + Carnets, Le mois, « Avant de partir », « L'auto ».
 
+**« Planifier une journée » (2026-08-26)** — and the interesting part is *why* it had
+never been swept: **it was not in the matrix at all.** The sweep only ever looked at
+routes it had been told about, so the one screen where a whole day is composed
+accumulated four hand-rolled `.sec-label` divs, two full-width « Ajouter un
+rendez-vous / une corvée » bars under their lists, five dashed « ＋ Ajouter » slot
+pills, an always-open todo composer, and a « Le fil du jour » heading over a
+« Rendez-vous » heading for the same rows — none of it measured. The fix was mostly
+**one anatomy applied five times**: `SecLabel` (glyph · title · rule · count) with a
+`SectionAdd` ＋ in the header, rows, then the composer that ＋ opened. It now carries
+`day-plan` + `day-plan-wall` budgets, so it cannot drift back.
+
+The lesson generalizes: *check what the matrix does NOT list.* A budget guards a
+surface; the absence of an entry guards nothing, and reads exactly like a pass.
+
 **The two lenses, now swept** (2026-08-26): the toddler lens and the 1280px wall
 were standing requirements in `CLAUDE.md` with exactly one matrix entry each, both
 on the board. Both now carry the five hub tabs with budgets.

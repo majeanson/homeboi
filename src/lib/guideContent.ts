@@ -2233,6 +2233,18 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/event/new?activity=1',
       },
+      // Appended (migration 0121): a rendez-vous carries its own note.
+      {
+        label: { fr: 'La note du rendez-vous', en: 'The appointment’s note' },
+        detail: {
+          fr: 'Sous « Note », écris ce qu’il faut savoir : « apporter la carte d’assurance maladie », « 3e étage, bureau 12 », « demander pour le renouvellement ». Elle suit le rendez-vous — elle apparaît sous son titre dans la journée et dans sa fiche, et elle le suit s’il change de date.',
+          en: 'Under “Note”, write what you need to know: “bring the health card”, “3rd floor, office 12”, “ask about the renewal”. It belongs to the appointment — it shows under its title on the day page and in its card, and it follows it if the date moves.',
+        },
+        why: {
+          fr: 'Avant, ça finissait dans le titre (que le babillard affiche au complet) ou dans la note de la journée — qui appartient au jour, pas au rendez-vous, et qui reste derrière quand il se déplace.',
+          en: 'It used to end up in the title (which the board prints in full) or in the day’s own note — which belongs to the day, not to the appointment, and stays behind when it moves.',
+        },
+      },
     ],
   },
   {

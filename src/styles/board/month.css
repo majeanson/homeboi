@@ -392,6 +392,17 @@
 .day-plan__sections .sec-label {
   margin-top: 10px;
 }
+/* One section of the day page (Rendez-vous · Corvées · Projets · À compléter ·
+   Les repas). They all share the same anatomy — a `SecLabel` header carrying the
+   category glyph + a trailing `SectionAdd` ＋, then the rows, then the composer the
+   ＋ opened — so the stack must space itself identically whether the section is this
+   wrapper or the shared `.todo-sec`. `--sec-tint` set inline is what colours the
+   header glyph and the rule. */
+.day-plan__sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .day-plan__add {
   align-self: flex-start;
   display: inline-flex;

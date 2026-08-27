@@ -496,21 +496,8 @@
   font-size: var(--text-sm);
   font-weight: 600;
 }
-.kitchen__slot-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  align-self: flex-start;
-  border: 1px dashed var(--line);
-  background: transparent;
-  color: var(--ink-faint);
-  border-radius: var(--radius-pill);
-  padding: 0.3rem 0.7rem;
-  min-height: 2.4rem;
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
+/* (The dashed « ＋ Ajouter » slot pill is gone — every add affordance on the day
+   scene is the shared SectionAdd ＋ chip now; see DayEditor.) */
 /* The planned meals in one slot — a stacked list of rows with per-item controls. */
 .kitchen__meal-list {
   list-style: none;

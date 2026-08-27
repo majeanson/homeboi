@@ -1944,6 +1944,16 @@ export function DevKit() {
           <Demo label="nav row + badge">
             <Act cat="meal" title="Macaroni chinois" when="Souper" onActivate={() => {}} badge={<Chip>Restants</Chip>} />
           </Demo>
+          <Demo label="the row's OWN note (a rendez-vous', migration 0121) — a second sub-line, clamped to two">
+            <Act
+              cat="event"
+              title="Rendez-vous dentiste"
+              when="14:00"
+              who="Camille"
+              note="apporter la carte d’assurance maladie · 3e étage, bureau 12 · demander pour le renouvellement de l’ordonnance"
+              onActivate={() => {}}
+            />
+          </Demo>
           <Demo label="reminder window open ('Bientôt')">
             <Act cat="event" title="Rendez-vous dentiste" when="jeu. 14:00" who="Camille" soon />
           </Demo>

@@ -20,6 +20,9 @@ import { Icon, InlineIcon } from '../components/Icon'
 import { Cluster } from '../components/Layout'
 import { SceneHead } from '../components/SceneHead'
 import { Act } from '../components/board/Act'
+import { SecLabel } from '../components/board/BoardCard'
+import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
+import { CATS } from '../lib/cats'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { type Member } from '../components/board/types'
 import { Fil } from '../components/board/Fil'
@@ -55,7 +58,7 @@ import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY, CAR_KEY } fr
 // recurring) and recurring-chore occurrences. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
-  events: { id: string; title: string; at: number; all_day: number; end_at?: number | null; car_id?: string | null; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null }[]
+  events: { id: string; title: string; at: number; all_day: number; end_at?: number | null; car_id?: string | null; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; notes?: string | null }[]
   chores: { id: string; title: string; color: string | null; who: string | null }[]
   // "Projets & Entretien" (home_projects) landing on this day — read-only here
   // (managed in Réglages ▸ Corvées). null homeProjects = older payload → [].
@@ -168,6 +171,10 @@ export function DayPlanPage() {
     const at = Number(occId.split('#')[1]) // recurring chore occurrence id is `base#at`
     return Number.isFinite(at) && isSoonAt(at, choresFullQ.data?.chores.find((c) => c.id === baseId(occId))?.lead_seconds)
   }
+
+  // « À compléter »'s template picker waits behind that section's header ＋ (the shared
+  // SectionAdd), like every other composer on this page — see the TodoSection call.
+  const todoAdd = useSectionAdd()
 
   // Inline add (no value) / edit (value) for events + chores on this day. null = closed.
   const [eventForm, setEventForm] = useState<{ value?: EventInit } | null>(null)
@@ -459,6 +466,9 @@ export function DayPlanPage() {
       // that ties up the vehicle, so the day page reads like the board.
       icon={!e.work && e.car_id ? 'car-bold' : undefined}
       soon={e.birthday || e.work ? undefined : eventSoon(e.id, e.at)}
+      // Its own note (migration 0121) — « apporter la carte d'assurance maladie ».
+      // A derived birthday/work window has none by construction.
+      note={e.work || e.birthday ? undefined : e.notes?.trim() || undefined}
       onActivate={e.work ? () => nav('/voiture') : ro || e.birthday ? undefined : () => openEventEdit(e.id)}
     />
   )
@@ -496,23 +506,6 @@ export function DayPlanPage() {
               </span>
             )}
           </div>
-        )}
-
-        {/* « Avant de partir » — this day's calm "before you go" screen (its departure
-            checklists, that day's schedule + corvées, the weather tip, L'auto). It lived
-            on the retired « Moments » per-day block; the day page is its home now. Kept
-            near the top: it's a DOOR, and the meal editor below is long. Hidden for a
-            read-only guest — the checklist it opens onto writes. */}
-        {!ro && (
-          <Cluster className="day-plan__doors">
-            <button
-              type="button"
-              className="btn btn--ghost mono day-plan__add"
-              onClick={() => nav(`/board/departure?day=${date}`)}
-            >
-              <Icon name="key-bold" size={16} /> {t.departure.title}
-            </button>
-          </Cluster>
         )}
 
         {/* The day's free-text note as its HEADLINE — "what's today about", pulled up
@@ -617,55 +610,40 @@ export function DayPlanPage() {
           )
         })}
 
-        {/* The day's sections, in glance order: À compléter → Les repas → the agenda
-            (fil + rendez-vous + corvées). Add + edit are inline (the shared
-            EventForm/ChoreForm, date pre-filled). Editing a recurring row edits the
-            whole series. */}
+        {/* The day's sections, in the order the day is actually PLANNED: what is
+            already booked and can't move (Rendez-vous ▸ Corvées ▸ Projets), then what
+            you decide around it (À compléter ▸ Les repas). It used to open on the todo
+            list and the meal editor, with the day's own schedule scrolled off below
+            them — you had to leave the page to remember what the day held (Marc,
+            2026-08-26).
+
+            One anatomy for every section, so the page reads as one thing: a `SecLabel`
+            header (category glyph, title, rule, quiet count) whose trailing ＋ is the
+            shared `SectionAdd`, the rows, then the composer the ＋ opened — folded away
+            again once something is written. That replaces four hand-rolled `.sec-label`
+            divs and the two full-width « Ajouter un rendez-vous / une corvée » bars that
+            camped under each list. Editing a recurring row still edits the whole
+            series. */}
         <section className="day-plan__sections">
-          {/* À compléter for THIS day — per-day check-off todos (migration 0046),
-              with inline add/edit, check-in-place and one-tap departure templates. */}
-          <TodoSection day={date} title={t.todos.title} members={formMembers} bento={false} />
-
-          {/* Les repas — the meal planner, always visible (it used to sit at the
-              bottom in a collapsed disclosure). The note is rendered as the day's
-              headline above, so DayEditor hides its own copy. */}
-          <div className="sec-label">
-            <b>{t.kitchen.mealsHeading}</b>
-            <span className="ln" />
-          </div>
-          <DayEditor
-            date={date}
-            recipes={recipes}
-            lowItems={lowItems}
-            listItems={listItems}
-            suppers={suppers}
-            mealsFor={mealsFor}
-            note={dayNote}
-            recipeFor={recipeForMeal}
-            memberName={memberName}
-            onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
-            mealErr={mealErr}
-            plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-            picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
-            leftovers={{
-              pool: leftoversQ.data?.leftovers ?? [],
-              plan: planLeftoverOnDay,
-            }}
-            slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
-            noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-            actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
-            hideNote
-          />
-
-          {/* « Le fil du jour » — the day's shape as a time ribbon, the hero on a busy
-              day (≥2 timed events). When on, it OWNS the timed events (the Rendez-vous
-              bucket below then lists only the all-day rows). */}
-          {filShown && (
-            <>
-              <div className="sec-label">
-                <b>{t.board.fil}</b>
-                <span className="ln" />
-              </div>
+          {/* Rendez-vous — the day's schedule leads. When the day has ≥2 timed things,
+              « Le fil du jour » draws it as a ribbon INSIDE this section (it owns the
+              timed rows; the bucket keeps the all-day ones) rather than under a second
+              heading of its own — one section, one header, one subject. */}
+          <section className="day-plan__sec" style={{ '--sec-tint': CATS.event.color } as React.CSSProperties}>
+            <SecLabel
+              label={t.monthView.legendEvents}
+              icon={CATS.event.icon}
+              count={dayEvents.length}
+              action={
+                <SectionAdd
+                  open={!!eventForm}
+                  onToggle={() => setEventForm(eventForm ? null : {})}
+                  label={t.operator.addEvent}
+                  readOnly={ro}
+                />
+              }
+            />
+            {filShown && (
               <Fil
                 timed={filTimed.map((e) => ({ id: e.id, start_at: e.at, until: e.work ? e.end : undefined, node: eventActNode(e) }))}
                 untimed={[]}
@@ -674,39 +652,31 @@ export function DayPlanPage() {
                 freeLabel={t.board.free}
                 lang={lang}
               />
-            </>
-          )}
-
-          {/* Rendez-vous — the day's schedule leads the agenda. */}
-          <div className="sec-label">
-            <b>{t.monthView.legendEvents}</b>
-            <span className="ln" />
-          </div>
-          {!filShown && dayEvents.length === 0 && !eventForm ? (
-            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
-          ) : (
-            bucketEvents.map((e) => (
-              <div key={e.id} className="day-plan__act-row">
-                {eventActNode(e)}
-                {/* « Partager » one event → a public /partage link (real page, not a text
-                    paste). Operator-only + real events only (not a derived birthday or a
-                    work/car row). */}
-                {!e.work && !e.birthday && signedIn && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono day-plan__act-share"
-                    onClick={() => setSharingEvent({ id: e.id, title: e.title })}
-                    aria-label={t.shareLink.action}
-                    title={t.shareLink.action}
-                  >
-                    <Icon name="arrow-up-right-bold" size={16} />
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-          {!ro &&
-            (eventForm ? (
+            )}
+            {!filShown && dayEvents.length === 0 && !eventForm ? (
+              <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
+            ) : (
+              bucketEvents.map((e) => (
+                <div key={e.id} className="day-plan__act-row">
+                  {eventActNode(e)}
+                  {/* « Partager » one event → a public /partage link (real page, not a text
+                      paste). Operator-only + real events only (not a derived birthday or a
+                      work/car row). */}
+                  {!e.work && !e.birthday && signedIn && (
+                    <button
+                      type="button"
+                      className="btn btn--ghost mono day-plan__act-share"
+                      onClick={() => setSharingEvent({ id: e.id, title: e.title })}
+                      aria-label={t.shareLink.action}
+                      title={t.shareLink.action}
+                    >
+                      <Icon name="arrow-up-right-bold" size={16} />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+            {!ro && eventForm && (
               <EventForm
                 key={eventForm.value?.id ?? 'new-event'}
                 members={formMembers}
@@ -715,34 +685,40 @@ export function DayPlanPage() {
                 onSaved={afterEventSave}
                 onCancel={() => setEventForm(null)}
               />
-            ) : (
-              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setEventForm({})}>
-                <Icon name="plus-bold" size={16} /> {t.operator.addEvent}
-              </button>
-            ))}
+            )}
+          </section>
 
-          {/* Corvées */}
-          <div className="sec-label">
-            <b>{t.board.chores}</b>
-            <span className="ln" />
-          </div>
-          {dayChores.length === 0 && !choreForm ? (
-            <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
-          ) : (
-            dayChores.map((c) => (
-              <Act
-                key={c.id}
-                cat="chore"
-                title={c.title}
-                who={c.who || undefined}
-                color={c.color || undefined}
-                soon={choreSoon(c.id)}
-                onActivate={ro ? undefined : () => openChoreEdit(c.id)}
-              />
-            ))
-          )}
-          {!ro &&
-            (choreForm ? (
+          {/* Corvées — whose turn it is on this day. */}
+          <section className="day-plan__sec" style={{ '--sec-tint': CATS.chore.color } as React.CSSProperties}>
+            <SecLabel
+              label={t.board.chores}
+              icon={CATS.chore.icon}
+              count={dayChores.length}
+              action={
+                <SectionAdd
+                  open={!!choreForm}
+                  onToggle={() => setChoreForm(choreForm ? null : {})}
+                  label={t.operator.addChore}
+                  readOnly={ro}
+                />
+              }
+            />
+            {dayChores.length === 0 && !choreForm ? (
+              <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
+            ) : (
+              dayChores.map((c) => (
+                <Act
+                  key={c.id}
+                  cat="chore"
+                  title={c.title}
+                  who={c.who || undefined}
+                  color={c.color || undefined}
+                  soon={choreSoon(c.id)}
+                  onActivate={ro ? undefined : () => openChoreEdit(c.id)}
+                />
+              ))
+            )}
+            {!ro && choreForm && (
               <ChoreForm
                 key={choreForm.value?.id ?? 'new-chore'}
                 members={formMembers}
@@ -751,25 +727,84 @@ export function DayPlanPage() {
                 onSaved={afterChoreSave}
                 onCancel={() => setChoreForm(null)}
               />
-            ) : (
-              <button type="button" className="btn btn--ghost mono day-plan__add" onClick={() => setChoreForm({})}>
-                <Icon name="plus-bold" size={16} /> {t.operator.addChore}
-              </button>
-            ))}
+            )}
+          </section>
 
           {/* Projets & Entretien landing on this day — read-only (managed in
               Réglages ▸ Corvées); shown only when there's something, to keep the
-              day page calm. */}
+              day page calm. No ＋: this is a mirror, not a home. */}
           {dayHome.length > 0 && (
-            <>
-              <div className="sec-label">
-                <b>{t.operator.home.subEntretien}</b>
-                <span className="ln" />
-              </div>
+            <section className="day-plan__sec" style={{ '--sec-tint': CATS.chore.color } as React.CSSProperties}>
+              <SecLabel label={t.operator.home.subEntretien} icon="gear-six-bold" count={dayHome.length} />
               {dayHome.map((h) => (
                 <Act key={h.id} cat="chore" title={h.title} color={h.color || undefined} />
               ))}
-            </>
+            </section>
+          )}
+
+          {/* À compléter for THIS day — per-day check-off todos (migration 0046), with
+              inline edit, check-in-place and one-tap departure templates. Its picker
+              waits behind the same header ＋ as the two sections above (it used to sit
+              open under the list), and it carries the same glyph + tint, so the shared
+              component reads as one of this page's sections rather than a guest. */}
+          <TodoSection
+            day={date}
+            title={t.todos.title}
+            members={formMembers}
+            bento={false}
+            icon="check-square-bold"
+            tint={CATS.list.color}
+            picker={todoAdd.open ? 'templates' : 'none'}
+            addAutoFocus={todoAdd.autoFocus}
+            onAdded={todoAdd.close}
+            action={<SectionAdd open={todoAdd.open} onToggle={todoAdd.toggle} label={t.todos.addPlaceholder} readOnly={ro} />}
+          />
+
+          {/* Les repas — the meal planner. The day's note is rendered as the headline
+              above, so DayEditor hides its own copy. */}
+          <section className="day-plan__sec" style={{ '--sec-tint': CATS.meal.color } as React.CSSProperties}>
+            <SecLabel label={t.kitchen.mealsHeading} icon={CATS.meal.icon} />
+            <DayEditor
+              date={date}
+              recipes={recipes}
+              lowItems={lowItems}
+              listItems={listItems}
+              suppers={suppers}
+              mealsFor={mealsFor}
+              note={dayNote}
+              recipeFor={recipeForMeal}
+              memberName={memberName}
+              onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
+              mealErr={mealErr}
+              plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
+              picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
+              leftovers={{
+                pool: leftoversQ.data?.leftovers ?? [],
+                plan: planLeftoverOnDay,
+              }}
+              slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
+              noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
+              actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
+              hideNote
+            />
+          </section>
+
+          {/* « Avant de partir » — this day's calm "before you go" screen (its departure
+              checklists, that day's schedule + corvées, the weather tip, L'auto). A DOOR,
+              so it sits at the FOOT now (LEAN #5): it opened the page above the day's own
+              content, and "let me check what to grab" is a thought you have after reading
+              the day, not before. Hidden for a read-only guest — the checklist it opens
+              onto writes. */}
+          {!ro && (
+            <Cluster className="day-plan__doors">
+              <button
+                type="button"
+                className="btn btn--ghost mono day-plan__add"
+                onClick={() => nav(`/board/departure?day=${date}`)}
+              >
+                <Icon name="key-bold" size={16} /> {t.departure.title}
+              </button>
+            </Cluster>
           )}
         </section>
 

@@ -2442,8 +2442,12 @@ export const FR = {
     eventPeople: 'Pour qui ?',
     eventTakesCar: 'Prend l’auto',
     eventCarWho: 'Quelle auto ?',
-    // Le troisième repli du formulaire de rendez-vous : « Répéter » + « Afficher dès »,
-    // deux réglages à leur valeur par défaut la plupart du temps.
+    // Le repli « Note » du formulaire de rendez-vous (migration 0121) : ce qu'il faut
+    // savoir, apporter ou demander — pas le titre, pas la note de la journée.
+    eventNote: 'Note',
+    eventNotePlaceholder: 'Ce qu’il faut apporter, l’étage, quoi demander…',
+    // Le repli « Répéter » + « Afficher dès » : deux réglages à leur valeur par défaut
+    // la plupart du temps.
     eventWhenMore: 'Répétition et rappel',
     eventBring: 'À apporter',
     // Inline bring-list builder in the event form's « À apporter » section.

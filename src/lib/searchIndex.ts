@@ -94,7 +94,11 @@ export const SEARCH_INDEX = {
     primary: (p) => p.label,
     secondary: (p) => p.detail ?? '',
   }),
-  event: entry<EventRow>({ primary: (e) => e.title }),
+  // A rendez-vous is found by its title first; its own note (migration 0121) is a
+  // SECONDARY hit, so « assurance » finds the dentist appointment that says to bring
+  // the card without outranking anything actually NAMED that (same rule as a fridge
+  // memo's body).
+  event: entry<EventRow>({ primary: (e) => e.title, secondary: (e) => e.notes ?? '' }),
   listItem: entry<ListRowLite>({ primary: (li) => li.text }),
   // Cercle family notes: rich-text body folded to its plain words.
   familyNote: entry<FamilyNote>({

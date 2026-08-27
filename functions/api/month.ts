@@ -45,15 +45,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // plain string, a contact's JSON — so a rendez-vous peek can offer « Itinéraire »
     // straight to Google Maps; same subselect pattern as contact_name).
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
+      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, notes, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ?',
     )
       .bind(hh, from, to)
-      .all<{ id: string; title: string; start_at: number; all_day: number; end_at: number | null; car_id: string | null; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; bring_template_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; end_at: number | null; car_id: string | null; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; bring_template_id: string | null; notes: string | null }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, recur_json, bring_template_id, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
+      'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, recur_json, bring_template_id, notes, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NOT NULL',
     )
       .bind(hh)
-      .all<{ id: string; title: string; start_at: number; all_day: number; end_at: number | null; car_id: string | null; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; recur_json: string; bring_template_id: string | null }>(),
+      .all<{ id: string; title: string; start_at: number; all_day: number; end_at: number | null; car_id: string | null; member_id: string | null; passengers: string | null; contact_id: string | null; contact_name: string | null; contact_address: string | null; business_id: string | null; business_name: string | null; business_colour: string | null; business_address: string | null; recur_json: string; bring_template_id: string | null; notes: string | null }>(),
     // Meals & day-notes are stored at LOCAL midnight; widen the SQL window a day
     // each side so an entry near the window edge still lands, then re-bucket by
     // local day below and clip back to [from, to).
@@ -204,6 +204,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     color?: string | null // the block's tint (member colour falls back client-side)
     holds_car?: number // 1 = this window ties up the shared car
     bring_template_id?: string | null // « Activité »: its "what to bring" template (Avant de partir surfaces it)
+    notes?: string | null // 0121: the rendez-vous' free-text note (« apporter la carte… »)
   }[] = []
   for (const e of oneOff.results) {
     const day = dayOf(e.start_at)
@@ -225,6 +226,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         business_colour: e.business_colour,
         business_address: e.business_address,
         bring_template_id: e.bring_template_id,
+        notes: e.notes,
         day,
       })
   }
@@ -250,6 +252,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         business_colour: e.business_colour,
         business_address: e.business_address,
         bring_template_id: e.bring_template_id,
+        notes: e.notes,
         day: dayOf(at),
       })
     }

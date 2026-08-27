@@ -108,6 +108,10 @@ export function buildEvent(
         }`,
     who,
     whoStack: whoStack.length > 1 ? whoStack : undefined,
+    // The rendez-vous' own note (migration 0121) — « apporter la carte d'assurance
+    // maladie », « 3e étage, bureau 12 ». Handwritten look: it IS a note, and the peek
+    // is where you read one before walking out the door.
+    blocks: e.notes?.trim() ? [{ kind: 'text', text: e.notes.trim(), hand: true }] : undefined,
     // Basic peek actions: see the day, Modify (the primary — opens the event form),
     // Share, Delete (danger). Modify/Delete/Share are opt-gated at the call site so a
     // guest/toddler peek stays read-only. Exactly one primary (edit when present).

@@ -153,6 +153,7 @@ export function Act({
   photo,
   badge,
   soon,
+  note,
 }: {
   cat: CatKey
   title: string
@@ -174,6 +175,10 @@ export function Act({
   photo?: string // an image shown IN the tile instead of the glyph (falls back to the icon)
   badge?: React.ReactNode // a small pill/marker at the trailing edge, before any affordance
   soon?: boolean // calm "Bientôt" reminder window is open now → a quiet clock chip (migration 0038)
+  // A row's own free-text note (a rendez-vous' « apporter la carte… », migration 0121)
+  // as a second, quieter sub-line — clamped to two lines so a long one can never turn
+  // a glance row into a paragraph; the detail peek carries it in full.
+  note?: string
 }) {
   const t = useT()
   // Read-only guest: a check fires a write (mark done) — drop it so the row reads as
@@ -224,6 +229,12 @@ export function Act({
         <AvatarStack faces={whoFaces} size={18} className="act__pax" />
       ) : (
         who && <span className="who">{who}</span>
+      )}
+      {note && (
+        <span className="act__note">
+          <Icon name="pencil-simple-bold" size={12} />
+          <span>{note}</span>
+        </span>
       )}
       {soon && (
         <span className="act__soon mono">

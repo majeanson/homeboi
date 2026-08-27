@@ -533,3 +533,12 @@
   min-width: 100%;
 }
 
+
+/* EntityCombobox: the dropdown's optional header row (the souper « + ingrédients »
+   opt-in). `display: contents` on purpose — the wrapper exists ONLY to catch the
+   mousedown that would otherwise blur the input and close the menu mid-tap (see
+   EntityCombobox.tsx), so it must not become a flex child of `.combobox__menu` and
+   change the spacing that shipped. */
+.combobox__header {
+  display: contents;
+}

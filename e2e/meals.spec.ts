@@ -52,7 +52,9 @@ test('a slot holds several meals — both show, with an add-another', async ({ p
   await expect(suppers).toHaveCount(2)
   await expect(sheet).toContainText('Spaghetti maison')
   await expect(sheet).toContainText('Salade César')
-  await expect(sheet.getByText('Ajouter un autre').first()).toBeVisible()
+  // The add affordance is the shared SectionAdd ＋ chip on the slot's header line; its
+  // accessible name still says WHICH slot and that this one already holds a meal.
+  await expect(sheet.getByRole('button', { name: 'Ajouter un autre — Souper' })).toBeVisible()
 })
 
 test('removing one meal deletes just that row', async ({ page }) => {

@@ -764,7 +764,7 @@ test.describe('kitchen', () => {
     // default so "Mettre" just saves the meal (one less step).
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
-    await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
+    await sheet.locator('[data-dnd-zone="supper"] .day-mng__sec-head-row .sec-label__actbtn').click()
     // The supper title editor is an EntityCombobox (reuses .edit-field styling but
     // is NOT a form — Enter commits the free text → beginSetMeal).
     const edit = sheet.locator('[data-dnd-zone="supper"] .edit-field')
@@ -774,7 +774,7 @@ test.describe('kitchen', () => {
 
     // Re-open and turn the "+ ingrédients" opt-in ON → committing now fetches the
     // staple list first (POST meal-staples).
-    await sheet.locator('[data-dnd-zone="supper"] .kitchen__slot-add').click()
+    await sheet.locator('[data-dnd-zone="supper"] .day-mng__sec-head-row .sec-label__actbtn').click()
     const edit2 = sheet.locator('[data-dnd-zone="supper"] .edit-field')
     await edit2.locator('input.input').fill('Lasagne')
     await edit2.locator('.kitchen__recipe-staples').click()
@@ -794,7 +794,7 @@ test.describe('kitchen', () => {
     // Setting a lunch is a plain title — a straight POST (append, saveSlot), no
     // staples step. The "＋ Ajouter" sits in the Dîner section's header; scope to it.
     const dinerSec = sheet.locator('.day-mng__sec', { hasText: 'Dîner' })
-    await dinerSec.locator('.kitchen__slot-add').click()
+    await dinerSec.locator('.day-mng__sec-head-row .sec-label__actbtn').click()
     // The per-slot title editor is an EntityCombobox (reuses .edit-field styling but
     // is NOT a form — Enter commits the free text → saveSlot → POST meals).
     const edit = dinerSec.locator('.edit-field')

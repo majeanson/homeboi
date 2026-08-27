@@ -49,6 +49,7 @@ export interface EventInit {
   car_id?: string | null // « L'auto »: which household car this rendez-vous takes
   passengers?: string | null // « Qui »: the household people this concerns (JSON id array); member_id = passengers[0]
   bring_template_id?: string | null // « Activité »: the todo_templates id of its "what to bring" list
+  notes?: string | null // 0121: the rendez-vous' free-text note
 }
 
 // The "with" combobox lists BOTH cercle people and businesses; the picked option
@@ -197,6 +198,13 @@ export function EventForm({
   // people riding are « Qui » above (no separate passenger list); a cercle contact in
   // « Avec » still reads as a carpool parent driving their car. Default off so a plain
   // event is unchanged. Collapsed in a Disclosure (calm: secondary).
+  // « Note » (migration 0121) — what you have to remember about THIS rendez-vous:
+  // « apporter la carte d'assurance maladie », « 3e étage, bureau 12 ». It used to
+  // have nowhere to go but the title (which the board then prints in full) or the
+  // day's own note, which belongs to the day and stays behind when the appointment
+  // moves. Folded like the other optional halves of this form, and opened for you the
+  // moment there IS one (invariant 1: a fold never hides a filled field).
+  const [notes, setNotes] = useState(value?.notes ?? '')
   const { cars, hasCar, primary } = useCars()
   // A new ride (defaultRide) pre-picks the household car so it's a one-tap add.
   const [carId, setCarId] = useState<string | null>(value?.car_id ?? (defaultRide && primary ? primary.id : null))
@@ -234,6 +242,8 @@ export function EventForm({
       carId,
       passengers: people,
       bringTemplateId: effectiveBring,
+      // null (not undefined) so clearing the note on a PATCH actually clears it.
+      notes: notes.trim() || null,
     }
     setBusy(true)
     setErr(false)
@@ -349,6 +359,23 @@ export function EventForm({
           typeaheadOnly
         />
       )}
+      {/* « Note » — the free-text half of a rendez-vous (what to bring, which floor,
+          what to ask). Folded like the three optional sections below it, and open
+          from the start whenever the rendez-vous already carries one, so editing can
+          never bury it. `maxLength` is the server's own cap (EVENT_NOTES_MAX), so the
+          box refuses the 2001st character rather than letting the tail be sliced off
+          quietly on save. */}
+      <Disclosure label={t.operator.eventNote} defaultOpen={!!notes.trim()} className="event-note">
+        <textarea
+          className="input"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          maxLength={2000}
+          placeholder={t.operator.eventNotePlaceholder}
+          aria-label={t.operator.eventNote}
+        />
+      </Disclosure>
       {/* « Répéter » and « Afficher dès » sat here as two permanently-open select
           rows, and both are at their default on nearly every rendez-vous you write
           (« Jamais » · « Au moment même ») — two lines of machinery between « Qui »

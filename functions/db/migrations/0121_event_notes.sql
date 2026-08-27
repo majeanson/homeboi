@@ -1,0 +1,21 @@
+-- A free-text note on a rendez-vous.
+--
+-- The one thing an appointment could never carry: what you have to remember about it
+-- — « apporter la carte d'assurance maladie », « 3e étage, bureau 12 », « demander
+-- pour le renouvellement ». Until now that had to go in the TITLE (which the board
+-- then had to render in full) or in the day's own `day_notes` row, which belongs to
+-- the day, not to the rendez-vous, and is gone the moment the appointment moves.
+--
+--   notes  free-text detail, NULL = none. Same name and same shape as
+--          home_projects.notes (migration 0074) — one spelling for "free-text detail
+--          on a row", so a reader never has to guess between note/notes/detail.
+--
+-- A recurring rendez-vous carries ONE note on the series, like its title and its
+-- « Qui »: every expanded occurrence shows it (the occurrences are derived, never
+-- stored). Deliberately NOT exposed on the public /partage snapshot — a shared link
+-- says title + when + who-label and nothing more, and the note is exactly the private
+-- half of a rendez-vous.
+--
+-- Additive + nullable: every existing row stays valid and every reader that does not
+-- know about it is unaffected. Forward-only, filename-locked.
+ALTER TABLE events ADD COLUMN notes TEXT;
