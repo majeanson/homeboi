@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Home } from './pages/Home'
 import { useT } from './i18n'
 import { useSurface } from './lib/surface'
 import { useAuth } from './lib/auth'
 import { isPaired } from './lib/device'
+import { remeasureViewport } from './lib/viewportVars'
 
 // Hot paths eager (Home, Board — the kiosk surfaces a tablet hits on boot).
 // Everything else is lazy. The six themed tabs (board/kitchen/liste/notes/maison/
@@ -135,9 +136,25 @@ function Entry() {
   return <Home />
 }
 
+// Every client-side navigation re-reads the visual viewport. iOS doesn't fire a
+// `resize` (nor a `focusout`) when the keyboard closes because the field it was
+// attached to was UNMOUNTED by the route change — so `.kb-open` + --kb-fixed stay
+// latched, and the page you just opened pads a keyboard's height away at the
+// bottom: a dead band hiding its lower third, with no keyboard in sight (the day
+// page opened from the calendar stopped at « Dîner »). A pure re-read: a keyboard
+// that really is still up keeps its fit. See lib/viewportVars.ts.
+function ViewportOnNav() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    remeasureViewport()
+  }, [pathname])
+  return null
+}
+
 export function AppRoutes() {
   return (
     <Suspense fallback={<Loading />}>
+      <ViewportOnNav />
       <Routes>
         <Route path="/" element={<Entry />} />
         <Route path="/setup" element={<Setup />} />

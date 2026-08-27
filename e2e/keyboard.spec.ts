@@ -387,3 +387,93 @@ test('a suspend never latches --kb / .kb-open', async ({ page }) => {
   await expect(page.locator('.hubnav')).toBeVisible()
   await expect(page.locator('.add-fab')).toBeVisible()
 })
+
+// A keyboard dismissed by the ROUTE CHANGE ITSELF — the field it was attached to is
+// unmounted, so iOS fires neither a visualViewport `resize` nor a `focusout`. The vars
+// stay latched at keyboard-open values, and the full-screen scene you just opened pads
+// a keyboard's height off its own bottom: a dead band across the lower third with no
+// keyboard in sight (Marc, iOS PWA — the day page opened from the calendar showed
+// nothing past « Dîner »). Nothing re-measured on a client-side navigation, so the band
+// followed you from page to page. The router now re-reads the viewport on every
+// pathname change (router.tsx ViewportOnNav → lib/viewportVars remeasureViewport).
+const silentlyRestoreViewport = () => {
+  const stub = (window as unknown as { __vvStub: { height: number; offsetTop: number } }).__vvStub
+  stub.height = window.innerHeight
+  stub.offsetTop = 0
+  document.getElementById('fake-kb')?.remove()
+  // …and NO resize event: that is exactly the iOS gap this guards.
+}
+
+test('a keyboard that vanishes with the route leaves no dead band on the next scene', async ({ page }) => {
+  const open = boot({ w: 390, h: 844 })
+  await open(page, '/board')
+
+  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  await add.scrollIntoViewIfNeeded()
+  await add.focus()
+  await openKeyboard(page, 291)
+  expect(await page.evaluate(kbState), 'keyboard up').toEqual({ open: true, kb: '291px' })
+
+  await page.evaluate(silentlyRestoreViewport)
+  // Navigate the way the app does: an in-app link into a full-screen .scene.
+  await page.locator('a[href="/board/departure"]').first().click()
+  await expect(page.locator('.scene')).toBeVisible()
+  await page.waitForTimeout(700) // remeasure's settle retries (60/200/500ms)
+
+  expect(await page.evaluate(kbState), 'vars cleared by the navigation').toEqual({ open: false, kb: '0px' })
+  const band = await page.evaluate(() => {
+    const body = document.querySelector('.scene__body')!
+    return Math.round(window.innerHeight - body.getBoundingClientRect().bottom)
+  })
+  expect(band, 'the scene body reaches the bottom of the screen').toBeLessThanOrEqual(1)
+})
+
+test('a keyboard that is genuinely still up keeps its fit across a navigation', async ({ page }) => {
+  const open = boot({ w: 390, h: 844 })
+  await open(page, '/board')
+
+  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  await add.scrollIntoViewIfNeeded()
+  await add.focus()
+  await openKeyboard(page, 291)
+
+  // The viewport stays shrunk — the keyboard really is there. The re-read must agree
+  // with the device, not blanket-clear on every navigation.
+  await page.locator('a[href="/board/departure"]').first().click()
+  await expect(page.locator('.scene')).toBeVisible()
+  await page.waitForTimeout(700)
+  expect(await page.evaluate(kbState), 'fit kept').toEqual({ open: true, kb: '291px' })
+})
+
+// The same unmount WITHOUT a route change — a sheet closing on save takes its focused
+// field with it. No blur, no focusout, and iOS can skip the resize too. The next tap
+// anywhere re-reads the viewport (viewportVars' pointerup backstop), so the dead band
+// never outlives one touch.
+test('a keyboard that vanishes with its sheet is cleared by the next tap', async ({ page }) => {
+  const open = boot({ w: 390, h: 844 })
+  await open(page, '/board')
+
+  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  await add.scrollIntoViewIfNeeded()
+  await add.focus()
+  await openKeyboard(page, 291)
+  expect(await page.evaluate(kbState), 'keyboard up').toEqual({ open: true, kb: '291px' })
+
+  // The field is removed (not blurred) and the viewport comes back silently.
+  await page.evaluate(() => {
+    ;(document.activeElement as HTMLElement | null)?.blur?.()
+    document.getElementById('fake-kb')?.remove()
+    const stub = (window as unknown as { __vvStub: { height: number; offsetTop: number } }).__vvStub
+    stub.height = window.innerHeight
+    stub.offsetTop = 0
+  })
+  // Whatever the engine does with blur, re-latch the stale state so the backstop is
+  // what's under test, then tap somewhere harmless.
+  await page.evaluate(() => {
+    document.documentElement.classList.add('kb-open')
+    document.documentElement.style.setProperty('--kb', '291px')
+  })
+  await page.locator('.hub__body').first().click({ position: { x: 5, y: 5 } })
+  await page.waitForTimeout(300)
+  expect(await page.evaluate(kbState), 'the next tap cleared it').toEqual({ open: false, kb: '0px' })
+})

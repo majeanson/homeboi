@@ -315,6 +315,24 @@ function followCaret(el: HTMLElement): void {
   if (over > 0) nudgeBy(el, over)
 }
 
+// Re-read the visual viewport ON DEMAND. The vars above only recompute when the
+// browser SAYS the viewport moved — and iOS skips that event in one very reachable
+// case: the keyboard closes because its focused field was REMOVED (a route change
+// unmounting the form). No `resize`, and no `focusout` either — so `.kb-open` +
+// --kb-fixed stay latched at the keyboard's height, and the NEXT full-screen
+// surface pads ~290px of itself away: a dead band across the bottom third that
+// hides the rest of the page (Marc, iOS PWA — the day page opened from the
+// calendar showed nothing past « Dîner »). Nothing else re-measured on a
+// client-side navigation, so the stale band followed you from page to page.
+// This is a pure re-READ of the live viewport, never a guess about the keyboard,
+// so calling it can only replace a stale answer with the true one — a keyboard
+// that IS still up keeps its fit. No-op before trackVisualViewport() has run (or
+// where visualViewport is missing).
+let remeasureNow: () => void = () => {}
+export function remeasureViewport(): void {
+  remeasureNow()
+}
+
 export function trackVisualViewport(): void {
   const vv = window.visualViewport
   if (!vv) return
@@ -507,6 +525,11 @@ export function trackVisualViewport(): void {
     schedule()
     for (const ms of [60, 200, 500]) setTimeout(schedule, ms)
   }
+  // The same re-read, callable from React: `remeasureViewport()` fires on every
+  // client-side navigation (router.tsx). Wired here so it shares this closure's
+  // `queued` latch and its settle retries — the keyboard's dismissal ANIMATION is
+  // still running when the route changes, so one immediate read isn't enough.
+  remeasureNow = remeasure
   document.addEventListener('visibilitychange', remeasure)
   window.addEventListener('focus', remeasure)
   window.addEventListener('pageshow', remeasure)
@@ -582,6 +605,19 @@ export function trackVisualViewport(): void {
   // viewport and correctly keeps things as-is.
   document.addEventListener('focusout', () => {
     setTimeout(schedule, 300)
+  })
+
+  // …and the case `focusout` itself misses: the field wasn't blurred, it was
+  // REMOVED (a sheet closing, a form unmounting on save). Removing the focused
+  // node fires no blur/focusout, and iOS can hide the keyboard without a
+  // visualViewport `resize` — so the vars latch. On a NAVIGATION the router
+  // re-reads them (remeasureViewport above); this covers the same unmount with no
+  // route change. Gated tight: only when we still claim a keyboard is up while
+  // nothing editable holds focus — with a field focused this is a no-op, so a live
+  // keyboard is never fought. It only ever re-READS the viewport; a keyboard that
+  // is genuinely still up keeps its fit.
+  document.addEventListener('pointerup', () => {
+    if (kbOpen && !isEditable(document.activeElement)) schedule()
   })
 
   // Final backstop for iOS Safari browser tabs: block the pinch-zoom gesture
