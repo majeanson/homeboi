@@ -80,6 +80,8 @@ at all (❌).
 | Greeting · « Depuis ce matin » | ✅ the greeting IS a button — now named (`aria-label`) + a `greeting` help entry⁸ | — | — | — | ✅ armed « ? » explains it | — | ✅ |
 | Face · switch | ✅ chipᴹ / `MemberSwitcher`ᴷ | — | — | — | — | — | ✅ |
 | View · Grille/Mois/Année · day plan · departure | ✅ `BoardViewToggle`, card pills, mini corners | — | — | ＋ `plan-today/tomorrow/departure` | — | — | ✅ |
+| Mois · day · read / add to it | ✅ tap the cell (tap again = close) | — | ➖ the pane below IS the day | day ⋯ (rendez-vous / corvée / repas / note) | ✅ « Voir la journée » → `/kitchen/day/:date` | — | ✅ |
+| Mois · highlight one kind | ✅ the legend chips are toggles (`aria-pressed`, `?type=`) — the pane becomes that kind's month roll-up | — | ➖ roll-up rows keep their own peeks (one renderer) | — | ➖ device-local reading lens, no setting | ➖ nothing written | ✅ real buttons, Enter/Space |
 
 ### La cuisine (`pages/Kitchen.tsx`, `components/kitchen/*`)
 

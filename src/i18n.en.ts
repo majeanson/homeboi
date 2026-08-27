@@ -966,6 +966,12 @@ export const EN: typeof FR = {
     legendChores: 'Chores',
     legendTodos: 'To complete',
     legendNotes: 'Notes',
+    // …and the legend is also the calendar's HIGHLIGHT LENS: tap an entry to light that
+    // kind across the whole month and roll it up in the panel below.
+    legendLens: 'Highlight a kind',
+    lensHint: (kind: string) => `Highlight: ${kind}`,
+    lensClear: 'Back to the day',
+    lensEmpty: 'Nothing of the kind this month',
     // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
     dayActions: 'Day actions',
     // The pinned day panel on a phone: it opens as a one-line bar you tap to unfold.

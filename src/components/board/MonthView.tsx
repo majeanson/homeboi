@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
 import { LoadError } from '../LoadError'
@@ -12,7 +12,7 @@ import { useAuth } from '../../lib/auth'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
-import { formatTime, formatMonthYear, formatDayLong, weekdayShort, capitalize as cap } from '../../lib/format'
+import { formatTime, formatMonthYear, formatDay, formatDayLong, weekdayShort, dayNum, capitalize as cap } from '../../lib/format'
 import { monthGrid, inMonth, stepMonthDay } from '../../lib/monthgrid'
 import { localYMD, addLocalDays, localDayStart } from '../../lib/localDay'
 import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
@@ -89,6 +89,55 @@ interface Dot {
 interface Line extends Dot {
   time?: string
   label: string
+}
+
+// ── The legend, which is ALSO a highlight lens ──────────────────────────────────────
+// The shape key under the grid used to be pure decoration (aria-hidden, unclickable).
+// Tapping one of its six entries now LIGHTS that kind: every day carrying it steps
+// forward in the grid, everything else steps back, and the panel below swaps from "the
+// picked day" to "this kind, all month" (see the panel's two faces). It is a READING
+// lens, not a filter — nothing is removed from the calendar, the unlit markers just lose
+// weight — so a month of rendez-vous reads as one list instead of thirty taps while the
+// grid still says where they fall. Lives in the URL (`?type=`) beside `?date=`, so a lit
+// calendar is a linkable place and survives a hop into a day page and back.
+const LENS_KEYS = ['none', 'event', 'meal', 'chore', 'todo', 'note', 'trip'] as const
+type LensParam = (typeof LENS_KEYS)[number]
+type LensKey = Exclude<LensParam, 'none'>
+// Which lens each cell marker answers to. Birthdays and « L'auto » work windows ride the
+// SAME `events` payload and the legend never listed them apart, so « Rendez-vous » lights
+// them too rather than leaving two glyph kinds unreachable. Habits are deliberately not
+// cell markers at all (see the grid), so they have no lens.
+const LENS_OF: Record<DotKind, LensKey | null> = {
+  event: 'event',
+  birthday: 'event',
+  work: 'event',
+  meal: 'meal',
+  chore: 'chore',
+  todo: 'todo',
+  note: 'note',
+  habit: null,
+}
+
+// How many things of ONE lit kind a day holds — the same slices the panel prints, so a
+// day can never light up in the grid and then have nothing under its date in the roll-up.
+// « Voyage » is absent on purpose: a trip spans days, so the roll-up lists each trip once
+// rather than repeating it under every date it covers.
+function lensCount(b: DayBucket | undefined, k: LensKey, meals: MealPrefs, pendingTodo: Set<string>): number {
+  if (!b) return 0
+  switch (k) {
+    case 'event':
+      return b.events.length
+    case 'meal':
+      return b.meals.filter((m) => meals.isVisible(m.slot)).length
+    case 'chore':
+      return b.chores.length + b.home.length
+    case 'todo':
+      return b.todos.filter((td) => !pendingTodo.has(td.id)).length
+    case 'note':
+      return b.notes.length
+    default:
+      return 0
+  }
 }
 
 // EVERY dated thing on a day, in the order the detail panel lists them (events first,
@@ -193,16 +242,32 @@ export function MonthView({
   const [params, setParams] = useSearchParams()
   const dateParam = Number(params.get('date'))
   const selected = Number.isFinite(dateParam) && dateParam > 0 ? localDayStart(new Date(dateParam * 1000)) : todayDay
-  const setSelected = (d: number) =>
+  // The legend's highlight lens (`?type=`), read the same forgiving way as `?date=`: an
+  // unknown value is simply no lens. null = the plain calendar.
+  const lensParam = params.get('type')
+  const lens = ((LENS_KEYS as readonly string[]).includes(lensParam ?? '') ? lensParam : 'none') as LensParam
+  const lit: LensKey | null = lens === 'none' ? null : lens
+  // ONE writer for both params the calendar owns. Picking a day also clears the lens, and
+  // two back-to-back setSearchParams calls would have the second read a `prev` that does
+  // not yet carry the first (the location hasn't re-rendered) — silently undoing it. One
+  // call, one URLSearchParams, both edits.
+  const patchUrl = (patch: { date?: number; type?: LensParam }) =>
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        if (d === todayDay) next.delete('date')
-        else next.set('date', String(d))
+        if (patch.date !== undefined) {
+          if (patch.date === todayDay) next.delete('date')
+          else next.set('date', String(patch.date))
+        }
+        if (patch.type !== undefined) {
+          if (patch.type === 'none') next.delete('type')
+          else next.set('type', patch.type)
+        }
         return next
       },
       { replace: true },
     )
+  const setSelected = (d: number) => patchUrl({ date: d })
   // Months from the real current one — read off the picked day, never stored beside it.
   const selYMD = localYMD(selected)
   const nowYMD = localYMD(todayDay)
@@ -227,15 +292,29 @@ export function MonthView({
   // ?date= deep-link still lands with the day open, which is the whole point of the
   // link. Picking any OTHER day re-opens it; tapping the open one closes it.
   const [dayOpen, setDayOpen] = useState(true)
+  const revealPanel = () => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    dayPanelRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+  }
   const pickDay = (d: number) => {
-    if (d === selected && dayOpen) {
+    // Untapping only applies to the plain calendar. With a lens lit the panel below is
+    // the month roll-up, so tapping a date means "show me THIS day" — it drops the lens
+    // and opens the day, never folds something the tap wasn't about.
+    if (!lit && d === selected && dayOpen) {
       setDayOpen(false)
       return
     }
-    setSelected(d)
+    patchUrl({ date: d, type: 'none' })
     setDayOpen(true)
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    dayPanelRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest' })
+    revealPanel()
+  }
+  // Tap a legend entry to light its kind; tap the lit one (or the panel's ✕) to go back
+  // to the plain calendar. The panel is force-opened: the lens has nowhere to show itself
+  // if the day drawer happens to be folded away.
+  const toggleLens = (k: LensKey) => {
+    patchUrl({ type: lens === k ? 'none' : k })
+    setDayOpen(true)
+    revealPanel()
   }
 
   // The pinned day drawer, folded away to read the grid under it. Narrow screens only —
@@ -410,6 +489,263 @@ export function MonthView({
           onSelect: () => nav('/board/habitudes'),
         },
       ]
+  // ── The panel's ONE row renderer ────────────────────────────────────────────────────
+  // The bottom pane has two faces — the picked DAY, and a legend lens's month ROLL-UP —
+  // and both print the same rows in the same order, with the same peeks, the same check
+  // -with-undo, the same colours. One renderer behind both, so a rendez-vous can never
+  // behave differently depending on which face named it. `only` narrows to a single
+  // legend kind (the roll-up); null prints everything (the day).
+  const dayRows = (day: number, only: LensKey | null) => {
+    const b = byDay.get(day)
+    const show = (k: LensKey) => only === null || only === k
+    const meals = show('meal') ? (b?.meals ?? []).filter((m) => mealPrefs.isVisible(m.slot)) : []
+    const events = show('event') ? b?.events ?? [] : []
+    const chores = show('chore') ? b?.chores ?? [] : []
+    const home = show('chore') ? b?.home ?? [] : []
+    const todos = show('todo') ? (b?.todos ?? []).filter((td) => !pendingTodo.has(td.id)) : []
+    // Habits are a RECORD of the day, not one of the legend's six kinds (they are not
+    // cell markers either) — so only the day face lists them.
+    const habits = only === null ? (b?.habits ?? []).filter((h) => h.done) : []
+    const notes = show('note') ? b?.notes ?? [] : []
+    return (
+      <>
+        {/* Same order, same cards as the bento day: meals, then events, then
+            chores, then the day note — so nothing dated is represented here
+            differently than on the day view. */}
+        {meals.map((m) => (
+          <Act
+            key={m.id}
+            cat="meal"
+            icon={SLOT_ICON_NAME[m.slot as MealSlot]}
+            title={`${slotLabel(m.slot)} · ${m.title}`}
+            who={cookLine(m.cook_member_id)}
+            color={mealPrefs.color(m.slot)}
+            onOpen={() => openMeal(m, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: day })}
+          />
+        ))}
+        {events.map((e) =>
+          e.work ? (
+            // A derived « L'auto » work window — read-only; tapping opens the car
+            // week view (where the schedule is tuned), never an event editor.
+            <Act
+              key={e.id}
+              cat="work"
+              title={e.title || t.auto.work}
+              when={t.auto.range(formatTime(e.at, lang), e.end != null ? formatTime(e.end, lang) : '')}
+              who={nameOf(members, e.member_id) ?? undefined}
+              color={e.color ?? colorOf(members, e.member_id) ?? undefined}
+              onActivate={() => nav('/voiture')}
+            />
+          ) : (
+            <Act
+              key={e.id}
+              cat={e.birthday ? 'birthday' : 'event'}
+              title={e.title}
+              when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
+              who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
+              whoFaces={eventFaces(e)}
+              color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
+              // 🚗 when this rendez-vous takes the shared car — same cue as a
+              // work window that holds it (the row just above), so the calendar
+              // and the board say "the car is spoken for" the same way.
+              icon={e.car_id ? 'car-bold' : undefined}
+              onOpen={() =>
+                detail.open(
+                  buildEvent(
+                    { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, end_at: e.end_at, car_id: e.car_id, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, contact_address: e.contact_address, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, business_address: e.business_address, birthday: e.birthday, age: e.age },
+                    detailCtx,
+                    eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
+                  ),
+                )
+              }
+            />
+          ),
+        )}
+        {chores.map((c) => (
+          <Act
+            key={c.id}
+            cat="chore"
+            title={c.title}
+            who={c.who ?? undefined}
+            color={c.color ?? undefined}
+            onOpen={() =>
+              detail.open(buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx))
+            }
+          />
+        ))}
+        {/* Projets & Entretien landing on this day — read-only peek (managed in
+            Réglages); tap opens the same chore-style detail. */}
+        {home.map((h) => (
+          <Act
+            key={h.id}
+            cat="chore"
+            title={h.title}
+            color={h.color ?? undefined}
+            onOpen={() => detail.open(buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx))}
+          />
+        ))}
+        {/* À compléter todos pinned to this day — check them off right here (the
+            check is its own tap target); tap the rest of the row to open the day
+            page. The source list, if any, rides as the sub-line. */}
+        {todos.map((td) => (
+          <Act
+            key={td.id}
+            cat="chore"
+            icon="check-bold"
+            title={td.title}
+            who={td.section ?? undefined}
+            color={colorOf(members, td.member_id) ?? undefined}
+            onCheck={() => markTodoDone(td)}
+            onOpen={() => nav(`/kitchen/day/${day}`)}
+          />
+        ))}
+        {/* « Mes habitudes » on this day — a RECORD, not a check-in: only the
+            habits actually DONE that day, read-only, exactly like a birthday or a
+            work window. The panel used to carry full per-kind marking rows for
+            today and any past day, which put « Encore un » / « C'est fait »
+            buttons under a date you were merely browsing, and named every
+            unfinished intention on every square you tapped — a calendar answers
+            "what happened", not "what do you still owe". Marking (and backfilling
+            a forgotten day, through the habit's own week of dots) lives in « Le
+            point du jour », one tap away through this row or through the ⋯ above. */}
+        {habits.map((h) => (
+          <Act
+            key={h.id}
+            cat="routine"
+            icon="repeat-bold"
+            title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
+            // Day-neutral (« Fait », never « Fait aujourd'hui »): this same row
+            // renders for a date weeks back. Never a count, never a rank (calm).
+            who={t.habits.doneOnDay}
+            done
+            color={h.colour ?? undefined}
+            onOpen={() => nav('/board/habitudes')}
+          />
+        ))}
+        {notes.map((n) => (
+          <DayNote key={n.id} note={n} members={members} />
+        ))}
+      </>
+    )
+  }
+
+  // « Voyage » is its own shape: a trip SPANS days, so the day face lists the trips
+  // covering that date (plus the itinerary written for it), while the roll-up lists each
+  // trip once — repeating a two-week trip under fourteen dates would be noise, not a list.
+  const dayTrips = (day: number) => {
+    const trips = tripsByDay.get(day) ?? []
+    const plans = (data?.tripPlans ?? []).filter((p) => p.day === day)
+    return (
+      <>
+        {/* « Voyage » covering this day — atop the list, tapping into the trip,
+            followed by the dated itinerary entries written for the day (the actual
+            plans, not just the global trip band). */}
+        {trips.map((tr) => {
+          // « Jour N » — 1-based day-of-trip for this date, mirroring
+          // DayPlanPage's tripDayNum (both dates are local-midnight; round absorbs DST).
+          const jour = Math.round((day - tr.start_at) / DAY) + 1
+          // A « Voyage partagé » (promoted/joined) taps into the shared scene; the sub-tab
+          // param (`vue`/`jour`) is read identically there (SharedVoyagePage reuses VoyageItinerary).
+          const base = tr.shared ? `/voyage/partage/${tr.id}` : `/voyage/${tr.id}`
+          return (
+            <div key={tr.id} className="day-plan__trip">
+              <Act
+                cat="event"
+                title={`${t.voyage.title} · ${tr.title}`}
+                when={t.voyage.dayN(jour)}
+                color={tr.colour}
+                // « Partagé » marker only here (the panel list shows text), never on the
+                // month grid band — the band colour + title carry it there (calm).
+                badge={
+                  tr.shared ? (
+                    <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                      <Icon name="users-three-bold" size={13} />
+                    </span>
+                  ) : undefined
+                }
+                onActivate={() => nav(`${base}?vue=itineraire`)}
+              />
+              {plans
+                .filter((p) => p.trip_id === tr.id)
+                .map((p) => (
+                  <Act
+                    key={p.id}
+                    cat="event"
+                    icon={tripCategoryIcon(p.category as TripCategory)}
+                    title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
+                    who={p.label && p.text ? p.text : undefined}
+                    color={p.colour}
+                    // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
+                    // that day's section inside the itinerary instead of its top.
+                    onActivate={() => nav(`${base}?vue=itineraire&jour=${jour}`)}
+                  />
+                ))}
+            </div>
+          )
+        })}
+      </>
+    )
+  }
+
+  // The legend's six entries, in the grid's own reading order. Built here because one of
+  // the swatches needs live state (the hero meal slot's icon, per Réglages ▸ Repas).
+  const LEGEND: { key: LensKey; label: string; swatch: ReactNode }[] = [
+    {
+      key: 'event',
+      label: t.monthView.legendEvents,
+      swatch: <span className="monthv__dot monthv__dot--event" style={{ background: 'var(--ink-soft)' }} />,
+    },
+    {
+      key: 'meal',
+      label: t.monthView.legendMeals,
+      swatch: (
+        <span className="monthv__dot-icon">
+          <Icon name={SLOT_ICON_NAME[mealPrefs.hero]} size={12} color="var(--ink-soft)" />
+        </span>
+      ),
+    },
+    {
+      key: 'chore',
+      label: t.monthView.legendChores,
+      swatch: <span className="monthv__dot monthv__dot--chore" style={{ background: 'var(--ink-soft)' }} />,
+    },
+    {
+      key: 'todo',
+      label: t.monthView.legendTodos,
+      swatch: (
+        <span className="monthv__dot-icon">
+          <Icon name="check-bold" size={12} color="var(--ink-soft)" />
+        </span>
+      ),
+    },
+    {
+      key: 'note',
+      label: t.monthView.legendNotes,
+      swatch: <span className="monthv__dot monthv__dot--note" style={{ color: 'var(--ink-soft)' }} />,
+    },
+    {
+      key: 'trip',
+      label: t.voyage.legendTrips,
+      swatch: <span className="monthv__legend-band" style={{ background: 'var(--ink-soft)' }} />,
+    },
+  ]
+  const lensLabel = LEGEND.find((it) => it.key === lit)?.label ?? ''
+
+  // The days of THIS month that carry the lit kind, in date order — the roll-up's spine.
+  // Out-of-month squares are excluded (the grid doesn't light them either): the roll-up
+  // says « ce mois-ci », and the neighbouring month is one ‹ › away.
+  const lensDays = useMemo(
+    () =>
+      lit && lit !== 'trip'
+        ? grid.days.filter((d) => inMonth(d, grid.month) && lensCount(byDay.get(d), lit, mealPrefs, pendingTodo) > 0)
+        : [],
+    // mealPrefs is rebuilt every render; its VISIBILITY set is the only part read here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [lit, grid, byDay, pendingTodo, mealPrefs.visibleSlots],
+  )
+  // Every trip touching the shown window — the « Voyages » lens's whole list.
+  const monthTrips = data?.trips ?? []
+
   const atToday = offset === 0 && selected === todayDay
   // Grid keys are LOCAL midnights now (monthgrid.ts), so labels render in local
   // time — the household's wall month/weekday, no UTC flag.
@@ -470,138 +806,163 @@ export function MonthView({
           // names and with everything you can DO with the day. A tapped cell is simply
           // the lit one now.
           const on = d === selected && dayOpen
+          const inM = inMonth(d, grid.month)
+          const bands = tripsByDay.get(d) ?? []
+          // ── Under a legend lens ─────────────────────────────────────────────────────
+          // The lit kind's markers come FIRST, so the four-marker cut can never hide the
+          // very thing you asked to see, and the cell itself either steps forward (it has
+          // one) or back (it doesn't). Out-of-month cells never light: the roll-up below
+          // lists THIS month, and a lit trailing square with no row under it would lie.
+          const litMarks = lit && lit !== 'trip' && inM ? marks.filter((m) => LENS_OF[m.kind] === lit) : []
+          const hit = lit === 'trip' ? inM && bands.length > 0 : litMarks.length > 0
+          const shown = lit ? [...litMarks, ...marks.filter((m) => !litMarks.includes(m))] : marks
+          // A marker's weight under the lens. No lens → no class at all, so an unlit
+          // calendar renders exactly the markup it always did.
+          const mk = (k: DotKind) => (!lit ? '' : inM && LENS_OF[k] === lit ? ' is-lit' : ' is-dim')
+          const bandCls = !lit ? '' : lit === 'trip' && inM ? ' is-lit' : ' is-dim'
           const cls =
             'monthv__cell' +
-            (inMonth(d, grid.month) ? '' : ' is-out') +
+            (inM ? '' : ' is-out') +
             (d === todayDay ? ' is-today' : '') +
-            (on ? ' is-on' : '')
+            (on && !lit ? ' is-on' : '') +
+            (lit ? (hit ? ' is-lit' : ' is-dim') : '')
           return (
             <button key={d} type="button" role="gridcell" aria-selected={on} className={cls} onClick={() => pickDay(d)}>
               <span className="monthv__num">{localYMD(d).day}</span>
-              {marks.length > 0 && (
+              {shown.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
-                  {marks.slice(0, 4).map((dot, i) =>
+                  {shown.slice(0, 4).map((dot, i) =>
                     dot.kind === 'meal' && dot.slot ? (
                       // Meal → its slot icon, tinted with the slot colour (Réglages ▸ Repas).
-                      <span key={i} className="monthv__dot-icon">
+                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
                         <Icon name={SLOT_ICON_NAME[dot.slot]} size={12} color={dot.color} />
                       </span>
                     ) : dot.kind === 'todo' ? (
                       // À compléter → a check icon tinted with the member colour.
-                      <span key={i} className="monthv__dot-icon">
+                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
                         <Icon name="check-bold" size={12} color={dot.color} />
                       </span>
                     ) : dot.kind === 'birthday' ? (
                       // A derived birthday → a cake, tinted with the cercle rose.
-                      <span key={i} className="monthv__dot-icon">
+                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
                         <Icon name="cake-bold" size={12} color={dot.color} />
                       </span>
                     ) : dot.kind === 'work' ? (
                       // A derived « L'auto » work window → a clock, tinted by the member.
-                      <span key={i} className="monthv__dot-icon">
+                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
                         <Icon name="clock-bold" size={12} color={dot.color} />
                       </span>
                     ) : (
                       <span
                         key={i}
-                        className={`monthv__dot monthv__dot--${dot.kind}`}
+                        className={`monthv__dot monthv__dot--${dot.kind}` + mk(dot.kind)}
                         // A ring (note) is drawn from `color`; filled shapes from `background`.
                         style={dot.kind === 'note' ? { color: dot.color } : { background: dot.color }}
                       />
                     ),
                   )}
-                  {marks.length > 4 && <span className="monthv__more">+{marks.length - 4}</span>}
+                  {shown.length > 4 && <span className="monthv__more">+{shown.length - 4}</span>}
                 </span>
               )}
               {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so
                   they never push the number/dots), one per covering trip, rounded on the
                   trip's first/last day. */}
-              {(() => {
-                const bands = tripsByDay.get(d) ?? []
-                return bands.length > 0 ? (
-                  <span className="monthv__bands" aria-hidden="true">
-                    {bands.slice(0, 3).map((tr) => (
-                      <span
-                        key={tr.id}
-                        className={'monthv__band' + (tr.isStart ? ' is-start' : '') + (tr.isEnd ? ' is-end' : '')}
-                        style={{ background: tr.colour }}
-                      />
-                    ))}
-                  </span>
-                ) : null
-              })()}
+              {bands.length > 0 && (
+                <span className="monthv__bands" aria-hidden="true">
+                  {bands.slice(0, 3).map((tr) => (
+                    <span
+                      key={tr.id}
+                      className={'monthv__band' + (tr.isStart ? ' is-start' : '') + (tr.isEnd ? ' is-end' : '') + bandCls}
+                      style={{ background: tr.colour }}
+                    />
+                  ))}
+                </span>
+              )}
             </button>
           )
         })}
       </div>
 
-      {/* Shape key: the dots are shape-coded, so a small legend tells a glance which
-          shape is a chore vs a meal vs an event. Neutral swatches — it's about the
-          SHAPE here, not the colour (colour carries who/which-slot in the cells). */}
-      <div className="monthv__legend" aria-hidden="true">
-        <span className="monthv__legend-item">
-          <span className="monthv__dot monthv__dot--event" style={{ background: 'var(--ink-soft)' }} /> {t.monthView.legendEvents}
-        </span>
-        <span className="monthv__legend-item">
-          <span className="monthv__dot-icon">
-            <Icon name={SLOT_ICON_NAME[mealPrefs.hero]} size={12} color="var(--ink-soft)" />
-          </span>{' '}
-          {t.monthView.legendMeals}
-        </span>
-        <span className="monthv__legend-item">
-          <span className="monthv__dot monthv__dot--chore" style={{ background: 'var(--ink-soft)' }} /> {t.monthView.legendChores}
-        </span>
-        <span className="monthv__legend-item">
-          <span className="monthv__dot-icon">
-            <Icon name="check-bold" size={12} color="var(--ink-soft)" />
-          </span>{' '}
-          {t.monthView.legendTodos}
-        </span>
-        <span className="monthv__legend-item">
-          <span className="monthv__dot monthv__dot--note" style={{ color: 'var(--ink-soft)' }} /> {t.monthView.legendNotes}
-        </span>
-        <span className="monthv__legend-item">
-          <span className="monthv__legend-band" style={{ background: 'var(--ink-soft)' }} /> {t.voyage.legendTrips}
-        </span>
-      </div>
+      {/* Shape key AND the highlight lens: the dots are shape-coded, so this tells a
+          glance which shape is a chore vs a meal vs an event — and tapping one lights
+          that kind across the whole month (see LENS_KEYS above). Neutral swatches: it's
+          about the SHAPE here, not the colour (colour carries who/which-slot in the
+          cells). A Cluster, never a hand-rolled flex row — .monthv__legend keeps its own
+          tightened gap/font on top (month.css is imported after core.css). */}
+      <Cluster className="monthv__legend" role="group" aria-label={t.monthView.legendLens}>
+        {LEGEND.map((it) => (
+          <button
+            key={it.key}
+            type="button"
+            className={
+              'monthv__legend-item' + (lit === it.key ? ' is-on' : '') + (lit && lit !== it.key ? ' is-off' : '')
+            }
+            aria-pressed={lit === it.key}
+            title={t.monthView.lensHint(it.label)}
+            onClick={() => toggleLens(it.key)}
+          >
+            {it.swatch} {it.label}
+          </button>
+        ))}
+      </Cluster>
 
-      {/* Untapping the open day closes this drawer — the calendar goes back to being a
-          calendar. Tap any day (including the same one) to bring it back. */}
+      {/* The pane under the calendar, in its TWO faces: the picked day (its things, its
+          doors), or — when a legend entry is lit — that kind's whole month, rolled up
+          date by date. Untapping the open day closes the drawer; tapping any day (or the
+          lens's ✕) brings it back. */}
       {dayOpen && (
       <div
-        className={'monthv__day' + (folded ? ' monthv__day--folded' : '')}
+        className={'monthv__day' + (folded ? ' monthv__day--folded' : '') + (lit ? ' monthv__day--lens' : '')}
         ref={dayPanelRef}
-        aria-label={cap(formatDayLong(selected, lang))}
+        aria-label={lit ? `${lensLabel} · ${title}` : cap(formatDayLong(selected, lang))}
       >
         <div className="monthv__day-h">
-          <b>{cap(formatDayLong(selected, lang))}</b>
+          <b>{lit ? `${lensLabel} · ${title}` : cap(formatDayLong(selected, lang))}</b>
           <Cluster className="monthv__day-tools">
-            {/* « Voir la journée » — the calendar's ONE door into a specific day: the full
-                day page (/kitchen/day/:date), where that day's meals, rendez-vous, corvées,
-                à compléter and note are all editable. It used to sit beside a « Voir ce
-                moment » twin that opened the same day read-only; « Moments » is retired. */}
-            {/* Icon-only, like the ⋯ and the fold beside it: three little round buttons
-                reading as one row of controls, instead of one wide worded button that
-                made the header look like a form. The name lives on aria-label/title —
-                an icon button still has to SAY what it is to a screen reader. */}
-            <button
-              type="button"
-              className="monthv__day-btn monthv__open-day"
-              onClick={() => nav(`/kitchen/day/${selected}`)}
-              aria-label={t.detail.openDay}
-              title={t.detail.openDay}
-            >
-              <Icon name="calendar-blank-bold" size={16} />
-            </button>
-            {/* Everything you can ADD to the picked date, behind ONE ⋯. The calendar could
-                previously only READ a day — putting a rendez-vous on the 14th meant leaving
-                for the ＋ FAB and losing your place. Every target already exists and already
-                seeds itself from the date, so this wires no new form: /event/new?date= and
-                /chore/new?start= pre-fill (note the two param names differ), and the meal +
-                day-note both live on the day page. All four invalidate MONTH_KEY on save, so
-                coming back shows the new row. ActionMenu renders nothing on an empty list,
-                so the ⋯ simply disappears for a read-only guest. */}
-            <ActionMenu label={t.monthView.dayActions} items={dayAdds} triggerClassName="monthv__day-btn" />
+            {/* Under a lens the two day doors make no sense — « Voir la journée » and the
+                day's ⋯ adds both need ONE date, and the pane is showing a month. They are
+                replaced by the one control the lens needs: put the calendar back. */}
+            {lit && (
+              <button
+                type="button"
+                className="monthv__day-btn monthv__lens-clear"
+                onClick={() => patchUrl({ type: 'none' })}
+                aria-label={t.monthView.lensClear}
+                title={t.monthView.lensClear}
+              >
+                <Icon name="x-bold" size={16} />
+              </button>
+            )}
+            {!lit && (
+              <>
+                {/* « Voir la journée » — the calendar's ONE door into a specific day: the full
+                    day page (/kitchen/day/:date), where that day's meals, rendez-vous, corvées,
+                    à compléter and note are all editable. It used to sit beside a « Voir ce
+                    moment » twin that opened the same day read-only; « Moments » is retired. */}
+                {/* Icon-only, like the ⋯ and the fold beside it: three little round buttons
+                    reading as one row of controls, instead of one wide worded button that
+                    made the header look like a form. The name lives on aria-label/title —
+                    an icon button still has to SAY what it is to a screen reader. */}
+                <button
+                  type="button"
+                  className="monthv__day-btn monthv__open-day"
+                  onClick={() => nav(`/kitchen/day/${selected}`)}
+                  aria-label={t.detail.openDay}
+                  title={t.detail.openDay}
+                >
+                  <Icon name="calendar-blank-bold" size={16} />
+                </button>
+                {/* Everything you can ADD to the picked date, behind ONE ⋯. The calendar could
+                    previously only READ a day — putting a rendez-vous on the 14th meant leaving
+                    for the ＋ FAB and losing your place. Every target already exists and already
+                    seeds itself from the date, so this wires no new form: /event/new?date= and
+                    /chore/new?start= pre-fill (note the two param names differ), and the meal +
+                    day-note both live on the day page. All four invalidate MONTH_KEY on save, so
+                    coming back shows the new row. ActionMenu renders nothing on an empty list,
+                    so the ⋯ simply disappears for a read-only guest. */}
+                <ActionMenu label={t.monthView.dayActions} items={dayAdds} triggerClassName="monthv__day-btn" />
+              </>
+            )}
             {/* Fold the drawer away to read the grid under it. A real button, never a
                 swipe — and hidden outright in the two-column layout, where the day sits
                 beside the calendar and there is nothing to reclaim. */}
@@ -625,172 +986,59 @@ export function MonthView({
           // A month whose fetch FAILED is not an empty month — saying « rien »
           // (or hanging on Chargement) lied on flaky wifi (2026-08-27).
           <LoadError onRetry={() => void refetch()} />
+        ) : lit === 'trip' ? (
+          // « Voyages » — each trip in the window ONCE, with its span, not a copy under
+          // every date it covers.
+          monthTrips.length === 0 ? (
+            <EmptyState>{t.monthView.lensEmpty}</EmptyState>
+          ) : (
+            monthTrips.map((tr) => (
+              <Act
+                key={tr.id}
+                cat="event"
+                title={`${t.voyage.title} · ${tr.title}`}
+                when={`${formatDay(tr.start_at, lang)} → ${formatDay(tr.end_at, lang)}`}
+                color={tr.colour}
+                badge={
+                  tr.shared ? (
+                    <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                      <Icon name="users-three-bold" size={13} />
+                    </span>
+                  ) : undefined
+                }
+                onActivate={() => nav(`${tr.shared ? '/voyage/partage' : '/voyage'}/${tr.id}?vue=itineraire`)}
+              />
+            ))
+          )
+        ) : lit ? (
+          // ── The lens roll-up ──────────────────────────────────────────────────────
+          // One kind, the whole month, gathered date by date: a calendar-style date badge
+          // on the left (the meal plan's own pattern) with that day's rows beside it. The
+          // badge is the way back — tapping it drops the lens and opens that single day.
+          lensDays.length === 0 ? (
+            <EmptyState>{t.monthView.lensEmpty}</EmptyState>
+          ) : (
+            lensDays.map((d) => (
+              <div key={d} className="monthv__rollup">
+                <button
+                  type="button"
+                  className={'monthv__rollup-date' + (d === todayDay ? ' is-today' : '')}
+                  onClick={() => pickDay(d)}
+                  aria-label={cap(formatDayLong(d, lang))}
+                >
+                  <span className="monthv__rollup-dow mono" aria-hidden="true">{cap(weekdayShort(d, lang))}</span>
+                  <span className="monthv__rollup-num" aria-hidden="true">{dayNum(d, lang)}</span>
+                </button>
+                <div className="monthv__rollup-rows">{dayRows(d, lit)}</div>
+              </div>
+            ))
+          )
         ) : selCount === 0 ? (
           <EmptyState>{t.monthView.empty}</EmptyState>
         ) : (
           <>
-            {/* « Voyage » covering this day — atop the list, tapping into the trip,
-                followed by the dated itinerary entries written for the day (the actual
-                plans, not just the global trip band). */}
-            {selTrips.map((tr) => {
-              // « Jour N » — 1-based day-of-trip for the selected date, mirroring
-              // DayPlanPage's tripDayNum (both dates are local-midnight; round absorbs DST).
-              const jour = Math.round((selected - tr.start_at) / DAY) + 1
-              // A « Voyage partagé » (promoted/joined) taps into the shared scene; the sub-tab
-              // param (`vue`/`jour`) is read identically there (SharedVoyagePage reuses VoyageItinerary).
-              const base = tr.shared ? `/voyage/partage/${tr.id}` : `/voyage/${tr.id}`
-              return (
-                <div key={tr.id} className="day-plan__trip">
-                  <Act
-                    cat="event"
-                    title={`${t.voyage.title} · ${tr.title}`}
-                    when={t.voyage.dayN(jour)}
-                    color={tr.colour}
-                    // « Partagé » marker only here (the panel list shows text), never on the
-                    // month grid band — the band colour + title carry it there (calm).
-                    badge={
-                      tr.shared ? (
-                        <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
-                          <Icon name="users-three-bold" size={13} />
-                        </span>
-                      ) : undefined
-                    }
-                    onActivate={() => nav(`${base}?vue=itineraire`)}
-                  />
-                  {selTripPlans
-                    .filter((p) => p.trip_id === tr.id)
-                    .map((p) => (
-                      <Act
-                        key={p.id}
-                        cat="event"
-                        icon={tripCategoryIcon(p.category as TripCategory)}
-                        title={p.label || p.text || t.voyage.cat[p.category as TripCategory]}
-                        who={p.label && p.text ? p.text : undefined}
-                        color={p.colour}
-                        // Deep-link to this exact day: `&jour=N` (1-based day-of-trip) lands on
-                        // that day's section inside the itinerary instead of its top.
-                        onActivate={() => nav(`${base}?vue=itineraire&jour=${jour}`)}
-                      />
-                    ))}
-                </div>
-              )
-            })}
-            {/* Same order, same cards as the bento day: meals, then events, then
-                chores, then the day note — so nothing dated is represented here
-                differently than on the day view. */}
-            {selMeals.map((m) => (
-              <Act
-                key={m.id}
-                cat="meal"
-                icon={SLOT_ICON_NAME[m.slot as MealSlot]}
-                title={`${slotLabel(m.slot)} · ${m.title}`}
-                who={cookLine(m.cook_member_id)}
-                color={mealPrefs.color(m.slot)}
-                onOpen={() => openMeal(m, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: selected })}
-              />
-            ))}
-            {(sel?.events ?? []).map((e) =>
-              e.work ? (
-                // A derived « L'auto » work window — read-only; tapping opens the car
-                // week view (where the schedule is tuned), never an event editor.
-                <Act
-                  key={e.id}
-                  cat="work"
-                  title={e.title || t.auto.work}
-                  when={t.auto.range(formatTime(e.at, lang), e.end != null ? formatTime(e.end, lang) : '')}
-                  who={nameOf(members, e.member_id) ?? undefined}
-                  color={e.color ?? colorOf(members, e.member_id) ?? undefined}
-                  onActivate={() => nav('/voiture')}
-                />
-              ) : (
-                <Act
-                  key={e.id}
-                  cat={e.birthday ? 'birthday' : 'event'}
-                  title={e.title}
-                  when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-                  who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
-                  whoFaces={eventFaces(e)}
-                  color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
-                  // 🚗 when this rendez-vous takes the shared car — same cue as a
-                  // work window that holds it (the row just above), so the calendar
-                  // and the board say "the car is spoken for" the same way.
-                  icon={e.car_id ? 'car-bold' : undefined}
-                  onOpen={() =>
-                    detail.open(
-                      buildEvent(
-                        { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, end_at: e.end_at, car_id: e.car_id, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, contact_address: e.contact_address, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, business_address: e.business_address, birthday: e.birthday, age: e.age },
-                        detailCtx,
-                        eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
-                      ),
-                    )
-                  }
-                />
-              ),
-            )}
-            {(sel?.chores ?? []).map((c) => (
-              <Act
-                key={c.id}
-                cat="chore"
-                title={c.title}
-                who={c.who ?? undefined}
-                color={c.color ?? undefined}
-                onOpen={() =>
-                  detail.open(buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx))
-                }
-              />
-            ))}
-            {/* Projets & Entretien landing on this day — read-only peek (managed in
-                Réglages); tap opens the same chore-style detail. */}
-            {(sel?.home ?? []).map((h) => (
-              <Act
-                key={h.id}
-                cat="chore"
-                title={h.title}
-                color={h.color ?? undefined}
-                onOpen={() => detail.open(buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx))}
-              />
-            ))}
-            {/* À compléter todos pinned to this day — check them off right here (the
-                check is its own tap target); tap the rest of the row to open the day
-                page. The source list, if any, rides as the sub-line. */}
-            {selTodos.map((td) => (
-              <Act
-                key={td.id}
-                cat="chore"
-                icon="check-bold"
-                title={td.title}
-                who={td.section ?? undefined}
-                color={colorOf(members, td.member_id) ?? undefined}
-                onCheck={() => markTodoDone(td)}
-                onOpen={() => nav(`/kitchen/day/${selected}`)}
-              />
-            ))}
-            {/* « Mes habitudes » on this day — a RECORD, not a check-in: only the
-                habits actually DONE that day, read-only, exactly like a birthday or a
-                work window. The panel used to carry full per-kind marking rows for
-                today and any past day, which put « Encore un » / « C'est fait »
-                buttons under a date you were merely browsing, and named every
-                unfinished intention on every square you tapped — a calendar answers
-                "what happened", not "what do you still owe". Marking (and backfilling
-                a forgotten day, through the habit's own week of dots) lives in « Le
-                point du jour », one tap away through this row or through the ⋯ above. */}
-            {selHabitsDone.map((h) => (
-              <Act
-                key={h.id}
-                cat="routine"
-                icon="repeat-bold"
-                title={`${h.icon ? h.icon + ' ' : ''}${h.title}`}
-                // Day-neutral (« Fait », never « Fait aujourd'hui »): this same row
-                // renders for a date weeks back. Never a count, never a rank (calm).
-                who={t.habits.doneOnDay}
-                done
-                color={h.colour ?? undefined}
-                onOpen={() => nav('/board/habitudes')}
-              />
-            ))}
-            {(sel?.notes ?? []).map((n) => (
-              <DayNote key={n.id} note={n} members={members} />
-            ))}
+            {dayTrips(selected)}
+            {dayRows(selected, null)}
           </>
         )}
         {/* « L'auto » for the SELECTED day — its status + rides follow the picked date
@@ -800,7 +1048,7 @@ export function MonthView({
             leading with it pushed the rendez-vous and meals you tapped the date FOR below
             the fold. Outside the loading/empty branch on purpose — a day with nothing
             planned still wants to say the car is free. */}
-        {car && <AutoCardView model={car} day={selected} />}
+        {!lit && car && <AutoCardView model={car} day={selected} />}
         </div>
       </div>
       )}

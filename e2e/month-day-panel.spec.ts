@@ -291,3 +291,109 @@ test.describe('Mois — the day panel', () => {
     await expect(page.locator('.monthv__day-h')).toBeVisible()
   })
 })
+
+// ── The legend is a HIGHLIGHT LENS ────────────────────────────────────────────────
+// The shape key under the grid used to be decoration (aria-hidden, unclickable). Each
+// entry is a toggle now: tap « Rendez-vous » and every day carrying one steps forward in
+// the grid while the rest step back, and the pane below swaps from "the picked day" to
+// "that kind, all month" — rolled up date by date, the same rows the day face prints.
+test.describe('Mois — the legend lens', () => {
+  const lit = (page: Page) => page.locator('.monthv__legend-item[aria-pressed="true"]')
+
+  async function moisSeeded(page: Page, viewport = REPORTED) {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize(viewport)
+    await mockApi(page)
+    await seedMonthOnCell(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
+    await page.goto('/board')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+  }
+
+  test('lights one kind across the month and rolls it up below', async ({ page }) => {
+    await moisSeeded(page)
+    const panel = page.locator('.monthv__day')
+    // Nothing lit to begin with: the pane is the picked day and says BOTH seeded things.
+    await expect(lit(page)).toHaveCount(0)
+    expect(new URL(page.url()).searchParams.get('type')).toBeNull()
+
+    await page.locator('.monthv__legend-item', { hasText: 'Rendez-vous' }).click()
+    // The pick lives in the URL, beside ?date= — a lit calendar is a linkable place.
+    await expect.poll(() => new URL(page.url()).searchParams.get('type')).toBe('event')
+    await expect(lit(page)).toHaveCount(1)
+
+    // The grid: exactly the seeded day steps forward, and only in-month cells may.
+    const seeded = page.locator('.monthv__cell').nth(SEED_IDX)
+    await expect(seeded).toHaveClass(/is-lit/)
+    await expect(page.locator('.monthv__cell.is-lit')).toHaveCount(1)
+    await expect(page.locator('.monthv__cell.is-lit.is-out')).toHaveCount(0)
+    // …and the rendez-vous marker inside it is the one carrying weight.
+    await expect(seeded.locator('.monthv__dot--event.is-lit')).toHaveCount(1)
+    // …and the OTHER marker on that day (the meal) steps back rather than disappearing:
+    // the lens is a reading weight, never a filter of the grid.
+    await expect(seeded.locator('.monthv__dots .is-dim')).toHaveCount(1)
+
+    // The pane: the month's rendez-vous, under their date — and NOT the meal.
+    await expect(panel.locator('.monthv__rollup')).toHaveCount(1)
+    await expect(panel).toContainText(EVENT_TITLE)
+    await expect(panel).not.toContainText(MEAL_TITLE)
+    // The day's own doors make no sense over a month — they give way to « revenir ».
+    await expect(panel.locator('.monthv__open-day')).toHaveCount(0)
+    await expect(panel.locator('.monthv__lens-clear')).toHaveCount(1)
+
+    // Swapping lens re-aims the whole thing rather than stacking a second filter.
+    await page.locator('.monthv__legend-item', { hasText: 'Repas' }).click()
+    await expect(lit(page)).toHaveCount(1)
+    await expect(panel).toContainText(MEAL_TITLE)
+    await expect(panel).not.toContainText(EVENT_TITLE)
+
+    // The ✕ puts the calendar back exactly as it was.
+    await panel.locator('.monthv__lens-clear').click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('type')).toBeNull()
+    await expect(page.locator('.monthv__cell.is-lit')).toHaveCount(0)
+    await expect(panel.locator('.monthv__open-day')).toHaveCount(1)
+  })
+
+  test('survives a reload, and a roll-up date is the way back into that day', async ({ page }) => {
+    await moisSeeded(page)
+    await page.locator('.monthv__legend-item', { hasText: 'Rendez-vous' }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('type')).toBe('event')
+
+    await page.reload()
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+    await expect(lit(page)).toHaveCount(1)
+    await expect(page.locator('.monthv__day')).toContainText(EVENT_TITLE)
+
+    // Tapping the roll-up's date badge drops the lens and opens that single day — the
+    // roll-up is a map back into the calendar, never a dead end.
+    await page.locator('.monthv__rollup-date').first().click()
+    await expect.poll(() => new URL(page.url()).searchParams.get('type')).toBeNull()
+    await expect(page.locator('.monthv__cell').nth(SEED_IDX)).toHaveClass(/is-on/)
+    // …and the full day is back: both seeded things, and the day's own door.
+    const panel = page.locator('.monthv__day')
+    await expect(panel).toContainText(EVENT_TITLE)
+    await expect(panel).toContainText(MEAL_TITLE)
+    await expect(panel.locator('.monthv__open-day')).toHaveCount(1)
+  })
+
+  // Desktop reachability + no horizontal overflow: the legend is a row of real buttons
+  // now, so it has to be keyboard-operable and it must not bleed off a 390px phone.
+  test('is keyboard-operable and fits a phone', async ({ page }) => {
+    await moisSeeded(page, PHONE)
+    const chip = page.locator('.monthv__legend-item', { hasText: 'Corvées' })
+    await chip.focus()
+    await page.keyboard.press('Enter')
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
+    await page.keyboard.press('Enter')
+    await expect(chip).toHaveAttribute('aria-pressed', 'false')
+
+    // Per-child bounds vs the legend's own box (the hub body clips overflow-x, so
+    // scrollWidth reads 0 — see CLAUDE.md § Horizontal overflow).
+    const row = (await page.locator('.monthv__legend').boundingBox())!
+    for (const it of await page.locator('.monthv__legend-item').all()) {
+      const b = (await it.boundingBox())!
+      expect(b.x + b.width, 'a legend chip bleeds past the row').toBeLessThanOrEqual(row.x + row.width + 1)
+      expect(b.height, 'a legend chip is too small to tap').toBeGreaterThanOrEqual(26)
+    }
+  })
+})

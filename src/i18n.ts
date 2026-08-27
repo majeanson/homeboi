@@ -1115,6 +1115,12 @@ export const FR = {
     legendChores: 'Corvées',
     legendTodos: 'À compléter',
     legendNotes: 'Notes',
+    // …and the legend is also the calendar's HIGHLIGHT LENS: tap an entry to light that
+    // kind across the whole month and roll it up in the panel below.
+    legendLens: 'Mettre en évidence un type',
+    lensHint: (kind: string) => `Mettre en évidence : ${kind}`,
+    lensClear: 'Revenir à la journée',
+    lensEmpty: 'Rien de ce genre ce mois-ci',
     // The day panel's ⋯ — everything you can ADD to the picked date, in one door.
     // Le ⋯ du panneau du jour : surtout des ajouts, plus la porte « Mes habitudes »
     // (revoir et modifier) — donc un nom qui couvre les deux.

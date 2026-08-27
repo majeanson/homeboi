@@ -913,3 +913,126 @@
 .monthv__legend-item {
   gap: 0.25rem;
 }
+
+/* -- The legend is also the calendar's HIGHLIGHT LENS ---------------------------------
+   The shape key used to be decoration (aria-hidden, unclickable). Each entry is a real
+   toggle now: tap « Rendez-vous » and every day carrying one steps FORWARD in the grid
+   while everything else steps back, and the pane below swaps to that kind's whole month.
+   Nothing is removed — it is a reading lens, not a filter — so the calm rule here is
+   weight, not hiding: the lit thing gets bigger and keeps its colour, the rest fades.
+   The chips stay small (this row sits between the grid and the pane, and every wrapped
+   line is height the day loses) but carry a real hit area: min-height, not just text. */
+.monthv__legend-item {
+  appearance: none;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1.1;
+  color: inherit;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  /* Tight inline padding on purpose: six chips have to share a 390px phone on ONE line,
+     the way the plain key did. The hit area comes from min-height, not from padding. */
+  padding: 0 0.28rem;
+  min-height: 26px;
+  cursor: pointer;
+}
+.monthv__legend-item.is-on {
+  border-color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+}
+/* The five entries you did NOT light — still readable, plainly not the active one. */
+.monthv__legend-item.is-off {
+  opacity: 0.55;
+}
+/* A day that carries the lit kind. A wash + an inset ring rather than a border/outline,
+   so it STACKS with the two treatments a cell may already wear (today's accent border,
+   the picked day's outline) instead of overwriting either. */
+.monthv__cell.is-lit {
+  background: color-mix(in oklab, var(--accent) 14%, var(--card));
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent) 45%, transparent);
+}
+.monthv__cell.is-dim {
+  opacity: 0.42;
+}
+/* Markers: the lit kind grows, the rest recedes. Transform only — never the box size —
+   so the dot row keeps its rhythm and the responsive dot sizes above still govern. */
+.monthv__dot.is-lit,
+.monthv__dot-icon.is-lit {
+  transform: scale(1.55);
+}
+/* The chore diamond carries its own rotate; restate it, or a lit corvée would round off
+   into a plain square exactly when you asked to see it. */
+.monthv__dot--chore.is-lit {
+  transform: rotate(45deg) scale(1.35);
+}
+.monthv__dot.is-dim,
+.monthv__dot-icon.is-dim,
+.monthv__band.is-dim {
+  opacity: 0.28;
+}
+.monthv__band.is-lit {
+  height: 6px;
+}
+
+/* -- The lens roll-up: ONE kind, the whole month --------------------------------------
+   The pane's second face. Same rows as the day face (one renderer — see dayRows), laid
+   out against a calendar-style date badge on the left, the meal plan's own pattern
+   (.kitchen__day-date). The badge is the way back: tapping it drops the lens and opens
+   that single day, so the roll-up is a map into the calendar, not a dead end. */
+.monthv__day--lens .monthv__day-body {
+  gap: 0;
+}
+.monthv__rollup {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+}
+.monthv__rollup + .monthv__rollup {
+  border-top: 1px solid var(--line);
+}
+.monthv__rollup-date {
+  flex: 0 0 2.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0.2rem 0;
+  border: 0;
+  border-radius: var(--radius-md, 12px);
+  /* A faint neutral chip — enough to read as a control (it IS the way back into the
+     day) without competing with the rows' own coloured spines beside it. */
+  background: color-mix(in oklab, var(--ink) 6%, transparent);
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+.monthv__rollup-date.is-today {
+  background: var(--accent);
+  color: var(--accent-ink, var(--ink));
+}
+.monthv__rollup-dow {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.monthv__rollup-num {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.monthv__rollup-rows {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The pane's hairline rhythm reaches nested rows too (the flat-drawer rule above only
+   matches .act siblings that are direct children of .monthv__day-body). */
+.monthv__rollup-rows > .act + .act {
+  border-top: 1px solid var(--line);
+}
