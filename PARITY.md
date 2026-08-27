@@ -752,12 +752,16 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 
 **🟢 Nice-to-have / superset-safe (Wave D / opportunistic):**
 
-17. [ ] 🟢 **D5 hygiene (F4/F9/F28/F33×D5)** — `SILENT_PATHS` carries a **dead
-        `capture-classify`** entry (no route in `worker/routes.ts`) and omits
-        `note-media`, `routine-card-photo`, `ask`, `place-import`,
-        `guest/intake-media`, `guest/postbox-media`, `guest-links`, `guest/*-submit`,
-        **`recipe-ocr`** — each over-broadcasts `[['board']]` (harmless superset).
-        Cells stay ✅; add to `SILENT_PATHS` when a wave touches that file. **→ Wave D.**
+17. [x] 🟢 **D5 hygiene (F4/F9/F28/F33×D5)** — **DONE 2026-08-27.** Dead
+        `capture-classify` dropped; the blob/AI-scratch set (`note-media`,
+        `routine-card-photo`, `ask`, `place-import`, `guest/intake-media`,
+        `guest/postbox-media`, `recipe-ocr`) silenced. **Verdict corrected on
+        code-read for the other three**: `guest/postbox-submit`/`postbox`,
+        `guest/intake-submit`/`intake` and `guest-links` all have REAL polled
+        client keys (`['postbox']` PostboxReview, `['intake']` IntakeReview,
+        `['guest-links']` operator/guest.tsx) — they got `PATH_KEYS` entries, not
+        silence, so an open review screen refreshes when a relative drops a
+        message. `realtime.test.ts` pins both sets.
         _(D5 adversarial re-verify 2026-07-10 — enumerated every `worker/routes.ts`
         write vs `PATH_KEYS`∪`SILENT_PATHS`: **`recipe-ocr` was the one omission this
         list had missed** — an `onRequestPost` returning `ok({text})` inline, same
@@ -870,8 +874,10 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         like `carnets.archived_at`) — not a rename target.
   - [ ] media parallel arrays → trio: `care_log.media_json`, `members.avatar_*`,
         recipe step-images, routine card-audio/photo. _(genuinely pending, opportunistic)_
-  - [ ] `SILENT_PATHS` cleanup: drop dead `capture-classify`; add the 9 blob/AI
-        endpoints (entry 17). Keep `realtime.test.ts` green. _(genuinely pending)_
+  - [x] `SILENT_PATHS` cleanup — **DONE 2026-08-27** (entry 17): dead
+        `capture-classify` dropped, 7 blob/AI-scratch endpoints silenced, and the
+        3 with real polled keys (`postbox`, `intake`, `guest-links`) mapped in
+        `PATH_KEYS` instead. `realtime.test.ts` green (22 tests).
 
 ---
 

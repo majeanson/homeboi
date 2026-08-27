@@ -48,20 +48,26 @@ const SILENT_PATHS = new Set<string>([
   'auth/me',
   'ai-errors',
   'ai-test',
-  'capture-classify', // pure classifier; the follow-up write carries its own path
+  'ask', // « Demander à l'IA » scratch Q&A; the answer is returned inline
   'empty-fridge', // « vide-frigo » AI ideas/recipes; saving a result hits recipes
   'demo/claim', // « Garder ma maisonnée » — rewrites the operator credential only; no polled cache changes
   'guest/start',
+  'guest/intake-media', // guest blob stage; the intake-submit write carries the path
+  'guest/postbox-media', // guest blob stage; the postbox-submit write carries the path
   'health',
+  'note-media', // fridge-note blob (audio/drawing/photo); the notes write carries the path
   'pair/start',
   'pair/poll',
   'pair/claim',
   'pair/devices',
+  'place-import', // AI place/business parse; the result is returned inline, saving hits cercle*
   'recipe-draft',
   'recipe-image',
   'recipe-import',
+  'recipe-ocr', // AI scratch (photo → text), same class as recipe-vision — returns inline
   'recipe-step-image',
   'recipe-vision',
+  'routine-card-photo', // routine card blob; the routines write carries the path
   'suggest-meal',
   'transcribe',
   'trip-doc-media', // trip document/photo/audio blob; the trip_notes write carries the path
@@ -137,8 +143,19 @@ const PATH_KEYS: Record<string, string[][]> = {
   // « Laisse un mot » — a member-to-member mot rides its own inbox card AND the per-face
   // dot on the board's face row, so nudge both ['mots'] and the board.
   mots: [['mots'], ['board']],
-  // Accepting a « boîte aux lettres » message inserts a board note — nudge the board.
-  postbox: [['board']],
+  // « La boîte aux lettres »: a relative's drop (guest/postbox-submit) refreshes an
+  // open review screen; the operator's accept/reject (postbox PATCH) refreshes the
+  // review AND — accept inserts a board fridge note — the board.
+  'guest/postbox-submit': [['postbox']],
+  postbox: [['postbox'], ['board']],
+  // « Formulaire d'accueil »: a guest submission refreshes an open review screen.
+  // The accept-side cercle merge runs client-side through /api/cercle* writes,
+  // which carry their own keys — intake rows themselves only feed ['intake'].
+  'guest/intake-submit': [['intake']],
+  intake: [['intake']],
+  // Minting/revoking a share link refreshes the Réglages ▸ Partage list on other
+  // open devices — and nothing else (the link itself is returned inline).
+  'guest-links': [['guest-links']],
   // Garde-manger flags; a running-low item feeds the « À régler » meal-low scan.
   pantry: [['pantry'], ['a-regler']],
   'use-soon': [['use-soon']],

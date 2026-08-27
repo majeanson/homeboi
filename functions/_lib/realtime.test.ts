@@ -150,9 +150,31 @@ describe('keysForPath', () => {
       'health',
       'photos',
       'members/avatar',
+      // The PARITY entry-17 sweep: blob stages + AI scratch endpoints whose
+      // result returns inline (the follow-up write carries its own path).
+      'ask',
+      'note-media',
+      'place-import',
+      'recipe-ocr',
+      'routine-card-photo',
+      'guest/intake-media',
+      'guest/postbox-media',
     ]) {
       expect(keysForPath(p)).toEqual([])
     }
+  })
+
+  it('maps the guest drops + their review surfaces to their own keys, not the board default', () => {
+    // A relative's postbox drop refreshes an open review screen; the operator's
+    // accept (which inserts a board fridge note) refreshes review + board.
+    expect(keysForPath('guest/postbox-submit')).toEqual([['postbox']])
+    expect(keysForPath('postbox')).toEqual([['postbox'], ['board']])
+    // Intake rows only feed the review screen — the accept-side cercle merge
+    // runs through /api/cercle* writes that carry their own keys.
+    expect(keysForPath('guest/intake-submit')).toEqual([['intake']])
+    expect(keysForPath('intake')).toEqual([['intake']])
+    // Minting/revoking a link refreshes Réglages ▸ Partage, nothing else.
+    expect(keysForPath('guest-links')).toEqual([['guest-links']])
   })
 
   it('treats image blob routes (img/<key>) as silent', () => {
