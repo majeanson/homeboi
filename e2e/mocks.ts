@@ -542,7 +542,9 @@ const AUTH_ME = {
 
 // Map of route suffix (after /api/) -> JSON body. Matched by pathname start so
 // query strings (?view=manage, ?id=…) still hit. GET only; writes get a generic ok.
-const ROUTES: Record<string, unknown> = {
+// Exported so a spec can build a VARIANT of a fixture (spread + tweak one field)
+// instead of hand-writing a whole payload that then drifts from this one.
+export const ROUTES: Record<string, unknown> = {
   'auth/me': AUTH_ME,
   board: BOARD,
   weather: {
@@ -997,11 +999,15 @@ export async function mockApi(
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
       return
     }
-    if (opts.fresh && path === 'board') {
-      const empty = { ...BOARD, members: [], today: [], tomorrow: [], upcoming: [], tonight: null, tonightMeals: [], tomorrowMeal: null, todayMeals: [], dayNote: null, tomorrowMeals: [], tomorrowNote: null, list: [], chores: [], notes: [], choresToday: [], choresUpcoming: [], todos: [], leftovers: [] }
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(empty) })
-      return
-    }
+    // NOTE (2026-08-27) — what `fresh` does NOT empty, since it has surprised two
+    // specs now: `emptyArrays` empties ARRAYS and keeps every scalar and OBJECT
+    // field, so `board.tonight`, `board.tomorrowMeal` and `board.dayNote` survive a
+    // `fresh` run with their seeded values. (A hand-written board-nulling branch used
+    // to sit here; it was unreachable — the generic branch above matches `board`
+    // first — so it was removed rather than left looking load-bearing.) A spec that
+    // needs a genuinely empty board passes both: `{ fresh: true, overrides: { board:
+    // { ...BOARD, tonight: null, tomorrowMeal: null, … } } }` — `fresh` still empties
+    // the arrays of the OVERRIDE, so the two compose.
 
     // ghost?view=manage is a distinct shape.
     if (path === 'ghost' && url.searchParams.get('view') === 'manage') {

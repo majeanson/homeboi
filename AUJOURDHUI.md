@@ -127,11 +127,37 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 ### Gaps ❌ (backlog)
 
 - [x] **« Disposition du babillard » panel** — `board-customize.spec.ts` toggles « À venir » off in Réglages ▸ Affichage and asserts the bento leaves the Grille, then Reset brings it back. (Drag-reorder still untested.)
-- [ ] **Unified event form** — assert « Trajet » + « À apporter » sections render, and the inline bring-list builder creates + selects a list.
+- [x] **Unified event form** — ✅ **DONE 2026-08-27**, `e2e/event-form-bring.spec.ts` (4 cases),
+  on top of the render-level assertions already in `screenshots.spec.ts`. « Créer la liste » POSTs
+  the typed items to `todo-templates` **and selects the new list**, so the event's own POST carries
+  `bringTemplateId` — the step the old coverage stopped short of, and the one whose failure looks
+  completely normal on screen (chips present, button present, list silently unattached). Also:
+  saving with the draft still typed creates the list on the way out rather than dropping it, a chip
+  can be removed before creation, and « Prend l'auto » (there is no « Trajet » noun — one engagement
+  model) reaches the POST as `carId`. The spec stubs the create's response id locally, since the
+  shared harness answers every write with a bare `{ok:true}` and this is the one call that needs
+  the id synchronously.
 - [x] ~~**Moments chips**~~ — **moot (2026-08-25): « Moments » is retired.** `board-customize.spec.ts` now asserts an old `/moment` link redirects to the board instead.
 - [x] **Face lens** — `board-customize.spec.ts` picks Papa and asserts the board re-renders: another member's event (Garderie / Léa) drops out while a shared row stays.
-- [ ] **Empty-state hiding** — no test empties a section and asserts the card/sub-group vanishes (Demain, À finir).
-- [ ] **Toddler board** — screenshot only; no interaction flow (tap-to-hear, all-clear).
+- [x] **Empty-state hiding** — ✅ **DONE 2026-08-27**, `e2e/board-empty-cards.spec.ts` (6 cases).
+  Pins both directions of the `mode` contract: an `auto` card (« Demain », « À finir ») collapses
+  when its data empties, an `always` card (« Aujourd'hui », « Avant de partir ») holds its place
+  with the slot's placeholder on a completely fresh household. Two subtleties are asserted on
+  purpose because they're what a "tidy-up" would break: (1) a collapsed slot is **hidden, not
+  unmounted** — a self-fetching card can only learn it's empty *after* fetching, so unmounting
+  would take the fetch with it and the card could never return; (2) « Demain » counts a **wide**
+  net — tomorrow's forecast alone earns the card, so emptying only its events must NOT hide it.
+  Same for « À venir », whose fêtes QC/CA are derived client-side rather than stored.
+- [x] **Toddler board** — ✅ **DONE 2026-08-27**, `e2e/toddler-board.spec.ts` (4 cases). The
+  assertion that matters is what a tap **doesn't** do: on the kid lens every board tile is
+  hear-first (no `onTap`), so tapping « Sortir les poubelles » flashes `is-speaking`, never arms,
+  and fires **no `/api/*` write at all** — a pre-reader's finger wanders across a wall tablet all
+  day, and a board where a touch ticked a chore would quietly corrupt the household's day. (The
+  two-tap arm is covered where the committable tiles actually live — the routine filmstrip, in
+  `interactions.spec.ts`.) Plus the « Rien de prévu » all-clear, and its mirror: a bare day WITH
+  weather is deliberately not all-clear, since `kidAllClear` is a wider check than the parent's
+  `dayClear` (bmad/10). Getting there also documented what `fresh` does **not** empty in
+  `e2e/mocks.ts` (objects survive `emptyArrays`) and removed an unreachable board-nulling branch.
 - [x] ~~**Calendar → « Voir ce moment »**~~ — **moot (2026-08-25):** the calendar has ONE door now, « Voir la journée » → `/kitchen/day/:date`. `board-customize.spec.ts` covers the redirect; the day panel's single door is asserted in `month-day-panel.spec.ts`.
 - [x] **`seedState` `cardPrefs` option** — already present in `e2e/mocks.ts` (`AppState.cardPrefs` → seeds `babillard-card-prefs`); the new layout test toggles via the real UI instead.
 

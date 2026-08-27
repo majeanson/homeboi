@@ -279,8 +279,13 @@ not structural. Four reviewers; findings deduped below.
 - [ ] **Guest handling inconsistent across config panels.** Most render a read-only legend;
   `MeasureColorsSection` returns `null` (whole section vanishes, `display.tsx:477`). Prefer
   a uniform read-only legend.
-- [ ] **e2e blind spots** (beyond aisle-sort, P1): interactive **cook-mode** stepper
-  (`/kitchen/recipe/:id/cook` never navigated — only `cook/multi` smoke-tested); the
+- [~] **e2e blind spots** (beyond aisle-sort, P1) — the **cook-mode stepper is now covered**
+  (✅ 2026-08-27, `e2e/cook-stepper.spec.ts`, 6 cases): forward/back with the counter following,
+  the clamp at the last stage (a bad `Math.min` blanks the page rather than erroring), the
+  **keyboard mirror** (ArrowLeft/Right — the standing "nothing touch-only" rule), the toddler
+  **lock** (no « Affichage » switcher, because a pre-reader dropped into the ingredient wall has
+  no way back and the kid lens has no in-app escape), the parent's switch away from the stepper
+  and back, and the ✕ exit. Still open here: the
   **AI/book/use-up suggestion cards**, **shop-the-week**, and the **Vide-frigo** sheet;
   **toddler kitchen picker** (KidKitchen/KidCollections/ToddlerCookBook interaction — the
   highest-quality, most interaction-dense part of the slice); config panels are
@@ -379,13 +384,22 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
 - [ ] **Nested interactive-in-interactive on the parent grid** — `<button>` edit + `<button>`
   run inside a `role="button"` card (`Routines.tsx:134-231`); works via `stopPropagation` but
   fragile for keyboard/AT. Make the card a non-button `<article>` with explicit controls.
-- [ ] **e2e — the step editor itself is untested.** "Add a kid routine" only fills the name;
-  no add/remove/**reorder** card, picto pick, or media attach. The whole correctness story of
-  `CardDeckEditor` (parallel photo/narration arrays staying index-aligned on reorder/remove)
-  has no editor-level test. Add a Playwright case asserting the POST arrays stay aligned.
-- [ ] **e2e — per-step countdown timer has zero coverage** — the most intricate logic
-  (wall-clock `endsAt`, pause/resume/restart, chime-once, cross-close persistence) is
-  untested.
+- [~] **e2e — the step editor itself is untested** — **stale (verified 2026-08-27):**
+  `e2e/routine-builder.spec.ts` covers exactly what this asked for — removing the middle card
+  keeps the deck aligned in the POST, reordering a card up is reflected in the POST order, and
+  the edit scene's delete (confirm → DELETE → back to the tab). The parallel-array alignment
+  story is additionally unit-tested in `src/lib/parallelArray.test.ts`. Nothing left.
+- [x] **e2e — per-step countdown timer has zero coverage** — ✅ **DONE 2026-08-27**,
+  `e2e/routine-timer.spec.ts` (6 cases). The persisted-shape distinction is what's pinned,
+  because it's the whole reason the feature survives a sleeping tablet: **running** banks an
+  absolute `{endsAt}` (recomputed from the clock on reopen), **paused** banks a duration
+  `{left}` (no clock is running, so an absolute end would keep "counting" while paused). Plus:
+  a card with no `seconds` renders no ring; a paused timer reopens at its banked remaining, not
+  the full duration; a timer that expired while the app was away reads done, does NOT chime,
+  and above all does NOT advance the story (NFR-CALM — the child still taps → themselves); and
+  a read-only guest gets a working ring that never PATCHes. The fixture carried no card with
+  `seconds`, which is why this went uncovered — the spec builds a variant off the exported
+  `ROUTES` rather than hand-writing a payload that would drift.
 
 ### Findings — P3 (bigger / judgement)
 
@@ -655,11 +669,14 @@ default kind. These deserve priority in the implement phase.
   render `reviewPending(n)` ("N fiches à réviser"). Borderline against the "no unread counts"
   tenet; operator-only, passive, no nav badge/push, hidden at zero → borderline-acceptable.
   _(Marc's call: keep, or drop the number for strict compliance.)_
-- [ ] **e2e — zero coverage of any guest flow.** No spec touches intake/postbox/courrier or the
-  guest scenes; `guestScope.test.ts` doesn't even assert showcase is **blocked** from
-  `home-pins`/`care-log` (the one denylist branch is untested). Add: a showcase-denies-unit case,
-  a curated-kind-403'd-off-scope assertion, an intake+postbox submit→review→accept e2e, and an
-  expired-token render.
+- [~] **e2e — zero coverage of any guest flow** — **stale (verified 2026-08-27):** four specs
+  cover it now. `intake.spec.ts` (a relative fills and submits the form; the operator reviews a
+  pending intake and accepts it into the cercle — the submit→review→accept round trip this
+  asked for), `postbox.spec.ts` (text-only send with the sender name, a staged photo sent with
+  the message, a returning sender's quiet reçu-✓, **and the revoked-link expired state**),
+  plus `guest-scenes.spec.ts` and `guest-settings.spec.ts`. The remaining sliver is the unit
+  half — `guestScope.test.ts` still doesn't exercise the showcase **denylist** branch
+  (`home-pins`/`care-log`) — tracked with the other unit gaps, not as "zero coverage".
 
 ### Findings — P3 (SECURITY hardening + nits)
 
@@ -928,9 +945,12 @@ absence.
   unreachable after you close the scene. And `Trip.media_key` is read (`VoyageDocuments.tsx:80`) +
   PATCH-accepted but `VoyageForm` has no cover picker → write-only dead branch. Require dates (or
   surface undated trips) + wire or drop the cover.
-- [ ] **e2e gaps:** **Voyage has ZERO coverage** — absent from `scenes.spec.ts`, no `trips`/
-  `trip-notes`/`trip-packing` mocks, so the media-undo bug above sits untested; add mocks + a
-  `/voyage/:id` entry + a delete-undo-media interaction spec. **Search has no functional test**
+- [~] **e2e gaps:** ~~**Voyage has ZERO coverage**~~ — **stale (verified 2026-08-27):** the
+  mocks landed and `e2e/voyage.spec.ts` now runs 10 cases (create → navigate, the four sub-tabs,
+  packing add + check, itinerary drag-reorder PATCHing `position`, a PDF attach that uploads then
+  posts a document note, an info note behind its category pick, trip edit PATCH, and the
+  confirm-gated trip delete), with `e2e/voyage-share.spec.ts` adding 8 more for the shared-trip
+  half. **Search has no functional test**
   (only the Ask button's visibility) — nothing asserts a query surfaces rows across sections.
   Departure's one write (ActivityBring "Ajouter à cocher") is untested; Jouer is screenshot-only.
   ✅ **Search now has a functional test** (`e2e/search.spec.ts`, 2026-07-02): asserts a query
