@@ -1315,6 +1315,21 @@ test.describe('list', () => {
     expect(listWrites).toHaveLength(1)
   })
 
+  test('the drag grip is a keyboard door too — ↑ on a focused grip PATCHes the new order', async ({ page }) => {
+    // « Mon ordre » reorder was drag-only (ACTIONS.md ¹³): a mouse can drag, a
+    // keyboard could not. The ⠿ grip is now focusable and ↑/↓ run the same
+    // splice — Tab to the grip, arrow, and the order persists.
+    const grips = page.locator('.list-row__grip')
+    await expect(grips.first()).toBeVisible()
+    const second = grips.nth(1)
+    await second.focus()
+    const [req] = await Promise.all([page.waitForRequest(isApi('PATCH', 'list')), second.press('ArrowUp')])
+    const body = JSON.parse(req.postData() || '{}')
+    // The second row moved to the front: a full-order reorder write, its id first.
+    expect(Array.isArray(body.reorder)).toBe(true)
+    expect(body.reorder[0]).toBe('l2')
+  })
+
   test('a store-flyer add links the SPECIFIC product name onto the generic line', async ({ page }) => {
     // Browsing a whole store flyer has no search concept, so the add carries the
     // raw product name ("Lait 2% 4L"). The matcher must still land it on the

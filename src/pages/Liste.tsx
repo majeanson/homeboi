@@ -119,6 +119,7 @@ function ListItemRow({
   deleteLabel,
   aisleTag,
   dnd,
+  onMove,
   index,
   readOnly = isGuest(),
 }: {
@@ -148,6 +149,9 @@ function ListItemRow({
   // Drag-and-drop reorder: the shared pointer-DnD handle + this row's position. The
   // zone id and the drag id are both the index (a drop = "move dragged row here").
   dnd?: ReturnType<typeof usePointerDnd>
+  // The grip's KEYBOARD mirror (focus it, ↑/↓): the drag is invisible to a
+  // keyboard, so the same handle answers arrows too. Only passed with `dnd`.
+  onMove?: (dir: 'up' | 'down') => void
   index: number
   // Read-only guest: no check toggle, no ✏️, no swipe-to-delete, no delete pane,
   // no drag grip. The picture/name taps stay — for a guest the name NAVIGATES to
@@ -191,9 +195,19 @@ function ListItemRow({
             className="dnd-grip list-row__grip"
             data-dnd-grip=""
             role="button"
-            aria-label={t.operator.dragHint}
-            title={t.operator.dragHint}
+            // Focusable on purpose: the drag is invisible to a keyboard, so the
+            // SAME handle is the arrow door — Tab to the grip, ↑/↓ move the row
+            // (ACTIONS.md ¹³, the desktop-reachability rule). preventDefault so
+            // an arrow moves the ROW, not the page scroll.
+            tabIndex={0}
+            aria-label={`${t.list.reorderHint} — ${text}`}
+            title={t.list.reorderHint}
             onPointerDown={(e) => dnd!.start(zoneId, text, e)}
+            onKeyDown={(e) => {
+              if (!onMove || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return
+              e.preventDefault()
+              onMove(e.key === 'ArrowUp' ? 'up' : 'down')
+            }}
           >
             ⠿
           </span>
@@ -331,17 +345,25 @@ export function Liste() {
   // hook must run before any early return, so it can't close over the `list` const
   // computed below), splice it, and persist the new id order — the server writes
   // position 0..n and the poll resorts everyone to match.
+  // Move the row at `from` to slot `to` in the live cache order and persist.
+  // Shared by the pointer DROP and the grip's keyboard ARROWS — the drag was the
+  // only reorder path in « Mon ordre » (ACTIONS.md ¹³): a mouse can drag, a
+  // keyboard could not, so the grip is focusable and ↑/↓ do the same splice.
+  function moveRow(from: number, to: number) {
+    if (from === to) return
+    const cur = removal.visible(qc.getQueryData<BoardListData>(BOARD_KEY)?.list ?? [])
+    const ids = cur.map((i) => i.id)
+    if (from < 0 || from >= ids.length || to < 0 || to >= ids.length) return
+    const [moved] = ids.splice(from, 1)
+    ids.splice(to, 0, moved)
+    reorderTo(ids)
+  }
   const dnd = usePointerDnd({
     onDrop: (fromId, toZone) => {
       const from = Number(fromId)
       const to = Number(toZone)
-      if (!Number.isInteger(from) || !Number.isInteger(to) || from === to) return
-      const cur = removal.visible(qc.getQueryData<BoardListData>(BOARD_KEY)?.list ?? [])
-      const ids = cur.map((i) => i.id)
-      if (from < 0 || from >= ids.length || to < 0 || to >= ids.length) return
-      const [moved] = ids.splice(from, 1)
-      ids.splice(to, 0, moved)
-      reorderTo(ids)
+      if (!Number.isInteger(from) || !Number.isInteger(to)) return
+      moveRow(from, to)
     },
     holdMs: DND_HOLD_MS,
   })
@@ -740,8 +762,10 @@ export function Liste() {
                 )}
                 <ListItemRow
                   // The drag grip only makes sense in "Mon ordre" — aisle sort owns
-                  // the order there, so no dnd is passed and the grip hides.
+                  // the order there, so no dnd is passed and the grip hides
+                  // (taking its keyboard mirror with it).
                   dnd={byAisle ? undefined : dnd}
+                  onMove={byAisle ? undefined : (dir) => moveRow(index, dir === 'up' ? index - 1 : index + 1)}
                   index={index}
                   text={item.text}
                   picto={pic}

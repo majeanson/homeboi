@@ -418,6 +418,7 @@ export const EN: typeof FR = {
     // "No rush" (edit scene + row tag): an item we only pick up if a good deal is on.
     // One switch, off by default — an ordinary errand has nothing to set. Not a rank.
     rushNone: 'No rush',
+    reorderHint: 'Reorder — drag, or ↑/↓ on the keyboard',
     rushHint:
       'Reads in pale grey and sinks to the bottom of the list: we grab it if a good deal comes up, otherwise we let it go. You can drag it back up in “My order”.',
     // Voice add (continuous): hint while listening + why nothing landed on error.

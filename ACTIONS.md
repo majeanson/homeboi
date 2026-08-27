@@ -102,7 +102,7 @@ at all (❌).
 | Item · add | ✅ always-open `EditField` (Enter; mic splits a breath into items) | — | — | ＋ `list-item` / ⚡ `/liste/quick` | — | compensating (`useCreateWithUndo`) | ✅ |
 | Item · edit | 🔶ᴸ simple: long-press → `/liste/item/:id` | ✅ hold | ➖ scene, not peek¹² | — | Avancé ✏️ | — | 🔶ᴸ ✅ |
 | Item · delete | 🔶ᴸ simple: swipe-left | ✅ swipe | item scene Delete | — | Avancé 🗑 | deferred (never logged as bought) | 🔶ᴸ ✅ |
-| Item · reorder | ✅ ⠿ hold-drag (« Mon ordre » only) | ✅ | — | — | liste▸aisles (aisle order) | — | 🔶¹³ |
+| Item · reorder | ✅ ⠿ hold-drag, grip focus + ↑/↓ (« Mon ordre » only) | ✅ | — | — | liste▸aisles (aisle order) | — | ✅¹³ |
 | List · clear checked / sort / cashier / flyers | ✅ « Vider les cochés »; ⋯ « Allées »; buttons | — | — | ＋ `flyer` / `share` / `auto-pick` | liste▸stores/shop/ghost | deferred | ✅ |
 | List · search | ❌ no in-page search¹⁴ (global 🔍 only) | | | | | | |
 
@@ -159,7 +159,7 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 | **Delete a row** | swipe-left (Liste) · `RowActions` 🗑 (pools, Avancé faces, Réglages) · peek ⋯ danger (event, pet, business) · visible peek danger (mot⁶, meal « Retirer ») · ✕ badge (media fridge note) · hand-rolled trash (NotesList¹⁵, DrawingGallery) · nowhere (chore/home-project³, contact¹⁶) | **`RowActions` on managing faces; peek ⋯ danger for peeked entities; swipe stays a Liste/QuickAdd accelerator, never the only door** |
 | **Edit** | peek « Modifier » → Modal (event) · pencil → scene (recipes, day, liste item) · ✎ on card (routine) · long-press (Liste simple) · inline tap-name (board todos) · inline `EditField` swap (CheckRow, MealPool) | acceptable variety — *peek for peeked, scene for scened, inline for one-field* — but each row records which |
 | **Add** | always-open composer (Liste, Notes) · `SectionAdd` ＋ (pantry ×3, day page, board todos) · `EntityCombobox` (pools) · ＋ FAB tile (everything) · FAB-only (Maison➖) | **every entity has a ＋-sheet path OR a recorded ➖**; `SectionAdd` when the section is the natural place; always-open only where the page IS the composer (LEAN) |
-| **Reorder** | drag ⠿ (Liste, Notes Avancé, board cards) · ⋯ Monter/Descendre (meal rows) · none | drag + a non-drag mirror where drag is the only path¹³ |
+| **Reorder** | drag ⠿ (Liste — its grip also answers ↑/↓ focused, Notes Avancé, board cards) · ⋯ Monter/Descendre (meal rows) · none | drag + a non-drag mirror where drag is the only path¹³ |
 | **Long tail** | `ActionMenu` ⋯ at row / section-head / page-tool altitude | ✅ one primitive, three altitudes — fine, document which altitude when adding |
 | **Search** | `SearchField` collapsible (Notes simple, Recettes) · always-open (Notes Avancé) · none (Liste¹⁴, Maison¹⁸, Historique, Garde-manger) | **`SearchField` collapsible wherever a list can exceed a screenful** |
 | **⚙ Simple↔Avancé face** | Notes + Liste + **garde-manger + meal pools** (2026-08-26, `lib/surfaceMode` factory). Habitudes and board todos: ➖ — furniture already behind a door (row peek / tap-to-edit); Réglages: ➖ always-managing | done (Wave A); a NEW row list picks a face or records why not (door #13) |
@@ -197,12 +197,23 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 - [x] ¹⁸ Maison directory search: the registered-but-unwired `CERCLE_HELP.search` now has its control — a collapsible `SearchField`; a live query flattens the grouped cards into flat matching rows across both sections, cleared → groups return.
 - [x] ¹⁴ ➖ Liste in-page search recorded: the list is finite and short by design (calm); revisit only if real lists regularly exceed a screenful.
 - [x] `useSwipeToDelete`'s red pane → **`SwipeDeletePane`** (`components/SwipeDeletePane.tsx`) — the hook owns the behaviour, this owns the markup; both callers converted.
-- [ ] ¹³ reorder mirrors: Liste « Mon ordre » drag-only — still open: add ⋯ Monter/Descendre like meal rows, or record ➖ (aisle sort is the non-drag ordering). Decide next audit.
+- [x] ¹³ **resolved 2026-08-27**: the ⠿ grip itself is the mirror — focusable
+      (`tabIndex`), ↑/↓ run the SAME splice as a drop (`moveRow`, shared with
+      `onDrop`), label « Réordonner — glisse, ou ↑/↓ au clavier ». No third row
+      control (LEAN): the handle that drags is the handle that arrows. Guard:
+      `interactions.spec.ts` « the drag grip is a keyboard door too ».
 
 ### Wave D — ＋ sheet coverage 🟡 — **CLOSED 2026-08-26** (one fix, rest verdicted)
 
 - [x] ¹² ➖ **corrected on code-read**: the FAB exists only inside `HubLayout`, whose six routes are ALL explicitly keyed in `SECTION_MODES` (settings hides it) — every scene route (`/voyage`, `/voiture`, `/habitude`, `/cercle/*`, `/liste/quick`…) renders OUTSIDE `HubLayout` and never shows a FAB. The board fallback is defensive code, not a user-reachable state.
-- [x] ¹¹ ➖ use-soon keeps `SectionAdd` as its one add door for now: folding it into the `pantry` ＋ tile means widening `AddSheet`, which the parallel composer-layout pass is actively reshaping — revisit after that settles.
+- [x] ¹¹ ➖ **made permanent 2026-08-27** (the composer pass settled — `.edit-field--cta`
+      shipped with its guards — so the deferral reason is gone and the question was
+      re-asked on its merits): use-soon keeps `SectionAdd` as its ONE add door. LEAN's
+      own rule answers it — "where does a section's composer live? behind the
+      `SecLabel` ＋, opened focused" — and the kitchen ＋ already carries 7 tiles; an
+      8th for the least-used of the three garde-manger lists widens the chooser for
+      every add to serve the rarest one. Revisit only if adding-to-use-soon becomes a
+      daily gesture.
 - [x] ² ➖ fêtes/announce rows stay static: a fête is fully self-describing (name + date, both already on the row) — a peek would carry nothing the row doesn't ("the peek is CONTENT").
 - [x] ⁹ ➖ kept: recipe/routine/day peeks retired under "tap the thing, get the thing" (`adapters.ts`); `buildDay` zero-actions; Maison in-page add (FAB-only).
 - [x] ³ ➖→🟡 recorded: chore/home-project edit from the board — peek stays Fait/Reporter (calm glance surface); the edit door is Réglages. Revisit only if Marc trips on it.

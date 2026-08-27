@@ -479,6 +479,9 @@ export const FR = {
     // belle aubaine passe. Un seul interrupteur, éteint par défaut — une commission
     // ordinaire n’a rien à régler. Pas une priorité, pas un rang.
     rushNone: 'Pas pressé',
+    // The ⠿ grip's accessible name: it drags AND (focused) répond aux flèches —
+    // the keyboard mirror of the drag (ACTIONS.md ¹³), so the label names both.
+    reorderHint: 'Réordonner — glisse, ou ↑/↓ au clavier',
     rushHint:
       'Se lit en gris pâle et descend au bas de la liste : on le prend si une belle aubaine passe, sinon on l’oublie. Tu peux le remonter à la main dans « Mon ordre ».',
     // Voice add (continuous): hint while listening + why nothing landed on error.
