@@ -103,15 +103,53 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 
 - [~] **Contrast audit** — DONE for the dawn/dusk dark tiers Marc flagged: the **twilight** (purple) palette had `--ink-faint` time labels at **2.4:1** on its mid-tone `--card` — a clear AA fail. Fixed by darkening the twilight grounds a step (`#6a5c69→#564a57`, still distinctly lighter than deep-twilight so the day→twilight→deep-twilight→night ramp stays gradual) **and** lifting `--ink-faint`/`--line-strong` so small text clears 4.5:1 and the check disc reads; deep-twilight `--ink-faint` (was 3.0) bumped the same way (`core.css`). **Now done:** base-day `--ink-faint` darkened `#a99e8e→#7a7060` to clear AA on cream, AND `tintInk` is now **adaptive** (`lib/colors.ts`) — a bright member/slot colour is pulled harder toward `--ink` by its luminance (cap 62%), so a coloured `.act .title` stays ≥AA whatever face/slot colour it wears.
 - [x] **Focus restoration on detail-sheet close** — `DetailProvider` captures the opener (`document.activeElement`) on `open` and returns focus to it on `close` (via rAF, if still connected), so keyboard/AT users land back on the row they peeked.
-- [ ] **Focus order in the masonry** — tab order is source order, not visual; on a wide kiosk that can jump columns. Consider a roving/landmark structure or accept it (document).
-- [ ] **Landscape / very-narrow phone (320–667px)** — heroes may stack and `columns:300px` is wider than a 320px screen minus padding; test + a `@media` tweak.
+- [x] **Focus order in the masonry** — ✅ **ADDRESSED 2026-08-27 (landmarks, not a re-order).**
+  The original diagnosis is out of date: the board stopped being CSS multi-column (which flows
+  down column 1, then column 2 — genuinely scrambled against source order) and is now a JS-counted
+  CSS **grid** flowing left-to-right. What remains is narrower and is documented at the source
+  (`widget-grid.css`): `grid-auto-flow: row dense` can back-fill a hole with a **later** card, so
+  visual order may depart from DOM order on a wide board. **Verdict: keep `dense`** — dropping it
+  buys ragged holes on every wide board, and forcing order with `tabindex` is an anti-pattern. DOM
+  order stays the household's own stored layout order, i.e. a meaningful sequence (WCAG 1.3.2) and
+  a stable focus order (2.4.3). What was actually missing: each `.wg-slot` is a `<section>` with
+  **no accessible name**, so it was not exposed as a landmark at all and the board reached AT as
+  one undifferentiated run of controls. `CardSlot` now sets `aria-label={label}` → every visible
+  card is a named **region**, so nobody has to tab the whole wall to reach one card. Guarded by
+  `e2e/layout-overflow.spec.ts` (« board cards with no accessible name »).
+- [x] **Landscape / very-narrow phone (320–667px)** — ✅ **DONE 2026-08-27 (tested; no fix needed).**
+  The `columns: 300px` half of the premise is stale: the masonry became a JS-counted grid
+  (`colsFor`, `lib/widgetGrid`) precisely so a card's size can be **clamped** against the column
+  count instead of overflowing. `e2e/layout-overflow.spec.ts` now sweeps the board at **320 / 568 /
+  667** px, asserting the resolved column count (1 / 2 / 2), zero horizontal overflow, and — measured
+  per card, because a too-wide card is *clipped* rather than reported — that no card renders wider
+  than the grid holding it. All green; no `@media` tweak was needed.
 
 ### P3 — bigger or judgement calls
 
-- [ ] **Two "todo" surfaces** — « À faire » (loose `data.todos`) vs « À compléter » (`todo_templates`-backed `TodoSection`) read similarly and both can appear; no UI hint which a household uses. Consider clarifying copy or merging. (See project memory [[babillard-two-todo-concepts]].)
-- [ ] **Very-wide kiosk** — `.board-wall` max-width is 1500px but on a 4K wall the masonry spreads across many columns and the glance gets diffuse. Consider capping column count or `max-width` for kiosk.
-- [ ] **BigTiles 6-second arm timeout** — may be short for a hesitant 2-year-old; test with real kids, consider 10s.
-- [ ] **Untested intermediate widths** — 520–680px (tablet transition) + 1500px+ ultra-wide have no e2e frame.
+- [x] **Two "todo" surfaces** — ✅ **RESOLVED (verified 2026-08-27).** They are ONE card now:
+  `nodes.todos` renders « À faire » with the loose to-dos and embeds `TodoSection show="loose"`;
+  the reusable checklists moved out to their own « Avant de partir » card (migration 0116). The
+  "no UI hint which a household uses" premise is gone too — `boardHelp.todos` spells the split out
+  in both languages (« des choses ponctuelles… tes listes qui reviennent vivent sur la carte
+  “Avant de partir” »). The three-concept distinction still holds in the data model, as recorded
+  in project memory [[babillard-two-todo-concepts]] — this was only ever a board-surface question.
+- [x] **Very-wide kiosk** — ✅ **RESOLVED (verified + now guarded, 2026-08-27).** Stale premise:
+  `.board-wall` has **no** max-width (it is deliberately full-bleed) and the masonry no longer
+  "spreads across many columns" — `WidgetGrid` caps the count at `maxCols` (3 for the band, 4 for
+  the grid), with `colMin` raised to 340px on a kiosk so cards stay readable across the room. The
+  cap is now asserted at **2560px**, where an uncapped grid would ask for ~6 columns
+  (`e2e/layout-overflow.spec.ts` `lo-board-w2560`).
+- [ ] **BigTiles 6-second arm timeout** — may be short for a hesitant 2-year-old; test with real
+  kids, consider 10s. _(Left open deliberately: this is an empirical question about a specific
+  child, not a code judgement — both values are defensible and guessing would be pretending. The
+  constant is `ARM_MS` in `components/BigTiles.tsx`, a one-line change once Marc has watched one
+  real bedtime with it. Note the risk is bounded: on the toddler BOARD nothing commits at all, so
+  the arm only governs the routine filmstrip and the défi tile.)_
+- [x] **Untested intermediate widths** — ✅ **DONE 2026-08-27.** `e2e/layout-overflow.spec.ts`
+  gained a deliberately narrow width axis (board only, parent only, FR only — five cases, not
+  another full matrix): **320 · 568 · 667 · 1600 · 2560**. Each asserts the resolved column count,
+  no horizontal overflow, no card wider than its grid, and that every visible card is a named
+  region. The existing FORMATS×TABS sweep still owns the tab-by-tab coverage.
 
 ---
 
@@ -169,7 +207,8 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
 - **Documented (page-level, correctly not in the live gallery)**: DayHeroes, ARegler, AutoCard, Notes, PhotoFrame, ActivityBring.
 - **Gaps** (backlog):
   - [x] ~~**MomentPeek**~~ — **moot (2026-08-25):** the card was deleted with « Moments ».
-  - [ ] **DayNote** — undocumented in COMPONENTS.md (small, but should be listed).
+  - [x] ~~**DayNote** — undocumented in COMPONENTS.md~~ — **stale (verified 2026-08-27):** it has
+    its own row in COMPONENTS.md, beside `SkyTonight` in the board block.
   - [x] ~~**MomentsView**~~ — **moot (2026-08-25):** the view was deleted with « Moments »; `SkyTonight` was extracted to its own file, is documented, and is now in DevKit.
 
 ---

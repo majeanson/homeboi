@@ -1046,11 +1046,16 @@ real backlog is small:
   toggle in Réglages ▸ Mode veille. Kept armed on every surface deliberately: a wall tablet
   signed in as the operator reads as `surface==='mobile'`, so scoping the default off by surface
   would disable the screensaver on exactly the device it exists for.
-- [ ] **`RealtimeHub` doesn't use the WebSocket Hibernation API** — `server.accept()` + an in-memory
-  `Set` (`worker/RealtimeHub.ts:43,31`); a 24/7 wall tablet holds an open socket so the DO never
-  evicts from memory and is billed for continuous wall-clock — at odds with the free-tier focus.
-  Switch to `state.acceptWebSocket()` (hibernatable) before flipping realtime fully on at scale.
-  _(cross-ref project memory [[babillard-free-tier-capacity]].)_
+- [x] **`RealtimeHub` doesn't use the WebSocket Hibernation API** — ✅ **DONE 2026-08-27.**
+  `server.accept()` + the in-memory `Set<WebSocket>` → `state.acceptWebSocket(server)` +
+  `state.getWebSockets()`, so the runtime holds the sockets and the object can be evicted while a
+  wall tablet's connection stays open — instead of billing continuous wall-clock per household for
+  a hub that is idle between writes. The `addEventListener('close'|'error')` pair became the
+  `webSocketClose`/`webSocketError` hibernation callbacks (the listeners would never fire again
+  after an eviction). No `webSocketMessage` handler: clients only listen (`src/lib/realtime.ts`),
+  so nothing wakes the object except a broadcast. Both socket kinds ride the same class (a
+  household room and a `st:<id>` shared-trip room are two DO **ids**), so one change covers both.
+  No wrangler migration needed — hibernation is an API, not a class change.
 
 ### Findings — P3 (bigger / judgement)
 

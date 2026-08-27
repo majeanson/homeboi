@@ -145,3 +145,92 @@ for (const format of FORMATS) {
     }
   }
 }
+
+// ─────────────────── the widths between and beyond the formats ───────────────
+//
+// AUJOURDHUI §7: "untested intermediate widths — 520–680px (tablet transition) +
+// 1500px+ ultra-wide have no e2e frame", plus the 320px landscape/very-narrow
+// phone. The board is where width actually changes behaviour — `colsFor`
+// (lib/widgetGrid) counts the columns in JS so a card's size can be CLAMPED
+// against the count, which is precisely the code that misbehaves at a boundary:
+// too many columns and the glance goes diffuse, too few and a size-3 card
+// overflows the viewport instead of shrinking.
+//
+// Deliberately narrow: the board only, parent only, FR only — four extra cases,
+// not another full matrix. The full FORMATS×TABS sweep above already owns the
+// tab-by-tab coverage; what's missing is purely the width axis.
+const WIDTHS = [
+  // 320px: the narrowest phone still in the wild, and the width the old
+  // `columns: 300px` masonry could not fit (a card wider than the screen). The
+  // grid is JS-counted now, so this must resolve to a single column.
+  { name: 'w320', width: 320, height: 640, surface: 'mobile' as Surface, cols: { min: 1, max: 1 } },
+  // 568px: a phone in LANDSCAPE. Two columns fit comfortably here.
+  { name: 'w568', width: 568, height: 320, surface: 'mobile' as Surface, cols: { min: 2, max: 2 } },
+  // 667px: the top of the "tablet transition" gap the sweep jumps over (390 → 834).
+  { name: 'w667', width: 667, height: 900, surface: 'mobile' as Surface, cols: { min: 2, max: 2 } },
+  // 1600px and 2560px: ultra-wide walls. The count is NOT pinned exactly here — it
+  // depends on the kiosk nav's width and on `colMin` being 340 rather than 300 on a
+  // kiosk (cards are read from across the room) — so what's asserted is the property
+  // that matters: it never exceeds `maxCols`. Without that cap a 4K wall would keep
+  // adding columns until the glance went diffuse, which is the AUJOURDHUI §7 worry.
+  // 2560 is the one that proves the cap: uncapped it would ask for ~6 columns.
+  { name: 'w1600', width: 1600, height: 900, surface: 'kiosk' as Surface, cols: { min: 3, max: 4 } },
+  { name: 'w2560', width: 2560, height: 1080, surface: 'kiosk' as Surface, cols: { min: 4, max: 4 } },
+]
+
+for (const w of WIDTHS) {
+  test(`lo-board-${w.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: w.width, height: w.height })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: w.surface })
+    await page.goto('/board')
+    await settle(page)
+
+    await expect
+      .poll(async () => (await page.locator('.hub__body').innerText()).trim().length, { timeout: 8000 })
+      .toBeGreaterThan(10)
+    await expect
+      .poll(() => hOverflow(page), { timeout: 6000, intervals: [200, 400, 800] })
+      .toBe('ok')
+
+    // The column count the width should resolve to. `--wg-cols` is what the grid
+    // actually laid out with, so this pins the boundary behaviour rather than just
+    // "nothing overflowed" — including the ultra-wide cap.
+    const cols = await page
+      .locator('.wg[data-zone="grid"]')
+      .first()
+      .evaluate((el) => Number(getComputedStyle(el).getPropertyValue('--wg-cols')))
+    expect(cols, `column count at ${w.width}px`).toBeGreaterThanOrEqual(w.cols.min)
+    expect(cols, `column count at ${w.width}px`).toBeLessThanOrEqual(w.cols.max)
+
+    // No card may render wider than the grid that holds it — the clamp `colsFor`
+    // exists for. Measured, because a too-wide card is CLIPPED by the container's
+    // overflow-x:hidden and so is invisible to a scrollWidth check.
+    const spill = await page.evaluate(() => {
+      const grid = document.querySelector('.wg[data-zone="grid"]')
+      if (!grid) return []
+      const box = grid.getBoundingClientRect()
+      return [...grid.querySelectorAll('.wg-slot')]
+        .filter((el) => !el.hasAttribute('hidden'))
+        .filter((el) => el.getBoundingClientRect().right > box.right + 1)
+        .map((el) => el.getAttribute('data-card') || '?')
+    })
+    expect(spill, 'cards wider than the board grid').toEqual([])
+
+    // Every visible card is a NAMED region. `grid-auto-flow: dense` can pull a later
+    // card up into an earlier hole, so on a wide board the visual order departs from
+    // the DOM (tab) order — which is exactly when a keyboard/AT user needs to jump to
+    // a card by name instead of tabbing the whole wall. A bare <section> has no
+    // accessible name and is therefore not a landmark at all, so this is the
+    // assertion that keeps the board navigable (AUJOURDHUI §7 focus order).
+    const unnamed = await page.evaluate(() =>
+      [...document.querySelectorAll('.wg-slot')]
+        .filter((el) => !el.hasAttribute('hidden'))
+        .filter((el) => !(el.getAttribute('aria-label') || '').trim())
+        .map((el) => el.getAttribute('data-card') || '?'),
+    )
+    expect(unnamed, 'board cards with no accessible name (not exposed as regions)').toEqual([])
+
+    await page.screenshot({ path: `e2e/screenshots/lo-board-${w.name}.png`, fullPage: true })
+  })
+}

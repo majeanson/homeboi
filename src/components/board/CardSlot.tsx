@@ -274,6 +274,16 @@ export function CardSlot({
       ref={slotRef}
       style={style}
       data-card={id}
+      // Name the section so it is exposed as a REGION landmark. A bare <section> has
+      // no accessible name and so is not a landmark at all — the board reached AT as
+      // one long undifferentiated run of controls. Naming it gives a screen-reader
+      // user the board's card list to jump between, which is the practical answer to
+      // the masonry's focus-order problem (AUJOURDHUI §7): `grid-auto-flow: dense`
+      // can pull a later card up into an earlier hole, so VISUAL order may depart
+      // from DOM order. DOM order stays the household's own stored layout order — a
+      // meaningful sequence — and landmarks mean nobody has to tab through the whole
+      // wall to reach the card they want.
+      aria-label={label}
       // Drop targets exist only while editing. Always-on would also opt every board card
       // out of tap-to-hear, which excludes `[data-dnd-zone]` by design.
       data-dnd-zone={editing ? key : undefined}

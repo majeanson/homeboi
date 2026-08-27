@@ -7,10 +7,25 @@
 // (src/lib/query.ts) — if the DO is never deployed or a socket drops, polling
 // still keeps screens fresh. Nothing here is on the write path's critical line.
 //
-// Kept deliberately minimal: in-memory socket set + a broadcast. No persistence,
-// no presence list, no auth re-check inside the DO (the Worker authenticates the
+// Kept deliberately minimal: a broadcast and nothing else. No persistence, no
+// presence list, no auth re-check inside the DO (the Worker authenticates the
 // upgrade BEFORE handing the request here, and only ever routes a socket to the
 // caller's OWN household DO, so a connection can't cross households).
+//
+// HIBERNATION (2026-08-27). This used `server.accept()` plus an in-memory
+// `Set<WebSocket>`, which pins the DO in memory for as long as any socket is
+// open — and a Babillard's whole point is a wall tablet that never closes its
+// tab, so that meant billing continuous wall-clock, 24/7, per household, for a
+// hub that is idle between writes. The WebSocket Hibernation API fixes exactly
+// that shape: `state.acceptWebSocket()` hands the socket to the RUNTIME, which
+// can evict this object from memory while the connection stays open and revive
+// it when something arrives. `state.getWebSockets()` returns the live sockets
+// after such a revival, so it replaces the Set outright — and since this hub
+// holds no other state, there is nothing else to rebuild on wake-up. Clients
+// never send (src/lib/realtime.ts only listens), so there is no
+// `webSocketMessage` handler to write; close/error just drop the connection,
+// which the runtime already tracks. Matters for the free tier — see project
+// memory [[babillard-free-tier-capacity]].
 //
 // Typed against @cloudflare/workers-types (tsconfig.node.json). The integrator
 // finalizes the exact DO base/migration form for the target plan.
@@ -28,25 +43,20 @@ interface InvalidateMessage {
 //   GET  + Upgrade: websocket → a client joining the household (returns 101)
 //   POST /broadcast            → a write happened; body is an InvalidateMessage
 export class RealtimeHub implements DurableObject {
-  private sockets = new Set<WebSocket>()
-
-  // `state` is required by the DO constructor contract even though this minimal
-  // hub keeps everything in memory; prefixed with _ to satisfy noUnusedParameters.
-  constructor(_state: DurableObjectState) {}
+  // The runtime owns the socket set now (see the hibernation note above), so the
+  // only thing this object holds is the handle it asks for them through.
+  constructor(private state: DurableObjectState) {}
 
   async fetch(request: Request): Promise<Response> {
-    // --- A client joining: upgrade to a WebSocket and remember it -------------
+    // --- A client joining: upgrade to a WebSocket the RUNTIME holds -----------
     if (request.headers.get('Upgrade') === 'websocket') {
       const pair = new WebSocketPair()
       const client = pair[0]
       const server = pair[1]
-      server.accept()
-      this.sockets.add(server)
-      // Drop the socket from the fan-out set when it closes or errors so we don't
-      // broadcast into dead connections (and leak memory in a long-lived DO).
-      const forget = () => this.sockets.delete(server)
-      server.addEventListener('close', forget)
-      server.addEventListener('error', forget)
+      // NOT `server.accept()`: that keeps the socket in THIS object's memory and
+      // pins the DO awake for the life of the connection. `acceptWebSocket` lets
+      // the object be evicted while the socket stays open.
+      this.state.acceptWebSocket(server)
       return new Response(null, { status: 101, webSocket: client })
     }
 
@@ -65,15 +75,44 @@ export class RealtimeHub implements DurableObject {
     return new Response('Not found.', { status: 404 })
   }
 
+  // --- Hibernation callbacks ------------------------------------------------
+  // With `acceptWebSocket` the runtime, not this object, dispatches socket events
+  // — so these replace the `addEventListener('close'|'error')` pair, which would
+  // never fire again once the object had been evicted. There is nothing to
+  // un-register (the runtime drops the socket from `getWebSockets()` itself);
+  // closing our end just makes sure a half-open connection is really finished.
+  webSocketClose(ws: WebSocket): void {
+    try {
+      ws.close()
+    } catch {
+      /* already closed */
+    }
+  }
+
+  webSocketError(ws: WebSocket): void {
+    try {
+      ws.close()
+    } catch {
+      /* already closed */
+    }
+  }
+
   private broadcast(msg: InvalidateMessage): void {
     const data = JSON.stringify(msg)
-    for (const ws of this.sockets) {
+    // The live sockets, straight from the runtime — correct even on the very first
+    // call after this object was revived from hibernation, when an in-memory Set
+    // would have been empty and every board would have silently stopped updating.
+    for (const ws of this.state.getWebSockets()) {
       try {
         ws.send(data)
       } catch {
-        // A send to a half-dead socket throws — drop it; close handler may not
-        // have fired yet. Best-effort: one bad socket never blocks the rest.
-        this.sockets.delete(ws)
+        // A send to a half-dead socket throws. Best-effort: close it and carry on,
+        // so one bad connection never blocks the rest of the household.
+        try {
+          ws.close()
+        } catch {
+          /* already gone */
+        }
       }
     }
   }
