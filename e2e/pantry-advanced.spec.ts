@@ -64,8 +64,9 @@ test('meal pools: their OWN flag folds the row furniture the same way', async ({
   // Simple: an idea row is its chip (tap = plan) — no ✏️/🗑.
   await expect(page.locator('.kitchen__idea-row .row-actions')).toHaveCount(0)
 
-  // The pools' ⚙ is a separate flag from the garde-manger's.
-  const toggle = page.locator('.kitchen__ideas .mode-toggle')
+  // The pools' ⚙ is a separate flag from the garde-manger's. Both inline pools
+  // (Idées + Restants) carry one — same flag, so clicking either flips both.
+  const toggle = page.locator('.kitchen__ideas .mode-toggle').first()
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.kitchen__idea-row .row-actions').first()).toBeVisible()
