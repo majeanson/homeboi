@@ -21,7 +21,7 @@ import {
   type BoardCardId,
   type CardZone,
 } from '../../lib/boardCards'
-import { colWidth, isCompact, rowSpan, WG_MINI_ROWS } from '../../lib/widgetGrid'
+import { colWidth, isCompact, rowIndexAt, rowSpan, WG_MINI_ROWS } from '../../lib/widgetGrid'
 import { EmptyState } from '../EmptyState'
 import { InlineIcon } from '../Icon'
 import { BoardCard } from './BoardCard'
@@ -80,8 +80,11 @@ export function CardSlot({
   const t = useT()
   const prefs = useBoardCards()
   const grid = useWidgetGrid()
+  const slotRef = useRef<HTMLElement>(null)
   const innerRef = useRef<HTMLDivElement>(null)
   const [rows, setRows] = useState(1)
+  // The row this slot occupied at the instant it was tapped open — see `pin` below.
+  const [pinRow, setPinRow] = useState<number | null>(null)
 
   // The child→shell registration channel. Idempotent by construction: a report whose
   // value already matches is dropped, so an unstable caller is a harmless no-op rather
@@ -124,16 +127,57 @@ export function CardSlot({
   const span = expanded ? cols : sizedSpan
   // A tile in its compact form. Its ROW span is a constant, never measured — see below.
   const isMini = compact && !expanded
+
+  // KEEP YOUR EYES ON THE CARD YOU OPENED.
+  // Growing to `cols` makes this slot full-width, and a full-width item cannot share a
+  // row: `grid-auto-flow: dense` re-places it at the first row where EVERY column is
+  // free — which is *below every card already laid out*. So a tile opened beside a tall
+  // card leapt hundreds of pixels down the page and the expansion happened off screen:
+  // you never saw the thing you tapped.
+  // So we PIN it. Read the row it is on RIGHT NOW (the ruler is uniform, so the row index
+  // is pure arithmetic on its offset — `rowIndexAt`) and hand that to `grid-row-start`
+  // for as long as it stays open. Explicitly-placed items are laid out BEFORE auto-placed
+  // ones, so the rest of the masonry flows around and beneath the open card instead of
+  // shoving it aside — and the open card itself never moves while it is open, which is
+  // what makes opening and closing readable.
+  // Measured in the tap handler, BEFORE the state change: the compact layout is still on
+  // screen at that moment, and its position is exactly the one we want to hold.
+  const pin = useCallback(() => {
+    const el = slotRef.current
+    const gridEl = el?.parentElement
+    if (!el || !gridEl) return
+    // `.wg` carries no padding or border today, so its border-box top IS the first row
+    // line — but read them live rather than assume, in case that ever changes.
+    const cs = getComputedStyle(gridEl)
+    const top =
+      gridEl.getBoundingClientRect().top +
+      (parseFloat(cs.borderTopWidth) || 0) +
+      (parseFloat(cs.paddingTop) || 0)
+    setPinRow(rowIndexAt(el.getBoundingClientRect().top - top))
+  }, [])
+
+  // Release the pin the moment this card is no longer the open one — and whenever the
+  // column count changes underneath it (a rotation re-lays the whole grid, so the row we
+  // captured means nothing any more; auto placement is the honest fallback).
+  useEffect(() => {
+    if (!expanded) setPinRow(null)
+  }, [expanded])
+  useEffect(() => {
+    setPinRow(null)
+  }, [cols])
+
   const lens = useMemo<CardLens>(
     () => ({
       compact,
       expanded,
       expand: () => {
-        if (!editing) onExpandGrid?.(id)
+        if (editing) return
+        pin()
+        onExpandGrid?.(id)
       },
       collapse: () => onCollapseGrid?.(),
     }),
-    [compact, expanded, editing, onExpandGrid, onCollapseGrid, id],
+    [compact, expanded, editing, onExpandGrid, onCollapseGrid, id, pin],
   )
 
   useEffect(() => {
@@ -185,11 +229,14 @@ export function CardSlot({
     () => ({
       ['--wg-span-rows' as string]: isMini ? WG_MINI_ROWS : heldRows,
       ['--wg-span-cols' as string]: span,
+      // Only ever set while THIS card is the open one (see `pin`); unset otherwise, so an
+      // ordinary card is placed by the flow exactly as it was before.
+      ['--wg-row-start' as string]: expanded && pinRow ? pinRow : undefined,
       // The card's persona, for a card that never set `--sec-tint` itself — and for the
       // empty placeholder below, which has no card to ask. Never overrides one that did.
       ['--wg-tint' as string]: meta?.tint,
     }),
-    [isMini, heldRows, span, meta],
+    [isMini, heldRows, span, expanded, pinRow, meta],
   )
 
   const dnd = grid?.dnd ?? null
@@ -224,6 +271,7 @@ export function CardSlot({
         (dnd?.activeId === id ? ' is-dragging' : '') +
         (dnd?.over === key ? ' dnd-over' : '')
       }
+      ref={slotRef}
       style={style}
       data-card={id}
       // Drop targets exist only while editing. Always-on would also opt every board card

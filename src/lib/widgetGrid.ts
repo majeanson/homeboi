@@ -138,3 +138,25 @@ export const WG_MINI_H = WG_MINI_ROWS * WG_ROW + (WG_MINI_ROWS - 1) * WG_GAP
  * things is a lie the count tells better, so the tile shows the icon and the number.
  */
 export const WG_MINI_MAX_ITEMS = 5
+
+/**
+ * Which grid row (1-based) a slot sitting `offsetTop` px below the grid's content top
+ * starts on.
+ *
+ * The inverse of the ruler `rowSpan` quantises to: row N starts at
+ * `(N-1) * (WG_ROW + WG_GAP)`, because every row carries its gap AFTER it. Rounding (not
+ * flooring) is deliberate — a sub-pixel measurement must not read as the row above.
+ *
+ * WHY IT EXISTS: expanding a compact tile grows it to the zone's full column count, and a
+ * full-width item can no longer share a row with anything — so `grid-auto-flow: dense`
+ * re-places it at the first row where ALL columns are free, which is *below every card
+ * already placed*. A tile tapped open beside a tall card jumped hundreds of pixels down,
+ * off screen: you never saw the thing you opened. Pinning the expanded slot to the row it
+ * was ALREADY on (`grid-row-start`) keeps it exactly where the eye left it and pushes the
+ * other cards around and beneath it instead — explicitly-placed items are laid out before
+ * auto-placed ones, so the flow works around the pin rather than over it.
+ */
+export function rowIndexAt(offsetTop: number): number {
+  if (!Number.isFinite(offsetTop) || offsetTop <= 0) return 1
+  return Math.max(1, Math.round(offsetTop / (WG_ROW + WG_GAP)) + 1)
+}

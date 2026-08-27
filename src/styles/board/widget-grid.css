@@ -34,9 +34,23 @@
    board/grid.css). `min-width: 0` keeps a long unbreakable row (a note, a URL) from
    forcing the column wider than its track — the recurring horizontal-overflow bug. */
 .wg-slot {
+  /* `--wg-row-start` is `auto` for every card except the one currently tapped open: that
+     one is PINNED to the row it was already sitting on (`CardSlot`'s `pin`), because
+     growing to full width otherwise sends it below every card already placed — `dense`
+     can only put a full-width item where all columns are free — and the expansion then
+     happens off screen. Explicitly-placed items are laid out before auto-placed ones, so
+     pinning makes the other cards flow around and BENEATH the open one, and the open one
+     hold still while you read it. */
+  grid-row-start: var(--wg-row-start, auto);
   grid-row-end: span var(--wg-span-rows, 1);
   grid-column-end: span var(--wg-span-cols, 1);
   min-width: 0;
+}
+/* The open card spans every column, so say so explicitly: paired with the pinned
+   `--wg-row-start` this makes it a fully definite placement, laid out in the very first
+   pass of grid auto-placement — the rest of the masonry is then dealt around it. */
+.wg-slot[data-expanded] {
+  grid-column-start: 1;
 }
 .wg-slot__inner {
   min-width: 0;

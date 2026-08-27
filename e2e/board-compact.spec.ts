@@ -309,6 +309,62 @@ test.describe('board compact lens', () => {
     // Back to its compact tile, not the grown form, the moment edit mode arms.
     await expect(slot.locator('.cardmini')).toBeVisible()
   })
+
+  // THE THING YOU OPENED MUST STAY UNDER YOUR EYE.
+  // A grown card is full-width, and `grid-auto-flow: dense` can only put a full-width item
+  // where EVERY column is free — i.e. below everything already placed. So the tile on the
+  // RIGHT of a shelf could never grow where it stood: it was bumped a whole shelf (168px,
+  // measured) past its own neighbour, and on a board of stacked shelves that is the card
+  // opening somewhere you are not looking. `CardSlot` pins the open slot to the row it was
+  // already on, so the other cards move beneath it instead.
+  //
+  // The card under test is `departure` — the SECOND of the today/departure shelf — on
+  // purpose: the left-hand tile of a shelf never moved (its row is already the first free
+  // one), so expanding `today` here would pass with the pin ripped out.
+  test('an opened card holds its place — the others move beneath it, not the other way round', async ({
+    page,
+  }) => {
+    await open(page, { today: 1, departure: 1 })
+
+    // Everything measured against the GRID's own top, so a page scroll can't flatter the
+    // result: these are layout positions, not viewport ones.
+    const boxes = () =>
+      page.locator('.board-grid .wg-slot:not([hidden])').evaluateAll((els) =>
+        els.map((el) => {
+          const g = el.parentElement!.getBoundingClientRect()
+          const r = el.getBoundingClientRect()
+          return { card: el.getAttribute('data-card')!, top: r.top - g.top, bottom: r.bottom - g.top }
+        }),
+      )
+    const find = (all: Awaited<ReturnType<typeof boxes>>, card: string) => all.find((b) => b.card === card)!
+
+    const slot = page.locator('.wg-slot[data-card="departure"]')
+    const before = await boxes()
+    const beforeTop = find(before, 'departure').top
+
+    await slot.locator('.cardmini').scrollIntoViewIfNeeded()
+    await slot.locator('.cardmini').click()
+    await expect(slot).toHaveAttribute('data-expanded', '')
+
+    const during = await boxes()
+    const grown = find(during, 'departure')
+    // It grew DOWN from where it already was — same row line, not a new one further on.
+    expect(Math.abs(grown.top - beforeTop)).toBeLessThan(2)
+    expect(grown.bottom).toBeGreaterThan(grown.top)
+
+    // Nothing shares its rows any more: a full-width card can't, and the pin is what
+    // makes the neighbours yield to it instead of it yielding to them.
+    for (const other of during.filter((b) => b.card !== 'departure')) {
+      const overlaps = other.top < grown.bottom - 1 && other.bottom > grown.top + 1
+      expect(overlaps, `${other.card} still overlaps the opened card's rows`).toBe(false)
+    }
+
+    // …and closing it puts it back exactly where it started, so the eye doesn't have to
+    // find it again.
+    await slot.locator('.sec-label__reduce').click()
+    await expect(slot).not.toHaveAttribute('data-expanded', /.*/)
+    expect(Math.abs(find(await boxes(), 'departure').top - beforeTop)).toBeLessThan(2)
+  })
 })
 
 // « À régler » is a hero tile (`.now-card`), not a `Section`/`BoardCard` — it reads

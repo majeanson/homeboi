@@ -4,6 +4,7 @@ import {
   colWidth,
   isCompact,
   isNarrow,
+  rowIndexAt,
   rowSpan,
   WG_COL_MIN,
   WG_COMPACT_MAX,
@@ -193,5 +194,30 @@ describe('the compact tile shelf', () => {
   it('stays a glance, not a list view', () => {
     // Calm: the cap is a ceiling on how much a 142px tile may say, not just what fits.
     expect(WG_MINI_MAX_ITEMS).toBeLessThanOrEqual(5)
+  })
+})
+
+describe('rowIndexAt — the pin that keeps an opened card under your eye', () => {
+  it('is the exact inverse of where the ruler puts a row', () => {
+    // Row N starts at (N-1)*(ROW+GAP): every row carries its gap AFTER it. If these two
+    // ever disagree, an expanded card is pinned to the wrong row and lands on top of (or
+    // a shelf away from) where the eye left it.
+    for (let n = 1; n <= 40; n++) {
+      expect(rowIndexAt((n - 1) * (WG_ROW + WG_GAP))).toBe(n)
+    }
+  })
+
+  it('rounds, so a sub-pixel measurement never reads as the row above', () => {
+    const step = WG_ROW + WG_GAP
+    expect(rowIndexAt(2 * step - 0.4)).toBe(3)
+    expect(rowIndexAt(2 * step + 0.4)).toBe(3)
+  })
+
+  it('never returns a row a grid does not have', () => {
+    // `grid-row-start` is 1-based and 0 / negative is not a placement — a slot measured
+    // at (or above) the grid's own top belongs to row 1.
+    for (const bad of [0, -1, -1000, NaN, Infinity, -Infinity]) {
+      expect(rowIndexAt(bad)).toBe(1)
+    }
   })
 })
