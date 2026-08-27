@@ -73,8 +73,17 @@
   color: var(--ink-faint);
   cursor: pointer;
 }
-.todo-row__check:hover {
-  color: var(--ink);
+/* Hover "preview" tick. The glyph is ALWAYS in the DOM; what hides it on an
+   unchecked row is `.act .check { color: transparent }` (today.css) — this rule
+   reveals it under a pointer as the "tap to check" affordance. It must stay behind
+   a hover query: iOS Safari leaves :hover applied to the last-tapped element until
+   you tap somewhere else, so un-checking a todo left a full tick sitting in an
+   empty disc. The row really was unchecked (no strike-through, no fill) — the
+   ghost was this rule outliving the tap, not stale state. */
+@media (hover: hover) and (pointer: fine) {
+  .todo-row__check:hover {
+    color: var(--ink);
+  }
 }
 .todo-row.done .todo-row__check {
   color: var(--accent, #6b8a52);
