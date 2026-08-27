@@ -257,6 +257,15 @@ feature's `i18n.ts` block aloud.
 mur de collants, price-match, deals/circulaires browsing, family-import.
 Recipe: grep `e2e/` for the feature name; check the visual sweep specs too.
 
+**D17 — Action reachability.** Every user action the feature exposes has a
+non-touch, non-hidden door AND a considered undo tier. ✅ = each action reaches
+through a Part-1 channel of **`ACTIONS.md`** (row furniture / ⋯ / peek / ＋ tile /
+Réglages mirror / ⚙ Avancé face), a swipe or long-press is never the only path,
+and every destructive door names deferred / compensating / confirm / ➖-with-why.
+Recipe: read the feature's rows in `ACTIONS.md` Part 2 — **the per-action detail
+lives there, not in a 17th column below** (this table stays 16 columns; D17 is
+scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.md`).
+
 ---
 
 ## Part 3 — The matrix (filled on audit days)
@@ -909,6 +918,7 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 - [ ] Toddler + simple lens treatment (or written ➖); kiosk glanceability (board card decision in `lib/boardCards`); mobile 360px no-overflow (`Cluster`/`Rail`).
 - [ ] Voice on compose surfaces via `EditField`'s opt-in (or ➖ for structured forms).
 - [ ] Attribution shown as faces, never counts (calm).
+- [ ] Every action walks `ACTIONS.md` Part 5 (door from the Part-1 taxonomy, non-touch mirror, undo tier, ⚙-face placement) and lands a Part-2 matrix row in the same commit (D17).
 
 **Discovery & i18n**
 
