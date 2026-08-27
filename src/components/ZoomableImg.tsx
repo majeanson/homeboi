@@ -14,11 +14,17 @@ export function ZoomableImg({
   src,
   alt = '',
   className,
+  caption,
   onError,
 }: {
   src: string
   alt?: string
   className?: string
+  /** Optional line under the zoomed picture — what you came to check while you have
+   *  it open. La liste passes the staged deal (store · price · dates) so a flyer
+   *  clipping answers "is this still the deal?" without leaving the list. Absent →
+   *  nothing renders, and the overlay is exactly what it was. */
+  caption?: React.ReactNode
   // Forwarded to the thumbnail — lets a caller detect a blob that won't render as an
   // image (e.g. an extension-less PDF key) and swap in a different affordance.
   onError?: React.ReactEventHandler<HTMLImageElement>
@@ -47,7 +53,7 @@ export function ZoomableImg({
         }}
         style={{ cursor: 'zoom-in' }}
       />
-      {open && <ZoomOverlay src={src} alt={alt} onClose={() => setOpen(false)} />}
+      {open && <ZoomOverlay src={src} alt={alt} caption={caption} onClose={() => setOpen(false)} />}
     </>
   )
 }
@@ -58,7 +64,7 @@ const clampScale = (s: number) => Math.min(MAX_SCALE, Math.max(1, s))
 // The full-screen layer with the gesture handling. Transform state lives in refs
 // and is written straight to the <img> style so a pinch/pan stays smooth (no
 // re-render per pointer move).
-function ZoomOverlay({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+function ZoomOverlay({ src, alt, caption, onClose }: { src: string; alt: string; caption?: React.ReactNode; onClose: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   // Esc-to-close + background scroll lock + focus trap, shared with every dialog.
@@ -173,6 +179,9 @@ function ZoomOverlay({ src, alt, onClose }: { src: string; alt: string; onClose:
         onPointerCancel={onPointerUp}
         onDoubleClick={onDoubleClick}
       />
+      {/* Sits ON the backdrop, not the picture: the image pans and scales under a
+          pinch, and a caption riding that transform would slide off-screen. */}
+      {caption && <div className="zoom-overlay__cap mono">{caption}</div>}
       <button type="button" className="zoom-overlay__close" aria-label="Fermer / Close" onClick={onClose}>
         <Icon name="x-bold" size={20} />
       </button>

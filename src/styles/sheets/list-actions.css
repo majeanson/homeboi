@@ -55,13 +55,22 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* "Vider" (clear checked) sits quietly to the right under the list — a small,
-   secondary control, not a full-width bar. Restocking past items and browsing
-   flyers moved into the ＋ Add sheet, so the page is the list and its add bar. */
+/* "Vider" (clear checked) closes the trip: it only appears once something is
+   ticked, and by then it's the one thing you want. On a PHONE it spans the width
+   like « Montrer à la caisse » below it — an easy thumb target at the end of the
+   list, and the two prominent actions then read as one column instead of one
+   centred pill and one stray right-aligned chip. Wider screens keep it tucked
+   right, where the list is the page and its controls stay out of the way. */
 .list-clear {
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
+}
+@media (max-width: 520px) {
+  .list-clear .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }
 
 /* The ⚡ Quick add scene — re-add candidates inside a .scene__body.qa. Tap one to
@@ -241,6 +250,24 @@
   height: 2.4rem;
   padding: 0;
 }
+/* The circulaires shortcut is the only one of the three that STARTS something (the
+   others reorder or restock a list you already have), so it carries the list's own
+   marigold and a bigger target. Deliberately NOT .btn--primary: that token is the
+   app accent, and this row belongs to La liste. The other two stay quiet ghosts —
+   one loud thing per row, or none of them reads as loud. */
+.list-actions__icon--flyer {
+  width: 3rem;
+  min-width: 3rem;
+  height: 3rem;
+  background: var(--marigold, #f2a03d);
+  border-color: color-mix(in srgb, var(--marigold, #f2a03d) 78%, black);
+  color: #3a2a12;
+  box-shadow: var(--shadow-sm);
+}
+.list-actions__icon--flyer:hover {
+  background: color-mix(in srgb, var(--marigold, #f2a03d) 88%, black);
+}
+
 /* The menu's WRAPPER is the flex child (ActionMenu renders .action-menu around its
    trigger) — it takes its trigger's width, nothing more. */
 .list-actions .action-menu {

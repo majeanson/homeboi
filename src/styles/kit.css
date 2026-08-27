@@ -405,6 +405,42 @@
   outline-offset: 2px;
 }
 
+/* ── ModeToggle (src/components/ModeToggle.tsx) ─────────────────────────────
+   The ⚙ SIMPLE ↔ AVANCÉ chip shared by « Les notes » and « La liste ». Eager for
+   the same reason as ShareModal below: it began life as `.notes-mode` in
+   cercle.css, which the notes pages import lazily — so the moment La liste reused
+   the class it rendered as a bare 32×22 box, because that sheet is never loaded
+   there. A control used by two sections belongs in the shell.
+
+   Sized as the exact twin of the SearchField's collapsed loupe (2.5rem) so the two
+   read as one pair of tools. `--mode-tint` lets each section light it in its own
+   colour (Notes teal, La liste marigold) without a second class. */
+.mode-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.mode-toggle:hover,
+.mode-toggle:focus-visible {
+  color: var(--ink);
+  background: var(--surface);
+}
+/* Lit IS the state (the accessible name says where the next tap goes, not where
+   you are), so it has to be legible on its own. */
+.mode-toggle.is-on {
+  background: color-mix(in srgb, var(--mode-tint, var(--accent)) 18%, var(--card));
+  border-color: color-mix(in srgb, var(--mode-tint, var(--accent)) 38%, var(--line));
+  color: var(--mode-tint, var(--accent));
+}
+
 /* ── ShareModal (src/components/ShareModal.tsx) ────────────────────────────
    The ONE share sheet's link block, factored out of styles/cercle.css (B-11,
    bmad/10): ShareModal is a generic shared component reachable from the eager

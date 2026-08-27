@@ -18,6 +18,7 @@ import { EditField } from '../components/EditField'
 import { useMemoAttach } from '../components/MemoAttach'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { SearchField } from '../components/SearchField'
+import { ModeToggle } from '../components/ModeToggle'
 import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { RowActions } from '../components/RowActions'
@@ -593,6 +594,7 @@ export function DevKit() {
   const [text1, setText1] = useState('')
   const [text2, setText2] = useState('Macaroni chinois')
   const [text3, setText3] = useState('')
+  const [demoAdvanced, setDemoAdvanced] = useState(false)
   const [search1, setSearch1] = useState('')
   const [search2, setSearch2] = useState('')
   const [comboVal, setComboVal] = useState('')
@@ -844,6 +846,39 @@ export function DevKit() {
           </Demo>
           <Demo label="compact — icon-only face (quick-add row); tap the pip for the full list">
             <AislePicker text="Pain tranché" compact className="qa__aisle" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'ModeToggle',
+      file: 'components/ModeToggle.tsx',
+      kw: 'mode simple avancé advanced toggle engrenage gear réglage face liste notes',
+      render: () => (
+        <>
+          <Demo label="SIMPLE — the default face; the name says where the next tap goes">
+            <ModeToggle
+              advanced={false}
+              onToggle={() => setDemoAdvanced(!demoAdvanced)}
+              toSimple="Mode simple"
+              toAdvanced="Mode avancé — modifier et supprimer sur chaque ligne"
+            />
+          </Demo>
+          <Demo label="AVANCÉ, tinted per section — Notes teal, La liste marigold">
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+              <ModeToggle advanced onToggle={() => {}} toSimple="Mode simple" toAdvanced="Mode avancé" tint="var(--teal-deep, #2a8f85)" />
+              <ModeToggle advanced onToggle={() => {}} toSimple="Mode simple" toAdvanced="Mode avancé" tint="var(--marigold-deep)" />
+            </div>
+          </Demo>
+          <Demo label="live — tap it">
+            <ModeToggle
+              advanced={demoAdvanced}
+              onToggle={() => setDemoAdvanced(!demoAdvanced)}
+              toSimple="Revenir au mode simple"
+              toAdvanced="Passer au mode avancé"
+              tint="var(--marigold-deep)"
+            />
           </Demo>
         </>
       ),

@@ -888,6 +888,16 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/settings?tab=liste&sub=aisles',
       },
+      {
+        // Appended as point 9 — LISTE_HELP.mode deep-links here. The twin of the
+        // notes card's « Simple ou avancé » (point 6); same wording on purpose.
+        label: { fr: 'Simple ou avancé', en: 'Simple or advanced' },
+        detail: {
+          fr: 'Par défaut la liste MAGASINE : une rangée, c’est une image, un nom et un crochet — rien d’autre sous le pouce dans l’allée. Garde le doigt sur une rangée pour la modifier, touche l’image pour ouvrir le retaillon de la circulaire. Le petit ⚙ à côté des raccourcis passe en Avancé : le ✏️ et la 🗑 reviennent sur chaque rangée — la porte pour qui range sa liste à la souris. C’est par appareil : ta tablette et ton téléphone peuvent différer.',
+          en: 'By default the list SHOPS: a row is a picture, a name and a check — nothing else under your thumb in the aisle. Press and hold a row to edit it, tap the picture to open the flyer clipping. The small ⚙ beside the shortcuts switches to Advanced: the ✏️ and 🗑 come back on every row — the door for whoever tidies the list with a mouse. It’s per device: your tablet and your phone can differ.',
+        },
+        route: '/liste',
+      },
     ],
   },
   {

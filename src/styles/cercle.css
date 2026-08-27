@@ -1306,31 +1306,9 @@
   min-width: 0;
   margin: 0;
 }
-/* SIMPLE ↔ AVANCÉ — icon only, sized as the exact twin of the SearchField's
-   collapsed loupe beside it (2.5rem), so the two read as one pair of tools. Lit
-   when advanced; that lit state IS the label (the button's aria-name/tooltip say
-   what the next tap does). */
-.notes-mode {
-  display: inline-grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--card);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.notes-mode:hover,
-.notes-mode:focus-visible {
-  color: var(--ink);
-  background: var(--surface);
-}
-.notes-mode.is-on {
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 18%, var(--card));
-  border-color: color-mix(in srgb, var(--teal-deep, #2a8f85) 38%, var(--line));
-  color: var(--teal-deep, #2a8f85);
-}
+/* SIMPLE ↔ AVANCÉ moved to styles/kit.css as `.mode-toggle` (components/ModeToggle)
+   when « La liste » grew the same control: this sheet is imported LAZILY by the
+   cercle/notes pages, so the class rendered as an unstyled box anywhere else. */
 /* --- iOS-Notes-style list ----------------------------------------------------
    The Notes tab reads like the iOS Notes app, NOT the board's sticky-note wall: one
    rounded card of clean, scannable rows (bold first line + a quiet "date · preview"),

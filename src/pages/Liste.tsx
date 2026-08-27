@@ -33,6 +33,11 @@ import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { LISTE_HELP } from '../lib/listeHelp'
+import { RowActions } from '../components/RowActions'
+import { ZoomableImg } from '../components/ZoomableImg'
+import { useLongPress } from '../lib/useLongPress'
+import { useListeAdvanced, setListeAdvanced } from '../lib/listeMode'
+import { ModeToggle } from '../components/ModeToggle'
 
 // The shared list — ONE active list, two lenses on the same data:
 //   - parent: the compact list you check off as you shop.
@@ -95,10 +100,13 @@ const LIST_SORT_KEY = 'liste-sort'
 // in rather than errand-bound — so the eye can skip the whole set of them when there's
 // no aubaine on. It behaves exactly like any other row otherwise.
 function ListItemRow({
+  itemId,
   text,
   picto,
   dealImage,
   dealLabel,
+  dealDetail,
+  advanced,
   adder,
   checked,
   noRush,
@@ -113,10 +121,16 @@ function ListItemRow({
   index,
   readOnly = isGuest(),
 }: {
+  /** Read off the row by the page's long-press listener to open THIS item. */
+  itemId: string
   text: string
   picto: string
   dealImage?: string | null
   dealLabel?: React.ReactNode
+  /** The staged deal spelled out, shown under the picture once it's zoomed. */
+  dealDetail?: React.ReactNode
+  /** AVANCÉ (lib/listeMode): put the explicit ✏️/🗑 back on the row. */
+  advanced?: boolean
   adder?: ListMember | null
   checked?: boolean
   // « Pas pressé »: only worth buying on a deal. Purely a presentation state.
@@ -159,7 +173,7 @@ function ListItemRow({
     (dnd?.activeId === zoneId ? ' is-dragging' : '') +
     (overHere ? ' dnd-over' : '')
   return (
-    <div className={zoneClass} data-dnd-zone={draggable ? zoneId : undefined}>
+    <div className={zoneClass} data-item-id={itemId} data-dnd-zone={draggable ? zoneId : undefined}>
       {/* The precise drop indicator: a calm accent line in the gap where the row
           will land, on the edge the drag is heading toward. */}
       {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
@@ -188,16 +202,20 @@ function ListItemRow({
             ⠿
           </span>
         )}
-        {/* The picture is the row's ONE door to the item sheet (edit/detail — where
-            the deals door, delete and the rest now live). Mouse+keyboard reachable,
-            so the swipe-delete keeps its non-touch mirror there. */}
-        <button type="button" className="list-row__img" onClick={onName} aria-label={`${nameLabel} — ${text}`}>
-          {dealImage ? (
-            // A linked flyer deal with a clipping → show the product picture.
-            <span className="tile list-row__thumb" aria-hidden="true">
-              <img src={dealImage} alt="" loading="lazy" />
+        {/* A row with a flyer clipping: the picture is the PICTURE. Tap it and it
+            opens full-screen with the deal spelled out underneath — the "is this
+            still the aubaine?" check, answered without leaving the list. Editing
+            moved off this tap: press and hold the row (or flip ⚙ Avancé for an
+            explicit ✏️, which is also the mouse/keyboard door). */}
+        {dealImage ? (
+          <span className="list-row__img list-row__img--zoom">
+            <span className="tile list-row__thumb">
+              <ZoomableImg src={dealImage} alt={text} caption={dealDetail} />
             </span>
-          ) : picto ? (
+          </span>
+        ) : (
+        <button type="button" className="list-row__img" onClick={onName} aria-label={`${nameLabel} — ${text}`}>
+          {picto ? (
             // The item's own picture (milk/bread/apple…) so the list reads as
             // distinct things, not a column of identical carts.
             <span className="tile list-row__pic" style={{ background: CATS.list.wash }} aria-hidden="true">
@@ -209,6 +227,7 @@ function ListItemRow({
             </span>
           )}
         </button>
+        )}
         {/* The row centre: the biggest target does the most frequent job — the
             CHECK (same handler as the disc, deferred/pending behaviour intact).
             Editing moved to the explicit ✏️ beside the check; a guest's name tap
@@ -259,6 +278,19 @@ function ListItemRow({
         {/* Same as the todo row: the adder's tint is a colour-only signal, so the
             name rides into the accessible tree here rather than renaming a control. */}
         {adder && <span className="sr-only">{adder.display_name}</span>}
+        {/* AVANCÉ only. The long-press that edits in the simple face is invisible to
+            a mouse and unreachable from a keyboard, so this pair is the non-touch
+            door — the reason the toggle exists at all, not decoration. */}
+        {advanced && !readOnly && (
+          <RowActions
+            className="list-row__acts"
+            onEdit={onName}
+            editLabel={`${nameLabel} — ${text}`}
+            onDelete={onDelete}
+            deleteLabel={`${deleteLabel} — ${text}`}
+            size={16}
+          />
+        )}
         {!readOnly && (
           <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={`${toggleLabel} — ${text}`}>
             <Icon name="check-bold" size={18} />
@@ -282,6 +314,21 @@ export function Liste() {
   // before un-hiding so the poll can't flash a just-removed row back.
   const removal = useDeferredRemoval(BOARD_KEY)
   const qc = useQueryClient()
+  // SIMPLE ↔ AVANCÉ (lib/listeMode) — the same device-local flag « Les notes » uses.
+  const advanced = useListeAdvanced()
+  // Press and hold a row to edit it. The picture's tap now zooms the flyer clipping,
+  // so the hold carries what that tap used to do. Grips and form fields are excluded
+  // by the hook itself, so this never fights the drag-reorder or the add field — and
+  // because a hold is invisible to a mouse and a keyboard, AVANCÉ's ✏️ is its mirror,
+  // not a nicety (CLAUDE.md: no touch-only path to an action).
+  useLongPress({
+    targets: '.list-row',
+    enabled: !isGuest(),
+    onLongPress: (el) => {
+      const id = el.dataset.itemId
+      if (id) nav(`/liste/item/${id}`)
+    },
+  })
   // Drag-and-drop reorder of the list. The grip on each row starts a press-and-hold
   // drag (DND_HOLD_MS); dropping onto another row's zone moves the dragged row to
   // that slot. We read the live rendered order out of the cache at drop time (the
@@ -611,14 +658,18 @@ export function Liste() {
           still one tap away, and the list is back to being the list. Only worth a
           button once there's more than one row to order. */}
       <Cluster className="list-actions list-actions--quiet">
+        {/* The circulaires are the one shortcut that STARTS a shopping decision —
+            the other two reorder or restock a list you already have. It carries the
+            list's own marigold and a bigger target to say so; the other two stay
+            quiet ghosts beside it. */}
         <button
           type="button"
-          className="btn btn--sm btn--ghost list-actions__icon help-pick"
+          className="btn btn--sm list-actions__icon list-actions__icon--flyer help-pick"
           aria-label={t.shop.browse}
           title={t.shop.browse}
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
         >
-          <InlineIcon name="magnifying-glass-bold" size={17} />
+          <InlineIcon name="magnifying-glass-bold" size={20} />
         </button>
         <button
           type="button"
@@ -643,10 +694,23 @@ export function Liste() {
             items={sortItems}
           />
         )}
+        {/* SIMPLE ↔ AVANCÉ. Icon-only and last in the row: it's a preference you set
+            once, not a shortcut you reach for. Its accessible name says which way the
+            next tap goes. Device-local, so a guest gets it too. Same control, same
+            class family and same wording as « Les notes » — one thing to learn. */}
+        <ModeToggle
+          advanced={advanced}
+          onToggle={help.pick('mode', () => setListeAdvanced(!advanced))}
+          toSimple={t.list.modeToSimple}
+          toAdvanced={t.list.modeToAdvanced}
+          tint={CATS.list.deep}
+          className="help-pick"
+        />
       </Cluster>
       {help.bubbleFor('flyer')}
       {help.bubbleFor('quick')}
       {help.bubbleFor('aisles')}
+      {help.bubbleFor('mode')}
 
       {list.length === 0 ? (
         <EmptyState guide={{ card: 'liste' }}>{t.board.listEmpty}</EmptyState>
@@ -697,6 +761,8 @@ export function Liste() {
                       </span>
                     ) : undefined
                   }
+                  itemId={item.id}
+                  advanced={advanced}
                   dealImage={staged?.image}
                   // A staged flyer deal: store + price, visible on the row itself.
                   // Store + price, joined only by what actually EXISTS. money() returns
@@ -715,6 +781,15 @@ export function Liste() {
                         <InlineIcon name="tag-bold" /> {bits.join(' · ')}
                       </span>
                     )
+                  })()}
+                  // Spelled out under the picture once it's zoomed — store, price and
+                  // what it's for, so « est-ce encore l'aubaine ? » is answered there.
+                  dealDetail={(() => {
+                    if (!staged) return null
+                    const bits = [staged.merchant?.trim() || null, staged.price != null ? money(staged.price) : null].filter(
+                      (x): x is string => !!x,
+                    )
+                    return <>{[item.text, ...bits].join(' · ')}</>
                   })()}
                   adder={adder}
                   checked={checked}

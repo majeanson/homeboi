@@ -35,6 +35,18 @@ export const LISTE_HELP = {
       en: 'Choose the list’s order: “My order” (yours, by hand) or “By aisle” (your store’s walk). You can also show each item’s aisle under its name, or arrange the whole list by aisle in one tap.',
     },
   },
+  // The SIMPLE ↔ AVANCÉ chip (lib/listeMode) — the exact twin of NOTES_HELP.mode,
+  // deliberately worded the same way: two lists that behave alike are learned once.
+  // Anchored in BOTH faces, because in simple mode this ⚙ is the one control that
+  // explains why the rows carry no ✏️/🗑 — and how to get them back.
+  mode: {
+    card: 'liste',
+    point: 9, // « Simple ou avancé » — appended to the liste card's points
+    body: {
+      fr: 'Simple (par défaut) : on MAGASINE. Une rangée, c’est une image, un nom et un crochet — rien d’autre sous le pouce dans l’allée. Garde le doigt sur une rangée pour la modifier, et touche l’image pour ouvrir le retaillon de la circulaire. Ce ⚙ passe en Avancé : le ✏️ et la 🗑 reviennent sur chaque rangée — c’est aussi la porte pour qui range sa liste à la souris. C’est par appareil : ta tablette et ton téléphone peuvent différer.',
+      en: 'Simple (the default): you SHOP. A row is a picture, a name and a check — nothing else under your thumb in the aisle. Press and hold a row to edit it, and tap the picture to open the flyer clipping. This ⚙ switches to Advanced: the ✏️ and 🗑 come back on every row — which is also the door for whoever tidies the list with a mouse. It’s per device: your tablet and your phone can differ.',
+    },
+  },
   clear: {
     card: 'liste',
     point: 2,

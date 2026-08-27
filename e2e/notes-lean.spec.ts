@@ -64,7 +64,7 @@ test('simple (default): no section header, and rows carrying nothing but the not
   await expect(row.locator('.cnote__meta')).toHaveCSS('white-space', 'normal')
 
   // The mode button carries no word — just the ⚙, named for what the next tap does.
-  const mode = page.locator('.notes-mode')
+  const mode = page.locator('.mode-toggle')
   await expect(mode).toHaveText('')
   await expect(mode).toHaveAttribute('aria-pressed', 'false')
 })
@@ -115,7 +115,7 @@ test('simple: the loupe is a small button until you ask for it', async ({ page }
 test('the ⚙ opens Avancé WITHOUT stealing the caret into the search', async ({ page }) => {
   await openNotes(page)
 
-  await page.locator('.notes-mode').click()
+  await page.locator('.mode-toggle').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
 
   // Avancé swaps the collapsed loupe for the always-open field. That expansion must
@@ -127,15 +127,15 @@ test('the ⚙ opens Avancé WITHOUT stealing the caret into the search', async (
   await expect(field).toBeVisible()
   await expect(field).not.toBeFocused()
   // …and the ⚙ itself keeps the focus it was given by the click.
-  await expect(page.locator('.notes-mode')).toBeFocused()
+  await expect(page.locator('.mode-toggle')).toBeFocused()
 })
 
 test('the ⚙ brings the ACTING face back — row actions, mic, rich editor', async ({ page }) => {
   await openNotes(page)
 
-  await page.locator('.notes-mode').click()
+  await page.locator('.mode-toggle').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
-  await expect(page.locator('.notes-mode')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.mode-toggle')).toHaveAttribute('aria-pressed', 'true')
   // Still no section header — the ⚙ brings back tools, not a second page title.
   await expect(page.locator('.cercle-notes__head')).toHaveCount(0)
   await expect(page.locator('.cnote-list--compact')).toHaveCount(0)
@@ -182,7 +182,7 @@ test('the mode toggle is device-local — a read-only guest may flip it', async 
   await expect(page.locator('.cercle-notes__composer')).toHaveCount(0)
   await expect(page.locator('.cnote__act')).toHaveCount(0)
   // …but the presentation flag is this browser's localStorage, not the household's.
-  await page.locator('.notes-mode').click()
+  await page.locator('.mode-toggle').click()
   await expect(page.locator('.cercle-notes--advanced')).toBeVisible()
   await expect(page.locator('.cnote__act')).toHaveCount(0)
 })

@@ -24,6 +24,27 @@
   will-change: transform;
   cursor: grab;
 }
+/* The optional caption — what you opened the picture to CHECK (La liste passes the
+   staged deal: item · store · price). Fixed to the bottom of the backdrop, not to
+   the image: the picture is pinch-zoomed and panned by transform, so a caption
+   inside it would slide away exactly when you're reading it. Its own scrim keeps it
+   legible over a bright flyer clipping. */
+.zoom-overlay__cap {
+  position: fixed;
+  left: 50%;
+  bottom: 1.1rem;
+  transform: translateX(-50%);
+  max-width: min(92vw, 34rem);
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: rgba(20, 16, 12, 0.82);
+  color: #fff;
+  font-size: 0.85rem;
+  text-align: center;
+  /* The backdrop closes on tap; the caption must not swallow that. */
+  pointer-events: none;
+}
+
 .zoom-overlay__close {
   position: fixed;
   top: 1rem;

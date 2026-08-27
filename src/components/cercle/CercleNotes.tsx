@@ -6,6 +6,7 @@ import { live } from '../../lib/query'
 import { useProfile } from '../../lib/profile'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope, visibleNotes } from '../../lib/familyNotes'
+import { ModeToggle } from '../ModeToggle'
 import type { Member } from '../../lib/cercle'
 import { isGuest } from '../../lib/device'
 import { useSurface } from '../../lib/surface'
@@ -219,16 +220,13 @@ export function CercleNotes({
               rare, once-a-household choice, not a label worth a word on every visit.
               Its state is the lit pill (aria-pressed for AT), and the tooltip/aria
               name says which way the next tap goes. Device-local, so a guest gets it. */}
-          <button
-            type="button"
-            className={'notes-mode' + (advanced ? ' is-on' : '')}
-            onClick={help ? help.pick('mode', () => setNotesAdvanced(!advanced)) : () => setNotesAdvanced(!advanced)}
-            aria-pressed={advanced}
-            aria-label={advanced ? fn.modeToSimple : fn.modeToAdvanced}
-            title={advanced ? fn.modeToSimple : fn.modeToAdvanced}
-          >
-            <Icon name="gear-six-bold" size={16} />
-          </button>
+          <ModeToggle
+            advanced={advanced}
+            onToggle={help ? help.pick('mode', () => setNotesAdvanced(!advanced)) : () => setNotesAdvanced(!advanced)}
+            toSimple={fn.modeToSimple}
+            toAdvanced={fn.modeToAdvanced}
+            tint="var(--teal-deep, #2a8f85)"
+          />
         </Cluster>
       </Cluster>
       {help?.bubbleFor('mode')}
