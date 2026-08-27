@@ -92,6 +92,16 @@ export const BOARD_HELP = {
       en: 'Coming up: what’s ahead this week, with “in X days” when it’s close.',
     },
   },
+  // The greeting doubles as « Depuis ce matin » (A-3) — a real button, but it looks
+  // like plain text, so armed help is where a mouse user learns the door exists
+  // (ACTIONS.md Wave C: it was the board's one undiscoverable action).
+  greeting: {
+    card: 'board',
+    body: {
+      fr: 'La salutation s’ouvre : « Depuis ce matin » — ce que la maisonnée a ajouté aujourd’hui, visage par visage. Rien ne clignote; tu tires quand tu veux.',
+      en: 'The greeting opens: “Since this morning” — what the household added today, face by face. Nothing blinks; you pull when you want.',
+    },
+  },
   // The header magnifier (A-9 soft icon label — the icon stays wordless; armed
   // help explains it in place instead of navigating away).
   search: {

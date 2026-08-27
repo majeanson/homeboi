@@ -649,6 +649,7 @@ export const EN: typeof FR = {
     pastToday: 'Already done today',
     moreN: (n: number) => `+${n} more`,
     editDiscover: 'Hold a card to rearrange the board.',
+    editEnter: 'Arrange the board',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     cardEmpty: 'Nothing right now.',
@@ -1430,6 +1431,7 @@ export const EN: typeof FR = {
     newPerson: 'New person',
     editPerson: 'Edit person',
     search: 'Search for a person',
+    searchNone: 'No one matches.',
     firstName: 'First name',
     lastName: 'Last name',
     nickname: 'Nickname',

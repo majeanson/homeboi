@@ -747,6 +747,9 @@ export const FR = {
     // One-time discoverability line for the long-press door into edit mode —
     // dismissible, per-device, never auto-shown to a guest or the toddler lens.
     editDiscover: 'Maintiens une carte pour réorganiser le babillard.',
+    // La porte permanente au pied du babillard une fois l'indice retiré — le miroir
+    // clavier/souris du maintien (ACTIONS.md Wave C).
+    editEnter: 'Organiser le babillard',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'Tout est calme',
     // Shown inside a card the device asked to keep visible even when it has nothing
@@ -1596,6 +1599,7 @@ export const FR = {
     newPerson: 'Nouvelle personne',
     editPerson: 'Modifier la personne',
     search: 'Chercher une personne',
+    searchNone: 'Personne ne correspond.',
     firstName: 'Prénom',
     lastName: 'Nom',
     nickname: 'Surnom',

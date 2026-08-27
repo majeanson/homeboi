@@ -33,6 +33,7 @@ import { nextRdvFor } from '../lib/nextRdv'
 import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY, MEMBERS_KEY, BOARD_KEY, EVENTS_KEY } from '../lib/queryKeys'
 import { Loading, LoadError, PairPrompt } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
+import { SearchField } from '../components/SearchField'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { Avatar } from '../components/Avatar'
@@ -204,11 +205,18 @@ function MaisonParent() {
   // exact row. Family notes now deep-link into /notes instead (pages/Notes.tsx).
   const [focusItem, setFocusItem] = useState<string | null>(null)
 
+  // The cercle's OWN person search (guide `cercle` point 8 — the CERCLE_HELP.search
+  // entry existed but no control did; ACTIONS.md Wave C wired it). One collapsible
+  // loupe over the WHOLE directory — a live query flattens the grouped cards into
+  // plain matching rows, so "where did I file Ginette" is one type-ahead, not a
+  // scroll through every family card. Cleared → the grouped view returns untouched.
+  const [personQ, setPersonQ] = useState('')
+
   // Contextual help (shared engine): arm the "?" then tap a button/title to learn
   // what it does in place, with a deep-link into the `cercle` guide card. Merges
   // ROUTINES_HELP now that Routines is a sub-tab here — the two registries only
   // both declare a `search` key (CERCLE_HELP's is the cercle's own person-search
-  // field, guide `cercle` point 8, currently unwired to any control on this page;
+  // field, guide `cercle` point 8 — the SearchField over the directory below;
   // ROUTINES_HELP's is the header magnifier, guide `board` point 4). The spread
   // below lets ROUTINES_HELP.search win, which is harmless: the header magnifier
   // here is wired to CERCLE_HELP's own separate `globalSearch` key (unaffected),
@@ -951,6 +959,30 @@ function MaisonParent() {
                 </div>
               ) : (
                 <>
+              <SearchField
+                value={personQ}
+                onChange={setPersonQ}
+                ariaLabel={t.cercle.search}
+                placeholder={t.cercle.search}
+                collapsible
+                className="cercle-people-search"
+              />
+              {personQ.trim() !== '' ? (
+                // Search results: a flat list across BOTH sections' people — the
+                // point of the loupe is "where is X", not "X if filed in this tab".
+                <section className="cercle-group">
+                  {(() => {
+                    const q = personQ.trim().toLowerCase()
+                    const hits = people.filter((p) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(q))
+                    return hits.length === 0 ? (
+                      <EmptyState tone="calm">{t.cercle.searchNone}</EmptyState>
+                    ) : (
+                      hits.map((p) => <Row key={p.key} p={p} />)
+                    )
+                  })()}
+                </section>
+              ) : (
+              <>
               {section === 'family' && birthdays.length > 0 && (
                 <section className="cercle-bdays">
                   <HelpTitle help={help} k="birthdays" className="cercle-section__label">
@@ -1181,6 +1213,8 @@ function MaisonParent() {
                   {/* Creation actions (add person / family / connect / new group) all
                       live on the ＋ chooser now — no in-page add buttons here. */}
                 </>
+                </>
+              )}
                 </>
               )}
             </>

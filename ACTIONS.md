@@ -76,8 +76,8 @@ at all (❌).
 | Drawing · edit / keep / new | ✅ ✏️ + 🖌 badges, « Dessiner » chip | — | — | ＋ `note` (DrawPad)ᴿ | — | — | ✅ |
 | Mot · open / reply / keep / delete | ✅ tap (stamps `opened_at`) | — | ✅ all four **visible**⁶ | ＋ `mot`ᴳ | — | — (delete direct⁶) | ✅ |
 | Habit · open / edit | ✅ tap; ➖ furniture lives behind the row's own peek + the « En pause » fold **by design** (HabitudesPage — the check-in surface is for tapping, not managing; no ⚙ needed) | — | ✅ Modifier primary | ＋ `habit-pick` | — | — | ✅ |
-| Board card · edit mode (move/resize/hide) | — | 🔶 long-press `.wg-slot`⁷ | — | — | ✅ board▸layout + `/board?edit=1` | revert button | 🔶⁷ |
-| Greeting · « Depuis ce matin » | ❌ bare tap on the greeting (Board.tsx:1514)⁸ | — | — | — | ❌ no link, no help | — | ❌⁸ |
+| Board card · edit mode (move/resize/hide) | ✅ « Organiser le babillard » chip at the board foot (the retired hint's slot)⁷ | ✅ hold `.wg-slot` (works with a mouse-hold too) | — | — | ✅ board▸layout + `/board?edit=1` | revert button | ✅ |
+| Greeting · « Depuis ce matin » | ✅ the greeting IS a button — now named (`aria-label`) + a `greeting` help entry⁸ | — | — | — | ✅ armed « ? » explains it | — | ✅ |
 | Face · switch | ✅ chipᴹ / `MemberSwitcher`ᴷ | — | — | — | — | — | ✅ |
 | View · Grille/Mois/Année · day plan · departure | ✅ `BoardViewToggle`, card pills, mini corners | — | — | ＋ `plan-today/tomorrow/departure` | — | — | ✅ |
 
@@ -128,7 +128,7 @@ at all (❌).
 | Group · edit / delete / share / builder | ✅ section-head ⋯ (5 actions, danger last) | — | — | ＋ `group` | maison▸cercle | ❌ no undo¹⁷ | ✅ |
 | Business · open / call / write / add | ✅ row tap + quick icons | — | ✅ `buildBusiness` | ✅ ＋ `business` (no in-page add➖) | — | confirm | ✅ |
 | Carnet · open / add / restore | ✅ row tap → scene (no peek➖) | — | — | ✅ ＋ `carnet` only➖ | — | ✅ reversible archive (`Disclosure` Restaurer) | ✅ |
-| Directory · search | ❌ registered in help, never rendered (Maison.tsx:211)¹⁸ | | | | | | |
+| Directory · search | ✅ collapsible `SearchField` over the whole directory — a live query flattens the groups into matching rows¹⁸ | | | | | | |
 | Joindre rail · quick-dial | ✅ foot of Famille/Socialᴹ | — | — | — | — | — | ✅ |
 
 **Footnotes ¹–¹⁸** are carried by the Part 4 backlog items citing the same number
@@ -190,14 +190,14 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 - [x] ⁶ ➖ mot's visible « Supprimer » recorded deliberate: the mot peek's four actions ARE its whole interaction and it has no other overflow — hiding one of four behind a ⋯ would be a menu for a menu's sake. The "danger goes overflow" rule applies where a peek has a primary + a long tail.
 - [x] dead `'note'` arm in `DetailKind` removed (tombstone comment in `lib/detail.ts`).
 
-### Wave C — non-touch doors + discoverability 🟡
+### Wave C — non-touch doors + discoverability 🟡 — **DONE 2026-08-26** (one ➖, one open)
 
-- [ ] ⁷ board edit mode: on-surface mouse door (« Organiser » near `BoardViewToggle` / a `SecLabel` action) mirroring the long-press; Réglages▸Disposition stays the SR mirror.
-- [ ] ⁸ greeting → « Depuis ce matin »: real labelled `<button>` + a help/guide point (merge into an existing card — DISCOVERY ceiling).
-- [ ] ¹⁸ Maison directory search: render the registered `SearchField` (collapsible) in Famille/Social.
-- [ ] ¹⁴ Liste in-page search: ➖ for now — the list is finite and short by design (calm); revisit if lists regularly exceed a screenful.
-- [ ] `useSwipeToDelete` red-pane markup duplicated (`Liste.tsx:184`, `QuickAddPage.tsx:245`) → the hook/component owns the pane.
-- [ ] ¹³ reorder mirrors: Liste « Mon ordre » drag-only → ➖ (order also editable implicitly via aisle sort; keyboard reorder deferred with why) — or add ⋯ Monter/Descendre like meal rows.
+- [x] ⁷ board edit mode: once the one-time hint retires, its foot slot keeps a **permanent quiet « Organiser le babillard » chip** (`board-edit-hint--door`) — the keyboard/discoverable mirror of the hold (which a mouse-hold also triggers; the gap was that nothing SAID so once the hint was gone). Réglages▸Disposition stays the SR-grade mirror.
+- [x] ⁸ **corrected on code-read**: the greeting already WAS a real `<button>` (keyboard-reachable) — the gap was its name and discoverability. It now carries `aria-label`/`title` = « Depuis ce matin » and a `greeting` entry in `BOARD_HELP` (armed « ? » explains the door in place).
+- [x] ¹⁸ Maison directory search: the registered-but-unwired `CERCLE_HELP.search` now has its control — a collapsible `SearchField`; a live query flattens the grouped cards into flat matching rows across both sections, cleared → groups return.
+- [x] ¹⁴ ➖ Liste in-page search recorded: the list is finite and short by design (calm); revisit only if real lists regularly exceed a screenful.
+- [x] `useSwipeToDelete`'s red pane → **`SwipeDeletePane`** (`components/SwipeDeletePane.tsx`) — the hook owns the behaviour, this owns the markup; both callers converted.
+- [ ] ¹³ reorder mirrors: Liste « Mon ordre » drag-only — still open: add ⋯ Monter/Descendre like meal rows, or record ➖ (aisle sort is the non-drag ordering). Decide next audit.
 
 ### Wave D — ＋ sheet coverage 🟡
 

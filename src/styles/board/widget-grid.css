@@ -248,6 +248,13 @@
   color: var(--ink-soft);
   font-size: var(--text-sm);
 }
+/* The permanent door the retired hint leaves behind — one quiet ghost chip,
+   centred, no dashed frame (it's a control now, not an instruction). */
+.board-edit-hint--door {
+  justify-content: center;
+  border: 0;
+  padding: 0;
+}
 
 /* ---- Compact lens: a half-width card's genuinely small form ----------------- */
 /* A card whose MEASURED rendered width falls under the compact threshold

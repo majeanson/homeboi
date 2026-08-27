@@ -34,6 +34,7 @@ import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { LISTE_HELP } from '../lib/listeHelp'
 import { RowActions } from '../components/RowActions'
+import { SwipeDeletePane } from '../components/SwipeDeletePane'
 import { ZoomableImg } from '../components/ZoomableImg'
 import { useLongPress } from '../lib/useLongPress'
 import { useListeAdvanced, setListeAdvanced } from '../lib/listeMode'
@@ -178,14 +179,9 @@ function ListItemRow({
           will land, on the edge the drag is heading toward. */}
       {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
       {/* The delete pane revealed behind the row as it slides left under the
-          finger. Inert/aria-hidden — the swipe drives it; the edit sheet keeps an
-          actual Delete button for non-touch. */}
-      {!readOnly && (
-        <span className="list-row__del" aria-hidden="true">
-          <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
-          <span className="list-row__del-label">{deleteLabel}</span>
-        </span>
-      )}
+          finger (shared with Ajout rapide) — the edit sheet keeps an actual
+          Delete button for non-touch. */}
+      {!readOnly && <SwipeDeletePane label={deleteLabel} />}
       <div ref={mainRef} className={`act list-row__main${checked ? ' done' : ''}`}>
         {draggable && (
           // Press-and-hold the grip to reorder. It lives outside the swipe path

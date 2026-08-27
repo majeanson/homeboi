@@ -13,6 +13,7 @@ import { useQuickItems, type QuickItem } from '../lib/quickItems'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { AislePicker } from '../components/AislePicker'
 import { RowActions } from '../components/RowActions'
+import { SwipeDeletePane } from '../components/SwipeDeletePane'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 // Accent/case-blind matching so "creme" filters to "Crème".
@@ -242,10 +243,7 @@ function QaChip({
   // mirror (the same pattern as La liste, whose edit sheet keeps a real Delete button).
   return (
     <div className="list-row qa__row">
-      <span className="list-row__del" aria-hidden="true">
-        <span className="list-row__del-icon"><Icon name="trash-bold" size={18} /></span>
-        <span className="list-row__del-label">{t.common.delete}</span>
-      </span>
+      <SwipeDeletePane label={t.common.delete} />
       <button
         ref={mainRef}
         type="button"
