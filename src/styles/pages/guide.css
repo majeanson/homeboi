@@ -152,10 +152,36 @@ details[open] > summary > .guide__group-caret {
   border-color: var(--line-strong);
 }
 /* The card a contextual "?" deep-linked to — a brief accent ring so the eye
-   lands on it after the scroll. */
+   lands on it after the scroll, plus the same one-shot pulse the sub-point gets.
+   Without the pulse a reader arriving from another section had no idea WHICH card
+   the link meant: the ring is quiet by design, and quiet is invisible when you've
+   just been moved somewhere you didn't choose. It fades once, then settles.
+   `scroll-margin` keeps the landing off the very edge — `block: 'start'` parks the
+   border box flush at 0, which clipped this ring by a few pixels. */
 .guide__card.is-target {
   border-color: var(--accent, var(--marigold-deep));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 28%, transparent);
+  animation: guide-card-pulse 1.4s var(--ease-out, ease) 1;
+}
+@keyframes guide-card-pulse {
+  0% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent, var(--marigold-deep)) 40%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 28%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide__card.is-target {
+    animation: none;
+  }
+}
+/* Both deep-link targets land with a little air above them rather than jammed
+   against the scrollport edge. */
+.guide__card,
+.guide__point {
+  scroll-margin-top: 0.85rem;
+  scroll-margin-bottom: 0.85rem;
 }
 .guide__summary {
   display: flex;

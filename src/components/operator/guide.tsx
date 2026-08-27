@@ -14,7 +14,7 @@ import { markTourOffered } from '../../lib/tourOffer'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { EmptyState } from '../EmptyState'
-import { scrollBehavior } from '../../lib/motion'
+import { scrollIntoViewSettled } from '../../lib/motion'
 
 // One documentation card (native <details>, so it stays accessible and calm):
 // an icon, a title, the one-line "what", then every point as its own nested
@@ -29,6 +29,7 @@ function GuideCard({
   pointsOpen = false,
   showGoTo = true,
   targetPoint,
+  pointRef,
   highlight: hl,
   tint,
   onReplayTour,
@@ -50,6 +51,12 @@ function GuideCard({
   highlight?: string
   // A specific sub-point to open + highlight + scroll to (contextual "?" deep-link).
   targetPoint?: number
+  // The deep-link owner's ref for that sub-point. The SCROLL lives up there, not here:
+  // a card that scrolls itself and a point that scrolls itself are two scrolls racing,
+  // and React runs the child's effect FIRST — so the card's landing always overwrote
+  // the point's, dumping the reader at the top of a card instead of on the line they
+  // asked for. One owner, one target. See useGuideCardTarget.
+  pointRef?: Ref<HTMLDetailsElement>
   // Replay a guided tour by id (the card names it via entry.tour). Generalized so
   // EVERY tour — the essentials one AND each section tour — is re-doable here, not
   // just on first run.
@@ -59,14 +66,6 @@ function GuideCard({
 }) {
   const t = useT()
   const { lang } = useLang()
-  const pointRef = useRef<HTMLDetailsElement | null>(null)
-  // Scroll the targeted point into view once (after the card has opened). Runs after
-  // the card-level scroll in GuideSection, so the point wins the final position.
-  useEffect(() => {
-    if (targetPoint != null && pointRef.current) {
-      pointRef.current.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
-    }
-  }, [targetPoint])
   return (
     <details
       ref={cardRef}
@@ -201,6 +200,7 @@ function useGuideCardTarget(pinTab?: string) {
     () => resolveGuideCard(params.get('card'), parseGuidePoint(params.get('point'))).point,
   )
   const targetRef = useRef<HTMLDetailsElement | null>(null)
+  const pointRef = useRef<HTMLDetailsElement | null>(null)
   useEffect(() => {
     const card = params.get('card')
     if (!card) return
@@ -217,19 +217,29 @@ function useGuideCardTarget(pinTab?: string) {
     setParams(next, { replace: true })
   }, [params, setParams, pinTab])
   useEffect(() => {
-    if (openId && targetRef.current) {
-      // A deep-linked card may sit inside collapsed <details>; open every ancestor
-      // before scrolling, or the target would be display:none and the scroll would
-      // land on empty space.
-      let node: HTMLElement | null = targetRef.current
-      while (node) {
-        if (node instanceof HTMLDetailsElement) node.open = true
-        node = node.parentElement
-      }
-      targetRef.current.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
+    if (!openId || !targetRef.current) return
+    // A deep-linked card may sit inside collapsed <details>; open every ancestor
+    // before scrolling, or the target would be display:none and the scroll would
+    // land on empty space.
+    let node: HTMLElement | null = targetRef.current
+    while (node) {
+      if (node instanceof HTMLDetailsElement) node.open = true
+      node = node.parentElement
     }
-  }, [openId])
-  return { openId, targetPoint, targetRef }
+    // ONE scroll, to the most specific thing the link named: the sub-point when the
+    // link carried one (centred — a point is a line, and a line reads best with its
+    // neighbours around it), otherwise the card (aligned to the top, since a card is
+    // a block you read downward from).
+    //
+    // `scrollIntoViewSettled` rather than a bare scrollIntoView because everything
+    // here moves right after this effect: the ancestors we just opened re-layout, the
+    // card expands, and the params consumption above fires a `replace` navigation. A
+    // smooth scroll started against that old layout was silently dropped and the
+    // reader stayed at the TOP of the page — the whole point of a deep link, lost.
+    const target = targetPoint != null && pointRef.current ? pointRef.current : targetRef.current
+    return scrollIntoViewSettled(target, { block: targetPoint != null ? 'center' : 'start' })
+  }, [openId, targetPoint])
+  return { openId, targetPoint, targetRef, pointRef }
 }
 
 // The « Comprendre » lens of one themed Réglages tab: everything the Guide knows
@@ -248,7 +258,7 @@ export function ComprendrePanel({ section }: { section: SectionKey }) {
     resetWelcome()
     nav('/board')
   }
-  const { openId, targetPoint, targetRef } = useGuideCardTarget(section)
+  const { openId, targetPoint, targetRef, pointRef } = useGuideCardTarget(section)
   const tint = SECTION_TINT[section].ink
   const bucket = CONCEPT_THEMES.find((th) => th.key === section)
   const lead = GUIDE.filter((e) => e.group === 'sections' && e.id === section)
@@ -263,6 +273,7 @@ export function ComprendrePanel({ section }: { section: SectionKey }) {
       key={e.id}
       entry={e}
       cardRef={e.id === openId ? targetRef : undefined}
+      pointRef={e.id === openId ? pointRef : undefined}
       isTarget={e.id === openId}
       targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
       open={alwaysOpen || e.id === openId}
@@ -315,7 +326,7 @@ export function DiscoverSection() {
   // ?card= deep-links whose card homes on Découvrir (the start card) — plus the
   // search-result cards rendered here — reuse the shared open/scroll wiring. No
   // pin: the raw ?tab= already resolves to this tab.
-  const { openId, targetPoint, targetRef } = useGuideCardTarget()
+  const { openId, targetPoint, targetRef, pointRef } = useGuideCardTarget()
 
   // A feature-map tile opens that theme's Réglages tab on its Comprendre lens
   // (one URL write — two useTabParam setters in a row would race each other).
@@ -366,6 +377,7 @@ export function DiscoverSection() {
       key={e.id}
       entry={e}
       cardRef={e.id === openId ? targetRef : undefined}
+      pointRef={e.id === openId ? pointRef : undefined}
       isTarget={e.id === openId}
       targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
       open={q.length > 0 || e.id === openId}
@@ -432,6 +444,7 @@ export function DiscoverSection() {
               key={e.id}
               entry={e}
               cardRef={e.id === openId ? targetRef : undefined}
+      pointRef={e.id === openId ? pointRef : undefined}
               isTarget={e.id === openId}
               targetPoint={e.id === openId ? targetPoint ?? undefined : undefined}
               open
