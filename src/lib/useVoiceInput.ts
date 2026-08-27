@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLang } from '../i18n'
 import { api } from './api'
 import { cleanSpokenItem } from './voiceText'
+import { pokeIdle } from './idleHold'
 
 // On-device speech-to-text via the browser's Web Speech API. This is the calm,
 // zero-cost, in-browser STT the capture surfaces share: where the browser
@@ -636,6 +637,18 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
       recogRef.current = null
     }
   }
+
+  // Talking IS activity. The shell's idle cycle re-arms on pointerdown/keydown
+  // only, so a hands-free capture longer than `idleMin` used to be covered
+  // mid-sentence by the screensaver (or have the picked face drifted back to
+  // Maisonnée under it). One poke per 15 s while the mic is open holds both off;
+  // the poke is a no-op outside the hub shell. See lib/idleHold.
+  useEffect(() => {
+    if (!listening) return
+    pokeIdle()
+    const id = setInterval(pokeIdle, 15_000)
+    return () => clearInterval(id)
+  }, [listening])
 
   return { listening, hasVoice, error, permission, start, stop }
 }

@@ -73,6 +73,13 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
           </div>
           <p className="operator__hint mono">{t.operator.ambientBreathHint}</p>
 
+          {/* Says WHERE it applies (this device, whatever its surface) and that
+              waking it costs nothing. The copy existed but was never rendered,
+              and claimed "kiosk only" — HubLayout arms the idle cycle on every
+              surface, so a phone operator met a full-screen clock the settings
+              swore couldn't happen. */}
+          <p className="operator__hint mono">{t.operator.ambientNote}</p>
+
           <button type="button" className="btn btn--ghost" onClick={() => forceIdle('screensaver')}>
             <Icon name="play-bold" size={16} /> {t.operator.ambientPreview}
           </button>

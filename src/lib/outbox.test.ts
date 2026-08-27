@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { extractCreatedId, rewriteTmpId, type OutboxEntry } from './outbox'
+import { extractCreatedId, rewriteTmpId, replayVerdict, MAX_ATTEMPTS, type OutboxEntry } from './outbox'
+import { ApiError } from './api'
 
 // E-41 (bmad/08): the temp-id chain. A row added offline gets an optimistic
 // `tmp-…` id; follow-up ops queued against that id must be rewritten to the real
@@ -66,5 +67,41 @@ describe('rewriteTmpId', () => {
     expect(out.id).toBe(e.id)
     expect(out.key).toBe(e.key)
     expect(out.affectedKeys).toEqual(e.affectedKeys)
+  })
+})
+
+// The dead-letter policy. FIFO order is load-bearing (the tmp-id chain above), so
+// the replay loop `break`s on a server error rather than skipping ahead — which
+// meant ONE entry the server permanently 500s blocked every write queued behind
+// it, forever and silently. `replayVerdict` is the pure decision that ends that.
+describe('replayVerdict', () => {
+  const apiErr = (status: number) => new ApiError(status, `boom ${status}`)
+
+  it('401 stops the run for the auth-lost path (which clears the queue)', () => {
+    expect(replayVerdict(apiErr(401), 0)).toBe('auth-lost')
+  })
+
+  it('drops a 4xx as moot — the row is gone/forbidden, the poll reconciles', () => {
+    expect(replayVerdict(apiErr(404), 0)).toBe('drop')
+    expect(replayVerdict(apiErr(403), 3)).toBe('drop')
+    expect(replayVerdict(apiErr(409), 0)).toBe('drop')
+  })
+
+  it('retries a 5xx while the entry has attempts left', () => {
+    expect(replayVerdict(apiErr(500), 0)).toBe('retry')
+    expect(replayVerdict(apiErr(503), MAX_ATTEMPTS - 2)).toBe('retry')
+  })
+
+  it('dead-letters a 5xx once THIS attempt reaches the cap', () => {
+    expect(replayVerdict(apiErr(500), MAX_ATTEMPTS - 1)).toBe('dead-letter')
+    expect(replayVerdict(apiErr(500), MAX_ATTEMPTS + 9)).toBe('dead-letter')
+  })
+
+  it('waits on a transport failure WITHOUT spending an attempt', () => {
+    // fetch rejects with a TypeError when the connection fails: no server answer,
+    // so it says nothing about this entry. Being offline five times in a row must
+    // never dead-letter a perfectly good write.
+    expect(replayVerdict(new TypeError('Failed to fetch'), 0)).toBe('wait')
+    expect(replayVerdict(new TypeError('Failed to fetch'), MAX_ATTEMPTS + 3)).toBe('wait')
   })
 })

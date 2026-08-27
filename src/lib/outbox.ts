@@ -26,6 +26,11 @@ export interface OutboxEntry {
   // queued op that still targets the tmp id is rewritten to the real one — so
   // "add offline, then check/edit/delete it offline" no longer drops the follow-up.
   tmpId?: string
+  // How many times the SERVER has answered this entry with a 5xx. Only server
+  // failures count (a network failure is the connection's fault, not this
+  // entry's), and past MAX_ATTEMPTS the entry is dead-lettered — see replayVerdict.
+  // Absent on entries queued before this field existed; read as 0.
+  attempts?: number
 }
 
 function idb(): Promise<IDBDatabase | null> {
@@ -153,9 +158,39 @@ function notifyReplayRejected(count: number): void {
   else pendingRejected += count
 }
 
+// How many SERVER failures one entry gets before it's dead-lettered. Each attempt
+// needs its own replay trigger (reconnect / tab focus / app start), so five is a
+// long time in practice — a server that's merely down for an afternoon doesn't
+// burn through them, but a write the server will NEVER accept can't wedge the
+// queue forever either.
+export const MAX_ATTEMPTS = 5
+
+export type ReplayVerdict =
+  | 'auth-lost' // 401 — the device/session is revoked; stop, the auth-lost path clears the queue
+  | 'drop' // 4xx — moot write (row gone/forbidden/conflicting); the poll reconciles
+  | 'dead-letter' // 5xx past MAX_ATTEMPTS — the server will not take this one; let the rest through
+  | 'retry' // 5xx under the cap — stop the run, count the attempt, try next trigger
+  | 'wait' // network/transport failure — stop the run, DON'T count it against this entry
+
+// What to do with one failed replay. Pure + exported so the policy is unit-tested
+// without an IndexedDB round-trip (the loop itself is covered by e2e).
+//
+// The bug this exists for: FIFO order is load-bearing here (the E-41 tmp-id chain
+// means entry N+1 can reference what entry N creates), so the loop `break`s on any
+// server error and resumes next trigger. One entry the server permanently 500s
+// therefore blocked EVERY write queued behind it, forever and silently. Bounded
+// attempts turn that into "this one write is reported lost, the rest land".
+export function replayVerdict(err: unknown, priorAttempts: number): ReplayVerdict {
+  if (!(err instanceof ApiError)) return 'wait' // fetch threw: no server answer at all
+  if (err.status === 401) return 'auth-lost'
+  if (err.status >= 400 && err.status < 500) return 'drop'
+  return priorAttempts + 1 >= MAX_ATTEMPTS ? 'dead-letter' : 'retry'
+}
+
 // Replay the queue in FIFO order. Stops (keeping order) on a transient failure so
 // it can resume next trigger; drops an entry the server rejects as moot (4xx — the
-// row's gone/forbidden/conflicting), since the live poll will reconcile the cache.
+// row's gone/forbidden/conflicting), since the live poll will reconcile the cache,
+// and dead-letters one the server keeps 5xx-ing so it can't wedge the queue.
 let replaying = false
 async function replayOutbox(qc: QueryClient): Promise<void> {
   if (replaying) return
@@ -185,19 +220,29 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
           }
         }
       } catch (err) {
-        if (err instanceof ApiError && err.status === 401) {
+        const verdict = replayVerdict(err, e.attempts ?? 0)
+        if (verdict === 'auth-lost') {
           // Device/session revoked — these will never succeed. Let the auth-lost
           // path handle it (it clears the outbox); stop here.
           emitAuthLost()
           break
         }
-        if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
-          await remove(e.id) // moot write; cache reconciles on the next poll
+        if (verdict === 'drop' || verdict === 'dead-letter') {
+          // 'drop' = moot write (the poll reconciles). 'dead-letter' = the server
+          // kept failing this ONE entry; we let it go so everything queued behind
+          // it can land on this same run. Both are counted into the single calm
+          // "some offline changes couldn't be saved" line — never silent.
+          await remove(e.id)
           rejected++
           e.affectedKeys.forEach((k) => touched.add(JSON.stringify(k)))
           continue
         }
-        break // 5xx / network — keep order, retry on the next trigger
+        // 'retry' — the server answered 5xx but this entry still has attempts
+        // left; remember the attempt so it can't retry forever. ('wait' means the
+        // network failed with no server answer: not this entry's fault, so it
+        // keeps its full budget.)
+        if (verdict === 'retry') await tx('readwrite', (s) => s.put({ ...e, attempts: (e.attempts ?? 0) + 1 }))
+        break // keep FIFO order, resume on the next trigger
       }
     }
   } finally {

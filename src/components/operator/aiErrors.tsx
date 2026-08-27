@@ -6,6 +6,8 @@ import { OperatorSection } from './OperatorSection'
 import { EmptyState } from '../EmptyState'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { isGuest } from '../../lib/device'
+import { useAi } from '../../lib/ai'
+import { useOnline } from '../../lib/online'
 import { AI_ERRORS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 
@@ -37,6 +39,8 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
   const [checks, setChecks] = useState<AiCheck[] | null>(null)
   const [running, setRunning] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
+  // The household switch, separate from the binding this button probes.
+  const { enabled: aiEnabled, available: aiAvailable } = useAi()
 
   async function run() {
     setRunning(true)
@@ -69,6 +73,12 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
       )}
 
       {unavailable && <EmptyState>{t.operator.aiTestUnavailable}</EmptyState>}
+
+      {/* This probes the BINDING, not the household switch — so it stays here, and
+          can pass green, while Réglages ▸ IA has AI turned off for everyone. Say
+          so, otherwise a passing test reads as "AI is on" and the operator hunts
+          a bug that is their own switch. */}
+      {aiAvailable && !aiEnabled && <p className="operator__hint mono">{t.operator.aiTestWhileOff}</p>}
 
       {checks && (
         <ul className="ai-test">
@@ -103,7 +113,15 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
     queryFn: () => api<{ errors: AiErrorRow[] }>('ai-errors'),
   })
   const errors = data?.errors ?? []
+  const online = useOnline()
 
+  // DELIBERATELY `api()` and not `useWrite()` — one of the two documented
+  // exceptions to the write rule, both in this file. Emptying a diagnostic
+  // journal is not household content: queueing it for replay would mean a clear
+  // pressed offline silently wipes failures logged AFTER it, hours later, on
+  // reconnect. It's an online-only maintenance act, so the button is simply
+  // disabled offline rather than pretending to work. (The other exception is the
+  // `ai-test` POST above: a probe, not a write — a queued probe is meaningless.)
   async function clearAll() {
     await api('ai-errors', { method: 'DELETE' }).catch(() => {})
     qc.invalidateQueries({ queryKey: AI_ERRORS_KEY })
@@ -129,7 +147,14 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
               ))}
             </ul>
             {!isGuest() && (
-              <button type="button" className="btn btn--ghost" onClick={clearAll}>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={clearAll}
+                disabled={!online}
+                aria-disabled={!online}
+                title={online ? undefined : t.offline.unavailable}
+              >
                 {t.operator.aiLogClear}
               </button>
             )}

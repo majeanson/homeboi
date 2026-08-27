@@ -18,8 +18,6 @@ import {
   type Theme,
   isDaypartAuto,
   setDaypartAuto,
-  setDayPart,
-  themeForPart,
   applyThemeAttr,
   getStoredTheme,
 } from '../../lib/theme'
@@ -31,7 +29,7 @@ import {
   type Contrast,
   type TextScale,
 } from '../../lib/accessibility'
-import { computeDayPart } from '../../lib/timeofday'
+import { applyDaypartNow } from '../../lib/daypartDrift'
 import { MEASURE_SWATCHES, swatchColor, useMeasureColorsEditor } from '../../lib/measurePrefs'
 import { useTapToHear, setTapToHear } from '../../lib/tapToHear'
 import { useHolidaysEnabled, setHolidaysEnabled } from '../../lib/year'
@@ -92,11 +90,11 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
     setDaypartAuto(next) // persists the flag; pins 'manual' when turning OFF
     if (next) {
       // Resume the drift now AND engage auto day/night for the current part, so
-      // flipping it on at night goes dark immediately.
-      const part = computeDayPart(Date.now())
-      setDayPart(part)
-      const autoTheme = themeForPart(part)
-      applyThemeAttr(autoTheme)
+      // flipping it on at night goes dark immediately. The 10-min loop in
+      // lib/daypartDrift keeps running whatever this flag says, so the drift also
+      // ADVANCES from here without a reload — it just re-reads the flag on its
+      // next tick. Same helper the loop itself uses (one spelling of "apply now").
+      const autoTheme = applyDaypartNow()
       // The day/night pip is binary; the intermediate twilight tiers read as day.
       setThemeState(autoTheme === 'night' ? 'night' : 'day')
     } else {

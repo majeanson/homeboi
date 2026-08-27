@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { HEALTH_KEY, HOUSEHOLD_KEY } from './queryKeys'
+import { useWrite } from './write'
 
 // THE one place the SPA asks "may we show AI?". Every AI affordance (the capture
 // router's sparkle, recipe import/read, the recap button, meal suggestions, the
@@ -36,17 +37,23 @@ export function useAi(): AiState {
   }
 }
 
-// Flip the household AI switch. PATCHes the household setting, then invalidates the
-// health cache (so `enabled` flips app-wide) AND the household settings cache (so the
-// toggle's own state refreshes). Returns the promise so the caller can show "saving".
+// Flip the household AI switch. A real household write, so it goes through
+// `useWrite` like every other one: offline it queues and replays on reconnect
+// instead of throwing away the flip (it used to call `api()` directly, which is
+// the documented rule's one exception list — see CLAUDE.md « Any /api/* write »).
+// `writeWith` invalidates the affected keys itself: HEALTH_KEY so `enabled` flips
+// app-wide, HOUSEHOLD_KEY so the toggle's own state refreshes. Returns the promise
+// so the caller can show "saving".
 export function useAiToggle(): (next: boolean) => Promise<void> {
-  const qc = useQueryClient()
+  const write = useWrite()
   return useCallback(
     async (next: boolean) => {
-      await api('household', { method: 'PATCH', body: { aiEnabled: next } })
-      qc.invalidateQueries({ queryKey: HEALTH_KEY })
-      qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
+      await write('household', {
+        method: 'PATCH',
+        body: { aiEnabled: next },
+        affectedKeys: [HEALTH_KEY, HOUSEHOLD_KEY],
+      })
     },
-    [qc],
+    [write],
   )
 }

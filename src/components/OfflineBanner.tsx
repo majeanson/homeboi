@@ -20,9 +20,16 @@ export function OfflineBanner() {
   const { lang } = useLang()
   const qc = useQueryClient()
   const pending = useOutboxCount()
-  if (online && !stale) return null
+  if (online && !stale && pending === 0) return null
 
-  const staleOnly = online // reached this line + online → must be the stale-while-online case
+  // Three faces, in order of certainty. `navigator.onLine` can read "online" on a
+  // connection that can't actually reach the Worker — a write that fails its
+  // transport is queued to the outbox all the same, and before this the bar
+  // rendered nothing at all in that case: the queue grew invisibly and the person
+  // had no idea their supper plan hadn't left the tablet. Queued writes now always
+  // show, even when everything else looks healthy.
+  const pendingOnly = online && !stale // nothing wrong except: writes are still queued
+  const staleOnly = online && !pendingOnly // online but the data stopped refreshing
   const newest = newestFetchMs(qc)
   const stamp = newest
     ? new Date(newest).toLocaleString(
@@ -34,9 +41,17 @@ export function OfflineBanner() {
     : null
 
   return (
-    <div className={`offline-bar mono${staleOnly ? ' offline-bar--stale' : ''}`} role="status" aria-live="polite">
-      <InlineIcon name={staleOnly ? 'clock-bold' : 'wifi-high-bold'} />{' '}
-      {staleOnly ? (
+    <div
+      className={`offline-bar mono${staleOnly || pendingOnly ? ' offline-bar--stale' : ''}`}
+      role="status"
+      aria-live="polite"
+    >
+      <InlineIcon name={pendingOnly ? 'clock-counter-clockwise-bold' : staleOnly ? 'clock-bold' : 'wifi-high-bold'} />{' '}
+      {pendingOnly ? (
+        <>
+          {t.offline.pendingSend} · {pending}
+        </>
+      ) : staleOnly ? (
         stamp && (
           <>
             {t.offline.stale} {stamp}
@@ -45,7 +60,7 @@ export function OfflineBanner() {
       ) : (
         t.offline.banner
       )}
-      {pending > 0 && <span className="offline-bar__stamp"> · {pending} {t.offline.pending}</span>}
+      {!pendingOnly && pending > 0 && <span className="offline-bar__stamp"> · {pending} {t.offline.pending}</span>}
       {!staleOnly && stamp && (
         <span className="offline-bar__stamp">
           {' '}

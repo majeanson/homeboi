@@ -760,10 +760,15 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
 
 ### Findings — P3 (bigger / judgement)
 
-- [ ] **Réglages writes via `api()` not `useWrite()`** — photo delete (`media.tsx:104`), AI toggle
-  (`ai.ts:46`), ai-errors delete (`:108`); consistent with the app-wide Réglages-online-only
-  pattern but a documented deviation from the `useWrite` rule. Decide: gate on `useOnline()` or
-  annotate the exception.
+- [x] **Réglages writes via `api()` not `useWrite()`** — ✅ **DONE 2026-08-27**, decided per call
+  site rather than in bulk. **Migrated** (real household writes, worth queueing): the photo delete
+  (`media.tsx` — its `undoableRemove` commit now goes through `useWrite` with `PHOTOS_KEY`, so a
+  delete confirmed on a tablet that just lost its uplink replays instead of throwing behind an
+  already-removed tile) and the AI toggle (`lib/ai.ts` `useAiToggle` → `useWrite('household', …)`
+  with `HEALTH_KEY`+`HOUSEHOLD_KEY`). **Annotated as deliberate exceptions + gated on `useOnline()`**:
+  the ai-errors DELETE (emptying a diagnostic journal — a queued clear would wipe failures logged
+  *after* it, on reconnect; the button now disables offline) and the `ai-test` POST (a probe, not
+  a write). Both carry the why in a comment beside the call.
 - [ ] **Latent flash-back edge:** `DayPlanPage` reads `EVENTS_KEY`/`CHORES_KEY` **live**; a
   RealtimeHub `invalidate` on another device mid-undo-window could resurrect a row deleted in
   Réglages (the shell's own queries aren't live, so it's safe there). The row snapshot mitigates
@@ -771,8 +776,10 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
 - [~] **First-paint flashes:** ✅ Photos guarded on `isPending` 2026-07-02 (Phase 0, `media.tsx:112`)
   so "noPhotos" no longer flashes before the grid. _Still open:_ `ThisWeek` has no error state (a
   failed fetch reads as an empty week, `:94`).
-- [ ] **`AiStatusTest` ("Tester l'IA") shows even when the household turned AI off** (`aiErrors.tsx:
-  35`) — it probes the binding, not the household switch; add a clarifying hint.
+- [x] **`AiStatusTest` ("Tester l'IA") shows even when the household turned AI off** — ✅ **DONE
+  2026-08-27.** It still shows (probing the wiring while the switch is off is exactly when you'd
+  want it), but when `available && !enabled` it now says so: « L'IA est éteinte pour la maisonnée
+  … ce test vérifie le branchement, pas l'interrupteur » — so a green pass can't read as "AI is on".
 - [ ] **Reuse candidates:** `OperatorJump` not registered in DevKit; `ItemReorder` (`todos.tsx:260`)
   hand-copies EditField's reorder buttons; `ChoreForm`/`BlockForm` hand-roll the same member-toggle
   row (a candidate shared `MemberToggleRow`); `DeviceRow` hand-rolls optimistic rename vs
@@ -829,10 +836,11 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
   items but submits the event *without* clicking « Créer la liste », `bringDraft` is dropped and
   `bringTemplateId` stays null with no warning (`EventForm.tsx:135-153,354`). On submit, auto-
   create from the draft or block with a hint.
-- [ ] **`createBringList` failure is fully silent** (`EventForm.tsx:148` — catch keeps the draft,
-  no `StatusMessage`), and it POSTs via `api()` not `useWrite()` (online-only; semi-justified
-  since it needs `res.id` synchronously to auto-select, which a queued `useWrite` returns null —
-  but comment it + disable « Créer la liste » via `useOnline()`).
+- [x] ~~**`createBringList` failure is fully silent**~~ — **already resolved when re-verified
+  (2026-08-27):** the catch sets `bringErr` → `<StatusMessage tone="error">` (`EventForm.tsx:185,510`),
+  the `api()` exception is commented as online-only-because-it-needs-`res.id`-synchronously, and
+  « Créer la liste » is `disabled={bringBusy || !online}` with a `t.offline.unavailable` notice.
+  A stale finding — the fix landed with the date/time-label batch and the box was never ticked.
 - [x] **EventForm date/time inputs are mislabelled.** The `<input type="date">` has **no**
   aria-label/visible label (`EventForm.tsx:224`); the time input's aria-label is `eventAllDay`
   ("Toute la journée") — wrong for a time field (`:230`). Contrast ChoreForm/HomeProjectForm,
@@ -1002,18 +1010,22 @@ real backlog is small:
   default. _(A full auto-completeness test cross-referencing `worker/routes.ts` — importing the
   handler table into a Functions-layer test — was deferred as higher-risk; the pin + guard covers
   the known drift. → Batch H.)_
-- [ ] **Waking the screensaver by tap does NOT reset the shell idle cycle.** `AmbientScreen.wake`
-  calls `stopPropagation()` (`AmbientScreen.tsx:100`) so HubLayout's window `pointerdown` reset
-  (`HubLayout.tsx:207`) never fires — a pending return-home drift can still fire right after a
-  wake tap, and the screensaver won't re-arm until the next interaction. Have `onWake` poke the
-  shared re-arm.
-- [ ] **Day-part auto-advance loop isn't restarted when enabled mid-session** — `startDaypartDrift()`
-  is one-shot at boot and no-ops if drift was OFF then (`main.tsx:335`, `daypartDrift.ts:20`); a
-  kiosk toggled ON mid-session shows the right tint now but won't advance dawn→…→night until reload.
-- [ ] **Screensaver is default-ON and arms on mobile, but the help copy says "kiosk only"**
-  (`i18n.ts:1948` `ambientNote` — also an unused/dead key). A phone operator gets a full-screen
-  clock after 5 idle min with copy claiming it can't happen. Scope the default off for
-  `surface==='mobile'` or fix the copy.
+- [x] **Waking the screensaver by tap does NOT reset the shell idle cycle** — ✅ **DONE 2026-08-27.**
+  New `lib/idleHold.ts`: HubLayout registers its `reset` there, `AmbientScreen`'s `onWake` pokes it.
+  The `stopPropagation()` stays (the wake gesture must not land on a board control underneath) —
+  the poke is the channel a stopped event can still reach. Also fixed while there: the dialog now
+  takes focus on show and hands it back on wake, so its own `onKeyDown` stops being dead code and
+  a keyboard user's focus ring isn't stranded behind the z-200 overlay.
+- [x] **Day-part auto-advance loop isn't restarted when enabled mid-session** — ✅ **DONE 2026-08-27.**
+  `startDaypartDrift()` now arms its 10-min interval unconditionally and `tick` re-reads the flag
+  (an off session costs one no-op per tick), so flipping the toggle on mid-session both paints now
+  AND keeps advancing. The toggle's inline paint is deduped into the shared `applyDaypartNow()`.
+- [x] **Screensaver is default-ON and arms on mobile, but the help copy says "kiosk only"** —
+  ✅ **DONE 2026-08-27.** Copy fixed (« sur CET appareil — tablette murale comme téléphone »)
+  and, since `ambientNote` was never rendered anywhere, it is now shown under the screensaver
+  toggle in Réglages ▸ Mode veille. Kept armed on every surface deliberately: a wall tablet
+  signed in as the operator reads as `surface==='mobile'`, so scoping the default off by surface
+  would disable the screensaver on exactly the device it exists for.
 - [ ] **`RealtimeHub` doesn't use the WebSocket Hibernation API** — `server.accept()` + an in-memory
   `Set` (`worker/RealtimeHub.ts:43,31`); a 24/7 wall tablet holds an open socket so the DO never
   evicts from memory and is billed for continuous wall-clock — at odds with the free-tier focus.
@@ -1022,19 +1034,27 @@ real backlog is small:
 
 ### Findings — P3 (bigger / judgement)
 
-- [ ] **Outbox head-of-line blocking:** one poisoned entry (persistent 5xx) `break`s the run and
-  retries indefinitely with no max-attempt/dead-letter (`outbox.ts:113`), so everything queued
-  behind a server-bug-500 op never lands. Add an attempt counter → dead-letter after N.
-- [ ] **Pending-write count is invisible when `navigator.onLine` lies "online"** — `OfflineBanner`
-  returns null when `online` (`:18`), but transport-failure writes still queue; surface
-  `useOutboxCount()>0` regardless of `online`.
-- [ ] **Voice input doesn't hold off idle** — the reset listens to `pointerdown`/`keydown` only
-  (`HubLayout.tsx:207`), so a hands-free capture past `idleMin` can be covered by the screensaver /
-  reattributed by drift.
-- [ ] **Ambient reuse nits:** the on/off `Toggle` is hand-rolled twice (again — the §5 dup);
-  `AmbientScreen` re-rolls a clock instead of the shared `useNow` (`:51`); the screensaver dialog
-  takes no focus on mount so its own `onKeyDown` wake is dead code (wake works via the window
-  listener) — a sighted keyboard user keeps an invisible focus ring behind the z-200 overlay.
+- [x] **Outbox head-of-line blocking** — ✅ **DONE 2026-08-27.** `OutboxEntry.attempts` + a pure,
+  unit-tested `replayVerdict(err, priorAttempts)` (`auth-lost` / `drop` / `dead-letter` / `retry` /
+  `wait`). Only a **5xx** — a real server answer — spends an attempt; a transport failure returns
+  `wait` and costs nothing, so being offline five times can't dead-letter a good write. Past
+  `MAX_ATTEMPTS` (5, each needing its own replay trigger) the entry is dropped and counted into the
+  existing one-line "some offline changes couldn't be saved" toast, and the rest of the queue lands
+  on that same run. FIFO order is kept for everything else (the E-41 tmp-id chain depends on it).
+- [x] **Pending-write count is invisible when `navigator.onLine` lies "online"** — ✅ **DONE
+  2026-08-27.** `OfflineBanner` now returns null only when `online && !stale && pending === 0`;
+  a third "pendingOnly" face shows « Changements en attente d'envoi · N » with the
+  counter-clockwise clock glyph.
+- [x] **Voice input doesn't hold off idle** — ✅ **DONE 2026-08-27.** `useVoiceInput` pokes
+  `lib/idleHold` on start and every 15 s while `listening`, so a hands-free capture holds off both
+  the screensaver and the return-home drift. One place, so every voice surface inherits it.
+- [~] **Ambient reuse nits** — the two real ones are done; the third is a deliberate ➖.
+  ✅ the screensaver dialog now takes focus on show and restores the opener on wake (see the P2
+  entry above), so `onKeyDown` is live and no focus ring is stranded. ✅ the hand-rolled on/off
+  toggles are gone — `operator/ambient.tsx` and `operator/display.tsx` both use the shared
+  `<Toggle>`. ➖ `AmbientScreen` keeps `useAmbientScene`'s ticker rather than the shared `useNow`
+  **on purpose**: that ticker is gated on `active` and re-seeds on wake, so an idle screensaver
+  never joins the app-wide minute tick (free-tier/battery) and never flashes a stale clock.
 - [x] **e2e — behavioural coverage of the whole layer** — ✅ **DONE 2026-07-03**: the offline
   **outbox** queue→replay (`offline-outbox.spec`), the **SW** precache + offline reboot (`sw.spec`
   + `sw.config`, on a `vite build`/`preview` harness since the SW is a PROD-only build artifact),

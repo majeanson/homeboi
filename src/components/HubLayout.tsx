@@ -10,6 +10,7 @@ import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { useHabitCheckinTrigger } from '../lib/habitCheckin'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
+import { registerIdleReset, pokeIdle } from '../lib/idleHold'
 import { useTapToHearListener } from '../lib/tapToHear'
 import { useTour } from '../lib/tour'
 import { useTourOfferDot } from '../lib/tourOffer'
@@ -259,6 +260,7 @@ export function HubLayout() {
     if (!driftOn && !saverOn) {
       setIdleWarn(false)
       setSaver(false)
+      registerIdleReset(null)
       return
     }
     const DRIFT = override ?? ambient.returnHomeMin * 60_000
@@ -285,12 +287,18 @@ export function HubLayout() {
     reset()
     window.addEventListener('pointerdown', reset, { passive: true })
     window.addEventListener('keydown', reset)
+    // …and the same re-arm for the two interactions the window listener can't
+    // see: the screensaver's own wake tap (stopPropagation'd on purpose so it
+    // can't leak onto a board control) and a hands-free voice capture, which
+    // emits neither pointer nor key. See lib/idleHold.
+    registerIdleReset(reset)
     return () => {
       clearTimeout(tWarn)
       clearTimeout(tDrift)
       clearTimeout(tSaver)
       window.removeEventListener('pointerdown', reset)
       window.removeEventListener('keydown', reset)
+      registerIdleReset(null)
     }
   }, [
     profileId,
@@ -581,9 +589,20 @@ export function HubLayout() {
         </button>
       )}
       <AddSheet open={addOpen} modes={addModes ?? sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
-      {/* Ambient screensaver — full-screen idle face; any pointer/key wakes it
-          (the idle effect's `reset` already clears `saver`, this just mirrors it). */}
-      <AmbientScreen show={saver} onWake={() => setSaver(false)} />
+      {/* Ambient screensaver — full-screen idle face. A KEY wake reaches the idle
+          effect's window listener on its own; a POINTER wake can't (AmbientScreen
+          stopPropagation()s it so the gesture never lands on a board control), so
+          it pokes the same `reset` through lib/idleHold. Without that poke a
+          pending return-home drift still fired right after a wake tap, and the
+          screensaver never re-armed. `setSaver(false)` stays as the belt-and-
+          braces path for a forced screensaver (idleDebug) with both behaviours off. */}
+      <AmbientScreen
+        show={saver}
+        onWake={() => {
+          setSaver(false)
+          pokeIdle()
+        }}
+      />
     </div>
     </DetailProvider>
     </KitchenActionsContext.Provider>

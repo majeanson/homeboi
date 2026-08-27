@@ -9,7 +9,7 @@ import { useMealPrefs } from '../lib/mealPrefs'
 import { CATS } from '../lib/cats'
 import { PhotoMosaic } from './PhotoMosaic'
 import { InlineIcon } from './Icon'
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 
 // The ambient screensaver (backlog #3): after N idle minutes the kiosk fades to a
 // big clock + date over the slow photo frame, with an optional "next up" stack —
@@ -27,11 +27,29 @@ import type { CSSProperties } from 'react'
 
 export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => void }) {
   const a = useAmbient()
+  const boxRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<Element | null>(null)
   const t = useT()
   const { lang } = useLang()
   const mealPrefs = useMealPrefs()
   const { now, nowSec, next, meal, routine, breath, drift } = useAmbientScene(show)
   const { x: driftX, y: driftY } = drift
+
+  // Take focus while the screensaver covers everything, and hand it back on wake.
+  // Without this the focus ring stayed on whatever control was focused BEHIND the
+  // z-200 overlay (invisible to a sighted keyboard user), and this dialog's own
+  // `onKeyDown` wake was dead code — a key only woke the screen because HubLayout
+  // listens at `window`. Same capture-the-opener idiom as DetailProvider.
+  useEffect(() => {
+    if (show) {
+      openerRef.current = document.activeElement
+      boxRef.current?.focus()
+      return
+    }
+    const back = openerRef.current
+    openerRef.current = null
+    if (back instanceof HTMLElement && back.isConnected) back.focus()
+  }, [show])
 
   if (!show) return null
   // Wake without leaking the gesture into the app underneath: preventDefault on the
@@ -54,6 +72,7 @@ export function AmbientScreen({ show, onWake }: { show: boolean; onWake: () => v
       className="ambient"
       role="dialog"
       aria-label={t.ambient.title}
+      ref={boxRef}
       onPointerDown={wake}
       onKeyDown={wake}
       tabIndex={-1}

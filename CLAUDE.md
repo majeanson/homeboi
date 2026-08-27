@@ -77,6 +77,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
 | A press-and-hold gesture | **`useLongPress`** | `lib/useLongPress.ts` (aborts on travel, kills the context menu, swallows the trailing click) |
+| "Something is happening — don't screensaver/drift over it" | **`pokeIdle()`** | `lib/idleHold.ts` — HubLayout's idle cycle only sees `pointerdown`/`keydown` at `window`; anything else that counts as activity (a hands-free voice capture, a gesture that `stopPropagation()`s on purpose) pokes this instead |
 | A board card's placement / width / drop target | **`WidgetGrid`** + **`CardSlot`** | `components/board/*` — one grid per zone (`band`, `grid`); sizes/zones/modes live in `lib/boardCards`. Never re-add `columns:` or `column-span` to the board |
 | "This card has nothing to show" | **`useReportEmpty`** | `lib/useReportEmpty.ts` — never a bare `return null`: the slot can't tell empty from loading, and mode `always` needs to know |
 | Upload a photo / audio / drawing blob to R2 | **`uploadMedia()`** / **`useMediaUpload()`** | `lib/uploadMedia.ts` (resize→POST→`{key}`, 503→`MediaUnavailableError`) |

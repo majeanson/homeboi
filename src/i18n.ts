@@ -256,6 +256,10 @@ export const FR = {
     stale: 'Données de',
     live: 'De nouveau en ligne',
     pending: 'en attente',
+    // The bar's third face: everything LOOKS fine (online, data fresh) but writes
+    // are still queued — navigator.onLine can lie, and a queue nobody can see is a
+    // supper plan the household thinks it saved. Followed by the count.
+    pendingSend: 'Changements en attente d’envoi',
     unavailable: 'Indisponible hors-ligne',
     // One calm line per replay run when the server refused some queued writes
     // (4xx — the row's gone/forbidden). Never one toast per entry.
@@ -2655,7 +2659,11 @@ export const FR = {
     habitCheckinRemindersHint: 'Aux heures que tu as choisies, sur l’écran allumé — jamais dans ta poche, jamais pendant une routine ou un formulaire.',
     habitCheckinReplay: 'Rejouer l’ouverture du jour',
     ambientMinutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),
-    ambientNote: 'L’économiseur n’apparaît que sur un kiosque. Touche l’écran pour le réveiller — rien n’est jamais perdu.',
+    // Rendered under the screensaver toggle. It USED to say « seulement sur un
+    // kiosque » and was never rendered anywhere — both wrong: HubLayout arms the
+    // idle cycle on every surface (a wall tablet signed in as operator reads as
+    // surface=mobile), so a phone really does fade to the clock after idleMin.
+    ambientNote: 'L’économiseur s’affiche sur CET appareil — tablette murale comme téléphone. Touche l’écran pour le réveiller ; rien n’est jamais perdu.',
     aiTestTitle: 'État de l’IA',
     aiTestHint: 'Vérifie que l’IA répond vraiment — un vrai appel à chaque modèle, ici maintenant.',
     aiTestBtn: 'Tester l’IA',
@@ -2665,6 +2673,9 @@ export const FR = {
     aiTestText: 'Texte (capture, idées, recettes)',
     aiTestVision: 'Photo (lire une recette)',
     aiTestUnavailable: 'L’IA n’est pas configurée sur ce déploiement.',
+    // The probe tests the deployment's AI binding, not the household switch: it
+    // can pass green while Réglages ▸ IA has AI off for everyone.
+    aiTestWhileOff: 'L’IA est éteinte pour la maisonnée (Réglages ▸ IA). Ce test parle quand même au modèle : il vérifie le branchement, pas l’interrupteur.',
     micTestTitle: 'Test du micro',
     micTestHint:
       'Le micro échoue sur certains iPhone/iPad sans message clair. Lance ce test sur l’appareil qui bogue, dis « lait, œufs, pain », puis copie le rapport et envoie-le-nous : il dit exactement pourquoi le micro a marché ou non.',

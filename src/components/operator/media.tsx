@@ -6,6 +6,7 @@ import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useAi } from '../../lib/ai'
 import { useUndoableRemove } from '../../lib/undoRemove'
+import { useWrite } from '../../lib/write'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
 import { isGuest } from '../../lib/device'
@@ -58,6 +59,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   const { data, isPending } = usePhotos()
   const photos = data?.photos ?? []
   const undoableRemove = useUndoableRemove()
+  const write = useWrite()
   // Read-only guest: photos are viewable, but no delete-per-tile and no upload.
   const ro = isGuest()
   const [busy, setBusy] = useState(false)
@@ -99,7 +101,11 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
       id,
       label: '', // a photo has no name — use the dedicated copy instead
       message: t.undo.photoRemoved,
-      commit: () => api('photos', { method: 'DELETE', body: { id } }),
+      // Through `useWrite`, not `api()`: a delete confirmed on a tablet that has
+      // just lost its uplink is queued and replayed on reconnect instead of
+      // throwing (the tile is already gone from the grid by then, so a silent
+      // throw left the photo back on the next poll).
+      commit: () => write('photos', { method: 'DELETE', body: { id }, affectedKeys: [PHOTOS_KEY] }),
       after: () => qc.invalidateQueries({ queryKey: PHOTOS_KEY }),
     })
   }
