@@ -1262,6 +1262,9 @@ test.describe('list', () => {
       page.locator('.deal').first().getByRole('button', { name: /Ajouter à la liste/ }).click(),
     ])
     expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'l1' })
+    // …and the button says WHICH line it rode on: the flyer's product name is
+    // nowhere on the list, so a bare ✓ reads as "nothing happened".
+    await expect(page.locator('.deal').first().locator('.deal__choose')).toHaveText(/Lait/)
   })
 
   test('a browsed deal for a new item adds it under the SEARCHED name, not the product name', async ({ page }) => {
@@ -1276,7 +1279,9 @@ test.describe('list', () => {
     ])
     // The new line is the generic thing searched ("fromage"), NOT the flyer's
     // "Lait 2% 4L" — so quick-add keeps suggesting the generic item next week.
-    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ text: 'fromage' })
+    // `match: true` asks the server to re-run the same reuse-not-duplicate
+    // decision before it inserts — the backstop for a cold cache / offline replay.
+    expect(JSON.parse(req.postData() || '{}')).toMatchObject({ text: 'fromage', match: true })
   })
 
   test('a store-flyer add links the SPECIFIC product name onto the generic line', async ({ page }) => {

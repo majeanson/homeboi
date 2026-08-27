@@ -14,7 +14,7 @@ import { SceneHead } from '../components/SceneHead'
 import { FlyerViewer } from '../components/FlyerViewer'
 import { DealCard } from '../components/DealCard'
 import { type Deal } from '../lib/deals'
-import { ensureListLine, parseDeal, parseTerms, type ListItem } from '../lib/picks'
+import { ensureListLine, parseDeal, parseTerms, type AddedTo, type ListItem } from '../lib/picks'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
@@ -78,6 +78,8 @@ export function PriceMatchPage() {
   // Filter the results to one store (Maxi, Super C…); null = all.
   const [store, setStore] = useState<string | null>(null)
   const [added, setAdded] = useState<string | null>(null)
+  // The EXISTING list line the last add rode on (null = it made a new line).
+  const [addedTo, setAddedTo] = useState<AddedTo>(null)
   // Esc leaves the scene — but not while the full flyer is open over it (that
   // overlay owns Esc), so one keypress doesn't pop both layers.
   useEscapeKey(close, !flyer)
@@ -91,9 +93,12 @@ export function PriceMatchPage() {
   // Drop an item straight onto the grocery list (from a deal card or the flyer).
   // Reuse-not-duplicate: an existing line is kept (a checked one is unchecked),
   // only a true miss inserts — see matchListItem in lib/picks.
-  async function addToList(name: string) {
+  async function addToList(name: string): Promise<AddedTo> {
     setAdded(name)
-    await ensureListLine(qc, name)
+    setAddedTo(null)
+    const on = await ensureListLine(qc, name)
+    setAddedTo(on)
+    return on
   }
 
   // Distinct stores for the filter; the shown list respects the active store.
@@ -157,6 +162,7 @@ export function PriceMatchPage() {
                 isBest={d === bestKey}
                 isChosen={chosenId != null && d.id === chosenId}
                 added={added === d.name}
+                addedTo={added === d.name ? addedTo : null}
                 onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant, logo: deal.logo, premium: deal.premium })}
                 onAddToList={addToList}
                 onChoose={(deal) => {

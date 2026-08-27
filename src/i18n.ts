@@ -453,6 +453,10 @@ export const FR = {
     addPlaceholderShort: 'Ex. : lait, pain…',
     check: 'Cocher',
     uncheck: 'Décocher',
+    // Le ⚙ SIMPLE ↔ AVANCÉ (lib/listeMode). Même formulation que « Les notes » :
+    // le nom dit vers quoi va la PROCHAINE touche, jamais l'état courant.
+    modeToAdvanced: 'Mode avancé — modifier et supprimer sur chaque ligne',
+    modeToSimple: 'Mode simple — juste la photo, le nom et la coche',
     clearChecked: 'Vider les cochés',
     // Sort toggle: keep the hand-dragged order, or auto-group by store aisle.
     sortMine: 'Mon ordre',
@@ -3095,6 +3099,10 @@ export const FR = {
     best: 'Meilleur prix',
     allStores: 'Tous',
     addToList: 'Ajouter à la liste',
+    // A flyer add rides on the line that already covers it (« Pommes Gala 3 lb »
+    // → « Pommes ») — say WHICH line, or the ✓ reads as nothing having happened:
+    // the flyer's product name is nowhere on the list.
+    addedTo: (item: string) => `Sur « ${item} »`,
     noUnit: 'Format non indiqué',
     position: { top: 'haut', middle: 'milieu', bottom: 'bas', left: 'gauche', center: 'centre', right: 'droite', col: 'colonne' },
     choose: 'Choisir ce prix',

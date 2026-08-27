@@ -56,3 +56,21 @@ describe('matchListItem', () => {
     expect(matchListItem(list, 'fromage')?.id).toBe('b')
   })
 })
+
+describe('matchListItem — synonyms typed as one comma list', () => {
+  // The edit sheet takes one chip at a time, but a household types the whole set
+  // into one ("chicken, chicken breast, poitrine"). The deals lookup has always
+  // split ?terms= that way; matching now does too, so the line that carries the
+  // synonyms recognizes its own flyer names instead of spawning a duplicate.
+  const poulet = row('a', 'Poulet', { search_terms: '["chicken, chicken breast, poitrine"]' })
+
+  it('matches through a comma-listed synonym', () => {
+    expect(matchListItem([poulet], 'Chicken Breast, Boneless')?.id).toBe('a')
+    expect(matchListItem([poulet], 'Chicken Thighs')?.id).toBe('a')
+    expect(matchListItem([poulet], 'chicken')?.id).toBe('a')
+  })
+
+  it('still refuses an unrelated flyer name', () => {
+    expect(matchListItem([poulet], 'Lait 2% 4L')).toBeNull()
+  })
+})

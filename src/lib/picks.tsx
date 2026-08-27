@@ -32,12 +32,27 @@ export function parseDeal(dealJson: string | null | undefined): Deal | null {
   }
 }
 
-// Parse the saved flyer-search synonyms off a list row ([] when none / malformed).
+// A saved synonym is sometimes typed as ONE comma list ("apple, apples, pomme")
+// instead of one chip per word — that is what a household actually does, and
+// `/api/deals?terms=` has always split it that way for the lookup. Matching splits
+// it too, or the very line carrying the synonyms never recognizes its own flyer
+// names ("Chicken breast, boneless" spawned a duplicate beside a « Poulet » line
+// whose one chip read "chicken, chicken breast, poitrine"). Mirror of
+// `splitTerms` in functions/_lib/listMatch.ts.
+const TERM_SPLIT = /[,;/|\n]+/
+
+function splitTerms(raw: string): string[] {
+  return raw.split(TERM_SPLIT).map((s) => s.trim()).filter(Boolean)
+}
+
+// Parse the saved flyer-search synonyms off a list row ([] when none / malformed),
+// comma lists unpacked — so the chip editor, the deals lookup and matchListItem
+// all see the same flat set of synonyms.
 export function parseTerms(json: string | null | undefined): string[] {
   if (!json) return []
   try {
     const a = JSON.parse(json)
-    return Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
+    return Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string').flatMap(splitTerms) : []
   } catch {
     return []
   }
@@ -119,18 +134,43 @@ export function matchListItem(list: ListItem[], name: string): ListItem | null {
 }
 
 // The cached ['board'] list (empty when the cache is cold — callers that add from
-// a scene outside HubLayout must subscribe to BOARD_KEY themselves, or every add
-// will look like a brand-new line; the server backstop in POST /api/list catches
-// the deal-carrying ones regardless).
+// a scene outside HubLayout should still subscribe to BOARD_KEY themselves so the
+// match happens before the round-trip; the server backstop in POST /api/list
+// re-runs the same decision on every `match: true` add regardless).
 function cachedList(qc: QueryClient): ListItem[] {
   return qc.getQueryData<{ list?: ListItem[] }>(BOARD_KEY)?.list ?? []
+}
+
+// What a flyer add did: the text of the EXISTING line it rode on, or null when it
+// inserted a new one. Callers show it ("✓ sur « Pommes »") so a match doesn't read
+// as nothing having happened — the flyer's product name never appears on the list.
+export type AddedTo = string | null
+
+// The POST answer: the row it landed on, plus whether the server's backstop
+// matched an existing line (client cache cold / an offline replay).
+interface AddResult {
+  id: string
+  text: string
+  matched?: boolean
+}
+
+// Ask the server to run the same reuse-not-duplicate decision before it inserts
+// (`match: true`) — the client decides first against its cached board list, but a
+// cold cache or a replayed offline add has nothing to decide against.
+async function addLine(qc: QueryClient, body: Record<string, unknown>): Promise<AddedTo> {
+  const res = await writeWith<AddResult>(qc, 'list', {
+    method: 'POST',
+    body: { ...body, match: true },
+    affectedKeys: [BOARD_KEY],
+  }).catch(() => null)
+  return res && !res.queued && res.data?.matched ? res.data.text : null
 }
 
 // Put `name` on the list without duplicating: an open match is already there (keep
 // its search_terms and hand position), a checked match comes back to buy (uncheck —
 // re-adding a ticked line must not spawn a twin beside the strike-through), and
-// only a true miss inserts a new line.
-export async function ensureListLine(qc: QueryClient, name: string): Promise<void> {
+// only a true miss inserts a new line. Returns the matched line's name, or null.
+export async function ensureListLine(qc: QueryClient, name: string): Promise<AddedTo> {
   const existing = matchListItem(cachedList(qc), name)
   if (existing) {
     if (existing.checked_at)
@@ -139,24 +179,24 @@ export async function ensureListLine(qc: QueryClient, name: string): Promise<voi
         body: { id: existing.id, checked: false },
         affectedKeys: [BOARD_KEY],
       }).catch(() => {})
-    return
+    return existing.text
   }
-  await writeWith(qc, 'list', { method: 'POST', body: { text: name }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+  return addLine(qc, { text: name })
 }
 
 // Stage a deal: attach it to its grocery line, reusing an existing line or adding
 // one. A checked match is unchecked too — the deal means "buy this again", so the
 // line comes back instead of gaining a twin. Persists server-side and refreshes
 // the board so every device sees it.
-export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<void> {
+export async function stageDeal(qc: QueryClient, name: string, deal: Deal): Promise<AddedTo> {
   const existing = matchListItem(cachedList(qc), name)
   if (existing) {
     const body: { id: string; deal: Deal; checked?: boolean } = { id: existing.id, deal }
     if (existing.checked_at) body.checked = false
     await writeWith(qc, 'list', { method: 'PATCH', body, affectedKeys: [BOARD_KEY] }).catch(() => {})
-  } else {
-    await writeWith(qc, 'list', { method: 'POST', body: { text: name, deal }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    return existing.text
   }
+  return addLine(qc, { text: name, deal })
 }
 
 // Unstage: keep the grocery line, drop its deal (remove it from the cashier set).

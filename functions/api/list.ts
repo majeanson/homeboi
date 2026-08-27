@@ -2,6 +2,7 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
+import { lineMatches, normTerms } from '../_lib/listMatch'
 import { profileMemberId } from '../_lib/profile'
 
 // Shared list: ONE active list. Read, add, toggle a check (a mark — the item
@@ -71,11 +72,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   return ok({ items: results })
 })
 
-// Normalize an incoming synonyms value to a stored JSON array (or null): trimmed,
-// de-blanked, capped at 12 — same shape the PATCH and the deals lookup expect.
+// Normalize an incoming synonyms value to a stored JSON array (or null): split on
+// commas/slashes, trimmed, de-blanked, deduped, capped at 12 — same shape the
+// PATCH, the matcher and the deals lookup expect (see _lib/listMatch).
 function termsJson(value: unknown): string | null {
-  if (!Array.isArray(value)) return null
-  const terms = value.map((s) => String(s).trim()).filter(Boolean).slice(0, 12)
+  const terms = normTerms(value)
   return terms.length ? JSON.stringify(terms) : null
 }
 
@@ -121,65 +122,46 @@ async function settle(db: D1Database, householdId: string, id: string, where: 'b
   )
 }
 
-// Crude per-word singular fold, mirror of src/lib/picks.tsx: « pommes » still
-// finds « Pomme Gala 3 lb ». Trailing 's' on 4+ letter words only.
-function singularWords(key: string): string {
-  return key
-    .split(' ')
-    .map((w) => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w))
-    .join(' ')
-}
-
-// Does an existing line answer for this (flyer) name? Exact normalized name, exact
-// synonym, or the LINE's generic name contained whole-word in the specific product
-// name (one direction only — mirror of matchListItem's tiers 1–4, flattened; the
-// tier preference is approximated by the caller's open-before-checked ordering).
-function lineMatches(dealKey: string, line: { text: string; search_terms: string | null }): boolean {
-  const hay = ` ${singularWords(dealKey)} `
-  let terms: string[] = []
-  try {
-    const a = line.search_terms ? JSON.parse(line.search_terms) : []
-    terms = Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
-  } catch {
-    /* malformed synonyms — match on the name alone */
-  }
-  return [normalizeItem(line.text), ...terms.map(normalizeItem)].some(
-    (k) => !!k && (k === dealKey || (k.length >= 3 && hay.includes(` ${singularWords(k)} `))),
-  )
-}
-
 export const onRequestPost = authed(async (ctx, actor) => {
   // `deal` optionally stages a flyer deal onto the new line (the cashier set lives
   // on the list now) — stored as JSON; absent for an ordinary grocery item.
   // `search_terms` lets the quick-add panel restock an item with the flyer
   // synonyms it carried last time (a JSON array of strings), so re-adding "Pain"
   // keeps "baguette/bread" without retyping.
-  const body = await readJson<{ text?: string; deal?: unknown; search_terms?: unknown }>(ctx.request)
+  const body = await readJson<{ text?: string; deal?: unknown; search_terms?: unknown; match?: unknown }>(ctx.request)
   const text = body?.text?.trim()
   if (!text) return badRequest('Texte requis.')
   const id = newId()
   const dealJson = body?.deal ? JSON.stringify(body.deal) : null
   const searchTerms = termsJson(body?.search_terms)
-  // Deal ↔ item backstop for a cold client cache: a deal-carrying add whose name
-  // already matches a line rides on THAT line (unchecked if it was ticked) instead
-  // of inserting a specific-named duplicate that loses the line's saved synonyms.
-  // Deal adds only — a plain POST may be a deliberate second line ("pommes" twice
-  // before a big party is the household's call, not ours).
-  if (dealJson) {
-    const dealKey = normalizeItem(text)
-    if (dealKey) {
+  // Deal ↔ item backstop for a cold client cache: an add whose name already
+  // matches a line rides on THAT line (unchecked if it was ticked) instead of
+  // inserting a specific-named duplicate that loses the line's saved synonyms.
+  // Runs for a deal-carrying add AND for any add that asks for it (match: true —
+  // what every flyer path sends through ensureListLine/stageDeal: a browse add
+  // carries no deal but is just as much "this thing, on sale"). NOT for a bare
+  // POST: typing « pommes » twice before a big party is the household's call,
+  // not ours.
+  if (dealJson || body?.match === true) {
+    const key = normalizeItem(text)
+    if (key) {
       const { results } = await ctx.env.DB.prepare(
         // Open lines first, so a still-to-buy line wins over a ticked twin.
         'SELECT id, text, search_terms FROM list_items WHERE household_id = ? ORDER BY checked_at IS NOT NULL, created_at',
       )
         .bind(actor.householdId)
         .all<{ id: string; text: string; search_terms: string | null }>()
-      const hit = results.find((r) => lineMatches(dealKey, r))
+      const hit = results.find((r) => lineMatches(key, r))
       if (hit) {
-        await ctx.env.DB.prepare('UPDATE list_items SET deal_json = ?, checked_at = NULL WHERE id = ? AND household_id = ?')
-          .bind(dealJson, hit.id, actor.householdId)
-          .run()
-        return ok({ id: hit.id, text: hit.text })
+        // The deal (when there is one) lands on the matched line; either way the
+        // line comes back to buy — re-adding a ticked line must not spawn a twin
+        // beside the strike-through. `matched` lets the caller name WHICH line it
+        // rode on instead of the add looking like a silent no-op.
+        await (dealJson
+          ? ctx.env.DB.prepare('UPDATE list_items SET deal_json = ?, checked_at = NULL WHERE id = ? AND household_id = ?').bind(dealJson, hit.id, actor.householdId)
+          : ctx.env.DB.prepare('UPDATE list_items SET checked_at = NULL WHERE id = ? AND household_id = ?').bind(hit.id, actor.householdId)
+        ).run()
+        return ok({ id: hit.id, text: hit.text, matched: true })
       }
     }
   }

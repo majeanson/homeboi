@@ -12,7 +12,7 @@ import { Icon, InlineIcon } from './Icon'
 import { SceneHead } from './SceneHead'
 import { SubTabs } from './SubTabs'
 import { type Deal, type FlyerSummary } from '../lib/deals'
-import { ensureListLine, stageDeal } from '../lib/picks'
+import { ensureListLine, stageDeal, type AddedTo } from '../lib/picks'
 import { useBoardData } from '../lib/queryHooks'
 import { useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
@@ -67,8 +67,11 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const [query, setQuery] = useState('')
   const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
   const [store, setStore] = useState<string | null>(null)
-  const [added, setAdded] = useState<Set<string>>(new Set())
-  const [staged, setStaged] = useState<Set<string>>(new Set())
+  // Product name → what the add did: the EXISTING line it rode on, or null when
+  // it made a new one. Keyed by the flyer's product name (what the card shows);
+  // the value is the list line, which is usually a DIFFERENT, generic word.
+  const [added, setAdded] = useState<Map<string, AddedTo>>(new Map())
+  const [staged, setStaged] = useState<Map<string, AddedTo>>(new Map())
   // The deal lookup is online-only (a live Flipp query, retry: false, nothing
   // cached for an unseen term) — firing it offline is a doomed request that lands
   // as a fake "no deals". Disable the submit + staple chips and say why instead
@@ -125,22 +128,27 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   // search concept, so there the product name is the best we have.
   const lineName = (productName: string) => (mode === 'item' && query.trim() ? query.trim() : productName)
 
-  async function addToList(name: string) {
-    setAdded((prev) => new Set(prev).add(name))
+  async function addToList(name: string): Promise<AddedTo> {
+    setAdded((prev) => new Map(prev).set(name, null))
     // Reuse-not-duplicate: an existing line (by name, synonym, or the generic line
     // contained in the flyer product name) is kept — a checked one comes back to
     // buy — and only a true miss inserts. writeWith inside, so an offline add
-    // queues + replays; it lives under BOARD_KEY.
-    await ensureListLine(qc, lineName(name))
+    // queues + replays; it lives under BOARD_KEY. The server runs the same match
+    // before inserting, so a cold cache can't duplicate either.
+    const on = await ensureListLine(qc, lineName(name))
+    setAdded((prev) => new Map(prev).set(name, on))
+    return on
   }
 
   // Add a deal to the list in one tap — it attaches the deal to its grocery line
   // (the recurring item, reusing an existing line or adding one), which both shows
   // it on the list row and flows it to the cashier. Persisted server-side, so it's
   // there on any device.
-  async function stage(deal: Deal) {
-    setStaged((prev) => new Set(prev).add(deal.name))
-    await stageDeal(qc, lineName(deal.name), deal)
+  async function stage(deal: Deal): Promise<AddedTo> {
+    setStaged((prev) => new Map(prev).set(deal.name, null))
+    const on = await stageDeal(qc, lineName(deal.name), deal)
+    setStaged((prev) => new Map(prev).set(deal.name, on))
+    return on
   }
 
   const stores = deals ? [...new Set(deals.map((d) => d.merchant).filter(Boolean))].sort() : []
@@ -251,6 +259,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                 isBest={d === bestKey}
                 added={added.has(d.name)}
                 staged={staged.has(d.name)}
+                addedTo={staged.get(d.name) ?? added.get(d.name) ?? null}
                 onViewFlyer={(deal) => setFlyer({ id: deal.flyerId!, itemId: deal.id, merchant: deal.merchant, logo: deal.logo, premium: deal.premium })}
                 onAddToList={addToList}
                 onStage={stage}

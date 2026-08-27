@@ -67,15 +67,21 @@ export function ListEditPage() {
   const deal = parseDeal(item?.deal_json)
 
   function addTerm(raw: string) {
-    const v = raw.trim()
-    if (!v) return
+    // The hint reads « œuf, œufs, egg », so the whole set gets typed into one
+    // field — take it as several synonyms rather than one that matches nothing
+    // (splitTerms in lib/picks unpacks it on read, and the server on save).
+    const incoming = raw
+      .split(/[,;/|\n]+/)
+      .map((x) => x.trim())
+      .filter(Boolean)
+    if (!incoming.length) return
     // Case/accent-blind dedupe so "Œuf" and "œuf" don't both land.
     const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    if (terms.some((x) => fold(x) === fold(v))) {
-      setDraft('')
-      return
-    }
-    setTerms((xs) => [...xs, v])
+    setTerms((xs) => {
+      const out = [...xs]
+      for (const v of incoming) if (!out.some((x) => fold(x) === fold(v))) out.push(v)
+      return out
+    })
     setDraft('')
   }
   function removeTerm(i: number) {

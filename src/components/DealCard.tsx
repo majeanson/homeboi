@@ -22,6 +22,7 @@ export function DealCard({
   isChosen,
   added,
   staged,
+  addedTo,
   onViewFlyer,
   onAddToList,
   onChoose,
@@ -32,6 +33,10 @@ export function DealCard({
   isChosen?: boolean
   added?: boolean
   staged?: boolean
+  // The EXISTING list line this deal rode on (deal ↔ item: « Pommes Gala 3 lb »
+  // lands on « Pommes »). Shown instead of the plain label so a reuse doesn't look
+  // like nothing happened — null/undefined = it made a new line.
+  addedTo?: string | null
   onViewFlyer?: (deal: Deal) => void
   onAddToList?: (name: string) => void
   onChoose?: (deal: Deal) => void
@@ -75,11 +80,13 @@ export function DealCard({
               className={`deal__choose mono${staged ? ' is-chosen' : ''}`}
               onClick={() => onStage(deal)}
             >
-              <InlineIcon name={staged ? 'check-bold' : 'plus-bold'} /> {t.shop.addToList}
+              <InlineIcon name={staged ? 'check-bold' : 'plus-bold'} />{' '}
+              {staged && addedTo ? t.shop.addedTo(addedTo) : t.shop.addToList}
             </button>
           ) : onAddToList ? (
             <button type="button" className="deal__choose mono" onClick={() => onAddToList(deal.name)}>
-              <InlineIcon name={added ? 'check-bold' : 'plus-bold'} /> {t.shop.addToList}
+              <InlineIcon name={added ? 'check-bold' : 'plus-bold'} />{' '}
+              {added && addedTo ? t.shop.addedTo(addedTo) : t.shop.addToList}
             </button>
           ) : null}
           <ActionMenu

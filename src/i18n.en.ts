@@ -395,6 +395,8 @@ export const EN: typeof FR = {
     addPlaceholderShort: 'E.g. milk, bread…',
     check: 'Check off',
     uncheck: 'Uncheck',
+    modeToAdvanced: 'Advanced mode — edit and delete on every row',
+    modeToSimple: 'Simple mode — just the picture, the name and the check',
     clearChecked: 'Clear checked',
     // Sort toggle: keep the hand-dragged order, or auto-group by store aisle.
     sortMine: 'My order',
@@ -2856,6 +2858,7 @@ export const EN: typeof FR = {
     best: 'Best price',
     allStores: 'All',
     addToList: 'Add to list',
+    addedTo: (item: string) => `On “${item}”`,
     noUnit: 'Size not listed',
     position: { top: 'top', middle: 'middle', bottom: 'bottom', left: 'left', center: 'center', right: 'right', col: 'column' },
     choose: 'Use this price',

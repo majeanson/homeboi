@@ -8,6 +8,7 @@ import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { SubTabs } from './SubTabs'
 import { type Deal, type FlyerSummary } from '../lib/deals'
+import { type AddedTo } from '../lib/picks'
 import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
 import { warmImageCache } from '../lib/cacheWarm'
@@ -159,8 +160,11 @@ export function FlyerViewer({
   // Whether this is an image-based (premium) flyer. Drives the "official vs
   // reconstructed" note. Resolved like logo (prop → flyers cache → unknown).
   premium?: boolean
-  onAddToList?: (name: string) => void
-  onStage?: (deal: Deal) => void // stage this flyer item for the cashier (one tap)
+  // Both answer with the EXISTING list line the add rode on (deal ↔ item: a
+  // specific flyer product lands on its generic line), or null for a new line —
+  // the button says which, so a reuse doesn't read as nothing happening.
+  onAddToList?: (name: string) => void | Promise<AddedTo | void>
+  onStage?: (deal: Deal) => void | Promise<AddedTo | void> // stage for the cashier (one tap)
   onClose: () => void
 }) {
   const t = useT()
@@ -168,6 +172,8 @@ export function FlyerViewer({
   const overlayRef = useRef<HTMLDivElement>(null)
   useModal(overlayRef, onClose)
   const [addedName, setAddedName] = useState<string | null>(null)
+  // The list line the last add landed on (null = a new line, or not known yet).
+  const [addedTo, setAddedTo] = useState<AddedTo>(null)
   const { lang } = useLang()
 
   // Logo for the header band: explicit prop wins; otherwise look this flyer up by
@@ -580,35 +586,42 @@ export function FlyerViewer({
                 className="btn btn--primary mono flyer-detail__add"
                 onClick={() => {
                   const nm = selected.name
+                  setAddedTo(null)
+                  // Whichever action this flyer was opened with answers with the
+                  // list line the item rode on — show it on the button.
+                  const done = (r: void | Promise<AddedTo | void>) =>
+                    void Promise.resolve(r).then((on) => setAddedTo(on ?? null))
                   if (onStage) {
                     // Synthesize a Deal from the flyer item + this flyer's
                     // merchant/id so the cashier card has store, price, and image.
-                    onStage({
-                      id: selected.id,
-                      flyerId,
-                      name: nm,
-                      price: selected.price,
-                      wasPrice: null,
-                      unitPrice: selected.unitPrice,
-                      unitLabel: selected.unitLabel,
-                      unitKind: selected.unitKind,
-                      unitApprox: false,
-                      merchant: title ?? '',
-                      logo: resolvedLogo,
-                      premium: resolvedPremium ?? false,
-                      image: selected.image,
-                      validFrom: selected.validFrom,
-                      validTo: selected.validTo,
-                    })
+                    done(
+                      onStage({
+                        id: selected.id,
+                        flyerId,
+                        name: nm,
+                        price: selected.price,
+                        wasPrice: null,
+                        unitPrice: selected.unitPrice,
+                        unitLabel: selected.unitLabel,
+                        unitKind: selected.unitKind,
+                        unitApprox: false,
+                        merchant: title ?? '',
+                        logo: resolvedLogo,
+                        premium: resolvedPremium ?? false,
+                        image: selected.image,
+                        validFrom: selected.validFrom,
+                        validTo: selected.validTo,
+                      }),
+                    )
                   } else {
-                    onAddToList!(nm)
+                    done(onAddToList!(nm))
                   }
                   setAddedName(nm)
                 }}
               >
                 {addedName === selected.name ? (
                   <>
-                    <InlineIcon name="check-bold" /> {t.shop.addToList}
+                    <InlineIcon name="check-bold" /> {addedTo ? t.shop.addedTo(addedTo) : t.shop.addToList}
                   </>
                 ) : (
                   <>
