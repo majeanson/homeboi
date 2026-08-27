@@ -159,9 +159,12 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     <div className="scene" aria-label={t.shop.browseTitle}>
       {/* In-store scene, outside HubLayout: opt into the shared offline/stale bar
           (shop seam #2) so a dead in-store signal reads as "not live". */}
+      {/* No subtitle: « Cherche un article en aubaine cette semaine » said exactly what
+          the field's own placeholder and the empty state right below it (« Cherche un
+          article, ou touche une suggestion » — which ALSO explains the chips) already
+          say, and it said it in the header on every visit, results included. LEAN #8. */}
       <SceneHead
         title={t.shop.browseTitle}
-        subtitle={t.shop.browseHint}
         card="deals"
         onClose={onClose}
         closeLabel={t.shop.close}

@@ -3126,7 +3126,6 @@ export const FR = {
     browse: 'Parcourir les circulaires',
     browseShort: 'Circulaires',
     browseTitle: 'Les circulaires',
-    browseHint: 'Cherche un article en aubaine cette semaine.',
     search: 'Chercher un article…',
     browseStart: 'Cherche un article, ou touche une suggestion.',
     byItem: 'Par article',
@@ -3146,6 +3145,13 @@ export const FR = {
     accept: 'Accepter',
     saving: 'Enregistrement…',
     more: (n: number) => `+${n} autre${n > 1 ? 's' : ''}`,
+  },
+  // Le ⚙ SIMPLE ↔ AVANCÉ générique (lib/surfaceMode) — les surfaces à deux faces
+  // qui n'ont pas leur propre formulation (garde-manger, bassins de repas). Comme
+  // « La liste » et « Les notes » : le nom dit vers quoi va la PROCHAINE touche.
+  mode: {
+    toAdvanced: 'Mode avancé — modifier et supprimer sur chaque ligne',
+    toSimple: 'Mode simple — les rangées sans le crayon ni la poubelle',
   },
   // À compléter — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de

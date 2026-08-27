@@ -1,4 +1,4 @@
-import { createDeviceStore } from './createDeviceStore'
+import { createModeStore } from './surfaceMode'
 
 // « Les notes » — SIMPLE (default) vs AVANCÉ, one device-local flag.
 //
@@ -17,10 +17,7 @@ import { createDeviceStore } from './createDeviceStore'
 // DEVICE-LOCAL, so a guest may flip it (CLAUDE.md: a localStorage presentation
 // preference is not a household write — never gate one on isGuest). A wall kiosk and
 // a phone each keep their own answer.
-const store = createDeviceStore<boolean>('babillard-notes-advanced', false, {
-  read: (raw) => raw === '1',
-  write: (v) => (v ? '1' : '0'),
-})
+const store = createModeStore('babillard-notes-advanced')
 
 /** Live: is this device on the advanced (pre-lean) Notes face? */
 export const useNotesAdvanced = store.use

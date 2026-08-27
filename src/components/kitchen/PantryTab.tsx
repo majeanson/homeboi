@@ -7,6 +7,9 @@ import { EditField } from '../EditField'
 import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { CheckRow } from '../CheckRow'
 import { EmptyState } from '../EmptyState'
+import { ModeToggle } from '../ModeToggle'
+import { usePantryAdvanced, setPantryAdvanced } from '../../lib/surfaceMode'
+import { CATS } from '../../lib/cats'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
@@ -49,6 +52,12 @@ export function PantryTab({
   // section leads with its content again.
   const soonAdd = useSectionAdd()
   const lowAdd = useSectionAdd()
+  // SIMPLE ↔ AVANCÉ (lib/surfaceMode, one flag for the whole garde-manger tab incl.
+  // La réserve between the two lists). Simple keeps the DO actions — the check and
+  // the réserve's 🛍 restock — and folds the ✏️ rename + the low list's 🗑 discard
+  // behind the ⚙: that toggle is the door to managing, same as La liste and Les
+  // notes. Device-local, so a guest gets it too.
+  const advanced = usePantryAdvanced()
 
   // Add one low item. `viaVoice` skips the put-it-back-on-failure (the field is
   // already cleared by the voice path and the spoken word is gone anyway).
@@ -153,7 +162,17 @@ export function PantryTab({
       <section>
         <div className="kitchen__head">
           <HelpTitle help={help} k="useSoon">{t.kitchen.useSoon}</HelpTitle>
-          <SectionAdd open={soonAdd.open} onToggle={soonAdd.toggle} label={t.kitchen.useSoonAdd} />
+          <span className="kitchen__head-actions">
+            <SectionAdd open={soonAdd.open} onToggle={soonAdd.toggle} label={t.kitchen.useSoonAdd} />
+            {/* ⚙ once, in the tab's first header — it governs all three lists. */}
+            <ModeToggle
+              advanced={advanced}
+              onToggle={() => setPantryAdvanced(!advanced)}
+              toSimple={t.mode.toSimple}
+              toAdvanced={t.mode.toAdvanced}
+              tint={CATS.pantry.deep}
+            />
+          </span>
         </div>
         {help?.bubbleFor('useSoon')}
         {soonAdd.open && (
@@ -182,7 +201,7 @@ export function PantryTab({
                 item={s.item}
                 onCheck={() => clearSoonItem(s)}
                 checkLabel={t.kitchen.useSoonCheck}
-                onRename={(item) => renameSoonItem(s, item)}
+                onRename={advanced ? (item) => renameSoonItem(s, item) : undefined}
               />
             ))}
           </ul>
@@ -229,8 +248,8 @@ export function PantryTab({
                 // per row" rule the note rows and the aisle tags follow.
                 onCheck={() => checkLowItem(l)}
                 checkLabel={t.kitchen.addToList}
-                onRename={(item) => renameLowItem(l, item)}
-                onDelete={() => removeLowItem(l)}
+                onRename={advanced ? (item) => renameLowItem(l, item) : undefined}
+                onDelete={advanced ? () => removeLowItem(l) : undefined}
               />
             ))}
           </ul>

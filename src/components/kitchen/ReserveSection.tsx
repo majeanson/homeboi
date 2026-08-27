@@ -10,6 +10,7 @@ import { EditField } from '../EditField'
 import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { EmptyState } from '../EmptyState'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
+import { usePantryAdvanced } from '../../lib/surfaceMode'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
@@ -39,6 +40,11 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   // The add box waits behind the section ＋ (SectionAdd) — see the header below.
   const add = useSectionAdd()
   const [newLoc, setNewLoc] = useState<string>('')
+  // SIMPLE ↔ AVANCÉ — the garde-manger tab's ONE flag (the ⚙ lives in PantryTab's
+  // first header, above this section). Simple keeps the check + the 🛍 restock (DO
+  // actions); Avancé restores the ✏️ rename/move editor. There is no 🗑 either way
+  // — clearing IS the check (see ReserveItemRow).
+  const advanced = usePantryAdvanced()
   // The picked location, guarded against a stale choice — if the household removed
   // the location this field was on (or it hasn't been picked yet), fall back to the
   // first one rather than silently filing the next item under "Autres".
@@ -172,6 +178,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
                   onClear={() => clearItem(r)}
                   onSave={(item, locationId) => saveItem(r, item, locationId)}
                   onAddToList={() => addToList(r)}
+                  advanced={advanced}
                 />
               ))}
             </ul>
@@ -192,12 +199,14 @@ function ReserveItemRow({
   onClear,
   onSave,
   onAddToList,
+  advanced,
 }: {
   row: ReserveRow
   locName: (id: string | null | undefined) => string
   onClear: () => void
   onSave: (item: string, locationId: string | null) => void
   onAddToList: () => void
+  advanced: boolean
 }) {
   const t = useT()
   return (
@@ -206,7 +215,7 @@ function ReserveItemRow({
       onCheck={onClear}
       checkLabel={t.kitchen.reserveCheck}
       editLabel={`${t.common.edit} — ${locName(row.location_id)}`}
-      renderEdit={(close) => <ReserveEditForm row={row} onSave={onSave} onClose={close} />}
+      renderEdit={advanced ? (close) => <ReserveEditForm row={row} onSave={onSave} onClose={close} /> : undefined}
       onExtra={onAddToList}
       extraIcon="shopping-bag-bold"
       extraLabel={t.kitchen.addToList}

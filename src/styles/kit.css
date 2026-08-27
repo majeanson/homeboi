@@ -406,7 +406,8 @@
 }
 
 /* ── ModeToggle (src/components/ModeToggle.tsx) ─────────────────────────────
-   The ⚙ SIMPLE ↔ AVANCÉ chip shared by « Les notes » and « La liste ». Eager for
+   The ⚙ SIMPLE ↔ AVANCÉ chip of every two-faces surface (« Les notes »,
+   « La liste », the garde-manger, the meal pools — lib/surfaceMode). Eager for
    the same reason as ShareModal below: it began life as `.notes-mode` in
    cercle.css, which the notes pages import lazily — so the moment La liste reused
    the class it rendered as a bare 32×22 box, because that sheet is never loaded
@@ -439,6 +440,12 @@
   background: color-mix(in srgb, var(--mode-tint, var(--accent)) 18%, var(--card));
   border-color: color-mix(in srgb, var(--mode-tint, var(--accent)) 38%, var(--line));
   color: var(--mode-tint, var(--accent));
+}
+/* A heading-less `.kitchen__head` that carries only right-side tools — the
+   drawer's meal pools keep their ⚙ without re-growing the redundant <h2> (C-14).
+   Lives beside the toggle it exists for, in the eager shell like it. */
+.kitchen__head--end {
+  justify-content: flex-end;
 }
 
 /* ── ShareModal (src/components/ShareModal.tsx) ────────────────────────────

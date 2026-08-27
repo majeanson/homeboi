@@ -1,11 +1,13 @@
 import { Icon } from './Icon'
 
-// The ⚙ SIMPLE ↔ AVANCÉ chip, shared by « Les notes » and « La liste ».
+// The ⚙ SIMPLE ↔ AVANCÉ chip — THE control of every two-faces surface (« Les
+// notes », « La liste », the garde-manger, the meal pools; flags minted by
+// lib/surfaceMode's createModeStore).
 //
-// Both tabs lean the same way: the default face is for READING/DOING (a row is its
-// content and one action), and the advanced face puts the explicit ✏️/🗑 furniture
-// back. Two tabs behaving alike should be learned once, so they share this control
-// rather than each growing a lookalike.
+// Every caller leans the same way: the default face is for READING/DOING (a row is
+// its content and one action), and the advanced face puts the explicit ✏️/🗑
+// furniture back. Surfaces behaving alike should be learned once, so they share
+// this control rather than each growing a lookalike.
 //
 // Two rules it encodes, so a third caller can't get them wrong:
 //   • The accessible name says where the NEXT tap goes, never the current state —

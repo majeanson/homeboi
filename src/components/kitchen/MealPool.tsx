@@ -14,6 +14,9 @@ import { Icon } from '../Icon'
 import { EditField } from '../EditField'
 import { useInlineEdit } from '../../lib/useInlineEdit'
 import { RowActions } from '../RowActions'
+import { ModeToggle } from '../ModeToggle'
+import { useMealPoolAdvanced, setMealPoolAdvanced } from '../../lib/surfaceMode'
+import { CATS } from '../../lib/cats'
 import { useSingleOpen } from '../Disclosure'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
@@ -104,6 +107,10 @@ export function MealPool<T extends { id: string; title: string }, O>({
   const planSlot = planSlotPick ?? mealPrefs.hero
   const [busy, setBusy] = useState(false)
   const edit = useInlineEdit() // which row is renaming + its draft
+  // SIMPLE ↔ AVANCÉ — one flag for every pool (lib/surfaceMode): simple = a row is
+  // its chip and the tap-to-plan; Avancé restores ✏️/🗑 per row. Read HERE so both
+  // pools (Idées / Restants) and every host (kitchen page, drawer) can't drift.
+  const advanced = useMealPoolAdvanced()
 
   function add(rawTitle: string, picked: ComboOption<O> | null) {
     const v = rawTitle.trim()
@@ -146,11 +153,21 @@ export function MealPool<T extends { id: string; title: string }, O>({
   const visible = removal.visible(items)
   return (
     <section className="kitchen__ideas">
-      {!hideHeading && (
-        <div className="kitchen__head">
-          <HelpTitle help={help} k={helpKey}>{labels.heading}</HelpTitle>
-        </div>
-      )}
+      {/* The ⚙ rides the heading row; a heading-less pool (the drawer, whose chip
+          already names the concept) still gets it, right-aligned on its own quiet
+          line — it is the only door back to the ✏️/🗑, so it can't be host-optional. */}
+      <div className={'kitchen__head' + (hideHeading ? ' kitchen__head--end' : '')}>
+        {!hideHeading && <HelpTitle help={help} k={helpKey}>{labels.heading}</HelpTitle>}
+        {/* Not gated on the guest: a device-local presentation pref renders for
+            everyone (ModeToggle's own rule) — the rows' RowActions hide themselves. */}
+        <ModeToggle
+          advanced={advanced}
+          onToggle={() => setMealPoolAdvanced(!advanced)}
+          toSimple={t.mode.toSimple}
+          toAdvanced={t.mode.toAdvanced}
+          tint={CATS.meal.deep}
+        />
+      </div>
       {help?.bubbleFor(helpKey)}
 
       {!ro && (
@@ -222,12 +239,14 @@ export function MealPool<T extends { id: string; title: string }, O>({
                         </span>
                       </button>
                     )}
-                    <RowActions
-                      editLabel={t.common.edit}
-                      deleteLabel={labels.removeLabel}
-                      onEdit={() => edit.open(item.id, item.title)}
-                      onDelete={() => removeItem(item)}
-                    />
+                    {advanced && (
+                      <RowActions
+                        editLabel={t.common.edit}
+                        deleteLabel={labels.removeLabel}
+                        onEdit={() => edit.open(item.id, item.title)}
+                        onDelete={() => removeItem(item)}
+                      />
+                    )}
                   </>
                 )}
               </div>

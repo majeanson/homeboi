@@ -75,7 +75,7 @@ at all (❌).
 | Fridge notes · clear all | ✅ broom in strip head | — | — | — | — | deferred | ✅ |
 | Drawing · edit / keep / new | ✅ ✏️ + 🖌 badges, « Dessiner » chip | — | — | ＋ `note` (DrawPad)ᴿ | — | — | ✅ |
 | Mot · open / reply / keep / delete | ✅ tap (stamps `opened_at`) | — | ✅ all four **visible**⁶ | ＋ `mot`ᴳ | — | — (delete direct⁶) | ✅ |
-| Habit · open / edit | ✅ tap | — | ✅ Modifier primary | ＋ `habit-pick` | — | — | ✅ |
+| Habit · open / edit | ✅ tap; ➖ furniture lives behind the row's own peek + the « En pause » fold **by design** (HabitudesPage — the check-in surface is for tapping, not managing; no ⚙ needed) | — | ✅ Modifier primary | ＋ `habit-pick` | — | — | ✅ |
 | Board card · edit mode (move/resize/hide) | — | 🔶 long-press `.wg-slot`⁷ | — | — | ✅ board▸layout + `/board?edit=1` | revert button | 🔶⁷ |
 | Greeting · « Depuis ce matin » | ❌ bare tap on the greeting (Board.tsx:1514)⁸ | — | — | — | ❌ no link, no help | — | ❌⁸ |
 | Face · switch | ✅ chipᴹ / `MemberSwitcher`ᴷ | — | — | — | — | — | ✅ |
@@ -86,11 +86,11 @@ at all (❌).
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Day plan · glance / plan empty / full edit | ✅ tap summary; « À planifier » → inline field; pencil → `/kitchen/day/:date` | ✅ drag day→day (`dayDnd`) | ✅ `buildDay` (zero actions, deliberate⁹) | ＋ `meal` | kitchen▸meals (slots/hero/hours) | — | ✅ |
-| Idées / Restants · add / plan / rename / delete | ✅ `EntityCombobox`; chip tap → `MealPlanPicker` | — | — | ＋ `leftovers` | — | deferred | ✅¹⁰ |
+| Idées / Restants · add / plan / rename / delete | ✅ `EntityCombobox`; chip tap → `MealPlanPicker`; ✏️/🗑 behind ⚙¹⁰ | — | — | ＋ `leftovers` | — | deferred | ✅ (⚙) |
 | Meal row (day editor) · reorder / leftover / delete | ✅ ✏️ + row ⋯ (`MealRows.tsx:160`) | ➖ no drag (⋯ Monter/Descendre is the door) | — | — | — | ⋯ confirm-free | ✅ |
-| Pantry low · to list / delete / rename | ✅ check = to-list; 🗑 + ✏️ `RowActions`¹⁰ | — | — | ✅ `SectionAdd` ×2 + ＋ `pantry` | — | deferred | ✅¹⁰ |
-| À utiliser (use-soon) · clear / add | ✅ check | — | — | 🔶 `SectionAdd` only, no ＋ tile¹¹ | — | deferred | ✅ |
-| Réserve · use / to list / rename+move | ✅ check; 🛍 `onExtra`; ✏️ swap-in editor | — | — | ✅ `SectionAdd` + ＋ `reserve` | kitchen▸reserve (locations) | deferred | ✅¹⁰ |
+| Pantry low · to list / delete / rename | ✅ check = to-list; ✏️ + 🗑 behind ⚙¹⁰ | — | — | ✅ `SectionAdd` ×2 + ＋ `pantry` | — | deferred | ✅ (⚙) |
+| À utiliser (use-soon) · clear / rename / add | ✅ check; ✏️ behind ⚙¹⁰ | — | — | 🔶 `SectionAdd` only, no ＋ tile¹¹ | — | deferred | ✅ (⚙) |
+| Réserve · use / to list / rename+move | ✅ check; 🛍 `onExtra` (a DO action, both faces); ✏️ behind ⚙¹⁰ | — | — | ✅ `SectionAdd` + ＋ `reserve` | kitchen▸reserve (locations) | deferred | ✅ (⚙) |
 | Recipe · open / favourite / filter / create | ✅ card tap → scene (peek retired⁹); ❤ `HeartButton`; collapsible `SearchField` + filter panel | — | ➖⁹ | ＋ `recipe` / `book` / `cook` | kitchen▸apparence (tags/pills/colours) | — | ✅ |
 | History · re-plan / day | ✅ chip → « Encore ? »; badge → day peek; pencil → editor | — | ✅ | — | liste▸history | — | ✅ |
 
@@ -131,6 +131,12 @@ at all (❌).
 | Directory · search | ❌ registered in help, never rendered (Maison.tsx:211)¹⁸ | | | | | | |
 | Joindre rail · quick-dial | ✅ foot of Famille/Socialᴹ | — | — | — | — | — | ✅ |
 
+**Footnotes ¹–¹⁸** are carried by the Part 4 backlog items citing the same number
+(each verdict lives beside its fix, not in a second list). Two that no fix carries:
+⁴ fridge notes deliberately have no peek — the card IS the content, a tap clears it;
+¹⁰ the garde-manger + pool ✏️/🗑 moved behind the ⚙ face 2026-08-26
+(`lib/surfaceMode`, guarded by `e2e/pantry-advanced.spec.ts`).
+
 ### Réglages-only actions (no in-app door — deliberate admin altitude)
 
 Board layout mirror (board▸layout, guest-allowed — device-local) · member admin
@@ -156,7 +162,7 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 | **Reorder** | drag ⠿ (Liste, Notes Avancé, board cards) · ⋯ Monter/Descendre (meal rows) · none | drag + a non-drag mirror where drag is the only path¹³ |
 | **Long tail** | `ActionMenu` ⋯ at row / section-head / page-tool altitude | ✅ one primitive, three altitudes — fine, document which altitude when adding |
 | **Search** | `SearchField` collapsible (Notes simple, Recettes) · always-open (Notes Avancé) · none (Liste¹⁴, Maison¹⁸, Historique, Garde-manger) | **`SearchField` collapsible wherever a list can exceed a screenful** |
-| **⚙ Simple↔Avancé face** | Notes + Liste only; Pantry/Réserve/MealPool/Habitudes/board-todos show managing furniture unconditionally | **generalize (Wave A)**: default face reads/does; Avancé restores furniture. Réglages ➖ |
+| **⚙ Simple↔Avancé face** | Notes + Liste + **garde-manger + meal pools** (2026-08-26, `lib/surfaceMode` factory). Habitudes and board todos: ➖ — furniture already behind a door (row peek / tap-to-edit); Réglages: ➖ always-managing | done (Wave A); a NEW row list picks a face or records why not (door #13) |
 | **Undo tier** | deferred (most checks/deletes) · compensating (Liste add) · confirm (heavy) · **none** (single fridge-note⁵, group¹⁷, event¹ post-confirm) | every destructive door names its tier; « none » requires a footnote |
 
 ---
@@ -167,12 +173,13 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 > PARITY Part 4. ⚠ Composer *layout* (field width, CTA stacking, gutters) is owned
 > by the parallel "lean outside, generous inside" pass in `LEAN.md` — out of scope here.
 
-### Wave A — generalize the two-faces pattern 🔴
+### Wave A — generalize the two-faces pattern 🔴 — **DONE 2026-08-26**
 
-- [ ] Extract `lib/surfaceMode.ts` — `createModeStore(key)` factory; `notesMode`/`listeMode` re-export, keys unchanged.
-- [ ] ⚙ face for **Pantry/Réserve** (`PantryTab.tsx`, `ReserveSection.tsx`), **MealPool/Idées** (`MealPool.tsx`, `IdeasDrawer.tsx`), **Habitudes** (`HabitudesPage.tsx`), **board todos** (`todos/TodoSection.tsx`): default face = row + its one act; Avancé restores ✏️/🗑/reorder. `ModeToggle` as-is (accessible-name + guest rules already encoded).
-- [ ] One e2e spec on a representative surface (pattern: `e2e/liste-advanced.spec.ts`).
-- [ ] ➖ Réglages surfaces stay always-managing (admin altitude).
+- [x] `lib/surfaceMode.ts` — `createModeStore(key)` factory; `notesMode`/`listeMode` rebuilt on it, keys unchanged.
+- [x] ⚙ face for the **garde-manger** (`usePantryAdvanced`, one flag: `PantryTab` ×2 lists + `ReserveSection`; ⚙ in the tab's first header, terracotta) and the **meal pools** (`useMealPoolAdvanced`, read inside `MealPool` so kitchen page + drawer inherit; ⚙ rides the pool's head row, `.kitchen__head--end` when heading-less). DO actions (check, 🛍 restock, tap-to-plan) stay on the simple face; ✏️/🗑 are Avancé.
+- [x] e2e: `e2e/pantry-advanced.spec.ts` (default face bare, ⚙ restores, flags independent, reload-persistent).
+- [x] ➖ **corrected two pre-seeded targets on code-read**: Habitudes (RowActions already behind the row's peek + the « En pause » fold — `HabitudesPage.tsx:120`) and board todos (🗑 already inside the tap-to-edit state — `TodoSection.tsx:304`) need **no** ⚙; recorded in their Part 2 rows.
+- [x] ➖ Réglages surfaces stay always-managing (admin altitude).
 
 ### Wave B — one delete grammar 🔴
 

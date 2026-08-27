@@ -1,4 +1,4 @@
-import { createDeviceStore } from './createDeviceStore'
+import { createModeStore } from './surfaceMode'
 
 // « La liste » — SIMPLE (default) vs AVANCÉ, one device-local flag. The same shape
 // and the same reasoning as [[notesMode]] (src/lib/notesMode.ts), deliberately: two
@@ -16,10 +16,7 @@ import { createDeviceStore } from './createDeviceStore'
 // DEVICE-LOCAL, so a guest may flip it — a localStorage presentation preference is
 // not a household write, and gating one on isGuest() is what once hid the whole
 // in-app guide from the demo. A wall kiosk and a phone each keep their own answer.
-const store = createDeviceStore<boolean>('babillard-liste-advanced', false, {
-  read: (raw) => raw === '1',
-  write: (v) => (v ? '1' : '0'),
-})
+const store = createModeStore('babillard-liste-advanced')
 
 /** Live: is this device on the advanced (row-actions) list face? */
 export const useListeAdvanced = store.use

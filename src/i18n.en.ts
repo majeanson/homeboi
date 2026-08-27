@@ -2882,7 +2882,6 @@ export const EN: typeof FR = {
     browse: 'Browse flyers',
     browseShort: 'Flyers',
     browseTitle: 'Flyers',
-    browseHint: 'Search an item on sale this week.',
     search: 'Search an item…',
     browseStart: 'Search an item, or tap a suggestion.',
     byItem: 'By item',
@@ -2902,6 +2901,12 @@ export const EN: typeof FR = {
     accept: 'Accept',
     saving: 'Saving…',
     more: (n: number) => `+${n} more`,
+  },
+  // The generic ⚙ SIMPLE ↔ ADVANCED (lib/surfaceMode) — two-faces surfaces without
+  // their own wording (garde-manger, meal pools). The name says where the NEXT tap goes.
+  mode: {
+    toAdvanced: 'Advanced mode — edit and delete on every row',
+    toSimple: 'Simple mode — rows without the pencil and trash',
   },
   // To complete — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.
