@@ -477,3 +477,40 @@ test('a keyboard that vanishes with its sheet is cleared by the next tap', async
   await page.waitForTimeout(300)
   expect(await page.evaluate(kbState), 'the next tap cleared it').toEqual({ open: false, kb: '0px' })
 })
+
+// …and the same unmount with NO tap and NO navigation: idle hands heal nothing.
+// Every backstop above needs an EVENT (a tap, a route change, a focus move), so
+// closing a composer by its own ✕ and then just LOOKING at the screen left the tab
+// bar + ＋ FAB hidden until the next touch (Marc, iOS PWA — « the bottom bar
+// sometimes disappears », 2026-08-27). The watchdog in lib/viewportVars re-reads
+// the viewport once a second while the state is self-contradictory (we claim a
+// keyboard, yet nothing editable holds focus).
+test('a keyboard that vanishes with nothing touched clears itself within a tick', async ({ page }) => {
+  const open = boot({ w: 390, h: 844 })
+  await open(page, '/board')
+
+  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  await add.scrollIntoViewIfNeeded()
+  await add.focus()
+  await openKeyboard(page, 291)
+  expect(await page.evaluate(kbState), 'keyboard up').toEqual({ open: true, kb: '291px' })
+  await expect(page.locator('.hubnav')).toBeHidden()
+
+  // REMOVE the focused field (a composer closing takes its input with it — Chromium
+  // fires no blur/focusout for a removed node, exactly like iOS) and restore the
+  // viewport silently: no resize, no focusout, no tap, no navigation.
+  await page.evaluate(() => {
+    document.activeElement?.remove()
+    document.getElementById('fake-kb')?.remove()
+    const stub = (window as unknown as { __vvStub: { height: number; offsetTop: number } }).__vvStub
+    stub.height = window.innerHeight
+    stub.offsetTop = 0
+  })
+
+  // Nothing is touched — only the watchdog can save this.
+  await expect
+    .poll(() => page.evaluate(kbState), { message: 'the watchdog cleared the stale latch', timeout: 4000 })
+    .toEqual({ open: false, kb: '0px' })
+  await expect(page.locator('.hubnav')).toBeVisible()
+  await expect(page.locator('.add-fab')).toBeVisible()
+})

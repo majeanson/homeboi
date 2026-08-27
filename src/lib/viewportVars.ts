@@ -620,6 +620,20 @@ export function trackVisualViewport(): void {
     if (kbOpen && !isEditable(document.activeElement)) schedule()
   })
 
+  // Watchdog: `.kb-open` with NOTHING editable focused must not outlive the
+  // keyboard. Every healer above needs an EVENT — a tap (pointerup), a navigation
+  // (remeasureViewport), a focus change — but idle hands heal nothing: close a
+  // composer via its own ✕ (the field unmounts, iOS hides the keyboard with no
+  // `resize` and no `focusout`) and then just LOOK at the screen, and the tab bar
+  // + ＋ FAB stay hidden until the next tap (« the bottom bar sometimes
+  // disappears », 2026-08-27). While the state is contradictory — we claim a
+  // keyboard yet no field holds focus — re-READ once a second. Pure re-read,
+  // never a guess: a keyboard genuinely up keeps its fit; a stale latch clears
+  // within a tick. Constant-time no-op the rest of the time.
+  setInterval(() => {
+    if (kbOpen && !document.hidden && !isEditable(document.activeElement)) schedule()
+  }, 1000)
+
   // Final backstop for iOS Safari browser tabs: block the pinch-zoom gesture
   // outright (it honours user-scalable=no only once installed standalone). These
   // gesture* events are iOS-only.
