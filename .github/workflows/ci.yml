@@ -39,6 +39,17 @@ jobs:
       # every lazy route), EXCEPT the online-only allowlist (the HEIC upload
       # decoder), which must NOT be. See scripts/check-bundle.mjs.
       - run: npm run check:bundle
+      # Dead-code gate. It was in package.json and in the project's own notes as "the
+      # gate" for months while being wired into NOTHING — so it gated nothing, and by
+      # 2026-08-27 it no longer even ran on a dev machine (oxc-parser reserves a >4 GiB
+      # ArrayBuffer for its raw-transfer parse, which fails on a memory-tight Windows
+      # box; a CI runner has the headroom). Wired here so the claim becomes true.
+      #
+      # knip.json sets `ignoreExportsUsedInFile`: without it the report was ~90%
+      # "this export is only used inside its own module", which is a superfluous
+      # `export` keyword, not dead code — and that noise is exactly why the report
+      # was being skimmed and ignored.
+      - run: npm run knip
 
   deploy:
     name: Deploy to Cloudflare

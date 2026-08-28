@@ -9,5 +9,6 @@
     "worker/**/*.ts",
     "functions/**/*.ts",
     "scripts/**/*.mjs"
-  ]
+  ],
+  "ignoreExportsUsedInFile": true
 }

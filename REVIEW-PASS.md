@@ -408,10 +408,13 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
 
 ### Findings — P3 (bigger / judgement)
 
-- [ ] **Routines never surface on the Board, yet saving invalidates `BOARD_KEY`**
-  (`RoutineFormPage.tsx:52`) — a dead invalidate (no routine ref in `board.ts`/`Board.tsx`).
-  **Decision:** either wire a "morning routine" board glance (a *possible missing feature*)
-  or drop the invalidate. _(worth Marc's call.)_
+- [~] ~~**Routines never surface on the Board, yet saving invalidates `BOARD_KEY`**~~ —
+  **stale on BOTH halves (verified 2026-08-27).** Routines DO surface on the board now:
+  `routineNext` is a real card (`lib/boardCards.ts:168`, `components/board/RoutineNextCard.tsx`),
+  which is the "morning routine glance" this finding proposed as the alternative. And the
+  save no longer touches `BOARD_KEY` at all — `RoutineForm` writes with
+  `affectedKeys: [ROUTINES_KEY]`, which is the key the card actually reads. Zero
+  `BOARD_KEY` references remain anywhere in the routine save path. Nothing to decide.
 - [ ] **Two timers on screen at once** on a timed step — the `Countdown` ring
   (`RoutinePlayer.tsx:310`) *and* the run count-up stopwatch (`:351`) both show; potentially
   confusing on the toddler surface. Design decision on whether both belong.
