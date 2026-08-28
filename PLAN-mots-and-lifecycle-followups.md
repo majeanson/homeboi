@@ -21,6 +21,12 @@
 > `worker/routes.ts` + `keysForPath` mapping. New shared component → `/dev/kit` +
 > `COMPONENTS.md`; new user-facing behaviour → the in-app Guide (`lib/guideContent.ts`).
 
+> ⚪ **This is an idea pool, not a backlog.** Every entry below is uncommitted —
+> inspiration for a *deliberate* decision, never a queue to work down. Twelve designed-but-unbuilt features (A5–D2); none started.
+> It deliberately carries **no checkboxes**: a `- [ ]` in this repo means real open
+> work, and these are not that. See `STATE.md` §4-F and its checkbox convention.
+
+
 ---
 
 ## Priority read

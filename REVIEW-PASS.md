@@ -1,6 +1,6 @@
 # REVIEW-PASS — a slow, section-by-section audit of the whole app
 
-> 📍 **20 findings still open here** (P2/P3, section debt — no data loss). For where they
+> 📍 **15 findings still open here** (P2/P3, section debt — no data loss). For where they
 > rank against everything else in the repo, read [`STATE.md`](./STATE.md) § 4.
 >
 > **Swept 2026-08-28.** Every open box was grepped against code before anything was built.
@@ -14,6 +14,13 @@
 > is a verdict from a moment, not a fact. And grep the *tree*, not just the place the
 > finding points at: "`OperatorJump` is not in DevKit" was true and useless, because the
 > component had been deleted. **Tick a box in the same commit that resolves it.**
+
+> **Checkbox convention** (repo-wide, adopted 2026-08-28 — see `STATE.md`):
+> `- [ ]` open work · `- [x]` done · `- [~]` reviewed and parked, with the why ·
+> `❓` an open question, not a task. **Templates and idea pools carry no checkboxes at
+> all.** A `- [ ]` anywhere in this repo now means exactly one thing: work someone still
+> has to do.
+
 
 > **Purpose.** One living plan to review **every section and every feature** of
 > Babillard for what's **missing**, what's **overlooked/redundant**, and what needs a
@@ -35,9 +42,9 @@
 > row + `keysForPath`. Push straight to `main`; CI is the only gate.
 >
 > **Not a duplicate of.** The **Board** already has its own deep review + backlog in
-> [`AUJOURDHUI.md`](./AUJOURDHUI.md); this plan **points at it** for Board and does not
+> [`AUJOURDHUI.md`](./bmad/history/AUJOURDHUI.md); this plan **points at it** for Board and does not
 > re-audit it. Shared-UI reuse debt lives in [`COMPONENTS.md`](./COMPONENTS.md) +
-> [`UNIFORMIZING.md`](./UNIFORMIZING.md); mots/lifecycle follow-ups in
+> [`UNIFORMIZING.md`](./bmad/history/UNIFORMIZING.md); mots/lifecycle follow-ups in
 > [`PLAN-mots-and-lifecycle-followups.md`](./PLAN-mots-and-lifecycle-followups.md). When a
 > finding really belongs in one of those, log it **there** and link it from here.
 
@@ -202,7 +209,7 @@ the board memo path too — a good small next fix.
 **P1** (quick, high-value / a11y) · **P2** (small design pass) · **P3** (bigger / judgement
 call). Sections are ordered so each one's **feeders** sit next to it (Kitchen↔Liste,
 Routines, Le cercle, Share-links, Settings, Capture, Scenes, Ambient/offline). **Board is
-excluded** — its own backlog lives in [`AUJOURDHUI.md`](./AUJOURDHUI.md). Each block opens
+excluded** — its own backlog lives in [`AUJOURDHUI.md`](./bmad/history/AUJOURDHUI.md). Each block opens
 with a one-line current-state + verdict, then P1/P2/P3 findings and "strengths to keep".
 
 ---
@@ -340,16 +347,21 @@ not structural. Four reviewers; findings deduped below.
   honestly. `onConfirm(items)` hands the picked names back and the host picks its undo tier —
   which is exactly how `ACTIONS.md` already models undo. Forcing either behaviour on both
   would have lost a working undo or painted an untappable one.
-  Two things worth recording. **The modal has no product caller** — only the `/dev/kit`
-  specimen; the Kitchen recipe peek that used it was removed, and `COMPONENTS.md` had already
-  said so, which is why it's KEPT rather than deleted (a recorded decision, not an oversight).
-  And it therefore had **no test at all**, so the deferred half of the pair was unguarded:
-  new `e2e/recipe-ingredient-pick.spec.ts` drives the specimen (same drill as
-  `recipe-read-review.spec.ts`) and pins the negative — after confirming, **nothing** reaches
-  the server while the undo stands, and « Annuler » leaves it untouched — plus the settle
-  path sending exactly one POST carrying only the ticked name. **Run against the bug:**
-  making the modal POST immediately turns the first case red. The inline half stays covered
-  by `interactions.spec.ts` › recipes.
+  **The modal is deleted** (same day, after Marc's call). It had no product caller — only
+  the `/dev/kit` specimen — and the reason turned out to be stronger than "the peek was
+  removed": `detail/adapters.ts` deletes that whole class of surface **by rule** ("a peek
+  that is really just a MENU of 'go to page X' is an inter-tap"), so every path to a recipe
+  lands on `RecipeSheet`, which already carries this checklist. Its niche was closed on
+  purpose, not vacated by accident, and a component that looks live in `COMPONENTS.md` +
+  `/dev/kit` while no user can reach it is precisely the `OperatorJump` shape. The
+  extraction is what makes this cheap to undo: the deferred variant is a ~20-line Modal
+  wrapper around the shared body, and the trade-off that motivated it is recorded in that
+  body's header rather than lost.
+  `e2e/recipe-ingredient-pick.spec.ts` now drives the **shared body's** specimen and pins
+  its contract instead: `## Titre` markers are not offered as groceries, it opens
+  all-unticked with a dead CTA, and select-all is a real toggle. **Run against the bugs:**
+  keeping headings, and opening all-ticked — both turn it red. The live commit path stays
+  covered by `interactions.spec.ts` › recipes.
 - [x] **Adding recipe ingredients to La liste has no undo** — ✅ **Fixed 2026-07-02**:
   `RecipeListPicker.confirm` now DEFERS the `recipe-to-list` POST behind `useUndoToast`
   (mirrors `ReserveSection.addToList`) — the write only fires if you don't undo, so no

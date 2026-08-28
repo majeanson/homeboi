@@ -13,6 +13,12 @@
 > businesses graph), the recurrence engine, `todos`/`tasks`, R2 media, the capture
 > spine, ghost cadence, guest mode, realtime/DO. Nothing here is committed.
 
+> ⚪ **This is an idea pool, not a backlog.** Every entry below is uncommitted —
+> inspiration for a *deliberate* decision, never a queue to work down. None of these was ever committed to.
+> It deliberately carries **no checkboxes**: a `- [ ]` in this repo means real open
+> work, and these are not that. See `STATE.md` §4-F and its checkbox convention.
+
+
 ---
 
 ## North star

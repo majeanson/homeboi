@@ -87,8 +87,8 @@ export function RecipeSheet({
   const [leftoverSaved, setLeftoverSaved] = useState(false)
   const [sharing, setSharing] = useState(false)
   // "Add to list" opens the shared « quels ingrédients ? » checklist
-  // (RecipeIngredientPick — the same body the RecipeListPicker modal uses). The tick
-  // state lives in there; this host only says whether the panel is open.
+  // (RecipeIngredientPick — the shared body; this used to be a second copy of it).
+  // The tick state lives in there; this host only says whether the panel is open.
   const [pickingList, setPickingList] = useState(false)
   const [planning, setPlanning] = useState(false)
   // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
@@ -168,8 +168,9 @@ export function RecipeSheet({
   // 40, so an « Annuler » from here would be painted underneath. The POST goes at
   // once and the label flip to « Ajouté à la liste » IS the confirmation; the badge
   // rolls back if the write fails, so the sheet never claims a list it didn't write.
-  // (The RecipeListPicker modal CAN defer, because it closes before it commits —
-  // see RecipeIngredientPick's header for the whole trade-off.)
+  // (A surface that CLOSES before it commits could defer honestly — see
+  // RecipeIngredientPick's header for the whole trade-off, and for why the modal
+  // host that did exactly that was deleted rather than kept.)
   async function confirmAddToList(items: string[]) {
     setAdded(true)
     setPickingList(false)

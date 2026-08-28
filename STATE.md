@@ -1,6 +1,6 @@
 # STATE.md — where Babillard is, what's left, and how we've been working
 
-> **What this file is.** The single front door. Thirteen other markdown files in this
+> **What this file is.** The single front door. Nine other root markdown files in this
 > repo hold real, careful detail; none of them answers "what should I do next?", which
 > is why that question has to be asked out loud every session. This file answers it, and
 > points at the detail rather than repeating it.
@@ -51,28 +51,45 @@
 
 ## 2. The document map
 
-Thirteen root `.md` files, 6,144 lines. They are **not** interchangeable, and three of
-them are finished. Read this table before opening any of them.
+**Ten** root `.md` files (was thirteen — three finished ledgers moved to
+`bmad/history/` on 2026-08-28). They are **not** interchangeable. Read this table
+before opening any of them.
+
+> **The checkbox convention** (repo-wide, adopted 2026-08-28 — this is the canonical
+> statement; the ledgers carry a copy):
+>
+> | | |
+> | --- | --- |
+> | `- [ ]` | **open work.** Someone still has to do it. Nothing else uses this. |
+> | `- [x]` | done — with the file:line or commit that settles it |
+> | `- [~]` | reviewed and parked, **with the why** — so it isn't re-litigated |
+> | `❓` | an open **question**, not a task |
+> | ⚪ | an **idea pool** entry — uncommitted, never a queue |
+>
+> Templates (`PARITY.md` Parts 5–6, `ACTIONS.md` Part 5) and idea pools carry **no
+> checkboxes at all**. Before this, `- [ ]` meant three different things and any count
+> of "open items" read **75** when the true number was 17 — a mis-count that opened at
+> least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
+> a number you can trust — it reads **17** today (15 in `REVIEW-PASS.md`, 2 in
+> `PARITY.md`'s Wave D), and that is the whole of the repo's written open work.
 
 | File | Kind | Status |
 | --- | --- | --- |
 | **STATE.md** | ← you are here | The front door. Start here. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
-| `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
-| `AUJOURDHUI.md` | Ledger | ✅ **Closed** — no open items (the last, `ARM_MS`, answered 2026-08-28). |
-| `REVIEW-PASS.md` | Ledger | 🟡 **19 open** P2/P3 findings across 8 sections (was "31"; the 2026-08-28 sweep found 8 already fixed and never ticked, and closed the birthday split). The main written debt pool. |
-| `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — all 5 tier-1 and all 9 tier-2 seams resolved (5 of the 9 were already done and merely unticked). Only tier-3 polish remains. See §4-B. |
-| `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
-| `PLAN-mots-and-lifecycle-followups.md` | Feature backlog | 🟡 12 designed-but-unbuilt features (A5–D2), never started. |
-| `bmad/05` + `bmad/06` | Idea pools | ⚪ Brainstorms. Nothing committed. Don't treat as a backlog. |
-| `PARITY.md` | **Playbook** | 35 "open" boxes are a **per-feature checklist template**, not work. Never "close" them. |
-| `ACTIONS.md` | **Playbook** | Same: 7 boxes are the add-an-action checklist. |
+| `REVIEW-PASS.md` | Ledger | 🟡 **15 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
+| `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — tiers 1 and 2 fully resolved; tier 3 swept the same day (five re-checked, four stale). See §4-B. |
+| `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. **2 open items** (Part 4 Wave D, opportunistic). Parts 5–6 are a template — copy, don't tick. |
+| `ACTIONS.md` | **Playbook** | The action × door matrix. **No open items** — Part 5 is a template. |
+| `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed-but-unbuilt features (A5–D2), never started. Not a backlog. |
+| `bmad/05` + `bmad/06` | ⚪ Idea pools | Brainstorms. Nothing committed. Not a backlog. |
 | `LEAN.md` · `DISCOVERY.md` · `COMPONENTS.md` · `OFFLINE.md` · `DEPLOY.md` | Reference | Consult when touching their concern. |
-| `bmad/01`–`10` | History | Brief, PRD, architecture, and shipped feature lines. Requirement tags (`NFR-*`, `PRD *`, `OD-*`) resolve here. |
+| `bmad/01`–`10` | History | Brief, PRD, architecture, shipped feature lines. Requirement tags (`NFR-*`, `PRD *`, `OD-*`) resolve here. |
+| `bmad/history/` | **Archive** | ✅ Finished ledgers: `UNIFORMIZING.md`, `AUJOURDHUI.md`, `12-ui-polish-queue.md`. Verdicts only. **Do not mine for work.** Tags still resolve by name under `bmad/`. |
 
-**The trap this table exists to stop:** `PARITY.md` + `ACTIONS.md` contribute 42 unticked
-boxes that are templates. Any naive count of "open items" — including the one that opened
-this session — reads 75 and is wrong by more than half.
+**The trap this table used to exist to stop is now fixed at the source.** `PARITY.md` +
+`ACTIONS.md` contributed 40 unticked boxes that were templates; they are plain bullets
+now, so the repo-wide count is honest for the first time.
 
 ---
 
@@ -102,7 +119,7 @@ Four waves, each its own commit, all green, no rollbacks.
 
 ### The second half of the day — the polish queue and the top-10
 
-Ten more commits, same shape. `bmad/12` is now **empty**: #10 elevation tokens, #11 focus
+Ten more commits, same shape. `bmad/12` is now **empty** (and archived to `bmad/history/`): #10 elevation tokens, #11 focus
 rings, #8 night contrast, #1 Skeleton, #6 EmptyState doors, #13 PWA theming, #14 the 360px
 heading ramp, #16 Ctrl+Z, #17 pull-to-refresh, #18 hold-the-＋-and-speak, #25 note age,
 #26 the stale-link toast. Alongside it, six of the ten ranked seams: the list-item peek,
@@ -228,8 +245,9 @@ proves nothing about the codebase; grep the tree.
 Shapes still worth batching:
 
 - **Reuse duplicates** — ~~the "which ingredients?" checklist exists twice~~ (✅ 2026-08-28 —
-  one `RecipeIngredientPick` body; the **commit** deliberately stays with each host, because
-  whether an undo is reachable is a property of the surface); three `Member` shapes converge
+  one `RecipeIngredientPick` body, and the `RecipeListPicker` modal **deleted**: its niche
+  was a recipe peek, which `adapters.ts` removes by rule. The **commit** deliberately stays
+  with the host, because whether an undo is reachable is a property of the surface); three `Member` shapes converge
   on one face control; `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; ~~two `parseBirthday` derivations that disagree on the year regex~~ (✅ 2026-08-28 — it was
   FOUR spellings; the rule now lives once in `functions/_lib/birthdayRule.ts`, pinned by an
   agreement table in `src/lib/cercle.test.ts`).
@@ -254,7 +272,7 @@ Shapes still worth batching:
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**
-  `AUJOURDHUI.md` now has no open boxes at all. Declined, not deferred — don't
+  `bmad/history/AUJOURDHUI.md` now has no open boxes at all. Declined, not deferred — don't
   re-propose without a new observation.
 - **Review-queue counts** in intake/postbox section titles — borderline against the
   no-counts tenet; operator-only and passive. Keep, or drop the number.
@@ -345,15 +363,16 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
    this whole session began with the question "next steps?", which the repo could not
    answer for itself. *This file is the attempted fix; it only works if it is maintained.*
 
-3. **`- [ ]` means three different things.** A real to-do, a template checklist item
-   (`PARITY`, `ACTIONS`), and a recorded not-doing. Anyone counting gets a number that is
-   more than half wrong. *Fix:* one convention, stated at the top of every ledger —
-   `[ ]` to-do · `[x]` done · `[~]` reviewed-and-parked-with-a-why · templates never use
-   checkboxes at all.
+3. ~~**`- [ ]` means three different things.**~~ ✅ **fixed 2026-08-28.** It meant a real
+   to-do, a template checklist item (`PARITY`, `ACTIONS`) and a recorded not-doing, so
+   anyone counting got a number more than half wrong — 75 against a true 17. The 40
+   template boxes are plain bullets now ("copy, don't tick"), the idea pools carry a ⚪
+   banner instead, and the convention is stated canonically in §2 with a copy at the top
+   of each live ledger. `- [ ]` now means exactly one thing, repo-wide.
 
 4. **Audits are produced faster than they are acted on.** bmad/11 generated 33 verified
    seams; none were approved; the document has stood as a permanent unfixed inventory for
-   six weeks. bmad/05, bmad/06, bmad/12 and PLAN-mots add ~60 more designed-but-unbuilt
+   six weeks. bmad/05, bmad/06 and PLAN-mots add ~45 more designed-but-unbuilt
    items. **Writing another audit right now would be the wrong move** — the constraint is
    decisions, not information.
 
@@ -386,7 +405,10 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
    verified in code first, five of the fourteen turned out to be already fixed.
 2. **Turn the `useWrite` rule into a test** (`write-rule.test.ts` + allowlist), and fix
    `/share` as its first customer.
-3. **Adopt one checkbox convention** and put the legend at the top of each ledger; strip
-   checkboxes from `PARITY`/`ACTIONS` templates entirely.
+3. ~~**Adopt one checkbox convention**~~ ✅ **done 2026-08-28** — legend at the top of each
+   live ledger, template boxes stripped from `PARITY`/`ACTIONS`, ⚪ banners on the three
+   idea pools, and the canonical statement in §2.
 4. **Maintain this file, and freeze new audit docs** until the existing pools are decided
-   or deleted.
+   or deleted. ✅ **Partly done 2026-08-28**: the three *finished* ledgers moved to
+   `bmad/history/` (with a README saying why they're kept and not to mine them), so the
+   root now holds ten files instead of thirteen and none of them is closed.

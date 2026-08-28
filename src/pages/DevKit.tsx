@@ -108,7 +108,6 @@ import { RecipeReadReview } from '../components/RecipeReadReview'
 import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
-import { RecipeListPicker } from '../components/RecipeListPicker'
 import { RecipeIngredientPick } from '../components/RecipeIngredientPick'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
 import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
@@ -714,7 +713,6 @@ export function DevKit() {
   const [readReviewOpen, setReadReviewOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [listPickOpen, setListPickOpen] = useState(false)
   const [askSheetOpen, setAskSheetOpen] = useState(false)
   const voice = useVoiceInput(setText3, { continuous: true, split: true })
   // « Joindre » specimen — the hook must run at component top level (rules of hooks);
@@ -3047,36 +3045,6 @@ export function DevKit() {
           </div>
         </Demo>
       ),
-    },
-    {
-      cat: 'Overlays & chrome',
-      name: 'RecipeListPicker',
-      file: 'components/RecipeListPicker.tsx',
-      kw: 'recipe ingredients grocery list shop add modal liste ingrédients épicerie',
-      render: () => {
-        const recipe: Recipe = {
-          id: 'demo',
-          title: 'Spaghetti bolognaise',
-          ingredients: ['500 g de bœuf haché', '1 oignon', '2 gousses d’ail', '800 ml de tomates', 'Spaghettis', 'Parmesan'],
-          steps: [],
-          servings: null,
-          notes: null,
-          source: null,
-          image: null,
-          tags: [],
-          updatedAt: 0,
-        }
-        return (
-          <Demo label="pick which ingredients to add to the list (not all)">
-            <div>
-              <button className="btn" onClick={() => setListPickOpen(true)}>
-                Ajouter à la liste
-              </button>
-              {listPickOpen && <RecipeListPicker recipe={recipe} onClose={() => setListPickOpen(false)} />}
-            </div>
-          </Demo>
-        )
-      },
     },
     {
       cat: 'Champs & saisie',

@@ -8,30 +8,29 @@ import { Chip } from './Chip'
 // THE « quels ingrédients ? » checklist — tick the few you're missing before a
 // recipe's ingredients go on the shared grocery list. You rarely need EVERY line
 // (most are staples you already have), so it opens **all-unticked**: "pick the few
-// I'm missing", never "untick the many I have".
+// I'm missing", never "untick the many I have". Section markers (`## Titre`) are
+// dropped and names are deduped case-insensitively.
 //
-// It existed twice — the `RecipeListPicker` modal and an inline copy inside
-// `RecipeSheet` — down to the same `.recipe-list-pick*` classes and the same i18n
-// keys, each with its own dedup loop and its own tick state. This is that body,
-// once. Both hosts keep their own shell (a Modal / an inline panel).
+// It was written twice — here and, until 2026-08-28, in a `RecipeListPicker` modal —
+// down to the same `.recipe-list-pick*` classes and the same i18n keys, each with its
+// own dedup loop and its own tick state. This is that body, once.
 //
-// WHAT THE HOST KEEPS, deliberately: the commit. The two callers really do differ,
-// and not by accident —
+// THE HOST OWNS THE COMMIT, and that is not laziness — it is the actual rule.
+// `onConfirm` hands back the picked names and the caller does the write, because
+// whether an undo is REACHABLE is a property of the surface, not of the checklist.
+// Today's only caller, `RecipeSheet`, stays open inside `.recipe-modal` (z-index 80)
+// while `.undo-toast` sits at 40, so an « Annuler » offered from there would be
+// painted underneath — it POSTs at once and flips its label instead (the cook-mode
+// lesson of 2026-08-27, third time). The deleted modal host did the opposite and was
+// right to: it CLOSED before committing, so its toast landed on a clear page and the
+// POST could be deferred behind « Annuler » honestly.
 //
-//   • `RecipeListPicker` CLOSES itself on confirm, so nothing is left painted above
-//     the undo toast; it can and does DEFER the POST behind « Annuler » (the write
-//     only fires if you don't take it back, so undo is conflict-free — nothing to
-//     reverse).
-//   • `RecipeSheet` stays open inside `.recipe-modal` (z-index 80) while the toast
-//     sits at 40, so an « Annuler » offered from there would be painted underneath
-//     and unreachable. It POSTs immediately and flips its label to « Ajouté à la
-//     liste » — the same call cook mode's « Il en manque » and this sheet's own
-//     leftovers button already made (2026-08-27).
-//
-// So the undo TIER is a property of the SURFACE, not of the checklist, and pushing
-// one behaviour down into the shared body would either lose an undo that works or
-// paint one nobody can tap. `onConfirm` hands the host the picked names and lets it
-// decide. (ACTIONS.md models exactly this: undo tier is per door.)
+// If a new surface ever needs that deferred variant, it is a ~20-line Modal wrapper
+// around this component — which is the whole point of the split. The modal was
+// removed because its niche was closed on purpose, not because it was wrong: the
+// recipe PEEK it existed for was deleted under the rule in `detail/adapters.ts`
+// ("a peek that is really just a MENU of 'go to page X' is an inter-tap"), so every
+// path to a recipe now lands on `RecipeSheet`, which already carries this checklist.
 export function RecipeIngredientPick({
   lines,
   onCancel,

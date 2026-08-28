@@ -6,13 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > This file governs **Babillard** (the `PlannerOrSomething/` project) specifically.
 
 > **Asked "what should we work on?" — read [`STATE.md`](./STATE.md) first, not the
-> ledgers.** It is the one front door: current health numbers, which of the thirteen
-> markdown files still hold work and which are finished, and the whole remaining backlog
+> ledgers.** It is the one front door: current health numbers, which of the ten root
+> markdown files still hold work and which are reference (the finished ones were moved
+> to `bmad/history/` on 2026-08-28), and the whole remaining backlog
 > consolidated and ranked by user harm rather than by which document it lives in. It also
-> records the two counting traps that have burned a session each: `PARITY.md` and
-> `ACTIONS.md`'s unticked boxes are **per-feature checklist templates, not work**, and a
-> ledger entry is a verdict from a moment — **grep the claim in code before building on
-> it** (a third of the items picked up on 2026-08-27 were already done).
+> records the counting trap that burned a session: a ledger entry is a verdict from a
+> moment — **grep the claim in code before building on it** (a third of the items picked
+> up on 2026-08-27 were already done, and four of the five tier-3 items re-checked on
+> 2026-08-28 were stale).
+>
+> The *other* counting trap is **fixed at the source** (2026-08-28): `PARITY.md` and
+> `ACTIONS.md`'s per-feature checklist templates no longer carry checkboxes — copy them
+> into your commit, don't tick them there — and the idea pools carry a ⚪ banner instead.
+> **`- [ ]` now means exactly one thing repo-wide: open work.** The convention (`[ ]` ·
+> `[x]` · `[~]` · `❓` · ⚪) is stated canonically in `STATE.md` §2. Keep it that way:
+> if you add a checklist someone is meant to copy, give it bullets, not boxes.
 >
 > This file (`CLAUDE.md`) stays the **law**: how to write code here. `STATE.md` is *what
 > to write next*. Update `STATE.md` in the same commit as the work it describes.
@@ -243,7 +251,7 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
 
 > Canonical naming rules for new tables/columns, so the schema stops accumulating
 > drift. These are **forward rules**: adopt them for all new migrations. (Existing
-> outliers are tracked in `UNIFORMIZING.md` Part I §5 / Part II §D and converged only
+> outliers are tracked in `bmad/history/UNIFORMIZING.md` Part I §5 / Part II §D, converged only
 > during the one-household migration window — don't retro-churn a working table just
 > to match a name.) The calm-tenet test (`calm-tenets.test.ts`) still overrides
 > everything: no `streak`/`points`/`badge`/`push_subscription` table, no inventory

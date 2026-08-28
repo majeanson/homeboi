@@ -532,12 +532,17 @@ mode · F-45 grandma-kiosk constellation · F-46 scribble-to-list.
 
 ## The Grandma Test, as a checklist (run it on a real human)
 
-- [ ] 60s unaided: says what the app is (A-3 words / A-8 demo)
-- [ ] Finds tonight's supper in ≤2 taps (C-18)
-- [ ] Adds « lait » to the list by voice or typing (capture spine)
-- [ ] Undoes it, unafraid (A-6)
-- [ ] Hears something read aloud (A-2)
-- [ ] Never once saw jargon, an error code, or a dead end (A-7, E-34)
+> A **protocol you run**, not work in this file — copy these six lines into the notes of
+> the session where you sit someone down with the tablet, and tick them there. No
+> checkboxes here: a `- [ ]` in this repo means open work (`STATE.md` §2), and these
+> were six of the boxes that made the repo-wide count wrong.
+
+- 60s unaided: says what the app is (A-3 words / A-8 demo)
+- Finds tonight's supper in ≤2 taps (C-18)
+- Adds « lait » to the list by voice or typing (capture spine)
+- Undoes it, unafraid (A-6)
+- Hears something read aloud (A-2)
+- Never once saw jargon, an error code, or a dead end (A-7, E-34)
 
 ## Open questions — all answered except OQ-4
 

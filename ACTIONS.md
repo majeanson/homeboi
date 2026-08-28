@@ -1,9 +1,10 @@
 # ACTIONS.md — action reachability: every action, every door
 
-> 🛑 **Counting warning.** The unticked `- [ ]` boxes in Part 5 are a **per-action
-> checklist template** — copied into the commit that adds or moves an action, and ticked
-> there. They are **not** pending work in this file. See [`STATE.md`](./STATE.md)
-> § *The document map*.
+> ✅ **The counting trap is gone (2026-08-28).** Part 5 is a **per-action checklist
+> template** — copied into the commit that adds or moves an action, and ticked *there* —
+> so it no longer carries checkboxes. Plain bullets: **copy, don't tick.** This file has
+> **no open items**; it is a playbook, not a backlog. A `- [ ]` anywhere in this repo
+> now means real open work. See [`STATE.md`](./STATE.md) for the convention.
 
 > Companion to `PARITY.md` (cross-cutting **uniformity** — its **D17** points here),
 > `DISCOVERY.md` (**comprehension** ↔ action), `LEAN.md` (**chrome** before content)
@@ -235,10 +236,10 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 When ANY new user action ships (on a new or existing entity), walk this; a skipped
 line is a recorded ➖ with a why. Feeds PARITY Part 5's UX-reach block.
 
-- [ ] **Primary door** picked from Part 1 — reuse the owning primitive, never a bespoke button/gesture.
-- [ ] **Non-touch mirror**: if the door is swipe/long-press/drag, name the mouse+keyboard path (⚙ Avancé furniture, peek action, ⋯ item, or Réglages) in a code comment.
-- [ ] **Undo tier declared**: deferred / compensating / confirm / ➖-with-why. Destructive + polled ⇒ `useDeferredRemoval`, never optimistic-then-defer.
-- [ ] **Gating**: guest (`isGuest()` only if it writes `/api/*` — device-local prefs stay open), toddler/simple lens, kiosk vs mobile, operator scope, AI/R2-unset fallback.
-- [ ] **⚙ face**: on a two-faces surface, does the action belong to the reading face (≤1 act per row) or the Avancé face (furniture)?
-- [ ] **Discovery**: ＋-sheet tile (`SECTION_MODES` + `ADD_HELP`) or recorded ➖; « ? » help entry; guide card merge if it changes a main surface (`DISCOVERY.md`).
-- [ ] **Matrix**: add/update this file's Part 2 row **in the same commit**.
+- **Primary door** picked from Part 1 — reuse the owning primitive, never a bespoke button/gesture.
+- **Non-touch mirror**: if the door is swipe/long-press/drag, name the mouse+keyboard path (⚙ Avancé furniture, peek action, ⋯ item, or Réglages) in a code comment.
+- **Undo tier declared**: deferred / compensating / confirm / ➖-with-why. Destructive + polled ⇒ `useDeferredRemoval`, never optimistic-then-defer.
+- **Gating**: guest (`isGuest()` only if it writes `/api/*` — device-local prefs stay open), toddler/simple lens, kiosk vs mobile, operator scope, AI/R2-unset fallback.
+- **⚙ face**: on a two-faces surface, does the action belong to the reading face (≤1 act per row) or the Avancé face (furniture)?
+- **Discovery**: ＋-sheet tile (`SECTION_MODES` + `ADD_HELP`) or recorded ➖; « ? » help entry; guide card merge if it changes a main surface (`DISCOVERY.md`).
+- **Matrix**: add/update this file's Part 2 row **in the same commit**.

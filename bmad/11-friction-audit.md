@@ -15,6 +15,13 @@
 > ticked here. What remains of #4 (the habit morning-open on a locked kiosk) is a
 > recorded decision, not a gap. See [`STATE.md`](../STATE.md) § 4-B.
 
+> **Checkbox convention** (repo-wide, adopted 2026-08-28 — see `STATE.md`):
+> `- [ ]` open work · `- [x]` done · `- [~]` reviewed and parked, with the why ·
+> `❓` an open question, not a task. **Templates and idea pools carry no checkboxes at
+> all.** A `- [ ]` anywhere in this repo now means exactly one thing: work someone still
+> has to do.
+
+
 > Five parallel read-only audits walked the flows a real household runs weekly:
 > **plan the week · grocery run · cook tonight · kid mornings/bedtime ·
 > capture + Sunday tidy.** Every seam below was verified against code (file:line

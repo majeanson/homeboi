@@ -1,11 +1,18 @@
 # PARITY.md — the feature-parity audit & uniformization playbook
 
-> 🛑 **Counting warning.** The unticked `- [ ]` boxes in Parts 5 and 6 are a
-> **per-feature checklist template** — you copy them into a new feature's commit and
-> tick them there. They are **not a to-do list for this file** and must never be
-> "closed". A naive count of open items across the repo reads them as ~35 pending
-> tasks; they are zero. See [`STATE.md`](./STATE.md) § *The document map* for what
-> genuinely holds work.
+> ✅ **The counting trap is gone (2026-08-28).** Parts 5 and 6 are a **per-feature
+> checklist template** — you copy them into a new feature's commit and tick them
+> *there* — so they no longer carry checkboxes at all. They used to, and a naive count
+> across the repo read them as ~33 pending tasks when the true number was zero; that
+> mis-count opened at least one session. Plain bullets now: **copy, don't tick.**
+>
+> **This file holds exactly two open items**, both in Part 4's Wave D
+> (opportunistic media-shape convergence). Everything else here is a verdict or a
+> template. A `- [ ]` anywhere in this repo means real open work — see
+> [`STATE.md`](./STATE.md) for the convention and for what genuinely holds work.
+>
+> ❓ marks an open **question** (a candidate primitive awaiting its 3-site proof),
+> deliberately not a checkbox: it is not work until someone decides it is.
 
 > **What this is.** A standing, multi-day-executable playbook that maps every
 > user-facing feature of Babillard against every cross-cutting capability
@@ -14,7 +21,7 @@
 > ending with primitives extracted from proven gaps and a canonical
 > **new-entity checklist** for future features.
 >
-> **Successor to `UNIFORMIZING.md`** (2026-06-26, fully executed). Same format
+> **Successor to `UNIFORMIZING.md`** (2026-06-26, fully executed; archived to `bmad/history/`). Same format
 > (checkboxes, severity, verdicts), different altitude: UNIFORMIZING deduped
 > _mechanisms_; PARITY audits _features_ for even coverage of those mechanisms.
 >
@@ -73,9 +80,9 @@ mark unfinished cells ❓, never guess.
       **17 entries (4 🔴, 12 🟡, 1 🟢)**, each mapped to a wave. Part 4's eight waves
       now sized with per-item checkboxes + verify steps; suggested order S→T→H→E
       (🔴), then U→O (🟡), then P→D (opportunistic).
-- [ ] **Day 5+ — Fix-waves:** one wave per session (Part 4). After each wave,
+- **Day 5+ — Fix-waves:** one wave per session (Part 4). After each wave,
       update the matrix cells it fixed and re-run the wave's verification.
-- [ ] **Last day — Part 5:** extract primitives (≥3-features rule), finalize the
+- **Last day — Part 5:** extract primitives (≥3-features rule), finalize the
       new-entity checklist, fold it into `CLAUDE.md`, close this file with a
       status headline like UNIFORMIZING's.
 
@@ -900,9 +907,9 @@ invisible to the next session.
 
 Candidates to watch for while auditing (not yet justified — need the 3-site proof):
 
-- [ ] ❓ a shared "entity list section" (header + rows + empty + add) — Board `Act`/`Section` vs kitchen pools vs cercle `NotesList` may already be 3 shapes of one thing.
-- [ ] ❓ a `useEntityCrud(queryKey, endpoint)` bundle (useWrite + useDeferredRemoval + invalidate wiring) if Day 1 shows the same 15-line block in 3+ features.
-- [ ] ❓ (add here as the matrix fills)
+- ❓ a shared "entity list section" (header + rows + empty + add) — Board `Act`/`Section` vs kitchen pools vs cercle `NotesList` may already be 3 shapes of one thing.
+- ❓ a `useEntityCrud(queryKey, endpoint)` bundle (useWrite + useDeferredRemoval + invalidate wiring) if Day 1 shows the same 15-line block in 3+ features.
+- ❓ (add here as the matrix fills)
 
 ### The new-entity checklist (canonical — seeded now, finalized last day)
 
@@ -912,38 +919,38 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 
 **Schema & backend**
 
-- [ ] Migration follows the schema conventions: `created_at`/`updated_at`/`deleted_at`, `position`, `colour`, media trio, DB-5 attribution pattern chosen consciously, JSON `NOT NULL` defaults, soft refs commented. Calm test stays green.
-- [ ] Handler under `functions/api/` wrapped in `authed()` (+ `'operator'` scope if destructive) **and** a `TABLE` row in `worker/routes.ts`.
-- [ ] `PATH_KEYS` entry in `functions/_lib/realtime.ts` (or `SILENT_PATHS` with a why) + `realtime.test.ts` still green.
-- [ ] Idempotent writes ride the existing middleware (nothing to do — verify only).
+- Migration follows the schema conventions: `created_at`/`updated_at`/`deleted_at`, `position`, `colour`, media trio, DB-5 attribution pattern chosen consciously, JSON `NOT NULL` defaults, soft refs commented. Calm test stays green.
+- Handler under `functions/api/` wrapped in `authed()` (+ `'operator'` scope if destructive) **and** a `TABLE` row in `worker/routes.ts`.
+- `PATH_KEYS` entry in `functions/_lib/realtime.ts` (or `SILENT_PATHS` with a why) + `realtime.test.ts` still green.
+- Idempotent writes ride the existing middleware (nothing to do — verify only).
 
 **Frontend data**
 
-- [ ] Shared query key in `src/lib/queryKeys.ts` (page-local keys stay local).
-- [ ] Writes via `useWrite()`; polled-list deletes via `useDeferredRemoval`; heavy deletes via `useConfirm`.
-- [ ] Reads via `api()` only.
+- Shared query key in `src/lib/queryKeys.ts` (page-local keys stay local).
+- Writes via `useWrite()`; polled-list deletes via `useDeferredRemoval`; heavy deletes via `useConfirm`.
+- Reads via `api()` only.
 
 **UX reach**
 
-- [ ] Detail adapter in `adapters.ts` — or a ➖ verdict comment beside the others.
-- [ ] `SEARCH_INDEX` entry (or ➖ for ephemeral kinds).
-- [ ] `EmptyState` / `useReportEmpty` on every surface (board card never returns bare null).
-- [ ] Toddler + simple lens treatment (or written ➖); kiosk glanceability (board card decision in `lib/boardCards`); mobile 360px no-overflow (`Cluster`/`Rail`).
-- [ ] Voice on compose surfaces via `EditField`'s opt-in (or ➖ for structured forms).
-- [ ] Attribution shown as faces, never counts (calm).
-- [ ] Every action walks `ACTIONS.md` Part 5 (door from the Part-1 taxonomy, non-touch mirror, undo tier, ⚙-face placement) and lands a Part-2 matrix row in the same commit (D17).
+- Detail adapter in `adapters.ts` — or a ➖ verdict comment beside the others.
+- `SEARCH_INDEX` entry (or ➖ for ephemeral kinds).
+- `EmptyState` / `useReportEmpty` on every surface (board card never returns bare null).
+- Toddler + simple lens treatment (or written ➖); kiosk glanceability (board card decision in `lib/boardCards`); mobile 360px no-overflow (`Cluster`/`Rail`).
+- Voice on compose surfaces via `EditField`'s opt-in (or ➖ for structured forms).
+- Attribution shown as faces, never counts (calm).
+- Every action walks `ACTIONS.md` Part 5 (door from the Part-1 taxonomy, non-touch mirror, undo tier, ⚙-face placement) and lands a Part-2 matrix row in the same commit (D17).
 
 **Discovery & i18n**
 
-- [ ] Guide: merge into an existing card in `lib/guideContent.ts` (32-card ceiling) with Ouvrir/Régler/Essayer; « ? » help entries in the owning registry; tour step if it changes a main surface. Read `DISCOVERY.md`; orphan tests green.
-- [ ] `i18n.ts` FR block in Québécois register (EN parity enforced by tsc).
-- [ ] New Réglages setting stacks into an existing sub (C-15), never a new pill.
+- Guide: merge into an existing card in `lib/guideContent.ts` (32-card ceiling) with Ouvrir/Régler/Essayer; « ? » help entries in the owning registry; tour step if it changes a main surface. Read `DISCOVERY.md`; orphan tests green.
+- `i18n.ts` FR block in Québécois register (EN parity enforced by tsc).
+- New Réglages setting stacks into an existing sub (C-15), never a new pill.
 
 **Proof**
 
-- [ ] One e2e happy-path spec (or extend a sweep spec).
-- [ ] New shared primitive (if any) → DevKit + `COMPONENTS.md`.
-- [ ] Add the feature as a row in this file's Part 1 and score it.
+- One e2e happy-path spec (or extend a sweep spec).
+- New shared primitive (if any) → DevKit + `COMPONENTS.md`.
+- Add the feature as a row in this file's Part 1 and score it.
 
 ---
 
@@ -1011,14 +1018,14 @@ card. Score them explicitly, every time.
 
 ```
 Gold-standard check (PARITY Part 6):
-- [ ] Part-1 row added, all 16 cells scored (➖ = footnoted why; no bare 🔶/❌)
-- [ ] Reused the primitive for every applicable dimension (no hand-rolled fork)
-- [ ] Schema conventions + calm test green | authed() + routes.ts + PATH_KEYS/SILENT_PATHS
-- [ ] useWrite / useDeferredRemoval / api() ; shared query key
-- [ ] Peek adapter · search · empty · toddler+mobile+desktop · attribution-as-faces (or ➖ each)
-- [ ] Guide card merged (32-ceiling) + help entries ; i18n Québécois register
-- [ ] e2e happy-path ; any new primitive → DevKit + COMPONENTS.md
-- [ ] Non-obvious cells cite the migration/commit that proves them
+- Part-1 row added, all 16 cells scored (➖ = footnoted why; no bare 🔶/❌)
+- Reused the primitive for every applicable dimension (no hand-rolled fork)
+- Schema conventions + calm test green | authed() + routes.ts + PATH_KEYS/SILENT_PATHS
+- useWrite / useDeferredRemoval / api() ; shared query key
+- Peek adapter · search · empty · toddler+mobile+desktop · attribution-as-faces (or ➖ each)
+- Guide card merged (32-ceiling) + help entries ; i18n Québécois register
+- e2e happy-path ; any new primitive → DevKit + COMPONENTS.md
+- Non-obvious cells cite the migration/commit that proves them
 ```
 
 ---

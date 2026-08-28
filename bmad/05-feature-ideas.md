@@ -17,6 +17,12 @@
 > 4, 7, 8, 9, 10, 18, 22, 24, 25, 26, 28, 29, 31, 32, 33, 35, 39, 40, 41, 44, 45
 > — plus #20's voice half.
 
+> ⚪ **This is an idea pool, not a backlog.** Every entry below is uncommitted —
+> inspiration for a *deliberate* decision, never a queue to work down. Roughly 21 of these were never built.
+> It deliberately carries **no checkboxes**: a `- [ ]` in this repo means real open
+> work, and these are not that. See `STATE.md` §4-F and its checkbox convention.
+
+
 ## A · The wall board & ambient kiosk
 
 1. **Day-part ambient theming** [S] — ✅ **BUILT** (`lib/daypartDrift` + `data-daypart`, dawn→day→dusk→night, opt-out toggle, never overrides manual Night).
