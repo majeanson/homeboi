@@ -22,6 +22,7 @@ import { ModeToggle } from '../components/ModeToggle'
 import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
 import { RowActions } from '../components/RowActions'
+import { Reorder } from '../components/Reorder'
 import { ActionMenu } from '../components/ActionMenu'
 import { DragPill } from '../components/DragPill'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
@@ -1951,6 +1952,24 @@ export function DevKit() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <span>Yogourt grec</span>
             <RowActions onEdit={() => {}} onDelete={() => {}} />
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'Reorder',
+      file: 'components/Reorder.tsx',
+      kw: 'reorder move up down ↑ ↓ monter descendre ordre flèches clavier non-tactile mirror',
+      render: () => (
+        <Demo label="↑ / ↓ pair — the non-touch mirror of drag-to-reorder">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span>Boîte à lunch</span>
+            <Reorder onUp={() => {}} onDown={() => {}} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span>Première rangée (↑ désactivé)</span>
+            <Reorder onUp={() => {}} onDown={() => {}} upDisabled />
           </div>
         </Demo>
       ),

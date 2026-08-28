@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
 import { Icon, type IconName } from './Icon'
+import { Reorder } from './Reorder'
 import { StatusMessage } from './StatusMessage'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
 
@@ -288,28 +289,7 @@ export function EditField({
 
         {trailing}
 
-        {reorder && (
-          <div className="edit-field__reorder">
-            <button
-              type="button"
-              className="edit-field__mini"
-              onClick={reorder.onUp}
-              disabled={reorder.upDisabled}
-              aria-label={t.operator.moveUp}
-            >
-              <Icon name="caret-up-bold" size={16} />
-            </button>
-            <button
-              type="button"
-              className="edit-field__mini"
-              onClick={reorder.onDown}
-              disabled={reorder.downDisabled}
-              aria-label={t.operator.moveDown}
-            >
-              <Icon name="caret-down-bold" size={16} />
-            </button>
-          </div>
-        )}
+        {reorder && <Reorder {...reorder} />}
 
         {onDelete && (
           <button

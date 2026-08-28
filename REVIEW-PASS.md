@@ -1,9 +1,19 @@
 # REVIEW-PASS — a slow, section-by-section audit of the whole app
 
-> 📍 **31 findings still open here** (P2/P3, section debt — no data loss). For where they
-> rank against everything else in the repo, and what to do before picking one up, read
-> [`STATE.md`](./STATE.md) § 4. **Grep every claim in code first** — a third of the items
-> picked up on 2026-08-27 turned out to be already fixed and never ticked.
+> 📍 **20 findings still open here** (P2/P3, section debt — no data loss). For where they
+> rank against everything else in the repo, read [`STATE.md`](./STATE.md) § 4.
+>
+> **Swept 2026-08-28.** Every open box was grepped against code before anything was built.
+> It said 29; **eight were already fixed and never ticked**, and one named a component that
+> no longer exists (`OperatorJump`). Those are ticked above with the file:line that settles
+> each. Two were fixed in the same pass (`NoteEditor`'s silent auto-save; `ItemReorder` →
+> the shared `<Reorder>`). What is left below has been verified as genuinely open.
+>
+> **The rule this sweep exists to enforce: grep the claim in code first.** Between this
+> file and `bmad/11`, thirteen "open" items in two days were already done — a ledger cell
+> is a verdict from a moment, not a fact. And grep the *tree*, not just the place the
+> finding points at: "`OperatorJump` is not in DevKit" was true and useless, because the
+> component had been deleted. **Tick a box in the same commit that resolves it.**
 
 > **Purpose.** One living plan to review **every section and every feature** of
 > Babillard for what's **missing**, what's **overlooked/redundant**, and what needs a
@@ -391,9 +401,10 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   `onDelete`, edit-mode only). `RoutineFormPage` owns it: a weighty `useConfirm` dialog →
   `useWrite` DELETE (offline-queueable) → invalidate `ROUTINES_KEY`/`BOARD_KEY` → back to the
   tab. Covered by `routine-builder.spec.ts` (deep-link → confirm → DELETE `{id}` → `/routines`).
-- [ ] **Nested interactive-in-interactive on the parent grid** — `<button>` edit + `<button>`
-  run inside a `role="button"` card (`Routines.tsx:134-231`); works via `stopPropagation` but
-  fragile for keyboard/AT. Make the card a non-button `<article>` with explicit controls.
+- [x] **Nested interactive-in-interactive on the parent grid** — ✅ **fixed 2026-08-27**
+  (verified in code 2026-08-28). The card is no longer a `role="button"`; the file now says so
+  itself (`maison/RoutinesTab.tsx`, "The card is NOT a role=\"button\" any more"), and
+  `src/lib/nested-interactive.test.ts` fails the build on the shape.
 - [~] **e2e — the step editor itself is untested** — **stale (verified 2026-08-27):**
   `e2e/routine-builder.spec.ts` covers exactly what this asked for — removing the middle card
   keeps the deck aligned in the POST, reordering a card up is reflected in the POST order, and
@@ -423,8 +434,9 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
 - [ ] **Two timers on screen at once** on a timed step — the `Countdown` ring
   (`RoutinePlayer.tsx:310`) *and* the run count-up stopwatch (`:351`) both show; potentially
   confusing on the toddler surface. Design decision on whether both belong.
-- [ ] **Parent overview shows no "done today"** (`Routines.tsx:194`) while the toddler picker
-  shows `doneCount/total` (`KidView.tsx:206`) — information asymmetry (calm-by-omission?).
+- [x] **Parent overview shows no "done today"** — ✅ **stale (verified 2026-08-28).** The file
+  moved to `maison/RoutinesTab.tsx`, which computes today's `doneCount` from `doneIdx` and
+  shows it (clamped to the deck so the ring never over-fills, `:81`). The asymmetry is gone.
 - [x] **`RoutinesSection` has no empty state** — ✅ **Fixed 2026-07-03**: renders
   `<EmptyState>{t.operator.noRoutines}</EmptyState>` when the list is empty, matching every
   sibling section (new `noRoutines` FR/EN key).
@@ -508,11 +520,10 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   come from `/api/cercle`, not `MEMBERS_KEY`; if the member-PATCH write path (Settings ▸
   Maisonnée) doesn't list `CERCLE_KEY` in `affectedKeys` (or map it via realtime `keysForPath`),
   a renamed/recoloured face goes stale in the cercle until an unrelated poll. _(cross-link seam.)_
-- [ ] **[nte] The full-screen `NoteEditor` is NOT bound to the visual viewport above the
-  keyboard.** `.note-editor` is `position:fixed; inset:0` with no `.kb-open`/`--vvh` handling
-  (`cercle.css:1903`), unlike `.recipe-modal` — so on a phone with the keyboard up, the bottom
-  attach buttons + lower body sit **behind** the keyboard. Directly violates the standing
-  "editor above the keyboard" rule. Pin to `var(--vvh)` under `.kb-open`.
+- [x] **[nte] The full-screen `NoteEditor` is NOT bound to the visual viewport** — ✅ **stale
+  (verified 2026-08-28).** `.note-editor` sits in the « Keyboard fit » list beside `.scene` and
+  `.recipe-modal` (`core.css:740`), and `.note-editor__body` takes the trailing slack (`:754`).
+  `src/styles/keyboard-fit.test.ts` now fails the build if that regresses.
 - [x] **[frm] `FamilyBuilder` defines `Chip`/`PetChip` components inside the render body**
   (`:320,341`) → a new component type every render → React remounts the whole chip subtree,
   churning DnD/focus. Hoist them or inline the JSX.
@@ -524,8 +535,14 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   `HEAD_RE/CHECK_RE/BULLET_RE/…` + inline bold/italic parsing. Render-vs-edit split is fine,
   but share the grammar constants in one module (a marker tweak in one silently breaks
   round-trip fidelity with the other).
-- [ ] **[nte] `NoteEditor` auto-save is entirely silent** (`:119`) — no "enregistré" cue, and
-  offline the write queues invisibly. Consider a commit toast.
+- [x] **[nte] `NoteEditor` auto-save is entirely silent** — ✅ **fixed 2026-08-28.** Closing now
+  says which of the three things happened: « Note enregistrée », « Note gardée — elle partira au
+  retour du réseau » (queued), or « La note n'a pas pu être enregistrée ». That last one was the
+  real defect under the reported one: each branch ended `.catch(() => {})`, so a genuine server
+  rejection was swallowed too and a note could close and simply not exist. The toast bar is the
+  only channel left at close — and reachable *because* the editor is unmounting; a notice raised
+  from inside a full-screen scene is painted under it (`.undo-toast` is z-index 40). Emptying a
+  note to nothing still deletes it and is deliberately NOT announced as saved.
 - [ ] **[crn] Carnet-scoped Entretien rows are add-only from the carnet scene** (read-only
   text, `CercleCarnetPage.tsx:374`) while care-log and pins both get `RowActions` — to edit/
   delete a carnet's upkeep row the user must leave to Réglages ▸ Corvées. Wire `RowActions` →
@@ -561,10 +578,10 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   — ✅ **Fixed 2026-07-02**: added a shared `LoadError` fallback (`components/Fallback.tsx`,
   `role="alert"` + `t.common.loadFailed`) and both `Cercle.tsx` + `CercleWorldPage.tsx` now
   return it on `error && !data` (a stale-but-good poll still renders — kept over the error).
-- [ ] **[dir/crn] `role="img"` world SVG with interactive `role="button"` descendants**
-  (`CercleConstellation.tsx:260`) can collapse the subtree for AT, hiding the focusable islands/
-  faces; and the per-island **people count** (`peopleN`, `:299`) is the one surfaced number —
-  calm gut-check against the chore-ledger "faces not counts" rule.
+- [x] **[dir/crn] `role="img"` world SVG with interactive descendants** — ✅ **fixed
+  2026-08-27** (verified 2026-08-28): the SVG is `role="group"` now (`CercleConstellation.tsx:152`),
+  so its focusable islands/faces stay in the a11y tree, and `nested-interactive.test.ts` guards
+  the shape. _(The `peopleN` calm gut-check was a question, not a defect — left as asked.)_
 - [ ] **[crn] `foreignObject`-wrapped `<Avatar>` per face in the world SVG** (`:315`) — long
   history of iOS-Safari render/hit-test bugs; real-device check on a large family (no e2e).
 - [ ] **[frm] Small reuse/consistency nits:** `LinkComposer` hand-parses the person key instead
@@ -702,8 +719,9 @@ default kind. These deserve priority in the implement phase.
   allowlist loses its default-deny property for showcase. And **`postbox-media` accepts any
   content-type** (`accept:()=>true`, `:37`) where `intake-media` guards `image/` — mirror the
   guard. `/api/img/<key>` is not household-scoped (accepted capability model — note only).
-- [ ] **Guest "done" state is client-only → duplicate pending rows on refresh/resubmit**
-  (`IntakeForm.tsx:216`, `Postbox.tsx:188` — no submit idempotency).
+- [x] **Guest "done" state is client-only → duplicate pending rows** — ✅ **fixed 2026-08-27**
+  (verified 2026-08-28): the submit carries an `idempotencyKey` (`IntakeForm.tsx:231`), deduped
+  server-side in `authed()` via `_lib/idempotency.ts`.
 - [~] **Nits:** ✅ WifiBlock's tap-to-copy password button now wraps + breaks a long key
   (`.handoff__wifi-pw`) so it never overflows the card at 320px (2026-07-03). Remaining:
   `INTAKE_KEY`/`POSTBOX_KEY` page-local literals (hygiene); the guest scenes hand-roll
@@ -810,10 +828,16 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   2026-08-27.** It still shows (probing the wiring while the switch is off is exactly when you'd
   want it), but when `available && !enabled` it now says so: « L'IA est éteinte pour la maisonnée
   … ce test vérifie le branchement, pas l'interrupteur » — so a green pass can't read as "AI is on".
-- [ ] **Reuse candidates:** `OperatorJump` not registered in DevKit; `ItemReorder` (`todos.tsx:260`)
-  hand-copies EditField's reorder buttons; `ChoreForm`/`BlockForm` hand-roll the same member-toggle
-  row (a candidate shared `MemberToggleRow`); `DeviceRow` hand-rolls optimistic rename vs
-  `HouseholdListSection`.
+- [~] **Reuse candidates** — half resolved 2026-08-28, half re-scoped:
+  - ~~`OperatorJump` not registered in DevKit~~ — **stale**: the component no longer exists
+    anywhere in `src/`. Nothing to register. (Caught only by grepping the tree rather than
+    DevKit alone — checking the gallery for an absence proves nothing about the codebase.)
+  - ~~`ItemReorder` hand-copies EditField's reorder buttons~~ — ✅ **fixed 2026-08-28**: both
+    render the shared `<Reorder>` (`components/Reorder.tsx`), in DevKit and `COMPONENTS.md`.
+    They were identical down to the class names, and the private copy even passed by hand the
+    two i18n strings the other hardcoded.
+  - **Still open:** `ChoreForm`/`BlockForm` hand-roll the same member-toggle row (candidate
+    shared `MemberToggleRow`); `DeviceRow` hand-rolls optimistic rename vs `HouseholdListSection`.
 - [ ] **Smaller nits:** schedule "add" disabled with 0 members but no hint (`schedule.tsx:139`);
   todo-template delete+undo re-creates with a **new id** → dangling refs (documented, low harm);
   `ScheduleSection` row packs too much on one line at 320px; `THIS_WEEK_KEY` page-local, never
@@ -885,10 +909,10 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
 
 ### Findings — P3 (bigger / judgement)
 
-- [ ] **Query-key + invalidation gaps in capture:** `submitList` invalidates `['ghosts']`/
-  `['list-history']` as inline literals (`AddSheet.tsx:544`, same un-shared keys as §1);
-  `MONTH_KEY` is **not** in `CAPTURE_KEYS`, so a captured event/meal won't reconcile an open
-  month/day page until its poll; event/task/meal titles are **unclamped** (only the `note` path
+- [~] **Query-key + invalidation gaps in capture** — two of three **stale (verified 2026-08-28)**:
+  ~~`submitList` invalidates `['ghosts']`/`['list-history']` as inline literals~~ (neither
+  literal is in `AddSheet.tsx` any more) and ~~`MONTH_KEY` is not in `CAPTURE_KEYS`~~ (it is —
+  `lib/captureKeys.ts:23`). **Still open:** event/task/meal titles are **unclamped** (only the `note` path
   clamps to 280, `capture.ts:214`) — a long capture bloats the board payload.
 - [x] **`aria-pressed` missing on the toggle chips** — EventForm member/car/passenger/template +
   ChoreForm rotation (`EventForm.tsx:234-351`) convey selection visually only. _(Recurring theme
@@ -972,8 +996,9 @@ absence.
 
 ### Findings — P3 (bigger / judgement)
 
-- [ ] **Shared-primitive nits:** `capitalize` re-defined ×3 (`DeparturePage.tsx:28`,
-  `MomentsView.tsx:75`, `DayPlanPage`) → promote to `lib/format`; Departure/Moment hand-roll
+- [~] **Shared-primitive nits** — the first is **stale (verified 2026-08-28)**: ~~`capitalize`
+  re-defined ×3~~ — there is exactly ONE definition left (`lib/format.ts:8`), and `MomentsView`
+  no longer exists at all (« Moments » was retired). **Still open:** Departure hand-rolls
   empty/loading (`departure__empty`/`loading mono`) instead of `EmptyState`; gallery `['drawings']`
   key is local (`drawingGallery.ts:23`) not in `queryKeys.ts`; `DrawingGalleryPage` members query
   lacks `...live` (`:40`) unlike every other consumer.

@@ -1934,6 +1934,12 @@ export const FR = {
       untitled: 'Note sans titre',
       titlePlaceholder: 'Titre (facultatif)',
       forWhom: 'Pour qui',
+      // L'auto-sauvegarde à la fermeture ne disait rien du tout — ni « c'est
+      // enregistré », ni, plus grave, « ça n'a pas marché » (le .catch avalait le
+      // refus). L'éditeur se ferme, donc la barre de toasts est le seul canal.
+      saved: 'Note enregistrée',
+      savedQueued: 'Note gardée — elle partira au retour du réseau',
+      saveFailed: 'La note n’a pas pu être enregistrée',
       editorNew: 'Nouvelle note',
       editorEdit: 'Modifier la note',
       done: 'Terminé',

@@ -22,6 +22,7 @@ import {
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { Icon } from '../Icon'
+import { Reorder } from '../Reorder'
 import { EmptyState } from '../EmptyState'
 import { Modal } from '../Modal'
 import { OperatorSection } from './OperatorSection'
@@ -151,7 +152,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
                 <ul className="todo-tpl__items">
                   {tpl.items.map((it, idx) => {
                     const reorder = (
-                      <ItemReorder
+                      <Reorder
                         onUp={() => moveItem(tpl, idx, 'up')}
                         onDown={() => moveItem(tpl, idx, 'down')}
                         upDisabled={idx === 0}
@@ -327,29 +328,3 @@ function TemplatePreview({ templates, id, onClose }: { templates: TodoTemplate[]
 
 // Small ↑/↓ reorder pair (the shared EditField already has one, but the static
 // item row isn't an EditField). Mirrors the EditField reorder buttons + classes.
-function ItemReorder({
-  onUp,
-  onDown,
-  upDisabled,
-  downDisabled,
-  upLabel,
-  downLabel,
-}: {
-  onUp: () => void
-  onDown: () => void
-  upDisabled?: boolean
-  downDisabled?: boolean
-  upLabel: string
-  downLabel: string
-}) {
-  return (
-    <div className="edit-field__reorder">
-      <button type="button" className="edit-field__mini" onClick={onUp} disabled={upDisabled} aria-label={upLabel}>
-        <Icon name="caret-up-bold" size={16} />
-      </button>
-      <button type="button" className="edit-field__mini" onClick={onDown} disabled={downDisabled} aria-label={downLabel}>
-        <Icon name="caret-down-bold" size={16} />
-      </button>
-    </div>
-  )
-}

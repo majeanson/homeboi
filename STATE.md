@@ -195,23 +195,41 @@ cashier's second check-state, staples chips, no meal-done on the supper hero, th
 Jan-1970 cold-grid flash, the abandoned routine stopwatch, « Par allée » hiding the
 drag grip).
 
-### C. Section debt — `REVIEW-PASS.md`, 31 findings
+### C. Section debt — `REVIEW-PASS.md`, 20 findings (swept 2026-08-28)
 
-Steady, contained work; nothing here loses data. Distribution: Le cercle 11 · Kitchen 4 ·
-Routines 4 · Réglages 5 · Share/inbound 3 · Capture 2 · Scenes 2. Recurring shapes worth
-batching rather than picking off one at a time:
+**It said 31. It was 29 boxes, and eight of those were already fixed and never ticked** —
+verified by grepping every open claim against code, which is the sweep this section had
+been asking for. What is left has been checked and is genuinely open.
 
-- **Reuse duplicates** — the "which ingredients?" checklist exists twice; `capitalize`
-  ×3; three `Member` shapes converge on one face control; `OperatorJump` and `ItemReorder`
-  aren't in DevKit.
-- ~~**A11y** — nested interactive-in-interactive on the parent routine grid; a `role="img"`
-  SVG with `role="button"` descendants in « Notre monde ».~~ ✅ **fixed 2026-08-27**,
-  plus a third case in cook mode that the guard found. `nested-interactive.test.ts`
-  now fails the build on both shapes.
-- **Silent states** — `NoteEditor` auto-save gives no cue; `ThisWeek` has no error state.
-- **Remaining e2e gaps** — Le cercle is screenshots-only; the toddler kitchen picker
-  (the most interaction-dense surface in the kitchen) is untested; config panels are
-  screenshot-only, so a broken PATCH would pass.
+Ticked as already-done in the sweep: the nested interactive on the routine grid and the
+`role="img"` world SVG (both 2026-08-27, now guarded); `NoteEditor` not bound above the
+keyboard (`.note-editor` is in `core.css`'s « Keyboard fit » list); the parent overview's
+missing "done today" (`RoutinesTab` shows it); guest submit idempotency; `MONTH_KEY` missing
+from `CAPTURE_KEYS`; the inline `['ghosts']`/`['list-history']` literals; `capitalize` ×3
+(one definition left, and `MomentsView` no longer exists).
+
+Fixed in the same pass: **`NoteEditor`'s silent auto-save** — and the defect *under* the
+reported one, a `.catch(() => {})` on every branch that swallowed real server rejections, so
+a note could close and simply not exist; and **`ItemReorder`**, which duplicated `EditField`'s
+reorder buttons down to the class names → one shared `<Reorder>`, in DevKit and `COMPONENTS.md`.
+
+One finding was worse than stale: **"`OperatorJump` is not registered in DevKit" was true and
+useless** — the component had been deleted from the tree. Checking a gallery for an absence
+proves nothing about the codebase; grep the tree.
+
+Shapes still worth batching:
+
+- **Reuse duplicates** — the "which ingredients?" checklist exists twice (`RecipeListPicker`
+  vs `RecipeSheet`'s inline `listPrompt`); three `Member` shapes converge on one face control;
+  `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; two `parseBirthday`
+  derivations that disagree on the year regex.
+- **Silent / inconsistent states** — `MeasureColorsSection` vanishes entirely for a guest
+  where every sibling shows a read-only legend; `HeartButton` truncates faces at 4 with no
+  "+" signal. *(`ThisWeek` having no error state was itself stale — it renders one at
+  `ThisWeekTogetherSection.tsx:137`.)*
+- **Remaining e2e gaps** — Le cercle is screenshots-only (zero behavioural coverage for
+  Businesses, the carnet scene, group CRUD); the toddler kitchen picker is untested; config
+  sub-panels are screenshot-only, so a broken PATCH would pass.
 
 ### D. Judgement calls waiting on Marc, not on code
 

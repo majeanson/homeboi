@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useT } from '../../i18n'
 import { createDeviceStore } from '../../lib/createDeviceStore'
 import { useWrite } from '../../lib/write'
+import { useNotice } from '../../lib/toast'
 import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
 import { useModal } from '../../lib/useModal'
@@ -88,6 +89,7 @@ export function NoteEditor({
   const t = useT()
   const fn = t.cercle.familyNotes
   const write = useWrite()
+  const notice = useNotice()
   const online = useOnline()
   const toolbarScroll = useHScroll<HTMLDivElement>()
 
@@ -177,6 +179,17 @@ export function NoteEditor({
   // useModal always runs the latest state without re-subscribing the Esc handler.
   const commitRef = useRef<() => void>(() => {})
   commitRef.current = () => {
+    // Auto-save used to be entirely silent: no "enregistré", and — worse — the
+    // `.catch(() => {})` on each branch swallowed a REAL server rejection too, so a
+    // note could close and simply not exist, with nothing said. These two say which
+    // happened, and name the offline case as kept rather than sent.
+    //
+    // The toast bar is the only channel left because the editor is CLOSING as this
+    // runs — and that is also why it is reachable: a notice raised from INSIDE a
+    // full-screen scene would be painted underneath it (.undo-toast is z-index 40),
+    // the trap cook mode and the recipe sheet both hit.
+    const said = (r: { queued?: boolean }) => notice(r.queued ? fn.savedQueued : fn.saved)
+    const failed = () => notice(fn.saveFailed)
     // Simple mode: the title is DERIVED (the rows already fall back to the body's
     // first line), so it saves empty — the words you typed are the heading.
     const ti = advanced ? title.trim() : ''
@@ -204,10 +217,14 @@ export function NoteEditor({
         method: 'POST',
         body: { title: ti, text: bo, scope: effScope, member_id: forMember, media_kind: mediaKind, media_key: mediaKey, scene_key: sceneKey },
         affectedKeys: [FAMILY_NOTES_KEY],
-      }).catch(() => {})
+      })
+        .then(said)
+        .catch(failed)
       return
     }
     if (empty) {
+      // Emptied to nothing = deleted. Deliberately NOT announced as "saved" — the
+      // row is gone, and saying so would read as a confirmation of the opposite.
       void write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
       return
     }
@@ -215,7 +232,9 @@ export function NoteEditor({
       method: 'PATCH',
       body: { id: note.id, title: ti, text: bo, scope: effScope, member_id: forMember, media_kind: mediaKind, media_key: mediaKey, scene_key: sceneKey },
       affectedKeys: [FAMILY_NOTES_KEY],
-    }).catch(() => {})
+    })
+      .then(said)
+      .catch(failed)
   }
 
   const onCloseRef = useRef(onClose)
