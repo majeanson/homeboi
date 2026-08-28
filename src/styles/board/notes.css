@@ -23,8 +23,15 @@
   gap: 0.15rem;
 }
 /* « Tout effacer » (tidy seam #1) and the ＋: quiet header-corner actions — the
-   strip is the content, not its controls. Inherit the head's small-caps look. */
+   strip is the content, not its controls. Inherit the head's small-caps look.
+
+   `.tidy-btn` is the SHARED name for the broom: the same quiet control now ends
+   « Déjà vus » on the mots card (bmad/11 tier-2 #3), and a second surface copying
+   these declarations under its own class is exactly the drift this file's
+   neighbours were written to avoid. `.notes__clear-all` stays as the board
+   strip's own hook. */
 .notes__clear-all,
+.tidy-btn,
 .notes__add {
   border: 0;
   background: none;
@@ -46,6 +53,8 @@
 }
 .notes__clear-all:hover,
 .notes__clear-all:focus-visible,
+.tidy-btn:hover,
+.tidy-btn:focus-visible,
 .notes__add:hover,
 .notes__add:focus-visible {
   color: var(--ink);

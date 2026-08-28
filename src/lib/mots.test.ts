@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sentMots, waitingRecipientIds, type Mot } from './mots'
+import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sweepableMots, sentMots, waitingRecipientIds, type Mot } from './mots'
 
 // A minimal Mot factory — only the fields the pure helpers read.
 function mot(p: Partial<Mot>): Mot {
@@ -81,6 +81,22 @@ describe('mots helpers', () => {
     })
     it('saved = kept keepsakes', () => {
       expect(savedMots(all, 'A').map((m) => m.id)).toEqual(['kept'])
+    })
+    // « Effacer les déjà vus » takes exactly this set. The kept mot's absence is
+    // the load-bearing assertion: a « Gardé » badge is someone saying "I want
+    // this", and deleting one otherwise asks a confirm — a broom that swept them
+    // along with the rest would be the one way this feature destroys something
+    // wanted. The unopened mot's absence matters too: it hasn't been read yet.
+    it('sweepable = seen but NOT kept — a keepsake is never swept', () => {
+      expect(sweepableMots(all, 'A').map((m) => m.id)).toEqual(['seen'])
+    })
+    it('sweepable respects the face: another member’s mots are not yours to clear', () => {
+      const mixed = [...all, mot({ id: 'theirs', member_id: 'B', opened_at: 50 })]
+      expect(sweepableMots(mixed, 'A').map((m) => m.id)).toEqual(['seen'])
+    })
+    it('a Maisonnée face sweeps only family-wide mots', () => {
+      const mixed = [...all, mot({ id: 'house', member_id: null, opened_at: 50 })]
+      expect(sweepableMots(mixed, null).map((m) => m.id)).toEqual(['house'])
     })
   })
 

@@ -56,6 +56,18 @@ export function savedMots(mots: Mot[], face: string | null): Mot[] {
   return visibleMots(mots, face).filter((m) => m.saved_at != null)
 }
 
+// What « Effacer les déjà vus » actually deletes (bmad/11 tier-2 #3): the SEEN
+// mots for a face, minus the KEPT ones.
+//
+// The exclusion is the whole point, not a detail. A « Gardé » badge is someone
+// explicitly saying "I want this", and deleting one already asks a confirm — so a
+// broom that quietly took keepsakes along with the rest would be the single way
+// this feature could destroy something wanted. Nothing here decays on its own
+// either: the sweep only ever runs because a human tapped it.
+export function sweepableMots(mots: Mot[], face: string | null): Mot[] {
+  return visibleMots(mots, face).filter((m) => m.opened_at != null && m.saved_at == null)
+}
+
 // The SENDER's outbox — mots this face authored, newest first, INCLUDING not-yet-surfaced
 // scheduled ones (the sender should see + be able to pull back a « Plus tard » before it
 // lands). Read off the RAW list (useAllMots), never the surface-gated one. Calm: this is the

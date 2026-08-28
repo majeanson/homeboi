@@ -5,13 +5,14 @@ import { api } from '../../lib/api'
 import { useProfile } from '../../lib/profile'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
+import { isGuest } from '../../lib/device'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import { useMots, useAllMots, waitingMots, visibleMots, sentMots, isScheduled, type Mot } from '../../lib/mots'
+import { useMots, useAllMots, waitingMots, visibleMots, sweepableMots, sentMots, isScheduled, type Mot } from '../../lib/mots'
 import { formatDayTime } from '../../lib/format'
 import { CATS } from '../../lib/cats'
-import { type IconName } from '../Icon'
+import { InlineIcon, type IconName } from '../Icon'
 import { Act, Section } from '../board/Act'
 import { type HelpMode } from '../../lib/helpMode'
 import { Disclosure } from '../Disclosure'
@@ -103,7 +104,28 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
     else run()
   }
 
-  const toggleSave = (m: Mot) =>
+  // Empty « Déjà vus » in one tap (bmad/11 tier-2 #3 — the Sunday tidy was
+  // per-item labour). Deliberately manual: nothing here decays on its own, so no
+  // mot ever disappears unasked.
+  //
+  // KEPT mots are never swept. A « Gardé » badge is someone explicitly saying "I
+  // want this", and the per-item delete already asks a confirm before losing one —
+  // a broom that quietly took them with the rest would be the one way this could
+  // eat something wanted. So it clears exactly what the count promises.
+  // The shared selector (lib/mots), narrowed to what's actually on screen —
+  // rows mid-undo-removal are already hidden and must not be re-deleted.
+  const sweepable = removal.visible(sweepableMots(mots, profileId))
+  function clearSeen() {
+    const ids = sweepable.map((m) => m.id)
+    if (!ids.length) return
+    removal.remove(ids, fn.clearedN(ids.length), () =>
+      Promise.all(
+        ids.map((id) => write('mots', { method: 'DELETE', body: { id }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(() => {})),
+      ),
+    )
+  }
+
+    const toggleSave = (m: Mot) =>
     void write('mots', { method: 'PATCH', body: { id: m.id, saved: !m.saved_at }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(() => {})
 
   function open(m: Mot) {
@@ -188,6 +210,15 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
         // stays collapsed (secondary, calm).
         <Disclosure label={fn.seenGroup} defaultOpen={waiting.length === 0}>
           {seen.map((m) => row(m, true))}
+          {/* Inside the fold on purpose (LEAN): a collapsed card pays nothing for
+              it, and you only ever want it once you've opened the pile to tidy.
+              Writes, so a read-only guest never sees it; pointless under two. */}
+          {!isGuest() && sweepable.length > 1 && (
+            <button type="button" className="tidy-btn" onClick={clearSeen}>
+              <InlineIcon name="broom-bold" size={13} />{' '}
+              {sweepable.length < seen.length ? fn.clearSeenKept : fn.clearSeen}
+            </button>
+          )}
         </Disclosure>
       )}
       {/* « Ce que j'ai laissé » — the sender's own outbox: did they see it yet, and pull back or

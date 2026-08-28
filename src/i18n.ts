@@ -1971,6 +1971,13 @@ export const FR = {
     photo: 'Photo',
     untitled: 'Un mot',
     seenGroup: 'Déjà vus',
+    // Empty « Déjà vus » in one tap (the Sunday tidy was per-item labour). Lives
+    // INSIDE the fold, so a collapsed card costs nothing for it. A KEPT mot is a
+    // keepsake and is never swept — the label says so, and clearN counts only what
+    // will actually go.
+    clearSeen: 'Effacer les déjà vus',
+    clearSeenKept: 'Effacer les déjà vus (les gardés restent)',
+    clearedN: (n: number) => `${n} mot${n > 1 ? 's' : ''} effacé${n > 1 ? 's' : ''}`,
     keep: 'Garder',
     kept: 'Gardé',
     delete: 'Supprimer le mot',
