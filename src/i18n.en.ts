@@ -597,6 +597,7 @@ export const EN: typeof FR = {
     love: 'Love it',
     unlove: 'Unlove',
     lovedBy: 'Loved by',
+    andOthers: 'and others',
   },
   board: {
     today: 'Today',

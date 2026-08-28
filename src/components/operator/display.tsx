@@ -531,7 +531,23 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
   // The ONE gated control in this file, and gated for the right reason: unlike the
   // device-local prefs above, measure colours are a HOUSEHOLD setting — the editor
   // PATCHes /api/household on close, so a read-only guest has nothing to commit.
-  if (isGuest()) return null
+  //
+  // It used to `return null` and take the whole section with it. Two things about
+  // that, both found by grepping rather than by reading the finding (2026-08-28):
+  //
+  //  • A LINK guest never saw either version. `kitchen ▸ apparence` is not in
+  //    `GUEST_SUBS` (pages/Operator.tsx), so for them the kitchen tab has no Régler
+  //    side at all — the sub list filters to empty one layer up. That allowlist, not
+  //    this line, is what actually protects the household here; this is belt-and-braces.
+  //  • Who DID see the hole is an operator in **guest preview** — `isGuest()` is true
+  //    for them, `isGuestLocked()` (which drives GUEST_SUBS) is not. So the one
+  //    audience for the gate got a section that silently vanished, in the very mode
+  //    whose whole job is to show what read-only looks like.
+  //
+  // So it degrades like its siblings now (AisleOrderSection is the reference): the
+  // swatches and the sample line stay — they ARE the household's colour coding, and
+  // reading them is the point — while the OS pickers and « Réinitialiser » drop.
+  const ro = isGuest()
   // A sample line that exercises every colour family + the scoop circles.
   const sample =
     lang === 'fr'
@@ -542,7 +558,13 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
       <div className="measure-colors">
         {MEASURE_SWATCHES.map((s) => {
           const color = swatchColor(s, overrides)
-          return (
+          // Read-only: a plain swatch in the same box, no picker to open.
+          return ro ? (
+            <span key={s.id} className="measure-colors__row measure-colors__row--ro">
+              <span className="measure-colors__swatch" style={{ background: color }} aria-hidden="true" />
+              <span className="measure-colors__name">{s.label[lang]}</span>
+            </span>
+          ) : (
             <label key={s.id} className="measure-colors__row">
               {/* DELIBERATELY the free-form OS picker, NOT the shared ColorPicker (palette
                   dots): a household matches these to its PHYSICAL colour-coded spoons/cups
@@ -568,9 +590,11 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
           <IngredientLine line={sample} size="lg" scoops />
         </span>
       </div>
-      <button type="button" className="btn" onClick={reset}>
-        <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.measureColorsReset}
-      </button>
+      {!ro && (
+        <button type="button" className="btn" onClick={reset}>
+          <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.measureColorsReset}
+        </button>
+      )}
     </OperatorSection>
   )
 }

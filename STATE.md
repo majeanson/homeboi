@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1845 unit tests in 142 files · 116 Playwright spec files |
+| **Tests** | 1845 unit tests in 142 files · 117 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -226,10 +226,15 @@ Shapes still worth batching:
   on one face control; `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; ~~two `parseBirthday` derivations that disagree on the year regex~~ (✅ 2026-08-28 — it was
   FOUR spellings; the rule now lives once in `functions/_lib/birthdayRule.ts`, pinned by an
   agreement table in `src/lib/cercle.test.ts`).
-- **Silent / inconsistent states** — `MeasureColorsSection` vanishes entirely for a guest
-  where every sibling shows a read-only legend; `HeartButton` truncates faces at 4 with no
-  "+" signal. *(`ThisWeek` having no error state was itself stale — it renders one at
-  `ThisWeekTogetherSection.tsx:137`.)*
+- **Silent / inconsistent states** — ✅ **both closed 2026-08-28.**
+  `MeasureColorsSection` degrades to a read-only legend instead of vanishing — and the
+  finding named the wrong audience: a LINK guest never reached that sub (`kitchen ▸
+  apparence` isn't in `GUEST_SUBS`), the one who saw the hole is an operator in **guest
+  preview**, where `isGuest()` is true but `isGuestLocked()` isn't. `HeartButton` now shows
+  a muted « … » past four faces (never a "+N" — a count is what the calm tenet forbids
+  here) and folds « et d'autres » into the `aria-label`. Both in `e2e/readonly-states.spec.ts`,
+  each run against its planted bug. *(`ThisWeek` having no error state was itself stale — it
+  renders one at `ThisWeekTogetherSection.tsx:137`.)*
 - **Remaining e2e gaps** — ~~Le cercle is screenshots-only~~ **stale, and now narrowed**
   (2026-08-28): Businesses + group CRUD were already covered by `cercle-crud.spec.ts`, and
   the **carnet scene**'s R2 + undo seams are covered now — `carnet-scene.spec.ts` 5 → 13

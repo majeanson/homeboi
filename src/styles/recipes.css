@@ -1131,3 +1131,15 @@
   background: var(--paper-deep);
   margin-bottom: 0.5rem;
 }
+
+/* The overflow cue past the four shown faces — a muted « … » in the same disc.
+   NEVER a « +N »: a count is what the calm tenet forbids on hearts (the chore-ledger
+   rule — which faces, never how many). Without it a fifth person's ❤ just vanished
+   and the row quietly under-reported. */
+.hearts__face--more {
+  background: var(--line);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}

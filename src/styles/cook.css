@@ -1312,3 +1312,20 @@
 /* #43 "Cuisiner ensemble" is now CookMode itself (tabbed via .cook__siblings,
    above), so the old side-by-side .multicook__* columns + the standalone
    .kitchen__cook-together button were removed. */
+
+/* Read-only measure swatch — the same box as `.measure-colors__pick`, without the
+   OS colour input. Shown to a guest and, the audience that actually reaches it, an
+   operator in guest preview: the household's colour coding stays legible (that IS
+   the information) while the editing affordances drop. Same shape as
+   AisleOrderSection's read-only branch. `--ro` only kills the pointer cursor — the
+   row isn't a label any more, so there is nothing to click. */
+.measure-colors__row--ro {
+  cursor: default;
+}
+.measure-colors__swatch {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  flex: none;
+}

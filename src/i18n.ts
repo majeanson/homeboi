@@ -696,6 +696,10 @@ export const FR = {
     love: 'J’aime',
     unlove: 'Je n’aime plus',
     lovedBy: 'Aimé par',
+    // The overflow cue past the four shown faces. NOT « +N » — a count is exactly
+    // what the calm tenet forbids on hearts (the chore-ledger rule: which faces,
+    // never how many). « et d’autres » says there are more without ranking anyone.
+    andOthers: 'et d’autres',
   },
   board: {
     today: 'Aujourd’hui',

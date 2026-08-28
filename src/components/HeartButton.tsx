@@ -27,9 +27,16 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
   const mine = !!memberId && lovers.includes(memberId)
   const faces = lovers.map((id) => members.find((m) => m.id === id)).filter((m): m is Member => !!m)
 
+  // Four faces fit; past that the row needs to SAY there are more, or a fifth
+  // person's ❤ simply disappears and the display quietly lies. The cue is a muted
+  // « … » disc in the same shape — deliberately NOT « +N »: a count is the one thing
+  // the calm tenet forbids here (same rule as the chore ledger — which faces, never
+  // how many), and ranking is the whole thing hearts are not for.
+  const MAX_FACES = 4
+  const shown = faces.slice(0, MAX_FACES)
   const dots = faces.length > 0 && (
     <span className="hearts__faces" aria-hidden="true">
-      {faces.slice(0, 4).map((m) => {
+      {shown.map((m) => {
         const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
         return (
           <span key={m.id} className="hearts__face" style={{ background: photo ? undefined : m.colour }}>
@@ -37,14 +44,22 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
           </span>
         )
       })}
+      {faces.length > MAX_FACES && (
+        <span className="hearts__face hearts__face--more" title={t.loves.andOthers}>
+          …
+        </span>
+      )}
     </span>
   )
+  // The discs are aria-hidden (a row of initials reads as noise), so the label is
+  // the only thing assistive tech gets — it carries the overflow too.
+  const lovedLabel = faces.length > MAX_FACES ? `${t.loves.lovedBy} ${t.loves.andOthers}` : t.loves.lovedBy
 
   // Maisonnée (no face): read-only — show the hearts but offer no toggle.
   if (!memberId) {
     if (!loved) return null
     return (
-      <span className="hearts hearts--ro" aria-label={t.loves.lovedBy}>
+      <span className="hearts hearts--ro" aria-label={lovedLabel}>
         <Icon name="heart-fill" size={16} color={TERRA} />
         {dots}
       </span>

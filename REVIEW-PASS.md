@@ -291,9 +291,20 @@ not structural. Four reviewers; findings deduped below.
   `PantryTab.checkLowItem` + `ReserveSection.addToList` now pass
   `[BOARD_KEY, GHOSTS_KEY, HISTORY_KEY]`, matching the canonical `Liste.postAdd`, so a
   low/reserve item drops out of the quick-add candidate set the moment it's listed.
-- [ ] **Guest handling inconsistent across config panels.** Most render a read-only legend;
-  `MeasureColorsSection` returns `null` (whole section vanishes, `display.tsx:477`). Prefer
-  a uniform read-only legend.
+- [x] **Guest handling inconsistent across config panels** — ✅ **Fixed 2026-08-28**, and the
+  finding named the wrong audience, which is worth recording. It reads as a LINK-guest
+  problem; grepping the tree says a link guest never saw either version: `kitchen ▸
+  apparence` is not in `GUEST_SUBS` (`pages/Operator.tsx`), so `visibleSubs` filters to
+  empty and the kitchen tab shows them **no Régler side at all**. That allowlist, not the
+  component's own line, is what protects the household here.
+  Who DID see the hole: an operator in **guest preview**. `isGuest()` is true for them and
+  `isGuestLocked()` — which drives `GUEST_SUBS` — is not, so the gate's one real audience got
+  a section that silently vanished, in the very mode whose job is to show what read-only
+  looks like. `MeasureColorsSection` now degrades like `AisleOrderSection`: swatches + the
+  sample line stay (they ARE the household's colour coding), the OS pickers and
+  « Réinitialiser » drop. **Run against the bug:** restoring `return null` turns the new
+  `e2e/readonly-states.spec.ts` case red; a companion case pins that an operator still gets
+  the editor, so a too-eager read-only branch can't take it from its owner.
 - [~] **e2e blind spots** (beyond aisle-sort, P1) — the **cook-mode stepper is now covered**
   (✅ 2026-08-27, `e2e/cook-stepper.spec.ts`, 6 cases): forward/back with the counter following,
   the clamp at the last stage (a bad `Math.min` blanks the page rather than erroring), the
@@ -355,8 +366,16 @@ not structural. Four reviewers; findings deduped below.
   **Deliberately NOT swept over all ~108 call sites:** a CELL empty (« Rien de prévu » on one
   day) is a complete answer, and padding it would be a nag — the copy contract in COMPONENTS.md
   says so. Guarded both ways by `e2e/empty-doors.spec.ts`, including the guest gate.
-- [ ] **Heart faces truncate at 4 with no "+" signal** (`HeartButton.tsx:32`) — calm-correct
-  (no count) but "which faces" is incomplete on a 5+ member household.
+- [x] **Heart faces truncate at 4 with no "+" signal** — ✅ **Fixed 2026-08-28.** A fifth
+  person's ❤ simply disappeared and the row quietly under-reported. The cue is a muted
+  « … » disc in the same shape, plus « et d'autres » folded into the read-only
+  `aria-label` (the discs are `aria-hidden` — a row of initials reads as noise — so the
+  label was the only channel assistive tech had, and it was silent about the overflow).
+  **Deliberately not the "+" the finding suggests**: a count is exactly what the calm tenet
+  forbids on hearts (the chore-ledger rule — which faces, never how many), and the finding
+  itself says so one clause earlier. Guarded in `e2e/readonly-states.spec.ts`, including a
+  `not.toContainText(/d/)` on the row so a future "+N" cannot creep back, and a case that
+  four-or-fewer faces show no cue at all. **Run against the bug:** dropping the cue turns it red.
 - [x] **`MealIdeas` empty state has no guide deep-link** — ✅ **Fixed 2026-07-02**:
   passes `guide={{ card: 'kitchen' }}` to `MealPool` (the kitchen card explicitly covers
   meal ideas), matching `Leftovers`' `guide={{ card: 'leftovers' }}`.
