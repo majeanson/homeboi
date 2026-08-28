@@ -64,11 +64,25 @@ const CAPTURE_UNDO_EP: Record<string, string> = {
 }
 
 
-export function CaptureForm({ autoFocus }: { autoFocus?: boolean }) {
+/**
+ * The ONE capture spine: type or speak a line, the AI files it, and the result comes
+ * back as « Ajouté : X » with a « Corriger » disclosure that MOVES the capture rather
+ * than duplicating it.
+ *
+ * `seed` pre-fills the field for a capture that arrived from somewhere else — today
+ * the PWA share target (/share). That page used to re-implement this form beside it,
+ * which is why a shared link landed with no routed label and no way back if the AI
+ * mis-filed it: the recovery UI lives here, and only here. Seeding is read ONCE, at
+ * mount; the caller owns whether the form is mounted at all.
+ *
+ * `onRouted` fires after a successful (non-degraded) route, so a host scene can offer
+ * its own way onward without this form having to know about navigation.
+ */
+export function CaptureForm({ autoFocus, seed, onRouted }: { autoFocus?: boolean; seed?: string; onRouted?: () => void }) {
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
-  const [text, setText] = useState('')
+  const [text, setText] = useState(seed ?? '')
   const voice = useVoiceInput(setText)
   // The last route's result, kept so we can (a) confirm "Ajouté : X", (b) offer the
   // re-route tiles, and (c) re-file with the ORIGINAL text + the rows to undo — the
@@ -136,6 +150,9 @@ export function CaptureForm({ autoFocus }: { autoFocus?: boolean }) {
       if (!degraded && cleanup.length) {
         recordUndo({ message: `${t.capture.routed} ${label}`, onUndo: () => void undoCapture(cleanup) })
       }
+      // A real route landed — the host scene may now offer its way onward. Outside
+      // the cleanup guard above: a route with nothing to undo still routed.
+      if (!degraded) onRouted?.()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
       // A real 4xx/5xx (the server answered and said no): surface it so the tap

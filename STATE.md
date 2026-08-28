@@ -22,19 +22,19 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1815 unit tests in 140 files · 112 Playwright spec files |
+| **Tests** | 1823 unit tests in 142 files · 115 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
-- `npm run typecheck` · `npm test` (1815) · `npm run build` — green.
+- `npm run typecheck` · `npm test` (1823) · `npm run build` — green.
 - `npm run check:bundle` — **3859 KB** of JS across `dist/assets`, **733 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1128 passed, 13 skipped**.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Nine build-gating invariants** (this is the codebase's best feature — see §5):
+- **Ten build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -42,7 +42,9 @@
   `demoHousehold.test.ts` (a new table must join the sandbox sweep),
   `realtime.test.ts` (`PATH_KEYS` coverage), **`nested-interactive.test.ts` (no control
   inside a control, no `role="img"` on an interactive SVG — added 2026-08-27)**,
-  `check-bundle.mjs` (size + precache). `knip` now runs in CI too.
+  `check-bundle.mjs` (size + precache), and **`ingredient-mirror.test.ts` (the client
+  and server copies of `ingredientName` are the same code — added 2026-08-28)**. `knip`
+  now runs in CI too.
 
 ---
 
@@ -58,7 +60,7 @@ them are finished. Read this table before opening any of them.
 | `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
 | `AUJOURDHUI.md` | Ledger | ✅ **Closed** — no open items (the last, `ARM_MS`, answered 2026-08-28). |
 | `REVIEW-PASS.md` | Ledger | 🟡 **31 open** P2/P3 findings across 8 sections. The main written debt pool. |
-| `bmad/11-friction-audit.md` | Ledger | 🟢 **No tier-1 seam fully open** (#1/#2/#3/#4 addressed 2026-08-27, #5 was already fixed). 9 tier-2 seams + tier-3 polish remain. See §4-B. |
+| `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — all 5 tier-1 and all 9 tier-2 seams resolved (5 of the 9 were already done and merely unticked). Only tier-3 polish remains. See §4-B. |
 | `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
 | `PLAN-mots-and-lifecycle-followups.md` | Feature backlog | 🟡 12 designed-but-unbuilt features (A5–D2), never started. |
 | `bmad/05` + `bmad/06` | Idea pools | ⚪ Brainstorms. Nothing committed. Don't treat as a backlog. |
@@ -162,34 +164,36 @@ it happens to live in.
    atomically coupled to a blob upload that cannot be queued, so routing only the write
    through the outbox would land a row pointing at blobs that were never stored.
 
-### B. The friction pool — highest user value, **blocked on a decision**
+### B. The friction pool — ✅ CLOSED 2026-08-28
 
-`bmad/11-friction-audit.md` holds 14 ranked seams from five flow audits, every one
-verified against code at the time. Its five **tier-1** entries block rituals or lose data:
+`bmad/11-friction-audit.md` held 14 ranked seams from five flow audits. **All five
+tier-1 and all nine tier-2 entries are now resolved.** The five tier-1 seams closed on
+2026-08-27 (with #5 found already fixed); tier 2 closed on 2026-08-28 with #10, and
+with **#11 and #12 found already done and never ticked** — five of the nine were in
+that state, which is §5-1 in one table.
 
-1. ~~Sunday planning can't reach Fri/Sat~~ — ✅ **fixed 2026-08-27.** The meal window
-   rolls from today instead of decaying from a fixed Tuesday, and its length is a
-   household setting (« Jours affichés » — 7 · 10 · 14, default 10). The bounds are set
-   by two existing surfaces, not taste: the toddler kitchen slices `week.slice(0, 7)`,
-   and `ask.ts` snapshots `today+14d` for the AI.
-2. ~~`/share` loses or strands captures~~ — ✅ **fixed 2026-08-27** (§4-A). The
-   undo/« Corriger » half of that seam stands.
-3. ~~A dated loose todo silently vanishes after its day.~~ — ✅ **fixed 2026-08-27.**
-   The board glance now also selects past-day, undone, loose todos and shows them
-   under « En retard », above the rest. Nothing is rewritten or deleted.
-4. ~~The locked kiosk hides the departure checklist~~ — ✅ **fixed 2026-08-27**, and the
-   seam was overstated: the items already reached the kid lens, just folded into
-   « À faire ». They are their own hear-first « Avant de partir » section now.
-   *Deliberately still gated:* « Le point du jour », which is written for a reader.
-5. ~~A half-done routine pins the kiosk; no "switch kid" affordance.~~ — ✅ **was already
-   fixed** and never ticked (kids seams #1 and #4, `KidView.tsx:84,147`). Found while
-   planning, which is the §5 lesson working.
+The last piece was tier-1 #2's remaining half: **/share had no routed label and no
+« Corriger »**. The fix was to *delete* the re-implementation rather than copy the
+missing parts into it — the page now mounts `<CaptureForm seed=…>`, THE capture spine,
+so the routed line, the re-route tiles and the undo cannot drift from the ＋ sheet's
+again. That is the same build-beside that cost this path its outbox in the first place,
+and it is the clearest argument in the repo for fixing one by removing it.
 
-**Status: parked.** On 2026-07-13 Marc explicitly declined the proposed F1–F5 fix-wave
-grouping. The *grouping* was rejected, not the seams — they have never been disputed, and
-nothing has changed about them since. **This is the single biggest gap between what is
-documented and what is fixed, and it needs one decision, not more analysis.** The right
-next question to Marc is which tier-1 seams to take, individually.
+Two things worth keeping from the work itself:
+
+- **The e2e caught what re-reading did not.** `useAnnounceLeftover()` was dropped where
+  the plain function it replaced had lived — below the board's `if (unauth) return` —
+  so a hook ran conditionally and the locked kiosk crashed outright ("Rendered more
+  hooks than during the previous render"). Typecheck and 1823 unit tests were green.
+- **A guard that has never been red proves nothing — a third time.** The /share spec
+  passed against the very timed bounce it was written to forbid: it read the routed
+  label and clicked « Corriger » inside the old 1 s window. It only became a guard once
+  it waited the bounce out. Verified by planting the old behaviour back.
+
+**What remains in that file:** tier-3 polish only (~9 opportunistic items — the
+cashier's second check-state, staples chips, no meal-done on the supper hero, the
+Jan-1970 cold-grid flash, the abandoned routine stopwatch, « Par allée » hiding the
+drag grip).
 
 ### C. Section debt — `REVIEW-PASS.md`, 31 findings
 
@@ -339,8 +343,9 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
 
 ### The four changes worth making
 
-1. **Decide bmad/11 tier-1.** Five seams, individually, yes or no. Biggest available user
-   value; needs a decision, not analysis.
+1. ~~**Decide bmad/11 tier-1.**~~ ✅ **done** — all five closed (2026-08-27/28), and tier 2
+   with them. The decision never needed to be a five-seam grouping: taken one at a time,
+   verified in code first, five of the fourteen turned out to be already fixed.
 2. **Turn the `useWrite` rule into a test** (`write-rule.test.ts` + allowlist), and fix
    `/share` as its first customer.
 3. **Adopt one checkbox convention** and put the legend at the top of each ledger; strip

@@ -4,9 +4,9 @@ import { useT } from '../i18n'
 import { api, ApiError, isStatus } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useOnline } from '../lib/online'
-import { CAPTURE_KEYS } from '../lib/captureKeys'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { StatusMessage } from '../components/StatusMessage'
+import { CaptureForm } from '../components/CaptureForm'
 import { Icon } from '../components/Icon'
 
 // PWA share-target capture (#13). The manifest registers /share as a POST share
@@ -15,7 +15,13 @@ import { Icon } from '../components/Icon'
 // here. We drain that cache on load (query params are a fallback) and:
 //   • a shared PHOTO → an image fridge note (note-media → notes, media_kind:image),
 //     so it shows on the board like a drawn note, clearable. Optional caption.
-//   • shared TEXT/URL → the capture spine (AI routes it), pre-filled, one tap.
+//   • shared TEXT/URL → <CaptureForm seed=…>, THE capture spine itself. This page
+//     used to re-implement that form beside it — the build-beside failure mode
+//     CLAUDE.md warns about — and the cost was exactly the part it didn't copy:
+//     a shared link landed with no « Ajouté : rendez-vous » label and no
+//     « Corriger », so an AI mis-file was silent and unrecoverable. It now mounts
+//     the real one, so the routed label, the re-route tiles and the undo come for
+//     free and can't drift (bmad/11 tier-1 seam #2's remaining half).
 // Never a silent auto-post; nothing shared → straight to the board. Standalone scene.
 const SHARE_CACHE = 'babillard-share'
 
@@ -82,6 +88,10 @@ export function SharePage() {
     }
   }, [params])
 
+  // The PHOTO branch is done the moment the note is written — nothing to correct,
+  // so it keeps its calm auto-return. The TEXT branch does NOT: a routed capture is
+  // exactly when « Corriger » matters, and bouncing to the board a second later took
+  // that away before it could be read. It sets `added` and stays put.
   function finish() {
     setAdded(true)
     window.setTimeout(() => nav('/board', { replace: true }), 1000)
@@ -119,28 +129,6 @@ export function SharePage() {
     }
   }
 
-  // Shared TEXT/URL → the capture spine, through `useWrite` like every other
-  // household write. It used to be a raw `api()` call, which meant the share
-  // target had NO OUTBOX: sharing a link to Babillard with no signal threw the
-  // capture away in silence — you tapped « Ajouter », the page said nothing, and
-  // the line never existed. Queued, it lands on reconnect like any other write.
-  // Mirrors CaptureForm's own submit (same CAPTURE_KEYS, same queued branch).
-  async function addText() {
-    const value = text.trim()
-    if (!value || busy) return
-    setBusy(true)
-    try {
-      await write('capture', { method: 'POST', body: { text: value }, affectedKeys: CAPTURE_KEYS })
-      // Offline the write is queued, not lost — `finish()` either way, because
-      // from here the two outcomes are the same promise: it's kept.
-      finish()
-    } catch (e) {
-      fail(e)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const mapsLink = text.match(MAPS_LINK)?.[0] ?? null
 
   if (!ready) {
@@ -156,7 +144,10 @@ export function SharePage() {
   return (
     <main className="narrow share-page">
       <h1>{t.share.title}</h1>
-      {added ? (
+      {/* The PHOTO branch keeps its own confirmation + auto-return: the note is
+          written, there is nothing to re-file. The TEXT branch shows CaptureForm's
+          own routed line instead, which is the whole point of mounting it. */}
+      {added && imageBlob ? (
         <p className="share-page__done mono" role="status">
           <Icon name="check-bold" size={18} /> {t.share.done}
         </p>
@@ -165,33 +156,35 @@ export function SharePage() {
           <p className="lead">{imageBlob ? t.share.photoLead : t.share.lead}</p>
           {imageUrl && <img className="share-page__img" src={imageUrl} alt="" />}
           {imageBlob ? (
-            <input
-              className="input share-page__box"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={t.share.caption}
-              aria-label={t.share.caption}
-            />
+            <>
+              <input
+                className="input share-page__box"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={t.share.caption}
+                aria-label={t.share.caption}
+              />
+              {/* The photo branch needs the upload; say so rather than offering a
+                  button that can only fail. Shared TEXT has no such limit — it queues. */}
+              {!online && <StatusMessage tone="info">{t.offline.unavailable}</StatusMessage>}
+            </>
           ) : (
-            <textarea
-              className="input share-page__box"
-              rows={4}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              aria-label={t.share.title}
-            />
+            // THE capture spine, seeded with what was shared — same field, same AI
+            // routing, same « Ajouté : X » + « Corriger », same undo. Nothing about
+            // the result is re-implemented here any more.
+            <CaptureForm seed={text} onRouted={() => setAdded(true)} />
           )}
-          {/* The photo branch needs the upload; say so rather than offering a
-              button that can only fail. Shared TEXT has no such limit — it queues. */}
-          {imageBlob && !online && <StatusMessage tone="info">{t.offline.unavailable}</StatusMessage>}
           <div className="share-page__actions">
+            {/* Before the capture this is « Annuler »; after it, the way onward.
+                Not a timed bounce: a routed capture is exactly when « Corriger »
+                matters, and it has to still be on screen to be tapped. */}
             <button type="button" className="btn btn--ghost" onClick={() => nav('/board', { replace: true })}>
-              {t.common.cancel}
+              {added ? t.nav.board : t.common.cancel}
             </button>
             {/* A shared Google Maps place → straight to a pre-filled business card
                 (the capture spine has no business type, so without this door a
                 shared vet/plumber link just became a note with a naked URL). */}
-            {!imageBlob && mapsLink && (
+            {!imageBlob && !added && mapsLink && (
               <button
                 type="button"
                 className="btn btn--ghost"
@@ -200,14 +193,16 @@ export function SharePage() {
                 <Icon name="storefront-bold" size={18} /> {t.cercle.business.add}
               </button>
             )}
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={imageBlob ? addImage : addText}
-              disabled={(!imageBlob && !text.trim()) || busy || (!!imageBlob && !online)}
-            >
-              <Icon name="plus-bold" size={18} /> {t.common.add}
-            </button>
+            {imageBlob && (
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={addImage}
+                disabled={busy || !online}
+              >
+                <Icon name="plus-bold" size={18} /> {t.common.add}
+              </button>
+            )}
           </div>
         </>
       )}

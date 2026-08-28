@@ -109,16 +109,24 @@ test('a share-target capture made offline queues instead of vanishing, then repl
   await expect(page.locator('.share-page')).toBeVisible()
 
   // NOTE: /share is a standalone scene OUTSIDE HubLayout, so it shows no offline
-  // bar — the banner is rendered by the hub shell. (Same class as bmad/11 tier-2
-  // seam #12, « no offline/stale banner on the in-store scenes ».) Nothing here
-  // depends on the banner; `setOffline` is what writeWith actually reads.
+  // bar — the banner is rendered by the hub shell. Nothing here depends on the
+  // banner; `setOffline` is what writeWith actually reads.
   await page.context().setOffline(true)
 
-  await page.locator('.share-page__actions .btn--primary').click()
+  // /share now MOUNTS the capture spine (seeded) rather than re-implementing it, so
+  // the submit is CaptureForm's own — and so is the queued confirmation. That reuse is
+  // the point: this path can no longer drift away from the ＋ spine's behaviour, which
+  // is how it lost its outbox in the first place.
+  await expect(page.locator('.share-page .capture-form input.edit-field__input')).toHaveValue(
+    'https://example.com/recette-de-tarte',
+  )
+  await page.locator('.share-page .capture-form .edit-field__submit').click()
 
-  // The scene confirms and leaves, exactly as it does online — the whole point is
-  // that offline is no longer a different, silent outcome. Nothing went over the wire.
-  await expect(page.locator('.share-page__done')).toBeVisible()
+  // Offline is no longer a different, silent outcome: the same calm « gardé » line the
+  // ＋ spine shows, the box cleared, and nothing over the wire.
+  await expect(page.locator('.status-msg--info', { hasText: 'Hors ligne' })).toBeVisible()
+  await expect(page.locator('.status-msg--error')).toHaveCount(0)
+  await expect(page.locator('.share-page .capture-form input.edit-field__input')).toHaveValue('')
   expect(capturePosts.length).toBe(0)
 
   // Reconnect → the outbox replays the held capture with its idempotency key.
