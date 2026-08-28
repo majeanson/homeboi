@@ -66,6 +66,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, type DetailCtx } from '../components/detail/adapters'
 import { useOpenMeal } from '../components/detail/useOpenMeal'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
+import { useAnnounceLeftover } from '../components/kitchen/Leftovers'
 // The board writes meals too (« ce soir »): the same keys the kitchen's own
 // mutations refresh, so the week grid and « Historique » don't keep a row the
 // board just deleted (and « Déjà mangé » rides the meal-history prefix).
@@ -539,6 +540,12 @@ export function Board() {
     if (editing) setExpandedId(null)
   }, [editing])
 
+  // Save a meal as a pool leftover — the ONE shared hook (kitchen/Leftovers), which
+  // also refreshes the kitchen pool the old hand-rolled copy left stale. A HOOK, so
+  // it sits above the early return below with the rest of them (the copy it replaced
+  // was a plain function and could live further down).
+  const saveAsLeftover = useAnnounceLeftover()
+
   if (unauth) return <PairPrompt />
 
   // The picked member on this device (greeting + "your day" emphasis, both
@@ -641,22 +648,6 @@ export function Board() {
     memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
 
   // ── Detail-sheet contextual actions for meals + leftovers ──────────────────
-  // Save a meal as a pool leftover (compensating undo: delete the created entry).
-  const saveAsLeftover = async (id: string, title: string) => {
-    const res = await write<{ id?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { title, sourceMealId: id },
-      affectedKeys: [BOARD_KEY],
-    }).catch(() => null)
-    const leftoverId = res && !res.queued ? res.data?.id : undefined
-    recordUndo({
-      message: t.undo.leftoverAdded(title),
-      onUndo: async () => {
-        if (leftoverId)
-          await write('meal-leftovers', { method: 'DELETE', body: { id: leftoverId }, affectedKeys: [BOARD_KEY] }).catch(() => {})
-      },
-    })
-  }
   // Remove a planned meal (compensating undo: re-add it at same day+slot).
   const removeMealFromPlan = async (id: string, title: string, slot: string, date: number) => {
     const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY]
@@ -959,7 +950,7 @@ export function Board() {
           color: supperColor,
           slotLabel: heroCardLabel(heroSlot, t),
           daySec: todayDay,
-          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+          onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
           onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
         })
       }
@@ -1003,7 +994,7 @@ export function Board() {
           color: mealPrefs.color(m.slot),
           slotLabel: slotLabel(m.slot),
           daySec: todayDay,
-          onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+          onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
           onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
         })
       }
@@ -1308,7 +1299,7 @@ export function Board() {
               color: supperColor,
               slotLabel: slotLabel(heroSlot),
               daySec: tomorrowDay,
-              onLeftover: ro ? undefined : () => saveAsLeftover(data.tomorrowMeal!.id, data.tomorrowMeal!.title),
+              onLeftover: ro ? undefined : () => saveAsLeftover({ id: data.tomorrowMeal!.id, title: data.tomorrowMeal!.title }),
               onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay),
             })
           }
@@ -1328,7 +1319,7 @@ export function Board() {
               color: mealPrefs.color(m.slot),
               slotLabel: slotLabel(m.slot),
               daySec: tomorrowDay,
-              onLeftover: ro ? undefined : () => saveAsLeftover(m.id, m.title),
+              onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
               onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
             })
           }

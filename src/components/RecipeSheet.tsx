@@ -22,6 +22,7 @@ import { Chip } from './Chip'
 import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { MEALS_KEY, MEAL_HISTORY_KEY } from './kitchen/types'
+import { useAnnounceLeftover } from './kitchen/Leftovers'
 import { useModal } from '../lib/useModal'
 import { useConfirm } from '../lib/confirm'
 import { useAuth } from '../lib/auth'
@@ -73,6 +74,18 @@ export function RecipeSheet({
   const modalRef = useRef<HTMLDivElement>(null)
   useModal(modalRef, onClose)
   const [added, setAdded] = useState(false)
+  // « Il en reste ? » — put the dish in the Restants pool without leaving the recipe
+  // (bmad/11 tier-2 #10). Tapping a recipe-backed meal ROUTES here, so this was the
+  // one surface the pool could not be reached from: you finish supper, tap the dish,
+  // and had to walk back out to La cuisine to say there were leftovers.
+  //
+  // NO undo toast, deliberately — same reason cook mode dropped its own on 2026-08-27:
+  // .recipe-modal is z-index 80 and .undo-toast is 40, so an « Annuler » offered from
+  // here would be painted underneath the recipe. The label flip IS the confirmation
+  // (exactly what « Ajouté à la liste » does one line above), and the pool's own
+  // « Fini » is the reachable way back.
+  const announceLeftover = useAnnounceLeftover()
+  const [leftoverSaved, setLeftoverSaved] = useState(false)
   const [sharing, setSharing] = useState(false)
   // "Add to list" opens a checklist (you rarely need EVERY ingredient — most are
   // staples you already have). null = closed; each row is a buyable name you tick
@@ -218,6 +231,16 @@ export function RecipeSheet({
       label: added ? t.recipes.addedToList : t.recipes.addToList,
       disabled: added,
       onSelect: () => (listPrompt ? setListPrompt(null) : openAddToList()),
+    })
+  if (!ro)
+    menuItems.push({
+      icon: 'arrow-counter-clockwise-bold',
+      label: leftoverSaved ? t.kitchen.leftoversSaved : t.kitchen.leftoversFromMeal,
+      disabled: leftoverSaved,
+      onSelect: () => {
+        setLeftoverSaved(true)
+        void announceLeftover({ title: recipe.title, recipe_id: recipe.id }, { undo: false })
+      },
     })
   // « En routine pour enfant » — turn the recipe into a toddler picture
   // routine (#19). Parent-only (the toddler lens + guests are `ro`), so the

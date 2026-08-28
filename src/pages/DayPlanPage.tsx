@@ -39,10 +39,10 @@ import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
+import { useAnnounceLeftover } from '../components/kitchen/Leftovers'
 import { reschedule, restoreMeals } from '../components/kitchen/mealMutations'
 import {
   type Leftover,
-  type MealRow,
   type MealsData,
   type DayNotesData,
   MEALS_KEY,
@@ -330,22 +330,9 @@ export function DayPlanPage() {
     }).catch(() => {})
   }
 
-  // "Il en reste ?" from a meal row — announce leftovers into the Restants pool.
-  // Compensating undo deletes the row we just created (the pool is live-polled).
-  async function announceLeftover(meal: MealRow) {
-    const res = await write<{ id?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { title: meal.title, recipeId: meal.recipe_id ?? null, sourceMealId: meal.id },
-      affectedKeys: [LEFTOVERS_KEY],
-    }).catch(() => null)
-    const id = res && !res.queued ? res.data?.id : undefined
-    recordUndo({
-      message: t.undo.leftoverAdded(meal.title),
-      onUndo: () => {
-        if (id) void write('meal-leftovers', { method: 'DELETE', body: { id }, affectedKeys: [LEFTOVERS_KEY] }).catch(() => {})
-      },
-    })
-  }
+  // "Il en reste ?" from a meal row — announce leftovers into the Restants pool,
+  // through the ONE shared hook (components/kitchen/Leftovers).
+  const announceLeftover = useAnnounceLeftover()
 
   // Easy clearing: wipe one slot's meals, or the whole day's. Snapshot the rows
   // first so Annuler can put them back (compensating undo).

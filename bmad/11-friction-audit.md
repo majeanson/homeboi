@@ -51,7 +51,7 @@ Tier 1 — blocks the ritual / loses data:
 
 Tier 2 — high-frequency annoyances (weekly ×N):
 
-> **Re-verified 2026-08-27 before building.** Three of these nine were ALREADY
+> **Re-verified 2026-08-27, and again 2026-08-28.** FOUR of these nine were ALREADY
 > FIXED and still listed — #6 (the row's centre checks; the editor moved to a
 > hold and the ⚙ Avancé ✏️), #7 (the empty hero offers « Choisir un souper »),
 > #8 (an empty day cell plans in place). Half of #9 too: the board strip and
@@ -66,8 +66,8 @@ Tier 2 — high-frequency annoyances (weekly ×N):
 | 7 | ✅ **shipped** (verified in code 2026-08-27, `DayHeroes` empty branch) — **17h empty « Ce soir » says nothing** — no supper block, no "des idées ?" door; suggestions/vide-frigo sit unreached in the kitchen drawer | cook |
 | 8 | ✅ **shipped** (verified 2026-08-27, `e2e/kitchen-inline-plan.spec.ts`) — **Every supper costs a full-screen day scene** — no inline quick-add on the grid cell; ~7 heavy loads to fill a week | plan |
 | 9 | ✅ **2026-08-27** (mots; the board strip and « À compléter » already had theirs) — **No bulk clear / decay** on fridge notes (media notes even confirm per-item), standing todos, seen mots | tidy |
-| 10 | **Leftovers unpostable from a recipe-backed meal** — tap routes to the recipe view, which lacks « Créer des restants » | cook |
-| 11 | **« Magasiner la semaine » silently disappears** when the week is free-text (tile filtered, not disabled-with-why) | plan |
+| 10 | ✅ **2026-08-28** — **Leftovers unpostable from a recipe-backed meal** — tap routes to the recipe view, which lacked « Créer des restants ». « Il en reste ? » is now in the recipe scene's ⋯ overflow, through a shared `useAnnounceLeftover()` (`kitchen/Leftovers`) that also replaced the day editor's and the board peek's hand-rolled copies — they had drifted apart on invalidation, each refreshing only its own surface. NO undo toast from that scene, deliberately: `.recipe-modal` is z-index 80 and `.undo-toast` 40, so it would be painted underneath (cook mode's 2026-08-27 bug); the label flip is the confirmation. Guarded by `e2e/recipe-leftovers.spec.ts`, which also asserts the absent undo | cook |
+| 11 | ✅ **shipped** (verified in code 2026-08-28, `AddSheet.tsx` `KITCHEN_ACTIONS`) — **« Magasiner la semaine » silently disappears** when the week is free-text. The tile stays put and goes disabled-with-why (`shopWeekWhy`, shown in-tile since touch has no tooltip), and stays tappable in help mode. A fourth row that was already done and never ticked | plan |
 | 12 | **No offline/stale banner on the in-store scenes** (cashier/price-match/flyers are outside HubLayout) + **a failed lookup renders as "no deals"** with no retry | shop |
 | 13 | ✅ **2026-08-27** — **Mid-cook "ran out → flag low" doesn't exist** — cook mode has zero pantry affordance | cook |
 | 14 | ✅ **2026-08-27** (migration 0122) — **« À régler » can't be snoozed/acknowledged** — an unresolvable friction re-nags every scan | tidy |

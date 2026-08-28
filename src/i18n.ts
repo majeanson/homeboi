@@ -1344,6 +1344,9 @@ export const FR = {
     leftoversAdd: 'Ajouter un reste',
     leftoversEmpty: 'Pas de restants. Tant mieux !',
     leftoversFromMeal: 'Il en reste ?',
+    // L'état « c'est fait » du menu ⋯ d'une recette — la bascule d'étiquette EST la
+    // confirmation, la barre « Annuler » étant peinte sous la scène (z-index 40 vs 80).
+    leftoversSaved: 'Dans les restants',
     leftoversToPool: 'À finir bientôt',
     leftoversPlan: 'Planifier',
     leftoversDone: 'Fini',

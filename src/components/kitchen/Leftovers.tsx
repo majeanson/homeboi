@@ -48,6 +48,57 @@ export function usePlanLeftover() {
   }
 }
 
+
+/**
+ * « Il en reste ? » — announce leftovers from something already cooked INTO the pool
+ * (the mirror of usePlanLeftover, which takes one back out). Compensating undo: the
+ * pool is live-polled, so the row has to be deleted rather than held back.
+ *
+ * Lived in THREE hand-rolled copies before 2026-08-28 — the day editor, the board's
+ * meal peek, and (differently) the ＋ sheet — which is how they came to disagree on
+ * the invalidation: the day page refreshed only the kitchen pool, the board only the
+ * board, and each announce left the OTHER surface showing a stale list until its next
+ * poll. One hook, both keys, so they can't drift apart again.
+ *
+ * `from` is deliberately loose: a meal row (with its recipe link), a board meal (no
+ * recipe_id in that payload), or a recipe with no meal behind it at all.
+ *
+ * `opts.undo` opts OUT of the undo toast, and it is not a preference: the toast is
+ * z-index 40 and a full-screen scene is 80–90, so an « Annuler » offered from inside
+ * one is painted UNDERNEATH it — an undo nobody can tap. Cook mode hit exactly this
+ * on 2026-08-27. A caller that turns it off owes the user another way back (its own
+ * control state, or a reachable door on the pool itself). Returns the new row's id
+ * so such a caller can undo it in place.
+ *
+ * (The ＋ sheet keeps its own copy ON PURPOSE — it is a form with busy/error state
+ * that closes on success, and it offers no undo because the sheet is already gone.)
+ */
+export function useAnnounceLeftover() {
+  const t = useT()
+  const write = useWrite()
+  const recordUndo = useRecordUndo()
+  return async (
+    from: { id?: string | null; title: string; recipe_id?: string | null },
+    opts?: { undo?: boolean },
+  ): Promise<string | undefined> => {
+    const keys = [LEFTOVERS_KEY, BOARD_KEY]
+    const res = await write<{ id?: string }>('meal-leftovers', {
+      method: 'POST',
+      body: { title: from.title, recipeId: from.recipe_id ?? null, sourceMealId: from.id ?? null },
+      affectedKeys: keys,
+    }).catch(() => null)
+    const id = res && !res.queued ? res.data?.id : undefined
+    if (opts?.undo !== false)
+      recordUndo({
+        message: t.undo.leftoverAdded(from.title),
+        onUndo: () => {
+          if (id) void write('meal-leftovers', { method: 'DELETE', body: { id }, affectedKeys: keys }).catch(() => {})
+        },
+      })
+    return id
+  }
+}
+
 export function Leftovers({
   leftovers,
   recentMeals,

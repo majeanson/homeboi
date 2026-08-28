@@ -1172,6 +1172,7 @@ export const EN: typeof FR = {
     leftoversAdd: 'Add leftovers',
     leftoversEmpty: 'No leftovers. All good!',
     leftoversFromMeal: 'Any left?',
+    leftoversSaved: 'In leftovers',
     leftoversToPool: 'To finish soon',
     leftoversPlan: 'Plan',
     leftoversDone: 'Done',
