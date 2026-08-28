@@ -20,6 +20,15 @@ export default defineConfig({
   // a one-shot retry absorbs that environmental flake without masking real ones
   // (a genuine failure fails both attempts).
   retries: process.env.CI ? 0 : 1,
+  // …except that "fails both attempts" was NOT what the local run reported. A test
+  // that failed once and passed on the retry printed as « flaky » and the run still
+  // exited 0 — so a genuinely broken change read as green locally and was pushed,
+  // and CI (retries: 0) failed it deterministically (2026-08-28, the `.kb-open`
+  // invariant vs keyboard.spec.ts). The retry is still worth having, because the
+  // cold-compile starvation is real; what was wrong is that needing it was free.
+  // Now a flake FAILS the local run: the retry tells you which test is unstable
+  // instead of hiding that it was.
+  failOnFlakyTests: true,
   // Cap workers: the first hit on each lazy route triggers a Vite transform, and
   // too much parallel cold-compile starves navigations (mitigated by vite.config
   // `server.warmup`, which pre-transforms the routes at boot). 4 is a good balance;

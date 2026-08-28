@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
+import { boxOf } from './measure'
 import { mockApi, seedState, type Audience, type Lang } from './mocks'
 
 // Interaction coverage: navigation, tabs, toggles, forms, and clicks across
@@ -835,6 +836,22 @@ test.describe('kitchen', () => {
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.sheet.show').getByRole('button', { name: /Magasiner la semaine/ }).click()
     await expect(page.locator('.kitchen__shop')).toBeVisible()
+
+    // Every gather tick is a real thumb target. bmad/11 tier-3 reported these at ~27px
+    // "beside a read-aloud zone"; measured 2026-08-28 they are 46px, so that item was
+    // stale — but nothing held it there, and a chip is exactly the control that shrinks
+    // when someone tunes padding. `--touch-target` (44px) is the app's own floor.
+    const ticks = page.locator('.kitchen__staples-chips .chip')
+    const n = await ticks.count()
+    expect(n, 'the shop prompt offers ticks').toBeGreaterThan(0)
+    const floor = Number(
+      (await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--touch-target'))).replace('px', '').trim(),
+    )
+    for (let i = 0; i < Math.min(n, 5); i++) {
+      const box = await boxOf(ticks.nth(i))
+      expect(box.height, `gather tick ${i} is a thumb target`).toBeGreaterThanOrEqual(floor)
+    }
+
     // The picker starts all-unchecked now — tick everything, then confirm posts it.
     await page.locator('.kitchen__shop').getByRole('button', { name: 'Tout cocher' }).click()
     await expectApi(page, 'POST', 'recipe-to-list', () =>

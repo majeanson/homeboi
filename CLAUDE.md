@@ -193,6 +193,20 @@ job runs `npm run e2e` then `npm run e2e:sw` (the SW harness). **Trust CI as the
 don't run e2e locally by default — check the E2E job on the run page for visual/flow
 regressions.** Node 24.
 
+> **A local e2e run is WEAKER than CI, and knowing how is the point.** CI runs
+> `workers: 1, retries: 0`; locally it is `4` workers with `retries: 1`. A test that
+> failed once and passed on the retry used to print « flaky » and **still exit 0** — so
+> a genuinely broken change read as green here and CI failed it deterministically
+> (2026-08-28: the `.kb-open` invariant vs `keyboard.spec.ts`). Two things now:
+>
+> - **`failOnFlakyTests: true`** — a flake FAILS the local run. The retry still absorbs
+>   Vite cold-compile starvation, but needing it is no longer free. **Never dismiss a
+>   flake without reading WHICH test it was** — that name is the whole signal, and it
+>   was printed the first time and skipped over.
+> - **`npm run e2e:ci`** — `--workers=1 --retries=0 --forbid-only`, the authoritative
+>   shape. Run this, not `npm run e2e`, before pushing anything that touches shared
+>   machinery (the viewport/keyboard vars, `lib/query`, a board-wide component).
+
 > **Workflow: push straight to `main`.** No PR branches — commit and `git push origin
 main` directly. CI (typecheck/test/build) is the only gate; a red build is caught
 > on `main` and fixed forward. (This supersedes the old branch-per-change + PR flow.)

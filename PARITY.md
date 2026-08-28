@@ -886,8 +886,25 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         **DONE — mig 0087.**
   - [x] `notes.dismissed_at`: **keep + commented** (sanctioned distinct semantic,
         like `carnets.archived_at`) — not a rename target.
-  - [ ] media parallel arrays → trio: `care_log.media_json`, `members.avatar_*`,
-        recipe step-images, routine card-audio/photo. _(genuinely pending, opportunistic)_
+  - [ ] media parallel arrays → trio. **Halved on inspection, 2026-08-28** — the four
+        names are three different shapes, and two of them are correct as they stand:
+        - **REAL, and the anti-pattern the item means — positional arrays indexed by
+          another array's position.** `recipes.steps_images_json` is parallel to
+          `steps_json` by index (there is already a `normalizeStepImages(json,
+          steps.length)` guarding the two apart — evidence the fragility is real, not
+          theoretical), and routine cards do the same twice over
+          (`cards_narration_json[i]` + the `rcp_` card photos). Insert or reorder a step
+          and every array has to be re-indexed in lockstep. This is what to converge.
+        - ➖ `care_log.media_json` — **not parallel to anything.** It is a LIST of R2 keys
+          (invoice + manual + photo on one entry). The `media_kind`/`media_key` trio is
+          single-blob by definition, so "converging" it would delete the multi-document
+          ability the carnet scene is built on. Keep.
+        - ➖ `members.avatar_kind` / `avatar_ref` — **not a media key.** `avatar_ref`
+          holds a hex COLOUR or an R2 key depending on `avatar_kind` (0001_init:46). It is
+          a polymorphic discriminated pair that happens to share the trio's shape; renaming
+          it to `media_key` would make it lie for the majority case. Keep.
+        _(still opportunistic: fold it in when a wave already touches recipes or routines,
+        never as a churn-only migration.)_
   - [x] `SILENT_PATHS` cleanup — **DONE 2026-08-27** (entry 17): dead
         `capture-classify` dropped, 7 blob/AI-scratch endpoints silenced, and the
         3 with real polled keys (`postbox`, `intake`, `guest-links`) mapped in

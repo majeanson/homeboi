@@ -96,7 +96,14 @@ Tier 3 — polish (fix opportunistically, or bundle with the tier above).
   re-checked — a design question, not a defect.)*
 - Staples chips re-ask what pantry-low/list already know (plan). *(not re-checked —
   same.)*
-- Gather tick ~27px beside a read-aloud zone; cook-bar icons crowded (cook).
+- ✅ **2026-08-28** Gather tick ~27px beside a read-aloud zone — **stale, and settled by
+  MEASUREMENT rather than by reading the CSS.** The « Magasiner la semaine » ticks render
+  **46px** tall at 390px (`.chip` carries `min-height: 40px`, and the icon + padding take
+  it past that), above the app's own `--touch-target: 44px` floor. Nothing held it there,
+  though, and a chip is exactly the control that shrinks when someone tunes padding — so
+  the measurement is now a guard in `interactions.spec.ts` › « shop the week », asserting
+  each tick against `--touch-target` read from the live stylesheet (not a hard-coded 44).
+  *Still open:* cook-bar icons crowded (cook).
 - 🔶 No meal-done — the supper hero headlines an eaten meal all evening (cook).
   **Half stale:** « Marquer mangé » exists as a detail-peek action
   (`components/detail/adapters.ts:417`, `t.detail.markEaten`). Whether the board's

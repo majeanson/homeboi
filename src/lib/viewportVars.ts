@@ -480,17 +480,19 @@ export function trackVisualViewport(): void {
     // keyboard, `.kb-open` latched, and hub.css hid the tab bar and the ＋ FAB with no
     // field on screen to justify it and no event coming to heal it.
     //
-    // The missing invariant is simple: a keyboard cannot be up if nothing that could
-    // summon one holds focus. Checked on BOTH edges, not just the rising one — the
-    // reported state was already latched, so a rising-edge-only guard would not have
-    // recovered it.
+    // The missing invariant: a keyboard cannot ARRIVE if nothing that could summon one
+    // holds focus. Gated on the RISING edge only (`|| kbOpen` keeps an already-open
+    // keyboard open) — and that half matters as much as the guard itself. A keyboard
+    // genuinely still up across an in-app NAVIGATION has no focused field: the old one
+    // unmounted with the route. Gating both edges dropped the fit there and broke
+    // `keyboard.spec.ts` « a keyboard that is genuinely still up keeps its fit across a
+    // navigation » — a case that exists precisely because the re-read must agree with
+    // the device rather than blanket-clear on every route change.
     //
-    // The cost is the reverse case: iOS can keep the keyboard up for a moment after
-    // the focused field is REMOVED (a sheet closing, a form unmounting on save), and
-    // there we now drop `.kb-open` while it slides out — the chrome reappears a beat
-    // early. That is the far smaller bug, and it is what every healer below is already
-    // trying to achieve; this just gets there without waiting for an event.
-    const open = kbInset > KB_THRESHOLD && canSummonKeyboard(document.activeElement)
+    // So: a phantom shrink with nothing ever focused never opens (the reported bug),
+    // while a real keyboard survives losing its field. The falling edge stays where it
+    // was — owned by the geometry (the shrink going away) and by the healers below.
+    const open = kbInset > KB_THRESHOLD && (kbOpen || canSummonKeyboard(document.activeElement))
     // --kb means "how much keyboard covers the bottom", so it must agree with
     // `.kb-open` — publishing a sub-threshold inset (browser chrome, an accessory
     // bar) lifted every consumer off a keyboard that isn't there.

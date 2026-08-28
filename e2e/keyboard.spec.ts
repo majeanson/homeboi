@@ -157,13 +157,42 @@ for (const d of DEVICES) {
   })
 
   // --- Recipe sheet: read view, actions stay reachable ---
+  //
+  // The keyboard is opened on the BOARD and carried here, which is the only way this
+  // state exists on a real device: the recipe view — and the whole Recettes tab —
+  // contains no input, textarea or contenteditable at all (verified 2026-08-28), so
+  // nothing here can summon a keyboard. You arrive with one already up.
+  //
+  // It used to just shrink the viewport on this page with nothing ever focused. That
+  // shortcut stopped working when `.kb-open` gained its missing invariant — a keyboard
+  // cannot ARRIVE with no summoner focused, because iOS shrinks the visual viewport for
+  // screenshots and the app switcher too, and the board was losing its tab bar to that
+  // (Marc, 2026-08-28). The assertion is unchanged and the scenario is now the real one;
+  // it also covers the other half of that invariant — a live keyboard SURVIVES losing
+  // its field to a navigation.
   test(`kb ${d.name}: recipe sheet`, async ({ page }) => {
-    await open(page, '/kitchen')
+    await open(page, '/board')
+    const add = page.getByPlaceholder('Ajouter à compléter…').first()
+    await add.scrollIntoViewIfNeeded()
+    await add.focus()
+    await openKeyboard(page, d.kb)
+
+    // Carry it across. The route change is driven through the History API rather than
+    // a tap, for a reason that is itself the feature: `.kb-open` HIDES the hub tab bar
+    // (that is what it is for), so with a keyboard up there is no visible in-app door
+    // to La cuisine to click. A `page.goto` would reload and reset the viewport stub,
+    // i.e. close the keyboard — the one thing this test needs kept. pushState +
+    // popstate is what BrowserRouter listens to, so the app navigates client-side with
+    // the keyboard still up, exactly as it does on the device.
+    await page.evaluate(() => {
+      history.pushState({}, '', '/kitchen')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
     await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
     // Card → straight to the recipe view route (the detail peek was removed).
     await page.locator('.recipe-card').first().click()
     await page.locator('.recipe-modal').waitFor({ state: 'visible' })
-    await openKeyboard(page, d.kb)
+    await expect(page.locator('html'), 'the carried keyboard is still claimed').toHaveClass(/kb-open/)
     await page.screenshot({ path: png('recipe-sheet'), fullPage: false })
     await expectAbove(page.locator('.recipe-actions .btn--primary'), VISIBLE, 'recipe Cuisiner')
   })

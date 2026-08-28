@@ -266,6 +266,24 @@ not structural. Four reviewers; findings deduped below.
   `e2e/kb-latch.spec.ts`, three cases, run against the bug (restoring the shrink-only
   test turns two of them red).
 
+- [x] **« Du calendrier annuel vers un mois, rien ne charge »** — ✅ **Fixed 2026-08-28,
+  and it was MY regression from earlier the same day.** The transition itself is sound
+  (the mini-month writes `?date=`, Mois derives its window from it — verified by driving
+  it). What broke was the FAILURE state, on a surface that punishes it: `MONTH_KEY` has
+  no `live` (browsing is not a glance surface, so it never polls) and the client sets
+  `refetchOnWindowFocus: false`, so once a month fetch has spent its retries **nothing**
+  retries it. The « Réessayer » button is the only door there is — and the previous
+  commit had removed it while offline, on the reasoning that a retry "cannot work with no
+  network". That ignores the obvious: a person taps it when they think the signal is
+  BACK. The result was a blank calendar with two small grey lines and nothing to tap —
+  which is exactly what "rien ne charge" looks like.
+  The quiet TONE offline was right and stays (that was the original complaint: three red
+  alarms for one fact). The button comes back. `e2e/year-to-month.spec.ts` pins all three
+  — the happy path fetches the month you asked for, and the failed path keeps a door both
+  online and offline; run against the regression.
+  **Process note, since it is the more useful half:** this shipped because a local e2e run
+  reported « flaky » and still exited 0. `failOnFlakyTests` is on now and `npm run e2e:ci`
+  mirrors CI exactly (`--workers=1 --retries=0`). See `CLAUDE.md`.
 - [x] **The board cried « Hors ligne » over data one minute old — and a reload did not
   clear it.** ✅ **Fixed 2026-08-28.** The proof is in the screenshot: board clock 11:23,
   banner « Hors ligne · données de 11:23 ».

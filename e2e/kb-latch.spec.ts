@@ -54,10 +54,16 @@ test('a real keyboard — a focused field — still hides the chrome and fits', 
   await expect(page.locator('html')).toHaveClass(/kb-open/)
 })
 
-test('the latch clears once the focused field goes away', async ({ page }) => {
-  // The falling edge the watchdog was written for, now reached without needing an
-  // event: blur the field while the viewport is still shrunk (iOS can hide the
-  // keyboard with no `resize` and no `focusout` when the node is removed).
+test('a real keyboard survives losing its field — the fit is not dropped on a blur', async ({ page }) => {
+  // The OTHER half of the invariant, and the one that keeps the guard honest. iOS keeps
+  // the keyboard up when the focused field goes away — a sheet closing, a form
+  // unmounting on save, or an in-app NAVIGATION taking the field with it. There is no
+  // focused summoner then, but the keyboard is really still there, so the fit must hold.
+  //
+  // This is why the guard is on the RISING edge only. A first draft gated both edges;
+  // it read better and was wrong, and CI said so by failing keyboard.spec.ts's « a
+  // keyboard that is genuinely still up keeps its fit across a navigation ». The
+  // falling edge belongs to the geometry (the shrink going away) and to the healers.
   await boot(page)
   await page.locator('.add-fab').click()
   const field = page.locator('.sheet.show input:visible, .sheet.show textarea:visible, .sheet.show [contenteditable]:visible').first()
@@ -65,9 +71,10 @@ test('the latch clears once the focused field goes away', async ({ page }) => {
   await openKeyboard(page, 318)
   await expect(page.locator('html')).toHaveClass(/kb-open/)
 
-  // Focus leaves; the viewport stays shrunk (the exact stale-latch condition).
+  // Focus leaves while the viewport stays shrunk: the keyboard is still up.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-  await expect(page.locator('html')).not.toHaveClass(/kb-open/, { timeout: 5_000 })
+  await page.waitForTimeout(1500) // past the 1 s watchdog tick
+  await expect(page.locator('html'), 'a live keyboard must not be un-fitted by a blur').toHaveClass(/kb-open/)
 })
 
 // ---- The other half of the same phone screenshot ----------------------------
@@ -102,15 +109,22 @@ test('offline, LoadError states the fact — no alarm tone, no dead retry', asyn
   await expect(err.locator('.status-msg')).toHaveCount(1)
   await expect(err.locator('button')).toHaveCount(1)
 
-  // Offline: no signal is not a surprise worth an alarm colour, and « Réessayer »
-  // has nothing to retry with.
+  // Offline: no signal is not a surprise worth an alarm COLOUR…
   await page.evaluate(() => window.dispatchEvent(new Event('offline')))
   await expect(err.locator('.load-error__offline')).toHaveCount(1)
   await expect(err.locator('.status-msg'), 'no alarm tone while offline').toHaveCount(0)
-  await expect(err.locator('button'), 'no retry button that cannot reach the network').toHaveCount(0)
 
-  // …and it comes back when the signal does.
+  // …but the retry STAYS. A first version dropped it too, reasoning that it "cannot
+  // work offline" — which ignores that the person taps it when they think the signal
+  // is back, and that on a surface with no poll it is the only door there is. A month
+  // whose one fetch failed never retries itself (MONTH_KEY has no `live`, and the
+  // client sets refetchOnWindowFocus: false), so removing the button turned a visible
+  // failure into a blank calendar with no way out.
+  await expect(err.locator('button'), 'the only manual door must survive going offline').toHaveCount(1)
+
+  // …and the tone comes back when the signal does.
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
+  await expect(err.locator('.status-msg')).toHaveCount(1)
   await expect(err.locator('button')).toHaveCount(1)
 })
 

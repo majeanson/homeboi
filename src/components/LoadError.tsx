@@ -21,7 +21,16 @@ import { StatusMessage } from './StatusMessage'
 //     signal is not a surprise, it is the weather. The board already says it once
 //     and calmly at the top (`board__synced`, whose own comment is the rule this
 //     follows: "say so AT THE TOP … not as a stampless footnote below every card").
-//     So offline drops the error tone and the retry button and states the fact.
+//     So offline drops the error TONE — but keeps the button.
+//
+//     Dropping the button too was the first version of this, and it was wrong: it
+//     reads as "the retry cannot work offline, so do not offer it", which ignores
+//     that the person taps it when they think the signal is BACK. On a surface with
+//     no poll that button is the only door there is — `MONTH_KEY` has no `live` and
+//     the client sets `refetchOnWindowFocus: false`, so a month whose one fetch
+//     failed will never retry itself. Removing it turned a visible failure into a
+//     blank calendar with two grey lines and no way out (Marc, 2026-08-28: "clicking
+//     from the yearly calendar into a month, then nothing loads").
 //  2. **`onRetry` is optional.** A screen gets ONE retry door. Where a surface
 //     reports the same failed query in two regions (MonthView: above the grid AND
 //     in the day panel), the second passes no handler and becomes a quiet echo
@@ -36,7 +45,7 @@ export function LoadError({ onRetry, className }: { onRetry?: () => void; classN
       ) : (
         <p className="load-error__offline mono">{t.board.offline}</p>
       )}
-      {online && onRetry && (
+      {onRetry && (
         <button type="button" className="btn btn--ghost btn--sm" onClick={onRetry}>
           {t.load.retry}
         </button>

@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1857 unit tests in 143 files · 122 Playwright spec files |
+| **Tests** | 1857 unit tests in 143 files · 123 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -284,10 +284,11 @@ Shapes still worth batching:
   ReviewChecklist apply, .vcf import, note autosave round-trip; the toddler kitchen picker
   and `CircleKidView`; config sub-panels are screenshot-only, so a broken PATCH would pass.
 
-### C-bis. Reported from the device, 2026-08-28 — both fixed
+### C-bis. Reported from the device, 2026-08-28 — all four fixed
 
-Three reports from Marc's phone, both **pre-existing** (the deploy stamp in the second
-predates that day's work). Neither was in any ledger; both are now P1 in `REVIEW-PASS.md`.
+Four reports from Marc's phone. The first three were **pre-existing** (the deploy stamp in the second
+predates that day's work) and none was in any ledger; the fourth was a regression from fixing
+the second. All four are P1 in `REVIEW-PASS.md`.
 
 1. **The tab bar and ＋ FAB vanished with no keyboard on screen.** `?kbdebug` read
    `kbInset=318 open=true … ae=BODY` — a 318px "keyboard" with nothing focused. The app
@@ -311,7 +312,21 @@ predates that day's work). Neither was in any ledger; both are now P1 in `REVIEW
    their own. The AGE is load-bearing now, on the same yardstick the OfflineBanner was
    already using. Pure `isBoardStale`, six boundary tests, run against the bug.
 
-**The lesson worth keeping:** neither of the first two was reachable from the desk. The first needs a real
+4. **« Du calendrier annuel vers un mois, rien ne charge »** — and this one was MINE, from
+   fix #2 the same day. Removing the retry button while offline looked principled (it
+   "cannot work with no network") and was wrong: a person taps it when they think the
+   signal is back, and the month view NEVER retries itself (`MONTH_KEY` has no `live`; the
+   client sets `refetchOnWindowFocus: false`). The quiet tone stays; the door comes back.
+
+**How it got out, which matters more than the bug:** a local e2e run printed « flaky » and
+still exited 0, so a genuinely broken change read as green here and CI failed it
+deterministically. The flaky test's NAME was printed the first time and I skipped over it.
+`failOnFlakyTests: true` now fails the local run, and `npm run e2e:ci` mirrors CI exactly
+(`--workers=1 --retries=0 --forbid-only`) — run that, not `npm run e2e`, before pushing
+anything touching shared machinery. Recorded in `CLAUDE.md`, verified by planting a
+deliberate flake and watching the run exit 1.
+
+**The lesson worth keeping:** the first two were not reachable from the desk at all. The first needs a real
 iOS system overlay; the second's exact state (offline AND errored) is **unreachable
 through a real query in the harness at all**, because going offline makes TanStack pause
 the query before it can error. A screenshot from the actual phone found both in one
