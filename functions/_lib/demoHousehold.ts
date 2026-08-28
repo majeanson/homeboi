@@ -79,6 +79,9 @@ export const CHILD_TABLES: ReadonlyArray<readonly [table: string, fk: string, pa
 // most-referenced content parents, so they sit at the end of the content block;
 // the household plumbing (devices/guests/operators) follows.
 export const HOUSEHOLD_TABLES: readonly string[] = [
+  // A derived-signal acknowledgement (0122) — no FK, and it prunes itself, but a
+  // sandbox must still leave nothing behind when it's swept.
+  'a_regler_snoozes',
   // cercle content children → parents
   'contact_links',
   'contact_photos',

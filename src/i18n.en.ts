@@ -208,6 +208,8 @@ export const EN: typeof FR = {
     mealEmpty: (meal: string, when: string) => `${when} ${meal.toLowerCase()} to plan`,
     mealLow: (meal: string, item: string) => `${meal}: out of ${item}`,
     birthday: (who: string) => `${who} — birthday soon, no gift idea`,
+    snooze: 'Later',
+    snoozed: 'Put off until tomorrow',
   },
   offline: {
     banner: 'Offline',

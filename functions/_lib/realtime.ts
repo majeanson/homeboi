@@ -95,6 +95,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   carnets: [['carnets'], ['board']],
   'care-log': [['carnets'], ['care-log'], ['board']],
   'home-pins': [['home-pins']],
+  // « Plus tard » on a friction: the scan is household-wide, so the kitchen tablet
+  // must stop showing what the phone just quieted.
+  'a-regler': [['a-regler'], ['board']],
   // Calendar events show on the board, the events list, and the month grid; a
   // driverless ride also feeds the « À régler » heads-up (functions/api/a-regler).
   // ['car'] because a rendez-vous can take the car (« Prend l'auto ») and /api/car

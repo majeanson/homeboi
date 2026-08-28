@@ -4,7 +4,10 @@ import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
-import { useARegler, frictionRow } from '../../lib/aRegler'
+import { useARegler, frictionRow, type Friction } from '../../lib/aRegler'
+import { useWrite } from '../../lib/write'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
+import { A_REGLER_KEY } from '../../lib/queryKeys'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
@@ -49,7 +52,30 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   // « À régler » — the cross-domain heads-up rides at the top of the ritual: resolve
   // these few frictions first, then read the week. Always enabled here (Réglages is
   // operator-only). One-tap fix links per row; empties to « Tout est sous contrôle ».
-  const frictions = useARegler(true).data?.signals ?? []
+  const allFrictions = useARegler(true).data?.signals ?? []
+  // « Plus tard » — quiet ONE friction until tomorrow (migration 0122). It lives
+  // HERE, on the full list, not on the board's hero tile: this is the one surface
+  // where each friction owns a row with room for its own control, and adding an ✕
+  // to the calmest glance in the app would spend chrome on every household that
+  // never needs it. The board card links here whenever there's more than one.
+  //
+  // Household-scoped on purpose: the kitchen tablet must stop nagging about what
+  // the phone just acknowledged. Deferred undo, so a mis-tap costs nothing — and
+  // nothing is deleted either way, the signal simply returns tomorrow if it's
+  // still true.
+  // useDeferredRemoval, not a bare undo toast: the scan is LIVE-POLLED, so hiding
+  // optimistically and writing later lets the next poll resurrect the row mid-undo
+  // (the flash-back glitch this hook exists for). It hides now, holds the write
+  // behind the toast, and waits for a fresh frame before un-hiding.
+  const write = useWrite()
+  const snoozed = useDeferredRemoval(A_REGLER_KEY)
+  const snooze = (f: Friction) =>
+    snoozed.remove([f.key], t.aRegler.snoozed, () =>
+      write('a-regler', { method: 'POST', body: { key: f.key }, affectedKeys: [A_REGLER_KEY] }).catch(() => {}),
+    )
+
+  // Rows mid-snooze are hidden here, keyed by the signal's own stable key.
+  const frictions = snoozed.visible(allFrictions.map((f) => ({ ...f, id: f.key })))
 
   const dayName = (sec: number) => new Date(sec * 1000).toLocaleDateString(loc, { weekday: 'short', day: 'numeric' })
 
@@ -85,9 +111,24 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
           frictions.map((f) => {
             const r = frictionRow(f, t)
             return (
-              <Link key={f.key} to={f.href} className="tweek__row a-regler__row">
-                <Icon name={r.icon} size={15} /> <span>{r.text}</span>
-              </Link>
+              // The « Plus tard » button is a SIBLING of the link, never inside it:
+              // a control nested in a link is a nested interactive, which no screen
+              // reader or keyboard handles sanely (and is the same defect being
+              // fixed in « Notre monde »).
+              <div key={f.key} className="tweek__row a-regler__row">
+                <Link to={f.href} className="a-regler__row-link">
+                  <Icon name={r.icon} size={15} /> <span>{r.text}</span>
+                </Link>
+                <button
+                  type="button"
+                  className="tidy-btn a-regler__snooze"
+                  onClick={() => snooze(f)}
+                  title={t.aRegler.snooze}
+                  aria-label={`${t.aRegler.snooze} — ${r.text}`}
+                >
+                  <Icon name="clock-counter-clockwise-bold" size={15} />
+                </button>
+              </div>
             )
           })
         )}

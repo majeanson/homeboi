@@ -477,3 +477,26 @@
   color: var(--ink-soft);
 }
 
+
+/* « Plus tard » on a friction row (migration 0122). The row becomes a link PLUS a
+   sibling button — never a button inside the link, which is a nested interactive
+   no screen reader or keyboard handles sanely. The link takes the width; the
+   button is a quiet trailing glyph. */
+.a-regler__row-link {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.a-regler__snooze {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A real thumb target without growing the row's own height. */
+  min-width: 32px;
+  min-height: 32px;
+}

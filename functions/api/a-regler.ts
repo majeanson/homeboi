@@ -1,4 +1,5 @@
-import { ok } from '../_lib/json'
+import { ok, badRequest, readJson } from '../_lib/json'
+import type { Env } from '../_lib/env'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays, nowSec } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
@@ -7,6 +8,7 @@ import { fetchCarOccupancy, resolveCarRange } from '../_lib/occupancy'
 import { ingredientName } from '../_lib/ingredient'
 import { isSectionHeading } from '../_lib/recipeSections'
 import { householdMealLayout } from '../_lib/mealSlots'
+import { snoozeUntil, withoutSnoozed } from '../_lib/aReglerSnooze'
 
 // « À régler » — a calm, cross-domain heads-up: a SHORT, finite list of frictions
 // worth a parent's attention, each with a one-tap fix. The mental-load surface — it
@@ -187,7 +189,64 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
+  // « Plus tard »: drop the signals this household has acknowledged and whose quiet
+  // day hasn't arrived yet. Applied LAST, so a snoozed friction doesn't consume one
+  // of the CAP slots that a live one could use.
+  const live = withoutSnoozed(signals, await snoozedKeys(ctx.env, actor.householdId, today))
+
   // Soonest first, then cap — calm: a short list, never a backlog.
-  signals.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
-  return ok({ signals: signals.slice(0, CAP) })
+  live.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
+  return ok({ signals: live.slice(0, CAP) })
+})
+
+// The household's still-active snoozes, pruning the expired ones on the way past.
+// Pruning here rather than on a schedule keeps the table a handful of rows without
+// a job to run: the scan is the only thing that ever reads it.
+async function snoozedKeys(env: Env, householdId: string, today: number): Promise<Set<string>> {
+  try {
+    const rows = await env.DB.prepare('SELECT key FROM a_regler_snoozes WHERE household_id = ? AND until > ?')
+      .bind(householdId, today)
+      .all<{ key: string }>()
+    // Fire-and-forget: a failed prune must never cost the user their scan.
+    void env.DB.prepare('DELETE FROM a_regler_snoozes WHERE household_id = ? AND until <= ?')
+      .bind(householdId, today)
+      .run()
+      .catch(() => {})
+    return new Set(rows.results.map((r: { key: string }) => r.key))
+  } catch {
+    // The table is younger than some deployed DBs. A missing table must degrade to
+    // "nothing is snoozed" — the pre-0122 behaviour — not to a broken board card.
+    return new Set()
+  }
+}
+
+// « Plus tard » — quiet ONE signal until a chosen day (default: tomorrow).
+//
+// Deliberately not a delete and not a preference: the friction is derived and will
+// be re-derived tomorrow, so this only says "I've seen it, not today". If the
+// underlying thing is actually settled the signal stops being generated anyway and
+// the row prunes itself.
+export const onRequestPost = authed(async (ctx, actor) => {
+  const body = (await readJson(ctx.request)) as { key?: unknown; days?: unknown } | null
+  const key = typeof body?.key === 'string' ? body.key.trim() : ''
+  if (!key || key.length > 200) return badRequest('Signal manquant.')
+  const today = localDayStart(new Date())
+  await ctx.env.DB.prepare(
+    `INSERT INTO a_regler_snoozes (household_id, key, until, created_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT(household_id, key) DO UPDATE SET until = excluded.until, created_at = excluded.created_at`,
+  )
+    .bind(actor.householdId, key, snoozeUntil(today, body?.days), nowSec())
+    .run()
+  return ok({ ok: true })
+})
+
+// Undo a « Plus tard » — the signal comes back on the next scan.
+export const onRequestDelete = authed(async (ctx, actor) => {
+  const body = (await readJson(ctx.request)) as { key?: unknown } | null
+  const key = typeof body?.key === 'string' ? body.key.trim() : ''
+  if (!key) return badRequest('Signal manquant.')
+  await ctx.env.DB.prepare('DELETE FROM a_regler_snoozes WHERE household_id = ? AND key = ?')
+    .bind(actor.householdId, key)
+    .run()
+  return ok({ ok: true })
 })
