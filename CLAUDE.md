@@ -98,7 +98,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 
 | Concern | Use | Don't |
 | --- | --- | --- |
-| Any `/api/*` write | **`useWrite()`** (`lib/write.ts`) | …call `api()` directly for writes (skips the offline outbox) |
+| Any `/api/*` write | **`useWrite()`** (`lib/write.ts`) — a **test** enforces this now (`src/lib/write-rule.test.ts`): a raw `api()` write fails the build unless its site is in that file’s ALLOWED list **with the reason**. The prose rule had drifted, and one of the strays lost data (`/share` had no outbox) | …call `api()` directly for writes (skips the offline outbox), or add an ALLOWED entry without saying why the outbox would be actively WRONG there |
 | Any `/api/*` read/fetch | **`api()`** (`lib/api.ts`) | …`fetch` directly (loses CSRF, device token, locale, profile) |
 | Server state / caching | **TanStack Query**; shared keys in `lib/queryKeys.ts` | …a parallel store, or a key spelled twice |
 | Device role / presentation lens | **`useSurface()`** / **`useAudience()`** | …branch on width or invent a flag |

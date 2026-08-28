@@ -87,3 +87,46 @@ test('the mic stays offline-disabled — only the typed capture path is queueabl
 
   await page.context().setOffline(false)
 })
+
+// The PWA SHARE TARGET, same promise. /share was the one capture path still on raw
+// `api()` — no outbox — so sharing a link to Babillard with no signal threw the
+// capture away in silence: you tapped « Ajouter », the page said nothing, and the
+// line never existed (bmad/11 tier-1 seam #2, fixed 2026-08-27). The rule itself is
+// now enforced by src/lib/write-rule.test.ts; this proves the behaviour end to end.
+test('a share-target capture made offline queues instead of vanishing, then replays', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+
+  const capturePosts: Request[] = []
+  page.on('request', (r) => {
+    if (isCapturePost(r)) capturePosts.push(r)
+  })
+
+  // The query-param fallback the page uses when the service worker's share cache is
+  // empty — which is exactly the state a dev-server run is in.
+  await page.goto('/share?text=' + encodeURIComponent('https://example.com/recette-de-tarte'))
+  await expect(page.locator('.share-page')).toBeVisible()
+
+  // NOTE: /share is a standalone scene OUTSIDE HubLayout, so it shows no offline
+  // bar — the banner is rendered by the hub shell. (Same class as bmad/11 tier-2
+  // seam #12, « no offline/stale banner on the in-store scenes ».) Nothing here
+  // depends on the banner; `setOffline` is what writeWith actually reads.
+  await page.context().setOffline(true)
+
+  await page.locator('.share-page__actions .btn--primary').click()
+
+  // The scene confirms and leaves, exactly as it does online — the whole point is
+  // that offline is no longer a different, silent outcome. Nothing went over the wire.
+  await expect(page.locator('.share-page__done')).toBeVisible()
+  expect(capturePosts.length).toBe(0)
+
+  // Reconnect → the outbox replays the held capture with its idempotency key.
+  await Promise.all([
+    page.waitForRequest(isCapturePost, { timeout: 20_000 }),
+    page.context().setOffline(false),
+  ])
+  expect(capturePosts.length).toBe(1)
+  expect(capturePosts[0].headers()['idempotency-key']).toBeTruthy()
+  expect(JSON.parse(capturePosts[0].postData() || '{}').text).toBe('https://example.com/recette-de-tarte')
+})

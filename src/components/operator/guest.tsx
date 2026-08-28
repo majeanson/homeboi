@@ -8,7 +8,8 @@ import { IntakeReview } from './IntakeReview'
 import { PostboxReview } from './PostboxReview'
 import { api } from '../../lib/api'
 import { isGuest, type GuestKind } from '../../lib/device'
-import { CERCLE_KEY, SHARES_KEY } from '../../lib/queryKeys'
+import { useWrite } from '../../lib/write'
+import { CERCLE_KEY, SHARES_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { useConfirm } from '../../lib/confirm'
 import { useShares, revokeShare, type ShareKind } from '../../lib/share'
 import type { IconName } from '../Icon'
@@ -746,6 +747,7 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
   const t = useT()
   const [fields, setFields] = useState<ShareFields>(EMPTY)
   const [saving, setSaving] = useState(false)
+  const write = useWrite()
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
@@ -777,7 +779,9 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
     if (saving) return
     setSaving(true)
     try {
-      await api('household', { method: 'PATCH', body: fields })
+      // Through useWrite: the Wi-Fi / house-rules block a sitter reads is ordinary
+      // household content, so an edit saved offline queues instead of being dropped.
+      await write('household', { method: 'PATCH', body: fields, affectedKeys: [HOUSEHOLD_KEY] })
       setSaved(true)
     } catch {
       /* surfaced nowhere fancy — the operator can retry */

@@ -19,6 +19,7 @@ import {
 } from '../../lib/recipePills'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
+import { useWrite } from '../../lib/write'
 import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon, InlineIcon } from '../Icon'
@@ -83,6 +84,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()
+  const write = useWrite()
   const ro = isGuest()
   const tagsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
   // Tags an operator can target with a "tag" rule (saved presets + ones in use).
@@ -93,7 +95,10 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
   const list = local ?? tagsQ.data?.pills ?? DEFAULT_PILLS
 
   const patch = useMutation({
-    mutationFn: (next: Pill[]) => api('recipe-tags', { method: 'PATCH', body: { setPills: next } }),
+    // Through useWrite so the pill layout survives a save made offline (it is an
+    // ordinary household preference — no blob, nothing to read back synchronously).
+    mutationFn: (next: Pill[]) =>
+      write('recipe-tags', { method: 'PATCH', body: { setPills: next }, affectedKeys: [RECIPE_TAGS_KEY] }),
     onSettled: () => qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY }),
   })
   const save = (next: Pill[]) => {

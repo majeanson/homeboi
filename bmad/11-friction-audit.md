@@ -3,10 +3,11 @@
 > 🔴 **This is the highest-value unfixed pool in the repo, and it is blocked on a
 > decision — not on analysis.** Marc declined the proposed F1–F5 fix-wave *grouping* on
 > 2026-07-13; the **seams themselves were never disputed**, and nothing has changed about
-> them since. The five tier-1 entries below block real rituals or lose data (seam #2,
-> `/share` losing captures offline, was re-verified in code on 2026-08-27 and is still
-> live). Ask about them **individually** before executing anything. See
-> [`STATE.md`](../STATE.md) § 4-B.
+> them since — **except where a row below says otherwise**. Two of the five tier-1
+> entries are now closed: **#2** (`/share` losing captures) was fixed 2026-08-27, and
+> **#5** turned out to have been fixed earlier and never ticked here. **#1, #3 and #4
+> are live and verified in code on 2026-08-27.** Ask about them **individually** before
+> executing anything. See [`STATE.md`](../STATE.md) § 4-B.
 
 > Five parallel read-only audits walked the flows a real household runs weekly:
 > **plan the week · grocery run · cook tonight · kid mornings/bedtime ·
@@ -31,7 +32,8 @@
 
 Plus one structural repeat: **/share re-implemented the capture spine** beside
 `CaptureForm` (no useWrite, no undo, no « Corriger ») — the exact build-beside
-failure mode CLAUDE.md warns about.
+failure mode CLAUDE.md warns about. *(The useWrite half was fixed 2026-08-27 and is
+now guarded by a build-gating test; the undo/« Corriger » half stands.)*
 
 ## Ranked seams (cross-flow, worst first)
 
@@ -40,10 +42,10 @@ Tier 1 — blocks the ritual / loses data:
 | # | Seam | Flow | Why first |
 | - | ---- | ---- | --------- |
 | 1 | **Sunday planning can't reach Fri/Sat** — the Tuesday-anchored `windowDaysFor` shows 4–5 cells on Sun/Mon; no picker in the app reaches the coming weekend | plan | The core ritual is impossible on the two evenings it happens |
-| 2 | **/share loses or strands captures** — raw `api()` (no outbox: offline = silent loss), no routed-label/undo/« Corriger » | tidy | Data loss + unrecoverable mis-route |
+| 2 | ~~**/share loses captures**~~ ✅ **FIXED 2026-08-27** — the capture now rides `useWrite` (queues + replays offline), and the rule itself is enforced by `src/lib/write-rule.test.ts` so it cannot drift back. Guarded by `e2e/capture-offline.spec.ts`. **Still open:** no routed-label/undo/« Corriger » on /share, and the scene shows no offline banner (it sits outside HubLayout — same as seam #12) | tidy | Data loss FIXED; mis-route UX remains |
 | 3 | **A dated loose todo silently vanishes after its day** — never swept, never rolled forward, invisible to board glance / Moments / À régler | tidy | Lost intended work |
 | 4 | **The locked kiosk (`?kid=1`) hides every parent glance** — departure checklist + habit morning-open unreachable except via the 3s-hold+math gate, every morning | kids | One-tablet households lose the 7h10 surface |
-| 5 | **A half-done routine pins the kiosk** (return-to-picker only arms on *finished*) + **no "switch kid" affordance** once a face with one routine is picked | kids | The toddler norm (wandering off) bricks the shared surface |
+| 5 | ~~**A half-done routine pins the kiosk** + **no "switch kid" affordance**~~ ✅ **ALREADY FIXED (verified 2026-08-27)** — both halves shipped and were never ticked here: a ~60 s idle drift returns to the picker whatever the progress (`KidView.tsx:84`, "Kids seam #1"), and `backToFaces` + the "other kids" strip give the way back (`KidView.tsx:147`, "Kids seam #4") | kids | — |
 
 Tier 2 — high-frequency annoyances (weekly ×N):
 

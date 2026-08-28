@@ -6,6 +6,7 @@ import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor } from '../../lib/recipes'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
+import { useWrite } from '../../lib/write'
 import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost } from '../../lib/dnd'
 import { Icon } from '../Icon'
@@ -34,6 +35,7 @@ const chipTint = (hex: string | undefined): React.CSSProperties | undefined =>
 export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
+  const write = useWrite()
   const confirm = useConfirm()
   // Read-only guest: tags read as plain inert chips — no recolor / rename / remove /
   // add (every interactive control here is a write).
@@ -66,7 +68,9 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
       rename?: { from: string; to: string }
       remove?: string
       setColor?: { tag: string; color: string | null }
-    }) => api('recipe-tags', { method: 'PATCH', body }),
+      // Through useWrite — renaming or recolouring a tag is a household
+      // preference, so it queues and replays like any other write.
+    }) => write('recipe-tags', { method: 'PATCH', body, affectedKeys: [RECIPE_TAGS_KEY, RECIPES_KEY] }),
     onSettled: invalidate,
   })
 

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../lib/confirm'
+import { useWrite } from '../../lib/write'
 import { imgUrl } from '../../lib/image'
 import { useMediaUpload } from '../../lib/uploadMedia'
 import { useOnline } from '../../lib/online'
@@ -31,6 +32,7 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()
+  const write = useWrite()
   const online = useOnline()
   const fileRef = useRef<HTMLInputElement>(null)
   // The gallery blob rides R2 through the shared /api/cercle image upload (same as
@@ -63,7 +65,9 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
     const trimmed = next.trim()
     if (trimmed === (p.caption ?? '')) return
     try {
-      await api('cercle-photos', { method: 'PATCH', body: { id: p.id, caption: trimmed || null } })
+      // Through useWrite: a caption is plain text with no blob behind it, so unlike
+      // the add path above it queues and replays offline like any household write.
+      await write('cercle-photos', { method: 'PATCH', body: { id: p.id, caption: trimmed || null }, affectedKeys: [photosKey] })
       refresh()
     } catch {
       /* leave the field as typed; a later edit retries */
@@ -76,7 +80,9 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
     // delete convention (useConfirm for heavy deletes, undo toast for light ones).
     if (!(await confirm({ message: t.cercle.removePhotoFromGallery, tone: 'danger' }))) return
     try {
-      await api('cercle-photos', { method: 'DELETE', body: { id: p.id } })
+      // Also through useWrite — the delete carries no blob of its own (the server
+      // frees the R2 object when it runs), so it is safe to queue.
+      await write('cercle-photos', { method: 'DELETE', body: { id: p.id }, affectedKeys: [photosKey] })
       refresh()
     } catch {
       /* keep it on screen if the delete didn't land */

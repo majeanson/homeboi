@@ -5,8 +5,7 @@ import { useWrite } from '../lib/write'
 import { useRecordUndo } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { CATS, type CatKey } from '../lib/cats'
-import { BOARD_KEY, MONTH_KEY, HOME_PROJECTS_KEY } from '../lib/queryKeys'
-import { MEALS_KEY, MEAL_HISTORY_KEY, PANTRY_KEY, LEFTOVERS_KEY } from './kitchen/types'
+import { CAPTURE_KEYS } from '../lib/captureKeys'
 import { Icon, type IconName } from './Icon'
 import { EditField } from './EditField'
 import { Disclosure } from './Disclosure'
@@ -64,10 +63,6 @@ const CAPTURE_UNDO_EP: Record<string, string> = {
   notes: 'notes',
 }
 
-// The caches a capture can land in (board glance, meal grid, pantry, leftovers
-// pool, AND the month/day calendar — a captured event/task is dated) — invalidated
-// after a capture AND after an undo-delete so the live poll reconciles.
-const CAPTURE_KEYS = [BOARD_KEY, MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, MONTH_KEY, MEAL_HISTORY_KEY, HOME_PROJECTS_KEY]
 
 export function CaptureForm({ autoFocus }: { autoFocus?: boolean }) {
   const t = useT()

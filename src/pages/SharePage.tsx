@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useT } from '../i18n'
 import { api, ApiError, isStatus } from '../lib/api'
+import { useWrite } from '../lib/write'
+import { useOnline } from '../lib/online'
+import { CAPTURE_KEYS } from '../lib/captureKeys'
+import { BOARD_KEY } from '../lib/queryKeys'
+import { StatusMessage } from '../components/StatusMessage'
 import { Icon } from '../components/Icon'
 
 // PWA share-target capture (#13). The manifest registers /share as a POST share
@@ -25,6 +30,10 @@ export function SharePage() {
   const t = useT()
   const nav = useNavigate()
   const [params] = useSearchParams()
+  const write = useWrite()
+  // The photo path needs R2 before it can write anything (see addImage), so it is
+  // the one branch here that genuinely cannot be queued.
+  const online = useOnline()
 
   const [ready, setReady] = useState(false)
   const [text, setText] = useState('')
@@ -86,12 +95,22 @@ export function SharePage() {
     if (!(e instanceof ApiError)) throw e
   }
 
+  // A shared PHOTO is a two-step write and the first step is a blob upload: the
+  // note row can only be written once R2 has answered with a key. That upload is
+  // one of the sanctioned online-only writes (OFFLINE.md « media upload »), so
+  // this whole branch is gated on `online` rather than queued — the button says
+  // so instead of pretending. The note row itself still rides `useWrite`: by then
+  // we are demonstrably online, and it keeps the board cache honest.
   async function addImage() {
-    if (!imageBlob || busy) return
+    if (!imageBlob || busy || !online) return
     setBusy(true)
     try {
       const { key } = await api<{ key: string }>('note-media', { method: 'POST', body: imageBlob })
-      await api('notes', { method: 'POST', body: { media_kind: 'image', media_key: key, text: text.trim() } })
+      await write('notes', {
+        method: 'POST',
+        body: { media_kind: 'image', media_key: key, text: text.trim() },
+        affectedKeys: [BOARD_KEY],
+      })
       finish()
     } catch (e) {
       fail(e)
@@ -100,12 +119,20 @@ export function SharePage() {
     }
   }
 
+  // Shared TEXT/URL → the capture spine, through `useWrite` like every other
+  // household write. It used to be a raw `api()` call, which meant the share
+  // target had NO OUTBOX: sharing a link to Babillard with no signal threw the
+  // capture away in silence — you tapped « Ajouter », the page said nothing, and
+  // the line never existed. Queued, it lands on reconnect like any other write.
+  // Mirrors CaptureForm's own submit (same CAPTURE_KEYS, same queued branch).
   async function addText() {
     const value = text.trim()
     if (!value || busy) return
     setBusy(true)
     try {
-      await api('capture', { method: 'POST', body: { text: value } })
+      await write('capture', { method: 'POST', body: { text: value }, affectedKeys: CAPTURE_KEYS })
+      // Offline the write is queued, not lost — `finish()` either way, because
+      // from here the two outcomes are the same promise: it's kept.
       finish()
     } catch (e) {
       fail(e)
@@ -154,6 +181,9 @@ export function SharePage() {
               aria-label={t.share.title}
             />
           )}
+          {/* The photo branch needs the upload; say so rather than offering a
+              button that can only fail. Shared TEXT has no such limit — it queues. */}
+          {imageBlob && !online && <StatusMessage tone="info">{t.offline.unavailable}</StatusMessage>}
           <div className="share-page__actions">
             <button type="button" className="btn btn--ghost" onClick={() => nav('/board', { replace: true })}>
               {t.common.cancel}
@@ -174,7 +204,7 @@ export function SharePage() {
               type="button"
               className="btn btn--primary"
               onClick={imageBlob ? addImage : addText}
-              disabled={(!imageBlob && !text.trim()) || busy}
+              disabled={(!imageBlob && !text.trim()) || busy || (!!imageBlob && !online)}
             >
               <Icon name="plus-bold" size={18} /> {t.common.add}
             </button>

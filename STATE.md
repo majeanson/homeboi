@@ -22,24 +22,25 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~141k lines across 823 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 121 forward-only migrations |
-| **Tests** | 1748 unit tests in 295 files · 106 Playwright spec files (~1120 cases) |
+| **Tests** | 1752 unit tests in 296 files · 107 Playwright spec files (~1124 cases) |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
-- `npm run typecheck` · `npm test` (1748) · `npm run build` — green.
-- `npm run check:bundle` — **3841 KB** of JS across `dist/assets`, **727 KB eager**; every
+- `npm run typecheck` · `npm test` (1752) · `npm run build` — green.
+- `npm run check:bundle` — **3842 KB** of JS across `dist/assets`, **726 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1120 passed, 13 skipped**.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Six build-gating invariants** (this is the codebase's best feature — see §5):
+- **Seven build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
-  `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), `helpRegistry.test.ts`
-  + `discovery.test.ts` (no dead guide deep-links), `demoHousehold.test.ts` (a new table
-  must join the sandbox sweep), `realtime.test.ts` (`PATH_KEYS` coverage),
-  `check-bundle.mjs` (size + precache).
+  `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
+  (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
+  `helpRegistry.test.ts` + `discovery.test.ts` (no dead guide deep-links),
+  `demoHousehold.test.ts` (a new table must join the sandbox sweep),
+  `realtime.test.ts` (`PATH_KEYS` coverage), `check-bundle.mjs` (size + precache).
 
 ---
 
@@ -55,7 +56,7 @@ them are finished. Read this table before opening any of them.
 | `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
 | `AUJOURDHUI.md` | Ledger | ✅ **Effectively closed** — 1 open item, deliberately (see §4-D). |
 | `REVIEW-PASS.md` | Ledger | 🟡 **31 open** P2/P3 findings across 8 sections. The main written debt pool. |
-| `bmad/11-friction-audit.md` | Ledger | 🔴 **14 ranked seams + tier-3 polish, none approved.** The highest-value pool. See §4-B. |
+| `bmad/11-friction-audit.md` | Ledger | 🔴 **3 of 5 tier-1 seams live** (#1, #3, #4 — #2 fixed 2026-08-27, #5 was already fixed). Plus 9 tier-2 + tier-3 polish. The highest-value pool. See §4-B. |
 | `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
 | `PLAN-mots-and-lifecycle-followups.md` | Feature backlog | 🟡 12 designed-but-unbuilt features (A5–D2), never started. |
 | `bmad/05` + `bmad/06` | Idea pools | ⚪ Brainstorms. Nothing committed. Don't treat as a backlog. |
@@ -101,27 +102,32 @@ Four waves, each its own commit, all green, no rollbacks.
 Deduplicated across every source above. Ranked by **user harm**, not by which document
 it happens to live in.
 
-### A. Verified correctness — do these first
+### A. Verified correctness — ✅ DONE 2026-08-27
 
-1. **`/share` loses captures offline.** `SharePage.tsx:94,108` posts through raw `api()`,
-   not `useWrite()` — so the PWA share-target capture has **no outbox**: offline, it is
-   silently lost. Verified 2026-08-27. This is bmad/11 tier-1 seam #2 and is the same
-   bug class the outbox dead-letter fixed in wave 1. `QuickAddPage` next door does it
-   correctly — copy that.
-2. **The `useWrite` rule is prose-only, and it has drifted.** A sweep found **~35 raw
-   `api()` write sites** outside `lib/write.ts`. Most are legitimately online-only
-   (login, pairing, seeding, minting a share link, an operator review/merge). But about
-   eight are ordinary household content that should queue: `/share` (above),
-   `board/Notes.tsx:105-106` (saving a drawn fridge note), `lib/drawingGallery.ts:70,117`,
-   `cercle/ContactPhotos.tsx` ×3, and the household-preference PATCHes in
-   `lib/measurePrefs.ts`, `operator/recipePills.tsx`, `operator/recipesTags.tsx`,
-   `operator/guest.tsx:780`.
-   **Fix the class, not the sites:** migrate those eight, add a one-line
-   "online-only because…" comment to each legitimate exception (the pattern already used
-   in `operator/aiErrors.tsx`), then **make it a build-gating test** — a grep-style
-   `write-rule.test.ts` with an explicit allowlist, exactly as `field-fit.test.ts` and
-   `keyboard-fit.test.ts` already guard CSS invariants. A prose rule drifts; a failing
-   test does not.
+1. ~~**`/share` loses captures offline.**~~ **Fixed.** The share-target capture now rides
+   `useWrite()`, so a capture made with no signal queues and replays instead of being
+   thrown away in silence. The photo branch — which needs an R2 key back before it can
+   write anything — is now honestly gated on `useOnline()` rather than offering a button
+   that can only fail. bmad/11 tier-1 seam #2 is closed; guarded end-to-end by
+   `e2e/capture-offline.spec.ts`.
+2. ~~**The `useWrite` rule is prose-only.**~~ **It is a test now:**
+   `src/lib/write-rule.test.ts` fails the build on ANY raw `api()` write in `src/`
+   unless its `file → endpoint` is in that file's `ALLOWED` set **with the reason**.
+   Fail-closed, so a brand-new endpoint written through `api()` fails by default.
+   Verified to actually go red on a planted violation — a guard that was never red
+   proves nothing.
+   The scan found **95 write sites across 53 endpoints**, not the ~35 first estimated;
+   but most collapse into principled categories (blob uploads that need the key back,
+   session/pairing, link minting, AI round trips, multi-step operator merges). The
+   genuinely queueable strays were **6 sites in 5 files** and are migrated:
+   `cercle/ContactPhotos` (caption + delete), `operator/recipePills`,
+   `operator/recipesTags`, `lib/measurePrefs`, `operator/guest`.
+   The 66 documented exceptions are grouped by *why* in eleven commented blocks.
+
+   *Left standing, deliberately:* `board/Notes.tsx` and `lib/drawingGallery.ts` already
+   carried explicit "stays on api() ON PURPOSE" reasoning — each trailing write is
+   atomically coupled to a blob upload that cannot be queued, so routing only the write
+   through the outbox would land a row pointing at blobs that were never stored.
 
 ### B. The friction pool — highest user value, **blocked on a decision**
 
@@ -129,12 +135,15 @@ it happens to live in.
 verified against code at the time. Its five **tier-1** entries block rituals or lose data:
 
 1. Sunday planning can't reach Fri/Sat (the core weekly ritual is impossible on the two
-   evenings it actually happens).
-2. `/share` loses or strands captures — **also §4-A above**.
-3. A dated loose todo silently vanishes after its day.
+   evenings it actually happens). **Live.**
+2. ~~`/share` loses or strands captures~~ — ✅ **fixed 2026-08-27** (§4-A). The
+   undo/« Corriger » half of that seam stands.
+3. A dated loose todo silently vanishes after its day. **Live.**
 4. The locked kiosk (`?kid=1`) hides every parent glance — a one-tablet household loses
-   its 7h10 surface every morning.
-5. A half-done routine pins the kiosk; no "switch kid" affordance.
+   its 7h10 surface every morning. **Live.**
+5. ~~A half-done routine pins the kiosk; no "switch kid" affordance.~~ — ✅ **was already
+   fixed** and never ticked (kids seams #1 and #4, `KidView.tsx:84,147`). Found while
+   planning, which is the §5 lesson working.
 
 **Status: parked.** On 2026-07-13 Marc explicitly declined the proposed F1–F5 fix-wave
 grouping. The *grouping* was rejected, not the seams — they have never been disputed, and

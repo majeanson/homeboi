@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import { HOUSEHOLD_KEY } from './queryKeys'
+import { useWrite } from './write'
 import type { HouseholdSettings } from './mealPrefs'
 import type { MeasureUnit } from './measure'
 import {
@@ -74,6 +75,7 @@ export function swatchColor(s: MeasureSwatch, ov: MeasureOverrides): string {
 // API). `preview` only paints the shared cache; `commit`/`reset` persist + refetch.
 export function useMeasureColorsEditor() {
   const qc = useQueryClient()
+  const write = useWrite()
   const overrides = useMeasureColors()
 
   // Paint the shared household cache so every pill/scoop (and the settings preview)
@@ -84,13 +86,15 @@ export function useMeasureColorsEditor() {
     )
   }
 
+  // The COMMIT goes through useWrite like every other household write, so a colour
+  // chosen on a tablet that has lost its uplink replays instead of evaporating.
+  // `paint` above stays a pure cache write — it is the live drag preview, not a save,
+  // and useWrite's own `optimistic` hook would fire once per commit rather than per
+  // pointer move. writeWith invalidates `affectedKeys` itself, so the old
+  // finally-invalidate is gone rather than duplicated.
   const persist = async (next: MeasureOverrides) => {
     paint(next)
-    try {
-      await api('household', { method: 'PATCH', body: { measureColors: next } })
-    } finally {
-      qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
-    }
+    await write('household', { method: 'PATCH', body: { measureColors: next }, affectedKeys: [HOUSEHOLD_KEY] })
   }
 
   return {
