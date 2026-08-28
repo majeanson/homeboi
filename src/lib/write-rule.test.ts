@@ -149,7 +149,6 @@ const ALLOWED = new Set<string>([
   'pages/SharePage.tsx → note-media',
   'lib/drawingToRoutine.ts → routine-card-photo',
   'lib/recipeToRoutine.ts → routine-card-photo',
-  'components/cercle/ContactForm.tsx → cercle',
   'components/cercle/PetForm.tsx → pets',
   'components/cercle/CareLogForm.tsx → care-log',
   'components/cercle/HomePinForm.tsx → home-pins',

@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1857 unit tests in 143 files · 123 Playwright spec files |
+| **Tests** | 1857 unit tests in 143 files · 125 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -70,7 +70,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust — it reads **6** today (4 in `REVIEW-PASS.md`, 2 in `PARITY.md`'s
+> a number you can trust — it reads **3** today (1 in `REVIEW-PASS.md`, 2 in `PARITY.md`'s
 > Wave D), and that is the whole of the repo's written open work. It was 75 before the
 > convention, and 17 the moment the convention landed. Note what `[~]` may NOT be used for:
 > a bullet that still lists "Still open: …" is open work, not a park — four were flipped back
@@ -80,7 +80,7 @@ before opening any of them.
 | --- | --- | --- |
 | **STATE.md** | ← you are here | The front door. Start here. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
-| `REVIEW-PASS.md` | Ledger | 🟡 **4 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
+| `REVIEW-PASS.md` | Ledger | 🟡 **1 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
 | `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — tiers 1 and 2 fully resolved; tier 3 swept the same day (five re-checked, four stale). See §4-B. |
 | `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. **2 open items** (Part 4 Wave D, opportunistic). Parts 5–6 are a template — copy, don't tick. |
 | `ACTIONS.md` | **Playbook** | The action × door matrix. **No open items** — Part 5 is a template. |
@@ -223,7 +223,7 @@ Still genuinely open: the cashier's second check-state, staples chips, the gathe
 the abandoned routine stopwatch, the empty shell routine's missing cue, and "last week"
 review. « Par allée »'s drag grip is a recorded decision, not a gap.
 
-### C. Section debt — `REVIEW-PASS.md`, **4 findings left** (swept twice, 2026-08-28)
+### C. Section debt — `REVIEW-PASS.md`, **1 finding left** (swept three times, 2026-08-28)
 
 > **Second sweep, same day (evening).** 31 → 29 → 20 → 15 → **4**. Marc decided the four
 > judgement calls and picked three of four bigger items; everything else was re-verified
@@ -333,6 +333,44 @@ the query before it can error. A screenshot from the actual phone found both in 
 morning. When Marc reports a state, reproduce it from the pixels, not from the model of
 how it should be reachable.
 
+### C-ter. The third sweep — the ledger is effectively empty (2026-08-28, evening)
+
+`REVIEW-PASS.md` went 31 → 29 → 20 → 15 → 4 → **1**. The last pass settled the residual
+nit bullets, and the ratio held to the end: of the sub-claims re-checked, **five more were
+stale or misread** — `firstLine` recomputed inline (it is not), the NoteEditor body
+mislabelled in edit mode (it is not; the cited line no longer exists), `HomeProjectForm`
+on a bare `<input>` (it uses `EditField`, and says so), the settings-nav's second
+`OperatorJump` row (that component is deleted), and the "stale section ids" (deliberate
+alias regressions, labelled as such in the file).
+
+**Three were settled by MEASUREMENT rather than by reading code**, which is the habit
+worth keeping from this pass:
+
+- the bmad/11 "gather tick ~27px" measures **46px** (the floor is 44) — now guarded
+  against `--touch-target` read from the live stylesheet, not a hard-coded number;
+- `.cf__addr-row` "packs tight at 320px" — it wraps to two lines and ends at x=304 inside
+  a 320px viewport. Tight is a fair description; it is not a defect. Left alone;
+- the 7-up re-file grid at 320px — measured with `worstRightBleed` (the card does not clip,
+  so `assertClean`'s precondition does not apply) and guarded against a planted bleed.
+
+Two real fixes came out of it: **`ContactForm`'s avatar rides `useMediaUpload()`** (the last
+hand-rolled resize→POST→key, and `write-rule.test.ts` caught its allowlist entry going stale
+the moment the raw `api()` left), and **a pet weight re-entered on the same date now
+CORRECTS the reading instead of appending a duplicate** — two rows for one day corrupts the
+trend the log exists to show, and re-entering the date is also the edit door a weight row
+never had.
+
+And one guard now holds a TENET rather than coverage: **`ThisWeek` asserts
+faces-not-counts**. The section widens the chore ledger to the whole household and inherits
+its hard rule — say WHO, never HOW MANY — which the file stated and nothing enforced. The
+assertion is that no digit appears in the block at all.
+
+**What is left is one honest coverage backlog** (device-revoke / member-rename round-trips,
+untested config sub-panels, photo upload+delete+undo only smoke-rendered) plus PARITY's two
+Wave-D items — and Wave D itself was halved on inspection: only `recipes.steps_images_json`
+and the routine cards are genuinely positional parallel arrays, while `care_log.media_json`
+(a multi-document LIST) and `members.avatar_ref` (a polymorphic colour-or-key pair) are
+correct as they stand.
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**

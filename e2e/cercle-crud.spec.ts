@@ -67,3 +67,40 @@ test('creating a pet posts to pets', async ({ page }) => {
     page.getByRole('button', { name: 'Ajouter un animal' }).click(),
   )
 })
+
+// The weight log is one reading PER DATE. Re-entering a date you already logged
+// REPLACES it — two rows for one day is never what someone means (they re-weighed, or
+// mistyped the first number), and it quietly corrupts the trend the log exists to show.
+// It is also the only edit door: a weight row is a date and a number, so re-entering it
+// IS the edit; the row itself carries only a ✕. (REVIEW-PASS « frm ».)
+test('a second weight on the same date corrects the first instead of duplicating it', async ({ page }) => {
+  await page.goto('/cercle/pet/new')
+  await page.getByLabel('Nom', { exact: true }).fill('Rex')
+
+  // The weight log lives inside the « Détails / santé » disclosure.
+  await page.getByRole('button', { name: 'Détails / santé' }).click()
+  const weights = page.locator('.pet-form__weight-add')
+  const date = weights.getByLabel('Date')
+  const kg = weights.getByLabel('Poids (kg)')
+  const add = weights.getByRole('button', { name: 'Ajouter' })
+  const rows = page.locator('.pet-form__weight')
+
+  await date.fill('2026-08-01')
+  await kg.fill('12')
+  await add.click()
+  await expect(rows).toHaveCount(1)
+
+  // Same day, corrected number.
+  await date.fill('2026-08-01')
+  await kg.fill('12.4')
+  await add.click()
+  await expect(rows, 'one reading per date').toHaveCount(1)
+  await expect(rows.first()).toContainText('12.4')
+
+  // A DIFFERENT day is a new reading, and the log stays sorted by date.
+  await date.fill('2026-07-01')
+  await kg.fill('11')
+  await add.click()
+  await expect(rows).toHaveCount(2)
+  await expect(rows.first()).toContainText('2026-07-01')
+})

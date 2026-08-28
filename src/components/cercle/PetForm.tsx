@@ -130,10 +130,18 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
     }
   }
 
+  // One reading PER DATE: re-entering a date you already logged REPLACES it rather
+  // than appending a second row for the same day (REVIEW-PASS « frm »). Two entries
+  // for one date is never what someone means — they re-weighed, or fat-fingered the
+  // first number — and it quietly corrupts the trend line the log exists to show.
+  // This is also the edit door: there is no pencil on a weight row (the row is a date
+  // and a number, so re-entering it IS the edit), only the ✕ beside it.
   function addWeight() {
     const kg = Number(wKg)
     if (!wDate || !Number.isFinite(kg) || kg <= 0) return
-    setWeights((w) => [...w, { date: wDate, kg }].sort((a, b) => a.date.localeCompare(b.date)))
+    setWeights((w) =>
+      [...w.filter((x) => x.date !== wDate), { date: wDate, kg }].sort((a, b) => a.date.localeCompare(b.date)),
+    )
     setWDate('')
     setWKg('')
   }

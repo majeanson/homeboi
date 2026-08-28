@@ -786,22 +786,41 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   Hand-drawing faces in raw SVG to avoid it forks the one avatar component, which costs more
   than it saves at household scale. Original text: (`:315`) — long
   history of iOS-Safari render/hit-test bugs; real-device check on a large family (no e2e).
-- [ ] **[frm] Small reuse/consistency nits** — **two fixed 2026-08-28, three still open.**
-  ✅ `LinkComposer` now calls `parsePersonKey` instead of re-splitting the key twice by hand
-  (six lines → two; the key format is decided in `lib/cercle`, and a fork keeps working right
-  up until that format changes). ✅ `ContactPhotos`' inline `['cercle','photos',id]` literal is
-  `cerclePhotosKey(contactId)` in `queryKeys.ts` — a factory, since it is per-contact, but it
-  belongs with the rest: an inline literal is exactly how one key becomes two spellings and then
-  two caches.
-  **Still open:** `ContactForm` avatar posts via `api()` directly while `ContactPhotos` uses
-  `useMediaUpload()`; pet weight log has no edit + no same-date dedupe (`PetForm.tsx:129`);
-  `cf__addr-row` packs city+province+postal tight at 320px.
-- [ ] **[nte] Small nits** — the `firstLine` half is **stale (verified 2026-08-28)**: it is
-  exported from `lib/noteMarkdown.tsx:205` and no cercle component recomputes it inline any
-  more. The rest stands. Original: `firstLine()` exported but `CercleNotes` recomputes it inline
-  (`:227`); latent **orphaned-R2 blobs on in-editor replace/discard** (NoteEditor uploads
-  immediately on pick — same class as the Voyage memo caveat); contentEditable body always
-  labelled `fn.editorNew` even in edit mode (`:441`); audio-note edit is title-only.
+- [x] **[frm] Small reuse/consistency nits** — ✅ **all five settled 2026-08-28**, two by a
+  fix and three by measurement.
+  - ✅ `LinkComposer` calls `parsePersonKey` instead of re-splitting the key twice by hand.
+  - ✅ `ContactPhotos`' inline `['cercle','photos',id]` literal is `cerclePhotosKey()` in
+    `queryKeys.ts`.
+  - ✅ **`ContactForm`'s avatar rides `useMediaUpload()`** now, like `ContactPhotos` next
+    door — it was the last hand-rolled resize→POST→read-the-key, which is how the two had
+    already drifted apart on error handling (it swallowed every failure identically; the
+    hook distinguishes R2-unset from a real error). `AVATAR_MAX` rides the hook's `resize`
+    option. Its `uploading` flag is the hook's own `busy` now, so the button and the save
+    gate cannot disagree with the upload actually in flight. **`write-rule.test.ts` caught
+    the allowlist entry going stale the moment the raw `api()` left** — the guard doing
+    exactly what it was built for.
+  - ✅ **pet weight log** — a second reading on a date you already logged now REPLACES it
+    instead of appending a duplicate. Two rows for one day is never what someone means
+    (they re-weighed, or mistyped), and it corrupts the trend the log exists to show. That
+    is also the "no edit" half answered: a weight row is a date and a number, so
+    re-entering the date IS the edit. Covered in `cercle-crud.spec.ts`, run against the bug.
+  - ➖ **`cf__addr-row` "packs city+province+postal tight at 320px"** — **measured, not a
+    defect.** At 320px the row is 288px wide ending at x=304 (no overflow); city 186px and
+    province 96px share line one, postal 112px wraps to line two. "Tight" is a fair
+    description and it is correct behaviour. Left alone. *(The `flex: 1 1 8rem` bases are
+    the shape CLAUDE.md warns about, but `flex-wrap: wrap` is present and the row demonstrably
+    wraps — converting it to `Cluster` would be churn on working layout.)*
+- [~] **[nte] Small nits** — **two stale, two parked (2026-08-28).**
+  - ✅ **stale:** `firstLine` is exported from `lib/noteMarkdown.tsx:205` and no cercle
+    component recomputes it inline any more.
+  - ✅ **stale:** the contentEditable body is NOT always labelled `editorNew` — `NoteEditor`
+    passes `ariaLabel={note ? fn.editorEdit : fn.editorNew}` (`:638`), as do the dialog
+    (`:581`) and the heading (`:586`). The cited `:441` no longer exists.
+  - [~] orphaned R2 blobs on in-editor replace/discard — real, and the same class as the
+    Voyage memo caveat: the editor uploads on PICK, so abandoning the note leaves the blob.
+    Fixing it properly means a sweep or a deferred commit, not a patch; parked deliberately.
+  - [~] audio-note edit is title-only — a limitation, not a defect; recording over an
+    existing clip is a different feature from editing a note.
 - [x] **[crn] `HomeProjectForm`/`CareLogForm` invalidate `['carnets']` as an inline literal**
   (`:76`/`:94`) instead of importing `CARNETS_KEY`.
 - [x] **[dir] EN gender-label maps omit `in_law`/`step_family`** — ✅ **Fixed 2026-07-02**:
@@ -1029,8 +1048,15 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   genuinely open. Original: stale section ids in `settings-sections.spec.ts:10` (retired ids alias to hosts
   → duplicate screenshots under different filenames); **no** device-revoke / member-delete-rename
   round-trip; untested config sub-panels (schedule, cars, todo-templates, home-projects
-  Projets/Entretien, the chore ledger); `ThisWeek` render never **asserts** faces-not-counts; photo
-  upload+delete+undo only smoke-rendered.
+  Projets/Entretien, the chore ledger); photo upload+delete+undo only smoke-rendered.
+  - ✅ **`ThisWeek` asserts faces-not-counts now** (`e2e/this-week-calm.spec.ts`). It is the
+    one sub-item here that guards a TENET rather than coverage: the section widens the
+    chore-ledger pattern to the whole household and inherits its hard rule — say WHO, never
+    HOW MANY. The file states that at the top and nothing held it there, so a well-meaning
+    « 3 corvées cette semaine » could have shipped unopposed. The fixture gives one chore
+    three helpers and repeats a face across rows (the shape that tempts a summary number),
+    and the assertion is that **no digit appears in the block at all**. Run against the bug:
+    adding a per-row `({helpers.length})` turns it red.
 
 ### Findings — P3 (bigger / judgement)
 
@@ -1153,15 +1179,23 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
 - [x] **`aria-pressed` missing on the toggle chips** — EventForm member/car/passenger/template +
   ChoreForm rotation (`EventForm.tsx:234-351`) convey selection visually only. _(Recurring theme
   with §5's picker `aria-pressed` gap — batch them.)_
-- [ ] **Small consistency nits** — **one fixed, one stale, three still open (2026-08-28).**
-  ✅ the dead i18n key `t.capture.pickType` is gone from both locales (it had no consumer in the
-  tree — a string pair carried since the capture type-picker changed shape).
-  ✅ **stale:** `HomeProjectForm`'s title is NOT a bare `<input>` — it uses `EditField`, and the
-  file says so at `:107` ("this was the lone operator form still on a bare <input>"), so that
-  was fixed and never ticked.
-  **Still open:** reroute 7-up grid overflow untested at 320px; redundant page-level invalidates
-  (belt-and-suspenders over the form's own `affectedKeys`); `RecurPicker` is a documented
-  parallel shape to server `recur` (latent drift); the "EventForm → Le fil" link is unverified.
+- [~] **Small consistency nits** — **three settled, two parked (2026-08-28).**
+  - ✅ the dead i18n key `t.capture.pickType` is gone from both locales.
+  - ✅ **stale:** `HomeProjectForm`'s title is not a bare `<input>` — it uses `EditField`,
+    and says so at `:107`.
+  - ✅ **the re-file 7-up grid is measured at 320px now** (`capture-degraded.spec.ts`), via
+    `worstRightBleed` rather than `assertClean` — the card deliberately does not clip
+    overflow-x, so the helper's clip precondition does not apply, but the per-child
+    right-edge measurement does. It matters here more than most: the grid appears exactly
+    when the AI could not route the note, so the person is already doing unplanned work.
+    Run against a planted bleed.
+  - ✅ **verified, and the link HOLDS:** "EventForm → Le fil". `Fil` is presentational —
+    the host builds its rows from the board payload — and `EventForm` invalidates
+    `BOARD_KEY` (`:257`, alongside EVENTS/MONTH/CAR). Nothing to change.
+  - [~] redundant page-level invalidates (belt-and-suspenders over the form's own
+    `affectedKeys`) and `RecurPicker`'s documented parallel shape to the server `recur` —
+    both are latent-drift risks with no user-visible cost, and both are already commented
+    as deliberate. Parked rather than churned.
 
 **Strengths to keep.** AI-degrade never drops words (row always inserted, degraded note
 auto-cleaned on first real pick); reroute is a server MOVE (delete-then-insert, no dup);

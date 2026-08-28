@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
+import { useMediaUpload } from '../../lib/uploadMedia'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { LinkComposer } from './LinkComposer'
 import { GroupForm, type GroupFormValue } from './GroupForm'
-import { api, ApiError } from '../../lib/api'
-import { resizeImage, AVATAR_MAX } from '../../lib/image'
+import { ApiError } from '../../lib/api'
+import { AVATAR_MAX } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
@@ -90,7 +91,6 @@ export function ContactForm({
   const [memberId, setMemberId] = useState(value?.memberId ?? '')
   const [memberText, setMemberText] = useState(() => members.find((m) => m.id === value?.memberId)?.displayName ?? '')
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
-  const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   // The server refused the save/delete (4xx/5xx) — keep the form and say so, like
   // the sibling forms (PetForm/BusinessForm/CarnetForm). Offline is not an error:
@@ -270,19 +270,20 @@ export function ContactForm({
     return [...all].sort().map((tg) => ({ id: tg, label: tg, data: tg }))
   }, [contacts, tags])
 
+  // The ONE client upload path (lib/uploadMedia), not a fourth hand-rolled
+  // resize→POST→read-the-key. `ContactPhotos` next door already used it; this one
+  // still spelled the flow out, which is how the two drifted apart on error handling
+  // (REVIEW-PASS « frm »). AVATAR_MAX rides the hook's `resize` option — a face on a
+  // pick screen does not need a 1024px blob.
+  const avatarUpload = useMediaUpload({ endpoint: 'cercle', resize: AVATAR_MAX })
+  const uploading = avatarUpload.busy
   async function pickPhoto(file: File | undefined) {
     if (!file) return
-    setUploading(true)
-    try {
-      const blob = await resizeImage(file, AVATAR_MAX)
-      const { key } = await api<{ key: string }>('cercle', { method: 'POST', body: blob })
-      setPhotoKey(key)
-    } catch {
-      /* upload failed (offline / R2 unset) — keep the previous tile, no crash */
-    } finally {
-      setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
-    }
+    const key = await avatarUpload.upload(file)
+    // null = offline / R2 unset / too large — the hook owns the reason; keep the
+    // previous tile rather than blanking a photo the contact already had.
+    if (key) setPhotoKey(key)
+    if (fileRef.current) fileRef.current.value = ''
   }
 
   // Bridge the discrete field states to the shared ContactFields cluster. The

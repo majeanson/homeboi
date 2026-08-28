@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
+import { worstRightBleed } from './overflow'
 import { mockApi, seedState } from './mocks'
 
 // Behavioural coverage for the capture AI-off DEGRADE + RE-ROUTE flow — the last
@@ -114,4 +115,32 @@ test('picking a type re-routes with forceType and hands the note rows back as un
   // The re-file cleared the box and the degraded picker is gone (real route now).
   await expect(page.locator('.capture-form input.edit-field__input')).toHaveValue('')
   await expect(page.locator('.capture__routed')).toHaveText('Ajouté : souper spaghetti jeudi')
+})
+
+// The re-file grid is SEVEN tiles wide-ish and had never been measured at 320px — the
+// narrowest phone the suite covers, and the width at which every other overflow bug in
+// this app has surfaced (REVIEW-PASS « small consistency nits »). It matters more here
+// than in most places: this grid appears exactly when the AI could not route the note,
+// so the person is already doing unplanned work, and a tile bleeding past the right
+// edge would be invisible — `.sheet` and the capture card both clip overflow-x, which
+// is why a `scrollWidth` check cannot see it. `assertClean` measures each visible
+// descendant's right edge against the container's, which sees through the clip.
+test('the degraded re-file grid never bleeds past the right edge @320', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 })
+  await stubCapture(page)
+  await page.goto('/board')
+  await openCapture(page, 'souper spaghetti jeudi')
+  await submitCapture(page)
+
+  // All seven tiles are on screen (the degraded path shows them outright).
+  const tiles = page.locator('.capture-form .cat-pick')
+  await expect(tiles.first()).toBeVisible({ timeout: 20_000 })
+  expect(await tiles.count(), 'the full re-file grid is shown').toBeGreaterThanOrEqual(6)
+
+  // worstRightBleed, not assertClean: the latter also asserts the container itself
+  // clips overflow-x, which .capture-form deliberately does not (it is an in-page card,
+  // not a sheet). What matters here is the same measurement — no visible descendant may
+  // extend past the card's right edge — read through whatever clipping is above it.
+  const { bleed, culprit } = await worstRightBleed(page, '.capture-form')
+  expect(bleed, `"${culprit}" bleeds off the right edge at 320px`).toBeLessThanOrEqual(1)
 })
