@@ -32,12 +32,10 @@ export function createModeStore(key: string) {
  *  discard-without-buying). */
 const pantry = createModeStore('babillard-pantry-advanced')
 export const usePantryAdvanced = pantry.use
-export const getPantryAdvanced = pantry.get
 export const setPantryAdvanced = pantry.set
 
 /** The meal pools (Idées / Restants — MealPool, wherever it renders): simple =
  *  tap-a-chip-to-plan; Avancé restores ✏️ rename + 🗑 remove per row. */
 const mealPool = createModeStore('babillard-repas-advanced')
 export const useMealPoolAdvanced = mealPool.use
-export const getMealPoolAdvanced = mealPool.get
 export const setMealPoolAdvanced = mealPool.set

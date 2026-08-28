@@ -20,6 +20,4 @@ const store = createModeStore('babillard-liste-advanced')
 
 /** Live: is this device on the advanced (row-actions) list face? */
 export const useListeAdvanced = store.use
-/** Read once, outside React. */
-export const getListeAdvanced = store.get
 export const setListeAdvanced = store.set

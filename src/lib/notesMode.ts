@@ -21,6 +21,4 @@ const store = createModeStore('babillard-notes-advanced')
 
 /** Live: is this device on the advanced (pre-lean) Notes face? */
 export const useNotesAdvanced = store.use
-/** Read once, outside React (the editor's save path). */
-export const getNotesAdvanced = store.get
 export const setNotesAdvanced = store.set

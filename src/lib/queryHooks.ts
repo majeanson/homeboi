@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { live } from './query'
 import { BOARD_KEY } from './queryKeys'
-import { RECIPES_KEY, RECIPE_TAGS_KEY, type Recipe, type RecipeTagsData } from './recipes'
+import { RECIPES_KEY, type Recipe } from './recipes'
 import {
   MEALS_KEY,
   DAY_NOTES_KEY,
@@ -33,14 +33,6 @@ export function useBoardData(opts?: ReadOpts) {
 
 export function useRecipes(opts?: ReadOpts) {
   return useQuery({ queryKey: RECIPES_KEY, queryFn: () => api<{ recipes: Recipe[] }>('recipes'), ...live, ...opts })
-}
-
-// Per-tag household colours (migration 0037), keyed lowercase tag → "#rrggbb".
-// The ONE place the detail peek + anywhere else that just needs the colour map
-// reads it (RecipeSheet/RecipesTab read the full payload directly). Doesn't poll —
-// tag colours change only from Réglages. Pass into a DetailCtx as `tagColors`.
-export function useTagColors(): Record<string, string> | undefined {
-  return useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') }).data?.colors
 }
 
 export function useMeals(opts?: ReadOpts) {

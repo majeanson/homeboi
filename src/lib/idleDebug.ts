@@ -32,22 +32,14 @@ export function idleOverrideMs(): number | null {
   }
 }
 
-export function currentIdleSpeed(): IdleSpeed {
-  const ms = idleOverrideMs()
-  if (ms == null) return 'normal'
-  return (Object.keys(IDLE_SPEED_MS) as IdleSpeed[]).find((k) => IDLE_SPEED_MS[k] === ms) ?? 'normal'
-}
-
-export function setIdleSpeed(speed: IdleSpeed) {
-  const ms = IDLE_SPEED_MS[speed]
-  try {
-    if (ms == null) localStorage.removeItem(SPEED_KEY)
-    else localStorage.setItem(SPEED_KEY, String(ms))
-  } catch {
-    /* private-mode storage failure — debug only, ignore */
-  }
-  emit('speed')
-}
+// NOTE (2026-08-27): the SPEED half of this module has no UI and never had one.
+// `currentIdleSpeed`/`setIdleSpeed` were removed as dead exports when knip became a
+// real gate — nothing ever called them, so `SPEED_KEY` is a key nothing writes and
+// `idleOverrideMs()` below therefore always reads null today. It is kept because
+// HubLayout still consults it, and because writing that key by hand in devtools is a
+// genuinely useful way to watch the idle cycle without waiting three minutes.
+// What DOES ship is the force half: « Aperçu » in Réglages ▸ Affichage ▸ Mode veille
+// calls `forceIdle('screensaver')`.
 
 // Force the warning chip, the immediate drift back to Maisonnée, or the
 // screensaver, right now — no waiting for the timer.
