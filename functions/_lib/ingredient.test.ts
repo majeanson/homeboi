@@ -43,4 +43,29 @@ describe('ingredientName', () => {
   it('still handles a bare "c." abbreviation with no "à"', () => {
     expect(ingredientName('1 c. de vanille')).toBe('Vanille')
   })
+
+  // The glued unit. Found in the wild 2026-08-28: cook mode's « Il en manque »
+  // flagged "60ml de farine blanche" — the WHOLE line, measurement included —
+  // because "60ml" is one token to split(' '), so the leading walk stopped on its
+  // first token and stripped nothing at all. You buy flour, not 60 ml of it.
+  it('splits a glued quantity+unit ("60ml")', () => {
+    expect(ingredientName('60ml de farine blanche')).toBe('Farine blanche')
+    expect(ingredientName('250g de beurre')).toBe('Beurre')
+    expect(ingredientName('1L de lait')).toBe('Lait')
+  })
+  it('never splits a digit-led word that is not a unit', () => {
+    // "up" is not a unit, so "7up" stays whole rather than becoming "Up".
+    expect(ingredientName('7up')).toBe('7up')
+  })
+
+  // The mirror-image miss: the measurement TRAILS the item.
+  it('strips a trailing measurement run', () => {
+    expect(ingredientName('Farine blanche 60 ml')).toBe('Farine blanche')
+    expect(ingredientName('Beurre 250 g')).toBe('Beurre')
+  })
+  it('keeps a trailing unit word that carries no quantity', () => {
+    // Without the sawQty guard this would lose its last word ("Sauce en").
+    expect(ingredientName('Sauce en pot')).toBe('Sauce en pot')
+    expect(ingredientName('Crème 35%')).toBe('Crème 35%')
+  })
 })

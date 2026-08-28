@@ -26,10 +26,22 @@ const NUMBER = /^\d+([.,/x-]\d+)*$/i
 
 const bareOf = (tok: string) => tok.toLowerCase().replace(/[.,;]+$/, '')
 
+// A glued quantity+unit — "60ml", "250g", "1L" — is ONE token to split(' '), so the
+// walk below stopped on its very first token and stripped NOTHING: the whole line,
+// measurement and all, became the item name ("60ml de farine blanche" landed on the
+// grocery list instead of "Farine blanche"). Web-imported recipes write it this way
+// constantly. Split it back into two tokens — but ONLY when the letters are a KNOWN
+// unit, so a real item that happens to start with a digit ("7up") is never cut in half.
+const GLUED = /^([\d.,/]+|[½¼¾⅓⅔⅛⅜⅝⅞]+)([a-zà-ÿ]+\.?)$/i
+const splitGlued = (tok: string): string[] => {
+  const m = GLUED.exec(tok)
+  return m && UNITS.has(bareOf(m[2])) ? [m[1], m[2]] : [tok]
+}
+
 export function ingredientName(line: string): string {
   const cleaned = line.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()
   if (!cleaned) return line.trim()
-  const toks = cleaned.split(' ')
+  const toks = cleaned.split(' ').flatMap(splitGlued)
   let j = 0
   while (j < toks.length) {
     const bare = bareOf(toks[j])
@@ -48,7 +60,31 @@ export function ingredientName(line: string): string {
     }
     break
   }
-  let name = j > 0 ? toks.slice(j).join(' ').trim() : cleaned
+
+  // The same run can TRAIL the item instead of leading it ("Farine blanche 60 ml",
+  // "Beurre 250 g") — a shape the leading-only walk left completely whole. Walk back
+  // from the end by the same rules. Guard: the run must contain an actual QUANTITY,
+  // otherwise an item whose last word merely reads as a unit ("Sauce en pot") would
+  // lose it.
+  let k = toks.length
+  let sawQty = false
+  while (k > j) {
+    const tok = toks[k - 1]
+    const bare = bareOf(tok)
+    const isQty = NUMBER.test(bare) || FRACTIONS.test(tok)
+    if (isQty || UNITS.has(bare) || CONNECT.has(bare)) {
+      if (isQty) sawQty = true
+      k--
+      continue
+    }
+    break
+  }
+  if (!sawQty || k === j) k = toks.length
+
+  // j === 0 and k === toks.length: no measurement run at either end → keep the
+  // line. A line that is ONLY measurements ("500 g") slices to nothing and the
+  // !name guard below hands it back whole.
+  let name = j > 0 || k < toks.length ? toks.slice(j, k).join(' ').trim() : cleaned
   name = name.replace(/^d['’]\s*/i, '').replace(/^(de|du|des|of|à|au|aux)\s+/i, '').trim()
   if (!name) name = cleaned
   return name.charAt(0).toUpperCase() + name.slice(1)
