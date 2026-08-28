@@ -229,9 +229,14 @@ Shapes still worth batching:
   where every sibling shows a read-only legend; `HeartButton` truncates faces at 4 with no
   "+" signal. *(`ThisWeek` having no error state was itself stale — it renders one at
   `ThisWeekTogetherSection.tsx:137`.)*
-- **Remaining e2e gaps** — Le cercle is screenshots-only (zero behavioural coverage for
-  Businesses, the carnet scene, group CRUD); the toddler kitchen picker is untested; config
-  sub-panels are screenshot-only, so a broken PATCH would pass.
+- **Remaining e2e gaps** — ~~Le cercle is screenshots-only~~ **stale, and now narrowed**
+  (2026-08-28): Businesses + group CRUD were already covered by `cercle-crud.spec.ts`, and
+  the **carnet scene**'s R2 + undo seams are covered now — `carnet-scene.spec.ts` 5 → 13
+  cases (care-log add/edit/delete, pin delete, both halves of `useDeferredRemoval`, the
+  mid-undo resurrection race, the removal-scope split, and `CarnetDocs`' PDF/photo tiles),
+  each verified against a planted bug. Genuinely left: the ＋ chooser, drag-to-group + undo,
+  ReviewChecklist apply, .vcf import, note autosave round-trip; the toddler kitchen picker
+  and `CircleKidView`; config sub-panels are screenshot-only, so a broken PATCH would pass.
 
 ### D. Judgement calls waiting on Marc, not on code
 

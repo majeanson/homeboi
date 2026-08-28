@@ -550,13 +550,31 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
 - [x] **[frm] `ConnectPeople` comboboxes omit `typeaheadOnly`** — ✅ **Fixed 2026-07-02**:
   both person-A/B comboboxes now set `typeaheadOnly`, matching every other cercle combobox
   (no more free-text that resolves to nothing).
-- [ ] **e2e — the whole section is screenshots-only.** `cercle-visual`/`scenes` shoot
-  section×view×theme×format but assert nothing and drive no interaction. **Zero** behavioural
-  coverage for: group CRUD, the ＋ chooser (connect/group/business/carnet), drag-to-group +
-  undo, ReviewChecklist apply, .vcf import, **Businesses** (no spec at all), note autosave
-  round-trip / re-scope / media attach, the **carnet scene** (CRUD/care-log/pin/archive/doc
-  lifecycle — highest-risk R2/undo seams, no coverage), and the toddler `CircleKidView` /
-  world tour. Add write-path smoke tests, prioritizing carnet + businesses + ReviewChecklist.
+- [~] **e2e — the whole section is screenshots-only.** **Partly stale when re-checked
+  2026-08-28, then narrowed.** The "**zero** behavioural coverage" claim had already been
+  overtaken: `cercle-crud.spec.ts` covers group / **business** / carnet / pet creation,
+  `carnet-restore.spec.ts` covers the archived list + restore, and `carnet-scene.spec.ts`
+  covered the scene's render, tree navigation and the carnet's own confirm-then-DELETE.
+  So "add write-path smoke tests, prioritizing carnet + businesses" was mostly done and
+  never ticked — §5-1 again.
+  **Closed this pass — the carnet scene's R2 and undo seams**, which genuinely had none.
+  `carnet-scene.spec.ts` grows from 5 cases to 13: care-log add (POST) / edit (PATCH, and
+  the form is *seeded*, not blank) / delete, pin delete, and the two halves of
+  `useDeferredRemoval` stated separately — « Annuler » un-hides the row **and sends
+  nothing at all** (a delete-then-recreate would pass a weaker assertion), and letting the
+  hold expire sends the DELETE exactly once. Plus the resurrection race the helper exists
+  to kill (a refetch forced *during* the undo window must not bring the row back), the
+  scope split (deleting an entry must not hide a pin), and the `CarnetDocs` read seam (a
+  `.pdf` key opens the inline sheet, a photo stays a zoomable image — a break there is
+  silent: the blob is stored, just unreachable).
+  **Run against the bugs.** Three planted, each caught: `visible()` stops filtering → 4
+  red; `onUndo` also commits → both « Annuler » cases red; `isPdfKey` always false → the
+  docs case red. One assertion was itself wrong first time — reading the recorded calls
+  right after `waitForRequest` raced the route handler that records them, so it read empty
+  while the DELETE had plainly fired; it polls now.
+  **Still open** (unchanged, and the honest remainder): the ＋ chooser, drag-to-group +
+  undo, ReviewChecklist apply, .vcf import, note autosave round-trip / re-scope / media
+  attach, and the toddler `CircleKidView` / world tour.
 
 ### Findings — P3 (bigger / judgement)
 
