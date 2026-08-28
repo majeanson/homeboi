@@ -35,6 +35,30 @@
   display: inline-block;
   vertical-align: -0.1em;
 }
+/* The DOOR (bmad/12 #6): the one way forward out of an empty SECTION. A quiet chip
+   rather than a full-width primary bar — LEAN smell #7 (a full-width CTA for what is
+   still a secondary action) and the same bars→chips→glyphs walk La liste's shortcuts
+   already made. It reads as an offer, not an instruction: an empty section is not a
+   problem the household has to solve right now. */
+.empty-state__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.empty-state__action svg {
+  flex: none;
+}
 
 /* ── StatusMessage ──────────────────────────────────────────────────────── */
 .status-msg {

@@ -112,7 +112,12 @@ export function BusinessesTab({
   return (
     <section className="cercle-group cercle-business">
       {shown.length === 0 ? (
-        <EmptyState>{bz.empty}</EmptyState>
+        <EmptyState
+          guide={{ card: 'cercle', point: 11 }}
+          action={{ to: '/maison?section=business&plus=business', label: bz.add, icon: 'plus-bold' }}
+        >
+          {bz.empty}
+        </EmptyState>
       ) : (
         shown.map((b) => {
           const photo = b.photoKey ? imgUrl(b.photoKey) : null

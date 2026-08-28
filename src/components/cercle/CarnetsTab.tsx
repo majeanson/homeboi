@@ -60,7 +60,12 @@ export function CarnetsTab() {
   return (
     <section className="cercle-group cercle-carnets">
       {tops.length === 0 ? (
-        <EmptyState guide={{ card: 'carnets' }}>{c.empty}</EmptyState>
+        <EmptyState
+          guide={{ card: 'carnets' }}
+          action={{ to: '/maison?section=carnets&plus=carnet', label: c.add, icon: 'plus-bold' }}
+        >
+          {c.empty}
+        </EmptyState>
       ) : (
         tops.map((x) => {
           const photo = x.mediaKey ? imgUrl(x.mediaKey) : null

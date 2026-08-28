@@ -152,7 +152,12 @@ export function HabitudesPage() {
         <DefiBlock payload={data} today={today} />
 
         {mine.length === 0 ? (
-          <EmptyState tone="calm">{face ? fn.emptyFace : fn.emptyHousehold}</EmptyState>
+          <EmptyState
+            tone="calm"
+            action={{ to: '/habitude/new', label: fn.add, icon: 'plus-bold' }}
+          >
+            {face ? fn.emptyFace : fn.emptyHousehold}
+          </EmptyState>
         ) : (
           <>
             {asking.length === 0 ? (

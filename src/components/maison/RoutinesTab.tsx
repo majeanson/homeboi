@@ -233,7 +233,12 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
       <div data-tour="routines-grid">
       {routines.length === 0 ? (
         <div className="routines-empty">
-          <EmptyState guide={{ card: 'routines' }}>{t.routines.parentEmpty}</EmptyState>
+          <EmptyState
+            guide={{ card: 'routines' }}
+            action={{ to: '/maison?plus=routine-pick', label: t.routines.add, icon: 'plus-bold' }}
+          >
+            {t.routines.parentEmpty}
+          </EmptyState>
           {/* The warm in-tab create path — no more "make one in the réglages".
               Opens the builder scene; hidden for a read-only guest. */}
           {!isGuest() && (

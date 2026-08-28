@@ -315,9 +315,14 @@ not structural. Four reviewers; findings deduped below.
   — ✅ **Fixed 2026-07-02**: the recipe peek now passes `onShop: undefined` (which
   `buildRecipe` hides) when there are no buyable ingredients, so "Ajouter à la liste"
   isn't offered at all rather than dead-tapping — mirrors the `onMakeRoutine` gate.
-- [ ] **Empty-state dead-ends:** empty recipe book has no direct "add a recipe" CTA (only a
-  guide link, `RecipesTab.tsx:413` — create is ＋-FAB-only); `ToddlerCookBook` with zero
-  recipes shows a cover reading "0 recettes" (`:84`), a dead book.
+- [x] **Empty-state dead-ends** — ✅ **DONE 2026-08-27** (bmad/12 #6). `EmptyState` gained an
+  `action` slot: one quiet chip-link under the line, using the app’s own `?plus=` URL grammar so
+  the door does what the ＋ FAB would have. Applied to the five genuine SECTION dead ends —
+  the recipe book (the one this finding named), Les carnets, Business, Routines and
+  « Mes habitudes » (whose copy already ended « …ou ajoutes-en une » with nothing to tap).
+  **Deliberately NOT swept over all ~108 call sites:** a CELL empty (« Rien de prévu » on one
+  day) is a complete answer, and padding it would be a nag — the copy contract in COMPONENTS.md
+  says so. Guarded both ways by `e2e/empty-doors.spec.ts`, including the guest gate.
 - [ ] **Heart faces truncate at 4 with no "+" signal** (`HeartButton.tsx:32`) — calm-correct
   (no count) but "which faces" is incomplete on a 5+ member household.
 - [x] **`MealIdeas` empty state has no guide deep-link** — ✅ **Fixed 2026-07-02**:

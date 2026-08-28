@@ -449,7 +449,12 @@ export function RecipesTab({
       )}
       {recipes.length === 0 ? (
         <>
-          <EmptyState guide={{ card: 'recipes' }}>{t.recipes.empty}</EmptyState>
+          <EmptyState
+            guide={{ card: 'recipes' }}
+            action={{ to: '/kitchen?plus=recipe', label: t.recipes.addFirst, icon: 'plus-bold' }}
+          >
+            {t.recipes.empty}
+          </EmptyState>
           {/* A first-time book has no recipes and (before) no visible way to add one —
               create is otherwise ＋-FAB-only. Offer a direct CTA into the recipe editor. */}
           <button type="button" className="btn btn--primary recipes__add-first" onClick={() => nav('/kitchen/recipe/new')}>

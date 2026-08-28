@@ -4,10 +4,10 @@
 > pick items off this queue when a session wants a contained UI/UX win. All are
 > client-side unless noted. Numbers keep the original proposal's ids.
 
-1. **`<Skeleton>` primitive** — generalize the board's ghost tiles (5c64b3e) into
+1. ✅ **DONE 2026-08-27** — **`<Skeleton>` primitive** — generalize the board's ghost tiles (5c64b3e) into
    a `.skeleton` family in /dev/kit; sweep Kitchen grid, recipe book, Cercle
    lists, Réglages panels off their mixed `<Loading/>` spinners.
-6. **Every `EmptyState` opens a door** — audit all call sites (~88); each gets an
+6. ✅ **DONE 2026-08-27** (five section dead ends; cells deliberately left bare) — **Every `EmptyState` opens a door** — audit all call sites (~88); each gets an
    add / guide / settings action (the « Ce soir » fix generalized). The primitive
    already carries `guide`; add an `action` slot.
 8. **Night-mode contrast pass** — AA-audit `--ink-soft` on wash backgrounds at
