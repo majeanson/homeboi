@@ -432,7 +432,12 @@ function DetailSheetDemo() {
     accent: '#7BB0C9',
     when: 'mar. 18 juin · 14 h 00',
     who: { role: 'Tour de', name: 'Camille', colour: '#88A36F' },
-    blocks: [{ kind: 'chips', label: 'Équipe', chips: ['Camille', 'Marc'] }],
+    blocks: [
+      { kind: 'chips', label: 'Équipe', chips: ['Camille', 'Marc'] },
+      // A LABELLED text block — the shape a voice mot's machine transcript wears, so
+      // nobody reads it as what the sender typed (PLAN-mots A5).
+      { kind: 'text', label: 'Ce qui a été dit', text: 'Apporte le carnet de rendez-vous.' },
+    ],
     actions: [{ key: 'day', label: 'Voir la journée', icon: 'calendar-blank-bold', primary: true, run: () => {} }],
   }
   return (
