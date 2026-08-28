@@ -12,13 +12,11 @@ import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
 import { useRecipeToRoutine } from '../lib/recipeToRoutine'
 import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
-import { groupSections, withoutHeadings } from '../lib/recipeSections'
-import { ingredientName } from '../lib/ingredient'
+import { groupSections } from '../lib/recipeSections'
 import { type MealSlot } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
-import { Chip } from './Chip'
 import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { MEALS_KEY, MEAL_HISTORY_KEY } from './kitchen/types'
@@ -26,6 +24,7 @@ import { useAnnounceLeftover } from './kitchen/Leftovers'
 import { useModal } from '../lib/useModal'
 import { useConfirm } from '../lib/confirm'
 import { useAuth } from '../lib/auth'
+import { RecipeIngredientPick } from './RecipeIngredientPick'
 import { RecipeShareModal } from './RecipeShareModal'
 import { SceneHead } from './SceneHead'
 import { ActionMenu, type ActionMenuItem } from './ActionMenu'
@@ -87,11 +86,10 @@ export function RecipeSheet({
   const announceLeftover = useAnnounceLeftover()
   const [leftoverSaved, setLeftoverSaved] = useState(false)
   const [sharing, setSharing] = useState(false)
-  // "Add to list" opens a checklist (you rarely need EVERY ingredient — most are
-  // staples you already have). null = closed; each row is a buyable name you tick
-  // to add. Starts all-unticked, so it's "pick the few I'm missing", not "untick
-  // the many I have".
-  const [listPrompt, setListPrompt] = useState<{ item: string; on: boolean }[] | null>(null)
+  // "Add to list" opens the shared « quels ingrédients ? » checklist
+  // (RecipeIngredientPick — the same body the RecipeListPicker modal uses). The tick
+  // state lives in there; this host only says whether the panel is open.
+  const [pickingList, setPickingList] = useState(false)
   const [planning, setPlanning] = useState(false)
   // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
   const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
@@ -165,32 +163,16 @@ export function RecipeSheet({
       return { ...g, start }
     })
   })()
-  // Open the "which ingredients?" checklist: the recipe's buyable names, deduped,
-  // section markers dropped. (recipe-to-list reduces a measured line to its name
-  // anyway — "500 g de bœuf haché" → "Bœuf haché" — so we show that directly.)
-  function openAddToList() {
-    const seen = new Set<string>()
-    const opts: { item: string; on: boolean }[] = []
-    for (const line of withoutHeadings(scaledIngredients)) {
-      const name = ingredientName(line)
-      const k = name.toLowerCase()
-      if (name && !seen.has(k)) {
-        seen.add(k)
-        opts.push({ item: name, on: false })
-      }
-    }
-    setListPrompt(opts)
-  }
-  const toggleListItem = (item: string) =>
-    setListPrompt((p) => p?.map((o) => (o.item === item ? { ...o, on: !o.on } : o)) ?? p)
-  const allListOn = !!listPrompt?.length && listPrompt.every((o) => o.on)
-  const toggleAllList = () => setListPrompt((p) => p?.map((o) => ({ ...o, on: !allListOn })) ?? p)
-
-  async function confirmAddToList() {
-    const items = (listPrompt ?? []).filter((o) => o.on).map((o) => o.item)
-    if (!items.length) return
+  // NO undo toast here either, for the reason spelled out above the leftovers
+  // button: this sheet STAYS open (.recipe-modal, z-index 80) while the toast sits at
+  // 40, so an « Annuler » from here would be painted underneath. The POST goes at
+  // once and the label flip to « Ajouté à la liste » IS the confirmation; the badge
+  // rolls back if the write fails, so the sheet never claims a list it didn't write.
+  // (The RecipeListPicker modal CAN defer, because it closes before it commits —
+  // see RecipeIngredientPick's header for the whole trade-off.)
+  async function confirmAddToList(items: string[]) {
     setAdded(true)
-    setListPrompt(null)
+    setPickingList(false)
     await write('recipe-to-list', { method: 'POST', body: { items }, affectedKeys: [BOARD_KEY] }).catch(() =>
       setAdded(false),
     )
@@ -230,7 +212,7 @@ export function RecipeSheet({
       icon: 'shopping-bag-bold',
       label: added ? t.recipes.addedToList : t.recipes.addToList,
       disabled: added,
-      onSelect: () => (listPrompt ? setListPrompt(null) : openAddToList()),
+      onSelect: () => setPickingList((v) => !v),
     })
   if (!ro)
     menuItems.push({
@@ -494,42 +476,15 @@ export function RecipeSheet({
         </div>
         )}
 
-        {/* "Which ingredients?" checklist — tick the few you're missing (it opens
-            all-unticked, since most are staples you already have). */}
-        {listPrompt && (
-          <div className="recipe-list-pick">
-            <div className="recipe-list-pick__head">
-              <span className="recipe-list-pick__label mono">{t.recipes.addWhich}</span>
-              <button type="button" className="chip recipe-list-pick__all" onClick={toggleAllList}>
-                {allListOn ? t.recipes.selectNone : t.recipes.selectAll}
-              </button>
-            </div>
-            <div className="recipe-list-pick__items">
-              {listPrompt.map((o) => (
-                <Chip key={o.item} selected={o.on} onClick={() => toggleListItem(o.item)}>
-                  {o.on && (
-                    <>
-                      <InlineIcon name="check-bold" />{' '}
-                    </>
-                  )}
-                  {o.item}
-                </Chip>
-              ))}
-            </div>
-            <div className="recipe-list-pick__actions">
-              <button type="button" className="btn btn--ghost mono" onClick={() => setListPrompt(null)}>
-                {t.common.cancel}
-              </button>
-              <button
-                type="button"
-                className="btn btn--primary mono"
-                onClick={confirmAddToList}
-                disabled={!listPrompt.some((o) => o.on)}
-              >
-                {t.recipes.addSelected(listPrompt.filter((o) => o.on).length)}
-              </button>
-            </div>
-          </div>
+        {/* « Quels ingrédients ? » — the shared checklist, inline here. Fed the
+            SCALED lines so it reads the servings you're actually cooking; the names
+            it derives are the same either way (ingredientName drops the measure). */}
+        {pickingList && (
+          <RecipeIngredientPick
+            lines={scaledIngredients}
+            onCancel={() => setPickingList(false)}
+            onConfirm={(items) => void confirmAddToList(items)}
+          />
         )}
 
         {/* Plan-a-supper day picker, anchored right above the actions so tapping

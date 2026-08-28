@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1845 unit tests in 142 files · 115 Playwright spec files |
+| **Tests** | 1845 unit tests in 142 files · 116 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -220,9 +220,10 @@ proves nothing about the codebase; grep the tree.
 
 Shapes still worth batching:
 
-- **Reuse duplicates** — the "which ingredients?" checklist exists twice (`RecipeListPicker`
-  vs `RecipeSheet`'s inline `listPrompt`); three `Member` shapes converge on one face control;
-  `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; ~~two `parseBirthday` derivations that disagree on the year regex~~ (✅ 2026-08-28 — it was
+- **Reuse duplicates** — ~~the "which ingredients?" checklist exists twice~~ (✅ 2026-08-28 —
+  one `RecipeIngredientPick` body; the **commit** deliberately stays with each host, because
+  whether an undo is reachable is a property of the surface); three `Member` shapes converge
+  on one face control; `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; ~~two `parseBirthday` derivations that disagree on the year regex~~ (✅ 2026-08-28 — it was
   FOUR spellings; the rule now lives once in `functions/_lib/birthdayRule.ts`, pinned by an
   agreement table in `src/lib/cercle.test.ts`).
 - **Silent / inconsistent states** — `MeasureColorsSection` vanishes entirely for a guest

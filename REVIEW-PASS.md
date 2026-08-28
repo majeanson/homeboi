@@ -314,9 +314,31 @@ not structural. Four reviewers; findings deduped below.
   `lib/queryKeys.ts`. ✅ **Batch A: the dead `['list']` invalidate is removed** (`useRecipeShop.
   ts`, `RecipeSheet`, `RecipeListPicker`, + the server `keysForPath`). Remaining: centralize
   ghosts/history (Batch E).
-- [ ] **Duplicate "which ingredients?" checklist.** `RecipeListPicker.tsx` (modal) and the
-  inline `listPrompt` in `RecipeSheet.tsx:408-442` reimplement the same tick-list +
-  select-all + `recipe-to-list` POST. Extract one shared checklist body.
+- [x] **Duplicate "which ingredients?" checklist** — ✅ **Fixed 2026-08-28.** The body is one
+  component now, **`components/RecipeIngredientPick.tsx`** (names deduped, `## Titre` markers
+  dropped, opens all-unticked, select-all/none); `RecipeListPicker` is a 38-line Modal host
+  over it and `RecipeSheet` renders it inline. Registered in `/dev/kit` (Champs & saisie) and
+  `COMPONENTS.md`; the three now-unused imports it left behind in `RecipeSheet` are the
+  cheapest possible proof the duplication is actually gone.
+  **The commit deliberately did NOT move down into the shared body**, which is the whole
+  finding: the asymmetry it flagged is real and *correct*. Whether an undo is REACHABLE is a
+  property of the surface, not of the checklist — `RecipeSheet` stays open inside
+  `.recipe-modal` (z-index 80) while `.undo-toast` sits at 40, so an « Annuler » offered from
+  there would be painted underneath (the cook-mode lesson of 2026-08-27, third time); the
+  modal picker CLOSES before it commits, so its toast lands on a clear page and it can defer
+  honestly. `onConfirm(items)` hands the picked names back and the host picks its undo tier —
+  which is exactly how `ACTIONS.md` already models undo. Forcing either behaviour on both
+  would have lost a working undo or painted an untappable one.
+  Two things worth recording. **The modal has no product caller** — only the `/dev/kit`
+  specimen; the Kitchen recipe peek that used it was removed, and `COMPONENTS.md` had already
+  said so, which is why it's KEPT rather than deleted (a recorded decision, not an oversight).
+  And it therefore had **no test at all**, so the deferred half of the pair was unguarded:
+  new `e2e/recipe-ingredient-pick.spec.ts` drives the specimen (same drill as
+  `recipe-read-review.spec.ts`) and pins the negative — after confirming, **nothing** reaches
+  the server while the undo stands, and « Annuler » leaves it untouched — plus the settle
+  path sending exactly one POST carrying only the ticked name. **Run against the bug:**
+  making the modal POST immediately turns the first case red. The inline half stays covered
+  by `interactions.spec.ts` › recipes.
 - [x] **Adding recipe ingredients to La liste has no undo** — ✅ **Fixed 2026-07-02**:
   `RecipeListPicker.confirm` now DEFERS the `recipe-to-list` POST behind `useUndoToast`
   (mirrors `ReserveSection.addToList`) — the write only fires if you don't undo, so no

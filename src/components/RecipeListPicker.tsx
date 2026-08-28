@@ -1,57 +1,27 @@
-import { useMemo, useState } from 'react'
 import { Modal } from './Modal'
 import { useT } from '../i18n'
 import { useWrite } from '../lib/write'
 import { useUndoToast } from '../lib/toast'
 import { BOARD_KEY } from '../lib/queryKeys'
-import { withoutHeadings } from '../lib/recipeSections'
-import { ingredientName } from '../lib/ingredient'
-import { InlineIcon } from './Icon'
-import { Chip } from './Chip'
+import { RecipeIngredientPick } from './RecipeIngredientPick'
 import type { Recipe } from '../lib/recipes'
 
-// "Which ingredients?" picker for adding a recipe's ingredients to the shared
-// grocery list — you rarely need EVERY ingredient (most are staples you already
-// have), so this lets you tick the few you're missing instead of dumping them all.
-// Mirrors the inline checklist inside RecipeSheet (same `recipe-list-pick` styles
-// + i18n), but wrapped in the shared Modal so any surface that only has the recipe
-// (e.g. the Kitchen recipe-peek) can offer the same selection. Opens all-unticked.
+// The MODAL door onto the « quels ingrédients ? » checklist, for a surface that only
+// has the recipe (the Kitchen recipe-peek). The checklist body itself is shared with
+// `RecipeSheet`'s inline copy — see `RecipeIngredientPick`, which also explains why
+// the commit stays here rather than moving down into it.
+//
+// This host CLOSES before it commits, so the undo toast (z-index 40) lands on the
+// page with nothing painted over it: the POST is DEFERRED behind « Annuler » (mirrors
+// ReserveSection.addToList). Nothing lands until the window passes, so undo is
+// conflict-free — there is no inverse write to run.
 export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose: () => void }) {
   const t = useT()
   const write = useWrite()
   const undo = useUndoToast()
-  // The recipe's buyable names, deduped, section markers dropped. (recipe-to-list
-  // reduces a measured line to its name anyway — "500 g de bœuf haché" → "Bœuf
-  // haché" — so we show that directly.)
-  const names = useMemo(() => {
-    const seen = new Set<string>()
-    const out: string[] = []
-    for (const line of withoutHeadings(recipe.ingredients ?? [])) {
-      const name = ingredientName(line)
-      const k = name.toLowerCase()
-      if (name && !seen.has(k)) {
-        seen.add(k)
-        out.push(name)
-      }
-    }
-    return out
-  }, [recipe.ingredients])
-  const [on, setOn] = useState<Record<string, boolean>>({})
-  const toggle = (item: string) => setOn((s) => ({ ...s, [item]: !s[item] }))
-  const allOn = names.length > 0 && names.every((n) => on[n])
-  const toggleAll = () => {
-    const next = !allOn
-    setOn(Object.fromEntries(names.map((n) => [n, next])))
-  }
-  const picked = names.filter((n) => on[n])
 
-  function confirm() {
-    if (!picked.length) return
-    const items = picked // capture before we close + clear
-    onClose()
-    // DEFERRED behind the undo toast, like every other list-add (mirrors
-    // ReserveSection.addToList): the POST only fires if you don't take it back within
-    // the window, so undo is conflict-free — no inverse to run since nothing landed.
+  function commit(items: string[]) {
+    onClose() // close FIRST — an undo offered under an open modal is unreachable
     undo({
       message: t.undo.addedToList(recipe.title),
       onUndo: () => {},
@@ -62,34 +32,7 @@ export function RecipeListPicker({ recipe, onClose }: { recipe: Recipe; onClose:
 
   return (
     <Modal open onClose={onClose} title={recipe.title}>
-      <div className="recipe-list-pick">
-        <div className="recipe-list-pick__head">
-          <span className="recipe-list-pick__label mono">{t.recipes.addWhich}</span>
-          <button type="button" className="chip recipe-list-pick__all" onClick={toggleAll}>
-            {allOn ? t.recipes.selectNone : t.recipes.selectAll}
-          </button>
-        </div>
-        <div className="recipe-list-pick__items">
-          {names.map((item) => (
-            <Chip key={item} selected={!!on[item]} onClick={() => toggle(item)}>
-              {on[item] && (
-                <>
-                  <InlineIcon name="check-bold" />{' '}
-                </>
-              )}
-              {item}
-            </Chip>
-          ))}
-        </div>
-        <div className="recipe-list-pick__actions">
-          <button type="button" className="btn btn--ghost mono" onClick={onClose}>
-            {t.common.cancel}
-          </button>
-          <button type="button" className="btn btn--primary mono" onClick={confirm} disabled={!picked.length}>
-            {t.recipes.addSelected(picked.length)}
-          </button>
-        </div>
-      </div>
+      <RecipeIngredientPick lines={recipe.ingredients ?? []} onCancel={onClose} onConfirm={commit} />
     </Modal>
   )
 }

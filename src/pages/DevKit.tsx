@@ -109,6 +109,7 @@ import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeListPicker } from '../components/RecipeListPicker'
+import { RecipeIngredientPick } from '../components/RecipeIngredientPick'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
 import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
@@ -3076,6 +3077,21 @@ export function DevKit() {
           </Demo>
         )
       },
+    },
+    {
+      cat: 'Champs & saisie',
+      name: 'RecipeIngredientPick',
+      file: 'components/RecipeIngredientPick.tsx',
+      kw: 'recipe ingredients grocery list checklist tick ingrédients épicerie cocher quels',
+      render: () => (
+        <Demo label="« quels ingrédients ? » — the shared body; the HOST owns the commit and its undo tier">
+          <RecipeIngredientPick
+            lines={['500 g de bœuf haché', '1 oignon', '## Sauce', '2 gousses d’ail', '800 ml de tomates', 'Parmesan']}
+            onCancel={() => {}}
+            onConfirm={() => {}}
+          />
+        </Demo>
+      ),
     },
     {
       cat: 'Overlays & chrome',
