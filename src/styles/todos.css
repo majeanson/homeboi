@@ -52,6 +52,15 @@
   padding-left: 0.15rem;
 }
 
+/* « En retard » — a loose to-do left on a day that has passed. It leads the card,
+   so it needs to read as OWED without reading as an alarm: the header takes the
+   ink of a normal label rather than the faint one, and that is the whole
+   difference. No red, no count, no badge — a thing you meant to do is not a
+   failure, and the calm tenets rule out a scoreboard either way. */
+.todo-group--overdue > .todo-grouphead {
+  color: var(--ink-soft);
+}
+
 /* The row IS an `.act` (flex card). Compact-rows pass: no spine, no avatar disc,
    no always-on trash — "who" is the title's tint, delete lives in the tap-to-edit
    state — so the padding shrinks to a text-first minimum and the row stays short. */

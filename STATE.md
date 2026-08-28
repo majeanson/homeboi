@@ -56,7 +56,7 @@ them are finished. Read this table before opening any of them.
 | `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
 | `AUJOURDHUI.md` | Ledger | ✅ **Effectively closed** — 1 open item, deliberately (see §4-D). |
 | `REVIEW-PASS.md` | Ledger | 🟡 **31 open** P2/P3 findings across 8 sections. The main written debt pool. |
-| `bmad/11-friction-audit.md` | Ledger | 🟡 **2 of 5 tier-1 seams live** (#3, #4 — #1 and #2 fixed 2026-08-27, #5 was already fixed). Plus 9 tier-2 + tier-3 polish. Still the highest-value pool. See §4-B. |
+| `bmad/11-friction-audit.md` | Ledger | 🟡 **1 of 5 tier-1 seams live** (#4 — #1/#2/#3 fixed 2026-08-27, #5 was already fixed). Plus 9 tier-2 + tier-3 polish. See §4-B. |
 | `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
 | `PLAN-mots-and-lifecycle-followups.md` | Feature backlog | 🟡 12 designed-but-unbuilt features (A5–D2), never started. |
 | `bmad/05` + `bmad/06` | Idea pools | ⚪ Brainstorms. Nothing committed. Don't treat as a backlog. |
@@ -141,7 +141,9 @@ verified against code at the time. Its five **tier-1** entries block rituals or 
    and `ask.ts` snapshots `today+14d` for the AI.
 2. ~~`/share` loses or strands captures~~ — ✅ **fixed 2026-08-27** (§4-A). The
    undo/« Corriger » half of that seam stands.
-3. A dated loose todo silently vanishes after its day. **Live.**
+3. ~~A dated loose todo silently vanishes after its day.~~ — ✅ **fixed 2026-08-27.**
+   The board glance now also selects past-day, undone, loose todos and shows them
+   under « En retard », above the rest. Nothing is rewritten or deleted.
 4. The locked kiosk (`?kid=1`) hides every parent glance — a one-tablet household loses
    its 7h10 surface every morning. **Live.**
 5. ~~A half-done routine pins the kiosk; no "switch kid" affordance.~~ — ✅ **was already

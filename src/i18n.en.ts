@@ -2947,6 +2947,7 @@ export const EN: typeof FR = {
     fromTemplate: (s: string) => `"${s}" list added`,
     scopeGlobal: 'Anytime',
     scopeToday: 'Today',
+    scopeOverdue: 'Overdue',
     scopeDate: 'A date',
     templateDayHint: 'A checklist is added for the day — here, today.',
     templatesTitle: 'Checklists',

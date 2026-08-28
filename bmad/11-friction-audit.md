@@ -3,12 +3,12 @@
 > 🔴 **This is the highest-value unfixed pool in the repo, and it is blocked on a
 > decision — not on analysis.** Marc declined the proposed F1–F5 fix-wave *grouping* on
 > 2026-07-13; the **seams themselves were never disputed**, and nothing has changed about
-> them since — **except where a row below says otherwise**. Three of the five tier-1
-> entries are now closed: **#1** (the planning window) and **#2** (`/share` losing
-> captures) were fixed 2026-08-27, and **#5** turned out to have been fixed earlier and
-> never ticked here. **#3 and #4 are live and verified in code on 2026-08-27.** Ask
-> about them **individually** before executing anything. See
-> [`STATE.md`](../STATE.md) § 4-B.
+> them since — **except where a row below says otherwise**. Four of the five tier-1
+> entries are now closed: **#1** (the planning window), **#2** (`/share` losing
+> captures) and **#3** (vanishing dated to-dos) were fixed 2026-08-27, and **#5**
+> turned out to have been fixed earlier and
+> never ticked here, and **#3** was fixed the same day. **Only #4 is still live.** Ask
+> about it before executing anything. See [`STATE.md`](../STATE.md) § 4-B.
 
 > Five parallel read-only audits walked the flows a real household runs weekly:
 > **plan the week · grocery run · cook tonight · kid mornings/bedtime ·
@@ -44,7 +44,7 @@ Tier 1 — blocks the ritual / loses data:
 | - | ---- | ---- | --------- |
 | 1 | ~~**Sunday planning can't reach Fri/Sat**~~ ✅ **FIXED 2026-08-27** — `windowDaysFor` is gone. The window ROLLS from today (`today .. today + N`), and N is a household setting: « Jours affichés », Réglages ▸ Cuisine ▸ Repas, 7 · 10 · 14, default 10. Any Sunday reaches the following Saturday **by construction**, since the floor is 7. Clamp unit-tested (`_lib/mealSlots.test.ts` — the old window had zero coverage), control e2e'd (`config-panels.spec.ts`) | plan | — |
 | 2 | ~~**/share loses captures**~~ ✅ **FIXED 2026-08-27** — the capture now rides `useWrite` (queues + replays offline), and the rule itself is enforced by `src/lib/write-rule.test.ts` so it cannot drift back. Guarded by `e2e/capture-offline.spec.ts`. **Still open:** no routed-label/undo/« Corriger » on /share, and the scene shows no offline banner (it sits outside HubLayout — same as seam #12) | tidy | Data loss FIXED; mis-route UX remains |
-| 3 | **A dated loose todo silently vanishes after its day** — never swept, never rolled forward, invisible to board glance / Moments / À régler | tidy | Lost intended work |
+| 3 | ~~**A dated loose todo silently vanishes after its day**~~ ✅ **FIXED 2026-08-27** — the board glance also selects past-day, undone, LOOSE todos, and they read as their own « En retard » group above the rest (the shape Entretien's carry-forward already uses). Nothing is rewritten and nothing is deleted: the row keeps its day. Query shape pinned by `src/lib/todos.test.ts`, behaviour by `e2e/todo-overdue.spec.ts` | tidy | — |
 | 4 | **The locked kiosk (`?kid=1`) hides every parent glance** — departure checklist + habit morning-open unreachable except via the 3s-hold+math gate, every morning | kids | One-tablet households lose the 7h10 surface |
 | 5 | ~~**A half-done routine pins the kiosk** + **no "switch kid" affordance**~~ ✅ **ALREADY FIXED (verified 2026-08-27)** — both halves shipped and were never ticked here: a ~60 s idle drift returns to the picker whatever the progress (`KidView.tsx:84`, "Kids seam #1"), and `backToFaces` + the "other kids" strip give the way back (`KidView.tsx:147`, "Kids seam #4") | kids | — |
 
@@ -87,10 +87,10 @@ switches; the nightly routine reset.
 
 ## Suggested fix-waves (proposal — decide before executing)
 
-- ~~**Wave F1 « the ritual works »**~~ — two thirds shipped 2026-08-27: the planning
-  window rolls from today and is a household setting; /share writes through useWrite
-  (its routed-label / « Corriger » half is still open). **Remaining: item 3** —
-  overdue loose todos surface as a quiet group.
+- ~~**Wave F1 « the ritual works »**~~ — ✅ **shipped 2026-08-27.** The planning window
+  rolls from today and is a household setting; /share writes through useWrite; overdue
+  loose todos surface as a quiet « En retard » group. (Left open from the wave's
+  original wording: /share's routed-label / « Corriger » recovery UI.)
 - **Wave F2 « the kiosk belongs to the family »** (items 4–5): idle
   return-to-picker regardless of completion; an always-there "whose routine?"
   face chip; a gated parent peek (departure + habit check-in) on the locked

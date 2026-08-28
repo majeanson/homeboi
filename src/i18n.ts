@@ -3220,6 +3220,10 @@ export const FR = {
     // Portée choisie dans la feuille ＋ : standing (en tout temps), aujourd’hui, ou une date précise.
     scopeGlobal: 'En tout temps',
     scopeToday: 'Aujourd’hui',
+    // A loose to-do left on a past day. It used to vanish from every glance the
+    // moment its day passed (bmad/11 tier-1 seam #3); it now waits here, calmly,
+    // until it is checked. Never a count, never a colour of alarm.
+    scopeOverdue: 'En retard',
     scopeDate: 'Une date',
     // Feuille ＋ : une LISTE piochée est toujours pour une journée (mig 0116) — sous
     // « En tout temps » elle s’ajoute pour aujourd’hui, et cette ligne le dit.

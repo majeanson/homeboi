@@ -78,12 +78,33 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(actor.householdId, day)
       .all<TodoRow>()
   } else {
-    // Board glance: standing global todos (day IS NULL) plus today's per-day ones.
+    // Board glance: standing global todos (day IS NULL), today's per-day ones, AND
+    // anything loose left OVERDUE on a past day.
+    //
+    // That last clause is the fix for a silent loss (bmad/11 tier-1 seam #3): a
+    // to-do someone pinned to Tuesday was only ever selected by `day = today`, so
+    // from Wednesday on it existed in the database and appeared NOWHERE — not on
+    // the board, not in any glance, only on that one past day's page. It was never
+    // swept either (the sweep above deliberately only removes checklist INSTANCES),
+    // so it sat there, unfinished and invisible, forever.
+    //
+    // Deliberately narrow, and each condition earns its place:
+    //   • `source_template_id IS NULL` — a stale « Avant de partir » instance is
+    //     finished business and IS swept; only a hand-written to-do carries intent.
+    //   • `done_at IS NULL` — a completed one is not owed.
+    //   • `day IS NOT NULL` — globals are already covered by the first clause.
+    // Nothing is rewritten and nothing is deleted: the row keeps its own day, and
+    // the client shows it as overdue (the same treatment Entretien already gets).
     const today = localDayStart(new Date())
     rows = await ctx.env.DB.prepare(
-      `SELECT ${COLS} FROM todos WHERE household_id = ? AND (day IS NULL OR day = ?) ORDER BY created_at, position`,
+      `SELECT ${COLS} FROM todos
+         WHERE household_id = ?
+           AND (day IS NULL
+                OR day = ?
+                OR (day < ? AND day IS NOT NULL AND source_template_id IS NULL AND done_at IS NULL))
+         ORDER BY created_at, position`,
     )
-      .bind(actor.householdId, today)
+      .bind(actor.householdId, today, today)
       .all<TodoRow>()
   }
   return ok({ todos: rows.results })

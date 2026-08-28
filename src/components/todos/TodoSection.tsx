@@ -153,7 +153,16 @@ export function TodoSection({
   // twin of a global. Homogeneous lists + day pages stay headerless (no noise).
   // (Scoped to the LOOSE set — a day-pinned checklist instance next to standing
   // globals must not force the headers onto a list whose loose rows are homogeneous.)
-  const showScope = scope === null && loose.some((td) => td.day == null) && loose.some((td) => td.day != null)
+  // OVERDUE: a loose to-do left on a past day. The server only sends these to the
+  // board glance (scope null) — see functions/api/todos.ts — where they used to be
+  // invisible forever. They read as their own group ABOVE the rest, the same shape
+  // Entretien's carry-forward already uses on the « À faire » card. Calm: a quiet
+  // header, no count, no red, and nothing is rewritten — the row keeps its own day.
+  const isOverdue = (td: Todo) => td.day != null && td.day < todayLocalDay()
+  const overdue = scope === null ? loose.filter(isOverdue) : []
+  const current = scope === null ? loose.filter((td) => !isOverdue(td)) : loose
+  const showScope =
+    scope === null && current.some((td) => td.day == null) && current.some((td) => td.day != null)
 
   // — add (board glance → global; day page → that day) —
   // A today-pinned add (day page where date === today) is a row the board's
@@ -391,32 +400,41 @@ export function TodoSection({
               exactly one header per scope — never a duplicate. In `foldAll` (the
               Aujourd'hui / Demain agglomerators) the whole loose set collapses under
               one « À compléter » Disclosure so it never takes the full view. */}
-          {loose.length > 0 &&
+          {/* What's owed, first — a thing you meant to do on a day that has passed.
+              Outside the fold, and above the rest, because it is the one part of this
+              card that would otherwise be lost. */}
+          {overdue.length > 0 && (
+            <div className="todo-group todo-group--overdue">
+              <div className="todo-grouphead">{t.todos.scopeOverdue}</div>
+              {overdue.map(renderRow)}
+            </div>
+          )}
+          {current.length > 0 &&
             (foldAll ? (
               <Disclosure
                 label={t.todos.title}
-                count={loose.filter((td) => !isChecked(td)).length}
+                count={current.filter((td) => !isChecked(td)).length}
                 className="todo-fold"
               >
-                <div className="todo-group">{loose.map(renderRow)}</div>
+                <div className="todo-group">{current.map(renderRow)}</div>
               </Disclosure>
             ) : showScope ? (
               <>
-                {loose.some((td) => td.day == null) && (
+                {current.some((td) => td.day == null) && (
                   <div className="todo-group">
                     <div className="todo-grouphead">{t.todos.scopeGlobal}</div>
-                    {loose.filter((td) => td.day == null).map(renderRow)}
+                    {current.filter((td) => td.day == null).map(renderRow)}
                   </div>
                 )}
-                {loose.some((td) => td.day != null) && (
+                {current.some((td) => td.day != null) && (
                   <div className="todo-group">
                     <div className="todo-grouphead">{t.todos.scopeToday}</div>
-                    {loose.filter((td) => td.day != null).map(renderRow)}
+                    {current.filter((td) => td.day != null).map(renderRow)}
                   </div>
                 )}
               </>
             ) : (
-              <div className="todo-group">{loose.map(renderRow)}</div>
+              <div className="todo-group">{current.map(renderRow)}</div>
             ))}
           {/* Then the checklist instances (« Avant de partir », « Sac de soccer »…),
               one group per instantiated template. `foldSections` collapses each under

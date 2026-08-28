@@ -238,3 +238,46 @@ describe('todo length caps mirror functions/api', () => {
     expect(TODO_TITLE_MAX).toBeGreaterThanOrEqual(1000)
   })
 })
+
+// The overdue clause on the board glance (bmad/11 tier-1 seam #3). A loose to-do
+// pinned to a day used to be selected only by `day = today`, so from the next
+// morning it existed in the database and appeared NOWHERE — never swept, never
+// rolled forward, invisible in every glance. The handler needs D1, so what is
+// pinned here is the SHAPE of its query: each condition below is load-bearing, and
+// dropping any one of them either loses the row again or resurrects the wrong ones.
+describe('the board glance selects overdue loose todos', () => {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../functions/api', 'todos.ts'),
+    'utf8',
+  )
+  // The no-`date` (board glance) branch, up to the end of its query.
+  const glance = src.slice(src.indexOf('Board glance'), src.indexOf('Board glance') + 1400)
+
+  it('still selects standing globals and today (the original two)', () => {
+    expect(glance).toMatch(/day IS NULL/)
+    expect(glance).toMatch(/day = \?/)
+  })
+
+  it('also selects a PAST day — the row that used to vanish', () => {
+    expect(glance).toMatch(/day < \?/)
+  })
+
+  it('only LOOSE ones: a stale checklist instance is swept, not owed', () => {
+    // `source_template_id IS NULL` — an « Avant de partir » instance from Tuesday is
+    // finished business and the sweep deletes it; only a hand-written to-do carries
+    // intent worth keeping.
+    expect(glance).toMatch(/source_template_id IS NULL/)
+  })
+
+  it('only UNDONE ones: a completed to-do is not owed', () => {
+    expect(glance).toMatch(/done_at IS NULL/)
+  })
+
+  it('the sweep still only removes checklist instances (nothing new is deleted)', () => {
+    // The fix must not have turned into a delete. The sweep's WHERE is unchanged:
+    // it requires source_template_id IS NOT NULL, so a loose row is never swept.
+    const sweep = src.slice(src.indexOf('const sweepStale'), src.indexOf('const sweepStale') + 400)
+    expect(sweep).toMatch(/DELETE FROM todos/)
+    expect(sweep).toMatch(/source_template_id IS NOT NULL/)
+  })
+})
