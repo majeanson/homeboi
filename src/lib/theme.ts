@@ -39,12 +39,41 @@ export function getStoredTheme(): Theme {
     : 'day'
 }
 
+// The browser's own chrome — the status bar on an installed PWA, the address-bar
+// tint in a tab — reads <meta name="theme-color">. That tag was pinned to the day
+// cream in index.html, so a phone in Night mode painted a dark app under a CREAM
+// status bar, and the ambient drift slid the whole palette toward twilight while
+// the chrome stayed put (bmad/12 #13).
+//
+// It can't be solved in the manifest: `theme_color` there is static JSON, and this
+// app's theme is an IN-APP choice with four intermediate dusk tiers, not a
+// prefers-color-scheme flip. So the tag follows the painted palette instead — we
+// read `--paper` back off the document after the attribute lands, which means the
+// chrome tracks every tier (day · twilight · deep-twilight · night) for free, and
+// keeps tracking any tier added later without this function knowing about it.
+function syncBrowserChrome(): void {
+  try {
+    const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()
+    if (!paper) return
+    let tag = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]:not([media])')
+    if (!tag) {
+      tag = document.createElement('meta')
+      tag.name = 'theme-color'
+      document.head.appendChild(tag)
+    }
+    tag.content = paper
+  } catch {
+    /* no document / a browser that doesn't expose it — purely cosmetic, never throw */
+  }
+}
+
 // Apply a theme tier to <html> WITHOUT persisting — used by auto day/night so the
 // stored manual choice survives untouched (see getStoredTheme). Accepts the wider
 // `ThemeAttr` so the drift can set the intermediate twilight tiers; the manual
 // toggle only ever passes 'day'/'night'.
 export function applyThemeAttr(theme: ThemeAttr): void {
   document.documentElement.setAttribute('data-theme', theme)
+  syncBrowserChrome()
 }
 
 export function toggleTheme(): Theme {
@@ -81,6 +110,9 @@ export function isDaypartAuto(): boolean {
 
 export function setDayPart(part: DayPart | 'manual'): void {
   document.documentElement.setAttribute('data-daypart', part)
+  // The daypart tiers rebind --paper too, so the browser chrome follows the drift
+  // rather than only the day/night flip.
+  syncBrowserChrome()
 }
 
 // Auto day/night: when the ambient drift is on it ALSO drives the day/night theme

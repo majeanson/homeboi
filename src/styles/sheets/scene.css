@@ -53,7 +53,18 @@
 .pm-sheet__title {
   font-family: var(--display);
   font-weight: 800;
-  font-size: 24px;
+  /* ONE heading ramp with the hub's `.greet` (today.css), bmad/12 #14. Both are
+     "the title of what I am looking at" and both sit on a row that also carries
+     round action buttons, but only the hub's scaled: this was a flat 24px, so on a
+     360px phone a long scene title had nowhere to go and leaned on the ellipsis
+     `.scene__head-titles { min-width: 0 }` provides — the exact failure `.greet`
+     was fixed for in 2026-07.
+
+     Same clamp idiom, different numbers on purpose, because the two heads compete
+     for room with a different number of buttons: `.greet` shares its row with up to
+     four (hence its 16px floor), a scene head with two (help + close), so this can
+     hold a more comfortable 19px before it gives up any width. */
+  font-size: clamp(19px, 5.2vw, 24px);
   margin: 2px 0 0;
 }
 /* SceneHead: the title block (left) + the action cluster (right, help "?" +

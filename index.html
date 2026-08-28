@@ -16,6 +16,12 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"
     />
+    <!-- FIRST PAINT ONLY. lib/theme.ts rewrites the unscoped tag from the painted
+         --paper as soon as it runs, so the chrome tracks the in-app theme AND the
+         ambient dusk tiers. These two media-scoped tags just avoid a cream flash on
+         a phone already in dark mode, before that happens. -->
+    <meta name="theme-color" content="#FBF3E4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1b1712" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#FBF3E4" />
     <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale." />
     <title>Babillard</title>

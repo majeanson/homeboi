@@ -16,8 +16,8 @@
     scale; document the levels in devkit ▸ Fondations.
 11. ✅ **DONE 2026-08-27** — **`:focus-visible` ring consistency** — one token ring across chips, member
     discs, board tiles, kid tiles.
-13. **PWA theming polish** — manifest `theme_color`/splash matched to day/night.
-14. **360px typographic rhythm pass** — one heading ramp for HubHead vs SceneHead
+13. ✅ **DONE 2026-08-27** — **PWA theming polish** — manifest `theme_color`/splash matched to day/night.
+14. ✅ **DONE 2026-08-27** — **360px typographic rhythm pass** — one heading ramp for HubHead vs SceneHead
     on narrow phones.
 16. **Ctrl+Z fires the newest undo entry** (desktop) — the toast already holds it.
 17. **Pull-to-refresh on mobile hub bodies** — invalidate the tab's keys.
