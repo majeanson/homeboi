@@ -51,17 +51,26 @@ Tier 1 — blocks the ritual / loses data:
 
 Tier 2 — high-frequency annoyances (weekly ×N):
 
+> **Re-verified 2026-08-27 before building.** Three of these nine were ALREADY
+> FIXED and still listed — #6 (the row's centre checks; the editor moved to a
+> hold and the ⚙ Avancé ✏️), #7 (the empty hero offers « Choisir un souper »),
+> #8 (an empty day cell plans in place). Half of #9 too: the board strip and
+> « À compléter » had their brooms; only the mots pile lacked one. A ledger cell
+> is a verdict, not a fact — the standing rule in CLAUDE.md — and this table cost
+> about an hour of would-be rework to the sessions that trusted it. Tick a row in
+> the same commit that resolves it.
+
 | # | Seam | Flow |
 | - | ---- | ---- |
-| 6 | List row's big centre target **navigates to the editor instead of checking** — the check is the small far-right disc; dozens of mis-taps per trip | shop |
-| 7 | **17h empty « Ce soir » says nothing** — no supper block, no "des idées ?" door; suggestions/vide-frigo sit unreached in the kitchen drawer | cook |
-| 8 | **Every supper costs a full-screen day scene** — no inline quick-add on the grid cell; ~7 heavy loads to fill a week | plan |
-| 9 | **No bulk clear / decay** on fridge notes (media notes even confirm per-item), standing todos, seen mots | tidy |
+| 6 | ✅ **2026-08-26/27** — List row's big centre target **navigates to the editor instead of checking** — the check is the small far-right disc; dozens of mis-taps per trip | shop |
+| 7 | ✅ **shipped** (verified in code 2026-08-27, `DayHeroes` empty branch) — **17h empty « Ce soir » says nothing** — no supper block, no "des idées ?" door; suggestions/vide-frigo sit unreached in the kitchen drawer | cook |
+| 8 | ✅ **shipped** (verified 2026-08-27, `e2e/kitchen-inline-plan.spec.ts`) — **Every supper costs a full-screen day scene** — no inline quick-add on the grid cell; ~7 heavy loads to fill a week | plan |
+| 9 | ✅ **2026-08-27** (mots; the board strip and « À compléter » already had theirs) — **No bulk clear / decay** on fridge notes (media notes even confirm per-item), standing todos, seen mots | tidy |
 | 10 | **Leftovers unpostable from a recipe-backed meal** — tap routes to the recipe view, which lacks « Créer des restants » | cook |
 | 11 | **« Magasiner la semaine » silently disappears** when the week is free-text (tile filtered, not disabled-with-why) | plan |
 | 12 | **No offline/stale banner on the in-store scenes** (cashier/price-match/flyers are outside HubLayout) + **a failed lookup renders as "no deals"** with no retry | shop |
-| 13 | **Mid-cook "ran out → flag low" doesn't exist** — cook mode has zero pantry affordance | cook |
-| 14 | **« À régler » can't be snoozed/acknowledged** — an unresolvable friction re-nags every scan | tidy |
+| 13 | ✅ **2026-08-27** — **Mid-cook "ran out → flag low" doesn't exist** — cook mode has zero pantry affordance | cook |
+| 14 | ✅ **2026-08-27** (migration 0122) — **« À régler » can't be snoozed/acknowledged** — an unresolvable friction re-nags every scan | tidy |
 
 Tier 3 — polish (fix opportunistically, or bundle with the tier above):
 
@@ -74,8 +83,8 @@ Tier 3 — polish (fix opportunistically, or bundle with the tier above):
   the kid with no cue; `calm.ts` comment contradicts actual behaviour (kids).
 - « Par allée » hides the drag grip (no in-aisle tweak); online-only search
   fires doomed requests instead of disabling (shop).
-- Capture-routed notes carry no origin/age marker after the sheet closes (tidy).
-- Stale cook/multi-cook deep-links bounce to /kitchen silently (cook).
+- 🔶 **2026-08-27** an AGE marker shipped on fridge notes (bmad/12 #25); an ORIGIN marker still needs a column — out of scope. Capture-routed notes carry no origin marker after the sheet closes (tidy).
+- ✅ **2026-08-27** Stale cook/multi-cook deep-links bounce to /kitchen silently (cook).
 - No "last week" review anywhere in the kitchen (grid is forward-only) (plan).
 
 ## Verified healthy (the audits checked, and these hold)

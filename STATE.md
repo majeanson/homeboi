@@ -20,27 +20,29 @@
 | | |
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
-| **Code** | ~141k lines across 823 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 121 forward-only migrations |
-| **Tests** | 1757 unit tests in 296 files · 108 Playwright spec files (~1141 cases) |
+| **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
+| **Schema** | 123 forward-only migrations |
+| **Tests** | 1815 unit tests in 140 files · 112 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
-- `npm run typecheck` · `npm test` (1757) · `npm run build` — green.
-- `npm run check:bundle` — **3844 KB** of JS across `dist/assets`, **727 KB eager**; every
+- `npm run typecheck` · `npm test` (1815) · `npm run build` — green.
+- `npm run check:bundle` — **3859 KB** of JS across `dist/assets`, **733 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1128 passed, 13 skipped**.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Seven build-gating invariants** (this is the codebase's best feature — see §5):
+- **Nine build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
   `helpRegistry.test.ts` + `discovery.test.ts` (no dead guide deep-links),
   `demoHousehold.test.ts` (a new table must join the sandbox sweep),
-  `realtime.test.ts` (`PATH_KEYS` coverage), `check-bundle.mjs` (size + precache).
+  `realtime.test.ts` (`PATH_KEYS` coverage), **`nested-interactive.test.ts` (no control
+  inside a control, no `role="img"` on an interactive SVG — added 2026-08-27)**,
+  `check-bundle.mjs` (size + precache). `knip` now runs in CI too.
 
 ---
 
@@ -94,6 +96,37 @@ Four waves, each its own commit, all green, no rollbacks.
    old in-memory socket set billed continuous wall-clock per household for an idle hub).
 
 **Roughly a third of what those waves picked up was already done and never ticked** — see §5.
+
+### The second half of the day — the polish queue and the top-10
+
+Ten more commits, same shape. `bmad/12` is now **empty**: #10 elevation tokens, #11 focus
+rings, #8 night contrast, #1 Skeleton, #6 EmptyState doors, #13 PWA theming, #14 the 360px
+heading ramp, #16 Ctrl+Z, #17 pull-to-refresh, #18 hold-the-＋-and-speak, #25 note age,
+#26 the stale-link toast. Alongside it, six of the ten ranked seams: the list-item peek,
+guest-submit idempotency, the mots broom, « À régler » snooze (**migration 0122**), the
+a11y nesting fixes, the voice-mot transcript (**0123**), and mid-cook « Il en manque ».
+
+**Four of the ten were already shipped** — the empty « Ce soir » door, the inline supper
+quick-add, the NoteEditor keyboard binding, and most of the list row. Verified in code
+first, which is the §5 lesson working a second time. See the note now standing at the top
+of `bmad/11`'s tier-2 table.
+
+**Three defects were found by re-reading my own work rather than by a red test**, and they
+are the useful part of this entry:
+
+- The **undo I offered from cook mode was painted under it** — the scene is z-index 90,
+  the undo bar 40. An undo nobody could tap. It became a toggle on the button itself,
+  which is both reachable and calmer.
+- Its un-flag **destructured `items` from a payload whose key is `low`.** Nothing
+  exercised the path, so nothing said so.
+- **Pull-to-refresh swallowed a nested scroller's drag**: a capped list (Réglages' review
+  queue) stopped moving under the thumb, because the hook only asked whether the PAGE was
+  at its top.
+
+And one guard **reported green over the very defect it was written for** (an indentation
+walk where a tag-depth walk was needed). Re-checked against the bug, it found a THIRD
+nested interactive nobody had reported, in cook mode. A guard that has never been red
+proves nothing — that rule earned its keep twice in one day.
 
 ---
 
@@ -167,8 +200,10 @@ batching rather than picking off one at a time:
 - **Reuse duplicates** — the "which ingredients?" checklist exists twice; `capitalize`
   ×3; three `Member` shapes converge on one face control; `OperatorJump` and `ItemReorder`
   aren't in DevKit.
-- **A11y** — nested interactive-in-interactive on the parent routine grid; a `role="img"`
-  SVG with `role="button"` descendants in « Notre monde ».
+- ~~**A11y** — nested interactive-in-interactive on the parent routine grid; a `role="img"`
+  SVG with `role="button"` descendants in « Notre monde ».~~ ✅ **fixed 2026-08-27**,
+  plus a third case in cook mode that the guard found. `nested-interactive.test.ts`
+  now fails the build on both shapes.
 - **Silent states** — `NoteEditor` auto-save gives no cue; `ThisWeek` has no error state.
 - **Remaining e2e gaps** — Le cercle is screenshots-only; the toddler kitchen picker
   (the most interaction-dense surface in the kitchen) is untested; config panels are
@@ -187,7 +222,10 @@ batching rather than picking off one at a time:
 
 ### E. Tooling gaps found during this cleanup
 
-- **`knip` is not a gate, and currently does not run.** It is absent from `.github/workflows/ci.yml`,
+- ~~**`knip` is not a gate, and currently does not run.**~~ ✅ **wired into CI 2026-08-27**
+  (it still crashes locally on this machine — environmental — so the CI run is the one
+  that counts), and `ignoreExportsUsedInFile` collapsed 58 findings to 7 real ones.
+  The original finding, for the record: it was absent from `.github/workflows/ci.yml`,
   and on this machine it now crashes every time (`oxc-parser` `RangeError: Array buffer
   allocation failed`) — it ran once earlier the same day, so it is environmental, but the
   "dead-code gate" is neither gating nor runnable. Either fix and wire it, or stop calling
@@ -211,7 +249,7 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
 
 ### What is genuinely working
 
-- **Invariants as tests.** The six build-gating checks in §1 are the best thing in this
+- **Invariants as tests.** The nine build-gating checks in §1 are the best thing in this
   repo. The calm tenet cannot drift in by accident because a test scans every migration
   for it. Guide deep-links cannot rot because a test walks all seven registries. This is
   the pattern that should absorb every other prose rule.
@@ -225,6 +263,25 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
   distinct, here's why" stop the same question being re-litigated. Underused, but right.
 
 ### What is not working
+
+0. **A guard that has never been red proves nothing** — and this is not a slogan, it
+   cost real work twice on 2026-08-27. `nested-interactive.test.ts` was written to catch
+   a control-inside-a-control on the routines grid and **reported green over exactly that
+   defect**: it walked JSX by indentation, and prettier breaks a multi-attribute open tag
+   right after the tag name, so `<div` was the whole line and the "does the tag close
+   here?" scan ended on the element's own first line. Re-counted by tag depth, it went red
+   on the routines grid, on « Notre monde », and on a THIRD case in cook mode that no
+   audit had reported. The same hour, `write-rule.test.ts` had been deliberately checked
+   against a planted violation, and that habit is the only reason the difference was
+   visible. **Every new guard gets run against the bug it was written for, before it is
+   trusted.**
+
+   The sibling lesson, same day: **three defects in my own new code were found by
+   re-reading it cold, not by a red test** — an undo painted underneath the full-screen
+   scene that offered it (z-index 90 vs 40), a payload key destructured wrong on a path
+   nothing exercised, and a pull-to-refresh that froze a nested scroller under the thumb.
+   Green tests said nothing about any of them. A review pass after the work is not
+   ceremony.
 
 1. **The ledgers rot faster than they are ticked, and nobody notices.** This session
    found **~13 stale findings** — work already shipped, boxes never ticked: Voyage's

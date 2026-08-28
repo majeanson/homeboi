@@ -584,6 +584,18 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
   setting → `kitchen ▸ apparence`, stacked `OperatorSection` bodies under one
   pill, the board▸thisweek / settings▸system precedent) and stack your section's
   body there instead of widening the pill row.
+- **A new guard must be run against the bug it was written for, before it is
+  trusted** (standing rule). The build-gating grep tests (`calm-tenets`,
+  `field-fit`, `keyboard-fit`, `write-rule`, `nested-interactive`, `discovery`,
+  `demoHousehold`, `realtime`) are the best thing in this codebase — and a green
+  one proves nothing on its own. `nested-interactive.test.ts` was written to catch
+  a control-inside-a-control on the routines grid and reported GREEN over exactly
+  that defect: it walked JSX by indentation, and prettier breaks a multi-attribute
+  open tag right after the tag name, so `<div` is the whole line and the walk ended
+  on the element's own first line. Re-counted by tag depth it went red — and found a
+  third case nobody had reported. Stash the fix (or plant a violation), watch the
+  guard fail, then restore. Two lines of shell; it is the difference between a test
+  and a decoration.
 - **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
   only gate, fix forward if it goes red (standing rule). If a branch ever is used,
   delete it (local + remote) after it merges.
