@@ -178,6 +178,36 @@ Swept and leaned in Aug 2026: Notes, Recettes, garde-manger, La liste, the four
 heavy forms (person / event / recipe / pet), Réglages, the board, Maison ▸
 Business + Carnets, Le mois, « Avant de partir », « L'auto ».
 
+**Maison ▸ Famille & Social (2026-08-27) — the pass that LOOKED.** Marc sent a
+screenshot of Famille on his phone with four words: *"too much space lost in
+height."* The first person row sat **542px** down — the worst `contentTopPx` in the
+matrix by 170px, against a 190–250 band for every other list surface. Seven stacked
+rows before a single name: header, section pills, view switch, face chip, a hint
+line under it, a lone search loupe, and « Anniversaires à venir ».
+
+Four cuts, all of them smells already in the table above:
+1. the « Liens vus selon X » hint — #8, prose restating the face chip directly above;
+2. « Anniversaires à venir » to the **foot** — #5, a housekeeping offer camping over
+   the content you came for. « Compléter les familles » had already made this move,
+   for this reason, three lines further down the same file;
+3. the view switch to the **compact** variant — it is the SECONDARY of two stacked
+   pill rows, the section pills being the tab's primary nav;
+4. the search loupe **folded into that row's trailing slot** — #3 had already given
+   it the collapsible face, but it still owned a full-height line to hold one round
+   button. (`.subtabs-row` gained `flex-wrap` first, so the field can EXPAND
+   downward instead of off the right edge — the § Horizontal overflow trap.)
+
+**542 → 374** on Famille, **448 → 382** on Social, budgets ratcheted to match.
+
+The uncomfortable part, and the reason this entry exists: **a lean pass had already
+run on this exact surface the day before** and left the birthday tile at the top,
+reasoning that "a birthday is time-sensitive; the directory below it is reference."
+That is a good sentence and it was wrong in aggregate — nothing is lost by moving a
+birthday one scroll down, while the directory the tab exists for was being lost every
+time it opened. Two passes reasoned about this screen. The third one **looked at it**,
+which is what the method at the top of this file says to do and what a sentence of
+prose is very good at talking you out of.
+
 **« Planifier une journée » (2026-08-26)** — and the interesting part is *why* it had
 never been swept: **it was not in the matrix at all.** The sweep only ever looked at
 routes it had been told about, so the one screen where a whole day is composed

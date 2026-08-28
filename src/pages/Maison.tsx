@@ -499,7 +499,6 @@ function MaisonParent() {
   // member deleted while focused silently falls back to Maisonnée (no match).
   const focusMember = focusId ? members.find((m) => m.id === focusId) ?? null : null
   const focusKey = focusMember ? personKey('member', focusMember.id) : null
-  const focusName = focusMember?.displayName ?? null
 
   // Drag a person row (the ⠿ grip) onto a named-group section to add them to it.
   // The drag id is the person key; the drop zone is `group:<id>`. On drop the row
@@ -737,6 +736,11 @@ function MaisonParent() {
           row's trailing slot as a DISTINCT launch button (sparkle + ↗) that reads as
           a context jump — keeping the segmented control honest (every segment swaps
           in-page, none navigates away). */}
+      {/* The view row takes the COMPACT variant (size="mini"): it sits directly
+          under the section pills, which are the tab's PRIMARY nav. Two full-height
+          pill rows stacked spent ~220px before any content arrived on a 390px
+          phone (LEAN.md — measured, not reasoned). The secondary of the two goes
+          mini, the same call the recipe book's Aa/Collections toggle made. */}
       <SubTabs<View>
         options={VIEW_TABS.map((v) => ({
           key: v,
@@ -745,11 +749,27 @@ function MaisonParent() {
         }))}
         value={view}
         onSelect={setView}
+        size="mini"
         pick={help.pick}
         armed={help.active}
         ariaLabel={t.nav.cercle}
         tour="cercle-views"
         trailing={
+          <>
+          {/* The loupe RIDES this row instead of owning one. Collapsed it is a single
+              round button, and it used to sit alone on a full-height line of its own
+              — ~90px of the 542px a phone scrolled past before the first person
+              (LEAN.md smell #3 gave it the collapsible face; this gives it a home).
+              Expanded it grows the row DOWN, never off the right edge: .subtabs-row
+              wraps now. */}
+          <SearchField
+            value={personQ}
+            onChange={setPersonQ}
+            ariaLabel={t.cercle.search}
+            placeholder={t.cercle.search}
+            collapsible
+            className="cercle-people-search"
+          />
           <button
             type="button"
             className="cercle-worldlaunch"
@@ -762,6 +782,7 @@ function MaisonParent() {
             <span className="cercle-worldlaunch__label">{t.cercle.world.title}</span>
             <InlineIcon name="arrow-up-right-bold" size={13} />
           </button>
+          </>
         }
       />
       {help.bubbleFor('list')}
@@ -921,7 +942,6 @@ function MaisonParent() {
                 ) : (
                   <FaceSelect faces={faces} value={focusId} onChange={setFocusId} allLabel={t.cercle.memberBadge} ariaLabel={t.cercle.focusLabel} />
                 )}
-                {focusName && <p className="cercle-focus__hint mono">{t.cercle.focusBy(focusName)}</p>}
               </div>
             )
           })()}
@@ -968,14 +988,6 @@ function MaisonParent() {
                 </div>
               ) : (
                 <>
-              <SearchField
-                value={personQ}
-                onChange={setPersonQ}
-                ariaLabel={t.cercle.search}
-                placeholder={t.cercle.search}
-                collapsible
-                className="cercle-people-search"
-              />
               {personQ.trim() !== '' ? (
                 // Search results: a flat list across BOTH sections' people — the
                 // point of the loupe is "where is X", not "X if filed in this tab".
@@ -992,25 +1004,6 @@ function MaisonParent() {
                 </section>
               ) : (
               <>
-              {section === 'family' && birthdays.length > 0 && (
-                <section className="cercle-bdays">
-                  <HelpTitle help={help} k="birthdays" className="cercle-section__label">
-                    <InlineIcon name="cake-bold" size={16} color={CERCLE_ACCENT} /> {t.cercle.birthdaysSoon}
-                  </HelpTitle>
-                  {help.bubbleFor('birthdays')}
-                  {/* Hidden scrollbar + fixed-width tiles: without useHScroll a mouse
-                      can't reach the birthdays past the right edge. */}
-                  <div className="cercle-bdays__row" ref={bdaysScroll.ref}>
-                    {birthdays.map(({ p, days }) => (
-                      <button type="button" key={p.key} className="cercle-bday" onClick={() => openPerson(p)}>
-                        <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={40} />
-                        <span className="cercle-bday__name">{p.firstName}</span>
-                        <span className="cercle-bday__when mono">{days === 0 ? t.cercle.birthdayToday : t.cercle.inDaysN(days)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
 
               <>
                   {/* The Maisonnée — your one family, titled from Réglages. Always at
@@ -1198,6 +1191,34 @@ function MaisonParent() {
                       {section === 'social' ? t.cercle.socialEmpty : t.cercle.empty}
                     </EmptyState>
                   )}
+                  {/* « Anniversaires à venir » — AT THE FOOT, for the same reason
+                      « Compléter les familles » below it is: it is something the page
+                      OFFERS, not the thing you opened the page to read. It used to sit
+                      between the search row and the first person, and on a 390px phone
+                      the directory did not begin until 542px down — the worst chrome
+                      number in the whole state matrix. Nothing is lost: it is still one
+                      scroll and one tap, found once you have read who's who (LEAN.md
+                      smell #5, measured at 390px). */}
+                {section === 'family' && birthdays.length > 0 && (
+                  <section className="cercle-bdays">
+                    <HelpTitle help={help} k="birthdays" className="cercle-section__label">
+                      <InlineIcon name="cake-bold" size={16} color={CERCLE_ACCENT} /> {t.cercle.birthdaysSoon}
+                    </HelpTitle>
+                    {help.bubbleFor('birthdays')}
+                    {/* Hidden scrollbar + fixed-width tiles: without useHScroll a mouse
+                        can't reach the birthdays past the right edge. */}
+                    <div className="cercle-bdays__row" ref={bdaysScroll.ref}>
+                      {birthdays.map(({ p, days }) => (
+                        <button type="button" key={p.key} className="cercle-bday" onClick={() => openPerson(p)}>
+                          <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={40} />
+                          <span className="cercle-bday__name">{p.firstName}</span>
+                          <span className="cercle-bday__when mono">{days === 0 ? t.cercle.birthdayToday : t.cercle.inDaysN(days)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                   {/* « Compléter les familles » — complete the WHOLE intertwined family,
                       not just one named group: every named famille-kind group made 100%
                       related AND every precise rung the hierarchy implies across the

@@ -222,14 +222,27 @@ const openNoteEditor = async (page: Page) => {
 // drift this exists to stop. See LEAN.md.
 //
 // Read them as a worklist, not a verdict. maison-family and maison-social were the
-// two worst (540 / 392px); working them 2026-08-26 is what the distinction is FOR.
-// Famille lost 54px with nothing removed — « Anniversaires à venir » is content and
-// keeps its place at the top (a birthday is time-sensitive; the directory below it
-// is reference), so the tile was laid sideways instead of being cut or demoted.
-// Social was left alone at 392px: its three bands are the section pills, the view
-// switch and the focus lens — all controls, none removable without losing a door.
-// A number with nothing behind it gets ratcheted and left, never trimmed to look
-// good. The number is a signal; the screenshot beside it is the judgement.
+// two worst, and they have now been worked TWICE.
+//
+// 2026-08-26 kept « Anniversaires à venir » at the top — "a birthday is
+// time-sensitive; the directory below it is reference" — and laid the tile sideways
+// instead, for 54px.
+//
+// 2026-08-27 REVERSED that call, and it is worth saying why rather than quietly
+// overwriting it. Marc looked at the surface on a real phone and the number had a
+// face: SEVEN stacked rows, and the first person 542px down — the worst in this
+// matrix by 170px. The earlier reasoning was sound in isolation and wrong in
+// aggregate. A birthday IS time-sensitive, but nothing was lost by moving it one
+// scroll down; what was being lost, every single time the tab opened, was the
+// directory the tab exists for. It now sits at the foot beside « Compléter les
+// familles » — which had already made this exact move, for this exact reason.
+// With the « Liens vus selon » hint deleted (it restated the face chip above it),
+// the view switch on the compact variant, and the search loupe folded into that
+// row instead of owning a line: 542 → 374 on Famille, 448 → 382 on Social.
+//
+// The standing lesson: the number is a signal, the screenshot beside it is the
+// judgement — and LEAN.md means it when it says LOOK at the first screen rather
+// than reason about it. Two passes reasoned; the third one looked.
 const MATRIX: Entry[] = [
   // — the six hub tabs at rest, phone, both themes —
   { name: 'board', route: '/board', content: '.wg-slot', budgetPx: 235 },
@@ -267,8 +280,8 @@ const MATRIX: Entry[] = [
   { name: 'kitchen-history', route: '/kitchen?tab=history', content: '.kitchen__history .kitchen__week', budgetPx: 200, themes: ['day'] },
 
   { name: 'maison-routines', route: '/maison?section=routines', content: '.routine-card', budgetPx: 244, themes: ['day'] },
-  { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 535, themes: ['day'] },
-  { name: 'maison-social', route: '/maison?section=social', content: '.cercle-row', budgetPx: 432, themes: ['day'] },
+  { name: 'maison-family', route: '/maison?section=family', content: '.cercle-row', budgetPx: 411, themes: ['day'] },
+  { name: 'maison-social', route: '/maison?section=social', content: '.cercle-row', budgetPx: 420, themes: ['day'] },
   { name: 'maison-business', route: '/maison?section=business', content: '.cercle-row', budgetPx: 194, themes: ['day'], api: BUSINESS_FIXTURE },
   { name: 'maison-carnets', route: '/maison?section=carnets', content: '.cercle-row', budgetPx: 194, themes: ['day'], api: CARNETS_FIXTURE },
 

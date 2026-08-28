@@ -22,17 +22,17 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~141k lines across 823 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 121 forward-only migrations |
-| **Tests** | 1757 unit tests in 296 files · 107 Playwright spec files (~1127 cases) |
+| **Tests** | 1757 unit tests in 296 files · 108 Playwright spec files (~1141 cases) |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
 - `npm run typecheck` · `npm test` (1757) · `npm run build` — green.
-- `npm run check:bundle` — **3843 KB** of JS across `dist/assets`, **727 KB eager**; every
+- `npm run check:bundle` — **3844 KB** of JS across `dist/assets`, **727 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
-- Full local Playwright suite — **1120 passed, 13 skipped**.
+- Full local Playwright suite — **1128 passed, 13 skipped**.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
 - **Seven build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),

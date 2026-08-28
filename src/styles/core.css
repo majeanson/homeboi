@@ -1354,6 +1354,14 @@ textarea.input {
   align-items: center;
   gap: 10px;
   margin: 0 0 1.25rem;
+  /* The row carries a trailing slot (a launch button, a collapsible search loupe),
+     and a hand-rolled non-wrapping flex row of controls is the exact shape that
+     overflows silently here — #root/.hub__body clip it, so the eye and a
+     scrollWidth check both read "fine" (CLAUDE.md § Horizontal overflow). Let it
+     take a second line instead: at normal widths nothing moves, and when the
+     trailing control EXPANDS (SearchField's open state) the row grows down rather
+     than off the right edge. */
+  flex-wrap: wrap;
 }
 .subtabs-row .subtabs {
   flex: 1;
