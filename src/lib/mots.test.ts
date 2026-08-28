@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sweepableMots, sentMots, waitingRecipientIds, type Mot } from './mots'
+import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sweepableMots, sentMots, waitingRecipientIds, motLabel, type Mot } from './mots'
 
 // A minimal Mot factory — only the fields the pure helpers read.
 function mot(p: Partial<Mot>): Mot {
@@ -8,6 +8,7 @@ function mot(p: Partial<Mot>): Mot {
     member_id: p.member_id ?? null,
     author_member_id: p.author_member_id ?? null,
     text: p.text ?? '',
+    transcript: p.transcript ?? null,
     media_kind: p.media_kind ?? null,
     media_key: p.media_key ?? null,
     scene_key: p.scene_key ?? null,
@@ -109,5 +110,30 @@ describe('mots helpers', () => {
       ])
       expect([...ids]).toEqual(['A'])
     })
+  })
+})
+
+// The label chain a row, a peek title and a quoted reply all share (A5).
+describe('motLabel', () => {
+  const L = { memo: 'Mémo vocal', drawing: 'Dessin', photo: 'Photo', untitled: 'Un mot' }
+  it('a written line wins — the transcript never overrides what someone typed', () => {
+    expect(motLabel(mot({ text: 'Bonne fête', transcript: 'bon effet' }), L)).toBe('Bonne fête')
+  })
+  it('a voice mot reads as its words instead of « Mémo vocal »', () => {
+    expect(motLabel(mot({ text: '', media_kind: 'audio', transcript: 'Je rentre plus tard' }), L)).toBe(
+      'Je rentre plus tard',
+    )
+  })
+  it('falls back to the media label when AI is unset (transcript NULL) — the ordinary local path', () => {
+    expect(motLabel(mot({ text: '', media_kind: 'audio', transcript: null }), L)).toBe('Mémo vocal')
+  })
+  it('a whitespace-only transcript is not a label', () => {
+    expect(motLabel(mot({ text: '', media_kind: 'audio', transcript: '   \n  ' }), L)).toBe('Mémo vocal')
+  })
+  it('takes the FIRST line of a multi-line transcript, not the whole paragraph', () => {
+    expect(motLabel(mot({ text: '', media_kind: 'audio', transcript: 'Salut\nça va ?' }), L)).toBe('Salut')
+  })
+  it('a mot with nothing at all still reads as something', () => {
+    expect(motLabel(mot({ text: '' }), L)).toBe('Un mot')
   })
 })

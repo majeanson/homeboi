@@ -1,0 +1,18 @@
+-- A voice mot's words, so the fridge reads at a glance (PLAN-mots A5).
+--
+-- « Laisse un mot » gained audio with the media-kind work (#38) and shipped with
+-- NO text surface for it: a voice mot's row and peek title were the generic
+-- « Mémo vocal », which tells you nothing about a message meant to be glanceable.
+-- Worse for a screen reader, which could announce only that an audio file exists.
+--
+-- Filled once, best-effort, when the mot is left — Workers AI Whisper, off the
+-- response path (waitUntil), errors swallowed. NULL therefore means « not
+-- transcribed »: AI unset (the expected local/degraded path), the model failed, or
+-- the mot predates this column. Every reader must fall back to the media label, so
+-- a null is never a broken row.
+--
+-- Deliberately no language column: the household locale already decides, and
+-- Whisper detects. And deliberately no confidence score — the transcript is a
+-- convenience LABEL, never required reading (NFR-KID-2); the audio stays the
+-- source of truth, always one tap away in the peek.
+ALTER TABLE mots ADD COLUMN transcript TEXT;

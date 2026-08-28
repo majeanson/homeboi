@@ -1978,6 +1978,10 @@ export const FR = {
     photo: 'Photo',
     untitled: 'Un mot',
     seenGroup: 'Déjà vus',
+    // Le texte d'un mot vocal, écrit par la machine (A5, migration 0123). Nommé
+    // pour qu'on ne le prenne pas pour ce que l'expéditeur a tapé : c'est une
+    // commodité, jamais la source — l'enregistrement reste à un toucher.
+    transcript: 'Ce qui a été dit',
     // Empty « Déjà vus » in one tap (the Sunday tidy was per-item labour). Lives
     // INSIDE the fold, so a collapsed card costs nothing for it. A KEPT mot is a
     // keepsake and is never swept — the label says so, and clearN counts only what

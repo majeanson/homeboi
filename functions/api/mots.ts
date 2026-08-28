@@ -1,4 +1,5 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { transcribeMot } from '../_lib/motTranscript'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -44,7 +45,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Returns ALL live mots (incl. not-yet-surfaced scheduled ones); the client gates display
   // by surface_at (one chokepoint in lib/mots, leaving room for a future sender outbox).
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, member_id, author_member_id, text, media_kind, media_key, scene_key, created_at, updated_at, opened_at, saved_at, surface_at, reply_to FROM mots WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+    'SELECT id, member_id, author_member_id, text, transcript, media_kind, media_key, scene_key, created_at, updated_at, opened_at, saved_at, surface_at, reply_to FROM mots WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
     .all<MotRow>()
@@ -119,6 +120,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
       nowSec(),
     )
     .run()
+
+  // A voice mot gets its words filled in behind the response (PLAN-mots A5).
+  // waitUntil, never awaited: Whisper takes seconds and leaving a mot must stay
+  // instant. Every failure inside leaves `transcript` NULL, which every reader
+  // already falls back from — same fire-and-forget stance as the realtime hook.
+  if (kind === 'audio' && mediaKey) {
+    ctx.waitUntil(transcribeMot(ctx.env, actor.householdId, id, mediaKey, ctx.request))
+  }
   return ok({ ok: true, id })
 })
 

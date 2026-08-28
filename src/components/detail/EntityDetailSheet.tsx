@@ -146,7 +146,15 @@ function DetailBody({ model, onAction }: { model: DetailModel; onAction: (a: Det
 function Block({ block }: { block: DetailBlock }) {
   switch (block.kind) {
     case 'text':
-      return <p className={'detail-sheet__text' + (block.hand ? ' detail-sheet__text--hand' : '')}>{block.text}</p>
+      // `label` names where the words came from when that isn't obvious — a voice
+      // mot's machine transcript wears « Ce qui a été dit » so it never reads as
+      // something the sender typed. Same quiet blocklabel the chip rows use.
+      return (
+        <>
+          {block.label && <span className="detail-sheet__blocklabel mono">{block.label}</span>}
+          <p className={'detail-sheet__text' + (block.hand ? ' detail-sheet__text--hand' : '')}>{block.text}</p>
+        </>
+      )
     case 'chips':
       return (
         <div className="detail-sheet__chips">

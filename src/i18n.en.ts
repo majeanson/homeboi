@@ -1779,6 +1779,7 @@ export const EN: typeof FR = {
     photo: 'Photo',
     untitled: 'A note',
     seenGroup: 'Already seen',
+    transcript: 'What was said',
     clearSeen: 'Clear the seen ones',
     clearSeenKept: 'Clear the seen ones (kept ones stay)',
     clearedN: (n: number) => `${n} note${n > 1 ? 's' : ''} cleared`,

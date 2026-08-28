@@ -9,7 +9,7 @@ import { isGuest } from '../../lib/device'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import { useMots, useAllMots, waitingMots, visibleMots, sweepableMots, sentMots, isScheduled, type Mot } from '../../lib/mots'
+import { useMots, useAllMots, waitingMots, visibleMots, sweepableMots, sentMots, isScheduled, motLabel, type Mot } from '../../lib/mots'
 import { formatDayTime } from '../../lib/format'
 import { CATS } from '../../lib/cats'
 import { InlineIcon, type IconName } from '../Icon'
@@ -84,9 +84,10 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
         : fn.statusWaiting
     return [to, status].join(' · ')
   }
-  const labelOf = (m: Mot) =>
-    m.text.split('\n').find((l) => l.trim())?.trim() ||
-    (m.media_kind === 'audio' ? fn.memo : m.media_kind === 'drawing' ? fn.drawing : m.media_kind === 'image' ? fn.photo : fn.untitled)
+  // ONE label chain, shared with the peek (lib/mots): first written line → the voice
+  // transcript → the media label. « Mémo vocal · Papa » told you nothing about a
+  // message whose whole job is to be glanceable.
+  const labelOf = (m: Mot) => motLabel(m, fn)
   // A reply quotes the mot it answers (resolved from the live list) for the peek's context.
   const quoteOf = (m: Mot): string | null => {
     if (!m.reply_to) return null

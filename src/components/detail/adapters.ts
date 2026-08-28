@@ -13,7 +13,7 @@ import { KIND_EMOJI, type CarnetKind } from '../../lib/carnets'
 import { formatDay, formatDayMaybeYear, formatDayTime, formatTime } from '../../lib/format'
 import { localDayStart } from '../../lib/localDay'
 import { type Recipe } from '../../lib/recipes'
-import { type Mot } from '../../lib/mots'
+import { motLabel, type Mot } from '../../lib/mots'
 import { type Habit, type HabitDay, habitStatusOn, habitReading, deriveProgress } from '../../lib/habits'
 import { type NextRdv } from '../../lib/nextRdv'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
@@ -292,12 +292,15 @@ export function buildMot(
   const fn = t.mots
   const icon: IconName =
     m.media_kind === 'audio' ? 'microphone-bold' : m.media_kind === 'drawing' ? 'paint-brush-bold' : m.media_kind === 'image' ? 'image-square-bold' : 'envelope-bold'
-  const firstLine = m.text.split('\n').find((l) => l.trim())?.trim()
-  const mediaLabel = m.media_kind === 'audio' ? fn.memo : m.media_kind === 'drawing' ? fn.drawing : m.media_kind === 'image' ? fn.photo : ''
   const blocks: DetailBlock[] = []
   // A reply quotes the mot it answers, up top, so the thread reads in context.
   if (opts?.parentQuote?.trim()) blocks.push({ kind: 'text', text: `↩ ${opts.parentQuote.trim()}`, hand: true })
   if (m.text.trim()) blocks.push({ kind: 'text', text: m.text.trim() })
+  // The spoken words, when there are any and no written line already says them.
+  // Labelled, so nobody mistakes the machine's guess for what was typed — and it
+  // sits ABOVE the player, which stays the source of truth one tap away.
+  if (!m.text.trim() && m.transcript?.trim())
+    blocks.push({ kind: 'text', label: fn.transcript, text: m.transcript.trim() } as DetailBlock)
   if (m.media_key && (m.media_kind === 'drawing' || m.media_kind === 'image')) blocks.push({ kind: 'image', src: imgUrl(m.media_key) })
   if (m.media_key && m.media_kind === 'audio') blocks.push({ kind: 'audio', src: imgUrl(m.media_key) })
 
@@ -312,7 +315,7 @@ export function buildMot(
 
   return {
     kind: 'mot',
-    title: firstLine || mediaLabel || fn.untitled,
+    title: motLabel(m, fn),
     icon,
     accent: colorOf(members, m.author_member_id) ?? CATS.cercle.color,
     when: opts?.whenOverride ?? `${formatDayTime(m.created_at, lang)} · ${m.member_id === null ? fn.forMaisonnee : fn.forYou}`,

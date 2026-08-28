@@ -27,7 +27,7 @@
 
 | ID | Feature | Effort | Value | Migration? |
 | -- | ------- | ------ | ----- | ---------- |
-| A5 | Voice-mot transcription preview | M | High (glance + a11y) | no |
+| A5 | ✅ **DONE 2026-08-27** — Voice-mot transcription preview | M | High (glance + a11y) | 0123 |
 | A6 | Mot → transformer (route to capture) | M | High (LAC-spirit) | no |
 | A7 | Reply mini-thread in the peek | S | Medium | no |
 | A8 | Occasion mots (surface on a birthday) | S | Medium | no |

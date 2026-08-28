@@ -13,6 +13,12 @@ export interface Mot {
   member_id: string | null // RECIPIENT scope: NULL = Maisonnée (everyone)
   author_member_id: string | null // SENDER (pick-your-face)
   text: string
+  // A voice mot's words, filled in behind the send by Workers AI Whisper
+  // (migration 0123). NULL = not transcribed — AI unset (the ordinary local and
+  // degraded path), the model failed, or the mot predates the column — so every
+  // reader falls back to the media label rather than treating null as broken.
+  // A convenience LABEL, never required reading: the audio stays the source.
+  transcript?: string | null
   media_kind: MotMedia | null
   media_key: string | null
   scene_key: string | null
@@ -22,6 +28,22 @@ export interface Mot {
   saved_at: number | null // NULL = not kept; set = a « Gardé » keepsake
   surface_at: number | null // NULL = surface now; else hidden until this unix second (scheduled)
   reply_to: string | null // the parent mot this answers; NULL = top-level
+}
+
+// What a mot READS AS on a row, a peek title, or a quoted reply: the first written
+// line, else the voice transcript (A5 — « Mémo vocal · Papa » told you nothing about
+// a message meant to be glanceable, and told a screen reader even less), else the
+// media label, else « Un mot ». One chain, so the card and the peek can't drift.
+export function motLabel(m: Mot, labels: { memo: string; drawing: string; photo: string; untitled: string }): string {
+  const firstLine = (s: string | null | undefined) => s?.split('\n').find((l) => l.trim())?.trim()
+  const line = firstLine(m.text)
+  if (line) return line
+  const spoken = firstLine(m.transcript)
+  if (spoken) return spoken
+  if (m.media_kind === 'audio') return labels.memo
+  if (m.media_kind === 'drawing') return labels.drawing
+  if (m.media_kind === 'image') return labels.photo
+  return labels.untitled
 }
 
 // A scheduled mot stays hidden until its surface_at moment (NULL = surface now). Pure so the

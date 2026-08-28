@@ -26,7 +26,10 @@ type DetailKind =
 
 // One block of body content. The sheet renders these top-to-bottom.
 export type DetailBlock =
-  | { kind: 'text'; text: string; hand?: boolean } // a paragraph (hand = handwritten note look)
+  // A paragraph (hand = handwritten note look). `label` names where the words came
+  // from when that isn't obvious — a voice mot's machine transcript is labelled so
+  // nobody reads it as what the sender typed.
+  | { kind: 'text'; text: string; hand?: boolean; label?: string }
   | { kind: 'chips'; label?: string; chips: string[]; tones?: (string | undefined)[] } // a tag/chip row; `tones[i]` = a per-chip household hex
   | { kind: 'list'; label?: string; items: string[] } // a short bullet list (a person's relationships, a day's meals)
   | { kind: 'image'; src: string; alt?: string } // a media image (note photo/drawing), tap-to-zoom

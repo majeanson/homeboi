@@ -116,8 +116,11 @@ export const SEARCH_INDEX = {
   habit: entry<Habit>({ primary: (h) => h.title }),
   // « Laisse un mot » — a mot has NO name; its message text is a SECONDARY hit
   // (mirrors fridgeNote), so a thing actually NAMED what you typed ranks above a
-  // mot that merely mentions it. Media-only mots carry no text → never surface.
-  mot: entry<Mot>({ primary: () => '', secondary: (m) => m.text ?? '' }),
+  // mot that merely mentions it. A VOICE mot is searchable by its transcript now
+  // (A5, migration 0123): it used to carry no text at all, so a message someone
+  // spoke was unfindable by construction — you could only remember which face left
+  // it and scroll. A mot with neither still never surfaces.
+  mot: entry<Mot>({ primary: () => '', secondary: (m) => [m.text, m.transcript].filter(Boolean).join(' ') }),
   // Plan des repas — free-text suppers only (recipe-linked meals already surface
   // via their recipe; SearchPage filters `!recipe_id` before handing them here).
   meal: entry<MealRow>({ primary: (m) => m.title }),
