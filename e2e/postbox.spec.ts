@@ -106,3 +106,47 @@ test('a revoked link shows the expired state, not the form', async ({ page }) =>
   await expect(page.locator('.guest-expired')).toBeVisible()
   await expect(page.getByPlaceholder('Papi, Mamie, Tante Lou…')).toHaveCount(0)
 })
+
+// A double-send must not create a second quarantine row (bmad/11 tier-2 #2).
+//
+// The two ordinary things a relative does — double-tapping « Envoyer » on a slow
+// phone, and resending when the response is lost — each used to land a SECOND
+// pending row in the operator's review queue, indistinguishable from a genuine
+// second message. The server has deduped keyed writes for a long while
+// (functions/_lib/idempotency.ts, applied centrally in authed()); this form just
+// never sent a key, because a guest writes through raw api() rather than the
+// outbox's useWrite.
+//
+// What this guards is the CLIENT half: that a key is sent at all, and that it is
+// the SAME key across retries of one composed message — which is exactly what
+// makes the server's ledger able to recognise the retry.
+test('a resend carries the SAME Idempotency-Key, so the server can dedup it', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/guest/window**', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ kind: 'postbox', householdName: 'Maison Tremblay' }) }),
+  )
+  const keys: string[] = []
+  let failFirst = true
+  await page.route('**/api/guest/postbox-submit**', (r) => {
+    keys.push(r.request().headers()['idempotency-key'] ?? '')
+    // The first attempt fails, so the relative taps « Envoyer » again — the case.
+    if (failFirst) {
+      failFirst = false
+      return r.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'boom' }) })
+    }
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+  await seedState(page, { theme: 'day', lang: 'fr' })
+  await page.goto('/courrier')
+
+  await page.getByPlaceholder('Papi, Mamie, Tante Lou…').fill('Papi')
+  await page.getByPlaceholder('Écris un petit mot…').fill('Bonne fête !')
+  const send = page.getByRole('button', { name: 'Envoyer' })
+  await send.click()
+  await expect.poll(() => keys.length).toBe(1)
+  await send.click()
+  await expect.poll(() => keys.length).toBe(2)
+
+  expect(keys[0]).toBeTruthy()
+  expect(keys[1]).toBe(keys[0])
+})

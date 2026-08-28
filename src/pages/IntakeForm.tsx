@@ -188,6 +188,8 @@ export function IntakeForm() {
     setPets((ps) => ps.filter((p) => p.id !== id))
   }
 
+  const sendKey = useRef<string | null>(null)
+
   async function submit() {
     if (busy) return
     if (!self.firstName.trim()) {
@@ -196,6 +198,24 @@ export function IntakeForm() {
     }
     setBusy(true)
     setErr(null)
+  // ONE key per composed submission, not per attempt (bmad/11 tier-2 #2). The
+  // server already dedups any write that carries an Idempotency-Key
+  // (functions/_lib/idempotency.ts, applied centrally in authed()); this path
+  // simply never sent one, because a guest form writes through raw `api()`
+  // rather than the outbox's `useWrite`.
+  //
+  // Without it the two ordinary things a relative does — double-tapping
+  // « Envoyer » on a slow phone, or hitting refresh-and-resend when the response
+  // is lost — each landed a SECOND quarantine row in the operator's review
+  // queue, with no way to tell it from a genuine second message. The key is
+  // minted when the send begins and REUSED by every retry of that same
+  // submission, so a retry answers from the ledger instead of writing again.
+  //
+  // It is never reset, and does not need to be: the ledger only remembers
+  // SUCCESSES, so a failed send retries for real under the same key, and a
+  // successful one ends the form (the « merci » screen is terminal). A relative
+  // sending a genuine second message reloads the link, which mints a fresh one.
+    if (!sendKey.current) sendKey.current = crypto.randomUUID()
     // Keep only named entries; links/pets address people by final position (self = 0).
     const named = household.filter((p) => p.core.firstName.trim())
     const namedPets = pets.filter((p) => p.name.trim())
@@ -208,7 +228,7 @@ export function IntakeForm() {
       ),
     }
     try {
-      await api('guest/intake-submit', { method: 'POST', body: submission })
+      await api('guest/intake-submit', { method: 'POST', body: submission, idempotencyKey: sendKey.current })
       setDone(true)
     } catch (e) {
       setErr((e as Error).message)

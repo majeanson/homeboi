@@ -3,7 +3,7 @@
 import '../styles/cercle.css'
 // intake.css — reuses the .intake__* field/section classes for its own layout.
 import '../styles/intake.css'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
@@ -68,6 +68,25 @@ export function Postbox() {
     photoLabel: t.postbox.addPhoto,
   })
 
+  // ONE key per composed submission, not per attempt (bmad/11 tier-2 #2). The
+  // server already dedups any write that carries an Idempotency-Key
+  // (functions/_lib/idempotency.ts, applied centrally in authed()); this path
+  // simply never sent one, because a guest form writes through raw `api()`
+  // rather than the outbox's `useWrite`.
+  //
+  // Without it the two ordinary things a relative does — double-tapping
+  // « Envoyer » on a slow phone, or hitting refresh-and-resend when the response
+  // is lost — each landed a SECOND quarantine row in the operator's review
+  // queue, with no way to tell it from a genuine second message. The key is
+  // minted when the send begins and REUSED by every retry of that same
+  // submission, so a retry answers from the ledger instead of writing again.
+  //
+  // It is never reset, and does not need to be: the ledger only remembers
+  // SUCCESSES, so a failed send retries for real under the same key, and a
+  // successful one ends the form (the « merci » screen is terminal). A relative
+  // sending a genuine second message reloads the link, which mints a fresh one.
+  const sendKey = useRef<string | null>(null)
+
   async function submit() {
     if (busy) return
     if (!senderName.trim()) {
@@ -80,10 +99,12 @@ export function Postbox() {
     }
     setBusy(true)
     setErr(null)
+    if (!sendKey.current) sendKey.current = crypto.randomUUID()
     try {
       await api('guest/postbox-submit', {
         method: 'POST',
         body: { senderName: senderName.trim(), text: text.trim(), ...memo.body },
+        idempotencyKey: sendKey.current,
       })
       setDone(true)
     } catch (e) {
