@@ -5,7 +5,8 @@ import { BOARD, mockApi, seedState } from './mocks'
 // as « Les notes », through the same shared ModeToggle:
 //
 //   SIMPLE (the default) — the shopping face. A row is a picture, a name and a
-//     check. Editing is a press-and-hold; the picture's tap opens the flyer
+//     check. A press-and-hold opens the shared PEEK (deal, aisle, who added it) with
+//     « Modifier » inside it; the picture's tap opens the flyer
 //     clipping full-screen with the deal spelled out under it.
 //   AVANCÉ — the ✏️/🗑 come back on every row. Not decoration: a long-press is
 //     invisible to a mouse and unreachable from a keyboard, so this IS the
@@ -91,7 +92,7 @@ test('tapping a clipping zooms the picture and names the deal under it', async (
   await expect(cap).toHaveCSS('pointer-events', 'none')
 })
 
-test('press and hold a row to edit it', async ({ page }) => {
+test('press and hold a row opens the peek; « Modifier » inside it opens the editor', async ({ page }) => {
   await openListe(page)
   const row = page.locator('.list-row').first()
   const box = (await row.boundingBox())!
@@ -104,6 +105,11 @@ test('press and hold a row to edit it', async ({ page }) => {
   await page.waitForTimeout(750)
   await page.mouse.up()
 
+  // In a shop the hold answers « est-ce encore l'aubaine ? / quelle allée ? / qui
+  // l'a mis ? » without leaving the list — the editor is one tap further, inside.
+  const peek = page.locator('.detail-sheet')
+  await expect(peek).toBeVisible()
+  await peek.getByRole('button', { name: /Modifier l’article/ }).click()
   await expect(page).toHaveURL(/\/liste\/item\//)
 })
 

@@ -27,7 +27,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
 import { money } from '../lib/deals'
-import { cashierPicksFrom, useTillHiddenStores, parseDeal } from '../lib/picks'
+import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
@@ -38,6 +38,9 @@ import { RowActions } from '../components/RowActions'
 import { SwipeDeletePane } from '../components/SwipeDeletePane'
 import { ZoomableImg } from '../components/ZoomableImg'
 import { useLongPress } from '../lib/useLongPress'
+import { useEntityDetail } from '../components/detail/DetailProvider'
+import { buildListItem } from '../components/detail/adapters'
+import type { Member as DetailMember } from '../components/board/types'
 import { useListeAdvanced, setListeAdvanced } from '../lib/listeMode'
 import { ModeToggle } from '../components/ModeToggle'
 
@@ -327,17 +330,30 @@ export function Liste() {
   const qc = useQueryClient()
   // SIMPLE ↔ AVANCÉ (lib/listeMode) — the same device-local flag « Les notes » uses.
   const advanced = useListeAdvanced()
+  const detail = useEntityDetail()
   // Press and hold a row to edit it. The picture's tap now zooms the flyer clipping,
   // so the hold carries what that tap used to do. Grips and form fields are excluded
   // by the hook itself, so this never fights the drag-reorder or the add field — and
   // because a hold is invisible to a mouse and a keyboard, AVANCÉ's ✏️ is its mirror,
   // not a nicety (CLAUDE.md: no touch-only path to an action).
+  // The hold opens the shared DETAIL PEEK, not the editor scene. In a shop you
+  // mostly want to LOOK — « est-ce encore l'aubaine ? », « quelle allée ? », « qui
+  // l'a mis ? » — and the peek answers all three without leaving the list;
+  // « Modifier » inside it is one tap further into the same scene. AVANCÉ's ✏️
+  // still goes straight there: it's the deliberate, non-touch path, and a peek in
+  // front of it would only add a step.
+  //
+  // The builder needs data computed AFTER this hook (the aisle classifier, the
+  // member map, the row's staged deal), and a hook can't move below the early
+  // returns — so render fills this ref and the hold calls whatever is current.
+  // Same shape as the kitchen-actions registration in HubLayout.
+  const peekRef = useRef<(id: string) => void>(() => {})
   useLongPress({
     targets: '.list-row',
     enabled: !isGuest(),
     onLongPress: (el) => {
       const id = el.dataset.itemId
-      if (id) nav(`/liste/item/${id}`)
+      if (id) peekRef.current(id)
     },
   })
   // Drag-and-drop reorder of the list. The grip on each row starts a press-and-hold
@@ -554,6 +570,36 @@ export function Liste() {
   // What an aisle header groups: the aisle WITHIN its block, so the header always
   // restarts where the « pas pressé » lines begin instead of swallowing the boundary.
   const groupOf = (i: ListRow) => `${rushRank(i)}:${aisleOf(i.text)}`
+
+  // What the hold shows (see peekRef above). Built from the same values the row
+  // draws from, so the peek can never disagree with the line it came from.
+  peekRef.current = (id: string) => {
+    const item = list.find((i) => i.id === id)
+    if (!item) return
+    const staged = parseDeal(item.deal_json)
+    const ai = AISLE_BY_ID[aisleOf(item.text)]
+    detail.open(
+      buildListItem(
+        {
+          id: item.id,
+          text: item.text,
+          checked: !!item.checked_at,
+          noRush: !!item.non_urgent,
+          terms: parseTerms(item.search_terms),
+        },
+        { t, lang, members: (board?.members ?? []) as unknown as DetailMember[] },
+        {
+          adderId: item.added_by ?? null,
+          picto: pictoFor(item.text),
+          aisle: ai ? `${ai.emoji} ${ai.label[lang]}` : undefined,
+          dealMerchant: staged?.merchant ?? null,
+          dealPrice: staged?.price != null ? money(staged.price) : null,
+          onToggle: () => toggleChecked(item),
+          onDelete: () => deleteItem(item),
+        },
+      ),
+    )
+  }
 
   // Everything the « Allées » button opens. Two mutually exclusive sort rows
   // (radio: one order is always in force), then — in Mon ordre only — the aisle

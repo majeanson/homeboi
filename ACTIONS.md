@@ -107,8 +107,8 @@ at all (❌).
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Item · check | ✅ whole row centre + disc | — | — | — | — | in-place mark | ✅ |
 | Item · add | ✅ always-open `EditField` (Enter; mic splits a breath into items) | — | — | ＋ `list-item` / ⚡ `/liste/quick` | — | compensating (`useCreateWithUndo`) | ✅ |
-| Item · edit | 🔶ᴸ simple: long-press → `/liste/item/:id` | ✅ hold | ➖ scene, not peek¹² | — | Avancé ✏️ | — | 🔶ᴸ ✅ |
-| Item · delete | 🔶ᴸ simple: swipe-left | ✅ swipe | item scene Delete | — | Avancé 🗑 | deferred (never logged as bought) | 🔶ᴸ ✅ |
+| Item · edit | 🔶ᴸ simple: long-press → peek → « Modifier » | ✅ hold | ✅ `buildListItem` (deal · allée · termes · qui) | — | Avancé ✏️ → the scene direct | — | 🔶ᴸ ✅ |
+| Item · delete | 🔶ᴸ simple: swipe-left | ✅ swipe | ✅ peek ⋯ « Effacer » + item scene Delete | — | Avancé 🗑 | deferred (never logged as bought) | 🔶ᴸ ✅ |
 | Item · reorder | ✅ ⠿ hold-drag, grip focus + ↑/↓ (« Mon ordre » only) | ✅ | — | — | liste▸aisles (aisle order) | — | ✅¹³ |
 | List · clear checked / sort / cashier / flyers | ✅ « Vider les cochés »; ⋯ « Allées »; buttons | — | — | ＋ `flyer` / `share` / `auto-pick` | liste▸stores/shop/ghost | deferred | ✅ |
 | List · search | ❌ no in-page search¹⁴ (global 🔍 only) | | | | | | |

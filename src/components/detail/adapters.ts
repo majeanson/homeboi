@@ -422,6 +422,67 @@ export function buildLeftover(
   }
 }
 
+// — One grocery line on « La liste » —
+//
+// The SIMPLE face's hold used to jump straight to the full-screen editor. That
+// works, but it's the one surface where a peek earns its place twice over: in a
+// shop you mostly want to LOOK (« est-ce encore l'aubaine ? », « quelle allée ? »,
+// « c'est qui qui l'a mis ? ») and only sometimes to edit. So the hold shows the
+// row's quiet facts, with « Modifier » one tap further into the same scene. The
+// AVANCÉ face's ✏️ still goes there directly — it's the non-touch door, and
+// putting a peek in front of it would add a step to the deliberate path.
+//
+// Nothing here is a new write: the check and the delete reuse the page's own
+// handlers, undo tiers and all.
+export function buildListItem(
+  i: { id: string; text: string; checked?: boolean; noRush?: boolean; terms?: string[] },
+  ctx: DetailCtx,
+  opts: {
+    adderId?: string | null
+    picto?: string
+    aisle?: string
+    dealMerchant?: string | null
+    dealPrice?: string | null
+    onToggle?: () => void
+    onDelete?: () => void
+  } = {},
+): DetailModel {
+  const { t } = ctx
+  const blocks: DetailBlock[] = []
+  // The staged deal first — in the aisle it's the whole reason you're looking.
+  const dealBits = [opts.dealMerchant?.trim() || null, opts.dealPrice || null].filter((x): x is string => !!x)
+  if (dealBits.length) blocks.push({ kind: 'chips', label: t.list.dealLabel, chips: [dealBits.join(' · ')] })
+  if (opts.aisle) blocks.push({ kind: 'chips', label: t.list.aisleLabel, chips: [opts.aisle] })
+  // The flyer-search synonyms are invisible on the row but decide whether a deal
+  // is ever FOUND for this line — worth seeing before wondering why there's none.
+  if (i.terms?.length) blocks.push({ kind: 'chips', label: t.list.termsLabel, chips: i.terms })
+  if (i.noRush) blocks.push({ kind: 'text', text: t.list.rushHint })
+
+  const actions: DetailAction[] = []
+  if (opts.onToggle)
+    actions.push({
+      key: 'check',
+      label: i.checked ? t.list.uncheck : t.list.check,
+      icon: 'check-bold',
+      primary: true,
+      run: opts.onToggle,
+    })
+  actions.push({ key: 'edit', label: t.list.editTitle, icon: 'pencil-simple-bold', href: `/liste/item/${i.id}` })
+  if (opts.onDelete)
+    actions.push({ key: 'delete', label: t.common.delete, icon: 'trash-bold', tone: 'danger', overflow: true, run: opts.onDelete })
+
+  return {
+    kind: 'list-item',
+    title: i.text,
+    emoji: opts.picto || undefined,
+    icon: CATS.list.icon,
+    accent: colorOf(ctx.members, opts.adderId ?? null) || CATS.list.color,
+    who: whoOf(ctx.members, opts.adderId ?? null, t.list.addedBy),
+    blocks,
+    actions,
+  }
+}
+
 // The fields a meal can carry across the board (DayMealRow) and the kitchen
 // (MealRow) — the builder reads whatever's present.
 export interface MealLike {

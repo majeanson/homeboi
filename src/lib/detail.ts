@@ -17,6 +17,7 @@ type DetailKind =
   | 'chore'
   | 'todo'
   | 'leftover'
+  | 'list-item' // « La liste » — one grocery line (Simple's hold; Avancé's ✏️ skips it)
   // ('note' was a dead arm — nothing ever built one: a fridge note's card IS its
   //  content, and a cercle note expands in place. ACTIONS.md Part 2 records both ➖.)
   | 'mot' // « Laisse un mot » — a member-to-member message (text / voice / drawing / photo)

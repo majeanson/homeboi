@@ -396,6 +396,8 @@ export const EN: typeof FR = {
     addPlaceholderShort: 'E.g. milk, bread…',
     check: 'Check off',
     uncheck: 'Uncheck',
+    addedBy: 'Added by',
+    dealLabel: 'Deal',
     modeToAdvanced: 'Advanced mode — edit and delete on every row',
     modeToSimple: 'Simple mode — just the picture, the name and the check',
     clearChecked: 'Clear checked',

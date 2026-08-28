@@ -457,6 +457,11 @@ export const FR = {
     addPlaceholderShort: 'Ex. : lait, pain…',
     check: 'Cocher',
     uncheck: 'Décocher',
+    // The peek's quiet attribution line (« Ajouté par » + the face). The row itself
+    // says this in the title's TINT only, which a screen reader can't read.
+    addedBy: 'Ajouté par',
+    // The staged flyer deal, named in the peek where there's room for a label.
+    dealLabel: 'Aubaine',
     // Le ⚙ SIMPLE ↔ AVANCÉ (lib/listeMode). Même formulation que « Les notes » :
     // le nom dit vers quoi va la PROCHAINE touche, jamais l'état courant.
     modeToAdvanced: 'Mode avancé — modifier et supprimer sur chaque ligne',
