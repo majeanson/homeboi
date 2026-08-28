@@ -1185,6 +1185,13 @@ export const FR = {
   lead: { label: 'Afficher dès', none: 'Au moment même', h1: '1 h avant', h3: '3 h avant', h6: '6 h avant', d1: '1 jour avant', d2: '2 jours avant', d3: '3 jours avant', w1: '1 semaine avant' },
   kitchen: {
     title: 'La cuisine',
+    // A link that no longer points at anything (bmad/12 #26) — a texted recipe
+    // link, a bookmark from last week. Says the ordinary cause out loud rather
+    // than dropping you on La cuisine with no explanation.
+    recipeGone: 'Cette recette n’existe plus.',
+    cookGone: 'Cette recette n’existe plus — rien à cuisiner ici.',
+    multiCookGone: 'Il n’y a plus deux recettes à cuisiner ensemble ce jour-là.',
+    dayGone: 'Ce jour-là n’est plus au menu.',
     week: 'La semaine',
     planShort: 'À planifier',
     // The inline planner that an empty day cell opens (no full-screen scene needed).

@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useLang, useT } from '../../i18n'
+import { formatAgo } from '../../lib/format'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { api, ApiError, isStatus } from '../../lib/api'
@@ -46,6 +47,11 @@ export function Notes({
   action?: ReactNode
 }) {
   const t = useT()
+  const { lang } = useLang()
+  // One "now" per render, not one per card: three cards computing three slightly
+  // different nows is how a list ends up saying « il y a 1 j » beside « il y a 2 j »
+  // for two notes written a minute apart.
+  const nowSec = Math.floor(Date.now() / 1000)
   const write = useWrite()
   // The widget's own add door (top-right ＋): opens the ONE « Note rapide » sheet
   // (the same composer as the ＋ FAB tile) — never a parallel composer.
@@ -225,6 +231,17 @@ export function Notes({
           const from = n.author_label ? (
             <span className="note-card__from mono">— {n.author_label}</span>
           ) : null
+          // How long it has been on the fridge (bmad/12 #25) — but ONLY once it has
+          // been there a full day. A stamp on every note would be noise on a surface
+          // whose whole job is to be glanced at: what you actually want to know is
+          // « ça traîne depuis quand, ça ? », and that question doesn't exist for
+          // something written this morning. Client-side from created_at; there is no
+          // origin marker to show (that would need a column — out of scope).
+          const ageSec = nowSec - n.created_at
+          const age =
+            ageSec >= 86400 ? (
+              <span className="note-card__age mono">{formatAgo(n.created_at * 1000, lang, nowSec * 1000)}</span>
+            ) : null
           // The card's inner face by kind: a drawing (#14) or shared photo (#13)
           // image, a voice-memo play affordance (#38), or the written line. An
           // image/audio note may also carry a caption (text), shown beneath.
@@ -297,6 +314,7 @@ export function Notes({
                   </>
                 )}
                 {from}
+                {age}
                 {!ro && !toddler && (
                   <button
                     type="button"
@@ -317,6 +335,7 @@ export function Notes({
               <div key={n.id} className="note-card" style={css}>
                 <span className="note-card__text">{n.text}</span>
                 {from}
+                {age}
               </div>
             )
           }
@@ -335,6 +354,7 @@ export function Notes({
             >
               <span className="note-card__text">{n.text}</span>
               {from}
+                {age}
               {!toddler && (
                 <span className="note-card__clear" aria-hidden="true">
                   <Icon name="x-bold" size={14} />

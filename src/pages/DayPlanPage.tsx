@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { useParams, Navigate, useNavigate } from 'react-router-dom'
+import { StaleBounce } from '../components/StaleBounce'
+import { useParams, useNavigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
@@ -421,7 +422,7 @@ export function DayPlanPage() {
   const rescheduleMeal = (id: string, toDate: number, slot?: string) => void reschedule(qc, id, toDate, slot)
 
   // A bad date in the URL → back to the grid rather than an empty editor.
-  if (bad) return <Navigate to="/kitchen" replace />
+  if (bad) return <StaleBounce to="/kitchen" message={t.kitchen.dayGone} />
   if (isUnauthorized(meals.error)) return <PairPrompt />
 
   // Read-only guest: DayEditor already gates its own controls; here the day-agenda

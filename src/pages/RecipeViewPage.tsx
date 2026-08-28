@@ -1,7 +1,8 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { StaleBounce } from '../components/StaleBounce'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { Loading } from '../components/Fallback'
-import { useLang } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { useWeekLabeled } from '../components/kitchen/week'
 import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useRecipes, useMeals } from '../lib/queryHooks'
@@ -11,6 +12,7 @@ import { useSceneClose } from '../lib/sceneNav'
 // over the kitchen). Recipe + the plan-a-supper week both come from the shared
 // caches, so a deep link / reload rebuilds them. Cook + Edit are sibling routes.
 export function RecipeViewPage() {
+  const t = useT()
   const { id } = useParams()
   const nav = useNavigate()
   const { lang } = useLang()
@@ -25,7 +27,8 @@ export function RecipeViewPage() {
   const labeled = useWeekLabeled(weekStart, mealsQ.data?.windowDays ?? WINDOW_DAYS_DEFAULT, lang)
   const week = weekStart ? labeled : []
 
-  if (!recipe) return recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />
+  if (!recipe)
+    return recipesQ.isLoading ? <Loading /> : <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
   return (
     <RecipeSheet
       recipe={recipe}

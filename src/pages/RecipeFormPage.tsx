@@ -1,4 +1,6 @@
 import { Navigate, useParams } from 'react-router-dom'
+import { useT } from '../i18n'
+import { StaleBounce } from '../components/StaleBounce'
 import { RecipeForm } from '../components/RecipeForm'
 import { Loading } from '../components/Fallback'
 import { isGuest } from '../lib/device'
@@ -10,6 +12,7 @@ import { useSceneClose } from '../lib/sceneNav'
 // cache. Save and cancel both leave the scene: a fresh create pops back to the
 // kitchen, an edit pops back to that recipe's view (now showing the edits).
 export function RecipeFormPage() {
+  const t = useT()
   const { id } = useParams()
   const close = useSceneClose(id ? `/kitchen/recipe/${id}` : '/kitchen')
   const recipesQ = useRecipes({ enabled: !!id })
@@ -20,7 +23,8 @@ export function RecipeFormPage() {
 
   if (id) {
     const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
-    if (!recipe) return recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />
+    if (!recipe)
+      return recipesQ.isLoading ? <Loading /> : <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
     return <RecipeForm value={recipe} onSaved={close} onCancel={close} />
   }
   return <RecipeForm value={null} onSaved={close} onCancel={close} />

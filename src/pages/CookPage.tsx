@@ -1,4 +1,6 @@
-import { Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { useT } from '../i18n'
+import { StaleBounce } from '../components/StaleBounce'
 import { CookMode } from '../components/CookMode'
 import { Loading } from '../components/Fallback'
 import { scaleIngredients } from '../lib/scale'
@@ -9,13 +11,15 @@ import { useSceneClose } from '../lib/sceneNav'
 // the recipe modal). The batch factor rides in ?x= so the cook screen scales to
 // the same amounts the recipe view showed. Closing returns to the recipe.
 export function CookPage() {
+  const t = useT()
   const { id } = useParams()
   const [sp] = useSearchParams()
   const close = useSceneClose(`/kitchen/recipe/${id}`)
   const recipesQ = useRecipes()
 
   const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
-  if (!recipe) return recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />
+  if (!recipe)
+    return recipesQ.isLoading ? <Loading /> : <StaleBounce to="/kitchen" message={t.kitchen.cookGone} />
 
   const factor = Number(sp.get('x')) || 1
   const cookRecipe =

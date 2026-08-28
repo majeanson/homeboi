@@ -253,3 +253,13 @@
 /* The Record / Draw row that used to sit under the Note rapide capture is gone:
    those actions are now the field's own 📎 (.memo-attach, styles/pages/fields.css). */
 
+
+/* The "this has been here a while" stamp on a fridge note (bmad/12 #25). Only
+   rendered past a full day, so it's never noise on a fresh note; quiet enough
+   that a glance reads the note first and the age only if it looks for it. */
+.note-card__age {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  opacity: 0.55;
+}

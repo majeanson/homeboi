@@ -1028,6 +1028,10 @@ export const EN: typeof FR = {
   lead: { label: 'Show from', none: 'At the time', h1: '1 h before', h3: '3 h before', h6: '6 h before', d1: '1 day before', d2: '2 days before', d3: '3 days before', w1: '1 week before' },
   kitchen: {
     title: 'Kitchen',
+    recipeGone: 'That recipe is gone.',
+    cookGone: 'That recipe is gone — nothing to cook here.',
+    multiCookGone: 'There aren’t two recipes to cook together that day any more.',
+    dayGone: 'That day isn’t on the menu any more.',
     week: 'The week',
     planShort: 'To plan',
     planPlaceholder: 'E.g. spaghetti',

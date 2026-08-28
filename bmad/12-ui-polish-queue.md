@@ -23,9 +23,9 @@
 17. ✅ **DONE 2026-08-27** — **Pull-to-refresh on mobile hub bodies** — invalidate the tab's keys.
 18. ✅ **DONE 2026-08-27** — **FAB long-press → instant voice capture** — hold ＋, speak, release; rides
     the existing mic + capture spine.
-25. **Age cue on fridge notes** — quiet `formatAgo` stamp (client-only; origin
+25. ✅ **DONE 2026-08-27** — **Age cue on fridge notes** — quiet `formatAgo` stamp (client-only; origin
     marker would need a column — out of scope).
-26. **Stale deep-link bounce says why** — cook/multi-cook/recipe links to a
+26. ✅ **DONE 2026-08-27** — **Stale deep-link bounce says why** — cook/multi-cook/recipe links to a
     deleted recipe get a toast instead of a silent /kitchen landing.
 
 Rejected from the same list (do not re-propose without new information): 2, 3,

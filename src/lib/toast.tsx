@@ -60,6 +60,8 @@ const MAX_RECENTS = 15
 interface ToastApi {
   schedule: (req: UndoRequest) => void
   record: (req: RecordRequest) => void
+  // A message-only line, nothing to undo (kind 'notice').
+  notice: (message: string) => void
   // The session log + its late-undo: history is newest-LAST; undo cancels/reverses
   // an entry still in its hold window; isLive says whether that's still possible.
   history: RecentItem[]
@@ -69,6 +71,7 @@ interface ToastApi {
 const ToastContext = createContext<ToastApi>({
   schedule: () => {},
   record: () => {},
+  notice: () => {},
   history: [],
   undo: () => {},
   isLive: () => false,
@@ -378,7 +381,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const newest = entries[entries.length - 1]
 
   return (
-    <ToastContext.Provider value={{ schedule, record, history, undo, isLive }}>
+    <ToastContext.Provider value={{ schedule, record, notice, history, undo, isLive }}>
       {children}
       {/* The bar shows while `visible` — set on every action and (re)armed to clear
           15 s after the last one (pinned open while you read the expanded log). Once
@@ -494,6 +497,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 // Schedule a DEFERRED undoable action (write held a few seconds). Reads as
 // `undo({ message, onUndo, onCommit })` at the call site.
 export const useUndoToast = () => useContext(ToastContext).schedule
+
+// Say ONE calm line with nothing to undo — the 'notice' kind. For telling the
+// user why something they asked for didn't happen (a link to a deleted recipe, a
+// replay that dropped rejected writes). It rides the same bar, the same session
+// log and the same auto-dismiss as an undoable action, so it can't become a
+// second, competing notification surface.
+export const useNotice = () => useContext(ToastContext).notice
 
 // Record a COMPENSATING undoable action (write already applied; onUndo is the
 // guarded inverse). For changes that must appear instantly, like adding to the list.
