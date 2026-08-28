@@ -3280,6 +3280,19 @@ export const FR = {
     previewFinal: 'Voir la liste finale',
     previewHint: 'Voici à quoi la liste ressemblera une fois ajoutée.',
   },
+  // « Le son » — l'interrupteur silencieux de l'app (lib/sound). Il existe parce
+  // que le bouton silencieux du téléphone n'atteint PAS une page web : sur iOS il
+  // n'a jamais touché la synthèse vocale ni un « audio » démarré par un script.
+  // L'app lisait donc une carte de routine à voix haute dans un autobus tranquille
+  // sans qu'on puisse l'arrêter autrement qu'en quittant.
+  sound: {
+    mute: 'Couper le son',
+    unmute: 'Remettre le son',
+    label: 'Son de l’appareil',
+    on: 'Son actif',
+    off: 'Silencieux',
+    hint: 'Coupe la VOIX de l’app : la lecture à voix haute, le carillon des minuteries, les vibrations. Un enregistrement que tu fais jouer toi-même avec ▶ (un mot vocal, un mémo) joue quand même — tu viens de le demander. Propre à cet appareil : la tablette du mur et ton téléphone gardent chacun leur réponse.',
+  },
   undo: {
     action: 'Annuler',
     more: (n: number) => `Récents (${n})`,

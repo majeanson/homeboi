@@ -64,6 +64,7 @@ import { ReviewChecklist } from '../components/ReviewChecklist'
 import { AskSheet } from '../components/AskSheet'
 import type { ContactGroup, Member, Person, PersonKind, World } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
+import { SoundToggle } from '../components/SoundToggle'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { Avatar } from '../components/Avatar'
 import { AvatarStack } from '../components/AvatarStack'
@@ -2839,6 +2840,17 @@ export function DevKit() {
             onToggle={() => {}}
             onRemove={() => {}}
           />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'SoundToggle',
+      file: 'components/SoundToggle.tsx',
+      kw: 'son sound mute silencieux muet voix haut-parleur speaker silence',
+      render: () => (
+        <Demo label="the app's own silent switch — a phone's ring/silent switch doesn't reach a web page">
+          <SoundToggle />
         </Demo>
       ),
     },

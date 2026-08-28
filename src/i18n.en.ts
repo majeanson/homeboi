@@ -2978,6 +2978,14 @@ export const EN: typeof FR = {
     previewFinal: 'Preview final list',
     previewHint: 'Here’s how the list will look once it’s added.',
   },
+  sound: {
+    mute: 'Mute',
+    unmute: 'Unmute',
+    label: 'Sound on this device',
+    on: 'Sound on',
+    off: 'Silent',
+    hint: 'Mutes the app’s VOICE: read-aloud, the timer chime, vibration. A recording you press ▶ on yourself (a voice note, a memo) still plays — you just asked for it. Per device: the wall tablet and your phone each keep their own answer.',
+  },
   undo: {
     action: 'Undo',
     more: (n: number) => `Recent (${n})`,

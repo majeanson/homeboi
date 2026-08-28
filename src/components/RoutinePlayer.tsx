@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { SoundToggle } from './SoundToggle'
+import { soundOn } from '../lib/sound'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
@@ -247,7 +249,8 @@ export function RoutinePlayer({
   // at zero, so the app feels the same in the hand. Guarded: no vibration API is fine.
   function buzz() {
     try {
-      navigator.vibrate?.(20)
+      // Muted (lib/sound) covers vibration too — see the note in lib/sound.ts.
+      if (soundOn()) navigator.vibrate?.(20)
     } catch {
       /* no vibration API — the ✓ + the spoken next step carry it */
     }
@@ -461,6 +464,12 @@ export function RoutinePlayer({
           <Link to={exitTo} className="tdl-exit" aria-label={t.kid.exit}>
             <Icon name="arrow-right-bold" size={20} style={{ transform: 'rotate(180deg)' }} />
           </Link>
+          {/* The app's own silent switch, ON the loudest surface it has: this screen
+              narrates every step by itself. A phone's ring/silent switch does not
+              reach Web Speech, so without this the only way to stop a routine talking
+              in a quiet room was to leave it. Beside the exit deliberately — that is
+              where the hand already goes when the room needs quiet. */}
+          <SoundToggle className="tdl-sound" size={18} />
           <div className="tdl-name">{routine.memberName ? `${routine.memberName} · ${routine.name}` : routine.name}</div>
           {/* "Whose routine?" — a FACE chip (pre-reader friendly), always present
               when the caller offers a way back (kids seam #4): tapping it returns
@@ -812,7 +821,7 @@ function Countdown({
       chimed.current = true
       chime()
       try {
-        navigator.vibrate?.([200, 100, 200])
+        if (soundOn()) navigator.vibrate?.([200, 100, 200])
       } catch {
         /* no vibration API — the chime + the ✓ pulse carry it */
       }

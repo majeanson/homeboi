@@ -738,3 +738,51 @@
   right: 0.4rem;
   border-top: 1px solid var(--line);
 }
+
+/* --- « Le son » — the app's own silent switch (lib/sound) ------------------- */
+/* A phone's ring/silent switch does not reach a web page, so this is the only
+   thing that can stop the app talking. It rides three hosts (the routine player's
+   top row, cook mode's bar, Réglages ▸ Voix), each of which already sizes its own
+   controls — so the base here is only the shape a bare icon button needs, and
+   each host's class supplies the rest. */
+.sound-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A real thumb target even when a host gives it nothing. */
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-pill, 99px);
+  -webkit-tap-highlight-color: transparent;
+}
+/* MUTED is the state worth seeing across a room: the app is quiet and it needs to
+   look deliberate, not broken. Struck speaker + a warm ground, so a glance at the
+   wall answers « pourquoi ça ne parle pas ? » without touching anything. */
+.sound-toggle.is-muted {
+  color: var(--terracotta-deep, var(--ink));
+  background: var(--terracotta-wash, transparent);
+}
+.sound-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* On the routine player the row is exit · name · face — all 46px discs. Match them
+   so the mute doesn't read as a different KIND of control from the way out. */
+.tdl-sound {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+.tdl-sound.is-muted {
+  background: var(--terracotta-wash, var(--card));
+}

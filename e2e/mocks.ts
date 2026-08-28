@@ -772,12 +772,40 @@ export async function mockApi(
   // audible while e2e drives the browser. No-op ONLY `speak` (and `cancel`) — leave
   // getVoices()/hasVoiceFor() intact so the 🔊 affordances render identically in
   // screenshots; we suppress the audio, not the feature.
+  // It also COUNTS, on `window.__spoke`. A test that wants to prove the app went
+  // quiet (e2e/sound-toggle.spec.ts, « Le son ») cannot install its own counter:
+  // this script runs after any the test added and would silently overwrite it,
+  // leaving a counter that never moves — which reads exactly like "muting works".
+  // One place owns the stub, so there is nothing to overwrite.
   await page.addInitScript(() => {
+    const w = window as unknown as { __spoke: number }
+    w.__spoke = 0
     try {
       const ss = window.speechSynthesis
       if (ss) {
-        ss.speak = () => {}
+        ss.speak = () => {
+          w.__spoke++
+        }
         ss.cancel = () => {}
+        // Headless Chromium ships NO voices, and lib/speak deliberately waits for
+        // one before it utters (so the first word gets the right accent) — with an
+        // empty list nothing would ever reach `speak` and the counter would stay at
+        // zero for a reason that has nothing to do with the mute. Hand it one.
+        const voice = { lang: 'fr-CA', name: 'E2E', voiceURI: 'e2e', default: true, localService: true }
+        ss.getVoices = () => [voice as unknown as SpeechSynthesisVoice]
+        // …and the utterance must accept that plain object on `.voice`. The real one
+        // throws a TypeError for anything but a SpeechSynthesisVoice, and lib/speak's
+        // never-throw-on-a-tap catch would swallow it — silent for the wrong reason.
+        ;(window as unknown as { SpeechSynthesisUtterance: unknown }).SpeechSynthesisUtterance = class {
+          text: string
+          lang = ''
+          rate = 1
+          voice: unknown = null
+          onend: (() => void) | null = null
+          constructor(text: string) {
+            this.text = text
+          }
+        }
       }
     } catch {
       /* no speech support — nothing to silence */

@@ -24,6 +24,7 @@ import {
   saveCookView,
 } from '../lib/cookPrefs'
 import { IngredientLine } from './IngredientLine'
+import { SoundToggle } from './SoundToggle'
 import { ingredientName } from '../lib/ingredient'
 import { useWrite } from '../lib/write'
 import { api } from '../lib/api'
@@ -460,6 +461,11 @@ export function CookMode({
       <div className="cook__bar">
         <span className="cook__title">{recipe.title}</span>
         <div className="cook__bar-tools">
+          {/* Mute, first in the row: cook mode reads steps aloud and rings timers on
+              its own, and a phone's silent switch reaches neither. Shown to the
+              toddler lens too — it is the one control on this screen that cannot
+              lose anything. */}
+          <SoundToggle className="cook__sound" size={20} />
           {/* Parent-only « Affichage » toggle — opens the layout / text-size / step-
               ingredient options in a panel below (toddler is locked to the stepper). */}
           {!isToddler && (

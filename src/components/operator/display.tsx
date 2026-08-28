@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { SoundToggle } from '../SoundToggle'
+import { useSoundOn } from '../../lib/sound'
 import { Link } from 'react-router-dom'
 import { useLang, useT, type Lang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
@@ -383,6 +385,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   // Tap-to-hear (bmad/08 A-2): the per-device long-press-to-speak pref for the
   // toddler/simple lenses (lib/tapToHear). Default ON.
   const tapToHear = useTapToHear()
+  const soundIsOn = useSoundOn()
   // The GLOBAL read-aloud language — applies to ALL narration everywhere (#TTS).
   const readLang = useReadLang()
   // Which language's VOICE we're configuring. A French app can read recipes in
@@ -407,6 +410,23 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={t.operator.voiceTitle} help={help} helpKey="voice">
+      {/* « Le son » — the app's own silent switch, ABOVE the voice pickers and
+          OUTSIDE the `available` guard, because it stays meaningful when no TTS voice
+          is installed at all: it still mutes the timer chime and the vibration. It is
+          also the reason the pickers below might do nothing, so it has to be the
+          first thing read here.
+
+          The same switch rides the routine player's and cook mode's bars — this is
+          the calm mirror, not the primary door (you reach for it when something is
+          already talking). Device-local, so a guest may flip it. */}
+      <div className="operator__seg">
+        <span className="operator__seg-label mono">{t.sound.label}</span>
+        <div className="picker-chips mono">
+          <SoundToggle />
+          <span className="mono">{soundIsOn ? t.sound.on : t.sound.off}</span>
+        </div>
+      </div>
+      <p className="operator__hint mono">{t.sound.hint}</p>
       {!available ? (
         <p className="operator__hint mono">{t.operator.voiceNone}</p>
       ) : (

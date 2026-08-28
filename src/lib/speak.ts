@@ -16,6 +16,7 @@
 //      same language family, then to best-effort default. That's an OS gap, not
 //      a bug; install a Français (Canada) voice to hear it narrated properly.
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { soundOn } from './sound'
 import { useLang, type Lang } from '../i18n'
 
 const SUPPORTED = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -271,6 +272,9 @@ export function playNarration(
   fallbackText: string | undefined,
   speak: (raw: string | undefined) => void,
 ): () => void {
+  // Muted: neither the clip nor the TTS fallback — a recorded parent voice is the
+  // LOUDEST thing this app plays, and it is the one most likely to start on its own.
+  if (!soundOn()) return () => {}
   if (!audioKey) {
     speak(fallbackText)
     return () => {}
@@ -309,6 +313,15 @@ export function useSpeak() {
   return useCallback(
     (raw: string | undefined, langOverride?: Lang, opts?: { onEnd?: () => void }) => {
       if (!raw || !SUPPORTED) return
+      // Muted (lib/sound): this device makes no sound at all. Read live rather than
+      // captured, so flipping the switch mid-sentence stops the NEXT utterance
+      // without this callback needing to be rebuilt. `onEnd` still fires — a caller
+      // that advances a stepper when the narration finishes must not stall forever
+      // just because nobody could hear it.
+      if (!soundOn()) {
+        opts?.onEnd?.()
+        return
+      }
       const text = spokenOnly(raw)
       if (!text) return
       // A per-call override wins (a recipe's own language); else the household's

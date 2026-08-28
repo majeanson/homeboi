@@ -558,8 +558,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Lecture à voix haute', en: 'Read aloud' },
         detail: {
-          fr: 'Les recettes et les routines se lisent à voix haute. Choisis la voix pour chaque langue dans Réglages ▸ Système ▸ Voix; une recette gardée en anglais se lit en anglais.',
-          en: 'Recipes and routines read themselves aloud. Pick the voice per language in Settings ▸ System ▸ Voice; a recipe kept in English reads in English.',
+          fr: 'Les recettes et les routines se lisent à voix haute. Choisis la voix pour chaque langue dans Réglages ▸ Système ▸ Voix; une recette gardée en anglais se lit en anglais. Besoin de silence ? Le [[icon:speaker-slash-bold]] dans la barre du mode cuisson et de la routine coupe le son de l’app — le bouton silencieux du téléphone, lui, n’atteint pas une page web. Propre à cet appareil.',
+          en: 'Recipes and routines read themselves aloud. Pick the voice per language in Settings ▸ System ▸ Voice; a recipe kept in English reads in English. Need quiet? The [[icon:speaker-slash-bold]] in the cook-mode and routine bars mutes the app — a phone’s own silent switch doesn’t reach a web page. Per device.',
         },
       },
       {

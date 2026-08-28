@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { soundOn } from './sound'
 
 // A live countdown for a duration found in a step. Several run at once (start the
 // pasta, then the sauce), so each carries a label + its own id. Extracted from
@@ -15,6 +16,9 @@ export const clock = (r: number) => `${Math.floor(r / 60)}:${String(r % 60).padS
 // Exported so the routine player's per-step timer (a 2-min teeth brush) rings the
 // SAME friendly "ding-ding" as the cook timers, rather than forking a second tone.
 export function chime() {
+  // Muted (lib/sound): a phone's silent switch doesn't reach Web Audio, so this is
+  // the only thing that can stop a timer ringing on a quiet bus.
+  if (!soundOn()) return
   try {
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!Ctx) return
@@ -86,7 +90,10 @@ export function useCookTimers(onFinish?: (labels: string[]) => void) {
         if (justDone.length) {
           chime()
           try {
-            navigator.vibrate?.([200, 100, 200])
+            // Vibration is muted too, deliberately: a buzz on a table at 3 a.m. is
+            // the same intrusion as a chime, and « silencieux » has to mean it. The
+            // timer's visual "done" state carries the news either way.
+            if (soundOn()) navigator.vibrate?.([200, 100, 200])
           } catch {
             /* no vibration API — the chime + visual "done" state are enough */
           }
