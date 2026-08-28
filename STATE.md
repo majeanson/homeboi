@@ -22,19 +22,19 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1823 unit tests in 142 files · 115 Playwright spec files |
+| **Tests** | 1845 unit tests in 142 files · 115 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
-- `npm run typecheck` · `npm test` (1823) · `npm run build` — green.
+- `npm run typecheck` · `npm test` (1845) · `npm run build` — green.
 - `npm run check:bundle` — **3859 KB** of JS across `dist/assets`, **733 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1128 passed, 13 skipped**.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Ten build-gating invariants** (this is the codebase's best feature — see §5):
+- **Eleven build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -43,8 +43,9 @@
   `realtime.test.ts` (`PATH_KEYS` coverage), **`nested-interactive.test.ts` (no control
   inside a control, no `role="img"` on an interactive SVG — added 2026-08-27)**,
   `check-bundle.mjs` (size + precache), and **`ingredient-mirror.test.ts` (the client
-  and server copies of `ingredientName` are the same code — added 2026-08-28)**. `knip`
-  now runs in CI too.
+  and server copies of `ingredientName` are the same code — added 2026-08-28)**, and
+  **the birthday agreement table (`src/lib/cercle.test.ts`, added 2026-08-28 — the client
+  and server `parseBirthday` must agree case-for-case)**. `knip` now runs in CI too.
 
 ---
 
@@ -59,7 +60,7 @@ them are finished. Read this table before opening any of them.
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
 | `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
 | `AUJOURDHUI.md` | Ledger | ✅ **Closed** — no open items (the last, `ARM_MS`, answered 2026-08-28). |
-| `REVIEW-PASS.md` | Ledger | 🟡 **31 open** P2/P3 findings across 8 sections. The main written debt pool. |
+| `REVIEW-PASS.md` | Ledger | 🟡 **19 open** P2/P3 findings across 8 sections (was "31"; the 2026-08-28 sweep found 8 already fixed and never ticked, and closed the birthday split). The main written debt pool. |
 | `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — all 5 tier-1 and all 9 tier-2 seams resolved (5 of the 9 were already done and merely unticked). Only tier-3 polish remains. See §4-B. |
 | `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
 | `PLAN-mots-and-lifecycle-followups.md` | Feature backlog | 🟡 12 designed-but-unbuilt features (A5–D2), never started. |
@@ -221,8 +222,9 @@ Shapes still worth batching:
 
 - **Reuse duplicates** — the "which ingredients?" checklist exists twice (`RecipeListPicker`
   vs `RecipeSheet`'s inline `listPrompt`); three `Member` shapes converge on one face control;
-  `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; two `parseBirthday`
-  derivations that disagree on the year regex.
+  `ChoreForm`/`BlockForm` hand-roll the same member-toggle row; ~~two `parseBirthday` derivations that disagree on the year regex~~ (✅ 2026-08-28 — it was
+  FOUR spellings; the rule now lives once in `functions/_lib/birthdayRule.ts`, pinned by an
+  agreement table in `src/lib/cercle.test.ts`).
 - **Silent / inconsistent states** — `MeasureColorsSection` vanishes entirely for a guest
   where every sibling shows a read-only legend; `HeartButton` truncates faces at 4 with no
   "+" signal. *(`ThisWeek` having no error state was itself stale — it renders one at

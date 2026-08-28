@@ -4,6 +4,7 @@ import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { deleteR2Blob } from '../_lib/r2'
 import { freeMemberMediaBlobs, memberRefStatements } from '../_lib/members'
+import { birthdayOrNull } from '../_lib/birthdayRule'
 
 // The routine companion is a closed set of creature tokens (lib/companions mirrors
 // this) — a soft preference, never free text, so it can't carry a score.
@@ -18,9 +19,6 @@ const companionOrNull = (v: unknown): string | null =>
 // Phase 3: members now also carry email, phone, birthday, notes to mirror the
 // contact fields in le cercle — the same person, just living in the household.
 
-const BIRTHDAY_RE = /^\d{1,4}-\d{2}-\d{2}$/
-const birthdayOrNull = (v: unknown): string | null =>
-  typeof v === 'string' && BIRTHDAY_RE.test(v.trim()) ? v.trim() : null
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 const genderOrNull = (v: unknown): string | null => (v === 'm' || v === 'f' ? v : null)
 

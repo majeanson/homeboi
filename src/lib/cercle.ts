@@ -955,6 +955,13 @@ export function dedupeNewLinks(generated: GeneratedLink[], existing: ContactLink
 
 // Parse 'YYYY-MM-DD' → parts. Year 0 (or '0000') means "year unknown" → yearKnown
 // is false and age can't be computed. Returns null for empty/garbage.
+//
+// TWIN of `parseBirthday` in functions/_lib/birthdays.ts — the SPA and the Worker
+// don't share code, so the rule lives once per tree and the two MUST agree. They
+// didn't until 2026-08-28 (the server copy matched `\d{4}`, this one `\d{1,4}`, so a
+// short year showed on the cercle page and vanished from the board's agenda). Change
+// one, change both: `functions/_lib/birthdays.test.ts` runs an agreement table over
+// both copies and fails on any divergence.
 export function parseBirthday(birthday: string | null | undefined): { year: number; month: number; day: number; yearKnown: boolean } | null {
   if (!birthday) return null
   const m = /^(\d{1,4})-(\d{2})-(\d{2})$/.exec(birthday.trim())

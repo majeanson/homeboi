@@ -2,6 +2,7 @@ import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
+import { birthdayOrNull } from '../_lib/birthdayRule'
 
 // « Le cercle » → Pets: the household's animals, returned as PEOPLE in the circle (a
 // 'pet' PersonKind merged into the SPA's people set, like contacts + members). A pet
@@ -127,7 +128,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       str(body?.breed),
       str(body?.photoKey),
       str(body?.colour),
-      str(body?.birthday),
+      birthdayOrNull(body?.birthday),
       str(body?.microchip),
       str(body?.feeding)?.slice(0, TEXT_CAP) ?? null,
       str(body?.sitterNotes)?.slice(0, TEXT_CAP) ?? null,
@@ -169,7 +170,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf('breed' in body, 'breed', str(body.breed))
   setIf('photoKey' in body, 'media_key', str(body.photoKey))
   setIf('colour' in body, 'colour', str(body.colour))
-  setIf('birthday' in body, 'birthday', str(body.birthday))
+  setIf('birthday' in body, 'birthday', birthdayOrNull(body.birthday))
   setIf('microchip' in body, 'microchip', str(body.microchip))
   setIf('feeding' in body, 'feeding', str(body.feeding)?.slice(0, TEXT_CAP) ?? null)
   setIf('sitterNotes' in body, 'sitter_notes', str(body.sitterNotes)?.slice(0, TEXT_CAP) ?? null)

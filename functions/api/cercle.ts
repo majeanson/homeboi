@@ -2,6 +2,7 @@ import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
+import { birthdayOrNull } from '../_lib/birthdayRule'
 
 // « Le cercle » — the household people directory (contacts). GET returns the
 // whole circle (contacts + their relationship edges + named groups) in one shot;
@@ -94,8 +95,6 @@ interface PetRow {
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 const genderOrNull = (v: unknown): string | null => (v === 'm' || v === 'f' ? v : null)
-const BIRTHDAY_RE = /^\d{1,4}-\d{2}-\d{2}$/
-const birthdayOrNull = (v: unknown): string | null => (typeof v === 'string' && BIRTHDAY_RE.test(v.trim()) ? v.trim() : null)
 // A JSON value we control, re-serialized defensively (drops anything non-array /
 // non-object before storage so a bad client can't poison the column).
 function jsonArray(v: unknown): string {

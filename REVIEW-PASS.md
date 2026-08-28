@@ -564,10 +564,27 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   `?focus=` per the subtab-URL rule (survives scene round-trips + deep-links); it also renders
   in Social where it collapses most rows to "aucun lien connu" (`:706`), and clearing it
   doesn't re-centre the ego view (`CercleEgo.tsx:45`).
-- [ ] **[dir] Two independent "upcoming birthday" derivations + two `parseBirthday`** — client
-  `cercle.ts:850` (`\d{1,4}`, ≤31-day window) vs server `_lib/birthdays.ts:33` (`\d{4}`) driving
-  the board. Different regex/window for one concept → drift (a 1–3-digit stored year shows on
-  the cercle page but is dropped by the board). Unify.
+- [x] **[dir] Two independent "upcoming birthday" derivations + two `parseBirthday`** —
+  ✅ **Fixed 2026-08-28.** It was worse than reported: **four** spellings of the rule, not
+  two. Client `cercle.ts` and BOTH write validators (`api/members.ts`, `api/cercle.ts`, each
+  with its own `BIRTHDAY_RE` copy) matched `\d{1,4}`; the server derivation
+  (`_lib/birthdays.ts`) matched `\d{4}`. So the write path *admitted* a short year that the
+  board then silently dropped — the reported symptom, with the writers as the reason it
+  could ever be in the table. `api/pets.ts` had no validator at all (`str(body.birthday)`),
+  storing any string.
+  The rule now lives once, in **`functions/_lib/birthdayRule.ts`** (kept out of
+  `birthdays.ts` because that module names `D1Database`, which the SPA tsconfig has no
+  types for): `parseBirthday` permissive on READ (`\d{1,4}`, so short years already stored
+  are seen by both trees), `birthdayOrNull` canonical on WRITE (pads the year to 4, the
+  shape `makeBirthday` already emits) and validating **through** `parseBirthday`, so
+  "accepted" and "readable" can no longer drift — `2020-13-01` used to be stored and then
+  ignored by every reader. All three handlers now share it.
+  The client twin stays (the two bundles don't share code) and is pinned by an **agreement
+  table over both real implementations** in `src/lib/cercle.test.ts` — same direction and
+  same shape as that file's existing `INVERSES` pin, since a test in `functions/` may not
+  import `src/`. **Run against the bug**: restoring `\d{4}` turns 6 cases red across the two
+  files; restored, 115 pass. (A first attempt to plant it via `sed` silently no-op'd and the
+  suite stayed green — the §5-0 trap, caught only by re-grepping the file after planting.)
 - [x] **[dir] Four hand-rolled Union-Find copies** — ✅ **already resolved** (verified against
   code 2026-07-02): the shared `UnionFind` class (`cercle.ts:625`) is used by ALL four sites —
   `detectFamilyGroups` (`:684`), `closedLinks`' sibling grouping (`:1474`), `CercleWeb` (`:64`),

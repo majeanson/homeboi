@@ -30,15 +30,11 @@ export interface BirthdayOccurrence extends DerivedOccurrence {
   giftIdeas: string | null // #20
 }
 
-function parseBirthday(s: string): { year: number; month: number; day: number; yearKnown: boolean } | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim())
-  if (!m) return null
-  const year = Number(m[1])
-  const month = Number(m[2])
-  const day = Number(m[3])
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null
-  return { year, month, day, yearKnown: year !== 0 }
-}
+// The parse/validate rule itself lives in `birthdayRule.ts` — kept apart from this
+// module because the agreement test in `src/lib/cercle.test.ts` imports it from the
+// SPA tree, whose tsconfig has no Workers types (`fetchBirthdayPeople` below names
+// `D1Database`).
+import { parseBirthday } from './birthdayRule'
 
 // Every person's birthday occurrence(s) falling in [rangeStart, rangeEnd) (unix
 // seconds; rangeStart a local-midnight day boundary). Pure + deterministic.
