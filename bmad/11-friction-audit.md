@@ -79,17 +79,40 @@ Tier 2 — high-frequency annoyances (weekly ×N):
 | 13 | ✅ **2026-08-27** — **Mid-cook "ran out → flag low" doesn't exist** — cook mode has zero pantry affordance | cook |
 | 14 | ✅ **2026-08-27** (migration 0122) — **« À régler » can't be snoozed/acknowledged** — an unresolvable friction re-nags every scan | tidy |
 
-Tier 3 — polish (fix opportunistically, or bundle with the tier above):
+Tier 3 — polish (fix opportunistically, or bundle with the tier above).
 
-- Cashier ✓ is a second ephemeral check-state disjoint from the list (shop).
-- Staples chips re-ask what pantry-low/list already know (plan).
+> **Swept 2026-08-28.** Five of these were re-checked against code before anything was
+> built. **Four were stale** — the same ratio tier 2 had, and the same reason: the fix
+> landed in the file that owned it and this list was never re-read. Verdicts inline.
+
+- Cashier ✓ is a second ephemeral check-state disjoint from the list (shop). *(not
+  re-checked — a design question, not a defect.)*
+- Staples chips re-ask what pantry-low/list already know (plan). *(not re-checked —
+  same.)*
 - Gather tick ~27px beside a read-aloud zone; cook-bar icons crowded (cook).
-- No meal-done — the supper hero headlines an eaten meal all evening (cook).
-- Cold kitchen grid flashes a Jan-1970 week (`weekStart ?? 0`) (plan).
+- 🔶 No meal-done — the supper hero headlines an eaten meal all evening (cook).
+  **Half stale:** « Marquer mangé » exists as a detail-peek action
+  (`components/detail/adapters.ts:417`, `t.detail.markEaten`). Whether the board's
+  supper hero *reflects* it is the part still open — the door was the missing piece
+  the item described, and it is there.
+- ✅ **2026-08-28** Cold kitchen grid flashes a Jan-1970 week (`weekStart ?? 0`) (plan).
+  **The named site was already fixed** (`pages/Kitchen.tsx` holds a `Skeleton` until the
+  meals payload lands, with the comment explaining why). Sweeping the RULE instead of the
+  site found a **fifth consumer that was not guarded, and where the epoch was worse than
+  a flash**: `IdeasPage` fed the labelled week straight into the ideas drawer's "plan it
+  on…" chips, so on a cold open **a tap wrote a meal dated 1 Jan 1970**. RecipeViewPage,
+  AddSheet and nextMeal all already had `weekStart ? … : []`; IdeasPage was the one that
+  didn't. Fixed + `e2e/cold-week-anchor.spec.ts` (and its first assertion, looking for
+  the string "1970", passed with the bug planted — `formatWeekday` renders « jeudi », no
+  year — so it is structural now: no anchor, no day chip to tap).
 - Abandoned routine stopwatch logs absurd laps; empty shell routine invisible to
-  the kid with no cue; `calm.ts` comment contradicts actual behaviour (kids).
-- « Par allée » hides the drag grip (no in-aisle tweak); online-only search
-  fires doomed requests instead of disabling (shop).
+  the kid with no cue (kids). ✅ the third clause, "`calm.ts` comment contradicts actual
+  behaviour", is **stale** — that header now documents the contradiction as a past error
+  ("it used to claim otherwise in three places, while the code did the opposite").
+- « Par allée » hides the drag grip — **a recorded decision, not a gap.** ✅ "online-only
+  search fires doomed requests instead of disabling" is **stale**: `DealsBrowser.tsx`
+  disables the submit and the suggestion chips on `!online` and shows
+  `t.shop.searchOffline` (:223, :228, :232).
 - 🔶 **2026-08-27** an AGE marker shipped on fridge notes (bmad/12 #25); an ORIGIN marker still needs a column — out of scope. Capture-routed notes carry no origin marker after the sheet closes (tidy).
 - ✅ **2026-08-27** Stale cook/multi-cook deep-links bounce to /kitchen silently (cook).
 - No "last week" review anywhere in the kitchen (grid is forward-only) (plan).

@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1845 unit tests in 142 files · 117 Playwright spec files |
+| **Tests** | 1845 unit tests in 142 files · 118 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -191,10 +191,17 @@ Two things worth keeping from the work itself:
   label and clicked « Corriger » inside the old 1 s window. It only became a guard once
   it waited the bounce out. Verified by planting the old behaviour back.
 
-**What remains in that file:** tier-3 polish only (~9 opportunistic items — the
-cashier's second check-state, staples chips, no meal-done on the supper hero, the
-Jan-1970 cold-grid flash, the abandoned routine stopwatch, « Par allée » hiding the
-drag grip).
+**What remains in that file:** tier-3 polish only, **swept 2026-08-28 — five re-checked,
+four stale**, which is tier 2's ratio again. Verdicts are now inline in the file. The one
+real defect the sweep found was not the one it was looking for: the Jan-1970 cold-grid
+flash **was** already fixed at the named site (`Kitchen.tsx` holds a Skeleton), but
+sweeping the *rule* turned up a fifth `weekStart ?? 0` consumer that wasn't guarded —
+`IdeasPage`, where the epoch week became the ideas drawer's "plan it on…" chips, so a tap
+on a cold open **wrote a meal dated 1 Jan 1970**. Fixed, with `e2e/cold-week-anchor.spec.ts`.
+Still genuinely open: the cashier's second check-state, staples chips, the gather tick's
+27px target, whether the supper hero reflects « Marquer mangé » (the action itself exists),
+the abandoned routine stopwatch, the empty shell routine's missing cue, and "last week"
+review. « Par allée »'s drag grip is a recorded decision, not a gap.
 
 ### C. Section debt — `REVIEW-PASS.md`, 20 findings (swept 2026-08-28)
 

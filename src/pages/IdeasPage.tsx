@@ -62,7 +62,16 @@ export function IdeasPage() {
 
   // The countdown window the day chips plan onto — same source (/api/meals) and same
   // DST-safe stepping as the Kitchen grid. 10 is the just-loaded fallback.
-  const week = useWeekLabeled(meals.data?.weekStart ?? 0, meals.data?.windowDays ?? WINDOW_DAYS_DEFAULT, lang)
+  //
+  // `weekStart ?? 0` is the epoch until the meals payload lands, and here that was not
+  // the cosmetic January-1970 flash the Kitchen grid had (bmad/11 tier-3, fixed at
+  // Kitchen.tsx): these labelled days ARE the "plan it on…" chips, so on a cold open
+  // a tap wrote a meal dated 1 Jan 1970. Empty week until the real anchor arrives —
+  // the same guard RecipeViewPage, AddSheet and nextMeal already had, and this was
+  // the one consumer of the five that didn't. (Sweep the rule, not the site.)
+  const weekStart = meals.data?.weekStart ?? 0
+  const labeled = useWeekLabeled(weekStart, meals.data?.windowDays ?? WINDOW_DAYS_DEFAULT, lang)
+  const week = weekStart ? labeled : []
 
   const ai = useAiWake()
   const { enabled: aiEnabled } = useAi()
