@@ -131,9 +131,42 @@
   background: var(--card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
+  /* The line takes the width; « Il en manque » trails it. A flex row, not a
+     float, so a long ingredient wraps under itself rather than under the button. */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .cook__full-ings .cook__ing-text {
-  display: inline-block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* « Il en manque » (bmad/11 tier-2 #10) — quiet until you need it: hands in the
+   bowl, you notice you're out, one tap and the low list has it. It becomes a check
+   once flagged (and disables), so a second tap can't add the same thing twice. */
+.cook__ing-low {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A real target for a floury finger, without growing the row. */
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.cook__ing-low:hover,
+.cook__ing-low:focus-visible {
+  color: var(--terracotta-deep, var(--ink));
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.cook__ing-low.is-done {
+  color: var(--sage-deep, var(--ink-soft));
+  cursor: default;
 }
 /* The method stays a single readable column (capped) even in the wide container —
    long lines hurt step-following — while the ingredients above use the full width. */

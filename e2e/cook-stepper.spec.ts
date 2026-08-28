@@ -129,3 +129,54 @@ test('the ✕ closes cook mode and lands back on the recipe', async ({ page }) =
   await expect(page.locator('.cook')).toHaveCount(0)
   await expect(page).not.toHaveURL(/\/cook$/)
 })
+
+// « Il en manque » mid-cook (bmad/11 tier-2 #10).
+//
+// You find out you're out of something with your hands in the bowl. The only doors
+// were La cuisine ▸ Garde-manger and the ＋ sheet — both of which mean abandoning
+// cook mode mid-step. This is the same pantry-low write those use: no new endpoint,
+// no new noun, and emphatically not a quantity (the calm tenet).
+test('a parent can flag an ingredient low without leaving the recipe', async ({ page }) => {
+  const posted: Record<string, unknown>[] = []
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await page.route('**/api/pantry', async (route) => {
+    if (route.request().method() === 'POST') {
+      posted.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    }
+    return route.fallback()
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/kitchen/recipe/rc1/cook')
+  await expect(page.locator('.cook')).toBeVisible()
+
+  // The scroll view is where the whole ingredient list lives (the stepper shows a
+  // step's own ingredients); a parent can switch to it, a toddler cannot.
+  await page.locator('.cook__autoread').first().click()
+  const full = page.locator('.cook__view-opt', { hasText: /Tout/ })
+  if (await full.count()) await full.first().click()
+
+  const low = page.locator('.cook__ing-low').first()
+  await expect(low).toBeVisible()
+  await low.click()
+
+  await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1)
+  // Only the NAME travels — « 250 ml de beurre » would be a recipe line on a
+  // shopping reminder, not a thing you're out of.
+  const item = String(posted[0].item ?? '')
+  expect(item).toBeTruthy()
+  expect(item).not.toMatch(/\d/)
+  // Flagged rows become a check and stop accepting taps, so the same thing can't be
+  // added twice by a floury double-tap.
+  await expect(low).toBeDisabled()
+  await low.click({ force: true }).catch(() => {})
+  expect(posted).toHaveLength(1)
+})
+
+test('a toddler never sees the flag-low control', async ({ page }) => {
+  // The kid lens is hear-first and writes nothing — the same contract the toddler
+  // board holds. A pre-reader must not be able to edit the household's pantry.
+  await openCook(page, 'toddler')
+  await expect(page.locator('.cook__ing-low')).toHaveCount(0)
+})

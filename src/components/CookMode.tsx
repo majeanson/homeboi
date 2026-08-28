@@ -24,6 +24,13 @@ import {
   saveCookView,
 } from '../lib/cookPrefs'
 import { IngredientLine } from './IngredientLine'
+import { ingredientName } from '../lib/ingredient'
+import { useWrite } from '../lib/write'
+import { useRecordUndo } from '../lib/toast'
+import { api } from '../lib/api'
+import { isGuest } from '../lib/device'
+import { PANTRY_KEY } from './kitchen/types'
+import { A_REGLER_KEY } from '../lib/queryKeys'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
 import { useCookTimers } from '../lib/cookTimers'
@@ -94,6 +101,57 @@ export function CookMode({
   // keyboard / swipe handlers can ignore nav outside the stepper without rebinding.
   const { audience } = useAudience()
   const isToddler = audience === 'toddler'
+  // « Il en manque » — flag an ingredient running low WITHOUT leaving the recipe
+  // (bmad/11 tier-2 #10). You find out you're out of something with your hands in
+  // the bowl; until now the only doors were La cuisine ▸ Garde-manger and the ＋
+  // sheet, both of which mean abandoning cook mode mid-step. This is the same
+  // pantry-low write those use — no new endpoint, no new noun, and emphatically
+  // not a quantity (the calm tenet: « il en manque », never « il en reste 2 »).
+  //
+  // Only the ingredient NAME goes over: `ingredientName` drops « 250 ml de » so
+  // the low list reads « beurre », not a line from a recipe.
+  const write = useWrite()
+  const recordUndo = useRecordUndo()
+  const [flagged, setFlagged] = useState<Set<string>>(new Set())
+  const canFlagLow = !isToddler && !isGuest()
+  function flagLow(line: string) {
+    const item = ingredientName(line).trim()
+    if (!item || flagged.has(item)) return
+    // Marked here and now: the point is to keep cooking, so the confirmation has to
+    // be the button itself changing, not a trip to another screen.
+    setFlagged((cur) => new Set(cur).add(item))
+    void write('pantry', { method: 'POST', body: { item }, affectedKeys: [PANTRY_KEY, A_REGLER_KEY] })
+      .then(() => {
+        // Compensating undo: the row is already live, so taking it back deletes it.
+        // We don't know its id, so the inverse re-reads the list — cheap, and it
+        // keeps this off the critical path of a cook who just wants to keep going.
+        recordUndo({
+          message: t.recipes.lowAdded(item),
+          onUndo: () => {
+            setFlagged((cur) => {
+              const next = new Set(cur)
+              next.delete(item)
+              return next
+            })
+            void api<{ items: { id: string; item: string }[] }>('pantry')
+              .then((r) => r.items.find((i) => i.item.trim().toLowerCase() === item.toLowerCase()))
+              .then((row) =>
+                row ? write('pantry', { method: 'DELETE', body: { id: row.id }, affectedKeys: [PANTRY_KEY, A_REGLER_KEY] }) : null,
+              )
+              .catch(() => {})
+          },
+        })
+      })
+      .catch(() => {
+        // The write failed for real (offline QUEUES instead of throwing) — un-mark
+        // it rather than leaving a checkmark over something that never landed.
+        setFlagged((cur) => {
+          const next = new Set(cur)
+          next.delete(item)
+          return next
+        })
+      })
+  }
   const [view, setView] = useState<CookView>(() => (isToddler ? 'step' : loadCookView(recipe.id)))
   // The layout / text-size / step-ingredient controls are set-once options — collapse
   // them behind an « Affichage » (…) toggle so they don't crowd the step at the stove.
@@ -572,6 +630,22 @@ export function CookMode({
                           >
                             <IngredientLine line={ing} size="sm" />
                           </span>
+                          {/* « Il en manque » — a SIBLING of the read-aloud control,
+                              never nested inside it. Quiet until you need it, and it
+                              becomes a check once flagged so a second tap can't add
+                              the same thing twice. */}
+                          {canFlagLow && (
+                            <button
+                              type="button"
+                              className={'cook__ing-low' + (flagged.has(ingredientName(ing).trim()) ? ' is-done' : '')}
+                              onClick={() => flagLow(ing)}
+                              disabled={flagged.has(ingredientName(ing).trim())}
+                              aria-label={`${t.recipes.flagLow} — ${ingredientName(ing)}`}
+                              title={t.recipes.flagLow}
+                            >
+                              <Icon name={flagged.has(ingredientName(ing).trim()) ? 'check-bold' : 'carrot-bold'} size={15} />
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ul>

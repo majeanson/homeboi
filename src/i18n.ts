@@ -1509,6 +1509,12 @@ export const FR = {
     gathered: 'Pris ✓',
     toGather: 'À prendre',
     hearLine: 'Écouter l’ingrédient',
+    // « Il en manque » — signaler un manque SANS quitter la recette (palier 2 nº10).
+    // On découvre qu'on est à court les mains dans le bol ; jusqu'ici les seules
+    // portes étaient le garde-manger et la feuille ＋, deux façons d'abandonner la
+    // cuisson en plein milieu. Un manque, jamais une quantité (tenet du calme).
+    flagLow: 'Il en manque',
+    lowAdded: (item: string) => `« ${item} » ajouté aux manques`,
     originalShow: 'Voir la recette originale',
     originalHide: 'Retour à la fiche',
     originalImported: 'Tel qu’importé',

@@ -1333,6 +1333,8 @@ export const EN: typeof FR = {
     gathered: 'Got it ✓',
     toGather: 'To gather',
     hearLine: 'Hear the ingredient',
+    flagLow: 'Running low',
+    lowAdded: (item: string) => `“${item}” added to running low`,
     originalShow: 'View the original recipe',
     originalHide: 'Back to the card',
     originalImported: 'As imported',
