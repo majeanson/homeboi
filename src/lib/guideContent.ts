@@ -1245,8 +1245,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: '« À régler »', en: '“To sort”' },
         detail: {
-          fr: 'Une petite carte du babillard signale ce qui mérite ton attention — une sortie sans conducteur, un souper vide. La liste complète, avec un raccourci par correction, vit dans Réglages ▸ « Cette semaine ». Elle se vide quand c’est réglé.',
-          en: 'A small board card flags what deserves your attention — a ride with no driver, an empty supper. The full list, with a one-tap fix each, lives in Settings ▸ “This week”. It empties as you sort it.',
+          fr: 'Une petite carte du babillard signale ce qui mérite ton attention — une sortie sans conducteur, un souper vide. La liste complète, avec un raccourci par correction, vit dans Réglages ▸ « Cette semaine ». Elle se vide quand c’est réglé — et si quelque chose ne peut pas se régler aujourd’hui, « Plus tard » le fait taire jusqu’à demain, sur tous les appareils de la maison.',
+          en: 'A small board card flags what deserves your attention — a ride with no driver, an empty supper. The full list, with a one-tap fix each, lives in Settings ▸ “This week”. It empties as you sort it — and when something simply can’t be sorted today, “Later” quiets it until tomorrow, on every device in the house.',
         },
         route: '/settings?tab=board&sub=thisweek',
       },
@@ -1275,8 +1275,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Il attend, sans presser', en: 'It waits, no pressure' },
         detail: {
-          fr: 'Le mot reste fermé sur le visage du destinataire — jamais de pastille de compte. On l’ouvre quand on passe, et on peut y répondre.',
-          en: 'The note stays closed on the recipient’s face — never an unread count. You open it when you pass by, and you can reply.',
+          fr: 'Le mot reste fermé sur le visage du destinataire — jamais de pastille de compte. On l’ouvre quand on passe, et on peut y répondre. Un mot dit à voix haute s’écrit tout seul, donc la pile se lit d’un coup d’œil sans rien jouer. Une fois vus, ils descendent dans « Déjà vus », qu’un balai vide d’un coup — sauf ceux que tu as gardés.',
+          en: 'The note stays closed on the recipient’s face — never an unread count. You open it when you pass by, and you can reply. A spoken note writes itself down, so the pile reads at a glance without playing anything. Once seen, notes drop into “Already seen”, which one broom empties — except the ones you kept.',
         },
       },
       {
@@ -1906,8 +1906,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode cuisson', en: 'Cook mode' },
         detail: {
-          fr: 'Plein écran, gros texte, l’écran reste allumé. Tu peux aussi en faire une [[card:routines|routine pour enfant]].',
-          en: 'Full screen, big text, the screen stays awake. You can also turn it into a [[card:routines|kid routine]].',
+          fr: 'Plein écran, gros texte, l’écran reste allumé. S’il te manque un ingrédient en pleine recette, touche le [[icon:carrot-bold]] à côté : il part dans « Ce qui s’achève » sans que tu quittes la page. Tu peux aussi en faire une [[card:routines|routine pour enfant]].',
+          en: 'Full screen, big text, the screen stays awake. Out of an ingredient mid-recipe? Tap the [[icon:carrot-bold]] beside it and it joins “Running low” without you leaving the page. You can also turn it into a [[card:routines|kid routine]].',
         },
       },
       {
