@@ -7,6 +7,8 @@ import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
 import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
+import { weekDates } from './kitchen/week'
+import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { formatWeekday, formatRelativeWeekday } from '../lib/format'
@@ -399,11 +401,10 @@ export function AddSheet({
   const [ensemblePick, setEnsemblePick] = useState<Set<string> | null>(null)
   const mealPrefs = useMealPrefs()
   const weekStart = mealsData?.weekStart ?? 0
-  // Same 10-day countdown window the Kitchen grid renders (shrinks 10 → 4 across
-  // the week, re-anchored each Tuesday — see functions/api/meals.ts).
-  const weekDays = weekStart
-    ? Array.from({ length: mealsData?.windowDays ?? 10 }, (_, i) => addLocalDays(weekStart, i))
-    : []
+  // The same rolling window the Kitchen grid renders — today through today + the
+  // household's « Jours affichés » (functions/api/meals.ts). Built by the ONE
+  // builder in components/kitchen/week.ts rather than re-derived here.
+  const weekDays = weekStart ? weekDates(weekStart, mealsData?.windowDays ?? WINDOW_DAYS_DEFAULT) : []
   // Today's planned (non-leftover) meals → "we ate this, there's some left"
   // suggestions for the leftovers combobox; picking one carries its recipe link.
   const leftoverMealOpts = useMemo(

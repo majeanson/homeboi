@@ -2426,6 +2426,13 @@ export const FR = {
     ghost: 'Liste fantôme',
     mealsTab: 'Repas',
     mealColors: 'Couleurs des repas',
+    // « Jours affichés » — the rolling meal-plan window (functions/_lib/mealSlots).
+    // Replaced a Tuesday-anchored block that could not reach the coming weekend
+    // from a Sunday evening (bmad/11 tier-1 seam #1).
+    mealWindowTitle: 'Jours affichés',
+    mealWindowLabel: 'La grille montre',
+    mealWindowHint: 'À partir d’aujourd’hui, toujours. Dix jours suffisent pour planifier la fin de semaine qui vient, un dimanche soir comme un mercredi.',
+    mealWindowDays: (n: number) => `${n} jours`,
     mealColorsHint:
       'Donne une couleur à chaque repas (déjeuner, dîner, collation, souper, dessert). Elle paraît partout où ce repas apparaît — babillard, calendrier, cuisine.',
     mealColorReset: 'Couleur par défaut',

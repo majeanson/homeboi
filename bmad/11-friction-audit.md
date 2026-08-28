@@ -3,11 +3,12 @@
 > 🔴 **This is the highest-value unfixed pool in the repo, and it is blocked on a
 > decision — not on analysis.** Marc declined the proposed F1–F5 fix-wave *grouping* on
 > 2026-07-13; the **seams themselves were never disputed**, and nothing has changed about
-> them since — **except where a row below says otherwise**. Two of the five tier-1
-> entries are now closed: **#2** (`/share` losing captures) was fixed 2026-08-27, and
-> **#5** turned out to have been fixed earlier and never ticked here. **#1, #3 and #4
-> are live and verified in code on 2026-08-27.** Ask about them **individually** before
-> executing anything. See [`STATE.md`](../STATE.md) § 4-B.
+> them since — **except where a row below says otherwise**. Three of the five tier-1
+> entries are now closed: **#1** (the planning window) and **#2** (`/share` losing
+> captures) were fixed 2026-08-27, and **#5** turned out to have been fixed earlier and
+> never ticked here. **#3 and #4 are live and verified in code on 2026-08-27.** Ask
+> about them **individually** before executing anything. See
+> [`STATE.md`](../STATE.md) § 4-B.
 
 > Five parallel read-only audits walked the flows a real household runs weekly:
 > **plan the week · grocery run · cook tonight · kid mornings/bedtime ·
@@ -41,7 +42,7 @@ Tier 1 — blocks the ritual / loses data:
 
 | # | Seam | Flow | Why first |
 | - | ---- | ---- | --------- |
-| 1 | **Sunday planning can't reach Fri/Sat** — the Tuesday-anchored `windowDaysFor` shows 4–5 cells on Sun/Mon; no picker in the app reaches the coming weekend | plan | The core ritual is impossible on the two evenings it happens |
+| 1 | ~~**Sunday planning can't reach Fri/Sat**~~ ✅ **FIXED 2026-08-27** — `windowDaysFor` is gone. The window ROLLS from today (`today .. today + N`), and N is a household setting: « Jours affichés », Réglages ▸ Cuisine ▸ Repas, 7 · 10 · 14, default 10. Any Sunday reaches the following Saturday **by construction**, since the floor is 7. Clamp unit-tested (`_lib/mealSlots.test.ts` — the old window had zero coverage), control e2e'd (`config-panels.spec.ts`) | plan | — |
 | 2 | ~~**/share loses captures**~~ ✅ **FIXED 2026-08-27** — the capture now rides `useWrite` (queues + replays offline), and the rule itself is enforced by `src/lib/write-rule.test.ts` so it cannot drift back. Guarded by `e2e/capture-offline.spec.ts`. **Still open:** no routed-label/undo/« Corriger » on /share, and the scene shows no offline banner (it sits outside HubLayout — same as seam #12) | tidy | Data loss FIXED; mis-route UX remains |
 | 3 | **A dated loose todo silently vanishes after its day** — never swept, never rolled forward, invisible to board glance / Moments / À régler | tidy | Lost intended work |
 | 4 | **The locked kiosk (`?kid=1`) hides every parent glance** — departure checklist + habit morning-open unreachable except via the 3s-hold+math gate, every morning | kids | One-tablet households lose the 7h10 surface |
@@ -86,9 +87,10 @@ switches; the nightly routine reset.
 
 ## Suggested fix-waves (proposal — decide before executing)
 
-- **Wave F1 « the ritual works »** (tier 1, items 1–3): planning window ≥
-  today→next-Sunday; /share renders the capture spine (or minimally useWrite +
-  routed/undo); overdue loose todos roll forward or surface as a quiet group.
+- ~~**Wave F1 « the ritual works »**~~ — two thirds shipped 2026-08-27: the planning
+  window rolls from today and is a household setting; /share writes through useWrite
+  (its routed-label / « Corriger » half is still open). **Remaining: item 3** —
+  overdue loose todos surface as a quiet group.
 - **Wave F2 « the kiosk belongs to the family »** (items 4–5): idle
   return-to-picker regardless of completion; an always-there "whose routine?"
   face chip; a gated parent peek (departure + habit check-in) on the locked

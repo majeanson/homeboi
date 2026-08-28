@@ -28,6 +28,19 @@ export const DEFAULT_SLOT_ORDER: MealSlot[] = ['breakfast', 'lunch', 'snack', 's
 // The day's headline slot, out of the box.
 export const DEFAULT_HERO: MealSlot = 'supper'
 
+// « Jours affichés » — how far the meal grid reaches, counting today. A HOUSEHOLD
+// SETTING like order/hero/hours above: read it off `/api/household`
+// (`mealWindowDays`), never off this constant. These are only what the picker in
+// Réglages ▸ Cuisine ▸ Repas offers and what to assume before the read lands.
+//
+// functions/_lib/mealSlots.ts is the AUTHORITY — it clamps whatever arrives, so a
+// value outside this list can never reach the grid. The bounds are set by two
+// existing surfaces, not by taste: the toddler kitchen slices `week.slice(0, 7)`
+// (so never below 7) and functions/api/ask.ts snapshots `today+14d` for the AI (so
+// never above 14). Keep the two files in step.
+export const WINDOW_DAYS_DEFAULT = 10
+export const WINDOW_DAYS_OPTIONS = [7, 10, 14] as const
+
 // When each meal is SERVED, in minutes from local midnight. An ordinary Québec day.
 export const DEFAULT_SLOT_HOURS: Record<MealSlot, number> = {
   breakfast: 7 * 60, // 07:00

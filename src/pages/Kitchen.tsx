@@ -41,7 +41,7 @@ import { EditField } from '../components/EditField'
 import { isGuest } from '../lib/device'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildDay } from '../components/detail/adapters'
-import { SLOT_ICON_NAME } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
@@ -159,14 +159,14 @@ export function Kitchen() {
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   const weekStart = meals.data?.weekStart ?? 0
-  // 10-day countdown block, re-anchored each Tuesday; the count shrinks 10 → 4
-  // across the week (see functions/api/meals.ts). 10 is the just-loaded fallback.
-  const windowDays = meals.data?.windowDays ?? 10
+  // The household's « Jours affichés », rolling from today (see functions/api/meals.ts
+  // and _lib/mealSlots). WINDOW_DAYS_DEFAULT is only the not-yet-loaded fallback.
+  const windowDays = meals.data?.windowDays ?? WINDOW_DAYS_DEFAULT
   const low = pantry.data?.low ?? []
   const soon = useSoonQ.data?.soon ?? []
 
-  // Build the countdown grid from weekStart (today) across the remaining days of
-  // the 10-day block. The HERO slot is the day's primary meal (the headline, the
+  // Build the grid from weekStart (today) across the window's days. The HERO slot
+  // is the day's primary meal (the headline, the
   // shop-the-week driver, the kid-suggestion target) — the souper unless the
   // household picked another in Réglages ▸ Repas — so the grid + week shape stay
   // keyed on it; the other slots ride alongside in the household's order.

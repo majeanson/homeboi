@@ -3,7 +3,11 @@ import {
   DEFAULT_HERO,
   DEFAULT_SLOT_HOURS,
   DEFAULT_SLOT_ORDER,
+  WINDOW_DAYS_DEFAULT,
+  WINDOW_DAYS_MAX,
+  WINDOW_DAYS_MIN,
   cleanColors,
+  cleanWindowDays,
   cleanHero,
   cleanHidden,
   cleanHours,
@@ -125,5 +129,54 @@ describe('slotCaseSql', () => {
 describe('mealOrderSql', () => {
   it('tie-breaks on position then created_at then id, after the slot rank', () => {
     expect(mealOrderSql(DEFAULT_SLOT_ORDER)).toBe(`${slotCaseSql(DEFAULT_SLOT_ORDER)}, position, created_at, id`)
+  })
+})
+
+// « Jours affichés » — how far the meal grid reaches, and the first test the meal
+// window has ever had. The Tuesday-anchored `windowDaysFor` it replaced had ZERO
+// coverage, and `e2e/mocks.ts` pins `windowDays: 10`, so the whole browser suite
+// would sail straight through a regression in this logic. That is exactly why the
+// clamp is unit-tested here rather than trusted.
+describe('cleanWindowDays', () => {
+  it('defaults when the household never set one (absent / corrupt / non-numeric)', () => {
+    // A household that never opened Réglages ▸ Repas must behave exactly as the app
+    // did before the setting existed — 10 days.
+    expect(cleanWindowDays(undefined)).toBe(WINDOW_DAYS_DEFAULT)
+    expect(cleanWindowDays(null)).toBe(WINDOW_DAYS_DEFAULT)
+    expect(cleanWindowDays('sept')).toBe(WINDOW_DAYS_DEFAULT)
+    expect(cleanWindowDays({})).toBe(WINDOW_DAYS_DEFAULT)
+    expect(cleanWindowDays(NaN)).toBe(WINDOW_DAYS_DEFAULT)
+    expect(cleanWindowDays(Infinity)).toBe(WINDOW_DAYS_DEFAULT)
+  })
+
+  it('keeps a value inside the range', () => {
+    expect(cleanWindowDays(7)).toBe(7)
+    expect(cleanWindowDays(10)).toBe(10)
+    expect(cleanWindowDays(14)).toBe(14)
+  })
+
+  it('CLAMPS rather than rejects, so one bad number never fails a save that also reordered', () => {
+    expect(cleanWindowDays(1)).toBe(WINDOW_DAYS_MIN)
+    expect(cleanWindowDays(0)).toBe(WINDOW_DAYS_MIN)
+    expect(cleanWindowDays(-30)).toBe(WINDOW_DAYS_MIN)
+    expect(cleanWindowDays(365)).toBe(WINDOW_DAYS_MAX)
+  })
+
+  it('the bounds are the ones the rest of the app assumes, not taste', () => {
+    // ≥7: the toddler kitchen slices week.slice(0, 7) (KidKitchen / KidCollections),
+    // so a shorter window would silently drop days from a child's week.
+    expect(WINDOW_DAYS_MIN).toBeGreaterThanOrEqual(7)
+    // ≤14: functions/api/ask.ts snapshots today+14d for the AI, so past 14 the
+    // assistant stops seeing the plan the household is looking at.
+    expect(WINDOW_DAYS_MAX).toBeLessThanOrEqual(14)
+    // …and the default has to sit inside its own range.
+    expect(WINDOW_DAYS_DEFAULT).toBeGreaterThanOrEqual(WINDOW_DAYS_MIN)
+    expect(WINDOW_DAYS_DEFAULT).toBeLessThanOrEqual(WINDOW_DAYS_MAX)
+  })
+
+  it('accepts a numeric string and rounds a fraction (a select can only send strings)', () => {
+    expect(cleanWindowDays('14')).toBe(14)
+    expect(cleanWindowDays(10.4)).toBe(10)
+    expect(cleanWindowDays(9.6)).toBe(10)
   })
 })

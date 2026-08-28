@@ -108,6 +108,13 @@ export const OPERATOR_HELP = {
       en: `The order, colour and hour of each meal of the day, and which ones you want to show on the board and in the kitchen. Drag them into the order your day runs in: it's respected everywhere. The star marks the headline meal — the one the board leads with. The hour says when each meal is served: that, not the order, decides which meal to cook next.`,
     },
   },
+  mealWindow: {
+    card: 'kitchen',
+    body: {
+      fr: `Jusqu'où la grille des repas regarde devant, à partir d'aujourd'hui. Elle partait autrefois d'un mardi fixe et rétrécissait au fil de la semaine : le dimanche soir, elle n'atteignait plus la fin de semaine qu'on était justement en train de planifier. Elle roule maintenant avec le jour. Dix jours par défaut ; sept si tu ne planifies qu'une semaine, quatorze si tu vois plus loin.`,
+      en: `How far ahead the meal grid looks, counting today. It used to start from a fixed Tuesday and shrink across the week: by Sunday evening it no longer reached the very weekend you were planning. It rolls with the day now. Ten days by default; seven if you plan a week at a time, fourteen if you look further out.`,
+    },
+  },
   todoTemplates: {
     card: 'todos',
     point: 2,

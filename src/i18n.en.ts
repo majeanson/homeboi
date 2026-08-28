@@ -2212,6 +2212,10 @@ export const EN: typeof FR = {
     ghost: 'Ghost list',
     mealsTab: 'Meals',
     mealColors: 'Meal colours',
+    mealWindowTitle: 'Days shown',
+    mealWindowLabel: 'The grid shows',
+    mealWindowHint: 'Always starting today. Ten days is enough to plan the coming weekend, on a Sunday evening as much as on a Wednesday.',
+    mealWindowDays: (n: number) => `${n} days`,
     mealColorsHint:
       'Give each meal a colour (breakfast, lunch, snack, supper, dessert). It shows everywhere that meal appears — the board, the calendar, the kitchen.',
     mealColorReset: 'Default colour',

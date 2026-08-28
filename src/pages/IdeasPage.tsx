@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, isUnauthorized } from '../lib/api'
+import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { live } from '../lib/query'
 import { useAi } from '../lib/ai'
 import { useProfile } from '../lib/profile'
@@ -61,7 +62,7 @@ export function IdeasPage() {
 
   // The countdown window the day chips plan onto — same source (/api/meals) and same
   // DST-safe stepping as the Kitchen grid. 10 is the just-loaded fallback.
-  const week = useWeekLabeled(meals.data?.weekStart ?? 0, meals.data?.windowDays ?? 10, lang)
+  const week = useWeekLabeled(meals.data?.weekStart ?? 0, meals.data?.windowDays ?? WINDOW_DAYS_DEFAULT, lang)
 
   const ai = useAiWake()
   const { enabled: aiEnabled } = useAi()

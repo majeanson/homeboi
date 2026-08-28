@@ -66,9 +66,10 @@ export interface DayNoteRow {
   updated_at: number
 }
 export type DayNotesData = { notes: DayNoteRow[] }
-// windowDays: how many days the 10-day countdown block currently shows (10 on
-// Tuesday, shrinking to 4 by Monday). The client renders this many days from
-// weekStart instead of a fixed 7.
+// windowDays: how many days the grid shows, counting today — the household's
+// « Jours affichés » (Réglages ▸ Cuisine ▸ Repas; 7–14, default 10). A ROLLING
+// window: weekStart is always today's local midnight, so the count never decays.
+// The client renders this many days from weekStart instead of a fixed 7.
 // `recent`: the last few days of planned, non-leftover meals (newest first, deduped
 // by title) — the source for the Restants "Suggestions" quick-pick chips.
 export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number; recent: MealRow[] }

@@ -114,8 +114,10 @@ export function localTimeOnDay(daySec: number, secsOfDay: number, tz = HOUSEHOLD
   return Math.floor((wallTarget - offset2) / 1000)
 }
 
-// Day-of-week (0 = Sunday) in `tz` — the week-block anchor must use the local
-// day, not getUTCDay (which flips at 8 PM Eastern).
+// Day-of-week (0 = Sunday) in `tz` — every week-boundary calculation must use the
+// local day, not getUTCDay (which flips at 8 PM Eastern). Callers: recurrence
+// matching, the work-schedule week, habits, the calendar grids. (The meal plan used
+// to anchor its block on a Tuesday through here; it rolls from today now.)
 export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {
   const wd = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(d)
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd)

@@ -13,6 +13,8 @@ import {
   SLOT_ICON_NAME,
   formatSlotHour,
   isMealSlot,
+  WINDOW_DAYS_DEFAULT,
+  WINDOW_DAYS_OPTIONS,
   type MealSlot,
 } from '../../lib/mealSlots'
 import { wash } from '../../lib/colors'
@@ -290,6 +292,78 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
       {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
       {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
       <DragGhost ghost={dnd.ghost} />
+    </OperatorSection>
+  )
+}
+
+// « Jours affichés » — how far ahead the meal grid reaches, counting today.
+//
+// Its own section, stacked under the SAME `meals` pill as MealSlotsSection
+// (C-15: a new setting merges into the sub that already owns the concept, never a
+// new pill — the board▸events / SchoolYearSection precedent). Kept separate from
+// MealSlotsSection rather than folded into it because that section's title and
+// help copy describe THE MEALS OF A DAY (order, hero, hours, colour, visibility);
+// a planning horizon is a different question about the same grid.
+//
+// Why it exists at all: the window used to be a Tuesday-anchored block that
+// decayed from 10 days to 4 by Monday, so a Sunday-evening planning session could
+// not reach the coming Fri/Sat — the weekend it was for (bmad/11 tier-1 seam #1).
+// It is a rolling window from today now, and its length is the household's call.
+export function MealWindowSection({ help }: { help?: HelpMode }) {
+  const t = useT()
+  const write = useWrite()
+  const ro = isGuest()
+  const [days, setDays] = useState<number | null>(null)
+  const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
+
+  useEffect(() => {
+    api<HouseholdSettings>('household')
+      .then((r) => setDays(r.mealWindowDays ?? WINDOW_DAYS_DEFAULT))
+      .catch(() => setDays(WINDOW_DAYS_DEFAULT))
+  }, [])
+
+  async function pick(next: number) {
+    setDays(next)
+    setStatus('idle')
+    try {
+      // MEALS_KEY as well as HOUSEHOLD_KEY: this changes what the SERVER returns
+      // for /api/meals (the window bounds its SQL), so the grid must refetch — the
+      // same `serverSorted` reasoning as the order/hero saves in MealSlotsSection.
+      await write('household', {
+        method: 'PATCH',
+        body: { mealWindowDays: next },
+        affectedKeys: [HOUSEHOLD_KEY, MEALS_KEY],
+      })
+      setStatus('saved')
+    } catch {
+      setStatus('bad')
+    }
+  }
+
+  return (
+    <OperatorSection title={t.operator.mealWindowTitle} help={help} helpKey="mealWindow">
+      <div className="operator__seg">
+        <span className="operator__seg-label mono">{t.operator.mealWindowLabel}</span>
+        {ro ? (
+          <span className="mono">{t.operator.mealWindowDays(days ?? WINDOW_DAYS_DEFAULT)}</span>
+        ) : (
+          <select
+            className="input"
+            value={days ?? WINDOW_DAYS_DEFAULT}
+            onChange={(e) => pick(Number(e.target.value))}
+            aria-label={t.operator.mealWindowLabel}
+          >
+            {WINDOW_DAYS_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {t.operator.mealWindowDays(n)}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+      <p className="operator__hint mono">{t.operator.mealWindowHint}</p>
+      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
     </OperatorSection>
   )
 }

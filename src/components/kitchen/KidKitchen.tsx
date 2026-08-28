@@ -52,9 +52,11 @@ export function KidKitchen({
   const hasCollections = useMemo(() => buildCollections(recipes).length > 0, [recipes])
 
   // The toddler lens is just "this week": the next 7 days, one of each weekday.
-  // (The parent grid runs a longer 10-day countdown, but two "Mardi" tiles would
-  // confuse a pre-reader picking a day by sight — and read-aloud — so the kid
-  // view stays a single, unambiguous week.)
+  // (The parent grid runs a longer window — « Jours affichés », 7–14 — but two
+  // "Mardi" tiles would confuse a pre-reader picking a day by sight, and by
+  // read-aloud, so the kid view stays a single unambiguous week.)
+  // This slice is WHY the setting's floor is 7: below that a child's week would
+  // silently lose days. See WINDOW_DAYS_MIN in functions/_lib/mealSlots.
   const days7 = week.slice(0, 7)
 
   // A planned supper that maps to a saved recipe is tappable: hear "Jeudi :

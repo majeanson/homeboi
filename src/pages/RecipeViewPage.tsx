@@ -2,8 +2,8 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { RecipeSheet } from '../components/RecipeSheet'
 import { Loading } from '../components/Fallback'
 import { useLang } from '../i18n'
-import { formatWeekday } from '../lib/format'
-import { addLocalDays } from '../lib/localDay'
+import { useWeekLabeled } from '../components/kitchen/week'
+import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useRecipes, useMeals } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
 
@@ -20,13 +20,10 @@ export function RecipeViewPage() {
 
   const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
   const weekStart = mealsQ.data?.weekStart ?? 0
-  const windowDays = mealsQ.data?.windowDays ?? 10
-  const week = weekStart
-    ? Array.from({ length: windowDays }, (_, i) => {
-        const date = addLocalDays(weekStart, i)
-        return { date, label: formatWeekday(date, lang) }
-      })
-    : []
+  // The ONE window builder (components/kitchen/week.ts) — this used to re-implement
+  // it inline, which is how a "one place that builds it" comment came to be untrue.
+  const labeled = useWeekLabeled(weekStart, mealsQ.data?.windowDays ?? WINDOW_DAYS_DEFAULT, lang)
+  const week = weekStart ? labeled : []
 
   if (!recipe) return recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />
   return (

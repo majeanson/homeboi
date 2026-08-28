@@ -341,10 +341,14 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       S,
     ),
 
-    // meals — a full week's plan (déjeuner / dîner / souper), the way a busy household
-    // actually keeps it: a hero supper most nights, a couple of lunches + breakfasts,
-    // and two kid-suggested picks. `date` = local midnight; position 0-based per
-    // (date, slot). Several link a recipe so the peek → cook mode works.
+    // meals — the way a busy household actually keeps a plan: a hero supper most
+    // nights, a couple of lunches + breakfasts, two kid-suggested picks, and a tail
+    // that thins out as the days get further away. It reaches into the SECOND week
+    // on purpose — the grid's default window is 10 days (« Jours affichés »), so a
+    // plan stopping at day 6 left the demo household with an empty third of a grid.
+    // It still stops short of the window's end, because a real plan does.
+    // `date` = local midnight; position 0-based per (date, slot). Several link a
+    // recipe so the peek → cook mode works.
     ...[
       // today
       { day: d0, slot: 'breakfast', title: 'Crêpes' },
@@ -361,6 +365,9 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       { day: d4, slot: 'supper', title: 'Pâté chinois', cook: maman },
       { day: d5, slot: 'supper', title: 'Pizza maison', suggested: lea },
       { day: d6, slot: 'supper', title: 'Soupe poulet et nouilles', recipe: rSoupe },
+      // …and into the second week, thinning out.
+      { day: d7, slot: 'supper', title: 'Macaroni gratiné', cook: papa },
+      { day: addLocalDays(d0, 8), slot: 'supper', title: 'Restes du congélo' },
     ].map((m) =>
       P(
         `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, recipe_id, suggested_by, position, created_at, is_sample)

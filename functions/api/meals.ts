@@ -1,15 +1,24 @@
 import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, localDayOfWeek, newId, nowSec } from '../_lib/ids'
+import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
 
-// Meal plan as a 10-day countdown. The planning block is re-anchored every
-// Tuesday (UTC, getUTCDay: Tue=2): each block spans its Tuesday through Tuesday+9
-// (10 inclusive days). Past days within the block drop off, so the visible window
-// is today..blockEnd — it shrinks 10 → 4 across the week, then snaps back to 10
-// each Tuesday (Monday-midnight reset). A day has five slots — déjeuner / dîner /
+// Meal plan as a ROLLING window: today through today + N days, where N is the
+// household's « Jours affichés » (`windowDays` on the mealSlots preference,
+// 7–14, default 10 — see _lib/mealSlots).
+//
+// It used to be a TUESDAY-ANCHORED block that decayed 10 → 4 across the week and
+// snapped back each Tuesday. That made the Sunday-evening planning ritual
+// impossible: on a Sunday the window reached only to Thursday, so the coming
+// Fri/Sat — the weekend being planned — was unreachable anywhere in the app
+// (bmad/11 tier-1 seam #1). Rolling from today has no such blind spot, and the
+// length became a setting rather than a constant nobody could see.
+//
+// `weekStart` is still exactly today's local midnight and MUST stay that way:
+// five call sites read it as "today" (nextMeal, AddSheet's leftover pick,
+// Kitchen's isToday/isTomorrow). A day has five slots — déjeuner / dîner /
 // souper / collation / dessert (breakfast/lunch/supper/snack/dessert); the client
 // groups per day.
 // A slot can hold SEVERAL meals (migration 0033): each is a row, ordered by
@@ -30,13 +39,6 @@ const asSlot = (v: unknown): string | null => (typeof v === 'string' && SLOTS.ha
 // reshuffles between the kitchen grid, the board and the month.
 
 const DAY = 86400
-// Days remaining in the active block, counting today. = 10 - (days since the
-// block's Tuesday). Ranges 10 (on Tuesday) down to 4 (on Monday). Local
-// day-of-week so the block re-anchors at LOCAL Tuesday midnight, not 8 PM.
-const windowDaysFor = (today: number): number => {
-  const sinceTue = (localDayOfWeek(new Date(today * 1000)) - 2 + 7) % 7
-  return 10 - sinceTue
-}
 
 // "What we ate lately" lookback for the Restants quick-pick suggestions. The
 // forward grid starts at today, so today-only suggestions vanish whenever nothing
@@ -46,8 +48,11 @@ const RECENT_DAYS = 3
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
-  const windowDays = windowDaysFor(today)
-  const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, actor.householdId)).order)
+  // One read serves both: the layout call was already here for the slot order, so
+  // the household's window length costs no extra D1 round trip.
+  const layout = await householdMealLayout(ctx.env, actor.householdId)
+  const windowDays = layout.windowDays
+  const MEAL_ORDER = mealOrderSql(layout.order)
   const { results } = await ctx.env.DB.prepare(
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
   )

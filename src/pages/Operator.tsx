@@ -22,7 +22,7 @@ import { PhotosSection, RecapSection } from '../components/operator/media'
 import { ThisWeekTogetherSection } from '../components/operator/ThisWeekTogetherSection'
 import { RecipeTagsSection } from '../components/operator/recipesTags'
 import { RecipePillsSection } from '../components/operator/recipePills'
-import { MealSlotsSection } from '../components/operator/meals'
+import { MealSlotsSection, MealWindowSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
 import { CarsSection } from '../components/operator/cars'
 import { ScheduleSection } from '../components/operator/schedule'
@@ -358,7 +358,20 @@ export function Operator() {
           </>
         ),
       },
-      meals: { label: t.operator.mealColors, node: <MealSlotsSection help={operatorHelp} /> },
+      // « Jours affichés » stacks under the SAME 'meals' pill as MealSlotsSection
+      // (C-15 standing rule — a new setting merges into the sub that already owns
+      // the concept, never adds a pill; the board▸events / SchoolYearSection
+      // precedent). The slots section owns the meals OF a day; this one owns how
+      // many days the grid reaches.
+      meals: {
+        label: t.operator.mealColors,
+        node: (
+          <>
+            <MealSlotsSection help={operatorHelp} />
+            <MealWindowSection help={operatorHelp} />
+          </>
+        ),
+      },
       reserve: { label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
     },
     liste: {

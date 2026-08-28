@@ -22,14 +22,14 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~141k lines across 823 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 121 forward-only migrations |
-| **Tests** | 1752 unit tests in 296 files · 107 Playwright spec files (~1124 cases) |
+| **Tests** | 1757 unit tests in 296 files · 107 Playwright spec files (~1127 cases) |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
-- `npm run typecheck` · `npm test` (1752) · `npm run build` — green.
-- `npm run check:bundle` — **3842 KB** of JS across `dist/assets`, **726 KB eager**; every
+- `npm run typecheck` · `npm test` (1757) · `npm run build` — green.
+- `npm run check:bundle` — **3843 KB** of JS across `dist/assets`, **727 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1120 passed, 13 skipped**.
@@ -56,7 +56,7 @@ them are finished. Read this table before opening any of them.
 | `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
 | `AUJOURDHUI.md` | Ledger | ✅ **Effectively closed** — 1 open item, deliberately (see §4-D). |
 | `REVIEW-PASS.md` | Ledger | 🟡 **31 open** P2/P3 findings across 8 sections. The main written debt pool. |
-| `bmad/11-friction-audit.md` | Ledger | 🔴 **3 of 5 tier-1 seams live** (#1, #3, #4 — #2 fixed 2026-08-27, #5 was already fixed). Plus 9 tier-2 + tier-3 polish. The highest-value pool. See §4-B. |
+| `bmad/11-friction-audit.md` | Ledger | 🟡 **2 of 5 tier-1 seams live** (#3, #4 — #1 and #2 fixed 2026-08-27, #5 was already fixed). Plus 9 tier-2 + tier-3 polish. Still the highest-value pool. See §4-B. |
 | `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
 | `PLAN-mots-and-lifecycle-followups.md` | Feature backlog | 🟡 12 designed-but-unbuilt features (A5–D2), never started. |
 | `bmad/05` + `bmad/06` | Idea pools | ⚪ Brainstorms. Nothing committed. Don't treat as a backlog. |
@@ -134,8 +134,11 @@ it happens to live in.
 `bmad/11-friction-audit.md` holds 14 ranked seams from five flow audits, every one
 verified against code at the time. Its five **tier-1** entries block rituals or lose data:
 
-1. Sunday planning can't reach Fri/Sat (the core weekly ritual is impossible on the two
-   evenings it actually happens). **Live.**
+1. ~~Sunday planning can't reach Fri/Sat~~ — ✅ **fixed 2026-08-27.** The meal window
+   rolls from today instead of decaying from a fixed Tuesday, and its length is a
+   household setting (« Jours affichés » — 7 · 10 · 14, default 10). The bounds are set
+   by two existing surfaces, not taste: the toddler kitchen slices `week.slice(0, 7)`,
+   and `ask.ts` snapshots `today+14d` for the AI.
 2. ~~`/share` loses or strands captures~~ — ✅ **fixed 2026-08-27** (§4-A). The
    undo/« Corriger » half of that seam stands.
 3. A dated loose todo silently vanishes after its day. **Live.**

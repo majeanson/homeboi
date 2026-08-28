@@ -33,6 +33,7 @@ export const SETTINGS_FOCUS: Record<string, readonly string[]> = {
   'board/events': ['schoolYear'],
   'board/thisweek': ['recap'],
   'kitchen/apparence': ['recipeTags', 'recipePills', 'measureColors'],
+  'kitchen/meals': ['mealSlots', 'mealWindow'],
   'settings/ambient': ['ambient', 'habits'],
   'settings/system': ['micTest', 'aiLog'],
 }

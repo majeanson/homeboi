@@ -103,3 +103,40 @@ test('a household schoolYear with tomorrow as la rentrée shows the board Demain
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
   await expect(page.locator('.tomorrow-school')).toContainText('École demain', { timeout: 15_000 })
 })
+
+
+// « Jours affichés » — the rolling meal-plan window, added 2026-08-27 with bmad/11
+// tier-1 seam #1 (a Tuesday-anchored block could not reach the coming weekend from a
+// Sunday evening). It stacks under the SAME 'meals' pill as the slot panel above
+// (C-15), so this also asserts the two sections coexist there.
+test('« Jours affichés » patches household with the chosen window', async ({ page }) => {
+  await page.goto('/settings?tab=recipes&sub=meals')
+  const section = page.locator('#operator-panel')
+  await expect(section).toBeVisible()
+
+  // The window select lives in its own section under the slot list.
+  const select = section.getByLabel('La grille montre')
+  await expect(select).toBeVisible()
+  // The fixture household has never set one, so it reads the default.
+  await expect(select).toHaveValue('10')
+
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('PATCH', 'household'), { timeout: 20_000 }),
+    select.selectOption('14'),
+  ])
+  const body = JSON.parse(req.postData() || '{}') as { mealWindowDays?: number }
+  expect(body.mealWindowDays).toBe(14)
+  await expect(select).toHaveValue('14')
+})
+
+test('the window picker only offers what the rest of the app supports', async ({ page }) => {
+  // The bounds are load-bearing, not taste: below 7 the toddler kitchen's
+  // week.slice(0, 7) would drop days; above 14 the AI snapshot (ask.ts, today+14d)
+  // would stop seeing the plan. If someone widens the picker, they have to fix
+  // those surfaces first — so the offered set is pinned here.
+  await page.goto('/settings?tab=recipes&sub=meals')
+  const select = page.locator('#operator-panel').getByLabel('La grille montre')
+  await expect(select).toBeVisible()
+  const values = await select.locator('option').evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value))
+  expect(values).toEqual(['7', '10', '14'])
+})

@@ -61,6 +61,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     mealOrder: meals.order,
     mealHero: meals.hero,
     mealHours: meals.hours,
+    mealWindowDays: meals.windowDays,
     measureColors,
     reserveLocations,
     cars,
@@ -83,6 +84,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     mealOrder?: unknown // slot display order
     mealHero?: unknown // the day's headline slot
     mealHours?: unknown // { slot: startMinuteOfDay } — merged onto the stored map
+    mealWindowDays?: unknown // « Jours affichés »: how far the meal grid reaches, 7–14
     measureColors?: Record<string, string>
     reserveLocations?: unknown
     cars?: unknown
@@ -170,11 +172,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Each is only touched when its key is present, so the reorder control, the hero
   // picker and an hour field save independently; `mealHours` merges onto the stored
   // map, so one changed hour never resets the other four.
-  if (body && ('mealOrder' in body || 'mealHero' in body || 'mealHours' in body)) {
-    const patch: { order?: unknown; hero?: unknown; hours?: unknown } = {}
+  if (body && ('mealOrder' in body || 'mealHero' in body || 'mealHours' in body || 'mealWindowDays' in body)) {
+    const patch: { order?: unknown; hero?: unknown; hours?: unknown; windowDays?: unknown } = {}
     if ('mealOrder' in body) patch.order = body.mealOrder
     if ('mealHero' in body) patch.hero = body.mealHero
     if ('mealHours' in body) patch.hours = body.mealHours
+    // Out-of-range or malformed values are clamped by cleanWindowDays rather than
+    // rejected: a bad number here should never 400 a save that also carried a
+    // legitimate reorder.
+    if ('mealWindowDays' in body) patch.windowDays = body.mealWindowDays
     await setHouseholdMealLayout(ctx.env, actor.householdId, patch)
   }
 
@@ -301,6 +307,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     mealOrder: meals.order,
     mealHero: meals.hero,
     mealHours: meals.hours,
+    mealWindowDays: meals.windowDays,
     measureColors,
     reserveLocations,
     cars,
