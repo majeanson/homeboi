@@ -102,7 +102,7 @@
   transform: scale(0.94);
 }
 .app-head__search:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* E-22 — the « Demande à la maison » mic, beside the loupe: same disc, sage
@@ -942,7 +942,7 @@
 .act:focus-visible,
 .act__hit:focus-visible,
 .act__checkbtn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* The split row's body button is inside the card — inset the ring so it reads as

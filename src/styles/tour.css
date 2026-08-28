@@ -69,7 +69,7 @@
   color: var(--ink);
   border-radius: var(--radius-lg);
   padding: 18px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.32);
+  box-shadow: var(--shadow-float-lg);
   display: flex;
   flex-direction: column;
   gap: 12px;

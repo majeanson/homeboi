@@ -405,7 +405,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-float-md);
 }
 @media (prefers-reduced-motion: reduce) {
   .dnd-ghost {

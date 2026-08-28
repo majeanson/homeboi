@@ -81,6 +81,7 @@ import { type Recipe } from '../lib/recipes'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { EmptyState } from '../components/EmptyState'
 import { Skeleton } from '../components/Skeleton'
+import { contrast, verdict } from '../lib/contrastAudit'
 import { GuestExpired } from '../components/GuestExpired'
 import { StatusMessage } from '../components/StatusMessage'
 import { LoadError } from '../components/LoadError'
@@ -320,6 +321,90 @@ function Demo({ label, children }: { label: string; children: ReactNode }) {
       <div className="devkit__demo-label mono">{label}</div>
       <div className="devkit__demo-body">{children}</div>
     </div>
+  )
+}
+
+// « Contraste » — every ink × every ground in the CURRENT theme, measured live
+// (bmad/12 #8). Reads the real computed values off the document, so it audits
+// whatever theme the DevKit chrome is showing rather than a hard-coded table:
+// flip the gallery to night and the numbers follow.
+//
+// Why it exists: twice a contrast failure shipped and was found by eye weeks
+// later — the twilight tier at 2.4:1, and --ink-faint at 2.65:1 on the night
+// marigold wash. Both were TEXT below even the 3:1 non-text floor. Eyes adapt to
+// a palette; ratios don't. A unit test (lib/contrastAudit.test.ts) pins the night
+// values so a regression fails the build; this panel is how you SEE it.
+const CONTRAST_INKS = ['--ink', '--ink-soft', '--ink-faint'] as const
+const CONTRAST_GROUNDS = [
+  '--paper',
+  '--paper-deep',
+  '--card',
+  '--marigold-wash',
+  '--terracotta-wash',
+  '--sage-wash',
+  '--sky-wash',
+  '--berry-wash',
+  '--teal-wash',
+] as const
+
+// A computed CSS colour → `#rrggbb`. Browsers hand back `rgb(r, g, b)`; anything
+// else (a colour we can't parse) returns null so the cell reads « — » instead of
+// inventing a number.
+function readColour(styles: CSSStyleDeclaration, token: string): string | null {
+  const raw = styles.getPropertyValue(token).trim()
+  const m = /^rgba?\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)/.exec(raw)
+  if (!m) return null
+  const hex = [1, 2, 3].map((i) => Math.round(Number(m[i])).toString(16).padStart(2, '0')).join('')
+  return '#' + hex
+}
+
+function ContrastPanel() {
+  const styles = getComputedStyle(document.documentElement)
+  const inks = CONTRAST_INKS.map((t) => [t, readColour(styles, t)] as const)
+  const grounds = CONTRAST_GROUNDS.map((t) => [t, readColour(styles, t)] as const)
+  return (
+    <Demo label="chaque encre × chaque fond, dans le thème affiché — 4.5 = texte, 3 = gros texte / non-texte">
+      <div style={{ overflowX: 'auto' }}>
+        <table className="mono" style={{ borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '4px 10px 4px 0' }}>fond</th>
+              {inks.map(([t]) => (
+                <th key={t} style={{ textAlign: 'left', padding: '4px 10px' }}>
+                  {t}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {grounds.map(([gt, gv]) => (
+              <tr key={gt}>
+                <td style={{ padding: '4px 10px 4px 0', color: 'var(--ink-soft)' }}>{gt}</td>
+                {inks.map(([it, iv]) => {
+                  if (!gv || !iv) return <td key={it} style={{ padding: '4px 10px' }}>—</td>
+                  const r = contrast(iv, gv)
+                  const v = verdict(r)
+                  return (
+                    <td
+                      key={it}
+                      style={{
+                        padding: '4px 10px',
+                        background: gv,
+                        color: iv,
+                        fontWeight: v === 'FAIL' ? 700 : 400,
+                      }}
+                      title={`${it} on ${gt}`}
+                    >
+                      {r.toFixed(2)} {v === 'AA' ? '' : v === 'lg' ? '· gros' : '· ÉCHEC'}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Demo>
   )
 }
 
@@ -1524,6 +1609,61 @@ export function DevKit() {
     },
 
     // ── Foundations ────────────────────────────────────────────────────
+    {
+      cat: 'Fondations',
+      name: 'Contraste (WCAG)',
+      file: 'lib/contrastAudit.ts',
+      kw: 'contrast contraste wcag aa lisibilite accessibilite nuit night ratio',
+      render: () => <ContrastPanel />,
+    },
+    {
+      cat: 'Fondations',
+      name: 'Élévation (--shadow-*)',
+      file: 'styles/core.css',
+      kw: 'shadow ombre elevation depth flottant float relief profondeur',
+      render: () => (
+        <>
+          {/* TWO families, and picking the wrong one is the mistake this page exists
+              to prevent. Ask: does the thing SIT on the page, or float ABOVE it? */}
+          <Demo label="posé sur la page — ombres chaudes, décalées (le look maison)">
+            <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', padding: '0.5rem 0 1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-sm)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-sm</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-md)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-md</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-lg)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-lg</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-press)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-press</span>
+            </div>
+            </div>
+          </Demo>
+          <Demo label="flottant au-dessus — ombres neutres (bulle, fantôme de glisser, coachmark)">
+            <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap', padding: '0.5rem 0 1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-float)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-float</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-float-md)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-float-md</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
+              <div style={{ width: 84, height: 56, borderRadius: 14, background: 'var(--card)', boxShadow: 'var(--shadow-float-lg)' }} />
+              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-soft)' }}>--shadow-float-lg</span>
+            </div>
+            </div>
+          </Demo>
+        </>
+      ),
+    },
     {
       cat: 'Fondations',
       name: 'Boutons (.btn)',

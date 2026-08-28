@@ -471,7 +471,7 @@
   border-radius: 14px 14px 4px 14px;
   background: var(--surface, #fff);
   color: var(--ink, #222);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.16);
+  box-shadow: var(--shadow-float);
   font-size: var(--text-md);
   font-weight: 600;
   line-height: 1.35;
@@ -919,7 +919,7 @@
   border-radius: 28px;
   overflow: hidden;
   background: var(--card);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  box-shadow: var(--shadow-float-md);
   display: flex;
   align-items: center;
   justify-content: center;

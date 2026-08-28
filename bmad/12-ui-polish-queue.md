@@ -10,11 +10,11 @@
 6. ✅ **DONE 2026-08-27** (five section dead ends; cells deliberately left bare) — **Every `EmptyState` opens a door** — audit all call sites (~88); each gets an
    add / guide / settings action (the « Ce soir » fix generalized). The primitive
    already carries `guide`; add an `action` slot.
-8. **Night-mode contrast pass** — AA-audit `--ink-soft` on wash backgrounds at
+8. ✅ **DONE 2026-08-27** — **Night-mode contrast pass** — AA-audit `--ink-soft` on wash backgrounds at
    night; add a contrast state to /dev/kit so regressions stay visible.
-10. **Elevation tokens sweep** — fold bespoke `box-shadow`s into the `--shadow-*`
+10. ✅ **DONE 2026-08-27** — **Elevation tokens sweep** — fold bespoke `box-shadow`s into the `--shadow-*`
     scale; document the levels in devkit ▸ Fondations.
-11. **`:focus-visible` ring consistency** — one token ring across chips, member
+11. ✅ **DONE 2026-08-27** — **`:focus-visible` ring consistency** — one token ring across chips, member
     discs, board tiles, kid tiles.
 13. **PWA theming polish** — manifest `theme_color`/splash matched to day/night.
 14. **360px typographic rhythm pass** — one heading ramp for HubHead vs SceneHead

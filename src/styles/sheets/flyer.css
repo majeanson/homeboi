@@ -112,7 +112,7 @@
   transform: scale(0.97);
 }
 .flyer-full-link:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* "Télécharger hors-ligne" — a quieter outline pill so it sits beside the primary
@@ -144,7 +144,7 @@
   transform: scale(0.97);
 }
 .flyer-dl:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 /* Flyer validity span under the merchant name — the dates the cashier checks. */

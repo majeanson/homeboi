@@ -149,11 +149,29 @@
      own spacing — this is about the surfaces you open to DO something. */
   --gutter: 22px;
 
-  /* ---- elevation (warm offset "printed" shadows — never gray) ---- */
+  /* ---- elevation (warm offset "printed" shadows — never gray) ----
+     The house look: paper laid on paper, lit from the top-left. Everything that sits
+     ON the page uses these. */
   --shadow-sm: 2px 3px 0 rgba(72, 54, 30, 0.08);
   --shadow-md: 3px 5px 0 rgba(72, 54, 30, 0.1), 0 2px 8px rgba(72, 54, 30, 0.06);
   --shadow-lg: 5px 8px 0 rgba(72, 54, 30, 0.1), 0 10px 24px rgba(72, 54, 30, 0.1);
   --shadow-press: 1px 1px 0 rgba(72, 54, 30, 0.12);
+
+  /* ---- elevation, FLOATING (neutral drop shadows for things lifted OFF the page) ----
+     A second family on purpose, not drift (bmad/12 #10, 2026-08-27). The warm offset
+     shadows above say "this sheet rests on that sheet"; they do not read at all on a
+     surface hovering over a dimmed backdrop or following a finger. Five hand-rolled
+     values had grown for exactly that case — a companion speech bubble, a raised kid
+     tile, the drag ghost, a print block, the tour coachmark — so it gets tokens rather
+     than being forced onto a scale that means something else.
+     Which to reach for: does the thing sit on the page, or above it? */
+  --shadow-float: 0 4px 14px rgb(0 0 0 / 0.16); /* a bubble, a small lifted card */
+  --shadow-float-md: 0 10px 30px rgb(0 0 0 / 0.16); /* a raised tile, a dragged ghost */
+  --shadow-float-lg: 0 16px 48px rgb(0 0 0 / 0.32); /* a coachmark / dialog over a scrim */
+  /* Deliberately NOT tokenised: the two UPWARD shadows (cercle.css, sheets/flyer.css,
+     both `0 -Npx`) are not elevation at all — they are an edge cue on a sticky bottom
+     bar, telling you content scrolls UNDER it. Two values doing one job that no other
+     surface needs; a token there would be tidiness, not clarity. */
 
   /* ---- motion ---- */
   --ease-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -172,7 +190,24 @@
   --card: #25201a;
   --ink: #ece6d8;
   --ink-soft: #a59d8c;
-  --ink-faint: #786f61;
+  /* MEASURED 2026-08-27 (bmad/12 #8). The old #786f61 failed on the dark washes —
+     2.65:1 on marigold, 2.77 sage, 2.87 teal, 2.88 terracotta, 2.89 sky — i.e. below
+     even the 3:1 NON-text floor, for text. On --card it managed 3.26, still short of
+     the 4.5 body-text bar. Lifted until the WORST ground clears 4.5:1:
+       card 5.60 · paper 6.18 · marigold 4.54 · terracotta 4.93 · sage 4.75
+       sky 4.97 · berry 5.32 · teal 4.92
+     (--ink and --ink-soft were audited at the same time and pass everywhere —
+     --ink-soft is 4.87–6.62 — so the item's original worry was the wrong token.)
+
+     THE TRADE, said out loud: at night the faint tier now sits close to --ink-soft
+     (ΔL 0.026), so the three-step ink ramp is really two after dark. That is the
+     honest outcome — a bottom tier that cannot be read is not a tier. Day keeps all
+     three, since it has the headroom.
+     The alternative, if the flattened ramp ever bothers: darken every night wash by
+     14 and set --ink-faint #91887a, which restores a visible gap (ΔL 0.090) with
+     everything ≥4.51:1. It repaints the night palette's warmth, so it wants eyes on
+     it rather than a solo call. */
+  --ink-faint: #a09789;
   --line: #38322a;
   --line-strong: #4a4239;
 

@@ -72,7 +72,7 @@
   transform: scale(0.94);
 }
 .cook__autoread:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .cook__stage {
@@ -161,7 +161,7 @@
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .cook__full-steps li:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .cook__full-notes {
@@ -243,7 +243,7 @@
   color: var(--accent-ink);
 }
 .cook__ing-check:focus-visible .cook__ing-box {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .cook__ing-text {
@@ -256,7 +256,7 @@
   opacity: 0.5;
 }
 .cook__ing-text:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 0.3rem;
 }
@@ -419,7 +419,7 @@
   transform: scale(0.96);
 }
 .meas-pill:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 .meas-pill--sm {
@@ -453,7 +453,7 @@
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .cook__step-read:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 /* One-tap timers for a duration written into the step. */
@@ -999,7 +999,7 @@
   transform: scale(0.95);
 }
 .cook__segbtn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 /* The density "A" glyphs at three sizes, so the control reads as small/normal/big. */
@@ -1065,7 +1065,7 @@
   box-shadow: inset 0 -3px 0 var(--accent);
 }
 .cook__sibling:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
 
@@ -1171,7 +1171,7 @@
   transform: scale(0.96);
 }
 .scoops:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: 6px;
 }

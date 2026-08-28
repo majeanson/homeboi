@@ -537,7 +537,7 @@ a.ledger__chore--link {
   background: #fff;
   padding: 0.5rem;
   border-radius: var(--radius, 12px);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 /* « État des services » (E-34, bmad/08) — Réglages ▸ Système ▸ diagnostics. One
