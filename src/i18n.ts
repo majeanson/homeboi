@@ -1514,7 +1514,6 @@ export const FR = {
     // portes étaient le garde-manger et la feuille ＋, deux façons d'abandonner la
     // cuisson en plein milieu. Un manque, jamais une quantité (tenet du calme).
     flagLow: 'Il en manque',
-    lowAdded: (item: string) => `« ${item} » ajouté aux manques`,
     originalShow: 'Voir la recette originale',
     originalHide: 'Retour à la fiche',
     originalImported: 'Tel qu’importé',

@@ -167,11 +167,36 @@ test('a parent can flag an ingredient low without leaving the recipe', async ({ 
   const item = String(posted[0].item ?? '')
   expect(item).toBeTruthy()
   expect(item).not.toMatch(/\d/)
-  // Flagged rows become a check and stop accepting taps, so the same thing can't be
-  // added twice by a floury double-tap.
-  await expect(low).toBeDisabled()
-  await low.click({ force: true }).catch(() => {})
-  expect(posted).toHaveLength(1)
+  // It's a TOGGLE, not a one-way flag, and that isn't a preference: cook mode is a
+  // full-screen scene at z-index 90 while the undo bar sits at 40, so an « Annuler »
+  // offered from here would be painted UNDER the recipe — an undo nobody could tap.
+  // Taking it back happens on the button itself.
+  await expect(low).toHaveAttribute('aria-pressed', 'true')
+
+  const deleted: Record<string, unknown>[] = []
+  await page.route('**/api/pantry', async (route) => {
+    const req = route.request()
+    if (req.method() === 'DELETE') {
+      deleted.push(req.postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    }
+    if (req.method() === 'GET') {
+      // The un-flag has to LOOK the row up (POST answers { ok } with no id). Its
+      // payload key is `low`, not `items` — which is exactly how this shipped
+      // wrong the first time, silently, because nothing exercised the path.
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ low: [{ id: 'pl-new', item, marked_at: 1 }] }),
+      })
+    }
+    return route.fallback()
+  })
+
+  await low.click()
+  await expect.poll(() => deleted.length, { timeout: 5000 }).toBe(1)
+  expect(deleted[0]).toMatchObject({ id: 'pl-new' })
+  await expect(low).toHaveAttribute('aria-pressed', 'false')
 })
 
 test('a toddler never sees the flag-low control', async ({ page }) => {

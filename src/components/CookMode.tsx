@@ -26,7 +26,6 @@ import {
 import { IngredientLine } from './IngredientLine'
 import { ingredientName } from '../lib/ingredient'
 import { useWrite } from '../lib/write'
-import { useRecordUndo } from '../lib/toast'
 import { api } from '../lib/api'
 import { isGuest } from '../lib/device'
 import { PANTRY_KEY } from './kitchen/types'
@@ -111,46 +110,53 @@ export function CookMode({
   // Only the ingredient NAME goes over: `ingredientName` drops « 250 ml de » so
   // the low list reads « beurre », not a line from a recipe.
   const write = useWrite()
-  const recordUndo = useRecordUndo()
   const [flagged, setFlagged] = useState<Set<string>>(new Set())
+  const [flagBusy, setFlagBusy] = useState<Set<string>>(new Set())
   const canFlagLow = !isToddler && !isGuest()
-  function flagLow(line: string) {
+  const mark = (setter: typeof setFlagged, item: string, on: boolean) =>
+    setter((cur) => {
+      const next = new Set(cur)
+      if (on) next.add(item)
+      else next.delete(item)
+      return next
+    })
+
+  // A TOGGLE, not a one-way flag with an undo toast — and that distinction was a
+  // real bug, not a preference. Cook mode is a full-screen scene at z-index 90 and
+  // the undo bar sits at 40, so an « Annuler » offered from here would have been
+  // painted underneath the recipe: an undo nobody could ever tap. Tapping the check
+  // again takes it back instead, right where the finger already is, and the button's
+  // own state is the confirmation (the calm way — no bar, nothing to dismiss).
+  //
+  // The un-flag has to LOOK UP the row: POST /api/pantry answers { ok } with no id.
+  // Cheap, and off the critical path of a cook who just wants to keep going.
+  function toggleLow(line: string) {
     const item = ingredientName(line).trim()
-    if (!item || flagged.has(item)) return
-    // Marked here and now: the point is to keep cooking, so the confirmation has to
-    // be the button itself changing, not a trip to another screen.
-    setFlagged((cur) => new Set(cur).add(item))
-    void write('pantry', { method: 'POST', body: { item }, affectedKeys: [PANTRY_KEY, A_REGLER_KEY] })
-      .then(() => {
-        // Compensating undo: the row is already live, so taking it back deletes it.
-        // We don't know its id, so the inverse re-reads the list — cheap, and it
-        // keeps this off the critical path of a cook who just wants to keep going.
-        recordUndo({
-          message: t.recipes.lowAdded(item),
-          onUndo: () => {
-            setFlagged((cur) => {
-              const next = new Set(cur)
-              next.delete(item)
-              return next
-            })
-            void api<{ items: { id: string; item: string }[] }>('pantry')
-              .then((r) => r.items.find((i) => i.item.trim().toLowerCase() === item.toLowerCase()))
-              .then((row) =>
-                row ? write('pantry', { method: 'DELETE', body: { id: row.id }, affectedKeys: [PANTRY_KEY, A_REGLER_KEY] }) : null,
-              )
-              .catch(() => {})
-          },
-        })
-      })
-      .catch(() => {
-        // The write failed for real (offline QUEUES instead of throwing) — un-mark
-        // it rather than leaving a checkmark over something that never landed.
-        setFlagged((cur) => {
-          const next = new Set(cur)
-          next.delete(item)
-          return next
-        })
-      })
+    if (!item || flagBusy.has(item)) return
+    const wasOn = flagged.has(item)
+    mark(setFlagBusy, item, true)
+    // Optimistic: at the stove, a control that waits on the network reads as broken.
+    mark(setFlagged, item, !wasOn)
+    const done = () => mark(setFlagBusy, item, false)
+    // A failed write must not leave a check over something that never landed —
+    // offline QUEUES rather than throwing, so this only fires on a real rejection.
+    const failed = () => {
+      mark(setFlagged, item, wasOn)
+      done()
+    }
+    if (!wasOn) {
+      void write('pantry', { method: 'POST', body: { item }, affectedKeys: [PANTRY_KEY, A_REGLER_KEY] })
+        .then(done)
+        .catch(failed)
+      return
+    }
+    void api<{ low: { id: string; item: string }[] }>('pantry')
+      .then((r) => r.low?.find((i) => i.item.trim().toLowerCase() === item.toLowerCase()))
+      .then((row) =>
+        row ? write('pantry', { method: 'DELETE', body: { id: row.id }, affectedKeys: [PANTRY_KEY, A_REGLER_KEY] }) : null,
+      )
+      .then(done)
+      .catch(failed)
   }
   const [view, setView] = useState<CookView>(() => (isToddler ? 'step' : loadCookView(recipe.id)))
   // The layout / text-size / step-ingredient controls are set-once options — collapse
@@ -638,8 +644,8 @@ export function CookMode({
                             <button
                               type="button"
                               className={'cook__ing-low' + (flagged.has(ingredientName(ing).trim()) ? ' is-done' : '')}
-                              onClick={() => flagLow(ing)}
-                              disabled={flagged.has(ingredientName(ing).trim())}
+                              onClick={() => toggleLow(ing)}
+                              aria-pressed={flagged.has(ingredientName(ing).trim())}
                               aria-label={`${t.recipes.flagLow} — ${ingredientName(ing)}`}
                               title={t.recipes.flagLow}
                             >
