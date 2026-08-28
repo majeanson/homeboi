@@ -35,6 +35,25 @@ const RESISTANCE = 0.5
 // glitch, not as "I heard you".
 const MIN_SPIN_MS = 450
 
+/**
+ * Is there a vertically-scrollable element between `from` and the scroller
+ * `stop` (exclusive)? If so the gesture belongs to it, not to the page.
+ *
+ * Deliberately conservative — it doesn't ask whether the inner list is at ITS
+ * top. Chaining rules are subtle, several of these lists opt out of chaining
+ * outright (`overscroll-behavior: contain`), and the cost of being wrong is
+ * asymmetric: a missed pull-to-refresh is a shrug, a list that stops scrolling
+ * under your thumb reads as a broken app.
+ */
+function hasScrollableAncestor(from: HTMLElement, stop: HTMLElement): boolean {
+  for (let el: HTMLElement | null = from; el && el !== stop; el = el.parentElement) {
+    if (el.scrollHeight <= el.clientHeight) continue
+    const oy = getComputedStyle(el).overflowY
+    if (oy === 'auto' || oy === 'scroll') return true
+  }
+  return false
+}
+
 export interface PullState {
   /** Current drag distance in px (0 when idle). Drives the indicator's height. */
   pull: number
@@ -98,7 +117,15 @@ export function usePullToRefresh(
       // Never steal a drag handle's touch — usePointerDnd's grips set
       // `touch-action: none` precisely because they own the whole gesture.
       const target = e.target as HTMLElement | null
-      if (target?.closest('.dnd-grip, [data-dnd-zone] [draggable], .undo-toast')) return
+      if (!target) return
+      if (target.closest('.dnd-grip, [data-dnd-zone] [draggable], .undo-toast')) return
+      // …nor a NESTED scroller's. A capped list inside the page (Réglages' review
+      // queue is `max-height: 50vh; overflow-y: auto`) owns any vertical drag that
+      // starts in it, and several of them say so outright with
+      // `overscroll-behavior: contain`. Without this, pulling such a list down while
+      // the page happened to be at its top opened the refresh indicator AND
+      // preventDefault'd the list's own scroll — the list simply stopped moving.
+      if (hasScrollableAncestor(target, el)) return
       startY.current = e.touches[0].clientY
       startX.current = e.touches[0].clientX
       tracking.current = true

@@ -243,6 +243,15 @@ const openNoteEditor = async (page: Page) => {
 // The standing lesson: the number is a signal, the screenshot beside it is the
 // judgement — and LEAN.md means it when it says LOOK at the first screen rather
 // than reason about it. Two passes reasoned; the third one looked.
+//
+// 2026-08-27, same lesson from the other side: after that pass, the WORST
+// contentTopPx in the whole matrix became `cashier` at 412px — and it is
+// deliberately correct. « À la caisse » shows ONE item, vertically centred at
+// thumb height, with a lot of paper above and below it on purpose. The metric
+// measures « how far down does content start », which for a centred layout is not
+// chrome at all. So it gets no `budgetPx`: a number here would invite someone to
+// "fix" the one screen in the app whose emptiness IS the design. Look before you
+// ratchet — in both directions.
 const MATRIX: Entry[] = [
   // — the six hub tabs at rest, phone, both themes —
   { name: 'board', route: '/board', content: '.wg-slot', budgetPx: 235 },
