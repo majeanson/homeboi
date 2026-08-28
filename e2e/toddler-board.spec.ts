@@ -89,3 +89,44 @@ test('the weather stays on an otherwise empty day — and then it is NOT all-cle
   await expect(page.locator('.today-kid__clear')).toHaveCount(0)
   await expect(page.locator('.today-hero--weather')).toBeVisible()
 })
+
+// « Avant de partir » on the kid lens (bmad/11 tier-1 seam #4). On a locked kiosk
+// (?kid=1) the parent departure CARD sits behind a 3 s hold + an arithmetic gate —
+// every morning, for the one-tablet household that needs it most at 7h10. The items
+// did already reach this board, but folded into « À faire », where « prends ta boîte
+// à lunch » read the same as « ranger ta chambre ». They are their own section now.
+test('the leaving checklist is its own section, not mixed into « À faire »', async ({ page }) => {
+  await kidBoard(page)
+
+  // The fixture's departure instances (source_template_id set) group under their own
+  // heading, separate from the to-dos.
+  const heads = await page.locator('.today-kid__h').allInnerTexts()
+  expect(heads).toContain('Avant de partir')
+  expect(heads).toContain('À faire')
+
+  const depart = page.locator('.today-kid__section', { hasText: 'Avant de partir' })
+  await expect(depart.locator('.bigtile').first()).toBeVisible()
+  // A checklist item is in the leaving section…
+  await expect(depart).toContainText('Vérifier les portes')
+  // …and NOT duplicated into the to-do section beside it.
+  const todoSec = page.locator('.today-kid__section', { hasText: /^À faire/ })
+  if (await todoSec.count()) await expect(todoSec).not.toContainText('Vérifier les portes')
+})
+
+test('the leaving tiles are hear-first too — tapping one writes nothing', async ({ page }) => {
+  // The whole board's contract, extended to the new section: a wandering finger must
+  // not be able to tick the household's morning off the wall.
+  await kidBoard(page)
+  const writes: string[] = []
+  page.on('request', (r) => {
+    if (r.method() !== 'GET' && new URL(r.url()).pathname.startsWith('/api/')) writes.push(r.url())
+  })
+
+  const tile = page.locator('.today-kid__section', { hasText: 'Avant de partir' }).locator('.bigtile').first()
+  await tile.click()
+  await expect(tile).toHaveClass(/is-speaking/)
+  await tile.click()
+  await expect(tile).not.toHaveClass(/is-armed/)
+  await page.waitForTimeout(300)
+  expect(writes, 'the leaving checklist must not be tickable from the kid board').toEqual([])
+})

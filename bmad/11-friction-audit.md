@@ -7,8 +7,9 @@
 > entries are now closed: **#1** (the planning window), **#2** (`/share` losing
 > captures) and **#3** (vanishing dated to-dos) were fixed 2026-08-27, and **#5**
 > turned out to have been fixed earlier and
-> never ticked here, and **#3** was fixed the same day. **Only #4 is still live.** Ask
-> about it before executing anything. See [`STATE.md`](../STATE.md) § 4-B.
+> never ticked here, and **#3** and most of **#4** were fixed the same day. **No tier-1
+> seam is fully open**; what remains of #4 (the habit morning-open on a locked kiosk) is
+> a recorded decision, not a gap. See [`STATE.md`](../STATE.md) § 4-B.
 
 > Five parallel read-only audits walked the flows a real household runs weekly:
 > **plan the week · grocery run · cook tonight · kid mornings/bedtime ·
@@ -45,7 +46,7 @@ Tier 1 — blocks the ritual / loses data:
 | 1 | ~~**Sunday planning can't reach Fri/Sat**~~ ✅ **FIXED 2026-08-27** — `windowDaysFor` is gone. The window ROLLS from today (`today .. today + N`), and N is a household setting: « Jours affichés », Réglages ▸ Cuisine ▸ Repas, 7 · 10 · 14, default 10. Any Sunday reaches the following Saturday **by construction**, since the floor is 7. Clamp unit-tested (`_lib/mealSlots.test.ts` — the old window had zero coverage), control e2e'd (`config-panels.spec.ts`) | plan | — |
 | 2 | ~~**/share loses captures**~~ ✅ **FIXED 2026-08-27** — the capture now rides `useWrite` (queues + replays offline), and the rule itself is enforced by `src/lib/write-rule.test.ts` so it cannot drift back. Guarded by `e2e/capture-offline.spec.ts`. **Still open:** no routed-label/undo/« Corriger » on /share, and the scene shows no offline banner (it sits outside HubLayout — same as seam #12) | tidy | Data loss FIXED; mis-route UX remains |
 | 3 | ~~**A dated loose todo silently vanishes after its day**~~ ✅ **FIXED 2026-08-27** — the board glance also selects past-day, undone, LOOSE todos, and they read as their own « En retard » group above the rest (the shape Entretien's carry-forward already uses). Nothing is rewritten and nothing is deleted: the row keeps its day. Query shape pinned by `src/lib/todos.test.ts`, behaviour by `e2e/todo-overdue.spec.ts` | tidy | — |
-| 4 | **The locked kiosk (`?kid=1`) hides every parent glance** — departure checklist + habit morning-open unreachable except via the 3s-hold+math gate, every morning | kids | One-tablet households lose the 7h10 surface |
+| 4 | ~~**The locked kiosk hides the departure checklist**~~ ✅ **PART FIXED 2026-08-27** — and the original wording was too strong: the checklist ITEMS did already reach the kid lens, but folded into « À faire », where « prends ta boîte à lunch » read the same as « ranger ta chambre ». They are their own « Avant de partir » section now, hear-first and read-only (the board still writes nothing at all). **Still behind the gate, deliberately:** « Le point du jour » (`habitCheckin.ts` bails on a non-parent audience) — it is written for a reader and would need its own toddler face first | kids | Morning surface reachable |
 | 5 | ~~**A half-done routine pins the kiosk** + **no "switch kid" affordance**~~ ✅ **ALREADY FIXED (verified 2026-08-27)** — both halves shipped and were never ticked here: a ~60 s idle drift returns to the picker whatever the progress (`KidView.tsx:84`, "Kids seam #1"), and `backToFaces` + the "other kids" strip give the way back (`KidView.tsx:147`, "Kids seam #4") | kids | — |
 
 Tier 2 — high-frequency annoyances (weekly ×N):

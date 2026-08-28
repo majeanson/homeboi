@@ -15,7 +15,7 @@ import { isGuest } from '../../lib/device'
 import { useMots, waitingMots, type Mot } from '../../lib/mots'
 import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi, faceTriedDefi, useToggleDefiMark } from '../../lib/habits'
 import type { BoardModel } from '../../lib/boardModel'
-import type { Todo } from '../../lib/todos'
+import { splitTodos, type Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type EventRow, type MealRow } from './types'
 import { BoardCanvas } from './BoardCanvas'
 import { Notes } from './Notes'
@@ -215,6 +215,12 @@ export function ToddlerBoard({
     </button>
   ) : null
 
+  // THE one loose/checklist discriminator (lib/todos) — the same split the parent
+  // « À faire » card and the departure card bucket with, so the two lenses can never
+  // disagree about which row is a leaving-checklist item.
+  const { loose: looseTodos, checklists: todoChecklists } = splitTodos(openTodos)
+  const departureTodos = todoChecklists.flatMap((g) => g.todos)
+
   const kidSection = (label: string, tiles: Tile[]) =>
     tiles.length > 0 ? (
       <section className="today-kid__section">
@@ -325,7 +331,7 @@ export function ToddlerBoard({
               narration: c.title,
               color: c.color ?? undefined,
             })),
-            ...openTodos.map((td) => ({
+            ...looseTodos.map((td) => ({
               key: td.id,
               icon: pictoFor(td.title, '✅'),
               label: td.title,
@@ -333,6 +339,28 @@ export function ToddlerBoard({
               color: memberColor(td.member_id) ?? undefined,
             })),
           ])}
+          {/* « Avant de partir » — the morning's leaving checklist, as its OWN
+              section rather than folded into « À faire ».
+              WHY IT MATTERS HERE: on a locked kiosk (?kid=1) the parent departure
+              CARD is unreachable without the 3 s hold + arithmetic gate — every
+              morning, and a one-tablet household is exactly the household that
+              needs it at 7h10 (bmad/11 tier-1 seam #4). The items did already reach
+              this lens, but mixed in with the to-dos, where « prends ta boîte à
+              lunch » read the same as « ranger ta chambre ». Split out, a pre-reader
+              can see what to TAKE before the door.
+              Hear-first and READ-ONLY like every tile here: no onTap, so a wandering
+              finger can never tick the household's morning (toddler-board.spec.ts
+              asserts this board writes nothing at all). */}
+          {kidSection(
+            t.departure.title,
+            departureTodos.map((td) => ({
+              key: td.id,
+              icon: pictoFor(td.title, '🎒'),
+              label: td.title,
+              narration: td.title,
+              color: memberColor(td.member_id) ?? undefined,
+            })),
+          )}
           {/* « Mes habitudes » — what today is still asking (« brosse tes dents »),
               read aloud. Same face filter + reading as the parent card; self-hides
               when nothing is due. A parent marks them in « Le point du jour ». */}
