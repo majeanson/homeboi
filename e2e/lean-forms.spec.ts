@@ -117,8 +117,13 @@ test('« Compléter les familles » sits under the directory, not over it', asyn
   const w = (await complete.boundingBox())!.width
   expect(w).toBeLessThan(300)
 
-  // Same for the face chip above — it wore the full width too.
+  // Same for the face chip above — it wore the full width too. Awaited visible for
+  // the SAME reason as the row: this one wasn't, and it flaked on CI once
+  // (« Cannot read properties of null (reading 'y') ») under the full parallel
+  // suite while passing alone — the exact trap the note above describes. A guard
+  // that only holds when the machine is fast is not a guard.
   const chip = page.locator('.cercle-focus .profile-chip')
+  await expect(chip).toBeVisible()
   const chipW = (await chip.boundingBox())!.width
   expect(chipW).toBeLessThan(300)
 })
