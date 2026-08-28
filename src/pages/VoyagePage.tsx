@@ -1,6 +1,7 @@
 // B-11 (bmad/10) — voyage.css moved out of the eager shell (position-immaterial
 // scene classes); load it whenever this page renders instead.
 import '../styles/voyage.css'
+import { facesFromMembers } from '../lib/faces'
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -8,7 +9,6 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useT, useLang } from '../i18n'
 import { live } from '../lib/query'
-import { imgUrl } from '../lib/image'
 import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { todayLocalDay } from '../lib/localDay'
@@ -18,6 +18,7 @@ import { useConfirm } from '../lib/confirm'
 import type { Member } from '../lib/members'
 import { PairPrompt } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
+import { PhotoField } from '../components/PhotoField'
 import { ActionMenu } from '../components/ActionMenu'
 import { SubTabs } from '../components/SubTabs'
 import { Chip, ChipGroup } from '../components/Chip'
@@ -85,12 +86,7 @@ function VoyageInner() {
   const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), ...live })
   const allFaces: MemberFace[] = useMemo(
     () =>
-      (membersQ.data?.members ?? []).map((m) => ({
-        id: m.id,
-        name: m.display_name,
-        colour: m.colour,
-        photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
-      })),
+      facesFromMembers(membersQ.data?.members ?? []),
     [membersQ.data],
   )
 
@@ -230,6 +226,13 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
   const [start, setStart] = useState(secToDateInput(trip?.start_at ?? null))
   const [end, setEnd] = useState(secToDateInput(trip?.end_at ?? null))
   const [members, setMembers] = useState<string[]>(trip?.members ?? [])
+  // The trip COVER. `trips.media_key` has been read and PATCH-accepted since the
+  // feature shipped — with correct old-blob cleanup server-side — but nothing could
+  // ever SET it and nothing showed it: a write-only dead branch (REVIEW-PASS « voy »).
+  // It is a real field now: picked here, shown as the board row's thumbnail. The blob
+  // rides `trip-doc-media` (the trip's own upload endpoint); the server stamps
+  // `media_kind: 'image'` itself, so the kind/key invariant can't be half-written.
+  const [cover, setCover] = useState<string | null>(trip?.media_key ?? null)
   const [busy, setBusy] = useState(false)
 
   const toggleMember = (mid: string) =>
@@ -245,6 +248,9 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
       startAt: dateInputToSec(start),
       endAt: dateInputToSec(end),
       members,
+      // Only sent when there IS one — the PATCH branch is "set/replace", it has no
+      // clear, so sending null would be a no-op that reads like a delete.
+      ...(cover ? { media_key: cover } : {}),
     }
     try {
       if (editing) {
@@ -306,6 +312,15 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
             <input className="input" type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
           </span>
         </div>
+        <label className="voyage-form__label mono">{t.voyage.cover}</label>
+        <PhotoField
+          value={cover}
+          onChange={setCover}
+          endpoint="trip-doc-media"
+          icon="camera-bold"
+          addLabel={t.voyage.addCover}
+          uploadingLabel={t.voyage.coverUploading}
+        />
         {faces.length > 0 && (
           <>
             <label className="voyage-form__label mono">{t.voyage.whoGoing}</label>

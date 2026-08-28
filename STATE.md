@@ -22,13 +22,13 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1845 unit tests in 142 files · 118 Playwright spec files |
+| **Tests** | 1851 unit tests in 143 files · 121 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 ### Health signals, all green as of 2026-08-27
 
-- `npm run typecheck` · `npm test` (1845) · `npm run build` — green.
+- `npm run typecheck` · `npm test` (1851) · `npm run build` — green.
 - `npm run check:bundle` — **3859 KB** of JS across `dist/assets`, **733 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
@@ -70,14 +70,17 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust — it reads **17** today (15 in `REVIEW-PASS.md`, 2 in
-> `PARITY.md`'s Wave D), and that is the whole of the repo's written open work.
+> a number you can trust — it reads **6** today (4 in `REVIEW-PASS.md`, 2 in `PARITY.md`'s
+> Wave D), and that is the whole of the repo's written open work. It was 75 before the
+> convention, and 17 the moment the convention landed. Note what `[~]` may NOT be used for:
+> a bullet that still lists "Still open: …" is open work, not a park — four were flipped back
+> from `[~]` to `[ ]` on the day the convention shipped, for exactly that reason.
 
 | File | Kind | Status |
 | --- | --- | --- |
 | **STATE.md** | ← you are here | The front door. Start here. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
-| `REVIEW-PASS.md` | Ledger | 🟡 **15 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
+| `REVIEW-PASS.md` | Ledger | 🟡 **4 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
 | `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — tiers 1 and 2 fully resolved; tier 3 swept the same day (five re-checked, four stale). See §4-B. |
 | `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. **2 open items** (Part 4 Wave D, opportunistic). Parts 5–6 are a template — copy, don't tick. |
 | `ACTIONS.md` | **Playbook** | The action × door matrix. **No open items** — Part 5 is a template. |
@@ -220,7 +223,19 @@ Still genuinely open: the cashier's second check-state, staples chips, the gathe
 the abandoned routine stopwatch, the empty shell routine's missing cue, and "last week"
 review. « Par allée »'s drag grip is a recorded decision, not a gap.
 
-### C. Section debt — `REVIEW-PASS.md`, 20 findings (swept 2026-08-28)
+### C. Section debt — `REVIEW-PASS.md`, **4 findings left** (swept twice, 2026-08-28)
+
+> **Second sweep, same day (evening).** 31 → 29 → 20 → 15 → **4**. Marc decided the four
+> judgement calls and picked three of four bigger items; everything else was re-verified
+> against code and either fixed or given a recorded verdict. Of the claims re-checked in
+> this pass, **six were stale or misread**: `HomeProjectForm`'s "bare input" (it uses
+> EditField, and says so), `firstLine` "recomputed inline" (it isn't), the settings-nav
+> "wrapping OperatorJump row" (that component is deleted), the "stale section ids" (they
+> are deliberate alias regressions, labelled as such), `?focus=` as the fix for the focus
+> lens (that param is already Réglages' section-landing grammar), and the flash-back's
+> location (DayPlanPage was safe; **Réglages** was the exposed one). Two findings were
+> *worse* than written: the trip cover could never be set at all, and the undo assertion in
+> my own new carnet test was reading a log nothing wrote to.
 
 **It said 31. It was 29 boxes, and eight of those were already fixed and never ticked** —
 verified by grepping every open claim against code, which is the sweep this section had

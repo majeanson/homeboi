@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { facesFromMembers } from '../lib/faces'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import '../styles/habits.css'
@@ -8,7 +9,6 @@ import { useAuth } from '../lib/auth'
 import { isGuest } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { useWrite } from '../lib/write'
-import { imgUrl } from '../lib/image'
 import { type Member } from '../lib/members'
 import { HABITS_KEY, BOARD_KEY, MONTH_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import {
@@ -61,12 +61,7 @@ export function HabitudesPage() {
   const days = data?.days ?? []
 
   const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? []
-  const faces: MemberFace[] = members.map((m) => ({
-    id: m.id,
-    name: m.display_name,
-    colour: m.colour,
-    photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
-  }))
+  const faces: MemberFace[] = facesFromMembers(members)
 
   const mine = visibleHabits(habits, face)
   // Paused habits are invisible to visibleHabits (it filters archived out for

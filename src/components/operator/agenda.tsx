@@ -4,7 +4,7 @@ import { useLang, useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
-import { useUndoableRemove } from '../../lib/undoRemove'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useConfirm } from '../../lib/confirm'
 import { isGuest } from '../../lib/device'
 import { api } from '../../lib/api'
@@ -39,23 +39,26 @@ export function EventsSection({
   const t = useT()
   const { lang } = useLang()
   const { open } = useAddSheet()
-  const undoableRemove = useUndoableRemove()
+  const removal = useDeferredRemoval(EVENTS_KEY)
   const write = useWrite()
   // Read-only guest: hide the add-event button + the inline edit form (RowActions
   // already hides its own ✏️/🗑️, so a guest can't open the editor anyway).
   const ro = isGuest()
   const [editing, setEditing] = useState<EventRow | null>(null)
 
+  // useDeferredRemoval, NOT useUndoableRemove (REVIEW-PASS, 2026-08-28). The latter
+  // hides the row by mutating the cache (`setQueryData`), which is fine while the only
+  // reader is this Réglages list — its queries are not `live`. But `DayPlanPage` reads
+  // EVENTS_KEY with `...live` (staleTime 0, ~10 s poll), so a poll or a RealtimeHub
+  // nudge landing inside the undo window refilled the cache and flashed the deleted row
+  // back on the day page, then removed it again when the held write finally ran. The
+  // deferred store holds the id OUT of the render on every surface in the scope, which
+  // no refetch can undo — the exact case its "CROSS-SURFACE" note describes.
   function remove(ev: EventRow) {
     if (editing?.id === ev.id) setEditing(null)
-    undoableRemove({
-      queryKey: EVENTS_KEY,
-      listProp: 'events',
-      id: ev.id,
-      label: ev.title,
-      commit: () =>
-        write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY, CAR_KEY] }),
-      after: onChange,
+    removal.remove([ev.id], t.undo.cleared(ev.title), async () => {
+      await write('events', { method: 'DELETE', body: { id: ev.id }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY, CAR_KEY] })
+      onChange()
     })
   }
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.display_name
@@ -73,7 +76,7 @@ export function EventsSection({
         <EmptyState>{t.operator.noEvents}</EmptyState>
       ) : (
         <ul className="operator__list">
-          {events.map((ev) => (
+          {removal.visible(events).map((ev) => (
             <li key={ev.id}>
               <ListRow
                 leading={

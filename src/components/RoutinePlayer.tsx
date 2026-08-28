@@ -18,6 +18,7 @@ import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
 import { useSurface } from '../lib/surface'
+import { useAudience } from '../lib/audience'
 import { companionPool, companionTone, isCompanion, type CompanionMoment } from '../lib/companions'
 import { computeDayPart } from '../lib/timeofday'
 import { tipFor } from '../lib/routineTips'
@@ -111,6 +112,8 @@ export function RoutinePlayer({
   const { lang } = useLang()
   const { calm } = useCalm()
   const { surface } = useSurface()
+  // The presentation lens — the run stopwatch is parent-only (see its render below).
+  const { audience } = useAudience()
   const speak = useSpeak()
   const qc = useQueryClient()
   // The buddy is big + glanceable on a wall tablet (kiosk), but on a phone the same
@@ -708,10 +711,21 @@ export function RoutinePlayer({
                   {running ? (
                     <div className="tdl-timer">
                       {/* A glanceable count-up, not a status message — announcing it every
-                          second floods a screen reader, so keep it out of the live region. */}
-                      <span className="tdl-clock mono" aria-live="off">
-                        {clock(elapsed)}
-                      </span>
+                          second floods a screen reader, so keep it out of the live region.
+                          PARENT ONLY (Marc, 2026-08-28): a step that carries `seconds` also
+                          renders the Countdown ring right above this, and two live numbers
+                          on one screen is two things to read. They answer different
+                          questions — the ring is "how much longer for THIS step", which a
+                          pre-reader can act on; this is "how long the whole routine has
+                          taken", which is a parent's metric and means nothing to a
+                          four-year-old. So the lens splits them rather than either being
+                          dropped: the recap still shows the total for whoever wants it.
+                          The ✓/→ button below is NOT gated — it is the only way forward. */}
+                      {audience !== 'toddler' && (
+                        <span className="tdl-clock mono" aria-live="off">
+                          {clock(elapsed)}
+                        </span>
+                      )}
                       <button
                         type="button"
                         className="tdl-finish"

@@ -44,3 +44,19 @@
   color: var(--ink-soft);
   white-space: nowrap;
 }
+
+/* The trip's cover thumbnail, inline before its title — the ONE place `trips.media_key`
+   is displayed (it had a column, a PATCH branch and blob cleanup, but no picker and no
+   render, so it could never be anything but null). Small and decorative on purpose: the
+   row's job is the name and the when; the picture is a recognition aid. Inline-block +
+   a negative vertical-align so it sits on the text's optical line, since the row aligns
+   on the baseline and an image has no useful baseline of its own. */
+.voyage-card__cover {
+  display: inline-block;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-right: 0.4rem;
+  vertical-align: -0.45em;
+  border-radius: 0.35rem;
+  object-fit: cover;
+}

@@ -37,6 +37,7 @@ import { CarnetForm } from '../components/cercle/CarnetForm'
 import { CarnetDocs } from '../components/cercle/CarnetDocs'
 import { CareLogForm } from '../components/cercle/CareLogForm'
 import { HomePinForm } from '../components/cercle/HomePinForm'
+import { HomeProjectForm } from '../components/forms/HomeProjectForm'
 
 type Seg = 'surveiller' | 'carnet'
 
@@ -75,8 +76,15 @@ export function CercleCarnetPage() {
   const [editLog, setEditLog] = useState<CareLog | null>(null)
   const [addingPin, setAddingPin] = useState(false)
   const [editPin, setEditPin] = useState<HomePin | null>(null)
+  // An Entretien row scoped to this carnet was read-only text here (REVIEW-PASS
+  // « crn »): care-log and pins both carried RowActions, so changing an upkeep row
+  // meant leaving the scene for Réglages ▸ Corvées. Same two doors as its siblings
+  // now — edit opens the SHARED HomeProjectForm in a modal (not a second form), and
+  // delete rides the same deferred removal, since ['home-projects'] is polled live.
+  const [editUpkeep, setEditUpkeep] = useState<HomeProject | null>(null)
   const logRemoval = useDeferredRemoval([...CARE_LOG_KEY, id])
   const pinRemoval = useDeferredRemoval([...HOME_PINS_KEY, id])
+  const upkeepRemoval = useDeferredRemoval(HOME_PROJECTS_KEY)
 
   if (!data) return <Loading />
   const carnet = id ? data.carnets.find((x) => x.id === id) ?? null : null
@@ -97,7 +105,7 @@ export function CercleCarnetPage() {
   const soon = (data.soon ?? []).filter((s) => s.carnetId === carnet.id || childIds.has(s.carnetId))
   const entries = logData?.entries ?? []
   const shownEntries = logRemoval.visible(entries)
-  const entretien = (hpData?.projects ?? []).filter((p) => p.carnet_id === carnet.id)
+  const entretien = upkeepRemoval.visible((hpData?.projects ?? []).filter((p) => p.carnet_id === carnet.id))
   // Warranties ending soon — DERIVED from facts.warrantyUntil (this carnet + its
   // things), a calm heads-up to use/extend before it lapses. No rows. See warrantyExpiries.
   const warranties = warrantyExpiries([carnet, ...children], Math.floor(Date.now() / 1000))
@@ -126,6 +134,12 @@ export function CercleCarnetPage() {
   function removeLog(e: CareLog) {
     logRemoval.remove([e.id], c.logDeleted, () =>
       write('care-log', { method: 'DELETE', body: { id: e.id }, affectedKeys: [CARE_LOG_KEY, CARNETS_KEY] }),
+    )
+  }
+
+  function removeUpkeep(p: HomeProject) {
+    upkeepRemoval.remove([p.id], c.careDeleted, () =>
+      write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']] }),
     )
   }
 
@@ -431,6 +445,10 @@ export function CercleCarnetPage() {
                           </span>
                         )}
                       </span>
+                      {/* Operator-only, matching the ＋ above it: the create scene
+                          bounces an unsigned kiosk, so offering edit/delete there
+                          would be a door onto a wall. */}
+                      {!ro && signedIn && <RowActions onEdit={() => setEditUpkeep(p)} onDelete={() => removeUpkeep(p)} />}
                     </div>
                   )
                 })
@@ -479,6 +497,19 @@ export function CercleCarnetPage() {
       <Modal open={addingLog || !!editLog} onClose={() => { setAddingLog(false); setEditLog(null) }} title={editLog ? c.editEntry : c.addEntry}>
         {(addingLog || editLog) && (
           <CareLogForm carnetId={carnet.id} value={editLog} onSaved={() => { setAddingLog(false); setEditLog(null) }} onCancel={() => { setAddingLog(false); setEditLog(null) }} />
+        )}
+      </Modal>
+      {/* Edit a carnet-scoped Entretien row — the SAME form the create scene and
+          Réglages ▸ Corvées use, so the three can't drift. */}
+      <Modal open={!!editUpkeep} onClose={() => setEditUpkeep(null)} title={c.editCare}>
+        {editUpkeep && (
+          <HomeProjectForm
+            kind="upkeep"
+            value={editUpkeep}
+            carnetId={carnet.id}
+            onSaved={() => setEditUpkeep(null)}
+            onCancel={() => setEditUpkeep(null)}
+          />
         )}
       </Modal>
       {/* Add / edit an « en cas de pépin » map pin */}

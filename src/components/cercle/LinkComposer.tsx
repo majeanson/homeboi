@@ -9,6 +9,7 @@ import {
   type RelationshipType,
   type InferredLink,
   personKey,
+  parsePersonKey,
   relationshipPickerGroups,
   relLabel,
   genderedRelLabel,
@@ -120,12 +121,11 @@ export function LinkComposer({
   }
 
   async function acceptSuggestion(s: InferredLink) {
-    const firstColon = s.aKey.indexOf(':')
-    const aKind = s.aKey.slice(0, firstColon)
-    const aId = s.aKey.slice(firstColon + 1)
-    const firstColonB = s.bKey.indexOf(':')
-    const bKind = s.bKey.slice(0, firstColonB)
-    const bId = s.bKey.slice(firstColonB + 1)
+    // parsePersonKey, not a second hand-rolled split: the key format ('member:<id>' /
+    // 'contact:<id>') is decided in lib/cercle, and a fork here would keep working
+    // right up until that format changes (REVIEW-PASS « frm »).
+    const { kind: aKind, id: aId } = parsePersonKey(s.aKey)
+    const { kind: bKind, id: bId } = parsePersonKey(s.bKey)
     setBusy(true)
     try {
       await write('cercle-links', {

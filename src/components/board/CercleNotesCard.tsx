@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
+import { facesFromMembers } from '../../lib/faces'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useProfile } from '../../lib/profile'
 import { isGuest } from '../../lib/device'
-import { imgUrl } from '../../lib/image'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, visibleNotes } from '../../lib/familyNotes'
 import type { Member } from '../../lib/members'
@@ -59,12 +59,7 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
   // the editor's "Pour qui" picker).
   const faces: MemberFace[] = useMemo(
     () =>
-      members.map((m) => ({
-        id: m.id,
-        name: m.display_name,
-        colour: m.colour,
-        photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
-      })),
+      facesFromMembers(members),
     [members],
   )
 

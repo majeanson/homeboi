@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
-import { resizeImage, imgUrl } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { BUSINESSES_KEY } from '../../lib/queryKeys'
@@ -9,6 +8,7 @@ import { type Business, BUSINESS_CATEGORIES, BUSINESS_COLOUR } from '../../lib/b
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
+import { PhotoField } from '../PhotoField'
 import { FormFooter } from '../FormFooter'
 import { Icon } from '../Icon'
 
@@ -45,7 +45,6 @@ export function BusinessForm({
   const [notes, setNotes] = useState(value?.notes ?? '')
   const [colour, setColour] = useState(value?.colour ?? BUSINESS_COLOUR)
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
-  const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
@@ -88,20 +87,6 @@ export function BusinessForm({
       setImportMsg(bz.importFailed)
     } finally {
       setImporting(false)
-    }
-  }
-
-  async function pickPhoto(file: File | undefined) {
-    if (!file) return
-    setUploading(true)
-    try {
-      const blob = await resizeImage(file, 1024)
-      const { key } = await api<{ key: string }>('businesses', { method: 'POST', body: blob })
-      setPhotoKey(key)
-    } catch {
-      /* R2 unset / failed upload → keep the icon tile */
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -153,7 +138,6 @@ export function BusinessForm({
     }
   }
 
-  const photo = photoKey ? imgUrl(photoKey) : null
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
@@ -213,16 +197,7 @@ export function BusinessForm({
       </label>
 
       {/* Optional business-card photo (hidden gracefully if R2 is unset → upload fails). */}
-      <label className="business-form__photo">
-        {photo ? (
-          <img src={photo} alt="" className="business-form__photo-img" />
-        ) : (
-          <span className="business-form__photo-add">
-            <Icon name="storefront-bold" size={20} /> {uploading ? bz.uploading : bz.addPhoto}
-          </span>
-        )}
-        <input type="file" accept="image/*" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
-      </label>
+      <PhotoField value={photoKey} onChange={setPhotoKey} endpoint="businesses" icon="storefront-bold" addLabel={bz.addPhoto} uploadingLabel={bz.uploading} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter

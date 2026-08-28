@@ -151,11 +151,17 @@ const ALLOWED = new Set<string>([
   'lib/recipeToRoutine.ts → routine-card-photo',
   'components/cercle/ContactForm.tsx → cercle',
   'components/cercle/PetForm.tsx → pets',
-  'components/cercle/BusinessForm.tsx → businesses',
   'components/cercle/CareLogForm.tsx → care-log',
-  'components/cercle/CarnetForm.tsx → carnets',
   'components/cercle/HomePinForm.tsx → home-pins',
   'components/cercle/ContactPhotos.tsx → cercle-photos',
+  // The shared single-photo field (2026-08-28). It replaced the byte-identical upload
+  // handlers CarnetForm and BusinessForm each carried — whose entries were HERE, and
+  // which this file's "every exception still exists" check flagged the moment they
+  // stopped writing, exactly as intended. Same reason as the rest of this block: it
+  // POSTs the blob and hands the caller the key back; the row write that STORES that
+  // key still goes through useWrite in the host form. The endpoint is a prop, so the
+  // scanner reads it as '?'.
+  'components/PhotoField.tsx → ?',
 
   // 7. The row write ATOMICALLY COUPLED to one of those uploads. Queueing only the
   //    trailing POST/PATCH would split a two-step operation across online and

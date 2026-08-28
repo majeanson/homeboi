@@ -150,3 +150,42 @@ test('a read-only guest can run the timer locally but never writes it to the hou
   await page.waitForTimeout(300)
   expect(patched).toBe(false) // …but nothing of theirs lands in the household's day
 })
+
+// ---- One live number per surface (Marc, 2026-08-28) --------------------------
+//
+// A step that carries `seconds` renders the Countdown ring AND, just below, the run
+// count-up stopwatch — two live numbers on one screen, both changing every second.
+// They answer different questions: the ring is "how much longer for THIS step",
+// which a pre-reader can act on; the stopwatch is "how long the whole routine has
+// taken", which is a parent's metric and means nothing to a four-year-old.
+//
+// So the audience lens splits them instead of either being dropped. The parent keeps
+// both; the toddler surface keeps only the ring. The ✓/→ advance button is NOT gated
+// — it is the only way forward, and hiding it would strand the child.
+
+test('the toddler surface shows the step ring but not the run stopwatch', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page, { overrides: { routines: routinesWithTimer() } })
+  await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', surface: 'kiosk' })
+  await page.goto('/routine/r1/run')
+  await expect(page.locator('.tdl-what')).toBeVisible()
+
+  // Start the run, which is what mounts the stopwatch row.
+  await page.locator('.tdl-start').click()
+  await expect(page.locator('.tdl-timer')).toBeVisible()
+
+  // The step ring stays — it is the one a pre-reader can act on.
+  await expect(page.locator('.tdl-countdown')).toHaveCount(1)
+  // The run count-up goes.
+  await expect(page.locator('.tdl-clock')).toHaveCount(0)
+  // …but the way forward must remain. Hiding this would strand the child.
+  await expect(page.locator('.tdl-timer .tdl-finish')).toBeVisible()
+})
+
+test('the parent surface keeps both numbers', async ({ page }) => {
+  // The other side, so "hide the stopwatch" can't quietly become "drop it".
+  await openRun(page)
+  await page.locator('.tdl-start').click()
+  await expect(page.locator('.tdl-countdown')).toHaveCount(1)
+  await expect(page.locator('.tdl-clock')).toBeVisible()
+})

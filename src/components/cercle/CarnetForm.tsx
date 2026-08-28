@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
-import { resizeImage, imgUrl } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { useCars } from '../../lib/carPrefs'
@@ -17,10 +15,10 @@ import {
 } from '../../lib/carnets'
 import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
+import { PhotoField } from '../PhotoField'
 import { FormFooter } from '../FormFooter'
 import { Disclosure } from '../Disclosure'
 import { EmojiField } from '../EmojiPicker'
-import { Icon } from '../Icon'
 
 // Add / edit ONE carnet's identity (a house, a car, a water heater, a room). A child
 // carries `parentId`; the kind seeds its default emoji. POST when new, PATCH when
@@ -55,26 +53,11 @@ export function CarnetForm({
   const [warranty, setWarranty] = useState(anchorSecToDate((value?.facts?.warrantyUntil as number) ?? null))
   const [notes, setNotes] = useState(value?.notes ?? '')
   const [linkId, setLinkId] = useState<string>(value?.linkId ?? '')
-  const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   // An 'auto' carnet can bridge to an existing « L'auto » car (link_id = car id), so
   // its scene links over to the car's schedule. L'auto's own data stays untouched.
   const { cars } = useCars()
-
-  async function pickPhoto(file: File | undefined) {
-    if (!file) return
-    setUploading(true)
-    try {
-      const blob = await resizeImage(file, 1024)
-      const { key } = await api<{ key: string }>('carnets', { method: 'POST', body: blob })
-      setPhotoKey(key)
-    } catch {
-      /* R2 unset / failed upload → keep the emoji disc */
-    } finally {
-      setUploading(false)
-    }
-  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -131,7 +114,6 @@ export function CarnetForm({
     }
   }
 
-  const photo = photoKey ? imgUrl(photoKey) : null
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
@@ -209,16 +191,7 @@ export function CarnetForm({
       <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={c.notes} aria-label={c.notes} />
 
       {/* Optional photo of the thing (degrades to the emoji disc when R2 is unset). */}
-      <label className="business-form__photo">
-        {photo ? (
-          <img src={photo} alt="" className="business-form__photo-img" />
-        ) : (
-          <span className="business-form__photo-add">
-            <Icon name="camera-bold" size={20} /> {uploading ? c.uploading : c.addPhoto}
-          </span>
-        )}
-        <input type="file" accept="image/*" hidden onChange={(e) => pickPhoto(e.target.files?.[0])} />
-      </label>
+      <PhotoField value={photoKey} onChange={setPhotoKey} endpoint="carnets" icon="camera-bold" addLabel={c.addPhoto} uploadingLabel={c.uploading} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter

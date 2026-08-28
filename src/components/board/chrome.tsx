@@ -1,5 +1,5 @@
 import { useProfile } from '../../lib/profile'
-import { imgUrl } from '../../lib/image'
+import { facesFromMembers } from '../../lib/faces'
 import { useFaceHasWaiting } from '../../lib/mots'
 import { type BoardView } from '../../lib/boardview'
 import { Icon, type IconName } from '../Icon'
@@ -65,13 +65,8 @@ export function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
   const hasWaiting = useFaceHasWaiting()
   return (
     <FaceSwitcher
-      faces={members.map((m) => ({
-        id: m.id,
-        name: m.display_name,
-        colour: m.colour,
-        photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
-        dot: hasWaiting(m.id),
-      }))}
+      // The waiting-mot dot is this surface's own accent, layered on the shared mapping.
+      faces={facesFromMembers(members).map((f) => ({ ...f, dot: hasWaiting(f.id) }))}
       value={memberId}
       onChange={setMemberId}
       allLabel={t.profile.household}

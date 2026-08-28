@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
@@ -22,23 +23,21 @@ import { type Chore, type Routine } from './types'
 export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
   const t = useT()
   const { open } = useAddSheet()
-  const undoableRemove = useUndoableRemove()
+  const removal = useDeferredRemoval(CHORES_KEY)
   const write = useWrite()
+  // Same reason as agenda.tsx's events: DayPlanPage reads CHORES_KEY `live`, so an
+  // optimistic cache hide is undone by the next poll mid-undo. See the note there.
   function remove(c: Chore) {
-    undoableRemove({
-      queryKey: CHORES_KEY,
-      listProp: 'chores',
-      id: c.id,
-      label: c.title,
-      commit: () => write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [CHORES_KEY] }),
-      after: onChange,
+    removal.remove([c.id], t.undo.cleared(c.title), async () => {
+      await write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [CHORES_KEY] })
+      onChange()
     })
   }
 
   return (
     <OperatorSection title={t.operator.chores}>
       <ul className="operator__list">
-        {chores.map((c) => (
+        {removal.visible(chores).map((c) => (
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
         ))}
       </ul>

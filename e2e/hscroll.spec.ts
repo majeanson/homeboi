@@ -109,3 +109,24 @@ test.describe('side-scrolling rows stay reachable with a mouse', () => {
     await expect(active).toBeInViewport()
   })
 })
+
+// The THEMED TAB row had the same defect the sub row above already fixed, and it went
+// unnoticed because the finding that named it also named a component that no longer
+// exists (a second wrapping `OperatorJump` row — deleted). What survived re-checking:
+// under 60rem the tab nav is a ONE-LINE scroll row with a hidden scrollbar, and a
+// deep-linked tab beyond its right edge was lit but invisible, with no way to know the
+// page had responded at all. `SubTabs` solved this internally with `hs.toView`; the
+// tab row is hand-rolled in Operator.tsx and had no equivalent.
+test('a deep-linked THEMED TAB is scrolled into view, not left off-edge', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  // Narrow: above 60rem the nav is a vertical sidebar and nothing overflows sideways.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  // « Système » is the LAST themed tab — off the right edge on first paint at 390px.
+  await page.goto('/settings?tab=settings')
+  const tabs = page.locator('.operator__tabs')
+  await tabs.waitFor({ state: 'visible', timeout: 15_000 })
+  const active = tabs.locator('[role="tab"][aria-selected="true"]')
+  await expect(active).toBeInViewport()
+})

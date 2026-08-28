@@ -437,7 +437,6 @@ export const FR = {
     voice: 'Parler',
     listening: 'J’écoute…',
     routed: 'Ajouté :',
-    pickType: 'C’était quoi ?',
     types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', upkeep: 'Entretien', note: 'Note' },
     degraded: 'L’IA ne répond pas — choisis le type toi-même.',
     failed: 'La capture n’a pas fonctionné. Ton texte est gardé, réessaie.',
@@ -967,6 +966,11 @@ export const FR = {
     startDate: 'Départ',
     endDate: 'Retour',
     whoGoing: 'Qui part ?',
+    // The trip cover — one photo, shown as the board row's thumbnail. Optional; a
+    // trip with no cover just shows its name, and R2-unset hides the picker's effect.
+    cover: 'Photo du voyage',
+    addCover: 'Ajouter une photo',
+    coverUploading: 'Téléversement…',
     createTrip: 'Créer le voyage',
     createHint: 'Tu pourras ajouter l’itinéraire, les bagages et les documents ensuite.',
     // sub-tabs
@@ -1026,6 +1030,10 @@ export const FR = {
     // wears the short form (BoardCard compactLabel).
     nextTripShort: 'Voyage',
     ongoing: 'En cours',
+    // An early idea with no dates yet — it still shows on the board card (it used to
+    // be filtered out and become unfindable). Deliberately not « à planifier », which
+    // would read as a nag; it just states the fact.
+    noDatesYet: 'Sans dates',
     inDays: (n: number) => (n === 1 ? 'Demain' : `Dans ${n} jours`),
     startsToday: 'Aujourd’hui',
     legendTrips: 'Voyages',
@@ -1113,6 +1121,8 @@ export const FR = {
     openInTab: 'Ouvrir en plein écran',
     noEntretien: 'Aucun entretien récurrent. Le filtre de la fournaise, les piles des détecteurs…',
     addCare: 'Ajouter un entretien',
+    editCare: 'Modifier l’entretien',
+    careDeleted: 'Entretien supprimé',
     // « En cas de pépin » — the house map (home carnets).
     enCasDePepin: 'En cas de pépin',
     noPins: 'Aucun repère. Où est la valve d’eau, le panneau électrique, la clé de secours ?',
@@ -2530,6 +2540,7 @@ export const FR = {
     schedTitle: 'Horaires',
     schedEmpty: 'Aucun horaire. Ajoute les heures de travail pour savoir quand l’auto est prise.',
     schedAdd: 'Ajouter un horaire',
+    schedNoMembers: 'Ajoute d’abord une personne à la maisonnée — un horaire appartient à quelqu’un. Réglages ▸ Maison ▸ Membres.',
     schedLabel: 'Étiquette (Travail, Garderie…)',
     schedFrom: 'De',
     schedTo: 'à',

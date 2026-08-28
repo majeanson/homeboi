@@ -67,8 +67,13 @@ describe('keysForPath', () => {
     expect(keysForPath('household')).toEqual([['household'], ['board'], ['health'], ['meals'], ['month']])
   })
 
-  it('maps routines to routines + board', () => {
-    expect(keysForPath('routines')).toEqual([['routines'], ['board']])
+  // NOT + board, deliberately (2026-08-28). The board DOES show routines — the
+  // `routineNext` card — but that card runs its own ROUTINES_KEY query and
+  // `/api/board` carries no routine data, so fanning out to ['board'] refetched the
+  // entire kiosk glance on every routine save and changed nothing. Re-adding it is a
+  // regression, not a safety net: assert the exact array, not a superset.
+  it('maps routines to routines ONLY — the board card reads the routines key itself', () => {
+    expect(keysForPath('routines')).toEqual([['routines']])
   })
 
   it('maps habits to habits + board + month (a day mark re-derives calendar occurrences)', () => {

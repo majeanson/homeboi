@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { facesFromCercleMembers } from '../../lib/faces'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -11,7 +12,6 @@ import type { Member } from '../../lib/cercle'
 import { isGuest } from '../../lib/device'
 import { useSurface } from '../../lib/surface'
 import { useNotesAdvanced, setNotesAdvanced } from '../../lib/notesMode'
-import { imgUrl } from '../../lib/image'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { SearchField } from '../SearchField'
@@ -104,12 +104,7 @@ export function CercleNotes({
   // and the editor's "Pour qui" picker.
   const faces: MemberFace[] = useMemo(
     () =>
-      members.map((m) => ({
-        id: m.id,
-        name: m.displayName,
-        colour: m.colour,
-        photoUrl: m.avatarKind === 'photo' && m.avatarRef ? imgUrl(m.avatarRef) : null,
-      })),
+      facesFromCercleMembers(members),
     [members],
   )
 

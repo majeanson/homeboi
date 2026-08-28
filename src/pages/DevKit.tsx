@@ -109,6 +109,7 @@ import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeIngredientPick } from '../components/RecipeIngredientPick'
+import { PhotoField } from '../components/PhotoField'
 import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
 import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
@@ -3043,6 +3044,24 @@ export function DevKit() {
               </button>
             </Sheet>
           </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Champs & saisie',
+      name: 'PhotoField',
+      file: 'components/PhotoField.tsx',
+      kw: 'photo image upload r2 cover couverture carnet commerce voyage téléverser',
+      render: () => (
+        <Demo label="THE optional single photo — pick, see, replace. The host owns the row write; R2-unset degrades silently to the placeholder.">
+          <PhotoField
+            value={null}
+            onChange={() => {}}
+            endpoint="carnets"
+            icon="camera-bold"
+            addLabel="Ajouter une photo"
+            uploadingLabel="Téléversement…"
+          />
         </Demo>
       ),
     },

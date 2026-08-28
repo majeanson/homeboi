@@ -177,8 +177,13 @@ const PATH_KEYS: Record<string, string[][]> = {
   // (their relationship edits re-derive the circle's families).
   // (a birthday edit also feeds the « À régler » gift-idea heads-up).
   members: [['members'], ['board'], ['cercle'], ['a-regler']],
-  // Kid routines render on the board and the routines tab.
-  routines: [['routines'], ['board']],
+  // Kid routines render on the board (the `routineNext` card) AND the routines tab —
+  // but BOTH read `['routines']`: `RoutineNextCard` runs its own ROUTINES_KEY query
+  // (`board/RoutineNextCard.tsx:38`) and `/api/board` returns no routine data at all.
+  // So the extra `['board']` fan-out refetched the whole kiosk glance on every routine
+  // save for nothing. Dropped 2026-08-28 after checking both ends: the board's routine
+  // card still refreshes, because it was never listening to the board key.
+  routines: [['routines']],
   // The routine sticker wall (opt-in) — placing/removing a sticker refreshes the wall.
   'routine-stickers': [['routine-stickers']],
   // À compléter (todos): the board glance + day page read ['todos']; the board's own

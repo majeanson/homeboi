@@ -292,3 +292,75 @@ test('an attached PDF opens the read sheet; a photo stays an image', async ({ pa
   await expect(frame).toBeVisible()
   await expect(frame).toHaveAttribute('src', '/api/img/care/fac1.pdf')
 })
+
+// ---- Entretien rows are editable from the scene (REVIEW-PASS « crn ») ---------
+//
+// A carnet-scoped upkeep row was read-only text while care-log and pins both carried
+// RowActions, so changing "filtre de la fournaise, tous les 3 mois" meant leaving the
+// carnet for Réglages ▸ Corvées. Same two doors as its siblings now, and edit opens
+// the SHARED HomeProjectForm rather than a fourth copy of an upkeep form.
+
+const UPKEEP = {
+  id: 'hp9',
+  title: 'Filtre de la fournaise',
+  kind: 'upkeep',
+  carnet_id: 'ca1',
+  at: BASE + 30 * DAY,
+  nextAt: BASE + 30 * DAY,
+  recur_json: null,
+  recur_from: null,
+  budget_cents: null,
+  color: null,
+  notes: null,
+  done: 0,
+  snoozedUntil: null,
+}
+
+// NOTE: this registers AFTER stubWritable's routes and Playwright matches the most
+// recently registered first, so this handler — not that one — sees every
+// /api/home-projects call. It therefore has to do the recording itself; the first
+// version didn't, which made the undo assertion below trivially true (an empty array
+// that proved nothing, over a DELETE that could have fired).
+async function stubUpkeep(page: Page, seen: { method: string; path: string }[]) {
+  await page.route('**/api/home-projects**', async (route) => {
+    const m = route.request().method()
+    if (m === 'GET') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ projects: [UPKEEP] }) })
+    }
+    seen.push({ method: m, path: new URL(route.request().url()).pathname })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+}
+
+const upkeepRow = (page: Page) => page.locator('.cercle-row', { hasText: 'Filtre de la fournaise' })
+
+test('an Entretien row can be edited without leaving the carnet', async ({ page }) => {
+  const api = stubWritable(page)
+  await api.install()
+  await stubUpkeep(page, api.seen)
+  await page.goto('/cercle/carnet/ca1')
+  await expect(upkeepRow(page)).toBeVisible()
+
+  await upkeepRow(page).getByRole('button', { name: 'Modifier' }).click()
+  // The shared HomeProjectForm, seeded — not a blank fourth upkeep form. Its title
+  // field is an EditField whose ariaLabel is the add label (« Ajouter un entretien »).
+  const title = page.getByRole('textbox', { name: 'Ajouter un entretien' })
+  await expect(title).toHaveValue('Filtre de la fournaise')
+})
+
+test('deleting an Entretien row defers behind « Annuler », like its siblings', async ({ page }) => {
+  const api = stubWritable(page)
+  await api.install()
+  await stubUpkeep(page, api.seen)
+  await page.goto('/cercle/carnet/ca1')
+  await expect(upkeepRow(page)).toBeVisible()
+
+  await upkeepRow(page).getByRole('button', { name: 'Supprimer' }).click()
+  await expect(upkeepRow(page)).toHaveCount(0)
+  await expect(page.locator('.undo-toast')).toBeVisible()
+
+  await page.locator('.undo-toast__btn').first().click()
+  await expect(upkeepRow(page)).toBeVisible()
+  // ['home-projects'] is polled live, so the undo must leave the server untouched.
+  expect(api.seen.filter((r) => r.path === '/api/home-projects')).toEqual([])
+})

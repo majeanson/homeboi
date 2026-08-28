@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { cerclePhotosKey } from '../../lib/queryKeys'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -41,7 +42,7 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
 
   // Prefixed under 'cercle' so a realtime cercle nudge (or a CERCLE_KEY
   // invalidation) refreshes the gallery too.
-  const photosKey = ['cercle', 'photos', contactId]
+  const photosKey = cerclePhotosKey(contactId)
   const { data } = useQuery({
     queryKey: photosKey,
     queryFn: () => api<{ photos: ContactPhoto[] }>(`cercle-photos?contactId=${encodeURIComponent(contactId)}`),

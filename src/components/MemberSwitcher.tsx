@@ -14,17 +14,11 @@ import { Icon } from './Icon'
 // shape (snake_case `lib/members` OR camelCase `lib/cercle`) to `MemberFace` at the
 // call site — resolve the photo URL there (`imgUrl`) so this stays presentational.
 
-export interface MemberFace {
-  id: string
-  name: string
-  // The face's colour for the initial disc; null falls back to the neutral disc.
-  colour: string | null
-  // A resolved image URL (e.g. imgUrl(avatar_ref)) or null for the coloured initial.
-  photoUrl?: string | null
-  // A calm presence accent on the face (e.g. « un mot t'attend ») — a BOOLEAN dot, like the
-  // board's "Bientôt" chip. Never a count (NFR-CALM). Optional; absent → no dot.
-  dot?: boolean
-}
+// The face shape moved to lib/faces.ts, where the three member shapes that feed it
+// are adapted (facesFromMembers / facesFromCercleMembers). Re-exported here so the
+// fourteen `import { type MemberFace } from './MemberSwitcher'` sites keep working.
+export type { MemberFace } from '../lib/faces'
+import type { MemberFace } from '../lib/faces'
 
 export function MemberSwitcher({
   faces,

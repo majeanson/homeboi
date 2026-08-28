@@ -149,6 +149,11 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
           ＋ {t.operator.schedAdd}
         </button>
       )}
+      {/* A disabled button with no reason beside it is a dead end: a schedule block
+          belongs to a MEMBER, so with none added there is nothing to schedule — say
+          that, and point at where members are added, rather than greying out and
+          leaving the operator to guess (REVIEW-PASS « smaller nits »). */}
+      {!ro && members.length === 0 && <p className="operator__hint mono">{t.operator.schedNoMembers}</p>}
       <Modal open={adding} onClose={() => setAdding(false)} title={t.operator.schedAdd}>
         {adding && <BlockForm members={members} onSave={save} onCancel={() => setAdding(false)} />}
       </Modal>

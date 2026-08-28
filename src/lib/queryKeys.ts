@@ -139,3 +139,8 @@ export const SAMPLE_KEY = ['sample']
 export function guestWindowKey(preview: string | null | undefined, sub?: string) {
   return sub ? ['guest-window', preview ?? 'self', sub] : ['guest-window', preview ?? 'self']
 }
+
+// A contact's photo strip. Per-contact, so it is a FACTORY rather than a constant —
+// but it belongs here with the rest: an inline `['cercle','photos',id]` literal at the
+// call site is exactly how one key becomes two spellings and then two caches.
+export const cerclePhotosKey = (contactId: string) => ['cercle', 'photos', contactId]

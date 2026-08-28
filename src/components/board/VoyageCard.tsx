@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { daysUntilLocal, todayLocalDay } from '../../lib/localDay'
 import { useTrips, useSharedTrips, VOYAGE_ICON } from '../voyage/voyage'
 import { Chip } from '../Chip'
+import { imgUrl } from '../../lib/image'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 
@@ -21,13 +22,28 @@ export function VoyageCard() {
 
   // Upcoming or under way: a dated trip whose last day is today or later. Private and
   // shared trips carry the same date/title fields, so they merge into one sorted run.
-  const rows = [
+  const all = [
     ...(data?.trips ?? []).map((tr) => ({ ...tr, shared: false })),
     ...(sharedData?.trips ?? []).map((tr) => ({ ...tr, shared: true })),
   ]
+  const dated = all
     .filter((tr) => tr.end_at != null && tr.start_at != null && tr.end_at >= today)
     .sort((a, b) => (a.start_at ?? 0) - (b.start_at ?? 0))
-    .slice(0, 3)
+  // A trip with no dates yet — « on veut aller en Gaspésie, un jour » — used to be
+  // filtered out here, and this card plus /search were the only two places trips are
+  // listed at all. So you could create one, close the scene, and never find it again
+  // unless you remembered its name well enough to search it (REVIEW-PASS « voy »).
+  //
+  // Requiring dates would have been the wrong fix: an early idea legitimately has none,
+  // and forcing a made-up date to keep the trip visible is worse than no date.
+  //
+  // They fill the REMAINDER, never displace a real upcoming trip — a household with
+  // five someday-ideas must not lose next week's departure off the bottom of a
+  // three-row card. Newest first, since an undated trip has nothing else to sort by.
+  const undated = all
+    .filter((tr) => tr.start_at == null || tr.end_at == null)
+    .sort((a, b) => b.created_at - a.created_at)
+  const rows = [...dated, ...undated].slice(0, 3)
   const empty = rows.length === 0
   useReportEmpty(empty)
   if (empty) return null
@@ -57,6 +73,14 @@ export function VoyageCard() {
           <li key={tr.id} className="voyage-card__row">
             <Link to={tr.shared ? `/voyage/partage/${tr.id}` : `/voyage/${tr.id}`} className="voyage-card__open">
               <span className="voyage-card__name">
+                {/* The trip's cover, if it has one — the ONE place it shows. The column
+                    was read + PATCH-accepted since the feature shipped but had no picker
+                    and no display, so it could never be anything but null. It lives
+                    INSIDE the name (not as a third row child): the row is
+                    `justify-content: space-between`, which would have pushed the picture
+                    to one edge and the title to the middle, away from each other.
+                    Decorative — alt="" — the title carries the meaning. */}
+                {tr.media_key && <img src={imgUrl(tr.media_key)} alt="" className="voyage-card__cover" />}
                 {tr.title}
                 {tr.shared && (
                   <Chip icon="users-three-bold" className="voyage-card__shared">
@@ -66,7 +90,11 @@ export function VoyageCard() {
               </span>
               <span className="voyage-card__when mono">
                 {tr.destination ? `${tr.destination} · ` : ''}
-                {whenLabel(tr.start_at as number, tr.end_at as number)}
+                {/* No dates yet → say so plainly rather than compute a countdown from
+                    a null (which read « dans NaN jours » in the first draft). */}
+                {tr.start_at != null && tr.end_at != null
+                  ? whenLabel(tr.start_at, tr.end_at)
+                  : t.voyage.noDatesYet}
               </span>
             </Link>
           </li>

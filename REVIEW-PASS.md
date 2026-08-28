@@ -484,9 +484,13 @@ duplication and timer/e2e gaps. Two reviewers; deduped below.
   save no longer touches `BOARD_KEY` at all — `RoutineForm` writes with
   `affectedKeys: [ROUTINES_KEY]`, which is the key the card actually reads. Zero
   `BOARD_KEY` references remain anywhere in the routine save path. Nothing to decide.
-- [ ] **Two timers on screen at once** on a timed step — the `Countdown` ring
-  (`RoutinePlayer.tsx:310`) *and* the run count-up stopwatch (`:351`) both show; potentially
-  confusing on the toddler surface. Design decision on whether both belong.
+- [x] **Two timers on screen at once** on a timed step — ✅ **decided + shipped 2026-08-28
+  (Marc): the audience lens splits them.** They answer different questions — the ring is
+  "how much longer for THIS step", which a pre-reader can act on; the run stopwatch is "how
+  long the whole routine has taken", a parent's metric that means nothing to a four-year-old.
+  So the toddler surface keeps the ring only; the parent keeps both, and the recap still
+  carries the total either way. The ✓/→ advance button is deliberately NOT gated — it is the
+  only way forward. Guarded both ways in `e2e/routine-timer.spec.ts`, run against the bug.
 - [x] **Parent overview shows no "done today"** — ✅ **stale (verified 2026-08-28).** The file
   moved to `maison/RoutinesTab.tsx`, which computes today's `doneCount` from `doneIdx` and
   shows it (clamped to the deck so the ring never over-fills, `:81`). The asymmetry is gone.
@@ -563,7 +567,15 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   scrolls at 320–360px **and** carries `role="tablist"`/`role="tab"` with no roving tabindex /
   arrow keys / `aria-controls`. Migrate to the shared **`SubTabs`** (help- + keyboard-aware),
   already used for the view switch.
-- [ ] **[dir] Three `Member` shapes converge on the ONE face control.** camelCase cercle
+- [x] **[dir] Three `Member` shapes converge on the ONE face control** — ✅ **Fixed 2026-08-28.**
+  The shared TYPE already existed (`MemberFace`); what did not was the MAPPING, hand-written at
+  **nine** call sites, character-identical apart from which convention it read. It lives in
+  **`src/lib/faces.ts`** now: `toFace` / `facesFromMembers` (snake_case) and
+  `facesFromCercleMembers` (camelCase), with `MemberFace` re-homed there and re-exported from
+  `MemberSwitcher` so the fourteen existing imports keep working. `FormScene.toFace` — already a
+  single-member adapter with four callers — moved in rather than becoming a fifth spelling.
+  `faces.test.ts` pins the property no call site could state alone: **the two conventions yield
+  the same face**. Run against the bug (renaming one side's field turns it red). Original finding: camelCase cercle
   `Member` (`cercle.ts:49`), snake_case `/api/members` rows (board/MemberSwitcher consume raw),
   and the detail adapter's own `Member` (`adapters.ts:30`). Cercle feeds `MemberSwitcher`/
   `FaceSelect` from shape 1 (`Cercle.tsx:707`), the board from shape 2 — a field rename on
@@ -596,10 +608,16 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   only channel left at close — and reachable *because* the editor is unmounting; a notice raised
   from inside a full-screen scene is painted under it (`.undo-toast` is z-index 40). Emptying a
   note to nothing still deletes it and is deliberately NOT announced as saved.
-- [ ] **[crn] Carnet-scoped Entretien rows are add-only from the carnet scene** (read-only
-  text, `CercleCarnetPage.tsx:374`) while care-log and pins both get `RowActions` — to edit/
-  delete a carnet's upkeep row the user must leave to Réglages ▸ Corvées. Wire `RowActions` →
-  `HomeProjectForm` + delete.
+- [x] **[crn] Carnet-scoped Entretien rows are add-only from the carnet scene** — ✅ **Fixed
+  2026-08-28.** Same two doors as its siblings: `RowActions` → edit opens the **shared**
+  `HomeProjectForm` in a modal (not a fourth upkeep form), delete rides `useDeferredRemoval`
+  like care-log and pins, since `['home-projects']` is polled live. Operator-only, matching the
+  ＋ above it (the create scene bounces an unsigned kiosk, so edit/delete there would be a door
+  onto a wall). Two cases in `e2e/carnet-scene.spec.ts`, run against the bug.
+  *And a note on the test:* its first version asserted the undo sent nothing by reading a
+  request log the stub never wrote to — the upkeep route was registered LAST and Playwright
+  matches most-recent-first, so the array was trivially empty and would have passed over a
+  DELETE that fired. Caught by asking what the empty array actually proved.
 - [x] **[frm] `ConnectPeople` comboboxes omit `typeaheadOnly`** — ✅ **Fixed 2026-07-02**:
   both person-A/B comboboxes now set `typeaheadOnly`, matching every other cercle combobox
   (no more free-text that resolves to nothing).
@@ -631,10 +649,15 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
 
 ### Findings — P3 (bigger / judgement)
 
-- [ ] **[dir] Focus lens is `useState`, not URL state** (`Cercle.tsx:178`) — should ride
-  `?focus=` per the subtab-URL rule (survives scene round-trips + deep-links); it also renders
-  in Social where it collapses most rows to "aucun lien connu" (`:706`), and clearing it
-  doesn't re-centre the ego view (`CercleEgo.tsx:45`).
+- [~] **[dir] Focus lens is `useState`, not URL state** — **reviewed 2026-08-28, parked with
+  the reason.** Two anchors are stale: `Cercle.tsx` no longer exists (the lens is
+  `Maison.tsx:206`), and — the part that matters — **`?focus=` is already taken.** It is
+  Réglages' section-landing param (`?focus=<helpKey>` → scroll + accent ring on a stacked
+  settings card; `DISCOVERY.md` URL grammar, `SETTINGS_FOCUS`). Adopting it here would give one
+  param two meanings on two surfaces, the opposite of what the subtab-URL rule is for. Doing it
+  properly means **choosing a new param**, i.e. extending the URL grammar — a design decision,
+  not a defect. The two behavioural sub-claims (Social collapsing to "aucun lien connu", the ego
+  view not re-centring) were NOT re-verified and stand as written.
 - [x] **[dir] Two independent "upcoming birthday" derivations + two `parseBirthday`** —
   ✅ **Fixed 2026-08-28.** It was worse than reported: **four** spellings of the rule, not
   two. Client `cercle.ts` and BOTH write validators (`api/members.ts`, `api/cercle.ts`, each
@@ -670,14 +693,25 @@ below: `[dir]` directory/views · `[frm]` forms/builders · `[nte]` notes/busine
   2026-08-27** (verified 2026-08-28): the SVG is `role="group"` now (`CercleConstellation.tsx:152`),
   so its focusable islands/faces stay in the a11y tree, and `nested-interactive.test.ts` guards
   the shape. _(The `peopleN` calm gut-check was a question, not a defect — left as asked.)_
-- [ ] **[crn] `foreignObject`-wrapped `<Avatar>` per face in the world SVG** (`:315`) — long
+- [~] **[crn] `foreignObject`-wrapped `<Avatar>` per face in the world SVG** — **reviewed
+  2026-08-28, kept: a recorded decision, not an oversight.** `CercleEgo.tsx:12` states the why in
+  the file — "foreignObject hosts the shared `<Avatar>` so faces match the rest of the app".
+  Hand-drawing faces in raw SVG to avoid it forks the one avatar component, which costs more
+  than it saves at household scale. Original text: (`:315`) — long
   history of iOS-Safari render/hit-test bugs; real-device check on a large family (no e2e).
-- [ ] **[frm] Small reuse/consistency nits:** `LinkComposer` hand-parses the person key instead
-  of `parsePersonKey` (`:122`); `ContactForm` avatar posts via `api()` directly while
-  `ContactPhotos` uses `useMediaUpload()` (`:260` vs `:38`); `ContactPhotos` query key is an
-  inline literal not in `queryKeys.ts`; pet weight log has no edit + no same-date dedupe
-  (`PetForm.tsx:129`); `cf__addr-row` packs city+province+postal tight at 320px.
-- [ ] **[nte] Small nits:** `firstLine()` exported but `CercleNotes` recomputes it inline
+- [ ] **[frm] Small reuse/consistency nits** — **two fixed 2026-08-28, three still open.**
+  ✅ `LinkComposer` now calls `parsePersonKey` instead of re-splitting the key twice by hand
+  (six lines → two; the key format is decided in `lib/cercle`, and a fork keeps working right
+  up until that format changes). ✅ `ContactPhotos`' inline `['cercle','photos',id]` literal is
+  `cerclePhotosKey(contactId)` in `queryKeys.ts` — a factory, since it is per-contact, but it
+  belongs with the rest: an inline literal is exactly how one key becomes two spellings and then
+  two caches.
+  **Still open:** `ContactForm` avatar posts via `api()` directly while `ContactPhotos` uses
+  `useMediaUpload()`; pet weight log has no edit + no same-date dedupe (`PetForm.tsx:129`);
+  `cf__addr-row` packs city+province+postal tight at 320px.
+- [ ] **[nte] Small nits** — the `firstLine` half is **stale (verified 2026-08-28)**: it is
+  exported from `lib/noteMarkdown.tsx:205` and no cercle component recomputes it inline any
+  more. The rest stands. Original: `firstLine()` exported but `CercleNotes` recomputes it inline
   (`:227`); latent **orphaned-R2 blobs on in-editor replace/discard** (NoteEditor uploads
   immediately on pick — same class as the Voyage memo caveat); contentEditable body always
   labelled `fn.editorNew` even in edit mode (`:441`); audio-note edit is title-only.
@@ -777,16 +811,22 @@ default kind. These deserve priority in the implement phase.
   its own name/text/draft-preview/submit. POST mode (board + CercleNotes) is byte-for-byte unchanged;
   the shared upload now routes through the canonical `uploadMedia`. Locked by `e2e/postbox.spec.ts`
   (text-only + photo-staged send) + the board fridge-note/drawings specs stay green.
-- [ ] **Operator can't edit incoming values before accepting** (`IntakeReview` merge-or-create
-  only, `:280`; PostboxReview posts text as-is) — a typo'd relative name can't be fixed pre-merge.
+- [~] **Operator can't edit incoming values before accepting** — **not scheduled (Marc,
+  2026-08-28)**, weighed against three other items in the same pass and not picked. Still true as
+  written: `IntakeReview` is merge-or-create only (`:280`) and `PostboxReview` posts text as-is,
+  so a typo'd relative name is fixed after it lands rather than before. Recorded as a decision so
+  it stops reading as an oversight; the workaround (accept, then edit the contact) costs one
+  extra step and loses nothing.
 - [x] **Mic-denied is silent** — ✅ **Fixed 2026-07-02.** Now handled in the shared `MemoControls`
   (which Postbox delegates to after the theme-6 refactor, so the board memo path gets it too): a
   `getUserMedia` rejection sets `micDenied` → a `StatusMessage` (`t.memo.micDenied`, FR/EN), instead
   of the silent swallow. A written note still works.
-- [ ] **Review-queue count in the section title** — `IntakeReview.tsx:226`/`PostboxReview.tsx:69`
-  render `reviewPending(n)` ("N fiches à réviser"). Borderline against the "no unread counts"
-  tenet; operator-only, passive, no nav badge/push, hidden at zero → borderline-acceptable.
-  _(Marc's call: keep, or drop the number for strict compliance.)_
+- [x] **Review-queue count in the section title** — ✅ **KEPT (Marc, 2026-08-28).** The number
+  stays. It is a **work queue the operator chose to open**, not a nag: operator-only, passive,
+  no nav badge, no push, hidden at zero — and knowing there are seven fiches rather than one is
+  what decides whether you sit down for it. Different in kind from the counts the calm tenet
+  forbids (a score, a rank, a streak, an unread badge that follows you). Decided, not deferred —
+  do not re-propose dropping it without a new observation.
 - [~] **e2e — zero coverage of any guest flow** — **stale (verified 2026-08-27):** four specs
   cover it now. `intake.spec.ts` (a relative fills and submits the form; the operator reviews a
   pending intake and accepts it into the cercle — the submit→review→accept round trip this
@@ -885,10 +925,21 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   (`devices.tsx`, 2026-07-02). Remaining: it writes via `api()` not `useWrite()` with no
   `useOnline()` gate/justifying comment (`:34`) — though pairing is inherently online (it
   needs the server round-trip immediately), so this is arguably correct-as-is.
-- [ ] **Phone settings nav** is a wrapping chip row **plus** a second wrapping `OperatorJump` row,
-  with no active-tab-scroll-into-view on deep-link (`Operator.tsx:307`) — can push content far down
-  at 320px. Verify against the overflow guard.
-- [ ] **e2e gaps:** stale section ids in `settings-sections.spec.ts:10` (retired ids alias to hosts
+- [x] **Phone settings nav** — ✅ **half stale, half fixed 2026-08-28.** The "wrapping chip row
+  plus a second wrapping `OperatorJump` row pushing content far down" is gone: under 60rem the
+  tab nav is a **one-line scroll row** (`useHScroll`), and `OperatorJump` was deleted from the
+  tree entirely — the same component this file's sweep already caught being audited after its
+  own deletion. What survived re-checking was the last clause, and it was real: **no
+  active-tab-scroll-into-view on deep-link.** `SubTabs` solved that internally with `hs.toView`;
+  the themed-tab row is hand-rolled in `Operator.tsx` and had no equivalent, so `?tab=settings`
+  at 390px lit a tab beyond the right edge with nothing to show the page had responded. Fixed on
+  both the deep link and the arrow keys (`focus({preventScroll})` + `toView`, mirroring SubTabs).
+  Guarded in `e2e/hscroll.spec.ts`, run against the bug.
+- [ ] **e2e gaps** — the "stale section ids" half is **a misread (verified 2026-08-28)**: those
+  ids are DELIBERATE alias regressions, labelled as such in the file ("Legacy ids, kept as alias
+  regressions: each must still render a panel"). They cost a duplicate screenshot each, which is
+  the price of proving every old deep link still lands. The rest of the bullet stands and is
+  genuinely open. Original: stale section ids in `settings-sections.spec.ts:10` (retired ids alias to hosts
   → duplicate screenshots under different filenames); **no** device-revoke / member-delete-rename
   round-trip; untested config sub-panels (schedule, cars, todo-templates, home-projects
   Projets/Entretien, the chore ledger); `ThisWeek` render never **asserts** faces-not-counts; photo
@@ -905,10 +956,17 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   the ai-errors DELETE (emptying a diagnostic journal — a queued clear would wipe failures logged
   *after* it, on reconnect; the button now disables offline) and the `ai-test` POST (a probe, not
   a write). Both carry the why in a comment beside the call.
-- [ ] **Latent flash-back edge:** `DayPlanPage` reads `EVENTS_KEY`/`CHORES_KEY` **live**; a
-  RealtimeHub `invalidate` on another device mid-undo-window could resurrect a row deleted in
-  Réglages (the shell's own queries aren't live, so it's safe there). The row snapshot mitigates
-  but doesn't prevent.
+- [x] **Latent flash-back edge** — ✅ **Fixed 2026-08-28, though not where the finding pointed.**
+  `DayPlanPage` does read `EVENTS_KEY`/`CHORES_KEY` live, but only to look up `lead_seconds`;
+  its ROWS come from `[...MONTH_KEY, date]` in occurrence-id space, so the resurrection could not
+  land there. The exposure is in **Réglages itself**, and the parenthetical "the shell's own
+  queries aren't live, so it's safe there" is what was wrong: a RealtimeHub `invalidate`
+  refetches an ACTIVE query whether or not it polls, and so does simply leaving the sub and
+  coming back. `useUndoableRemove` hides the row by mutating the cache (`setQueryData`), so
+  either one refilled it mid-undo. Both deletes (`operator/agenda.tsx` events,
+  `operator/chores.tsx` chores) now ride `useDeferredRemoval`, whose pending set filters the
+  RENDER and outlives the component. `e2e/settings-delete-undo.spec.ts` drives a real
+  client-side remount inside the undo window; run against the bug.
 - [~] **First-paint flashes:** ✅ Photos guarded on `isPending` 2026-07-02 (Phase 0, `media.tsx:112`)
   so "noPhotos" no longer flashes before the grid. _Still open:_ `ThisWeek` has no error state (a
   failed fetch reads as an empty week, `:94`).
@@ -926,7 +984,10 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
     two i18n strings the other hardcoded.
   - **Still open:** `ChoreForm`/`BlockForm` hand-roll the same member-toggle row (candidate
     shared `MemberToggleRow`); `DeviceRow` hand-rolls optimistic rename vs `HouseholdListSection`.
-- [ ] **Smaller nits:** schedule "add" disabled with 0 members but no hint (`schedule.tsx:139`);
+- [~] **Smaller nits** — ✅ the first is **fixed 2026-08-28**: the schedule ＋ no longer greys out
+  silently, it says why and where to go ("un horaire appartient à quelqu'un — Réglages ▸ Maison ▸
+  Membres"). A disabled control with no reason beside it is a dead end. The rest stand. Original:
+  schedule "add" disabled with 0 members but no hint (`schedule.tsx:139`);
   todo-template delete+undo re-creates with a **new id** → dangling refs (documented, low harm);
   `ScheduleSection` row packs too much on one line at 320px; `THIS_WEEK_KEY` page-local, never
   invalidated by writes (recap won't refresh live); MicSelfTest textarea can overflow / lacks a
@@ -1005,11 +1066,15 @@ date/time **mislabel**, and thin/half-closed e2e on the load-bearing degrade + e
 - [x] **`aria-pressed` missing on the toggle chips** — EventForm member/car/passenger/template +
   ChoreForm rotation (`EventForm.tsx:234-351`) convey selection visually only. _(Recurring theme
   with §5's picker `aria-pressed` gap — batch them.)_
-- [ ] **Small consistency nits:** reroute 7-up grid overflow untested at 320px; dead i18n key
-  `t.capture.pickType`; `HomeProjectForm` title is a bare `<input>` where Event/Chore use
-  `EditField`; redundant page-level invalidates (belt-and-suspenders over the form's own
-  `affectedKeys`); `RecurPicker` is a documented parallel shape to server `recur` (latent drift);
-  the "EventForm → Le fil" link is unverified (events likely derive from BOARD/EVENTS — confirm).
+- [ ] **Small consistency nits** — **one fixed, one stale, three still open (2026-08-28).**
+  ✅ the dead i18n key `t.capture.pickType` is gone from both locales (it had no consumer in the
+  tree — a string pair carried since the capture type-picker changed shape).
+  ✅ **stale:** `HomeProjectForm`'s title is NOT a bare `<input>` — it uses `EditField`, and the
+  file says so at `:107` ("this was the lone operator form still on a bare <input>"), so that
+  was fixed and never ticked.
+  **Still open:** reroute 7-up grid overflow untested at 320px; redundant page-level invalidates
+  (belt-and-suspenders over the form's own `affectedKeys`); `RecurPicker` is a documented
+  parallel shape to server `recur` (latent drift); the "EventForm → Le fil" link is unverified.
 
 **Strengths to keep.** AI-degrade never drops words (row always inserted, degraded note
 auto-cleaned on first real pick); reroute is a server MOVE (delete-then-insert, no dup);
@@ -1065,7 +1130,20 @@ absence.
 - [x] **Search cold-load false "aucun résultat"** — ✅ **Already fixed** (verified 2026-07-02):
   `SearchPage.tsx:265` computes `fetching = useIsFetching()` and shows `t.search.searching` until the
   queries settle (`:341-348`), only then `noResults`. This box was stale; kept for the record.
-- [ ] **Undated trips + dead cover-photo.** `VoyageCard`/`MonthView` only list trips with
+- [x] **Undated trips + dead cover-photo** — ✅ **Fixed 2026-08-28, and one half of the claim
+  was overstated.** "Unreachable after you close the scene" is not quite right: `/search` lists
+  trips with no date filter (`SearchPage.tsx:176`), so an undated trip was findable *if you
+  remembered its name*. The board card was the real gap, and requiring dates would have been the
+  wrong fix — an early idea legitimately has none, and a made-up date to keep it visible is worse
+  than no date. Undated trips now fill the **remainder** of `VoyageCard` (newest first, since
+  they have nothing else to sort by) so they are reachable but never displace a real departure
+  off a three-row card. The **cover** is a real field now rather than a write-only branch: picked
+  in the trip form via the new shared `PhotoField`, uploaded through `trip-doc-media`, shown as
+  the board row's thumbnail (the server already stamped `media_kind` itself and freed the
+  superseded blob, so the kind/key invariant could not be half-written). *Left open on purpose:*
+  the PATCH branch is set/replace with **no clear** — removing a cover once set still needs a
+  server change. `e2e/voyage-undated.spec.ts`, five cases, run against both planted failures.
+  Original finding: `VoyageCard`/`MonthView` only list trips with
   start+end (`VoyageCard.tsx:18`), and there's no trip-list surface, so an undated trip is
   unreachable after you close the scene. And `Trip.media_key` is read (`VoyageDocuments.tsx:80`) +
   PATCH-accepted but `VoyageForm` has no cover picker → write-only dead branch. Require dates (or

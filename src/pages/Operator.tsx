@@ -303,6 +303,14 @@ export function Operator() {
   // mouse can't scroll sideways; this maps the wheel onto it. Above 60rem the nav is a
   // vertical sidebar and the hook no-ops (nothing overflows horizontally).
   const tabsScroll = useHScroll<HTMLElement>()
+  // A deep-linked tab (?tab=maison, a guide « Régler » link, a LEGACY_TAB fold) can
+  // land beyond the right edge of the phone's one-line row, lit but invisible — the
+  // sub row already solved this inside SubTabs (hs.toView); the TAB row had no
+  // equivalent (REVIEW-PASS). Runs on every tab change, including the first paint.
+  useEffect(() => {
+    tabsScroll.toView(document.getElementById(`op-tab-${tab}`))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toView is stable per ref
+  }, [tab])
 
   // Each themed tab's « Régler » lens holds its sub-sections in a SubTabs pill
   // row ("one job at a time") instead of stacking every panel in one long scroll.
@@ -571,7 +579,11 @@ export function Operator() {
             e.preventDefault()
             const id = sectionIds[n]
             setTab(id)
-            document.getElementById(`op-tab-${id}`)?.focus()
+            // preventScroll + toView, exactly as SubTabs does it: a bare .focus()
+            // scrolls the whole PAGE to the row instead of scrolling the row.
+            const el = document.getElementById(`op-tab-${id}`)
+            el?.focus({ preventScroll: true })
+            tabsScroll.toView(el)
           }}
         >
           {SECTIONS.map((s) => {

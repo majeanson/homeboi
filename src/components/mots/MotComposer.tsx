@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { facesFromMembers } from '../../lib/faces'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, ApiError } from '../../lib/api'
@@ -6,7 +7,6 @@ import { useWrite } from '../../lib/write'
 import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
 import { useVoiceInput } from '../../lib/useVoiceInput'
-import { imgUrl } from '../../lib/image'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY } from '../../lib/queryKeys'
 import { type Mot } from '../../lib/mots'
@@ -67,12 +67,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
   const members = data?.members ?? []
   const replyName = replyTo ? members.find((m) => m.id === replyTo.author_member_id)?.display_name ?? null : null
-  const faces = members.map((m) => ({
-    id: m.id,
-    name: m.display_name,
-    colour: m.colour,
-    photoUrl: m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null,
-  }))
+  const faces = facesFromMembers(members)
 
   const extraBody = { recipient_id: recipient, surface_at: surfaceAt, reply_to: replyTo?.id ?? null }
 
