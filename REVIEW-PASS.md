@@ -239,7 +239,52 @@ Calm is clean (no counts/ranks/quantity; ghost stays opt-in; hearts show faces n
 Findings cluster in **seams, a recurring `useWrite` bypass, tap targets, and e2e gaps** —
 not structural. Four reviewers; findings deduped below.
 
-### Findings — P1 (quick, high-value / a11y)
+## Findings — P1
+
+### From Marc's phone, 2026-08-28 (two screenshots, both pre-existing)
+
+- [x] **« Perte du footer » — the tab bar and the ＋ FAB vanish with no keyboard.**
+  ✅ **Fixed.** Caught on-device with `?kbdebug` reading `inner=894 vvH=576 kbInset=318
+  open=true … ae=BODY`: a 318-pixel "keyboard" while **nothing was focused**. `.kb-open`
+  hides the bottom chrome (hub.css), so the household lost its navigation with no field on
+  screen to explain it and no event coming to heal it.
+  **Cause:** `apply()` inferred the keyboard from the visual-viewport SHRINK alone. iOS
+  collapses that viewport for things that are not keyboards — the screenshot
+  preview/markup editor, the app switcher, Control Centre, a share sheet. The
+  `document.hidden` guard was written for exactly this and **does not fire for a
+  screenshot preview**, so the shrink read as a keyboard. Every healer needs an event, and
+  the 1 s watchdog only ever RE-READS — the re-read still said "shrunk", so it never
+  recovered.
+  **Fix:** the missing invariant — *a keyboard cannot be up if nothing that could summon
+  one holds focus*. New `canSummonKeyboard()` (wider than `isEditable`: a
+  `<input type="date">` has no caret but its iOS wheel occludes exactly like a keyboard,
+  so date/time/select count; checkbox/button/file/colour/range do not). Checked on BOTH
+  edges — the reported state was already latched, so a rising-edge guard alone would not
+  have recovered it. Accepted cost: when a focused field is REMOVED while the keyboard
+  slides out, the chrome returns a beat early — which is what every healer was already
+  trying to do.
+  `e2e/kb-latch.spec.ts`, three cases, run against the bug (restoring the shrink-only
+  test turns two of them red).
+
+- [x] **Offline, the Mois grid said the same thing three times — one of them a lie.**
+  ✅ **Fixed.** The board's calm « Hors ligne — voici la dernière version reçue » line at
+  the top, then **two identical red « Le réseau n'a pas répondu · Réessayer » blocks**:
+  `MonthView` renders `LoadError` above the grid AND in the day panel, both gated on the
+  same `!data && isError`. One of those retry buttons could not possibly work — there was
+  no network to retry with. The board's own comment states the rule this broke: "say so AT
+  THE TOP … not as a stampless footnote below every card".
+  **Fix, in the component rather than the call sites:** `LoadError` is offline-aware — a
+  failed fetch with no signal is not a surprise, it is the weather, so it drops the alarm
+  tone and the dead button and states the fact in the same quiet mono the board uses. And
+  `onRetry` is now optional: both blank regions still explain themselves, but a screen
+  gets ONE retry door.
+  Guarded in `e2e/kb-latch.spec.ts`, run against the bug. *Worth recording:* the offline
+  case is driven off the `/dev/kit` specimen because going offline in the harness makes
+  TanStack **pause** the query, so it never reaches `isError` — the photographed state
+  (offline AND errored, what you get when connectivity drops on an in-flight request) is
+  unreachable synthetically through a real query.
+
+### The original P1 sweep (quick, high-value / a11y)
 
 - [x] **`💡` emoji literal instead of the Phosphor glyph.** ✅ Batch A — `MealRows.tsx:128` now
   uses `InlineIcon name="sparkle-bold"`, matching the guest branch.

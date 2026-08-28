@@ -985,7 +985,9 @@ export function MonthView({
         ) : !data && isError ? (
           // A month whose fetch FAILED is not an empty month — saying « rien »
           // (or hanging on Chargement) lied on flaky wifi (2026-08-27).
-          <LoadError onRetry={() => void refetch()} />
+          // No onRetry: the block above the grid already carries the one retry
+          // door this screen gets, and offline it says so calmly — see LoadError.
+          <LoadError />
         ) : lit === 'trip' ? (
           // « Voyages » — each trip in the window ONCE, with its span, not a copy under
           // every date it covers.

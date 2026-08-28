@@ -1,4 +1,5 @@
 import { useT } from '../i18n'
+import { useOnline } from '../lib/online'
 import { StatusMessage } from './StatusMessage'
 
 // The honest face of a data-less read that ERRORED. A query with no cached frame
@@ -11,14 +12,35 @@ import { StatusMessage } from './StatusMessage'
 //
 // One line + « Réessayer » — calm, no alarm; polls/`live` keep retrying on their
 // own regardless, this just names the wait and gives an immediate manual door.
-export function LoadError({ onRetry, className }: { onRetry: () => void; className?: string }) {
+//
+// TWO THINGS IT NOW REFUSES TO DO (Marc's phone, 2026-08-28 — a Mois grid carrying
+// the offline bar AND two identical red blocks, one of them with a « Réessayer »
+// that could not possibly work):
+//
+//  1. **It does not shout when the device is OFFLINE.** A failed fetch with no
+//     signal is not a surprise, it is the weather. The board already says it once
+//     and calmly at the top (`board__synced`, whose own comment is the rule this
+//     follows: "say so AT THE TOP … not as a stampless footnote below every card").
+//     So offline drops the error tone and the retry button and states the fact.
+//  2. **`onRetry` is optional.** A screen gets ONE retry door. Where a surface
+//     reports the same failed query in two regions (MonthView: above the grid AND
+//     in the day panel), the second passes no handler and becomes a quiet echo
+//     instead of a second alarm with a second button.
+export function LoadError({ onRetry, className }: { onRetry?: () => void; className?: string }) {
   const t = useT()
+  const online = useOnline()
   return (
     <div className={'load-error' + (className ? ` ${className}` : '')}>
-      <StatusMessage tone="error">{t.load.failed}</StatusMessage>
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onRetry}>
-        {t.load.retry}
-      </button>
+      {online ? (
+        <StatusMessage tone="error">{t.load.failed}</StatusMessage>
+      ) : (
+        <p className="load-error__offline mono">{t.board.offline}</p>
+      )}
+      {online && onRetry && (
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onRetry}>
+          {t.load.retry}
+        </button>
+      )}
     </div>
   )
 }

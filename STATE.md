@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1851 unit tests in 143 files · 121 Playwright spec files |
+| **Tests** | 1851 unit tests in 143 files · 122 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -283,6 +283,33 @@ Shapes still worth batching:
   each verified against a planted bug. Genuinely left: the ＋ chooser, drag-to-group + undo,
   ReviewChecklist apply, .vcf import, note autosave round-trip; the toddler kitchen picker
   and `CircleKidView`; config sub-panels are screenshot-only, so a broken PATCH would pass.
+
+### C-bis. Reported from the device, 2026-08-28 — both fixed
+
+Two screenshots from Marc's phone, both **pre-existing** (the deploy stamp in the second
+predates that day's work). Neither was in any ledger; both are now P1 in `REVIEW-PASS.md`.
+
+1. **The tab bar and ＋ FAB vanished with no keyboard on screen.** `?kbdebug` read
+   `kbInset=318 open=true … ae=BODY` — a 318px "keyboard" with nothing focused. The app
+   inferred the keyboard from the visual-viewport SHRINK alone, and iOS shrinks that
+   viewport for the screenshot preview, the app switcher, Control Centre and share sheets.
+   The `document.hidden` guard written for exactly this **does not fire for a screenshot
+   preview**; every healer needs an event, and the 1 s watchdog only re-READS, so it never
+   recovered. Now: *a keyboard cannot be up if nothing that could summon one holds focus*,
+   checked on both edges.
+2. **Offline, the Mois grid said the same thing three times**, and one of them was a lie —
+   the calm stale line, plus two identical red « Le réseau n'a pas répondu · Réessayer »
+   blocks, one carrying a retry button with no network to retry with. `LoadError` is
+   offline-aware now (no alarm tone, no dead button — the weather is not a surprise) and
+   `onRetry` is optional, so a screen gets ONE retry door while both blank regions still
+   explain themselves.
+
+**The lesson worth keeping:** neither was reachable from the desk. The first needs a real
+iOS system overlay; the second's exact state (offline AND errored) is **unreachable
+through a real query in the harness at all**, because going offline makes TanStack pause
+the query before it can error. A screenshot from the actual phone found both in one
+morning. When Marc reports a state, reproduce it from the pixels, not from the model of
+how it should be reachable.
 
 ### D. Judgement calls waiting on Marc, not on code
 

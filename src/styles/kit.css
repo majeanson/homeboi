@@ -484,6 +484,14 @@
 .load-error .status-msg {
   margin: 0;
 }
+/* The OFFLINE face: no signal is not a surprise worth an alarm colour, so this
+   states the fact in the same quiet mono the board uses for its own stale line
+   (.board__synced) rather than the error tone. See LoadError. */
+.load-error__offline {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
 
 /* ── ShareModal (src/components/ShareModal.tsx) ────────────────────────────
    The ONE share sheet's link block. Named `.sharesheet*` since 2026-08-27

@@ -33,6 +33,20 @@ function isEditable(el: EventTarget | null): el is HTMLElement {
   )
 }
 
+// Controls whose FOCUS can make the platform put something over the bottom of the
+// screen: a keyboard, or one of iOS's picker wheels (date/time/select). Wider than
+// `isEditable` on purpose — a `<input type="date">` has no caret to follow, but its
+// wheel occludes exactly like a keyboard and the fit padding must still apply.
+//
+// The types EXCLUDED are the ones whose focus summons nothing: a checkbox, a button,
+// a file/colour/range picker. Focus on a `<div>`, a link or `<body>` is likewise no.
+const NO_SUMMON = /^(checkbox|radio|button|submit|reset|file|color|range|image|hidden)$/i
+function canSummonKeyboard(el: EventTarget | null): boolean {
+  if (!(el instanceof HTMLElement)) return false
+  if (el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true
+  return el.tagName === 'INPUT' && !NO_SUMMON.test((el as HTMLInputElement).type)
+}
+
 // In an iOS HOME-SCREEN app, the keyboard carries no attached accessory bar —
 // instead a floating ▲▼✓ pill hovers INSIDE the visual viewport, ~10px above the
 // keyboard top. visualViewport knows nothing about it, so "just above the
@@ -456,7 +470,27 @@ export function trackVisualViewport(): void {
     const bottomInset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
     root.setProperty('--vvh', `${Math.round(vv.height)}px`)
     root.setProperty('--vvt', `${Math.round(vv.offsetTop)}px`)
-    const open = kbInset > KB_THRESHOLD
+    // A shrunken visual viewport is NOT proof of a keyboard, and treating it as one
+    // cost the bottom chrome (Marc, 2026-08-28: « perte du footer », with the ?kbdebug
+    // overlay reading `kbInset=318 open=true ae=BODY` — a 318px "keyboard" while
+    // NOTHING was focused). iOS collapses the visual viewport for things that are not
+    // keyboards: the screenshot preview/markup editor, the app switcher, Control
+    // Centre, a share sheet. `document.hidden` above catches only some of those — it
+    // stays FALSE for a screenshot preview — so the shrink read exactly like a
+    // keyboard, `.kb-open` latched, and hub.css hid the tab bar and the ＋ FAB with no
+    // field on screen to justify it and no event coming to heal it.
+    //
+    // The missing invariant is simple: a keyboard cannot be up if nothing that could
+    // summon one holds focus. Checked on BOTH edges, not just the rising one — the
+    // reported state was already latched, so a rising-edge-only guard would not have
+    // recovered it.
+    //
+    // The cost is the reverse case: iOS can keep the keyboard up for a moment after
+    // the focused field is REMOVED (a sheet closing, a form unmounting on save), and
+    // there we now drop `.kb-open` while it slides out — the chrome reappears a beat
+    // early. That is the far smaller bug, and it is what every healer below is already
+    // trying to achieve; this just gets there without waiting for an event.
+    const open = kbInset > KB_THRESHOLD && canSummonKeyboard(document.activeElement)
     // --kb means "how much keyboard covers the bottom", so it must agree with
     // `.kb-open` — publishing a sub-threshold inset (browser chrome, an accessory
     // bar) lifted every consumer off a keyboard that isn't there.
