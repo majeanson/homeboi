@@ -36,7 +36,7 @@ async function withAiState(page: Page) {
   return state
 }
 
-test('the Réglages header tag toggles AI on/off and the change persists', async ({ page }) => {
+test('the IA section toggles AI on/off and the change persists', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page)
   await withAiState(page)
@@ -48,8 +48,10 @@ test('the Réglages header tag toggles AI on/off and the change persists', async
   // The IA settings section renders.
   await expect(page.getByRole('heading', { name: 'Intelligence artificielle' })).toBeVisible({ timeout: 15_000 })
 
-  // The header status tag is the on/off button, starting "active".
-  const tag = page.locator('.operator__meta button.tag--btn')
+  // The switch lives IN the IA section — it used to be mirrored as a tag on the
+  // Réglages identity line, which was a second spelling of one control on the line
+  // you read first (removed 2026-08-28, Marc's call). Starting "active".
+  const tag = page.locator('.operator__section button[aria-pressed]').first()
   await expect(tag).toContainText('active')
 
   // Turn AI off — it PATCHes the household and the tag flips to "désactivée".
@@ -82,7 +84,7 @@ test('disabling AI hides the search "Ask the AI" affordance', async ({ page }) =
   // ?sub=ai selects the AI on/off sub-section within the « IA & système » tab (the
   // tab now shows one sub-section at a time behind a SubTabs row).
   await page.goto('/settings?tab=ai&sub=ai')
-  const tag = page.locator('.operator__meta button.tag--btn')
+  const tag = page.locator('.operator__section button[aria-pressed]').first()
   await expect(tag).toContainText('active')
   await Promise.all([
     page.waitForRequest((r) => r.url().includes('/api/household') && r.method() === 'PATCH'),

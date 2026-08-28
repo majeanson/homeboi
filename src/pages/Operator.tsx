@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { useAi, useAiToggle } from '../lib/ai'
+import { useAi } from '../lib/ai'
 import { isPaired, isGuestLocked } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
@@ -160,12 +160,10 @@ export function Operator() {
   const chores = choresQ.data?.chores ?? []
   const routines = routinesQ.data?.routines ?? []
   const events = eventsQ.data?.events ?? []
-  // The household AI on/off switch, surfaced as the header tag (now a toggle) and a
-  // dedicated tab. `available` = the binding exists (can enable); `enabled` = the
-  // effective on/off the whole UI gates on. See lib/ai.ts.
-  const { enabled: aiEnabled, available: aiAvailable } = useAi()
-  const aiToggle = useAiToggle()
-  const [aiBusy, setAiBusy] = useState(false)
+  // The household AI on/off state. The SWITCH lives in the IA tab (components/
+  // operator/ai.tsx) — this page only reads `enabled` to decide whether the AI
+  // error log is worth showing at all. See lib/ai.ts.
+  const { enabled: aiEnabled } = useAi()
 
   // Child sections call this after a write. Invalidate the settings reads plus
   // ['board'] so member/chore/routine/event edits surface on the wall at once
@@ -519,31 +517,12 @@ export function Operator() {
         {!guest && (
         <div className="operator__meta mono">
           <span>{household?.name}</span>
-          {/* The "IA : active" status tag is now the quick on/off switch (the fuller
-              control + explanation lives in the IA tab). Binding absent → a plain
-              "unavailable" tag, nothing to toggle. */}
-          {aiAvailable ? (
-            <button
-              type="button"
-              className={`tag tag--btn ${aiEnabled ? 'tag--on' : 'tag--off'}`}
-              onClick={async () => {
-                if (aiBusy) return
-                setAiBusy(true)
-                try {
-                  await aiToggle(!aiEnabled)
-                } finally {
-                  setAiBusy(false)
-                }
-              }}
-              disabled={aiBusy}
-              aria-pressed={aiEnabled}
-              title={t.operator.aiToggleTitle}
-            >
-              {aiEnabled ? t.operator.aiOn : t.operator.aiDisabled}
-            </button>
-          ) : (
-            <span className="tag tag--off">{t.operator.aiOff}</span>
-          )}
+          {/* The « IA : active » tag used to live here as a quick on/off switch. It
+              is gone (Marc, 2026-08-28): the IA tab already carries the same toggle
+              WITH its explanation and its « En savoir plus » link, so this was a
+              second spelling of one control on the line you read first — and it
+              spent that line on a setting almost nobody flips. Réglages ▸ IA is the
+              one door now. */}
           {/* Sign-IN stays up here: for a kiosk it is the ENABLING action — the
               door to the operator-only subs, and the kioskNotice right below
               explains why. Sign-OUT moved to the foot of the page (see below): it

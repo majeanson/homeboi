@@ -56,7 +56,7 @@ them are finished. Read this table before opening any of them.
 | **STATE.md** | ← you are here | The front door. Start here. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
 | `UNIFORMIZING.md` | Ledger | ✅ **CLOSED** — zero open items, verdicts only. Do not re-mine it for work. |
-| `AUJOURDHUI.md` | Ledger | ✅ **Effectively closed** — 1 open item, deliberately (see §4-D). |
+| `AUJOURDHUI.md` | Ledger | ✅ **Closed** — no open items (the last, `ARM_MS`, answered 2026-08-28). |
 | `REVIEW-PASS.md` | Ledger | 🟡 **31 open** P2/P3 findings across 8 sections. The main written debt pool. |
 | `bmad/11-friction-audit.md` | Ledger | 🟢 **No tier-1 seam fully open** (#1/#2/#3/#4 addressed 2026-08-27, #5 was already fixed). 9 tier-2 seams + tier-3 polish remain. See §4-B. |
 | `bmad/12-ui-polish-queue.md` | Queue | 🟡 12 Marc-approved contained UI wins, unscheduled. |
@@ -211,8 +211,9 @@ batching rather than picking off one at a time:
 
 ### D. Judgement calls waiting on Marc, not on code
 
-- **`ARM_MS` 6s → 10s** on the toddler tiles (`components/BigTiles.tsx`) — empirical;
-  needs one real bedtime observed. The only open box in `AUJOURDHUI.md`.
+- ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**
+  `AUJOURDHUI.md` now has no open boxes at all. Declined, not deferred — don't
+  re-propose without a new observation.
 - **Review-queue counts** in intake/postbox section titles — borderline against the
   no-counts tenet; operator-only and passive. Keep, or drop the number.
 - **Routines invalidate `BOARD_KEY` but never surface on the board** — either wire a

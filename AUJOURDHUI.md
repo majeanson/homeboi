@@ -1,10 +1,9 @@
 # AUJOURD'HUI — the board (the main window): review & backlog
 
-> ✅ **Effectively closed (2026-08-27).** Every P1/P2/P3 item below is done or
-> verdict-closed except one, left open on purpose: the toddler tiles' 6-second arm
-> (`ARM_MS`), an empirical question about a real child rather than a code judgement.
-> Sections 1–4 remain a useful **current-state map** of the board. See
-> [`STATE.md`](./STATE.md).
+> ✅ **CLOSED (2026-08-28).** Every P1/P2/P3 item below is done or verdict-closed.
+> The last one open — the toddler tiles' 6-second arm (`ARM_MS`) — was answered by
+> Marc on 2026-08-28: **6 s stands.** Sections 1–4 remain a useful **current-state
+> map** of the board. See [`STATE.md`](./STATE.md).
 
 > The Aujourd'hui board (`/board`, the **Grille** view) is the app's **main window** —
 > the thing a household sees all day on the wall tablet and reaches for on a phone. This
@@ -145,12 +144,11 @@ degraded:true}` and the client shows a manual 7-type picker (capture is never lo
   the grid), with `colMin` raised to 340px on a kiosk so cards stay readable across the room. The
   cap is now asserted at **2560px**, where an uncapped grid would ask for ~6 columns
   (`e2e/layout-overflow.spec.ts` `lo-board-w2560`).
-- [ ] **BigTiles 6-second arm timeout** — may be short for a hesitant 2-year-old; test with real
-  kids, consider 10s. _(Left open deliberately: this is an empirical question about a specific
-  child, not a code judgement — both values are defensible and guessing would be pretending. The
-  constant is `ARM_MS` in `components/BigTiles.tsx`, a one-line change once Marc has watched one
-  real bedtime with it. Note the risk is bounded: on the toddler BOARD nothing commits at all, so
-  the arm only governs the routine filmstrip and the défi tile.)_
+- [x] **BigTiles 6-second arm timeout** — ✅ **CLOSED 2026-08-28: 6 s stands** (Marc's call).
+  It was left open as an empirical question about a specific child rather than a code judgement,
+  and the person who watches that bedtime has answered it. `ARM_MS` in `components/BigTiles.tsx`
+  stays at 6000; the 10 s alternative is not pending, it is declined. Do not re-propose it without
+  a new observation.
 - [x] **Untested intermediate widths** — ✅ **DONE 2026-08-27.** `e2e/layout-overflow.spec.ts`
   gained a deliberately narrow width axis (board only, parent only, FR only — five cases, not
   another full matrix): **320 · 568 · 667 · 1600 · 2560**. Each asserts the resolved column count,
