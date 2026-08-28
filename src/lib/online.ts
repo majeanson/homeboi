@@ -56,6 +56,35 @@ export function isStaleAt(newestMs: number, nowMs: number, gearMs: number, anyFi
   return nowMs - newestMs > threshold
 }
 
+// The BOARD's own « Hors ligne » line (pages/Board.tsx). Kept here, pure, beside the
+// yardstick it uses, because the interesting part is the boundary and it is easy to
+// get subtly wrong — it already was.
+//
+// It used to be "the board poll failed twice", full stop. That claim outran its
+// evidence: two consecutive misses is ~20 s at the awake gear, and a phone banks
+// pairs of misses constantly without being offline — iOS aborts in-flight fetches
+// when the web view suspends, so every app-switch away and back can produce two.
+// The result was a board announcing « Hors ligne · données de 11:23 » at 11:23
+// (Marc, 2026-08-28) — a stamp one minute old, presented as an outage, surviving a
+// reload and a pull-to-refresh because each of those banks its own fresh failures.
+//
+// A failure count answers "did a poll land?". The banner claims "what you are looking
+// at is old". Only the second is worth interrupting a calm board for, so the AGE is
+// load-bearing and the failures merely corroborate: data can be legitimately old on
+// an idling kiosk that has not polled yet, and that is not an outage either.
+export function isBoardStale(o: {
+  isError: boolean
+  failureCount: number
+  unauth: boolean
+  hasData: boolean
+  dataUpdatedAt: number
+  nowMs: number
+  gearMs: number
+}): boolean {
+  if (o.unauth || !o.hasData) return false
+  if (!o.isError || o.failureCount < 2) return false
+  return isStaleAt(o.dataUpdatedAt, o.nowMs, o.gearMs, false)
+}
 // Re-evaluate on a slow timer (not per-second — this is a calm awareness stamp,
 // not a countdown) plus whenever the query cache itself changes, so a fresh poll
 // clears the flag immediately instead of waiting for the next tick.

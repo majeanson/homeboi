@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateFreshness, isStaleAt, type LiveQuerySnapshot } from './online'
+import { evaluateFreshness, isStaleAt, type LiveQuerySnapshot, isBoardStale } from './online'
 
 // bmad/10 B-7 — "La ligne de vérité." isStaleAt is the pure boundary math behind
 // the online-but-stale banner: threshold = max(3 × gearMs, 90_000). Exhaustive on
@@ -206,5 +206,45 @@ describe('evaluateFreshness', () => {
       WINDOW,
     )
     expect(newestMs).toBe(NOW - 1000)
+  })
+})
+
+describe('isBoardStale — the board « Hors ligne » line', () => {
+  const AWAKE = 10_000 // the active poll gear; isStaleAt floors the window at 90 s
+  const NOW = 1_000_000
+  const base = { isError: true, failureCount: 2, unauth: false, hasData: true, nowMs: NOW, gearMs: AWAKE }
+
+  // THE REGRESSION (Marc, 2026-08-28). The board announced « Hors ligne · données de
+  // 11:23 » at 11:23. Two failed polls is ~20 s and a phone banks pairs of them for
+  // reasons that are not an outage — iOS aborts in-flight fetches when the web view
+  // suspends, so an app-switch away and back produces two. Failures alone must never
+  // carry a claim about how old the data is.
+  it('does NOT claim offline while the data is a minute old', () => {
+    expect(isBoardStale({ ...base, dataUpdatedAt: NOW - 60_000 })).toBe(false)
+  })
+
+  it('does not claim offline the instant two polls miss on fresh data', () => {
+    expect(isBoardStale({ ...base, dataUpdatedAt: NOW - 20_000 })).toBe(false)
+    expect(isBoardStale({ ...base, failureCount: 9, dataUpdatedAt: NOW - 1_000 })).toBe(false)
+  })
+
+  it('DOES claim offline once the data is genuinely old and polls are failing', () => {
+    expect(isBoardStale({ ...base, dataUpdatedAt: NOW - 91_000 })).toBe(true)
+  })
+
+  it('holds its tongue on old data that is not failing — an idling kiosk is not an outage', () => {
+    // A kiosk at the idle gear simply has not polled yet. Nothing is wrong.
+    expect(isBoardStale({ ...base, isError: false, failureCount: 0, dataUpdatedAt: NOW - 600_000 })).toBe(false)
+  })
+
+  it('needs TWO misses, not one — a single blip on weak wifi self-heals', () => {
+    expect(isBoardStale({ ...base, failureCount: 1, dataUpdatedAt: NOW - 600_000 })).toBe(false)
+  })
+
+  it('never fires with no frame to describe, nor on an auth failure', () => {
+    // With no cached data the board shows its own empty/loading face; and a 401 is a
+    // pairing problem with its own prompt, not an outage.
+    expect(isBoardStale({ ...base, hasData: false, dataUpdatedAt: NOW - 600_000 })).toBe(false)
+    expect(isBoardStale({ ...base, unauth: true, dataUpdatedAt: NOW - 600_000 })).toBe(false)
   })
 })

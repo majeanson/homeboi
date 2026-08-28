@@ -266,6 +266,30 @@ not structural. Four reviewers; findings deduped below.
   `e2e/kb-latch.spec.ts`, three cases, run against the bug (restoring the shrink-only
   test turns two of them red).
 
+- [x] **The board cried « Hors ligne » over data one minute old — and a reload did not
+  clear it.** ✅ **Fixed 2026-08-28.** The proof is in the screenshot: board clock 11:23,
+  banner « Hors ligne · données de 11:23 ».
+  **Cause:** the condition was `isError && failureCount >= 2` — literally "the board poll
+  failed twice", with nothing about how old the data was. Two misses is ~20 s at the awake
+  gear, and a phone banks pairs of them constantly without being offline: **iOS aborts
+  in-flight fetches when the web view suspends**, so every app-switch away and back can
+  produce two. A reload and a pull-to-refresh each bank their own fresh failures, which is
+  exactly why neither cleared it. (The comment above that line already records an earlier
+  round of this same bug — "read as the app lying, 2026-08-27" — and the two-failure rule
+  WAS that fix. It was not enough, because counting failures cannot answer the question the
+  banner asks.)
+  **Fix:** a failure count answers "did a poll land?"; the banner claims "what you are
+  looking at is old". Only the second is worth interrupting a calm board for, so the AGE is
+  load-bearing now — the same `isStaleAt` yardstick the OfflineBanner's "line of truth"
+  uses (three missed cycles at the current gear, floored at 90 s) — and the failure count
+  merely corroborates, since old-and-not-failing is an idling kiosk, not an outage.
+  Extracted as pure `isBoardStale` in `lib/online.ts`, beside the yardstick, matching that
+  file's "pure so the boundary math is unit-testable" idiom. Six boundary cases in
+  `online.test.ts`; **run against the bug** (restoring the failure-count-only rule turns
+  two red).
+  *Caveat recorded honestly:* this fixes the app LYING about the failures, not the failures
+  themselves. If the line still appears, the board genuinely is not reaching the Worker for
+  90 s+ — a different problem, and a real one.
 - [x] **Offline, the Mois grid said the same thing three times — one of them a lie.**
   ✅ **Fixed.** The board's calm « Hors ligne — voici la dernière version reçue » line at
   the top, then **two identical red « Le réseau n'a pas répondu · Réessayer » blocks**:

@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1851 unit tests in 143 files · 122 Playwright spec files |
+| **Tests** | 1857 unit tests in 143 files · 122 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -286,7 +286,7 @@ Shapes still worth batching:
 
 ### C-bis. Reported from the device, 2026-08-28 — both fixed
 
-Two screenshots from Marc's phone, both **pre-existing** (the deploy stamp in the second
+Three reports from Marc's phone, both **pre-existing** (the deploy stamp in the second
 predates that day's work). Neither was in any ledger; both are now P1 in `REVIEW-PASS.md`.
 
 1. **The tab bar and ＋ FAB vanished with no keyboard on screen.** `?kbdebug` read
@@ -304,7 +304,14 @@ predates that day's work). Neither was in any ledger; both are now P1 in `REVIEW
    `onRetry` is optional, so a screen gets ONE retry door while both blank regions still
    explain themselves.
 
-**The lesson worth keeping:** neither was reachable from the desk. The first needs a real
+3. **The board cried « Hors ligne » over data one minute old**, and neither a reload nor
+   a pull-to-refresh cleared it. The condition was "the board poll failed twice" —
+   nothing about age — and a phone banks pairs of misses constantly (iOS aborts
+   in-flight fetches when the web view suspends), while a reload and a refresh each bank
+   their own. The AGE is load-bearing now, on the same yardstick the OfflineBanner was
+   already using. Pure `isBoardStale`, six boundary tests, run against the bug.
+
+**The lesson worth keeping:** neither of the first two was reachable from the desk. The first needs a real
 iOS system overlay; the second's exact state (offline AND errored) is **unreachable
 through a real query in the harness at all**, because going offline makes TanStack pause
 the query before it can error. A screenshot from the actual phone found both in one

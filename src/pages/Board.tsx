@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { isBoardStale } from '../lib/online'
+import { liveInterval } from '../lib/query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
@@ -261,7 +263,7 @@ export function Board() {
   // the last good frame when a poll fails, so on wifi loss we keep rendering it
   // and just flip the "offline" stamp. retry:false overrides the default → the
   // stale stamp appears promptly and the next poll recovers.
-  const { data, error, isError, failureCount } = useBoardData({ retry: false })
+  const { data, error, isError, failureCount, dataUpdatedAt } = useBoardData({ retry: false })
   // « Les carnets » — map a carnet id → its thing, so a carnet-scoped Entretien row on
   // the board reads with its thing's emoji (🔥 Chauffe-eau · filtre) while staying
   // checkable in place. `live: false` shares the board card's non-polling observer (one
@@ -269,12 +271,24 @@ export function Board() {
   const { data: carnetsData } = useCarnets({ live: false })
   const carnetById = new Map((carnetsData?.carnets ?? []).map((x) => [x.id, x]))
   const unauth = isUnauthorized(error)
-  // TWO consecutive failed polls before claiming « Hors ligne » (failureCount only
-  // resets on a success): one blipped fetch on weak wifi self-heals within the next
-  // ~10 s tick, and stamping « Hors ligne · données de 08:44 » AT 8:44 while the
-  // phone is online read as the app lying (2026-08-27). Two misses ≈ 20+ s of
-  // genuinely unreachable — worth saying; one is noise.
-  const stale = isError && failureCount >= 2 && !unauth && !!data
+  // « Hors ligne » must ALSO mean the data is actually old (Marc, 2026-08-28: the
+  // board said « Hors ligne · données de 11:23 » at 11:23 — a stamp one minute old,
+  // announced as an outage, and it kept coming back after a reload and after a
+  // pull-to-refresh).
+  //
+  // Counting failures alone could never carry that claim. Two consecutive misses is
+  // ~20 s at the awake gear, and a phone banks pairs of misses constantly without
+  // being offline at all: iOS aborts in-flight fetches when the web view suspends, so
+  // every app-switch away and back can produce two. The failure count says "a poll did
+  // not land"; it does not say "what you are looking at is old", and only the second
+  // is worth interrupting a calm board for.
+  //
+  // The AGE is the load-bearing half now, measured with the same yardstick the
+  // OfflineBanner's "line of truth" uses (isStaleAt: three missed cycles at the
+  // current gear, floored at 90 s). The failure count stays as the corroborating
+  // half — data can be legitimately old on an idling kiosk that simply has not polled
+  // yet, and that is not an outage either.
+  const stale = isBoardStale({ isError, failureCount, unauth, hasData: !!data, dataUpdatedAt, nowMs: Date.now(), gearMs: liveInterval() })
   // "How old is what I'm looking at" — the newest successful fetch in the cache,
   // same source + formatting as OfflineBanner's stamp. Only computed while stale.
   const staleFetchMs = stale ? newestFetchMs(qc) : null
