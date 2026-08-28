@@ -207,8 +207,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 
   // A message-only line — nothing to undo (kind 'notice', no Annuler). Same bar,
-  // same session log, same auto-dismiss as the others; used by the outbox to say
-  // a replay run had to drop rejected writes.
+  // same session log, same auto-dismiss as the others. Two callers: the outbox
+  // (a replay run had to drop rejected writes) and StaleBounce (a deep link no
+  // longer points at anything). Exposed as useNotice() so neither has to invent a
+  // second, competing notification surface.
   const notice = useCallback(
     (message: string) => {
       const id = ++idRef.current
