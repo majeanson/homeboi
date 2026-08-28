@@ -93,18 +93,9 @@
    first paint isn't one text line that pops into a full board at once. Same column
    rhythm as the grid (auto-fill on the mobile colMin), same mini height as a
    compact tile (--wg-mini-h's 152px), a calm wash — no shimmer (NFR-CALM). */
-.board-skeleton {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-  margin-top: 0.75rem;
-}
-.board-skeleton__tile {
-  height: 152px;
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  opacity: 0.55;
-}
+/* The board's ghost tiles became the shared `.skeleton--card` family (core.css) on
+   2026-08-27. The board proved the idea and then kept it to itself for months; every
+   known-shape surface uses it now. Nothing to re-add here — reach for <Skeleton>. */
 
 /* Each section is a calm bento tile. CHROME BELONGS TO THE CARD, never to whichever
    container happens to hold it. This used to be `.board-grid > .bento`, which meant a

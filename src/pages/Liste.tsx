@@ -19,7 +19,8 @@ import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { live } from '../lib/query'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { PairPrompt } from '../components/Fallback'
+import { Skeleton } from '../components/Skeleton'
 import { useCreateWithUndo } from '../lib/undoCreate'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
@@ -522,7 +523,7 @@ export function Liste() {
   }
 
   if (isUnauthorized(error)) return <PairPrompt />
-  if (!board && !error) return <Loading />
+  if (!board && !error) return <Skeleton count={5} />
   // Hide items whose clear is still settling so they can't be resurrected.
   const list = removal.visible(board?.list ?? [])
   const checkedIds = list.filter((i) => i.checked_at).map((i) => i.id)

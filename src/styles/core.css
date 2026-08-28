@@ -808,6 +808,38 @@ textarea.input {
   color: var(--ink-soft);
 }
 
+/* --- Skeleton (components/Skeleton.tsx) ----------------------------------- */
+/* The waiting state for a surface whose shape is already known: reserve the space
+   the rows/cards are about to take, so the first paint is the right size and
+   nothing jumps under a thumb already moving toward it.
+
+   NO SHIMMER, NO PULSE — deliberately. A shimmering placeholder performs, and this
+   app's stance is that a screen may not ask for attention it hasn't earned
+   (NFR-CALM). Opacity alone says "something is coming". Generalized from the
+   board's own ghost tiles, which now ride this family instead of a private copy. */
+.skeleton {
+  display: grid;
+  gap: var(--space-3, 12px);
+  margin-top: 0.75rem;
+}
+.skeleton__block {
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  opacity: 0.55;
+}
+/* A stacked list: one row's typical height, full width. */
+.skeleton--row .skeleton__block {
+  height: 56px;
+}
+/* A responsive grid of tiles, the same rhythm as the board masonry. */
+.skeleton--card {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.skeleton--card .skeleton__block {
+  height: 152px;
+}
+
 /* --- Layout --------------------------------------------------------------- */
 .page {
   /* Fill the #root scroller (not 100vh — that's the iOS phantom height that

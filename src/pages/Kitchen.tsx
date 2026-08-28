@@ -16,7 +16,8 @@ import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { PairPrompt } from '../components/Fallback'
+import { Skeleton } from '../components/Skeleton'
 import { formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
@@ -337,7 +338,9 @@ export function Kitchen() {
   // real anchor arrives — the persisted cache restores it before first paint on a
   // warm start, and a failed poll keeps the last good frame (TanStack), so this
   // only ever shows on the true cold load the flash came from.
-  if (!meals.data && !meals.error) return <Loading />
+  // The grid's shape is known before its data is (N day cells), so reserve them
+  // rather than popping a whole week in over one centred line.
+  if (!meals.data && !meals.error) return <Skeleton variant="card" count={4} />
 
   if (audience === 'toddler') {
     return (

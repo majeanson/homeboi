@@ -80,6 +80,7 @@ import { type WeekDay } from '../components/kitchen/types'
 import { type Recipe } from '../lib/recipes'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { EmptyState } from '../components/EmptyState'
+import { Skeleton } from '../components/Skeleton'
 import { GuestExpired } from '../components/GuestExpired'
 import { StatusMessage } from '../components/StatusMessage'
 import { LoadError } from '../components/LoadError'
@@ -2592,6 +2593,22 @@ export function DevKit() {
     },
 
     // ── Feedback ───────────────────────────────────────────────────────
+    {
+      cat: 'Feedback',
+      name: 'Skeleton',
+      file: 'components/Skeleton.tsx',
+      kw: 'skeleton loading chargement attente placeholder ghost squelette',
+      render: () => (
+        <>
+          <Demo label="row — a stacked list (La liste, Les notes)">
+            <Skeleton count={3} />
+          </Demo>
+          <Demo label="card — a grid of tiles (the board, the kitchen week, the recipe book)">
+            <Skeleton variant="card" count={2} />
+          </Demo>
+        </>
+      ),
+    },
     {
       cat: 'Feedback',
       name: 'EmptyState',

@@ -11,7 +11,8 @@ import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { CERCLE_KEY } from '../lib/queryKeys'
-import { Loading, LoadError, PairPrompt } from '../components/Fallback'
+import { LoadError, PairPrompt } from '../components/Fallback'
+import { Skeleton } from '../components/Skeleton'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -84,7 +85,7 @@ function NotesParent() {
   // face row (reads as "you know nobody") — surface it. A stale-but-good `data` from
   // a prior poll still renders (kept over the error), the calm live-poll behaviour.
   if (error && !data) return <LoadError />
-  if (!data) return <Loading />
+  if (!data) return <Skeleton count={4} />
 
   return (
     <main className={'today-feed notes-page' + (help.active ? ' help-armed' : '')}>

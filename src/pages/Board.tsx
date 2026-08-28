@@ -51,6 +51,7 @@ import { BoardCanvas } from '../components/board/BoardCanvas'
 import { WonderBand, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
+import { Skeleton } from '../components/Skeleton'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 import { MonthView } from '../components/board/MonthView'
 import { YearView } from '../components/board/YearView'
@@ -1651,15 +1652,11 @@ export function Board() {
 
       {!data ? (
         <>
-          <p className="loading mono">{t.common.loading}</p>
           {/* Reserve mini-height tiles where the masonry will land, so the first
-              paint isn't one text line that pops into a full board at once. Pure
-              placeholder: no data, no per-card logic, hidden from readers. */}
-          <div className="board-skeleton" aria-hidden="true">
-            {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="board-skeleton__tile" />
-            ))}
-          </div>
+              paint isn't one text line that pops into a full board at once. This is
+              where the idea started; it is the shared <Skeleton> now, so every other
+              known-shape surface gets the same treatment without a second copy. */}
+          <Skeleton variant="card" count={6} />
         </>
       ) : view === 'month' ? (
         <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />

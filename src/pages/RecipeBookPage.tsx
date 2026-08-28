@@ -1,6 +1,6 @@
 import { Navigate, useNavigate } from 'react-router-dom'
 import { ToddlerCookBook } from '../components/kitchen/ToddlerCookBook'
-import { Loading } from '../components/Fallback'
+import { Skeleton } from '../components/Skeleton'
 import { useRecipes } from '../lib/queryHooks'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
@@ -15,7 +15,7 @@ export function RecipeBookPage() {
   useEscapeKey(close)
   const recipesQ = useRecipes()
 
-  if (!recipesQ.data) return recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />
+  if (!recipesQ.data) return recipesQ.isLoading ? <Skeleton variant="card" count={6} /> : <Navigate to="/kitchen" replace />
   return (
     <div className="scene kidbook-scene">
       <ToddlerCookBook
