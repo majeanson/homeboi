@@ -90,7 +90,7 @@ export function CercleWeb({
     <div className="cercle-tree cercle-web">
       <p className="cercle-ego__hint mono">{t.cercle.webHint}</p>
       <PanZoom className="cercle-tree__zoom" ariaLabel={t.cercle.view.links}>
-        <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={t.nav.cercle}>
+        <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" role="group" aria-label={t.nav.cercle}>
           {/* Bridges under the islands — the person who ties two circles together. */}
           {bridges.map((b) => (
             <g key={b.key} className="world-bridge">

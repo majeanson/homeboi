@@ -290,20 +290,16 @@ export function CookMode({
               // right now" the stepper shows, generalized to the scroll views.
               const used = stepIngsOn ? ingredientsForStep(s, recipe.ingredients, g.title) : []
               return (
-                <li
-                  key={idx}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={t.recipes.readStep}
-                  onClick={() => say(s)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      say(s)
-                    }
-                  }}
-                >
-                  {s}
+                // The step's TEXT is the read-aloud control, not the whole <li>. The li
+                // used to be a role="button" holding the timer chips' real buttons —
+                // a nested interactive: announced as a button whose contents are
+                // buttons, and a keyboard user tabbed into a button from inside one.
+                // The chips are siblings of the read control now, so neither needs to
+                // stop the other's propagation.
+                <li key={idx}>
+                  <button type="button" className="cook__step-read" aria-label={t.recipes.readStep} onClick={() => say(s)}>
+                    {s}
+                  </button>
                   {used.length > 0 && (
                     <ul className="recipe-step__ings cook__step-ings-inline mono" aria-label={t.recipes.stepIngredients}>
                       {used.map((ing, j) => (
@@ -314,7 +310,8 @@ export function CookMode({
                     </ul>
                   )}
                   {/* Start a timer for a duration in this step — same rail as the
-                      stepper. stopPropagation so the tap doesn't also read the step. */}
+                      stepper. A sibling of the read control now, so no stopPropagation
+                      is needed (and none is wanted: it was masking the nesting). */}
                   {durs.length > 0 && (
                     <span className="cook__full-timers">
                       {durs.map((d) => (
@@ -322,10 +319,7 @@ export function CookMode({
                           key={d.seconds}
                           type="button"
                           className="cook__timer-chip mono"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            addStepTimer(d.seconds, d.label, sN)
-                          }}
+                          onClick={() => addStepTimer(d.seconds, d.label, sN)}
                         >
                           ⏱ {d.label}
                         </button>

@@ -106,7 +106,7 @@ export function CercleEgo({
       {/* Intrinsic width/height so CSS fits the whole ring within the area below the
           controls rather than stretching to the wall width (which pushed the lower
           ring off a kiosk glance). max-width/max-height in cercle.css scale to fit. */}
-      <svg className="cercle-ego__svg" width={VW} height={VH} viewBox={`0 0 ${VW} ${VH}`} role="img" aria-label={focus.name}>
+      <svg className="cercle-ego__svg" width={VW} height={VH} viewBox={`0 0 ${VW} ${VH}`} role="group" aria-label={focus.name}>
         {/* Connectors first (under the nodes), each labelled with the relation. */}
         {positions.map((n) => {
           const mx = (CX + n.x) / 2

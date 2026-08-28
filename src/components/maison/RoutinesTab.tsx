@@ -88,20 +88,24 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
     const openR = () => navigate(r.cards.length ? `/routine/${r.id}/run` : `/routine/${r.id}`)
     // In help mode, a tap EXPLAINS the card (one shared 'card' target) instead.
     const onCard = help.pick('card', openR)
+    // The card is NOT a role="button" any more. It held two real buttons (✎ and
+    // ▶), which is a nested interactive: a screen reader announces a button whose
+    // contents are buttons, and a keyboard user tabs INTO a button from inside a
+    // button. `stopPropagation` fixed the mouse behaviour and hid the semantics.
+    //
+    // Nothing is lost by dropping it, because every action the card's own tap
+    // offered is already on one of those buttons: ▶ runs a routine that has
+    // steps, ✎ opens the builder — which is exactly where an EMPTY card's tap
+    // went. So the div keeps its onClick as a pure MOUSE convenience (a bigger
+    // target for the same destination) and the two buttons carry the keyboard and
+    // the accessibility tree. Same reasoning as CardMini's "a button inside an
+    // anchor is invalid" swap.
     return (
       <div
         key={r.id}
         className="routine-card routine-card--tap"
         style={{ '--tint': tint } as React.CSSProperties}
-        role="button"
-        tabIndex={0}
         onClick={onCard}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onCard()
-          }
-        }}
       >
         <span className="routine-card__spine" style={{ background: tint }} aria-hidden="true" />
         <div className="routine-card__head">

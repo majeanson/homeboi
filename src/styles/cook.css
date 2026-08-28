@@ -149,18 +149,35 @@
   font-size: calc(1.15rem * var(--ds, 1));
   line-height: 1.45;
   padding-left: 0.3rem;
-  cursor: pointer;
   border-radius: var(--radius-sm, 0.4rem);
   -webkit-tap-highlight-color: transparent;
+}
+/* The step TEXT is the read-aloud button (the <li> used to be a role="button"
+   wrapping the timer chips' real buttons — a nested interactive). It has to read
+   as running text, so it inherits everything and keeps only the block layout
+   a full-width tap target needs. */
+.cook__step-read {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  border-radius: inherit;
 }
 .cook__full-steps li::marker {
   color: var(--terracotta-deep);
   font-weight: 700;
 }
-.cook__full-steps li:hover {
+.cook__full-steps li:hover,
+.cook__step-read:hover {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
-.cook__full-steps li:focus-visible {
+.cook__step-read:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }

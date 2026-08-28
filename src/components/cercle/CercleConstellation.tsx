@@ -149,7 +149,7 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
       </div>
 
       <PanZoom className="cercle-world__zoom" ariaLabel={w.title}>
-        <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={w.title}>
+        <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" role="group" aria-label={w.title}>
           {/* Bridges first, behind the islands — a wide invisible stroke is the tap
               target, a thin visible line the connection. */}
           {bridges.map((b) => (

@@ -99,7 +99,7 @@ export function CercleTree({
       {/* The SVG fills the PanZoom surface (viewBox + meet) so the whole forest fits at
           rest, then pinch / drag / +− scales it up. */}
       <PanZoom className="cercle-tree__zoom" ariaLabel={t.cercle.view.tree}>
-        <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" role="img" aria-label={t.cercle.view.tree}>
+        <svg className="cercle-tree__svg" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet" role="group" aria-label={t.cercle.view.tree}>
           {/* A named, tinted frame around each family — so a side-by-side forest reads
               as « la famille de Francis, la famille de Michelle », not one big blur. */}
           {frames.map((f) => (
