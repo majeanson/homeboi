@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // The "heavy form" pass: four surfaces where the chrome outweighed the content, all
 // fixed the same way — what you MUST answer leads, what you rarely touch waits behind
@@ -102,29 +103,30 @@ test('« Compléter les familles » sits under the directory, not over it', asyn
   const complete = page.locator('.cercle-complete')
   await expect(complete).toBeVisible()
 
-  // Below the last person, not between the face chip and the first one. Wait for the
-  // row to PAINT before measuring: boundingBox() returns null on an unrendered
-  // locator, and under the full parallel suite this page is slower to settle than it
-  // is when the spec runs alone (how this test passed in isolation and failed in the
-  // suite — the exact reading error that let eight regressions through).
+  // Below the last person, not between the face chip and the first one.
+  //
+  // Measured through boxOf() (e2e/measure), which RETRIES. Waiting for the row to be
+  // visible first is not enough and this test is the proof: it threw « Cannot read
+  // properties of null » on the line below while its own toBeVisible() had just
+  // passed. Visibility already implies a box — what it cannot promise is that the
+  // SAME node is still attached when the next call re-resolves the selector, and this
+  // list re-renders as its query settles. Fixed once here by awaiting visibility
+  // (cbed72c) and it came back the next day; retrying the measurement is the fix that
+  // holds.
   const firstRow = page.locator('.cercle-row').first()
   await expect(firstRow).toBeVisible()
-  const rowY = (await firstRow.boundingBox())!.y
-  const btnY = (await complete.boundingBox())!.y
+  const rowY = (await boxOf(firstRow)).y
+  const btnY = (await boxOf(complete)).y
   expect(btnY, 'the housekeeping action comes after the people').toBeGreaterThan(rowY)
 
   // …and it is a chip, not a full-width bar (a flex column stretches its children).
-  const w = (await complete.boundingBox())!.width
+  const w = (await boxOf(complete)).width
   expect(w).toBeLessThan(300)
 
-  // Same for the face chip above — it wore the full width too. Awaited visible for
-  // the SAME reason as the row: this one wasn't, and it flaked on CI once
-  // (« Cannot read properties of null (reading 'y') ») under the full parallel
-  // suite while passing alone — the exact trap the note above describes. A guard
-  // that only holds when the machine is fast is not a guard.
+  // Same for the face chip above — it wore the full width too.
   const chip = page.locator('.cercle-focus .profile-chip')
   await expect(chip).toBeVisible()
-  const chipW = (await chip.boundingBox())!.width
+  const chipW = (await boxOf(chip)).width
   expect(chipW).toBeLessThan(300)
 })
 

@@ -596,6 +596,13 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
   third case nobody had reported. Stash the fix (or plant a violation), watch the
   guard fail, then restore. Two lines of shell; it is the difference between a test
   and a decoration.
+- **Measure with `boxOf()` in e2e, never `(await x.boundingBox())!`** (standing rule).
+  `e2e/measure.ts` retries; the bare call throws « Cannot read properties of null »
+  when the selector re-resolves onto a node React detached between the assert and the
+  measure. Waiting for visibility does NOT prevent it — `lean-forms.spec.ts` threw one
+  line under its own passing `toBeVisible()`. Two CI reds in two days (`cbed72c`, then
+  again the next morning) came from this one pattern; 74 call sites still use the bare
+  form, so convert one whenever you touch it.
 - **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
   only gate, fix forward if it goes red (standing rule). If a branch ever is used,
   delete it (local + remote) after it merges.
