@@ -151,6 +151,22 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   notes: ['cnote'],
 }
 
+// Hold the ＋ and speak (bmad/12 #18): which of the section's forms the long-press
+// opens straight into, with the mic already listening. One per section — the ONE
+// thing you'd dictate there, chosen as the section's highest-frequency free-text
+// add. Rides the existing single-shot mic and capture spine; nothing new is
+// recorded, routed or stored.
+//
+// Maison is deliberately absent: every one of its adds is a structured entity (a
+// person, a family, a link) that a sentence of speech can't fill, so a hold there
+// keeps its ordinary meaning — the plain chooser.
+export const VOICE_MODES: Record<string, AddSheetMode> = {
+  board: 'note',
+  liste: 'list-item',
+  kitchen: 'pantry',
+  notes: 'cnote',
+}
+
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.
 // NOTE: `routine-pick` is deliberately NOT here — managing kid routines is the
 // wall tablet's own job and the /api/routines POST/PATCH already accept a paired

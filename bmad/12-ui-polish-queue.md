@@ -19,9 +19,9 @@
 13. ✅ **DONE 2026-08-27** — **PWA theming polish** — manifest `theme_color`/splash matched to day/night.
 14. ✅ **DONE 2026-08-27** — **360px typographic rhythm pass** — one heading ramp for HubHead vs SceneHead
     on narrow phones.
-16. **Ctrl+Z fires the newest undo entry** (desktop) — the toast already holds it.
-17. **Pull-to-refresh on mobile hub bodies** — invalidate the tab's keys.
-18. **FAB long-press → instant voice capture** — hold ＋, speak, release; rides
+16. ✅ **DONE 2026-08-27** — **Ctrl+Z fires the newest undo entry** (desktop) — the toast already holds it.
+17. ✅ **DONE 2026-08-27** — **Pull-to-refresh on mobile hub bodies** — invalidate the tab's keys.
+18. ✅ **DONE 2026-08-27** — **FAB long-press → instant voice capture** — hold ＋, speak, release; rides
     the existing mic + capture spine.
 25. **Age cue on fridge notes** — quiet `formatAgo` stamp (client-only; origin
     marker would need a column — out of scope).

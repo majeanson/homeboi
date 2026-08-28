@@ -757,6 +757,31 @@ test.describe('kitchen', () => {
     await expect(lows).toHaveCount(3)
   })
 
+  test('Ctrl+Z takes back the newest undo entry, but not while typing', async ({ page }) => {
+    // bmad/12 #16 — the desktop mirror of « Annuler ». The stack was always there;
+    // only the touch door existed.
+    await page.locator('.subtabs__opt', { hasText: 'Garde-manger' }).click()
+    const lows = page.locator('.kitchen__low li')
+    await lows.first().locator('button.checkrow__check').click()
+    await expect(lows).toHaveCount(2)
+    await expect(page.locator('.undo-toast')).toBeVisible()
+    await page.keyboard.press('Control+z')
+    await expect(lows).toHaveCount(3)
+
+    // …and it must NOT hijack the browser's own undo while a field has focus:
+    // there Ctrl+Z means « un-type that », and stealing it to resurrect a row
+    // would be the worst kind of surprise.
+    await lows.first().locator('button.checkrow__check').click()
+    await expect(lows).toHaveCount(2)
+    const low = page.locator('section', { has: page.locator('.kitchen__low') })
+    await low.locator('.sec-label__actbtn').first().click()
+    const field = low.locator('.edit-field input').first()
+    await field.fill('abc')
+    await expect(field).toBeFocused()
+    await page.keyboard.press('Control+z')
+    await expect(lows).toHaveCount(2)
+  })
+
   test('planning a supper saves directly; "+ ingrédients" opt-in fetches staples', async ({ page }) => {
     // The per-day planning controls live in the day editor SCENE now
     // (/kitchen/day/:date). Souper renders LAST (chronological order). The

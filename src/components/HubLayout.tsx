@@ -15,6 +15,8 @@ import { useTapToHearListener } from '../lib/tapToHear'
 import { useTour } from '../lib/tour'
 import { useTourOfferDot } from '../lib/tourOffer'
 import { useAmbient } from '../lib/ambient'
+import { usePullToRefresh, PULL_THRESHOLD } from '../lib/pullToRefresh'
+import { useLongPress } from '../lib/useLongPress'
 import { useKeepAwake } from '../lib/keepAwake'
 import { useWakeLock } from '../lib/useWakeLock'
 import { AmbientScreen } from './AmbientScreen'
@@ -26,7 +28,7 @@ import { AddSheet } from './AddSheet'
 import { DetailProvider } from './detail/DetailProvider'
 import { KidExitGate } from './KidExitGate'
 import { OfflineBanner } from './OfflineBanner'
-import { AddSheetContext, SECTION_MODES, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, type AddSheetMode } from '../lib/addSheet'
+import { AddSheetContext, SECTION_MODES, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, VOICE_MODES, type AddSheetMode } from '../lib/addSheet'
 import { useAuth } from '../lib/auth'
 import {
   KitchenActionsContext,
@@ -194,6 +196,43 @@ export function HubLayout() {
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: 0 })
   }, [section])
+
+  // Pull-to-refresh (bmad/12 #17). The browser can't offer its own here — the
+  // document never scrolls, .hub__body does (see lib/pullToRefresh.ts) — so the
+  // gesture every phone user reaches for did nothing. PHONE ONLY: a wall tablet
+  // is glanced at, not held, and it already polls; a stray sleeve on a kiosk
+  // shouldn't refetch. An unfiltered invalidate refetches exactly the active
+  // observers, i.e. what this tab is showing.
+  const ptr = usePullToRefresh(
+    bodyRef,
+    () => qc.invalidateQueries(),
+    surface === 'mobile',
+  )
+
+  // Hold the ＋ and speak (bmad/12 #18). The sheet's fastest path was already
+  // two taps (FAB → speak into the field's mic); holding makes it one gesture,
+  // which is the difference between "I'll do it when I'm at the counter" and
+  // saying it while your hands are full. It rides the SAME single-shot mic and the
+  // same capture spine — nothing new is recorded, routed or stored.
+  //
+  // The plain tap is untouched: useLongPress swallows only the click that ends a
+  // completed hold, so the chooser still opens on a normal press.
+  const [addVoice, setAddVoice] = useState(false)
+  const voiceMode = VOICE_MODES[section]
+  useLongPress({
+    targets: '.add-fab',
+    // Nothing to dictate into on this section (Maison's adds are all structured
+    // entities), or the device has no recogniser — leave the hold unbound rather
+    // than opening a form with a dead mic.
+    enabled: !!voiceMode,
+    onLongPress: () => {
+      if (!voiceMode) return
+      setAddMode(voiceMode)
+      setAddModes(null)
+      setAddVoice(true)
+      setAddOpen(true)
+    },
+  })
 
   // A PAIRED device getting 401s means its token was revoked (re-paired, device
   // removed in Réglages, DB reset) — latch a recovery screen at the shell level.
@@ -507,6 +546,18 @@ export function HubLayout() {
       </nav>
 
       <div className="hub__body" ref={bodyRef}>
+        {/* The pull indicator: a row that grows out of the top edge as you drag.
+            aria-hidden — the gesture is touch-only and the refetch's own loading
+            states are what a screen reader should hear. */}
+        {(ptr.pull > 0 || ptr.refreshing) && (
+          <div
+            className={`hub__ptr${ptr.armed || ptr.refreshing ? ' hub__ptr--armed' : ''}${ptr.refreshing ? ' hub__ptr--busy' : ''}`}
+            style={{ height: ptr.refreshing ? PULL_THRESHOLD : ptr.pull }}
+            aria-hidden="true"
+          >
+            <Icon name="arrow-right-bold" size={20} />
+          </div>
+        )}
         <OfflineBanner />
         {guest && (
           <p className="board__empty mono" role="status" style={{ textAlign: 'center', opacity: 0.8 }}>
@@ -588,7 +639,16 @@ export function HubLayout() {
           <Icon name="plus-bold" size={26} />
         </button>
       )}
-      <AddSheet open={addOpen} modes={addModes ?? sectionModes} initialMode={addMode} onClose={() => setAddOpen(false)} />
+      <AddSheet
+        open={addOpen}
+        modes={addModes ?? sectionModes}
+        initialMode={addMode}
+        autoVoice={addVoice}
+        onClose={() => {
+          setAddOpen(false)
+          setAddVoice(false)
+        }}
+      />
       {/* Ambient screensaver — full-screen idle face. A KEY wake reaches the idle
           effect's window listener on its own; a POINTER wake can't (AmbientScreen
           stopPropagation()s it so the gesture never lands on a board control), so

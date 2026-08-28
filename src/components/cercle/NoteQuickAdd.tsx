@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { isGuest } from '../../lib/device'
@@ -27,6 +27,7 @@ export function NoteQuickAdd({
   autoFocus,
   onSubmitted,
   lean = false,
+  autoVoice = false,
 }: {
   /** The acting face: a member id → a personal note, null → a Maisonnée note. */
   memberId: string | null
@@ -42,6 +43,8 @@ export function NoteQuickAdd({
    *  didn't disappear: they moved to the ＋ FAB's composer (bottom right), which is
    *  this same component WITHOUT `lean`. See lib/notesMode. */
   lean?: boolean
+  /** Open with the mic already listening (the ＋ FAB's hold-and-speak, bmad/12 #18). */
+  autoVoice?: boolean
 }) {
   const t = useT()
   const write = useWrite()
@@ -52,6 +55,16 @@ export function NoteQuickAdd({
   const [busy, setBusy] = useState(false)
   const voice = useVoiceInput(setText)
   const memo = useMemoAttach({ drawDraftId })
+
+  // Hold-and-speak: start listening on mount, once. `lean` has no mic at all, so
+  // there'd be nothing to stop — and a mic running behind a box with no visible
+  // listening state is exactly the "is it recording me?" anxiety to avoid.
+  const started = useRef(false)
+  useEffect(() => {
+    if (!autoVoice || lean || started.current || !voice.hasVoice) return
+    started.current = true
+    voice.start()
+  }, [autoVoice, lean, voice])
 
   // A read-only guest has no composer anywhere (EditField would hide its own box, but
   // the host's wrapper/heading would still paint an empty shell).

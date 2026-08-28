@@ -741,3 +741,42 @@
   max-width: none;
   margin-inline: 0;
 }
+
+/* --- Pull-to-refresh indicator (bmad/12 #17) ------------------------------ */
+/* A row that grows out of the top of `.hub__body` as you drag, pushing the
+   content down with it (it's a normal flow child, not an overlay — so nothing
+   is ever covered, and when it collapses the page is exactly where it was).
+   Height is set inline from the gesture; only the arrow's turn and the colour
+   are animated, and only on release. */
+.hub__ptr {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--ink-faint);
+  padding-bottom: 6px;
+  /* The drag itself must track the finger exactly — no transition while the
+     inline height is changing every frame. The collapse back to 0 is instant
+     for the same reason (the browser has no way to tell the two apart), and it
+     reads fine because the content simply returns to rest. */
+  transition: color 160ms ease;
+}
+.hub__ptr svg {
+  /* Points DOWN while you pull (« keep going »), flips UP once releasing would
+     refresh (« let go now ») — the one affordance this gesture needs. */
+  transform: rotate(90deg);
+  transition: transform 200ms ease;
+}
+.hub__ptr--armed {
+  color: var(--ink-soft);
+}
+.hub__ptr--armed svg {
+  transform: rotate(-90deg);
+}
+/* Working: the arrow stops being an instruction and just holds still, dimmed.
+   No spin — a perpetual spinner is exactly the anxious chrome NFR-CALM-1 keeps
+   out, and the refetch is over in a blink anyway (the hold is cosmetic). */
+.hub__ptr--busy svg {
+  transform: rotate(-90deg);
+  opacity: 0.45;
+}

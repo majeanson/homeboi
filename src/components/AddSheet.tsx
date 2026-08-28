@@ -10,7 +10,7 @@ import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
 import { weekDates } from './kitchen/week'
 import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useReserveLocations } from '../lib/reservePrefs'
-import { useVoiceInput } from '../lib/useVoiceInput'
+import { useVoiceInput, type VoiceInput } from '../lib/useVoiceInput'
 import { formatWeekday, formatRelativeWeekday } from '../lib/format'
 import { OPERATOR_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
 import { CATS, type CatKey } from '../lib/cats'
@@ -216,12 +216,15 @@ export function AddSheet({
   open,
   modes,
   initialMode = null,
+  autoVoice = false,
   onClose,
 }: {
   open: boolean
   modes: AddSheetMode[]
   // null = the section's default; an explicit mode (open('routine')) pins it.
   initialMode?: AddSheetMode | null
+  // Hold-and-speak (bmad/12 #18): open with `initialMode`'s mic already listening.
+  autoVoice?: boolean
   onClose: () => void
 }) {
   const t = useT()
@@ -366,6 +369,37 @@ export function AddSheet({
   // planning onto a day happens from the kitchen's Restants strip.
   const [leftoverText, setLeftoverText] = useState('')
   const leftoverVoice = useVoiceInput(setLeftoverText)
+
+  // Hold the ＋ and speak (bmad/12 #18). The FAB's long-press opens this sheet
+  // pinned to the section's dictatable form (VOICE_MODES) with `autoVoice`, and we
+  // start THAT form's own mic — never a shared one, so a board draft can't land on
+  // the grocery list. `cnote` isn't here: its composer is NoteQuickAdd, which owns
+  // its own mic and takes the same flag.
+  //
+  // Once per open, guarded by a ref: re-running on any re-render would restart a
+  // recogniser mid-sentence and lose the phrase.
+  const autoVoiceFor: Partial<Record<AddSheetMode, VoiceInput>> = {
+    note: noteVoice,
+    'list-item': listVoice,
+    todo: todoVoice,
+    pantry: pantryVoice,
+    reserve: reserveVoice,
+    leftovers: leftoverVoice,
+  }
+  const autoVoiceRef = useRef(autoVoiceFor)
+  autoVoiceRef.current = autoVoiceFor
+  const spoke = useRef(false)
+  useEffect(() => {
+    if (!open) {
+      spoke.current = false
+      return
+    }
+    if (!autoVoice || spoke.current || !mode) return
+    const v = autoVoiceRef.current[mode]
+    if (!v?.hasVoice) return
+    spoke.current = true
+    v.start()
+  }, [open, autoVoice, mode])
 
   // — plan a meal (kitchen) — "Planifier un repas" is now a DAY PICKER that opens
   // that day's full "Gérer" sheet (one real editor, reached two ways), instead of
@@ -956,9 +990,14 @@ export function AddSheet({
         {/* The shared submit-failed line for whichever form is in the panel (the
             hoisted note box renders its own copy in the lead block above). */}
         {err && (drilled || !noteAtTop) && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-        {/* When the note box is hoisted to the top (board), it isn't repeated
-            here; a chooser-less / kiosk-fallback sheet still shows it in-panel. */}
-        {!noteAtTop && mode === 'note' && noteForm}
+        {/* When the note box is hoisted to the top (board), it isn't repeated here
+            — UNLESS we're drilled straight into it, because then the chooser (which
+            carries the hoisted copy) isn't rendering at all and the panel is the
+            only body left. That happens whenever 'note' is PINNED rather than
+            picked: `?plus=note`, and the ＋ hold-to-speak. Without the `drilled`
+            arm both open an empty sheet. A chooser-less / kiosk-fallback sheet
+            still shows it in-panel as before. */}
+        {(!noteAtTop || drilled) && mode === 'note' && noteForm}
 
         {mode === 'list-item' && (
           <EditField
@@ -1058,7 +1097,13 @@ export function AddSheet({
             composer is text-only. Scoped to the picked face, exactly like the
             section's — a face → a personal note, « Maisonnée » → a family-wide one. */}
         {mode === 'cnote' && (
-          <NoteQuickAdd memberId={profileId} drawDraftId="sheet-cnote" autoFocus onSubmitted={close} />
+          <NoteQuickAdd
+            memberId={profileId}
+            drawDraftId="sheet-cnote"
+            autoFocus
+            autoVoice={autoVoice}
+            onSubmitted={close}
+          />
         )}
 
         {mode === 'pantry' && (

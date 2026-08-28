@@ -262,6 +262,38 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [apply, clearTimer, showBar],
   )
 
+  // Ctrl+Z / ⌘Z takes back the newest still-live entry (bmad/12 #16). The stack
+  // was already there — only the touch door (« Annuler ») existed, so on a desktop
+  // the muscle memory every other app trains did nothing. This is the same
+  // "don't leave a gesture as the ONLY path" rule as useHScroll, from the other
+  // side: a touch affordance needs a keyboard mirror too.
+  //
+  // Two things it must NOT do:
+  //   • steal the browser's native undo while you're TYPING — inside an input,
+  //     textarea or contenteditable, Ctrl+Z means "un-type that", and hijacking it
+  //     to delete a to-do would be the worst kind of surprise. We bail on those.
+  //   • undo a 'notice' (nothing to take back) or anything already committed —
+  //     `newest` is the live stack's top, which is exactly the entry the pill's
+  //     « Annuler » targets, so the key and the button always agree.
+  // Shift+Ctrl+Z (redo) is deliberately unbound: there is no redo here, and
+  // swallowing it would make the app feel broken rather than calm.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'z' && e.key !== 'Z') return
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return
+      const el = document.activeElement as HTMLElement | null
+      if (el?.isContentEditable) return
+      const tag = el?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const top = entriesRef.current[entriesRef.current.length - 1]
+      if (!top || top.kind === 'notice') return
+      e.preventDefault()
+      undo(top.id)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undo])
+
   // Whether an action can still be taken back (its entry is still in the live
   // stack). A 'notice' has nothing to undo, so it never reads as live.
   const isLive = useCallback(
