@@ -39,9 +39,22 @@ for (const format of [
     const modal = page.locator('.read-review')
     await expect(modal).toBeVisible()
 
-    // The flag logic actually fired: "3/4 tasse" (bare fraction) and "cannelle"
-    // (seeded low-confidence word) are both worth a second look.
-    await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(2)
+    // The flag logic actually fired: "3/4 tasse" (bare fraction), "cannelle"
+    // (seeded low-confidence word) and the long ramens line ("1/2 lb") are all
+    // worth a second look.
+    await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(3)
+
+    // The rows are MEMO boxes: the deliberately-long ramens ingredient must be
+    // fully visible — wrapped, never clipped. A one-line <input> fails this on
+    // scrollWidth (the "text that truncates" bug); a non-grown textarea fails on
+    // scrollHeight.
+    const clipped = await modal.locator('.read-review__fields').evaluate((root) => {
+      const memos = [...root.querySelectorAll<HTMLTextAreaElement>('.read-review__memo')]
+      const el = memos.find((m) => m.value.includes('ramens'))
+      if (!el) return 'long line missing from the specimen'
+      return el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1
+    })
+    expect(clipped, 'the long ingredient line is fully shown, not truncated').toBe(false)
     // Both feet are reachable: the ghost « Annuler » and the primary confirm
     // (« C'est bon ») — targeted structurally so the assertion is locale-proof.
     await expect(modal.locator('.read-review__foot .btn--ghost')).toBeVisible()

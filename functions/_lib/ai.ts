@@ -429,6 +429,7 @@ Reply with ONLY this JSON, no text around it:
 - Keep the EXACT words from the image: do not rephrase, summarize, translate, or fix spelling. The only edits allowed are splitting the method into separate steps and copying a part name as a "## " line. Think of it as an intelligent copy-paste, not a rewrite.
 - If the recipe is split into named parts, copy each part's EXACT printed name on its own line, prefixed with "## ", in the relevant array. Never use a part name that does not appear in the image.
 - Add NO remark, note, or explanation. Do not point out what is missing or unreadable. If something isn't written, set the field to null or omit that line — never explain why.
+- If the page is set in COLUMNS, read each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line.
 - At most 40 ingredients, 30 steps.`
       : `Tu transcris une recette à partir d'une image (page de livre, fiche manuscrite ou capture d'écran). Recopie EXACTEMENT ce qui est écrit. N'invente rien. N'ajoute aucun commentaire.
 Réponds avec UNIQUEMENT ce JSON, sans aucun texte autour :
@@ -441,6 +442,7 @@ Réponds avec UNIQUEMENT ce JSON, sans aucun texte autour :
 - Garde les mots EXACTS de l'image : ne reformule pas, ne résume pas, ne traduis pas, ne corrige pas l'orthographe. Les seules modifications permises sont de découper la préparation en étapes et de recopier un nom de partie en ligne « ## ». C'est un copier-coller intelligent, pas une réécriture.
 - Si la recette est séparée en parties, recopie le nom EXACT de chaque partie (tel qu'écrit dans l'image) sur sa propre ligne, préfixé de « ## », dans le bon tableau. N'utilise jamais un nom de partie qui n'apparaît pas dans l'image.
 - N'ajoute AUCUNE remarque, note ni explication. Ne signale pas ce qui manque ou serait illisible. Si une information n'est pas écrite, mets le champ à null ou n'écris pas cette ligne — ne l'explique pas.
+- Si la page est en COLONNES, lis chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
 - Maximum 40 ingrédients, 30 étapes.`
   try {
     const res = (await env.AI.run(VISION_MODEL, {

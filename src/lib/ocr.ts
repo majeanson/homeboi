@@ -10,7 +10,7 @@
 // in lib/image.ts. One worker is reused for the session. The recipe image never
 // leaves the device (Loi 25): OCR runs entirely in the browser.
 
-import type { Page, Word, Worker } from 'tesseract.js'
+import type { Bbox, Page, Word, Worker } from 'tesseract.js'
 
 // Below this per-word confidence (0–100) a token is "shaky" and gets surfaced to
 // the verify panel so the cook glances at the photo — the 3/4↔1/4 failure points.
@@ -131,6 +131,149 @@ export function mergeOcrPages(pages: string[]): string {
   return [...merged, ...extras].join('\n')
 }
 
+// ---------------------------------------------------------------------------
+// Column-aware reassembly (the "85 g de miel" bug)
+// ---------------------------------------------------------------------------
+// A printed recipe is very often set in 2–3 COLUMNS, and Tesseract's flat
+// `data.text` can join two columns' fragments onto one physical line — "de 85 g
+// chacun" (column 1) + "soupe) de miel" (column 2) parsed into an invented
+// "85 g de miel" ingredient. The words' bounding boxes know better: detect the
+// column gutters from the x-coverage of the page's body text, then re-emit the
+// transcript one column at a time, top to bottom. Pure and conservative — any
+// doubt (few lines, no clear gutter, a lopsided split) returns null and the
+// caller keeps Tesseract's own reading order.
+
+interface CWord {
+  text: string
+  x0: number
+  x1: number
+  y0: number
+  y1: number
+}
+
+// Flatten the page tree into physical lines of positioned words (x-sorted).
+// Tolerant of a null/odd shape — a word without a usable bbox is skipped.
+function pageLines(page: Page): CWord[][] {
+  const lines: CWord[][] = []
+  for (const block of page.blocks ?? []) {
+    for (const para of block?.paragraphs ?? []) {
+      for (const line of para?.lines ?? []) {
+        const ws: CWord[] = []
+        for (const w of line?.words ?? []) {
+          const text = typeof w?.text === 'string' ? w.text.trim() : ''
+          const b = (w as { bbox?: Bbox })?.bbox
+          if (!text || !b || typeof b.x0 !== 'number' || typeof b.x1 !== 'number') continue
+          ws.push({ text, x0: b.x0, x1: b.x1, y0: b.y0 ?? 0, y1: b.y1 ?? 0 })
+        }
+        if (ws.length) lines.push(ws.sort((a, z) => a.x0 - z.x0))
+      }
+    }
+  }
+  return lines
+}
+
+// Rebuild the transcript column-by-column, or null when the page doesn't read as
+// a confident multi-column layout (then Tesseract's own text order stands).
+export function columnizeOcrPage(page: Page): string | null {
+  const lines = pageLines(page)
+  if (lines.length < 6) return null
+  const words = lines.flat()
+  const heights = words.map((w) => w.y1 - w.y0).filter((h) => h > 0).sort((a, z) => a - z)
+  const medianH = heights[Math.floor(heights.length / 2)]
+  if (!medianH) return null
+  // Display-size words (the big title spanning the whole page) would fill the
+  // gutters; keep them out of the geometry and emit those lines first instead.
+  const isDisplay = (w: CWord) => w.y1 - w.y0 > 1.8 * medianH
+  const body = words.filter((w) => !isDisplay(w))
+  if (body.length < 12) return null
+  const minX = Math.min(...body.map((w) => w.x0))
+  const maxX = Math.max(...body.map((w) => w.x1))
+  const span = maxX - minX
+  if (span <= 0) return null
+
+  // x-coverage: how many LINES put body text over each bucket. A gutter is a run
+  // of buckets almost no line covers — "almost", because one meta line
+  // ("Préparation 20 min • Cuisson 5 min") legitimately spans every column.
+  const N = 256
+  const cover = new Array<number>(N).fill(0)
+  let bodyLines = 0
+  for (const line of lines) {
+    const bw = line.filter((w) => !isDisplay(w))
+    if (!bw.length) continue
+    bodyLines++
+    const seen = new Set<number>()
+    for (const w of bw) {
+      const b0 = Math.max(0, Math.floor(((w.x0 - minX) / span) * N))
+      const b1 = Math.min(N - 1, Math.ceil(((w.x1 - minX) / span) * N) - 1)
+      for (let b = b0; b <= b1; b++) seen.add(b)
+    }
+    for (const b of seen) cover[b]++
+  }
+  const sparseMax = Math.max(1, Math.round(bodyLines * 0.08))
+  // A real gutter is wide: at least a word-height and a half. The small gap
+  // between a step NUMBER and its text never qualifies.
+  const minGutter = Math.max(span * 0.02, 1.5 * medianH)
+  const gutters: number[] = [] // each gutter's centre x
+  let runStart = -1
+  for (let b = 0; b <= N; b++) {
+    const sparse = b < N && cover[b] <= sparseMax
+    if (sparse && runStart < 0) runStart = b
+    if ((!sparse || b === N) && runStart >= 0) {
+      // Interior runs only — a ragged left/right margin is not a gutter.
+      if (runStart > 0 && b < N) {
+        const a = minX + (runStart / N) * span
+        const e = minX + (b / N) * span
+        if (e - a >= minGutter) gutters.push((a + e) / 2)
+      }
+      runStart = -1
+    }
+  }
+  if (gutters.length === 0 || gutters.length > 3) return null
+
+  const bounds = [minX, ...gutters, maxX + 1]
+  const nCols = bounds.length - 1
+  const colOf = (w: CWord): number => {
+    const c = (w.x0 + w.x1) / 2
+    for (let i = 0; i < nCols; i++) if (c >= bounds[i] && c < bounds[i + 1]) return i
+    return c < bounds[0] ? 0 : nCols - 1
+  }
+  // Every column must hold a fair share of the text, or the "gutter" was noise
+  // (a hole in a short page, an indent) — better no split than a wrong one.
+  const counts = new Array<number>(nCols).fill(0)
+  for (const w of body) counts[colOf(w)]++
+  if (counts.some((c) => c < body.length * 0.12)) return null
+
+  // Re-emit: display lines that straddle columns (the title) first, then each
+  // column's segments top-to-bottom, left column to right. A physical line that
+  // crosses a gutter contributes one segment per column — exactly the un-merge.
+  const headers: { y: number; text: string }[] = []
+  const cols: { y: number; x: number; text: string }[][] = Array.from({ length: nCols }, () => [])
+  for (const line of lines) {
+    const touched = new Set(line.map(colOf))
+    if (touched.size > 1 && line.every(isDisplay)) {
+      headers.push({ y: Math.min(...line.map((w) => w.y0)), text: line.map((w) => w.text).join(' ') })
+      continue
+    }
+    const byCol = new Map<number, CWord[]>()
+    for (const w of line) {
+      const c = colOf(w)
+      const arr = byCol.get(c)
+      if (arr) arr.push(w)
+      else byCol.set(c, [w])
+    }
+    for (const [c, ws] of byCol) {
+      cols[c].push({ y: Math.min(...ws.map((w) => w.y0)), x: ws[0].x0, text: ws.map((w) => w.text).join(' ') })
+    }
+  }
+  headers.sort((a, z) => a.y - z.y)
+  const out = headers.map((h) => h.text)
+  for (const col of cols) {
+    col.sort((a, z) => a.y - z.y || a.x - z.x)
+    for (const seg of col) out.push(seg.text)
+  }
+  return out.join('\n')
+}
+
 // Walk the OCR page tree (blocks → paragraphs → lines → words) collecting words
 // whose confidence is below LOW_CONFIDENCE. Tolerant of a null/odd shape (older or
 // trimmed outputs) — never throws.
@@ -163,8 +306,15 @@ export async function ocrImage(image: Blob, onProgress?: (fraction: number) => v
   try {
     const worker = await getWorker(onProgress)
     if (!worker) return EMPTY
-    const { data } = await worker.recognize(image)
-    const text = normalizeOcrText(typeof data.text === 'string' ? data.text.trim() : '')
+    // tesseract.js v6 defaults `blocks: false`, which silently nulled the page
+    // tree — no shaky-word flags, no bboxes. Ask for it explicitly: it feeds both
+    // the low-confidence flags AND the column-aware reassembly.
+    const { data } = await worker.recognize(image, {}, { text: true, blocks: true })
+    // A multi-column page (most printed recipes) re-reads column by column so two
+    // columns' fragments never merge into one line; a single-column page (or any
+    // doubt) keeps Tesseract's own order.
+    const raw = typeof data.text === 'string' ? data.text.trim() : ''
+    const text = normalizeOcrText((columnizeOcrPage(data) ?? raw).trim())
     return {
       text,
       confidence: typeof data.confidence === 'number' ? data.confidence : 0,

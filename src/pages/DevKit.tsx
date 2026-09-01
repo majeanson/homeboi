@@ -3010,7 +3010,14 @@ export function DevKit() {
                 photoUrl={SAMPLE_RECIPE_PHOTO}
                 draft={{
                   title: 'Biscuits à l’avoine',
-                  ingredients: ['3/4 tasse de farine', '1 c. à thé de cannelle', '2 œufs'],
+                  ingredients: [
+                    '3/4 tasse de farine',
+                    '1 c. à thé de cannelle',
+                    // A LONG line on purpose — the rows are memo boxes that wrap,
+                    // never one-line inputs that truncate (the e2e measures this one).
+                    '225 g (1/2 lb) de ramens secs ou 3 paquets de ramens secs de 85 g chacun (sans les sachets d’assaisonnement)',
+                    '2 œufs',
+                  ],
                   steps: ['Préchauffer le four à 180 °C.', 'Mélanger le tout et cuire 12 minutes.'],
                   servings: 24,
                   servingsUnit: 'biscuits',

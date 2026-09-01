@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { Modal } from './Modal'
 import { findMeasures, measuresDisagree } from '../lib/measure'
@@ -60,6 +60,40 @@ function flagReason(line: string, lowSet: Set<string>): FlagReason | null {
 const reasonTip = (r: FlagReason, t: ReturnType<typeof useT>): string =>
   r === 'mismatch' ? t.recipes.reviewCheckMismatch : r === 'number' ? t.recipes.reviewCheckNumber : t.recipes.reviewCheckWord
 
+// Every line is a MEMO box, not a one-line input: verifying against the photo only
+// works if the whole line is readable, and a step easily runs three lines. The
+// textarea grows to fit its content (and re-fits as the cook types); Enter inside
+// one splits it into separate lines on confirm — handy when the OCR merged two.
+function GrowingLine({
+  value,
+  onChange,
+  ariaLabel,
+}: {
+  value: string
+  onChange: (v: string) => void
+  ariaLabel: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    // scrollHeight excludes the borders but .input is border-box — add them back
+    // (offsetHeight − clientHeight) or the box sits a couple px short and scrolls.
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`
+  }, [value])
+  return (
+    <textarea
+      ref={ref}
+      className="input read-review__memo"
+      rows={1}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel}
+    />
+  )
+}
+
 export function RecipeReadReview({
   photoUrl,
   draft,
@@ -106,11 +140,14 @@ export function RecipeReadReview({
       const n = parseInt(s, 10)
       return Number.isFinite(n) && n > 0 ? n : null
     }
+    // A newline typed inside one memo box splits it into separate lines — the
+    // in-place fix for a read that merged two printed lines into one.
+    const flat = (xs: string[]) => xs.flatMap((s) => s.split('\n')).map((s) => s.trim()).filter(Boolean)
     onConfirm({
       ...draft,
       title: title.trim() || null,
-      ingredients: ingredients.map((s) => s.trim()).filter(Boolean),
-      steps: steps.map((s) => s.trim()).filter(Boolean),
+      ingredients: flat(ingredients),
+      steps: flat(steps),
       servings: num(servings),
       times: { prep: num(prep), cook: num(cook), total: draft.times?.total ?? null },
     })
@@ -130,11 +167,10 @@ export function RecipeReadReview({
             <Icon name="warning-bold" size={14} />
           </span>
         )}
-        <input
-          className="input"
+        <GrowingLine
           value={shown}
-          onChange={(e) => editLine(set, i, sec ? SECTION_PREFIX + e.target.value : e.target.value)}
-          aria-label={kind === 'ingredients' ? t.recipes.ingredients : t.recipes.steps}
+          onChange={(v) => editLine(set, i, sec ? SECTION_PREFIX + v : v)}
+          ariaLabel={kind === 'ingredients' ? t.recipes.ingredients : t.recipes.steps}
         />
         {reason && <span className="chip read-review__chiptag">{t.recipes.reviewConfirm}</span>}
       </div>

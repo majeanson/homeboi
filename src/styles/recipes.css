@@ -1085,12 +1085,25 @@
 }
 .read-review__line {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* memo boxes grow — pin the flag/chip to the first line */
   gap: 0.4rem;
 }
 .read-review__line .input {
   flex: 1 1 auto;
   min-width: 0;
+}
+/* Each line is a memo box that grows to its content (height set from JS via
+   scrollHeight) so the WHOLE line reads against the photo — never a one-line
+   input that truncates mid-quantity. */
+.read-review__memo {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.35;
+  min-height: 2.25rem;
+}
+.read-review__flag,
+.read-review__chiptag {
+  margin-top: 0.45rem; /* optically centre on the memo's first text line */
 }
 .read-review__line.is-sec .input {
   font-weight: 700;
