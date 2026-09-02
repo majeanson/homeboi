@@ -436,7 +436,7 @@ export function DayEditor({
           className="btn btn--ghost mono kitchen__clear-day"
           onClick={() => clearDay(date)}
         >
-          <InlineIcon name="trash-bold" /> {t.kitchen.clearDay}
+          <InlineIcon name="trash-bold" /> {t.kitchen.clearDayMeals}
         </button>
       )}
       <DragGhost ghost={mealDnd.ghost} />

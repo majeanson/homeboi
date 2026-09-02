@@ -1087,7 +1087,7 @@ export const EN: typeof FR = {
     clearMeal: 'Clear meal',
     addAnother: 'Add another',
     clearSlot: 'Clear this meal',
-    clearDay: 'Clear the day',
+    clearDayMeals: 'Clear the meals',
     manage: 'Manage',
     moveUp: 'Move up',
     moveDown: 'Move down',

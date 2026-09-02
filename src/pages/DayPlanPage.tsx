@@ -92,8 +92,10 @@ interface DayItemsData {
 // « Planifier un repas » picker, the history pencil, a meal search hit, the
 // calendar ⋯ « Planifier un repas ») lands `?vue=repas`; every DAY door (« Voir la
 // journée », « Planifier aujourd'hui/demain », the calendar cell) lands the
-// default « Journée » (Marc, 2026-09-02). The weather strip and the day's
-// note-headline stay ABOVE the tabs — they are the day's identity, not a face.
+// default « Journée » (Marc, 2026-09-02). The SUB-TAB ROW IS THE FIRST THING in the
+// body, and the weather strip + the day's note-headline live INSIDE « Journée »:
+// they are context for the agenda, not for the meal planner, and above the picker
+// they pushed the face choice down the screen (Marc, on review).
 //
 // No DetailProvider: nothing on this page peeks any more. A meal that carries a recipe
 // navigates straight to that recipe's view, and MealRows already owns the per-row
@@ -485,6 +487,23 @@ export function DayPlanPage() {
     <div className="scene" aria-label={title}>
       <SceneHead title={title} card="board" onClose={close} closeLabel={t.common.close} />
       <div className="scene__body">
+
+        {/* « Journée » | « Repas » — the scene's two faces. The day's agenda and its
+            meal planner had grown into one long stack; one job at a time now, with
+            the door deciding the landing (?vue=repas from the meal doors). */}
+        <SubTabs
+          options={[
+            { key: 'jour', label: t.kitchen.dayVues.jour, icon: 'calendar-blank-bold' },
+            { key: 'repas', label: t.kitchen.dayVues.repas, icon: CATS.meal.icon },
+          ]}
+          value={vue}
+          onSelect={setVue}
+          ariaLabel={title}
+        />
+
+
+        {vue === 'jour' && (
+          <>
         {/* Day weather — only today/tomorrow have a forecast (see wxQ). A calm
             glance of "what's it like out" while planning this day's meals/events. */}
         {(todayWx || tomoWx) && (
@@ -570,22 +589,6 @@ export function DayPlanPage() {
             </button>
           )}
         </div>
-
-        {/* « Journée » | « Repas » — the scene's two faces. The day's agenda and its
-            meal planner had grown into one long stack; one job at a time now, with
-            the door deciding the landing (?vue=repas from the meal doors). */}
-        <SubTabs
-          options={[
-            { key: 'jour', label: t.kitchen.dayVues.jour, icon: 'calendar-blank-bold' },
-            { key: 'repas', label: t.kitchen.dayVues.repas, icon: CATS.meal.icon },
-          ]}
-          value={vue}
-          onSelect={setVue}
-          ariaLabel={title}
-        />
-
-        {vue === 'jour' && (
-          <>
         {/* « Voyage » — this day sits inside a trip. A calm header that taps into the
             trip's itinerary for this exact day, followed by the actual plans entered
             for the day (the dated itinerary notes), so the right info is right here. */}

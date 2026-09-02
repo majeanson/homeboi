@@ -527,18 +527,24 @@ export interface MealOpts {
   color?: string
   slotLabel?: string
   daySec?: number
+  /** The recipe this meal resolves to (useOpenMeal resolves it) — adds the 📖 / 🍲 doors. */
+  recipeId?: string | null
   onLeftover?: () => void
   onRemove?: () => void
 }
 
-// — A planned meal that has NO recipe behind it (a typed "Spaghettis", a leftover).
-// A meal that DOES resolve a recipe never reaches this builder: useOpenMeal sends the
-// tap straight to /kitchen/recipe/:id, where the photo, the tags, the ingredients, the
-// hearts and « Cuisiner » all already live. So this peek is what's left when there's
-// nowhere to jump — the plan-editing actions on a bare title.
-// `color` is the slot colour (useMealPrefs); `daySec` enables "Voir la journée" (the
-// day planner); `onLeftover` adds "Créer des restants"; `onRemove` the danger
-// "Retirer du plan". —
+// — A planned meal. EVERY tapped meal reaches this builder now (Marc, 2026-09-02):
+// a recipe-linked one used to navigate straight to /kitchen/recipe/:id, which meant a
+// planned meal had NO way back to the day it belongs to — the recipe view knows nothing
+// about the plan. The peek is the one place that holds both halves, so it carries the
+// day door AND the recipe doors rather than making you choose by guessing what a tap
+// will do. Accepted cost, chosen deliberately: cooking tonight from the board is 2 taps
+// instead of 1 (tap-budget.spec.ts re-pinned).
+// `color` is the slot colour (useMealPrefs); `daySec` enables "Voir la journée";
+// `recipeId` (resolved by useOpenMeal) adds « Ouvrir la recette » + the primary
+// « Cuisiner »; `onLeftover` adds "Créer des restants"; `onRemove` the danger
+// "Retirer du plan" — those last two fold into the ⋯ so the visible row stays the
+// three doors you actually came for. —
 export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailModel {
   const { t, members } = ctx
   const slot = m.slot
@@ -546,11 +552,21 @@ export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailM
   const blocks: DetailBlock[] = m.is_leftover ? [{ kind: 'text', text: t.kitchen.leftoversTag }] : []
   const actions: DetailModel['actions'] = []
   if (opts?.daySec) actions.push({ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.daySec}` })
-  // "Créer des restants" — skip if the meal is already a replanned leftover
+  // The recipe half — the same two doors a planner row wears, spelled out here since a
+  // lone peek has room for labels where a dense row only had glyphs. « Cuisiner » is the
+  // primary: it is what you opened a supper for.
+  if (opts?.recipeId) {
+    actions.push({ key: 'recipe', label: t.recipes.open, icon: 'book-open-bold', href: `/kitchen/recipe/${opts.recipeId}` })
+    actions.push({ key: 'cook', label: t.recipes.cook, icon: 'cooking-pot-bold', primary: true, href: `/kitchen/recipe/${opts.recipeId}/cook` })
+  }
+  // The plan-editing tail folds into the ⋯ — with the recipe doors present, five visible
+  // buttons would bury the three that matter. (Overflow is set explicitly per action, no
+  // heuristics — see DetailAction.)
+  const fold = !!opts?.recipeId
   if (opts?.onLeftover && !m.is_leftover)
-    actions.push({ key: 'leftover', label: t.detail.makeLeftover, icon: 'arrow-counter-clockwise-bold', run: opts.onLeftover })
+    actions.push({ key: 'leftover', label: t.detail.makeLeftover, icon: 'arrow-counter-clockwise-bold', overflow: fold, run: opts.onLeftover })
   if (opts?.onRemove)
-    actions.push({ key: 'remove', label: t.detail.removeFromPlan, tone: 'danger', run: opts.onRemove })
+    actions.push({ key: 'remove', label: t.detail.removeFromPlan, tone: 'danger', overflow: fold, run: opts.onRemove })
   return {
     kind: 'meal',
     title: m.title,
@@ -632,7 +648,10 @@ export function buildDay(
 //   · `buildRoutine` (the routine-card peek) → tapping a routine card runs it
 //     (/routine/:id/run); the card itself already carries one-tap ✎ and ▶, and
 //     « Partager » moved onto the routine's own scene (/routine/:id).
-//   · a recipe-linked MEAL → useOpenMeal navigates to the recipe view too.
+//   · a recipe-linked MEAL used to navigate to the recipe view too — REVERSED
+//     2026-09-02 (Marc): that left a planned meal with no door back to its day, so
+//     buildMeal now serves every meal and carries the day + recipe + Cuisiner doors.
+//     It is not an inter-tap: the peek holds what NEITHER page has (the plan).
 //   · a HABIT peek used to be rejected here on "the rows aren't tappable" grounds —
 //     that changed (Marc, Aug 2026): the board card's rows now open `buildHabit`
 //     (above), which passes the content bar (today's reading + week count + owner),

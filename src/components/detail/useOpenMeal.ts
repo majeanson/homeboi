@@ -1,30 +1,33 @@
-import { useNavigate } from 'react-router-dom'
 import { useEntityDetail } from './DetailProvider'
 import { buildMeal, type DetailCtx, type MealLike, type MealOpts } from './adapters'
 
 // The ONE answer to "a planned meal was tapped, now what?" — shared by every surface
-// that lists meals (the board heroes + rows, the moments view, the month grid, the day
-// page) so they can never disagree.
+// that lists meals (the board heroes + rows, the month grid) so they can never disagree.
 //
-// Tap the thing, get the thing: a meal that resolves a recipe goes STRAIGHT to that
-// recipe's view (/kitchen/recipe/:id) — no sheet in between offering « Ouvrir la
-// recette » / « Cuisiner », since the view carries both plus the photo, the tags, the
-// ingredients and the hearts. A meal with no recipe behind it has nowhere to jump, so
-// it opens the peek, where the plan actions (Voir la journée, Créer des restants,
-// Retirer du plan) live.
+// EVERY tapped meal opens the peek (Marc, 2026-09-02). It used to split: a meal that
+// resolved a recipe went STRAIGHT to /kitchen/recipe/:id under "tap the thing, get the
+// thing", and only a free-text meal peeked. That split cost the thing a plan is FOR —
+// the recipe view knows nothing about the day, so from a planned supper there was no
+// way back to the day it belongs to, and no « Voir la journée » anywhere on the path.
+// The peek is the only surface that holds both halves, so it now carries the day door,
+// « Ouvrir la recette » and a primary « Cuisiner » together.
 //
-// Resolution order matters, and mirrors what buildMeal used to do:
+// This is deliberately NOT the "menu-peek" the codebase deleted elsewhere: it does not
+// merely list ways to reach another page — it carries the PLAN (which day, which slot,
+// who cooks, restants, retirer du plan), which neither the recipe view nor the day page
+// shows. Accepted cost, chosen with eyes open: cooking tonight from the board's « Ce
+// soir » hero is 2 taps instead of 1 (tap-budget.spec.ts re-pinned to 2).
+//
+// Recipe resolution order matters:
 //   1. the RESOLVED recipe (useRecipeForMeal → by recipe_id, else by exact title), so a
-//      meal whose stored link went stale still lands on the recipe its title names;
-//   2. failing that, the raw `recipe_id` — the board can be tapped before RECIPES_KEY
-//      has loaded, and a linked meal must not peek-or-navigate depending on cache warmth.
-// Neither → a free-text meal ("Restes de poulet"), and the peek opens.
+//      meal whose stored link went stale still offers the recipe its title names;
+//   2. failing that, the raw `recipe_id` — a meal can be tapped before RECIPES_KEY has
+//      loaded, and the doors must not appear or vanish with cache warmth.
+// Neither → a free-text meal ("Restes de poulet"): the peek opens without recipe doors.
 export function useOpenMeal(ctx: DetailCtx): (m: MealLike, opts?: MealOpts) => void {
-  const nav = useNavigate()
   const detail = useEntityDetail()
   return (m, opts) => {
     const recipeId = ctx.recipeFor?.(m)?.id ?? m.recipe_id ?? null
-    if (recipeId) nav(`/kitchen/recipe/${recipeId}`)
-    else detail.open(buildMeal(m, ctx, opts))
+    detail.open(buildMeal(m, ctx, { ...opts, recipeId }))
   }
 }

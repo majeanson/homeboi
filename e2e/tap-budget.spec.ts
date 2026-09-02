@@ -140,17 +140,23 @@ test('liste: browse the flyers/deals — 2 taps (tab + the Circulaires shortcut)
 
 // ------------------------------------------------------------------- kitchen
 
-test('supper: cook tonight’s meal — 1 tap (the board hero row opens its recipe)', async ({ page }) => {
+test('supper: cook tonight’s meal — 2 taps (the board hero peeks, then Cuisiner)', async ({ page }) => {
   await boot(page)
   const { tap, count } = tapCounter()
-  // Tap the thing, get the thing. « Ce soir » resolves its recipe (by recipe_id, else
-  // by title — here the fixture's « Spaghetti maison » matches recipe rc1), so the row
-  // lands ON the recipe view. There used to be a peek in between offering « Ouvrir la
-  // recette » / « Cuisiner » — a menu about the recipe, costing a tap to get past.
+  // Re-pinned 1 → 2 on 2026-09-02, deliberately and on Marc's explicit call. « Ce soir »
+  // used to land straight ON the recipe view (1 tap). What that cost: a planned meal had
+  // NO door back to its day — the recipe view knows nothing about the plan — so every
+  // meal peeks now, and the peek carries « Voir la journée » beside « Ouvrir la recette »
+  // and the primary « Cuisiner ». A real regression on the kiosk's supper flow, budgeted
+  // on purpose: if it must be 1 again, the fix is a surface-scoped useOpenMeal, NOT
+  // deleting the day door.
   await tap(page.locator('.now-card__meal').filter({ hasText: 'Spaghetti maison' }).first()) // 1
-  await expect(page).toHaveURL(/\/kitchen\/recipe\/rc1$/)
-  await expect(page.locator('.recipe-actions .btn--primary')).toBeVisible({ timeout: 10_000 }) // Cuisiner
-  assertBudget('supper: cook tonight’s meal', count(), 1)
+  const sheet = page.locator('.detail-sheet')
+  await sheet.waitFor({ state: 'visible', timeout: 10_000 })
+  await expect(sheet.locator('.detail-sheet__actions').getByText('Voir la journée', { exact: true })).toBeVisible()
+  await tap(sheet.locator('.detail-sheet__actions .btn--primary')) // 2 — Cuisiner
+  await expect(page).toHaveURL(/\/kitchen\/recipe\/rc1\/cook/)
+  assertBudget('supper: cook tonight’s meal', count(), 2)
 })
 
 test('kitchen: see the week — 1 tap (the hub tab; Repas is the default sub-tab)', async ({ page }) => {

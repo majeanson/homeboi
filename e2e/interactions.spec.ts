@@ -1003,9 +1003,36 @@ test('a recipe-less meal still opens the peek, with its plan actions', async ({ 
   const actions = sheet.locator('.detail-sheet__actions')
   await expect(actions.getByText('Voir la journée', { exact: true })).toBeVisible()
   await expect(actions.getByText('Retirer du plan', { exact: true })).toBeVisible()
-  // …and none of the "go to the recipe" buttons that used to make this a menu.
+  // …and no recipe doors, because this meal resolves no recipe. (A meal that DOES is
+  // the test below — since 2026-09-02 it peeks too, rather than jumping.)
   await expect(actions.getByText('Ouvrir la recette', { exact: true })).toHaveCount(0)
   await expect(actions.getByText('Cuisiner', { exact: true })).toHaveCount(0)
+})
+
+// The other half, REVERSED on 2026-09-02 (Marc): a recipe-linked meal used to navigate
+// straight to /kitchen/recipe/:id, which left a planned meal with no door back to its
+// day. It peeks now, and the peek is the one surface carrying BOTH halves — the day and
+// the recipe. « Spaghetti maison » matches recipe rc1 by title in the fixture.
+test('a recipe-linked meal peeks too, carrying the day door AND the recipe doors', async ({ page }) => {
+  await APP('/board')(page)
+  await settle(page, '.board-wall')
+  await page.locator('.now-card__meal').filter({ hasText: 'Spaghetti maison' }).first().click()
+
+  const sheet = page.locator('.detail-sheet')
+  await sheet.waitFor({ state: 'visible', timeout: 10_000 })
+  // It stayed put — the jump is gone.
+  await expect(page).toHaveURL(/\/board$/)
+  const actions = sheet.locator('.detail-sheet__actions')
+  await expect(actions.getByText('Voir la journée', { exact: true })).toBeVisible()
+  await expect(actions.getByText('Ouvrir la recette', { exact: true })).toBeVisible()
+  // « Cuisiner » is the primary — it is what you opened a supper for.
+  await expect(sheet.locator('.detail-sheet__actions .btn--primary')).toHaveText(/Cuisiner/)
+  // The plan-editing tail folded into the ⋯ so the three doors above stay readable.
+  await expect(actions.getByText('Retirer du plan', { exact: true })).toHaveCount(0)
+  await expect(sheet.locator('.action-menu__btn')).toBeVisible()
+  // And the primary really does land in cook mode for THIS meal's recipe.
+  await sheet.locator('.detail-sheet__actions .btn--primary').click()
+  await expect(page).toHaveURL(/\/kitchen\/recipe\/rc1\/cook/)
 })
 
 // ──────────────────────── kid meal suggestion ──────────────────────────

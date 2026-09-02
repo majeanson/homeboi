@@ -421,6 +421,34 @@ Two reports from Marc, both chased to mechanisms rather than symptoms.
    that's the button Marc meant, the mechanics above don't cover it; adding a
    « liste » tile to the board ＋ is a product decision, not a bug fix.
 
+### C-septies. Asked by Marc, 2026-09-02 (evening) — the day scene's shape, and the meal peek restored
+
+Four asks, all shipped together:
+
+1. **The sub-tab row is now the FIRST thing in the day scene's body**, and the **weather
+   strip + the day-note headline moved INSIDE « Journée »**. They were above the tabs as
+   "the day's identity, not a face" — but they are context for the AGENDA, not for the
+   meal planner, and sitting above the picker they pushed the face choice down the screen.
+2. **Every tapped meal opens the peek again** — `useOpenMeal`'s split is REVERSED. A meal
+   that resolved a recipe used to navigate straight to `/kitchen/recipe/:id` under "tap
+   the thing, get the thing"; only a free-text meal peeked. That split cost the thing a
+   plan is FOR: the recipe view knows nothing about the day, so from a planned supper
+   there was **no door back to the day**. The peek is the only surface holding both
+   halves, so `buildMeal` now carries « Voir la journée » + « Ouvrir la recette » + a
+   primary « Cuisiner », with restants/retirer folded into the ⋯ (five visible buttons
+   would bury the three you came for). This is NOT the menu-peek the codebase deletes
+   elsewhere — it carries the PLAN (day, slot, cook), which neither page shows.
+   - **Accepted, budgeted regression, Marc's explicit call when asked:** cooking tonight
+     from the board's « Ce soir » hero is **2 taps, not 1**. `tap-budget.spec.ts` is
+     re-pinned 1 → 2 *with the reason written into it*: if it must be 1 again, the fix is
+     a surface-scoped `useOpenMeal`, never deleting the day door. ACTIONS.md footnote ¹⁰.
+3. **« Vider la journée » → « Vider les repas »**, key `clearDay` → `clearDayMeals`. It
+   lives on the « Repas » face only since the scene split, so the old label over-promised
+   (it never touched rendez-vous, corvées or the note).
+4. Guards: `interactions.spec.ts` « a recipe-linked meal peeks too, carrying the day door
+   AND the recipe doors » (new), the recipe-less case kept beside it, and the re-pinned
+   tap budget.
+
 ### C-sexies. STILL reported after C-quater, 2026-09-02 — and what production actually said
 
 Marc re-reported both bugs the same afternoon, with screenshots (« they always come

@@ -1264,7 +1264,9 @@ export const FR = {
     clearMeal: 'Effacer le repas',
     addAnother: 'Ajouter un autre',
     clearSlot: 'Vider ce repas',
-    clearDay: 'Vider la journée',
+    // Clears the MEALS of the day, not the day — it lives on the « Repas » face only
+    // (the scene split, 2026-09-02), so the old « Vider la journée » over-promised.
+    clearDayMeals: 'Vider les repas',
     manage: 'Gérer',
     moveUp: 'Monter',
     moveDown: 'Descendre',
