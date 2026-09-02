@@ -421,6 +421,29 @@ Two reports from Marc, both chased to mechanisms rather than symptoms.
    that's the button Marc meant, the mechanics above don't cover it; adding a
    « liste » tile to the board ＋ is a product decision, not a bug fix.
 
+### C-quinquies. Asked by Marc, 2026-09-02 — the day scene split into « Journée | Repas »
+
+Shipped inside `d7710d5` (three parallel sessions, one commit — this slice was the
+day-scene one; the message describes the liste/calendrier and deals slices). What changed:
+
+- **`/kitchen/day/:date` has two faces behind a `?vue=` SubTabs row** (the Voyage
+  pattern): « Journée » (default — rendez-vous, corvées, projets, à compléter, the
+  Avant-de-partir door) and « Repas » (the full DayEditor). The weather strip and the
+  day-note headline stay shared above the tabs.
+- **The door decides the landing.** Meal doors → `?vue=repas`: the kitchen grid's
+  pencil, the ＋ « Planifier un repas » day picker, the history pencil, a meal search
+  hit, the calendar day-⋯ « Planifier un repas ». Day doors → default « Journée »:
+  « Voir la journée » (calendar + event/meal peeks), « Planifier aujourd'hui/demain »,
+  the SimpleBoard tile.
+- **The kitchen day peek carries doors now** — `buildDay`'s zero-actions verdict was
+  REVERSED (ACTIONS.md ⁹): « Voir la journée » + primary « Planifier un repas », both
+  plain navigations so they survive a read-only guest.
+- Guards updated: `day-plan-lean.spec.ts` (faces + guest on both), `kitchen-meal-plan`
+  (locks the `?vue=repas` landing), state-matrix `day-plan` budget 178 → 228 (the one
+  deliberate chrome addition: the sub-tab row).
+- `t.kitchen.mealsHeading` removed (the « Repas » pill names the face; a heading
+  repeating the tab is a LEAN smell).
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**
