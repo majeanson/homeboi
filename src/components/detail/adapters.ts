@@ -446,6 +446,13 @@ export function buildListItem(
     aisle?: string
     dealMerchant?: string | null
     dealPrice?: string | null
+    /** The flyer product's own name ("Lait 2% 4L") — never on the row, so the peek
+     *  is where it gets said. */
+    dealName?: string | null
+    /** Preformatted validity ("jusqu'au 5 sept.") — the caller has the lang. */
+    dealUntil?: string | null
+    /** The validTo day is fully past (lib/deals dealEnded) → the loud warning chip. */
+    dealEnded?: boolean
     onToggle?: () => void
     onDelete?: () => void
   } = {},
@@ -453,8 +460,27 @@ export function buildListItem(
   const { t } = ctx
   const blocks: DetailBlock[] = []
   // The staged deal first — in the aisle it's the whole reason you're looking.
+  // Same facts as the cashier peek: name, store · price, validity — plus the
+  // « Aubaine terminée » chip (warn-tinted) once the validTo day is past.
   const dealBits = [opts.dealMerchant?.trim() || null, opts.dealPrice || null].filter((x): x is string => !!x)
-  if (dealBits.length) blocks.push({ kind: 'chips', label: t.list.dealLabel, chips: [dealBits.join(' · ')] })
+  const dealChips: string[] = []
+  const dealTones: (string | undefined)[] = []
+  if (opts.dealName?.trim()) {
+    dealChips.push(opts.dealName.trim())
+    dealTones.push(undefined)
+  }
+  if (dealBits.length) {
+    dealChips.push(dealBits.join(' · '))
+    dealTones.push(undefined)
+  }
+  if (opts.dealEnded) {
+    dealChips.push(opts.dealUntil ? `${t.shop.dealEnded} — ${opts.dealUntil}` : t.shop.dealEnded)
+    dealTones.push('#c2563a') // --terracotta-deep, the warn tone
+  } else if (opts.dealUntil) {
+    dealChips.push(opts.dealUntil)
+    dealTones.push(undefined)
+  }
+  if (dealChips.length) blocks.push({ kind: 'chips', label: t.list.dealLabel, chips: dealChips, tones: dealTones })
   if (opts.aisle) blocks.push({ kind: 'chips', label: t.list.aisleLabel, chips: [opts.aisle] })
   // The flyer-search synonyms are invisible on the row but decide whether a deal
   // is ever FOUND for this line — worth seeing before wondering why there's none.
@@ -538,12 +564,16 @@ export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailM
 }
 
 // — A whole DAY, informative (La cuisine week grid): the day's meals as a list +
-// the day note. No actions on purpose — the grid's pencil is the planner, so the
-// tap-peek and the edit button stay clearly distinct (Marc's ask). The cook name
-// is resolved by the caller (which holds the members), so this stays member-free. —
+// the day note, plus the two doors into the day scene's faces — « Planifier un
+// repas » (primary, `?vue=repas`, the pencil's landing) and « Voir la journée »
+// (the agenda face). It used to carry zero actions on purpose; Marc's 2026-09-02
+// ask flipped that — a tapped day should offer what to DO with it, not just the
+// meals as text. Both doors are plain navigations (the day scene gates its own
+// writes), so they stay for a read-only guest. The cook name is resolved by the
+// caller (which holds the members), so this stays member-free. —
 export function buildDay(
   ctx: DetailCtx,
-  opts: { label: string; accent?: string; meals: { slot: string; title: string; cook?: string | null }[]; note?: string | null },
+  opts: { label: string; day?: number; accent?: string; meals: { slot: string; title: string; cook?: string | null }[]; note?: string | null },
 ): DetailModel {
   const { t } = ctx
   const blocks: DetailBlock[] = []
@@ -555,12 +585,19 @@ export function buildDay(
     })
   else blocks.push({ kind: 'text', text: t.detail.dayEmpty })
   if (opts.note) blocks.push({ kind: 'text', text: opts.note, hand: true })
+  const actions: DetailModel['actions'] = opts.day
+    ? [
+        { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.day}` },
+        { key: 'meals', label: t.kitchen.planMeal, icon: CATS.meal.icon, primary: true, href: `/kitchen/day/${opts.day}?vue=repas` },
+      ]
+    : []
   return {
     kind: 'day',
     title: opts.label,
     icon: 'calendar-blank-bold',
     accent: opts.accent ?? CATS.meal.color,
     blocks,
+    actions,
   }
 }
 

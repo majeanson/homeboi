@@ -3,6 +3,7 @@ import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react
 import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
 import { isGuest } from './device'
+import { resolveTmpIdsIn, resolveTmpIdsInBody } from './tmpIds'
 import { bumpWriteCount } from './tourOffer'
 import { A_REGLER_KEY } from './queryKeys'
 
@@ -66,6 +67,14 @@ export async function writeWith<T = unknown>(
 ): Promise<WriteResult<T>> {
   const method = spec.method ?? 'POST'
   const affectedKeys = withAReglerKeys(path, spec.affectedKeys ?? [])
+  // E-41's online half (lib/tmpIds): a write whose caller captured an optimistic
+  // `tmp-…` id and fires LATER (a deferred delete held behind the undo toast, a
+  // clear-checked batch) resolves it to the real server id here, at the one
+  // chokepoint — the tmp-id DELETE used to match zero rows, answer 200, and leave
+  // the real row alive forever ("I delete items and they come back"). An id still
+  // unresolved (create itself queued) passes through; the outbox rewrite owns it.
+  const target = resolveTmpIdsIn(path)
+  const body = resolveTmpIdsInBody(spec.body)
 
   // Read-only guest session: refuse every write at the single chokepoint. We do
   // NOT apply the optimistic change, hit the network, or queue to the outbox — so
@@ -93,7 +102,7 @@ export async function writeWith<T = unknown>(
   const key = uuid()
 
   const queue = async (): Promise<WriteResult<T>> => {
-    await enqueue({ id: uuid(), key, path, method, body: spec.body, affectedKeys, createdAt: Date.now(), tmpId: spec.tmpId })
+    await enqueue({ id: uuid(), key, path: target, method, body, affectedKeys, createdAt: Date.now(), tmpId: spec.tmpId })
     return { data: null, queued: true }
   }
 
@@ -107,7 +116,7 @@ export async function writeWith<T = unknown>(
   }
 
   try {
-    const data = await api<T>(path, { method, body: spec.body, idempotencyKey: key })
+    const data = await api<T>(target, { method, body, idempotencyKey: key })
     return { data, queued: false }
   } catch (err) {
     // A network/transport failure rejects with a non-ApiError (TypeError) — queue

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '../EmptyState'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { mintTmpId } from '../../lib/tmpIds'
 import { useT } from '../../i18n'
 import { live } from '../../lib/query'
 import { isGuest } from '../../lib/device'
@@ -176,7 +177,7 @@ export function TodoSection({
     const value = text.trim()
     if (!value) return
     setAddText('')
-    const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
+    const tmpId = mintTmpId()
     // On a departure surface (show="checklists") a free-typed item is an « Avant de
     // partir » item for the viewed day — FLOORED to today — NOT a loose todo: it
     // carries the ad-hoc sentinel + a shared section so it groups with the day's

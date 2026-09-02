@@ -191,9 +191,11 @@ export function Kitchen() {
   // date → its day note (the per-day memo), if any.
   const noteFor = (date: number) => dayNotesQ.data?.notes?.find((n) => n.date === date)
 
-  // Tapping a day cell opens an INFORMATIVE day peek (the whole day's meals + note),
-  // distinct from the pencil that opens the planner — Marc's ask: in La cuisine the
-  // tap informs, the edit button plans. We guard against the drag: a pointerdown that
+  // Tapping a day cell opens the day peek (the whole day's meals + note) — which now
+  // also carries the two doors into the day scene's faces (« Planifier un repas » /
+  // « Voir la journée »), so a tapped day offers what to DO next, not just the meals
+  // as text (Marc, 2026-09-02). The pencil stays the direct planner door
+  // (?vue=repas). We guard against the drag: a pointerdown that
   // then moves >6px is a reschedule, not a tap, so it doesn't also open the peek.
   const tapDownRef = useRef<{ x: number; y: number } | null>(null)
   const boardMembers = boardQ.data?.members ?? []
@@ -205,7 +207,10 @@ export function Kitchen() {
     const rel = date === weekStart ? t.kitchen.todayShort : date === addLocalDays(weekStart, 1) ? t.kitchen.tomorrowShort : null
     const label = (rel ? `${rel} · ` : '') + formatDay(date, lang).replace(/^./, (c) => c.toUpperCase())
     detail.open(
-      buildDay({ t, lang, members: [] }, { label, accent: mealPrefs.color(mealPrefs.hero), meals: dayMeals, note: noteFor(date)?.text ?? null }),
+      buildDay(
+        { t, lang, members: [] },
+        { label, day: date, accent: mealPrefs.color(mealPrefs.hero), meals: dayMeals, note: noteFor(date)?.text ?? null },
+      ),
     )
   }
 
@@ -603,12 +608,14 @@ export function Kitchen() {
                     </span>
                     )}
                     {/* A small, icon-only edit button — the lone tap target that
-                        opens the day's editor. No "Gérer" label: the pencil says it
-                        and keeps the pill tiny so meal info keeps the width. */}
+                        opens the day's editor, landing on its « Repas » face
+                        (?vue=repas — a kitchen door means meals). No "Gérer" label:
+                        the pencil says it and keeps the pill tiny so meal info
+                        keeps the width. */}
                     <button
                       type="button"
                       className="kitchen__day-manage"
-                      onClick={() => nav(`/kitchen/day/${date}`)}
+                      onClick={() => nav(`/kitchen/day/${date}?vue=repas`)}
                       aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                       title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                     >

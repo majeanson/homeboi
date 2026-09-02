@@ -7,7 +7,7 @@ import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { SubTabs } from './SubTabs'
-import { type Deal, type FlyerSummary } from '../lib/deals'
+import { type Deal, type FlyerSummary, dealDate } from '../lib/deals'
 import { type AddedTo } from '../lib/picks'
 import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
@@ -319,13 +319,7 @@ export function FlyerViewer({
     return { page: page.page, v, h, col }
   }, [data, selected, t])
 
-  const fmtDate = (iso: string | null) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    return Number.isNaN(d.getTime())
-      ? ''
-      : d.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' })
-  }
+  const fmtDate = (iso: string | null) => dealDate(iso, lang)
 
   // The flyer's validity span for the header — "11 juin au 17 juin". This is the
   // date the cashier checks; reebee shows it but our reconstruction dropped it.

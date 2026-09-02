@@ -1274,7 +1274,9 @@ export const FR = {
     note: 'Note du jour',
     notePlaceholder: 'Une note pour ce jour…',
     clearNote: 'Effacer la note',
-    mealsHeading: 'Les repas',
+    // The day scene's two faces (?vue= on /kitchen/day/:date) — the day's agenda
+    // vs its meal planner. Meal doors land on « Repas », day doors on « Journée ».
+    dayVues: { jour: 'Journée', repas: 'Repas' },
     suggestAi: 'Idées de l’IA',
     suggestFromRecipes: 'Avec mes recettes',
     suggestAiOff: 'IA indisponible ici.',
@@ -3175,6 +3177,9 @@ export const FR = {
     searchOffline: 'Hors ligne — la recherche d’aubaines a besoin d’Internet.',
     was: 'avant',
     until: 'jusqu’au',
+    // Le « ! » sur la ligne de liste + l’aperçu zoomé / le peek : le jour validTo
+    // de l’aubaine agrafée est passé — le prix affiché ne tient probablement plus.
+    dealEnded: 'Aubaine terminée',
     dateRangeTo: 'au',
     flyerOfficial: 'Aperçu',
     flyerReconstructed: 'Aperçu',

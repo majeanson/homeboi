@@ -364,6 +364,32 @@ console.log(
 // Offline app shell for the installed PWA (wall tablet / iPad). No-op in dev.
 registerSw()
 
+// A deploy deletes the previous build's hashed chunks; a page loaded BEFORE it
+// that then lazy-imports a route gets a 404/504 (worker/index.ts + the SW both
+// refuse the SPA-fallback-HTML-as-JS poison), the import() rejects — and
+// React.lazy memoises the REJECTION, so that route stays dead for the life of
+// the document. Nothing recovered it short of a hand-made hard refresh. Vite
+// surfaces exactly this as `vite:preloadError`: reload once to pick up the new
+// build (whose chunks exist). The sessionStorage stamp keeps a genuinely broken
+// asset (rare: SW poison, proxy) from looping the reload — after one attempt
+// per minute we let the app-level ErrorBoundary say « Recharger » instead.
+window.addEventListener('vite:preloadError', (e) => {
+  let last = 0
+  try {
+    last = Number(sessionStorage.getItem('bb-preload-reload') || 0)
+  } catch {
+    /* storage broken → still reload; the loop guard just degrades */
+  }
+  if (Date.now() - last < 60_000) return
+  try {
+    sessionStorage.setItem('bb-preload-reload', String(Date.now()))
+  } catch {
+    /* ignore */
+  }
+  e.preventDefault() // we own the recovery — don't also throw into the boundary
+  window.location.reload()
+})
+
 // Keep --vvh/--vvt/--kb in sync with the visual viewport so modal and sheet
 // action buttons stay visible above the on-screen keyboard (iOS overlays it).
 trackVisualViewport()

@@ -86,14 +86,14 @@ at all (❌).
 | Greeting · « Depuis ce matin » | ✅ the greeting IS a button — now named (`aria-label`) + a `greeting` help entry⁸ | — | — | — | ✅ armed « ? » explains it | — | ✅ |
 | Face · switch | ✅ chipᴹ / `MemberSwitcher`ᴷ | — | — | — | — | — | ✅ |
 | View · Grille/Mois/Année · day plan · departure | ✅ `BoardViewToggle`, card pills, mini corners | — | — | ＋ `plan-today/tomorrow/departure` | — | — | ✅ |
-| Mois · day · read / add to it | ✅ tap the cell (tap again = close) | — | ➖ the pane below IS the day | day ⋯ (rendez-vous / corvée / repas / note) | ✅ « Voir la journée » → `/kitchen/day/:date` | — | ✅ |
+| Mois · day · read / add to it | ✅ tap the cell (tap again = close) | — | ➖ the pane below IS the day | day ⋯ (rendez-vous / corvée / repas → `?vue=repas` / note) | ✅ « Voir la journée » → `/kitchen/day/:date` (the « Journée » face) | — | ✅ |
 | Mois · highlight one kind | ✅ the legend chips are toggles (`aria-pressed`, `?type=`) — the pane becomes that kind's month roll-up | — | ➖ roll-up rows keep their own peeks (one renderer) | — | ➖ device-local reading lens, no setting | ➖ nothing written | ✅ real buttons, Enter/Space |
 
 ### La cuisine (`pages/Kitchen.tsx`, `components/kitchen/*`)
 
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Day plan · glance / plan empty / full edit | ✅ tap summary; « À planifier » → inline field; pencil → `/kitchen/day/:date` | ✅ drag day→day (`dayDnd`) | ✅ `buildDay` (zero actions, deliberate⁹) | ＋ `meal` | kitchen▸meals (slots/hero/hours) | — | ✅ |
+| Day plan · glance / plan empty / full edit | ✅ tap summary; « À planifier » → inline field; pencil → `/kitchen/day/:date?vue=repas` (the scene's « Repas » face; day doors land the default « Journée » face) | ✅ drag day→day (`dayDnd`) | ✅ `buildDay` (two doors since 2026-09-02: « Voir la journée » + primary « Planifier un repas »⁹) | ＋ `meal` (`?vue=repas`) | kitchen▸meals (slots/hero/hours) | — | ✅ |
 | Idées / Restants · add / plan / rename / delete | ✅ `EntityCombobox`; chip tap → `MealPlanPicker`; ✏️/🗑 behind ⚙¹⁰ | — | — | ＋ `leftovers` | — | deferred | ✅ (⚙) |
 | Meal row (day editor) · reorder / leftover / delete | ✅ ✏️ + row ⋯ (`MealRows.tsx:160`) | ➖ no drag (⋯ Monter/Descendre is the door) | — | — | — | ⋯ confirm-free | ✅ |
 | Pantry low · to list / delete / rename | ✅ check = to-list; ✏️ + 🗑 behind ⚙¹⁰ | — | — | ✅ `SectionAdd` ×2 + ＋ `pantry` | — | deferred | ✅ (⚙) |
@@ -223,7 +223,7 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
       every add to serve the rarest one. Revisit only if adding-to-use-soon becomes a
       daily gesture.
 - [x] ² ➖ fêtes/announce rows stay static: a fête is fully self-describing (name + date, both already on the row) — a peek would carry nothing the row doesn't ("the peek is CONTENT").
-- [x] ⁹ ➖ kept: recipe/routine/day peeks retired under "tap the thing, get the thing" (`adapters.ts`); `buildDay` zero-actions; Maison in-page add (FAB-only).
+- [x] ⁹ ➖ kept: recipe/routine peeks retired under "tap the thing, get the thing" (`adapters.ts`); Maison in-page add (FAB-only). `buildDay`'s zero-actions verdict was REVERSED 2026-09-02 (Marc): the kitchen day peek now carries the two `?vue=` doors (« Voir la journée » / « Planifier un repas ») — content plus doors, still no inter-tap menu.
 - [x] ³ ➖→🟡 recorded: chore/home-project edit from the board — peek stays Fait/Reporter (calm glance surface); the edit door is Réglages. Revisit only if Marc trips on it.
 - [x] ¹⁶ **fixed**: contact delete now one peek ⋯ away (confirm-then-DELETE, same heavy tier and same door as a pet's — `buildContact.onDelete`, `Maison.deleteContact`).
 - [x] ¹⁷ ➖ group delete keeps confirm-no-undo: the membership cascade makes it the heavy tier.

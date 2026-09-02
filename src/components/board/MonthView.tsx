@@ -10,6 +10,7 @@ import { useUndoToast } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
 import { useAuth } from '../../lib/auth'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
+import { healOnError } from '../../lib/query'
 import { type CarModel } from '../../lib/car'
 import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDay, formatDayLong, weekdayShort, dayNum, capitalize as cap } from '../../lib/format'
@@ -335,10 +336,13 @@ export function MonthView({
   const from = grid.days[0]
   const to = grid.days[grid.days.length - 1] + DAY
 
+  // healOnError: this surface has no poll, so before it a failed window sat blank
+  // until the one manual « Réessayer » tap (ddf0a4e) — now it also heals itself.
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: [...MONTH_KEY, from],
     queryFn: () => api<MonthData>(`month?from=${from}&to=${to}`),
     staleTime: 30_000,
+    ...healOnError,
   })
 
   // « L'auto » resolved across the visible range, so the day panel can show the
@@ -348,6 +352,7 @@ export function MonthView({
     queryKey: [...CAR_KEY, from],
     queryFn: () => api<CarModel>(`car?from=${from}&to=${to}`),
     staleTime: 30_000,
+    ...healOnError,
   })
 
   // One pass to bucket everything by day. The cell dots and the detail panel both
@@ -476,7 +481,9 @@ export function MonthView({
               { icon: 'hand-heart-bold', label: t.operator.addChore, onSelect: () => nav(`/chore/new?start=${selected}`) },
             ] as ActionMenuItem[])
           : []),
-        { icon: 'fork-knife-bold', label: t.kitchen.planMeal, onSelect: () => nav(`/kitchen/day/${selected}`) },
+        // « Planifier un repas » is a MEAL door → the day scene's Repas face; the
+        // day note is the scene's shared headline, reachable on the default face.
+        { icon: 'fork-knife-bold', label: t.kitchen.planMeal, onSelect: () => nav(`/kitchen/day/${selected}?vue=repas`) },
         { icon: 'pencil-simple-bold', label: t.kitchen.note, onSelect: () => nav(`/kitchen/day/${selected}`) },
         // …and the one row that isn't an add: the door to « Le point du jour », where a
         // habit is marked, edited (RowActions ▸ ✎) or created. The panel below only

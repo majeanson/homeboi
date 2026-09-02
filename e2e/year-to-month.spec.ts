@@ -40,6 +40,32 @@ test('a mini-month opens THAT month, and asks the server for its window', async 
   await expect.poll(() => windows.length, { timeout: 10_000 }).toBeGreaterThan(before)
 })
 
+test('a year whose fetch fails says so — never a lying « rien cette année »', async ({ page }) => {
+  // The unfixed twin of the month bug (Marc, 2026-09-02: « my calendar doesn't
+  // work and can't load until I do a hard refresh »): /api/year failed once,
+  // YearView had no error state, so it painted twelve blank mini-months plus a
+  // calm "nothing this year" — with no retry door and (no poll on this surface)
+  // no automatic retry, ever. Now it wears the same LoadError face as Mois, and
+  // « Réessayer » actually recovers once the server does.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await page.route('**/api/year**', (route) => route.fulfill({ status: 500, body: 'nope' }))
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', boardView: 'annee' })
+  await page.goto('/board')
+  await page.locator('.yearv').waitFor({ state: 'visible', timeout: 15_000 })
+
+  await expect(page.locator('.yearv .load-error')).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('.yearv .load-error button')).toHaveCount(1)
+  // The failed read must not masquerade as an empty year.
+  await expect(page.locator('.yearv .empty-state')).toHaveCount(0)
+
+  // Server recovers → « Réessayer » brings the year back (mockApi's fixture).
+  await page.unroute('**/api/year**')
+  await page.locator('.yearv .load-error button').click()
+  await expect(page.locator('.yearv .load-error')).toHaveCount(0, { timeout: 20_000 })
+})
+
 test('a month whose fetch fails still offers the way out — online', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })

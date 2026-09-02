@@ -1,6 +1,7 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { api, ApiError } from './api'
 import { emitAuthLost } from './authEvents'
+import { recordTmpId, resolveTmpIdsIn, resolveTmpIdsInBody } from './tmpIds'
 
 // The offline write queue (NFR-OFFLINE-1). Writes made while offline are appended
 // here (IndexedDB, survives reboot) and REPLAYED in order on reconnect. Each entry
@@ -203,7 +204,16 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
     for (let i = 0; i < entries.length; i++) {
       const e = entries[i]
       try {
-        const res = await api(e.path, { method: e.method, body: e.body, idempotencyKey: e.key, replay: true })
+        // A queued op can reference a tmp id whose create resolved OUTSIDE this
+        // queue (it landed online; only the follow-up got queued on the flaky
+        // moment). The in-queue rewrite below can't see that case — the session
+        // registry (lib/tmpIds) can, so resolve through it at send time.
+        const res = await api(resolveTmpIdsIn(e.path), {
+          method: e.method,
+          body: resolveTmpIdsInBody(e.body),
+          idempotencyKey: e.key,
+          replay: true,
+        })
         await remove(e.id)
         e.affectedKeys.forEach((k) => touched.add(JSON.stringify(k)))
         // E-41: this create stood in for a tmp row — patch the real id into every
@@ -211,6 +221,9 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
         // the rewrite so a mid-replay interruption doesn't lose it.
         const realId = e.tmpId ? extractCreatedId(res) : null
         if (e.tmpId && realId) {
+          // …and teach the session registry too, so a write NOT yet queued (e.g.
+          // a deferred delete still held behind the undo toast) resolves as well.
+          recordTmpId(e.tmpId, realId)
           for (let j = i + 1; j < entries.length; j++) {
             const rewritten = rewriteTmpId(entries[j], e.tmpId, realId)
             if (rewritten !== entries[j]) {

@@ -44,6 +44,25 @@
   /* The backdrop closes on tap; the caption must not swallow that. */
   pointer-events: none;
 }
+/* The caption's structured lines (La liste's staged deal, cashier-peek facts):
+   each fact its own centred line inside the pill. */
+.zoom-overlay__cap > span {
+  display: block;
+}
+.zoom-cap__name {
+  font-weight: 600;
+}
+.zoom-cap__price {
+  font-size: 1rem;
+  font-weight: 700;
+}
+/* « Aubaine terminée » — a warm alarm that stays legible on the dark scrim (the
+   overlay backdrop is dark in BOTH themes, so --warn's paper terracotta is not
+   used here). */
+.zoom-cap__ended {
+  color: #ffb38a;
+  font-weight: 600;
+}
 
 .zoom-overlay__close {
   position: fixed;
@@ -491,6 +510,17 @@
   font-size: 0.8rem;
   color: var(--ink-soft);
   margin-top: 0.1rem;
+}
+/* « ! Aubaine terminée » — the staged deal's validTo day is past, so the price on
+   the row probably no longer applies. A quiet warn beside the deal chip, visible
+   while scanning the list (the zoomed clipping + the peek spell it out). */
+.list-row__deal-ended {
+  color: var(--warn);
+  font-weight: 600;
+  margin-left: 0.35rem;
+}
+.list-row__deal-ended:first-child {
+  margin-left: 0;
 }
 /* The linked flyer item's clipping image, in the row's tile slot. */
 .list-row__thumb {

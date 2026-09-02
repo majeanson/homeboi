@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { useUndoToast } from './toast'
 import { onOutboxChange, outboxCount } from './outbox'
+import { onTmpIdResolved, resolveId } from './tmpIds'
 
 // The ONE bulletproof "calm delete / clear" for a LIVE-POLLED list — codified from
 // the pattern La liste and À cocher already used, so every list shares one
@@ -52,9 +53,16 @@ function subscribe(listener: () => void): () => void {
   }
 }
 
+// Hide/unhide track BOTH spellings of an id (the optimistic `tmp-…` one and its
+// resolved server id, lib/tmpIds): a delete gestured on a tmp row must keep hiding
+// the row after the refetch swaps in its real-id twin — otherwise the "deleted"
+// item visibly comes back mid-undo, and worse, unhide can't find what hide added.
 function hideIds(scope: string, ids: string[]): void {
   const next = new Set(buckets.get(scope) ?? EMPTY)
-  ids.forEach((id) => next.add(id))
+  ids.forEach((id) => {
+    next.add(id)
+    next.add(resolveId(id))
+  })
   buckets.set(scope, next)
   emit()
 }
@@ -63,11 +71,29 @@ function unhideIds(scope: string, ids: string[]): void {
   const cur = buckets.get(scope)
   if (!cur) return
   const next = new Set(cur)
-  ids.forEach((id) => next.delete(id))
+  ids.forEach((id) => {
+    next.delete(id)
+    next.delete(resolveId(id))
+  })
   if (next.size) buckets.set(scope, next)
   else buckets.delete(scope)
   emit()
 }
+
+// A tmp id hidden BEFORE its create resolved: add the freshly-learned real id
+// beside it in every bucket (keeping the tmp spelling, which cached frames may
+// still render), so the row stays hidden across the tmp→real swap.
+onTmpIdResolved((tmpId, realId) => {
+  let changed = false
+  for (const [scope, set] of buckets) {
+    if (!set.has(tmpId) || set.has(realId)) continue
+    const next = new Set(set)
+    next.add(realId)
+    buckets.set(scope, next)
+    changed = true
+  }
+  if (changed) emit()
+})
 
 // Un-hide `ids` only once a FRESH frame has actually arrived for the scope — not
 // merely once a refetch has SETTLED. `refetchQueries` resolves even when the fetch

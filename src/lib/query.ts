@@ -124,3 +124,17 @@ export const live = {
   staleTime: 0,
   meta: { live: true },
 } as const
+
+// For a BROWSE surface that deliberately has no poll (Mois, L'année, L'auto's
+// month read — D-18: fetched when the view opens, never polled): the client
+// default is `refetchOnWindowFocus: false` and retries stop after 2, so once a
+// fetch failed NOTHING ever retried it — the calendar sat blank until a hard
+// refresh (Marc, 2026-09-02: « my calendar doesn't work and can't load until I
+// do a hard refresh »). This heals failure WITHOUT polling success: re-fetch on
+// re-focus (free when the data is fine — staleTime still gates it), and only
+// while the query sits in error, retry on a quiet interval. The « Réessayer »
+// button (LoadError) stays the immediate manual door.
+export const healOnError = {
+  refetchOnWindowFocus: true,
+  refetchInterval: (q: { state: { status: string } }) => (q.state.status === 'error' ? 60_000 : false),
+} as const

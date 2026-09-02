@@ -120,11 +120,26 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   // Dedup key — see Options.idempotencyKey (B-9: sent on the online attempt too now).
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
 
+  const payload = opts.body === undefined ? undefined : isBlob ? (opts.body as Blob) : JSON.stringify(opts.body)
+
+  // A write fired while the page is going away or hidden (the undo toast flushes
+  // its held deletes on pagehide/lock — lib/toast) is aborted with the document
+  // unless it asks to outlive it. keepalive carries a small body past teardown;
+  // blobs and big payloads keep the normal path (keepalive's quota is 64 KB).
+  const keepalive =
+    method !== 'GET' &&
+    method !== 'HEAD' &&
+    !isBlob &&
+    (typeof payload !== 'string' || payload.length < 30_000) &&
+    typeof document !== 'undefined' &&
+    document.visibilityState === 'hidden'
+
   const res = await fetch(`/api/${path.replace(/^\/+/, '')}`, {
     method,
     headers,
     credentials: 'same-origin',
-    body: opts.body === undefined ? undefined : isBlob ? (opts.body as Blob) : JSON.stringify(opts.body),
+    body: payload,
+    keepalive: keepalive || undefined,
   })
 
   // A Workers AI call degraded server-side: the handler tagged the response so we

@@ -21,18 +21,22 @@ const PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
 /** The board fixture with a real image on the first item's staged deal. */
-function boardWithClipping() {
+function boardWithClipping(opts: { validTo?: string } = {}) {
   const board = JSON.parse(JSON.stringify(BOARD))
   const item = board.list[0]
   const d = JSON.parse(item.deal_json)
   d.image = PNG
+  if (opts.validTo !== undefined) d.validTo = opts.validTo
   item.deal_json = JSON.stringify(d)
   return board
 }
 
-async function openListe(page: Page, opts: { clipping?: boolean } = {}) {
+async function openListe(page: Page, opts: { clipping?: boolean; validTo?: string } = {}) {
   await page.setViewportSize({ width: 390, height: 844 })
-  await mockApi(page, opts.clipping ? { overrides: { board: boardWithClipping() } } : {})
+  await mockApi(
+    page,
+    opts.clipping ? { overrides: { board: boardWithClipping({ validTo: opts.validTo }) } } : {},
+  )
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/liste')
   await page.locator('.list-row').first().waitFor()
@@ -83,13 +87,38 @@ test('tapping a clipping zooms the picture and names the deal under it', async (
 
   await expect(page.locator('.zoom-overlay')).toBeVisible()
   // The whole reason the caption exists: « est-ce encore l'aubaine ? » answered
-  // without leaving the list — the item, the store and the price.
+  // without leaving the list — the item, the store, the price, and (cashier-peek
+  // parity) the flyer product's own name.
   const cap = page.locator('.zoom-overlay__cap')
   await expect(cap).toContainText('Super C')
   await expect(cap).toContainText('4,99')
+  await expect(cap).toContainText('Lait 2% 4L')
 
   // The caption must not eat the backdrop tap that closes the viewer.
   await expect(cap).toHaveCSS('pointer-events', 'none')
+})
+
+test('an ended deal is flagged on the row, and the zoom caption says it loud', async ({ page }) => {
+  // validTo well in the past → dealEnded. The fixture's default deal has no
+  // validTo (never flagged — unknown ≠ ended), which the base test above covers.
+  await openListe(page, { clipping: true, validTo: '2020-01-05' })
+
+  // The quick « ! » indicator, readable while scanning the list itself.
+  const warn = page.locator('.list-row__deal-ended').first()
+  await expect(warn).toBeVisible()
+  await expect(warn).toContainText('Aubaine terminée')
+
+  // …and the zoomed clipping spells it out with the date it ran to.
+  await page.locator('.list-row__img--zoom img').first().click()
+  const cap = page.locator('.zoom-overlay__cap')
+  await expect(cap.locator('.zoom-cap__ended')).toContainText('Aubaine terminée')
+  await expect(cap).toContainText('janv.')
+})
+
+test('a live deal shows no ended flag', async ({ page }) => {
+  // A validTo far in the future must NOT trip the warning.
+  await openListe(page, { clipping: true, validTo: '2099-12-31' })
+  await expect(page.locator('.list-row__deal-ended')).toHaveCount(0)
 })
 
 test('press and hold a row opens the peek; « Modifier » inside it opens the editor', async ({ page }) => {
@@ -109,6 +138,10 @@ test('press and hold a row opens the peek; « Modifier » inside it opens the ed
   // l'a mis ? » without leaving the list — the editor is one tap further, inside.
   const peek = page.locator('.detail-sheet')
   await expect(peek).toBeVisible()
+  // Cashier-peek parity: the staged deal's own product name and store · price
+  // are spelled out in the peek, not just the row's short chip.
+  await expect(peek).toContainText('Lait 2% 4L')
+  await expect(peek).toContainText('Super C')
   await peek.getByRole('button', { name: /Modifier l’article/ }).click()
   await expect(page).toHaveURL(/\/liste\/item\//)
 })

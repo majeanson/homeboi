@@ -41,4 +41,29 @@ export interface Pick {
 
 // fr-CA convention (the household + the flyers are Québec): comma decimal, the
 // dollar sign AFTER the amount with a non-breaking space — "4,99 $", not "$4.99".
+// The short flyer date ("5 sept." / "Sep 5") — the ONE implementation for every
+// deal surface (DealCard, CashierMode, FlyerViewer, La liste's zoom caption),
+// which each used to carry an identical local copy.
+export function dealDate(iso: string | null, lang: 'fr' | 'en'): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' })
+}
+
+// « Est-ce encore l'aubaine ? » answered structurally: the deal has ENDED once its
+// validTo DAY is fully past — valid THROUGH that day, so it is never flagged early
+// on its own last day. The calendar date is read literally as LOCAL rather than
+// through Date parsing (new Date('2026-09-01') is UTC midnight = the evening of
+// Aug 31 in Québec — off by a day). No / unparseable validTo → not flagged:
+// unknown validity is not the same thing as an ended deal.
+export function dealEnded(validTo: string | null | undefined, now = Date.now()): boolean {
+  if (!validTo) return false
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(validTo)
+  if (!m) return false
+  const endOfDay = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + 1)
+  return now >= endOfDay.getTime()
+}
+
 export const money = (n: number | null): string => (n == null ? '' : `${n.toFixed(2).replace('.', ',')} $`)

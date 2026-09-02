@@ -1096,7 +1096,8 @@ export const EN: typeof FR = {
     note: 'Day note',
     notePlaceholder: 'A note for this day…',
     clearNote: 'Clear note',
-    mealsHeading: 'Meals',
+    // The day scene's two faces (?vue= on /kitchen/day/:date).
+    dayVues: { jour: 'Day', repas: 'Meals' },
     clearText: 'Clear text',
     suggestAi: 'AI ideas',
     suggestFromRecipes: 'From my recipes',
@@ -2883,6 +2884,7 @@ export const EN: typeof FR = {
     searchOffline: 'Offline — searching the deals needs the internet.',
     was: 'was',
     until: 'until',
+    dealEnded: 'Deal ended',
     dateRangeTo: 'to',
     flyerOfficial: 'Preview',
     flyerReconstructed: 'Preview',

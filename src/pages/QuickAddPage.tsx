@@ -2,7 +2,9 @@ import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useWrite } from '../lib/write'
-import { useUndoToast } from '../lib/toast'
+import { useUndoToast, useNotice } from '../lib/toast'
+import { mintTmpId } from '../lib/tmpIds'
+import { spliceListLine } from '../lib/listAdd'
 import { isGuest } from '../lib/device'
 import { useT } from '../i18n'
 import { pictoFor } from '../lib/picto'
@@ -29,6 +31,7 @@ export function QuickAddPage() {
   const t = useT()
   const write = useWrite()
   const undo = useUndoToast()
+  const notice = useNotice()
   const close = useSceneClose('/liste')
   useEscapeKey(close)
   const items = useQuickItems()
@@ -61,28 +64,53 @@ export function QuickAddPage() {
   // Offer a free-text add only when what's typed isn't already a known item.
   const canAddTyped = fq.length > 0 && !items.some((i) => fold(i.label) === fq)
 
-  // Add a line (with its remembered flyer synonyms) and refresh so it drops out of
-  // the candidate set on the next render. Best-effort, like the rest of quick-add.
-  async function postAdd(text: string, terms: string[]) {
-    await write('list', {
+  // Add a line (with its remembered flyer synonyms). The optimistic temp row (the
+  // shared splice every list door uses now) is what makes an offline/queued add
+  // visible on La liste at once; before it, this page ticked « Ajouté N » and
+  // locked the chip ✓ off LOCAL state alone while nothing appeared on the list.
+  // Returns whether the write landed or queued — a server rejection (4xx/5xx) was
+  // 100 % invisible here (`.catch(() => {})`, the only write site with no error
+  // path), which read as « the quick add doesn't add any item at all ».
+  async function postAdd(text: string, terms: string[]): Promise<boolean> {
+    const tmpId = mintTmpId()
+    const res = await write('list', {
       method: 'POST',
       body: terms.length ? { text, search_terms: terms } : { text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
-    }).catch(() => {})
+      optimistic: (qc) => spliceListLine(qc, tmpId, text),
+      tmpId,
+    }).catch(() => null)
+    return res != null
   }
 
+  // Lock the chip ✓ at once (the tap must feel instant), but a REJECTED write
+  // un-locks it and says so once — the ✓ must never certify a write that the
+  // server refused. (A queued offline write counts as landed: the outbox owns it,
+  // and the optimistic row is already on the list.)
+  function reportFailed(key: string) {
+    setAdded((s) => {
+      const n = new Set(s)
+      n.delete(key)
+      return n
+    })
+    notice(t.common.saveFailed)
+  }
   function add(item: QuickItem) {
     if (added.has(item.key)) return
-    void postAdd(item.label, item.searchTerms)
     setAdded((s) => new Set(s).add(item.key))
+    void postAdd(item.label, item.searchTerms).then((ok) => {
+      if (!ok) reportFailed(item.key)
+    })
   }
   function addTyped() {
     const text = q.trim()
     if (!text) return
     const key = `typed:${fold(text)}`
-    void postAdd(text, [])
     setAdded((s) => new Set(s).add(key))
     setQ('')
+    void postAdd(text, []).then((ok) => {
+      if (!ok) reportFailed(key)
+    })
   }
 
   // Swipe a suggestion away → hide it now, hold the real removal behind the undo

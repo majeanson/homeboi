@@ -1,5 +1,5 @@
 import { useLang, useT } from '../i18n'
-import { type Deal, money } from '../lib/deals'
+import { type Deal, money, dealDate } from '../lib/deals'
 import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { InlineIcon } from './Icon'
@@ -47,13 +47,7 @@ export function DealCard({
   // Read-only guest: viewing the deal + opening the flyer are reads (keep), but
   // add-to-list / choose / stage all write — hide them.
   const ro = isGuest()
-  const fmtDate = (iso: string | null) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    return Number.isNaN(d.getTime())
-      ? ''
-      : d.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' })
-  }
+  const fmtDate = (iso: string | null) => dealDate(iso, lang)
 
   return (
     <li className={`deal${isBest ? ' deal--best' : ''}${isChosen ? ' deal--chosen' : ''}`}>

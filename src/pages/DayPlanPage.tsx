@@ -20,6 +20,8 @@ import { PairPrompt } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
 import { Cluster } from '../components/Layout'
 import { SceneHead } from '../components/SceneHead'
+import { SubTabs } from '../components/SubTabs'
+import { useTabParam } from '../lib/tabParam'
 import { Act } from '../components/board/Act'
 import { SecLabel } from '../components/board/BoardCard'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
@@ -75,13 +77,23 @@ interface DayItemsData {
   tripPlans?: { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string }[]
 }
 
-// /kitchen/day/:date — one day's full meal-planning editor, as a full-screen
-// .scene route (was the DayManageSheet bottom sheet). A height-capped sheet floats
+// /kitchen/day/:date — one day's planner, as a full-screen .scene route (was the
+// DayManageSheet bottom sheet). A height-capped sheet floats
 // above the mobile keyboard, so its lower inputs (add a meal, the note) stranded
 // under the keyboard; as a scene the page pins to the visible viewport and scrolls.
-// Reached two ways — the ＋ "Planifier un repas" day picker and the grid's pencil —
-// both navigate here. This page OWNS the editing state + handlers (lifted off the
+// This page OWNS the editing state + handlers (lifted off the
 // Kitchen page, which is now a read-only glance); DayEditor renders them.
+//
+// The scene has TWO FACES behind one sub-tab row (`?vue=`, the Voyage pattern):
+// « Journée » (default) — the day's agenda (rendez-vous, corvées, projets, à
+// compléter, the Avant-de-partir door); « Repas » — the full meal planner
+// (DayEditor). One day scene had grown both jobs stacked, and which one you came
+// for depended on the door: a MEAL door (the kitchen grid's pencil, the ＋
+// « Planifier un repas » picker, the history pencil, a meal search hit, the
+// calendar ⋯ « Planifier un repas ») lands `?vue=repas`; every DAY door (« Voir la
+// journée », « Planifier aujourd'hui/demain », the calendar cell) lands the
+// default « Journée » (Marc, 2026-09-02). The weather strip and the day's
+// note-headline stay ABOVE the tabs — they are the day's identity, not a face.
 //
 // No DetailProvider: nothing on this page peeks any more. A meal that carries a recipe
 // navigates straight to that recipe's view, and MealRows already owns the per-row
@@ -98,6 +110,11 @@ export function DayPlanPage() {
   const close = useSceneClose('/kitchen')
   const nav = useNavigate()
   useEscapeKey(close)
+
+  // Which face is showing — « Journée » (the agenda) or « Repas » (the meal
+  // planner). URL-held (useTabParam) so a meal door can land `?vue=repas` and the
+  // pick survives the return from a nested add/edit scene.
+  const [vue, setVue] = useTabParam('vue', 'jour', ['jour', 'repas'] as const)
 
   const { date: dateParam } = useParams()
   // A malformed :date (a stale link, an ISO string where day-seconds are expected)
@@ -554,6 +571,21 @@ export function DayPlanPage() {
           )}
         </div>
 
+        {/* « Journée » | « Repas » — the scene's two faces. The day's agenda and its
+            meal planner had grown into one long stack; one job at a time now, with
+            the door deciding the landing (?vue=repas from the meal doors). */}
+        <SubTabs
+          options={[
+            { key: 'jour', label: t.kitchen.dayVues.jour, icon: 'calendar-blank-bold' },
+            { key: 'repas', label: t.kitchen.dayVues.repas, icon: CATS.meal.icon },
+          ]}
+          value={vue}
+          onSelect={setVue}
+          ariaLabel={title}
+        />
+
+        {vue === 'jour' && (
+          <>
         {/* « Voyage » — this day sits inside a trip. A calm header that taps into the
             trip's itinerary for this exact day, followed by the actual plans entered
             for the day (the dated itinerary notes), so the right info is right here. */}
@@ -600,10 +632,10 @@ export function DayPlanPage() {
 
         {/* The day's sections, in the order the day is actually PLANNED: what is
             already booked and can't move (Rendez-vous ▸ Corvées ▸ Projets), then what
-            you decide around it (À compléter ▸ Les repas). It used to open on the todo
+            you decide around it (À compléter). It used to open on the todo
             list and the meal editor, with the day's own schedule scrolled off below
             them — you had to leave the page to remember what the day held (Marc,
-            2026-08-26).
+            2026-08-26). Les repas is the « Repas » face now, one tab over.
 
             One anatomy for every section, so the page reads as one thing: a `SecLabel`
             header (category glyph, title, rule, quiet count) whose trailing ＋ is the
@@ -748,35 +780,6 @@ export function DayPlanPage() {
             action={<SectionAdd open={todoAdd.open} onToggle={todoAdd.toggle} label={t.todos.addPlaceholder} readOnly={ro} />}
           />
 
-          {/* Les repas — the meal planner. The day's note is rendered as the headline
-              above, so DayEditor hides its own copy. */}
-          <section className="day-plan__sec" style={{ '--sec-tint': CATS.meal.color } as React.CSSProperties}>
-            <SecLabel label={t.kitchen.mealsHeading} icon={CATS.meal.icon} />
-            <DayEditor
-              date={date}
-              recipes={recipes}
-              lowItems={lowItems}
-              listItems={listItems}
-              suppers={suppers}
-              mealsFor={mealsFor}
-              note={dayNote}
-              recipeFor={recipeForMeal}
-              memberName={memberName}
-              onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
-              mealErr={mealErr}
-              plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-              picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
-              leftovers={{
-                pool: leftoversQ.data?.leftovers ?? [],
-                plan: planLeftoverOnDay,
-              }}
-              slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
-              noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-              actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
-              hideNote
-            />
-          </section>
-
           {/* « Avant de partir » — this day's calm "before you go" screen (its departure
               checklists, that day's schedule + corvées, the weather tip, L'auto). A DOOR,
               so it sits at the FOOT now (LEAN #5): it opened the page above the day's own
@@ -795,6 +798,42 @@ export function DayPlanPage() {
             </Cluster>
           )}
         </section>
+          </>
+        )}
+
+        {vue === 'repas' && (
+          <section className="day-plan__sections">
+            {/* Les repas — the full meal planner (DayEditor). No « Les repas » SecLabel:
+                the « Repas » pill above already names the face (LEAN — a heading that
+                repeats the tab is chrome). The day's note is the shared headline above
+                the tabs, so DayEditor hides its own copy. */}
+            <section className="day-plan__sec" style={{ '--sec-tint': CATS.meal.color } as React.CSSProperties}>
+              <DayEditor
+                date={date}
+                recipes={recipes}
+                lowItems={lowItems}
+                listItems={listItems}
+                suppers={suppers}
+                mealsFor={mealsFor}
+                note={dayNote}
+                recipeFor={recipeForMeal}
+                memberName={memberName}
+                onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
+                mealErr={mealErr}
+                plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
+                picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
+                leftovers={{
+                  pool: leftoversQ.data?.leftovers ?? [],
+                  plan: planLeftoverOnDay,
+                }}
+                slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
+                noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
+                actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
+                hideNote
+              />
+            </section>
+          </section>
+        )}
 
         {sharingEvent && (
           <EntityShareModal

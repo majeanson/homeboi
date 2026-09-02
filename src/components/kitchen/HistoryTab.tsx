@@ -204,7 +204,7 @@ export function HistoryTab({
                       <button
                         type="button"
                         className="kitchen__day-manage"
-                        onClick={() => nav(`/kitchen/day/${date}`)}
+                        onClick={() => nav(`/kitchen/day/${date}?vue=repas`)}
                         aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                         title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
                       >

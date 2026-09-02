@@ -13,7 +13,9 @@ import { Cluster } from '../components/Layout'
 import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu'
 import { useAisleOrder, useAisleOverrides, useAisleTagsShown, setAisleTagsShown } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
-import { noRushStart, rushRank } from '../lib/listOrder'
+import { rushRank } from '../lib/listOrder'
+import { mintTmpId } from '../lib/tmpIds'
+import { spliceListLine } from '../lib/listAdd'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
@@ -26,7 +28,7 @@ import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
-import { money } from '../lib/deals'
+import { money, dealDate, dealEnded, type Deal } from '../lib/deals'
 import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
@@ -86,6 +88,39 @@ type BoardListData = { list: ListRow[]; members?: ListMember[] }
 // order while the wall keeps the hand-dragged one). 'mine' = the dragged order,
 // 'aisle' = grouped/sorted by the household's aisle order.
 const LIST_SORT_KEY = 'liste-sort'
+
+// The zoomed clipping's caption — the staged deal spelled out the way the cashier
+// peek (CashierMode's bigcard) does it: the flyer product's own name, the item it's
+// for, store, price (+ « avant » / unit price) and the validity — with « Aubaine
+// terminée » said loud once the validTo day is past, since "is this still the
+// deal?" is the whole reason the picture gets tapped.
+function DealZoomCaption({ itemText, deal }: { itemText: string; deal: Deal }) {
+  const t = useT()
+  const { lang } = useLang()
+  const ended = dealEnded(deal.validTo)
+  const until = deal.validTo ? `${t.shop.until} ${dealDate(deal.validTo, lang)}` : ''
+  const priceBits = [
+    deal.price != null ? money(deal.price) : null,
+    deal.wasPrice != null && deal.wasPrice > (deal.price ?? 0) ? `${t.shop.was} ${money(deal.wasPrice)}` : null,
+    deal.unitPrice != null ? `${money(deal.unitPrice)}${deal.unitLabel ?? ''}` : null,
+  ].filter((x): x is string => !!x)
+  const head = [itemText, deal.merchant?.trim() || null].filter((x): x is string => !!x).join(' · ')
+  return (
+    <>
+      <span>{head}</span>
+      {!!deal.name?.trim() && <span className="zoom-cap__name">{deal.name}</span>}
+      {priceBits.length > 0 && <span className="zoom-cap__price">{priceBits.join(' · ')}</span>}
+      {ended ? (
+        <span className="zoom-cap__ended">
+          <InlineIcon name="warning-bold" size={13} /> {t.shop.dealEnded}
+          {until ? ` (${until})` : ''}
+        </span>
+      ) : (
+        until && <span>{until}</span>
+      )}
+    </>
+  )
+}
 
 // One list row, drawn the same way for every item. Three independent tap targets:
 // the picture opens the item's detail/edit sheet (rename, aisle, deals door,
@@ -445,7 +480,7 @@ export function Liste() {
     // Show the new line INSTANTLY via an optimistic temp row — offline, the
     // invalidate can't refetch it; on reconnect the queued POST creates the real
     // row and the invalidate swaps the temp one out.
-    const tmpId = `tmp-${Date.now()}-${Math.floor(Math.random() * 1e6).toString(36)}`
+    const tmpId = mintTmpId()
     // Online add returns the real id → offer Annuler that deletes exactly that line
     // (the COMPENSATING undo), even after several quick voice adds stack up. Offline
     // adds skip the undo (no server id yet); deleting the row is the way back.
@@ -453,15 +488,10 @@ export function Liste() {
       endpoint: 'list',
       body: terms && terms.length ? { text, search_terms: terms } : { text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
-      optimistic: (qc) =>
-        qc.setQueryData<BoardListData>(BOARD_KEY, (b) => {
-          if (!b) return b
-          // A new line is an errand: it lands at the end of the errands, above any
-          // « pas pressé » block — the same slot the server settles it into.
-          const list = [...b.list]
-          list.splice(noRushStart(list), 0, { id: tmpId, text, source: 'manual', checked_at: null })
-          return { ...b, list }
-        }),
+      // A new line is an errand: it lands at the end of the errands, above any
+      // « pas pressé » block — the same slot the server settles it into (the
+      // shared splice, also used by the ＋ sheet and the ⚡ Quick add).
+      optimistic: (qc) => spliceListLine(qc, tmpId, text),
       // E-41: if this add queues, later queued ops on the tmp row (check it, clear
       // it) get rewritten to the real id when the create replays.
       tmpId,
@@ -594,6 +624,9 @@ export function Liste() {
           aisle: ai ? `${ai.emoji} ${ai.label[lang]}` : undefined,
           dealMerchant: staged?.merchant ?? null,
           dealPrice: staged?.price != null ? money(staged.price) : null,
+          dealName: staged?.name ?? null,
+          dealUntil: staged?.validTo ? `${t.shop.until} ${dealDate(staged.validTo, lang)}` : null,
+          dealEnded: staged ? dealEnded(staged.validTo) : false,
           onToggle: () => toggleChecked(item),
           onDelete: () => deleteItem(item),
         },
@@ -842,22 +875,30 @@ export function Liste() {
                     const bits = [staged.merchant?.trim() || null, staged.price != null ? money(staged.price) : null].filter(
                       (x): x is string => !!x,
                     )
-                    if (bits.length === 0) return null
+                    // The validTo day is past → the deal likely no longer applies.
+                    // Said ON the row (a small warn « ! » + word), so a stale aubaine
+                    // is visible while scanning the list, not only once zoomed.
+                    const ended = dealEnded(staged.validTo)
+                    if (bits.length === 0 && !ended) return null
                     return (
                       <span className="list-row__deal mono">
-                        <InlineIcon name="tag-bold" /> {bits.join(' · ')}
+                        {bits.length > 0 && (
+                          <>
+                            <InlineIcon name="tag-bold" /> {bits.join(' · ')}
+                          </>
+                        )}
+                        {ended && (
+                          <span className="list-row__deal-ended">
+                            <InlineIcon name="warning-bold" size={12} /> {t.shop.dealEnded}
+                          </span>
+                        )}
                       </span>
                     )
                   })()}
-                  // Spelled out under the picture once it's zoomed — store, price and
-                  // what it's for, so « est-ce encore l'aubaine ? » is answered there.
-                  dealDetail={(() => {
-                    if (!staged) return null
-                    const bits = [staged.merchant?.trim() || null, staged.price != null ? money(staged.price) : null].filter(
-                      (x): x is string => !!x,
-                    )
-                    return <>{[item.text, ...bits].join(' · ')}</>
-                  })()}
+                  // Spelled out under the picture once it's zoomed — the cashier-peek
+                  // facts (name, store, price, avant/unit, validity + « terminée »),
+                  // so « est-ce encore l'aubaine ? » is answered there.
+                  dealDetail={staged ? <DealZoomCaption itemText={item.text} deal={staged} /> : null}
                   adder={adder}
                   checked={checked}
                   noRush={!!item.non_urgent}

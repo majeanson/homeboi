@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { useWrite, type WriteResult } from './write'
 import { useRecordUndo } from './toast'
+import { recordTmpId } from './tmpIds'
 
 // The create-side companion to useUndoableRemove / useDeferredRemoval: POST a new
 // row, then offer a COMPENSATING undo that DELETEs exactly that row. The subtle bit
@@ -52,6 +53,11 @@ export function useCreateWithUndo() {
         tmpId: opts.tmpId,
       }).catch(() => null)
       const id = createdId(res)
+      // E-41's online half (lib/tmpIds): the optimistic tmp row now has a real id.
+      // Anything that captured the tmp id and acts later (a deferred swipe-delete's
+      // held write, a clear-checked batch) resolves through the registry at fire
+      // time instead of DELETEing an id the server never had.
+      if (id && opts.tmpId) recordTmpId(opts.tmpId, id)
       if (id || opts.toastWhenQueued)
         recordUndo({
           message: opts.message,

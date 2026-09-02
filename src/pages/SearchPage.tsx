@@ -622,7 +622,7 @@ export function SearchPage() {
                 node: res!.meals.items.length > 0 && (
               <Section key="meals" label={t.search.meals}>
                 {res!.meals.items.map((m) => (
-                  <Link key={m.id} to={`/kitchen/day/${m.date}`} className="search__row">
+                  <Link key={m.id} to={`/kitchen/day/${m.date}?vue=repas`} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.meal.deep }}>
                       <InlineIcon name="fork-knife-bold" />
                     </span>

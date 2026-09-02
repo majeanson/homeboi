@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money } from '../lib/deals'
+import { type Pick, money, dealDate } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
@@ -48,13 +48,7 @@ export function CashierMode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyerKey, qc])
 
-  const fmtDate = (iso: string | null) => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    return Number.isNaN(d.getTime())
-      ? ''
-      : d.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { month: 'short', day: 'numeric' })
-  }
+  const fmtDate = (iso: string | null) => dealDate(iso, lang)
 
   // Show a pick: mark it shown (✓) and open its proof.
   const show = (p: Pick) => {

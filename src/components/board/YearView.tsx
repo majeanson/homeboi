@@ -6,7 +6,9 @@ import { localYMD, addLocalDays } from '../../lib/localDay'
 import { useHolidaysEnabled, useSchoolYear, yearPoints, groupByMonth, type YearData, type YearPointKind } from '../../lib/year'
 import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
+import { LoadError } from '../LoadError'
 import { Cluster } from '../Layout'
+import { healOnError } from '../../lib/query'
 import { type Dict } from './types'
 import { type Lang } from '../../i18n'
 
@@ -58,10 +60,14 @@ export function YearView({
   // fêtes (no /api/year import needed) — points added inside yearPoints().
   const schoolYear = useSchoolYear()
 
-  const { data, isLoading } = useQuery({
+  // healOnError: no poll here (D-18), so a failed /api/year would otherwise never
+  // retry itself — the unfixed twin of the Mois bug (ddf0a4e): twelve blank
+  // mini-months plus a lying « rien cette année », forever, with no button.
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['year', from],
     queryFn: () => api<YearData>(`year?from=${from}&to=${to}`),
     staleTime: 5 * 60_000,
+    ...healOnError,
   })
 
   const points = useMemo(
@@ -108,6 +114,11 @@ export function YearView({
 
   return (
     <div className="yearv">
+      {/* A data-less year whose fetch FAILED: the mini-months below draw all blank
+          and the list would say « rien cette année » — a lie. Say it once here,
+          with the hand back (the MonthView pattern, same failure same face). */}
+      {!data && isError && <LoadError onRetry={() => void refetch()} />}
+
       {/* Twelve mini-months — the dot texture of the year. Tap one to plan it. */}
       <div className="yearv__months">
         {Array.from({ length: 12 }, (_, i) => {
@@ -148,8 +159,10 @@ export function YearView({
         ))}
       </Cluster>
 
-      {/* The year in words: month sections, this month open, the rest folded. */}
-      {isLoading ? null : months.length === 0 ? (
+      {/* The year in words: month sections, this month open, the rest folded.
+          A failed data-less read shows NEITHER list nor empty state — the
+          LoadError above already named it; an empty line here would contradict it. */}
+      {isLoading || (!data && isError) ? null : months.length === 0 ? (
         <EmptyState tone="calm">{t.yearView.empty}</EmptyState>
       ) : (
         <div className="yearv__list">

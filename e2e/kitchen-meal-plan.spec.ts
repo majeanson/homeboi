@@ -37,9 +37,9 @@ test('＋ Planifier un repas → day picker → opens that day’s editor scene'
   await dayChip.click()
 
   // The day's full editor is a full-screen .scene route now (was a bottom sheet),
-  // so the URL carries the day and the scene holds the day sections.
-  await expect(page).toHaveURL(/\/kitchen\/day\/\d+/)
-  // The meal planner is always visible now (a « Les repas » section, no disclosure).
+  // so the URL carries the day — and a MEAL door lands straight on the scene's
+  // « Repas » face (?vue=repas), the meal planner showing without another tap.
+  await expect(page).toHaveURL(/\/kitchen\/day\/\d+\?vue=repas/)
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 })
 
@@ -48,9 +48,10 @@ test('day editor lists slots chronologically (note is the headline)', async ({ p
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
   // Open the first day's editor straight from the grid (the manage button is
-  // icon-only now, named "Gérer · <date>") → navigates to the day scene.
+  // icon-only now, named "Gérer · <date>") → navigates to the day scene's
+  // « Repas » face (the pencil is a meal door).
   await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
-  await expect(page).toHaveURL(/\/kitchen\/day\/\d+/)
+  await expect(page).toHaveURL(/\/kitchen\/day\/\d+\?vue=repas/)
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()

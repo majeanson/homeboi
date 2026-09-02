@@ -380,6 +380,31 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [],
   )
 
+  // The unmount net above never runs on a reload, tab close, PWA kill or SW-update
+  // reload (registerSw force-reloads on controllerchange) — React unmount cleanup
+  // isn't part of page teardown. A delete held behind the toast was then silently
+  // LOST: the row was only hidden client-side, and the next load showed it again
+  // ("I delete items and they come back"). So commit every held write the moment
+  // the page is going away (pagehide) or the app stops being visible (phone lock,
+  // app switch — the states a mobile tab gets discarded from, where the 15 s timer
+  // is throttled or never fires). While hidden the user can't see or tap « Annuler »
+  // anyway, so committing early trades an invisible undo window for not losing the
+  // write. api() sends these with keepalive so teardown doesn't abort the fetch.
+  useEffect(() => {
+    const flush = () => {
+      entriesRef.current.filter((e) => e.kind === 'deferred').forEach((e) => commit(e.id))
+    }
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [commit])
+
   const newest = entries[entries.length - 1]
 
   return (

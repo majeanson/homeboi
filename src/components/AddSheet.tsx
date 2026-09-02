@@ -25,6 +25,9 @@ import { type HabitsPayload } from '../lib/habits'
 import { type TodoTemplate, type TemplatesData, TODO_TITLE_MAX } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
+import { useDeferredRemoval } from '../lib/useDeferredRemoval'
+import { mintTmpId } from '../lib/tmpIds'
+import { spliceListLine } from '../lib/listAdd'
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
@@ -491,7 +494,13 @@ export function AddSheet({
     queryFn: () => api<{ list: ListItem[] }>('board'),
     enabled: open && wantsList,
   })
-  const listItems = listBoard?.list ?? []
+  // Rows mid-delete (held behind the undo toast) are EXCLUDED, exactly as lib/picks'
+  // matcher excludes them: auto-pick used to walk the raw frame, and staging a deal
+  // for a just-deleted row falls through matchListItem (which can't see it) into
+  // addLine — INSERTING a fresh line with the deleted item's text. « Je supprime des
+  // items et ils reviennent » — one « Meilleurs prix » tap resurrected them in batch.
+  const removal = useDeferredRemoval(BOARD_KEY)
+  const listItems = removal.visible(listBoard?.list ?? [])
   // Till-hidden stores: auto-pick still stages their deals (they ride the list
   // line), but they don't count as a reason to open the cashier stepper.
   const tillHidden = useTillHiddenStores()
@@ -599,7 +608,17 @@ export function AddSheet({
     try {
       // Offline-aware (like the todo/reserve adds below): queues + replays offline,
       // then affectedKeys reconcile the board + the quick-add ghosts/history panel.
-      await write('list', { method: 'POST', body: { text: value }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] })
+      // The optimistic temp row (the shared splice Liste's own bar uses) is what
+      // makes the queued case HONEST: without it an offline add closed the sheet
+      // and painted nothing — « doesn't add any item at all » — until replay.
+      const tmpId = mintTmpId()
+      await write('list', {
+        method: 'POST',
+        body: { text: value },
+        affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
+        optimistic: (qc) => spliceListLine(qc, tmpId, value),
+        tmpId,
+      })
       setListText('')
       close()
     } catch (e) {
@@ -731,12 +750,14 @@ export function AddSheet({
     }
   }
 
-  // Open a day's full editor from the picker: close this sheet and navigate to the
-  // day's planning scene (/kitchen/day/<date>). One editor, two entry points (the
-  // other is the grid's pencil); no duplicate mini-form.
+  // Open a day's full editor from the « Planifier un repas » picker: close this
+  // sheet and navigate to the day scene's MEAL face (/kitchen/day/<date>?vue=repas
+  // — a meal door lands on Repas; the plan-today/tomorrow tiles below are DAY doors
+  // and land on the default « Journée »). One editor, two entry points (the other
+  // is the grid's pencil); no duplicate mini-form.
   const planDay = (d: number) => {
     close()
-    nav(`/kitchen/day/${d}`)
+    nav(`/kitchen/day/${d}?vue=repas`)
   }
 
   const modeLabel = (m: AddSheetMode) => {

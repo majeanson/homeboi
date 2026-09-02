@@ -5,8 +5,12 @@ import { mockApi, seedState } from './mocks'
 //
 //  1. ORDER — the day's schedule leads. What is already booked and can't move
 //     (Rendez-vous ▸ Les corvées ▸ Projets) comes before what you decide around it
-//     (À compléter ▸ Les repas). It used to open on the todo list and the meal
+//     (À compléter). It used to open on the todo list and the meal
 //     editor, with the day's own agenda scrolled off below them.
+//     2026-09-02: the scene split into TWO FACES behind a `?vue=` sub-tab row —
+//     « Journée » (default: the agenda) and « Repas » (the meal planner). Meal
+//     doors (the kitchen pencil, ＋ « Planifier un repas », history, a meal search
+//     hit) land `?vue=repas`; day doors land the default.
 //  2. ONE ANATOMY — every section is a SecLabel header (glyph · title · rule ·
 //     count) whose trailing ＋ is the shared SectionAdd, then its rows, then the
 //     composer that ＋ opened. No hand-rolled headings, no full-width
@@ -49,7 +53,7 @@ const DAY_MONTH = {
   },
 }
 
-async function openDay(page: Page, opts: { guest?: boolean } = {}) {
+async function openDay(page: Page, opts: { guest?: boolean; vue?: 'repas' } = {}) {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.addInitScript(() => {
@@ -69,16 +73,23 @@ async function openDay(page: Page, opts: { guest?: boolean } = {}) {
     await page.addInitScript(() => localStorage.setItem('babillard-guest-token', 'e2e-guest-token'))
   }
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto(`/kitchen/day/${TODAY}`)
+  await page.goto(`/kitchen/day/${TODAY}${opts.vue ? `?vue=${opts.vue}` : ''}`)
   await expect(page.locator('.day-plan__sections')).toBeVisible({ timeout: 15_000 })
 }
 
 test('the day leads with its schedule: Rendez-vous and Les corvées come first', async ({ page }) => {
   await openDay(page)
+  // The default « Journée » face is the agenda alone — the meal planner is the
+  // « Repas » face, one sub-tab over (no « Les repas » section stacked below).
   const headings = (await page.locator('.day-plan__sections .sec-label b').allInnerTexts()).map((s) => s.trim())
   // Projets & Entretien is absent (nothing lands on this day) — it only shows when
   // there is something, and it is a mirror of Réglages ▸ Corvées, not a home.
-  expect(headings).toEqual(['Rendez-vous', 'Les corvées', 'À compléter', 'Les repas'])
+  expect(headings).toEqual(['Rendez-vous', 'Les corvées', 'À compléter'])
+  await expect(page.locator('.day-mng__sec')).toHaveCount(0)
+  // Flipping to « Repas » shows the planner (the slot sections), not the agenda.
+  await page.getByRole('tab', { name: 'Repas' }).click()
+  await expect(page.locator('.day-mng__sec').first()).toBeVisible()
+  await expect(page.locator('.day-plan__sec').filter({ hasText: 'Rendez-vous' })).toHaveCount(0)
 })
 
 test('every section carries its ＋ in the header — no add bar under the list', async ({ page }) => {
@@ -137,7 +148,7 @@ test('the event form carries a « Note » fold, open when the rendez-vous has on
 })
 
 test('the meal slots use the same ＋ chip — no dashed « Ajouter » pill', async ({ page }) => {
-  await openDay(page)
+  await openDay(page, { vue: 'repas' })
   const supper = page.locator('.day-mng__sec[data-dnd-zone="supper"]')
   await expect(supper.locator('.kitchen__slot-add')).toHaveCount(0)
   const plus = supper.locator('.day-mng__sec-head-row .sec-label__actbtn')
@@ -154,7 +165,7 @@ test('the « + ingrédients » opt-in does not close the dropdown under it', asy
   // deferred blur check found <body> focused, and the menu shut BETWEEN mousedown
   // and click. The tap toggled nothing and the list vanished. The fix is a
   // mousedown-preventDefault wrapper around the dropdown's header.
-  await openDay(page)
+  await openDay(page, { vue: 'repas' })
   const supper = page.locator('.day-mng__sec[data-dnd-zone="supper"]')
   await supper.locator('.day-mng__sec-head-row .sec-label__actbtn').click()
   const chip = supper.locator('.kitchen__recipe-staples')
@@ -176,4 +187,9 @@ test('a read-only guest sees the day, but none of the ＋', async ({ page }) => 
   await openDay(page, { guest: true })
   await expect(page.locator('.day-plan__sections .sec-label__actbtn')).toHaveCount(0)
   await expect(page.locator('.day-plan__sec .act').filter({ hasText: 'Dentiste' })).toBeVisible()
+  // …and the « Repas » face is just as read-only: no slot ＋ either (DayEditor
+  // gates its own controls via isGuest).
+  await page.getByRole('tab', { name: 'Repas' }).click()
+  await expect(page.locator('.day-mng__sec').first()).toBeVisible()
+  await expect(page.locator('.day-mng__sec .sec-label__actbtn')).toHaveCount(0)
 })

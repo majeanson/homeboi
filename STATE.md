@@ -371,6 +371,56 @@ Wave-D items — and Wave D itself was halved on inspection: only `recipes.steps
 and the routine cards are genuinely positional parallel arrays, while `care_log.media_json`
 (a multi-document LIST) and `members.avatar_ref` (a polymorphic colour-or-key pair) are
 correct as they stand.
+### C-quater. Reported from the device, 2026-09-02 — deleted list items resurrecting, calendars dead until hard refresh
+
+Two reports from Marc, both chased to mechanisms rather than symptoms.
+
+1. **« I delete items in La liste and they come back. »** No soft delete exists — every
+   "return" is a delete that never reached the server, or a fresh INSERT. Three real
+   mechanisms found, all fixed:
+   - **The tmp-id delete black hole (the big one).** Swipe-delete a row whose optimistic
+     create hadn't reconciled → the deferred delete fired 15 s later with `{id: 'tmp-…'}`
+     → `DELETE /api/list` matched zero rows, answered 200, and the real row lived forever.
+     Fix: a session tmp→real registry (`src/lib/tmpIds.ts`) fed by `undoCreate` (online)
+     and the outbox replay; `writeWith` resolves path+body through it at fire time, and
+     the deferred-removal store hides BOTH spellings so the row can't visibly come back
+     mid-undo. The outbox's E-41 rewrite still owns the queued-before-replay case.
+   - **Held deletes silently lost on teardown.** The ToastProvider's only safety net was a
+     React unmount effect, which never runs on reload/tab close/PWA kill/SW-update reload —
+     the row was hidden client-side only and the next load showed it again. Now every held
+     write commits on `pagehide` + `visibilitychange→hidden` (while hidden the user can't
+     see « Annuler » anyway), and `api()` sends hidden-state writes with `keepalive` so
+     teardown doesn't abort the fetch.
+   - **« Meilleurs prix » resurrected mid-delete rows in batch.** `autoPick` walked the raw
+     board frame; a held row can't match in `lib/picks` (which rightly excludes held ids),
+     so `stageDeal` fell through to `addLine` — INSERTING a fresh line with the deleted
+     item's text. AddSheet now filters through `removal.visible` like every list surface.
+2. **« The monthly/yearly calendar can't load until a hard refresh. »** Both views are in
+   the EAGER chunk — not the stale-chunk theory. The wedge is the data layer: no poll
+   (D-18), `refetchOnWindowFocus: false`, retries spent → a failed fetch never retried.
+   `MonthView` had the manual « Réessayer » (ddf0a4e); **`YearView` had no error state at
+   all** — twelve blank mini-months plus a lying « rien cette année », forever. Fixes:
+   `YearView` wears the same `LoadError` face, and both (+ the car query) ride
+   `healOnError` (`lib/query.ts`): refetch on focus + a quiet 60 s retry **only while
+   errored** — never a poll on success. E2E planted-bug-verified (`year-to-month.spec.ts`).
+   Related latent bug closed while in there: a deploy deletes old lazy chunks, `React.lazy`
+   memoises the rejection, and ~55 routes could go dead until a hand refresh — `main.tsx`
+   now reloads once (loop-guarded) on `vite:preloadError`.
+
+3. **« The hovering quick-add button doesn't add any item at all. »** Three add doors,
+   only Liste's own bar had an optimistic row — so on the ＋ sheet's « Ajouter à la
+   liste » and the ⚡ « Ajout rapide » chips, an offline/queued write painted NOTHING
+   (the sheet closed; the chip locked ✓ and « Ajouté N » ticked up off LOCAL state) and a
+   server rejection on the ⚡ page was 100 % swallowed (`.catch(() => {})` — the only
+   write site in the app with no error path). Fixes: the optimistic splice is now ONE
+   shared helper (`lib/listAdd.ts` `spliceListLine`, + `mintTmpId` in `lib/tmpIds`) used
+   by all three doors, and a rejected ⚡ add un-locks its chip + says `saveFailed` once.
+   Still open (judgement call, §D): the BOARD ＋ files typed text as a fridge NOTE — it
+   has no list door and no AI routing since the capture spine moved to the header mic —
+   so a grocery item typed there lands on the board as a note with zero feedback. If
+   that's the button Marc meant, the mechanics above don't cover it; adding a
+   « liste » tile to the board ＋ is a product decision, not a bug fix.
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**

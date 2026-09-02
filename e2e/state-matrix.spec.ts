@@ -311,8 +311,11 @@ const MATRIX: Entry[] = [
   // the question that matters here: how far do you scroll before the day itself
   // starts? The weather strip and the day's own note headline sit above it and are
   // content too — they are what the budget deliberately allows for.
-  { name: 'day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, content: '.day-plan__sec .act', budgetPx: 178, themes: ['day'], api: DAY_FIXTURE },
-  { name: 'day-plan-wall', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'kiosk', viewport: WALL, content: '.day-plan__sec .act', budgetPx: 178, themes: ['day'], api: DAY_FIXTURE },
+  // 2026-09-02: budget raised 178 → 228 for the ONE deliberate chrome addition —
+  // the « Journée | Repas » sub-tab row (?vue=) that split the scene's two jobs
+  // (the agenda vs the meal planner); the first agenda row now sits under it.
+  { name: 'day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, content: '.day-plan__sec .act', budgetPx: 228, themes: ['day'], api: DAY_FIXTURE },
+  { name: 'day-plan-wall', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'kiosk', viewport: WALL, content: '.day-plan__sec .act', budgetPx: 228, themes: ['day'], api: DAY_FIXTURE },
 
   // — THE SCENES THE SWEEP HAD NEVER OPENED. `day-plan` was found by asking what this
   //   table does NOT list (LEAN.md), and the same question turned up seventeen more:
