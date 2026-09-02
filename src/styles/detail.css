@@ -111,6 +111,40 @@
 .detail-sheet__list li {
   overflow-wrap: anywhere;
 }
+
+/* A list line that is a DOOR (a day peek's meal: 📖 recette · 🍲 Cuisiner). The
+   text keeps the bullet and wraps; the glyph cluster never shrinks and never
+   wraps under it, so a long dish title can't push the buttons off the row
+   (Horizontal overflow, CLAUDE.md). Same compact-icon / 44px-touch-target
+   grammar as .kitchen__meal-btn, which is the row furniture this mirrors. */
+.detail-sheet__listline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.detail-sheet__listtext {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.detail-sheet__listctl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.detail-sheet__listbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  border-radius: 0.4rem;
+}
 .detail-sheet__img {
   width: 100%;
   max-height: 40vh;

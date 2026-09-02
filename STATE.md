@@ -444,6 +444,27 @@ day-scene one; the message describes the liste/calendrier and deals slices). Wha
 - `t.kitchen.mealsHeading` removed (the « Repas » pill names the face; a heading
   repeating the tab is a LEAN smell).
 
+**Follow-up, same day (Marc, on review): the peek's MEALS became doors too.** The day
+peek listed its meals as plain text; a meal that resolves a recipe now carries the small
+📖 / 🍲 « Cuisiner » pair `MealRows` already gives a planner row — 📖 → the recipe view,
+🍲 → straight into cook mode. Per MEAL deliberately: one full-width « Cuisiner » on a day
+holding N meals could not say which one it meant. Mechanics:
+
+- The `list` DetailBlock was EXTENDED, not forked: an item is now `string | DetailListRow`
+  (`{ text, actions?: DetailAction[] }`), rows reusing the footer's `DetailAction` so they
+  close the peek then navigate through the same `runAction` — no second action grammar.
+  A plain string still renders exactly as before, so no other adapter moved.
+- Both call sites pass `recipeId`: the kitchen week grid (already holds `recipeForMeal`)
+  and Historique, which has no recipes of its own and uses `useRecipeForMeal()` with no
+  argument — the shared-cache mode that hook was built for.
+- A free-text meal (« Salade César ») keeps no buttons: there is nothing to cook. The
+  window-level « Voir la journée » / « Planifier un repas » doors are unchanged.
+- Both doors are plain navigations (reads), so a read-only guest keeps them; they are
+  real `<button>`s, so the non-touch verdict stays ✅.
+- Guard: `e2e/kitchen-meal-plan.spec.ts` « day peek — a recipe-linked meal carries 📖 +
+  « Cuisiner »… », **verified red** against a planted text-only regression before being
+  trusted (the standing rule). ACTIONS.md row + footnote ⁹ updated.
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**

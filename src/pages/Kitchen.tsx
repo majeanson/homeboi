@@ -194,7 +194,9 @@ export function Kitchen() {
   // Tapping a day cell opens the day peek (the whole day's meals + note) — which now
   // also carries the two doors into the day scene's faces (« Planifier un repas » /
   // « Voir la journée »), so a tapped day offers what to DO next, not just the meals
-  // as text (Marc, 2026-09-02). The pencil stays the direct planner door
+  // as text (Marc, 2026-09-02), and each meal that resolves a recipe carries its own
+  // 📖 / 🍲 Cuisiner pair — the cook door is per MEAL, not one per day.
+  // The pencil stays the direct planner door
   // (?vue=repas). We guard against the drag: a pointerdown that
   // then moves >6px is a reschedule, not a tap, so it doesn't also open the peek.
   const tapDownRef = useRef<{ x: number; y: number } | null>(null)
@@ -202,7 +204,12 @@ export function Kitchen() {
   const openDayPeek = (date: number) => {
     const nameById = (id: string | null) => (id ? boardMembers.find((m) => m.id === id)?.display_name ?? null : null)
     const dayMeals = mealPrefs.visibleSlots.flatMap((s) =>
-      mealsFor(date, s).map((m) => ({ slot: t.kitchen.slots[s], title: m.title, cook: nameById(m.cook_member_id) })),
+      mealsFor(date, s).map((m) => ({
+        slot: t.kitchen.slots[s],
+        title: m.title,
+        cook: nameById(m.cook_member_id),
+        recipeId: recipeForMeal(m)?.id ?? null,
+      })),
     )
     const rel = date === weekStart ? t.kitchen.todayShort : date === addLocalDays(weekStart, 1) ? t.kitchen.tomorrowShort : null
     const label = (rel ? `${rel} · ` : '') + formatDay(date, lang).replace(/^./, (c) => c.toUpperCase())

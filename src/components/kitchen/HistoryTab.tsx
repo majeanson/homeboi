@@ -16,6 +16,7 @@ import { Loading, LoadError } from '../Fallback'
 import { useSingleOpen } from '../Disclosure'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildDay } from '../detail/adapters'
+import { useRecipeForMeal } from './mealLookup'
 import { MealPlanPicker } from './MealPlanPicker'
 import { usePlanIdea } from './MealIdeas'
 import { MEAL_HISTORY_KEY, type MealHistoryPage, type MealRow } from './types'
@@ -98,8 +99,11 @@ export function HistoryTab({
     return out
   }, [historyQ.data, lang])
 
-  // The same informative day peek the week grid opens — built from the rows on
-  // hand (past day-notes aren't loaded; the peek just shows the meals).
+  // The same day peek the week grid opens — built from the rows on hand (past
+  // day-notes aren't loaded; the peek just shows the meals). Recipes come from the
+  // SHARED cache (useRecipeForMeal with no argument), since this cold-path tab
+  // never loads them itself — so a past supper still offers 📖 / 🍲 « Cuisiner ».
+  const recipeForMeal = useRecipeForMeal()
   const openDayPeek = (date: number, meals: MealRow[]) => {
     const nameById = (id: string | null) => (id ? members.find((mb) => mb.id === id)?.display_name ?? null : null)
     const label = formatDay(date, lang).replace(/^./, (c) => c.toUpperCase())
@@ -113,6 +117,7 @@ export function HistoryTab({
             slot: t.kitchen.slots[m.slot as MealSlot] ?? m.slot,
             title: m.title,
             cook: nameById(m.cook_member_id),
+            recipeId: recipeForMeal(m)?.id ?? null,
           })),
         },
       ),

@@ -563,7 +563,8 @@ export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailM
   }
 }
 
-// — A whole DAY, informative (La cuisine week grid): the day's meals as a list +
+// — A whole DAY (La cuisine week grid + Historique): the day's meals as a list of
+// DOORS (each recipe-linked meal wears 📖 + 🍲 Cuisiner) +
 // the day note, plus the two doors into the day scene's faces — « Planifier un
 // repas » (primary, `?vue=repas`, the pencil's landing) and « Voir la journée »
 // (the agenda face). It used to carry zero actions on purpose; Marc's 2026-09-02
@@ -573,7 +574,15 @@ export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailM
 // caller (which holds the members), so this stays member-free. —
 export function buildDay(
   ctx: DetailCtx,
-  opts: { label: string; day?: number; accent?: string; meals: { slot: string; title: string; cook?: string | null }[]; note?: string | null },
+  opts: {
+    label: string
+    day?: number
+    accent?: string
+    // `recipeId` (when the caller resolved one, via useRecipeForMeal) turns that
+    // meal line into a door pair; a free-text meal stays plain text.
+    meals: { slot: string; title: string; cook?: string | null; recipeId?: string | null }[]
+    note?: string | null
+  },
 ): DetailModel {
   const { t } = ctx
   const blocks: DetailBlock[] = []
@@ -581,7 +590,22 @@ export function buildDay(
     blocks.push({
       kind: 'list',
       label: t.board.meals,
-      items: opts.meals.map((m) => `${m.slot} · ${m.title}${m.cook ? ` (${m.cook})` : ''}`),
+      // Each meal that resolves a recipe carries the two small doors the planner
+      // rows already wear — 📖 the recipe view, 🍲 straight into cook mode. Per
+      // MEAL, not per day: one full-width « Cuisiner » on a day holding N meals
+      // could not say which one it meant (Marc, 2026-09-02). Both are plain
+      // navigations (reads), so a read-only guest keeps them.
+      items: opts.meals.map((m, i) => {
+        const text = `${m.slot} · ${m.title}${m.cook ? ` (${m.cook})` : ''}`
+        if (!m.recipeId) return text
+        return {
+          text,
+          actions: [
+            { key: `recipe-${i}`, label: t.recipes.title, icon: 'book-open-bold' as const, href: `/kitchen/recipe/${m.recipeId}` },
+            { key: `cook-${i}`, label: t.recipes.cook, icon: 'cooking-pot-bold' as const, href: `/kitchen/recipe/${m.recipeId}/cook` },
+          ],
+        }
+      }),
     })
   else blocks.push({ kind: 'text', text: t.detail.dayEmpty })
   if (opts.note) blocks.push({ kind: 'text', text: opts.note, hand: true })

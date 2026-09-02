@@ -31,12 +31,26 @@ export type DetailBlock =
   // nobody reads it as what the sender typed.
   | { kind: 'text'; text: string; hand?: boolean; label?: string }
   | { kind: 'chips'; label?: string; chips: string[]; tones?: (string | undefined)[] } // a tag/chip row; `tones[i]` = a per-chip household hex
-  | { kind: 'list'; label?: string; items: string[] } // a short bullet list (a person's relationships, a day's meals)
+  // A short bullet list (a person's relationships, a day's meals). An item is
+  // either a plain string (text-only) or a DetailListRow carrying small per-row
+  // glyph buttons — see DetailListRow below.
+  | { kind: 'list'; label?: string; items: (string | DetailListRow)[] }
   | { kind: 'image'; src: string; alt?: string } // a media image (note photo/drawing), tap-to-zoom
   | { kind: 'audio'; src: string } // a media audio memo (a <audio controls>)
   // Tappable chips that ADD/REMOVE membership inline (e.g. a person's named groups in
   // Le cercle). Each option carries its current on/off; onToggle persists the change.
   | { kind: 'togglechips'; label?: string; options: { id: string; label: string; on: boolean }[]; onToggle: (id: string, on: boolean) => void }
+
+// One line of a `list` block that is a DOOR, not just text. The day peek's meals
+// wear the same small 📖 / 🍲 pair MealRows already gives a planned meal row, so a
+// tapped day offers « voir la recette » / « Cuisiner » PER MEAL instead of one
+// full-width Cuisiner that could not say which of N meals it meant (Marc,
+// 2026-09-02). Rows reuse DetailAction, so they close the peek then run/navigate
+// exactly like the footer buttons — no second action grammar to learn.
+export interface DetailListRow {
+  text: string
+  actions?: DetailAction[]
+}
 
 // A face to attribute the entity to — drawn with the shared <Avatar>.
 export interface DetailWho {

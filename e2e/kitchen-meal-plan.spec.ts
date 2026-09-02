@@ -81,3 +81,37 @@ test('recipe builder fills the screen (no stale-keyboard dead space)', async ({ 
   }))
   expect(h).toBeGreaterThanOrEqual(vh - 2)
 })
+
+// The day peek's meals are DOORS, not just text (Marc, 2026-09-02). A meal that
+// resolves a recipe carries the same small pair the planner rows already wear —
+// 📖 the recipe view, 🍲 « Cuisiner » straight into cook mode — PER MEAL, since one
+// full-width Cuisiner on a day holding N meals can't say which one it means. A
+// free-text meal (« Salade César », no recipe_id) stays a plain line.
+test('day peek — a recipe-linked meal carries 📖 + « Cuisiner »; a free-text one does not', async ({ page }) => {
+  await boot(page)
+  await page.goto('/kitchen')
+  await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
+
+  // Tap the day BODY (not the « Gérer » pencil, which is the direct planner door).
+  await page.locator('.kitchen__day-sum-tap').first().click()
+  const sheet = page.locator('.detail-sheet')
+  await sheet.waitFor({ state: 'visible', timeout: 10_000 })
+
+  // « Spaghetti maison » is linked to recipe rc1 in the fixture → two doors.
+  const linked = sheet.locator('.detail-sheet__listrow', { hasText: 'Spaghetti maison' })
+  await expect(linked).toBeVisible()
+  await expect(linked.getByRole('button', { name: 'Cuisiner' })).toBeVisible()
+  await expect(linked.getByRole('button', { name: 'Recettes' })).toBeVisible()
+
+  // « Salade César » has no recipe_id → it must stay a plain line with no doors.
+  const bare = sheet.locator('li', { hasText: 'Salade César' })
+  await expect(bare).toBeVisible()
+  await expect(bare.locator('.detail-sheet__listbtn')).toHaveCount(0)
+
+  // The window-level doors are still there — per-meal cooking did not replace them.
+  await expect(sheet.locator('.detail-sheet__actions')).toContainText('Planifier un repas')
+
+  // 🍲 closes the peek and lands in cook mode for THAT meal's recipe.
+  await linked.getByRole('button', { name: 'Cuisiner' }).click()
+  await expect(page).toHaveURL(/\/kitchen\/recipe\/rc1\/cook/)
+})
