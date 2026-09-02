@@ -77,7 +77,7 @@ test('reorder posts a move; clear-day posts a clear', async ({ page }) => {
   await move
 
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === undefined)
-  await sheet.getByRole('button', { name: 'Vider la journée' }).click()
+  await sheet.getByRole('button', { name: 'Vider les repas' }).click()
   await clear
 })
 

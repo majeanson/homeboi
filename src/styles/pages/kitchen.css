@@ -606,7 +606,8 @@
 .kitchen__add-cancel {
   align-self: flex-start;
 }
-/* "Vider la journée" — the day's destructive clear. Pinned last and full-width,
+/* "Vider les repas" — the day’s meal-only clear (it lives on the « Repas » face).
+   Pinned last and full-width,
    reading red so it never reads as a quiet, easy-to-miss control. */
 .kitchen__clear-day {
   flex-basis: 100%;
