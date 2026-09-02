@@ -119,8 +119,12 @@
    grammar as .kitchen__meal-btn, which is the row furniture this mirrors. */
 .detail-sheet__listline {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  /* Top-aligned, NOT centred: a two-line dish title ("Sauté de poulet haché
+     miel-sriracha") wrapped, and centring left the glyphs floating in the middle
+     of the row, detached from the line they act on. They sit beside the FIRST
+     line now, where the meal's name starts. */
+  align-items: flex-start;
+  gap: 10px;
 }
 .detail-sheet__listtext {
   flex: 1 1 auto;
@@ -130,20 +134,34 @@
 .detail-sheet__listctl {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 10px;
   flex: none;
 }
+.detail-sheet__listctl {
+  /* Optically centre the cluster on the first text line rather than the block. */
+  margin-top: -1px;
+}
+/* Reads as a CONTROL, not a decorative glyph: a soft round chip on the sheet's
+   own tint. Kept visually small so it doesn't tower over a bullet line, while a
+   44px touch target is restored by padding that is pulled back out with a
+   negative margin — the row height stays the text's, the finger target doesn't. */
 .detail-sheet__listbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
-  min-height: 2.75rem;
-  border: 0;
-  background: transparent;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.375rem;
+  margin: -0.375rem;
+  box-sizing: content-box;
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
   color: var(--ink-soft);
   cursor: pointer;
-  border-radius: 0.4rem;
+  border-radius: 999px;
+}
+.detail-sheet__listbtn:active {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 .detail-sheet__img {
   width: 100%;

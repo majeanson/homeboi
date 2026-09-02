@@ -535,7 +535,7 @@ export function Liste() {
         method: 'PATCH',
         body: { clearChecked: true, ids },
         affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
-      }).catch(() => {}),
+      }),
     )
   }
 
@@ -563,8 +563,10 @@ export function Liste() {
   // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
   // path is the check + "Clear checked"). Same deferred shape via the shared hook.
   function deleteItem(item: ListRow) {
+    // No .catch here on purpose: useDeferredRemoval needs to SEE a rejection to
+    // tell "deleted, refetch failed" from "the delete failed" (it owns both cases).
     removal.remove([item.id], t.undo.cleared(item.text), () =>
-      write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+      write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }),
     )
   }
 

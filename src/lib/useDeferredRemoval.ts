@@ -103,10 +103,26 @@ onTmpIdResolved((tmpId, realId) => {
 // (2026-08-27) — the row was gone server-side after the first delete, but every
 // failed refetch un-hid it back out of stale cache. Freshness = every active query
 // under the scope has a successful dataUpdatedAt AFTER the commit; until then the
-// ids stay hidden and the ~10 s poll converges us. Bounded (90 s) so a row can
-// never be hidden forever if the connection stays dead — at that point the frame
-// is stale anyway and the next successful poll reconciles whichever way is true.
-function unhideWhenFresh(qc: QueryClient, scope: string, ids: string[], t0: number): void {
+// ids stay hidden and the ~10 s poll converges us.
+//
+// `confirmed` = the held write RESOLVED (the server accepted the delete, or it is
+// safely queued in the outbox). This used to carry a 90 s cap that un-hid REGARDLESS,
+// "so a row can never be hidden forever". That cap was the bug (Marc, 2026-09-02):
+// on a phone whose reads were failing, six list rows whose DELETE had demonstrably
+// landed — verified absent from production D1 — came back on screen, because the cap
+// un-hid them against the stale pre-delete frame that Query was still holding. A
+// delete we KNOW succeeded must never be undone by a frame that predates it.
+//
+// So there is no cap on the confirmed path: we wait for a successful frame however
+// long it takes. Nothing is hidden "forever" — the pending set is session-only module
+// state, so a reload clears it, and the row is gone server-side anyway, which means
+// the very next successful frame simply doesn't contain it. If the write FAILED, the
+// row genuinely still exists, so we un-hide at once rather than lie about it.
+function unhideWhenFresh(qc: QueryClient, scope: string, ids: string[], t0: number, confirmed = true): void {
+  if (!confirmed) {
+    unhideIds(scope, ids)
+    return
+  }
   const cache = qc.getQueryCache()
   const fresh = () =>
     cache.findAll({ queryKey: [scope], type: 'active' }).every((q) => q.state.dataUpdatedAt >= t0)
@@ -115,17 +131,12 @@ function unhideWhenFresh(qc: QueryClient, scope: string, ids: string[], t0: numb
     return
   }
   let done = false
-  const finish = () => {
-    if (done) return
+  const stop = cache.subscribe(() => {
+    if (done || !fresh()) return
     done = true
     stop()
-    clearTimeout(cap)
     unhideIds(scope, ids)
-  }
-  const stop = cache.subscribe(() => {
-    if (fresh()) finish()
   })
-  const cap = setTimeout(finish, 90_000)
 }
 
 // Keep `ids` hidden until the offline outbox has fully drained (every queued write
@@ -171,7 +182,17 @@ export function useDeferredRemoval(queryKey: QueryKey) {
       message,
       onUndo: () => unhideIds(scope, ids),
       onCommit: async () => {
-        await commit()
+        // Whether the held write actually LANDED decides what a missing frame means.
+        // The call sites used to swallow this (`.catch(() => {})`), so the hook could
+        // not tell "deleted, but the refetch failed" (keep hiding) from "the delete
+        // itself failed" (show it again) — and defaulted to showing the row, which
+        // resurrected rows that were already gone from the server.
+        let confirmed = true
+        try {
+          await commit()
+        } catch {
+          confirmed = false
+        }
         // Freshness fence: only a scope frame fetched AFTER this instant proves the
         // deletion reached the render data. (Captured after `commit`, so a fetch the
         // write's own invalidate races in just misses the fence — the row then stays
@@ -186,7 +207,11 @@ export function useDeferredRemoval(queryKey: QueryKey) {
         // queued, hold the un-hide until the outbox drains and re-confirm. Online (empty
         // outbox) we refetch now — and un-hide only once a FRESH frame landed (a
         // refetch that ERRORED kept the pre-delete frame; see unhideWhenFresh).
-        if ((await outboxCount()) > 0) {
+        if (!confirmed) {
+          // The server refused (or the write blew up): the row is still there, so
+          // stop hiding it — the list must not claim a delete that didn't happen.
+          unhideIds(scope, ids)
+        } else if ((await outboxCount()) > 0) {
           unhideWhenSynced(qc, scope, ids, refetch)
         } else {
           await refetch().catch(() => {})
@@ -213,5 +238,7 @@ export function heldIds(queryKey: QueryKey): ReadonlySet<string> {
   return snapshot(scopeOf(queryKey))
 }
 
-// Exported for unit tests — the pure store, exercised without React.
-export const _deferredRemovalStore = { hideIds, unhideIds, snapshot, scopeOf, EMPTY }
+// Exported for unit tests — the pure store plus the freshness fence, exercised
+// without React. `unhideWhenFresh` carries the rule that a CONFIRMED delete is
+// never undone by a stale frame, so it needs a door of its own to be guarded.
+export const _deferredRemovalStore = { hideIds, unhideIds, snapshot, scopeOf, EMPTY, unhideWhenFresh }

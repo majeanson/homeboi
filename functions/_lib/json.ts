@@ -2,7 +2,19 @@
 // status codes stay consistent across handlers (same idea as the portal's
 // _lib/json.ts).
 
-const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' }
+// `no-store` is not decoration. Every one of these bodies is per-household data
+// behind a session cookie or a device token, and until 2026-09-02 they went out
+// with NO cache directive at all (verified against production: /api/board answered
+// with content-type and nothing else). That leaves freshness to heuristics in the
+// browser, any intermediary, and iOS's back-forward cache — on a surface whose whole
+// correctness story is "the poll reconciles", a frame served from a cache is a frame
+// that can show a row the household already deleted. Freshness is TanStack's job;
+// the transport must not second-guess it. Image bytes are NOT affected: /api/img/*
+// builds its own Response (cache-first by design, capability-keyed and immutable).
+const JSON_HEADERS = {
+  'content-type': 'application/json; charset=utf-8',
+  'cache-control': 'no-store',
+}
 
 function body(data: unknown, status: number): Response {
   return new Response(JSON.stringify(data), { status, headers: JSON_HEADERS })

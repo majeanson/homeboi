@@ -421,6 +421,57 @@ Two reports from Marc, both chased to mechanisms rather than symptoms.
    that's the button Marc meant, the mechanics above don't cover it; adding a
    « liste » tile to the board ＋ is a product decision, not a bug fix.
 
+### C-sexies. STILL reported after C-quater, 2026-09-02 — and what production actually said
+
+Marc re-reported both bugs the same afternoon, with screenshots (« they always come
+back », « the calendar bug is still there »). C-quater's mechanisms were real and are
+still right — they were just not the whole story. **This round was diagnosed against
+PRODUCTION, not by reading**, and the evidence reversed the assumption underneath it:
+
+- **The deletes were NOT lost.** Six list rows (« 1 », « 2 », « 3 », « 4 », « Qw »)
+  were swipe-deleted and still on screen 26–31 s later. Queried prod D1 directly
+  (`wrangler d1 execute babillard --remote`): **none of them exist.** Every DELETE
+  had landed. The rows on screen were a CLIENT hallucination, not a failed write.
+- **The server is not the calendar's problem either.** Prod holds 43 events (0 recurring),
+  120 meals, 15 tasks, 32 todos — nothing that strains `/api/month`'s 17-query batch.
+  All 123 migrations are applied. `wrangler tail` showed `outcome: ok`, no exceptions.
+- So BOTH symptoms share ONE root cause: **that device's reads were failing.** La liste
+  rendered its last good (pre-delete) frame; the month view, having never loaded one at
+  all, showed the honest error face — which is C-quater's fix *working*, not failing.
+
+**The defect that fix exposed, now closed: a CONFIRMED delete could be resurrected by a
+stale frame.** `unhideWhenFresh` carried a 90 s cap that un-hid the pending ids
+*regardless* of whether a fresh frame ever arrived — justified as "a row must never be
+hidden forever". On a device whose reads were failing, that cap is precisely what
+repainted six rows the server had already deleted. Fixed:
+
+- **No cap on the confirmed path.** We wait for a genuinely fresh frame however long it
+  takes. Nothing hides "forever": the pending set is session-only module state (a reload
+  clears it) and the row is gone server-side, so the next successful frame simply lacks it.
+- **`remove` now OBSERVES its held write.** The call sites swallowed it
+  (`write(...).catch(() => {})`), so the hook could not tell "deleted, but the refetch
+  failed" (keep hiding) from "the delete failed" (show it again) — and defaulted to the
+  resurrecting choice. `Liste.tsx`'s `deleteItem`/`clearChecked` no longer swallow; a
+  write that genuinely FAILS un-hides at once, because then the row really is still there.
+- Guard: `useDeferredRemoval.test.ts` § "deferred-removal freshness fence", **verified
+  red** by re-planting the 90 s cap.
+
+**Also found and fixed: every `/api/*` JSON response shipped with NO cache directive.**
+Verified against production (`curl -D -` on `/api/board`: `content-type` and nothing
+else). Per-household data behind a session cookie, freshness left to browser/intermediary
+heuristics and iOS's bfcache — on a surface whose whole correctness story is "the poll
+reconciles", a cached frame is a frame that can show a row the household already deleted.
+`_lib/json.ts` now sets `cache-control: no-store`. Image bytes are untouched:
+`/api/img/*` and `/api/flyer-img` build their own Response with
+`public, max-age=31536000, immutable`.
+
+**Still not explained, and deliberately not guessed at:** *why* that phone's requests
+failed. The Worker was healthy throughout, the SW passes `/api/*` straight through
+(verified in `vite.config.ts`'s fetch handler), and the same account was served fine on
+desktop in the same minutes. The self-heal (refocus + 60 s retry while errored +
+« Réessayer ») is in place and is the intended recovery. If it recurs on a healthy
+connection, the next step is a device-side capture, not another code guess.
+
 ### C-quinquies. Asked by Marc, 2026-09-02 — the day scene split into « Journée | Repas »
 
 Shipped inside `d7710d5` (three parallel sessions, one commit — this slice was the
