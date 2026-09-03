@@ -611,10 +611,57 @@ clean-up for something this small.
 **The §D judgement calls, asked and answered the same session** — see below, each now
 struck through with its verdict.
 
-**Found in passing, not yet acted on:** `AisleOrderSection`'s reorder is drag-only —
+~~**Found in passing, not yet acted on:** `AisleOrderSection`'s reorder is drag-only —
 `DragPill` has no button/keyboard mirror, which the desktop-reachability rule (this file's
-own standing rule) forbids, and a shared `<Reorder>` primitive already exists and is used
-elsewhere in Réglages (`todos.tsx`). Worth a small follow-up.
+own standing rule) forbids.~~ ✅ **Done same day — and it was systemic, not a one-off.**
+A follow-up `/code-review` + UI/UX audit (below) found the same gap at **all 8** of
+`DragPill`'s call sites, one of them `boardLayout.tsx` — the panel CLAUDE.md itself
+documents as the board's "ACCESSIBLE MIRROR", drag-only despite the name. Fixed once in
+the shared component (an `onMove?: (dir) => void` prop makes the grip a real Tab stop
+with ↑/↓, copying the pattern `pages/Liste.tsx` had already hand-rolled outside the
+shared component instead of in it) and wired at all 8 sites + the DevKit gallery.
+`e2e/board-customize.spec.ts` gained a test, verified red against a planted regression
+(the tabIndex removed) before being trusted. `components/board/CardSlot.tsx` (the live
+2D board grid) was NOT touched — it hand-rolls its own grip rather than importing
+`DragPill`, and its documented keyboard door is `boardLayout.tsx` itself, not a direct
+one on the grid (arrow-key semantics across a 2-zone masonry layout have no obvious
+meaning, so guessing one wasn't in scope for "apply the existing fix"). The
+`<Reorder>`-primitive angle in the original finding turned out to be a red herring —
+`Reorder` is `EditField`'s own up/down button pair for a plain list, a different
+shape from a shared drag grip; `DragPill` gaining `onMove` is the actual fix.
+
+### C-nonies. Self-directed review + audit, 2026-09-03 (continued) — reviewing today's
+own work, then a fresh UI/UX pass with no new features
+
+Asked by Marc after the four commits above shipped: "review our work then look for more
+improvements on ui/ux — no new features, only improvements or uniformity." Two tracks,
+run in parallel as background agents.
+
+**`/code-review` on the session's own four commits (`66fb663..1a1fb09`).** Production
+code (the stopwatch removal, the `alignSide` convergence) came back clean. The new guard
+test itself, `parallel-array-rule.test.ts`, had two real enforcement gaps: its OPS check
+was a substring scan over the whole args text, so a top-level ternary could hide a
+hand-rolled array behind a real op mentioned in the OTHER branch; and the bare-`[]`
+exemption ran BEFORE the `ALLOWED` lookup, making the two documented entries dead code
+and silently exempting any future `setX([])` with no reasoning required. Both fixed —
+see the guard-hardening commit (`5f1bc56`) for the detail, including a real bug caught
+mid-fix (a naive block-comment strip briefly broke `write-rule.test.ts` on
+`IntakeForm.tsx`'s `accept="image/*"`, caught by that file's own self-check before it
+reached a commit). Also converged `sources()`/`blankComments()` — a third identical copy
+of `write-rule.test.ts`'s — into `src/lib/buildGuardScan.ts`.
+
+**A fresh UI/UX uniformity audit** (explicitly no new features — reuse gaps and
+inconsistencies only), re-verified against code rather than read off the docs:
+
+1. **`DragPill` had no keyboard mirror at any of its 8 sites** — see above, done.
+2. ~~`Chip` not adopted at its last two stragglers~~ — queued next.
+3. ~~`VoiceButton.tsx` hand-rolls error text instead of `StatusMessage`~~ — queued next.
+
+Checked and confirmed already clean (worth recording so it isn't re-investigated):
+`RowActions` adoption, `EmptyState` usage, `useConfirm` usage (no bare `window.confirm`
+anywhere), hand-rolled flex rows outside `Cluster`/`Rail` (only hits were in DevKit, not
+user-facing), and PARITY's full Part-4 ranked backlog (all resolved, including Wave D
+above).
 
 ### D. Judgement calls waiting on Marc, not on code
 

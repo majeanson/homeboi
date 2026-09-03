@@ -106,6 +106,40 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.wg-slot[data-card="notes"]')).toHaveCount(0)
   })
 
+  // The grip's ↑/↓ keyboard mirror (ACTIONS.md's desktop-reachability rule) —
+  // added 2026-09-03 after a code-review pass found DragPill drag-only across all
+  // 8 of its call sites, boardLayout.tsx among them despite CLAUDE.md documenting
+  // this exact panel as "the ACCESSIBLE MIRROR" of the board's press-and-drag
+  // editor. A mirror that's itself drag-only isn't one.
+  test('the grip is a real Tab stop — ↑/↓ reorders within the band, mouse-only', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+    await openLayout(page)
+    const band = page.locator('.board-layout').first()
+    const names = () => band.locator('.board-layout__row .board-layout__name')
+    const before = await names().allTextContents()
+    expect(before.length).toBeGreaterThan(1)
+
+    // Tab reaches the first row's grip — never a click, so this proves the door is
+    // open to a keyboard/mouse user with no pointer drag at all.
+    const firstGrip = band.locator('.board-layout__row').first().locator('.dnd-grip')
+    await firstGrip.focus()
+    await expect(firstGrip).toBeFocused()
+    await firstGrip.press('ArrowDown')
+
+    // The first two rows swapped; nothing else moved.
+    const after = await names().allTextContents()
+    expect(after[0]).toBe(before[1])
+    expect(after[1]).toBe(before[0])
+    expect(after.slice(2)).toEqual(before.slice(2))
+
+    // Persisted (localStorage-backed, like every board-layout knob) — survives a
+    // fresh open of the panel, not just an in-memory re-render.
+    await openLayout(page)
+    await expect(band.locator('.board-layout__row .board-layout__name').first()).toHaveText(before[1]!)
+  })
+
   test('the width control resizes the card on the board', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page)

@@ -142,6 +142,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                 className="tag-admin__row-wrap"
                 gripClassName="tag-admin__grip"
                 showGrip={!ro}
+                onMove={ro ? undefined : (dir) => movePill(i, dir === 'up' ? i - 1 : i + 1)}
               >
                 <div className="tag-admin__row">
                   {!ro && renaming === tg ? (

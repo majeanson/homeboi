@@ -157,21 +157,22 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
     save({ mealOrder: DEFAULT_SLOT_ORDER, mealHero: DEFAULT_HERO, mealHours: DEFAULT_SLOT_HOURS })
   }
 
+  // Shared by the drop handler and the ↑/↓ keyboard mirror below.
+  function move(from: number, to: number) {
+    if (!order || !Number.isInteger(from) || !Number.isInteger(to) || from === to) return
+    if (from < 0 || from >= order.length || to < 0 || to >= order.length) return
+    const next = [...order]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    setOrder(next)
+    save({ mealOrder: next })
+  }
+
   // Reuse the shared pointer DnD (same grip + ghost as La liste's reorder and the
   // aisle-order rows). A drop moves the dragged slot to the target index; we read the
   // live order at drop time.
   const dnd = usePointerDnd({
-    onDrop: (fromId, toZone) => {
-      const from = Number(fromId)
-      const to = Number(toZone)
-      if (!order || !Number.isInteger(from) || !Number.isInteger(to) || from === to) return
-      if (from < 0 || from >= order.length || to < 0 || to >= order.length) return
-      const next = [...order]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
-      setOrder(next)
-      save({ mealOrder: next })
-    },
+    onDrop: (fromId, toZone) => move(Number(fromId), Number(toZone)),
     holdMs: DND_HOLD_MS,
   })
 
@@ -205,6 +206,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
               label={t.kitchen.slots[slot]}
               className={'meal-slots__row' + (shown ? '' : ' is-off') + (isHero ? ' is-hero' : '')}
               showGrip={!ro}
+              onMove={ro ? undefined : (dir) => move(i, dir === 'up' ? i - 1 : i + 1)}
             >
               <span className="meal-slots__name">
                 <span

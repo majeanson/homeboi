@@ -67,6 +67,24 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
     holdMs: DND_HOLD_MS,
   })
 
+  // The ↑/↓ keyboard mirror for the drop above — same moveCard, scoped to reordering
+  // WITHIN one zone (band or grid). Moving a card BETWEEN zones stays a drag-only
+  // gesture: that's a size/placement decision, not a plain reorder, so it doesn't fit
+  // the up/down vocabulary DragPill's grip speaks. `before` is the card moveCard should
+  // land in front of — one slot earlier for 'up', one slot later for 'down' (which,
+  // since the moved card is removed before re-inserting, means the card TWO ahead).
+  function moveWithinZone(zone: CardZone, id: BoardCardId, dir: 'up' | 'down') {
+    const list = prefs[zone]
+    const i = list.indexOf(id)
+    if (dir === 'up') {
+      if (i <= 0) return
+      setCardPrefs(moveCard(prefs, id, zone, list[i - 1]!))
+    } else {
+      if (i < 0 || i >= list.length - 1) return
+      setCardPrefs(moveCard(prefs, id, zone, list[i + 2] ?? 'end'))
+    }
+  }
+
   const setMode = (id: BoardCardId, mode: CardMode) => setCardPrefs({ mode: { ...prefs.mode, [id]: mode } })
   const bumpSize = (id: BoardCardId) => setCardPrefs({ size: { ...prefs.size, [id]: nextSize(cardSize(prefs, id)) } })
 
@@ -123,6 +141,7 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
               label={t.boardCard[id]}
               className={'board-layout__row' + (cardMode(prefs, id) === 'never' ? ' is-hidden' : '')}
               showGrip
+              onMove={(dir) => moveWithinZone(zone, id, dir)}
             >
               <span className="board-layout__name">
                 <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}

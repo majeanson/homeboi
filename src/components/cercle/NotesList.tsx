@@ -118,13 +118,15 @@ export function NotesList({
     return () => clearTimeout(timer)
   }, [flashId])
 
-  // Reorder — the shared hold-to-drag. A drop renumbers the DISPLAYED rows 0..n-1
-  // (lib/reorder skips rows already stored at their index — fewer writes).
+  // Reorder — the shared hold-to-drag, plus its ↑/↓ keyboard mirror below. A move
+  // renumbers the DISPLAYED rows 0..n-1 (lib/reorder skips rows already stored at
+  // their index — fewer writes).
+  function move(from: number, to: number) {
+    for (const patch of reorderPatches(shown, from, to))
+      void write('family-notes', { method: 'PATCH', body: patch, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
+  }
   const dnd = usePointerDnd({
-    onDrop: (fromId, toZone) => {
-      for (const patch of reorderPatches(shown, Number(fromId), Number(toZone)))
-        void write('family-notes', { method: 'PATCH', body: patch, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
-    },
+    onDrop: (fromId, toZone) => move(Number(fromId), Number(toZone)),
     holdMs: DND_HOLD_MS,
   })
   const grips = !ro && !compact && canReorder && shown.length > 1
@@ -227,6 +229,7 @@ export function NotesList({
               index={idx}
               label={title}
               showGrip={grips}
+              onMove={grips ? (dir) => move(idx, dir === 'up' ? idx - 1 : idx + 1) : undefined}
               nodeRef={(el: HTMLElement | null) => {
                 noteRefs.current[n.id] = el
               }}

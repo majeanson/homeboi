@@ -52,19 +52,20 @@ export function AisleOrderSection() {
       .catch(() => setStatus('bad'))
   }
 
+  // Shared by the drop handler and the ↑/↓ keyboard mirror below.
+  function move(from: number, to: number) {
+    if (!order || !Number.isInteger(from) || !Number.isInteger(to) || from === to) return
+    if (from < 0 || from >= order.length || to < 0 || to >= order.length) return
+    const next = [...order]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    save(next)
+  }
+
   // Reuse the shared pointer DnD (same grip + ghost as La liste's reorder). A drop
   // moves the dragged aisle to the target index; we read the live order at drop time.
   const dnd = usePointerDnd({
-    onDrop: (fromId, toZone) => {
-      const from = Number(fromId)
-      const to = Number(toZone)
-      if (!order || !Number.isInteger(from) || !Number.isInteger(to) || from === to) return
-      if (from < 0 || from >= order.length || to < 0 || to >= order.length) return
-      const next = [...order]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
-      save(next)
-    },
+    onDrop: (fromId, toZone) => move(Number(fromId), Number(toZone)),
     holdMs: DND_HOLD_MS,
   })
 
@@ -93,6 +94,7 @@ export function AisleOrderSection() {
               label={a.label[lang]}
               className="aisle-order__row"
               showGrip={!ro}
+              onMove={ro ? undefined : (dir) => move(i, dir === 'up' ? i - 1 : i + 1)}
             >
               <span className="aisle-order__pos mono" aria-hidden="true">
                 {i + 1}

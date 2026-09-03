@@ -734,14 +734,17 @@ export function DevKit() {
   ])
   const [deckClips, setDeckClips] = useState<string[]>(['', '', ''])
   const [deckPhotos, setDeckPhotos] = useState<string[]>(['', '', ''])
+  function moveDragPill(from: number, to: number) {
+    if (from < 0 || to < 0 || from >= dragPills.length || to >= dragPills.length) return
+    setDragPills((ps) => {
+      const next = [...ps]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }
   const dragPillDnd = usePointerDnd({
-    onDrop: (from, to) =>
-      setDragPills((ps) => {
-        const next = [...ps]
-        const [moved] = next.splice(Number(from), 1)
-        next.splice(Number(to), 0, moved)
-        return next
-      }),
+    onDrop: (from, to) => moveDragPill(Number(from), Number(to)),
     canDrop: (from, to) => from !== to,
   })
   const icons = Object.keys(PIP_ICONS) as IconName[]
@@ -2035,7 +2038,7 @@ export function DevKit() {
       file: 'components/DragPill.tsx',
       kw: 'drag reorder grip ⠿ glisser réordonner pill tag pointer dnd',
       render: () => (
-        <Demo label="drag the ⠿ grip to reorder (span chips here; also renders as <li> rows via as='li')">
+        <Demo label="drag the ⠿ grip to reorder, or Tab to it + ↑/↓ (span chips here; also renders as <li> rows via as='li')">
           <div className="tag-admin__pills">
             {dragPills.map((p, i) => (
               <DragPill
@@ -2046,6 +2049,7 @@ export function DevKit() {
                 label={p}
                 className="chip tag-admin__pill"
                 gripClassName="tag-admin__pill-grip"
+                onMove={(dir) => moveDragPill(i, dir === 'up' ? i - 1 : i + 1)}
               >
                 <span className="tag-admin__pill-name">{p}</span>
               </DragPill>

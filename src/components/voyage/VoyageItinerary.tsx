@@ -51,15 +51,20 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   // slip of the finger). A drop renumbers the day's rows 0..n-1 via one position
   // PATCH per moved row (reorderPatches, pure) — the GET's ORDER BY picks it up.
   const dayOf = (zone: string) => zone.slice(0, zone.lastIndexOf(':'))
+  // Shared by the drop handler and each day section's ↑/↓ keyboard mirror below.
+  function moveInDay(d: number, from: number, to: number) {
+    const dayNotes = notes.filter((n) => n.date === d)
+    for (const patch of reorderPatches(dayNotes, from, to))
+      void write(voyageApi.notesEndpoint, { method: 'PATCH', body: patch, affectedKeys: [affectedKey] }).catch(() => {})
+  }
   const dnd = usePointerDnd({
     onDrop: (fromId, toZone) => {
       if (dayOf(fromId) !== dayOf(toZone)) return
-      const d = Number(dayOf(fromId))
-      const from = Number(fromId.slice(fromId.lastIndexOf(':') + 1))
-      const to = Number(toZone.slice(toZone.lastIndexOf(':') + 1))
-      const dayNotes = notes.filter((n) => n.date === d)
-      for (const patch of reorderPatches(dayNotes, from, to))
-        void write(voyageApi.notesEndpoint, { method: 'PATCH', body: patch, affectedKeys: [affectedKey] }).catch(() => {})
+      moveInDay(
+        Number(dayOf(fromId)),
+        Number(fromId.slice(fromId.lastIndexOf(':') + 1)),
+        Number(toZone.slice(toZone.lastIndexOf(':') + 1)),
+      )
     },
     canDrop: (id, zone) => dayOf(id) === dayOf(zone),
     holdMs: DND_HOLD_MS,
@@ -168,6 +173,9 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                 as="div"
                 className="voyage-itin__row"
                 showGrip={canReorder && dayNotes.length > 1}
+                onMove={
+                  canReorder && dayNotes.length > 1 ? (dir) => moveInDay(d, j, dir === 'up' ? j - 1 : j + 1) : undefined
+                }
               >
                 <TripNoteCard
                   note={n}

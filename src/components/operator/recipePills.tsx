@@ -190,6 +190,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
               className={'pill-admin__row' + (hidden ? ' is-hidden' : '')}
               gripClassName="pill-admin__grip"
               showGrip={!ro}
+              onMove={ro ? undefined : (dir) => move(i, dir === 'up' ? i - 1 : i + 1)}
             >
               <span className="chip pill-admin__chip" style={chipStyle}>
                 {pillLabel(p)}
