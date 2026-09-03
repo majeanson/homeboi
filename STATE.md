@@ -574,6 +574,16 @@ side array is added without registering it. Verified red against both plants. PA
 Wave D entry updated in place — the schema stays positional on purpose (never a
 churn-only migration wave), but the fragility it named is now contained.
 
+**4. Tooling hygiene — mostly already done, one real fix.** §E's "configure away
+knip's noise" turned out stale: `ignoreExportsUsedInFile` was already set the same day
+that bullet was written (`421aa91`, 2026-08-27) — nothing to configure. Confirmed local
+knip still can't run to re-verify the live count (same environmental `oxc-parser`
+crash); CI's is the run that counts, unchanged. The stray `.code-workspace` stub was
+real: moved from `src/pages/` to the repo root rather than deleted — its `path` pointed
+back at the repo root, reading as Marc's live workspace shortcut, and deleting an
+untracked file outside git's safety net on a guess would have been the wrong kind of
+clean-up for something this small.
+
 **The §D judgement calls, asked and answered the same session** — see below, each now
 struck through with its verdict.
 
@@ -617,12 +627,18 @@ elsewhere in Réglages (`todos.tsx`). Worth a small follow-up.
   allocation failed`) — it ran once earlier the same day, so it is environmental, but the
   "dead-code gate" is neither gating nor runnable. Either fix and wire it, or stop calling
   it a gate.
-- **Its signal is buried anyway.** Of 24 flagged "unused exports" checked by hand, **two**
-  were genuinely dead (`CARD_ZONES`, `CARD_MODES` — removed 2026-08-27). The other 22 are
-  used *inside their own module*; knip is really reporting an unnecessary `export`
-  keyword. Worth configuring away, or the report will keep being ignored.
-- `src/pages/PlannerOrSomething.code-workspace` — a stray VS Code stub sitting in
-  `src/pages/`. Git-ignored, harmless, but it doesn't belong there.
+- ~~**Its signal is buried anyway.**~~ ✅ **already configured away, same day as the
+  gate wiring (`421aa91`, 2026-08-27).** `knip.json`'s `ignoreExportsUsedInFile: true`
+  is exactly the fix this bullet asked for. Re-verified 2026-09-03: local knip still
+  can't run to confirm the live count (the same `oxc-parser` `RangeError: Array buffer
+  allocation failed`, environmental to this machine — CI's is the run that counts).
+  Nothing left to configure; this bullet was stale.
+- ~~`src/pages/PlannerOrSomething.code-workspace` — a stray VS Code stub.~~ ✅ **moved
+  2026-09-03**, not deleted — its `path` pointed back at the repo root, so it reads as
+  Marc's active workspace shortcut rather than a build artifact; deleting an untracked
+  file outside git's safety net on a guess would have been the wrong kind of clean-up.
+  Now `./PlannerOrSomething.code-workspace` (repo root), `path` corrected `"../.."` →
+  `"."`. Still git-ignored; nothing to commit.
 
 ### F. Not a backlog — do not mine these for work
 
