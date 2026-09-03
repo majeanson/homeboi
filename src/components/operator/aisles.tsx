@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
+import { useConfirm } from '../../lib/confirm'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import { StatusMessage } from '../StatusMessage'
@@ -34,6 +35,7 @@ export function AisleOrderSection() {
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
+  const confirm = useConfirm()
   const ro = isGuest()
   const [order, setOrder] = useState<AisleId[] | null>(null)
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
@@ -77,8 +79,14 @@ export function AisleOrderSection() {
       hint={t.operator.aisleOrderHint}
       action={
         !ro ? (
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => save([...ORDERABLE])}>
-            <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.aisleReset}
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            onClick={async () => {
+              if (await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.aisleReset, tone: 'default' })) save([...ORDERABLE])
+            }}
+          >
+            <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.aisleReset}
           </button>
         ) : undefined
       }

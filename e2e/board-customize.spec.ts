@@ -74,8 +74,11 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.bento .sec-label b', { hasText: /^À venir$/ })).toHaveCount(0)
 
     // Reset from the panel restores the default layout → the card comes back.
+    // The button now confirms first (2026-09-03 — a factory-reset button sharing
+    // undo's icon, with no confirm, was the predictability audit's #1 finding).
     await openLayout(page)
     await page.getByRole('button', { name: 'Réinitialiser' }).click()
+    await page.locator('.confirm').getByRole('button', { name: 'Réinitialiser', exact: true }).click()
     await page.goto('/board')
     await page.locator('.hub').waitFor({ state: 'visible' })
     await expect(page.locator('.bento .sec-label b', { hasText: /^À venir$/ })).toHaveCount(1)

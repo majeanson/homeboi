@@ -147,7 +147,7 @@ export function PanZoom({ children, className, ariaLabel }: { children: ReactNod
           <Icon name="minus-bold" size={18} />
         </button>
         <button type="button" className="btn btn--icon" onClick={reset} disabled={scale === MIN} aria-label={t.common.zoomReset} title={t.common.zoomReset}>
-          <Icon name="arrow-counter-clockwise-bold" size={18} />
+          <Icon name="crosshair-bold" size={18} />
         </button>
         <button type="button" className="btn btn--icon" onClick={zoomIn} disabled={scale >= MAX} aria-label={t.common.zoomIn} title={t.common.zoomIn}>
           <Icon name="plus-bold" size={18} />

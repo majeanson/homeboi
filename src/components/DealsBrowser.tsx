@@ -253,7 +253,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
           <div className="deal-error">
             <StatusMessage tone="error">{t.shop.error}</StatusMessage>
             <button type="button" className="btn btn--ghost mono" onClick={() => void dealsQ.refetch()}>
-              <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.retry}
+              <InlineIcon name="arrow-clockwise-bold" /> {t.shop.retry}
             </button>
           </div>
         )}
@@ -307,7 +307,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                 <div className="deal-error">
                   <StatusMessage tone="error">{t.shop.error}</StatusMessage>
                   <button type="button" className="btn btn--ghost mono" onClick={() => void flyersQ.refetch()}>
-                    <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.retry}
+                    <InlineIcon name="arrow-clockwise-bold" /> {t.shop.retry}
                   </button>
                 </div>
               ))}

@@ -678,6 +678,67 @@ anywhere), hand-rolled flex rows outside `Cluster`/`Rail` (only hits were in Dev
 user-facing), and PARITY's full Part-4 ranked backlog (all resolved, including Wave D
 above).
 
+### C-decies. Asked by Marc, 2026-09-03 (evening) — "I press buttons but what I see is
+not what I thought it would do"
+
+A different lens from C-octies/C-nonies' code-reuse audits: this one hunts USER-FACING
+predictability — does a button's icon/label correctly promise what happens on tap?
+Calibration was C-septies' own "Vider la journée" fix from earlier the same day (a
+label that over-promised scope). A fresh audit found the icon-side twin of that bug:
+
+**`arrow-counter-clockwise-bold` carried 7 unrelated meanings across ~13 real buttons**
+(32 raw uses total, but ~13 of those are a recurring "leftovers/restants" CONTENT tag,
+not a button — correctly left alone). A user who learns "counter-clockwise arrow = undo
+one small thing" from `DrawPad` had no visual reason to expect the same glyph on the
+aisle-order screen to discard their whole custom order — with no confirm behind it
+either. Verified against live code (not just the audit's word) before touching
+anything; one correction found in the process: `boardLayout.tsx`'s reset button doesn't
+actually use this icon at all — it had NO icon, text-only, so the audit overcounted it.
+
+Fixed by splitting the meanings, not by picking one winner:
+
+- **Kept** `arrow-counter-clockwise-bold` for its one canonical meaning — undo one
+  action (`DrawPad`). Everything else moved OFF it.
+- **Reused two already-distinct existing icons**, no new assets: `play-bold` for
+  "replay from the start" (`RoutinePlayer`'s « Recommencer » — restarting a routine
+  IS playing it again, a better semantic fit than a rotation icon); `crosshair-bold`
+  for "reset zoom to center" (`PanZoom`).
+- **Added 4 new icons** to `pipIcons.ts` (real Phosphor bold SVGs, fetched via curl
+  from `unpkg.com/@phosphor-icons/core@2` per the file's own documented process —
+  never hand-typed path data, and each rendered as a standalone SVG + screenshotted
+  before trusting it, since a garbled path fails silently as a blank glyph):
+  `arrow-clockwise-bold` (retry/reload — `DealsBrowser` ×2, `PriceMatchPage`),
+  `eye-bold` (show-again — `CashierMode`'s « Tout réafficher », a genuinely better
+  fit than a rotation icon for "make things visible again"), `arrow-u-up-left-bold`
+  (restore a deleted item — `CarnetsTab`), `arrows-counter-clockwise-bold` (the
+  fuller double-arrow, for the highest-stakes meaning — **discard ALL customization
+  to factory default** — `aisles.tsx`, `meals.tsx`, `display.tsx`'s measure-colours,
+  and `boardLayout.tsx`, which now gets an icon for the first time).
+- **All 4 factory-reset buttons also gained a `useConfirm` guard** (`tone: 'default'`
+  — a preference reset, not data loss, so no trash icon / danger styling), sharing
+  one new i18n key `t.operator.resetConfirm`. This was the audit's #2 finding,
+  folded into the same fix since it compounds #1: the icon collision made a full
+  wipe read as a small undo, and nothing stood between the tap and the wipe.
+- **Left alone, by design:** `ambient.tsx`'s replay button (explicitly dev-only
+  tooling, not user-facing — "Dev tooling (the idleDebug spirit)"); `VoyageShareModal`'s
+  link-reset and `VoiturePage`'s week-reset (both low-frequency operator surfaces;
+  the latter already carries `tone: 'danger'` styling, so it isn't visually
+  unmarked the way the other four were).
+- Two e2e tests updated for the new confirm step (`board-customize.spec.ts`,
+  `config-panels.spec.ts` — the latter written earlier THIS session for the aisle
+  reset, so this is that test's own guard catching its own subject changing under
+  it). `.confirm` scoping used since the dialog's confirm button repeats the
+  trigger's label verbatim.
+
+Checked and confirmed already clean by the same audit: `aria-pressed` toggles all
+pair with a visible state class (~45 sites checked — no "I tapped it, nothing looked
+like it happened" bugs); every `Vider`/`Effacer`/`Réinitialiser` label's actual scope
+matches what it says (Board Notes' « Tout effacer » does clear exactly the shown set);
+`caret-up/down-bold`'s dual meaning (collapse vs. reorder) reads fine in practice —
+reorder always renders as a paired ↑↓ set, collapse as a lone directional caret, no
+real ambiguity; every `❌`-flagged undo gap in ACTIONS.md already carries a recorded,
+deliberate reason.
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**

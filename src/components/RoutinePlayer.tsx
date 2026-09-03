@@ -533,7 +533,7 @@ export function RoutinePlayer({
                   choice the calm STOP leaves open. A guest can't commit progress. */}
               {!ro && (
                 <button type="button" className="tdl-again" onClick={restart} style={{ color: tintInk(tint) }}>
-                  <InlineIcon name="arrow-counter-clockwise-bold" /> {t.kid.again}
+                  <InlineIcon name="play-bold" /> {t.kid.again}
                 </button>
               )}
             </>

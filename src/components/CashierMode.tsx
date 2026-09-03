@@ -80,7 +80,7 @@ export function CashierMode({
           {/* Reset the within-trip ✓ marks — only when there's something to reset. */}
           {shown.size > 0 && (
             <button type="button" className="btn btn--ghost mono cashier__reset" onClick={() => setShown(new Set())}>
-              <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.showAgain}
+              <InlineIcon name="eye-bold" /> {t.shop.showAgain}
             </button>
           )}
           <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>

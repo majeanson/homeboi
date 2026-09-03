@@ -2396,6 +2396,11 @@ export const FR = {
     boardLayout: 'Disposition du babillard',
     boardLayoutHint: 'Choisis quelles cartes afficher, leur largeur et leur ordre — propre à cet appareil. Glisse une poignée pour réordonner, ou même pour déplacer une carte d’un groupe à l’autre.',
     boardLayoutReset: 'Réinitialiser',
+    // Shared by every « Réinitialiser » / « par défaut » button that discards
+    // customization in one tap (disposition, allées, repas, couleurs) — added
+    // 2026-09-03 after an audit found these sharing the undo icon with genuine
+    // undo, with no confirm behind any of them (STATE.md's predictability entry).
+    resetConfirm: 'Effacer ta personnalisation et revenir à la disposition par défaut ?',
     boardLayoutBand: 'Bandeau du haut',
     boardLayoutGrid: 'Cartes',
     // Drop target at the end of a group, so a card can be moved into an emptied one.

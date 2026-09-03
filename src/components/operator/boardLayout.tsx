@@ -1,5 +1,6 @@
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
+import { useConfirm } from '../../lib/confirm'
 import { OperatorSection } from './OperatorSection'
 import { InlineIcon } from '../Icon'
 import { Cluster } from '../Layout'
@@ -49,6 +50,7 @@ const MODE_ICON = { always: 'check-bold', auto: 'approximate-equals-bold', never
 
 export function BoardLayoutSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const confirm = useConfirm()
   const prefs = useBoardCards()
 
   // Both lists share ONE session; the zone travels in the drop-zone id. Hold-to-drag so a
@@ -175,8 +177,14 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
         // The old « Réorganiser sur le babillard » link moved to the shared
         // « Voir dans l'app » row (SUB_GOTO in lib/settingsNav) — one pattern
         // for every sub, not a bespoke button here.
-        <button type="button" className="btn btn--ghost btn--sm mono" onClick={resetCardPrefs}>
-          {t.operator.boardLayoutReset}
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm mono"
+          onClick={async () => {
+            if (await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.boardLayoutReset, tone: 'default' })) resetCardPrefs()
+          }}
+        >
+          <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.boardLayoutReset}
         </button>
       }
     >

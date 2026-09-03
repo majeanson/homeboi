@@ -2147,6 +2147,7 @@ export const EN: typeof FR = {
     boardLayout: 'Board layout',
     boardLayoutHint: 'Choose which cards show, how wide they are, and in what order — specific to this device. Drag a handle to reorder, or even to move a card from one group to the other.',
     boardLayoutReset: 'Reset',
+    resetConfirm: 'Clear your customization and go back to the default layout?',
     boardLayoutBand: 'Top band',
     boardLayoutGrid: 'Cards',
     boardLayoutDropHere: 'Drop here',

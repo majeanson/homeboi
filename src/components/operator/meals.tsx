@@ -19,6 +19,7 @@ import {
 } from '../../lib/mealSlots'
 import { wash } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
+import { useConfirm } from '../../lib/confirm'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import { ColorPicker } from '../ColorPicker'
@@ -64,6 +65,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
+  const confirm = useConfirm()
   // Only OVERRIDES live here (a slot absent = its default colour).
   const [colors, setColors] = useState<Record<string, string>>({})
   const [hidden, setHidden] = useState<Set<string>>(new Set())
@@ -150,7 +152,8 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
   }
   // Resets the LAYOUT (order · hero · hours) only. Colours and hidden slots keep their
   // own per-row reset affordances, so this button never silently undoes them.
-  function resetLayout() {
+  async function resetLayout() {
+    if (!(await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.mealReset, tone: 'default' }))) return
     setOrder([...DEFAULT_SLOT_ORDER])
     setHero(DEFAULT_HERO)
     setHours({ ...DEFAULT_SLOT_HOURS })
@@ -187,7 +190,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
       action={
         !ro ? (
           <button type="button" className="btn btn--ghost btn--sm" onClick={resetLayout}>
-            <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.mealReset}
+            <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.mealReset}
           </button>
         ) : undefined
       }

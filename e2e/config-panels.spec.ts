@@ -208,9 +208,12 @@ test('« Remettre l’ordre par défaut » patches household with the full aisle
   // a test can pull without simulating a pointer drag.
   await page.goto('/settings?tab=liste&sub=aisles')
   const section = page.locator('#operator-panel')
+  // The reset now confirms first (2026-09-03 predictability audit — a one-tap
+  // factory reset sharing undo's icon, with no confirm, was finding #1).
+  await section.getByRole('button', { name: 'Remettre l’ordre par défaut' }).click()
   const [req] = await Promise.all([
     page.waitForRequest(isApi('PATCH', 'household'), { timeout: 20_000 }),
-    section.getByRole('button', { name: 'Remettre l’ordre par défaut' }).click(),
+    page.locator('.confirm').getByRole('button', { name: 'Remettre l’ordre par défaut', exact: true }).click(),
   ])
   const body = JSON.parse(req.postData() || '{}') as { aisleOrder?: string[] }
   expect(Array.isArray(body.aisleOrder)).toBe(true)

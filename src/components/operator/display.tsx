@@ -14,6 +14,7 @@ import { useOcrEngine, setOcrEngine, useCloudOcrAvailable } from '../../lib/ocrP
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
+import { useConfirm } from '../../lib/confirm'
 import {
   getTheme,
   toggleTheme,
@@ -527,6 +528,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
 export function MeasureColorsSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
+  const confirm = useConfirm()
   const { overrides, preview, commit, reset } = useMeasureColorsEditor()
   // The ONE gated control in this file, and gated for the right reason: unlike the
   // device-local prefs above, measure colours are a HOUSEHOLD setting — the editor
@@ -591,8 +593,14 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
         </span>
       </div>
       {!ro && (
-        <button type="button" className="btn" onClick={reset}>
-          <InlineIcon name="arrow-counter-clockwise-bold" /> {t.operator.measureColorsReset}
+        <button
+          type="button"
+          className="btn"
+          onClick={async () => {
+            if (await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.measureColorsReset, tone: 'default' })) reset()
+          }}
+        >
+          <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.measureColorsReset}
         </button>
       )}
     </OperatorSection>

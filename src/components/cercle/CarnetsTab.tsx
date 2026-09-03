@@ -102,7 +102,7 @@ export function CarnetsTab() {
                 <span className="cercle-row__sub mono">{c.kind[x.kind]}</span>
               </span>
               <button type="button" className="btn btn--sm btn--ghost" onClick={() => void restore(x)}>
-                <Icon name="arrow-counter-clockwise-bold" size={15} /> {c.restore}
+                <Icon name="arrow-u-up-left-bold" size={15} /> {c.restore}
               </button>
             </div>
           ))}
