@@ -574,6 +574,30 @@ side array is added without registering it. Verified red against both plants. PA
 Wave D entry updated in place — the schema stays positional on purpose (never a
 churn-only migration wave), but the fragility it named is now contained.
 
+**Hardened same day, from a `/code-review` pass on the session's own commits.** The
+guard's first cut had two real enforcement gaps, both since fixed and each re-verified
+red against a fresh plant: (1) its OPS check was a substring test over the whole args
+text, so a top-level ternary could hide a hand-rolled array behind a real op mentioned
+in the OTHER branch — closed with a dedicated `HAND_ROLLED` pattern that flags
+`rows.map(() => '')`-shaped code unconditionally, wherever it sits in the expression,
+rather than trying to anchor the whole-expression check (tried and reverted — it broke
+every real call site, all of which use the `setX((prev) => opCall(...))` functional-
+updater form). (2) the bare-`[]` exemption ran BEFORE the `ALLOWED` lookup, making the
+two documented `ALLOWED` entries dead code and silently exempting any future `setX([])`
+anywhere with no reasoning required — folded into the same ALLOWED gate instead, so an
+un-listed `[]` is now a violation like anything else. Also fixed in the same pass: the
+tree-walk was reading all of `src/` twice per run (once per `it()`); now read once and
+shared. `sources()`/`blankComments()` were also a byte-for-byte third copy of
+`write-rule.test.ts`'s — extracted to `src/lib/buildGuardScan.ts` and both files
+converged onto it (safe because the two were identical; `nested-interactive.test.ts`'s
+variant genuinely differs — different extensions scanned, different comment logic — so
+it was deliberately left alone rather than risking an already-trusted guard for
+cosmetic reuse). `blankComments` itself also gained real block-comment stripping,
+string-aware this time — the naive version briefly regressed `write-rule.test.ts`
+(`IntakeForm.tsx`'s `accept="image/*"` looked like a comment opener and swallowed a
+real `api()` write between it and the next JSX comment), caught immediately by that
+file's own "every exception still exists" self-check before it ever reached a commit.
+
 **4. Tooling hygiene — mostly already done, one real fix.** §E's "configure away
 knip's noise" turned out stale: `ignoreExportsUsedInFile` was already set the same day
 that bullet was written (`421aa91`, 2026-08-27) — nothing to configure. Confirmed local

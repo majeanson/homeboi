@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { sourceFiles, readScanned } from './buildGuardScan'
 
 // THE PARALLEL-ARRAY RULE, made structural. PARITY's Wave D names exactly one real
 // anti-pattern left in this schema: a SIDE array indexed by another array's
@@ -30,8 +30,11 @@ import { describe, expect, it } from 'vitest'
 //
 // Sibling of write-rule.test.ts and nested-interactive.test.ts, and it carries their
 // lesson too: this guard was run against a planted bypass and seen to FAIL before it
-// was trusted. Comment lines are blanked before scanning, so a justification written
-// beside an exception cannot satisfy its own guard.
+// was trusted (see the file's own history for the two more it was tightened against
+// after a code-review pass — a top-level ternary hiding a hand-rolled array, and a
+// bare `[]` call bypassing the ALLOWED gate entirely). Comment lines are blanked
+// before scanning (buildGuardScan.ts, shared with write-rule.test.ts), so a
+// justification written beside an exception cannot satisfy its own guard.
 
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -43,6 +46,18 @@ const SIDE_SETTERS = ['setStepImages', 'setCardsNarration', 'setCardsPhoto']
 // The sync vocabulary. A setter call is well-formed when its value flows through
 // one of these (they all live in lib/parallelArray and are covered by its tests).
 const OPS = ['alignSide', 'sideInsert', 'sideRemove', 'sideMove', 'sideSwap', 'sideSplice', 'sideSet']
+
+// The named anti-pattern itself, wherever it appears in the args — not just "no op
+// is mentioned anywhere" (a substring check alone), because a real op CAN be
+// mentioned elsewhere in the same expression while a different branch still hides a
+// hand-rolled array (e.g. a top-level ternary: one arm calls alignSide, the other
+// rebuilds by hand). `rows.map(() => '')` is exactly `alignSide(undefined,
+// rows.length)` — three real sites had already drifted into writing it this way
+// before this guard existed. Anchoring the whole-expression check instead (requiring
+// args to START with an op call) was tried and reverted: it broke every real call
+// site, which is the functional-updater form `setX((prev) => opCall(...))` — the
+// arrow wrapper means the args never start with the op's own name.
+const HAND_ROLLED = /\.map\(\s*\([^)]*\)\s*=>\s*(['"])\1\s*\)/
 
 // Sites that legitimately bypass the helper, each with the reason it is right.
 // Adding an entry is a DECISION: say why keeping the side array in lockstep would
@@ -56,23 +71,6 @@ const ALLOWED: Record<string, string> = {
   'components/forms/RoutineForm.tsx → setCardsPhoto([])':
     'whole-form reset; setCards([]) empties the source in the same block',
 }
-
-function sources(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const p = join(dir, name)
-    if (statSync(p).isDirectory()) return sources(p)
-    if (/\.test\.tsx?$/.test(name)) return []
-    return /\.(ts|tsx)$/.test(name) ? [p] : []
-  })
-}
-
-// Blank comment-only lines rather than dropping them, so a reported line number
-// still matches the real file.
-const blankComments = (s: string): string =>
-  s
-    .split('\n')
-    .map((l) => (l.trim().startsWith('//') ? '' : l))
-    .join('\n')
 
 // Read the argument text of a call starting at the '(' that follows `at`, by
 // matching parens. String literals are skipped so a ')' inside one can't end it.
@@ -106,11 +104,13 @@ interface Site {
   args: string
 }
 
+// Read the tree ONCE — both checks below scan the same files, and a second
+// independent walk+read of ~600 files per `npm test` run was pure waste.
+const files = sourceFiles(srcDir).map((f) => ({ path: relative(srcDir, f).split(sep).join('/'), raw: readScanned(f) }))
+
 function sideSetterCalls(): Site[] {
   const out: Site[] = []
-  for (const file of sources(srcDir)) {
-    const raw = blankComments(readFileSync(file, 'utf8'))
-    const rel = relative(srcDir, file).split(sep).join('/')
+  for (const { path, raw } of files) {
     for (const setter of SIDE_SETTERS) {
       // The CALL form only — setX( — so `const [x, setX] = useState(...)` and a
       // setter passed as a prop value (onNarrationChange={setCardsNarration}) are
@@ -122,7 +122,7 @@ function sideSetterCalls(): Site[] {
         const before = raw.slice(Math.max(0, m.index - 80), m.index)
         if (/\[\s*[A-Za-z0-9_]+\s*,\s*$/.test(before)) continue
         out.push({
-          file: rel,
+          file: path,
           line: raw.slice(0, m.index).split('\n').length,
           setter,
           args: callArgs(raw, m.index + setter.length),
@@ -137,9 +137,16 @@ describe('parallel-array rule', () => {
   it('every side-array setter derives its value through lib/parallelArray', () => {
     const violations = sideSetterCalls()
       .filter((s) => {
-        if (OPS.some((op) => new RegExp(`\\b${op}\\s*\\(`).test(s.args))) return false
-        if (s.args.trim() === '[]') return false
-        return !(`${s.file} → ${s.setter}(${s.args.trim()})` in ALLOWED)
+        const args = s.args.trim()
+        // ALLOWED is checked FIRST and by exact args text — including a bare `[]`,
+        // which is NOT a blanket exemption: an unlisted `setX([])` is still a
+        // violation, because the whole point of ALLOWED is that a reset gets a
+        // reasoned entry, not a free pass for matching one specific literal.
+        if (`${s.file} → ${s.setter}(${args})` in ALLOWED) return false
+        // The named anti-pattern is checked UNCONDITIONALLY (even when an op is
+        // ALSO mentioned elsewhere in the same args) — see HAND_ROLLED's comment.
+        if (HAND_ROLLED.test(args)) return true
+        return !OPS.some((op) => new RegExp(`\\b${op}\\s*\\(`).test(args))
       })
       .map((s) => `${s.file}:${s.line} → ${s.setter}(${s.args.trim().slice(0, 60)})`)
     expect(
@@ -148,7 +155,7 @@ describe('parallel-array rule', () => {
         'lib/parallelArray (alignSide/sideInsert/sideRemove/sideMove/sideSwap/sideSplice/sideSet) rather than ' +
         "rebuilding it by hand — a hand-rolled rows.map(() => '') is alignSide(undefined, rows.length), and it " +
         'is the spelling that silently drifts the day it gains a filter. If the helper is genuinely wrong at a ' +
-        'site, add it to ALLOWED with the reason.',
+        'site (bare `[]` included), add it to ALLOWED with the reason.',
     ).toEqual([])
   })
 
@@ -158,13 +165,12 @@ describe('parallel-array rule', () => {
     // forgotten: a state whose name pairs it with a source array.
     const known = new Set(SIDE_SETTERS)
     const suspects = new Set<string>()
-    for (const file of sources(srcDir)) {
+    for (const { path, raw } of files) {
       // DevKit's gallery demo state is passed straight through as CardDeckEditor's
       // onNarrationChange/onPhotoChange props — the editor itself does the syncing
       // (sideMove/sideSet…) before calling back, so DevKit never rebuilds the array
       // by hand. Not a writer, so not in scope for this rule.
-      if (relative(srcDir, file).split(sep).join('/') === 'pages/DevKit.tsx') continue
-      const raw = blankComments(readFileSync(file, 'utf8'))
+      if (path === 'pages/DevKit.tsx') continue
       // Side arrays hold MEDIA keys, so their setter name carries a media word
       // (Image/Photo/Narration/Clip) — unlike setSteps/setCards, the SOURCE
       // arrays they annotate, which this pattern must not flag.

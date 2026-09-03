@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { sourceFiles, readScanned } from './buildGuardScan'
 
 // THE WRITE RULE, made structural. CLAUDE.md has said it in prose since the outbox
 // shipped — "Any /api/* write → useWrite(); …don't call api() directly for writes
@@ -25,26 +25,11 @@ import { describe, expect, it } from 'vitest'
 //
 // Comment lines are blanked before scanning (so the justification written beside an
 // exception can't satisfy its own guard), and `*.test.ts(x)` files are skipped, so
-// this file never matches itself.
+// this file never matches itself. The scan + blank plumbing lives in
+// buildGuardScan.ts, shared with parallel-array-rule.test.ts (its sibling in
+// enforcing the "did a writer actually use the shared helper" shape of rule).
 
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-
-function sources(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const p = join(dir, name)
-    if (statSync(p).isDirectory()) return sources(p)
-    if (/\.test\.tsx?$/.test(name)) return []
-    return /\.(ts|tsx)$/.test(name) ? [p] : []
-  })
-}
-
-// Blank comment-only lines rather than dropping them, so a reported line number
-// still matches the real file.
-const blankComments = (s: string): string =>
-  s
-    .split('\n')
-    .map((l) => (l.trim().startsWith('//') ? '' : l))
-    .join('\n')
 
 // The call whose options object a `method:` sits in.
 const CALLER = /\b(api|write|writeWith)\s*(?:<[^>]*>)?\s*\(/g
@@ -58,10 +43,10 @@ interface Site {
 // Every raw-`api()` write in src/, identified as `<file> → <endpoint>`.
 function rawApiWrites(): Site[] {
   const out: Site[] = []
-  for (const f of sources(srcDir)) {
+  for (const f of sourceFiles(srcDir)) {
     // lib/write.ts IS the wrapper — the one place allowed to reach api() for a write.
     if (f.endsWith(join('lib', 'write.ts'))) continue
-    const src = blankComments(readFileSync(f, 'utf8'))
+    const src = readScanned(f)
     for (const m of src.matchAll(/method:\s*['"](POST|PATCH|PUT|DELETE)['"]/g)) {
       const before = src.slice(Math.max(0, m.index - 400), m.index)
       const calls = [...before.matchAll(CALLER)]
@@ -203,7 +188,7 @@ const ALLOWED = new Set<string>([
 ])
 
 describe('the write rule (every /api/* write goes through useWrite)', () => {
-  const files = sources(srcDir)
+  const files = sourceFiles(srcDir)
   const writes = rawApiWrites()
 
   it('found the sources', () => {
