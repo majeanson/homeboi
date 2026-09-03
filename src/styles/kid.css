@@ -382,7 +382,7 @@
 .tdl-finish:active {
   transform: scale(0.95);
 }
-/* Clock + advance button sit SIDE BY SIDE, not stacked — one short row. */
+/* Wraps the → / ✓ advance button while a step is running. */
 .tdl-timer {
   display: flex;
   flex-direction: row;
@@ -390,15 +390,9 @@
   justify-content: center;
   gap: 18px;
 }
-.tdl-clock {
-  font-size: clamp(2rem, 8vh, 3.2rem);
-  font-weight: 800;
-  color: var(--ink);
-  line-height: 1;
-}
 /* The advance controls as ONE row: the ← rewind (when there's a step behind us),
-   then the ▶ start / the running clock + →. Wraps on a narrow phone rather than
-   bleeding off the edge (no bespoke fixed-basis flex row — see CLAUDE.md). */
+   then the ▶ start / the running →. Wraps on a narrow phone rather than bleeding
+   off the edge (no bespoke fixed-basis flex row — see CLAUDE.md). */
 .tdl-controls {
   display: flex;
   flex-wrap: wrap;
@@ -430,12 +424,6 @@
   font-family: var(--font-hand);
   font-size: 32px;
   color: var(--ink);
-}
-/* A quiet total on the end recap (a parent's glance). */
-.tdl-total {
-  font-size: var(--text-lg);
-  font-weight: 700;
-  color: var(--ink-soft);
 }
 /* The companion buddy — a present, tappable creature that keeps the child company
    through the run, anchored in a bottom corner of the stage. Tap → it speaks its

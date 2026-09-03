@@ -1606,11 +1606,9 @@ test('toddler reads a step aloud, then starts + finishes it', async ({ page }) =
   await tap.click()
   // Doing it is the start → finish flow; finishing marks the step done (PATCH).
   await page.locator('.tdl-start').click()
-  // The run row is up — but on the TODDLER surface it carries no count-up clock
-  // (Marc, 2026-08-28: one live number per surface; the step's Countdown ring is the
-  // one a pre-reader can act on, the run stopwatch is a parent's metric). This line
-  // used to assert `.tdl-clock` visible here, which is why the full suite caught the
-  // change — the ✓/→ button is what matters and is deliberately NOT gated.
+  // The run row is up — but it carries no count-up clock on ANY surface any more
+  // (the run stopwatch was dropped entirely 2026-09-03; see routine-timer.spec.ts).
+  // The ✓/→ button is what matters and is deliberately NOT gated.
   await expect(page.locator('.tdl-timer')).toBeVisible()
   await expect(page.locator('.tdl-clock')).toHaveCount(0)
   await expectApi(page, 'PATCH', 'routines', () => page.locator('.tdl-finish').click())

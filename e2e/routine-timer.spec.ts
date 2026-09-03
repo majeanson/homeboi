@@ -151,41 +151,44 @@ test('a read-only guest can run the timer locally but never writes it to the hou
   expect(patched).toBe(false) // …but nothing of theirs lands in the household's day
 })
 
-// ---- One live number per surface (Marc, 2026-08-28) --------------------------
+// ---- The run stopwatch is gone, on every surface (Marc, 2026-09-03) ----------
 //
-// A step that carries `seconds` renders the Countdown ring AND, just below, the run
-// count-up stopwatch — two live numbers on one screen, both changing every second.
-// They answer different questions: the ring is "how much longer for THIS step",
-// which a pre-reader can act on; the stopwatch is "how long the whole routine has
-// taken", which is a parent's metric and means nothing to a four-year-old.
-//
-// So the audience lens splits them instead of either being dropped. The parent keeps
-// both; the toddler surface keeps only the ring. The ✓/→ advance button is NOT gated
-// — it is the only way forward, and hiding it would strand the child.
+// Until 2026-09-02 a step that carried `seconds` rendered the Countdown ring AND,
+// just below, a run count-up stopwatch — two live numbers on one screen. They used
+// to be split by audience (parent: both; toddler: ring only, 2026-08-28), on the
+// reasoning that the stopwatch was a parent's metric. Marc's call the next day: drop
+// it entirely rather than keep splitting it — elapsed-time-per-run is the raw
+// material a personal-best score would be built from, closer to what the calm tenet
+// forbids than a parent-only metric is. `.tdl-clock` (the live number) and
+// `.tdl-total` (the end-of-run recap line) are both gone from the DOM now, on every
+// surface. The step ring is unaffected — it serves the task, not a score, and the
+// ✓/→ advance button is still NOT gated by any of this: it is the only way forward,
+// and hiding it would strand the child.
 
-test('the toddler surface shows the step ring but not the run stopwatch', async ({ page }) => {
+test('the step ring runs with no stopwatch, on either surface', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page, { overrides: { routines: routinesWithTimer() } })
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', surface: 'kiosk' })
   await page.goto('/routine/r1/run')
   await expect(page.locator('.tdl-what')).toBeVisible()
 
-  // Start the run, which is what mounts the stopwatch row.
   await page.locator('.tdl-start').click()
   await expect(page.locator('.tdl-timer')).toBeVisible()
 
   // The step ring stays — it is the one a pre-reader can act on.
   await expect(page.locator('.tdl-countdown')).toHaveCount(1)
-  // The run count-up goes.
+  // No stopwatch, no recap total.
   await expect(page.locator('.tdl-clock')).toHaveCount(0)
+  await expect(page.locator('.tdl-total')).toHaveCount(0)
   // …but the way forward must remain. Hiding this would strand the child.
   await expect(page.locator('.tdl-timer .tdl-finish')).toBeVisible()
 })
 
-test('the parent surface keeps both numbers', async ({ page }) => {
-  // The other side, so "hide the stopwatch" can't quietly become "drop it".
+test('the parent surface has no stopwatch either — this used to be the audience split', async ({ page }) => {
+  // Regression guard for the reversal: this test failing (a visible .tdl-clock)
+  // means the split came back rather than staying dropped.
   await openRun(page)
   await page.locator('.tdl-start').click()
   await expect(page.locator('.tdl-countdown')).toHaveCount(1)
-  await expect(page.locator('.tdl-clock')).toBeVisible()
+  await expect(page.locator('.tdl-clock')).toHaveCount(0)
 })

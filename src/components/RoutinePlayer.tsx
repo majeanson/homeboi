@@ -18,7 +18,6 @@ import { chime, clock } from '../lib/cookTimers'
 import { colourFor } from '../lib/things'
 import { Companion } from './Companion'
 import { useSurface } from '../lib/surface'
-import { useAudience } from '../lib/audience'
 import { companionPool, companionTone, isCompanion, type CompanionMoment } from '../lib/companions'
 import { computeDayPart } from '../lib/timeofday'
 import { tipFor } from '../lib/routineTips'
@@ -35,8 +34,8 @@ import { tipFor } from '../lib/routineTips'
 // dreams" and STOPS — no auto-advance, no nag — but offers a quiet, deliberate
 // "Recommencer" so a redo is a choice, not a streak hook; the day resets server-side.
 //
-// ONE finish screen: the recap (sweet dreams + the picture story again + the ⏱ total
-// + « Recommencer ») renders whenever the routine is complete, whatever the settings.
+// ONE finish screen: the recap (sweet dreams + the picture story again + « Recommencer »)
+// renders whenever the routine is complete, whatever the settings.
 // « Mode calme » decides exactly ONE thing here — the sticker offer: calm ON (the
 // default) ends the routine reward-free; calm OFF lets the child place a sticker on
 // their wall. The STRUCTURAL calm tenets (no points, no streaks, no push) aren't
@@ -112,8 +111,6 @@ export function RoutinePlayer({
   const { lang } = useLang()
   const { calm } = useCalm()
   const { surface } = useSurface()
-  // The presentation lens — the run stopwatch is parent-only (see its render below).
-  const { audience } = useAudience()
   const speak = useSpeak()
   const qc = useQueryClient()
   // The buddy is big + glanceable on a wall tablet (kiosk), but on a phone the same
@@ -172,49 +169,17 @@ export function RoutinePlayer({
   })
 
   // One continuous run, not a per-step start/stop: tap ▶ ONCE to begin (reads the
-  // first step aloud), then → through each step, ✓ on the last. Each → laps the
-  // step's time; the clock keeps running between steps. Count-up, no score; the end
-  // shows the total. (Distinct from a step's own tap-to-start countdown below.)
-  // WALL-CLOCK anchored, NOT a counter that freezes when the app is backgrounded:
-  // `startAt` is the unix second the current step began; `elapsed` is DERIVED from
-  // the clock on every render. A browser suspends setInterval in a backgrounded
-  // tab, so a `+1`-per-tick counter would stall while you're away and resume behind
-  // real time ("the timer hasn't moved"). Deriving from Date.now() means leaving and
-  // reopening shows the real time spent — the same discipline the Countdown ring uses.
-  const nowSec = () => Math.floor(Date.now() / 1000)
+  // first step aloud), then → through each step, ✓ on the last. `running` marks
+  // whether the current step has been started (▶ tapped) — that decides the Start
+  // vs advance/finish control. (Distinct from a step's own tap-to-start countdown
+  // below, a separate per-step timer that stays.) There is deliberately no session
+  // clock here any more — elapsed-time-per-run was dropped 2026-09-03 (Marc's call,
+  // §D): a step's own countdown serves the task, but timing the whole routine is
+  // the raw material a personal-best score would be built from.
   const [running, setRunning] = useState(false)
-  const [startAt, setStartAt] = useState(0)
-  // A bare re-render pulse each second while running (elapsed is derived, not stored).
-  const [, tick] = useState(0)
-  // How long each step took (card index → seconds), built up as steps finish so
-  // the end can show a total. Session-local — a gentle "look how you did", not data
-  // we persist; a reload starts it fresh.
-  const [times, setTimes] = useState<Record<number, number>>({})
-  const elapsed = running ? Math.max(0, nowSec() - startAt) : 0
-  useEffect(() => {
-    if (!running) return
-    const id = setInterval(() => tick((x) => x + 1), 1000)
-    return () => clearInterval(id)
-  }, [running])
-  // Backgrounding suspends the interval; on return recompute immediately (this also
-  // re-renders the child Countdown ring so it snaps to its real remaining at once)
-  // rather than wait up to a second for the first resumed tick.
-  useEffect(() => {
-    if (!running) return
-    const refresh = () => tick((x) => x + 1)
-    document.addEventListener('visibilitychange', refresh)
-    window.addEventListener('focus', refresh)
-    return () => {
-      document.removeEventListener('visibilitychange', refresh)
-      window.removeEventListener('focus', refresh)
-    }
-  }, [running])
-  // Switching to another routine (KidView picker, or a deep-link change) resets the
-  // stopwatch + tally.
+  // Switching to another routine (KidView picker, or a deep-link change) resets it.
   useEffect(() => {
     setRunning(false)
-    setStartAt(0)
-    setTimes({})
   }, [routine.id])
 
   // Which card is being read aloud right now (the `is-speaking` pulse on the hero +
@@ -297,18 +262,13 @@ export function RoutinePlayer({
     }).catch(() => setAwarded(null))
   }
   function startStep(idx: number) {
-    setStartAt(nowSec())
     setRunning(true)
     readAloud(idx)
   }
-  // Advance one step: lap the current step's time, mark it done (which moves the
-  // story to the next card), keep the clock running — until the LAST step, where it
-  // stops and the recap appears.
+  // Advance one step: mark it done (which moves the story to the next card) — until
+  // the LAST step, where it stops and the recap appears.
   function advance(idx: number) {
-    const taken = elapsed
     const isLast = idx >= routine.cards.length - 1
-    setStartAt(nowSec()) // re-anchor the lap for the next step; the clock keeps running
-    if (!routine.doneIdx.includes(idx)) setTimes((m) => ({ ...m, [idx]: taken }))
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: true })
     buzz()
     if (isLast) {
@@ -332,12 +292,6 @@ export function RoutinePlayer({
     if (ro || idx < 0) return
     setArmedIdx(null)
     toggle.mutate({ routineId: routine.id, cardIdx: idx, done: false })
-    setStartAt(nowSec()) // the lap restarts on the step we came back to
-    setTimes((m) => {
-      const next = { ...m }
-      delete next[idx]
-      return next
-    })
     buzz()
     readAloud(idx)
     setAnnounce(stepLabel(idx, t.kid.stepNow))
@@ -368,19 +322,17 @@ export function RoutinePlayer({
     armTimer.current = setTimeout(() => setArmedIdx(null), ARM_MS)
   }
 
-  // Play it again: clear the day's ✓ and the session stopwatch so it starts at the
-  // first card, fresh. The kid taps ▶ to begin again (we don't auto-run — calm).
+  // Play it again: clear the day's ✓ so it starts at the first card, fresh. The kid
+  // taps ▶ to begin again (we don't auto-run — calm).
   function restart() {
     if (ro) return
     resetRun.mutate({ routineId: routine.id })
     setRunning(false)
-    setStartAt(0)
-    setTimes({})
   }
 
   const tint = colourFor('routine', routine.color)
   // ONE finish screen, whatever the settings: a finished routine always ends on the
-  // "sweet dreams" recap (the picture story again + the ⏱ total + « Recommencer »).
+  // "sweet dreams" recap (the picture story again + « Recommencer »).
   // Calm used to fork this into a second, poorer ending ("sit on the last card") —
   // two code paths saying the same thing badly. Calm now gates exactly ONE thing:
   // the sticker offer below.
@@ -454,11 +406,6 @@ export function RoutinePlayer({
   // Picking a routine back up mid-day: the ▶ reads as « Continuer », not « Commencer »
   // (and, as always, speaks the step it lands on).
   const resuming = routine.doneIdx.length > 0
-
-  // Time spent so far across steps finished this session (plus the running one) —
-  // a quiet line on the recap (a parent's glance; the kid's recap is the pictures).
-  const tallied = Object.values(times).reduce((a, b) => a + b, 0)
-  const totalSecs = tallied + (running ? elapsed : 0)
 
   return (
     <div className="kid">
@@ -548,7 +495,6 @@ export function RoutinePlayer({
                   </button>
                 ))}
               </div>
-              {totalSecs > 0 && <div className="tdl-total mono">⏱ {clock(totalSecs)}</div>}
 
               {/* The sticker reward — the ONE thing « Mode calme » decides. Calm ON
                   (the default): the routine simply ends, no reward anywhere. Calm OFF:
@@ -710,22 +656,6 @@ export function RoutinePlayer({
                   )}
                   {running ? (
                     <div className="tdl-timer">
-                      {/* A glanceable count-up, not a status message — announcing it every
-                          second floods a screen reader, so keep it out of the live region.
-                          PARENT ONLY (Marc, 2026-08-28): a step that carries `seconds` also
-                          renders the Countdown ring right above this, and two live numbers
-                          on one screen is two things to read. They answer different
-                          questions — the ring is "how much longer for THIS step", which a
-                          pre-reader can act on; this is "how long the whole routine has
-                          taken", which is a parent's metric and means nothing to a
-                          four-year-old. So the lens splits them rather than either being
-                          dropped: the recap still shows the total for whoever wants it.
-                          The ✓/→ button below is NOT gated — it is the only way forward. */}
-                      {audience !== 'toddler' && (
-                        <span className="tdl-clock mono" aria-live="off">
-                          {clock(elapsed)}
-                        </span>
-                      )}
                       <button
                         type="button"
                         className="tdl-finish"
