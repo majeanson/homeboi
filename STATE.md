@@ -544,17 +544,68 @@ holding N meals could not say which one it meant. Mechanics:
   « Cuisiner »… », **verified red** against a planted text-only regression before being
   trusted (the standing rule). ACTIONS.md row + footnote ⁹ updated.
 
+### C-octies. Self-directed sweep, 2026-09-03 — settings write coverage + the parallel-array guard
+
+Picked from this file's own §4/§D backlog (Marc: "do 1, 3, 4 in order, ask about 2").
+Each item verified against code first, per the standing rule — one candidate ("`ChoreForm`/
+`BlockForm` hand-roll the same member-toggle row") turned out already stale (`ChoreForm`
+already goes through the shared face control; `BlockForm` doesn't exist) and was dropped
+without doing the work.
+
+**1. Nine new settings-write tests, six previously-silent subs (`0c047b6`).** Measured
+before writing anything: 24 subs in `SETTINGS_SUBS`, 17 operator panels that write, and
+only a handful had ever asserted a real request. `stores`, `aisles`, `todos` (templates),
+`routines` (the ToD chip), `members`, and `tablets` now do — each proven red against a
+planted bug (wrong field name, dropped id, missing colour) before being trusted. See
+`e2e/config-panels.spec.ts`'s header for why this class of panel fails silently: every
+control here commits optimistically, so a broken PATCH looks identical to a working one
+on screen.
+
+**3. The parallel-array write path is now structurally guarded.** PARITY's Wave D called
+`recipes.steps_images_json` / the routine-card side arrays unconverged; re-checked, the
+sync ops already lived in one place (`lib/parallelArray.ts`, unit-tested) since migration
+0041 — ten weeks before that note was written. What was actually missing was enforcement
+that a writer USES it: three call sites (`RecipeForm`'s import-replace reset, `RoutineForm`'s
+template-apply reset ×2) had quietly re-implemented `alignSide` by hand as
+`rows.map(() => '')`. Converged onto the shared helper, plus a new build-gating test,
+`src/lib/parallel-array-rule.test.ts` (sibling of `write-rule.test.ts`), that fails the
+build if a side-array setter is ever fed a hand-built array again, or a new positional
+side array is added without registering it. Verified red against both plants. PARITY's
+Wave D entry updated in place — the schema stays positional on purpose (never a
+churn-only migration wave), but the fragility it named is now contained.
+
+**The §D judgement calls, asked and answered the same session** — see below, each now
+struck through with its verdict.
+
+**Found in passing, not yet acted on:** `AisleOrderSection`'s reorder is drag-only —
+`DragPill` has no button/keyboard mirror, which the desktop-reachability rule (this file's
+own standing rule) forbids, and a shared `<Reorder>` primitive already exists and is used
+elsewhere in Réglages (`todos.tsx`). Worth a small follow-up.
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**
   `bmad/history/AUJOURDHUI.md` now has no open boxes at all. Declined, not deferred — don't
   re-propose without a new observation.
-- **Review-queue counts** in intake/postbox section titles — borderline against the
-  no-counts tenet; operator-only and passive. Keep, or drop the number.
-- **Routines invalidate `BOARD_KEY` but never surface on the board** — either wire a
-  morning-routine glance (a possible missing feature) or drop the dead invalidate.
-- **Two timers on screen at once** on a timed routine step (the countdown ring *and* the
-  run stopwatch) — a design decision.
+- ~~**Review-queue counts** in intake/postbox section titles.~~ ✅ **answered
+  2026-09-03: keep.** The no-counts tenet targets household-facing gamification
+  (streaks, ranks, tallies of who did more); an operator-only work queue's depth is
+  operational information for deciding whether to open the section, not a score. No
+  code change. Declined, not deferred.
+- ~~**Routines invalidate `BOARD_KEY` but never surface on the board.**~~ **Stale,
+  re-verified 2026-09-03 — both halves.** The "possible missing feature" already
+  ships: `RoutineNextCard.tsx` is a registered board card (`routineNext` in
+  `lib/boardCards`) reading `ROUTINES_KEY` directly. And the invalidate is not dead
+  either — `/api/board` returns no routine data, and the co-invalidate sites
+  (`household.tsx:334`'s member save, `Operator.tsx:174`'s refresh-all) are broad
+  cache refreshes where `BOARD_KEY` is warranted alongside `ROUTINES_KEY`, not a
+  routine-specific write with nowhere for it to land. Nothing to decide or fix.
+- ~~**Two timers on screen at once** on a timed routine step.~~ ✅ **answered
+  2026-09-03: drop the run stopwatch entirely.** The per-step countdown ring stays
+  (it serves the task — a 2-minute brush); the session stopwatch goes (elapsed time
+  per run is the raw material a personal-best score would be built from, closest to
+  the calm stance). `RoutinePlayer.tsx` — parent-only rendering removed, along with
+  its dead-code trail.
 
 ### E. Tooling gaps found during this cleanup
 

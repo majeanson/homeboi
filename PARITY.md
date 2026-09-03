@@ -905,6 +905,19 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
           it to `media_key` would make it lie for the majority case. Keep.
         _(still opportunistic: fold it in when a wave already touches recipes or routines,
         never as a churn-only migration.)_
+        **The write-path risk this item actually names — not the column shape — is now
+        guarded structurally (2026-09-03).** The sync ops already lived in one place
+        (`lib/parallelArray.ts`, unit-tested, in use by both editors since
+        migration 0041/`ad976bd` — ten weeks before this entry called it unconverged);
+        what was missing was enforcement that every writer used it. Three call sites had
+        already re-implemented `alignSide` by hand (`rows.map(() => '')`); converged onto
+        the shared helper, plus a new build-gating test,
+        `src/lib/parallel-array-rule.test.ts` (sibling of `write-rule.test.ts`), that
+        fails the build if a side-array setter is ever fed a hand-built array again, or
+        if a new positional side array is added without joining its `SIDE_SETTERS` list.
+        Verified red against both plants (a hand-rolled bypass, an unregistered new side
+        array) before being trusted. The schema itself stays positional on purpose — see
+        above — so this item stays open as a policy-deferred migration, not a live risk.
   - [x] `SILENT_PATHS` cleanup — **DONE 2026-08-27** (entry 17): dead
         `capture-classify` dropped, 7 blob/AI-scratch endpoints silenced, and the
         3 with real polled keys (`postbox`, `intake`, `guest-links`) mapped in

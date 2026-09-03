@@ -309,7 +309,7 @@ export function RecipeForm({
       // The imported steps are fresh rows (we only replace when the editor's steps
       // were all blank, so no photo is lost) — reset stepImages to a same-length
       // all-empty array so it can't drift past the new step count (feature #17 B).
-      setStepImages(d.steps.map(() => ''))
+      setStepImages(alignSide(undefined, d.steps.length))
     }
     if (d.servings && !servings.trim()) setServings(String(d.servings))
     if (d.servingsUnit && !servingsUnit.trim()) setServingsUnit(d.servingsUnit)

@@ -110,8 +110,8 @@ export function RoutineForm({
     setCards(tpl.cards.map((c) => ({ ...c })))
     // A template's cards carry no recorded clips or photos — reset both parallel
     // arrays to a fresh all-empty set of the new length so they never drift.
-    setCardsNarration(tpl.cards.map(() => ''))
-    setCardsPhoto(tpl.cards.map(() => ''))
+    setCardsNarration(alignSide(undefined, tpl.cards.length))
+    setCardsPhoto(alignSide(undefined, tpl.cards.length))
     // The template knows its moment (Matin → morning, Dodo → evening).
     setTod(tpl.tod)
     if (!name.trim()) {
