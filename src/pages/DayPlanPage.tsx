@@ -131,6 +131,21 @@ export function DayPlanPage() {
 
   // — server state (live-polled, same caches the Kitchen grid reads) —
   const meals = useMeals()
+  // /api/meals' plain read is a ROLLING WINDOW from today (functions/api/meals.ts) —
+  // it never carries a date already in the past, so a day scene reaching one (the
+  // Historique pencil, the calendar's ⋯ « Planifier un repas ») would otherwise
+  // render that day's meal planner EMPTY even though a meal is already there. This
+  // is a second, narrow read for exactly that ONE day, only ever fetched when it's
+  // actually past — merged into `days` below. Its key is a MEALS_KEY prefix, so
+  // every existing meal write (they all already invalidate MEALS_KEY) refreshes it
+  // too, same trick as MEAL_HISTORY_SUMMARY_KEY.
+  const isPast = date < todayLocalDay()
+  const pastMealsQ = useQuery({
+    queryKey: [...MEALS_KEY, 'past', date],
+    queryFn: () => api<MealsData>(`meals?date=${date}`),
+    enabled: isPast,
+    ...live,
+  })
   const dayNotesQ = useDayNotes()
   const pantry = usePantry()
   const recipesQ = useRecipes()
@@ -222,7 +237,7 @@ export function DayPlanPage() {
   }
 
   const recipes = recipesQ.data?.recipes ?? []
-  const days = meals.data?.days ?? []
+  const days = isPast ? [...(meals.data?.days ?? []), ...(pastMealsQ.data?.days ?? [])] : (meals.data?.days ?? [])
   const mealsFor = (d: number, slot: string) => days.filter((m) => m.date === d && m.slot === slot)
   const noteFor = (d: number) => dayNotesQ.data?.notes?.find((n) => n.date === d)
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
@@ -316,7 +331,9 @@ export function DayPlanPage() {
   // Wipe a planned slot entirely (the ✕ beside the picker). The editor closes and
   // the day goes back to its open "＋" state. On failure the editor stays open.
   async function clearMeal(id: string) {
-    const meal = qc.getQueryData<MealsData>(MEALS_KEY)?.days.find((m) => m.id === id)
+    // `days` (not a fresh MEALS_KEY read): the meal may live in the past-day query
+    // instead, which a plain MEALS_KEY lookup would miss entirely.
+    const meal = days.find((m) => m.id === id)
     try {
       await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] })
       setEditDate(null)
@@ -342,10 +359,13 @@ export function DayPlanPage() {
       method: 'PATCH',
       body: { id, title: v },
       affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
-      optimistic: (c) =>
-        c.setQueryData<MealsData>(MEALS_KEY, (d) =>
-          d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d,
-        ),
+      optimistic: (c) => {
+        const patch = (d: MealsData | undefined) =>
+          d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, title: v } : m)) } : d
+        c.setQueryData<MealsData>(MEALS_KEY, patch)
+        // The meal may live in the past-day query instead of the window (see `isPast`).
+        if (isPast) c.setQueryData<MealsData>([...MEALS_KEY, 'past', date], patch)
+      },
     }).catch(() => {})
   }
 
@@ -356,7 +376,7 @@ export function DayPlanPage() {
   // Easy clearing: wipe one slot's meals, or the whole day's. Snapshot the rows
   // first so Annuler can put them back (compensating undo).
   async function clearSlotMeals(d: number, slot: string) {
-    const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === d && m.slot === slot)
+    const removed = days.filter((m) => m.date === d && m.slot === slot)
     await write('meals', { method: 'POST', body: { action: 'clear', date: d, slot }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] }).catch(
       () => {},
     )
@@ -364,7 +384,7 @@ export function DayPlanPage() {
   }
   // Clearing the whole day empties the editor — leave the scene back to the grid.
   async function clearDay(d: number) {
-    const removed = (qc.getQueryData<MealsData>(MEALS_KEY)?.days ?? []).filter((m) => m.date === d)
+    const removed = days.filter((m) => m.date === d)
     await write('meals', { method: 'POST', body: { action: 'clear', date: d }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY] }).catch(() => {})
     if (removed.length) recordUndo({ message: t.undo.dayCleared, onUndo: () => restoreMeals(qc, removed) })
     close()

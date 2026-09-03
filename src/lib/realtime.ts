@@ -17,6 +17,7 @@
 // the socket dies, we flip back to fast polling AND refetch once to catch up on
 // whatever a heartbeat-sized gap might have missed, so freshness is never traded
 // for the savings. See `isRealtimeConnected()` + the `live` poll in query.ts.
+import { useSyncExternalStore } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import { getDeviceToken, getGuestToken, isGuest } from './device'
 
@@ -31,6 +32,75 @@ function isInvalidate(v: unknown): v is InvalidateMessage {
     typeof v === 'object' &&
     (v as { type?: unknown }).type === 'invalidate' &&
     Array.isArray((v as { keys?: unknown }).keys)
+  )
+}
+
+// --- Presence (nav-tab "someone's here" dot) --------------------------------
+//
+// The household socket doubles as a presence channel: HubLayout announces which
+// hub tab it's on (announcePresence), and the server echoes back the WHOLE
+// household's view→[memberId] map (see worker/RealtimeHub.ts) so a nav bar can
+// show a dot for ANY section, not just the one currently open. Deliberately
+// presence-only, never a count (calm — the chore-ledger rule: which faces, not
+// how many).
+interface PresenceMessage {
+  type: 'presence'
+  byView: Record<string, string[]>
+}
+
+function isPresenceMsg(v: unknown): v is PresenceMessage {
+  return !!v && typeof v === 'object' && (v as { type?: unknown }).type === 'presence' && !!(v as { byView?: unknown }).byView
+}
+
+// Replaced wholesale (never mutated) on every update so useSyncExternalStore's
+// reference-equality check works without extra bookkeeping.
+let presenceByView: Record<string, string[]> = {}
+const presenceListeners = new Set<() => void>()
+
+function setPresence(next: Record<string, string[]>): void {
+  presenceByView = next
+  for (const cb of presenceListeners) cb()
+}
+
+// What THIS tab last announced — resent automatically on every (re)connect, so a
+// dropped-and-restored socket doesn't leave the tab looking empty to everyone
+// else until the user happens to switch screens again.
+let announcedView: string | null = null
+let announcedMemberId: string | null = null
+
+function sendPresence(): void {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return
+  // No picked face → announce nothing, matching lib/profile.ts: attribution
+  // (and presence is a form of it) is opt-in, not tied to "a device is open."
+  const view = announcedMemberId ? announcedView : null
+  try {
+    socket.send(JSON.stringify({ type: 'presence', view, memberId: announcedMemberId }))
+  } catch {
+    /* socket died mid-send — the close handler will clear presence + reconnect */
+  }
+}
+
+// Tell the household which hub tab this device is on (`view`, e.g. 'today' /
+// 'kitchen' / 'list' — HubLayout's TABS keys), or `null` to leave every tab. A
+// no-op while disconnected; the value is remembered and resent the moment the
+// socket (re)opens.
+export function announcePresence(view: string | null, memberId: string | null): void {
+  announcedView = view
+  announcedMemberId = memberId
+  sendPresence()
+}
+
+// The live view→[memberId] map, read straight off the module singleton — a
+// plain object compared by reference, replaced wholesale on change (see
+// setPresence), so this is a valid useSyncExternalStore snapshot with no memo.
+export function usePresenceMap(): Record<string, string[]> {
+  return useSyncExternalStore(
+    (cb) => {
+      presenceListeners.add(cb)
+      return () => presenceListeners.delete(cb)
+    },
+    () => presenceByView,
+    () => presenceByView,
   )
 }
 
@@ -100,6 +170,7 @@ function openSocket(queryClient: QueryClient): void {
     ws.addEventListener('open', () => {
       connected = true
       reconnectDelay = 0 // a healthy connection resets the backoff
+      sendPresence() // re-announce whatever tab we're on — a fresh socket knows nothing yet
     })
 
     ws.addEventListener('message', (ev) => {
@@ -109,6 +180,8 @@ function openSocket(queryClient: QueryClient): void {
           for (const key of msg.keys) {
             void queryClient.invalidateQueries({ queryKey: key })
           }
+        } else if (isPresenceMsg(msg)) {
+          setPresence(msg.byView)
         }
       } catch {
         /* malformed frame — ignore; polling still covers freshness */
@@ -127,6 +200,10 @@ function openSocket(queryClient: QueryClient): void {
         connected = false
         void queryClient.refetchQueries({ type: 'active', predicate: (q) => q.meta?.live === true })
       }
+      // We don't know who's still on which tab until the next snapshot arrives —
+      // stale presence (someone shown as "here" after their tablet went offline)
+      // is worse than none, so clear it rather than let it go stale silently.
+      setPresence({})
       scheduleReconnect()
     }
     ws.addEventListener('error', onDown)
@@ -163,6 +240,7 @@ function disconnectRealtime(): void {
   clearReconnect()
   reconnectDelay = 0
   connected = false
+  setPresence({})
   try {
     socket?.close()
   } catch {

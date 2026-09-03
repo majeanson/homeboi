@@ -53,6 +53,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const layout = await householdMealLayout(ctx.env, actor.householdId)
   const windowDays = layout.windowDays
   const MEAL_ORDER = mealOrderSql(layout.order)
+
+  // ?date= — ONE day outside the rolling window below (the day scene reaching a
+  // past date: Historique's pencil, the calendar's ⋯ « Planifier un repas »). A
+  // narrow, single-day read; the caller (DayPlanPage) merges it into the window's
+  // `days` itself, under its own query key, so this never widens the window or
+  // affects the plain (no ?date=) call the kitchen grid makes.
+  const dateParam = Math.floor(Number(new URL(ctx.request.url).searchParams.get('date')))
+  if (Number.isFinite(dateParam) && dateParam > 0) {
+    const { results } = await ctx.env.DB.prepare(
+      `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date = ? ORDER BY ${MEAL_ORDER}`,
+    )
+      .bind(actor.householdId, dateParam)
+      .all()
+    return ok({ days: results, weekStart: today, windowDays, recent: [] })
+  }
+
   const { results } = await ctx.env.DB.prepare(
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
   )

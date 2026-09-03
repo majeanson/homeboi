@@ -8,6 +8,7 @@ import { MEALS_KEY } from './kitchen/types'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
+import { announcePresence, usePresenceMap } from '../lib/realtime'
 import { useHabitCheckinTrigger } from '../lib/habitCheckin'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
 import { registerIdleReset, pokeIdle } from '../lib/idleHold'
@@ -258,6 +259,19 @@ export function HubLayout() {
   // any interaction; a quiet heads-up appears 30 s before the drift so a parent
   // mid-glance isn't silently switched back (mis-attributing what they add).
   const { memberId: profileId, setMemberId } = useProfile()
+  // Presence dot (nav bar): tell the household which hub tab this device is on,
+  // so another device's nav bar can show a subtle "someone's here too" dot next
+  // to that section's icon. Re-announces on every tab switch or picked-face
+  // change; a SEPARATE mount-only effect below retracts it when the hub shell
+  // itself unmounts (leaving for a full-screen scene), so switching TABS doesn't
+  // briefly announce "gone" before "back" (see lib/realtime's re-announce-on-open
+  // for why a flicker there would matter: it would echo to every other device).
+  useEffect(() => {
+    const tab = TABS.find((t) => loc.pathname === t.to || loc.pathname.startsWith(t.to + '/'))
+    announcePresence(tab ? tab.key : null, profileId)
+  }, [loc.pathname, profileId])
+  useEffect(() => () => announcePresence(null, null), [])
+  const presenceByView = usePresenceMap()
   const ambient = useAmbient()
   const [idleWarn, setIdleWarn] = useState(false)
   const [saver, setSaver] = useState(false)
@@ -520,6 +534,17 @@ export function HubLayout() {
                 {/* A-5 whisper-dot: something sleeps in Découvrir. Decorative —
                     the tab keeps its plain section name (no urgency semantics). */}
                 {tab.to === '/settings' && tourDot && <span className="hubnav__whisper" aria-hidden="true" />}
+                {/* Presence: another device has this tab open right now. Same
+                    "decorative dot, no count" shape as the whisper-dot above —
+                    presence/absence only, never how many (calm — the chore-ledger
+                    rule). Tinted with the tab's own colour so it reads as "this
+                    section", not as an alert. */}
+                {(presenceByView[tab.key] ?? []).some((id) => id !== profileId) && (
+                  <>
+                    <span className="hubnav__presence" aria-hidden="true" style={{ background: tab.color }} />
+                    <span className="sr-only">{t.nav.presenceHere}</span>
+                  </>
+                )}
               </>
             )}
           </NavLink>

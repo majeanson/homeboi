@@ -21,11 +21,13 @@ import { mockApi, seedState } from './mocks'
 //
 // The shared `month` fixture is empty, so this spec seeds the day it means to test.
 
+const DAY = 86400
 const TODAY = (() => {
   const d = new Date()
   d.setHours(0, 0, 0, 0)
   return Math.floor(d.getTime() / 1000)
 })()
+const YESTERDAY = TODAY - DAY
 
 const NOTE = 'apporter la carte d’assurance maladie · 3e étage'
 
@@ -53,7 +55,18 @@ const DAY_MONTH = {
   },
 }
 
-async function openDay(page: Page, opts: { guest?: boolean; vue?: 'repas' } = {}) {
+async function openDay(
+  page: Page,
+  opts: {
+    guest?: boolean
+    vue?: 'repas'
+    date?: number
+    overrides?: Record<string, unknown>
+    // Registered right after mockApi's own routes (so it wins — Playwright tries
+    // routes newest-first) and before the page navigates.
+    extraRoutes?: (page: Page) => Promise<void>
+  } = {},
+) {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.addInitScript(() => {
@@ -63,7 +76,8 @@ async function openDay(page: Page, opts: { guest?: boolean; vue?: 'repas' } = {}
       /* noop */
     }
   })
-  await mockApi(page, { overrides: DAY_MONTH, signedIn: !opts.guest })
+  await mockApi(page, { overrides: opts.overrides ?? DAY_MONTH, signedIn: !opts.guest })
+  if (opts.extraRoutes) await opts.extraRoutes(page)
   if (opts.guest) {
     // A read-only LINK guest (what the public demo is): no operator session, a guest
     // token in localStorage, `showcase` share-mode so they stay in the hub.
@@ -73,7 +87,8 @@ async function openDay(page: Page, opts: { guest?: boolean; vue?: 'repas' } = {}
     await page.addInitScript(() => localStorage.setItem('babillard-guest-token', 'e2e-guest-token'))
   }
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto(`/kitchen/day/${TODAY}${opts.vue ? `?vue=${opts.vue}` : ''}`)
+  const date = opts.date ?? TODAY
+  await page.goto(`/kitchen/day/${date}${opts.vue ? `?vue=${opts.vue}` : ''}`)
   await expect(page.locator('.day-plan__sections')).toBeVisible({ timeout: 15_000 })
 }
 
@@ -192,4 +207,60 @@ test('a read-only guest sees the day, but none of the ＋', async ({ page }) => 
   await page.getByRole('tab', { name: 'Repas' }).click()
   await expect(page.locator('.day-mng__sec').first()).toBeVisible()
   await expect(page.locator('.day-mng__sec .sec-label__actbtn')).toHaveCount(0)
+})
+
+test('a PAST date is fully editable — the meal planner has no date gate', async ({ page }) => {
+  // /api/meals' plain GET is a rolling window from today (functions/api/meals.ts) —
+  // it never carries a past date, so DayPlanPage additionally reads
+  // /api/meals?date=<past> for the one day it's actually showing (src/pages/
+  // DayPlanPage.tsx, `pastMealsQ`). Stub the two shapes distinctly to prove that
+  // read actually happens and actually renders — not just that the write succeeds.
+  const posted: Record<string, unknown>[] = []
+  await openDay(page, {
+    vue: 'repas',
+    date: YESTERDAY,
+    extraRoutes: async (page) => {
+      await page.route('**/api/meals**', async (route) => {
+        const req = route.request()
+        if (req.method() === 'GET') {
+          const forPastDay = new URL(req.url()).searchParams.get('date') === String(YESTERDAY)
+          const body = forPastDay
+            ? {
+                days: [
+                  { id: 'ym1', date: YESTERDAY, slot: 'supper', title: 'Chili maison', cook_member_id: null, position: 0, is_leftover: 0 },
+                ],
+                weekStart: TODAY,
+                windowDays: 10,
+                recent: [],
+              }
+            : { days: [], weekStart: TODAY, windowDays: 10, recent: [] }
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
+        }
+        if (req.method() === 'POST') {
+          posted.push(req.postDataJSON())
+          return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'new-past' }) })
+        }
+        return route.fallback()
+      })
+    },
+  })
+
+  const supper = page.locator('.day-mng__sec[data-dnd-zone="supper"]')
+  // The read side: yesterday's already-planned meal actually renders — this is the
+  // part that used to be silently empty.
+  await expect(supper).toContainText('Chili maison')
+
+  // The write side: adding a second supper item on that PAST date must reach the
+  // server with that same past `date` — nothing downgrades it to read-only or
+  // silently redirects it to today.
+  await supper.locator('.day-mng__sec-head-row .sec-label__actbtn').click()
+  const field = supper.locator('.edit-field input.input')
+  await field.fill('Poutine')
+  await page.keyboard.press('Enter')
+
+  await expect.poll(() => posted.length, { message: 'the past-day meal was planned' }).toBeGreaterThan(0)
+  const body = posted[0] as { title?: string; date?: number; slot?: string }
+  expect(body.title).toBe('Poutine')
+  expect(body.slot).toBe('supper')
+  expect(body.date).toBe(YESTERDAY)
 })

@@ -108,6 +108,21 @@
   margin-left: auto;
 }
 
+/* Presence dot (src/lib/realtime.ts usePresenceMap): another device has this
+   tab open right now. Same decorative, no-count shape as the whisper-dot above
+   — colour comes from the tab itself (inline style), not a fixed hue, so it
+   reads as "this section" rather than a notification. Kept a hair smaller and
+   on the OPPOSITE corner from the whisper-dot on mobile (left vs right) so the
+   two could never visually merge if they ever landed on the same tab. */
+.hubnav__presence {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  min-width: 0;
+  border-radius: 50%;
+  margin-left: auto;
+}
+
 /* Keep the label on one line and let it shrink within the button (never spill
    past the right padding). The fluid font above means it won't actually
    ellipsize at real sizes — this is just a belt-and-suspenders guard. */
@@ -284,6 +299,12 @@
   position: absolute;
   top: 5px;
   right: 8px;
+  margin-left: 0;
+}
+.hub[data-surface='mobile'] .hubnav__presence {
+  position: absolute;
+  top: 5px;
+  left: 8px;
   margin-left: 0;
 }
 .hub[data-surface='mobile'] .hubnav__btn.is-active {

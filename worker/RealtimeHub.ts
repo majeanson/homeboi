@@ -7,10 +7,13 @@
 // (src/lib/query.ts) — if the DO is never deployed or a socket drops, polling
 // still keeps screens fresh. Nothing here is on the write path's critical line.
 //
-// Kept deliberately minimal: a broadcast and nothing else. No persistence, no
-// presence list, no auth re-check inside the DO (the Worker authenticates the
-// upgrade BEFORE handing the request here, and only ever routes a socket to the
-// caller's OWN household DO, so a connection can't cross households).
+// Kept deliberately minimal otherwise: besides the invalidate broadcast, the
+// only other state is a per-socket PRESENCE attachment (added 2026-09-03, see
+// below) — which hub tab a client is on, so nav bars can show a subtle "someone
+// else is here" dot. No auth re-check inside the DO either way (the Worker
+// authenticates the upgrade BEFORE handing the request here, and only ever
+// routes a socket to the caller's OWN household DO, so a connection can't cross
+// households).
 //
 // HIBERNATION (2026-08-27). This used `server.accept()` plus an in-memory
 // `Set<WebSocket>`, which pins the DO in memory for as long as any socket is
@@ -39,9 +42,42 @@ interface InvalidateMessage {
   keys: string[][]
 }
 
+// --- Presence (nav-tab "someone's here" dot) --------------------------------
+//
+// A client announces which hub tab it's on; every connected client gets back the
+// WHOLE household's view→[memberId] map so nav bars anywhere can show a dot for
+// ANY section, not just the one you're currently looking at. Deliberately no
+// count anywhere in this — only presence/absence (mirrors the chore-ledger rule:
+// show WHICH faces, never a number).
+//
+// State lives ONLY on each socket's attachment (`serializeAttachment`), which the
+// Hibernation API persists across an eviction — so there is nothing for this
+// object to rebuild on wake-up, same as the rest of the DO. A device with no
+// picked face never attaches anything and so never appears (mirrors
+// lib/profile.ts: no picked face = no attribution, and presence is a form of
+// attribution now — it says which room a person is in).
+interface PresenceAttachment {
+  view: string
+  memberId: string
+}
+
+interface PresenceIn {
+  type: 'presence'
+  // null retracts this socket's presence (tab closed the hub, or its face was
+  // cleared back to "tout le monde").
+  view: string | null
+  memberId: string | null
+}
+
+function isPresenceIn(v: unknown): v is PresenceIn {
+  return !!v && typeof v === 'object' && (v as { type?: unknown }).type === 'presence'
+}
+
 // The Worker sends this DO two request kinds, told apart by method:
 //   GET  + Upgrade: websocket → a client joining the household (returns 101)
 //   POST /broadcast            → a write happened; body is an InvalidateMessage
+// A joined client can also SEND presence frames (see webSocketMessage below) —
+// the one case where this hub listens instead of only speaking.
 export class RealtimeHub implements DurableObject {
   // The runtime owns the socket set now (see the hibernation note above), so the
   // only thing this object holds is the handle it asks for them through.
@@ -87,6 +123,10 @@ export class RealtimeHub implements DurableObject {
     } catch {
       /* already closed */
     }
+    // The closing socket drops out of getWebSockets() once it's actually gone, so
+    // this recomputes the roster WITHOUT it — the tab it was on may just have gone
+    // empty for everyone else.
+    this.broadcastPresence()
   }
 
   webSocketError(ws: WebSocket): void {
@@ -95,6 +135,28 @@ export class RealtimeHub implements DurableObject {
     } catch {
       /* already closed */
     }
+    this.broadcastPresence()
+  }
+
+  // A client is the only thing that ever sends here: a presence announce when it
+  // enters/leaves a hub tab (src/lib/realtime.ts announcePresence). Store it on
+  // THIS socket's attachment (survives hibernation) and re-fan-out the household's
+  // whole presence map — cheap at household scale, and simpler than tracking which
+  // views actually changed.
+  webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): void {
+    let msg: unknown
+    try {
+      msg = JSON.parse(typeof message === 'string' ? message : '')
+    } catch {
+      return // malformed frame — ignore, nothing to attach
+    }
+    if (!isPresenceIn(msg)) return
+    if (msg.view && msg.memberId) {
+      ws.serializeAttachment({ view: msg.view, memberId: msg.memberId } satisfies PresenceAttachment)
+    } else {
+      ws.serializeAttachment(null) // retract: no tab, or no face picked
+    }
+    this.broadcastPresence()
   }
 
   private broadcast(msg: InvalidateMessage): void {
@@ -108,6 +170,36 @@ export class RealtimeHub implements DurableObject {
       } catch {
         // A send to a half-dead socket throws. Best-effort: close it and carry on,
         // so one bad connection never blocks the rest of the household.
+        try {
+          ws.close()
+        } catch {
+          /* already gone */
+        }
+      }
+    }
+  }
+
+  // Rebuild the whole household's view→[memberId] map from every live socket's
+  // attachment and fan it out to everyone. Household socket counts are tiny (a
+  // handful of devices), so recomputing from scratch on every change is simpler
+  // than diffing and cheap enough not to matter.
+  private broadcastPresence(): void {
+    const byView: Record<string, string[]> = {}
+    for (const ws of this.state.getWebSockets()) {
+      let att: PresenceAttachment | null = null
+      try {
+        att = ws.deserializeAttachment() as PresenceAttachment | null
+      } catch {
+        att = null
+      }
+      if (!att) continue
+      ;(byView[att.view] ??= []).push(att.memberId)
+    }
+    const data = JSON.stringify({ type: 'presence', byView })
+    for (const ws of this.state.getWebSockets()) {
+      try {
+        ws.send(data)
+      } catch {
         try {
           ws.close()
         } catch {

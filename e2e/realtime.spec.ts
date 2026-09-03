@@ -95,3 +95,36 @@ test('a malformed realtime frame is ignored without breaking the socket (polling
   serverWs!.send(JSON.stringify({ type: 'invalidate', keys: [['board']] }))
   await expect(page.getByText('Bananes E2E', { exact: true })).toBeVisible({ timeout: 8_000 })
 })
+
+// Presence dot (nav bar): the RealtimeHub DO echoes back the WHOLE household's
+// view→[memberId] map on every presence change; the nav bar shows a subtle dot
+// on a tab when someone OTHER than this device is on it. No wrangler/DO here
+// either — the mock server plays the DO's part by hand.
+test('a presence snapshot from another device shows the nav-bar dot, and it clears when they leave', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  // A picked face — presence is opt-in, tied to the same rule as write attribution
+  // (lib/profile.ts): no face picked, no announce, nothing to receive either.
+  await page.addInitScript(() => localStorage.setItem('babillard-profile', 'm1'))
+
+  let serverWs: WebSocketRoute | null = null
+  await page.routeWebSocket(/\/api\/live/, (ws) => {
+    serverWs = ws
+  })
+
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+
+  await page.goto('/board')
+  await expect.poll(() => serverWs !== null, { timeout: 10_000 }).toBe(true)
+
+  const dot = page.locator('a[href="/board"] .hubnav__presence')
+  await expect(dot).toHaveCount(0) // nobody else here yet
+
+  // Another device (m2) is also on the board tab.
+  serverWs!.send(JSON.stringify({ type: 'presence', byView: { today: ['m1', 'm2'] } }))
+  await expect(dot).toBeVisible({ timeout: 8_000 })
+
+  // m2 leaves (or their socket drops) — the DO's next snapshot omits them.
+  serverWs!.send(JSON.stringify({ type: 'presence', byView: { today: ['m1'] } }))
+  await expect(dot).toHaveCount(0)
+})
