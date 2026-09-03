@@ -549,14 +549,20 @@ export interface MealOpts {
 // `recipeId` (resolved by useOpenMeal) adds « Ouvrir la recette » + the primary
 // « Cuisiner »; `onLeftover` adds "Créer des restants"; `onRemove` the danger
 // "Retirer du plan" — those last two fold into the ⋯ so the visible row stays the
-// three doors you actually came for. —
+// three doors you actually came for. « Voir la journée » lands `?vue=repas`
+// (Marc, 2026-09-04) — the tap that opened this peek WAS a meal, so it's a MEAL
+// door under the day scene's own taxonomy (DayPlanPage.tsx), same as buildDay's
+// dedicated « Planifier un repas » door below. It used to land the default
+// « Journée » face, which meant tapping a supper in the calendar's day panel and
+// asking to see the day dropped you on the agenda instead of the plan you just
+// looked at. —
 export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailModel {
   const { t, members } = ctx
   const slot = m.slot
   const icon: IconName = slot && isMealSlot(slot) ? SLOT_ICON_NAME[slot] : CATS.meal.icon
   const blocks: DetailBlock[] = m.is_leftover ? [{ kind: 'text', text: t.kitchen.leftoversTag }] : []
   const actions: DetailModel['actions'] = []
-  if (opts?.daySec) actions.push({ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.daySec}` })
+  if (opts?.daySec) actions.push({ key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${opts.daySec}?vue=repas` })
   // The recipe half — the same two doors a planner row wears, spelled out here since a
   // lone peek has room for labels where a dense row only had glyphs. « Cuisiner » is the
   // primary: it is what you opened a supper for.

@@ -226,6 +226,34 @@ test.describe('Mois — the day panel', () => {
     }
   })
 
+  // ── A tapped MEAL's own « Voir la journée » is a MEAL door ──────────────────────
+  // Marc, 2026-09-04: "select a meal ... Voir la journée button ... should take it
+  // to meal subtab (but only because it's a meal we clicked)". buildMeal's day door
+  // (src/components/detail/adapters.ts) used to land the default « Journée » face
+  // like any other day door — wrong here, since the tap that opened this peek WAS a
+  // meal. The day panel's OWN « Voir la journée » button (`.monthv__open-day`,
+  // tested above) stays on the default face: that one wasn't reached via a meal.
+  test('tapping a meal in the day panel, then « Voir la journée », lands on the Repas face', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize(REPORTED)
+    await mockApi(page)
+    await seedMonthOnCell(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
+    await page.goto('/board')
+    await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
+
+    const seeded = page.locator('.monthv__cell').nth(SEED_IDX)
+    await seeded.click()
+    const panel = page.locator('.monthv__day')
+    await panel.locator('.act').filter({ hasText: MEAL_TITLE }).click()
+
+    const sheet = page.locator('.detail-sheet')
+    await sheet.waitFor({ state: 'visible', timeout: 10_000 })
+    await sheet.locator('.detail-sheet__actions').getByText('Voir la journée', { exact: true }).click()
+
+    await page.waitForURL(/\/kitchen\/day\/\d+\?vue=repas/)
+  })
+
   // ── Where you are lives in the URL ──────────────────────────────────────────────
   test('the picked day and month ride in ?date=, and survive a reload', async ({ page }) => {
     await mois(page)

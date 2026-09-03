@@ -90,8 +90,10 @@ interface DayItemsData {
 // (DayEditor). One day scene had grown both jobs stacked, and which one you came
 // for depended on the door: a MEAL door (the kitchen grid's pencil, the ＋
 // « Planifier un repas » picker, the history pencil, a meal search hit, the
-// calendar ⋯ « Planifier un repas ») lands `?vue=repas`; every DAY door (« Voir la
-// journée », « Planifier aujourd'hui/demain », the calendar cell) lands the
+// calendar ⋯ « Planifier un repas », a tapped MEAL's own peek — buildMeal's
+// « Voir la journée », src/components/detail/adapters.ts, Marc 2026-09-04) lands
+// `?vue=repas`; every DAY door (« Voir la journée » from a DAY panel/peek — not a
+// meal's, « Planifier aujourd'hui/demain », the calendar cell) lands the
 // default « Journée » (Marc, 2026-09-02). The SUB-TAB ROW IS THE FIRST THING in the
 // body, and the weather strip + the day's note-headline live INSIDE « Journée »:
 // they are context for the agenda, not for the meal planner, and above the picker
