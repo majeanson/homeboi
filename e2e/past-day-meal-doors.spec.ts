@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState, MMID } from './mocks'
+import { todayLocalDay } from '../src/lib/localDay'
 
 // Two DOORS into the same editable day scene for a PAST date — La cuisine ▸
 // Historique's pencil, and Le babillard ▸ Mois's ⋯ « Planifier un repas ». Neither
@@ -60,11 +61,16 @@ test('Mois — the ⋯ « Planifier un repas » door reaches a past day too', as
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 660, height: 1176 })
   await mockApi(page)
-  const today = (() => {
-    const d = new Date()
-    d.setHours(0, 0, 0, 0)
-    return Math.floor(d.getTime() / 1000)
-  })()
+  // The household's own local-midnight math (America/Toronto, DST-aware), not a
+  // bare `new Date()` — the browser context is pinned to that zone
+  // (playwright.config.ts), but this Node test process runs in the CI RUNNER's
+  // zone (UTC). MonthView re-snaps `?date=` through the SAME Toronto-aware
+  // `localDayStart` (src/components/board/MonthView.tsx `selected`), so a
+  // UTC-computed epoch here would round-trip to a DIFFERENT calendar day on CI
+  // than the one this test asserts on — exactly what broke this test on CI
+  // (2026-09-03: expected .../1788307200, received .../1788235200 — one day off,
+  // the Toronto/UTC offset showing through).
+  const today = todayLocalDay()
   const past = today - DAY
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
   // ?date= picks the day directly on load (MonthView reads it from the URL), so this
