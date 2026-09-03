@@ -4,7 +4,7 @@ import { useWrite } from '../../lib/write'
 import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_IDEAS_KEY, MEAL_HISTORY_KEY } from './types'
 import { type AiWake } from './useAiWake'
 
@@ -42,7 +42,7 @@ export function useMealPlanning(ai: AiWake, profileId: string | null) {
       await write('meals', {
         method: 'POST',
         body: { date, slot, title, staples, recipeId },
-        affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+        affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
       })
       setEditDate(null)
       setMealText('')

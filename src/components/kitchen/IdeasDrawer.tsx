@@ -14,7 +14,7 @@ import { useLoves } from '../../lib/loves'
 import { type Member } from '../../lib/members'
 import { type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
-import { MEMBERS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { MEMBERS_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
 import { type Recipe } from '../../lib/recipes'
@@ -132,7 +132,7 @@ export function IdeasDrawer({
     void write('meals', {
       method: 'POST',
       body: { date, slot, title: r.title, recipeId: r.id, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     }).catch(() => {})
   }
 
@@ -141,7 +141,7 @@ export function IdeasDrawer({
     void write('meals', {
       method: 'POST',
       body: { date, slot, title, recipeId: null, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     }).catch(() => {})
   }
 

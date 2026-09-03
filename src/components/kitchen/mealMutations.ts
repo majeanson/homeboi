@@ -1,6 +1,6 @@
 import { type QueryClient } from '@tanstack/react-query'
 import { writeWith } from '../../lib/write'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type MealRow, type MealsData } from './types'
 
 // Meal-plan mutations shared by the calm week grid (Kitchen) and the day editor
@@ -18,7 +18,7 @@ export async function planMeal(qc: QueryClient, date: number, slot: string, titl
   await writeWith(qc, 'meals', {
     method: 'POST',
     body: { date, slot, title: v },
-    affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+    affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
   })
 }
 
@@ -31,7 +31,7 @@ export async function reschedule(qc: QueryClient, id: string, toDate: number, sl
   await writeWith(qc, 'meals', {
     method: 'POST',
     body: { action: 'reschedule', id, toDate, slot },
-    affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+    affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     optimistic: (c) =>
       c.setQueryData<MealsData>(MEALS_KEY, (d) =>
         d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, date: toDate, slot: slot ?? m.slot } : m)) } : d,
@@ -47,7 +47,7 @@ export async function restoreMeals(qc: QueryClient, meals: MealRow[]) {
     await writeWith(qc, 'meals', {
       method: 'POST',
       body: { date: m.date, slot: m.slot, title: m.title, recipeId: m.recipe_id ?? null },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     }).catch(() => {})
   }
 }

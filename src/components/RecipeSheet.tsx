@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
 import { isGuest } from '../lib/device'
 import { useAudience } from '../lib/audience'
@@ -189,7 +189,7 @@ export function RecipeSheet({
       body: { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
       // MEAL_HISTORY_KEY: the picked day can be today, which « Historique » shows —
       // and every dish planned here feeds « Déjà mangé » (same key prefix).
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     }).catch(() => setPlannedDate(null))
   }
 

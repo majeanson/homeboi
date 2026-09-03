@@ -55,9 +55,9 @@ describe('keysForPath', () => {
     }
   })
 
-  it('maps the meal plan to meals + board + a-regler (empty/low supper heads-up)', () => {
-    expect(keysForPath('meals')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history']])
-    expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board'], ['meal-history']])
+  it('maps the meal plan to meals + board + a-regler (empty/low supper heads-up) + month (calendar dots)', () => {
+    expect(keysForPath('meals')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history'], ['month']])
+    expect(keysForPath('meal-leftovers')).toEqual([['leftovers'], ['board'], ['meal-history'], ['month']])
   })
 
   // meals + month ride along because the meal ORDER/HERO are applied server-side, so
@@ -192,7 +192,7 @@ describe('keysForPath', () => {
 
   it('normalizes leading slash, api/ prefix, query string and trailing slash', () => {
     expect(keysForPath('/api/list')).toEqual([['board'], ['ghosts'], ['list-history']])
-    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history']])
+    expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history'], ['month']])
     expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month']])
     // A full URL pathname (what route.ts passes) works too.
     expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month'], ['a-regler'], ['car']])

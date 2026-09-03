@@ -104,7 +104,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 // and stays empty — no counters, no score for clearing it. The board has two
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
-import { BOARD_KEY, TODOS_KEY, WEATHER_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
@@ -664,7 +664,7 @@ export function Board() {
   // ── Detail-sheet contextual actions for meals + leftovers ──────────────────
   // Remove a planned meal (compensating undo: re-add it at same day+slot).
   const removeMealFromPlan = async (id: string, title: string, slot: string, date: number) => {
-    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY]
+    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
     await write('meals', { method: 'DELETE', body: { id }, affectedKeys: keys }).catch(() => {})
     recordUndo({
       message: t.undo.mealRemoved(title),
@@ -675,7 +675,7 @@ export function Board() {
   // Plan a pool leftover as tonight's supper (compensating undo: delete the
   // created meal + re-insert the pool row, exactly like Leftovers.tsx planLeftover).
   const planLeftoverTonight = async (id: string, title: string) => {
-    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY]
+    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id, date: todayDay, slot: heroSlot },

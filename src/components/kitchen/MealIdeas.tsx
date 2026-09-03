@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type HelpMode } from '../../lib/helpMode'
@@ -30,7 +30,7 @@ export function usePlanIdea() {
     void write('meals', {
       method: 'POST',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY],
+      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     }).catch(() => {})
   }
 }

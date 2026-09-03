@@ -129,10 +129,13 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Meal plan: the kitchen week grid + the board's "ce soir"; an empty/low-ingredient
   // supper feeds the « À régler » heads-up. ['meal-history'] rides along because a
   // meal write can touch a today-or-past day (edit/clear from the day editor, an
-  // add for today), which the Historique tab reads.
-  meals: [['meals'], ['board'], ['a-regler'], ['meal-history']],
-  // Planning a leftover CREATES a meal row (possibly today's) → history too.
-  'meal-leftovers': [['leftovers'], ['board'], ['meal-history']],
+  // add for today), which the Historique tab reads. ['month'] too — a meal shows on
+  // the calendar's day dots (functions/api/month.ts) exactly like a habit mark does
+  // (see the `habits` entry below); without it the Mois view kept showing a stale
+  // dot-less day until its own 30s staleTime happened to lapse.
+  meals: [['meals'], ['board'], ['a-regler'], ['meal-history'], ['month']],
+  // Planning a leftover CREATES a meal row (possibly today's) → history + month too.
+  'meal-leftovers': [['leftovers'], ['board'], ['meal-history'], ['month']],
   'meal-ideas': [['meal-ideas']],
   'meal-staples': [['meals']],
   // Per-day memo pinned to the meal week; today's shows on the board.

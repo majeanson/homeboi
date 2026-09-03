@@ -1,7 +1,7 @@
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
-import { BOARD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type MealSlot } from '../../lib/mealSlots'
 import { type HelpMode } from '../../lib/helpMode'
 import { InlineIcon } from '../Icon'
@@ -27,7 +27,7 @@ export function usePlanLeftover() {
   const write = useWrite()
   const recordUndo = useRecordUndo()
   return async (l: Leftover, date: number, slot: MealSlot) => {
-    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY]
+    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id: l.id, date, slot },
