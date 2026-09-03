@@ -15,7 +15,7 @@ export const FR = {
   tagline: 'Le planificateur familial calme.',
   // 'cercle'/'routines' are KEPT even though the hub tabs retired them — the
   // frozen /cercle/* and /routine/* scenes still use these words.
-  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', maison: 'Maison', notes: 'Les notes', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu', sections: 'Sections' },
+  nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', maison: 'Maison', notes: 'Les notes', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu', sections: 'Sections', presenceHere: 'Quelqu’un d’autre est aussi ici' },
   // The phone's bottom bar gives each of the six tabs ~57px, where the full names
   // ellipsize (« La cuisi… », « Aujourd… »). These are the same sections, named
   // short enough to fit whole — the articles drop and « Aujourd'hui », one
@@ -1441,6 +1441,34 @@ export const FR = {
     reviewRetake: 'Annuler',
     reviewConfirmBtn: 'C’est bon',
     reviewSaving: 'Un instant…',
+    reviewCheckAi: 'Ce nombre n’apparaît pas sur la photo — l’IA l’a peut-être modifié. Vérifie.',
+    // The « Rapport » tab: what read the photo, what organized the text, what was
+    // corrected or flagged — honesty about the pipeline, in plain words.
+    reviewTabVerify: 'Vérifier',
+    reviewTabReport: 'Rapport',
+    reportReader: 'Lecture de la photo',
+    reportReaderDevice: 'Sur l’appareil (Tesseract) — rien n’a quitté la maison',
+    reportReaderCloud: 'Haute précision (nuage)',
+    reportReaderVision: 'Modèle de vision (IA générative) — relis attentivement',
+    reportReaderNone: 'Aucune lecture n’a abouti',
+    reportConfidence: 'confiance',
+    reportPages: (n: number) => (n === 1 ? '1 photo' : `${n} photos`),
+    reportColumns: 'Colonnes détectées — relues séparément',
+    reportStructuring: 'Organisation du texte',
+    reportStructHeadings: 'Sans IA — les titres de sections ont suffi',
+    reportStructAi: 'Par IA (peut se tromper sur un chiffre — les lignes douteuses sont marquées)',
+    reportStructHeuristic: 'Heuristique, sans IA (au mieux)',
+    reportStructVision: 'Le modèle de vision a lu et organisé d’un coup',
+    reportModel: 'Modèle',
+    reportRepairs: 'Corrections automatiques',
+    reportRepairsNone: 'Aucune',
+    reportRepairsWhy: 'Fraction illisible reconstruite à partir des millilitres imprimés à côté.',
+    reportSuspect: 'Chiffres qui ne viennent pas de la photo',
+    reportSuspectNone: 'Aucun — tous les chiffres retracés dans la photo',
+    reportShaky: 'Mots lus avec hésitation',
+    reportShakyNone: 'Aucun',
+    reportShakyCount: (n: number) => (n === 1 ? '1 mot — surligné dans « Vérifier »' : `${n} mots — surlignés dans « Vérifier »`),
+    readFailEngine: 'Le lecteur n’a pas pu se charger (connexion ?). Réessaie, ou colle le texte.',
     import: 'Importer un lien',
     importTitle: 'Importer une recette',
     importUrl: 'Coller un lien de recette',

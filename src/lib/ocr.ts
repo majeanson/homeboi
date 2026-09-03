@@ -24,9 +24,16 @@ export interface OcrResult {
   /** Distinct shaky words (low per-word confidence) — the verify panel flags any
    *  ingredient/step line containing one. Lowercased, deduped. */
   lowConfidenceWords: string[]
+  /** True when the page read as multi-column and was re-emitted column by column
+   *  (columnizeOcrPage) — surfaced in the read report. */
+  columnized: boolean
+  /** True when the ENGINE never ran (worker/model download failed or timed out) —
+   *  distinct from "ran and read nothing": the caller can say "reader couldn't
+   *  load" instead of the misleading "text illisible". */
+  engineFailed: boolean
 }
 
-const EMPTY: OcrResult = { text: '', confidence: 0, lowConfidenceWords: [] }
+const EMPTY: OcrResult = { text: '', confidence: 0, lowConfidenceWords: [], columnized: false, engineFailed: true }
 
 // Singleton worker, created lazily on first read and kept for the session (creating
 // one downloads the core + traineddata, so we never pay that twice). FR + EN both,
@@ -41,22 +48,49 @@ let workerPromise: Promise<Worker | null> | null = null
 // photos). The faithful post-processing below (normalizeOcrText, mergeOcrPages, the
 // metric-fraction rescue) recovers the numbers without touching what the engine
 // actually saw. Cloud OCR ("Haute précision", Mistral) stays the accuracy option.
+// The engine + FR/EN traineddata download from a CDN on the FIRST read (~15 MB,
+// cached after). Two failure modes used to wedge the feature for the whole
+// session: a stalled download hung "Lecture…" forever (no timeout), and a FAILED
+// create was cached as null — every later read silently skipped OCR and dropped
+// to the generative vision fallback. Now the create races a timeout, and any
+// failure clears the cache so the next tap retries with a fresh download.
+const WORKER_TIMEOUT_MS = 60_000
+
 function getWorker(onProgress?: (fraction: number) => void): Promise<Worker | null> {
   if (!workerPromise) {
-    workerPromise = (async () => {
+    // `p` is captured by the async body below to clear the cache on failure —
+    // only if the cache still holds THIS attempt (a dispose/retry may have
+    // already replaced it). Assigned before the body's first await runs.
+    let p: Promise<Worker | null> | null = null
+    p = (async () => {
       try {
         const { createWorker } = await import('tesseract.js')
-        return await createWorker(['fra', 'eng'], 1, {
+        const creating = createWorker(['fra', 'eng'], 1, {
           logger: (m: { status: string; progress: number }) => {
             // Only the recognize phase carries a meaningful 0..1 for the "Lecture…"
             // progress; download/init phases just spin.
             if (m.status === 'recognizing text' && typeof m.progress === 'number') onProgress?.(m.progress)
           },
         })
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const expired = new Promise<null>((res) => {
+          timer = setTimeout(() => res(null), WORKER_TIMEOUT_MS)
+        })
+        const worker = await Promise.race([creating, expired]).finally(() => clearTimeout(timer))
+        if (!worker) {
+          // Stalled download: free the worker if it ever lands, retry next read.
+          creating.then((w) => void w?.terminate()).catch(() => {})
+          if (workerPromise === p) workerPromise = null
+          return null
+        }
+        return worker
       } catch {
-        return null // no models at all → caller degrades to the AI vision read
+        // No models at all → caller degrades to the AI vision read; next read retries.
+        if (workerPromise === p) workerPromise = null
+        return null
       }
     })()
+    workerPromise = p
   }
   return workerPromise
 }
@@ -243,16 +277,27 @@ export function columnizeOcrPage(page: Page): string | null {
   for (const w of body) counts[colOf(w)]++
   if (counts.some((c) => c < body.length * 0.12)) return null
 
-  // Re-emit: display lines that straddle columns (the title) first, then each
-  // column's segments top-to-bottom, left column to right. A physical line that
-  // crosses a gutter contributes one segment per column — exactly the un-merge.
+  // Re-emit: lines that GENUINELY span the columns first (the title, a meta line),
+  // then each column's segments top-to-bottom, left column to right. A merged-
+  // columns artifact — the bug this function exists for — contributes one segment
+  // per column instead: exactly the un-merge.
+  //
+  // Telling the two apart matters: chopping a genuine full-width sentence (a page
+  // whose ingredients are 2-col but whose intro/meta lines run edge to edge)
+  // scrambles it mid-phrase. The signatures are opposites — a REAL spanning line
+  // has a word physically crossing the gutter; the merge artifact has fragments on
+  // either side and the gutter itself empty (that emptiness is what made it a
+  // gutter). So: crossing word (or display-size type) → keep whole; else → chop.
   const headers: { y: number; text: string }[] = []
   const cols: { y: number; x: number; text: string }[][] = Array.from({ length: nCols }, () => [])
   for (const line of lines) {
     const touched = new Set(line.map(colOf))
-    if (touched.size > 1 && line.every(isDisplay)) {
-      headers.push({ y: Math.min(...line.map((w) => w.y0)), text: line.map((w) => w.text).join(' ') })
-      continue
+    if (touched.size > 1) {
+      const crossesGutter = gutters.some((g) => line.some((w) => w.x0 < g && w.x1 > g))
+      if (crossesGutter || line.every(isDisplay)) {
+        headers.push({ y: Math.min(...line.map((w) => w.y0)), text: line.map((w) => w.text).join(' ') })
+        continue
+      }
     }
     const byCol = new Map<number, CWord[]>()
     for (const w of line) {
@@ -314,14 +359,17 @@ export async function ocrImage(image: Blob, onProgress?: (fraction: number) => v
     // columns' fragments never merge into one line; a single-column page (or any
     // doubt) keeps Tesseract's own order.
     const raw = typeof data.text === 'string' ? data.text.trim() : ''
-    const text = normalizeOcrText((columnizeOcrPage(data) ?? raw).trim())
+    const columnized = columnizeOcrPage(data)
+    const text = normalizeOcrText((columnized ?? raw).trim())
     return {
       text,
       confidence: typeof data.confidence === 'number' ? data.confidence : 0,
       lowConfidenceWords: collectLowConfidence(data),
+      columnized: columnized !== null,
+      engineFailed: false,
     }
   } catch {
-    return EMPTY
+    return { ...EMPTY, engineFailed: false } // the engine RAN and choked on this image
   }
 }
 

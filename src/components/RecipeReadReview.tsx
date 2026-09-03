@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { Modal } from './Modal'
+import { SubTabs } from './SubTabs'
 import { findMeasures, measuresDisagree } from '../lib/measure'
 import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
@@ -26,30 +27,61 @@ export interface ReadReviewDraft {
   source?: string | null
 }
 
-// A bare fraction (ASCII "3/4" or a vulgar-fraction glyph) — the exact OCR flip
-// risk, flagged even when no cup/spoon unit follows.
+// What the pipeline actually DID with this photo, shown to the cook under the
+// « Rapport » tab: which reader ran (and which model), how the text got organized
+// (deterministic headings vs a generative model), what was auto-corrected, which
+// numbers could not be traced back to the photo, how many words the OCR itself
+// hesitated on. Built by RecipeForm.readPhoto as the read progresses — honesty
+// about the machine, so "it hallucinated" stops being a mystery.
+export interface ReadReport {
+  reader: 'device' | 'cloud' | 'vision' | null
+  readerModel: string | null
+  /** Mean OCR page confidence 0–100 (device reader only). */
+  confidence: number | null
+  pages: number
+  /** The multi-column un-merge ran (device reader, columnizeOcrPage). */
+  columnized: boolean
+  structuring: 'headings' | 'ai' | 'heuristic' | 'vision' | null
+  structuringModel: string | null
+  /** Metric→fraction rescues applied client-side (repairImperialFromMetric). */
+  repairs: { before: string; after: string }[]
+  /** Lines whose numbers do not exist in the OCR transcript — the structuring
+   *  model changed or invented them. Flagged 'ai' in the verify list. */
+  suspect: string[]
+  /** Distinct words the OCR engine read with low confidence (device reader). */
+  shakyCount: number
+}
+
+// A fraction (ASCII "3/4" or a vulgar-fraction glyph) — the exact OCR flip risk;
+// flagged only when it sits beside a unit word yet doesn't parse (see flagReason).
 const FRACTION = /[¼½¾⅓⅔⅛⅜⅝⅞⅙⅚⅕⅖⅗⅘⅐⅑⅒]|\b\d+\s*\/\s*\d+\b/
 
-// Why a line is worth a second look, or null when it's plain text, most-serious
-// first: a 'mismatch' is two units on the line that DISAGREE by conversion (one was
-// mis-read); 'number' is a measurement/fraction/"%" (a "%" is the classic OCR misread
-// of ¾/½/¼); 'shaky' is a word the OCR engine itself read with low confidence.
 // A unit word (cup/spoon), so we can tell "a measurement whose amount didn't read"
 // from plain prose. Paired with a metric ml on the line, an unreadable amount is the
-// garbled-fraction signature ("125 ml (A de c. à thé)").
-const UNIT_WORD = /\b(?:tasses?|cups?|cuill[èe]res?|tbsp|tbs|tsp)\b|c\.?\s*(?:à|a)\b/i
+// garbled-fraction signature ("125 ml (A de c. à thé)"). NOT `\b` after the à: JS \b
+// is ASCII-only, so `à\b` never matches and the whole "c. à" branch was silently dead
+// (same gotcha measure.ts documents) — a letter-lookahead does the boundary's job.
+const UNIT_WORD = /\b(?:tasses?|cups?|cuill[èe]res?|tbsp|tbs|tsp)\b|c\.?\s*(?:à|a)(?![a-zà-ÿ])/i
 
-// Why a line is worth a second look, or null when it's clean. We flag the RISKY
-// lines (a number that doesn't add up, a "%", a measurement whose amount is garbled,
-// a low-confidence word) — NOT every measurement, so a correctly-read "60 ml (1/4 de
-// tasse)" stays calm while "125 ml (A de c. à thé)" stands out.
-type FlagReason = 'mismatch' | 'number' | 'shaky'
-function flagReason(line: string, lowSet: Set<string>): FlagReason | null {
+// Why a line is worth a second look, or null when it's clean, most-serious first:
+// 'mismatch' = two units on the line DISAGREE by conversion (one was mis-read);
+// 'ai' = the structuring model put a number here the photo never printed;
+// 'number' = a "%" (the classic OCR misread of ¾/½/¼) or an amount beside a unit
+// word that doesn't parse; 'shaky' = the OCR engine itself hesitated on a word.
+//
+// We flag RISKY lines only — NOT every fraction. The panel used to flag every
+// line containing any fraction (most of a recipe), which trained the eye to skim
+// past the warnings; the one real flip then sailed through with the noise. A
+// clean "3/4 tasse de farine" now stays calm; the risky shapes stand out alone.
+type FlagReason = 'mismatch' | 'ai' | 'number' | 'shaky'
+function flagReason(line: string, lowSet: Set<string>, aiSet: Set<string>): FlagReason | null {
   if (measuresDisagree(line)) return 'mismatch'
-  if (line.includes('%') || FRACTION.test(line)) return 'number' // a stray fraction glyph the repair couldn't place
-  // A "<n> ml ( … unit … )" line whose imperial amount we can't read = a fraction the
-  // OCR mangled (and the metric repair couldn't rescue) — exactly what to double-check.
-  if (/\d\s*ml\b/i.test(line) && UNIT_WORD.test(line) && findMeasures(line).length === 0) return 'number'
+  if (aiSet.has(line)) return 'ai'
+  if (line.includes('%')) return 'number'
+  // A fraction or ml amount right beside a unit word that findMeasures can't
+  // parse = a garbled amount the metric repair couldn't rescue — double-check it.
+  if ((FRACTION.test(line) || /\d\s*ml\b/i.test(line)) && UNIT_WORD.test(line) && findMeasures(line).length === 0)
+    return 'number'
   if (lowSet.size) {
     for (const w of line.toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
       if (w && lowSet.has(w)) return 'shaky'
@@ -58,7 +90,13 @@ function flagReason(line: string, lowSet: Set<string>): FlagReason | null {
   return null
 }
 const reasonTip = (r: FlagReason, t: ReturnType<typeof useT>): string =>
-  r === 'mismatch' ? t.recipes.reviewCheckMismatch : r === 'number' ? t.recipes.reviewCheckNumber : t.recipes.reviewCheckWord
+  r === 'mismatch'
+    ? t.recipes.reviewCheckMismatch
+    : r === 'ai'
+      ? t.recipes.reviewCheckAi
+      : r === 'number'
+        ? t.recipes.reviewCheckNumber
+        : t.recipes.reviewCheckWord
 
 // Every line is a MEMO box, not a one-line input: verifying against the photo only
 // works if the whole line is readable, and a step easily runs three lines. The
@@ -98,6 +136,7 @@ export function RecipeReadReview({
   photoUrl,
   draft,
   lowConfidenceWords,
+  report,
   busy,
   onConfirm,
   onCancel,
@@ -105,11 +144,15 @@ export function RecipeReadReview({
   photoUrl: string
   draft: ReadReviewDraft
   lowConfidenceWords: string[]
+  // The pipeline honesty report (« Rapport » tab). Optional so older callers /
+  // the DevKit specimen without one simply hide the tab row.
+  report?: ReadReport | null
   busy?: boolean
   onConfirm: (d: ReadReviewDraft) => void
   onCancel: () => void
 }) {
   const t = useT()
+  const [tab, setTab] = useState<'verify' | 'report'>('verify')
 
   const [title, setTitle] = useState(draft.title ?? '')
   const [ingredients, setIngredients] = useState<string[]>(draft.ingredients.length ? draft.ingredients : [])
@@ -123,11 +166,15 @@ export function RecipeReadReview({
   const [cook, setCook] = useState(numStr(draft.times?.cook))
 
   const lowSet = useMemo(() => new Set(lowConfidenceWords.map((w) => w.toLowerCase())), [lowConfidenceWords])
+  // Lines the structuring model changed (numbers with no source in the photo) —
+  // matched by exact text; an edited line drops its flag, which is right (the
+  // cook just verified it by hand).
+  const aiSet = useMemo(() => new Set(report?.suspect ?? []), [report])
   // How many lines we're asking the cook to glance at — drives the header hint so a
   // clean read ("rien à confirmer") feels calm rather than alarming.
   const flaggedCount = useMemo(
-    () => [...ingredients, ...steps].filter((l) => !isSectionHeading(l) && flagReason(l, lowSet)).length,
-    [ingredients, steps, lowSet],
+    () => [...ingredients, ...steps].filter((l) => !isSectionHeading(l) && flagReason(l, lowSet, aiSet)).length,
+    [ingredients, steps, lowSet, aiSet],
   )
 
   const editLine = (set: React.Dispatch<React.SetStateAction<string[]>>, i: number, v: string) =>
@@ -159,7 +206,7 @@ export function RecipeReadReview({
     const set = kind === 'ingredients' ? setIngredients : setSteps
     const sec = isSectionHeading(value)
     const shown = sec ? value.replace(/^##\s?/, '') : value
-    const reason = sec ? null : flagReason(value, lowSet)
+    const reason = sec ? null : flagReason(value, lowSet, aiSet)
     return (
       <div key={i} className={'read-review__line' + (reason ? ' is-flagged' : '') + (sec ? ' is-sec' : '')}>
         {reason && (
@@ -183,13 +230,33 @@ export function RecipeReadReview({
           {flaggedCount > 0 ? t.recipes.reviewHint : t.recipes.reviewHintClean}
         </p>
 
+        {/* Vérifier ↔ Rapport: the second face is the pipeline honesty report —
+            what read the photo, what organized the text, what was corrected or
+            couldn't be traced back. Only offered when the caller built one. */}
+        {report && (
+          <SubTabs<'verify' | 'report'>
+            options={[
+              { key: 'verify', label: t.recipes.reviewTabVerify },
+              { key: 'report', label: t.recipes.reviewTabReport },
+            ]}
+            value={tab}
+            onSelect={setTab}
+            ariaLabel={t.recipes.reviewTitle}
+          />
+        )}
+
         <div className="read-review__body">
-          {/* The source card — tap to zoom and read a price/fraction up close. */}
+          {/* The source card — tap to zoom and read a price/fraction up close.
+              Stays visible on BOTH tabs: the report's flagged lines are checked
+              against the same photo. */}
           <div className="read-review__photo">
             <ZoomableImg src={photoUrl} alt={t.recipes.reviewPhotoAlt} />
           </div>
 
-          {/* The parsed lines, editable in place against the photo. */}
+          {report && tab === 'report' ? (
+            <ReadReportPanel report={report} />
+          ) : (
+          /* The parsed lines, editable in place against the photo. */
           <div className="read-review__fields">
             <input
               className="input read-review__title"
@@ -254,6 +321,7 @@ export function RecipeReadReview({
               <p className="read-review__empty mono">{t.recipes.reviewNone}</p>
             )}
           </div>
+          )}
         </div>
 
         <div className="read-review__foot">
@@ -265,5 +333,100 @@ export function RecipeReadReview({
           </button>
         </div>
     </Modal>
+  )
+}
+
+// The « Rapport » tab body: plain stacked rows, no jargon beyond the model names
+// themselves (naming the exact model IS the point — a wrong number has a named
+// suspect). Read-only; everything actionable lives under « Vérifier ».
+function ReadReportPanel({ report }: { report: ReadReport }) {
+  const t = useT()
+  const readerLabel =
+    report.reader === 'device'
+      ? t.recipes.reportReaderDevice
+      : report.reader === 'cloud'
+        ? t.recipes.reportReaderCloud
+        : report.reader === 'vision'
+          ? t.recipes.reportReaderVision
+          : t.recipes.reportReaderNone
+  const structLabel =
+    report.structuring === 'headings'
+      ? t.recipes.reportStructHeadings
+      : report.structuring === 'ai'
+        ? t.recipes.reportStructAi
+        : report.structuring === 'heuristic'
+          ? t.recipes.reportStructHeuristic
+          : report.structuring === 'vision'
+            ? t.recipes.reportStructVision
+            : null
+  const row = (label: string, children: React.ReactNode) => (
+    <div className="read-review__report-row">
+      <div className="read-review__report-label mono">{label}</div>
+      <div className="read-review__report-value">{children}</div>
+    </div>
+  )
+  return (
+    <div className="read-review__fields read-review__report">
+      {row(
+        t.recipes.reportReader,
+        <>
+          <p>{readerLabel}</p>
+          <p className="mono read-review__report-meta">
+            {[
+              report.readerModel,
+              report.confidence != null ? `${t.recipes.reportConfidence} ${Math.round(report.confidence)} %` : null,
+              t.recipes.reportPages(report.pages),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+          {report.columnized && <p className="mono read-review__report-meta">{t.recipes.reportColumns}</p>}
+        </>,
+      )}
+      {structLabel &&
+        row(
+          t.recipes.reportStructuring,
+          <>
+            <p>{structLabel}</p>
+            {report.structuringModel && (
+              <p className="mono read-review__report-meta">
+                {t.recipes.reportModel} : {report.structuringModel}
+              </p>
+            )}
+          </>,
+        )}
+      {row(
+        t.recipes.reportRepairs,
+        report.repairs.length ? (
+          <>
+            {report.repairs.map((r, i) => (
+              <p key={i} className="read-review__report-repair">
+                <s>{r.before}</s>
+                <br />
+                <Icon name="arrow-right-bold" size={12} /> {r.after}
+              </p>
+            ))}
+            <p className="mono read-review__report-meta">{t.recipes.reportRepairsWhy}</p>
+          </>
+        ) : (
+          <p>{t.recipes.reportRepairsNone}</p>
+        ),
+      )}
+      {/* Only meaningful when a generative model touched the text. */}
+      {(report.structuring === 'ai' || report.structuring === 'vision') &&
+        row(
+          t.recipes.reportSuspect,
+          report.suspect.length ? (
+            report.suspect.map((l, i) => <p key={i}>⚠ {l}</p>)
+          ) : (
+            <p>{t.recipes.reportSuspectNone}</p>
+          ),
+        )}
+      {report.reader === 'device' &&
+        row(
+          t.recipes.reportShaky,
+          <p>{report.shakyCount ? t.recipes.reportShakyCount(report.shakyCount) : t.recipes.reportShakyNone}</p>,
+        )}
+    </div>
   )
 }

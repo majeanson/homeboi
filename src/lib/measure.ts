@@ -155,19 +155,38 @@ export function findMeasures(line: string): Measure[] {
 const ML_PER: Record<MeasureUnit, number> = { tsp: 5, tbsp: 15, cup: 250 }
 const METRIC_ML = /(\d+(?:[.,]\d+)?)\s*ml\b/i
 
-// True when a line carries a metric (ml) amount AND a scoopable imperial one that
-// DISAGREE beyond kitchen-rounding tolerance (¼ cup printed as 60 vs the exact 62.5
-// is fine; 125 vs 1.25 is a dropped comma). No ml or no scoop on the line → false.
+// The dual-printed weight pair, same self-checking idea: "225 g (1/2 lb)". The lb
+// amount may be a fraction; the gram side is always plain digits.
+const METRIC_G = /(\d+(?:[.,]\d+)?)\s*(?:g|grammes?)\b/i
+const IMPERIAL_LB = /(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?)\s*(?:lbs?|livres?|pounds?)\b/i
+const G_PER_LB = 453.6
+
+// Kitchen-rounding band shared by both cross-checks. QC print rounds ¼ cup to
+// 60 ml (0.96×) and ⅓ cup to 80 ml (0.96×); real mis-reads — a dropped comma
+// (~10–100×), a flipped fraction, a 6 read as an 8 (0.64×) — land well outside.
+// The old 0.55–1.8 band was wide enough to let a 6↔8 misread through unflagged.
+const agreeIsh = (printed: number, expected: number): boolean =>
+  printed >= expected * 0.7 && printed <= expected * 1.45
+
+// True when a line prints the SAME amount in two units that DISAGREE beyond
+// kitchen-rounding tolerance — ml vs a scoopable cup/spoon, or g vs lb — meaning
+// one of the two was MIS-READ. No dual units on the line → false.
 export function measuresDisagree(line: string): boolean {
   const ml = METRIC_ML.exec(line)
-  if (!ml) return false
-  const printed = parseFloat(ml[1].replace(',', '.'))
-  if (!isFinite(printed) || printed <= 0) return false
-  for (const m of findMeasures(line)) {
-    const expected = m.value * ML_PER[m.unit]
-    // Wide band absorbs rounding (5 vs 4.93 ml, 250 vs 240); only real mis-reads —
-    // a dropped comma is ~10–100×, a flipped fraction well outside — trip it.
-    if (printed < expected * 0.55 || printed > expected * 1.8) return true
+  if (ml) {
+    const printed = parseFloat(ml[1].replace(',', '.'))
+    if (isFinite(printed) && printed > 0) {
+      for (const m of findMeasures(line)) {
+        if (!agreeIsh(printed, m.value * ML_PER[m.unit])) return true
+      }
+    }
+  }
+  const g = METRIC_G.exec(line)
+  const lb = g ? IMPERIAL_LB.exec(line) : null
+  if (g && lb) {
+    const grams = parseFloat(g[1].replace(',', '.'))
+    const pounds = parseQty(lb[1])
+    if (isFinite(grams) && grams > 0 && isFinite(pounds) && pounds > 0 && !agreeIsh(grams, pounds * G_PER_LB)) return true
   }
   return false
 }
@@ -202,12 +221,22 @@ const ML_PAREN = /(\d+(?:[.,]\d+)?)\s*ml\s*\(\s*([^)]*?)\s*\)/i
 // Rewrite "60 ml (<garbled> de tasse)" → "60 ml (1/4 de tasse)" using the ml. Returns
 // the line unchanged when there's no "<n> ml ( … unit … )" shape, or when the ml
 // doesn't convert to a clean fraction (we never invent an amount).
+//
+// GATED on the paren amount being actually unreadable. This used to rewrite
+// UNCONDITIONALLY, trusting the ml — but the ml side gets mis-read too ("60" with
+// its 6 read as an 8), and then a perfectly-read "¼ de tasse" was silently flipped
+// to "1/3 de tasse"… and the rewritten line, now self-consistent, sailed past the
+// verify panel's mismatch flag. The users' "1/2 tasse became 1/3" reports were
+// THIS, not the OCR. When both sides are legible and disagree, we repair nothing:
+// measuresDisagree flags the line and the cook checks the photo — never guess
+// which of the two numbers lied.
 export function repairImperialFromMetric(line: string): string {
   const m = ML_PAREN.exec(line)
   if (!m) return line
   const ml = parseFloat(m[1].replace(',', '.'))
   if (!isFinite(ml) || ml <= 0) return line
   const inner = m[2]
+  if (findMeasures(inner).length > 0) return line // the paren already reads cleanly — hands off
   const u = UNIT_IN_PAREN.exec(inner)
   if (!u) return line
   const snapped = snapAmount(ml / mlPerUnit(u[0]))

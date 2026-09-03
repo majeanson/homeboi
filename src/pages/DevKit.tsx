@@ -3014,9 +3014,17 @@ export function DevKit() {
                 photoUrl={SAMPLE_RECIPE_PHOTO}
                 draft={{
                   title: 'Biscuits à l’avoine',
+                  // One specimen line per flag reason (risky-only flagging): a
+                  // conversion MISMATCH (80 ml ≠ ½ tasse), an unparseable NUMBER
+                  // beside its unit ("A de tasse"), a SHAKY word ("cannelle"), an
+                  // AI-changed number ("1/3" — see report.suspect below) — plus
+                  // calm lines: a clean fraction ("3/4 tasse") no longer flags.
                   ingredients: [
                     '3/4 tasse de farine',
+                    '80 ml (1/2 tasse) de sucre',
+                    '125 ml (A de c. à thé) de sel',
                     '1 c. à thé de cannelle',
+                    '1/3 tasse de cassonade',
                     // A LONG line on purpose — the rows are memo boxes that wrap,
                     // never one-line inputs that truncate (the e2e measures this one).
                     '225 g (1/2 lb) de ramens secs ou 3 paquets de ramens secs de 85 g chacun (sans les sachets d’assaisonnement)',
@@ -3028,6 +3036,20 @@ export function DevKit() {
                   times: { prep: 15, cook: 12, total: null },
                 }}
                 lowConfidenceWords={['cannelle']}
+                report={{
+                  reader: 'device',
+                  readerModel: 'Tesseract',
+                  confidence: 87,
+                  pages: 2,
+                  columnized: true,
+                  structuring: 'ai',
+                  structuringModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+                  repairs: [
+                    { before: '60 ml (Ÿ de tasse) de beurre', after: '60 ml (1/4 de tasse) de beurre' },
+                  ],
+                  suspect: ['1/3 tasse de cassonade'],
+                  shakyCount: 1,
+                }}
                 onConfirm={() => setReadReviewOpen(false)}
                 onCancel={() => setReadReviewOpen(false)}
               />

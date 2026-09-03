@@ -859,6 +859,58 @@ uniform). Two genuinely-open, low-severity items survived:
   `pipIcons.ts`'s own documented process. `arrow-left-bold` now means exactly one
   thing app-wide.
 
+### C-undecies. Reported by users, 2026-09-03 — the photo→recipe read "hallucinates"
+(1/2 tasse → 1/3; 225 g (1/2 lb) → « 2 tasses ») + how columns are read
+
+A full audit of the photo→recipe pipeline traced the two complaint classes to two
+DIFFERENT causes — the worse one was **our own repair code, not the AI**:
+
+- **`repairImperialFromMetric` trusted the ml side unconditionally** and overwrote a
+  perfectly-read « ¼ de tasse » whenever the ml was the mis-read side (a 6 read as an
+  8) — and the rewritten line, now self-consistent, sailed past the verify panel's
+  mismatch flag. **Fixed**: gated on the paren amount being actually unreadable
+  (`findMeasures(inner)` empty); a legible disagreement is flagged, never rewritten.
+  Band tightened 0.55–1.8 → 0.7–1.45 (a 6↔8 misread is 0.64×) + a g↔lb cross-check.
+  Guard proven against the pre-fix code (3 red) before trusting it.
+- **The "faithful, no-AI" path was the exception, not the rule**: one OCR-garbled
+  heading and the whole transcript went through the generative 70B (`structureRecipe`)
+  whose prompt never forbade unit conversion — the « (2 tasses) » class. **Fixed**:
+  verbatim-quantities/no-conversion rule in the prompt (FR+EN), `max_tokens` 900→1700
+  (truncation read as "doesn't resolve"), commentary-stripping, AND a structural guard —
+  `linesWithForeignNumbers()` cross-checks every output number (and number+unit pair)
+  against the source transcript; foreign lines come back as `suspect`, flagged « à
+  confirmer ». Markdown-shaped transcripts (the cloud Mistral reader answers in
+  markdown, tables included) now flatten through `parseRecipeText()` and hit the
+  deterministic parser — the accuracy the cloud reader was bought for no longer
+  falls back into the AI.
+- **"Doesn't resolve"** was infrastructure: tesseract's ~15 MB traineddata comes from
+  a CDN on first read with no timeout (spinner forever), and a failed create was
+  cached null for the session (every later read silently used the vision fallback).
+  **Fixed**: 60 s create timeout, retry-on-next-read, `engineFailed` → its own honest
+  message (`readFailEngine`).
+- **Columns** (`columnizeOcrPage`): a genuine full-width body line (meta/intro) used to
+  be CHOPPED at the gutter mid-phrase (only display-size lines were exempt). **Fixed**:
+  a line with a word physically crossing a gutter is kept whole — the merge artifact
+  this function un-merges has the opposite signature (fragments each side, gutter empty).
+- **The verify panel flagged every fraction line** (contradicting its own comment) —
+  alarm fatigue meant the one real flip was skimmed past. **Fixed**: risky-only flags
+  (mismatch / unparseable amount / shaky word / AI-changed number), and the dead
+  `c. à` unit check came alive (JS ASCII `\b` after « à » — the exact gotcha
+  measure.ts documents — replaced with a letter-lookahead).
+- **New: the « Rapport » tab** in `RecipeReadReview` — pipeline honesty for the cook:
+  which reader ran (on-device Tesseract / cloud `mistral-ocr-latest` / vision
+  `llama-3.2-11b`), OCR confidence, columns detected, how the text was organized
+  (headings = no AI / AI with the model named / heuristic), each metric→fraction
+  repair (before → after), the numbers that could not be traced back to the photo,
+  and the shaky-word count. Endpoints return `structuring`/`model`/`suspect`;
+  `readPhoto` builds the report as it actually runs. DevKit specimen + both e2e specs
+  (`recipe-read-review`, `recipe-photo-import`) exercise the new taxonomy and the tab.
+
+Still open (deliberate): multi-photo `mergeOcrPages` can swallow an ingredient when
+two different lines share qty+unit+connector tokens (Jaccard 0.55 on 5-token lines);
+and a qty-column | name-column print layout could still read as two columns. Both need
+real-photo corpora to tune against — not guessed at.
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**

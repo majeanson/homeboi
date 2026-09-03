@@ -1,6 +1,6 @@
 import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { recipeFromImage, resolveLang } from '../_lib/ai'
+import { VISION_MODEL_ID, recipeFromImage, resolveLang } from '../_lib/ai'
 import { refineSteps } from '../_lib/recipeImport'
 import { detectLang } from '../_lib/langDetect'
 
@@ -37,6 +37,8 @@ export const onRequestPost = authed(async (ctx) => {
       // Read-aloud language guessed from the photo's own text ('fr'|'en'|null);
       // null leaves the form on "Auto" — exactly the "can't detect → leave" rule.
       lang: detectLang([r.title, ...r.ingredients, ...steps].join('\n')),
+      // Which model read the photo — the verify panel's read report names it.
+      model: VISION_MODEL_ID,
     }),
     report,
   )

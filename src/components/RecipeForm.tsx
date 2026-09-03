@@ -12,7 +12,7 @@ import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
 import { useOcrEngine, useCloudOcrAvailable } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
-import { RecipeReadReview, type ReadReviewDraft } from './RecipeReadReview'
+import { RecipeReadReview, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
 import {
   type Recipe,
@@ -145,6 +145,7 @@ export function RecipeForm({
     photoUrl: string
     sourceFile: File
     lowConfidenceWords: string[]
+    report: ReadReport
   } | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -340,6 +341,11 @@ export function RecipeForm({
     servingsUnit: string | null
     times: { prep: number | null; cook: number | null; total: number | null }
     lang: 'fr' | 'en' | null
+    // Report fields (recipe-import / recipe-vision): how the text was structured,
+    // by which model, and which lines carry numbers the source never printed.
+    structuring?: 'headings' | 'ai' | 'heuristic'
+    model?: string | null
+    suspect?: string[]
     empty?: boolean
   }
   const draftHasContent = (d: ReadDraft) => !!(d.title || d.ingredients.length || d.steps.length)
@@ -364,6 +370,20 @@ export function RecipeForm({
       const texts: string[] = []
       const lowWords = new Set<string>()
       let meanConf = 0
+      // The honesty report shown under the verify panel's « Rapport » tab — filled
+      // in as the pipeline actually runs, never reconstructed after the fact.
+      const report: ReadReport = {
+        reader: null,
+        readerModel: null,
+        confidence: null,
+        pages: files.length,
+        columnized: false,
+        structuring: null,
+        structuringModel: null,
+        repairs: [],
+        suspect: [],
+        shakyCount: 0,
+      }
 
       // The high-accuracy CLOUD reader (Mistral OCR), when the operator picked it and
       // the deployment has a key. Sends each page to /api/recipe-ocr → faithful text.
@@ -374,8 +394,14 @@ export function RecipeForm({
           // text fine, and this keeps the upload under the endpoint's 6 MB cap.
           const img = await resizeImage(files[i], OCR_MAX)
           setReadProgress(i / files.length)
-          const r = await api<{ text: string }>('recipe-ocr', { method: 'POST', body: img }).catch(() => null)
-          if (r?.text) texts.push(r.text)
+          const r = await api<{ text: string; model?: string }>('recipe-ocr', { method: 'POST', body: img }).catch(
+            () => null,
+          )
+          if (r?.text) {
+            texts.push(r.text)
+            report.reader = 'cloud'
+            report.readerModel = r.model ?? null
+          }
         }
         setReadProgress(1)
         if (texts.length) meanConf = 95 // cloud OCR is reliable → skip the AI fallback gate
@@ -385,13 +411,21 @@ export function RecipeForm({
       // Downscale-only to OCR_MAX (the original, "okay" read): plain shrinking reads
       // ordinary photos more faithfully than upscaling small ones, which invented
       // blurry pixels the engine then mis-read. Average confidence; union shaky words.
+      let engineFailed = false
       if (!texts.length) {
         let confSum = 0
         let confN = 0
+        engineFailed = true
         for (let i = 0; i < files.length; i++) {
           const big = await resizeImage(files[i], OCR_MAX)
           const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
-          if (res.text) texts.push(res.text)
+          if (!res.engineFailed) engineFailed = false
+          if (res.text) {
+            texts.push(res.text)
+            report.reader = 'device'
+            report.readerModel = 'Tesseract'
+          }
+          if (res.columnized) report.columnized = true
           if (res.confidence > 0) {
             confSum += res.confidence
             confN++
@@ -399,6 +433,8 @@ export function RecipeForm({
           res.lowConfidenceWords.forEach((w) => lowWords.add(w))
         }
         meanConf = confN ? confSum / confN : 0
+        if (confN) report.confidence = meanConf
+        report.shakyCount = lowWords.size
       }
 
       // Merge the pages: a wide shot + zoomed close-ups of the same recipe dedupe to
@@ -417,27 +453,53 @@ export function RecipeForm({
           () => null,
         )
       }
+      if (draft && draftHasContent(draft)) {
+        report.structuring = draft.structuring ?? null
+        report.structuringModel = draft.model ?? null
+        report.suspect = draft.suspect ?? []
+      }
       if ((!draft || draft.empty || !draftHasContent(draft)) && aiEnabled) {
         // Fallback: the generative vision read of the FIRST page (resized to the
         // upload cap, like recipe-image). 503 = AI off → handled below as readFail.
         const small = await resizeImage(files[0], PHOTO_MAX)
         if (small.size <= MAX_UPLOAD_BYTES) {
-          draft = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch((e) => {
-            if (isStatus(e, 503) || isStatus(e, 400)) return null
-            throw e
-          })
+          const v = await api<ReadDraft & { model?: string }>('recipe-vision', { method: 'POST', body: small }).catch(
+            (e) => {
+              if (isStatus(e, 503) || isStatus(e, 400)) return null
+              throw e
+            },
+          )
+          draft = v
+          if (v && draftHasContent(v)) {
+            // The vision model reads AND structures in one generative pass — say
+            // so plainly: this is the path that can invent, and the report names it.
+            report.reader = 'vision'
+            report.readerModel = v.model ?? null
+            report.structuring = 'vision'
+            report.structuringModel = v.model ?? null
+            report.suspect = []
+          }
         }
       }
 
       if (!draft || !draftHasContent(draft)) {
-        setReadMsg(t.recipes.readFail)
+        // The honest failure message: "the reader never loaded" is a connection
+        // problem, not an unreadable card — don't send the cook retaking photos.
+        setReadMsg(engineFailed && !texts.length ? t.recipes.readFailEngine : t.recipes.readFail)
         return
       }
       // Rescue garbled imperial fractions from the (reliably-read) millilitres: a
       // recipe printing "60 ml (¼ de tasse)" keeps the "60 ml" but loses the tiny ¼,
-      // so derive it back. No-op on lines without the "n ml (… unit …)" shape.
-      draft.ingredients = draft.ingredients.map(repairImperialFromMetric)
-      draft.steps = draft.steps.map(repairImperialFromMetric)
+      // so derive it back. No-op on lines without the "n ml (… unit …)" shape — and
+      // GATED: a line whose paren amount reads fine is never touched (measure.ts).
+      // Each rewrite is recorded in the report so the cook sees what was derived.
+      const repair = (l: string): string => {
+        const out = repairImperialFromMetric(l)
+        if (out !== l) report.repairs.push({ before: l, after: out })
+        return out
+      }
+      draft.ingredients = draft.ingredients.map(repair)
+      draft.steps = draft.steps.map(repair)
       // Hand off to the verify panel rather than applying straight to the form: the
       // cook glances at the photo, confirms the flagged numbers, THEN it lands.
       setReadReview({
@@ -445,6 +507,7 @@ export function RecipeForm({
         photoUrl: URL.createObjectURL(files[0]),
         sourceFile: files[0],
         lowConfidenceWords: [...lowWords],
+        report,
       })
     } catch (e) {
       if (isStatus(e, 503)) setReadMsg(t.recipes.aiOff)
@@ -1117,6 +1180,7 @@ export function RecipeForm({
           photoUrl={readReview.photoUrl}
           draft={readReview.draft}
           lowConfidenceWords={readReview.lowConfidenceWords}
+          report={readReview.report}
           busy={confirming}
           onConfirm={confirmRead}
           onCancel={closeReadReview}

@@ -16,10 +16,25 @@ afterEach(async () => {
 })
 
 describe('ocrImage', () => {
-  it('degrades to empty when the worker fails to create', async () => {
+  it('degrades to empty when the worker fails to create — and says the ENGINE failed', async () => {
     mockCreateWorker.mockRejectedValueOnce(new Error('no wasm'))
     const r = await ocrImage(blob)
-    expect(r).toEqual({ text: '', confidence: 0, lowConfidenceWords: [] })
+    expect(r).toEqual({ text: '', confidence: 0, lowConfidenceWords: [], columnized: false, engineFailed: true })
+  })
+
+  it('retries the worker create on the NEXT read after a failure (no session-long null cache)', async () => {
+    mockCreateWorker.mockRejectedValueOnce(new Error('cdn down'))
+    await ocrImage(blob)
+    // The download failed once (offline moment); the next tap must try again
+    // rather than silently skipping OCR for the rest of the session.
+    mockCreateWorker.mockResolvedValueOnce({
+      recognize: vi.fn().mockResolvedValue({ data: { text: 'allo', confidence: 80, blocks: null } }),
+      terminate: vi.fn(),
+    } as never)
+    const r = await ocrImage(blob)
+    expect(mockCreateWorker).toHaveBeenCalledTimes(2)
+    expect(r.text).toBe('allo')
+    expect(r.engineFailed).toBe(false)
   })
 
   it('degrades to empty when recognize throws', async () => {
@@ -155,6 +170,27 @@ describe('columnizeOcrPage', () => {
     )
     const page = { text: 'x', confidence: 90, blocks: [{ paragraphs: [{ lines }] }] }
     expect(columnizeOcrPage(page as never)).toBeNull()
+  })
+
+  it('keeps a BODY-size line whole when its words physically cross the gutter', () => {
+    const page = twoColumnPage()
+    // A genuine full-width meta line ("Préparation 20 min • Cuisson 5 min") in
+    // body type: one word sits ON the gutter (x 400–600 zone). The old code only
+    // exempted display-size lines and chopped this one mid-phrase into the two
+    // columns; the crossing word is the tell that it's real spanning text.
+    page.blocks[0].paragraphs[0].lines.push({
+      words: [
+        { text: 'Préparation', confidence: 90, bbox: { x0: 40, y0: 300, x1: 340, y1: 320 } },
+        { text: '20', confidence: 90, bbox: { x0: 360, y0: 300, x1: 430, y1: 320 } },
+        { text: 'minutes', confidence: 90, bbox: { x0: 450, y0: 300, x1: 640, y1: 320 } }, // crosses the gutter
+        { text: 'environ', confidence: 90, bbox: { x0: 660, y0: 300, x1: 840, y1: 320 } },
+      ],
+    })
+    const out = columnizeOcrPage(page as never)
+    expect(out).toBeTruthy()
+    expect(out!.split('\n')).toContain('Préparation 20 minutes environ')
+    // The 2-column un-merge itself still happened around it.
+    expect(out!.split('\n')).toContain('soupe) de miel')
   })
 
   it('emits a big straddling title first, not sliced into the columns', () => {

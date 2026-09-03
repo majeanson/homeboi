@@ -904,15 +904,44 @@ export function parseMarkdownRecipe(text: string): PastedRecipe {
     .replace(/```[a-z]*/gi, '') // ``` / ```json fences → gone (their content stays)
     .replace(/`/g, '')
     .split(/\r?\n/)
-    .map((line) =>
-      line
+    .map((line) => {
+      // Markdown TABLE rows (cloud OCR renders a tabular ingredient list as
+      // "| 225 g | de farine |"): drop the |---|---| separator row, then join the
+      // cells back into one plain line so the heading-aware parser reads it.
+      if (/^\s*\|.*\|\s*$/.test(line)) {
+        if (/^\s*\|[\s\-:|]+\|\s*$/.test(line)) return ''
+        line = line
+          .split('|')
+          .map((c) => c.trim())
+          .filter(Boolean)
+          .join(' ')
+      }
+      return line
         .replace(/^\s{0,3}#{1,6}\s+/, '') // "## Préparation" → "Préparation"
         .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** → bold (a "* item" bullet is untouched)
         .replace(/__([^_]+)__/g, '$1') // __bold__ → bold
-        .trim(),
-    )
+        .trim()
+    })
     .join('\n')
   return parsePastedRecipe(flat)
+}
+
+// Does this paste carry markdown structure? True for the cloud OCR's output
+// (headings, bold, tables) and for a paste from a markdown editor. Cheap and
+// deliberately loose — a false positive just routes through the flattener, which
+// is a no-op on plain text.
+export function looksLikeMarkdown(text: string): boolean {
+  return /^\s{0,3}#{1,6}\s/m.test(text) || /\*\*[^*\n]+\*\*/.test(text) || /^\s*\|.+\|\s*$/m.test(text)
+}
+
+// The ONE paste/transcript entry point: markdown-shaped text (the cloud OCR
+// reader answers in markdown; so do many editors) flattens first so its
+// "## Ingrédients" headings actually hit the heading-aware parser — before this,
+// a faithful cloud read fell through "not confident" into the generative AI
+// structuring, re-exposing it to exactly the rewrites the reader was bought to
+// avoid. Plain text goes straight through.
+export function parseRecipeText(text: string): PastedRecipe {
+  return looksLikeMarkdown(text) ? parseMarkdownRecipe(text) : parsePastedRecipe(text)
 }
 
 // A recipe page is mostly NOT the recipe. Nav, cookie banner, ad rails and the
@@ -947,6 +976,71 @@ export function recipeTextWindow(text: string, max = 6000): string {
 // `max` defaults to the model budget, but a caller that intends to window the
 // result (see recipeTextWindow) passes a large max so the recipe isn't already
 // truncated away before the window can find it.
+// ---------------------------------------------------------------------------
+// AI-structuring honesty check — did the model change any number?
+// ---------------------------------------------------------------------------
+// The AI structuring prompt says "organize WITHOUT inventing", but a generative
+// pass over text can still flip a fraction or "helpfully" convert a unit
+// ("225 g (1/2 lb)" → "(2 tasses)") — and no downstream check can catch a g→cup
+// invention by arithmetic. This is the STRUCTURAL guard: every number in the
+// model's output must already exist in the source transcript. Lines carrying a
+// foreign number (or a foreign number+unit pairing) are returned so the verify
+// panel flags them "à confirmer" and the read report lists them. Pure, no AI.
+
+// Vulgar-fraction glyphs → ascii, so "¾" in the source vouches for "3/4" out.
+const VULGAR_NUM: Record<string, string> = {
+  '¼': '1/4', '½': '1/2', '¾': '3/4', '⅐': '1/7', '⅑': '1/9', '⅒': '1/10',
+  '⅓': '1/3', '⅔': '2/3', '⅕': '1/5', '⅖': '2/5', '⅗': '3/5', '⅘': '4/5',
+  '⅙': '1/6', '⅚': '5/6', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8',
+}
+const foldNumbers = (s: string): string =>
+  s.replace(/[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/g, (g) => ` ${VULGAR_NUM[g]} `)
+
+// Every numeric token in the text, decimal comma normalized to a dot so "1,5"
+// and "1.5" vouch for each other. "1 1/2" yields "1" and "1/2".
+const NUM_TOKEN = /\d+\/\d+|\d+[.,]\d+|\d+/g
+function numberTokens(s: string): string[] {
+  return [...foldNumbers(s).matchAll(NUM_TOKEN)].map((m) => m[0].replace(',', '.'))
+}
+
+// Kitchen units worth pairing with their amount — a converted "(2 tasses)" is
+// caught by the PAIR even when a bare "2" exists elsewhere in the source (there
+// is always a "2" somewhere). Only unambiguous single-word units; the multi-word
+// spoons are covered well enough by the bare-number tier.
+const UNIT_CANON: [RegExp, string][] = [
+  [/^tasses?$/i, 'cup'], [/^cups?$/i, 'cup'],
+  [/^ml$/i, 'ml'], [/^l$/i, 'l'], [/^litres?$/i, 'l'], [/^liters?$/i, 'l'],
+  [/^g$/i, 'g'], [/^grammes?$/i, 'g'], [/^grams?$/i, 'g'], [/^kg$/i, 'kg'],
+  [/^lbs?$/i, 'lb'], [/^livres?$/i, 'lb'], [/^pounds?$/i, 'lb'], [/^oz$/i, 'oz'],
+]
+const canonUnit = (word: string): string | null => {
+  const w = word.replace(/[.,;:!?)]+$/, '')
+  for (const [re, canon] of UNIT_CANON) if (re.test(w)) return canon
+  return null
+}
+const PAIR_TOKEN = /(\d+\s+\d+\/\d+|\d+\/\d+|\d+[.,]\d+|\d+)\s*(?:de\s+|d['’]\s*)?([a-zà-öœ.]+)/gi
+function measurePairs(s: string): string[] {
+  const out: string[] = []
+  for (const m of foldNumbers(s).matchAll(PAIR_TOKEN)) {
+    const unit = canonUnit(m[2])
+    if (unit) out.push(`${m[1].replace(',', '.').replace(/\s+/g, ' ')}|${unit}`)
+  }
+  return out
+}
+
+// The subset of `lines` that carry a number (or amount+unit pairing) absent from
+// `source` — the model put it there, the page didn't. Section headings skipped.
+export function linesWithForeignNumbers(source: string, lines: string[]): string[] {
+  const nums = new Set(numberTokens(source))
+  const pairs = new Set(measurePairs(source))
+  if (!nums.size) return []
+  return lines.filter((l) => {
+    if (isSectionHeading(l)) return false
+    if (numberTokens(l).some((tok) => !nums.has(tok))) return true
+    return measurePairs(l).some((p) => !pairs.has(p))
+  })
+}
+
 export function htmlToText(html: string, max = 6000): string {
   return decodeEntities(
     html

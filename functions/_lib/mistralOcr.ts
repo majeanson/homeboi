@@ -14,6 +14,8 @@ import type { Env } from './env'
 // reads — the engine is swappable, the rest of the pipeline is shared.
 const ENDPOINT = 'https://api.mistral.ai/v1/ocr'
 const MODEL = 'mistral-ocr-latest'
+// Exported for the read report (the verify panel names the reader that was used).
+export const MISTRAL_OCR_MODEL = MODEL
 
 // btoa needs a binary string; build it in chunks so a multi-MB image doesn't blow
 // the argument-count limit of String.fromCharCode(...).

@@ -59,6 +59,9 @@ export interface Intent {
 // must accept both shapes — they do. Don't reintroduce a `String(res.response)`
 // assumption or every JSON-returning feature silently 503s again.
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+// Exported for the read report (Réglages-style honesty: the verify panel says
+// WHICH model structured the read, so a hallucination has a named suspect).
+export const TEXT_MODEL = MODEL
 
 // Few-shot, JSON-only, one prompt per language. The FR register hints
 // ("souper", "vidanges", "pus de") are deliberately Québécois so the router
@@ -322,31 +325,48 @@ export interface RecipeStructured {
 export async function structureRecipe(env: Env, text: string, lang: Lang = 'fr'): Promise<RecipeStructured> {
   const raw = text.trim().slice(0, 6000)
   if (!env.AI || !raw) return { title: null, ingredients: [], steps: [] }
+  // The quantity rules are the load-bearing part: this is a generative pass over
+  // text the user believes was "just OCR'd", and without an explicit ban the model
+  // "helpfully" converts units ("225 g (1/2 lb)" → "(2 tasses)") or flips a
+  // fraction — the exact hallucinations users reported. Belt: the prompt. And
+  // suspenders: recipe-import cross-checks every output number against the source
+  // (linesWithForeignNumbers) and flags what the model changed anyway.
   const prompt =
     lang === 'en'
       ? `Below is pasted recipe text. Organize it WITHOUT inventing anything new.
 Reply ONLY with JSON: {"title": string, "ingredients": string[], "steps": string[]}.
 Keep ingredient lines as written (with quantities). Split instructions into short steps. At most 30 ingredients, 20 steps.
+Copy every quantity and unit EXACTLY as written. NEVER convert between units (g, lb, ml, cups…), never round, never do arithmetic. If the text prints two units for one amount ("225 g (1/2 lb)"), keep BOTH verbatim.
 If the recipe has named parts (e.g. "Glaze", "Crust"), insert a heading line formatted exactly "## Name" in both arrays before that part's lines.
 Text:
 ${raw}`
       : `Voici du texte de recette collé. Organise-le SANS rien inventer.
 Réponds UNIQUEMENT avec du JSON : {"title": string, "ingredients": string[], "steps": string[]}.
 Garde les lignes d'ingrédients telles quelles (avec quantités). Découpe les instructions en étapes courtes. 30 ingrédients et 20 étapes au maximum.
+Recopie chaque quantité et chaque unité EXACTEMENT comme écrites. Ne convertis JAMAIS entre unités (g, lb, ml, tasses…), n'arrondis pas, ne fais aucun calcul. Si le texte donne deux unités pour une même quantité (« 225 g (1/2 lb) »), garde LES DEUX telles quelles.
 Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insère une ligne d'en-tête au format exact « ## Nom » dans les deux tableaux avant les lignes de cette partie.
 Texte :
 ${raw}`
   try {
     const res = (await env.AI.run(MODEL, {
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 900,
+      // 900 truncated long recipes mid-array → the JSON failed to parse → the read
+      // silently fell to the weak heuristic ("it doesn't resolve"). 30 ingredient
+      // lines + 20 steps at recipe verbosity need the headroom.
+      max_tokens: 1700,
     })) as { response?: unknown }
     const parsed = extractJson(res.response) as
       | { title?: unknown; ingredients?: unknown; steps?: unknown }
       | null
     if (!parsed) return { title: null, ingredients: [], steps: [] }
     const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
-    return { title, ingredients: cleanLines(parsed.ingredients, 30), steps: cleanLines(parsed.steps, 20) }
+    // Same net as the vision read: a model that disobeys "no commentary" leaks
+    // "Remarque…" lines into the arrays — drop them here too.
+    return {
+      title,
+      ingredients: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.ingredients, 30))),
+      steps: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.steps, 20))),
+    }
   } catch (err) {
     logAi('structureRecipe', err)
     return { title: null, ingredients: [], steps: [] }
@@ -378,6 +398,8 @@ ${raw}`
 // input arg against a live account before switching; the read silently degrades to
 // EMPTY if the shape is wrong, so an unverified swap would quietly kill the fallback.
 const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
+// Exported for the read report (the verify panel names the model that read the photo).
+export const VISION_MODEL_ID = VISION_MODEL
 
 // A photo read carries more than the paste path's RecipeStructured: the printed
 // servings and prep/cook times are usually right there on the card, and the form

@@ -1,6 +1,6 @@
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { mistralOcr } from '../_lib/mistralOcr'
+import { MISTRAL_OCR_MODEL, mistralOcr } from '../_lib/mistralOcr'
 import { householdAiEnabled } from '../_lib/aiPref'
 
 // Read a recipe photo with the OPTIONAL high-accuracy CLOUD OCR (Mistral). The client
@@ -21,5 +21,6 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const buf = await ctx.request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
   const text = await mistralOcr(ctx.env, new Uint8Array(buf))
-  return ok({ text })
+  // `model` feeds the read report (which reader produced this transcript).
+  return ok({ text, model: MISTRAL_OCR_MODEL })
 })

@@ -1134,6 +1134,40 @@
   padding: 0.8rem 1rem;
   border-top: 1px solid var(--line);
 }
+/* The « Rapport » tab: plain stacked label/value rows — read-only pipeline
+   honesty (which reader, which model, what was corrected/flagged). */
+.read-review .subtabs-row {
+  padding: 0 1rem 0.6rem;
+}
+.read-review__report {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.read-review__report-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.read-review__report-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.read-review__report-value p {
+  margin: 0 0 0.15rem;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere; /* a long ingredient line must wrap, never widen the modal */
+}
+.read-review__report-meta {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.read-review__report-repair s {
+  color: var(--ink-soft);
+}
 /* The source-card photo at the top of the sheet's "Original" view. */
 .recipe-original__source {
   display: block;

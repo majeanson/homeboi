@@ -9,8 +9,10 @@ import { mockApi, seedState } from './mocks'
 // no R2, no upload — just the component + its real Modal mount + the flag logic.
 //
 // What this guards: the dialog opens, the Modal chrome renders (.read-review), the
-// risky lines get flagged (a bare fraction "3/4 tasse" + a low-confidence word
-// "cannelle"), the confirm/retake feet are reachable, and it throws no pageerror.
+// RISKY lines get flagged (a conversion mismatch, an unparseable amount, a shaky
+// word, an AI-changed number) while clean measures stay calm, the « Rapport » tab
+// names the pipeline (reader, models, repairs), the confirm/retake feet are
+// reachable, and it throws no pageerror.
 // Run at phone width too — the "mobile-friendly always" rule applies to overlays.
 
 for (const format of [
@@ -39,10 +41,28 @@ for (const format of [
     const modal = page.locator('.read-review')
     await expect(modal).toBeVisible()
 
-    // The flag logic actually fired: "3/4 tasse" (bare fraction), "cannelle"
-    // (seeded low-confidence word) and the long ramens line ("1/2 lb") are all
-    // worth a second look.
-    await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(3)
+    // The flag logic actually fired — risky-only now, one specimen line per
+    // reason: the conversion mismatch ("80 ml (1/2 tasse)"), the unparseable
+    // amount ("A de c. à thé"), the shaky word ("cannelle"), the AI-changed
+    // number ("1/3 tasse", seeded via report.suspect). The clean "3/4 tasse de
+    // farine" and the consistent "225 g (1/2 lb)" ramens line stay CALM — the
+    // old flag-every-fraction behaviour trained the eye to skim past warnings.
+    await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(4)
+    const flagged = await modal
+      .locator('.read-review__line.is-flagged .read-review__memo')
+      .evaluateAll((els) => els.map((e) => (e as HTMLTextAreaElement).value))
+    expect(flagged.some((v) => v.includes('3/4 tasse de farine'))).toBe(false)
+
+    // The « Rapport » tab: the pipeline honesty report names the reader, the
+    // structuring model, the auto-repair and the AI-changed line.
+    await modal.getByRole('tab', { name: 'Rapport' }).click()
+    const reportPane = modal.locator('.read-review__report')
+    await expect(reportPane).toBeVisible()
+    await expect(reportPane).toContainText('Tesseract')
+    await expect(reportPane).toContainText('llama-3.3-70b')
+    await expect(reportPane).toContainText('1/3 tasse de cassonade')
+    await expect(reportPane).toContainText('60 ml (1/4 de tasse)')
+    await modal.getByRole('tab', { name: 'Vérifier' }).click()
 
     // The rows are MEMO boxes: the deliberately-long ramens ingredient must be
     // fully visible — wrapped, never clipped. A one-line <input> fails this on

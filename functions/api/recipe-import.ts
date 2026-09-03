@@ -1,15 +1,16 @@
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { resolveLang, structureRecipe } from '../_lib/ai'
+import { TEXT_MODEL, resolveLang, structureRecipe } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
 import { detectLang } from '../_lib/langDetect'
 import {
   NO_TIMES,
   type RecipeTimes,
   htmlToText,
-  parsePastedRecipe,
+  linesWithForeignNumbers,
   parseRecipeJsonLd,
   parseRecipeMicrodata,
+  parseRecipeText,
   recipeTextWindow,
   refineSteps,
   regroupIngredients,
@@ -39,6 +40,16 @@ interface DraftOut {
   // Auto-detected reading language ('fr' | 'en' | null = couldn't tell → the form
   // leaves its language on "Auto"). Set here so every import path fills it.
   lang: 'fr' | 'en' | null
+  // HOW this draft was structured, for the photo-read report (RecipeReadReview's
+  // « Rapport » tab): 'headings' = the deterministic no-AI parser (real section
+  // headings found), 'ai' = the generative structuring model (named in `model`),
+  // 'heuristic' = the shape-based best effort (no AI available or AI empty-handed).
+  structuring?: 'headings' | 'ai' | 'heuristic'
+  model?: string | null
+  // Lines whose numbers do NOT appear in the source text — the structuring model
+  // changed or invented them (linesWithForeignNumbers). Only ever set with
+  // structuring 'ai'; the verify panel flags these lines "à confirmer".
+  suspect?: string[]
   empty?: boolean
   // Why we came back empty-handed, so the UI can say something true instead of one
   // catch-all "rien trouvé":
@@ -150,8 +161,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const text = body?.text?.trim()
   if (text) {
     // Format first: a recipe pasted with its real headings (Ingrédients /
-    // Préparation) parses deterministically — no AI, nothing invented.
-    const heuristic = parsePastedRecipe(text)
+    // Préparation) parses deterministically — no AI, nothing invented. Markdown-
+    // shaped text (the cloud OCR reader answers in markdown) flattens first so
+    // its "## Ingrédients" / table rows hit the same deterministic parser.
+    const heuristic = parseRecipeText(text)
     if (heuristic.confident) {
       return ok(
         draft({
@@ -161,22 +174,30 @@ export const onRequestPost = authed(async (ctx, actor) => {
           servings: heuristic.servings,
           servingsUnit: heuristic.servingsUnit,
           times: heuristic.times,
+          structuring: 'headings',
         }),
       )
     }
     // Free-form text → AI structuring; its steps still go through the shared
-    // refinement (models love returning one packed paragraph).
+    // refinement (models love returning one packed paragraph). Every number the
+    // model emits is cross-checked against the source text — a line carrying a
+    // number the page never printed is returned in `suspect` for the verify
+    // panel to flag (the model was told not to touch quantities; trust, verify).
     if (aiOn) {
       const r = await structureRecipe(ctx.env, text, lang)
       if (r.ingredients.length || r.steps.length) {
+        const steps = refineSteps(r.steps)
         return ok(
           draft({
             title: r.title ?? heuristic.title,
             ingredients: r.ingredients,
-            steps: refineSteps(r.steps),
+            steps,
             servings: heuristic.servings,
             servingsUnit: heuristic.servingsUnit,
             times: heuristic.times,
+            structuring: 'ai',
+            model: TEXT_MODEL,
+            suspect: linesWithForeignNumbers(text, [...r.ingredients, ...steps]),
           }),
         )
       }
@@ -191,6 +212,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
           servings: heuristic.servings,
           servingsUnit: heuristic.servingsUnit,
           times: heuristic.times,
+          structuring: 'heuristic',
         }),
       )
     }
@@ -228,15 +250,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // the parsers above can't touch. Extract the WHOLE text, then window it onto the
   // recipe — a head slice would hand the model the nav bar and stop short of the food.
   if (aiOn) {
-    const r = await structureRecipe(ctx.env, recipeTextWindow(htmlToText(html, 200_000)), lang)
+    const windowed = recipeTextWindow(htmlToText(html, 200_000))
+    const r = await structureRecipe(ctx.env, windowed, lang)
     if (r.ingredients.length || r.steps.length) {
+      const steps = refineSteps(r.steps)
       return ok(
         draft({
           title: r.title ?? parsed?.title ?? null,
           ingredients: r.ingredients,
-          steps: refineSteps(r.steps),
+          steps,
           image: parsed?.image ?? null,
           source: url.toString(),
+          structuring: 'ai',
+          model: TEXT_MODEL,
+          suspect: linesWithForeignNumbers(windowed, [...r.ingredients, ...steps]),
         }),
       )
     }

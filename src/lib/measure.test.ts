@@ -100,6 +100,16 @@ describe('measuresDisagree — conversion cross-check', () => {
     expect(measuresDisagree('250 ml de lait')).toBe(false)
     expect(measuresDisagree('2 œufs')).toBe(false)
   })
+  it('flags a 6↔8 misread on the ml side (the band that used to let it through)', () => {
+    expect(measuresDisagree('80 ml (1/2 tasse) de sucre')).toBe(true) // ½ cup = 125 ml; 80 is a mis-read 60/180
+    expect(measuresDisagree('80 ml (1/3 de tasse) de sucre')).toBe(false) // ⅓ cup ≈ 83 ml — legit rounding
+  })
+  it('cross-checks the g ↔ lb dual print too', () => {
+    expect(measuresDisagree('225 g (1/2 lb) de ramens')).toBe(false) // ½ lb ≈ 227 g
+    expect(measuresDisagree('450 g (1 lb) de poulet')).toBe(false)
+    expect(measuresDisagree('225 g (2 lb) de ramens')).toBe(true) // one of the two was mis-read
+    expect(measuresDisagree('225 g de farine')).toBe(false) // no pair, nothing to check
+  })
 })
 
 describe('findMeasures — "de tasse" connector (FR)', () => {
@@ -126,6 +136,18 @@ describe('repairImperialFromMetric — rescue a fraction from the ml (FR recipes
   it('does NOT invent an amount when the ml is itself nonsense (dropped comma)', () => {
     // "1,25 ml (¼ c. à thé)" mis-read as "125 ml (…)" → 25 tsp, no clean snap → left for the panel to flag
     expect(repairImperialFromMetric('125 ml (A de c. à thé) de sel')).toBe('125 ml (A de c. à thé) de sel')
+  })
+  it('NEVER overwrites a legible fraction when the ml disagrees (the silent 1/2→1/3 flip)', () => {
+    // "60 ml (1/2 tasse)"-class lines: the FRACTION read fine, the ML was mis-read
+    // (6→8, a dropped leading 1). Repairing from the ml here flipped a correct ¼/½
+    // into 1/3 and un-flagged the line. Both stay verbatim; measuresDisagree flags.
+    expect(repairImperialFromMetric('80 ml (1/2 tasse) de sucre')).toBe('80 ml (1/2 tasse) de sucre')
+    expect(repairImperialFromMetric('80 ml (3/4 tasse) de farine')).toBe('80 ml (3/4 tasse) de farine')
+    expect(measuresDisagree('80 ml (1/2 tasse) de sucre')).toBe(true)
+    // Same protection when the garbling left a PARSEABLE-but-wrong amount ("¼"→"4"):
+    // we flag, we don't guess which side lied.
+    expect(repairImperialFromMetric('60 ml (4 de tasse) de beurre')).toBe('60 ml (4 de tasse) de beurre')
+    expect(measuresDisagree('60 ml (4 de tasse) de beurre')).toBe(true)
   })
   it('is a no-op on lines without the "n ml ( … unit … )" shape', () => {
     expect(repairImperialFromMetric('1 gros œuf')).toBe('1 gros œuf')

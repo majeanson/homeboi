@@ -29,6 +29,11 @@ const DRAFT = {
   servingsUnit: 'biscuits',
   times: { prep: 15, cook: 12, total: null },
   lang: 'fr',
+  // The AI-structured shape recipe-import now reports: the model + the line whose
+  // "180" the source never printed — the verify panel must flag it "à confirmer".
+  structuring: 'ai',
+  model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+  suspect: ['Préchauffer le four à 180 °C.'],
   empty: false,
 }
 const json = (body: unknown) => ({ contentType: 'application/json', body: JSON.stringify(body) })
@@ -46,7 +51,7 @@ test('photo import: read → verify dialog → apply draft to the form', async (
   // Registered after mockApi → these take precedence (Playwright runs newest first).
   // cloudOcr makes the cloud reader eligible; the two read endpoints return our draft.
   await page.route('**/api/health', (r) => r.fulfill(json({ ai: true, aiAvailable: true, cloudOcr: true })))
-  await page.route('**/api/recipe-ocr', (r) => r.fulfill(json({ text: OCR_TEXT })))
+  await page.route('**/api/recipe-ocr', (r) => r.fulfill(json({ text: OCR_TEXT, model: 'mistral-ocr-latest' })))
   await page.route('**/api/recipe-import', (r) => r.fulfill(json(DRAFT)))
   await page.route('**/api/recipe-vision', (r) => r.fulfill(json(DRAFT)))
 
@@ -72,10 +77,21 @@ test('photo import: read → verify dialog → apply draft to the form', async (
   })
 
   // The verify-against-the-photo dialog opens with the structured read, and the
-  // bare-fraction line ("3/4 tasse") is flagged for a second look.
+  // AI-changed line (report.suspect from recipe-import) is flagged for a second
+  // look. The clean "3/4 tasse" line is calm — risky-only flagging.
   const modal = page.locator('.read-review')
   await expect(modal).toBeVisible({ timeout: 15_000 })
-  await expect(modal.locator('.read-review__line.is-flagged').first()).toBeVisible()
+  await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(1)
+
+  // The « Rapport » tab exposes the real pipeline: the cloud reader (with its
+  // model name), the AI structuring, and the untraceable number.
+  await modal.getByRole('tab', { name: 'Rapport' }).click()
+  const report = modal.locator('.read-review__report')
+  await expect(report).toBeVisible()
+  await expect(report).toContainText('mistral-ocr-latest')
+  await expect(report).toContainText('llama-3.3-70b')
+  await expect(report).toContainText('180')
+  await modal.getByRole('tab', { name: 'Vérifier' }).click()
 
   // Confirm → the draft lands in the form behind the dialog (applyDraft).
   await modal.locator('.read-review__foot .btn--primary').click()
