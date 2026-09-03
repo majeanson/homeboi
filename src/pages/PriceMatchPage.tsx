@@ -54,9 +54,12 @@ export function PriceMatchPage() {
   const termsParam = terms.length ? terms.join(',') : ''
   const dealsQ = useQuery({
     queryKey: ['deals', query, termsParam, dayKey],
+    // Longer than api()'s 20s default: the server walks up to several Flipp
+    // searches (one per term) sequentially, which can outrun that on its own.
     queryFn: () =>
       api<{ deals: Deal[] }>(
         `deals?q=${encodeURIComponent(query)}${termsParam ? `&terms=${encodeURIComponent(termsParam)}` : ''}`,
+        { timeoutMs: 45_000 },
       ),
     staleTime: 60 * 60 * 1000,
     retry: false,

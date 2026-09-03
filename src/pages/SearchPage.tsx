@@ -99,9 +99,12 @@ export function SearchPage() {
     setAskErr(false)
     setAnswer(null)
     try {
+      // Longer than api()'s 20s default: /api/ask runs several DB queries plus an
+      // AI answer call, which routinely runs past that on a slow connection.
       const r = await api<{ answer: string | null; kind: AnswerKind; degraded: boolean }>('ask', {
         method: 'POST',
         body: { question },
+        timeoutMs: 30_000,
       })
       if (r.degraded) setAiOff(true)
       else if (r.answer) setAnswer({ text: r.answer, kind: r.kind })

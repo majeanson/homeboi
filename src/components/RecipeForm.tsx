@@ -411,7 +411,11 @@ export function RecipeForm({
       // drops to the generative vision read as a safety net.
       let draft: ReadDraft | null = null
       if (stitched.length >= 25 && meanConf >= 40) {
-        draft = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched } }).catch(() => null)
+        // Longer than api()'s 20s default: structuring runs through an AI model and
+        // can legitimately outrun that on a slow connection.
+        draft = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(
+          () => null,
+        )
       }
       if ((!draft || draft.empty || !draftHasContent(draft)) && aiEnabled) {
         // Fallback: the generative vision read of the FIRST page (resized to the
@@ -482,6 +486,9 @@ export function RecipeForm({
     setImporting(true)
     setImportMsg(null)
     try {
+      // Longer than api()'s 20s default: a URL import chains its own 20s scrape
+      // fetch server-side, THEN structures the result through an AI model —
+      // routinely outrunning api()'s plain-call bound on a slow connection.
       const r = await api<{
         title: string | null
         ingredients: string[]
@@ -494,7 +501,7 @@ export function RecipeForm({
         lang: 'fr' | 'en' | null
         empty?: boolean
         reason?: 'blocked' | 'no-recipe'
-      }>('recipe-import', { method: 'POST', body: text ? { text } : { url } })
+      }>('recipe-import', { method: 'POST', body: text ? { text } : { url }, timeoutMs: 45_000 })
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
         // A site that refuses us is not the same failure as a page with no recipe on
         // it — and neither is the AI being off. Say which one it was.

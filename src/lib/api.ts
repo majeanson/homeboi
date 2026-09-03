@@ -51,7 +51,24 @@ function readProfile(): string | null {
 // offline-outbox REPLAY (see the guest backstop below) — a direct `api()` caller
 // may now set `idempotencyKey` too (a one-liner, per the item's scope note) without
 // that alone granting the guest bypass.
-type Options = { method?: string; body?: unknown; idempotencyKey?: string; replay?: boolean }
+type Options = { method?: string; body?: unknown; idempotencyKey?: string; replay?: boolean; timeoutMs?: number }
+
+// `fetch` never times out on its own — a stalled connection (a store's captive
+// portal, a wifi AP going out of range mid-handshake, any "packets silently
+// dropped, no TCP RST" black hole) leaves this promise unresolved forever. That
+// hung `auth/me` call left a FREQUENT user, offline in a store, staring at only a
+// loading spinner: `AuthProvider.refresh()` awaits `api()` inside try/finally, so
+// `loading` never flips false, and the router's `/` entry has nothing else to fall
+// back on. Every caller gets a bound now: a plain JSON call gives up after
+// `DEFAULT_TIMEOUT_MS` (matches `lib/online.ts`'s own `SUPPRESS_WINDOW_MS`, so a
+// timed-out call and "this looks offline" agree); a Blob body (photo/audio/drawing
+// upload) gets more room — those are legitimately slower and more likely to be
+// attempted on a weak signal in the first place. A timeout throws a plain
+// `DOMException` (NOT an `ApiError`), so `writeWith` still classifies it as a
+// transport failure and queues it to the offline outbox exactly like any other
+// network error — nothing about that contract changes.
+const DEFAULT_TIMEOUT_MS = 20_000
+const UPLOAD_TIMEOUT_MS = 60_000
 
 export async function api<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const method = opts.method ?? 'GET'
@@ -134,13 +151,37 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
     typeof document !== 'undefined' &&
     document.visibilityState === 'hidden'
 
-  const res = await fetch(`/api/${path.replace(/^\/+/, '')}`, {
-    method,
-    headers,
-    credentials: 'same-origin',
-    body: payload,
-    keepalive: keepalive || undefined,
-  })
+  // A keepalive request is deliberately UNBOUNDED — it exists specifically to
+  // outlive teardown (pagehide/lock) after the JS context that started it may
+  // already be gone, so there's nothing here to abort it FOR: cutting it off at
+  // our own timeout would just turn "let the browser finish this in the
+  // background" back into "lose the write," the exact loss keepalive was added to
+  // prevent. Every other call gets bounded — no timer/signal is wired up at all
+  // for a keepalive request, rather than a timer that also aborts it.
+  const timeoutMs = opts.timeoutMs ?? (isBlob ? UPLOAD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS)
+  const controller = keepalive ? null : new AbortController()
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null
+
+  let res: Response
+  let text: string
+  try {
+    res = await fetch(`/api/${path.replace(/^\/+/, '')}`, {
+      method,
+      headers,
+      credentials: 'same-origin',
+      body: payload,
+      keepalive: keepalive || undefined,
+      signal: controller?.signal,
+    })
+    // `fetch` resolves as soon as HEADERS arrive — a connection that answers the
+    // handshake and then stalls mid-body (a proxy/captive-portal drop, a signal
+    // that cuts out right after) would hang HERE, one phase later, if the timer
+    // stopped covering it. Reading the body under the SAME timer/signal is what
+    // keeps that stall bounded too.
+    text = await res.text()
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
 
   // A Workers AI call degraded server-side: the handler tagged the response so we
   // can surface a notice (on success OR a 503), regardless of this body's shape.
@@ -156,7 +197,6 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   }
 
   let data: unknown = null
-  const text = await res.text()
   if (text) {
     try {
       data = JSON.parse(text)

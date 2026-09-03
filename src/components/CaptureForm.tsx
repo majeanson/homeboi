@@ -127,9 +127,12 @@ export function CaptureForm({ autoFocus, seed, onRouted }: { autoFocus?: boolean
     const prevCleanup = forceType ? routed?.cleanup : undefined
     setRouted(null)
     try {
+      // Longer than api()'s 20s default: the handler runs an inline AI
+      // classification call before it ever writes, which can outrun that on a
+      // slow connection while still genuinely being online and working.
       const res = await write<{ type: string; degraded: boolean; routed: { kind: string; label: string; cleanup?: Cleanup[] } }>(
         'capture',
-        { method: 'POST', body: { text: v, forceType, undo: prevCleanup }, affectedKeys: CAPTURE_KEYS },
+        { method: 'POST', body: { text: v, forceType, undo: prevCleanup }, affectedKeys: CAPTURE_KEYS, timeoutMs: 30_000 },
       )
       if (res.queued) {
         // Offline: no routed/undo UI (there's nothing routed yet) — just the calm

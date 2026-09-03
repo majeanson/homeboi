@@ -97,7 +97,9 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const now = Date.now()
   const dealsQ = useQuery({
     queryKey: ['deals', query, dayKey],
-    queryFn: () => api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(query)}`),
+    // Longer than api()'s 20s default: the server walks up to several Flipp
+    // searches (one per term) sequentially, which can outrun that on its own.
+    queryFn: () => api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(query)}`, { timeoutMs: 45_000 }),
     staleTime: 60 * 60 * 1000,
     retry: false,
     enabled: query.length > 0,

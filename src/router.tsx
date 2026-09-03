@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-rou
 import { Home } from './pages/Home'
 import { useT } from './i18n'
 import { useSurface } from './lib/surface'
-import { useAuth } from './lib/auth'
+import { useAuth, wasSignedIn } from './lib/auth'
 import { isPaired } from './lib/device'
 import { remeasureViewport } from './lib/viewportVars'
 
@@ -125,12 +125,15 @@ function LegacyHubRedirect({ map }: { map: (p: URLSearchParams) => { path: strin
 // The smart front door. A first-time visitor — no device role chosen, not paired,
 // not signed in — gets the marketing page. Everyone else (a returning kiosk, a
 // returning phone) skips straight to their home (/board renders per surface). We
-// only wait on the auth check when it's the deciding factor; a chosen/paired
-// device redirects without blocking on it.
+// only wait on the auth check when it's the deciding factor; a chosen/paired/
+// previously-signed-in device redirects without blocking on it — `wasSignedIn()`
+// is what keeps a returning phone off the marketing page when `auth/me` can't be
+// reached at all (offline cold start): a network failure there always reads as
+// "signed out" (see lib/auth.tsx), which used to be the only signal this route had.
 function Entry() {
   const { chosen } = useSurface()
   const { signedIn, loading } = useAuth()
-  if (chosen || isPaired()) return <Navigate to="/board" replace />
+  if (chosen || isPaired() || wasSignedIn()) return <Navigate to="/board" replace />
   if (loading) return <Loading />
   if (signedIn) return <Navigate to="/board" replace />
   return <Home />

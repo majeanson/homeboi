@@ -54,6 +54,11 @@ export interface WriteSpec {
   // tmp id once the create replays and the real id is known — so "add offline,
   // then act on it offline" no longer drops the follow-up.
   tmpId?: string
+  // Override api()'s default timeout (20s) for a write whose handler legitimately
+  // runs long (e.g. capture's inline AI classification before the DB write) — a
+  // caller that lets this time out gets the SAME transport-failure/outbox-queue
+  // treatment as any other network error, just later.
+  timeoutMs?: number
 }
 
 export type WriteResult<T> = { data: T; queued: false } | { data: null; queued: true }
@@ -116,7 +121,7 @@ export async function writeWith<T = unknown>(
   }
 
   try {
-    const data = await api<T>(target, { method, body, idempotencyKey: key })
+    const data = await api<T>(target, { method, body, idempotencyKey: key, timeoutMs: spec.timeoutMs })
     return { data, queued: false }
   } catch (err) {
     // A network/transport failure rejects with a non-ApiError (TypeError) — queue

@@ -141,4 +141,68 @@ describe('deferred-removal freshness fence', () => {
     store.unhideWhenFresh(qc, 'board', ['a'], Date.now() + 1_000, false)
     expect(store.snapshot('board').has('a')).toBe(false)
   })
+
+  // La liste "swipe it and it comes back": the undo timer can fire while NOTHING
+  // is watching the scope (the user swiped, then navigated off /liste before the
+  // 15 s hold elapsed, and no other mounted page queries 'board'). `findAll` then
+  // returns [], and `[].every(...)` is vacuously true — the old code treated an
+  // EMPTY match as "fresh" and un-hid on the spot with no frame ever confirmed.
+  it('does NOT vacuously un-hide when nothing is actively watching the scope', () => {
+    const qc = new QueryClient()
+    // A stale pre-delete frame sits in the cache, but nothing observes it — no
+    // mounted list/board page right now.
+    qc.setQueryData(['board'], { list: [{ id: 'a' }] })
+    store.hideIds('board', ['a'])
+    store.unhideWhenFresh(qc, 'board', ['a'], Date.now() + 1_000, true)
+    expect(store.snapshot('board').has('a')).toBe(true) // stays hidden — no active query confirmed it
+
+    // The user navigates back: a query mounts and shows the still-stale cached
+    // frame first. The row must stay hidden through that repaint...
+    const obs = new QueryObserver(qc, {
+      queryKey: ['board'],
+      queryFn: () => new Promise(() => {}),
+      staleTime: Infinity,
+      retry: false,
+    })
+    const unsub = obs.subscribe(() => {})
+    expect(store.snapshot('board').has('a')).toBe(true)
+
+    // ...and only un-hide once THAT query's own fetch actually lands past t0.
+    qc.setQueryData(['board'], { list: [] }, { updatedAt: Date.now() + 5_000 })
+    expect(store.snapshot('board').has('a')).toBe(false)
+    unsub()
+  })
+
+  // The fix above makes an empty match fall through to `cache.subscribe(...)`
+  // instead of returning immediately — which must not turn into a PERMANENT
+  // listener for a scope nobody ever revisits (an always-on kiosk session can run
+  // for weeks; every orphaned delete would otherwise leak one). It must give up
+  // WATCHING without ever un-hiding on its own timeout — that's the exact 90 s-cap
+  // bug this file's history already fixed once.
+  it('stops watching (never un-hides on its own) once the give-up bound elapses', () => {
+    vi.useFakeTimers()
+    const qc = new QueryClient()
+    qc.setQueryData(['board'], { list: [{ id: 'a' }] })
+    store.hideIds('board', ['a'])
+    store.unhideWhenFresh(qc, 'board', ['a'], Date.now() + 1_000, true)
+    expect(store.snapshot('board').has('a')).toBe(true)
+
+    // No active query ever mounts — advance well past the internal give-up bound.
+    vi.advanceTimersByTime(11 * 60 * 1000)
+    expect(store.snapshot('board').has('a')).toBe(true) // never resurrected on its own
+
+    // The listener was torn down when it gave up: even a fresh frame arriving
+    // AFTER that no longer reaches it, so the row stays hidden for the rest of the
+    // session rather than the (would-be-correct-if-it-were-still-listening) unhide.
+    const obs = new QueryObserver(qc, {
+      queryKey: ['board'],
+      queryFn: () => new Promise(() => {}),
+      staleTime: Infinity,
+      retry: false,
+    })
+    const unsub = obs.subscribe(() => {})
+    qc.setQueryData(['board'], { list: [] }, { updatedAt: Date.now() + 5_000 })
+    expect(store.snapshot('board').has('a')).toBe(true)
+    unsub()
+  })
 })

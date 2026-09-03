@@ -500,6 +500,98 @@ desktop in the same minutes. The self-heal (refocus + 60 s retry while errored +
 « Réessayer ») is in place and is the intended recovery. If it recurs on a healthy
 connection, the next step is a device-side capture, not another code guess.
 
+### C-septies. Reported STILL happening, 2026-09-03 — two more gaps under C-quater/C-sexies' own umbrella
+
+Marc reported both symptoms again: swiped list rows "sometimes" still come back, and
+"offline app should always be able to start." Neither is C-sexies' 90 s-cap bug (already
+closed) — both are separate gaps under the same two headings, found by reading the code
+(not by re-trusting the ledger — this file's own rule).
+
+- **The resurrection: `[].every(...)` is vacuously `true`.** `unhideWhenFresh`
+  (`src/lib/useDeferredRemoval.ts`) only ever checked `cache.findAll({queryKey:[scope],
+  type:'active'}).every(q => q.state.dataUpdatedAt >= t0)`. If the undo timer fires while
+  **nothing is actively watching that scope** — swipe-delete on `/liste`, then navigate to
+  a tab that doesn't query board data before the 15 s hold elapses — `findAll` returns
+  `[]`, and an empty array's `.every()` is vacuously true. The id un-hid on the spot with
+  no fresh frame ever confirmed, leaving the stale pre-delete cache untouched; the next
+  time a query for that scope mounted (navigating back), Query painted that stale frame
+  first and the "deleted" row flashed back until its own fetch resolved. Fixed:
+  `fresh()` now requires `queries.length > 0` — an empty match reads as "not fresh yet",
+  not "fresh," so it falls through to the existing subscribe-and-wait path instead of
+  un-hiding blind. Guard: new case in `useDeferredRemoval.test.ts` § "deferred-removal
+  freshness fence" — **verified red** against the un-fixed code (`queries.length > 0 &&`
+  removed) before landing the fix.
+- **Offline cold start: a FREQUENT user, offline in a store (weak/stalled signal, not
+  clean airplane-mode), saw only a loading spinner — never the board.** Marc's own
+  follow-up correction: this isn't a fresh-visitor routing gap, it's a genuine HANG.
+  `src/lib/api.ts`'s `fetch` carried no timeout at all — a stalled connection (captive
+  portal, a wifi AP fading in a store, any "packets silently dropped, no TCP RST" black
+  hole) leaves that promise unresolved forever, not rejected. `AuthProvider.refresh()`
+  (`src/lib/auth.tsx`) `await`s it inside `try/finally`, so `loading` never flips false
+  if it hangs; the router's `/` entry (`Entry()` in `router.tsx`) renders only
+  `<Loading/>` while `loading` is true, with nothing else to force an exit. Two fixes,
+  complementary rather than either alone being enough:
+  - **`api()` now bounds every request** with an `AbortController` timeout — 20 s for a
+    plain call (matches `lib/online.ts`'s own `SUPPRESS_WINDOW_MS`, so a timeout and
+    "this looks offline" agree), 60 s for a Blob body (photo/audio/drawing upload,
+    legitimately slower and more likely attempted on a weak signal in the first place).
+    A timeout rejects with a plain `DOMException`, not an `ApiError`, so `writeWith`
+    still classifies it as a transport failure and queues it to the offline outbox —
+    the existing contract is unchanged, just now actually reachable. Guard:
+    `api.test.ts` § "api() timeout on a stalled connection" — **verified red** by
+    reverting the timeout (the mock fetch throws synchronously on the now-missing
+    `signal`, proving the test is coupled to the fix, not just decorative).
+  - **A returning device also stops waiting on that round trip at all.** A persisted
+    `wasSignedIn()` flag (`localStorage`, mirrors `device.ts`'s device-token pattern for
+    kiosk) is set on every server-CONFIRMED `auth/me` answer (true or false) and cleared
+    on explicit sign-out — never touched on a network failure/timeout, so it survives
+    exactly this case. `Entry()` now checks `chosen || isPaired() || wasSignedIn()`
+    before ever looking at `loading`, so a known device skips the round trip (and its
+    now-20s-bounded wait) entirely and lands straight on `/board` with cached data. This
+    is the faster path for a *frequent* user specifically; the `api()` timeout is what
+    protects everyone else (first cold visit, a cleared profile, any OTHER query in the
+    app that could otherwise hang the same way once past Entry()).
+- Both are read-only-mode gaps: correct app state existed (cache, session) but the UI
+  didn't trust it. Neither had a prior guard exercising the "nothing is watching" /
+  "the network call itself fails" branch — every existing test kept at least one
+  active observer, or mocked a real 401 rather than a transport failure.
+
+**A `/code-review high` pass on the diff above (Marc's explicit ask — "make sure
+those bugs won't come back") found seven real issues the first pass missed**, all
+fixed in the same slice, each with its own regression test verified red first:
+
+- **The timeout only covered the CONNECTION, not the body.** `fetch()` resolves as
+  soon as headers arrive; a proxy/captive-portal that answers the handshake and
+  then stalls MID-BODY would still hang, one phase later — reproducing the exact
+  bug the timeout exists to fix. Fixed: the same timer/signal now also covers
+  `res.text()`.
+- **The 20 s default was too short for several legitimately-slow AI-backed
+  endpoints** (`recipe-import` — which chains its own 20 s server-side scrape fetch
+  before structuring, `ask`, `deals`'s multi-term Flipp walk, `capture`'s inline AI
+  classification): a slow-but-working call would now abort instead of finishing,
+  and for `capture` specifically that meant a genuinely-online write got silently
+  queued to the offline outbox. Fixed: `api()`/`WriteSpec` grew a `timeoutMs`
+  override, wired at each of those call sites (30–45 s).
+- **A `keepalive` request (the undo toast's pagehide flush) got the SAME 20 s
+  bound** — defeating the point of `keepalive`, which exists specifically to
+  outlive teardown. Fixed: a keepalive request gets no `AbortSignal` at all.
+- **`wasSignedIn` would also fast-path a demo SANDBOX visitor** straight past
+  `Entry()`'s marketing/login fallback once their throwaway household is swept —
+  landing them on a dead board instead. Fixed: never persisted true for
+  `isSandboxEmail`.
+- **Two overlapping `refresh()` calls (mount + an `onAuthLost` re-check) could
+  resolve out of order**, letting a slower/stale answer overwrite a fresher one —
+  including `wasSignedIn`. Fixed: a sequence-number guard drops any response
+  superseded by a newer request.
+- **The vacuous-truth fix's fallback (`cache.subscribe`) had no upper bound** — a
+  scope nobody ever revisits for the rest of a (potentially weeks-long, always-on
+  kiosk) session leaked one permanent cache listener per orphaned delete. Fixed: a
+  10-minute give-up that stops WATCHING (never un-hides on its own — that's the
+  90 s-cap bug already fixed once above) if no fresh frame ever arrives.
+- **`wasSignedIn`/`rememberSignedIn` hand-rolled the exact localStorage
+  get/set/try-catch shape `createDeviceStore` exists to collapse** (CLAUDE.md's
+  "build by reuse" rule). Fixed: rebuilt on that primitive.
+
 ### C-quinquies. Asked by Marc, 2026-09-02 — the day scene split into « Journée | Repas »
 
 Shipped inside `d7710d5` (three parallel sessions, one commit — this slice was the

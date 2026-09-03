@@ -124,19 +124,49 @@ function unhideWhenFresh(qc: QueryClient, scope: string, ids: string[], t0: numb
     return
   }
   const cache = qc.getQueryCache()
-  const fresh = () =>
-    cache.findAll({ queryKey: [scope], type: 'active' }).every((q) => q.state.dataUpdatedAt >= t0)
+  // `[].every(...)` is vacuously true — if nothing is currently watching this scope
+  // (the list page was navigated away from before the undo timer fired), `findAll`
+  // returns [] and the id used to un-hide on the spot with NO fresh frame ever
+  // confirmed. The stale pre-delete cache was left untouched; the next time a query
+  // for this scope mounted, Query painted that stale frame first — the deleted row
+  // flashed back until its own fetch resolved. Require at least one active query so
+  // an empty match means "not fresh yet", not "fresh": we then fall through to the
+  // subscribe below, which catches the moment a query mounts again and only unhides
+  // once ITS fetch actually lands past t0.
+  const fresh = () => {
+    const queries = cache.findAll({ queryKey: [scope], type: 'active' })
+    return queries.length > 0 && queries.every((q) => q.state.dataUpdatedAt >= t0)
+  }
   if (fresh()) {
     unhideIds(scope, ids)
     return
   }
   let done = false
+  let giveUpTimer: ReturnType<typeof setTimeout>
   const stop = cache.subscribe(() => {
     if (done || !fresh()) return
     done = true
+    clearTimeout(giveUpTimer)
     stop()
     unhideIds(scope, ids)
   })
+  // Bound the LISTENER's lifetime, never the hide itself — un-hiding on a timeout
+  // is exactly the 90 s-cap bug this function's own history warns about above. If
+  // no fresh frame arrives for this long (the scope's page is never revisited for
+  // the rest of the session — plausible on an always-on kiosk that can run for
+  // weeks), stop WATCHING: the id stays hidden either way (harmless — session-only
+  // state, and the row really is gone server-side), we just stop paying a
+  // cache-subscribe callback, on every write anywhere in the app, for a scope
+  // nobody's looking at anymore. Each orphaned delete would otherwise leak one
+  // listener for the rest of the session.
+  giveUpTimer = setTimeout(
+    () => {
+      if (done) return
+      done = true
+      stop()
+    },
+    10 * 60 * 1000,
+  )
 }
 
 // Keep `ids` hidden until the offline outbox has fully drained (every queued write

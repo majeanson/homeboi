@@ -57,9 +57,12 @@ export function AskSheet({ aiEnabled = true, onClose }: { aiEnabled?: boolean; o
     setAnswer(null)
     spokenRef.current = false
     try {
+      // Longer than api()'s 20s default: /api/ask runs several DB queries plus an
+      // AI answer call, which routinely runs past that on a slow connection.
       const r = await api<{ answer: string | null; kind: AnswerKind; degraded: boolean }>('ask', {
         method: 'POST',
         body: { question: q },
+        timeoutMs: 30_000,
       })
       if (r.degraded) setStatus('off')
       else if (r.answer) {
