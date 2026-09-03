@@ -100,7 +100,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
         // Reply: recipient is fixed to the original sender — show « En réponse à … » instead
         // of a picker, with a snippet of the mot being answered.
         <p className="mot-composer__reply mono">
-          <Icon name="arrow-left-bold" size={14} /> {replyName ? fn.replyTo(replyName) : fn.inReplyTo}
+          <Icon name="arrow-bend-up-left-bold" size={14} /> {replyName ? fn.replyTo(replyName) : fn.inReplyTo}
         </p>
       ) : (
         <>

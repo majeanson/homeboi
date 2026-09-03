@@ -831,6 +831,34 @@ reorder always renders as a paired ↑↓ set, collapse as a lone directional ca
 real ambiguity; every `❌`-flagged undo gap in ACTIONS.md already carries a recorded,
 deliberate reason.
 
+**Follow-up same day, three more passes (Marc: "review flow across sections and
+uniformity when editing, viewing").** Split into view/peek flow, edit-door flow, and
+cross-section navigation flow — each independently re-verified against current code,
+not against this file. **Verdict: already solid.** Every candidate the three passes
+surfaced turned out either already correct-by-construction or a documented, deliberate
+split (create-vs-edit door "mismatches" for events/home-projects, member-vs-pet edit
+doors, no silent auto-saves anywhere, no dead-tap rows, `x-bold`/FAB/undo-toast all
+uniform). Two genuinely-open, low-severity items survived:
+
+- **Fixed**: `buildMemberPerson`'s primary "Fiche complète" action and its own
+  "Relier à quelqu'un" action (`src/components/detail/adapters.ts`) shared
+  `users-three-bold` — two DIFFERENT actions in the SAME peek sheet, the same
+  failure class as the arrow-icon fix above. `users-three-bold` is `connect`'s
+  correct, established, app-wide meaning ("connect people" — same glyph AddSheet's
+  own category and `ConnectPeople`'s save button use); `detail` was the intruder,
+  swapped to `arrow-up-right-bold` ("step out to a fuller view" — its existing
+  meaning everywhere else it's used: share, open-in-new-tab, export).
+- **Fixed same day, on Marc's ask** ("fix 1 then ship"): `arrow-left-bold` also meant
+  "reply" (a mot's peek action + `MotComposer`'s "en réponse à" context line)
+  alongside its ~10 other, correct "go back a step" uses. No existing icon fit
+  without recreating the same collision elsewhere (`envelope-bold` already means
+  "mot," `arrow-u-up-left-bold` already means "restore a deleted item," `link-bold`
+  already means "share/copy a URL"), so `arrow-bend-up-left-bold` was fetched from
+  `unpkg.com/@phosphor-icons/core@2` and rendered standalone (Playwright screenshot,
+  side-by-side with an existing icon) before trusting the path data, per
+  `pipIcons.ts`'s own documented process. `arrow-left-bold` now means exactly one
+  thing app-wide.
+
 ### D. Judgement calls waiting on Marc, not on code
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**

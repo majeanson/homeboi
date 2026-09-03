@@ -306,7 +306,12 @@ export function buildMot(
 
   const actions: DetailAction[] = []
   // Reply leads (the warm action); reschedule (sender only) then keep + delete follow.
-  if (opts?.onReply) actions.push({ key: 'reply', label: fn.reply, icon: 'arrow-left-bold', primary: true, run: opts.onReply })
+  // `arrow-bend-up-left-bold`, not `arrow-left-bold`: that one already means "go
+  // back a step" everywhere else (AddSheet's chooser-back, CookMode/RoutinePlayer
+  // "previous step", SharedVoyagePage "back to board") — reusing it for "reply"
+  // was the same failure class as the arrow-icon fix (78590d2), just labeled well
+  // enough it never got reported.
+  if (opts?.onReply) actions.push({ key: 'reply', label: fn.reply, icon: 'arrow-bend-up-left-bold', primary: true, run: opts.onReply })
   if (opts?.onReschedule)
     actions.push({ key: 'reschedule', label: fn.reschedule, icon: 'clock-bold', run: opts.onReschedule })
   if (opts?.onToggleSave)
@@ -759,13 +764,24 @@ export function buildMemberPerson(
   if (opts?.groupToggle?.options.length)
     blocks.push({ kind: 'togglechips', label: t.cercle.groups, options: opts.groupToggle.options, onToggle: opts.groupToggle.onToggle })
   const actions: DetailAction[] = []
+  // `arrow-up-right-bold`, not `users-three-bold`: this button doesn't represent
+  // "a person" (that reading is already taken, app-wide, by `users-three-bold` —
+  // used both for a member/contact ROW ICON and for "connect" below in this same
+  // sheet) — it means "step out to a fuller view," the same meaning that icon
+  // already carries everywhere else it's used (share, open-in-new-tab, export).
+  // Sharing `users-three-bold` with "Relier à quelqu'un" two lines down made two
+  // DIFFERENT actions in the SAME sheet visually identical — the same failure
+  // class as the arrow-icon fix (78590d2).
   if (opts?.onDetail)
-    actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'users-three-bold', primary: true, run: opts.onDetail })
+    actions.push({ key: 'detail', label: t.cercle.detailPerson, icon: 'arrow-up-right-bold', primary: true, run: opts.onDetail })
   // The family-graph doors + the Réglages edit link fold into the head ⋯; « Fiche
   // complète » (the primary) and the rendez-vous door stay visible.
   // "Bâtir sa famille" — open the family builder seeded with this member.
   if (opts?.buildFamilyHref) actions.push({ key: 'family', label: t.cercle.familyFromPerson, icon: 'tree-bold', overflow: true, href: opts.buildFamilyHref })
-  // "Relier à quelqu'un" — open the connector with this member as side A.
+  // "Relier à quelqu'un" — open the connector with this member as side A. Keeps
+  // `users-three-bold`: this IS that icon's established app-wide meaning
+  // ("connect people" — same glyph AddSheet's own 'connect' category and
+  // ConnectPeople's save button use), unlike 'detail' above.
   if (opts?.onConnect) actions.push({ key: 'connect', label: t.cercle.connectFromPerson, icon: 'users-three-bold', overflow: true, run: opts.onConnect })
   // « Planifier un rendez-vous » — an appointment concerning this member, opening
   // the shared EventForm with them pre-selected.
