@@ -13,6 +13,7 @@ import { Icon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
+import { Chip } from '../Chip'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
@@ -159,9 +160,9 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                     />
                   ) : (
                     <>
-                      <span className="chip tag-admin__name" style={chipTint(tagColor(colors, tg))}>
+                      <Chip className="tag-admin__name" style={chipTint(tagColor(colors, tg))}>
                         {tg}
-                      </span>
+                      </Chip>
                       {/* A count if the tag is on recipes, else "Proposée" — it's a
                           spare preset offered in the form but not used yet. */}
                       <span className="tag-admin__count mono">

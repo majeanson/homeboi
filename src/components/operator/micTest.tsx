@@ -4,6 +4,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { isIos } from '../../lib/useVoiceInput'
 import { Icon } from '../Icon'
 import { OperatorSection } from './OperatorSection'
+import { StatusMessage } from '../StatusMessage'
 
 // A copy-pasteable mic diagnostic, the recognition twin of the "Test the AI"
 // probe above. The mic feature rides the browser's Web Speech API
@@ -416,10 +417,10 @@ export function MicSelfTest({ help }: { help?: HelpMode }) {
       )}
 
       {phase === 'running' && (
-        <p className="list-add__voicemsg" role="status" aria-live="polite">
+        <StatusMessage tone="info">
           {t.operator.micTestListening}
           {interim ? ` — « ${interim} »` : ''}
-        </p>
+        </StatusMessage>
       )}
 
       {phase === 'done' && report && (

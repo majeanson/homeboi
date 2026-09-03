@@ -2,6 +2,7 @@ import { useT } from '../i18n'
 import { isIos, type VoiceInput } from '../lib/useVoiceInput'
 import { useOnline } from '../lib/online'
 import { Icon } from './Icon'
+import { StatusMessage } from './StatusMessage'
 
 // The shared "speak it" mic, used by every add field (CaptureBar, the ＋ sheet,
 // La liste, the garde-manger). The caller owns the useVoiceInput hook (so the
@@ -54,11 +55,7 @@ export function VoiceStatus({ voice, hint }: { voice: VoiceInput; hint?: string 
   // Explain a remembered-blocked mic before the user even taps, so a kiosk that
   // was never granted access doesn't look merely silent.
   if (!voice.error && voice.permission === 'denied') {
-    return (
-      <p className="list-add__voicemsg list-add__voicemsg--err" role="status">
-        {deniedMsg}
-      </p>
-    )
+    return <StatusMessage tone="error">{deniedMsg}</StatusMessage>
   }
   if (voice.error) {
     const msg =
@@ -67,18 +64,10 @@ export function VoiceStatus({ voice, hint }: { voice: VoiceInput; hint?: string 
         : voice.error === 'language-not-supported'
           ? t.list.voiceUnsupported
           : t.list.voiceNoSpeech
-    return (
-      <p className="list-add__voicemsg list-add__voicemsg--err" role="status">
-        {msg}
-      </p>
-    )
+    return <StatusMessage tone="error">{msg}</StatusMessage>
   }
   if (voice.listening) {
-    return (
-      <p className="list-add__voicemsg" role="status">
-        {hint ?? t.list.voiceHint}
-      </p>
-    )
+    return <StatusMessage tone="info">{hint ?? t.list.voiceHint}</StatusMessage>
   }
   return null
 }

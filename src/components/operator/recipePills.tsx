@@ -26,6 +26,7 @@ import { Icon, InlineIcon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { DragPill } from '../DragPill'
 import { RowActions } from '../RowActions'
+import { Chip } from '../Chip'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Recettes → the recipe-tab PILLS (migration 0045). One ordered list:
@@ -192,9 +193,9 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
               showGrip={!ro}
               onMove={ro ? undefined : (dir) => move(i, dir === 'up' ? i - 1 : i + 1)}
             >
-              <span className="chip pill-admin__chip" style={chipStyle}>
+              <Chip className="pill-admin__chip" style={chipStyle}>
                 {pillLabel(p)}
-              </span>
+              </Chip>
               {custom && <span className="pill-admin__rules mono">{p.rules.map(ruleText).join(' · ')}</span>}
               {!ro && (
                 <button
@@ -286,11 +287,10 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                     {tagList.map((tg) => {
                       const sel = critTags(c).some((x) => x.toLowerCase() === tg.toLowerCase())
                       return (
-                        <button
+                        <Chip
                           key={tg}
-                          type="button"
-                          className={'chip pill-admin__tagopt' + (sel ? ' is-on' : '')}
-                          aria-pressed={sel}
+                          className="pill-admin__tagopt"
+                          selected={sel}
                           onClick={() => {
                             const cur = critTags(c)
                             const next = sel
@@ -300,7 +300,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                           }}
                         >
                           {tg}
-                        </button>
+                        </Chip>
                       )
                     })}
                   </div>

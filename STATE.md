@@ -654,8 +654,23 @@ of `write-rule.test.ts`'s — into `src/lib/buildGuardScan.ts`.
 inconsistencies only), re-verified against code rather than read off the docs:
 
 1. **`DragPill` had no keyboard mirror at any of its 8 sites** — see above, done.
-2. ~~`Chip` not adopted at its last two stragglers~~ — queued next.
-3. ~~`VoiceButton.tsx` hand-rolls error text instead of `StatusMessage`~~ — queued next.
+2. ~~`Chip` not adopted at its last two stragglers.~~ ✅ **done.** `recipesTags.tsx`'s
+   tag-name label and `recipePills.tsx`'s pill-name label + its tag-pick multi-select
+   toggle converged onto `<Chip>`; zero hand-rolled `.chip` spans left in either file.
+   COMPONENTS.md's uniformization row 2 updated in place.
+3. ~~`VoiceButton.tsx` hand-rolls error text instead of `StatusMessage`.~~ ✅ **done —
+   and a 4th site turned up while there.** `operator/micTest.tsx` hand-rolled the exact
+   same `list-add__voicemsg` class for its own listening line, missed by the original
+   audit (it only grepped `VoiceButton.tsx`). All four converged onto `StatusMessage`
+   (`tone="error"`/`"info"`); the dead `.list-add__voicemsg`/`--err` CSS removed from
+   `list-actions.css`. One deliberate behaviour change, not a bug: the two denied/error
+   lines move from `role="status"` (polite) to `StatusMessage`'s `tone="error"` →
+   `role="alert"` (assertive) — matching how every other error line in the app already
+   announces, which is the whole point of converging onto one primitive. No existing
+   unit or e2e coverage existed for `VoiceStatus` to begin with (checked, none found);
+   none added — the swap is markup-only, same conditions, same text, and a Web
+   Speech-mocking harness from scratch is out of scope for a uniformity fix. COMPONENTS.md
+   rows 2 (VoiceButton entry) and 6 updated in place.
 
 Checked and confirmed already clean (worth recording so it isn't re-investigated):
 `RowActions` adoption, `EmptyState` usage, `useConfirm` usage (no bare `window.confirm`

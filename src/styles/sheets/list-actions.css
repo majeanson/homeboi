@@ -7,18 +7,10 @@
 }
 /* The hand-rolled `.list-add` bar is gone — La liste's add row is an EditField
    like every other composer, so the shell (and the `flex: 1 1 10rem` that used to
-   pin its input to a too-small basis) lives once in pages/fields.css. Only the
-   voice feedback line below kept its name: VoiceButton renders it app-wide. */
-/* Voice feedback line under the add form: a calm hint while listening, or a
-   soft error so the mic never fails silently. */
-.list-add__voicemsg {
-  margin: 0.4rem 0 0;
-  font-size: var(--text-sm);
-  color: var(--ink-faint);
-}
-.list-add__voicemsg--err {
-  color: var(--danger, #b4413c);
-}
+   pin its input to a too-small basis) lives once in pages/fields.css. The voice
+   feedback line below it (VoiceButton's VoiceStatus, rendered app-wide) converged
+   onto the shared StatusMessage 2026-09-03 — its own `.list-add__voicemsg`/`--err`
+   rules are gone with it (kit.css's `.status-msg` styles it now). */
 /* A checked line stays IN PLACE but reads as "got it": struck title, dimmed
    picture (the sage-filled check comes from .act.done .check). Targeted to the
    list so other "done" rows elsewhere keep their own treatment. */
