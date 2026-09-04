@@ -87,16 +87,26 @@ export function NoteEditor({
     return bodyMdRef.current?.() ?? note?.text ?? ''
   }
 
+  // Snapshot of an EXISTING note's opening state, so closing without a real edit can
+  // skip the write entirely — see `commitRef` below.
+  const initialRef = useRef<{ md: string; forMember: string | null; mediaKind: AttachKind | null; mediaKey: string | null; sceneKey: string | null } | null>(null)
+
   // Seed from the note each time the editor opens (or the target note changes).
   useEffect(() => {
     if (!open) return
     // Editing → the note's own scope; new note → the picked face (scope/memberId props).
-    setForMember(note ? note.member_id : scope === 'self' ? memberId : null)
+    const initForMember = note ? note.member_id : scope === 'self' ? memberId : null
     const mk = note && (note.media_kind === 'image' || note.media_kind === 'drawing') ? note.media_kind : null
+    const initMediaKey = mk ? note!.media_key : null
+    const initSceneKey = mk === 'drawing' ? (note?.scene_key ?? null) : null
+    setForMember(initForMember)
     setMediaKind(mk)
-    setMediaKey(mk ? note!.media_key : null)
-    setSceneKey(mk === 'drawing' ? (note?.scene_key ?? null) : null)
+    setMediaKey(initMediaKey)
+    setSceneKey(initSceneKey)
     sessionKeysRef.current = new Set() // fresh editing session — nothing uploaded yet
+    initialRef.current = note
+      ? { md: seedMd(note).trim(), forMember: initForMember, mediaKind: mk, mediaKey: initMediaKey, sceneKey: initSceneKey }
+      : null
   }, [open, note, scope, memberId])
 
   // Commit on close (auto-save). Held in a ref so the stable handleClose passed to
@@ -134,6 +144,16 @@ export function NoteEditor({
     sessionKeysRef.current.forEach((k) => {
       if (!keptKeys.has(k)) void api('note-media', { method: 'DELETE', body: { key: k } }).catch(() => {})
     })
+    // Opening a note to READ it must not act on it. Auto-save used to write
+    // unconditionally, and the server always stamps `updated_at` — so merely tapping
+    // a note open and closing it again (no edit at all) silently bumped it to the
+    // top of the list on the next sort, with nothing to explain why.
+    if (note && !empty) {
+      const init = initialRef.current
+      if (init && bo === init.md && forMember === init.forMember && mediaKind === init.mediaKind && mediaKey === init.mediaKey && sceneKey === init.sceneKey) {
+        return
+      }
+    }
     if (!note) {
       if (empty) return // discard a brand-new, untouched note
       void write('family-notes', {

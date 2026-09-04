@@ -667,11 +667,13 @@
 }
 .voiture__ride-what {
   flex: 1 1 auto;
+  /* A floor, not 0: with .voiture__pax scaling with the passenger count, an
+     unfloored 0 lets this collapse to a sliver on a crowded line. */
+  min-width: 8rem;
   display: inline-flex;
   align-items: baseline;
   gap: 0.1rem 0.45rem;
   flex-wrap: wrap;
-  min-width: 0;
 }
 .voiture__ride-title {
   font-weight: 500;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { critTags, matchesCriterion, matchesCustom, slotPriority, type Criterion, type CustomPill, type BuiltinPill } from './recipePills'
+import { critTags, matchesCriterion, matchesCustom, slotPriorityLabel, type Criterion, type CustomPill, type BuiltinPill } from './recipePills'
 import { type Recipe } from './recipes'
 
 // A minimal recipe — the pill logic only reads tags / id / image / timing.
@@ -56,7 +56,7 @@ describe('matchesCustom — OR within a rule, AND across rules', () => {
   })
 })
 
-describe('slotPriority — meal-slot association ("Dîner & Souper" pill)', () => {
+describe('slotPriorityLabel — meal-slot association ("Dîner & Souper" pill), and WHICH pill lifted', () => {
   const dinerSouper: CustomPill = {
     id: 'p1',
     label: 'Dîner & Souper',
@@ -72,33 +72,46 @@ describe('slotPriority — meal-slot association ("Dîner & Souper" pill)', () =
   const noSlotPill: CustomPill = { id: 'p3', label: 'Sans lien repas', rules: [{ field: 'tag', tags: ['Soupe'] }] }
   const builtin: BuiltinPill = { k: 'cookable' }
 
-  it('matches a recipe tagged for a pill that claims the given slot', () => {
-    const test = slotPriority([dinerSouper], 'supper', noLove)
-    expect(test(recipe(['Diner-Souper']))).toBe(true)
-    expect(test(recipe(['Autre chose']))).toBe(false)
+  it("names the matching pill for a recipe tagged for a pill that claims the given slot", () => {
+    const test = slotPriorityLabel([dinerSouper], 'supper', noLove)
+    expect(test(recipe(['Diner-Souper']))).toBe('Dîner & Souper')
+    expect(test(recipe(['Autre chose']))).toBeNull()
   })
 
   it('the SAME pill applies at every slot it lists', () => {
     const r = recipe(['Diner-Souper'])
-    expect(slotPriority([dinerSouper], 'lunch', noLove)(r)).toBe(true)
-    expect(slotPriority([dinerSouper], 'supper', noLove)(r)).toBe(true)
-    expect(slotPriority([dinerSouper], 'breakfast', noLove)(r)).toBe(false)
+    expect(slotPriorityLabel([dinerSouper], 'lunch', noLove)(r)).toBe('Dîner & Souper')
+    expect(slotPriorityLabel([dinerSouper], 'supper', noLove)(r)).toBe('Dîner & Souper')
+    expect(slotPriorityLabel([dinerSouper], 'breakfast', noLove)(r)).toBeNull()
   })
 
   it('a pill scoped to one slot does not leak priority into another', () => {
     const r = recipe(['Soupe'])
-    expect(slotPriority([soupOnly], 'supper', noLove)(r)).toBe(true)
-    expect(slotPriority([soupOnly], 'lunch', noLove)(r)).toBe(false)
+    expect(slotPriorityLabel([soupOnly], 'supper', noLove)(r)).toBe('Soupers seulement')
+    expect(slotPriorityLabel([soupOnly], 'lunch', noLove)(r)).toBeNull()
   })
 
   it('a pill with no slots, a hidden (off) pill, and a built-in pill never grant priority', () => {
     const r = recipe(['Soupe'])
-    expect(slotPriority([noSlotPill], 'supper', noLove)(r)).toBe(false)
-    expect(slotPriority([{ ...soupOnly, off: true }], 'supper', noLove)(r)).toBe(false)
-    expect(slotPriority([builtin], 'supper', noLove)(r)).toBe(false)
+    expect(slotPriorityLabel([noSlotPill], 'supper', noLove)(r)).toBeNull()
+    expect(slotPriorityLabel([{ ...soupOnly, off: true }], 'supper', noLove)(r)).toBeNull()
+    expect(slotPriorityLabel([builtin], 'supper', noLove)(r)).toBeNull()
   })
 
-  it('an empty pill list always returns false, cheaply (no active pills to test)', () => {
-    expect(slotPriority([], 'supper', noLove)(recipe(['Soupe']))).toBe(false)
+  it('an empty pill list always returns null, cheaply (no active pills to test)', () => {
+    expect(slotPriorityLabel([], 'supper', noLove)(recipe(['Soupe']))).toBeNull()
+  })
+
+  it('the FIRST matching pill wins when several claim the same slot', () => {
+    const test = slotPriorityLabel([dinerSouper, soupOnly], 'supper', noLove)
+    // Matches both (Diner-Souper AND Soupe tags) — dinerSouper is first in the list.
+    expect(test(recipe(['Diner-Souper', 'Soupe']))).toBe('Dîner & Souper')
+  })
+
+  // The picker partitions on `!== null`, not on truthiness — an unnamed pill still
+  // lifts its recipes, it just has no name to show as the reason.
+  it('an unnamed pill lifts with an EMPTY label, which is not the same as null', () => {
+    const unnamed: CustomPill = { ...soupOnly, label: '' }
+    expect(slotPriorityLabel([unnamed], 'supper', noLove)(recipe(['Soupe']))).toBe('')
   })
 })

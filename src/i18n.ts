@@ -1509,6 +1509,10 @@ export const FR = {
     cookable: 'Quoi cuisiner ?',
     ready: 'Prêt',
     missingN: (n: number) => `il manque ${n}`,
+    // The meal-slot picker's pill-priority lift (Réglages ▸ Recettes ▸ une pastille
+    // ciblant ce repas) had no visible reason a recipe jumped to the top — this
+    // names the pill so the reorder isn't silent.
+    pillLifted: (pill: string) => `Remontée par la pastille « ${pill} »`,
     useItUp: 'À utiliser',
     usesN: (n: number) => `utilise ${n}`,
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
@@ -1981,6 +1985,9 @@ export const FR = {
       saveFailed: 'La note n’a pas pu être enregistrée',
       editorNew: 'Nouvelle note',
       editorEdit: 'Modifier la note',
+      // Every other add/edit field in the app (EditField) shows placeholder copy;
+      // a blank ProseMirror box with nothing typed yet looked broken without one.
+      newNotePlaceholder: 'Écris quelque chose…',
       done: 'Terminé',
       preview: 'Aperçu',
       writeTab: 'Écrire',

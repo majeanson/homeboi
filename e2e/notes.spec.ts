@@ -161,3 +161,38 @@ test('the date leads a day, not every row', async ({ page }) => {
   expect(third).toMatch(/nov\./)
   expect(third).not.toBe(second)
 })
+
+test('a read-only guest reads a note in place — the tap never opens the editor', async ({ page }) => {
+  // `openOnTap` sends a tap straight into the full-screen rich editor, whose every
+  // write a guest's session would only 403 at close — and whose auto-save-on-close
+  // makes "just looking" indistinguishable from editing. A guest falls through to
+  // the same expand-in-place read the board's glance card uses instead: the note is
+  // still fully readable, it just isn't opened in a surface that can't save.
+  await page.setViewportSize({ width: 800, height: 1280 })
+  await mockApi(page, { signedIn: false })
+  await page.route('**/api/guest/whoami**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ kind: 'showcase' }) }),
+  )
+  await page.route('**/api/family-notes**', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      // Two lines, so the row is `expandable` — a one-line note is entirely its own
+      // title and has nothing left to expand.
+      body: JSON.stringify({ notes: [{ ...NOTE, text: 'kit été rouge : short en twill\net la doublure beige' }] }),
+    })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.addInitScript(() => localStorage.setItem('babillard-guest-token', 'e2e-guest-token'))
+  await page.goto('/notes')
+  await expect(page.locator('.cercle-notes')).toBeVisible()
+
+  const row = page.locator('.cnote-list .cnote', { hasText: 'Couture' })
+  const main = row.locator('.cnote__main')
+  await expect(main).toHaveAttribute('aria-expanded', 'false') // the read toggle, not « Modifier »
+  await main.click()
+  await expect(page.locator('.note-editor')).toHaveCount(0)
+  await expect(main).toHaveAttribute('aria-expanded', 'true')
+  await expect(row).toContainText('doublure beige')
+})

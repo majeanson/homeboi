@@ -124,7 +124,11 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  /* Exactly 2× the -6px hit-area bleed each button grows below, so the two 44px
+     targets ABUT instead of overlapping — at the old 0.4rem the pencil's box (it
+     paints last) swallowed ~6px of the ＋'s, leaving the ＋ back under the floor
+     the bleed was added to reach. */
+  gap: 0.75rem;
 }
 /* Each planned supper, its own row: icon + title, tap = straight to its recipe.
    No visible drag grip (removed) — press-and-hold the row itself to reschedule
@@ -466,8 +470,14 @@
   max-width: 100%;
 }
 /* The edit cue — a small icon-only button that never shrinks, so the meal info to
-   its left keeps the rest of the width. The ONLY tap target that opens the sheet. */
+   its left keeps the rest of the width. The ONLY tap target that opens the sheet.
+   The 2rem (32px) VISUAL disc stays small on purpose (a header ornament, not a
+   button bar) but the actual hit area is widened to the 44px touch-target floor
+   via an invisible ::after — same technique as .sec-label__actbtn. Without it this
+   sat under the floor, and 9a1c48f gave it a second job (the header's new empty-day
+   ＋ shares this class too), packing two undersized targets side by side. */
 .kitchen__day-manage {
+  position: relative;
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -480,6 +490,11 @@
   border-radius: var(--radius-pill);
   padding: 0;
   cursor: pointer;
+}
+.kitchen__day-manage::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 .kitchen__day.is-today .kitchen__day-manage {
   border-color: var(--terracotta);

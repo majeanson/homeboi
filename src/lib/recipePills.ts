@@ -119,10 +119,16 @@ export const matchesCustom = (r: Recipe, p: CustomPill, loved: Set<string>): boo
 // whose `slots` claims that slot. Used by the meal-slot pickers (comboOptions.tsx)
 // to lift a household's "Dîner & Souper"-style pills above the rest of the book —
 // never above Restants, which always lead regardless of this.
-export function slotPriority(pills: Pill[], slot: MealSlot, loved: Set<string>): (r: Recipe) => boolean {
+//
+// Returns the LIFTING PILL'S OWN LABEL (its first match, if several) rather than a
+// bare boolean, so the picker can say WHY a recipe jumped to the top instead of
+// reordering silently — a household member who never opened Réglages had no way to
+// know. `null` = not lifted; test with `!== null`, never for truthiness: a pill the
+// household left unnamed has an empty label and is still a lift.
+export function slotPriorityLabel(pills: Pill[], slot: MealSlot, loved: Set<string>): (r: Recipe) => string | null {
   const active = pills.filter(
     (p): p is CustomPill => !isBuiltinPill(p) && !p.off && !!p.slots?.includes(slot),
   )
-  if (active.length === 0) return () => false
-  return (r) => active.some((p) => matchesCustom(r, p, loved))
+  if (active.length === 0) return () => null
+  return (r) => active.find((p) => matchesCustom(r, p, loved))?.label ?? null
 }

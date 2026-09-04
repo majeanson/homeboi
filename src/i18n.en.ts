@@ -1318,6 +1318,7 @@ export const EN: typeof FR = {
     cookable: 'What can I cook?',
     ready: 'Ready',
     missingN: (n: number) => `${n} to buy`,
+    pillLifted: (pill: string) => `Bumped up by the "${pill}" pill`,
     useItUp: 'Use it up',
     usesN: (n: number) => `uses ${n}`,
     // #11 "Recipe collections" — browse-by-tag view toggle inside the recipe book.
@@ -1762,6 +1763,7 @@ export const EN: typeof FR = {
       saveFailed: 'The note could not be saved',
       editorNew: 'New note',
       editorEdit: 'Edit note',
+      newNotePlaceholder: 'Start typing…',
       done: 'Done',
       preview: 'Preview',
       writeTab: 'Write',

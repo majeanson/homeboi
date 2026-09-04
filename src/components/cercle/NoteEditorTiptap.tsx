@@ -3,6 +3,11 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
+// From @tiptap/extensions, NOT the @tiptap/extension-placeholder package the docs
+// still name: that one is a one-line re-export of THIS (its repo directory is
+// literally packages-deprecated/), and @tiptap/extensions is already what
+// StarterKit pulls in — so this costs no new tree, just a declared dependency.
+import { Placeholder } from '@tiptap/extensions'
 import { useT } from '../../i18n'
 import { caretIntoView } from '../../lib/viewportVars'
 import { useHScroll } from '../../lib/hscroll'
@@ -56,6 +61,11 @@ export default function NoteEditorTiptap({
       }),
       TaskList,
       TaskItem.configure({ nested: false }),
+      // A blank ProseMirror box with nothing typed yet looked broken — every other
+      // add/edit field in the app (EditField) shows placeholder copy on the empty
+      // FIRST line only (the doc-emptiness check StarterKit's own paragraph node
+      // already exposes as `.is-editor-empty`, styled below).
+      Placeholder.configure({ placeholder: fn.newNotePlaceholder }),
     ],
     content: mdToTiptapHtml(initialMd),
     editorProps: {

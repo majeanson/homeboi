@@ -453,16 +453,22 @@ a.ledger__chore--link {
 
 /* In-app confirm dialog (src/lib/confirm) — the deliberate yes/no for HEAVY
    deletes (recipe, member, tag-everywhere). Its own backdrop sits above any open
-   sheet (a recipe sheet can spawn it), so it can't reuse the z-30 .scrim. */
+   sheet, so it can't reuse the sheet's own .scrim. That "above any open sheet"
+   is load-bearing and NOT free any more: the detail peek awaits confirm() with
+   its Sheet still mounted (components/detail/EventPeekActions.tsx), and .sheet
+   moved from 31 to 156 so a Sheet can open from inside a full-screen scene — at
+   the old 120 the dialog rendered BEHIND the peek, i.e. an app that looks frozen
+   (scroll locked, nothing visible to answer). See the layer scale in
+   styles/sheets/capture.css. */
 .confirm-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 160;
   background: rgba(44, 39, 34, 0.4);
 }
 .confirm {
   position: fixed;
-  z-index: 121;
+  z-index: 161;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);

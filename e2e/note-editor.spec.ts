@@ -41,6 +41,87 @@ async function openEditor(page: import('@playwright/test').Page) {
   return body
 }
 
+test('a brand-new note shows placeholder copy until the first character', async ({ page }) => {
+  // An empty ProseMirror box has no chrome of its own, so a fresh note read as a
+  // broken screen — every other add/edit field in the app (EditField) carries
+  // placeholder copy. This is BOTH halves of that fix at once: the extension's
+  // decoration (`is-editor-empty` + `data-placeholder`) AND the ::before rule that
+  // actually paints it (styles/board/cnote-list.css) — the attribute alone renders
+  // nothing, so asserting only the DOM would pass over a missing stylesheet.
+  const body = await openEditor(page)
+  const first = body.locator('p').first()
+  await expect(first).toHaveClass(/is-editor-empty/)
+  await expect(first).toHaveAttribute('data-placeholder', 'Écris quelque chose…')
+  const painted = await first.evaluate((el) => getComputedStyle(el, '::before').content)
+  expect(painted).toContain('Écris quelque chose')
+
+  // …and it gets out of the way the moment there is content.
+  await body.click()
+  await page.keyboard.type('a')
+  await expect(first).not.toHaveClass(/is-editor-empty/)
+})
+
+test('opening an existing note and closing it unchanged writes NOTHING', async ({ page }) => {
+  // Auto-save used to fire on every close, and the server stamps `updated_at` on any
+  // PATCH — so merely tapping a note open to READ it and closing again silently
+  // bumped it to the top of the list, with nothing to explain why. Reading is not
+  // editing.
+  const writes: string[] = []
+  await page.route('**/api/family-notes**', async (route) => {
+    const m = route.request().method()
+    if (m === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ notes: [{ id: 'n1', title: '', text: 'Liste de rappel\nlaver l’auto', scope: 'family', member_id: null, media_kind: null, media_key: null, scene_key: null, position: 0, created_at: 1, updated_at: 1 }] }),
+      })
+    writes.push(m)
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+
+  await page.goto('/notes')
+  await page.getByRole('button', { name: 'Modifier' }).first().click()
+  const body = page.locator('.note-editor .note-tiptap')
+  await expect(body).toBeVisible()
+  await expect(body).toContainText('laver')
+
+  await page.getByRole('button', { name: 'Terminé' }).click()
+  await expect(page.locator('.note-editor')).toHaveCount(0)
+  // Give any in-flight write a chance to land before declaring there wasn't one.
+  await page.waitForTimeout(400)
+  expect(writes).toEqual([])
+})
+
+test('opening an existing note and actually changing it still saves', async ({ page }) => {
+  // The other side of the guard above: skipping the no-op write must not skip a real
+  // one. Same seed, one typed character.
+  const patched: string[] = []
+  await page.route('**/api/family-notes**', async (route) => {
+    const m = route.request().method()
+    if (m === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ notes: [{ id: 'n1', title: '', text: 'Liste de rappel', scope: 'family', member_id: null, media_kind: null, media_key: null, scene_key: null, position: 0, created_at: 1, updated_at: 1 }] }),
+      })
+    if (m === 'PATCH') patched.push(JSON.parse(route.request().postData() || '{}').text)
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+
+  await page.goto('/notes')
+  await page.getByRole('button', { name: 'Modifier' }).first().click()
+  const body = page.locator('.note-editor .note-tiptap')
+  await expect(body).toBeVisible()
+  await body.click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' !')
+  await Promise.all([
+    page.waitForRequest((r) => r.url().includes('/api/family-notes') && r.method() === 'PATCH'),
+    page.getByRole('button', { name: 'Terminé' }).click(),
+  ])
+  expect(patched).toEqual(['Liste de rappel !'])
+})
+
 test('inline buttons (bold / italic / strike) wrap the selected text', async ({ page }) => {
   const body = await openEditor(page)
   await body.click()

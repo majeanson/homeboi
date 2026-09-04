@@ -166,8 +166,13 @@
 }
 .listrow__title {
   font-weight: 600;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Without nowrap, a long title just wraps to a 2nd line instead of
+     ellipsizing — text-overflow only kicks in once white-space forces a
+     single line and the text overflows THAT line horizontally. */
+  white-space: nowrap;
 }
 .listrow__sub {
   font-size: 0.8rem;
@@ -189,10 +194,12 @@
 }
 
 /* ── Modal (centred dialog) — mirrors .confirm but generic ──────────────── */
+/* Same tier as .confirm-backdrop (160) and for the same reason: it must clear an
+   open .sheet, which now sits at 156. Layer scale: styles/sheets/capture.css. */
 .kit-modal__backdrop {
   position: fixed;
   inset: 0;
-  z-index: 120;
+  z-index: 160;
   background: rgba(44, 39, 34, 0.4);
   display: flex;
   align-items: center;

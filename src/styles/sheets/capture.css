@@ -34,7 +34,38 @@ body.is-recording .add-fab {
 .scrim {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  /* Above every full-screen scene (DrawPad, the highest at 150) — a Sheet used to
+     only ever open from ordinary page chrome, but NoteEditor's "Pour qui" picker
+     (FaceSelect → Sheet) is opened FROM WITHIN one (z-index 140): at 30 the sheet
+     rendered, but behind the scene, so its buttons were unclickable — confirmed
+     live (Playwright: the scene's contenteditable intercepted the pointer event).
+     `.scrim`/`.sheet` are portalled straight to <body> (Sheet.tsx), so they always
+     compete directly with a scene in the SAME top-level stacking context; a
+     scoped fix isn't possible, only a floor above every current and future one.
+     `.scrim`/`.sheet` are the bare classes Sheet.tsx alone owns — the OTHER
+     `*__scrim` compounds (recipe-modal, now-card, tour) are unrelated rules.
+
+     ── THE fixed-overlay layer scale (ascending; keep this list true) ──────────
+       24        the ＋ FAB
+       25 / 30   hub chrome (kiosk rail, mobile tab bar)
+       40 / 42   .undo-toast / .ai-error-toast  ← page-chrome level ON PURPOSE
+       50 … 150  full-screen scenes: cashier 50, tour 60, flyer 70, recipe modal
+                 80, cook 90, note editor 140, DrawPad 150
+       155 / 156 .scrim / .sheet — a Sheet can be opened from a scene (this rule)
+       160 / 161 .kit-modal__backdrop, .confirm-backdrop / .confirm — a confirm
+                 can be raised from an OPEN sheet (the peek's ⋯ ▸ Supprimer awaits
+                 it with the sheet still mounted), so it has to clear 156 too; it
+                 only ever had to clear 31 before this rule moved
+       200       the screensaver — it owns the screen
+       1000+     image zoom, the ⋯ menu panel, the drag ghost
+     The toast pair deliberately stays DOWN at 40/42: it is a bottom pill that
+     LINGERS (`.undo-toast--log`), so lifting it over a scene would park an
+     interactive pill on the DrawPad canvas / cook stepper and eat taps there —
+     e2e/cook-stepper.spec.ts and e2e/recipe-leftovers.spec.ts both encode that
+     it is out of reach from a scene. The cost is that a toast raised while a
+     sheet is open waits for the sheet to close; every sheet action that offers
+     an undo closes the sheet first today. */
+  z-index: 155;
   background: rgba(44, 39, 34, 0.32);
   opacity: 0;
   pointer-events: none;
@@ -128,6 +159,11 @@ body.is-recording .add-fab {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 .undo-toast__msg {
+  /* Both the plain pill (direct flex child of .undo-toast) and the stacked-row
+     case below are flex-shrink:1 by default, but a row's automatic min-size
+     otherwise pins them to their content width — the classic min-width:auto
+     gotcha that leaves `text-overflow: ellipsis` unable to ever trigger. */
+  min-width: 0;
   font-size: 0.92rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -490,7 +526,8 @@ body.is-recording .add-fab {
      closes an already-closed sheet. That was the "rolled-up sheet I can't close"
      glitch after iOS suspended the web view with --kb stuck. */
   bottom: 0;
-  z-index: 31;
+  /* Above every full-screen scene, one above `.scrim` — see its comment. */
+  z-index: 156;
   max-width: 40rem;
   margin: 0 auto;
   max-height: 88vh;

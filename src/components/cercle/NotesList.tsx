@@ -65,7 +65,11 @@ export function NotesList({
   /** The Notes PAGE face (iOS-Notes-style): tapping a note's body opens it in
    *  `onEdit` directly instead of expanding it in place — there's no read-only
    *  detail view here, the editor IS the detail view. Audio notes keep tap-to-play
-   *  regardless (their "detail" is playing the clip, not text to read in place). */
+   *  regardless (their "detail" is playing the clip, not text to read in place).
+   *  A read-only guest (`readOnly`) is the one exception: `onEdit` opens the fully
+   *  interactive rich editor, which a guest write would only 403 at close — so a
+   *  guest falls through to the same expand-in-place read view the board card uses,
+   *  never `onEdit`. */
   openOnTap?: boolean
   /** Open the caller's full-screen NoteEditor on this note. */
   onEdit?: (n: FamilyNote) => void
@@ -267,7 +271,7 @@ export function NotesList({
                   <span className="cnote__title">{title}</span>
                   {metaOf(preview) && <span className="cnote__meta mono">{metaOf(preview)}</span>}
                 </button>
-              ) : openOnTap ? (
+              ) : openOnTap && !ro ? (
                 <button
                   type="button"
                   className="cnote__main"

@@ -22,19 +22,21 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1857 unit tests in 143 files · 125 Playwright spec files |
+| **Tests** | 1895 unit tests in 149 files · 125 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
-### Health signals, all green as of 2026-08-27
+### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-04)
 
-- `npm run typecheck` · `npm test` (1851) · `npm run build` — green.
-- `npm run check:bundle` — **3859 KB** of JS across `dist/assets`, **733 KB eager**; every
+- `npm run typecheck` · `npm test` (1895) · `npm run build` · `npm run knip` — green.
+- `npm run check:bundle` — **3871 KB** of JS across `dist/assets`, **748 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
-- Full local Playwright suite — **1128 passed, 13 skipped**.
+- Full local Playwright suite — **1128 passed, 13 skipped** *(that figure is still the
+  2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
+  CI's E2E job is the standing whole-suite signal)*.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Eleven build-gating invariants** (this is the codebase's best feature — see §5):
+- **Twelve build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -52,7 +54,10 @@
   owner module writes the flow, and every write carries the verified required
   affectedKeys — the leftover flow had re-grown four drifted copies, and an
   every-endpoint sweep found eleven more writes missing a surface's key, all fixed in
-  the same commit)**. `knip` now runs in CI too.
+  the same commit)**, and **`layer-order.test.ts` (added 2026-09-04 — the fixed-overlay
+  sandwich: every full-screen scene below `.scrim`/`.sheet`, every dialog that must
+  interrupt an open sheet above it; it discovers new overlays itself rather than
+  trusting a list)**. `knip` now runs in CI too.
 
 ---
 

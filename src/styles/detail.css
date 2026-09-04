@@ -113,10 +113,10 @@
 }
 
 /* A list line that is a DOOR (a day peek's meal: 📖 recette · 🍲 Cuisiner). The
-   text keeps the bullet and wraps; the glyph cluster never shrinks and never
-   wraps under it, so a long dish title can't push the buttons off the row
-   (Horizontal overflow, CLAUDE.md). Same compact-icon / 44px-touch-target
-   grammar as .kitchen__meal-btn, which is the row furniture this mirrors. */
+   text keeps the bullet and wraps; the glyph cluster never shrinks, so a long
+   dish title can't push the buttons off the row (Horizontal overflow, CLAUDE.md).
+   Same compact-icon / 44px-touch-target grammar as .kitchen__meal-btn, which is
+   the row furniture this mirrors. */
 .detail-sheet__listline {
   display: flex;
   /* Top-aligned, NOT centred: a two-line dish title ("Sauté de poulet haché
@@ -124,11 +124,17 @@
      of the row, detached from the line they act on. They sit beside the FIRST
      line now, where the meal's name starts. */
   align-items: flex-start;
+  /* The cluster keeps its width (flex:none) and the text keeps an 8rem FLOOR
+     rather than min-width:0, so the two can't race each other down to a sliver
+     (the AutoCard/voiture bug class). Those two together can exceed a very narrow
+     row, so the line wraps the cluster underneath instead of overflowing — every
+     caller caps the cluster at 2 buttons today, and this holds if a 3rd lands. */
+  flex-wrap: wrap;
   gap: 10px;
 }
 .detail-sheet__listtext {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: 8rem;
   overflow-wrap: anywhere;
 }
 .detail-sheet__listctl {
@@ -136,8 +142,6 @@
   align-items: center;
   gap: 10px;
   flex: none;
-}
-.detail-sheet__listctl {
   /* Optically centre the cluster on the first text line rather than the block. */
   margin-top: -1px;
 }

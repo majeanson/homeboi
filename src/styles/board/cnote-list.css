@@ -536,6 +536,17 @@
 .note-tiptap p {
   margin: 0.15rem 0;
 }
+/* @tiptap/extension-placeholder's own decoration classes — the empty FIRST-line
+   paragraph gets `is-editor-empty` + a `data-placeholder` attribute; standard
+   float:left + height:0 keeps the ::before from adding its own line box (it must
+   render exactly where the caret sits, not push the doc taller by one line). */
+.note-tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
 /* iOS-Notes style: the first line reads as the title WHILE TYPING, without
    requiring a heading mark — mirrors what the row list already derives (a bold
    title line above a quieter preview). Scoped to `p:first-child` on purpose: if
