@@ -559,6 +559,18 @@ export function Board() {
   // it sits above the early return below with the rest of them (the copy it replaced
   // was a plain function and could live further down).
   const saveAsLeftover = useAnnounceLeftover()
+  // Plan a pool leftover as tonight's supper — the ONE shared implementation
+  // (usePlanLeftover, Leftovers.tsx). This page carried a hand-rolled copy until
+  // 2026-09-03, and it had drifted twice over: its undo re-inserted the pool row
+  // as `{ title }` alone (dropping the recipe link — /api/board now sends
+  // recipe_id/source_meal_id on each leftover so the full row can travel), and
+  // its key list skipped LEFTOVERS_KEY (kitchen pool stale after planning).
+  //
+  // It replaced a plain function that legitimately lived below the early return —
+  // and stayed there, which meant the FIRST render (authed) ran this hook and the
+  // 401 render did not: React threw « Rendered fewer hooks than expected » and the
+  // ErrorBoundary ate the whole board instead of showing the re-pair door.
+  const planLeftover = usePlanLeftover()
 
   if (unauth) return <PairPrompt />
 
@@ -672,13 +684,8 @@ export function Board() {
         write('meals', { method: 'POST', body: { date, slot, title }, affectedKeys: keys }).catch(() => {}),
     })
   }
-  // Plan a pool leftover as tonight's supper — the ONE shared implementation
-  // (usePlanLeftover, Leftovers.tsx). This page carried a hand-rolled copy until
-  // 2026-09-03, and it had drifted twice over: its undo re-inserted the pool row
-  // as `{ title }` alone (dropping the recipe link — /api/board now sends
-  // recipe_id/source_meal_id on each leftover so the full row can travel), and
-  // its key list skipped LEFTOVERS_KEY (kitchen pool stale after planning).
-  const planLeftover = usePlanLeftover()
+  // Plan a pool leftover as tonight's supper — see `planLeftover` above the early
+  // return (it is a hook; this closure is not).
   const planLeftoverTonight = (l: { id: string; title: string; recipe_id?: string | null; source_meal_id?: string | null }) =>
     void planLeftover(l, todayDay, heroSlot as MealSlot)
 

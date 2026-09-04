@@ -179,29 +179,11 @@ test('the meal slots use the same ＋ chip — no dashed « Ajouter » pill', as
   await expect(supper.locator('.edit-field input.input')).toBeVisible()
 })
 
-test('the « + ingrédients » opt-in does not close the dropdown under it', async ({ page }) => {
-  // The regression: that chip is a plain <button>, which does NOT take focus on
-  // mousedown in Safari/Firefox — so pressing it blurred the input, the combobox's
-  // deferred blur check found <body> focused, and the menu shut BETWEEN mousedown
-  // and click. The tap toggled nothing and the list vanished. The fix is a
-  // mousedown-preventDefault wrapper around the dropdown's header.
-  await openDay(page, { vue: 'repas' })
-  const supper = page.locator('.day-mng__sec[data-dnd-zone="supper"]')
-  await supper.locator('.day-mng__sec-head-row .sec-label__actbtn').click()
-  const chip = supper.locator('.kitchen__recipe-staples')
-  await expect(chip).toBeVisible()
-
-  // The mechanism, asserted directly (Chromium focuses buttons on mousedown, so the
-  // browser this runs in cannot reproduce the Safari half on its own): a cancelable
-  // mousedown on the chip must come back prevented.
-  const prevented = await chip.evaluate((el) => !el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })))
-  expect(prevented).toBe(true)
-
-  // …and the behaviour: tap it, the opt-in turns on and the list is still open.
-  await chip.click()
-  await expect(chip).toHaveAttribute('aria-pressed', 'true')
-  await expect(supper.locator('.combobox__menu')).toBeVisible()
-})
+// The « + ingrédients » opt-in (and the mousedown-preventDefault guard that kept its
+// dropdown open) was REMOVED with the AI-staples flow it gated — `f9c3c83`, « meal
+// picker decluttered ». Its spec outlived it and had been failing on main ever since,
+// looking for a chip nothing renders. Deleted rather than rewritten: there is no
+// behaviour left to guard. See useMealPlanning.ts's own note on the removal.
 
 test('a read-only guest sees the day, but none of the ＋', async ({ page }) => {
   await openDay(page, { guest: true })
