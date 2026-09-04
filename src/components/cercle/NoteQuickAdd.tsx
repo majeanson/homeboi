@@ -9,17 +9,17 @@ import { useMemoAttach } from '../MemoAttach'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 
 // The ONE quick « note rapide » composer for family_notes — one line to write, a mic,
-// and the 📎 to clip a voice memo / drawing / photo onto it, in ONE write.
+// and the 📎 to clip a voice memo / drawing / photo onto it, in ONE write. Two call
+// sites share it: the board's « Notes (cercle) » card (its header ＋, `lean`) and the
+// Notes tab's ＋ FAB long-press (the AddSheet `cnote` mode, `autoVoice`) — same
+// endpoint, same memo attachment, same scope rule either way. The Notes tab itself has
+// no inline composer any more: a plain tap on its ＋ opens a blank note straight in
+// the rich full-screen editor (NoteEditor) instead.
 //
-// Lifted out of CercleNotes (Les notes) so the board's « Notes (cercle) » card can offer
-// the SAME composer behind its header ＋ instead of forking a second write path: same
-// endpoint, same memo attachment, same scope rule. The rich full-screen editor
-// (NoteEditor, « Nouvelle note ») stays the Notes tab's door — this is the quick one.
-//
-// SCOPE follows the face, exactly as it does in the section: a member → a personal
-// ('self') note, « Maisonnée » (null) → a family-wide one. No toggle. On the board the
-// face IS the device profile (the « Aujourd'hui » MemberSwitcher), so the ＋ there
-// composes for whoever the tablet is currently acting as.
+// SCOPE follows the face: a member → a personal ('self') note, « Maisonnée » (null) →
+// a family-wide one. No toggle. On the board the face IS the device profile (the
+// « Aujourd'hui » MemberSwitcher), so the ＋ there composes for whoever the tablet is
+// currently acting as.
 export function NoteQuickAdd({
   memberId,
   className,
@@ -31,17 +31,18 @@ export function NoteQuickAdd({
 }: {
   /** The acting face: a member id → a personal note, null → a Maisonnée note. */
   memberId: string | null
-  /** Wrapper class (the section's `cercle-notes__composer card`, the card's own). */
+  /** Wrapper class — the board card's own `cnotes-card__composer`, or none inside
+   *  the ＋ FAB's sheet (that shell already provides padding). */
   className?: string
   /** Keeps a half-finished drawing apart per surface (see useMemoAttach). */
   drawDraftId?: string
   autoFocus?: boolean
   /** Fired after a note is actually written (the board card closes its composer). */
   onSubmitted?: () => void
-  /** LEAN (« Les notes » in simple mode): the box is nothing but text — no mic, no
+  /** LEAN (the board card's composer): the box is nothing but text — no mic, no
    *  📎, no « Ajouter » button. Enter writes the note. The mic and the attachment
-   *  didn't disappear: they moved to the ＋ FAB's composer (bottom right), which is
-   *  this same component WITHOUT `lean`. See lib/notesMode. */
+   *  live in the Notes tab's ＋ FAB long-press instead — this same component
+   *  WITHOUT `lean`. */
   lean?: boolean
   /** Open with the mic already listening (the ＋ FAB's hold-and-speak, bmad/12 #18). */
   autoVoice?: boolean

@@ -14,11 +14,15 @@ import { createDeviceStore } from './createDeviceStore'
 // shared <ModeToggle> (components/ModeToggle.tsx) — it encodes the accessible-name
 // and guest rules a hand-rolled chip gets wrong.
 //
-// notesMode.ts and listeMode.ts are the founding twins (they keep their own files
-// for their surface-specific documentation); new surfaces mint their flag HERE and
-// record the face split in ACTIONS.md Part 2. NOT every row list qualifies: a
-// surface whose furniture already lives behind a door (Habitudes' peek, the board
-// todos' tap-to-edit) or that is inherently managing (Réglages) stays single-faced.
+// listeMode.ts is the founding example (it keeps its own file for its surface-
+// specific documentation); new surfaces mint their flag HERE and record the face
+// split in ACTIONS.md Part 2. NOT every row list qualifies: a surface whose
+// furniture already lives behind a door (Habitudes' peek, the board todos'
+// tap-to-edit) or that is inherently managing (Réglages) stays single-faced — and
+// « Les notes », the OTHER founding twin, DROPPED this door entirely (2026-09-04):
+// once actions live behind a "..." on every row and a tap opens the full editor,
+// a second face bought only density, which the board's own glance card already
+// covers. Retiring a two-faces surface is a legitimate outcome, not just adding one.
 export function createModeStore(key: string) {
   return createDeviceStore<boolean>(key, false, {
     read: (raw) => raw === '1',

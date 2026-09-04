@@ -33,11 +33,13 @@ const PUBLIC_SHELL = [
 // gallery, never a kiosk surface; accept no offline /dev/kit rather than tax
 // every install with its specimen chrome. guideContent stays precached — it's
 // the real offline-facing surface (the in-app Guide).
-// NoteEditorTiptap joins too — the opt-in BETA note-editing surface (a ~380 KB
-// ProseMirror chunk). Precaching it would tax every kiosk install for a surface
-// only beta devices open; online it loads on first use and runtime-caches like
-// heic2any. The CLASSIC editor stays the offline path (flip BETA off).
-const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/, /^assets\/DevKit-/, /^assets\/NoteEditorTiptap-/]
+// NoteEditorTiptap is DELIBERATELY NOT here (2026-09-04): it used to be the
+// opt-in BETA note-editing surface, excluded like heic2any because only beta
+// devices ever loaded it. It's now the ONLY note editor — every note open needs
+// it — so it must stay in the precache like every other lazy route
+// (NFR-OFFLINE-1); its real ~380 KB just gets its own cap in check-bundle.mjs's
+// LAZY_CAPS instead of the generic per-chunk budget.
+const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/, /^assets\/DevKit-/]
 
 // Caching-policy version, folded into the cache name (see serviceWorker()). Bump
 // on ANY change to swSource's caching rules so the new SW evicts caches written

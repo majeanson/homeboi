@@ -103,12 +103,12 @@ export type AddSheetMode =
   // check-in scene can't be (it only rows habits still asking today). `habit`
   // stays the create-only nav used by deep-links and the check-in scene's button.
   | 'habit-pick'
-  // « Les notes » ＋ — the ONLY tile on that tab, so the sheet drops straight into
-  // it with no chooser. An IN-SHEET composer (the shared NoteQuickAdd): type a line,
-  // Enter, done — and it's the one place that still carries the mic and the 📎
-  // attachment, which the section's own lean composer no longer shows. It used to
-  // navigate into the full-screen rich editor; that's now the row pencil (and, in
-  // advanced mode, « Nouvelle note » on the page itself).
+  // « Les notes » ＋ — TAPPED, it's in FORM_ROUTES (navigate straight to a blank
+  // NoteEditor: iOS-Notes style, no chooser, no sheet). This mode still exists for
+  // the HOLD: VOICE_MODES.notes reaches it directly (bypassing FORM_ROUTES) to open
+  // the shared NoteQuickAdd in the sheet with the mic already listening — the one
+  // place mic + 📎 quick-capture still lives, now that the page itself has no
+  // inline composer.
   | 'cnote'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
@@ -147,7 +147,9 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // business from a ?param). Every family/social/business/carnets sub-view offers
   // the full set, so e.g. "create a business" is reachable from the ＋ on any of them.
   maison: ['routine-pick', 'person', 'family', 'connect', 'group', 'business', 'pet', 'carnet', 'family-import'],
-  // Les notes: a single door — the quick composer, opened in the sheet itself.
+  // Les notes: a single mode, `cnote` — but its TAP is a FORM_ROUTES navigation
+  // (a blank NoteEditor), so this list only matters for the HOLD (voice) and for
+  // `?plus=cnote` deep-link validation.
   notes: ['cnote'],
 }
 
@@ -196,6 +198,11 @@ export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   routine: '/routine/new',
   voyage: '/voyage/new',
   habit: '/habitude/new',
+  // The ＋ FAB TAPPED opens a blank note directly (iOS-Notes style) — see the
+  // `cnote` doc comment below for why this reverses an older choice. HOLDING the
+  // FAB still bypasses this table entirely (VOICE_MODES.notes, wired straight in
+  // HubLayout's useLongPress) and opens the quick composer with the mic armed.
+  cnote: '/notes?add=1',
 }
 
 // Every mode, as a runtime list — what validates a ?plus=<mode> deep-link

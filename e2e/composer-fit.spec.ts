@@ -69,8 +69,11 @@ const COMPOSERS: Composer[] = [
   // The one that started this pass: « ＋ À finir bientôt » is the longest CTA in
   // the app, and the box also carries the combobox caret.
   { name: 'cuisine ▸ restants', route: '/kitchen', mode: 'leftovers', floor: { 360: 150, 390: 177 } },
-  // Les notes opens straight on its composer (a single mode, no chooser).
-  { name: 'notes ▸ note rapide', route: '/notes', mode: null, floor: { 360: 182, 390: 209 } },
+  // Les notes is absent on purpose (2026-09-04): the ＋ FAB now NAVIGATES straight
+  // to a blank note (FORM_ROUTES.cnote) rather than opening an in-sheet composer —
+  // same shape as `event`/`chore`/`routine`/`voyage`/`habit`, which this list
+  // already excludes. The quick voice/text/📎 composer still exists, but only
+  // behind a HOLD on the ＋ (see fab-hold-voice.spec.ts), not a plain tap.
 ]
 
 // The field's usable typing width, and whether its own placeholder fits in it —

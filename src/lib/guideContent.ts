@@ -968,10 +968,10 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ ouvre la boîte à écrire tout de suite : une ligne, Entrée, c’est noté. C’est aussi là que vivent le micro et le 📎 (mémo vocal, dessin, photo).',
-          en: 'The ＋ opens the writing box right away: one line, Enter, it’s written. It’s also where the mic and the 📎 (voice memo, drawing, photo) live.',
+          fr: 'Le ＋ ouvre une note vierge tout de suite, comme dans l’app Notes — écris, ça s’enregistre en fermant. Reste appuyé sur le ＋ pour dicter une note à voix haute à la place.',
+          en: 'The ＋ opens a blank note right away, like the Notes app — type, it saves on close. Hold the ＋ instead to dictate a note out loud.',
         },
-        route: '/notes?plus=cnote',
+        route: '/notes?add=1',
       },
       {
         label: { fr: 'Pour toi ou la Maisonnée', en: 'For you or the Household' },
@@ -983,15 +983,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La note riche', en: 'The rich note' },
         detail: {
-          fr: 'En mode avancé, le crayon d’une rangée ouvre l’éditeur complet : listes à cocher, gras, citations, une photo ou un dessin — pas juste une ligne de texte. Les premiers mots deviennent le titre.',
-          en: 'In advanced mode, a row’s pencil opens the full editor: checklists, bold, quotes, a photo or a drawing — not just a line of text. The first words become the title.',
+          fr: 'Touche une note pour l’ouvrir : listes à cocher, gras, citations, une photo ou un dessin — pas juste une ligne de texte. Les premiers mots deviennent le titre, en gras, comme dans l’app Notes.',
+          en: 'Tap a note to open it: checklists, bold, quotes, a photo or a drawing — not just a line of text. The first words become the title, bolded, like the Notes app.',
         },
       },
       {
         label: { fr: 'Un mémo vocal, un dessin, une photo', en: 'A voice memo, a drawing, a photo' },
         detail: {
-          fr: 'Le 📎 dans la boîte du ＋ (en bas à droite) joint un mémo vocal, un dessin ou une photo à la note — sans effacer ce que tu as tapé.',
-          en: 'The 📎 in the ＋ box (bottom right) clips a voice memo, a drawing or a photo onto the note — without erasing what you typed.',
+          fr: 'Reste appuyé sur le ＋ pour dicter une note à voix haute. Une photo ou un dessin se joint dans la note elle-même, une fois ouverte.',
+          en: 'Hold the ＋ to dictate a note out loud. A photo or a drawing clips onto the note itself, once it’s open.',
         },
       },
       {
@@ -1006,13 +1006,6 @@ export const GUIDE: GuideEntry[] = [
         detail: {
           fr: 'En vue enfant, les notes se lisent à voix haute, et un mémo vocal joint se joue d’un toucher.',
           en: 'In the kid view, notes read themselves aloud, and a clipped voice memo plays on tap.',
-        },
-      },
-      {
-        label: { fr: 'Simple ou avancé', en: 'Simple or advanced' },
-        detail: {
-          fr: 'Par défaut la page ne fait que LIRE : des rangées serrées qui montrent plusieurs lignes de chaque note, une seule boîte, la loupe repliée — pas même un crayon ni une poubelle. Le petit ⚙ à côté de la loupe passe en Avancé : c’est là qu’on modifie, supprime et réordonne, avec le titre de section, le micro dans la boîte et l’éditeur complet. C’est par appareil — ta tablette et ton téléphone peuvent différer.',
-          en: 'By default the page only READS: tight rows showing several lines of each note, one box, the loupe folded away — not even a pencil or a bin. The small ⚙ beside the loupe switches to Advanced: that’s where you edit, delete and reorder, with the section header, the mic in the box and the full editor. It’s per device — your tablet and your phone can differ.',
         },
       },
     ],

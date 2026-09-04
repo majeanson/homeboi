@@ -9,7 +9,7 @@ import { reorderPatches } from '../../lib/reorder'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropEdgeOf } from '../../lib/dnd'
 import { imgUrl } from '../../lib/image'
 import { InlineIcon } from '../Icon'
-import { RowActions } from '../RowActions'
+import { ActionMenu } from '../ActionMenu'
 import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
 import { Modal } from '../Modal'
@@ -20,13 +20,14 @@ import { scrollBehavior } from '../../lib/motion'
 
 // The ONE cercle-notes ROW LIST (the iOS-grouped `.cnote-list` anatomy), extracted from
 // CercleNotes so the board's « Notes (cercle) » card renders the SAME rows in the same
-// way — expand-to-read in place, tap-to-play audio, tappable checklists, pencil/trash,
-// and hold-to-drag reorder. The caller keeps what differs per surface: which notes
-// (face/search filter), the composer, the empty copy, and hosting the NoteEditor.
+// way — expand-to-read in place OR tap-to-edit (see `openOnTap`), tap-to-play audio,
+// tappable checklists, a "..." menu, and hold-to-drag reorder. The caller keeps what
+// differs per surface: which notes (face/search filter), the composer, the empty copy,
+// and hosting the NoteEditor.
 //
-//   • MULTI-EXPAND: several notes can be open at once (a Set, not a single id) — a
-//     wall tablet showing two routines' notes side by side shouldn't close one to
-//     read the other.
+//   • MULTI-EXPAND (non-`openOnTap` only): several notes can be open at once (a Set,
+//     not a single id) — a wall tablet showing two routines' notes side by side
+//     shouldn't close one to read the other.
 //   • REORDER: the shared hold-to-drag (usePointerDnd + DragPill grip, the itinerary /
 //     La liste gesture). A drop renumbers the DISPLAYED list 0..n-1 via one position
 //     PATCH per moved row (lib/reorder); the API's ORDER BY pins it. Manual order is
@@ -34,14 +35,15 @@ import { scrollBehavior } from '../../lib/motion'
 //     `canReorder` lets the caller drop the grips while a search narrows the list —
 //     reordering a filtered subset would scramble what it pins.
 //   • Deletion goes through useDeferredRemoval (undo toast, no poll flash-back);
-//     an audio memo's pencil renames it here (caption = title), every other note's
-//     pencil hands off to the caller's editor (onEdit).
+//     an audio memo's "..." renames it here (caption = title), every other note's
+//     tap hands off to the caller's editor (onEdit).
 export function NotesList({
   notes,
   faces,
   readOnly,
   canReorder = true,
   compact = false,
+  openOnTap = false,
   onEdit,
   focusId,
   onFocused,
@@ -56,14 +58,20 @@ export function NotesList({
   /** Offer the drag grips (default true). Pass false while a search filters the list. */
   canReorder?: boolean
   /** The board-card GLANCE face (compact-rows pass): no grip, no tint dot, no scope
-   *  chip, no pencil/trash — the row spends its whole width on the text ("who" is the
+   *  chip, no "..." menu — the row spends its whole width on the text ("who" is the
    *  title's author tint). Read-only affordances stay: expand-to-read, audio play,
    *  thumbnails, tappable checklists. Acting on a note lives in Le cercle ▸ Notes. */
   compact?: boolean
-  /** Open the caller's full-screen NoteEditor on this note (non-audio pencil). */
+  /** The Notes PAGE face (iOS-Notes-style): tapping a note's body opens it in
+   *  `onEdit` directly instead of expanding it in place — there's no read-only
+   *  detail view here, the editor IS the detail view. Audio notes keep tap-to-play
+   *  regardless (their "detail" is playing the clip, not text to read in place). */
+  openOnTap?: boolean
+  /** Open the caller's full-screen NoteEditor on this note. */
   onEdit?: (n: FamilyNote) => void
-  /** Deep-link focus (§892): when this note is in `notes`, expand + scroll + pulse it
-   *  once, then signal onFocused so the caller clears its one-shot id. */
+  /** Deep-link focus (§892): when this note is in `notes`, scroll + pulse it once
+   *  (and expand it in place, unless `openOnTap` already makes the row a direct
+   *  door into the editor), then signal onFocused so the caller clears its one-shot id. */
   focusId?: string | null
   onFocused?: () => void
   /** Rendered instead of the list when nothing is visible. */
@@ -105,7 +113,7 @@ export function NotesList({
     if (!focusId) return
     const n = sorted.find((x) => x.id === focusId)
     if (!n) return // not visible yet (face switch / next poll) — wait
-    setExpandedIds((prev) => new Set(prev).add(n.id))
+    if (!openOnTap) setExpandedIds((prev) => new Set(prev).add(n.id))
     setFlashId(n.id)
     requestAnimationFrame(() => noteRefs.current[n.id]?.scrollIntoView({ block: 'center', behavior: scrollBehavior() }))
     onFocused?.()
@@ -130,10 +138,9 @@ export function NotesList({
     holdMs: DND_HOLD_MS,
   })
   const grips = !ro && !compact && canReorder && shown.length > 1
-  // Pencil/trash ride the roomy rows only. Compact is a READING face — the board's
-  // glance card and « Les notes » in its lean mode both hand acting off elsewhere
-  // (the section, and AVANCÉ respectively), and both mirrors are real controls, not
-  // touch-only gestures.
+  // The "..." rides the roomy rows only. Compact is a READING face — the board's
+  // glance card hands acting off to the Notes page itself, and that mirror is a
+  // real control, not a touch-only gesture.
   const rowActions = !ro && !compact
 
   const colorOf = (id: string | null) => faces.find((f) => f.id === id)?.colour ?? null
@@ -249,10 +256,24 @@ export function NotesList({
                 </span>
               )}
 
-              {/* The body: tapping a text note expands/collapses it (to read long notes
-                  in place); an audio note plays it. Editing is the pencil, not the tap. */}
+              {/* The body: on the Notes PAGE (openOnTap), tapping any text note opens it
+                  straight in the editor — the editor IS the detail view, iOS-Notes
+                  style, so there's nothing to expand in place. Elsewhere (the board's
+                  glance card), tapping a text note expands/collapses it to read in
+                  place instead. An audio note always plays on tap; renaming/deleting
+                  live behind "...". */}
               {media === 'audio' ? (
                 <button type="button" className="cnote__main" onClick={() => playClip(n.media_key!)} aria-label={fn.memo}>
+                  <span className="cnote__title">{title}</span>
+                  {metaOf(preview) && <span className="cnote__meta mono">{metaOf(preview)}</span>}
+                </button>
+              ) : openOnTap ? (
+                <button
+                  type="button"
+                  className="cnote__main"
+                  onClick={() => onEdit?.(n)}
+                  aria-label={fn.edit}
+                >
                   <span className="cnote__title">{title}</span>
                   {metaOf(preview) && <span className="cnote__meta mono">{metaOf(preview)}</span>}
                 </button>
@@ -284,23 +305,18 @@ export function NotesList({
               {!compact && <span className="cnote__chip mono">{scopeChip}</span>}
 
               {rowActions && (
-                // THE shared ✏️/🗑 pair (44px targets — the hand-rolled `.cnote__act`
-                // twins were 32px, under the touch-target rule). One pencil per note:
-                // an audio memo renames (caption = title); every other note opens the
-                // full editor (title + body + attachment).
-                <RowActions
-                  className="cnote__actions"
-                  size={15}
-                  onEdit={
-                    media === 'audio'
-                      ? () => { setRenameId(n.id); setRenameVal(n.title) }
-                      : onEdit
-                        ? () => onEdit(n)
-                        : undefined
-                  }
-                  editLabel={media === 'audio' ? fn.rename : fn.edit}
-                  onDelete={() => remove(n)}
-                  deleteLabel={fn.delete}
+                // "..." — Modifier is the row tap itself (openOnTap) so it's not
+                // duplicated here: an audio memo offers Renommer (its caption is the
+                // title); every note offers Supprimer (undo toast, useDeferredRemoval).
+                <ActionMenu
+                  triggerClassName="btn btn--ghost mono action-menu__btn cnote__actions"
+                  label={title}
+                  items={[
+                    ...(media === 'audio'
+                      ? [{ icon: 'pencil-simple-bold' as const, label: fn.rename, onSelect: () => { setRenameId(n.id); setRenameVal(n.title) } }]
+                      : []),
+                    { icon: 'trash-bold', label: fn.delete, tone: 'danger' as const, onSelect: () => remove(n) },
+                  ]}
                 />
               )}
 

@@ -5,38 +5,46 @@ import TaskList from '@tiptap/extension-task-list'
 import TaskItem from '@tiptap/extension-task-item'
 import { useT } from '../../i18n'
 import { caretIntoView } from '../../lib/viewportVars'
+import { useHScroll } from '../../lib/hscroll'
 import { mdToTiptapHtml, tiptapDocToMd, type TiptapNode } from '../../lib/noteTiptap'
 import { Icon, type IconName } from '../Icon'
 
-// The BETA editing surface for « Le cercle » Notes — a real ProseMirror document
-// (TipTap StarterKit + task lists) behind the NoteEditor's « BETA » toggle, for
-// the list/checkbox editing the flat classic model fights (Enter mid-item, native
-// selection handling, list merging). Storage stays the SAME Markdown: seed via
-// mdToTiptapHtml, read back via tiptapDocToMd (lib/noteTiptap), so a note opens
-// identically in either editor and the row list / search / read view never know
-// which one wrote it.
+// THE editing surface for « Le cercle » Notes — a real ProseMirror document (TipTap
+// StarterKit + task lists), which is why it exists at all: the list/checkbox editing
+// a flat hand-rolled contentEditable model fights (Enter mid-item, native selection
+// handling, list merging) just works here. Storage stays Markdown: seed via
+// mdToTiptapHtml, read back via tiptapDocToMd (lib/noteTiptap), so the row list /
+// search / read view don't know or care that the editor is ProseMirror underneath.
 //
-// Lazy-loaded (React.lazy in NoteEditor) — TipTap is a real dependency and only
-// beta devices pay for it; the default editor ships without it.
+// Lazy-loaded (React.lazy in NoteEditor) purely for bundle size — the chunk only
+// downloads once a note is actually opened.
 //
-// It renders the SAME chrome slots as the classic editor (a .note-editor__toolbar
-// row + the .note-editor__body scroller), so the keyboard-fit CSS (core.css
-// « Keyboard fit »: --kb padding + the 120px trailing slack on the body) and the
-// global caret-follow (viewportVars watches any contentEditable) apply unchanged.
+// It renders the chrome slots the shell expects (a .note-editor__toolbar row + the
+// .note-editor__body scroller), so the keyboard-fit CSS (core.css « Keyboard fit »:
+// --kb padding + the 120px trailing slack on the body) and the global caret-follow
+// (viewportVars watches any contentEditable) apply unchanged. The toolbar hides its
+// scrollbar (calm) so it carries useHScroll — the house rule for any such row,
+// without which the tail buttons are unreachable with a mouse.
 export default function NoteEditorTiptap({
   initialMd,
   getMdRef,
+  autoFocus,
   ariaLabel,
 }: {
   initialMd: string
   /** NoteEditor's commit reads the body through this — set to a live serializer. */
   getMdRef: React.MutableRefObject<(() => string) | null>
+  /** A brand-new note (no title field above it any more) — the body IS the first
+   *  thing you type into, so it takes focus immediately. */
+  autoFocus?: boolean
   ariaLabel: string
 }) {
   const t = useT()
   const fn = t.cercle.familyNotes
+  const toolbarScroll = useHScroll<HTMLDivElement>()
 
   const editor = useEditor({
+    autofocus: autoFocus ? 'end' : false,
     extensions: [
       StarterKit.configure({
         // The note grammar stores two heading depths ('# ' / '## ').
@@ -68,9 +76,8 @@ export default function NoteEditorTiptap({
     }
   }, [editor, getMdRef])
 
-  // The classic editor funnels every edit through afterInput → caretIntoView; here
-  // ProseMirror owns the DOM, so follow the caret from its update event instead
-  // (the global input/selectionchange follow still covers typing with the OSK up).
+  // ProseMirror owns the DOM, so follow the caret from its update event (the global
+  // input/selectionchange follow still covers typing with the OSK up).
   useEffect(() => {
     if (!editor) return
     const follow = () => {
@@ -98,7 +105,7 @@ export default function NoteEditorTiptap({
 
   return (
     <>
-      <div className="note-editor__toolbar" role="group" aria-label={fn.format}>
+      <div ref={toolbarScroll.ref} className="note-editor__toolbar" role="group" aria-label={fn.format}>
         {FORMATS.map((f) => (
           <button
             key={f.kind}

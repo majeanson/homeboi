@@ -203,15 +203,15 @@ for (const d of DEVICES) {
 // contentEditable host — the host's TOP is already in view, so an element-level
 // scrollIntoView no-ops and the caret sits under the keyboard until the first
 // keystroke (whose input-driven follow then rescues it). pinOnce must route
-// contentEditables through followCaret. Also guards the two editor chrome rules:
-// the attach footer hides while typing, and the title never overflows on X.
+// contentEditables through followCaret. Also guards the attach footer hiding while
+// the keyboard is up.
 test('kb: opening the keyboard with the caret at the end of a long note reveals the caret', async ({ page }) => {
   const d = { w: 390, h: 844, kb: 336 }
   const open = boot(d)
   const VISIBLE = d.h - d.kb
-  await open(page, '/notes')
-  await page.getByRole('button', { name: 'Nouvelle note' }).click()
-  const body = page.locator('.note-editor__body')
+  await open(page, '/notes?add=1')
+  const scroller = page.locator('.note-editor__body')
+  const body = page.locator('.note-editor .note-tiptap')
   await body.click()
   // Build a long note with the caret left at the very end — keyboard still closed,
   // so neither the focus-pin nor the input-follow has fired yet.
@@ -222,7 +222,7 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
   await page.keyboard.type('FIN')
   // Strand the caret: scroll the body back to the top (what a re-opened note shows)
   // while the selection stays on the last line.
-  await body.evaluate((el) => (el.scrollTop = 0))
+  await scroller.evaluate((el) => (el.scrollTop = 0))
   await openKeyboard(page, d.kb)
 
   const last = body.locator(':scope > :last-child')
@@ -237,11 +237,8 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
     .toBe(true)
   await page.screenshot({ path: 'e2e/screenshots/kb-phone-note-caret-end.png', fullPage: false })
 
-  // Chrome rules: the Photo/Dessin footer yields to the keyboard…
+  // Chrome rule: the Photo/Dessin footer yields to the keyboard.
   await expect(page.locator('.note-editor__media')).toBeHidden()
-  // …and the title input stays inside the shell (was 1.6rem too wide).
-  const title = await page.locator('.note-editor__title').boundingBox()
-  expect(title!.x + title!.width, 'title inside the right edge').toBeLessThanOrEqual(d.w + 1)
 })
 
 // Dragging a selection HANDLE downward (extending the selection) must never be
@@ -254,9 +251,9 @@ test('kb: opening the keyboard with the caret at the end of a long note reveals 
 test('kb: extending a selection with the keyboard open is never yanked back up', async ({ page }) => {
   const d = { w: 390, h: 844, kb: 336 }
   const open = boot(d)
-  await open(page, '/notes')
-  await page.getByRole('button', { name: 'Nouvelle note' }).click()
-  const body = page.locator('.note-editor__body')
+  await open(page, '/notes?add=1')
+  const scroller = page.locator('.note-editor__body')
+  const body = page.locator('.note-editor .note-tiptap')
   await body.click()
   for (let i = 0; i < 30; i++) {
     await page.keyboard.type(`ligne ${i}`)
@@ -266,8 +263,8 @@ test('kb: extending a selection with the keyboard open is never yanked back up',
   await page.waitForTimeout(600) // let the focus-pin retries settle
   // Anchor the selection on an early line, scroll it above the fold, then extend
   // the focus end downward like a handle drag (each extend fires selectionchange).
-  const drift = await body.evaluate(async (el) => {
-    const lines = [...el.children] as HTMLElement[]
+  const drift = await scroller.evaluate(async (el) => {
+    const lines = [...el.querySelector('.note-tiptap')!.children] as HTMLElement[]
     const sel = document.getSelection()!
     sel.setBaseAndExtent(lines[2].firstChild ?? lines[2], 0, lines[20].firstChild ?? lines[20], 1)
     el.scrollTop = el.scrollHeight // the anchor line now sits far above the visible band
@@ -293,9 +290,8 @@ test('kb: the iOS viewport push does not disarm the keyboard machinery', async (
   const d = { w: 390, h: 844, kb: 336 }
   const PAN = 260
   const open = boot(d)
-  await open(page, '/notes')
-  await page.getByRole('button', { name: 'Nouvelle note' }).click()
-  const body = page.locator('.note-editor__body')
+  await open(page, '/notes?add=1')
+  const body = page.locator('.note-editor .note-tiptap')
   await body.click()
   for (let i = 0; i < 30; i++) {
     await page.keyboard.type(`ligne ${i}`)

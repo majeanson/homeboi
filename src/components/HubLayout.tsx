@@ -606,10 +606,10 @@ export function HubLayout() {
           data-tour="add-fab"
           onClick={() => {
             // A section with exactly ONE mode skips the chooser and goes straight
-            // to it — mirrors the single-mode skip Routines used to have on its own
-            // tab. /notes has just 'cnote', which is an IN-SHEET composer (not in
-            // FORM_ROUTES any more), so it falls through and AddSheet's defMode
-            // opens the sheet ON that composer — no one-tile "chooser".
+            // to it. /notes has just 'cnote', which IS in FORM_ROUTES (a blank
+            // NoteEditor, iOS-Notes style) — so a tap here never opens the sheet at
+            // all. Holding the FAB still does (VOICE_MODES, wired below), for the
+            // quick voice/text/📎 composer.
             const only = sectionModes.length === 1 ? sectionModes[0] : null
             if (only && FORM_ROUTES[only]) {
               nav(FORM_ROUTES[only])
@@ -633,18 +633,21 @@ export function HubLayout() {
             setAddModes(null)
             setAddOpen(true)
           }}
-          // The FAB always opens the section's blank-slate chooser/sheet, so its
-          // accessible name matches that sheet's TITLE per section (see AddSheet
-          // `title`) — not a specific sub-form. (It used to promise the pantry
-          // low-stock form on the kitchen Garde-manger tab while actually opening
-          // the kitchen chooser — an aria/behaviour mismatch, now removed.)
+          // The FAB's accessible name matches what a TAP actually opens: the
+          // section's blank-slate chooser/sheet TITLE (see AddSheet `title`) for
+          // every section except Notes, where a tap is a FORM_ROUTES navigation to
+          // a blank note — so it's named "Nouvelle note", not the sheet's quick-
+          // composer title (that name now only applies to the long-press door).
+          // (Kitchen used to promise the pantry low-stock form on the Garde-manger
+          // tab while actually opening the kitchen chooser — an aria/behaviour
+          // mismatch, now removed.)
           aria-label={
             section === 'kitchen'
               ? t.kitchen.addTitle
               : section === 'maison'
                 ? t.maison.addTitle
                 : section === 'notes'
-                  ? t.cercle.familyNotes.quickAdd
+                  ? t.cercle.familyNotes.editorNew
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.common.add
@@ -655,7 +658,7 @@ export function HubLayout() {
               : section === 'maison'
                 ? t.maison.addTitle
                 : section === 'notes'
-                  ? t.cercle.familyNotes.quickAdd
+                  ? t.cercle.familyNotes.editorNew
                   : section === 'liste'
                     ? t.list.addTitle
                     : t.common.add

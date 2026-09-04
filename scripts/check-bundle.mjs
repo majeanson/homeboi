@@ -11,6 +11,8 @@
 //      Conversely the allowlisted online-only chunks (the 1.3 MB HEIC upload
 //      decoder) must NOT be precached — that's the whole point of excluding
 //      them. Keep ONLINE_ONLY in sync with ONLINE_ONLY_CHUNKS in vite.config.ts.
+//      LAZY_CAPS is a separate list: chunks that DO need precaching but are too
+//      big for the generic per-chunk budget.
 //
 // Budgets are ~15-25% above today's real sizes — headroom for normal growth,
 // tight enough that "oops, the whole guide landed in the shell" fails loudly.
@@ -79,9 +81,14 @@ const ONLINE_ONLY = [
   // B-11 (bmad/10) — /dev/kit is a dev-only component gallery, never a kiosk
   // surface; accept no offline gallery rather than tax every install.
   { re: /^DevKit-/, cap: 90 * KB },
-  // The opt-in BETA note editor (TipTap/ProseMirror, ~380 KB): only beta devices
-  // ever load it, so it stays out of every install's precache; the classic
-  // editor remains the offline path. Keep in sync with vite.config.ts.
+]
+
+// Lazy chunks that ARE required in the precache (unlike ONLINE_ONLY) but are too
+// big for the generic CHUNK_BUDGET — each gets its own explicit cap instead.
+const LAZY_CAPS = [
+  // THE note editor (TipTap/ProseMirror, ~380 KB) — no longer opt-in BETA
+  // (2026-09-04): every note open loads it now, so it must stay precached like
+  // any other lazy route (NFR-OFFLINE-1). Keep in sync with vite.config.ts.
   { re: /^NoteEditorTiptap-/, cap: 450 * KB },
 ]
 
@@ -108,6 +115,11 @@ for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
   if (eager) {
     eagerTotal += size
     if (size > eager.cap) failures.push(`${f} exceeds its budget: ${kb} KB > ${Math.round(eager.cap / KB)} KB (${eager.label})`)
+    continue
+  }
+  const lazyCap = LAZY_CAPS.find((c) => c.re.test(f))
+  if (lazyCap) {
+    if (size > lazyCap.cap) failures.push(`${f} exceeds its budget: ${kb} KB > ${Math.round(lazyCap.cap / KB)} KB (lazy, custom cap)`)
     continue
   }
   if (size > CHUNK_BUDGET)

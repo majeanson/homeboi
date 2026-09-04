@@ -804,9 +804,8 @@ export function AddSheet({
       mot: t.mots.tile,
       habit: t.habits.add,
       'habit-pick': t.habits.title,
-      // The ＋ opens the QUICK composer (one line, Enter, done) — « Nouvelle note »
-      // names the page's rich-editor door in advanced mode, and two controls on one
-      // page must not share a name while doing different things.
+      // Only reachable by HOLDING the ＋ now (a tap is a FORM_ROUTES navigation to
+      // a blank note) — this names the quick voice/text/📎 composer that opens.
       cnote: t.cercle.familyNotes.quickAdd,
     }
     return labels[m]
@@ -1115,11 +1114,12 @@ export function AddSheet({
             (recipient + EditField + useMemoAttach); closes the sheet on send. */}
         {mode === 'mot' && <MotComposer onDone={close} />}
 
-        {/* « Les notes » — the quickest path from a thought to a note: one box,
-            Enter writes it, the sheet closes. NOT lean here: this is where the mic
-            and the 📎 (voice memo / drawing / photo) live now that the section's own
-            composer is text-only. Scoped to the picked face, exactly like the
-            section's — a face → a personal note, « Maisonnée » → a family-wide one. */}
+        {/* « Les notes » — only reached by HOLDING the ＋ (VOICE_MODES.notes): the
+            quickest path from a thought to a note, one box, Enter writes it, the
+            sheet closes. This is where the mic and the 📎 (voice memo / drawing /
+            photo) live now that the page itself has no inline composer at all — a
+            tap opens a blank note in the full editor instead. Scoped to the picked
+            face — a face → a personal note, « Maisonnée » → a family-wide one. */}
         {mode === 'cnote' && (
           <NoteQuickAdd
             memberId={profileId}

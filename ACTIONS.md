@@ -48,7 +48,7 @@ five spellings of delete).
 | 10 | **＋ FAB sheet tile** | `SECTION_MODES` per hub section, `?plus=<mode>` deep link, `ADD_HELP` per tile | `lib/addSheet.tsx`, `components/AddSheet.tsx` |
 | 11 | **Réglages sub** — the admin/SR-grade mirror, `SUB_GOTO` linking back | `pages/Operator.tsx`, `lib/settingsNav.ts` |
 | 12 | **Deep link** — `?edit= ?item= ?add= ?plus= ?tab/sub/lens/card/point/focus` | `DISCOVERY.md` owns the grammar |
-| 13 | **⚙ Simple ↔ Avancé face** — the default face reads/does (row = content + one action); Avancé restores the managing furniture. **This toggle IS the non-touch door** for a surface whose simple face relies on a gesture | **`ModeToggle`** + a `createDeviceStore` flag (`lib/notesMode.ts`, `lib/listeMode.ts`) | `components/ModeToggle.tsx` |
+| 13 | **⚙ Simple ↔ Avancé face** — the default face reads/does (row = content + one action); Avancé restores the managing furniture. **This toggle IS the non-touch door** for a surface whose simple face relies on a gesture | **`ModeToggle`** + a `createDeviceStore` flag (`lib/listeMode.ts`, `lib/surfaceMode.ts` factory) — Les notes DROPPED this door (2026-09-04): tap-to-edit + a "..." menu on every row made the split redundant, see the Les notes section below | `components/ModeToggle.tsx` |
 | 14 | **Undo tier** (every destructive door declares one): **deferred** `useDeferredRemoval` (live-polled lists) · **compensating** `recordUndo`/`useCreateWithUndo` (must-show-instantly) · **confirm** `useConfirm` (heavy: series, cascades, freed R2 blobs) · **none** (needs a recorded ➖) | `lib/useDeferredRemoval.ts`, `lib/toast.tsx`, `lib/confirm.tsx` |
 
 **Non-touch column below** = the desktop-reachability verdict for the whole
@@ -114,14 +114,15 @@ at all (❌).
 | List · clear checked / sort / cashier / flyers | ✅ « Vider les cochés »; ⋯ « Allées »; buttons | — | — | ＋ `flyer` / `share` / `auto-pick` | liste▸stores/shop/ghost | deferred | ✅ |
 | List · search | ❌ no in-page search¹⁴ (global 🔍 only) | | | | | | |
 
-### Les notes (`components/cercle/CercleNotes.tsx`, `NotesList.tsx`) — two faces via `notesMode`
+### Les notes (`components/cercle/CercleNotes.tsx`, `NotesList.tsx`) — ONE face, iOS-Notes style (2026-09-04: dropped the Simple/Avancé split)
 
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Note · read / expand / tick checklist / play audio | ✅ tap body (multi-expand Set); tap line ticks | — | ➖ expands in place, never the shared peek | — | `?item=<id>` deep link | — | ✅ |
-| Note · add | ✅ lean composer (Enter) / Avancé composer (mic+📎) | — | — | ✅ ＋ `cnote` = same composer un-leaned | `?add=1` | — | ✅ |
-| Note · edit / delete / reorder | ➖ simple face drops all furniture **by design** | Avancé ⠿ drag | — | — | ⚙ Avancé = the mirror (✏️/🗑/grip) | deferred | ✅ (via ⚙) |
-| Note · edit (hand-rolled pair) | 🔶 `NotesList.tsx:286` re-implements ✏️/🗑 instead of `RowActions`¹⁵ | | | | | | |
+| Note · read/edit (tap opens the editor) | ✅ tap body → `NoteEditor` directly (`openOnTap`) — no expand-in-place, the editor IS the detail view | — | ➖ deliberately not the shared peek — the editor already opens full-screen on one tap | ✅ ＋ FAB (`FORM_ROUTES.cnote`) → blank `NoteEditor` | `?item=<id>` scrolls+pulses the row; `?add=1` opens a blank note | deferred (auto-save on close; emptied = deleted) | ✅ |
+| Note · play audio | ✅ tap body plays the clip | — | — | — | — | — | ✅ |
+| Note · rename (audio) / delete | ⋯ **`ActionMenu`** (`cnote__actions`) — Modifier is the row tap itself so it's not duplicated here | — | — | — | — | deferred (`useDeferredRemoval`) | ✅ |
+| Note · dictate | — | hold the ＋ FAB (`VOICE_MODES.notes`) → `NoteQuickAdd` sheet, mic armed | — | — | — | — | 🔶 — hold-only; a typed note is the mirror |
+| Note · reorder | ⠿ drag (`usePointerDnd`) + `DragPill`'s own ↑/↓ mirror | — | — | — | — | — | ✅ |
 | Face/scope · switch | ✅ `FaceSelect` chip / `MemberSwitcher`ᴷ — the face IS the scope | — | — | — | — | — | ✅ |
 
 ### Maison (`pages/Maison.tsx`, `components/{maison,cercle}/*`)
@@ -164,13 +165,13 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 
 | Concept | Today's spellings | Verdict |
 | --- | --- | --- |
-| **Delete a row** | swipe-left (Liste) · `RowActions` 🗑 (pools, Avancé faces, Réglages) · peek ⋯ danger (event, pet, business) · visible peek danger (mot⁶, meal « Retirer ») · ✕ badge (media fridge note) · hand-rolled trash (NotesList¹⁵, DrawingGallery) · nowhere (chore/home-project³, contact¹⁶) | **`RowActions` on managing faces; peek ⋯ danger for peeked entities; swipe stays a Liste/QuickAdd accelerator, never the only door** |
-| **Edit** | peek « Modifier » → Modal (event) · pencil → scene (recipes, day, liste item) · ✎ on card (routine) · long-press (Liste simple) · inline tap-name (board todos) · inline `EditField` swap (CheckRow, MealPool) | acceptable variety — *peek for peeked, scene for scened, inline for one-field* — but each row records which |
-| **Add** | always-open composer (Liste, Notes) · `SectionAdd` ＋ (pantry ×3, day page, board todos) · `EntityCombobox` (pools) · ＋ FAB tile (everything) · FAB-only (Maison➖) | **every entity has a ＋-sheet path OR a recorded ➖**; `SectionAdd` when the section is the natural place; always-open only where the page IS the composer (LEAN) |
-| **Reorder** | drag ⠿ (Liste — its grip also answers ↑/↓ focused, Notes Avancé, board cards) · ⋯ Monter/Descendre (meal rows) · none | drag + a non-drag mirror where drag is the only path¹³ |
-| **Long tail** | `ActionMenu` ⋯ at row / section-head / page-tool altitude | ✅ one primitive, three altitudes — fine, document which altitude when adding |
-| **Search** | `SearchField` collapsible (Notes simple, Recettes) · always-open (Notes Avancé) · none (Liste¹⁴, Maison¹⁸, Historique, Garde-manger) | **`SearchField` collapsible wherever a list can exceed a screenful** |
-| **⚙ Simple↔Avancé face** | Notes + Liste + **garde-manger + meal pools** (2026-08-26, `lib/surfaceMode` factory). Habitudes and board todos: ➖ — furniture already behind a door (row peek / tap-to-edit); Réglages: ➖ always-managing | done (Wave A); a NEW row list picks a face or records why not (door #13) |
+| **Delete a row** | swipe-left (Liste) · `RowActions` 🗑 (pools, Avancé faces, Réglages) · peek ⋯ danger (event, pet, business) · visible peek danger (mot⁶, meal « Retirer ») · ✕ badge (media fridge note) · hand-rolled trash (DrawingGallery) · `ActionMenu` (Notes¹⁵) · nowhere (chore/home-project³, contact¹⁶) | **`RowActions` on managing faces; peek ⋯ danger for peeked entities; swipe stays a Liste/QuickAdd accelerator, never the only door** |
+| **Edit** | peek « Modifier » → Modal (event) · pencil → scene (recipes, day, liste item) · ✎ on card (routine) · long-press (Liste simple) · inline tap-name (board todos) · inline `EditField` swap (CheckRow, MealPool) · row tap → full editor (Notes) | acceptable variety — *peek for peeked, scene for scened, inline for one-field* — but each row records which |
+| **Add** | always-open composer (Liste) · `SectionAdd` ＋ (pantry ×3, day page, board todos) · `EntityCombobox` (pools) · ＋ FAB tile (everything) · ＋ FAB navigates straight to a blank editor (Notes¹⁵, `FORM_ROUTES`) · FAB-only (Maison➖) | **every entity has a ＋-sheet path OR a recorded ➖**; `SectionAdd` when the section is the natural place; always-open only where the page IS the composer (LEAN) |
+| **Reorder** | drag ⠿ (Liste — its grip also answers ↑/↓ focused, Notes, board cards) · ⋯ Monter/Descendre (meal rows) · none | drag + a non-drag mirror where drag is the only path¹³ |
+| **Long tail** | `ActionMenu` ⋯ at row (Notes¹⁵) / section-head / page-tool altitude | ✅ one primitive, three altitudes — fine, document which altitude when adding |
+| **Search** | `SearchField` collapsible (Notes, Recettes) · none (Liste¹⁴, Maison¹⁸, Historique, Garde-manger) | **`SearchField` collapsible wherever a list can exceed a screenful** |
+| **⚙ Simple↔Avancé face** | Liste + **garde-manger + meal pools** (2026-08-26, `lib/surfaceMode` factory). Notes DROPPED it (2026-09-04, ¹⁵) — tap-to-edit + "..." made both faces redundant. Habitudes and board todos: ➖ — furniture already behind a door (row peek / tap-to-edit); Réglages: ➖ always-managing | done (Wave A); a NEW row list picks a face or records why not (door #13) |
 | **Undo tier** | deferred (most checks/deletes) · compensating (Liste add) · confirm (heavy) · **none** (single fridge-note⁵, group¹⁷, event¹ post-confirm) | every destructive door names its tier; « none » requires a footnote |
 
 ---
@@ -191,7 +192,7 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 
 ### Wave B — one delete grammar 🔴 — **DONE 2026-08-26**
 
-- [x] ¹⁵ `NotesList` hand-rolled ✏️/🗑 → `RowActions size={15}` (audio-rename via `onEdit`; the 32px `.cnote__act` twins were also UNDER the 44px touch-target rule — retired, CSS tombstoned in `cnote-list.css`; `notes-lean`/`cercle-notes-card` specs re-anchored on `.row-actions__btn`).
+- [x] ¹⁵ `NotesList` hand-rolled ✏️/🗑 → `RowActions size={15}` (audio-rename via `onEdit`; the 32px `.cnote__act` twins were also UNDER the 44px touch-target rule — retired, CSS tombstoned in `cnote-list.css`; `notes-lean`/`cercle-notes-card` specs re-anchored on `.row-actions__btn`). **2026-09-04:** `RowActions` → `ActionMenu` ("...") on the Notes page, Modifier folded into the row TAP (`openOnTap` — opens `NoteEditor` directly, no more expand-in-place there), and the Simple/Avancé split (door #13) dropped entirely — one face, iOS-Notes style. The ＋ FAB now navigates straight to a blank note (`FORM_ROUTES.cnote`); its long-press still opens the quick voice/text/📎 composer. The board's glance card is unchanged (still compact, expand-in-place, no actions). `notes-lean.spec.ts` (the mode split's own guard) is retired; replaced by `notes.spec.ts`.
 - [x] ➖ **corrected on code-read**: `DrawingGalleryPage`'s trash is an OVERLAY BADGE on a tile (paired with the 📌 pin badge), not a row — glyph + label already canonical (`trash-bold`, `t.common.delete`); converting would fight the positioning for no drift win. Keep.
 - [x] `CheckRow`'s raw `.row-actions__btn` extra slot → `RowActions`' own `onExtra`/`extraIcon`/`extraLabel` slot (one owner of the class family; renders before ✏️/🗑, same chrome).
 - [x] ⁵ single fridge-note dismiss (`board/Notes.tsx`): a TEXT note now rides `useDeferredRemoval` (same held clear as « Tout effacer » — undo cancels the held DELETE). ➖ media-note keeps confirm-then-immediate (frees an R2 blob — media rows confirm, they don't undo).

@@ -1969,10 +1969,9 @@ export const FR = {
       seeAll: 'Toutes les notes',
       // …and its header ＋, which opens the same quick composer right on the board.
       quickAdd: 'Écrire une note rapide',
-      // #richnotes — full-screen rich editor (title + Markdown body + attachment).
-      newNote: 'Nouvelle note',
+      // #richnotes — full-screen rich editor (Markdown body + attachment; no title
+      // field — the first line IS the title, iOS style).
       untitled: 'Note sans titre',
-      titlePlaceholder: 'Titre (facultatif)',
       forWhom: 'Pour qui',
       // L'auto-sauvegarde à la fermeture ne disait rien du tout — ni « c'est
       // enregistré », ni, plus grave, « ça n'a pas marché » (le .catch avalait le
@@ -1994,18 +1993,9 @@ export const FR = {
       fmtNumbered: 'Liste numérotée',
       fmtCheck: 'Case à cocher',
       fmtQuote: 'Citation',
-      // Le sélecteur d’éditeur BETA (TipTap) — un essai réversible, jamais un
-      // nouveau format : la note reste le même Markdown dans les deux éditeurs.
-      betaTry: 'Essayer le nouvel éditeur (bêta)',
-      betaBack: 'Revenir à l’éditeur classique',
       attachPhoto: 'Photo',
       attachDrawing: 'Dessin',
       attachRemove: 'Retirer',
-      // SIMPLE ↔ AVANCÉ (lib/notesMode) — la préférence d'affichage de la section,
-      // par appareil. Simple (défaut) : rangées compactes, une seule boîte de texte.
-      // Le bouton ⚙ n'a pas d'étiquette : son nom dit ce que le PROCHAIN toucher fait.
-      modeToAdvanced: 'Passer au mode avancé (modifier, réordonner, éditeur complet)',
-      modeToSimple: 'Revenir au mode simple (lecture, plus de notes à l’écran)',
     },
   },
   // Maison — the merged tab (Routines · Famille · Social · Business · Carnets).

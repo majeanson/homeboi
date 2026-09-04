@@ -205,12 +205,10 @@ const openComposer = (mode: string) => async (page: Page) => {
 }
 
 const openNoteEditor = async (page: Page) => {
-  // NOT « Nouvelle note »: that button is advanced-mode chrome (lib/notesMode), and
-  // Les notes defaults to its lean READING face. ?add=1 is the canonical door in
-  // both faces — the same one advanced's own button navigates to.
+  // ?add=1 is the canonical door — the same one the ＋ FAB's tap navigates to.
   await page.goto('/notes?add=1')
   await expect(page.locator('.note-editor')).toBeVisible()
-  await page.locator('.note-editor__body').click()
+  await page.locator('.note-editor .note-tiptap').click()
 }
 
 // CHROME BUDGETS (`budgetPx`) — baselined 2026-08-26 at 390px from a real run,

@@ -1753,10 +1753,9 @@ export const EN: typeof FR = {
       seeAll: 'All notes',
       // …and its header ＋, which opens the same quick composer right on the board.
       quickAdd: 'Write a quick note',
-      // #richnotes — full-screen rich editor (title + Markdown body + attachment).
-      newNote: 'New note',
+      // #richnotes — full-screen rich editor (Markdown body + attachment; no title
+      // field — the first line IS the title, iOS style).
       untitled: 'Untitled note',
-      titlePlaceholder: 'Title (optional)',
       forWhom: 'For whom',
       saved: 'Note saved',
       savedQueued: 'Note kept — it will send when you’re back online',
@@ -1775,16 +1774,9 @@ export const EN: typeof FR = {
       fmtNumbered: 'Numbered list',
       fmtCheck: 'Checklist',
       fmtQuote: 'Quote',
-      betaTry: 'Try the new editor (beta)',
-      betaBack: 'Back to the classic editor',
       attachPhoto: 'Photo',
       attachDrawing: 'Drawing',
       attachRemove: 'Remove',
-      // SIMPLE ↔ ADVANCED (lib/notesMode) — this device's display preference for the
-      // section. Simple (the default): compact rows, one plain text box.
-      // The ⚙ button carries no label: its name says what the NEXT tap does.
-      modeToAdvanced: 'Switch to advanced mode (edit, reorder, full editor)',
-      modeToSimple: 'Back to simple mode (reading, more notes on screen)',
     },
   },
   // Maison — the merged tab (Routines · Family · Social · Business · Carnets).

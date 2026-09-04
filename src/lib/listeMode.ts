@@ -1,8 +1,9 @@
 import { createModeStore } from './surfaceMode'
 
-// « La liste » — SIMPLE (default) vs AVANCÉ, one device-local flag. The same shape
-// and the same reasoning as [[notesMode]] (src/lib/notesMode.ts), deliberately: two
-// lists that behave the same way should be learned once.
+// « La liste » — SIMPLE (default) vs AVANCÉ, one device-local flag. « Les notes »
+// used to share this exact shape/reasoning (two lists that behave alike should be
+// learned once) but dropped its own flag entirely on 2026-09-04 — see
+// surfaceMode.ts's header for why that's a legitimate outcome, not a drift.
 //
 // SIMPLE is the shopping face. A row is a picture, a name and a check — nothing
 // else competing for the thumb in a grocery aisle. Editing is still one gesture

@@ -19,11 +19,6 @@ export function boot(device: { w: number; h: number }) {
     await installVvStub(page)
     await mockApi(page, opts)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-    // The three note-editor keyboard cases reach the editor through « Nouvelle note »,
-    // which is ADVANCED-mode chrome (« Les notes » defaults to its lean reading face,
-    // lib/notesMode). Harmless everywhere else — it is one localStorage flag on a page
-    // that has no notes UI.
-    await page.addInitScript(() => localStorage.setItem('babillard-notes-advanced', '1'))
     await page.goto(path)
     await page.locator('.hub, .page').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   }

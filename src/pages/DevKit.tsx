@@ -1466,15 +1466,14 @@ export function DevKit() {
       cat: 'Saisie',
       name: 'CercleNotes',
       file: 'components/cercle/CercleNotes.tsx',
-      kw: 'cercle famille notes recommandations iOS quick note moi maisonnée self family scope media simple avancé lean advanced',
+      kw: 'cercle famille notes recommandations iOS quick note moi maisonnée self family scope media',
       render: () => (
         // « Les notes »: iOS-Notes-style quick notes scoped to a member ("Moi") or the
         // whole Maisonnée. Reads the live family-notes query (empty here) + the face
-        // control to scope by. The specimen renders in whichever face THIS device is
-        // set to (lib/notesMode) — flip it with the « Simple / Avancé » chip in the
-        // bar to see both: simple is the lean default (no header, compact rows, a
-        // text-only composer), advanced is the pre-lean tab.
-        <Demo label="Quick notes scoped to Moi / Maisonnée — simple (default) or advanced">
+        // control to scope by. ONE face (2026-09-04): a "..." on every row, a tap
+        // opens the note straight in NoteEditor, and the ＋ FAB (elsewhere in the app)
+        // opens a blank one the same way.
+        <Demo label="Quick notes scoped to Moi / Maisonnée — tap a row to open it">
           <CercleNotes members={DEMO_MEMBERS} />
         </Demo>
       ),
@@ -1496,14 +1495,14 @@ export function DevKit() {
         // « Les notes » and the board card's header ＋. The scope follows the face passed in:
         // a member id → a personal note, null → a Maisonnée one.
         <>
-          <Demo label="Quick « note rapide » composer (one write: text + memo)">
-            <NoteQuickAdd memberId={null} className="cercle-notes__composer card" />
+          <Demo label="Quick « note rapide » composer (one write: text + memo) — the ＋ FAB's long-press sheet">
+            <NoteQuickAdd memberId={null} className="card" />
           </Demo>
-          {/* LEAN — « Les notes »' default composer: text alone, Enter writes it.
-              The mic + 📎 didn't vanish, they live in the ＋ FAB's sheet composer
-              (the un-leaned one above). */}
-          <Demo label="lean — text only, Enter commits (« Les notes » default)">
-            <NoteQuickAdd memberId={null} lean className="cercle-notes__composer" />
+          {/* LEAN — the board's « Notes (cercle) » card composer: text alone, Enter
+              writes it. The mic + 📎 didn't vanish, they live in the ＋ FAB's
+              long-press sheet composer (the un-leaned one above). */}
+          <Demo label="lean — text only, Enter commits (board card composer)">
+            <NoteQuickAdd memberId={null} lean className="card" />
           </Demo>
         </>
       ),
@@ -1512,12 +1511,13 @@ export function DevKit() {
       cat: 'Saisie',
       name: 'NoteEditor',
       file: 'components/cercle/NoteEditor.tsx',
-      kw: 'note editor rich text markdown bold italic strike heading bullet numbered checklist quote title full screen cercle famille attachment',
+      kw: 'note editor rich text markdown bold italic strike heading bullet numbered checklist quote full screen cercle famille attachment tiptap prosemirror',
       render: () => (
-        // Full-screen iOS-Notes-style editor (#richnotes): optional title + Markdown body
-        // (bold/italic/strike, headings, bullets/numbered/checklists, quote) + one photo/
-        // drawing attachment. Reused for new + modify; auto-saves on close.
-        <Demo label="Full-screen rich note editor (title + Markdown + attachment)">
+        // Full-screen iOS-Notes-style editor (#richnotes): Markdown body (bold/italic/
+        // strike, headings, bullets/numbered/checklists, quote) + one photo/drawing
+        // attachment. No title field — the first line IS the title. Reused for new +
+        // modify; auto-saves on close.
+        <Demo label="Full-screen rich note editor (Markdown + attachment)">
           <NoteEditorDemo />
         </Demo>
       ),

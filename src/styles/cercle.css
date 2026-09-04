@@ -1200,38 +1200,12 @@
 .cercle-notes__face {
   margin: 0.2rem 0 0.8rem;
 }
-.cercle-notes__composer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  margin-bottom: 1rem;
-  padding: 0.7rem;
-  border-radius: var(--radius-md, 14px);
-}
-.cercle-notes__composer.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-sm);
-}
-/* LEAN composer (simple mode): no card frame, no padding of its own — the field IS
-   the composer, so every pixel of width goes to the text being typed. */
-.cercle-notes--lean .cercle-notes__composer {
-  margin-bottom: 0.7rem;
-  padding: 0;
-}
-/* AVANCÉ only — the door to the rich editor (title, formatting, attachment). Simple
-   mode reaches it through a row's pencil; the ＋ FAB writes the quick note. */
-.cercle-notes__new {
-  align-self: flex-start;
-  margin-bottom: 0.9rem;
-}
-
-/* --- The one control bar: whose notes · loupe · mode, in that order ----------- */
-/* All three sit TOGETHER at the start of the row (no space-between pushing the face
-   away from the loupe): picking a face and typing a query are the same "narrow what
-   I'm looking at" job, so they read as one group. A .cluster (Layout's Cluster), so
-   it wraps on a narrow phone instead of bleeding off the right edge — never a
-   hand-rolled flex row. */
+/* --- The one control bar: whose notes · loupe, in that order ------------------ */
+/* Both sit TOGETHER at the start of the row (no space-between pushing the face away
+   from the loupe): picking a face and typing a query are the same "narrow what I'm
+   looking at" job, so they read as one group. A .cluster (Layout's Cluster), so it
+   wraps on a narrow phone instead of bleeding off the right edge — never a hand-
+   rolled flex row. */
 .cercle-notes__bar {
   align-items: center;
   margin: 0.2rem 0 0.7rem;
@@ -1249,44 +1223,28 @@
   flex: 0 1 auto;
   min-width: 0;
 }
-.cercle-notes__tools {
-  align-items: center;
-  gap: 0.4rem;
-}
-/* Inside the bar the tools are ONE flex item beside the face, and a nested flex
-   container reports its max-content width — an <input>'s default ~20-character
-   preference — which on a 390px phone was wide enough to bump the whole group onto
-   a second line, under the face. An explicit small basis (it still grows into the
-   spare room) keeps the face and the loupe on the same line where they belong. */
-.cercle-notes__bar .cercle-notes__tools {
-  flex: 1 1 8rem;
-  min-width: 0;
-}
-/* The section's SearchField (the shared primitive, collapsible in simple mode): it
-   GROWS into whatever the row has spare, but its basis stays SMALL (6rem, not 12rem).
-   A wrapping flex row breaks the line on the items' basis — it never shrinks first to
-   avoid a wrap — so a 12rem basis dropped the whole tools group under the face chip on
-   a 390px phone, which is the very "face beside the loupe" pairing this bar exists to
-   keep. The input already carries min-width:0, so shrinking below the basis is safe. */
+/* The section's SearchField (the shared primitive, collapsible): it GROWS into
+   whatever the row has spare, but its basis stays SMALL (6rem, not 12rem). A
+   wrapping flex row breaks the line on the items' basis — it never shrinks first to
+   avoid a wrap — so a 12rem basis dropped it under the face chip on a 390px phone,
+   which is the very "face beside the loupe" pairing this bar exists to keep. The
+   input already carries min-width:0, so shrinking below the basis is safe. */
 .cercle-notes__search.searchfield {
   flex: 1 1 6rem;
   min-width: 0;
   margin: 0;
 }
-/* SIMPLE ↔ AVANCÉ moved to styles/kit.css as `.mode-toggle` (components/ModeToggle)
-   when « La liste » grew the same control: this sheet is imported LAZILY by the
-   cercle/notes pages, so the class rendered as an unstyled box anywhere else. */
 /* --- iOS-Notes-style list ----------------------------------------------------
    The Notes tab reads like the iOS Notes app, NOT the board's sticky-note wall: one
    rounded card of clean, scannable rows (bold first line + a quiet "date · preview"),
    each easy to read, edit, and delete. Its search box is the shared SearchField
    (styles/kit.css .searchfield) — the hand-rolled .cnote-search family it used to
    carry was that same control, drifting on its own. */
-/* The .cnote row family (list, rows, expand, actions) + the audio-memo rename
-   dialog moved to the EAGER shell — styles/board/cnote-list.css — because the
-   shared NotesList also renders on the board's « Notes (cercle) » glance card
-   (B-11: this file is lazy). The cercle-only chrome (search, composer, empty
-   state) stays here. */
+/* The .cnote row family (list, rows, expand/open, "..." actions) + the audio-memo
+   rename dialog moved to the EAGER shell — styles/board/cnote-list.css — because
+   the shared NotesList also renders on the board's « Notes (cercle) » glance card
+   (B-11: this file is lazy). The cercle-only chrome (search, empty state) stays
+   here. */
 .cercle-notes__empty {
   color: var(--ink-soft);
   text-align: center;

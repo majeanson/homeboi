@@ -116,7 +116,7 @@ test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/m
   await expect(page.locator('.search__row[href="/voyage/tr1"]').first()).toBeVisible()
 })
 
-test('a family-note hit deep-links to the note and expands it', async ({ page }) => {
+test('a family-note hit deep-links to the note and pulses its row', async ({ page }) => {
   // « Les notes » is its own hub tab now (split out of Le cercle) — the hit links
   // straight to /notes?item=<id>.
   await page.goto('/search')
@@ -128,8 +128,11 @@ test('a family-note hit deep-links to the note and expands it', async ({ page })
 
   await expect(page).toHaveURL(/\/notes/)
   await expect(page).not.toHaveURL(/item=/)
-  // Highlighted on arrival (transient — assert first), then expanded in place (persists).
+  // Highlighted on arrival, scrolled into view — but NOT auto-opened: the row
+  // doesn't expand in place any more (2026-09-04, `openOnTap`), and a search hit
+  // landing you straight in the full-screen editor unasked would be a surprise.
   await expect(page.locator('.cnote.is-focus')).toBeVisible()
-  await expect(page.locator('.cnote.cnote--expanded')).toBeVisible()
-  await expect(page.getByText('porc haché')).toBeVisible()
+  await expect(page.locator('.cnote.cnote--expanded')).toHaveCount(0)
+  await expect(page.locator('.note-editor')).toHaveCount(0)
+  await expect(page.getByText('Recette de tourtière')).toBeVisible()
 })

@@ -7,62 +7,58 @@ import { live } from '../../lib/query'
 import { useProfile } from '../../lib/profile'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, type NoteScope, visibleNotes } from '../../lib/familyNotes'
-import { ModeToggle } from '../ModeToggle'
 import type { Member } from '../../lib/cercle'
 import { isGuest } from '../../lib/device'
 import { useSurface } from '../../lib/surface'
-import { useNotesAdvanced, setNotesAdvanced } from '../../lib/notesMode'
-import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { SearchField } from '../SearchField'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { NoteEditor } from './NoteEditor'
-import { NoteQuickAdd } from './NoteQuickAdd'
 import { NotesList } from './NotesList'
-import { type HelpMode } from '../../lib/helpMode'
 
 // « Les notes » — iOS-Notes-style notes scoped to ONE household member (the "Moi" list)
 // or the whole Maisonnée (family-wide). A picked face (the device profile) sees THEIR
 // personal notes PLUS the Maisonnée notes always; "Maisonnée" sees only the family-wide
 // ones (decision 3). The scope is resolved PURELY from the picked face.
 //
-// TWO FACES, one device flag (lib/notesMode) — the whole section leans on it:
-//
-//   SIMPLE (default) — maximum note per pixel. A small face CHIP on every surface, a
-//     collapsed 🔍 that expands on tap, one wide text box where Enter writes the note
-//     (no mic, no 📎, no « Ajouter » button — those live in the ＋ FAB's composer,
-//     bottom right), and the board card's COMPACT rows, keeping only the pencil/trash
-//     so a note can still be edited or deleted from here.
-//   AVANCÉ — what the tab used to be: the kiosk face ROW, the mic + attachment in the
-//     composer, « Nouvelle note » into the rich editor, and the roomy rows (grip +
-//     drag-reorder, tint dot, scope chip).
+// ONE face — no Simple/Avancé toggle any more. It used to fork into a lean reading
+// face and a roomy managing one; once the ＋ always opens the real editor, "..." lives
+// on every row and tapping a note opens it directly, the only things the split still
+// bought were density (grip/tint dot/scope chip) and an always-open search box — and
+// the density need is already served by the board's own compact "Notes (cercle)" card
+// (`CercleNotesCard`, unchanged). So the page is just iOS Notes: kiosk gets the
+// always-visible face row (it's a wall tablet), mobile gets the compact chip; the
+// loupe stays collapsible everywhere (LEAN.md); rows are roomy with a "..." menu.
 //
 // NEITHER face carries a section title/subtitle: the hub header already says
 // « Les notes » with the same icon, and the old subtitle just restated the composer's
 // placeholder.
 //
+// Creating a note is always via the ＋ FAB, which opens NoteEditor directly (see
+// FORM_ROUTES['cnote'] in lib/addSheet.tsx) — no inline composer on this page any
+// more. Voice capture isn't lost: a LONG-press on the ＋ still opens the quick
+// NoteQuickAdd sheet with the mic armed (VOICE_MODES.notes, untouched); photo/drawing
+// attachment lives inside the editor itself.
+//
 // The ROWS themselves are the shared NotesList — the board's « Notes (cercle) » card
 // renders the same list. This component keeps what's section-only: the face row, the
-// composer, the search box, the mode toggle, and hosting the NoteEditor.
+// search box, and hosting the NoteEditor.
 export function CercleNotes({
   members,
-  help,
   // A global-search hit deep-links to a specific note via ?item=<id> (§892): switch the
-  // face so the note is visible; NotesList then expands + scrolls + pulses it and
-  // onFocused lets the parent clear its one-shot focus.
+  // face so the note is visible; NotesList then scrolls + pulses it and onFocused
+  // lets the parent clear its one-shot focus.
   focusId,
   onFocused,
-  // The « Nouvelle note » door (/notes?add=1): open the rich editor composing a NEW
-  // note. A NONCE, not a boolean — every bump opens it once. A boolean read on mount
-  // only would work the first time and then go dead, because landing on /notes?add=1
+  // The ＋ FAB's door (/notes?add=1): open the rich editor composing a NEW note. A
+  // NONCE, not a boolean — every bump opens it once. A boolean read on mount only
+  // would work the first time and then go dead, because landing on /notes?add=1
   // while already ON /notes is a same-route navigation: the search param changes, the
   // page never remounts. See the Notes page for the other half.
   composeNonce = 0,
 }: {
   members: Member[]
-  // Optional shared help mode (the page's) so the header + mode toggle are explainable.
-  help?: HelpMode
   focusId?: string | null
   onFocused?: () => void
   composeNonce?: number
@@ -70,10 +66,6 @@ export function CercleNotes({
   const t = useT()
   const { surface } = useSurface()
   const ro = isGuest()
-  // Device-local presentation flag — NOT a household write, so a guest may flip it
-  // (CLAUDE.md: gating a localStorage pref on isGuest is what hid whole features
-  // from the demo). See lib/notesMode.
-  const advanced = useNotesAdvanced()
 
   // The acting face for the section: whose notes to show, and the scope for a new note.
   // It IS the device profile (lib/profile), shared with the board's « Aujourd'hui » row
@@ -165,29 +157,26 @@ export function CercleNotes({
   const searchable = visible.length > 0 || query.trim() !== ''
 
   return (
-    <section className={'cercle-notes' + (advanced ? ' cercle-notes--advanced' : ' cercle-notes--lean')}>
-      {/* No section header in EITHER face. The hub header above already says
-          « Les notes » with the same icon, and the subtitle only repeated what the
-          empty composer's placeholder says — so advanced was spending two lines
-          before a single note to say what the page already said. (The explanation
-          itself isn't lost: the guide card « notes » still carries it, reachable
-          from the page's SectionIntro / HubHead.) */}
+    <section className="cercle-notes">
+      {/* No section header. The hub header above already says « Les notes » with the
+          same icon. (The explanation isn't lost: the guide card « notes » still
+          carries it, reachable from the page's SectionIntro / HubHead.) */}
 
-      {/* The one control bar: whose notes, then the tools right beside it — the face
-          and the loupe are the same "narrow what I'm looking at" pair, so they read
+      {/* The one control bar: whose notes, then the loupe right beside it — the face
+          and the search are the same "narrow what I'm looking at" pair, so they read
           as one group instead of being pushed to opposite edges. A Cluster (never a
           hand-rolled flex row) so it wraps instead of bleeding off a narrow phone. */}
       <Cluster className="cercle-notes__bar">
         {/* Whose notes — Maisonnée + each member, driving the SAME device profile as
-            the board's « Aujourd'hui » row. Advanced keeps the always-in-view face ROW
-            on a kiosk wall; simple is the small chip everywhere (Marc's ask: "only a
-            small toggle with faces"). This one control also decides a new note's scope:
-            a face → a personal note, Maisonnée → family-wide. */}
+            the board's « Aujourd'hui » row. Kiosk (a wall tablet) gets the always-
+            visible face ROW; mobile gets the small chip. This one control also
+            decides a new note's scope: a face → a personal note, Maisonnée →
+            family-wide. */}
         {/* Named « Pour qui » (the existing key, same words the editor's scope picker
             uses), not the old section title: with the header gone, that title was
             still being announced here — and "Notes & recommandations" never described
             a face picker anyway. */}
-        {advanced && surface === 'kiosk' ? (
+        {surface === 'kiosk' ? (
           <MemberSwitcher faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.forWhom} />
         ) : (
           <div className="cercle-notes__face">
@@ -195,65 +184,31 @@ export function CercleNotes({
           </div>
         )}
 
-        <Cluster className="cercle-notes__tools">
-          {/* The shared SearchField, in its COLLAPSIBLE face: a small loupe until
-              it's asked for, then the field in place. Advanced keeps it open, which
-              is what the tab always did. One primitive, not a second hand-rolled
-              "magnifier + input + ✕" row. */}
-          {searchable && (
-            <SearchField
-              className="cercle-notes__search"
-              value={query}
-              onChange={setQuery}
-              collapsible={!advanced}
-              placeholder={fn.search}
-              ariaLabel={fn.search}
-            />
-          )}
-
-          {/* SIMPLE ↔ AVANCÉ — icon only, like the loupe beside it: the mode is a
-              rare, once-a-household choice, not a label worth a word on every visit.
-              Its state is the lit pill (aria-pressed for AT), and the tooltip/aria
-              name says which way the next tap goes. Device-local, so a guest gets it. */}
-          <ModeToggle
-            advanced={advanced}
-            onToggle={help ? help.pick('mode', () => setNotesAdvanced(!advanced)) : () => setNotesAdvanced(!advanced)}
-            toSimple={fn.modeToSimple}
-            toAdvanced={fn.modeToAdvanced}
-            tint="var(--teal-deep, #2a8f85)"
+        {/* The shared SearchField, COLLAPSIBLE: a small loupe until it's asked for,
+            then the field in place — a permanently open field is a row of furniture
+            above notes you can usually just see (LEAN.md). */}
+        {searchable && (
+          <SearchField
+            className="cercle-notes__search"
+            value={query}
+            onChange={setQuery}
+            collapsible
+            placeholder={fn.search}
+            ariaLabel={fn.search}
           />
-        </Cluster>
+        )}
       </Cluster>
-      {help?.bubbleFor('mode')}
 
-      {/* The composer. Simple: text only, Enter writes it — the quickest possible
-          path from a thought to a note. The mic and the 📎 attachment moved to the
-          ＋ FAB (bottom right), which opens this very same component un-leaned.
-          Advanced keeps them inline, plus « Nouvelle note » into the rich editor. */}
-      {!ro && (
-        <NoteQuickAdd
-          memberId={face}
-          lean={!advanced}
-          className={'cercle-notes__composer' + (advanced ? ' card' : '')}
-        />
-      )}
-      {!ro && advanced && (
-        <button type="button" className="btn btn--ghost cercle-notes__new" onClick={openNew}>
-          <Icon name="plus-bold" size={16} /> {fn.newNote}
-        </button>
-      )}
-
-      {/* The rows. Simple wears the board card's COMPACT face outright — no grip, no
-          tint dot, no scope chip, and NO pencil/trash either: reading is the whole job,
-          so the row spends every pixel on the note itself (several lines of it). Acting
-          on a note — edit, delete, reorder — is what AVANCÉ is for, one tap away on the
-          ⚙ beside the loupe. Grips drop while a search narrows the list: reordering a
-          filtered subset would scramble what the drag pins. */}
+      {/* The rows. iOS-Notes style: tapping a note opens it straight in the editor
+          (`openOnTap`) — no expand-in-place, no separate pencil, the editor IS the
+          detail view. "..." (in NotesList) offers Supprimer. Grips drop while a
+          search narrows the list: reordering a filtered subset would scramble what
+          the drag pins. */}
       <NotesList
         notes={visible}
         faces={faces}
         readOnly={ro}
-        compact={!advanced}
+        openOnTap
         canReorder={query.trim() === ''}
         onEdit={openEdit}
         focusId={focusId}

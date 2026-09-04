@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { seedMd, type FamilyNote } from './familyNotes'
 
-// « Les notes » in SIMPLE mode has no title field — the note's first words ARE its
-// title (iOS style), and the save writes an empty one. So an existing note whose
-// title lives in its own column must have that title FOLDED INTO the body when the
-// editor opens, or closing the editor would silently drop it.
+// « Les notes » has no title field — the note's first words ARE its title (iOS
+// style), and the save always writes an empty one. So a note carrying a LEGACY
+// stored title (from before that field was removed) must have that title FOLDED
+// INTO the body when the editor opens, or closing it would silently drop it.
 
 const note = (title: string, text: string): FamilyNote => ({
   id: 'n1',
@@ -20,33 +20,28 @@ const note = (title: string, text: string): FamilyNote => ({
   updated_at: 0,
 })
 
-describe('seedMd — the simple-mode title fold', () => {
-  it('leaves the body untouched in advanced mode (the title field still owns it)', () => {
-    expect(seedMd(note('Courses', 'lait\noeufs'), true)).toBe('lait\noeufs')
-  })
-
+describe('seedMd — the legacy-title fold', () => {
   it('folds a stored title in as the first line — nothing is lost on save', () => {
-    expect(seedMd(note('Courses', 'lait\noeufs'), false)).toBe('Courses\nlait\noeufs')
+    expect(seedMd(note('Courses', 'lait\noeufs'))).toBe('Courses\nlait\noeufs')
   })
 
   it('is idempotent: a title already leading the body is never doubled', () => {
-    expect(seedMd(note('Courses', 'Courses\nlait'), false)).toBe('Courses\nlait')
+    expect(seedMd(note('Courses', 'Courses\nlait'))).toBe('Courses\nlait')
   })
 
   it('ignores blank lines when deciding whether the title already leads', () => {
-    expect(seedMd(note('Courses', '\n\nCourses\nlait'), false)).toBe('\n\nCourses\nlait')
+    expect(seedMd(note('Courses', '\n\nCourses\nlait'))).toBe('\n\nCourses\nlait')
   })
 
   it('a title-only note becomes a one-line body (no trailing blank line)', () => {
-    expect(seedMd(note('Courses', '   '), false)).toBe('Courses')
+    expect(seedMd(note('Courses', '   '))).toBe('Courses')
   })
 
   it('an untitled note is passed straight through', () => {
-    expect(seedMd(note('', 'lait'), false)).toBe('lait')
+    expect(seedMd(note('', 'lait'))).toBe('lait')
   })
 
   it('a brand-new note (no note at all) starts empty', () => {
-    expect(seedMd(null, false)).toBe('')
-    expect(seedMd(null, true)).toBe('')
+    expect(seedMd(null)).toBe('')
   })
 })

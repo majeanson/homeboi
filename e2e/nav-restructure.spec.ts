@@ -133,31 +133,36 @@ test.describe('toddler lens split (Maison vs Les notes)', () => {
   })
 })
 
-test('the ＋ on /notes drops straight into the quick composer — no chooser', async ({ page }) => {
-  // /notes carries a single add-mode ('cnote'), so the sheet has no tiles to choose
-  // between and opens ON the composer (AddSheet's defMode). The ＋ is also the one
-  // place that still carries the mic + 📎 attachment, now that the section's own
-  // composer is text-only (lib/notesMode — the lean default).
+test('the ＋ on /notes opens a blank note directly — no sheet, no chooser', async ({ page }) => {
+  // /notes carries a single add-mode ('cnote'), but it's in FORM_ROUTES (2026-09-04:
+  // iOS-Notes style) — so a tap NAVIGATES to /notes?add=1 and opens the full-screen
+  // NoteEditor, never the sheet. Holding the ＋ still opens the quick voice/text/📎
+  // composer (VOICE_MODES, see fab-hold-voice.spec.ts) — that door didn't move.
   await boot(page)
   await page.goto('/notes')
   await page.locator('.add-fab').click()
-  const sheet = page.locator('.sheet.show')
-  await expect(sheet).toBeVisible()
-  await expect(sheet.locator('.cat-pick')).toHaveCount(0) // no chooser tiles
-  const field = sheet.locator('.edit-field__input').first()
-  await expect(field).toBeVisible()
-  // The mic + 📎 the page's lean composer no longer shows.
-  await expect(sheet.locator('.edit-field__box button')).not.toHaveCount(0)
+  await expect(page.locator('.sheet.show')).toHaveCount(0)
+  const editor = page.locator('.note-editor')
+  await expect(editor).toBeVisible()
+  await expect(editor.locator('.note-editor__title')).toHaveCount(0) // no title field, ever
+  await expect(editor.locator('.note-editor__toggle')).toHaveCount(0) // no BETA chip, ever
 
-  // Enter writes the note and closes the sheet — the quickest path there is.
-  await field.fill('Rapport de la piscine')
-  await field.press('Enter')
-  await expect(sheet).toBeHidden()
+  // Closing (back arrow) auto-saves what was typed — no Cancel, iOS-Notes style.
+  await editor.locator('.note-tiptap').click()
+  await page.keyboard.type('Rapport de la piscine')
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.url().includes('/api/family-notes') && r.method() === 'POST'),
+    page.locator('.note-editor__back').click(),
+  ])
+  const posted = JSON.parse(req.postData() || '{}')
+  expect(posted.text).toBe('Rapport de la piscine')
+  expect(posted.title).toBe('') // derived from the first line, never stored
+  await expect(page.locator('.note-editor')).toHaveCount(0)
 })
 
 test('/notes?add=1 still opens the rich editor — every time, not just once', async ({ page }) => {
-  // The rich-editor door survives as a URL (advanced mode's « Nouvelle note » and any
-  // deep-link out in the wild use it); the ＋ FAB just no longer routes through it.
+  // The rich-editor door survives as a URL (a stray deep-link out in the wild), and
+  // it's what the ＋ FAB itself now navigates to on every tap.
   await boot(page)
   await page.goto('/notes?add=1')
   await expect(page.locator('.note-editor')).toBeVisible()

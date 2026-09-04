@@ -1118,7 +1118,7 @@ Exact per-feature mapping of the three discovery channels. Sources:
 | F22 Groupes            | ✅ `cercle` pt 8                      | ✅ add:`group`; cercle:`namedGroup`,`editGroup`,`deleteGroup`,`social`; operator:`cercleGroups`                                       | ➖ᵀ                                         |
 | F23 Animaux            | ✅ `cercle` pt 1                      | ✅ add:`pet`                                                                                                                          | ➖ᵀ                                         |
 | F24 Business           | ✅ `cercle` pt 11                     | ✅ add:`business`; cercle:`business`                                                                                                  | ➖ᵀ                                         |
-| F25 Notes du cercle    | ✅ `cercle` pt 10                     | ✅ notes:`mode`,`search`ᴺ                                                                                                                     | ➖ᵀ                                         |
+| F25 Notes du cercle    | ✅ `cercle` pt 10                     | ✅ notes:`search`ᴺ                                                                                                                     | ➖ᵀ                                         |
 | F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets`                                                                                                                   | ➖ᵀ                                         |
 | F27 Notre monde        | ✅ `cercle` pt 7                      | ✅ cercle:`monde`                                                                                                                     | ✅ cercle:`cercle-world`                   |
 | F28 Routines           | ✅ `routines` + `set-chores`          | ✅ add:`routine`; routines:`card`; operator:`calm`                                                                                    | ✅ routines: 4 steps                       |
@@ -1139,6 +1139,8 @@ reading — all of it stale cells, not new work:
   `IdeasPage card="kitchen"`, `VoyagePage card="voyage"`). The prose below already
   said this; the cells hadn't caught up.
 - **F25 Notes du cercle** — cited `cercle:notes`, a key that no longer exists (ᴺ).
+  2026-09-04: the `notes:mode` help key is gone too — the Simple/Avancé toggle it
+  explained was dropped (tap-to-edit + "..." made both faces redundant).
 - **F29 / F30** — toddler surfaces, ➖ᵀᵒ by design, not gaps.
 
 Remaining genuine partials, both 🔶 and both about the GUIDE column, not help:

@@ -109,7 +109,6 @@ function NotesParent() {
 
       <CercleNotes
         members={members}
-        help={help}
         focusId={focusItem}
         onFocused={() => setFocusItem(null)}
         composeNonce={composeNonce}

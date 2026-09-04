@@ -59,6 +59,18 @@ test.describe('hold the ＋ to speak', () => {
     await expect(page.locator('.sheet.show > .cat-grid')).toHaveCount(0)
   })
 
+  test('a hold on /notes opens the quick composer, not the blank editor', async ({ page }) => {
+    // A plain TAP on the Notes ＋ navigates straight to a blank note (FORM_ROUTES.cnote,
+    // nav-restructure.spec.ts) — the ONE door this hold still needs to reach, since
+    // that full editor has no mic. `VOICE_MODES.notes` bypasses FORM_ROUTES entirely.
+    await page.goto('/notes')
+    await hold(page)
+    await expect(page.locator('.note-editor')).toHaveCount(0)
+    const sheet = page.locator('.sheet.show')
+    await expect(sheet).toBeVisible()
+    await expect(sheet.locator('.edit-field').first()).toBeVisible()
+  })
+
   test('a hold on Maison keeps its ordinary meaning', async ({ page }) => {
     // Every Maison add is a structured entity a sentence of speech can't fill,
     // so there is no voice mode and the hold falls through to the plain chooser.

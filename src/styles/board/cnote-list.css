@@ -1,10 +1,12 @@
 /* The shared cercle-notes ROW LIST (components/cercle/NotesList) — the iOS-Notes
-   grouped rows: bold first line + a quiet "date · preview", expand-to-read in place,
-   pencil/trash, hold-to-drag grip. Moved OUT of styles/cercle.css (which is lazy,
-   B-11) because the board's « Notes (cercle) » glance card renders these rows on the
-   EAGER Board — same reasoning as board/carnets-card.css. Uniquely-named .cnote-*
-   classes, so cascade position is immaterial. The cercle-only chrome (search box,
-   composer, empty state) stayed in cercle.css. */
+   grouped rows: bold first line + a quiet "date · preview", a "..." menu, hold-to-
+   drag grip. On the Notes PAGE a tap opens the note straight in the editor
+   (`openOnTap`); the board's glance card instead expands-to-read in place. Moved
+   OUT of styles/cercle.css (which is lazy, B-11) because the board's « Notes
+   (cercle) » glance card renders these rows on the EAGER Board — same reasoning as
+   board/carnets-card.css. Uniquely-named .cnote-* classes, so cascade position is
+   immaterial. The cercle-only chrome (search box, empty state) stayed in
+   cercle.css. */
 
 /* One rounded card, hairline dividers between rows — the iOS grouped-list look. */
 .cnote-list {
@@ -105,6 +107,7 @@
   min-width: 0;
 }
 .cnote__title {
+  min-width: 0;
   font-size: 1rem;
   font-weight: 600;
   color: var(--ink);
@@ -135,6 +138,7 @@
   line-height: 1.5;
 }
 .cnote__meta {
+  min-width: 0;
   font-size: 0.8rem;
   color: var(--ink-faint);
   overflow: hidden;
@@ -152,9 +156,10 @@
   border-radius: var(--radius-pill);
   white-space: nowrap;
 }
-/* The ✏️/🗑 pair is the shared RowActions (`.row-actions`, styles/pages/operator.css
-   — 44px targets); this class only pins it in the flex row. The hand-rolled 32px
-   `.cnote__act` twins were retired for it (ACTIONS.md Wave B). */
+/* The "..." is the shared ActionMenu (`.action-menu`, components/ActionMenu.tsx);
+   this class only pins its trigger in the flex row. Replaced the hand-rolled 32px
+   `.cnote__act` twins, then the shared `RowActions` pencil/trash pair after that
+   (ACTIONS.md Wave B, then 2026-09-04). */
 .cnote__actions {
   flex: none;
 }
@@ -223,55 +228,18 @@
   padding-right: 0.15rem;
 }
 /* COMPACT (the board glance, NotesList `compact`): no grip / text-dot / chip /
-   pencil / trash in the DOM, so the CSS side just shrinks the frame and moves the
-   author tint onto the TITLE (the same "who = text colour" rule as the todo and
-   liste rows — member colours stay distinct via nextFreeColour). */
+   "..." in the DOM, so the CSS side just shrinks the frame and moves the author
+   tint onto the TITLE (the same "who = text colour" rule as the todo and liste
+   rows — member colours stay distinct via nextFreeColour). The Notes PAGE never
+   renders `compact` any more (2026-09-04: it dropped the simple/lean face), so
+   these rules are board-card-only now. */
 .cnote-list--compact .cnote {
   gap: 0.45rem;
   padding-top: 0.4rem;
   padding-bottom: 0.4rem;
 }
-/* The notes PAGE gives its rows a touch more air than the board tile — they carry
-   three lines of note each now, not a one-line teaser. */
-.cercle-notes .cnote-list--compact .cnote {
-  padding-top: 0.55rem;
-  padding-bottom: 0.6rem;
-}
 .cnote-list--compact .cnote__title {
   color: color-mix(in srgb, var(--note-tint) 62%, var(--ink) 38%);
-}
-/* ON THE NOTES PAGE ONLY (`.cercle-notes`, simple mode): with no grip / dot /
-   chip / pencil / trash left, the row has width AND height to spare — so spend it
-   on the note. The preview stops being a single clipped line and WRAPS to three,
-   clamped so one long note still can't eat the list (tap it to read the rest in
-   place). Deliberately NOT on the board's glance card, which is a tile that must
-   stay a glance — there the one-line teaser is the point. */
-/* Same reasoning for the heading: a note with no explicit title borrows the body's
-   first line, and clipping that to one line hid the whole note behind an ellipsis.
-   Let it wrap to two, caret pinned to the first line. */
-.cercle-notes .cnote-list--compact .cnote__titlerow {
-  align-items: flex-start;
-}
-.cercle-notes .cnote-list--compact .cnote__title {
-  white-space: normal;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
-}
-.cercle-notes .cnote-list--compact .cnote__caret {
-  margin-top: 0.15rem;
-}
-.cercle-notes .cnote-list--compact .cnote__meta {
-  white-space: normal;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  overflow: hidden;
-  text-overflow: unset;
 }
 /* Shared Markdown render (renderNoteBody) — the note rows' expanded view on BOTH the
    board card and Le cercle, plus the editor preview. Eager for the same reason as the
@@ -354,8 +322,9 @@
 }
 
 /* The header ＋'s quick composer, opened in place on the card (the shared
-   NoteQuickAdd — same field as the Notes tab's). Eager, like the rows above it:
-   the board renders it without ever loading the lazy cercle.css. */
+   NoteQuickAdd — also what a long-press on the Notes tab's own ＋ FAB opens).
+   Eager, like the rows above it: the board renders it without ever loading the
+   lazy cercle.css. */
 .cnotes-card__composer {
   margin: 0 0 0.6rem;
 }
@@ -380,8 +349,8 @@
    above: the board's « Notes (cercle) » card opens this editor, and on a session
    that never visited Le cercle the lazy chunk has not loaded — the fixed, full-
    screen dialog then paints as unstyled inline flow while useModal still locks the
-   page scroll, which reads as a frozen app. Uniquely-named .note-editor* / .ne-*
-   classes, so cascade position is immaterial. */
+   page scroll, which reads as a frozen app. Uniquely-named .note-editor* / .note-
+   tiptap classes, so cascade position is immaterial. */
 /* Full-screen editor — mirrors DrawPad's shell (portal + useModal). */
 .note-editor {
   position: fixed;
@@ -419,29 +388,6 @@
   font-weight: 700;
   font-size: 1rem;
   color: var(--ink);
-}
-/* The header's « BETA » chip — flips the editing surface to TipTap and back. */
-.note-editor__toggle {
-  flex: none;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--card);
-  color: var(--ink-soft);
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-.note-editor__toggle.is-on {
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, var(--card));
-  color: var(--ink);
-}
-.note-editor__title {
-  margin: 0.6rem 0.8rem 0;
-  /* .input sets width:100%; with the side margins that's 1.6rem past the right
-     edge (X overflow the shell's overflow:hidden then clips). Make room for them. */
-  width: calc(100% - 1.6rem);
-  font-size: 1.15rem;
-  font-weight: 700;
 }
 .note-editor__scope {
   display: flex;
@@ -532,97 +478,16 @@
   line-height: 1.55;
   outline: none;
   padding: 0.2rem 0 1rem;
-  counter-reset: ne;
   /* Mirror the read view (.note-md): a long unbroken word/URL wraps instead of
      overflowing — .note-editor is overflow:hidden, so an unwrapped line would be
-     silently clipped. `anywhere` also lets the flex list-rows (.ne-check/.ne-bullet/
-     .ne-number) shrink so their text can't push past the right edge. */
+     silently clipped. `anywhere` also lets a checklist/bullet/numbered row shrink
+     so its text can't push past the right edge. */
   overflow-wrap: anywhere;
 }
 .note-editor__body[data-empty='true']::before {
   content: attr(data-placeholder);
   color: var(--ink-faint);
   pointer-events: none;
-}
-/* Formatted blocks inside the editor (mirror the read-view .note-md look). */
-.note-editor__body > h3 {
-  font-size: 1.2rem;
-  font-weight: 800;
-  margin: 0.2rem 0;
-}
-.note-editor__body > h4 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin: 0.2rem 0;
-}
-.note-editor__body > .ne-quote {
-  padding-left: 0.7rem;
-  border-left: 3px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 40%, var(--line));
-  color: var(--ink-soft);
-  font-style: italic;
-}
-.note-editor__body > .ne-bullet,
-.note-editor__body > .ne-number,
-.note-editor__body > .ne-check {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding-left: 0.2rem;
-}
-.note-editor__body > .ne-bullet::before {
-  content: '•';
-  flex: none;
-  color: var(--teal-deep, #2a8f85);
-  font-weight: 800;
-}
-/* Numbered lines: a CSS counter that restarts after any non-number line. */
-.note-editor__body > :not(.ne-number) {
-  counter-reset: ne;
-}
-.note-editor__body > .ne-number {
-  counter-increment: ne;
-}
-.note-editor__body > .ne-number::before {
-  content: counter(ne) '.';
-  flex: none;
-  min-width: 1.1rem;
-  color: var(--teal-deep, #2a8f85);
-  font-variant-numeric: tabular-nums;
-}
-/* Checklist line: a tappable, non-editable checkbox widget + struck-through done text. */
-.ne-cb {
-  position: relative;
-  flex: none;
-  display: inline-block;
-  width: 1.4rem;
-  height: 1.4rem;
-  margin-top: 0.05rem;
-  border: 2px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 50%, var(--line));
-  border-radius: 6px;
-  background: var(--card);
-  cursor: pointer;
-  user-select: none;
-}
-.note-editor__body > .ne-check[data-checked='true'] .ne-cb {
-  background: var(--teal-deep, #2a8f85);
-  border-color: var(--teal-deep, #2a8f85);
-  text-decoration: none;
-}
-/* classic rotated-border check mark */
-.note-editor__body > .ne-check[data-checked='true'] .ne-cb::after {
-  content: '';
-  position: absolute;
-  left: 0.42rem;
-  top: 0.14rem;
-  width: 0.3rem;
-  height: 0.6rem;
-  border: solid #fff;
-  border-width: 0 2.5px 2.5px 0;
-  transform: rotate(45deg);
-}
-.note-editor__body > .ne-check[data-checked='true'] {
-  color: var(--ink-faint);
-  text-decoration: line-through;
 }
 .note-editor__media {
   display: flex;
@@ -655,10 +520,10 @@
   color: var(--danger, #c2563a);
 }
 
-/* ── The BETA (TipTap) editing surface ─────────────────────────────────────────
-   NoteEditorTiptap renders into the SAME .note-editor__body slot, so keyboard
-   fit + trailing slack (core.css) apply unchanged; ProseMirror's own
-   contenteditable (.note-tiptap) lives inside it. Mirrors the classic look. */
+/* ── The rich editing surface (ProseMirror / TipTap) ───────────────────────────
+   NoteEditorTiptap renders into the .note-editor__body slot, so keyboard fit +
+   trailing slack (core.css) apply unchanged; ProseMirror's own contenteditable
+   (.note-tiptap) lives inside it. */
 .note-editor__body--tiptap {
   display: flex;
   flex-direction: column;
@@ -670,6 +535,15 @@
 }
 .note-tiptap p {
   margin: 0.15rem 0;
+}
+/* iOS-Notes style: the first line reads as the title WHILE TYPING, without
+   requiring a heading mark — mirrors what the row list already derives (a bold
+   title line above a quieter preview). Scoped to `p:first-child` on purpose: if
+   the note starts with a heading it's already this large or bigger, and if it
+   starts with a list/checklist that first item shouldn't be styled as a title. */
+.note-tiptap > p:first-child {
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 .note-tiptap h1 {
   font-size: 1.2rem;
@@ -693,8 +567,8 @@
   margin: 0.15rem 0;
   padding-left: 1.4rem;
 }
-/* Task list: TipTap renders <ul data-type="taskList"><li><label><input…, so the
-   native checkbox replaces the classic .ne-cb widget. Same 1.2rem touch target. */
+/* Task list: TipTap renders <ul data-type="taskList"><li><label><input…, a native
+   checkbox. Same 1.2rem touch target as the rest of this row family. */
 .note-tiptap ul[data-type='taskList'] {
   list-style: none;
   padding-left: 0;

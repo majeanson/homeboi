@@ -40,16 +40,16 @@ export function sortNotes(notes: FamilyNote[]): FamilyNote[] {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || (b.updated_at ?? b.created_at) - (a.updated_at ?? a.created_at))
 }
 
-// What the EDITOR's body starts as. Advanced: the note's Markdown, untouched.
-// SIMPLE (lib/notesMode): the editor has no title FIELD — the note's first words are
-// its title, iOS style — so an existing note's stored title is folded in as the first
-// line here, and the save then writes an empty title. Nothing is lost, and the row
-// list already derives its heading from that first line. Idempotent: a title that
-// already leads the body is never doubled.
-export function seedMd(note: FamilyNote | null, advanced: boolean): string {
+// What the EDITOR's body starts as. The editor has no title FIELD — the note's first
+// words are its title, iOS style — so a note carrying a legacy stored `title` (from
+// before that field was removed) folds it in as the first line here, and the save
+// then writes an empty title. Nothing is lost, and the row list already derives its
+// heading from that first line. Idempotent: a title that already leads the body is
+// never doubled.
+export function seedMd(note: FamilyNote | null): string {
   const body = note?.text ?? ''
   const ti = note?.title.trim() ?? ''
-  if (advanced || !ti) return body
+  if (!ti) return body
   const first = body.split('\n').find((l) => l.trim())?.trim() ?? ''
   if (first === ti) return body
   return body.trim() ? ti + '\n' + body : ti
