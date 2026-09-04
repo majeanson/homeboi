@@ -121,7 +121,7 @@ All data writes go through `useWrite()` / `writeWith()`:
 
 **Deliberately NOT queued — online-only** (disable via `useOnline()` + an
 `t.offline.unavailable` hint, or just left as direct `api()`): voice capture / recipe
-vision-import-draft / meal-staples / suggest / recap, photo + avatar +
+vision-import-draft / suggest / recap, photo + avatar +
 recipe-image uploads (Blob bodies), pairing, auth, the **postal save** (reads the
 server-normalized value back), and **recipe-tags** (uses the `useOptimisticMutation`
 wrapper). These need a live server round-trip, so queueing them adds no value.

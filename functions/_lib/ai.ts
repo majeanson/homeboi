@@ -230,39 +230,11 @@ export async function classifyCapture(
   }
 }
 
-// Meal -> grocery staples (PRD B3). Given a planned supper title, name the main
-// staples it needs so the client can drop the missing ones onto the shared
-// list — the meal plan filling the list itself, with NO pantry inventory (brief
-// tenet 3). On-demand, one call, in-network. Returns [] on no-AI or any failure
-// so the caller just skips the staple step; the meal still saves.
-export async function mealStaples(env: Env, title: string, lang: Lang = 'fr'): Promise<string[]> {
-  const dish = title.trim()
-  if (!env.AI || !dish) return []
-  const prompt =
-    lang === 'en'
-      ? `List the main grocery staples needed to cook "${dish}" for a family supper.
-Reply ONLY with a JSON array of short item names, no quantities, at most 6.
-Example: ["pasta","tomato sauce","ground beef"].`
-      : `Donne les ingrédients d'épicerie principaux pour cuisiner « ${dish} » comme souper familial.
-Réponds UNIQUEMENT avec un tableau JSON de noms d'aliments courts, sans quantités, 6 au maximum.
-Exemple : ["pâtes","sauce tomate","viande hachée"].`
-  try {
-    const res = (await env.AI.run(MODEL, {
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 120,
-    })) as { response?: unknown }
-    return extractStringArray(res.response)
-  } catch (err) {
-    logAi('mealStaples', err)
-    return []
-  }
-}
-
 // Recipe drafter (recipe book helper). Given a dish title, draft a simple family
 // recipe: a short ingredient list + ordered prep steps, IN ONE call. The cook
 // edits freely afterward — this just seeds a blank card so nobody faces an empty
 // form. Returns { ingredients: [], steps: [] } on no-AI or any failure, so the
-// caller just opens an empty editor (graceful degrade, like mealStaples).
+// caller just opens an empty editor (graceful degrade).
 export interface RecipeDraft {
   ingredients: string[]
   steps: string[]

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, mealStaples, resolveLang, extractSizes } from './ai'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -61,25 +61,6 @@ describe('suggestMeals (response shape)', () => {
     const env = mockAiEnv(['spaghetti', 'chili', 'tacos'])
     const r = await suggestMeals(env, [], [])
     expect(r).toEqual(['spaghetti', 'chili', 'tacos'])
-  })
-})
-
-describe('mealStaples (response shape)', () => {
-  it('accepts an already-parsed array (new model shape)', async () => {
-    const env = mockAiEnv(['pâtes', 'sauce tomate', 'viande hachée'])
-    const r = await mealStaples(env, 'spaghetti')
-    expect(r).toEqual(['pâtes', 'sauce tomate', 'viande hachée'])
-  })
-})
-
-describe('mealStaples (degraded)', () => {
-  it('returns an empty list when AI is unset so the meal just saves', async () => {
-    const r = await mealStaples(noAiEnv, 'spaghetti')
-    expect(r).toEqual([])
-  })
-  it('returns an empty list for a blank title without calling AI', async () => {
-    const r = await mealStaples({ DB: {} as D1Database, AI: {} as Ai } as Env, '   ')
-    expect(r).toEqual([])
   })
 })
 

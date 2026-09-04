@@ -137,7 +137,6 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Planning a leftover CREATES a meal row (possibly today's) → history + month too.
   'meal-leftovers': [['leftovers'], ['board'], ['meal-history'], ['month']],
   'meal-ideas': [['meal-ideas']],
-  'meal-staples': [['meals']],
   // Per-day memo pinned to the meal week; today's shows on the board.
   'day-notes': [['day-notes'], ['board']],
   // Board-only sticky notes.
