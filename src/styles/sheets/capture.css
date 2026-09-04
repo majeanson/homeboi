@@ -49,9 +49,11 @@ body.is-recording .add-fab {
        24        the ＋ FAB
        25 / 30   hub chrome (kiosk rail, mobile tab bar)
        40 / 42   .undo-toast / .ai-error-toast  ← page-chrome level ON PURPOSE
-       50 … 150  full-screen scenes: cashier 50, tour 60, flyer 70, recipe modal
-                 80, cook 90, note editor 140, DrawPad 150
+       50 … 150  full-screen scenes: cashier 50, flyer 70, recipe modal 80, cook 90,
+                 note editor 140, DrawPad 150
        155 / 156 .scrim / .sheet — a Sheet can be opened from a scene (this rule)
+       158       .tour — a TEACHING layer, above whatever it points at, and a
+                 section tour walks inside the ＋ sheet (tour-nav.spec.ts)
        160 / 161 .kit-modal__backdrop, .confirm-backdrop / .confirm — a confirm
                  can be raised from an OPEN sheet (the peek's ⋯ ▸ Supprimer awaits
                  it with the sheet still mounted), so it has to clear 156 too; it

@@ -22,11 +22,16 @@ import { describe, expect, it } from 'vitest'
 // So the invariant is a SANDWICH, and neither slice can move alone:
 //     every full-screen scene  <  .scrim < .sheet  <  confirm / modal / screensaver
 //
-// The scan below is self-maintaining on purpose: it discovers every `position:
-// fixed; inset: 0` overlay that declares a z-index, so a NEW scene is caught without
-// anyone remembering to list it. A new overlay is either below the sheet (a scene)
-// or named in ABOVE_SHEET (a dialog that must interrupt one) — there is no third
-// answer, and picking one is the decision this guard exists to force.
+// The scan below discovers every `position: fixed; inset: 0` overlay that declares a
+// z-index, and every one of them must be CLASSIFIED here — below the sheet or above
+// it. An unlisted overlay fails the build rather than defaulting to either side.
+//
+// That "must be classified" is the second lesson, learned an hour after the first:
+// the guard's original shape assumed anything already below the sheet was a scene and
+// therefore fine. `.tour` sat at 60, so it passed — while being broken, because a tour
+// is a TEACHING layer that walks inside the ＋ sheet and the lift had just buried it
+// (tour-nav.spec.ts, caught by CI). A green guard proved nothing; only forcing a
+// decision per overlay does.
 
 const stylesDir = dirname(fileURLToPath(import.meta.url))
 
@@ -66,10 +71,16 @@ function z(selector: string): number {
   return hit!.z
 }
 
-// Overlays that MUST interrupt an open sheet rather than hide behind it: the two
-// dialogs (a heavy delete's yes/no, the generic Modal), the screensaver — which owns
-// the screen outright — and the zoom overlay, opened from a peek's own thumbnail.
-const ABOVE_SHEET = ['.confirm-backdrop', '.kit-modal__backdrop', '.ambient', '.zoom-overlay']
+// Overlays that MUST paint over an open sheet rather than hide behind it: the guided
+// tour (a section tour walks INSIDE the ＋ sheet — tour-nav.spec.ts), the two dialogs
+// (a heavy delete's yes/no, the generic Modal), the screensaver — which owns the
+// screen outright — and the zoom overlay, opened from a peek's own thumbnail.
+const ABOVE_SHEET = ['.tour', '.confirm-backdrop', '.kit-modal__backdrop', '.ambient', '.zoom-overlay']
+
+// Full-screen SCENES: a surface the user navigated into, which a sheet opened from
+// within it is expected to cover. Adding one here is the decision "a sheet may sit on
+// top of this"; if that is wrong for the new surface, it belongs in ABOVE_SHEET.
+const BELOW_SHEET = ['.flyer-overlay', '.cook', '.note-editor', '.drawpad']
 
 describe('fixed-overlay layer order', () => {
   it('found the stylesheets', () => {
@@ -80,22 +91,32 @@ describe('fixed-overlay layer order', () => {
     expect(z('.sheet')).toBeGreaterThan(z('.scrim'))
   })
 
-  it('a Sheet opened from inside a full-screen scene lands ON TOP of it', () => {
-    // Every full-screen fixed overlay in the stylesheets, discovered not listed.
-    const overlays = [...zBySelector.entries()]
-      .filter(([, v]) => /position\s*:\s*fixed/.test(v.body) && /inset\s*:\s*0/.test(v.body) && v.z > 0)
-      .map(([selector, v]) => ({ selector, z: v.z, file: v.file }))
-    // Sanity: the scan really is finding them (a broken parser would pass vacuously).
-    expect(overlays.map((o) => o.selector)).toEqual(expect.arrayContaining(['.note-editor', '.drawpad', '.scrim']))
+  // Every full-screen fixed overlay in the stylesheets, discovered rather than listed.
+  const overlays = [...zBySelector.entries()]
+    .filter(([, v]) => /position\s*:\s*fixed/.test(v.body) && /inset\s*:\s*0/.test(v.body) && v.z > 0)
+    .map(([selector, v]) => ({ selector, z: v.z, file: v.file }))
 
-    const scenes = overlays.filter((o) => o.selector !== '.scrim' && !ABOVE_SHEET.includes(o.selector))
-    for (const s of scenes) {
+  it('found the overlays (a broken parser must not pass vacuously)', () => {
+    expect(overlays.map((o) => o.selector)).toEqual(
+      expect.arrayContaining(['.note-editor', '.drawpad', '.scrim', '.tour', '.confirm-backdrop']),
+    )
+  })
+
+  it('every full-screen overlay is classified — below the sheet, or above it', () => {
+    for (const o of overlays) {
+      if (o.selector === '.scrim') continue
       expect(
-        s.z,
-        `${s.selector} (${s.file}, z-index ${s.z}) is a full-screen overlay at or above .scrim (${z('.scrim')}). ` +
-          'Either lower it below the sheet — a scene a sheet can cover — or add it to ABOVE_SHEET here, ' +
-          'which means it must also be able to interrupt an open sheet. See the layer scale in sheets/capture.css.',
-      ).toBeLessThan(z('.scrim'))
+        BELOW_SHEET.includes(o.selector) || ABOVE_SHEET.includes(o.selector),
+        `${o.selector} (${o.file}, z-index ${o.z}) is a new full-screen overlay and nothing here says where it sits. ` +
+          'Add it to BELOW_SHEET (a scene a sheet opened from within it may cover) or to ABOVE_SHEET ' +
+          '(it must paint over an open sheet). See the layer scale in sheets/capture.css.',
+      ).toBe(true)
+    }
+  })
+
+  it('a Sheet opened from inside a full-screen scene lands ON TOP of it', () => {
+    for (const sel of BELOW_SHEET) {
+      expect(z(sel), `${sel} must sit under .scrim, or it belongs in ABOVE_SHEET`).toBeLessThan(z('.scrim'))
     }
   })
 
@@ -104,6 +125,8 @@ describe('fixed-overlay layer order', () => {
     // (components/detail/EventPeekActions.tsx) — this is the live path.
     for (const sel of ABOVE_SHEET) expect(z(sel), `${sel} must clear .sheet`).toBeGreaterThan(z('.sheet'))
     expect(z('.confirm'), 'the dialog must sit above its own backdrop').toBeGreaterThan(z('.confirm-backdrop'))
+    // …and a dialog is an answer the tour must not obscure.
+    expect(z('.tour'), 'a confirm covers the tour, not the other way round').toBeLessThan(z('.confirm-backdrop'))
   })
 
   it('the screensaver still owns the screen, over every dialog', () => {

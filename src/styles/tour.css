@@ -1,14 +1,18 @@
 /* Guided tour overlay (components/tour/TourOverlay.tsx). A full-screen scrim with
-   a spotlight cutout (SVG mask) + a floating caption card. Sits above the sheets
-   (z 31) and scrim (30) but below full-screen scenes (cashier 50 / flyer 70) — a
-   tour is a teaching layer, not a scene. Surface-aware: bigger and calmer on the
-   wall tablet. Mobile- and tablet-friendly (large tap targets, card always
-   clamped on-screen by the JS positioner). */
+   a spotlight cutout (SVG mask) + a floating caption card. It is a TEACHING layer:
+   it has to sit above whatever it is currently pointing at, and one of the things
+   it points at is the ＋ sheet — a section tour walks INSIDE it (tour-nav.spec.ts).
+   That is why it is above `.sheet`, and why it ended up above the scenes too: the
+   sheet moved over them, and "tour above sheet" is the constraint that carries.
+   Only the dialogs (160/161) still cover it — a confirm is an answer the tour must
+   not obscure. The full scale lives in sheets/capture.css; keep this in step.
+   Surface-aware: bigger and calmer on the wall tablet. Mobile- and tablet-friendly
+   (large tap targets, card always clamped on-screen by the JS positioner). */
 
 .tour {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 158;
   /* NON-BLOCKING by design (calm ethos: the app never traps you). The layer only
      DIMS for focus — it does NOT catch input, so the highlighted control (e.g. a
      nav tab) and the rest of the app stay tappable. Advance with the card, just
