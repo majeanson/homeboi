@@ -80,27 +80,28 @@
   background: var(--terracotta-wash);
   box-shadow: var(--shadow-sm), inset 4px 0 0 var(--terracotta-deep), inset 0 0 0 1.5px var(--terracotta);
 }
-/* Calendar-style date badge: weekday over a big day number, the row's left
-   anchor. A small relative tag ("Aujourd'hui"/"Demain") sits above when set. */
+/* Calendar-style date badge: the row's left anchor. Now FLEXIBLE (not a fixed
+   2.9rem column) and laid out horizontally, so it claims the header's width
+   instead of sitting cramped in a tiny corner box beside a lot of empty space —
+   the ＋/pencil doors are icon-only and flex:none, so the date is free to grow. */
 .kitchen__day-date {
-  flex: none;
-  width: 2.9rem;
+  flex: 1;
+  min-width: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.05rem;
+  align-items: baseline;
+  gap: 0.4rem;
   line-height: 1.04;
-  text-align: center;
+  text-align: left;
 }
 .kitchen__day-rel {
-  font-size: 0.52rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--terracotta-deep);
 }
 .kitchen__day-dow {
-  font-size: 0.62rem;
+  font-size: 0.78rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -116,6 +117,15 @@
 .kitchen__day.is-weekend .kitchen__day-dow {
   color: var(--sky-deep);
 }
+/* The header's door cluster (the empty-day ＋ switch + the pencil) — grouped so
+   `.kitchen__day-head`'s space-between puts them together on the right while the
+   date above takes the rest of the width. */
+.kitchen__day-head-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
 /* Each planned supper, its own row: icon + title, tap = straight to its recipe.
    No visible drag grip (removed) — press-and-hold the row itself to reschedule
    the whole day, same gesture as before, just without the ⠿ glyph taking up a
@@ -127,8 +137,9 @@
 }
 .kitchen__day-meal {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  /* flex-start, not center: once the title wraps to a second line the icon must
+     stay pinned at the TOP of the row, not drift to its vertical middle. */
+  align-items: flex-start;
   gap: 0.5rem;
   width: 100%;
   text-align: left;
@@ -147,6 +158,22 @@
 }
 .kitchen__day-meal:active {
   cursor: grabbing;
+}
+/* The icon (an <svg>, already flex:none) never shrinks or wraps; the title
+   (+ its leftover tag) live in their OWN column next to it, so a long title
+   wraps WITHIN that column — its second line lands indented under the first,
+   never full-width under the icon. */
+.kitchen__day-meal > svg {
+  /* Nudge the icon down to sit on the title's first line, not the row's top edge. */
+  margin-top: 0.15rem;
+}
+.kitchen__day-meal-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
 }
 .kitchen__day-meal-title {
   min-width: 7rem;
@@ -429,13 +456,6 @@
   .dnd-ghost {
     box-shadow: none;
   }
-}
-/* The lighter slots wrap as colour chips (.meal-chip, shared — see misc.css) so
-   nothing is ever hidden; this is just their row. */
-.kitchen__day-slots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
 }
 /* The day note: a muted memo that always reads in full — it wraps onto as many
    lines as it needs rather than ellipsizing, so nothing is ever hidden. */

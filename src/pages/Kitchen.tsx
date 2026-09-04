@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Icon, InlineIcon } from '../components/Icon'
+import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
 import { SubTabs } from '../components/SubTabs'
 import { Chip } from '../components/Chip'
@@ -33,7 +33,7 @@ import { ReserveSection } from '../components/kitchen/ReserveSection'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
-import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
+import { type LowRow, type MealIdeasData, type MealRow, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers, usePlanLeftover } from '../components/kitchen/Leftovers'
@@ -45,7 +45,6 @@ import { mealPickOptions, type MealPick } from '../components/kitchen/comboOptio
 import { isGuest } from '../lib/device'
 import { SLOT_ICON_NAME, WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
-import { tintInk, faint, hairline } from '../lib/colors'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { KITCHEN_TAB_HELP } from '../lib/kitchenTabHelp'
@@ -467,16 +466,70 @@ export function Kitchen() {
               // a plan on its own (decided).
               const kidIdea = !showSupper ? ideasForDay(ideasQ.data?.ideas ?? [], date)[0] : undefined
               const kidWho = kidIdea ? boardMembers.find((m) => m.id === kidIdea.suggested_by) : undefined
-              // The lighter slots as their own colour-coded chips (déjeuner / dîner /
-              // collation), reusing the per-slot meal colours + icons (mealSlots +
-              // Réglages ▸ Repas). Each visible slot with meals becomes one chip that
-              // WRAPS at full card width — never clipped behind the Gérer cue, unlike
-              // the old single ellipsized line. Hidden slots drop off. Full per-slot
+              // The lighter slots (déjeuner / dîner / collation…) now render as the
+              // SAME full meal row as the hero souper — tap-straight-to-recipe,
+              // the leftover tag, the wrap — just in their own slot's icon + colour
+              // (mealSlots + Réglages ▸ Repas), one row per meal instead of one
+              // joined-title chip per slot. Hidden slots drop off; full per-slot
               // editing still lives in the Gérer sheet.
-              const sideRows = mealPrefs.sideSlots
+              const sideMeals = mealPrefs.sideSlots
                 .filter((s) => mealPrefs.isVisible(s))
-                .map((s) => ({ slot: s, titles: mealsFor(date, s).map((m) => m.title).join(', ') }))
-                .filter((r) => r.titles)
+                .flatMap((s) => mealsFor(date, s).map((m) => ({ slot: s, meal: m })))
+              const hasAnyMeal = showSupper || sideMeals.length > 0
+              // Shared row renderer for hero + side meals alike — tap opens the
+              // recipe (or the day editor for a free-text meal); only the hero row
+              // is also the day's drag handle (dragging reschedules the WHOLE day's
+              // headline plan, never a single side meal — see dayDnd above).
+              const mealRow = (m: MealRow, icon: IconName, color: string | undefined, draggable: boolean) => {
+                const r = recipeForMeal(m)
+                const go = () => nav(r ? `/kitchen/recipe/${r.id}` : `/kitchen/day/${date}?vue=repas`)
+                return (
+                  <div
+                    key={m.id}
+                    className="kitchen__day-meal"
+                    role="button"
+                    tabIndex={0}
+                    onPointerDown={
+                      draggable
+                        ? (e) => {
+                            // Remember where the press began so the click below can
+                            // tell a tap (open the recipe) from a drag (reschedule).
+                            tapDownRef.current = { x: e.clientX, y: e.clientY }
+                            dayDnd.start(String(date), suppers.map((s) => s.title).join(' · '), e)
+                          }
+                        : undefined
+                    }
+                    onClick={(e) => {
+                      if (draggable) {
+                        const d = tapDownRef.current
+                        if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
+                      }
+                      go()
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        go()
+                      }
+                    }}
+                    aria-label={r ? `${t.recipes.open} · ${m.title}` : undefined}
+                    title={draggable ? t.kitchen.dragDay : undefined}
+                  >
+                    <Icon name={icon} size={18} color={color} />
+                    {/* Title + leftover tag wrap TOGETHER inside their own column, so
+                        a long title's second line stays indented under the first —
+                        never drops full-width under the icon. */}
+                    <span className="kitchen__day-meal-text">
+                      <span className="kitchen__day-meal-title">{m.title}</span>
+                      {m.is_leftover ? (
+                        <span className="kitchen__meal-tag mono">
+                          <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                )
+              }
               // Standardized drop cue (same as La liste): a precise insertion line on
               // the edge the drag is heading toward, instead of the vague whole-cell
               // ring. Zones are keyed by date (epoch-day), so the direction test is a
@@ -506,24 +559,40 @@ export function Kitchen() {
                     <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
                     <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
                   </span>
-                  {/* A small, icon-only edit button — the lone door that opens the
-                      day's full editor, landing on its « Repas » face (?vue=repas —
-                      a kitchen door means meals). No "Gérer" label: the pencil says
-                      it and keeps the header tiny. */}
-                  <button
-                    type="button"
-                    className="kitchen__day-manage"
-                    onClick={() => nav(`/kitchen/day/${date}?vue=repas`)}
-                    aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
-                    title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
-                  >
-                    <Icon name="pencil-simple-bold" size={16} />
-                  </button>
+                  {/* The header's two doors, both icon-only so the date above keeps
+                      the rest of the width: a small ＋ while the day is still bare
+                      (opens the SAME inline planner below, plan seam #8 — a switch,
+                      not a whole extra body line), and the pencil that always opens
+                      the full editor on its « Repas » face (?vue=repas — a kitchen
+                      door means meals). */}
+                  <div className="kitchen__day-head-actions">
+                    {!hasAnyMeal && !planRo && planDate !== date && (
+                      <button
+                        type="button"
+                        className="kitchen__day-manage kitchen__day-addbtn"
+                        onClick={() => openPlan(date)}
+                        aria-label={`${t.kitchen.planShort} · ${formatDay(date, lang)}`}
+                        title={t.kitchen.planShort}
+                      >
+                        <Icon name="plus-bold" size={16} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="kitchen__day-manage"
+                      onClick={() => nav(`/kitchen/day/${date}?vue=repas`)}
+                      aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                      title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                    >
+                      <Icon name="pencil-simple-bold" size={16} />
+                    </button>
+                  </div>
                 </div>
-                {/* Calm, read-only glance — each supper its OWN row (icon + title,
-                    like the board's « Ce soir »), not one agglomerated line. A single
-                    tap goes straight to that meal's recipe; the other slots ride
-                    below as colour chips. Full editing lives in the day scene. */}
+                {/* Calm, read-only glance — every planned meal its OWN row (icon +
+                    title, like the board's « Ce soir »), hero and sides alike, not
+                    an agglomerated line or a separate chip style. A single tap goes
+                    straight to that meal's recipe. Full editing lives in the day
+                    scene; an empty day's ＋ now lives in the header above, not here. */}
                 <div className="kitchen__day-body">
                   {planDate === date && !planRo ? (
                     // Plan the day's hero meal RIGHT HERE — type free text, or pick
@@ -550,82 +619,19 @@ export function Kitchen() {
                       placeholder={t.kitchen.planPlaceholder}
                       ariaLabel={`${t.kitchen.planShort} · ${formatDay(date, lang)}`}
                     />
-                  ) : showSupper ? (
+                  ) : hasAnyMeal ? (
                     <div className={'kitchen__day-meals' + (dayDnd.activeId === String(date) ? ' is-dragging' : '')}>
-                      {suppers.map((m) => {
-                        const r = recipeForMeal(m)
-                        // A recipe-linked meal opens straight to its recipe (the
-                        // book-icon door, one tap); a free-text one falls back to
-                        // the day's full editor — there's nothing else to show it.
-                        const go = () => nav(r ? `/kitchen/recipe/${r.id}` : `/kitchen/day/${date}?vue=repas`)
-                        return (
-                          <div
-                            key={m.id}
-                            className="kitchen__day-meal"
-                            role="button"
-                            tabIndex={0}
-                            onPointerDown={(e) => {
-                              // Remember where the press began so the click below can
-                              // tell a tap (open the recipe) from a drag (reschedule).
-                              // No visible grip anymore — the row itself is the handle.
-                              tapDownRef.current = { x: e.clientX, y: e.clientY }
-                              dayDnd.start(String(date), suppers.map((s) => s.title).join(' · '), e)
-                            }}
-                            onClick={(e) => {
-                              const d = tapDownRef.current
-                              if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
-                              go()
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                go()
-                              }
-                            }}
-                            // Only override the accessible name for a recipe-linked
-                            // meal — it names where the tap goes. A free-text one falls
-                            // back to the day editor, and just reads as its title (its
-                            // own text content); an explicit "Gérer · <titre>" here
-                            // would collide with the header's own "Gérer" pencil.
-                            aria-label={r ? `${t.recipes.open} · ${m.title}` : undefined}
-                            title={t.kitchen.dragDay}
-                          >
-                            {/* The hero slot icon in its slot colour — the same icon +
-                                colour the chips and Réglages ▸ Repas use, not a bare dot. */}
-                            <Icon name={SLOT_ICON_NAME[heroSlot]} size={18} color={supperColor} />
-                            <span className="kitchen__day-meal-title">{m.title}</span>
-                            {m.is_leftover ? (
-                              <span className="kitchen__meal-tag mono">
-                                <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
-                              </span>
-                            ) : null}
-                          </div>
-                        )
-                      })}
+                      {/* The hero slot icon in its slot colour — the same icon +
+                          colour Réglages ▸ Repas uses, not a bare dot. It's also the
+                          day's drag handle (no separate grip glyph). */}
+                      {showSupper && suppers.map((m) => mealRow(m, SLOT_ICON_NAME[heroSlot], supperColor, true))}
+                      {/* The lighter slots (déjeuner / dîner / collation…) — the SAME
+                          row, just their own slot's icon + colour, not draggable. */}
+                      {sideMeals.map(({ slot, meal: m }) => mealRow(m, SLOT_ICON_NAME[slot], mealPrefs.color(slot), false))}
                     </div>
                   ) : planRo ? (
                     <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
-                  ) : (
-                    <button type="button" className="kitchen__day-sum-empty mono" onClick={() => openPlan(date)}>
-                      <InlineIcon name="plus-bold" size={12} /> {t.kitchen.planShort}
-                    </button>
-                  )}
-                  {sideRows.length > 0 && (
-                    <span className="kitchen__day-slots">
-                      {sideRows.map(({ slot, titles }) => {
-                        const c = mealPrefs.color(slot)!
-                        return (
-                          <span
-                            key={slot}
-                            className="meal-chip"
-                            style={{ color: tintInk(c), background: faint(c), borderColor: hairline(c) }}
-                          >
-                            <InlineIcon name={SLOT_ICON_NAME[slot]} /> {titles}
-                          </span>
-                        )
-                      })}
-                    </span>
-                  )}
+                  ) : null}
                   {note && (
                     <span className="kitchen__day-sum-meta mono">
                       <InlineIcon name="pencil-simple-bold" /> {note.text}

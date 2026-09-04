@@ -19,8 +19,8 @@ test('an empty day cell plans the supper in place', async ({ page }) => {
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
-  // An empty day announces itself as plannable…
-  const emptyCell = page.locator('.kitchen__day-sum-empty').first()
+  // An empty day announces itself as plannable via the header's ＋ switch…
+  const emptyCell = page.locator('.kitchen__day-addbtn').first()
   await expect(emptyCell).toBeVisible()
   await emptyCell.click()
 

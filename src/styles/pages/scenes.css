@@ -450,6 +450,13 @@
 .auto-card__ride {
   display: flex;
   align-items: center;
+  /* Wrap, don't crush: when `when` + an avatar/caricon + several passenger
+     avatars already fill the line, `.auto-card__what`'s `flex:1 1 auto;
+     min-width:0` used to shrink all the way to ~0 and its `overflow-wrap:
+     anywhere` text then wrapped one GLYPH per line down the whole card
+     (a several-hundred-px-tall column). Letting the row wrap gives it its
+     own full-width line instead. */
+  flex-wrap: wrap;
   gap: 0.55rem;
 }
 .auto-card__when {
@@ -468,9 +475,11 @@
 }
 .auto-card__what {
   flex: 1 1 auto;
-  /* min-width:0 lets this flex child shrink below its content so a very long,
-     unbreakable ride title wraps instead of pushing the card past the viewport. */
-  min-width: 0;
+  /* A floor so a crowded line (when + avatar + several passenger avatars)
+     wraps THIS onto its own full-width line instead of squeezing it toward
+     0 — at 0 width, `overflow-wrap: anywhere` below wraps every glyph onto
+     its own line rather than the words. */
+  min-width: 8rem;
   display: inline-flex;
   align-items: baseline;
   gap: 0.1rem 0.45rem;
@@ -638,6 +647,9 @@
 .voiture__ride {
   display: flex;
   align-items: center;
+  /* Same fix as .auto-card__ride: a data-scaling passenger list (.voiture__pax)
+     beside a fixed .voiture__ride-when can otherwise squeeze -what to ~0. */
+  flex-wrap: wrap;
   gap: 0.55rem;
   font-size: 1rem;
 }

@@ -42,10 +42,12 @@
   margin-right: auto;
   white-space: nowrap;
 }
+/* Only the sizing within .tag-admin__row (a flex row) — NOT display/align-items:
+   those belong to .edit-field itself (flex-direction:column, stretch), and
+   overriding align-items to `center` here stopped .edit-field__row from
+   stretching to the available width, collapsing it to ~0 and wrapping every
+   action (box / ✓ / ✕) onto its own line. */
 .tag-admin__rename {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
   flex: 1;
   min-width: 0;
 }
