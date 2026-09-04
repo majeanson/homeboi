@@ -2,8 +2,9 @@ import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
-import { SLOT_ICON_NAME } from '../../lib/mealSlots'
+import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
+import { type Pill } from '../../lib/recipePills'
 import { useMemo } from 'react'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
@@ -31,11 +32,17 @@ import { type useMealPlanning } from './useMealPlanning'
 // page). It flips to ✕ while its composer is open, which is also how you close it.
 type Plan = ReturnType<typeof useMealPlanning>
 
+// A stable empty-Set default for `loved` — a fresh `new Set()` literal in the
+// props destructure would re-identity every render and defeat the useMemo below.
+const EMPTY_LOVED: Set<string> = new Set()
+
 export function DayEditor({
   date,
   recipes,
   lowItems,
   listItems,
+  pills = [],
+  loved = EMPTY_LOVED,
   suppers,
   mealsFor,
   note,
@@ -55,6 +62,11 @@ export function DayEditor({
   recipes: Recipe[]
   lowItems: string[]
   listItems: string[]
+  // The household's recipe-pill config + who loved what — decide which recipes
+  // get lifted to the top of a slot's picker (a "Dîner & Souper" pill). Optional:
+  // omitted/empty behaves exactly as before (cookable-ranked, no priority group).
+  pills?: Pill[]
+  loved?: Set<string>
   suppers: MealRow[]
   mealsFor: (date: number, slot: string) => MealRow[]
   note: DayNoteRow | undefined
@@ -145,9 +157,11 @@ export function DayEditor({
   })
   // Recipes + leftovers as one grouped dropdown for the slot field — pick a recipe
   // (links it) or a pooled leftover (consumes it), or just type a free-text meal.
-  const mealOpts = useMemo(
-    () => mealPickOptions(recipes, lowItems, listItems, leftovers.pool, t),
-    [recipes, lowItems, listItems, leftovers.pool, t],
+  // Built PER SLOT (not once for the whole day): a pill lifting recipes for
+  // "Souper" shouldn't also reorder the "Déjeuner" field.
+  const mealOptsFor = useMemo(
+    () => (slot: string) => mealPickOptions(recipes, lowItems, listItems, leftovers.pool, t, { slot: slot as MealSlot, pills, loved }),
+    [recipes, lowItems, listItems, leftovers.pool, t, pills, loved],
   )
   // Route a combobox pick to the right handler for the given slot.
   const pickMeal = (d: number, slot: string) => (o: ComboOption<MealPick>) => {
@@ -210,7 +224,7 @@ export function DayEditor({
               <EntityCombobox
                 value={slotText}
                 onChange={setSlotText}
-                options={mealOpts}
+                options={mealOptsFor(slot)}
                 onPick={pickMeal(date, slot)}
                 onSubmit={(v) => saveSlot(date, slot, v)}
                 noMatchLabel={t.combo.noMatch}
@@ -272,7 +286,7 @@ export function DayEditor({
           <EntityCombobox
             value={mealText}
             onChange={setMealText}
-            options={mealOpts}
+            options={mealOptsFor(hero)}
             onPick={pickMeal(date, hero)}
             onSubmit={() => beginSetMeal(date, hero)}
             noMatchLabel={t.combo.noMatch}

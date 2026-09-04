@@ -2347,6 +2347,9 @@ export const EN: typeof FR = {
     pillRuleOr: 'or',
     pillRuleRemove: 'Remove criterion',
     pillSave: 'Save pill',
+    pillSlotsLabel: 'Priority for these meals',
+    pillSlotsHint:
+      'When you plan one of these meals, recipes matching this pill rise to the top (right after leftovers).',
     pillFieldName: (f: string) =>
       (({
         totalMin: 'Total time',

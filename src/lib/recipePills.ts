@@ -1,5 +1,6 @@
 import { type Recipe, recipeTotalMin } from './recipes'
 import { withoutHeadings } from './recipeSections'
+import { type MealSlot } from './mealSlots'
 
 // Customizable recipe-tab pills (the chips above the recipe grid). Two kinds:
 //   · BUILT-IN pills — the stock-aware sorts ("Quoi cuisiner?", "À utiliser",
@@ -61,6 +62,12 @@ export interface CustomPill {
   color?: string
   off?: boolean
   rules: Criterion[]
+  // Meal slots this pill should be PRIORITIZED for when planning a meal (the day
+  // editor's slot picker, the week grid's quick-add) — e.g. a "Dîner & Souper" pill
+  // lifts its matching recipes above the rest of the book (never above Restants,
+  // which always lead — see mealPickOptions). Absent/empty = no slot priority; the
+  // pill still works as an ordinary recipe-tab filter/sort.
+  slots?: MealSlot[]
 }
 export type Pill = BuiltinPill | CustomPill
 
@@ -107,3 +114,15 @@ export function matchesCriterion(r: Recipe, c: Criterion, loved: Set<string>): b
 // rule set matches nothing (the pill is incomplete) — callers hide such pills.
 export const matchesCustom = (r: Recipe, p: CustomPill, loved: Set<string>): boolean =>
   p.rules.length > 0 && p.rules.every((c) => matchesCriterion(r, c, loved))
+
+// A recipe→priority test for the given meal slot: matches ANY shown custom pill
+// whose `slots` claims that slot. Used by the meal-slot pickers (comboOptions.tsx)
+// to lift a household's "Dîner & Souper"-style pills above the rest of the book —
+// never above Restants, which always lead regardless of this.
+export function slotPriority(pills: Pill[], slot: MealSlot, loved: Set<string>): (r: Recipe) => boolean {
+  const active = pills.filter(
+    (p): p is CustomPill => !isBuiltinPill(p) && !p.off && !!p.slots?.includes(slot),
+  )
+  if (active.length === 0) return () => false
+  return (r) => active.some((p) => matchesCustom(r, p, loved))
+}

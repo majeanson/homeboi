@@ -128,16 +128,19 @@ export const WG_MINI_ROWS = 7
 export const WG_MINI_H = WG_MINI_ROWS * WG_ROW + (WG_MINI_ROWS - 1) * WG_GAP
 
 /**
- * How many one-line item rows a compact tile can name before it gives up and falls back
- * to icon + title + a quiet count.
+ * How many FULL item rows a compact tile names before it stops and adds a quiet
+ * "+N de plus" summary row instead of a further row.
  *
  * A mini's job is to ANSWER at a glance ("À finir: les restants de pâté chinois"), not to
- * promise an answer behind a tap. So it lists what it holds — up to the point where the
- * list stops fitting `WG_MINI_H` under its header (5 rows at ~17px, plus the header and
- * padding, is ~129px of 152px; a sixth would crowd it). Past that, naming five of nine
- * things is a lie the count tells better, so the tile shows the icon and the number.
+ * promise an answer behind a tap — and not to clip a title mid-word either (a row used to
+ * be forced onto one line and ellipsized, which cut "Rendez-vous chez le dentiste" down to
+ * "Rendez-vous chez l…"). A row now wraps onto up to two lines instead of truncating, so
+ * the cap has to shrink to match: 2 full rows can each go the worst-case two lines and
+ * still leave room for a trailing one-line "+N de plus" under `WG_MINI_H` (see the shelf
+ * test in widgetGrid.test.ts for the exact arithmetic). Naming two of nine and saying so
+ * ("+7 de plus") beats both a mid-word cut and the old all-or-nothing icon+count fallback.
  */
-export const WG_MINI_MAX_ITEMS = 5
+export const WG_MINI_MAX_ITEMS = 2
 
 /**
  * Which grid row (1-based) a slot sitting `offsetTop` px below the grid's content top

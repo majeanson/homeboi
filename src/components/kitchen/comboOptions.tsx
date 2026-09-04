@@ -2,6 +2,8 @@ import { type ComboOption } from '../EntityCombobox'
 import { InlineIcon } from '../Icon'
 import { type Recipe } from '../../lib/recipes'
 import { rankCookable } from '../../lib/cookable'
+import { type Pill, slotPriority } from '../../lib/recipePills'
+import { type MealSlot } from '../../lib/mealSlots'
 import { type Leftover, type MealRow } from './types'
 import { type useT } from '../../i18n'
 
@@ -19,13 +21,22 @@ export function recipeOptions(
   lowItems: string[],
   listItems: string[],
   t: T,
-  opts: { group?: string; readyBadge?: boolean } = {},
+  opts: { group?: string; readyBadge?: boolean; priority?: (r: Recipe) => boolean } = {},
 ): ComboOption<Recipe>[] {
-  const { group, readyBadge = true } = opts
+  const { group, readyBadge = true, priority } = opts
   // Badges only mean something against a low list — with an empty pantry-low every
   // recipe is "ready", which is just noise (same rule as RecipePickerMenu).
   const showBadge = lowItems.length > 0
-  return rankCookable(recipes, lowItems, listItems).map(({ recipe, missing }) => ({
+  let ranked = rankCookable(recipes, lowItems, listItems)
+  // A meal-slot pill (e.g. "Dîner & Souper") lifts its matching recipes to the top —
+  // cookability still orders WITHIN each group, so "what you could cook now" isn't
+  // lost, just outranked by what the household said belongs at this slot.
+  if (priority) {
+    const pri = ranked.filter((x) => priority(x.recipe))
+    const rest = ranked.filter((x) => !priority(x.recipe))
+    ranked = [...pri, ...rest]
+  }
+  return ranked.map(({ recipe, missing }) => ({
     id: recipe.id,
     label: recipe.title,
     data: recipe,
@@ -80,13 +91,20 @@ export function mealPickOptions(
   listItems: string[],
   leftovers: Leftover[],
   t: T,
+  // Which meal slot this picker is for, plus the household's pill config + who
+  // loved what — together they decide which recipes get lifted to the top of the
+  // recipe group (see lib/recipePills.slotPriority). All optional: omit `slot` (or
+  // leave `pills` empty) and the picker behaves exactly as before, cookable-ranked.
+  opts: { slot?: MealSlot; pills?: Pill[]; loved?: Set<string> } = {},
 ): ComboOption<MealPick>[] {
   const both = recipes.length > 0 && leftovers.length > 0
+  const priority = opts.slot ? slotPriority(opts.pills ?? [], opts.slot, opts.loved ?? new Set()) : undefined
   // No "Prêt" checkmark here (readyBadge: false) — the compact meal-slot picker
   // doesn't need it; recipeOptions' other caller (MealIdeas) keeps the badge.
   const r: ComboOption<MealPick>[] = recipeOptions(recipes, lowItems, listItems, t, {
     group: both ? t.recipes.title : undefined,
     readyBadge: false,
+    priority,
   }).map((o) => ({ ...o, data: { kind: 'recipe', recipe: o.data } }))
   const l: ComboOption<MealPick>[] = leftoverOptions(leftovers, t, both ? t.kitchen.leftovers : undefined).map((o) => ({
     ...o,

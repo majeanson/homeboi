@@ -34,7 +34,9 @@ import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
-import { type Recipe } from '../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY } from '../lib/recipes'
+import { DEFAULT_PILLS } from '../lib/recipePills'
+import { useLoves } from '../lib/loves'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { DayEditor } from '../components/kitchen/DayEditor'
@@ -151,6 +153,11 @@ export function DayPlanPage() {
   const pantry = usePantry()
   const recipesQ = useRecipes()
   const leftoversQ = useLeftovers()
+  // The household's recipe-pill config (a "Dîner & Souper" pill lifts its matching
+  // recipes to the top of that slot's picker) + who loved what (a pill can test
+  // "favorite"). Same cache RecipesTab/Réglages ▸ Recettes read — no extra fetch.
+  const pillsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
+  const { lovedSet } = useLoves()
   const boardQ = useQuery({
     queryKey: BOARD_KEY,
     queryFn: () => api<{ list: { text: string }[]; members?: Member[] }>('board'),
@@ -797,6 +804,8 @@ export function DayPlanPage() {
                 recipes={recipes}
                 lowItems={lowItems}
                 listItems={listItems}
+                pills={pillsQ.data?.pills ?? DEFAULT_PILLS}
+                loved={lovedSet}
                 suppers={suppers}
                 mealsFor={mealsFor}
                 note={dayNote}

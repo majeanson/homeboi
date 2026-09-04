@@ -2608,6 +2608,9 @@ export const FR = {
     pillRuleRemove: 'Retirer le critère',
     pillRuleOr: 'ou',
     pillSave: 'Enregistrer la pastille',
+    pillSlotsLabel: 'Priorité pour ces repas',
+    pillSlotsHint:
+      'Quand tu planifies un de ces repas, les recettes qui correspondent à cette pastille remontent en tête (juste après les restants).',
     pillFieldName: (f: string) =>
       (({
         totalMin: 'Temps total',

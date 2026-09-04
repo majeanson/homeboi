@@ -460,12 +460,13 @@
 }
 
 /* ---- Compact lens, the LIST face: a mini that names what it holds --------------- */
-/* A tile whose rows fit (`WG_MINI_MAX_ITEMS`, lib/widgetGrid) spends its fixed height
-   ANSWERING instead of promising: a header line — the same tinted disc, one notch
-   smaller, beside the card's title — over one line per thing. « À finir » names the
-   restants; « À venir », the two events. Past that count it falls back to the centred
-   icon + title + a quiet number (`CardMini`), because naming three of nine things is a
-   worse answer than counting nine.
+/* A tile with at least one item spends its fixed height ANSWERING instead of promising: a
+   header line — the same tinted disc, one notch smaller, beside the card's title — over
+   one row per thing, each wrapping onto up to two lines rather than ellipsizing mid-word.
+   « À finir » names the restants; « À venir », the two events. Past `WG_MINI_MAX_ITEMS`
+   (lib/widgetGrid) full rows, the rest fold into one quiet trailing "+N de plus" row
+   instead of a further title — naming two of nine and saying seven more exist beats both
+   a mid-word cut and pretending they don't (`CardMini`).
 
    Calm: the rows are a READING, never a control. No checks, no counts, no ranks — the
    tile is one tap target that grows the real card, exactly as the icon face is. */
@@ -524,7 +525,10 @@
 }
 .wg-slot .cardmini__row {
   display: flex;
-  align-items: baseline;
+  /* flex-start, not baseline: a row can now wrap onto two lines, and baseline would pin
+     the dot/lead token to the FIRST line's baseline while the label grows below it —
+     flex-start keeps the marker pinned to the top of the text block either way. */
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
   color: var(--ink-soft);
@@ -535,19 +539,31 @@
   flex: none;
   width: 5px;
   height: 5px;
+  margin-top: 0.5em;
   border-radius: 50%;
   /* One dot colour per CARD, not per row: the row's own category colour would turn a
      142px tile into a paint chart. The card's tint already says which card this is. */
   background: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-faint))) 70%, var(--ink-faint));
 }
-/* Never break mid-word (same reason as the title): clip the line, don't hyphenate it. */
+/* A row used to be forced onto one line and ellipsized — "Rendez-vous chez le
+   dentiste" cut down to "Rendez-vous chez l…". Wrap onto up to two lines instead (same
+   no-mid-word-break rule as the header title above); `WG_MINI_MAX_ITEMS` caps how many
+   FULL rows a mini shows so this can never outgrow `WG_MINI_H` (see widgetGrid.test.ts). */
 .wg-slot .cardmini__rowlabel {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: none;
+}
+/* The trailing "+N de plus" row (past `WG_MINI_MAX_ITEMS`) — quieter than an ordinary
+   row (it's a count, not a thing) and always one line; never itself gets truncated. */
+.wg-slot .cardmini__row--more .cardmini__rowlabel {
+  -webkit-line-clamp: 1;
+  color: color-mix(in srgb, var(--sec-tint, var(--wg-tint, var(--ink-faint))) 55%, var(--ink-faint));
+  font-weight: 600;
 }
 /* The outer `.bento` becomes a transparent frame once its content is the mini tile —
    `.cardmini` draws the actual card chrome (background/radius/shadow) itself, so

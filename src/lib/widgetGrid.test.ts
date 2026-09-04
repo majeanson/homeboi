@@ -180,19 +180,26 @@ describe('the compact tile shelf', () => {
     expect(WG_MINI_H).toBe(152)
   })
 
-  it('never promises more rows than the shelf can hold', () => {
-    // The list face spends WG_MINI_H on a header + WG_MINI_MAX_ITEMS one-line rows +
-    // padding. These three numbers mirror widget-grid.css (`.cardmini--list`); if the cap
-    // ever outgrew the shelf the last row would clip, which is the one failure a fixed
-    // height can produce and a `min-height` never could.
+  it('never promises more rows than the shelf can hold, even worst-case', () => {
+    // A row now wraps onto up to two lines instead of being clamped to one and
+    // ellipsized mid-word (BoardCard.tsx `cardmini__rowlabel`), and past
+    // `WG_MINI_MAX_ITEMS` full rows the rest fold into one trailing one-line
+    // "+N de plus" row. Worst case every full row goes the whole two lines — these
+    // numbers mirror widget-grid.css (`.cardmini--list`); if the cap ever outgrew the
+    // shelf the last row would clip, which is the one failure a fixed height can
+    // produce and a `min-height` never could.
     const HEADER = 24 // the tinted disc + the card's title
-    const ROW = 17 // 0.78rem at line-height 1.35, plus the 3px gap
+    const ROW1 = 17 // one line: 0.78rem at line-height 1.35
+    const ROW2 = 34 // the worst case: a full row wrapped onto two lines
+    const GAP = 3 // .cardmini__rows gap, paid once between every row shown
     const PADDING = 20 // 0.62rem, top and bottom
-    expect(HEADER + PADDING + WG_MINI_MAX_ITEMS * ROW).toBeLessThanOrEqual(WG_MINI_H)
+    const worst = WG_MINI_MAX_ITEMS * ROW2 + ROW1 + WG_MINI_MAX_ITEMS * GAP
+    expect(HEADER + PADDING + worst).toBeLessThanOrEqual(WG_MINI_H)
   })
 
   it('stays a glance, not a list view', () => {
-    // Calm: the cap is a ceiling on how much a 142px tile may say, not just what fits.
+    // Calm: the cap is a ceiling on how many FULL rows a 142px tile may name before it
+    // switches to "+N de plus" — not just what fits.
     expect(WG_MINI_MAX_ITEMS).toBeLessThanOrEqual(5)
   })
 })

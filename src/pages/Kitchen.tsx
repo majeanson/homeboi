@@ -23,6 +23,9 @@ import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { ideasForDay } from '../lib/mealIdeas'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
+import { type RecipeTagsData, RECIPE_TAGS_KEY } from '../lib/recipes'
+import { DEFAULT_PILLS } from '../lib/recipePills'
+import { useLoves } from '../lib/loves'
 import { KidKitchen } from '../components/kitchen/KidKitchen'
 import { HistoryTab } from '../components/kitchen/HistoryTab'
 import { PantryTab } from '../components/kitchen/PantryTab'
@@ -92,6 +95,10 @@ export function Kitchen() {
   const recipesQ = useRecipes()
   const ideasQ = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas'), ...live })
   const leftoversQ = useLeftovers()
+  // The household's recipe-pill config (a "Dîner & Souper" pill lifts its matching
+  // recipes) + who loved what, for the hero-slot quick-add dropdown below.
+  const pillsQ = useQuery({ queryKey: RECIPE_TAGS_KEY, queryFn: () => api<RecipeTagsData>('recipe-tags') })
+  const { lovedSet } = useLoves()
   // Shares the ['board'] cache with the Board/Liste pages — read only for the
   // shopping list, used to rank recipes by "what you could cook now".
   const boardQ = useQuery({
@@ -136,9 +143,12 @@ export function Kitchen() {
   // Recipes + Restants as one grouped dropdown for the empty-day quick planner —
   // the SAME builder the day editor's slot fields use, so the two doors can't drift.
   const leftoverPool = useMemo(() => leftoversQ.data?.leftovers ?? [], [leftoversQ.data])
+  const pills = pillsQ.data?.pills ?? DEFAULT_PILLS
+  // mealPrefs.hero, not the `heroSlot` const below — that's declared further down,
+  // after the grid-building section, and this memo runs before it exists.
   const mealOpts = useMemo(
-    () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t),
-    [recipes, lowItems, listItems, leftoverPool, t],
+    () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t, { slot: mealPrefs.hero, pills, loved: lovedSet }),
+    [recipes, lowItems, listItems, leftoverPool, t, mealPrefs.hero, pills, lovedSet],
   )
   const planLeftover = usePlanLeftover()
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a

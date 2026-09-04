@@ -15,7 +15,9 @@ export type CompactRow = string | { lead?: string; label: string }
 // A small secondary action pinned to a mini tile's bottom-right corner — its own tap
 // target, a `<Link>` rendered OUTSIDE the tile's button (never nested-interactive). One
 // or two per tile (« Aujourd'hui » carries a pencil → « Planifier » and a key → « Avant
-// de partir »); « Demain » just the pencil.
+// de partir »); « Demain » just the pencil. The GROWN card mirrors the same one-or-two
+// icon-only buttons in its header via `SecLabel`'s `action` slot (Board.tsx), so the
+// shortcut stays one tap away whichever size the card is at.
 export type CornerAction = { to: string; icon: IconName; label: string }
 
 // The ONE board-card header — a category glyph disc + bold label + rule + an optional
@@ -52,10 +54,11 @@ export function SecLabel({
   count?: number
   icon?: IconName
   iconNode?: ReactNode
-  /** One quiet control pinned to the header's trailing edge — a card's own ＋ (the
-   *  notes card's quick composer). Sits BEFORE the reduce chip so growing/shrinking a
-   *  card never moves it. Keep it to a single icon button: the header is a glance
-   *  label, not a toolbar. */
+  /** One or two quiet controls pinned to the header's trailing edge — a card's own ＋
+   *  (the notes card's quick composer), or the pencil/key pair « Aujourd'hui » mirrors
+   *  from its mini's corner actions (see `CornerAction`). Sits BEFORE the reduce chip so
+   *  growing/shrinking a card never moves it. Keep it to at most a couple of icon
+   *  buttons: the header is a glance label, not a toolbar. */
   action?: ReactNode
   help?: HelpMode
   helpKey?: string
@@ -134,16 +137,19 @@ export function SecLabel({
 //
 //  1. `body` — a FULL override, for a card whose compact form isn't text at all (the
 //     photo frame's picture, the weather hero's wonder backdrop). Wins outright.
-//  2. THE LIST — `items`, when there are few enough of them to name honestly
-//     (`WG_MINI_MAX_ITEMS`). The shared header over one line per thing. This is the point
-//     of the lens: « À finir » should say *what* is left to finish, not that two are.
+//  2. THE LIST — `items`, whenever there's at least one. Each row wraps onto up to two
+//     lines instead of being clamped to one and ellipsized mid-word (a title used to come
+//     out "Rendez-vous chez l…"). Past `WG_MINI_MAX_ITEMS` FULL rows, the rest fold into
+//     one quiet trailing "+N de plus" row rather than a title getting cut — this is the
+//     point of the lens: « À finir » should say *what* is left to finish, not just that
+//     two are, and admitting seven more exist beats pretending they don't.
 //  3. The GLANCE — the shared header (so an empty card's icon still sits top-left, never a
 //     lonely centred badge) over at most one quiet line (`hint`: a count like '3' or a name
 //     like 'Spaghetti' — never a score, never per-person). What a card falls back to when
-//     it holds too much to list, or has nothing listable to give.
+//     it has no `items` to list at all.
 //
-// A card that can list passes BOTH `items` and a counting `hint`, and this picks: naming
-// three things beats counting them; naming three of nine is a lie the count tells better.
+// A card that can list passes BOTH `items` and a counting `hint`; the hint only shows when
+// `items` is empty (naming what's there always beats a bare count).
 export function CardMini({
   className,
   style,
@@ -171,8 +177,9 @@ export function CardMini({
   /** A small extra pinned to the trailing edge of the header — a weather chip on
    *  « Aujourd'hui » / « Demain ». Shows on both faces (it rides the shared header). */
   head?: ReactNode
-  /** One line per thing the card holds. Rendered only when they all fit — see above.
-   *  A row may lead with a short time/day token (see `CompactRow`). */
+  /** One row per thing the card holds, up to `WG_MINI_MAX_ITEMS` full ones — past that
+   *  the rest fold into a trailing "+N de plus" row instead of listing further (see
+   *  above). A row may lead with a short time/day token (see `CompactRow`). */
   items?: readonly CompactRow[]
   body?: ReactNode
   /** When set, tapping the mini NAVIGATES here instead of growing the card in place — for
@@ -189,7 +196,10 @@ export function CardMini({
   const t = useT()
   // Index keys: this is a static, never-reordered projection of the card's rows, rebuilt
   // whole on every data change. A stable id would buy nothing and cost every call site.
-  const rows = items && items.length > 0 && items.length <= WG_MINI_MAX_ITEMS ? items : null
+  const rows = items && items.length > 0 ? items.slice(0, WG_MINI_MAX_ITEMS) : null
+  // What's left past the full rows above — named by a trailing "+N de plus" row instead
+  // of a further title getting shown at all (never a silent drop).
+  const moreCount = items ? Math.max(0, items.length - WG_MINI_MAX_ITEMS) : 0
   const glyph = icon ? <Icon name={icon} size={15} /> : iconNode
   // BOTH faces share one header — the tinted disc pinned TOP-LEFT beside the title, with an
   // optional trailing extra (the weather chip). The glance face used to centre a big icon
@@ -235,6 +245,12 @@ export function CardMini({
               </li>
             )
           })}
+          {moreCount > 0 && (
+            <li className="cardmini__row cardmini__row--more">
+              <span className="cardmini__dot" aria-hidden="true" />
+              <span className="cardmini__rowlabel">{t.board.moreN(moreCount)}</span>
+            </li>
+          )}
         </ul>
       ) : (
         hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>

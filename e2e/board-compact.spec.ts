@@ -170,11 +170,11 @@ test.describe('board compact lens', () => {
     // « Demain » is the card under test, NOT « Aujourd'hui ». This asserted the today tile
     // until « Aujourd'hui » absorbed the day's timeline: it now names the timed events, the
     // work windows, the chores AND the all-day items, so the fixture's busy day runs past
-    // WG_MINI_MAX_ITEMS (5) and the tile shows a COUNT instead of rows — deliberately
-    // ("naming five of nine is a lie the count tells better", lib/widgetGrid). That is the
-    // glance face, so the list-face assertions below could never hold there again. « Demain »
-    // is the same chronological + weather-chipped tile with a day short enough to list, so it
-    // still guards exactly what this test is for. The today tile's count is asserted below.
+    // WG_MINI_MAX_ITEMS (2) full rows — it still names what fits and folds the rest into a
+    // trailing "+N de plus" row rather than falling back to a bare count (lib/widgetGrid).
+    // « Demain » is the same chronological + weather-chipped tile with a day short enough to
+    // list in full, so it still guards exactly what this test is for. The today tile's
+    // overflow row is asserted below.
     await page.clock.setFixedTime(new Date(BASE * 1000))
     await page.setViewportSize({ width: 360, height: 740 })
     await mockApi(page)
@@ -193,11 +193,12 @@ test.describe('board compact lens', () => {
     const spill = await tile.evaluate((el) => el.scrollHeight > el.clientHeight + 1)
     expect(spill, 'the list face must not overflow its fixed height').toBeFalsy()
 
-    // The other half of the contract: a day too full to name falls to the glance face and
-    // says HOW MANY — with the weather chip still pinned to its header.
+    // The other half of the contract: a day too full to name in full still lists what fits
+    // (never falls back to a bare count) and folds the rest into a "+N de plus" row — with
+    // the weather chip still pinned to its header.
     const today = page.locator('.wg-slot[data-card="today"] .cardmini')
-    await expect(today).toHaveClass(/cardmini--glance/)
-    await expect(today.locator('.cardmini__hint')).toBeVisible()
+    await expect(today).toHaveClass(/cardmini--list/)
+    await expect(today.locator('.cardmini__row--more')).toBeVisible()
     await expect(today.locator('.cardmini__headx')).toBeVisible()
   })
 

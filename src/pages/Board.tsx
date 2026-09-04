@@ -1095,6 +1095,20 @@ export function Board() {
       // (BoardCard renders a hidden ghost) so a chip landing minutes later doesn't
       // reflow the title. A resolved "no weather" (binding unset) reserves nothing.
       compactHead={weather ? `${weather.tempC}°` : wx === undefined ? '' : undefined}
+      // The GROWN card mirrors the mini's own pencil + key corner shortcuts, right in the
+      // header — a one-tap-away door that doesn't make the reader scroll to the labelled
+      // « Planifier » / « Avant de partir » pills further down (which stay put too: the
+      // grown card keeps MORE room and options than the mini, not just the same two).
+      action={
+        <>
+          <Link to={`/kitchen/day/${todayDay}`} className="sec-label__actbtn" aria-label={t.board.planToday} title={t.board.planToday}>
+            <Icon name="pencil-simple-bold" size={14} />
+          </Link>
+          <Link to="/board/departure" className="sec-label__actbtn" aria-label={t.departure.title} title={t.departure.title}>
+            <Icon name="key-bold" size={14} />
+          </Link>
+        </>
+      }
     >
 {/* « Prochainement » — the next timed thing today as a calm tappable
     headline above the full day list (the glance the « Maintenant » view
@@ -1275,6 +1289,14 @@ export function Board() {
       // A pencil to « Planifier demain » (tomorrow's plan page) straight from the mini —
       // the night-before "sortir le poulet" gesture, one tap from the halved tile.
       compactCorner={{ to: `/kitchen/day/${tomorrowDay}`, icon: 'pencil-simple-bold', label: t.board.planTomorrow }}
+      // The GROWN card mirrors the same pencil in its header, so the shortcut is one tap
+      // away without scrolling to the labelled « Planifier demain » pill below (which
+      // stays too — the grown card keeps more room and options than the mini).
+      action={
+        <Link to={`/kitchen/day/${tomorrowDay}`} className="sec-label__actbtn" aria-label={t.board.planTomorrow} title={t.board.planTomorrow}>
+          <Icon name="pencil-simple-bold" size={14} />
+        </Link>
+      }
     >
       {/* D-17: the school/congé qualifier — silent almost every day BY
           DESIGN (rentrée/dernier jour/relâche edges/in-term fériés only,

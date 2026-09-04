@@ -17,6 +17,7 @@ import {
   critTags,
   pillKey,
 } from '../../lib/recipePills'
+import { MEAL_SLOTS, type MealSlot } from '../../lib/mealSlots'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
@@ -161,6 +162,16 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
   const addRule = () => setDraft((d) => (d ? { ...d, rules: [...d.rules, blankFor('totalMin')] } : d))
   const removeRule = (i: number) => setDraft((d) => (d ? { ...d, rules: d.rules.filter((_, j) => j !== i) } : d))
 
+  // Which meal slots this pill's recipes should be PRIORITIZED for (e.g. a
+  // "Dîner & Souper" pill lifts its matches to the top of both slots' pickers).
+  // Independent of the rules above — a pill can filter AND prioritize, or just one.
+  const toggleSlot = (s: MealSlot) =>
+    setDraft((d) => {
+      if (!d) return d
+      const cur = d.slots ?? []
+      return { ...d, slots: cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s] }
+    })
+
   const fieldLabel = (f: string) => t.operator.pillFieldName(f)
   const ruleText = (c: Criterion): string => {
     if (c.field === 'tag') {
@@ -197,7 +208,16 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
               <Chip className="pill-admin__chip" style={chipStyle}>
                 {pillLabel(p)}
               </Chip>
-              {custom && <span className="pill-admin__rules mono">{p.rules.map(ruleText).join(' · ')}</span>}
+              {custom && (
+                <span className="pill-admin__rules mono">
+                  {[
+                    p.rules.map(ruleText).join(' · '),
+                    p.slots?.length ? `${t.operator.pillSlotsLabel}: ${p.slots.map((s) => t.kitchen.slots[s]).join(', ')}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              )}
               {!ro && (
                 <button
                   type="button"
@@ -319,6 +339,21 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
             <button type="button" className="btn btn--ghost mono pill-admin__addrule" onClick={addRule}>
               <InlineIcon name="plus-bold" size={12} /> {t.operator.pillRuleAdd}
             </button>
+          </div>
+
+          {/* Meal-slot priority (independent of the rules above): tap a slot to have
+              this pill's matching recipes lead that slot's picker in the day editor
+              / week grid (still below Restants, which always lead there). */}
+          <div className="pill-admin__slots">
+            <span className="pill-admin__slots-label mono">{t.operator.pillSlotsLabel}</span>
+            <span className="pill-admin__slots-hint">{t.operator.pillSlotsHint}</span>
+            <div className="pill-admin__tagpick" role="group" aria-label={t.operator.pillSlotsLabel}>
+              {MEAL_SLOTS.map((s) => (
+                <Chip key={s} className="pill-admin__tagopt" selected={(draft.slots ?? []).includes(s)} onClick={() => toggleSlot(s)}>
+                  {t.kitchen.slots[s]}
+                </Chip>
+              ))}
+            </div>
           </div>
 
           <div className="pill-admin__editor-actions">

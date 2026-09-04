@@ -829,15 +829,17 @@
   width: 1.3rem;
   height: 1.3rem;
 }
-/* One quiet control at the trailing edge of a board-card header (SecLabel `action`):
-   the « Notes (cercle) » card's ＋, which opens the shared quick composer in place.
-   Sized like the compact lens's reduce chip (.sec-label__reduce) so a header that
-   carries both reads as one row of small round chips; a pseudo-element widens the
-   thumb target to 44px without inflating the visual disc. It is NOT a toolbar —
-   one action per header. */
+/* One or two quiet controls at the trailing edge of a board-card header (SecLabel
+   `action`): the « Notes (cercle) » card's ＋ (its shared quick composer), or a
+   pencil + key pair mirroring the mini's own corner shortcuts (« Aujourd'hui » /
+   « Demain », Board.tsx). Sized like the compact lens's reduce chip
+   (.sec-label__reduce) so a header that carries both reads as one row of small round
+   chips; a pseudo-element widens each thumb target to 44px without inflating the
+   visual disc. It is NOT a toolbar — at most a couple of icon buttons per header. */
 .sec-label__act {
   flex: none;
   display: inline-flex;
+  gap: 6px;
 }
 .sec-label__actbtn {
   position: relative;

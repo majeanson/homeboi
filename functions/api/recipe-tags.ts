@@ -87,6 +87,17 @@ const writeColors = (env: { DB: D1Database }, householdId: string, colors: Recor
 // trusted — a malformed pill / criterion is dropped on read AND on write.
 const PILL_BUILTINS = ['cookable', 'useSoon', 'fast', 'neglected', 'favorites', 'recent']
 const NUM_FIELDS = ['totalMin', 'prepMin', 'cookMin', 'ingredients', 'servings']
+// Mirror of MEAL_SLOTS in src/lib/mealSlots.ts — a custom pill's optional `slots`
+// (which meal slots it should be prioritized for, e.g. a "Dîner & Souper" pill).
+const MEAL_SLOTS = ['breakfast', 'lunch', 'supper', 'snack', 'dessert']
+
+// Known slots only, deduped, capped at one-per-slot. Anything else (a stale/typo'd
+// value) is silently dropped — same "shape gated, not trusted" rule as the rest of
+// this file.
+function cleanPillSlots(v: unknown): string[] {
+  if (!Array.isArray(v)) return []
+  return [...new Set(v.filter((s): s is string => isStr(s) && MEAL_SLOTS.includes(s)))]
+}
 
 function cleanCriterion(c: unknown): Record<string, unknown> | null {
   if (!c || typeof c !== 'object') return null
@@ -135,7 +146,15 @@ function cleanPills(raw: unknown): Record<string, unknown>[] {
       if (!label || !rules.length) continue
       seenId.add(id)
       const color = cleanColor(o.color)
-      out.push({ id, label, rules, ...(color ? { color } : {}), ...(o.off ? { off: true } : {}) })
+      const slots = cleanPillSlots(o.slots)
+      out.push({
+        id,
+        label,
+        rules,
+        ...(color ? { color } : {}),
+        ...(o.off ? { off: true } : {}),
+        ...(slots.length ? { slots } : {}),
+      })
     }
     if (out.length >= 30) break
   }

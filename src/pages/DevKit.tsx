@@ -2141,9 +2141,10 @@ export function DevKit() {
               scoped under (and where `--wg-tint` rides in), so the tiles here look exactly
               as they do on the board. See COMPONENTS.md · CardMini (BoardCard.tsx).
               Three faces, in order of how much the tile manages to say: it NAMES its rows
-              when few enough fit (WG_MINI_MAX_ITEMS), counts them when too many, and shows
-              its tint + a dashed edge when the card is empty. All one shelf tall. */}
-          <Demo label="compact lens — names its rows, counts them when too many, and says « Rien » when empty">
+              (up to WG_MINI_MAX_ITEMS full ones, wrapping onto up to two lines rather than
+              ellipsizing mid-word — the rest fold into a trailing "+N de plus" row), and
+              shows its tint + a dashed edge when the card is empty. All one shelf tall. */}
+          <Demo label="compact lens — names its rows (+N de plus past the cap), and says « Rien » when empty">
             <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '480px', flexWrap: 'wrap' }}>
               <div className="wg-slot" style={{ width: '140px', ['--wg-tint' as string]: 'var(--sage)' }}>
                 <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
@@ -2160,13 +2161,13 @@ export function DevKit() {
               </div>
               <div className="wg-slot" style={{ width: '140px', ['--wg-tint' as string]: 'var(--marigold)' }}>
                 <CardLensProvider value={{ compact: true, expanded: false, expand: () => {}, collapse: () => {} }}>
-                  {/* Too many to name honestly → the count, which says more than five of nine. */}
+                  {/* Too many to name honestly on their own → the first WG_MINI_MAX_ITEMS
+                      full rows, then a trailing "+N de plus" row (never a mid-word cut). */}
                   <BoardSection
                     label="Le fil du jour"
                     icon="clock-bold"
                     tint="var(--marigold)"
-                    compactItems={['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']}
-                    compactHint="9"
+                    compactItems={['Réveil de Léa', 'Rendez-vous chez le dentiste', 'Devoirs', 'Souper', 'Bain', 'Dodo']}
                   >
                     <Act cat="event" title="placeholder" />
                   </BoardSection>

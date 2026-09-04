@@ -194,6 +194,20 @@
 .pill-admin__addrule {
   align-self: flex-start;
 }
+/* Meal-slot priority chips (independent of the rules above). */
+.pill-admin__slots {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.pill-admin__slots-label {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.pill-admin__slots-hint {
+  color: var(--ink-faint);
+  font-size: var(--text-sm);
+}
 .pill-admin__editor-actions {
   display: flex;
   gap: 0.6rem;
