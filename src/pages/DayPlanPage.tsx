@@ -41,7 +41,8 @@ import { DayEditor } from '../components/kitchen/DayEditor'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { useAnnounceLeftover } from '../components/kitchen/Leftovers'
+import { useAnnounceLeftover, usePlanLeftover } from '../components/kitchen/Leftovers'
+import type { MealSlot } from '../lib/mealSlots'
 import { reschedule, restoreMeals } from '../components/kitchen/mealMutations'
 import {
   type Leftover,
@@ -50,7 +51,6 @@ import {
   MEALS_KEY,
   MEAL_HISTORY_KEY,
   DAY_NOTES_KEY,
-  LEFTOVERS_KEY,
 } from '../components/kitchen/types'
 import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY, CAR_KEY } from '../lib/queryKeys'
 
@@ -302,7 +302,10 @@ export function DayPlanPage() {
       return
     }
     try {
-      await write('day-notes', { method: 'POST', body: { date: d, text: v }, affectedKeys: [DAY_NOTES_KEY] })
+      // BOARD too: /api/board carries today's day note, so a DAY_NOTES-only
+      // invalidate left the wall showing the old memo until poll (the clear's
+      // undo below already had the right list — the drift proved itself).
+      await write('day-notes', { method: 'POST', body: { date: d, text: v }, affectedKeys: [DAY_NOTES_KEY, BOARD_KEY] })
       setEditNote(null)
       setNoteText('')
     } catch {
@@ -312,7 +315,7 @@ export function DayPlanPage() {
   async function clearNote(d: number) {
     const note = qc.getQueryData<DayNotesData>(DAY_NOTES_KEY)?.notes.find((n) => n.date === d)
     try {
-      await write('day-notes', { method: 'DELETE', body: { date: d }, affectedKeys: [DAY_NOTES_KEY] })
+      await write('day-notes', { method: 'DELETE', body: { date: d }, affectedKeys: [DAY_NOTES_KEY, BOARD_KEY] })
       setEditNote(null)
       setNoteText('')
       if (note)
@@ -414,36 +417,19 @@ export function DayPlanPage() {
     }).catch(() => {})
   }
 
-  // Plan a pooled leftover onto a day → a real meal tagged is_leftover; the pool
-  // row is consumed server-side. Compensating undo: delete the created meal AND
-  // re-insert the pool row, fully reversing the plan.
-  async function planLeftover(l: Leftover, d: number, slot: string) {
-    const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MONTH_KEY]
-    const res = await write<{ mealId?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { action: 'plan', id: l.id, date: d, slot },
-      affectedKeys: keys,
-    }).catch(() => null)
-    const mealId = res && !res.queued ? res.data?.mealId : undefined
-    recordUndo({
-      message: t.undo.leftoverPlanned(l.title),
-      onUndo: async () => {
-        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
-        await write('meal-leftovers', {
-          method: 'POST',
-          body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
-          affectedKeys: keys,
-        }).catch(() => {})
-      },
-    })
-  }
+  // Plan a pooled leftover onto a day — the ONE shared implementation
+  // (usePlanLeftover, Leftovers.tsx). This page carried a hand-rolled copy until
+  // 2026-09-03, and it drifted exactly as that file's header warns: the fork's
+  // key list was missing MEAL_HISTORY_KEY, so planning a leftover from the day
+  // scene left Historique stale until the next poll.
+  const planLeftover = usePlanLeftover()
   // The leftover-pick path: close whichever add-editor was open, then plan.
   function planLeftoverOnDay(d: number, slot: string, l: Leftover) {
     setEditDate(null)
     setEditSlot(null)
     setMealText('')
     setSlotText('')
-    void planLeftover(l, d, slot)
+    void planLeftover(l, d, slot as MealSlot)
   }
 
   // Drag a meal to another slot (same day) — shares the grid's reschedule helper.

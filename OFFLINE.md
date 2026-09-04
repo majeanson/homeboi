@@ -51,6 +51,23 @@ Rules that keep it fixed:
 Covered by `e2e/offline-boot.spec.ts` (hung open + unavailable open → app still mounts)
 and `e2e/sw.spec.ts` (shell reboots offline).
 
+## What the snapshot keeps (two rules, both learned the hard way)
+
+The snapshot can only ever save **what is still in the Query cache, with data** at
+save time — and two defaults quietly violated that (2026-09-03: airplane-mode test
+reopened on a Board and a Liste that were empty shells while La cuisine was fine):
+
+- **`gcTime` is a day, not TanStack's 5-minute default** (`lib/query.ts`). Ten
+  minutes spent on one tab garbage-collected every other tab's inactive queries,
+  and the next debounced save wrote a snapshot *without them* — offline reopen
+  then had nothing to restore for those tabs. Only an ephemeral surface may opt
+  back into a short `gcTime` per-query (`TodayChangesSheet`'s `gcTime: 0`).
+- **Dehydrate keeps every query that HOLDS DATA, not `status === 'success'`**
+  (`persist.ts`). A failed poll flips a query to `'error'` while its last good
+  data stays in the cache; filtering on status meant the act of going offline
+  *erased* the open tab from the snapshot within seconds. `dehydrate` only
+  serializes the data frame, so data-bearing errored queries are safe to keep.
+
 ## The write path (outbox)
 
 `useWrite()` (`src/lib/write.ts`) is the offline-aware replacement for the old

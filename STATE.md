@@ -45,7 +45,14 @@
   `check-bundle.mjs` (size + precache), and **`ingredient-mirror.test.ts` (the client
   and server copies of `ingredientName` are the same code — added 2026-08-28)**, and
   **the birthday agreement table (`src/lib/cercle.test.ts`, added 2026-08-28 — the client
-  and server `parseBirthday` must agree case-for-case)**. `knip` now runs in CI too.
+  and server `parseBirthday` must agree case-for-case)**, and **two added 2026-09-03:
+  `intl-rule.test.ts` (`new Intl.*` construction only in the five cached formatter
+  homes + a ratchet on `toLocale*String` — `/api/year` had burned 1.8 s of Worker CPU
+  rebuilding formatters per day) and `write-owners.test.ts` (owned endpoints: only the
+  owner module writes the flow, and every write carries the verified required
+  affectedKeys — the leftover flow had re-grown four drifted copies, and an
+  every-endpoint sweep found eleven more writes missing a surface's key, all fixed in
+  the same commit)**. `knip` now runs in CI too.
 
 ---
 

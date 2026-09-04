@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
-import { todayLocalDay } from '../src/lib/localDay'
+import { todayLocalDay, addLocalDays } from '../src/lib/localDay'
 
 // « Planifier une journée » (/kitchen/day/:date) after the 2026-08-26 pass:
 //
@@ -22,7 +22,6 @@ import { todayLocalDay } from '../src/lib/localDay'
 //
 // The shared `month` fixture is empty, so this spec seeds the day it means to test.
 
-const DAY = 86400
 // The household's own local-midnight math (America/Toronto, DST-aware), NOT a bare
 // `new Date()` — the browser context is pinned to that zone (playwright.config.ts),
 // but this Node test process runs in the CI RUNNER's zone (UTC), so a hand-rolled
@@ -30,7 +29,10 @@ const DAY = 86400
 // `todayLocalDay()` — and DayPlanPage's `isPast` gate (src/pages/DayPlanPage.tsx)
 // depends on exactly that comparison for the PAST-date test below.
 const TODAY = todayLocalDay()
-const YESTERDAY = TODAY - DAY
+// addLocalDays, not `TODAY - DAY`: a fixed 86400 misses yesterday's local midnight
+// on the two DST transition days (the documented fixed-86400 trap) — this spec
+// would go red on CI twice a year.
+const YESTERDAY = addLocalDays(TODAY, -1)
 
 const NOTE = 'apporter la carte d’assurance maladie · 3e étage'
 

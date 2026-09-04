@@ -7,21 +7,43 @@
 // (the kiosk lives in the house), matching how the Kitchen grid already formats.
 const HOUSEHOLD_TZ = 'America/Toronto'
 
-// Wall-clock Y/M/D h:m:s for an instant in `tz` (via Intl, DST-aware).
+// Constructing an Intl.DateTimeFormat costs ~100 µs — 1000× a formatToParts
+// call — and the year/month grids walk these helpers hundreds of days at a time
+// (the server twin burned whole SECONDS on /api/year before caching). One cached
+// formatter per tz + memoized parts keep the walk at Map-hit cost; mirrors
+// functions/_lib/ids.ts, which must stay behaviour-identical.
+const wallFmtCache = new Map<string, Intl.DateTimeFormat>()
+function wallFmt(tz: string): Intl.DateTimeFormat {
+  let f = wallFmtCache.get(tz)
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+    wallFmtCache.set(tz, f)
+  }
+  return f
+}
+
+// Wall-clock Y/M/D h:m:s for an instant in `tz` (via Intl, DST-aware). Memoized
+// per (tz, instant) — bounded; a year of day-walking touches ~1k instants.
+const wallPartsCache = new Map<string, { y: number; mo: number; d: number; h: number; mi: number; s: number }>()
 function wallParts(d: Date, tz: string) {
-  const f = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-  const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
+  const key = `${tz}:${d.getTime()}`
+  const hit = wallPartsCache.get(key)
+  if (hit) return hit
+  const p = Object.fromEntries(wallFmt(tz).formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
   // Intl emits hour "24" at midnight in some runtimes — normalize to 0.
-  return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+  const out = { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+  if (wallPartsCache.size > 20_000) wallPartsCache.clear()
+  wallPartsCache.set(key, out)
+  return out
 }
 
 // Unix-seconds of LOCAL midnight (in `tz`) for the day containing `d`. The
@@ -62,9 +84,14 @@ export function localMinuteOfDay(d: Date, tz = HOUSEHOLD_TZ): number {
 // Day-of-week (0 = Sunday) of the local day containing `d`. The month grid's
 // Sunday-start column must use the LOCAL weekday, not getUTCDay (which flips in
 // the evening, when local-midnight is already the next UTC day).
+const weekdayFmtCache = new Map<string, Intl.DateTimeFormat>()
 export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {
-  const wd = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(d)
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd)
+  let f = weekdayFmtCache.get(tz)
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
+    weekdayFmtCache.set(tz, f)
+  }
+  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(f.format(d))
 }
 
 // {year, month (0-11), day} of the local calendar day containing a local-midnight

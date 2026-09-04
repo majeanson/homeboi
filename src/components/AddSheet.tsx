@@ -739,7 +739,10 @@ export function AddSheet({
     setBusy(true)
     setErr(false)
     try {
-      await write('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId }, affectedKeys: [LEFTOVERS_KEY] })
+      // BOTH keys, matching useAnnounceLeftover — the pool AND the board's
+      // Restants card show this row; refreshing only one left the other stale
+      // (the exact drift that hook's header recounts, re-grown here by 2026-09-03).
+      await write('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId }, affectedKeys: [LEFTOVERS_KEY, BOARD_KEY] })
       setLeftoverText('')
       close()
     } catch (e) {

@@ -3,6 +3,23 @@ import { daysUntilLocal } from './localDay'
 
 const LOCALE: Record<Lang, string> = { fr: 'fr-CA', en: 'en-CA' }
 
+// Constructing an Intl.DateTimeFormat costs ~100 µs — 1000× a format() call — and
+// these helpers run per ROW (meal badges, deal cards, month cells, agenda lines),
+// so an uncached formatter taxes every list render on the cheap wall tablet. The
+// server twin burned whole seconds on /api/year this way (functions/_lib/ids.ts,
+// 2026-09-03). One cached formatter per (lang, shape); shapes are finite, so the
+// map never needs eviction.
+const fmtCache = new Map<string, Intl.DateTimeFormat>()
+function fmt(key: string, lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const k = `${lang}:${key}`
+  let f = fmtCache.get(k)
+  if (!f) {
+    f = new Intl.DateTimeFormat(LOCALE[lang], opts)
+    fmtCache.set(k, f)
+  }
+  return f
+}
+
 // Capitalize the first letter (e.g. a locale day name "lundi" → "Lundi"). Shared so
 // the departure/itinerary/day surfaces don't each re-declare it.
 export function capitalize(s: string): string {
@@ -11,7 +28,7 @@ export function capitalize(s: string): string {
 
 // Unix seconds -> "15 h 30" / "3:30 PM". Intl handles the locale spacing.
 export function formatTime(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { hour: 'numeric', minute: '2-digit' }).format(unixSec * 1000)
+  return fmt('time', lang, { hour: 'numeric', minute: '2-digit' }).format(unixSec * 1000)
 }
 
 // Calm relative time for the "Récents" session log (#38) — "à l'instant",
@@ -31,16 +48,14 @@ export function formatAgo(at: number, lang: Lang, now: number = Date.now()): str
 }
 
 export function formatDay(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'short', day: 'numeric', month: 'short' }).format(
-    unixSec * 1000,
-  )
+  return fmt('day', lang, { weekday: 'short', day: 'numeric', month: 'short' }).format(unixSec * 1000)
 }
 
 // A moment, not a day: "sam. 11 juill., 15 h 30". For anything stamped at an
 // instant (a mot, a note) shown in its detail view — a bare day can't tell two
 // messages of the same afternoon apart. Row/list surfaces keep formatDay.
 export function formatDayTime(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], {
+  return fmt('dayTime', lang, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -56,7 +71,7 @@ export function formatDayTime(unixSec: number, lang: Lang): string {
 export function formatDayMaybeYear(unixSec: number, lang: Lang, now: number = Date.now()): string {
   const ELEVEN_MONTHS_SEC = 11 * 30 * 24 * 60 * 60
   const far = unixSec - now / 1000 > ELEVEN_MONTHS_SEC
-  return new Intl.DateTimeFormat(LOCALE[lang], {
+  return fmt(far ? 'dayYear' : 'day', lang, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -65,7 +80,7 @@ export function formatDayMaybeYear(unixSec: number, lang: Lang, now: number = Da
 }
 
 export function formatWeekday(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long' }).format(unixSec * 1000)
+  return fmt('weekday', lang, { weekday: 'long' }).format(unixSec * 1000)
 }
 
 // Like formatWeekday, but anchors the two nearest days to "today"/"tomorrow" so a
@@ -96,7 +111,7 @@ export function formatRelativeWeekday(
 // "juin 2026" / "June 2026" — the month-view header. Intl lowercases the French
 // month; the caller capitalizes.
 export function formatMonthYear(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { month: 'long', year: 'numeric' }).format(unixSec * 1000)
+  return fmt('monthYear', lang, { month: 'long', year: 'numeric' }).format(unixSec * 1000)
 }
 
 // "12 mars" (same year) / "12 mars 2025" — a compact past-date tag, for the
@@ -104,7 +119,7 @@ export function formatMonthYear(unixSec: number, lang: Lang): string {
 export function formatPastDay(unixSec: number, lang: Lang, now: number = Date.now()): string {
   const d = new Date(unixSec * 1000)
   const sameYear = d.getFullYear() === new Date(now).getFullYear()
-  return new Intl.DateTimeFormat(LOCALE[lang], {
+  return fmt(sameYear ? 'pastDay' : 'pastDayYear', lang, {
     day: 'numeric',
     month: 'long',
     ...(sameYear ? {} : { year: 'numeric' }),
@@ -113,18 +128,16 @@ export function formatPastDay(unixSec: number, lang: Lang, now: number = Date.no
 
 // "vendredi 13 juin" / "Friday, June 13" — the month-view day-detail header.
 export function formatDayLong(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'long', day: 'numeric', month: 'long' }).format(
-    unixSec * 1000,
-  )
+  return fmt('dayLong', lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(unixSec * 1000)
 }
 
 // Short weekday ("ven" / "Fri") for the meal-plan date badge. Trim the locale's
 // trailing dot so it sits clean above the day number.
 export function weekdayShort(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { weekday: 'short' }).format(unixSec * 1000).replace('.', '')
+  return fmt('weekdayShort', lang, { weekday: 'short' }).format(unixSec * 1000).replace('.', '')
 }
 
 // Day-of-month number ("12") — the date badge's big anchor.
 export function dayNum(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(LOCALE[lang], { day: 'numeric' }).format(unixSec * 1000)
+  return fmt('dayNum', lang, { day: 'numeric' }).format(unixSec * 1000)
 }

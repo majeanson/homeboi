@@ -17,7 +17,7 @@ import { ChoreForm } from '../forms/ChoreForm'
 import { useNavigate } from 'react-router-dom'
 import { colourFor } from '../../lib/things'
 import { recurLabel } from '../../lib/recurLabel'
-import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY } from '../../lib/queryKeys'
+import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Chore, type Routine } from './types'
 
 export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
@@ -29,7 +29,10 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   // optimistic cache hide is undone by the next poll mid-undo. See the note there.
   function remove(c: Chore) {
     removal.remove([c.id], t.undo.cleared(c.title), async () => {
-      await write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [CHORES_KEY] })
+      // BOARD + MONTH too: a due chore shows on the board card and the month
+      // grid — a CHORES-only invalidate left the deleted row there until poll
+      // (the invalidation-drift class, 2026-09-03; ChoreForm carries the same list).
+      await write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [CHORES_KEY, BOARD_KEY, MONTH_KEY] })
       onChange()
     })
   }

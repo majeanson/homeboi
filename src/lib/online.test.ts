@@ -119,7 +119,6 @@ describe('evaluateFreshness', () => {
     return {
       queryHash: 'q',
       live: true,
-      succeeded: false,
       dataUpdatedAt: 0,
       fetching: false,
       fetchFailureCount: 0,
@@ -130,7 +129,7 @@ describe('evaluateFreshness', () => {
   it('non-live queries never contribute newest or suppression', () => {
     const map = new Map<string, number>()
     const { newestMs, anyFirstRetryInFlight } = evaluateFreshness(
-      [q({ live: false, succeeded: true, dataUpdatedAt: NOW, fetching: true })],
+      [q({ live: false, dataUpdatedAt: NOW, fetching: true })],
       NOW,
       map,
       WINDOW,
@@ -164,7 +163,7 @@ describe('evaluateFreshness', () => {
     const { newestMs, anyFirstRetryInFlight } = evaluateFreshness(
       [
         q({ queryHash: 'hung', fetching: true, fetchFailureCount: 0 }),
-        q({ queryHash: 'other', succeeded: true, dataUpdatedAt: hoursOld }),
+        q({ queryHash: 'other', dataUpdatedAt: hoursOld }),
       ],
       NOW,
       map,
@@ -193,19 +192,40 @@ describe('evaluateFreshness', () => {
     expect(anyFirstRetryInFlight).toBe(false)
   })
 
-  it('newestMs picks the max across multiple succeeded live queries', () => {
+  it('newestMs picks the max across multiple data-bearing live queries', () => {
     const map = new Map<string, number>()
     const { newestMs } = evaluateFreshness(
       [
-        q({ queryHash: 'a', succeeded: true, dataUpdatedAt: NOW - 5000 }),
-        q({ queryHash: 'b', succeeded: true, dataUpdatedAt: NOW - 1000 }),
-        q({ queryHash: 'c', succeeded: true, dataUpdatedAt: NOW - 9000 }),
+        q({ queryHash: 'a', dataUpdatedAt: NOW - 5000 }),
+        q({ queryHash: 'b', dataUpdatedAt: NOW - 1000 }),
+        q({ queryHash: 'c', dataUpdatedAt: NOW - 9000 }),
       ],
       NOW,
       map,
       WINDOW,
     )
     expect(newestMs).toBe(NOW - 1000)
+  })
+
+  // 2026-09-03: when the network drops, the active tab's next poll fails and flips
+  // its query to 'error' — but the last good frame is still on screen, and its
+  // dataUpdatedAt (only ever written on success) is that frame's true age. The old
+  // status === 'success' gate skipped it, so going offline instantly AGED the
+  // freshness stamp past the data actually showing (same class as the persist
+  // snapshot bug). The snapshot no longer carries a status at all; a failing query
+  // is one with fetchFailureCount > 0, and its dataUpdatedAt must still count.
+  it('a live query whose latest poll FAILED still contributes its last good dataUpdatedAt', () => {
+    const map = new Map<string, number>()
+    const { newestMs } = evaluateFreshness(
+      [
+        q({ queryHash: 'erroring', dataUpdatedAt: NOW - 2000, fetching: true, fetchFailureCount: 3 }),
+        q({ queryHash: 'old-success', dataUpdatedAt: NOW - 60 * 60 * 1000 }),
+      ],
+      NOW,
+      map,
+      WINDOW,
+    )
+    expect(newestMs).toBe(NOW - 2000)
   })
 })
 

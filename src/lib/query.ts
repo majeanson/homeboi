@@ -34,6 +34,15 @@ export const queryClient = new QueryClient({
       // masking real changes for long. Polling surfaces set their own interval.
       staleTime: 10_000,
       refetchOnWindowFocus: false,
+      // Keep INACTIVE queries for a day, not TanStack's 5-minute default. The
+      // persisted-cache snapshot (lib/persist.ts) can only save what's still in
+      // the cache: with the default, ten minutes on La cuisine silently GC'd the
+      // board + liste data, the next debounced snapshot wrote a cache without
+      // them, and an offline reopen showed those tabs as empty shells while
+      // Cuisine restored fine (Marc, 2026-09-03, airplane-mode test). A day
+      // matches persist's MAX_AGE; the payloads are small JSON. Ephemeral
+      // surfaces that must not linger opt out per-query (TodayChangesSheet).
+      gcTime: 24 * 60 * 60 * 1000,
     },
   },
 })

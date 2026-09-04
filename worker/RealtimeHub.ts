@@ -123,10 +123,12 @@ export class RealtimeHub implements DurableObject {
     } catch {
       /* already closed */
     }
-    // The closing socket drops out of getWebSockets() once it's actually gone, so
-    // this recomputes the roster WITHOUT it — the tab it was on may just have gone
-    // empty for everyone else.
-    this.broadcastPresence()
+    // Recompute the roster WITHOUT the closing socket — the tab it was on may just
+    // have gone empty for everyone else. Excluded explicitly rather than trusting
+    // getWebSockets() to have already dropped it: whether it has, this early in the
+    // close handler, is runtime behaviour we'd rather not depend on (a lingering
+    // ghost dot would otherwise sit there until the next presence event).
+    this.broadcastPresence(ws)
   }
 
   webSocketError(ws: WebSocket): void {
@@ -135,7 +137,7 @@ export class RealtimeHub implements DurableObject {
     } catch {
       /* already closed */
     }
-    this.broadcastPresence()
+    this.broadcastPresence(ws)
   }
 
   // A client is the only thing that ever sends here: a presence announce when it
@@ -151,8 +153,13 @@ export class RealtimeHub implements DurableObject {
       return // malformed frame — ignore, nothing to attach
     }
     if (!isPresenceIn(msg)) return
-    if (msg.view && msg.memberId) {
-      ws.serializeAttachment({ view: msg.view, memberId: msg.memberId } satisfies PresenceAttachment)
+    // Only string payloads, capped: the frame comes from any authed device, and an
+    // uncapped value would be stored on the attachment and rebroadcast to every
+    // socket in the household on each presence change. Real values are a hub-tab
+    // slug and a nanoid — 64 chars is generous headroom, not a limit anyone hits.
+    if (typeof msg.view === 'string' && msg.view && typeof msg.memberId === 'string' && msg.memberId) {
+      const att: PresenceAttachment = { view: msg.view.slice(0, 64), memberId: msg.memberId.slice(0, 64) }
+      ws.serializeAttachment(att)
     } else {
       ws.serializeAttachment(null) // retract: no tab, or no face picked
     }
@@ -183,9 +190,10 @@ export class RealtimeHub implements DurableObject {
   // attachment and fan it out to everyone. Household socket counts are tiny (a
   // handful of devices), so recomputing from scratch on every change is simpler
   // than diffing and cheap enough not to matter.
-  private broadcastPresence(): void {
+  private broadcastPresence(excluding?: WebSocket): void {
     const byView: Record<string, string[]> = {}
     for (const ws of this.state.getWebSockets()) {
+      if (ws === excluding) continue
       let att: PresenceAttachment | null = null
       try {
         att = ws.deserializeAttachment() as PresenceAttachment | null
@@ -197,6 +205,7 @@ export class RealtimeHub implements DurableObject {
     }
     const data = JSON.stringify({ type: 'presence', byView })
     for (const ws of this.state.getWebSockets()) {
+      if (ws === excluding) continue
       try {
         ws.send(data)
       } catch {

@@ -21,12 +21,14 @@ import { type Leftover, type MealRow, LEFTOVERS_KEY, MEALS_KEY, MEAL_HISTORY_KEY
 //     source chip already names the concept), above the use-soon recipe shortlist.
 // One file, so the add body, the recipe link, the undo and the copy can't drift.
 
-/** Plan a leftover onto a day+slot — consumed, so it records a compensating undo. */
+/** Plan a leftover onto a day+slot — consumed, so it records a compensating undo.
+ * The param is the SUBSET of Leftover this actually reads, so the board can pass
+ * its leaner /api/board row (no created_at there) without inventing one. */
 export function usePlanLeftover() {
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
-  return async (l: Leftover, date: number, slot: MealSlot) => {
+  return async (l: Pick<Leftover, 'id' | 'title' | 'recipe_id' | 'source_meal_id'>, date: number, slot: MealSlot) => {
     const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
     const res = await write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',

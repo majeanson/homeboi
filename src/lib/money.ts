@@ -6,13 +6,21 @@ import type { Lang } from '../i18n'
 // TARGET only — there is no saved-so-far / progress figure to format.
 
 // cents → localized currency string. null/undefined/NaN → '' (nothing to show).
+// Formatter cached per lang — constructing one costs ~100 µs and this runs per
+// project row (same class as the lib/format.ts caches).
+const moneyFmtCache = new Map<Lang, Intl.NumberFormat>()
 export function formatMoney(cents: number | null | undefined, lang: Lang): string {
   if (cents == null || !Number.isFinite(cents)) return ''
-  return new Intl.NumberFormat(lang === 'en' ? 'en-CA' : 'fr-CA', {
-    style: 'currency',
-    currency: 'CAD',
-    maximumFractionDigits: 0,
-  }).format(cents / 100)
+  let f = moneyFmtCache.get(lang)
+  if (!f) {
+    f = new Intl.NumberFormat(lang === 'en' ? 'en-CA' : 'fr-CA', {
+      style: 'currency',
+      currency: 'CAD',
+      maximumFractionDigits: 0,
+    })
+    moneyFmtCache.set(lang, f)
+  }
+  return f.format(cents / 100)
 }
 
 // A free-typed dollar amount → integer cents for storage. Tolerates spaces, a

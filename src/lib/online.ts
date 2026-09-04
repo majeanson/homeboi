@@ -104,7 +104,12 @@ export const SUPPRESS_WINDOW_MS = 20_000
 export interface LiveQuerySnapshot {
   queryHash: string
   live: boolean
-  succeeded: boolean
+  // When the query last HELD good data (0 = never). Deliberately not gated on the
+  // query's current status: a failed poll flips status to 'error' while the last
+  // good frame — the thing the freshness stamp describes — stays on screen, and
+  // dataUpdatedAt is only ever written by a successful fetch anyway. Gating on
+  // status === 'success' made going offline AGE the stamp past the data actually
+  // showing (same bug class as the persist snapshot filter, 2026-09-03).
   dataUpdatedAt: number
   fetching: boolean
   fetchFailureCount: number
@@ -127,7 +132,7 @@ export function evaluateFreshness(
   const stillFetching = new Set<string>()
   for (const q of queries) {
     if (!q.live) continue
-    if (q.succeeded && q.dataUpdatedAt > newest) newest = q.dataUpdatedAt
+    if (q.dataUpdatedAt > newest) newest = q.dataUpdatedAt
     if (q.fetching && q.fetchFailureCount === 0) {
       stillFetching.add(q.queryHash)
       let startedAt = fetchStartedAt.get(q.queryHash)
@@ -165,7 +170,6 @@ export function useDataFreshness(): boolean {
         .map((q) => ({
           queryHash: q.queryHash,
           live: q.meta?.live === true,
-          succeeded: q.state.status === 'success',
           dataUpdatedAt: q.state.dataUpdatedAt,
           fetching: q.state.fetchStatus === 'fetching',
           fetchFailureCount: q.state.fetchFailureCount,
@@ -197,7 +201,11 @@ export function useDataFreshness(): boolean {
 export function newestFetchMs(qc: ReturnType<typeof useQueryClient>): number {
   let newest = 0
   for (const q of qc.getQueryCache().getAll()) {
-    if (q.state.status === 'success' && q.state.dataUpdatedAt > newest) newest = q.state.dataUpdatedAt
+    // No status gate: a query whose latest poll failed still shows its last good
+    // data, and dataUpdatedAt (written only on success) is exactly that frame's
+    // age. Gating on status === 'success' made the banner report data as older
+    // than what was on screen the moment the network dropped (2026-09-03).
+    if (q.state.dataUpdatedAt > newest) newest = q.state.dataUpdatedAt
   }
   return newest
 }

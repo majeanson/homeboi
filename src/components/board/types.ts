@@ -69,6 +69,10 @@ export interface MealRow {
 interface LeftoverRow {
   id: string
   title: string
+  // Optional recipe link, so « planifier ce soir » can pass the full row to the
+  // shared usePlanLeftover (whose undo re-inserts the pool row WITH its link).
+  recipe_id?: string | null
+  source_meal_id?: string | null
 }
 // One of today's planned meals, with its slot (déjeuner/dîner/souper/collation)
 // so the board can label it. The full day's table, shown beside the supper hero.

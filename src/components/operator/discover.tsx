@@ -111,7 +111,11 @@ export function DidYouKnowCard() {
     })),
   })
   if (!enabled) return null
-  if (!results.every((r) => r.isSuccess)) return null
+  // Data presence, not isSuccess: a failed background refetch flips a probe to
+  // 'error' while its cached answer is still right there, and the status gate made
+  // this card vanish from an offline Réglages for no reason (the status-vs-data
+  // rule, CLAUDE.md conventions — same class as the persist snapshot bug).
+  if (!results.every((r) => r.data !== undefined)) return null
   const unused = DISCOVERY_PROBES.filter((p, i) => p.unused(results[i].data)).map((p) => p.card)
   const candidates = unused.filter((id) => !seen.includes(id))
   const pick = pickDaily(candidates, dayIndexNow())

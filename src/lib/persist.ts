@@ -106,14 +106,20 @@ export async function restorePersistedCache(qc: QueryClient): Promise<void> {
   }
 }
 
-// Snapshot the cache on changes, debounced. Dehydrates only SUCCESSFUL queries so
-// we never persist a loading/error frame as if it were good data.
+// Snapshot the cache on changes, debounced. Dehydrates every query that HOLDS
+// DATA — not `status === 'success'`: when the network drops while the app is
+// open, the active tab's next poll fails and flips its status to 'error' even
+// though the last good data is still right there in the cache. The old predicate
+// then saved a snapshot WITHOUT that tab, so going offline actively erased the
+// one thing offline needed (Marc, 2026-09-03, airplane-mode test). dehydrate
+// only ever serializes the data frame (never the error), so a query that has
+// data is safe to keep regardless of how its last fetch ended.
 export function startPersistingCache(qc: QueryClient): void {
   let timer: ReturnType<typeof setTimeout> | null = null
   const save = () => {
     timer = null
     try {
-      const state = dehydrate(qc, { shouldDehydrateQuery: (q) => q.state.status === 'success' })
+      const state = dehydrate(qc, { shouldDehydrateQuery: (q) => q.state.data !== undefined })
       void idbSet({ at: Date.now(), state })
     } catch {
       /* noop */

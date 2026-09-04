@@ -8,7 +8,7 @@ import { useUndoableRemove } from '../../lib/undoRemove'
 import { useAuth } from '../../lib/auth'
 import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
-import { HOME_PROJECTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { recurLabel } from '../../lib/recurLabel'
 import { fold } from '../../lib/normalize'
 import { useCarnets } from '../../lib/carnets'
@@ -108,7 +108,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
         leadSeconds: seed.leadWeeks * 7 * 86_400, // A-6: annual rituals get week-scale « Bientôt »
         carnetId: carnet?.id ?? null,
       },
-      affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']],
+      affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY],
     })
   }
   // « Cette saison » — for Entretien only, a calm glance of the upkeep owed now or
@@ -129,7 +129,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
       listProp: 'projects',
       id: p.id,
       label: p.title,
-      commit: () => write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']] }),
+      commit: () => write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY] }),
       after: () => {},
     })
   }

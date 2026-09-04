@@ -68,11 +68,11 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildEvent, buildChore, buildLeftover, type DetailCtx } from '../components/detail/adapters'
 import { useOpenMeal } from '../components/detail/useOpenMeal'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { useAnnounceLeftover } from '../components/kitchen/Leftovers'
+import { useAnnounceLeftover, usePlanLeftover } from '../components/kitchen/Leftovers'
 // The board writes meals too (« ce soir »): the same keys the kitchen's own
 // mutations refresh, so the week grid and « Historique » don't keep a row the
 // board just deleted (and « Déjà mangé » rides the meal-history prefix).
-import { MEALS_KEY, MEAL_HISTORY_KEY } from '../components/kitchen/types'
+import { MEALS_KEY, MEAL_HISTORY_KEY, LEFTOVERS_KEY } from '../components/kitchen/types'
 import { useBoardData } from '../lib/queryHooks'
 import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
@@ -104,7 +104,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 // and stays empty — no counters, no score for clearing it. The board has two
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
-import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY } from '../lib/queryKeys'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
@@ -672,24 +672,15 @@ export function Board() {
         write('meals', { method: 'POST', body: { date, slot, title }, affectedKeys: keys }).catch(() => {}),
     })
   }
-  // Plan a pool leftover as tonight's supper (compensating undo: delete the
-  // created meal + re-insert the pool row, exactly like Leftovers.tsx planLeftover).
-  const planLeftoverTonight = async (id: string, title: string) => {
-    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
-    const res = await write<{ mealId?: string }>('meal-leftovers', {
-      method: 'POST',
-      body: { action: 'plan', id, date: todayDay, slot: heroSlot },
-      affectedKeys: keys,
-    }).catch(() => null)
-    const mealId = res && !res.queued ? res.data?.mealId : undefined
-    recordUndo({
-      message: t.undo.leftoverPlanned(title),
-      onUndo: async () => {
-        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
-        await write('meal-leftovers', { method: 'POST', body: { title }, affectedKeys: keys }).catch(() => {})
-      },
-    })
-  }
+  // Plan a pool leftover as tonight's supper — the ONE shared implementation
+  // (usePlanLeftover, Leftovers.tsx). This page carried a hand-rolled copy until
+  // 2026-09-03, and it had drifted twice over: its undo re-inserted the pool row
+  // as `{ title }` alone (dropping the recipe link — /api/board now sends
+  // recipe_id/source_meal_id on each leftover so the full row can travel), and
+  // its key list skipped LEFTOVERS_KEY (kitchen pool stale after planning).
+  const planLeftover = usePlanLeftover()
+  const planLeftoverTonight = (l: { id: string; title: string; recipe_id?: string | null; source_meal_id?: string | null }) =>
+    void planLeftover(l, todayDay, heroSlot as MealSlot)
 
   // A due recurring chore, surfaced on the board. Tapping marks it done (advances
   // the rotation server-side). DEFERRED: hide it now (pendingDone) and hold the
@@ -707,9 +698,14 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await write('chores', { method: 'PATCH', body: { id: c.id, complete: true }, affectedKeys: [BOARD_KEY] }).catch(
-          () => {},
-        )
+        // CHORES + MONTH too: completing advances the rotation server-side, so
+        // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
+        // month grid change with it — BOARD alone left them stale until poll.
+        await write('chores', {
+          method: 'PATCH',
+          body: { id: c.id, complete: true },
+          affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
+        }).catch(() => {})
         // Wait for the board to reflect the change before un-hiding, else the stale
         // cached frame (still holding the row) flashes it back for a frame.
         await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
@@ -735,7 +731,9 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        // BOTH keys: the kitchen's Restants strip shows this row too, and a
+        // board-only invalidate left it stale until its next poll (2026-09-03).
+        await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY, LEFTOVERS_KEY] }).catch(() => {})
         // Wait for the refetch so the stale frame can't flash the row back.
         await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingLeftover((s) => {
@@ -776,9 +774,14 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await write('chores', { method: 'PATCH', body: { id: c.id, complete: true }, affectedKeys: [BOARD_KEY] }).catch(
-          () => {},
-        )
+        // CHORES + MONTH too: completing advances the rotation server-side, so
+        // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
+        // month grid change with it — BOARD alone left them stale until poll.
+        await write('chores', {
+          method: 'PATCH',
+          body: { id: c.id, complete: true },
+          affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
+        }).catch(() => {})
         // Wait for the refetch so the stale frame can't flash the row back.
         await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingDone((s) => {
@@ -817,7 +820,14 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await write('home-projects', { method: 'PATCH', body: { id: c.id }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        // The full HomeProjectForm list: stamping last_done_at re-derives nextAt
+        // (recur_from 'done' re-anchors), which the month grid, Réglages ▸ Projets
+        // and a carnet's own rows all display — BOARD alone left them stale.
+        await write('home-projects', {
+          method: 'PATCH',
+          body: { id: c.id },
+          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+        }).catch(() => {})
         await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingDone((s) => {
           const n = new Set(s)
@@ -842,7 +852,13 @@ export function Board() {
           return n
         }),
       onCommit: async () => {
-        await write('home-projects', { method: 'PATCH', body: { id: c.id, snooze: mode }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+        // Same list as markHomeDone: a snooze moves the next occurrence, which
+        // the month grid + Réglages ▸ Projets + carnet rows display too.
+        await write('home-projects', {
+          method: 'PATCH',
+          body: { id: c.id, snooze: mode },
+          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+        }).catch(() => {})
         await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
         setPendingDone((s) => {
           const n = new Set(s)
@@ -1384,7 +1400,7 @@ export function Board() {
           onCheck={ro ? undefined : () => markLeftoverDone(l)}
           onOpen={() => detail.open(buildLeftover(l, detailCtx, {
             onDone: ro ? undefined : () => markLeftoverDone(l),
-            onPlanTonight: ro ? undefined : () => planLeftoverTonight(l.id, l.title),
+            onPlanTonight: ro ? undefined : () => planLeftoverTonight(l),
           }))}
         />
       ))}

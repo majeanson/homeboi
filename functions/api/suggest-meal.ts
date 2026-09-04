@@ -1,7 +1,7 @@
 import { ok, serviceUnavailable, readJson, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { suggestMeals, resolveLang } from '../_lib/ai'
-import { localDayStart } from '../_lib/ids'
+import { localDayStart, addLocalDays } from '../_lib/ids'
 
 // "Qu'est-ce qu'on mange?" — one on-demand AI call returns a BATCH of 10 ideas.
 // The client shows them one per click and only asks again once exhausted, so 10
@@ -29,7 +29,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
     ctx.env.DB.prepare(
       'SELECT title FROM meals WHERE household_id = ? AND date < ? ORDER BY date DESC LIMIT 7',
     )
-      .bind(actor.householdId, today + 86400)
+      // addLocalDays, not `today + 86400`: meal dates sit AT local midnights, and
+      // on the 23 h spring-forward day a fixed bound reaches an hour past
+      // tomorrow's midnight, sweeping tomorrow's planned supper into "recent".
+      .bind(actor.householdId, addLocalDays(today, 1))
       .all<{ title: string }>(),
     // The family's own recipe book — so "what's for supper?" can resurface dishes
     // they've actually saved, not only AI-invented ones. LOVED recipes (#21 hearts)

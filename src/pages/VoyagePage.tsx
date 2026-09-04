@@ -253,11 +253,13 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
       ...(cover ? { media_key: cover } : {}),
     }
     try {
+      // MONTH too: /api/month draws each trip as a calendar band (title, colour,
+      // span) — a TRIPS-only invalidate left the old band there until poll.
       if (editing) {
-        await write('trips', { method: 'PATCH', body: { id: trip!.id, ...body }, affectedKeys: [TRIPS_KEY] })
+        await write('trips', { method: 'PATCH', body: { id: trip!.id, ...body }, affectedKeys: [TRIPS_KEY, MONTH_KEY] })
         onClose()
       } else {
-        const res = await write<{ id?: string }>('trips', { method: 'POST', body, affectedKeys: [TRIPS_KEY] })
+        const res = await write<{ id?: string }>('trips', { method: 'POST', body, affectedKeys: [TRIPS_KEY, MONTH_KEY] })
         const newId = res && !res.queued ? res.data?.id : undefined
         if (newId) nav(`/voyage/${newId}`, { replace: true })
         else onClose() // offline: queued; it appears on replay

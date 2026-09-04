@@ -15,7 +15,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
-import { CARNETS_KEY, CARE_LOG_KEY, HOME_PROJECTS_KEY, HOME_PINS_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { CARNETS_KEY, CARE_LOG_KEY, HOME_PROJECTS_KEY, HOME_PINS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { formatDay } from '../lib/format'
 import { recurLabel } from '../lib/recurLabel'
 import { formatMoney } from '../lib/money'
@@ -139,7 +139,7 @@ export function CercleCarnetPage() {
 
   function removeUpkeep(p: HomeProject) {
     upkeepRemoval.remove([p.id], c.careDeleted, () =>
-      write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, ['month']] }),
+      write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY] }),
     )
   }
 

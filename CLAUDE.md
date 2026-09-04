@@ -115,6 +115,10 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Delete / clear a row from a **live-polled** list | **`useDeferredRemoval(queryKey)`** (`lib/useDeferredRemoval.ts`) — `visible()` filters the rows, `remove()` holds the write behind the undo toast + awaits a refetch | …optimistically `setQueryData` then defer the write: the next poll resurrects the row mid-undo (flash-back glitch) |
 | A full-screen surface where the user **types** | be a **`.scene`** (`FormScene`/`SceneHead`) — or add **`.vv-fit`** on the fixed shell + **`.vv-slack`** on its scroller. Fit + trailing slack live in ONE place (`core.css` « Keyboard fit »); the caret pin/follow is global (`lib/viewportVars.ts`), nothing to wire per field. On-device debug: Réglages ▸ Système ▸ Version → « diagnostic clavier » | …shrink the shell under `.kb-open` (`height: var(--vvh)` — the page behind shows through the keyboard strip) or skip the slack (a last-line caret has no room to rise). `src/styles/keyboard-fit.test.ts` fails the build on both |
 | A container that already holds buttons | **plain `<div onClick>`** (mouse convenience only) | …give it `role="button"`+`tabIndex`: a control inside a control announces as "a button whose contents are buttons", and `stopPropagation` on the inner handlers fixes the MOUSE while hiding the semantics. Same for `role="img"` on an SVG with interactive children — an `img` role makes its whole subtree presentational, so those children vanish from the a11y tree (use `role="group"`). `src/lib/nested-interactive.test.ts` fails the build on both |
+| Format a date/time/amount for the UI | the **cached** helpers: `lib/format.ts` / `lib/money.ts` (client), `functions/_lib/ids.ts` / `askContext.ts` (Worker) — a new shape gets a new cached helper THERE | …construct `new Intl.*` inline (~100 µs each, paid per row/day — `/api/year` burned 1.8 s of a ~10 ms Worker CPU budget this way; `intl-rule.test.ts` fails the build) or casually add `toLocaleDateString` calls (same construction hidden in a convenience method — ratcheted by the same test) |
+| Day arithmetic on a local midnight | **`addLocalDays`** (`lib/localDay.ts` / `_lib/ids.ts`) | …`± 86400`: DST days are 23/25 h long, so a fixed day off a local midnight lands at 23:00/01:00 — the documented fixed-86400 trap, which also made two e2e specs red twice a year |
+| "Does this query hold data?" | **`state.data !== undefined`** (or `dataUpdatedAt > 0` for its age) | …gate on `status === 'success'`: a failed poll flips status to `'error'` while the last good frame STAYS cached — that gate erased the open tab from the offline snapshot and aged the freshness stamp the moment the network dropped (persist.ts + online.ts, 2026-09-03) |
+| A second write site for a flow with a shared hook | **the owner's hook** (`usePlanLeftover`/`useAnnounceLeftover` precedent); owned endpoints are mapped in `write-owners.test.ts` | …hand-roll a copy beside it: the leftover flow re-grew FOUR independent drifts by 2026-09-03 (a missing invalidation key ×3, an undo that dropped the recipe link) — the guard now fails a non-owner write site |
 | Hide a control from a read-only guest | **`isGuest()` — but only if it writes `/api/*`** | …gate a **device-local** pref with it (theme, language, audience lens, voice, calm, `lib/boardCards` layout): they're localStorage, they change nothing for the household, and gating them is what hid board reordering + the whole in-app guide from the public demo. See [The demo is a guest link](#the-demo-is-a-guest-link) |
 
 **When you DO add a new shared component:** register it in `src/pages/DevKit.tsx`,
@@ -608,8 +612,9 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
   body there instead of widening the pill row.
 - **A new guard must be run against the bug it was written for, before it is
   trusted** (standing rule). The build-gating grep tests (`calm-tenets`,
-  `field-fit`, `keyboard-fit`, `write-rule`, `nested-interactive`, `discovery`,
-  `demoHousehold`, `realtime`) are the best thing in this codebase — and a green
+  `field-fit`, `keyboard-fit`, `write-rule`, `write-owners`, `intl-rule`,
+  `nested-interactive`, `discovery`, `demoHousehold`, `realtime`) are the best
+  thing in this codebase — and a green
   one proves nothing on its own. `nested-interactive.test.ts` was written to catch
   a control-inside-a-control on the routines grid and reported GREEN over exactly
   that defect: it walked JSX by indentation, and prettier breaks a multi-attribute

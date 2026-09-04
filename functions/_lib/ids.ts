@@ -55,34 +55,66 @@ export function dayStart(d: Date): number {
 // UTC. Single Québec household, so a fixed zone is fine; Intl handles DST.
 export const HOUSEHOLD_TZ = 'America/Toronto'
 
+// Constructing an Intl.DateTimeFormat costs ~100 µs (ICU locale + pattern
+// resolution) — 1000× a formatToParts call. The calendar expanders walk these
+// helpers day-by-day (400 days × N recurring rows on /api/year), so fresh
+// construction per call burned SECONDS of CPU and blew the Worker's per-request
+// budget: /api/year died while everything else answered. One cached formatter
+// per tz keeps every caller on the cheap path.
+const wallFmtCache = new Map<string, Intl.DateTimeFormat>()
+function wallFmt(tz: string): Intl.DateTimeFormat {
+  let f = wallFmtCache.get(tz)
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+    wallFmtCache.set(tz, f)
+  }
+  return f
+}
+
 // Wall-clock Y/M/D h:m:s for an instant in `tz` (via Intl, DST-aware).
+// Memoized per (tz, instant): the recurrence walkers hand the SAME midnights and
+// noons back in across every row they expand, so repeat lookups are Map hits.
+// Bounded — a calendar year touches ~1k instants; the cap only guards pathology.
+const wallPartsCache = new Map<string, { y: number; mo: number; d: number; h: number; mi: number; s: number }>()
 function wallParts(d: Date, tz: string) {
-  const f = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
-  const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
+  const key = `${tz}:${d.getTime()}`
+  const hit = wallPartsCache.get(key)
+  if (hit) return hit
+  const p = Object.fromEntries(wallFmt(tz).formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
   // Intl emits hour "24" at midnight in some runtimes — normalize to 0.
-  return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+  const out = { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+  if (wallPartsCache.size > 20_000) wallPartsCache.clear()
+  wallPartsCache.set(key, out)
+  return out
 }
 
 // Unix-seconds of LOCAL midnight (in `tz`) for the day containing `d`. The
 // double-offset pass keeps it correct across a DST boundary. Use this for the
 // meal-week window so "today" advances at midnight, not 8 PM.
+const dayStartCache = new Map<string, number>()
 export function localDayStart(d: Date, tz = HOUSEHOLD_TZ): number {
+  const key = `${tz}:${d.getTime()}`
+  const hit = dayStartCache.get(key)
+  if (hit !== undefined) return hit
   const w = wallParts(d, tz)
   const offset = Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s) - d.getTime()
   const wallMidnight = Date.UTC(w.y, w.mo - 1, w.d)
   const approx = new Date(wallMidnight - offset)
   const w2 = wallParts(approx, tz)
   const offset2 = Date.UTC(w2.y, w2.mo - 1, w2.d, w2.h, w2.mi, w2.s) - approx.getTime()
-  return Math.floor((wallMidnight - offset2) / 1000)
+  const out = Math.floor((wallMidnight - offset2) / 1000)
+  if (dayStartCache.size > 20_000) dayStartCache.clear()
+  dayStartCache.set(key, out)
+  return out
 }
 
 // Local midnight (unix s) of the calendar day `n` days after the local-midnight
@@ -118,7 +150,19 @@ export function localTimeOnDay(daySec: number, secsOfDay: number, tz = HOUSEHOLD
 // local day, not getUTCDay (which flips at 8 PM Eastern). Callers: recurrence
 // matching, the work-schedule week, habits, the calendar grids. (The meal plan used
 // to anchor its block on a Tuesday through here; it rolls from today now.)
+const weekdayFmtCache = new Map<string, Intl.DateTimeFormat>()
+const weekdayCache = new Map<string, number>()
 export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {
-  const wd = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(d)
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(wd)
+  const key = `${tz}:${d.getTime()}`
+  const hit = weekdayCache.get(key)
+  if (hit !== undefined) return hit
+  let f = weekdayFmtCache.get(tz)
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
+    weekdayFmtCache.set(tz, f)
+  }
+  const out = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(f.format(d))
+  if (weekdayCache.size > 20_000) weekdayCache.clear()
+  weekdayCache.set(key, out)
+  return out
 }

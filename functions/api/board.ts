@@ -174,8 +174,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all(),
     // "Restants à finir" — undated leftovers to eat before cooking the rest. A
     // calm nudge, newest first; planning or finishing one happens from the card.
+    // recipe_id/source_meal_id ride along so the board's « planifier ce soir » can
+    // hand the FULL row to the shared usePlanLeftover — its compensating undo
+    // re-inserts the pool row, and without these the restored row lost its recipe
+    // link (the board's hand-rolled fork did exactly that until 2026-09-03).
     ctx.env.DB.prepare(
-      'SELECT id, title FROM meal_leftovers WHERE household_id = ? ORDER BY created_at DESC',
+      'SELECT id, title, recipe_id, source_meal_id FROM meal_leftovers WHERE household_id = ? ORDER BY created_at DESC',
     )
       .bind(hh)
       .all(),

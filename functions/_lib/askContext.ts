@@ -29,22 +29,26 @@ export const SLOT: Record<Lang, Record<string, string>> = {
 
 // Dates are formatted in the household timezone so the model can resolve
 // "Friday", "tomorrow", etc. — mirrors the client's HOUSEHOLD_TZ (src/lib/localDay.ts).
+// Formatters cached per lang: constructing one costs ~100 µs, these run per prompt
+// LINE (events + work windows), and the Worker's free-plan CPU budget is ~10 ms —
+// the /api/year endpoint burned seconds on exactly this pattern (ids.ts, 2026-09-03).
+const askFmtCache = new Map<string, Intl.DateTimeFormat>()
+function askFmt(key: string, lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const k = `${lang}:${key}`
+  let f = askFmtCache.get(k)
+  if (!f) {
+    f = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { timeZone: HOUSEHOLD_TZ, ...opts })
+    askFmtCache.set(k, f)
+  }
+  return f
+}
 export function fmtDay(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', {
-    timeZone: HOUSEHOLD_TZ,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date(unixSec * 1000))
+  return askFmt('day', lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(unixSec * 1000))
 }
 // Wall-clock time in the household timezone. Shared by the dated event lines and the
 // work-hour windows so the prompt never mixes two time formats.
 function hhmm(unixSec: number, lang: Lang): string {
-  return new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', {
-    timeZone: HOUSEHOLD_TZ,
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(unixSec * 1000))
+  return askFmt('hhmm', lang, { hour: 'numeric', minute: '2-digit' }).format(new Date(unixSec * 1000))
 }
 
 export function fmtDateTime(unixSec: number, allDay: number, lang: Lang): string {

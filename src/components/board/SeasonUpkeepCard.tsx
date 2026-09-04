@@ -4,7 +4,7 @@ import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useUndoableRemove } from '../../lib/undoRemove'
-import { HOME_PROJECTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import { currentSeason, SEASON_EMOJI, seasonUpkeepItems } from '../../lib/season'
 import { formatDayMaybeYear } from '../../lib/format'
 import type { HomeProject } from '../operator/types'
@@ -49,7 +49,15 @@ export function SeasonUpkeepCard() {
       id: p.id,
       label: p.title,
       message: t.undo.choreDone(p.title),
-      commit: () => write('home-projects', { method: 'PATCH', body: { id: p.id }, affectedKeys: [BOARD_KEY] }),
+      // The full HomeProjectForm list: the stamped last_done_at re-derives nextAt,
+      // which the month grid and a carnet's rows display too — BOARD alone left
+      // them stale until their next poll (invalidation-drift class, 2026-09-03).
+      commit: () =>
+        write('home-projects', {
+          method: 'PATCH',
+          body: { id: p.id },
+          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+        }),
       after: () => {
         void qc.refetchQueries({ queryKey: HOME_PROJECTS_KEY })
         void qc.refetchQueries({ queryKey: BOARD_KEY })

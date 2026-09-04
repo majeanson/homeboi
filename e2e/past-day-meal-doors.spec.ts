@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState, MMID } from './mocks'
-import { todayLocalDay } from '../src/lib/localDay'
+import { todayLocalDay, addLocalDays } from '../src/lib/localDay'
 
 // Two DOORS into the same editable day scene for a PAST date — La cuisine ▸
 // Historique's pencil, and Le babillard ▸ Mois's ⋯ « Planifier un repas ». Neither
@@ -71,7 +71,10 @@ test('Mois — the ⋯ « Planifier un repas » door reaches a past day too', as
   // (2026-09-03: expected .../1788307200, received .../1788235200 — one day off,
   // the Toronto/UTC offset showing through).
   const today = todayLocalDay()
-  const past = today - DAY
+  // addLocalDays, not `- DAY`: on the two DST transition days a fixed 86400 lands
+  // at yesterday 01:00 / 23:00 instead of its midnight (the repo's documented
+  // fixed-86400 trap), which would go red on CI twice a year.
+  const past = addLocalDays(today, -1)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
   // ?date= picks the day directly on load (MonthView reads it from the URL), so this
   // opens straight on a past day's panel with no cell-click needed — and sidesteps

@@ -139,10 +139,12 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
     setStores(next) // optimistic
     setPending((p) => new Set(p).add(s.key))
     try {
+      // HOUSEHOLD too: the shared household query carries includedStores (other
+      // surfaces read the store roster off it) — FLYERS alone left it stale.
       await write('household', {
         method: 'PATCH',
         body: { includedStores: next.filter((x) => x.included).map((x) => x.key) },
-        affectedKeys: [FLYERS_KEY],
+        affectedKeys: [HOUSEHOLD_KEY, FLYERS_KEY],
       })
     } catch {
       setStores(prev) // revert on failure
@@ -155,8 +157,11 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
     }
   }
 
-  // Toggle the "hide at the till" flag — independent of the include allowlist, so it
-  // PATCHes its own field and doesn't touch deal/flyer lookups (no affectedKeys).
+  // Toggle the "hide at the till" flag — independent of the include allowlist, so
+  // it PATCHes its own field and skips the deal/flyer keys. NOT keyless though:
+  // useTillHiddenStores (lib/picks.tsx) reads this flag off the shared household
+  // query for Liste/Cashier/AddSheet — the old "nothing reads it" comment was
+  // wrong, and a till-hide didn't reach an open till surface until poll.
   async function toggleTill(s: ManageStore) {
     if (!stores) return
     const prev = stores
@@ -167,6 +172,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
       await write('household', {
         method: 'PATCH',
         body: { cashierExcludedStores: next.filter((x) => x.tillHidden).map((x) => x.key) },
+        affectedKeys: [HOUSEHOLD_KEY],
       })
     } catch {
       setStores(prev) // revert on failure
@@ -302,7 +308,9 @@ export function HistorySection({ help }: { help?: HelpMode }) {
       message: t.undo.cleared(it.text),
       onUndo: () => void load(),
       onCommit: async () => {
-        await write('list', { method: 'DELETE', body: { historyKey: it.key } }).catch(() => {})
+        // HISTORY_KEY: QuickAddPage's suggestions read the purchase history —
+        // this section's own list is local state, but that cache isn't.
+        await write('list', { method: 'DELETE', body: { historyKey: it.key }, affectedKeys: [HISTORY_KEY] }).catch(() => {})
         refresh()
       },
     })
@@ -312,7 +320,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
     setEditing(null)
     if (!text || text === it.text) return
     mark(it.key, true)
-    await write('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text } }).catch(() => {})
+    await write('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text }, affectedKeys: [HISTORY_KEY] }).catch(() => {})
     refresh()
     mark(it.key, false)
   }

@@ -316,7 +316,9 @@ function SharedVoyageForm({ trip, onClose }: { trip: SharedTrip; onClose: () => 
           endAt: dateInputToSec(end),
           colour,
         },
-        affectedKeys: [SHARED_TRIPS_KEY],
+        // MONTH too: /api/month draws shared trips as calendar bands — a
+        // SHARED_TRIPS-only invalidate left the old band there until poll.
+        affectedKeys: [SHARED_TRIPS_KEY, MONTH_KEY],
       })
       onClose()
     } catch {
