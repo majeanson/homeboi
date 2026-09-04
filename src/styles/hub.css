@@ -413,6 +413,8 @@
    it must wrap: on a phone the pair drops to its own line rather than squeezing the name
    to zero width, where its inline content used to paint straight over the buttons. */
 .board-layout__row {
+  /* Positioning context for the precise drag insertion line (.dnd-drop). */
+  position: relative;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -432,9 +434,13 @@
 .board-layout__row.is-dragging {
   opacity: 0.5;
 }
+/* Standardized precise drop indicator (same family as La liste / the kitchen week
+   grid): the vague whole-row ring gives way to a calm wash + the .dnd-drop
+   insertion line the row renders itself, on the edge the drag is heading toward. */
 .board-layout__row.dnd-over {
-  border-color: var(--marigold);
-  box-shadow: inset 0 0 0 1px var(--marigold);
+  border-color: transparent;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--marigold) 10%, var(--card));
 }
 .board-layout__row.is-hidden {
   opacity: 0.55;
@@ -522,6 +528,8 @@
   width: 100%;
 }
 .deck__card {
+  /* Positioning context for the precise drag insertion line (.dnd-drop). */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -532,6 +540,12 @@
 }
 .deck__card.is-dragging {
   opacity: 0.5;
+}
+/* Standardized precise drop indicator (see kitchen.css's .dnd-drop family): a wash
+   on the target card + the insertion line it renders itself, not the vague ring. */
+.deck__card.dnd-over {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
 }
 .deck__handle {
   cursor: grab;

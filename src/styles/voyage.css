@@ -136,11 +136,19 @@
    card's own bottom margin moves to the row so the grip stays centred on the
    visible card; .is-dragging/.dnd-over come from the shared dnd styles. */
 .voyage-itin__row {
+  /* Positioning context for the precise drag insertion line (.dnd-drop). */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 2px;
   margin-bottom: 8px;
   border-radius: var(--radius-md);
+}
+/* Standardized precise drop indicator: a calm wash on the target row + the
+   insertion line it renders itself, in place of the vague whole-row ring. */
+.voyage-itin__row.dnd-over {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
 }
 .voyage-itin__row .trip-note {
   flex: 1 1 auto;

@@ -4,7 +4,7 @@ import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
 import { useT, useLang } from '../i18n'
 import { suggestedTip } from '../lib/routineTips'
-import { usePointerDnd, DragGhost } from '../lib/dnd'
+import { usePointerDnd, DragGhost, dropEdgeOf } from '../lib/dnd'
 import { useOnline } from '../lib/online'
 import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
 import { imgUrl, MAX_UPLOAD_BYTES } from '../lib/image'
@@ -113,16 +113,22 @@ export function CardDeckEditor({
 
   return (
     <div className="deck">
-      {cards.map((card, i) => (
+      {cards.map((card, i) => {
+        // Standardized precise drop indicator (see lib/dnd.dropEdgeOf): an
+        // insertion line on the edge the drag is heading toward, in place of the
+        // vague whole-card ring.
+        const edge = dropEdgeOf(dnd, String(i), dnd.activeId != null ? Number(dnd.activeId) : null, i)
+        return (
         <div key={i} className="deck__row">
           <div
             data-dnd-zone={String(i)}
             className={
               'deck__card' +
               (dnd.activeId === String(i) ? ' is-dragging' : '') +
-              (dnd.over === String(i) ? ' dnd-over' : '')
+              (edge ? ' dnd-over' : '')
             }
           >
+            {edge && <span className={`dnd-drop dnd-drop--${edge}`} aria-hidden="true" />}
             <EditField
               value={card.label}
               onChange={(v) => update(i, { label: v })}
@@ -235,7 +241,8 @@ export function CardDeckEditor({
             </div>
           )}
         </div>
-      ))}
+        )
+      })}
       <button type="button" className="btn btn--ghost mono deck__add" onClick={add}>
         <InlineIcon name="plus-bold" /> {t.operator.addCard}
       </button>

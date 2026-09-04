@@ -6,7 +6,7 @@ import { useRecordUndo } from '../../lib/toast'
 import { useConfirm } from '../../lib/confirm'
 import { formatDayLong, capitalize as cap } from '../../lib/format'
 import { isGuest } from '../../lib/device'
-import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropEdgeOf } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import { EmptyState } from '../EmptyState'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
@@ -163,12 +163,18 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                 />
               </span>
             </div>
-            {dayNotes.map((n, j) => (
+            {dayNotes.map((n, j) => {
+              const zone = `${d}:${j}`
+              // `dnd.over === zone` only fires when canDrop already confirmed the
+              // drag started in this SAME day (see `canDrop` above), so the active
+              // id's trailing index is always this day's — no cross-day lookup needed.
+              const fromIdx = dnd.activeId != null ? Number(dnd.activeId.slice(dnd.activeId.lastIndexOf(':') + 1)) : null
+              return (
               <DragPill
                 key={n.id}
                 dnd={dnd}
                 index={j}
-                zone={`${d}:${j}`}
+                zone={zone}
                 label={n.label || n.text || t.voyage.dayN(i + 1)}
                 as="div"
                 className="voyage-itin__row"
@@ -176,6 +182,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                 onMove={
                   canReorder && dayNotes.length > 1 ? (dir) => moveInDay(d, j, dir === 'up' ? j - 1 : j + 1) : undefined
                 }
+                edge={canReorder && dayNotes.length > 1 ? dropEdgeOf(dnd, zone, fromIdx, j) : undefined}
               >
                 <TripNoteCard
                   note={n}
@@ -184,7 +191,8 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                   onDelete={() => del(n)}
                 />
               </DragPill>
-            ))}
+              )
+            })}
             {addDay === d && (
               <TripNoteAdd
                 tripId={trip.id}

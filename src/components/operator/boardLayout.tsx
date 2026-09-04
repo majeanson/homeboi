@@ -4,7 +4,7 @@ import { useConfirm } from '../../lib/confirm'
 import { OperatorSection } from './OperatorSection'
 import { InlineIcon } from '../Icon'
 import { Cluster } from '../Layout'
-import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropEdgeOf } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import {
   useBoardCards,
@@ -134,6 +134,11 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
         {prefs[zone].map((id, i) => {
           const meta = cardMeta(id)
           if (!meta) return null
+          // The dragged card's position WITHIN THIS zone's own list — null if it's
+          // being dragged in from the other zone (no "direction" to show there;
+          // moveWithinZone's up/down vocabulary doesn't apply across zones either).
+          const activeHere = dnd.activeId ? parseZoneKey(dnd.activeId) : null
+          const fromIdx = activeHere && activeHere.zone === zone ? prefs[zone].indexOf(activeHere.before as BoardCardId) : null
           return (
             <DragPill
               key={id}
@@ -144,6 +149,7 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
               className={'board-layout__row' + (cardMode(prefs, id) === 'never' ? ' is-hidden' : '')}
               showGrip
               onMove={(dir) => moveWithinZone(zone, id, dir)}
+              edge={dropEdgeOf(dnd, zoneKey(zone, id), fromIdx != null && fromIdx >= 0 ? fromIdx : null, i)}
             >
               <span className="board-layout__name">
                 <InlineIcon name={meta.icon} size={16} /> {t.boardCard[id]}

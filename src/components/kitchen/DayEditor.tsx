@@ -9,7 +9,6 @@ import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { StatusMessage } from '../StatusMessage'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
-import { Chip } from '../Chip'
 import { SectionAdd } from '../SectionAdd'
 import { MealRows } from './MealRows'
 import { mealPickOptions, type MealPick } from './comboOptions'
@@ -67,16 +66,11 @@ export function DayEditor({
   onOpenRecipe: (r: Recipe, m: MealRow) => void
   // A meal save failed (offline / 503) — surface it inline so it never reads as saved.
   mealErr?: boolean
-  // The souper planning flow (type a title → AI staples → save). Owned by the page.
-  plan: Pick<
-    Plan,
-    'editDate' | 'setEditDate' | 'mealText' | 'setMealText' | 'staplesBusy' | 'staplePrompt' | 'saveMeal' | 'beginSetMeal' | 'toggleStaple'
-  >
-  // Planning a recipe onto a slot + the souper staples opt-in. The dropdown is now
-  // the combobox's own; only the pick handler + the staples toggle live here.
+  // The souper planning flow (type a title → save). Owned by the page.
+  plan: Pick<Plan, 'editDate' | 'setEditDate' | 'mealText' | 'setMealText' | 'beginSetMeal'>
+  // Planning a recipe onto a slot. The dropdown is the combobox's own; only the
+  // pick handler lives here.
   picker: {
-    pickWithStaples: boolean
-    setPickWithStaples: (f: (s: boolean) => boolean) => void
     planRecipe: (date: number, slot: string, r: Recipe) => void
   }
   // The Restants pool — a leftover picked from the combobox is consumed into the
@@ -123,8 +117,8 @@ export function DayEditor({
   // already renders inert (no drag handle passed below) and the recipe-open survives.
   const ro = isGuest()
 
-  const { editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple } = plan
-  const { pickWithStaples, setPickWithStaples, planRecipe } = picker
+  const { editDate, setEditDate, mealText, setMealText, beginSetMeal } = plan
+  const { planRecipe } = picker
   const { editSlot, setEditSlot, slotText, setSlotText, saveSlot } = slotEdit
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
   const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal } = actions
@@ -166,7 +160,6 @@ export function DayEditor({
   const addLabel = (count: number) => (count ? t.kitchen.addAnother : t.common.add)
 
   const supperEditing = editDate === date
-  const supperStaples = staplePrompt?.date === date && staplePrompt.slot === hero
 
   // A lighter slot's section — everything except the hero's grocery-staples step.
   const renderSideSlot = (slot: (typeof sideSlots)[number]) => {
@@ -220,7 +213,6 @@ export function DayEditor({
                 options={mealOpts}
                 onPick={pickMeal(date, slot)}
                 onSubmit={(v) => saveSlot(date, slot, v)}
-                submitLabel={t.kitchen.setMeal}
                 noMatchLabel={t.combo.noMatch}
                 frequentsKey="meal"
                 onCancel={() => {
@@ -236,8 +228,8 @@ export function DayEditor({
         )
   }
 
-  // ── The hero meal (its own grocery-staples step). Rendered at its place in the
-  //    household's order, not pinned last. ──
+  // ── The hero meal. Rendered at its place in the household's order, not pinned
+  //    last — only its position in the list sets it apart from a side slot. ──
   const renderHeroSlot = () => (
       <section
         key={hero}
@@ -249,7 +241,7 @@ export function DayEditor({
           <p className="day-mng__sec-head mono">
             <Icon name={SLOT_ICON_NAME[hero]} size={16} color={mealPrefs.color(hero)} /> {t.kitchen.slots[hero]}
           </p>
-          {!supperStaples && !ro && (
+          {!ro && (
             <SectionAdd
               open={supperEditing}
               onToggle={() => {
@@ -261,98 +253,39 @@ export function DayEditor({
             />
           )}
         </div>
-        {supperStaples && staplePrompt && !ro ? (
-          <div className="kitchen__staples">
-            <p className="kitchen__staples-q mono">
-              {staplePrompt.title} · {t.kitchen.staplesQ}
-            </p>
-            <p className="kitchen__staples-hint mono">{t.kitchen.staplesHint}</p>
-            <div className="kitchen__staples-chips">
-              {staplePrompt.options.map((o) => (
-                <Chip key={o.item} selected={o.on} onClick={() => toggleStaple(o.item)} title={o.item}>
-                  <InlineIcon name={o.on ? 'check-square-bold' : 'square-bold'} /> {o.item}
-                </Chip>
-              ))}
-            </div>
-            <div className="kitchen__staples-actions">
-              <button
-                type="button"
-                className="btn btn--primary mono"
-                onClick={() =>
-                  saveMeal(
-                    staplePrompt.date,
-                    staplePrompt.slot,
-                    staplePrompt.title,
-                    staplePrompt.options.filter((o) => o.on).map((o) => o.item),
-                    staplePrompt.recipeId,
-                  )
-                }
-              >
-                {t.kitchen.staplesAdd}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost mono"
-                onClick={() => saveMeal(staplePrompt.date, staplePrompt.slot, staplePrompt.title, [], staplePrompt.recipeId)}
-              >
-                {t.kitchen.staplesSkip}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <MealRows
-              meals={suppers}
-              recipeFor={recipeFor}
-              memberName={memberName}
-              onOpenRecipe={onOpenRecipe}
-              onRemove={clearMeal}
-              onMove={moveMeal}
-              onRename={renameMeal}
-              onClearAll={() => clearSlotMeals(date, hero)}
-              onLeftover={announceLeftover}
-              onDragStart={ro ? undefined : mealDnd.start}
-              draggingId={mealDnd.activeId}
-              dragLabel={t.kitchen.dragMeal}
-            />
-            {supperEditing && !ro && (
-              // The hero's box: type a free-text meal or pick a recipe / leftover.
-              // The dropdown leads with the "+ ingrédients" opt-in (off by default):
-              // it governs BOTH a recipe pick (also fill the grocery list with its
-              // ingredients) AND free text (→ AI staples). Default off → "Mettre"
-              // just saves the meal, one less step.
-              <EntityCombobox
-                value={mealText}
-                onChange={setMealText}
-                options={mealOpts}
-                onPick={pickMeal(date, hero)}
-                onSubmit={() => beginSetMeal(date, hero, pickWithStaples)}
-                submitLabel={staplesBusy ? t.kitchen.staplesThinking : t.kitchen.setMeal}
-                busy={staplesBusy}
-                noMatchLabel={t.combo.noMatch}
-                frequentsKey="meal"
-                onCancel={() => {
-                  setEditDate(null)
-                  setMealText('')
-                }}
-                autoFocus
-                // Named after the HERO slot, like every side slot's field — the old
-                // fixed « Quoi pour souper ? » read wrong above a promoted dîner.
-                placeholder={t.kitchen.slots[hero]}
-                listHeader={
-                  <button
-                    type="button"
-                    className={'chip kitchen__recipe-staples' + (pickWithStaples ? ' is-on' : '')}
-                    onClick={() => setPickWithStaples((s) => !s)}
-                    aria-pressed={pickWithStaples}
-                  >
-                    <InlineIcon name={pickWithStaples ? 'check-square-bold' : 'square-bold'} />{' '}
-                    <InlineIcon name="shopping-bag-bold" /> {t.kitchen.alsoStaples}
-                  </button>
-                }
-              />
-            )}
-          </>
+        <MealRows
+          meals={suppers}
+          recipeFor={recipeFor}
+          memberName={memberName}
+          onOpenRecipe={onOpenRecipe}
+          onRemove={clearMeal}
+          onMove={moveMeal}
+          onRename={renameMeal}
+          onClearAll={() => clearSlotMeals(date, hero)}
+          onLeftover={announceLeftover}
+          onDragStart={ro ? undefined : mealDnd.start}
+          draggingId={mealDnd.activeId}
+          dragLabel={t.kitchen.dragMeal}
+        />
+        {supperEditing && !ro && (
+          // The hero's box: type a free-text meal, or pick a recipe / leftover.
+          <EntityCombobox
+            value={mealText}
+            onChange={setMealText}
+            options={mealOpts}
+            onPick={pickMeal(date, hero)}
+            onSubmit={() => beginSetMeal(date, hero)}
+            noMatchLabel={t.combo.noMatch}
+            frequentsKey="meal"
+            onCancel={() => {
+              setEditDate(null)
+              setMealText('')
+            }}
+            autoFocus
+            // Named after the HERO slot, like every side slot's field — the old
+            // fixed « Quoi pour souper ? » read wrong above a promoted dîner.
+            placeholder={t.kitchen.slots[hero]}
+          />
         )}
       </section>
   )

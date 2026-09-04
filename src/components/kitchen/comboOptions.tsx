@@ -19,8 +19,9 @@ export function recipeOptions(
   lowItems: string[],
   listItems: string[],
   t: T,
-  group?: string,
+  opts: { group?: string; readyBadge?: boolean } = {},
 ): ComboOption<Recipe>[] {
+  const { group, readyBadge = true } = opts
   // Badges only mean something against a low list — with an empty pantry-low every
   // recipe is "ready", which is just noise (same rule as RecipePickerMenu).
   const showBadge = lowItems.length > 0
@@ -38,11 +39,13 @@ export function recipeOptions(
     keywords: recipe.ingredients,
     badge: showBadge
       ? missing.length === 0
-        ? (
-            <span className="combobox__badge is-ready mono">
-              <InlineIcon name="check-bold" /> {t.recipes.ready}
-            </span>
-          )
+        ? readyBadge
+          ? (
+              <span className="combobox__badge is-ready mono">
+                <InlineIcon name="check-bold" /> {t.recipes.ready}
+              </span>
+            )
+          : undefined
         : <span className="combobox__badge mono">{t.recipes.missingN(missing.length)}</span>
       : undefined,
   }))
@@ -79,14 +82,18 @@ export function mealPickOptions(
   t: T,
 ): ComboOption<MealPick>[] {
   const both = recipes.length > 0 && leftovers.length > 0
-  const r: ComboOption<MealPick>[] = recipeOptions(recipes, lowItems, listItems, t, both ? t.recipes.title : undefined).map(
-    (o) => ({ ...o, data: { kind: 'recipe', recipe: o.data } }),
-  )
+  // No "Prêt" checkmark here (readyBadge: false) — the compact meal-slot picker
+  // doesn't need it; recipeOptions' other caller (MealIdeas) keeps the badge.
+  const r: ComboOption<MealPick>[] = recipeOptions(recipes, lowItems, listItems, t, {
+    group: both ? t.recipes.title : undefined,
+    readyBadge: false,
+  }).map((o) => ({ ...o, data: { kind: 'recipe', recipe: o.data } }))
   const l: ComboOption<MealPick>[] = leftoverOptions(leftovers, t, both ? t.kitchen.leftovers : undefined).map((o) => ({
     ...o,
     data: { kind: 'leftover', leftover: o.data },
   }))
-  return [...r, ...l]
+  // Restants lead — what's already cooked and just needs a home beats a fresh recipe.
+  return [...l, ...r]
 }
 
 // Recent / today's planned meals — "we ate this, there's some left" suggestions

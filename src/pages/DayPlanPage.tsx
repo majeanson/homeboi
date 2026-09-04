@@ -38,12 +38,11 @@ import { type Recipe } from '../lib/recipes'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
 import { DayEditor } from '../components/kitchen/DayEditor'
-import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useAnnounceLeftover, usePlanLeftover } from '../components/kitchen/Leftovers'
 import type { MealSlot } from '../lib/mealSlots'
-import { reschedule, restoreMeals } from '../components/kitchen/mealMutations'
+import { reschedule, restoreMeals, planMealRecipe } from '../components/kitchen/mealMutations'
 import {
   type Leftover,
   type MealsData,
@@ -254,21 +253,8 @@ export function DayPlanPage() {
     return f.length > 1 ? f : undefined
   }
 
-  // — the souper planning flow (type a title → AI staples → save) —
-  const ai = useAiWake()
-  const {
-    editDate,
-    setEditDate,
-    mealText,
-    setMealText,
-    staplesBusy,
-    staplePrompt,
-    mealErr,
-    saveMeal,
-    beginSetMeal,
-    chooseRecipeForMeal,
-    toggleStaple,
-  } = useMealPlanning(ai, profileId)
+  // — the souper planning flow (type a title → save) —
+  const { editDate, setEditDate, mealText, setMealText, mealErr, beginSetMeal } = useMealPlanning(profileId)
 
   // — the lighter side slots' inline title editor —
   const [editSlot, setEditSlot] = useState<{ date: number; slot: string } | null>(null)
@@ -395,26 +381,13 @@ export function DayPlanPage() {
     close()
   }
 
-  // — the souper "+ ingredients" opt-in (the recipe/leftover dropdown is now the
-  //   combobox's own; only this cross-pick toggle stays page state) —
-  const [pickWithStaples, setPickWithStaples] = useState(false)
-
-  // Plan a recipe onto ANY slot. Souper keeps its optional "+ ingredients" staples
-  // step; every other slot is a clean quick-add (links the recipe, saves now).
+  // Plan a recipe onto any slot — a clean quick-add (links the recipe, saves now).
   async function planRecipe(d: number, slot: string, r: Recipe) {
     setEditDate(null)
     setEditSlot(null)
     setMealText('')
     setSlotText('')
-    if (slot === heroSlot && pickWithStaples) {
-      chooseRecipeForMeal(d, slot, r)
-      return
-    }
-    await write('meals', {
-      method: 'POST',
-      body: { date: d, slot, title: r.title, recipeId: r.id },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-    }).catch(() => {})
+    await planMealRecipe(qc, d, slot, r)
   }
 
   // Plan a pooled leftover onto a day — the ONE shared implementation
@@ -831,8 +804,8 @@ export function DayPlanPage() {
                 memberName={memberName}
                 onOpenRecipe={(r) => nav(`/kitchen/recipe/${r.id}`)}
                 mealErr={mealErr}
-                plan={{ editDate, setEditDate, mealText, setMealText, staplesBusy, staplePrompt, saveMeal, beginSetMeal, toggleStaple }}
-                picker={{ pickWithStaples, setPickWithStaples, planRecipe }}
+                plan={{ editDate, setEditDate, mealText, setMealText, beginSetMeal }}
+                picker={{ planRecipe }}
                 leftovers={{
                   pool: leftoversQ.data?.leftovers ?? [],
                   plan: planLeftoverOnDay,

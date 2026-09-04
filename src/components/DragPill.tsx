@@ -48,6 +48,13 @@ interface DragPillProps {
   /** Ref to the rendered zone element — for a caller that scrolls a row into view
    *  (e.g. the notes list's deep-link focus). */
   nodeRef?: Ref<HTMLElement>
+  /** The precise insertion-line cue (lib/dnd's `dropEdgeOf`) — pass it (even as
+   *  `null`) to opt this row into the standardized drop indicator: a thin accent
+   *  line on the edge the drag is heading toward, instead of the vague whole-row
+   *  `dnd-over` ring. Omitted entirely, the row keeps the plain ring (right for a
+   *  "drop into this zone" target that isn't a linear reorder). The host's CSS
+   *  needs `position: relative` for the line to place correctly. */
+  edge?: 'top' | 'bottom' | null
   children?: ReactNode
 }
 
@@ -63,18 +70,21 @@ export function DragPill({
   showGrip = true,
   onMove,
   nodeRef,
+  edge,
   children,
 }: DragPillProps) {
   const t = useT()
   const Tag = (as ?? 'li') as ElementType
   const id = zone ?? String(index)
+  const edged = edge !== undefined
   const zoneClass =
     (className ?? '') +
     (dnd.activeId === id ? ' is-dragging' : '') +
-    (dnd.over === id ? ' dnd-over' : '')
+    ((edged ? !!edge : dnd.over === id) ? ' dnd-over' : '')
 
   return (
     <Tag ref={nodeRef} data-dnd-zone={id} className={zoneClass} style={style}>
+      {edge && <span className={`dnd-drop dnd-drop--${edge}`} aria-hidden="true" />}
       {showGrip && (
         <span
           className={'dnd-grip' + (gripClassName ? ` ${gripClassName}` : '')}

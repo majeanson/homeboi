@@ -783,28 +783,23 @@ test.describe('kitchen', () => {
     await expect(lows).toHaveCount(2)
   })
 
-  test('planning a supper saves directly; "+ ingrédients" opt-in fetches staples', async ({ page }) => {
+  test('planning a supper saves directly on Enter — no "Mettre" pill, no ingredients opt-in', async ({ page }) => {
     // The per-day planning controls live in the day editor SCENE now
-    // (/kitchen/day/:date). Souper renders LAST (chronological order). The
-    // grocery-staples step is OPT-IN via the "+ ingrédients" toggle — off by
-    // default so "Mettre" just saves the meal (one less step).
+    // (/kitchen/day/:date). Souper renders LAST (chronological order). No
+    // submitLabel is passed anymore, so EntityCombobox renders an icon-only ✓
+    // instead of a labeled "Mettre" pill, and Enter alone still saves.
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
     await sheet.locator('[data-dnd-zone="supper"] .day-mng__sec-head-row .sec-label__actbtn').click()
     // The supper title editor is an EntityCombobox (reuses .edit-field styling but
     // is NOT a form — Enter commits the free text → beginSetMeal).
     const edit = sheet.locator('[data-dnd-zone="supper"] .edit-field')
+    await expect(edit.getByRole('button', { name: 'Mettre' })).toHaveCount(0)
     await edit.locator('input.input').fill('Pizza maison')
-    // Default (opt-in OFF): Enter just saves — a straight POST meals, no staples.
     await expectApi(page, 'POST', 'meals', () => edit.locator('input.input').press('Enter'))
 
-    // Re-open and turn the "+ ingrédients" opt-in ON → committing now fetches the
-    // staple list first (POST meal-staples).
-    await sheet.locator('[data-dnd-zone="supper"] .day-mng__sec-head-row .sec-label__actbtn').click()
-    const edit2 = sheet.locator('[data-dnd-zone="supper"] .edit-field')
-    await edit2.locator('input.input').fill('Lasagne')
-    await edit2.locator('.kitchen__recipe-staples').click()
-    await expectApi(page, 'POST', 'meal-staples', () => edit2.locator('input.input').press('Enter'))
+    // The "Ajouter les ingrédients aussi" opt-in was removed with it.
+    await expect(page.locator('.kitchen__recipe-staples')).toHaveCount(0)
   })
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {

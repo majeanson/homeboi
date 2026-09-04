@@ -5,7 +5,7 @@ import { useWrite } from '../../lib/write'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
 import { useConfirm } from '../../lib/confirm'
-import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropEdgeOf } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
@@ -103,6 +103,7 @@ export function AisleOrderSection() {
               className="aisle-order__row"
               showGrip={!ro}
               onMove={ro ? undefined : (dir) => move(i, dir === 'up' ? i - 1 : i + 1)}
+              edge={dropEdgeOf(dnd, String(i), dnd.activeId != null ? Number(dnd.activeId) : null, i)}
             >
               <span className="aisle-order__pos mono" aria-hidden="true">
                 {i + 1}

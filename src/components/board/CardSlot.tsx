@@ -243,6 +243,12 @@ export function CardSlot({
   // "Drop here" means "insert before THIS card" — never "at index N". See `zoneKey`.
   const key = zoneKey(zone, id)
   const label = t.boardCard[id]
+  // The precise drop cue (lib/dnd's standardized `.dnd-drop` line, same family as
+  // La liste / the kitchen week grid): always the LEADING edge, since a widget-grid
+  // drop is always "insert before this card" regardless of where the drag came from
+  // — unlike a plain sequential list there's no single "direction" to read in a
+  // multi-column masonry, so there's nothing to pick a top/bottom edge FROM.
+  const dropHere = dnd?.over === key
 
   // A MOUSE may grab the card body: it never scrolls by dragging, so there's no gesture
   // to lose. A FINGER must use the ⠿ grip, which is the only element carrying
@@ -269,7 +275,7 @@ export function CardSlot({
         'wg-slot' +
         (editing ? ' wg-slot--editing' : '') +
         (dnd?.activeId === id ? ' is-dragging' : '') +
-        (dnd?.over === key ? ' dnd-over' : '')
+        (dropHere ? ' dnd-over' : '')
       }
       ref={slotRef}
       style={style}
@@ -292,6 +298,7 @@ export function CardSlot({
       hidden={collapsed}
       onPointerDown={grabBody}
     >
+      {dropHere && <span className="dnd-drop dnd-drop--left" aria-hidden="true" />}
       <CardEmptyContext.Provider value={report}>
         <CardLensProvider value={lens}>
           <div className="wg-slot__inner" ref={innerRef}>

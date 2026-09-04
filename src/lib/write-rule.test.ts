@@ -108,7 +108,6 @@ const ALLOWED = new Set<string>([
   'pages/SearchPage.tsx → ask',
   'components/kitchen/useMealSuggest.ts → suggest-meal',
   'components/kitchen/EmptyFridgeSheet.tsx → empty-fridge',
-  'components/kitchen/useMealPlanning.ts → meal-staples',
   'components/RecipeForm.tsx → recipe-ocr',
   'components/RecipeForm.tsx → recipe-import',
   'components/RecipeForm.tsx → recipe-vision',

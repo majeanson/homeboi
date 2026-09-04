@@ -1,6 +1,7 @@
 import { type QueryClient } from '@tanstack/react-query'
 import { writeWith } from '../../lib/write'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { type Recipe } from '../../lib/recipes'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type MealRow, type MealsData } from './types'
 
 // Meal-plan mutations shared by the calm week grid (Kitchen) and the day editor
@@ -20,6 +21,18 @@ export async function planMeal(qc: QueryClient, date: number, slot: string, titl
     body: { date, slot, title: v },
     affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
   })
+}
+
+// Plan a SAVED RECIPE straight into a day+slot — links it, no staples prompt (that
+// AI-suggested-grocery-items opt-in was removed 2026-09-04; add ingredients from
+// the recipe's own view instead). Shared by the week grid's empty-day picker and
+// the day editor's slot fields, so the two doors can't drift.
+export async function planMealRecipe(qc: QueryClient, date: number, slot: string, recipe: Recipe) {
+  await writeWith(qc, 'meals', {
+    method: 'POST',
+    body: { date, slot, title: recipe.title, recipeId: recipe.id },
+    affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
+  }).catch(() => {})
 }
 
 // Drag-to-move: drop a meal on another day (slot kept) or another slot (same day).

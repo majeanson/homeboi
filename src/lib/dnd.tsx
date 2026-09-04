@@ -141,6 +141,29 @@ export function usePointerDnd(opts: {
   }
 }
 
+// The standardized precise drop-insertion edge for a reorderable row (La liste /
+// the kitchen week grid's pattern, generalized): null unless the pointer is
+// hovering THIS row's own zone with something ELSE actively dragging, in which
+// case 'bottom' when the drag started above this row (it will land after it) or
+// 'top' when it started below — so the cue always sits on the edge the drop is
+// heading toward, never the vague "somewhere on this row" whole-zone ring.
+// `fromIndex` is the dragged row's position within the SAME ordered list this row
+// belongs to — null when it isn't part of this list (e.g. a cross-zone/cross-day
+// drag whose target zone doesn't resolve to a position here), in which case there
+// is no direction to show. A plain index-keyed zone (id === String(index)) passes
+// `dnd.activeId != null ? Number(dnd.activeId) : null`; a compound zone key (a
+// day-scoped "«day»:«index»", a card-id-scoped zoneKey) resolves its own index
+// first (see boardLayout.tsx / VoyageItinerary.tsx for the two shapes).
+export function dropEdgeOf(
+  dnd: { activeId: string | null; over: string | null },
+  id: string,
+  fromIndex: number | null,
+  index: number,
+): 'top' | 'bottom' | null {
+  if (dnd.over !== id || dnd.activeId == null || dnd.activeId === id || fromIndex == null) return null
+  return fromIndex < index ? 'bottom' : 'top'
+}
+
 // The floating label that trails the finger. Render once per page using the hook.
 // Portalled to <body> so `position: fixed` stays viewport-relative even when an
 // ancestor is transformed (the day sheet animates with translateY — a fixed child

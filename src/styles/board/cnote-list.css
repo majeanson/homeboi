@@ -42,6 +42,13 @@
 .cnote--expanded {
   background: color-mix(in srgb, var(--note-tint) 6%, var(--card));
 }
+/* Standardized precise drop indicator (see kitchen.css's .dnd-drop family): a calm
+   wash on the target row + the insertion line it renders itself (DragPill's `edge`
+   prop), not the vague whole-row ring. */
+.cnote.dnd-over {
+  outline: none;
+  background: color-mix(in srgb, var(--note-tint) 10%, var(--card));
+}
 /* The reorder grip (DragPill) leads the row; the shared .dnd-grip already owns the
    gesture (touch-action) — just keep it from adding to the row's tap targets' gap. */
 .cnote .cnote__grip {

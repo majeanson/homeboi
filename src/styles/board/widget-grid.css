@@ -13,6 +13,9 @@
 .wg {
   --wg-row: 8px;
   --wg-gap: 16px;
+  /* Centres the drag insertion line (.dnd-drop, kitchen.css) in the grid's own gap
+     — half of --wg-gap, same reasoning as the week grid's 4px (half its 8px gap). */
+  --dnd-drop-gap: 8px;
   /* The ONE height every compact tile takes. LOAD-BEARING with `WG_MINI_H` in
      lib/widgetGrid (= WG_MINI_ROWS rows and the gaps between them: 7*8 + 6*16). A slot in
      its compact form claims exactly `WG_MINI_ROWS` rows without measuring anything, so
@@ -115,8 +118,17 @@
   opacity: 0.5;
   cursor: grabbing;
 }
-/* Where the card will land. Also on the grid itself, for a drop into trailing space. */
-.wg--editing .wg-slot.dnd-over,
+/* Where a card lands has a precise cue now: the LEADING edge of the target card
+   (a drop always means "insert before this card" — see CardSlot's `key`/comment),
+   the same .dnd-drop insertion line La liste / the kitchen week grid use, instead
+   of the vague whole-card ring. A calm wash keeps the eye on the target card. */
+.wg--editing .wg-slot.dnd-over {
+  outline: none;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--marigold, currentColor) 10%, transparent);
+}
+/* The grid's own trailing space stays a distinct "append here" target — not a
+   between-cards insertion, so it keeps the plain dashed ring. */
 .wg--editing.dnd-over {
   outline: 2px dashed var(--marigold, currentColor);
   outline-offset: 4px;

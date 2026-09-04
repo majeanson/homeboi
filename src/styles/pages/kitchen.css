@@ -42,8 +42,10 @@
   /* The week grid's gap is tighter than the list's — centre the drop line in it. */
   --dnd-drop-gap: 4px;
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
+  /* The date + edit door stack ABOVE the meals now (a sticky header over a
+     scrolling body), not beside them — see .kitchen__day-head. */
+  flex-direction: column;
+  gap: 0.35rem;
   padding: 0.7rem 0.95rem;
   /* Grid item: cap at the track so a long meal title / nowrap slot chip ellipsizes
      and wraps inside the card instead of stretching it past the viewport. */
@@ -51,9 +53,19 @@
   /* A soft inset rail at the left edge separates each day cleanly and reads as a
      countdown spine: neutral most days, sky on weekends, accent on today. */
   box-shadow: var(--shadow-sm), inset 4px 0 0 var(--line-strong);
-  /* Wrap so the "💡 suggéré par" note drops below the meal on a narrow phone
-     instead of overrunning the row. */
-  flex-wrap: wrap;
+}
+/* The date badge + the edit door — the pill's header. Sticky so it stays put if
+   a day's meals ever run long enough to scroll (the page, not the card, scrolls —
+   position:sticky pins it to the viewport top for as long as the card is in view). */
+.kitchen__day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: inherit;
 }
 /* The drop target during a day-drag: a faint accent wash so the eye lands on the
    destination day, paired with the precise insertion line — the same standardized
@@ -104,30 +116,42 @@
 .kitchen__day.is-weekend .kitchen__day-dow {
   color: var(--sky-deep);
 }
+/* Each planned supper, its own row: icon + title, tap = straight to its recipe.
+   No visible drag grip (removed) — press-and-hold the row itself to reschedule
+   the whole day, same gesture as before, just without the ⠿ glyph taking up a
+   touch target of its own. */
+.kitchen__day-meals {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
 .kitchen__day-meal {
-  /* min-width is a real floor, not 0: the title is the headline and must never
-     collapse to a sliver. Without it, the unstyled 📖 link + "💡 suggéré par"
-     chip (which don't shrink) would eat the row and squeeze this to < 1ch wide,
-     stacking the title one letter per line. With a 7rem floor it keeps a
-     readable column and instead forces those adornments to wrap below. */
-  flex: 1 1 auto;
-  min-width: 7rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
   text-align: left;
   background: none;
   border: none;
   color: inherit;
   font: inherit;
   font-size: 1.05rem;
+  font-weight: 600;
   line-height: 1.25;
   cursor: pointer;
   padding: 0.2rem 0;
-  /* Last-resort guard for one absurdly long unspaced word — normal multi-word
-     titles now wrap at spaces within the 7rem+ column above. */
+  /* It's also the day's drag handle now (no separate grip) — claim the gesture
+     so the page doesn't scroll mid-press. */
+  touch-action: none;
+}
+.kitchen__day-meal:active {
+  cursor: grabbing;
+}
+.kitchen__day-meal-title {
+  min-width: 7rem;
   overflow-wrap: anywhere;
 }
-/* The 📖 recipe link (.kitchen__day-recipe-link, cook.css) and the "💡 suggéré
-   par X" note (.kitchen__day-sugg, core.css) are both flex: none / own-line so
-   they no longer compete with the title for row width. */
 .kitchen__day-empty {
   color: var(--ink-soft);
 }
@@ -266,10 +290,9 @@
 /* ── Meals as lists per slot (N per slot, migration 0033) ─────────────────── */
 /* Everything in a day after the date badge stacks vertically in a width-capped
    column, so the per-meal control rows never push the card past the viewport. */
-/* The day row is a calm read-only glance: the souper headline + a compact "Gérer"
-   button share the top line, and the lighter slots wrap as colour chips below at
-   FULL card width — so the meal info is never clipped behind the button. Only the
-   Gérer pill opens that day's editing sheet (no more giant whole-row button). */
+/* The day card's body — everything under the sticky .kitchen__day-head: each
+   supper its own row (.kitchen__day-meal), the lighter slots as colour chips,
+   the note. A calm read-only glance; only the header's pencil opens the editor. */
 .kitchen__day-body {
   flex: 1;
   min-width: 0;
@@ -278,45 +301,26 @@
   gap: 0.3rem;
   padding: 0.15rem 0;
 }
-.kitchen__day-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-/* The inline day planner (an empty cell IS the field — plan seam #8). Takes the
-   summary's place in the row, so the cell keeps its height and the pencil stays put. */
+/* The inline day planner (an empty cell IS the field — plan seam #8). */
 .kitchen__day-add {
   flex: 1;
   min-width: 0;
 }
-.kitchen__day-sum-main {
-  flex: 1;
-  min-width: 0;
-  /* Column: the grip+icon+title line on top, the "Restants" tag below it — so the
-     tag never sits to the right of the title and steals its width. */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.25rem;
-  font-size: 1.05rem;
-  line-height: 1.25;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.kitchen__day-sum-line {
+.kitchen__day-sum-empty {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-  max-width: 100%;
-}
-.kitchen__day-sum-titles {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.kitchen__day-sum-empty {
+  gap: 0.3rem;
+  width: 100%;
+  min-height: var(--touch-target);
+  text-align: left;
+  background: none;
+  border: none;
   color: var(--ink-soft);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 0.2rem 0;
+  cursor: pointer;
 }
 /* ── Drag-to-move (src/lib/dnd.tsx) ──────────────────────────────────────────
    Touch-friendly pointer DnD: a grip starts the drag, a ghost trails the finger,
@@ -334,15 +338,6 @@
   user-select: none;
 }
 .dnd-grip:active {
-  cursor: grabbing;
-}
-/* The whole souper headline is the grid's drag handle (no separate row of UI on
-   the calm glance) — claim the gesture and read as movable. */
-.kitchen__day-drag {
-  touch-action: none;
-  cursor: grab;
-}
-.kitchen__day-drag:active {
   cursor: grabbing;
 }
 .is-dragging {
@@ -388,6 +383,29 @@
 }
 .dnd-drop--bottom {
   bottom: calc(-1 * var(--dnd-drop-gap, 6px));
+}
+/* The sideways pair — a multi-column host (the widget grid) whose items aren't a
+   single vertical run: same bar, rotated onto the left/right edge instead. */
+.dnd-drop--left,
+.dnd-drop--right {
+  left: auto;
+  right: auto;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  height: auto;
+}
+.dnd-drop--left::before,
+.dnd-drop--right::before {
+  left: 50%;
+  top: -3px;
+  transform: translateX(-50%);
+}
+.dnd-drop--left {
+  left: calc(-1 * var(--dnd-drop-gap, 6px));
+}
+.dnd-drop--right {
+  right: calc(-1 * var(--dnd-drop-gap, 6px));
 }
 .dnd-ghost {
   position: fixed;

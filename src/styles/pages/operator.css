@@ -189,6 +189,10 @@
   gap: 0.5rem;
 }
 .operator__list li {
+  /* Positioning context for the precise drag insertion line (.dnd-drop, absolute) —
+     every reorderable row here (aisle order, recipe tags/pills, meal slots) is a
+     plain <li> of this list. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -196,6 +200,14 @@
      narrow phone the row would overrun the viewport. Let it wrap; the name keeps
      line 1 and the delete action drops to its own right-aligned line. */
   flex-wrap: wrap;
+}
+/* Reorderable rows (DragPill's `edge` prop) drop the vague whole-row dashed
+   .dnd-over ring for the precise insertion LINE it renders itself (.dnd-drop) —
+   this just gives the target row a calm wash so the eye still lands on it. */
+.operator__list li.dnd-over {
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 8%, var(--card));
+  border-radius: var(--radius, 10px);
 }
 .operator__list li > span:not([class]) {
   /* The member name (the only unclassed span): take the slack so wrapped rows

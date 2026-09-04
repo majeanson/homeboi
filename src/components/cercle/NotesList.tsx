@@ -6,7 +6,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, sortNotes } from '../../lib/familyNotes'
 import { reorderPatches } from '../../lib/reorder'
-import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropEdgeOf } from '../../lib/dnd'
 import { imgUrl } from '../../lib/image'
 import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
@@ -236,6 +236,7 @@ export function NotesList({
               className={'cnote' + (expanded ? ' cnote--expanded' : '') + (flashId === n.id ? ' is-focus' : '')}
               gripClassName="cnote__grip"
               style={css}
+              edge={grips ? dropEdgeOf(dnd, String(idx), dnd.activeId != null ? Number(dnd.activeId) : null, idx) : undefined}
             >
               {/* Visual notes show a tappable thumbnail; text/audio show a tint dot.
                   Compact drops the text-note dot (the title tint already says whose it

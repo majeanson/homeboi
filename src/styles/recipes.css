@@ -559,12 +559,6 @@
   flex: none;
   padding-inline: 0.6rem;
 }
-/* The chip that opts a recipe pick into the grocery flow — quiet until ticked.
-   Now rendered as the souper combobox's dropdown header. */
-.kitchen__recipe-staples {
-  align-self: flex-start;
-}
-
 /* (The shared recipe/leftover picker list — `.recipe-picker*` — was replaced by
    EntityCombobox's dropdown; see `.combobox*` in pages/fields.css.) */
 

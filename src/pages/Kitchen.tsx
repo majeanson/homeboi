@@ -28,20 +28,18 @@ import { HistoryTab } from '../components/kitchen/HistoryTab'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
 import { RecipesTab } from '../components/kitchen/RecipesTab'
-import { useAiWake } from '../components/kitchen/useAiWake'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeShop } from '../components/kitchen/useRecipeShop'
 import { type LowRow, type MealIdeasData, type ReserveData, type WeekDay, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
 import { type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
-import { Leftovers } from '../components/kitchen/Leftovers'
+import { Leftovers, usePlanLeftover } from '../components/kitchen/Leftovers'
 import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { reschedule, planMeal } from '../components/kitchen/mealMutations'
-import { EditField } from '../components/EditField'
+import { reschedule, planMeal, planMealRecipe } from '../components/kitchen/mealMutations'
+import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
+import { mealPickOptions, type MealPick } from '../components/kitchen/comboOptions'
 import { isGuest } from '../lib/device'
-import { useEntityDetail } from '../components/detail/DetailProvider'
-import { buildDay } from '../components/detail/adapters'
 import { SLOT_ICON_NAME, WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { tintInk, faint, hairline } from '../lib/colors'
@@ -73,17 +71,15 @@ export function Kitchen() {
   // hidden slot can always be planned from a day's pencil.
   const mealPrefs = useMealPrefs()
   const nav = useNavigate()
-  // The day-glance peek (buildDay) still uses the shared entity-detail sheet.
-  // Tapping a recipe card, though, goes STRAIGHT to the full recipe view
-  // (/kitchen/recipe/:id) — no intermediate peek — since every action the peek
-  // offered (Ajouter à la liste, En routine pour enfant, Partager) now lives on
-  // that view. See RecipesTab's onView below.
-  const detail = useEntityDetail()
+  // Tapping a meal row goes STRAIGHT to the full recipe view (/kitchen/recipe/:id,
+  // like the board's meal rows) — every action a peek in between might offer
+  // (Ajouter à la liste, En routine pour enfant, Partager) already lives on that
+  // view. See RecipesTab's onView below.
   // #43 — "Cuisiner ensemble" (cook 2+ of today's dishes at once) now lives inside
   // the ＋ "Cuisiner" picker (AddSheet), beside the single-dish choices — not as a
   // standalone button up here.
-  // The full per-day editor (add/remove/reorder meals, the staples step, the day
-  // note, clear the day) lives on its own full-screen scene now — /kitchen/day/:date
+  // The full per-day editor (add/remove/reorder meals, the day note, clear the
+  // day) lives on its own full-screen scene now — /kitchen/day/:date
   // (DayPlanPage). This page is the calm read-only week glance: a row's pencil and
   // the ＋ "Planifier un repas" day picker both navigate there. The grid keeps only
   // its day→day drag (the shared `reschedule` helper) and the toddler kid-suggest.
@@ -103,7 +99,7 @@ export function Kitchen() {
     queryFn: () => api<{ list: { text: string }[]; members?: { id: string; display_name: string }[] }>('board'),
     ...live,
   })
-  const recipes = recipesQ.data?.recipes ?? []
+  const recipes = useMemo(() => recipesQ.data?.recipes ?? [], [recipesQ.data])
   // The recipe book + the per-day editor are routes now (/kitchen/recipe/*,
   // /kitchen/day/:date) — openers navigate instead of toggling local overlay state.
   // Parent kitchen sub-tab: one job at a time so the page isn't an endless scroll.
@@ -137,6 +133,14 @@ export function Kitchen() {
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const soonItems = useMemo(() => (useSoonQ.data?.soon ?? []).map((s) => s.item), [useSoonQ.data])
+  // Recipes + Restants as one grouped dropdown for the empty-day quick planner —
+  // the SAME builder the day editor's slot fields use, so the two doors can't drift.
+  const leftoverPool = useMemo(() => leftoversQ.data?.leftovers ?? [], [leftoversQ.data])
+  const mealOpts = useMemo(
+    () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t),
+    [recipes, lowItems, listItems, leftoverPool, t],
+  )
+  const planLeftover = usePlanLeftover()
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
   // meal linked to it (recipe_id, migration 0024) was *served*. Built from the meals
   // the page already holds — the 10-day window (`days`) plus the recent-history
@@ -191,35 +195,12 @@ export function Kitchen() {
   // date → its day note (the per-day memo), if any.
   const noteFor = (date: number) => dayNotesQ.data?.notes?.find((n) => n.date === date)
 
-  // Tapping a day cell opens the day peek (the whole day's meals + note) — which now
-  // also carries the two doors into the day scene's faces (« Planifier un repas » /
-  // « Voir la journée »), so a tapped day offers what to DO next, not just the meals
-  // as text (Marc, 2026-09-02), and each meal that resolves a recipe carries its own
-  // 📖 / 🍲 Cuisiner pair — the cook door is per MEAL, not one per day.
-  // The pencil stays the direct planner door
-  // (?vue=repas). We guard against the drag: a pointerdown that
-  // then moves >6px is a reschedule, not a tap, so it doesn't also open the peek.
+  // Each meal row is BOTH a tap target (straight to its recipe) and the day's drag
+  // handle (no separate grip glyph anymore — see the week grid below). We guard
+  // against the drag: a pointerdown that then moves >6px is a reschedule, not a
+  // tap, so it doesn't also navigate.
   const tapDownRef = useRef<{ x: number; y: number } | null>(null)
   const boardMembers = boardQ.data?.members ?? []
-  const openDayPeek = (date: number) => {
-    const nameById = (id: string | null) => (id ? boardMembers.find((m) => m.id === id)?.display_name ?? null : null)
-    const dayMeals = mealPrefs.visibleSlots.flatMap((s) =>
-      mealsFor(date, s).map((m) => ({
-        slot: t.kitchen.slots[s],
-        title: m.title,
-        cook: nameById(m.cook_member_id),
-        recipeId: recipeForMeal(m)?.id ?? null,
-      })),
-    )
-    const rel = date === weekStart ? t.kitchen.todayShort : date === addLocalDays(weekStart, 1) ? t.kitchen.tomorrowShort : null
-    const label = (rel ? `${rel} · ` : '') + formatDay(date, lang).replace(/^./, (c) => c.toUpperCase())
-    detail.open(
-      buildDay(
-        { t, lang, members: [] },
-        { label, day: date, accent: mealPrefs.color(mealPrefs.hero), meals: dayMeals, note: noteFor(date)?.text ?? null },
-      ),
-    )
-  }
 
   // Drag a day's hero meal to another day — the calm week-grid gesture. Each day cell
   // is a drop zone keyed by its date; the hero headline is the drag handle. A day
@@ -241,9 +222,7 @@ export function Kitchen() {
   // The week-action flows (shop / suggest) + the toddler kid-suggest. The per-day
   // meal editing moved to DayPlanPage; this page keeps only kidSuggest (the toddler
   // taps a recipe then an empty day — a suggestion, not a decision).
-  const ai = useAiWake()
-  const { aiWaking } = ai
-  const { kidSuggest } = useMealPlanning(ai, profileId)
+  const { kidSuggest } = useMealPlanning(profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
     useRecipeShop(days, recipeForMeal, listItems)
   // How many shop items are currently ticked (the panel starts all-unchecked, so
@@ -254,8 +233,7 @@ export function Kitchen() {
   // HERE at the top of the Repas tab (shop) or opens the IdeasDrawer (idées). If the
   // page is scrolled down to the week grid, an inline landing is off-screen and the
   // tap reads as "nothing happened". So shop bumps a tick that scrolls the results
-  // band into view (showing the ⏳ AI wake-up immediately, then the panel). See the
-  // wrapped handlers passed to registerKitchen below.
+  // band into view. See the wrapped handlers passed to registerKitchen below.
   const resultsRef = useRef<HTMLDivElement>(null)
   // The ONE « Idées » drawer (C-14) is a full-screen scene now (/kitchen/idees) —
   // reachable from the grid opener below AND the ＋ Add sheet's « Idées » tile. The
@@ -416,11 +394,6 @@ export function Kitchen() {
               vide-frigo) moved INTO the IdeasDrawer's source chips (C-14) — the ONE
               polite live region below only ever announces the shop panel now. */}
           <div className="kitchen__results" ref={resultsRef} aria-live="polite">
-            {aiWaking && (
-              <p className="kitchen__ai-waking mono">
-                ⏳ {t.kitchen.aiWaking}
-              </p>
-            )}
             {shopPrompt && (
               <div className="kitchen__staples kitchen__shop">
                 {shopPrompt.length === 0 ? (
@@ -513,122 +486,120 @@ export function Kitchen() {
                 }
               >
                 {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
-                {/* Calendar-style date badge — weekday + day number, the row's left
-                    anchor. Today/tomorrow get a relative tag; today's whole card
-                    lights up so "you are here" reads at a glance in the countdown. */}
-                <span className="kitchen__day-date" aria-label={formatDay(date, lang)}>
-                  {rel && <span className="kitchen__day-rel mono">{rel}</span>}
-                  <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
-                  <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
-                </span>
-                {/* Calm, read-only glance — the souper headline, the other slots as
-                    colour chips, the note. The meal info is plain display (no longer
-                    a giant button that hid it behind an ellipsis); only the compact
-                    "Gérer" cue opens that day's editor. Full editing lives in the
-                    DayManageSheet so two days still fit a phone. */}
+                {/* The date + the edit door stick as the pill's header — its ONLY
+                    two jobs are "which day" and "manage it"; the meals scroll below.
+                    Today/tomorrow get a relative tag; today's whole card lights up
+                    so "you are here" reads at a glance in the countdown. */}
+                <div className="kitchen__day-head">
+                  <span className="kitchen__day-date" aria-label={formatDay(date, lang)}>
+                    {rel && <span className="kitchen__day-rel mono">{rel}</span>}
+                    <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
+                    <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
+                  </span>
+                  {/* A small, icon-only edit button — the lone door that opens the
+                      day's full editor, landing on its « Repas » face (?vue=repas —
+                      a kitchen door means meals). No "Gérer" label: the pencil says
+                      it and keeps the header tiny. */}
+                  <button
+                    type="button"
+                    className="kitchen__day-manage"
+                    onClick={() => nav(`/kitchen/day/${date}?vue=repas`)}
+                    aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                    title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
+                  >
+                    <Icon name="pencil-simple-bold" size={16} />
+                  </button>
+                </div>
+                {/* Calm, read-only glance — each supper its OWN row (icon + title,
+                    like the board's « Ce soir »), not one agglomerated line. A single
+                    tap goes straight to that meal's recipe; the other slots ride
+                    below as colour chips. Full editing lives in the day scene. */}
                 <div className="kitchen__day-body">
-                  <div className="kitchen__day-top">
-                    {planDate === date && !planRo ? (
-                      // Plan the day's hero meal RIGHT HERE. Filling a week used to
-                      // cost seven full-screen day scenes (friction audit, plan seam
-                      // #8); the scene still owns the rest (sides, note, recipe, cook).
-                      // The shared EditField, so voice/clear/Enter/IME all behave.
-                      <EditField
-                        className="kitchen__day-add"
-                        value={planText}
-                        onChange={setPlanText}
-                        onSubmit={() => commitPlan(date)}
-                        onCancel={closePlan}
-                        commitOnBlur
-                        autoFocus
-                        busy={planBusy}
-                        submitLabel={t.common.add}
-                        submitLeadingIcon="plus-bold"
-                        submitVariant="primary"
-                        placeholder={t.kitchen.planPlaceholder}
-                        ariaLabel={`${t.kitchen.planShort} · ${formatDay(date, lang)}`}
-                      />
-                    ) : (
-                    <span
-                      className={
-                        'kitchen__day-sum-main kitchen__day-sum-tap' +
-                        (showSupper ? ' kitchen__day-drag' : '') +
-                        (showSupper && dayDnd.activeId === String(date) ? ' is-dragging' : '')
-                      }
-                      onPointerDown={(e) => {
-                        // Remember where the press began so the click below can tell a
-                        // tap (open the peek) from a drag (reschedule — skip the peek).
-                        tapDownRef.current = { x: e.clientX, y: e.clientY }
-                        if (showSupper) dayDnd.start(String(date), suppers.map((m) => m.title).join(' · '), e)
+                  {planDate === date && !planRo ? (
+                    // Plan the day's hero meal RIGHT HERE — type free text, or pick
+                    // a recipe / Restant from the SAME dropdown the day editor's slot
+                    // fields use (mealOpts), so the two doors can't drift. Filling a
+                    // week used to cost seven full-screen day scenes (friction audit,
+                    // plan seam #8); the scene still owns the rest (sides, note, cook).
+                    <EntityCombobox
+                      className="kitchen__day-add"
+                      value={planText}
+                      onChange={setPlanText}
+                      options={mealOpts}
+                      onPick={(o: ComboOption<MealPick>) => {
+                        closePlan()
+                        if (o.data.kind === 'recipe') planMealRecipe(qc, date, heroSlot, o.data.recipe)
+                        else void planLeftover(o.data.leftover, date, heroSlot)
                       }}
-                      onClick={(e) => {
-                        const d = tapDownRef.current
-                        if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
-                        // An EMPTY day opens the inline planner (its cue literally
-                        // says « À planifier ») — a planned one opens the peek.
-                        if (!showSupper && !planRo) openPlan(date)
-                        else openDayPeek(date)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          if (!showSupper && !planRo) openPlan(date)
-                          else openDayPeek(date)
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={
-                        !showSupper && !planRo
-                          ? `${t.kitchen.planShort} · ${formatDay(date, lang)}`
-                          : `${t.detail.openDay} · ${formatDay(date, lang)}`
-                      }
-                      title={showSupper ? t.kitchen.dragDay : undefined}
-                    >
-                      {showSupper ? (
-                        <>
-                          {/* Grip + slot icon + title on ONE line; the Restants tag drops
-                              to its own line below (the column is set in CSS) so it never
-                              sits to the right of the title and eats its width. */}
-                          <span className="kitchen__day-sum-line">
-                            {/* A drag grip so the calm headline reads as "movable" — drag
-                                it onto another day to reschedule the souper. */}
-                            <span className="dnd-grip mono" aria-hidden="true">⠿</span>
+                      onSubmit={() => commitPlan(date)}
+                      onCancel={closePlan}
+                      noMatchLabel={t.combo.noMatch}
+                      frequentsKey="meal"
+                      autoFocus
+                      busy={planBusy}
+                      placeholder={t.kitchen.planPlaceholder}
+                      ariaLabel={`${t.kitchen.planShort} · ${formatDay(date, lang)}`}
+                    />
+                  ) : showSupper ? (
+                    <div className={'kitchen__day-meals' + (dayDnd.activeId === String(date) ? ' is-dragging' : '')}>
+                      {suppers.map((m) => {
+                        const r = recipeForMeal(m)
+                        // A recipe-linked meal opens straight to its recipe (the
+                        // book-icon door, one tap); a free-text one falls back to
+                        // the day's full editor — there's nothing else to show it.
+                        const go = () => nav(r ? `/kitchen/recipe/${r.id}` : `/kitchen/day/${date}?vue=repas`)
+                        return (
+                          <div
+                            key={m.id}
+                            className="kitchen__day-meal"
+                            role="button"
+                            tabIndex={0}
+                            onPointerDown={(e) => {
+                              // Remember where the press began so the click below can
+                              // tell a tap (open the recipe) from a drag (reschedule).
+                              // No visible grip anymore — the row itself is the handle.
+                              tapDownRef.current = { x: e.clientX, y: e.clientY }
+                              dayDnd.start(String(date), suppers.map((s) => s.title).join(' · '), e)
+                            }}
+                            onClick={(e) => {
+                              const d = tapDownRef.current
+                              if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
+                              go()
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                go()
+                              }
+                            }}
+                            // Only override the accessible name for a recipe-linked
+                            // meal — it names where the tap goes. A free-text one falls
+                            // back to the day editor, and just reads as its title (its
+                            // own text content); an explicit "Gérer · <titre>" here
+                            // would collide with the header's own "Gérer" pencil.
+                            aria-label={r ? `${t.recipes.open} · ${m.title}` : undefined}
+                            title={t.kitchen.dragDay}
+                          >
                             {/* The hero slot icon in its slot colour — the same icon +
                                 colour the chips and Réglages ▸ Repas use, not a bare dot. */}
                             <Icon name={SLOT_ICON_NAME[heroSlot]} size={18} color={supperColor} />
-                            <span className="kitchen__day-sum-titles">{suppers.map((m) => m.title).join(' · ')}</span>
-                          </span>
-                          {/* Flag a leftover souper on the calm glance, so "finish the
-                              fridge" reads without opening the day. Below the title. */}
-                          {suppers.some((m) => m.is_leftover) && (
-                            <span className="kitchen__meal-tag mono">
-                              <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className="kitchen__day-sum-empty mono">
-                          {!planRo && <InlineIcon name="plus-bold" size={12} />} {t.kitchen.planShort}
-                        </span>
-                      )}
-                    </span>
-                    )}
-                    {/* A small, icon-only edit button — the lone tap target that
-                        opens the day's editor, landing on its « Repas » face
-                        (?vue=repas — a kitchen door means meals). No "Gérer" label:
-                        the pencil says it and keeps the pill tiny so meal info
-                        keeps the width. */}
-                    <button
-                      type="button"
-                      className="kitchen__day-manage"
-                      onClick={() => nav(`/kitchen/day/${date}?vue=repas`)}
-                      aria-label={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
-                      title={`${t.kitchen.manage} · ${formatDay(date, lang)}`}
-                    >
-                      <Icon name="pencil-simple-bold" size={16} />
+                            <span className="kitchen__day-meal-title">{m.title}</span>
+                            {m.is_leftover ? (
+                              <span className="kitchen__meal-tag mono">
+                                <InlineIcon name="arrow-counter-clockwise-bold" size={12} /> {t.kitchen.leftoversTag}
+                              </span>
+                            ) : null}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : planRo ? (
+                    <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>
+                  ) : (
+                    <button type="button" className="kitchen__day-sum-empty mono" onClick={() => openPlan(date)}>
+                      <InlineIcon name="plus-bold" size={12} /> {t.kitchen.planShort}
                     </button>
-                  </div>
+                  )}
                   {sideRows.length > 0 && (
                     <span className="kitchen__day-slots">
                       {sideRows.map(({ slot, titles }) => {
