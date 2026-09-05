@@ -160,8 +160,51 @@
    this class only pins its trigger in the flex row. Replaced the hand-rolled 32px
    `.cnote__act` twins, then the shared `RowActions` pencil/trash pair after that
    (ACTIONS.md Wave B, then 2026-09-04). */
-.cnote__actions {
+/* The "..." menu — pinned to the row's TOP-RIGHT corner rather than riding in the
+   flex row, where (flex:none, full row height) it took its width out of the note's own
+   text: a two-line preview clipped at « Hypothèque 81… » while a quarter of the row was
+   spent on a button. Absolute, so the text gets the whole width and the row reserves
+   only the corner. Same small-disc grammar as .sec-label__actbtn, hit-area bleed
+   included — the visible circle is 28px, the target 44. */
+/* The WRAPPER is what gets pinned: ActionMenu renders its trigger inside a
+   `position: relative` .action-menu span (that span is the flex item, and it is the
+   trigger's own containing block), so positioning the button alone just moved it
+   within a box that still sat in the row. */
+.cnote > .action-menu {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.5rem;
+}
+.cnote .cnote__actions {
   flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  border-radius: var(--radius-pill);
+}
+.cnote .cnote__actions::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+/* Only a row that HAS the menu reserves the corner — a read-only guest's rows and the
+   board's compact face don't render one, and shouldn't pay for it. */
+.cnote:has(> .action-menu) {
+  padding-right: 2.6rem;
+}
+/* The preview reads TWO full lines on the notes page (the board's compact face keeps
+   its single line) — the note's own words are what the row is for, and one ellipsised
+   line of « ven. 14 août · Hypothèque 81… » says almost nothing. Same two-line
+   treatment the board mini-cards got in f19662c. */
+.cnote-list:not(.cnote-list--compact) .cnote__meta {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 /* Phone: the scope chip would crowd the row — drop it (the face picker / board face
    already says whose list you're in) so the title + actions keep room. */

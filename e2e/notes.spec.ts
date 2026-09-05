@@ -196,3 +196,46 @@ test('a read-only guest reads a note in place — the tap never opens the editor
   await expect(main).toHaveAttribute('aria-expanded', 'true')
   await expect(row).toContainText('doublure beige')
 })
+
+test('a row spends its width on the note, not on its own furniture', async ({ page }) => {
+  // The ⋯ used to ride IN the row (flex:none, full row height), taking its width out of
+  // the note's text: a preview clipped at « Hypothèque 81… » while a quarter of the row
+  // was a button. It is a small disc in the top-right corner now, and the preview reads
+  // two full lines.
+  await openNotes(page, [
+    { ...NOTE, title: 'Virements', text: 'Virements\nHypothèque 812.82$\nMoi : 556.41 / 2 sems\nElle : 256.41' },
+  ])
+  const row = page.locator('.cnote-list .cnote').first()
+  const m = await row.evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    const btn = el.querySelector('.action-menu')!.getBoundingClientRect()
+    const meta = el.querySelector('.cnote__meta')!
+    const mr = meta.getBoundingClientRect()
+    const line = parseFloat(getComputedStyle(meta).lineHeight)
+    return {
+      rowW: r.width,
+      metaW: mr.width,
+      btnFromTop: btn.top - r.top,
+      btnH: btn.height,
+      metaLines: Math.round(mr.height / line),
+    }
+  })
+  // Top-RIGHT corner, not vertically centred in the row…
+  expect(m.btnFromTop, 'the ⋯ sits at the top of the row').toBeLessThan(16)
+  expect(m.btnH, 'a small disc, not a full-height column').toBeLessThan(40)
+  // …so the text keeps most of the row.
+  expect(m.metaW / m.rowW, 'the preview gets the width back').toBeGreaterThan(0.6)
+  // …and reads two lines, not one clipped one.
+  expect(m.metaLines).toBe(2)
+})
+
+test('the preview never repeats the title back at you', async ({ page }) => {
+  // A note titled « Virements » whose body also starts with it read:
+  //   Virements  /  8 juin · Virements Hypothèque 812.82$ …
+  // — the title again, eating the preview it was there to show. (lib/familyNotes
+  // noteRowText; the same rule seedMd enforces from the editor's side.)
+  await openNotes(page, [{ ...NOTE, title: 'Virements', text: 'Virements\nHypothèque 812.82$' }])
+  const meta = page.locator('.cnote-list .cnote').first().locator('.cnote__meta')
+  await expect(meta).toContainText('Hypothèque')
+  await expect(meta).not.toContainText('Virements')
+})

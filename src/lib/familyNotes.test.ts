@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sortNotes, visibleNotes, type FamilyNote } from './familyNotes'
+import { sortNotes, visibleNotes, type FamilyNote, noteRowText } from './familyNotes'
 
 // Build a minimal family note with just the fields the viewing filter reads.
 const note = (id: string, memberId: string | null, extra?: Partial<FamilyNote>): FamilyNote => ({
@@ -61,5 +61,56 @@ describe('sortNotes — manual drag order first, newest-first within a tie', () 
     const all = [note('b', null, { position: 1 }), note('a', null, { position: 0 })]
     sortNotes(all)
     expect(all.map((n) => n.id)).toEqual(['b', 'a'])
+  })
+})
+
+// The row's two lines. Its whole job is that neither says the same thing twice — the
+// same rule `seedMd` enforces from the editor's side.
+describe('noteRowText — the row title and what is left to preview', () => {
+  it('derives the title from the first line when there is no explicit one', () => {
+    expect(noteRowText('', 'Virements\nHypothèque 812.82$')).toEqual({
+      title: 'Virements',
+      preview: 'Hypothèque 812.82$',
+    })
+  })
+
+  // The reported waste: the ⋯ button was moved off the row to give the preview its
+  // width back, and the preview promptly spent it repeating the title.
+  it('does NOT repeat an explicit title that already leads the body', () => {
+    expect(noteRowText('Virements', 'Virements\nHypothèque 812.82$\nMoi : 556.41')).toEqual({
+      title: 'Virements',
+      preview: 'Hypothèque 812.82$ Moi : 556.41',
+    })
+  })
+
+  it('keeps the whole body when the explicit title is something else', () => {
+    expect(noteRowText('Banque', 'Virements\nHypothèque')).toEqual({
+      title: 'Banque',
+      preview: 'Virements Hypothèque',
+    })
+  })
+
+  it('a one-line note has a title and nothing left over', () => {
+    expect(noteRowText('', 'Sortir les poubelles')).toEqual({ title: 'Sortir les poubelles', preview: '' })
+    expect(noteRowText('Rappel', 'Rappel')).toEqual({ title: 'Rappel', preview: '' })
+  })
+
+  it('ignores leading blank lines and collapses the rest onto one line', () => {
+    expect(noteRowText('', '\n\n  Titre  \n\nligne 2\n\n\nligne 3')).toEqual({
+      title: 'Titre',
+      preview: 'ligne 2 ligne 3',
+    })
+  })
+
+  it('an empty note yields two empty strings, never « undefined »', () => {
+    expect(noteRowText('', '')).toEqual({ title: '', preview: '' })
+  })
+
+  it('a title that merely STARTS the first line is not the same as leading it', () => {
+    // « Virements » vs « Virements 2026 » — the body line says more, so it stays.
+    expect(noteRowText('Virements', 'Virements 2026\nHypothèque')).toEqual({
+      title: 'Virements',
+      preview: 'Virements 2026 Hypothèque',
+    })
   })
 })

@@ -4,7 +4,7 @@ import { formatDay, formatDayTime } from '../../lib/format'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
-import { type FamilyNote, sortNotes } from '../../lib/familyNotes'
+import { type FamilyNote, sortNotes, noteRowText } from '../../lib/familyNotes'
 import { reorderPatches } from '../../lib/reorder'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf } from '../../lib/dnd'
 import { imgUrl } from '../../lib/image'
@@ -218,14 +218,12 @@ export function NotesList({
           const bodyText = plainText(n.text)
           const explicitTitle = n.title.trim()
           const derivedFirst = bodyText.split('\n').find((l) => l.trim()) ?? ''
-          const title = explicitTitle || derivedFirst || mediaLabel || fn.untitled
-          // Preview = the body minus whatever already shows as the title line.
-          const rest = (explicitTitle
-            ? bodyText
-            : bodyText.slice(derivedFirst ? bodyText.indexOf(derivedFirst) + derivedFirst.length : 0)
-          )
-            .replace(/\n+/g, ' ')
-            .trim()
+          // The title/preview split lives in lib/familyNotes beside seedMd — the two
+          // halves of ONE rule (a title that leads the body is never doubled, in
+          // either direction).
+          const row = noteRowText(n.title, bodyText)
+          const title = row.title || mediaLabel || fn.untitled
+          const rest = row.preview
           const preview = rest
 
           // A note with body beyond its title can be read in place (tap to expand);

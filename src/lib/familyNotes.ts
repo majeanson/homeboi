@@ -40,6 +40,34 @@ export function sortNotes(notes: FamilyNote[]): FamilyNote[] {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || (b.updated_at ?? b.created_at) - (a.updated_at ?? a.created_at))
 }
 
+// What one ROW shows: a bold title line, then a quieter preview of what's left.
+//
+// The sibling of `seedMd` below, and it enforces the same rule from the other side:
+// a title that ALREADY LEADS THE BODY is never doubled. seedMd folds a legacy stored
+// title into the body without repeating it; this takes it back out of the preview.
+// Without that, a note titled « Virements » whose body starts with the same word read:
+//
+//   Virements
+//   dim. 8 juin · Virements Hypothèque 812.82$ Moi :…
+//
+// — the title again, eating the preview it was supposed to be showing. Both branches
+// slice the same leading line; the only question is whether the title CAME from it.
+//
+// `body` is the note's text already flattened to plain text by the caller (the row list
+// runs it through lib/noteMarkdown.plainText first, which this module must not import —
+// it is a .tsx renderer).
+export function noteRowText(title: string, body: string): { title: string; preview: string } {
+  const explicit = title.trim()
+  const first = body.split('\n').find((l) => l.trim()) ?? ''
+  const leads = !!explicit && first.trim() === explicit
+  const rest = (explicit && !leads ? body : body.slice(first ? body.indexOf(first) + first.length : 0))
+    .replace(/\n+/g, ' ')
+    .trim()
+  // Trim only the RETURNED title: the untrimmed `first` is what indexes into the body
+  // above, so slicing stays exact while the row shows a clean line.
+  return { title: explicit || first.trim(), preview: rest }
+}
+
 // What the EDITOR's body starts as. The editor has no title FIELD — the note's first
 // words are its title, iOS style — so a note carrying a legacy stored `title` (from
 // before that field was removed) folds it in as the first line here, and the save
