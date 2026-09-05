@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { installVvStub, openKeyboard } from './kb'
 
 // The full-screen rich note editor (#richnotes), driven in a real browser so
 // ProseMirror's own commands + native Enter/selection are covered end-to-end. It's
@@ -40,6 +41,56 @@ async function openEditor(page: import('@playwright/test').Page) {
   await expect(body).toBeVisible()
   return body
 }
+
+test('« Pour qui » opens from inside the editor scene, and a face can actually be picked', async ({ page }) => {
+  // Reported from the phone as "the toggle can't be clicked, nothing happens".
+  // It is a LAYERING failure, not a wiring one: FaceSelect's picker is a `Sheet`,
+  // and a Sheet used to sit at z-31 — under this editor's own scene (z-140). The
+  // sheet rendered, the scrim dimmed, and every tap landed on the editor's toolbar
+  // instead. Fixed in 3c9b903 by lifting .scrim/.sheet over every scene; this is
+  // the guard, and it fails with exactly the reported symptom when reverted
+  // ("…note-editor__toolbar… intercepts pointer events").
+  //
+  // Driven WITH THE KEYBOARD UP and the visual viewport panned, because that is
+  // the real moment you reach for « Pour qui » — mid-note — and it is when
+  // `.sheet.show`'s `bottom: var(--kb)` anchoring has the most to get wrong.
+  const member = { id: 'm1', displayName: 'Marc-Antoine', avatarKind: 'initial', avatarRef: '', colour: '#5891AC', isChild: false, email: null, phone: null, birthday: null, notes: null, gender: 'm' }
+  const note = { id: 'n1', member_id: null, author_member_id: 'm1', title: '', text: 'Virements\nHypothèque', media_kind: null, media_key: null, scene_key: null, position: 0, created_at: 1, updated_at: 1 }
+  const scoped: (string | null)[] = []
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await installVvStub(page)
+  await page.route('**/api/cercle**', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ contacts: [], members: [member], links: [], groups: [] }) })
+  })
+  await page.route('**/api/family-notes**', async (route) => {
+    if (route.request().method() === 'GET')
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notes: [note] }) })
+    scoped.push(JSON.parse(route.request().postData() || '{}').member_id ?? null)
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'n1' }) })
+  })
+
+  await page.goto('/notes')
+  await page.getByRole('button', { name: 'Modifier' }).first().click()
+  const body = page.locator('.note-editor .note-tiptap')
+  await expect(body).toBeVisible()
+  await body.click()
+  await page.keyboard.type(' x')
+  await openKeyboard(page, 336, 260)
+
+  await page.locator('.note-editor .profile-chip').click()
+  const face = page.locator('.sheet.show .profile-face', { hasText: 'Marc-Antoine' })
+  await expect(face).toBeVisible()
+  // THE assertion: visible is not enough — the face has to RECEIVE the tap. A sheet
+  // painted behind the scene is perfectly visible to the DOM and dead to the finger.
+  await face.click({ timeout: 4000 })
+  await expect(page.locator('.note-editor .profile-chip__name')).toHaveText('Marc-Antoine')
+
+  // …and the pick is what actually gets saved (the scope really changed).
+  await page.getByRole('button', { name: 'Terminé' }).click()
+  await expect.poll(() => scoped).toContain('m1')
+})
 
 test('a brand-new note shows placeholder copy until the first character', async ({ page }) => {
   // An empty ProseMirror box has no chrome of its own, so a fresh note read as a
