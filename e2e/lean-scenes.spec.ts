@@ -281,3 +281,32 @@ test('« Demain » does the same — one door, in the header', async ({ page }) 
   await expect(card.locator('.sec-label__act > *')).toHaveCount(1)
   await expect(card.getByLabel(/Planifier demain/)).toBeVisible()
 })
+
+test('on a 320px phone the doors take their own line rather than push the row off screen', async ({ page }) => {
+  // Three 44px touch targets are 132px whatever diameter you draw inside them. At
+  // 320px that leaves ~53px for a 94px title, so the header cannot fit on one line —
+  // and it bled off the screen (CI: layout-overflow « lo-board-w320 »). It wraps now:
+  // title whole, doors whole, hard right on the second line. Nothing clipped, nothing
+  // unreachable, one extra row of header on the phones that need it.
+  await boot(page)
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible' })
+  const head = page.locator('.wg-slot[data-card="today"] .sec-label').first()
+  await expect(head).toBeVisible()
+  const m = await head.evaluate((el) => {
+    const r = el.getBoundingClientRect()
+    const b = el.querySelector('b')!
+    const act = el.querySelector('.sec-label__act')!.getBoundingClientRect()
+    return {
+      titleClipped: b.scrollWidth > b.clientWidth + 1,
+      actWrapped: act.top - r.top > 8,
+      actRightGap: r.right - act.right,
+      actPastEdge: act.right - r.right,
+    }
+  })
+  expect(m.titleClipped, 'the title reads in full').toBe(false)
+  expect(m.actWrapped, 'the doors moved to their own line').toBe(true)
+  expect(m.actRightGap, 'and stayed hard right').toBeLessThan(2)
+  expect(m.actPastEdge, 'nothing bleeds off the header').toBeLessThanOrEqual(0)
+})

@@ -794,6 +794,18 @@
   align-items: center;
   gap: 10px;
   margin: 22px 2px 12px;
+  /* WHEN THE DOORS DON'T FIT, THEY TAKE THEIR OWN LINE — no breakpoint, no query, it
+     just happens when it has to. « Aujourd'hui » grew a third door and the header
+     stopped fitting a 320px phone: three 44px touch targets are 132px whatever
+     diameter you draw inside them, which left 53px for a 94px title, so the row bled
+     off the screen (e2e/layout-overflow.spec.ts « lo-board-w320 »).
+     Wrapping is the only lossless answer — the alternatives clip the title or shrink
+     the targets. It costs one row of header, and only on the phones that need it.
+     (A @container query was the wrong tool here and silently did nothing: a container
+     query matches against the nearest ANCESTOR container, so an element can never
+     query its own box. The descendant rules applied; every rule on .sec-label itself
+     was dead.) */
+  flex-wrap: wrap;
 }
 .sec-label b {
   font-family: var(--display);
@@ -805,6 +817,23 @@
   height: 2px;
   background: var(--line);
   border-radius: 2px;
+}
+/* WHAT YIELDS WHEN THE HEADER RUNS OUT OF ROOM, in order: spacing, then words.
+   Three 44px touch targets are 132px whatever we do, and « Aujourd'hui » grew a third
+   door — on a 320px phone that no longer fits beside the title, and the row bled off
+   the screen (e2e/layout-overflow.spec.ts « lo-board-w320 »).
+   The rule is NOT in this list even though it is the only decoration here: it is
+   `flex: 1 1 0`, so it already collapses to nothing on its own — and it is also what
+   PUSHES the doors to the right edge. Hiding it reclaimed 20px of gaps and paid for
+   them by sliding the doors back against the title on every phone, which is the
+   opposite of what they are for.
+   The 270px threshold is measured, not guessed: the header box is 223px at a 320px
+   viewport, 263px at 360, 293px at 390. So this bites on the two narrow ones and
+   leaves the phone in Marc's hand alone. */
+/* Hard right on whichever line it lands on: a no-op while `.ln` (flex: 1 1 0) is
+   eating the slack, and what keeps the doors in the corner once the row wraps. */
+.sec-label__act {
+  margin-left: auto;
 }
 .sec-label .ct {
   font-size: 12px;
