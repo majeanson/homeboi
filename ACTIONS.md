@@ -244,4 +244,10 @@ line is a recorded ➖ with a why. Feeds PARITY Part 5's UX-reach block.
 - **Gating**: guest (`isGuest()` only if it writes `/api/*` — device-local prefs stay open), toddler/simple lens, kiosk vs mobile, operator scope, AI/R2-unset fallback.
 - **⚙ face**: on a two-faces surface, does the action belong to the reading face (≤1 act per row) or the Avancé face (furniture)?
 - **Discovery**: ＋-sheet tile (`SECTION_MODES` + `ADD_HELP`) or recorded ➖; « ? » help entry; guide card merge if it changes a main surface (`DISCOVERY.md`).
+- **The door LANDS ON the thing**: if it names a thing (« Note du jour », an empty card's
+  « rien pour l'instant »), it opens that composer — `?focus=`, `?plus=<mode>`, `?add=1`,
+  or a form route. Landing on the page that merely CONTAINS it is the door doing half its
+  job, and it is what got reported from the phone (2026-09-05). A door that names a PAGE
+  is exempt. Grammar in `DISCOVERY.md`; guards in `e2e/door-landing.spec.ts` and
+  `boardCards.test.ts`'s « emptyTo ».
 - **Matrix**: add/update this file's Part 2 row **in the same commit**.

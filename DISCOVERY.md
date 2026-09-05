@@ -26,6 +26,15 @@ settings) are one tap back.** No dead-end prose.
 
 ## The URL grammar (deep links)
 
+> **A door lands ON its target.** The grammar below is not decoration — it is how a
+> door that NAMES a thing opens onto that thing ready to act, instead of onto the page
+> that merely contains it. « Note du jour » in the calendar's ⋯ used to navigate to the
+> day scene and stop: the composer was right there, closed, so asking for the note cost
+> a second tap to go find it. A door that names a PAGE (« Planifier aujourd'hui » → the
+> day's plan) is exempt; the page IS the target there.
+> Guards: `e2e/door-landing.spec.ts` (each target really opens) and
+> `boardCards.test.ts` « emptyTo » (each door really points at an add).
+
 | Param | On | Means |
 | --- | --- | --- |
 | `?tab=<SectionKey>` | `/settings` | Which themed Réglages tab (retired ids fold via `LEGACY_TAB`). |
@@ -33,6 +42,7 @@ settings) are one tap back.** No dead-end prose.
 | `?sub=<id>` | `/settings` | The Régler sub-section (ids in `SETTINGS_SUBS`; retired ids fold via `LEGACY_SUB`). |
 | `?card=<guideId>&point=<n>` | `/settings` | Land on ONE guide card (+ sub-point): forces the card's home tab + Comprendre lens, opens/scrolls/highlights. Retired ids resolve through `GUIDE_CARD_ALIAS`. |
 | `?focus=<helpKey>` | `/settings` | Land on ONE section card inside a stacked sub: scroll + accent ring (`SETTINGS_FOCUS`; anchor is `id="op-<helpKey>"` from `OperatorSection`). |
+| `?focus=note|meal` | `/kitchen/day/:date` | **Open** that composer on the day scene (the note headline, or the hero slot's meal), seeded and ready. Same one-shot shape as the Réglages one: act, then consume the param with one functional `setParams` so a refresh or a back-nav doesn't reopen it. |
 | `?plus=1\|<mode>` | any hub tab | Open the ＋ sheet: `1` = the section's chooser, a mode name = that tile (`/board?plus=mot`). Validated against `ADD_MODES`; ignored where the FAB is hidden; operator-grade modes fall back to the chooser when not signed in. |
 
 ## The two directions

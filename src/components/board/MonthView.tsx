@@ -481,10 +481,16 @@ export function MonthView({
               { icon: 'hand-heart-bold', label: t.operator.addChore, onSelect: () => nav(`/chore/new?start=${selected}`) },
             ] as ActionMenuItem[])
           : []),
-        // « Planifier un repas » is a MEAL door → the day scene's Repas face; the
-        // day note is the scene's shared headline, reachable on the default face.
-        { icon: 'fork-knife-bold', label: t.kitchen.planMeal, onSelect: () => nav(`/kitchen/day/${selected}?vue=repas`) },
-        { icon: 'pencil-simple-bold', label: t.kitchen.note, onSelect: () => nav(`/kitchen/day/${selected}`) },
+        // Both land ON their target, not merely on the page that contains it: the day
+        // scene's `?focus=` opens the composer you asked for (see DayPlanPage). Asking
+        // for « Note du jour » and then having to find the note field is the door doing
+        // half its job.
+        {
+          icon: 'fork-knife-bold',
+          label: t.kitchen.planMeal,
+          onSelect: () => nav(`/kitchen/day/${selected}?vue=repas&focus=meal`),
+        },
+        { icon: 'pencil-simple-bold', label: t.kitchen.note, onSelect: () => nav(`/kitchen/day/${selected}?focus=note`) },
         // …and the one row that isn't an add: the door to « Le point du jour », where a
         // habit is marked, edited (RowActions ▸ ✎) or created. The panel below only
         // RECORDS what was done, so this is the calendar's way back to the habits

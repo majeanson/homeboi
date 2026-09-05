@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   BOARD_CARDS,
   DEFAULT_CARD_PREFS,
+  cardMeta,
   cardMode,
   cardSize,
   cardZone,
@@ -396,5 +397,40 @@ describe('moveCard', () => {
     const p = fresh()
     expect(moveCard(p, 'nope' as BoardCardId, 'band', 'notes')).toBe(p)
     expect(moveCard(p, 'notes', 'band', 'notes')).toBe(p)
+  })
+})
+
+// A DOOR LANDS ON ITS TARGET (see e2e/door-landing.spec.ts, and DISCOVERY.md's URL
+// grammar). An empty card says « rien pour l'instant », which is an invitation — so
+// tapping it must open the ADD, not drop you on a page to go hunting for it. Three of
+// these pointed at a bare page: « Les notes » at the list, the routines card at
+// /maison, « À finir bientôt » at /kitchen.
+//
+// Pinned as DATA here because the e2e can only prove that each target URL opens
+// something — it navigates to the URL directly, so it would happily pass with these
+// values pointing somewhere else entirely. This is the half that says WHERE they point.
+describe('emptyTo — an empty card taps into its add', () => {
+  const to = (id: BoardCardId) => cardMeta(id)?.emptyTo
+
+  it('opens a composer, a ＋ sheet tile, or a form route — never a bare list page', () => {
+    expect(to('cercleNotes')).toBe('/notes?add=1')
+    expect(to('routineNext')).toBe('/maison?plus=routine')
+    expect(to('toFinish')).toBe('/kitchen?plus=leftovers')
+    expect(to('notes')).toBe('/board?plus=note')
+    expect(to('upcoming')).toBe('/event/new')
+    expect(to('voyage')).toBe('/voyage/new')
+    expect(to('seasonUpkeep')).toBe('/home-project/new')
+  })
+
+  it('every emptyTo is an add door — a form route, a ?plus= tile, or a named composer', () => {
+    // The ones that are a PAGE are so because the page itself is the thing you came
+    // for (the departure checklist, the habits check-in, the ideas drawer, the car).
+    const pageIsTheTarget = new Set(['/board/departure', '/board/habitudes', '/kitchen/idees', '/voiture', '/maison?section=carnets'])
+    for (const id of ALL) {
+      const target = to(id)
+      if (!target) continue
+      const opensSomething = /[?&](plus|add|focus)=/.test(target) || target.endsWith('/new') || pageIsTheTarget.has(target)
+      expect(opensSomething, `${id} → ${target} lands on a page with nothing open`).toBe(true)
+    }
   })
 })

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { StaleBounce } from '../components/StaleBounce'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
@@ -120,6 +120,23 @@ export function DayPlanPage() {
   // planner). URL-held (useTabParam) so a meal door can land `?vue=repas` and the
   // pick survives the return from a nested add/edit scene.
   const [vue, setVue] = useTabParam('vue', 'jour', ['jour', 'repas'] as const)
+  // A one-shot "open this" param — consumed on arrival (see the effect below), unlike
+  // `vue`, which is durable state the scene keeps.
+  const [params, setParams] = useSearchParams()
+  const focusParam = params.get('focus')
+  const setFocusParam = useCallback(
+    (v: string | null) =>
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (v) next.set('focus', v)
+          else next.delete('focus')
+          return next
+        },
+        { replace: true },
+      ),
+    [setParams],
+  )
 
   const { date: dateParam } = useParams()
   // A malformed :date (a stale link, an ISO string where day-seconds are expected)
@@ -414,6 +431,36 @@ export function DayPlanPage() {
 
   // Drag a meal to another slot (same day) — shares the grid's reschedule helper.
   const rescheduleMeal = (id: string, toDate: number, slot?: string) => void reschedule(qc, id, toDate, slot)
+
+  // ?focus= — LAND ON THE THING, not merely on the page that contains it.
+  //
+  // « Note du jour » in the calendar's ⋯ menu navigated here and stopped: the composer
+  // was right there, closed, so asking for the note cost a second tap to find it. A
+  // door should open onto its target ready to act. Same grammar as Réglages'
+  // `?focus=` (pages/Operator.tsx): act on it, then CONSUME the param with one
+  // functional setParams, so a refresh or a back-nav doesn't reopen the composer.
+  //
+  //   ?focus=note  the day's note composer, seeded with whatever is already written
+  //   ?focus=meal  the hero slot's meal composer (paired with ?vue=repas)
+  //
+  // Waits for the notes query so the composer opens with the existing text rather than
+  // blanking it — the note arrives a beat after the page does.
+  const focus = focusParam
+  useEffect(() => {
+    if (!focus || isGuest()) return
+    if (focus === 'note') {
+      if (dayNotesQ.data === undefined) return // not loaded yet — try again next render
+      setEditNote(date)
+      setNoteText(noteFor(date)?.text ?? '')
+    } else if (focus === 'meal') {
+      // The HERO slot has its own composer state (editDate/mealText) — the side slots
+      // share editSlot/slotText. « Planifier un repas » means the headline meal, so it
+      // opens the hero's.
+      setEditDate(date)
+      setMealText('')
+    }
+    setFocusParam(null)
+  }, [focus, date, dayNotesQ.data, noteFor, setFocusParam])
 
   // A bad date in the URL → back to the grid rather than an empty editor.
   if (bad) return <StaleBounce to="/kitchen" message={t.kitchen.dayGone} />

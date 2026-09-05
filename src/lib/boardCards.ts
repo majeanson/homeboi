@@ -145,6 +145,11 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // `notes` is not `halvable`: a multi-card strip has no one-summary compact form.
   // `heroes` IS halvable — its mini is a MEDIA tile (the wonder photo + the
   // temperature, nothing else; DayHeroes.tsx), not the generic icon+title.
+  // `emptyTo` — where an EMPTY card taps to. The rule is the same one the ⋯ menus
+  // follow (see DayPlanPage's `?focus=`): a door lands ON the thing you asked for, not
+  // merely on the page that contains it. « Rien pour l'instant » is an invitation to
+  // add one, so tapping it opens the ADD — `?plus=<mode>` (the ＋ sheet, HubLayout),
+  // `?add=1` (the notes editor), or a form route that IS the add (/event/new).
   // `emptyTo`: an empty notes card (mode 'always') taps straight into the ＋
   // « Note rapide » sheet (?plus=note), mirroring the strip's own head ＋.
   { id: 'notes', icon: 'push-pin-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', halvable: false, emptyTo: '/board?plus=note' },
@@ -165,14 +170,14 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // door + weather tip render on every day — leaving the house isn't conditional on
   // the agenda — so the card never sits slot-empty.
   { id: 'departure', icon: 'key-bold', tint: 'var(--marigold-deep)', zone: 'grid', size: 1, mode: 'always', emptyTo: '/board/departure' },
-  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/maison' },
+  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/maison?plus=routine' },
   { id: 'habitudes', icon: 'repeat-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/board/habitudes' },
   { id: 'tomorrow', icon: 'sun-horizon-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'countdown', icon: 'hourglass-high-bold', tint: 'var(--berry-deep)', zone: 'grid', size: 1, mode: 'auto' },
-  { id: 'toFinish', icon: 'check-bold', tint: 'var(--sage)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/kitchen' },
+  { id: 'toFinish', icon: 'check-bold', tint: 'var(--sage)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/kitchen?plus=leftovers' },
   { id: 'todos', icon: 'check-bold', tint: 'var(--terracotta)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'upcoming', icon: 'calendar-blank-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/event/new' },
-  { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/notes' },
+  { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/notes?add=1' },
   { id: 'voyage', icon: 'map-pin-bold', tint: 'var(--teal)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/voyage/new' },
   { id: 'carnets', icon: 'book-open-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/maison?section=carnets' },
   { id: 'seasonUpkeep', icon: 'broom-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/home-project/new' },
