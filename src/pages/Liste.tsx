@@ -29,7 +29,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
 import { money, dealDate, dealEnded, type Deal } from '../lib/deals'
-import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms } from '../lib/picks'
+import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms, sameItemName } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
@@ -105,10 +105,19 @@ function DealZoomCaption({ itemText, deal }: { itemText: string; deal: Deal }) {
     deal.unitPrice != null ? `${money(deal.unitPrice)}${deal.unitLabel ?? ''}` : null,
   ].filter((x): x is string => !!x)
   const head = [itemText, deal.merchant?.trim() || null].filter((x): x is string => !!x).join(' · ')
+  // The product name is only worth a second line when it SAYS something the head
+  // doesn't. Adding an item straight from the flyer names the list line after the
+  // product, so the two were identical and the caption printed it twice
+  // (« MELON D'EAU ENTIER SANS PÉPINS, ENVIRON 9 LB · Maxi » then the same again).
+  // Compared through `sameItemName` — the exact-match tier of `matchListItem`, the
+  // very matcher that linked this deal onto this line — so the two agree on what
+  // "the same item" means, accents, case, plurals and leading quantities included.
+  const name = deal.name?.trim()
+  const nameAdds = !!name && !sameItemName(name, itemText)
   return (
     <>
       <span>{head}</span>
-      {!!deal.name?.trim() && <span className="zoom-cap__name">{deal.name}</span>}
+      {nameAdds && <span className="zoom-cap__name">{name}</span>}
       {priceBits.length > 0 && <span className="zoom-cap__price">{priceBits.join(' · ')}</span>}
       {ended ? (
         <span className="zoom-cap__ended">

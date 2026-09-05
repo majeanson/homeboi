@@ -112,6 +112,15 @@ function singularWords(key: string): string {
 //      direction only: a generic line inside a specific product name — a deal
 //      searched as "oeufs" must NOT land on an "Oeufs en chocolat" line.
 //   4. same containment against the line's synonyms.
+// Do these two names denote the SAME grocery thing? The exact-match tier of
+// `matchListItem` below, pulled out for callers that already have both strings and
+// just need the yes/no — the flyer zoom's caption, which must not print the product
+// name twice when the list line was named after that very product.
+export const sameItemName = (a: string, b: string): boolean => {
+  const ka = normKey(a)
+  return !!ka && ka === normKey(b)
+}
+
 export function matchListItem(list: ListItem[], name: string): ListItem | null {
   const key = normKey(name)
   if (!key) return null

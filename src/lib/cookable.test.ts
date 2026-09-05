@@ -8,6 +8,17 @@ const R = {
 }
 
 describe('normKey', () => {
+  // A regex alternation takes the FIRST branch that matches, not the longest, and
+  // 'l' was listed before 'lb': « 2 lb de pommes » normalised to « b de pommes », so a
+  // flyer deal never linked onto a line written with pounds. Found while making the
+  // deal-zoom caption stop printing the product name twice (sameItemName).
+  it('matches the LONGEST unit, not the first one that fits', () => {
+    expect(normKey('2 lb de pommes')).toBe('pommes')
+    expect(normKey('2 lbs de pommes')).toBe('pommes')
+    expect(normKey('1 l de lait')).toBe('lait')
+    expect(normKey('250 gr de beurre')).toBe('beurre')
+  })
+
   it('strips quantity + unit and folds accents', () => {
     expect(normKey('400 g de pâtes')).toBe('pates')
     expect(normKey('Beurre')).toBe('beurre')

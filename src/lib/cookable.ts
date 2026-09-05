@@ -19,8 +19,13 @@ const UNITS = [
   'boite', 'boites', 'can', 'cans', 'paquet', 'paquets', 'sachet', 'sachets',
   'pot', 'pots', 'bouteille', 'bouteilles', 'contenant', 'contenants',
 ]
+// LONGEST FIRST. A regex alternation takes the first branch that matches, not the
+// longest, so with 'l' listed before 'lb' the string « 2 lb de pommes » matched the
+// « l » and normalised to « b de pommes » — which then matched nothing, so a flyer
+// deal never linked onto a line written that way. Sorting by length lets lb/lbs win
+// over 'l', 'lbs' over 'lb', 'gr' over 'g', and so on.
 const LEAD_QTY = new RegExp(
-  `^\\s*\\d+(?:[.,/]\\d+)?\\s*(?:${UNITS.join('|')})?\\.?\\s*(?:de\\s+|d\\s+|of\\s+)?`,
+  `^\\s*\\d+(?:[.,/]\\d+)?\\s*(?:${[...UNITS].sort((a, b) => b.length - a.length).join('|')})?\\.?\\s*(?:de\\s+|d\\s+|of\\s+)?`,
 )
 
 export function normKey(s: string): string {

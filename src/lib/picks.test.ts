@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchListItem, type ListItem } from './picks'
+import { matchListItem, sameItemName, type ListItem } from './picks'
 
 // matchListItem — the ONE reuse-not-duplicate decision for flyer adds (deal ↔ item
 // doctrine). The dangerous regressions are (a) a specific store-flyer product name
@@ -72,5 +72,38 @@ describe('matchListItem — synonyms typed as one comma list', () => {
 
   it('still refuses an unrelated flyer name', () => {
     expect(matchListItem([poulet], 'Lait 2% 4L')).toBeNull()
+  })
+})
+
+// The flyer zoom's caption prints the product name under the head line — but the head
+// already reads « <item> · <store> », and adding an item STRAIGHT FROM THE FLYER names
+// the list line after that product. So the caption said the same thing twice:
+//   MELON D'EAU ENTIER SANS PÉPINS, ENVIRON 9 LB · Maxi
+//   MELON D'EAU ENTIER SANS PÉPINS, ENVIRON 9 LB
+// It now asks this — the exact-match tier of matchListItem, i.e. the same notion of
+// "the same item" that linked the deal onto the line to begin with.
+describe('sameItemName', () => {
+  it('is true for the exact duplicate the caption was printing twice', () => {
+    expect(sameItemName("MELON D'EAU ENTIER SANS PÉPINS, ENVIRON 9 LB", "Melon d'eau entier sans pépins, environ 9 lb")).toBe(true)
+  })
+
+  it('ignores accents, case and punctuation', () => {
+    expect(sameItemName('Œufs', 'oeufs')).toBe(true)
+    expect(sameItemName('pain tranché', 'Pain tranche')).toBe(true)
+  })
+
+  it('ignores a leading quantity, the way the deal matcher does', () => {
+    expect(sameItemName('2 lb de pommes', 'pommes')).toBe(true)
+  })
+
+  it('is FALSE when the product name genuinely adds something', () => {
+    // The whole point of the second line: a generic list item + a specific product.
+    expect(sameItemName("MELON D'EAU ENTIER SANS PÉPINS, ENVIRON 9 LB", "melon d'eau")).toBe(false)
+    expect(sameItemName('Pain', 'Lait')).toBe(false)
+  })
+
+  it('an empty name is never "the same" as anything', () => {
+    expect(sameItemName('', 'pain')).toBe(false)
+    expect(sameItemName('   ', 'pain')).toBe(false)
   })
 })
