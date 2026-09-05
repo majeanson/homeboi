@@ -4,7 +4,7 @@ import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
 import { useT, useLang } from '../i18n'
 import { suggestedTip } from '../lib/routineTips'
-import { usePointerDnd, DragGhost, dropEdgeOf } from '../lib/dnd'
+import { usePointerDnd, DragGhost, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { useOnline } from '../lib/online'
 import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
 import { imgUrl, MAX_UPLOAD_BYTES } from '../lib/image'
@@ -114,10 +114,10 @@ export function CardDeckEditor({
   return (
     <div className="deck">
       {cards.map((card, i) => {
-        // Standardized precise drop indicator (see lib/dnd.dropEdgeOf): an
+        // Standardized precise drop indicator (see lib/dnd.dropCueOf): an
         // insertion line on the edge the drag is heading toward, in place of the
         // vague whole-card ring.
-        const edge = dropEdgeOf(dnd, String(i), dnd.activeId != null ? Number(dnd.activeId) : null, i)
+        const edge = dropEdgeClass(dropCueOf(dnd, String(i)), 'y')
         return (
         <div key={i} className="deck__row">
           <div

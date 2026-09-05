@@ -310,6 +310,41 @@ describe('moveCard', () => {
     expect(next.grid.filter((x) => x === 'today')).toHaveLength(1)
   })
 
+  // THE reported bug: « Demain » (tomorrow) could be dropped to the LEFT of « Aujourd'hui » and
+  // never to its right. 'before' alone cannot name the last position, and the only
+  // other way to reach it — the zone's trailing empty space — does not exist in a band
+  // row that two cards fill edge to edge.
+  it("places a card AFTER the one it was dropped on, including at the very end", () => {
+    const band = literal([], ['tomorrow', 'today'])
+    const next = moveCard(band, 'tomorrow', 'band', 'today', 'after')
+    expect(next.band).toEqual(['today', 'tomorrow'])
+  })
+
+  it("'after' the LAST card appends rather than overshooting", () => {
+    const next = moveCard(literal(['today', 'upcoming', 'photos']), 'today', 'grid', 'photos', 'after')
+    expect(next.grid).toEqual(['upcoming', 'photos', 'today'])
+  })
+
+  it("'before' stays the default, so an un-passed place behaves exactly as it did", () => {
+    const start = literal(['today', 'upcoming', 'photos'])
+    expect(moveCard(start, 'photos', 'grid', 'today').grid).toEqual(moveCard(start, 'photos', 'grid', 'today', 'before').grid)
+  })
+
+  it('the two sides of one card are adjacent, never the same slot', () => {
+    const start = literal(['aRegler', 'today', 'upcoming'])
+    const before = moveCard(start, 'upcoming', 'grid', 'today', 'before').grid
+    const after = moveCard(start, 'upcoming', 'grid', 'today', 'after').grid
+    expect(before).toEqual(['aRegler', 'upcoming', 'today'])
+    expect(after).toEqual(['aRegler', 'today', 'upcoming'])
+    expect(before).not.toEqual(after)
+  })
+
+  it('an unknown anchor still appends, whichever side was asked for', () => {
+    const start = literal(['today', 'upcoming'])
+    expect(moveCard(start, 'today', 'band', 'photos', 'after').band).toEqual(['today'])
+    expect(moveCard(start, 'today', 'band', 'photos', 'before').band).toEqual(['today'])
+  })
+
   it('is symmetric: up then down returns the original order', () => {
     const start = literal(['today', 'upcoming', 'photos'])
     const up = moveCard(start, 'photos', 'grid', 'upcoming')

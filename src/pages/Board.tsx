@@ -531,13 +531,14 @@ export function Board() {
   // ONE drag session across BOTH zones — that is what makes dragging a card out of the
   // band and into the masonry a single gesture rather than two systems.
   const cardDnd = usePointerDnd({
-    onDrop: (cardId, dropKey) => {
+    onDrop: (cardId, dropKey, edge) => {
       const target = parseZoneKey(dropKey)
       if (!target || !cardMeta(cardId as BoardCardId)) return
-      // A drop on a slot inserts BEFORE that card; a drop on the grid's trailing space
-      // appends. Never an index — dragging DOWN would land one slot too far, because
-      // removing the dragged card first shifts every later index left by one.
-      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, target.zone, target.before))
+      // A drop on a slot lands BESIDE that card — which side is the pointer's half of
+      // it (lib/dnd) — and a drop on the grid's trailing space appends. Never an index:
+      // dragging DOWN would land one slot too far, because removing the dragged card
+      // first shifts every later index left by one.
+      setCardPrefs(moveCard(boardCards, cardId as BoardCardId, target.zone, target.before, edge ?? 'before'))
     },
   })
 

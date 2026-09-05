@@ -15,7 +15,7 @@ import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
-import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { Skeleton } from '../components/Skeleton'
 import { formatDay, weekdayShort, dayNum } from '../lib/format'
@@ -530,13 +530,13 @@ export function Kitchen() {
                   </div>
                 )
               }
-              // Standardized drop cue (same as La liste): a precise insertion line on
-              // the edge the drag is heading toward, instead of the vague whole-cell
-              // ring. Zones are keyed by date (epoch-day), so the direction test is a
-              // date compare — "coming from an earlier day → land below".
-              const fromDate = dayDnd.activeId != null ? Number(dayDnd.activeId) : null
-              const overHere = dayDnd.over === String(date) && fromDate !== null && fromDate !== date
-              const dropEdge = overHere ? (fromDate! < date ? 'bottom' : 'top') : null
+              // A day cell is a CONTAINER target, not a slot in a reorderable run:
+              // dropping here moves that day's meals INTO this day (see dayDnd's
+              // onDrop). You cannot insert a day between the 4th and the 5th, so the
+              // insertion LINE this used to draw was telling a small lie about where
+              // the drop would land. It wears the dotted « into » outline instead —
+              // the third cue in lib/dnd's « THE THREE DROP CUES ».
+              const overHere = dropCueOf(dayDnd, String(date)) === 'into'
               return (
               <li
                 key={date}
@@ -548,7 +548,6 @@ export function Kitchen() {
                   (overHere ? ' is-droptarget' : '')
                 }
               >
-                {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
                 {/* The date + the edit door stick as the pill's header — its ONLY
                     two jobs are "which day" and "manage it"; the meals scroll below.
                     Today/tomorrow get a relative tag; today's whole card lights up

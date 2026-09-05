@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { zoneKey, type BoardCardId, type CardZone } from '../../lib/boardCards'
 import { colsFor, isNarrow } from '../../lib/widgetGrid'
+import { type DropEdge } from '../../lib/dnd'
 
 // The board's widget-space layout engine. ONE component, used once per zone (the pinned
 // band, then the masonry) — which is what makes "drag a card from the band into the grid"
@@ -80,6 +81,8 @@ export interface PointerDnd {
   start: (id: string, label: string, e: ReactPointerEvent) => void
   activeId: string | null
   over: string | null
+  /** Which side of the hovered slot the pointer is on — `dropCueOf` reads it. */
+  overEdge: DropEdge
 }
 
 // `zoneKey` / `parseZoneKey` live in lib/boardCards — the key format is a data concern,

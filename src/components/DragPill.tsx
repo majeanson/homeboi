@@ -1,6 +1,6 @@
 import { type CSSProperties, type ElementType, type ReactNode, type Ref } from 'react'
 import { useT } from '../i18n'
-import { type usePointerDnd } from '../lib/dnd'
+import { dropEdgeClass, type DropCue, type usePointerDnd } from '../lib/dnd'
 
 // The shared "draggable pill/row" shell over usePointerDnd (lib/dnd). The tag-pill
 // reorder strip and the recipe-pill list both hand-rolled the same three things on
@@ -48,13 +48,17 @@ interface DragPillProps {
   /** Ref to the rendered zone element — for a caller that scrolls a row into view
    *  (e.g. the notes list's deep-link focus). */
   nodeRef?: Ref<HTMLElement>
-  /** The precise insertion-line cue (lib/dnd's `dropEdgeOf`) — pass it (even as
-   *  `null`) to opt this row into the standardized drop indicator: a thin accent
-   *  line on the edge the drag is heading toward, instead of the vague whole-row
-   *  `dnd-over` ring. Omitted entirely, the row keeps the plain ring (right for a
-   *  "drop into this zone" target that isn't a linear reorder). The host's CSS
-   *  needs `position: relative` for the line to place correctly. */
-  edge?: 'top' | 'bottom' | null
+  /** The drop cue (lib/dnd's `dropCueOf`) — pass it (even as `null`) to opt this
+   *  row into the standardized indicator: a thin accent line on the edge the drop
+   *  will land, decided by where the POINTER is within the row. Omitted entirely,
+   *  the row is a CONTAINER target and keeps the dotted `dnd-over` outline (right
+   *  for "drop into this zone", wrong for a linear reorder). The host's CSS needs
+   *  `position: relative` for the line to place correctly. */
+  edge?: DropCue | null
+  /** Which way this list runs, so 'before'/'after' become the right physical edge:
+   *  'y' (default) = a column of rows → top/bottom; 'x' = a row of cards →
+   *  left/right. Also what tells lib/dnd this zone is a reorder target at all. */
+  axis?: 'x' | 'y'
   children?: ReactNode
 }
 
@@ -71,20 +75,30 @@ export function DragPill({
   onMove,
   nodeRef,
   edge,
+  axis = 'y',
   children,
 }: DragPillProps) {
   const t = useT()
   const Tag = (as ?? 'li') as ElementType
   const id = zone ?? String(index)
   const edged = edge !== undefined
+  const line = dropEdgeClass(edge ?? null, axis)
   const zoneClass =
     (className ?? '') +
     (dnd.activeId === id ? ' is-dragging' : '') +
     ((edged ? !!edge : dnd.over === id) ? ' dnd-over' : '')
 
   return (
-    <Tag ref={nodeRef} data-dnd-zone={id} className={zoneClass} style={style}>
-      {edge && <span className={`dnd-drop dnd-drop--${edge}`} aria-hidden="true" />}
+    <Tag
+      ref={nodeRef}
+      data-dnd-zone={id}
+      // Declaring the axis is what makes lib/dnd read the pointer's side of this
+      // row instead of treating it as a container — see « THE THREE DROP CUES ».
+      data-dnd-insert={edged ? axis : undefined}
+      className={zoneClass}
+      style={style}
+    >
+      {line && <span className={`dnd-drop dnd-drop--${line}`} aria-hidden="true" />}
       {showGrip && (
         <span
           className={'dnd-grip' + (gripClassName ? ` ${gripClassName}` : '')}

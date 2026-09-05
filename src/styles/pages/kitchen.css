@@ -374,19 +374,31 @@
 .is-dragging {
   opacity: 0.4;
 }
-/* The hovered, droppable zone — a calm dashed accent ring + faint wash, never a
-   loud fill. */
+/* ── THE THREE DROP CUES ────────────────────────────────────────────────────────
+   A drop only ever means one of three things, and the cue says which BEFORE you let
+   go. The vocabulary is defined once, in lib/dnd; these are its three faces:
+
+     .dnd-drop--top / --left      a line on the LEADING edge   → lands before
+     .dnd-drop--bottom / --right  a line on the TRAILING edge  → lands after
+     .dnd-over                    a dotted outline round it all → goes INSIDE
+
+   Which of the first two you get is decided by the POINTER's half of the item, not
+   by the direction you dragged from — that heuristic could not express "after the
+   last one". The third is for genuine containers (a meal slot, a family slot, a
+   group, a day cell in the week grid: you cannot insert a day between the 4th and
+   the 5th, so a line there would be a small lie). */
+/* Cue 3 — a calm DOTTED accent outline + faint wash, never a loud fill. Dotted
+   rather than dashed so it reads as a distinct third thing beside the two solid
+   insertion lines, not as a fainter version of them. */
 .dnd-over {
-  outline: 2px dashed var(--accent);
+  outline: 2px dotted var(--accent);
   outline-offset: -3px;
   background: color-mix(in srgb, var(--accent) 9%, transparent);
 }
-/* Precise INSERTION-LINE drop cue — the standardized affordance shared by the list
-   rows (La liste) and the week grid (here), since a line reads better than the vague
-   whole-zone .dnd-over ring. A thin accent bar with a leading caret nub, sitting in
-   the gap between items. Each container tunes --dnd-drop-gap to centre it in its own
-   gap (6px default = the list's 10px gap; the week grid sets 4px). Host must be
-   position:relative. */
+/* Cues 1 + 2 — the precise INSERTION LINE: a thin accent bar with a leading caret
+   nub, sitting in the gap the item will drop into. Each host tunes --dnd-drop-gap to
+   centre it in its own gap (6px default = the list's 10px gap; the week grid sets
+   4px). Host must be position:relative. */
 .dnd-drop {
   position: absolute;
   left: 6px;

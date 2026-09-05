@@ -391,25 +391,33 @@ export function nextSize(size: CardSize, cols?: number, halvable = true): CardSi
 }
 
 /**
- * Move `id` into `toZone`, immediately BEFORE the card `before` — or to the end when
- * `before` is `'end'` (or names a card that isn't there). Pure.
+ * Move `id` into `toZone`, next to the card `anchor` — `place` says which side —
+ * or to the end when `anchor` is `'end'` (or names a card that isn't there). Pure.
  *
- * "Before this card" rather than "at this index" is what makes a downward drag behave:
+ * "Beside this card" rather than "at this index" is what makes a downward drag behave:
  * the dragged card is removed first, which shifts every later index left by one, so an
  * index means different things depending on the drag direction. A neighbour doesn't move.
+ *
+ * `place` exists because 'before' alone could not express the LAST position. The only
+ * way to land after the final card was to hit the zone's trailing empty space — and a
+ * band row filled by two cards has none, so « Demain » could be dropped to the left of
+ * « Aujourd'hui » but never to its right. The pointer's side of the hovered card now
+ * decides (lib/dnd, « THE THREE DROP CUES »), and this is where that lands.
  */
 export function moveCard(
   prefs: BoardCardPrefs,
   id: BoardCardId,
   toZone: CardZone,
-  before: BoardCardId | 'end',
+  anchor: BoardCardId | 'end',
+  place: 'before' | 'after' = 'before',
 ): BoardCardPrefs {
-  if (!META.has(id) || id === before) return prefs
+  if (!META.has(id) || id === anchor) return prefs
   const band = prefs.band.filter((x) => x !== id)
   const grid = prefs.grid.filter((x) => x !== id)
   const next: BoardCardPrefs = { ...prefs, band, grid }
   const target = next[toZone]
-  const at = before === 'end' ? -1 : target.indexOf(before)
-  target.splice(at < 0 ? target.length : at, 0, id)
+  const at = anchor === 'end' ? -1 : target.indexOf(anchor)
+  if (at < 0) target.push(id)
+  else target.splice(place === 'after' ? at + 1 : at, 0, id)
   return next
 }

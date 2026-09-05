@@ -20,7 +20,7 @@ import {
 import { wash } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
 import { useConfirm } from '../../lib/confirm'
-import { usePointerDnd, DragGhost, DND_HOLD_MS, dropEdgeOf } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf } from '../../lib/dnd'
 import { DragPill } from '../DragPill'
 import { ColorPicker } from '../ColorPicker'
 import { Icon, InlineIcon } from '../Icon'
@@ -210,7 +210,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
               className={'meal-slots__row' + (shown ? '' : ' is-off') + (isHero ? ' is-hero' : '')}
               showGrip={!ro}
               onMove={ro ? undefined : (dir) => move(i, dir === 'up' ? i - 1 : i + 1)}
-              edge={dropEdgeOf(dnd, String(i), dnd.activeId != null ? Number(dnd.activeId) : null, i)}
+              edge={dropCueOf(dnd, String(i))}
             >
               <span className="meal-slots__name">
                 <span

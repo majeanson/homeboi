@@ -37,8 +37,20 @@ async function hold(page: Page, card: string, ms = HOLD) {
   await page.mouse.up()
 }
 
-/** Drag `from`'s grip onto `to`'s slot. */
-async function dragOnto(page: Page, from: string, to: string) {
+/** Drag `from`'s grip onto `to`'s slot, landing on the named HALF of it.
+ *
+ *  Which half is the whole gesture now: lib/dnd reads the pointer's side of the
+ *  hovered slot to pick "insert before" vs "insert after". Aiming at the exact
+ *  centre (what this helper used to do) sits on the boundary between the two, so
+ *  every caller says which side it means. */
+async function dragOnto(
+  page: Page,
+  from: string,
+  to: string,
+  side: 'before' | 'after' = 'before',
+  /** Runs while the pointer is still DOWN over the target — for reading the live cue. */
+  whileOver?: () => Promise<void>,
+) {
   const fromSel = `.wg-slot[data-card="${from}"]`
   const toSel = `.wg-slot[data-card="${to}"]`
   // Scroll ONCE — bringing the HIGHER of the two cards to the top of the scroller — then
@@ -56,14 +68,27 @@ async function dragOnto(page: Page, from: string, to: string) {
     },
     [fromSel, toSel],
   )
-  await page.locator(higher).evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
+  // …then back off 150px, so neither card sits in the drag's EDGE AUTO-SCROLL band
+  // (lib/dnd pans the page when the pointer nears the top/bottom of the scroller).
+  // `block:'start'` alone parks the higher card at y≈0, i.e. squarely in the top
+  // band — the drop point then scrolled away under the pointer mid-gesture and the
+  // card landed on whatever the scroll brought under it.
+  await page.locator(higher).evaluate((el) => {
+    el.scrollIntoView({ block: 'start', behavior: 'instant' })
+    const sc = el.closest('.hub__body') as HTMLElement | null
+    if (sc) sc.scrollTop = Math.max(0, sc.scrollTop - 150)
+  })
   const grip = (await page.locator(`${fromSel} .wg-slot__grip`).boundingBox())!
   const target = (await page.locator(toSel).boundingBox())!
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
   await page.mouse.down()
   // Clear the 6px engage threshold, then land on the target.
   await page.mouse.move(grip.x + 30, grip.y + 30, { steps: 4 })
-  await page.mouse.move(target.x + target.width / 2, target.y + 20, { steps: 8 })
+  // A quarter in from the leading/trailing edge — unambiguously one half, and far
+  // enough from the boundary that a sub-pixel layout shift can't flip it.
+  const at = side === 'after' ? target.x + target.width * 0.75 : target.x + target.width * 0.25
+  await page.mouse.move(at, target.y + target.height / 2, { steps: 8 })
+  await whileOver?.()
   await page.mouse.up()
 }
 
@@ -167,6 +192,105 @@ test.describe('board edit mode', () => {
     // It lands exactly where it was dropped: immediately before that card.
     expect(after[after.indexOf('autoCard') - 1]).toBe('today')
   })
+
+  test(`dropping on a card's TRAILING half lands after it — the reported bug`, async ({ page }) => {
+    // From the phone: « Demain » could not be placed to the right of « Aujourd'hui »,
+    // while the other way round worked. A drop used to mean "insert BEFORE this card"
+    // whatever half you released on, so the only way to reach the LAST position was the
+    // zone's trailing empty space — and a band row that two cards fill edge to edge has
+    // none. The pointer's half of the hovered card decides now (lib/dnd).
+    await page.setViewportSize({ width: 1280, height: 1200 })
+    await open(page)
+    await hold(page, 'autoCard')
+
+    const before = await order(page)
+    const first = before[0]!
+    const second = before[1]!
+    // Drop the FIRST card on the trailing half of the second: it must end up after it.
+    await dragOnto(page, first, second, 'after')
+    const after = await order(page)
+    expect(after[after.indexOf(second) + 1]).toBe(first)
+    expect([...after].sort()).toEqual([...before].sort()) // nothing lost or duplicated
+  })
+
+  test('the two halves of one card are different drops, and the cue says which', async ({ page }) => {
+    // The cue is a PROMISE: whichever line you see is where it will land. Read it
+    // mid-drag, through the SAME helper that performs the drop — a probe with its own
+    // copy of the gesture would be free to drift from the thing it claims to describe.
+    await page.setViewportSize({ width: 1280, height: 1200 })
+    await open(page)
+    await hold(page, 'autoCard')
+
+    async function lineOn(side: 'before' | 'after') {
+      const cards = await order(page)
+      let cls: string | null = null
+      await dragOnto(page, cards[0]!, cards[1]!, side, async () => {
+        // React state drives the cue, so poll rather than read on the move's own tick.
+        const line = page.locator(`.wg-slot[data-card="${cards[1]}"] .dnd-drop`)
+        await expect(line).toBeAttached({ timeout: 3000 })
+        cls = await line.evaluate((el) => el.className)
+      })
+      return cls
+    }
+
+    expect(await lineOn('before'), 'leading half → the LEFT line').toContain('dnd-drop--left')
+    expect(await lineOn('after'), 'trailing half → the RIGHT line').toContain('dnd-drop--right')
+  })
+
+  // ── Edge auto-scroll ────────────────────────────────────────────────────────────
+  // A live drag preventDefaults every pointermove so the page can't scroll out from
+  // under the drop — which also meant a card could only travel one screenful per drag,
+  // and reaching the bottom of a long board took several. The drag pans the page itself
+  // now when the finger nears an edge.
+  //
+  // Both tests grab a card whose grip is clear of BOTH the top auto-scroll band and the
+  // hub's bottom tab bar: the bar overlays the scroller's own lower edge, so a grip
+  // under it is simply not pressable (that is how this test first "proved" auto-scroll
+  // broken when it was the press that never landed).
+  const reachableCard = (page: Page) =>
+    page.evaluate(() => {
+      for (const g of Array.from(document.querySelectorAll('.wg-slot__grip'))) {
+        const r = g.getBoundingClientRect()
+        if (r.top > 130 && r.bottom < 600) return (g.closest('.wg-slot') as HTMLElement).dataset.card ?? null
+      }
+      return null
+    })
+
+  const scrollTopOf = (page: Page) =>
+    page.locator('.hub__body').evaluate((el) => Math.round((el as HTMLElement).scrollTop))
+
+  test('holding a dragged card at the bottom edge scrolls the board under it', async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 700 })
+    await open(page)
+    await hold(page, 'autoCard')
+
+    const bottom = await page.locator('.hub__body').evaluate((el) => {
+      const n = el as HTMLElement
+      n.scrollTop = 0
+      return Math.round(n.getBoundingClientRect().bottom)
+    })
+    const card = await reachableCard(page)
+    expect(card, 'a grip clear of the band and the tab bar').not.toBeNull()
+    const grip = (await page.locator(`.wg-slot[data-card="${card}"] .wg-slot__grip`).boundingBox())!
+
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+    await page.mouse.down()
+    // Out of the band first — auto-scroll ARMS only once the finger has been clear of
+    // it (see the next test), then hold near the scroller's own bottom edge.
+    await page.mouse.move(grip.x + 40, 350, { steps: 6 })
+    await expect(page.locator('.dnd-ghost'), 'the drag engaged').toHaveCount(1)
+    await page.mouse.move(grip.x + 40, bottom - 20, { steps: 6 })
+    await expect.poll(() => scrollTopOf(page), { timeout: 4000 }).toBeGreaterThan(400)
+    await page.mouse.up()
+  })
+
+  // The other half of the rule — that grabbing a card ALREADY in an edge band must
+  // NOT fly the page away until the finger has left the band once — is unit-tested in
+  // src/lib/dnd.test.ts (« autoScrollStep — the arming latch ») rather than here. It
+  // cannot be driven from this spec: a grip parked in the TOP band sits under the
+  // board's own edit bar, so the press never lands, and the test passed vacuously —
+  // a card the press never reached cannot scroll the page either, which looks exactly
+  // like the latch working.
 
   test('reordering DOWN lands on the drop target, not one slot past it', async ({ page }) => {
     // The index-based drop overshot downward drags: removing the dragged card first shifts

@@ -32,7 +32,7 @@ import { money, dealDate, dealEnded, type Deal } from '../lib/deals'
 import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms } from '../lib/picks'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
-import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../lib/dnd'
+import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { LISTE_HELP } from '../lib/listeHelp'
@@ -203,21 +203,27 @@ function ListItemRow({
   useSwipeToDelete(mainRef, readOnly ? () => {} : onDelete)
   const zoneId = String(index)
   const draggable = !!dnd && !readOnly
-  // Where, exactly, the dragged row will land — an INSERTION LINE on the right edge
-  // of this row, so you feel the gap it'll drop into rather than guessing from a
-  // whole-row highlight. Drag direction decides the edge: coming from above
-  // (from < here) it lands BELOW this row; from below, ABOVE it. Never on the
-  // dragged row's own slot (over === activeId), where there's no move to show.
-  const overHere = !!dnd && dnd.over === zoneId && dnd.activeId !== null && dnd.activeId !== zoneId
-  const fromIdx = dnd?.activeId != null ? Number(dnd.activeId) : null
-  const dropEdge = overHere ? (fromIdx !== null && fromIdx < index ? 'bottom' : 'top') : null
+  // Where, exactly, the dragged row will land — an INSERTION LINE in the gap it
+  // will drop into, rather than a whole-row highlight you have to interpret. The
+  // POINTER picks the edge (top half → lands above this row, bottom half → below);
+  // `data-dnd-insert="y"` below is what tells lib/dnd to read it that way. Never on
+  // the dragged row's own slot, where there's no move to show.
+  const cue = dnd ? dropCueOf(dnd, zoneId) : null
+  const dropEdge = dropEdgeClass(cue, 'y')
+  const overHere = !!dropEdge
   const zoneClass =
     'list-row' +
     (noRush ? ' list-row--norush' : '') +
     (dnd?.activeId === zoneId ? ' is-dragging' : '') +
     (overHere ? ' dnd-over' : '')
   return (
-    <div className={zoneClass} data-item-id={itemId} data-dnd-zone={draggable ? zoneId : undefined}>
+    <div
+      className={zoneClass}
+      data-item-id={itemId}
+      data-dnd-zone={draggable ? zoneId : undefined}
+      // A reorderable column: the pointer's half of the row picks before/after.
+      data-dnd-insert={draggable ? 'y' : undefined}
+    >
       {/* The precise drop indicator: a calm accent line in the gap where the row
           will land, on the edge the drag is heading toward. */}
       {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}

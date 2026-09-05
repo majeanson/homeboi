@@ -8,7 +8,7 @@ import { wash, tintInk, edge } from '../../lib/colors'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { isGuest } from '../../lib/device'
-import { usePointerDnd, DragGhost, dropEdgeOf } from '../../lib/dnd'
+import { usePointerDnd, DragGhost, dropCueOf } from '../../lib/dnd'
 import { Icon } from '../Icon'
 import { ColorPicker } from '../ColorPicker'
 import { DragPill } from '../DragPill'
@@ -144,7 +144,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                 gripClassName="tag-admin__grip"
                 showGrip={!ro}
                 onMove={ro ? undefined : (dir) => movePill(i, dir === 'up' ? i - 1 : i + 1)}
-                edge={dropEdgeOf(dnd, String(i), dnd.activeId != null ? Number(dnd.activeId) : null, i)}
+                edge={dropCueOf(dnd, String(i))}
               >
                 <div className="tag-admin__row">
                   {!ro && renaming === tg ? (
