@@ -57,8 +57,12 @@ export function SecLabel({
   /** One or two quiet controls pinned to the header's trailing edge — a card's own ＋
    *  (the notes card's quick composer), or the pencil/key pair « Aujourd'hui » mirrors
    *  from its mini's corner actions (see `CornerAction`). Sits BEFORE the reduce chip so
-   *  growing/shrinking a card never moves it. Keep it to at most a couple of icon
-   *  buttons: the header is a glance label, not a toolbar. */
+   *  growing/shrinking a card never moves it.
+   *
+   *  This is where a card's DOORS live — all of them. « Aujourd'hui » carries three
+   *  (plan · cook · before-you-leave), which is the ceiling: past that the header stops
+   *  reading as a glance label and starts reading as a toolbar, and the reduce chip can
+   *  make it four. Adding a fourth means finding one to merge, not widening the row. */
   action?: ReactNode
   help?: HelpMode
   helpKey?: string

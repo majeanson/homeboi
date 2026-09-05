@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
 import { liveInterval } from '../lib/query'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -368,7 +368,6 @@ export function Board() {
   // view: a quick action beside « Prochainement », never a dead end (a planned
   // leftover has nothing to cook, so the CTA hides for it).
   const cook = useNextMeal()
-  const nav = useNavigate()
   // "La galerie" door, shown in the Grille view. It rides as a small trailing
   // chip inside the drawings strip (beside the photos on tablet, under them on
   // mobile) so it never claims its own row; when there are no drawings yet it
@@ -1103,15 +1102,31 @@ export function Board() {
       // (BoardCard renders a hidden ghost) so a chip landing minutes later doesn't
       // reflow the title. A resolved "no weather" (binding unset) reserves nothing.
       compactHead={weather ? `${weather.tempC}°` : wx === undefined ? '' : undefined}
-      // The GROWN card mirrors the mini's own pencil + key corner shortcuts, right in the
-      // header — a one-tap-away door that doesn't make the reader scroll to the labelled
-      // « Planifier » / « Avant de partir » pills further down (which stay put too: the
-      // grown card keeps MORE room and options than the mini, not just the same two).
+      // The card's doors, ALL of them, as small discs in the header — mirroring the
+      // mini's own corner shortcuts. They used to be duplicated as three full-width
+      // labelled pills in the body as well, which is what the card mostly WAS: you
+      // opened « Aujourd'hui » and read three buttons before reaching a single fact
+      // about the day. The body is the day now; the doors live up here.
+      //
+      // The cooking pot only appears when there is something to cook (a planned,
+      // non-leftover meal) — and it goes to COOK MODE, which the meal's own row below
+      // does not: that row opens the recipe. Two different destinations, so this is a
+      // shortcut, not a duplicate.
       action={
         <>
           <Link to={`/kitchen/day/${todayDay}`} className="sec-label__actbtn" aria-label={t.board.planToday} title={t.board.planToday}>
             <Icon name="pencil-simple-bold" size={14} />
           </Link>
+          {!dayClear && cook.meal && !cook.meal.is_leftover && (
+            <Link
+              to={cook.target ?? '/kitchen'}
+              className="sec-label__actbtn"
+              aria-label={`${cook.target ? t.board.cook : t.board.cookPlan} · ${cook.meal.title}`}
+              title={`${cook.target ? t.board.cook : t.board.cookPlan} · ${cook.meal.title}`}
+            >
+              <Icon name="cooking-pot-bold" size={14} />
+            </Link>
+          )}
           <Link to="/board/departure" className="sec-label__actbtn" aria-label={t.departure.title} title={t.departure.title}>
             <Icon name="key-bold" size={14} />
           </Link>
@@ -1136,44 +1151,6 @@ export function Board() {
     <span className="board-nextup__title">{nextUpToday.title}</span>
   </button>
 )}
-{/* Quick actions, reused from the retired « Maintenant » view: jump straight
-    to cooking the next planned meal (hidden for a leftover — nothing to
-    cook) and a one-tap door to « Avant de partir » (the pre-departure
-    checklist + corvées + L'auto). Calm pills, not banners.
-    NFR-CALM: the COOK pill rides `!dayClear` — an empty agenda has nothing to
-    cook. « Avant de partir » (the key) stays put on every day, clear or not:
-    leaving the house is a thing you do regardless of how full the agenda is, and
-    Marc wants the key reliably one tap away from the day card. */}
-<div className="board-actions">
-  {/* « Planifier aujourd'hui » — the day's plan page, one tap. The mini tile carries
-      this as a corner pencil; here it's a real labelled button so it's reachable in the
-      GROWN card too, and stays put whether the day is clear or full (Marc: always
-      available, not mini-only). */}
-  <button
-    type="button"
-    className="btn btn--ghost mono board-action--plan"
-    onClick={() => nav(`/kitchen/day/${todayDay}`)}
-  >
-    <InlineIcon name="pencil-simple-bold" size={16} /> {t.board.planToday}
-  </button>
-  {!dayClear && cook.meal && !cook.meal.is_leftover && (
-    <button
-      type="button"
-      className="btn btn--ghost mono board-action--cook"
-      onClick={() => nav(cook.target ?? '/kitchen')}
-    >
-      <InlineIcon name="cooking-pot-bold" size={16} />
-      <span>{cook.target ? t.board.cook : t.board.cookPlan} · <b>{cook.meal.title}</b></span>
-    </button>
-  )}
-  <button
-    type="button"
-    className="btn btn--ghost mono board-action--depart"
-    onClick={() => nav('/board/departure')}
-  >
-    <InlineIcon name="key-bold" size={16} /> {t.departure.title}
-  </button>
-</div>
 {/* The calm "Rien de prévu" only stands in on a quiet day with nothing planned
     (a busy day is never empty — `filActive` needs ≥2 timed things to begin with). */}
 {!dayClear && !filActive && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
@@ -1297,9 +1274,9 @@ export function Board() {
       // A pencil to « Planifier demain » (tomorrow's plan page) straight from the mini —
       // the night-before "sortir le poulet" gesture, one tap from the halved tile.
       compactCorner={{ to: `/kitchen/day/${tomorrowDay}`, icon: 'pencil-simple-bold', label: t.board.planTomorrow }}
-      // The GROWN card mirrors the same pencil in its header, so the shortcut is one tap
-      // away without scrolling to the labelled « Planifier demain » pill below (which
-      // stays too — the grown card keeps more room and options than the mini).
+      // The GROWN card carries the same pencil in its header — the card's ONE door.
+      // It used to be duplicated as a full-width « Planifier demain » pill in the body
+      // too, above tomorrow's actual content; the body is tomorrow now.
       action={
         <Link to={`/kitchen/day/${tomorrowDay}`} className="sec-label__actbtn" aria-label={t.board.planTomorrow} title={t.board.planTomorrow}>
           <Icon name="pencil-simple-bold" size={14} />
@@ -1328,19 +1305,6 @@ export function Board() {
           {tomorrowWx.highC}° / {tomorrowWx.lowC}°
         </div>
       )}
-      {/* « Planifier demain » — the night-before "sortir le poulet" gesture. The mini
-          carries it as a corner pencil; here it's a real labelled button, at the TOP
-          like every grown card's action pills, whatever tomorrow already holds
-          (Marc: always available, not mini-only). */}
-      <div className="board-actions">
-        <button
-          type="button"
-          className="btn btn--ghost mono board-action--plan"
-          onClick={() => nav(`/kitchen/day/${tomorrowDay}`)}
-        >
-          <InlineIcon name="pencil-simple-bold" size={16} /> {t.board.planTomorrow}
-        </button>
-      </div>
       {/* Tomorrow's prep note, surfaced TODAY — "sortir le poulet", "faire
           tremper les haricots" — while there's still time to act on it. */}
       {data.tomorrowNote && (

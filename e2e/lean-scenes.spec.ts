@@ -239,3 +239,45 @@ test('the flyer scene drops the subtitle its own empty state already says', asyn
   await expect(page.locator('.scene__head')).not.toContainText('en aubaine cette semaine')
   await expect(page.getByText('Cherche un article, ou touche une suggestion.')).toBeVisible()
 })
+
+// ── /board ▸ « Aujourd'hui » ─────────────────────────────────────────────────────
+// The card opened with THREE full-width labelled pills — « Planifier aujourd'hui »,
+// « Préparer le repas · <plat> », « Avant de partir » — before a single fact about the
+// day. Two of the three were already small discs in the card's own header, so the body
+// was mostly a duplicate of the chrome above it. « Demain » had the same shape with one
+// pill. The doors live in the header now; the body is the day.
+test("« Aujourd'hui » leads with the day, not with a stack of buttons", async ({ page }) => {
+  await boot(page)
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible' })
+  const card = page.locator('.wg-slot[data-card="today"]')
+  await expect(card).toBeVisible()
+
+  // No pill row in the body…
+  await expect(card.locator('.board-actions')).toHaveCount(0)
+  // …and the doors are all in the header, as discs.
+  const discs = card.locator('.sec-label__act > *')
+  await expect(discs).toHaveCount(3) // plan · cook · before-you-leave
+  await expect(card.getByLabel(/Planifier aujourd/)).toBeVisible()
+  await expect(card.getByLabel(/Avant de partir/)).toBeVisible()
+
+  // Each disc holds the 44px touch floor and does not eat its neighbour's: the visible
+  // circle is 28px, widened by an invisible ::after, so the GAP has to be ≥ 2× that
+  // bleed or the later button swallows a slice of the one before it.
+  const gaps = await discs.evaluateAll((els) => {
+    const r = els.map((e) => e.getBoundingClientRect())
+    return r.slice(1).map((b, i) => Math.round(b.left - r[i]!.right))
+  })
+  for (const g of gaps) expect(g, 'discs must not overlap their 44px targets').toBeGreaterThanOrEqual(16)
+})
+
+test('« Demain » does the same — one door, in the header', async ({ page }) => {
+  await boot(page)
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible' })
+  const card = page.locator('.wg-slot[data-card="tomorrow"]')
+  await expect(card).toBeVisible()
+  await expect(card.locator('.board-actions')).toHaveCount(0)
+  await expect(card.locator('.sec-label__act > *')).toHaveCount(1)
+  await expect(card.getByLabel(/Planifier demain/)).toBeVisible()
+})

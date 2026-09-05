@@ -293,9 +293,12 @@
   margin: 0.2rem 0 0.6rem;
 }
 
-/* Quick actions under « Prochainement » — cook the next planned meal · « Avant de
-   partir » (the pre-departure glance). Reused from the retired « Maintenant » view as
-   calm pills (the shared .btn--ghost look); they wrap on a phone. */
+/* A row of calm action pills (the shared .btn--ghost look), wrapping on a phone.
+   « Aujourd'hui » and « Demain » used to carry one each — « Planifier », « Préparer le
+   repas », « Avant de partir » — duplicating doors their own headers already had as
+   small discs, so opening the card showed three buttons before a single fact about the
+   day. Those are gone; the card's doors live in its header now. This stays for the
+   DEPARTURE card, whose whole job IS its actions. */
 .board-actions {
   display: flex;
   flex-wrap: wrap;
@@ -304,15 +307,7 @@
 }
 .board-actions .btn {
   font-size: 0.9rem;
-  /* The cook CTA carries the meal's own name (a .mono system font, wider on
-     Linux/CI) — an unbreakable long title must wrap inside the pill. */
   overflow-wrap: anywhere;
-}
-.board-action--cook b {
-  font-weight: 700;
-}
-.board-action--cook {
-  color: var(--marigold-deep);
 }
 
 /* « À régler » — a QUIET one-line heads-up chip: it sits above every board view, so

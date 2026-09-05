@@ -839,7 +839,12 @@
 .sec-label__act {
   flex: none;
   display: inline-flex;
-  gap: 6px;
+  /* Exactly 2× the -8px hit-area bleed each disc grows below, so neighbouring 44px
+     targets ABUT instead of overlapping. At the old 6px they overlapped by 10px and
+     the later button (painting on top) swallowed a slice of its neighbour's target —
+     which only started to bite when « Aujourd'hui » grew a third door. Same fix as
+     .kitchen__day-head-actions. */
+  gap: 16px;
 }
 .sec-label__actbtn {
   position: relative;

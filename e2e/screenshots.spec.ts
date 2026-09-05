@@ -244,8 +244,8 @@ test('board renders household data', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr' })
   await page.goto('/board')
   await expect(page.locator('.hub')).toBeVisible()
-  // The next meal now shows BOTH in the « Ce soir » hero AND the « Préparer le repas »
-  // quick-action under « Prochainement », so scope to the first match.
+  // The next meal can show in more than one card (« Ce soir » hero, the day's own
+  // rows), so scope to the first match.
   await expect(page.getByText('Spaghetti maison').first()).toBeVisible()
 })
 
