@@ -569,6 +569,19 @@ export function buildMeal(m: MealLike, ctx: DetailCtx, opts?: MealOpts): DetailM
   if (opts?.recipeId) {
     actions.push({ key: 'recipe', label: t.recipes.open, icon: 'book-open-bold', href: `/kitchen/recipe/${opts.recipeId}` })
     actions.push({ key: 'cook', label: t.recipes.cook, icon: 'cooking-pot-bold', primary: true, href: `/kitchen/recipe/${opts.recipeId}/cook` })
+  } else if (opts?.daySec) {
+    // A FREE-TEXT meal — « Muffins maison » typed straight into a slot — has no cook
+    // mode to open, and used to offer nothing about preparing it at all: the peek
+    // listed the day and how to delete it. Now it offers the one thing that unlocks
+    // the rest, and lands on THAT meal's composer (?focus=meal:<slot>) rather than
+    // the day in general, so the recipe field is open when you arrive.
+    actions.push({
+      key: 'pick-recipe',
+      label: t.board.cookPlan,
+      icon: 'book-open-bold',
+      primary: true,
+      href: `/kitchen/day/${opts.daySec}?vue=repas&focus=meal${slot && isMealSlot(slot) ? `:${slot}` : ''}`,
+    })
   }
   // The plan-editing tail folds into the ⋯ — with the recipe doors present, five visible
   // buttons would bury the three that matter. (Overflow is set explicitly per action, no

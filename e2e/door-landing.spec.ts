@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, MMID } from './mocks'
 
 // A DOOR LANDS ON ITS TARGET.
 //
@@ -83,3 +83,49 @@ for (const [what, url, sel] of emptyDoors) {
     await expect(page.locator(sel).first()).toBeVisible({ timeout: 8000 })
   })
 }
+
+// ── A meal with no recipe can still be prepared ─────────────────────────────────
+// Reported from the phone: "in Aujourd'hui, meals without recipes don't pop off to
+// prepare." A free-text meal has no cook mode, so the card's row reads « Choisir une
+// recette » — and that door used to land on the KITCHEN'S FRONT PAGE, leaving you to
+// find the meal again. It lands on that meal's own composer now.
+// (The peek's matching door is unit-tested in components/detail/adapters.test.ts.)
+test('?focus=meal:<slot> opens THAT slot’s composer, not the headline one', async ({ page }) => {
+  await boot(page)
+  await page.goto(`/kitchen/day/${DAY}?vue=repas&focus=meal:snack`)
+  await page.locator('.day-mng__sec').first().waitFor({ state: 'visible', timeout: 15_000 })
+  const open = await page.locator('.day-mng__sec').evaluateAll((els) =>
+    els
+      .filter((e) => e.querySelector('.edit-field input.input'))
+      .map((e) => (e as HTMLElement).dataset.dndZone),
+  )
+  expect(open, 'only the named slot opens').toEqual(['snack'])
+  await expect(page).not.toHaveURL(/focus=/)
+})
+
+test('a recipe-less meal on the board lands on its own composer, not the kitchen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 1200 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.setFixedTime(new Date((MMID + 9 * 3600) * 1000))
+  await mockApi(page, {
+    overrides: {
+      meals: {
+        weekStart: MMID,
+        windowDays: 10,
+        recent: [],
+        days: [{ id: 'x1', date: MMID, slot: 'snack', title: 'Muffins maison', cook_member_id: null, position: 0 }],
+      },
+    },
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible' })
+
+  const prep = page.locator('.wg-slot[data-card="today"] .act', { hasText: 'Choisir une recette' })
+  await expect(prep, 'a free-text meal still offers to prepare it').toHaveCount(1)
+  await expect(prep).toContainText('Muffins maison')
+  await prep.click()
+  await page.waitForURL(/\/kitchen\/day\/\d+/)
+  // …with the collation's own field open (the focus param is consumed on arrival).
+  await expect(page.locator('.day-mng__sec[data-dnd-zone="snack"] .edit-field input.input')).toBeVisible({ timeout: 8000 })
+})

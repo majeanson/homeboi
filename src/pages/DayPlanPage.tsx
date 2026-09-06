@@ -43,7 +43,7 @@ import { DayEditor } from '../components/kitchen/DayEditor'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useAnnounceLeftover, usePlanLeftover } from '../components/kitchen/Leftovers'
-import type { MealSlot } from '../lib/mealSlots'
+import { isMealSlot, type MealSlot } from '../lib/mealSlots'
 import { reschedule, restoreMeals, planMealRecipe } from '../components/kitchen/mealMutations'
 import {
   type Leftover,
@@ -452,15 +452,23 @@ export function DayPlanPage() {
       if (dayNotesQ.data === undefined) return // not loaded yet — try again next render
       setEditNote(date)
       setNoteText(noteFor(date)?.text ?? '')
-    } else if (focus === 'meal') {
-      // The HERO slot has its own composer state (editDate/mealText) — the side slots
-      // share editSlot/slotText. « Planifier un repas » means the headline meal, so it
-      // opens the hero's.
-      setEditDate(date)
-      setMealText('')
+    } else if (focus === 'meal' || focus.startsWith('meal:')) {
+      // `meal` = the headline composer; `meal:<slot>` = that slot's own. The slot form
+      // is what a free-text meal needs: « Choisir une recette » on a collation has to
+      // land on the COLLATION, not on the supper (the door-lands-on-its-target rule).
+      // The HERO slot has its own composer state (editDate/mealText); the side slots
+      // share editSlot/slotText — so which one to open depends on which slot was named.
+      const named = focus.startsWith('meal:') ? focus.slice(5) : ''
+      if (named && isMealSlot(named) && named !== heroSlot) {
+        setEditSlot({ date, slot: named })
+        setSlotText('')
+      } else {
+        setEditDate(date)
+        setMealText('')
+      }
     }
     setFocusParam(null)
-  }, [focus, date, dayNotesQ.data, noteFor, setFocusParam])
+  }, [focus, date, heroSlot, dayNotesQ.data, noteFor, setFocusParam])
 
   // A bad date in the URL → back to the grid rather than an empty editor.
   if (bad) return <StaleBounce to="/kitchen" message={t.kitchen.dayGone} />

@@ -1056,7 +1056,10 @@ export function Board() {
         when={cook.target ? t.board.cook : t.board.cookPlan}
         title={m.title}
         color={mealPrefs.color(m.slot)}
-        onOpen={() => nav(cook.target ?? '/kitchen')}
+        // With a recipe: cook mode. Without one: that meal's own composer, so
+        // « Choisir une recette » lands where you can actually choose it — it used to
+        // drop you on the kitchen's front page to go find the meal again.
+        onOpen={() => nav(cook.target ?? `/kitchen/day/${todayDay}?vue=repas&focus=meal:${m.slot}`)}
       />
     )
   }
