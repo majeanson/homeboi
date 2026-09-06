@@ -1045,6 +1045,14 @@ export function Board() {
   // did). `cook.target` is cook mode; without a linked recipe it falls back to the
   // kitchen and the row reads « Choisir une recette ».
   const prepAct = () => {
+    // A CLEAR day has nothing to cook, by the board model's own definition (dayClear
+    // counts meals). The gate matters because the two halves come from different
+    // endpoints — the card reads /api/board, useNextMeal reads /api/meals — so
+    // without it a card that reports itself EMPTY could still draw a meal row, which
+    // is both a contradiction and, on a collapsed card, a row inside a card that is
+    // not supposed to be there at all. The pill this replaced carried the same gate;
+    // dropping it broke three « empty card » guards.
+    if (dayClear) return null
     const m = cook.meal
     if (!m || m.is_leftover) return null
     if (liveMeals.some((x) => x.id === m.id)) return null

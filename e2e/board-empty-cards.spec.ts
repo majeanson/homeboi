@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BOARD, ROUTES } from './mocks'
+import { mockApi, seedState, BOARD, MMID, ROUTES } from './mocks'
 
 // « Une carte qui n'a rien à dire s'en va » — the board's empty-card contract, and
 // the one AUJOURDHUI §6 gap no spec covered: every frame we shoot has a full
@@ -30,7 +30,16 @@ const slot = (page: Page, card: string) => page.locator(`.wg-slot[data-card="${c
 const NO_TOMORROW = { tomorrow: [], tomorrowMeal: null, tomorrowMeals: [], tomorrowNote: null }
 const wxNoTomorrow = () => ({ ...(ROUTES.weather as Record<string, unknown>), tomorrow: null })
 
+// THE CLOCK IS FROZEN, and it has to be: "empty" here means the fixture is empty, and
+// the board's own idea of a day is WIDER than the fixture. Holidays and school-year
+// edges are DERIVED from the real date (lib/year), so on the eve of a real holiday
+// « Demain » had something to say — « Congé férié · Fête du Travail » — and refused to
+// collapse. Three specs went red on 2026-09-06 for exactly that, and would have on the
+// eve of every holiday since. Freezing to the fixture's own anchor makes these tests
+// about emptiness again rather than about the calendar. (Same family as the fixed-86400
+// DST trap CLAUDE.md names — a test that passes most days is not passing.)
 async function board(page: Page, overrides?: Record<string, unknown>) {
+  await page.clock.setFixedTime(new Date((MMID + 12 * 3600) * 1000))
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page, overrides ? { overrides } : {})
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
@@ -79,6 +88,11 @@ test('a « toujours » card keeps its place on a completely empty day', async ({
   // `fresh` empties every fixture — a brand-new household. The auto cards collapse;
   // the always cards must NOT, or a new household lands on a blank board with no
   // door into anything.
+  // Frozen for the same reason as the helper above — and this one needs the calendar
+  // to COOPERATE rather than stay quiet: it asserts « À venir » survives an empty
+  // household because the fêtes are derived. Which fête is next depends on the date,
+  // so a real clock makes this test depend on the season.
+  await page.clock.setFixedTime(new Date((MMID + 12 * 3600) * 1000))
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page, { fresh: true })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })

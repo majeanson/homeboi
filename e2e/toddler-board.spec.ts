@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BOARD } from './mocks'
+import { mockApi, seedState, BOARD, MMID } from './mocks'
 
 // The toddler board — the wall tablet's other face, and until now screenshot-only.
 // A picture can't test what actually matters here, which is what a tap DOESN'T do.
@@ -17,7 +17,16 @@ import { mockApi, seedState, BOARD } from './mocks'
 // the kid lens, decided in bmad/10) — so an empty day still reads as intentional to
 // someone who can't read the empty sections.
 
+// THE CLOCK IS FROZEN, and it has to be: "empty" here means the fixture is empty, and
+// the board's own idea of a day is WIDER than the fixture. Holidays and school-year
+// edges are DERIVED from the real date (lib/year), so on the eve of a real holiday
+// « Demain » had something to say — « Congé férié · Fête du Travail » — and refused to
+// collapse. Three specs went red on 2026-09-06 for exactly that, and would have on the
+// eve of every holiday since. Freezing to the fixture's own anchor makes these tests
+// about emptiness again rather than about the calendar. (Same family as the fixed-86400
+// DST trap CLAUDE.md names — a test that passes most days is not passing.)
 async function kidBoard(page: Page, opts: Parameters<typeof mockApi>[1] = {}) {
+  await page.clock.setFixedTime(new Date((MMID + 12 * 3600) * 1000))
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page, opts)
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true })
