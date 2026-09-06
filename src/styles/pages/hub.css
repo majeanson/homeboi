@@ -24,11 +24,22 @@
 }
 .audience-switch {
   display: inline-flex;
+  /* A segmented control never runs off the edge: it stacks. Two labelled segments
+     (icon + word each) do not fit a 360px settings row — Réglages ▸ Système ▸
+     Affichage's OCR pair overran it by 62px, and the shell's overflow-x:hidden
+     CLIPPED the second one, so the choice was simply unreachable on a phone. Wrapping
+     costs a line only when it must, and keeps both words readable — ellipsising a
+     two-word choice would not. */
+  flex-wrap: wrap;
+  max-width: 100%;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   overflow: hidden;
 }
 .audience-switch__opt {
+  /* Share the row when they fit; a full line each when they do not. */
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 0.4rem 0.7rem;
   border: none;
   background: transparent;

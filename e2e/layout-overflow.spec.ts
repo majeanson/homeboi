@@ -1,4 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test'
+import { SETTINGS_SUBS } from '../src/lib/settingsNav'
 import { mockApi, seedState, type Audience, type Lang, type Surface } from './mocks'
 
 // "All platforms" layout guard. screenshots.spec.ts already hard-asserts no
@@ -233,4 +234,80 @@ for (const w of WIDTHS) {
 
     await page.screenshot({ path: `e2e/screenshots/lo-board-${w.name}.png`, fullPage: true })
   })
+}
+
+// ── Every Réglages sub, on a phone ───────────────────────────────────────────────
+// The sweep above walks the six HUB TABS, and of Réglages it opened exactly two
+// faces: Découvrir and Système. Réglages has ~28 subs, each a page of dense rows
+// (a chip, a count, two or three icon buttons, an edit/delete pair), and none of the
+// rest were ever measured at a phone width. That is how « Étiquettes de recettes »
+// shipped with its ✏️/🗑️ pushed off the right edge the moment the row grew a third
+// button: the shell's `overflow-x: hidden` CLIPS, so nothing looked broken — the
+// controls were just gone.
+//
+// Driven off SETTINGS_SUBS itself, so a sub added later is swept without anyone
+// remembering to list it here.
+//
+// 360px is the width to hold: the narrowest phone in common use, and where a row of
+// controls beside a label runs out of room first.
+for (const [tab, subs] of Object.entries(SETTINGS_SUBS)) {
+  for (const sub of subs) {
+    test(`lo-settings-${tab}-${sub}@360`, async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 780 })
+      await mockApi(page)
+      await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+      await page.goto(`/settings?tab=${tab}&sub=${sub}`)
+      await settle(page)
+      // The sub really rendered (a bounced/empty pane would pass every check below).
+      await expect
+        .poll(async () => (await page.locator('.operator__body, .hub__body').first().innerText()).trim().length, {
+          timeout: 8000,
+        })
+        .toBeGreaterThan(10)
+
+      // Per-CHILD bounds against the nearest CLIPPING ancestor — not scrollWidth, and
+      // not just the page edge.
+      //
+      // scrollWidth is useless here: every clip in this app is `overflow: hidden`, so a
+      // too-wide row reads as zero overflow while its right-hand controls sit off-screen
+      // and untappable. And measuring only against `.hub__body` misses the other half:
+      // a segmented control with its own `overflow: hidden` can swallow its second
+      // option while the control itself sits comfortably inside the page (Réglages ▸
+      // Système ▸ Affichage did exactly that — the « Renforcé » choice was simply gone
+      // on a 360px phone).
+      //
+      // Two things are deliberately NOT flagged: anything inside a real horizontal
+      // SCROLLER (extending past the edge is what scrolling means there), and text that
+      // merely ellipsises — this compares element BOXES, and an ellipsised span's own
+      // box stays inside its parent.
+      const spill = await page.evaluate(() => {
+        const root = document.querySelector('.hub__body') as HTMLElement | null
+        if (!root) return ['no .hub__body']
+        const out: string[] = []
+        root.querySelectorAll<HTMLElement>('*').forEach((el) => {
+          const r = el.getBoundingClientRect()
+          if (r.width === 0 && r.height === 0) return
+          for (let n = el.parentElement; n; n = n.parentElement) {
+            const ox = getComputedStyle(n).overflowX
+            if (ox === 'visible') {
+              if (n === root) break
+              continue
+            }
+            if (ox === 'auto' || ox === 'scroll') return // a scroller: overflow is the point
+            // A clip. Its padding box is the last place content can still be seen.
+            const b = n.getBoundingClientRect()
+            const past = r.right - b.right
+            if (past > 0.5) {
+              out.push(
+                `+${Math.round(past)}px ${el.tagName}.${String(el.className).slice(0, 34)} clipped by .${String(n.className).slice(0, 24)}`,
+              )
+            }
+            return
+          }
+        })
+        return [...new Set(out)].slice(0, 6)
+      })
+      expect(spill, 'content clipped away (invisible and untappable)').toEqual([])
+    })
+  }
 }

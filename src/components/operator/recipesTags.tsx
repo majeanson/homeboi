@@ -14,6 +14,7 @@ import { ColorPicker } from '../ColorPicker'
 import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
 import { Chip } from '../Chip'
+import { Cluster } from '../Layout'
 import { MEAL_SLOTS, type MealSlot } from '../../lib/mealSlots'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
@@ -213,48 +214,51 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                           </span>
                         )}
                       </span>
+                      {/* The row's controls travel as ONE unit (Cluster wraps; never a
+                          hand-rolled flex row — CLAUDE.md « Horizontal overflow »). Three
+                          of them beside the chip and the count no longer fit a 360px
+                          phone on one line, and they simply ran off the right edge: the
+                          shell clips, so the pencil and the bin were unreachable. */}
                       {!ro && (
-                        <button
-                          type="button"
-                          className={`tag-admin__color-btn${openSlots ? ' is-on' : ''}`}
-                          onClick={() => setOpenPane(openSlots ? null : { key, pane: 'slots' })}
-                          aria-label={t.operator.tagSlotsPick(tg)}
-                          aria-expanded={openSlots}
-                        >
-                          <Icon name="fork-knife-bold" size={16} />
-                        </button>
-                      )}
-                      {!ro && (
-                        <button
-                          type="button"
-                          className={`tag-admin__color-btn${openColor ? ' is-on' : ''}`}
-                          onClick={() => setOpenPane(openColor ? null : { key, pane: 'color' })}
-                          aria-label={t.operator.tagColorPick(tg)}
-                          aria-expanded={openColor}
-                        >
-                          <Icon name="paint-brush-bold" size={16} />
-                        </button>
-                      )}
-                      {!ro && (
-                        <RowActions
-                          editLabel={t.operator.tagRename}
-                          deleteLabel={t.operator.tagRemove}
-                          onEdit={() => {
-                            setRenaming(tg)
-                            setRenameTo(tg)
-                          }}
-                          onDelete={async () => {
-                            // A tag in use → strips it from EVERY recipe: heavy, so a
-                            // deliberate confirm. A spare preset (not on any recipe) →
-                            // just drop it from the offered list, no confirm needed.
-                            if (inUse) {
-                              if (await confirm({ message: t.operator.tagRemoveConfirm(tg), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
-                                patch.mutate({ remove: tg })
-                            } else {
-                              savePills(effective.filter((x) => x !== tg))
-                            }
-                          }}
-                        />
+                        <Cluster className="tag-admin__acts">
+                          <button
+                            type="button"
+                            className={`tag-admin__color-btn${openSlots ? ' is-on' : ''}`}
+                            onClick={() => setOpenPane(openSlots ? null : { key, pane: 'slots' })}
+                            aria-label={t.operator.tagSlotsPick(tg)}
+                            aria-expanded={openSlots}
+                          >
+                            <Icon name="fork-knife-bold" size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className={`tag-admin__color-btn${openColor ? ' is-on' : ''}`}
+                            onClick={() => setOpenPane(openColor ? null : { key, pane: 'color' })}
+                            aria-label={t.operator.tagColorPick(tg)}
+                            aria-expanded={openColor}
+                          >
+                            <Icon name="paint-brush-bold" size={16} />
+                          </button>
+                          <RowActions
+                            editLabel={t.operator.tagRename}
+                            deleteLabel={t.operator.tagRemove}
+                            onEdit={() => {
+                              setRenaming(tg)
+                              setRenameTo(tg)
+                            }}
+                            onDelete={async () => {
+                              // A tag in use → strips it from EVERY recipe: heavy, so a
+                              // deliberate confirm. A spare preset (not on any recipe) →
+                              // just drop it from the offered list, no confirm needed.
+                              if (inUse) {
+                                if (await confirm({ message: t.operator.tagRemoveConfirm(tg), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
+                                  patch.mutate({ remove: tg })
+                              } else {
+                                savePills(effective.filter((x) => x !== tg))
+                              }
+                            }}
+                          />
+                        </Cluster>
                       )}
                     </>
                   )}

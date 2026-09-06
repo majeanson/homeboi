@@ -21,14 +21,28 @@
   opacity: 0.45;
 }
 .tag-admin__row {
-  /* Take the slack beside the grip; keep the row's own controls on one line (the
-     count's margin-right:auto pins ✏️/🗑️ right — nowrap avoids a lonely 2nd line). */
-  flex: 1 1 auto;
+  /* Take the slack beside the grip. WRAPS: the controls used to be pinned to one line
+     ("nowrap avoids a lonely 2nd line") and that held while there were two of them — a
+     third pushed the pencil and the bin clean off the right edge on a 360px phone,
+     where the shell's overflow-x:hidden CLIPS rather than reveals, so they were simply
+     unreachable. A second line beats a control you cannot tap. The count yields first
+     (below), so this only wraps when the row genuinely cannot hold them. */
+  /* Basis 0, not auto: a flex line WRAPS before it shrinks, so an auto basis (= the
+     content width) pushed the whole row onto its own line under the grip — three lines
+     per tag instead of two. Basis 0 keeps it beside the grip and lets it wrap INSIDE
+     itself instead. Same reasoning as .cnote__main. */
+  flex: 1 1 0;
   min-width: 0;
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.5rem;
+}
+/* The controls travel together (Cluster) and stay hard right on whichever line they
+   land on — the count's margin-right:auto pushes them there while there is slack. */
+.tag-admin__acts {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 .tag-admin__name {
   pointer-events: none;
@@ -40,6 +54,13 @@
   color: var(--ink-soft);
   font-size: 0.82rem;
   margin-right: auto;
+  /* Shrinkable, and the FIRST thing to give: the count is the least load-bearing thing
+     on the row, so it ellipsises before the controls are pushed onto a new line.
+     min-width:0 is what actually lets it — a flex item's automatic minimum is its
+     content width, so text-overflow alone could never trigger. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 /* Only the sizing within .tag-admin__row (a flex row) — NOT display/align-items:
