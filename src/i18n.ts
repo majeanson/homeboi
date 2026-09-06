@@ -2635,6 +2635,16 @@ export const FR = {
     tagColor: 'Couleur',
     tagColorPick: (tag: string) => `Couleur de « ${tag} »`,
     tagColorNone: 'Aucune couleur',
+    // Une étiquette peut dire à quels repas elle appartient. C'était déjà possible
+    // via une PASTILLE portant une règle sur cette étiquette — mais ça demandait de
+    // modéliser un filtre pour énoncer un fait sur un mot. L'étiquette est l'endroit
+    // où on met le sens ; c'est donc là que la préférence appartient.
+    tagSlotsPick: (tag: string) => `Repas de « ${tag} »`,
+    tagSlotsLabel: 'Pour ces repas',
+    tagSlotsHint:
+      'Quand tu planifies un de ces repas, les recettes portant cette étiquette remontent en tête (juste après les restants).',
+    // La ligne discrète sur la rangée, pour que ça se lise sans ouvrir le tiroir.
+    tagSlotsOn: (slots: string) => `Pour : ${slots}`,
     events: 'Rendez-vous',
     addEvent: 'Ajouter un rendez-vous',
     eventWhat: 'Quoi ? (ex. dentiste)',

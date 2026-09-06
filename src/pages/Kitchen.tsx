@@ -143,10 +143,12 @@ export function Kitchen() {
   // the SAME builder the day editor's slot fields use, so the two doors can't drift.
   const leftoverPool = useMemo(() => leftoversQ.data?.leftovers ?? [], [leftoversQ.data])
   const pills = pillsQ.data?.pills ?? DEFAULT_PILLS
+  // Per-tag meal preferences (Réglages ▸ Recettes ▸ Étiquettes) — same query as the pills.
+  const tagSlots = pillsQ.data?.tagSlots ?? {}
   // mealPrefs.hero, not the `heroSlot` const below — that's declared further down,
   // after the grid-building section, and this memo runs before it exists.
   const mealOpts = useMemo(
-    () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t, { slot: mealPrefs.hero, pills, loved: lovedSet }),
+    () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t, { slot: mealPrefs.hero, pills, loved: lovedSet, tagSlots }),
     [recipes, lowItems, listItems, leftoverPool, t, mealPrefs.hero, pills, lovedSet],
   )
   const planLeftover = usePlanLeftover()

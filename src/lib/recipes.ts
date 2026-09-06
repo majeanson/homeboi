@@ -75,6 +75,10 @@ export interface RecipeTagsData {
   // The recipe-tab pill config (migration 0045): built-in pills (shown/hidden +
   // order) plus operator-defined custom pills. See lib/recipePills.ts.
   pills?: import('./recipePills').Pill[]
+  // Which meal slots each TAG is preferred for, keyed by lowercase tag name — set in
+  // Réglages ▸ Recettes ▸ Étiquettes. A recipe carrying that tag leads the matching
+  // slot's picker, without anyone having to build a pill to say so. Absent = none.
+  tagSlots?: Record<string, import('./mealSlots').MealSlot[]>
 }
 export const RECIPE_TAGS_KEY = ['recipeTags']
 

@@ -42,6 +42,7 @@ export function DayEditor({
   lowItems,
   listItems,
   pills = [],
+  tagSlots = {},
   loved = EMPTY_LOVED,
   suppers,
   mealsFor,
@@ -66,6 +67,9 @@ export function DayEditor({
   // get lifted to the top of a slot's picker (a "Dîner & Souper" pill). Optional:
   // omitted/empty behaves exactly as before (cookable-ranked, no priority group).
   pills?: Pill[]
+  /** Per-tag meal preferences (Réglages ▸ Recettes ▸ Étiquettes) — a tag can lift its
+   *  recipes for a slot on its own, without a pill built around it. */
+  tagSlots?: Record<string, MealSlot[]>
   loved?: Set<string>
   suppers: MealRow[]
   mealsFor: (date: number, slot: string) => MealRow[]
@@ -160,8 +164,9 @@ export function DayEditor({
   // Built PER SLOT (not once for the whole day): a pill lifting recipes for
   // "Souper" shouldn't also reorder the "Déjeuner" field.
   const mealOptsFor = useMemo(
-    () => (slot: string) => mealPickOptions(recipes, lowItems, listItems, leftovers.pool, t, { slot: slot as MealSlot, pills, loved }),
-    [recipes, lowItems, listItems, leftovers.pool, t, pills, loved],
+    () => (slot: string) =>
+      mealPickOptions(recipes, lowItems, listItems, leftovers.pool, t, { slot: slot as MealSlot, pills, loved, tagSlots }),
+    [recipes, lowItems, listItems, leftovers.pool, t, pills, loved, tagSlots],
   )
   // Route a combobox pick to the right handler for the given slot.
   const pickMeal = (d: number, slot: string) => (o: ComboOption<MealPick>) => {

@@ -1,18 +1,21 @@
 import { badRequest, ok, readJson, parseJsonArray } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { nowSec } from '../_lib/ids'
+import { getPref, setPref } from '../_lib/householdPrefs'
 
 // Recipe tag management — the household-wide layer over recipes.tags_json.
 //
 //   GET   → { presets, used: [{tag, count}], colors }   presets = the household's
 //           saved pill list (migration 0021, [] = use the UI's built-in starters);
 //           used = every tag currently on a recipe, with how many carry it;
-//           colors = per-tag colour overrides {lowercase tag: "#rrggbb"} (migration 0037).
+//           colors = per-tag colour overrides {lowercase tag: "#rrggbb"} (migration 0037);
+//           tagSlots = per-tag meal-slot preferences {lowercase tag: MealSlot[]}.
 //   PATCH → any of (operator-only):
 //           { presets: string[] }          replace the preset pill list
 //           { rename: {from, to} }         rename a tag on EVERY recipe (and in presets/colours)
 //           { remove: string }             strip a tag from EVERY recipe (and presets/colours)
 //           { setColor: {tag, color} }     set (or clear, color=null) a tag's colour
+//           { setTagSlots: {tag, slots} }  which meal slots that TAG is preferred for
 //
 // Rename/remove rewrite each affected recipe's tags_json in one pass — the
 // recipe book is small (a household's worth), so a read-modify-write loop in a
@@ -80,6 +83,38 @@ const writeColors = (env: { DB: D1Database }, householdId: string, colors: Recor
     ts,
     householdId,
   )
+
+// --- per-tag meal-slot preferences -------------------------------------------
+// « Cette étiquette est pour ces repas-là » — a tag mapped to the meal slots it
+// belongs to, so a recipe tagged « Souper » leads the souper picker without anyone
+// having to build a pill for it. A custom PILL could already carry `slots`, but that
+// asks the household to model a filter in order to state a fact about a label; the
+// label is where people put the meaning, so it is where the preference belongs.
+//
+// Lives in household_preferences (migration 0106), NOT a new `households` column —
+// DB-6: that table already carries 18 preference columns, which is exactly the
+// threshold that table was created for. Keyed by LOWERCASED tag, like `colors`, so it
+// tracks a tag through whatever casing a recipe stored.
+const TAG_SLOTS_KEY = 'recipeTagSlots'
+export type TagSlots = Record<string, string[]>
+
+// Shape-gated on read AND on write, same rule as the pill config: an unknown slot, a
+// non-array value or a junk key is dropped rather than trusted. A tag whose list ends
+// up empty is removed outright, so "no preference" is one state, never two.
+function cleanTagSlots(raw: unknown): TagSlots {
+  const out: TagSlots = {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const tag = cleanTag(k)
+    if (!tag) continue
+    const slots = cleanPillSlots(v)
+    if (slots.length) out[tag.toLowerCase()] = slots
+  }
+  return out
+}
+
+const readTagSlots = async (env: { DB: D1Database }, householdId: string): Promise<TagSlots> =>
+  cleanTagSlots(await getPref<unknown>(env as never, householdId, TAG_SLOTS_KEY))
 
 // --- recipe-tab pill config (migration 0045) ---------------------------------
 // Mirror of src/lib/recipePills.ts, validated server-side. Built-ins are gated to
@@ -201,7 +236,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const used = [...counts.values()].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
   const colors = await readColors(ctx.env, actor.householdId)
   const pills = await readPills(ctx.env, actor.householdId)
-  return ok({ presets, used, colors, pills })
+  const tagSlots = await readTagSlots(ctx.env, actor.householdId)
+  return ok({ presets, used, colors, pills, tagSlots })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
@@ -210,6 +246,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     rename?: { from?: unknown; to?: unknown }
     remove?: unknown
     setColor?: { tag?: unknown; color?: unknown }
+    setTagSlots?: { tag?: unknown; slots?: unknown }
     setPills?: unknown
   }>(ctx.request)
   if (!body) return badRequest('Corps requis.')
@@ -243,6 +280,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     else delete colors[key]
     await writeColors(ctx.env, actor.householdId, colors, nowSec()).run()
     return ok({ colors })
+  }
+
+  // Set (or clear, with an empty list) which meal slots a TAG is preferred for.
+  if (body.setTagSlots) {
+    const tag = cleanTag(body.setTagSlots.tag)
+    if (!tag) return badRequest('tag requis.')
+    const slots = cleanPillSlots(body.setTagSlots.slots)
+    const all = await readTagSlots(ctx.env, actor.householdId)
+    const key = tag.toLowerCase()
+    if (slots.length) all[key] = slots
+    else delete all[key]
+    await setPref(ctx.env as never, actor.householdId, TAG_SLOTS_KEY, all)
+    return ok({ tagSlots: all })
   }
 
   const renameFrom = cleanTag(body.rename?.from)
@@ -295,6 +345,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     delete colors[fromKey]
     if (renameTo) colors[renameTo.toLowerCase()] = hex
     updates.push(writeColors(ctx.env, actor.householdId, colors, ts))
+  }
+
+  // …and its meal-slot preference, for the same reason: renaming « Souper » to
+  // « Soir » must not quietly drop what that label MEANT. Written outside the batch
+  // because it lives in household_preferences (a separate upsert, not a D1 statement
+  // this function builds) — a rename that only moved slots still reports 0 changed
+  // rows, which is honest: no recipe changed.
+  const tagSlots = await readTagSlots(ctx.env, actor.householdId)
+  if (fromKey in tagSlots) {
+    const slots = tagSlots[fromKey]!
+    delete tagSlots[fromKey]
+    if (renameTo) tagSlots[renameTo.toLowerCase()] = slots
+    await setPref(ctx.env as never, actor.householdId, TAG_SLOTS_KEY, tagSlots)
   }
 
   if (updates.length) await ctx.env.DB.batch(updates)

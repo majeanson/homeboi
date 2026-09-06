@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { critTags, matchesCriterion, matchesCustom, slotPriorityLabel, type Criterion, type CustomPill, type BuiltinPill } from './recipePills'
 import { type Recipe } from './recipes'
+import { type MealSlot } from './mealSlots'
 
 // A minimal recipe — the pill logic only reads tags / id / image / timing.
 const recipe = (tags: string[], over: Partial<Recipe> = {}): Recipe =>
@@ -113,5 +114,57 @@ describe('slotPriorityLabel — meal-slot association ("Dîner & Souper" pill), 
   it('an unnamed pill lifts with an EMPTY label, which is not the same as null', () => {
     const unnamed: CustomPill = { ...soupOnly, label: '' }
     expect(slotPriorityLabel([unnamed], 'supper', noLove)(recipe(['Soupe']))).toBe('')
+  })
+})
+
+// A TAG can carry the meal preference on its own (Réglages ▸ Recettes ▸ Étiquettes).
+// A custom pill could already do it, but that asks the household to model a FILTER in
+// order to state a fact about a word — the label is where people put the meaning, so
+// it is where the preference belongs.
+describe('slotPriorityLabel — a tag can say which meals it is for', () => {
+  const souperPill: CustomPill = {
+    id: 'p1',
+    label: 'Soupers rapides',
+    rules: [{ field: 'tag', tags: ['Rapide'] }],
+    slots: ['supper'],
+  }
+
+  it('lifts a recipe carrying a tag mapped to this slot, with no pill involved', () => {
+    const test = slotPriorityLabel([], 'supper', noLove, { souper: ['supper'] })
+    expect(test(recipe(['Souper']))).toBe('Souper')
+    expect(test(recipe(['Déjeuner']))).toBeNull()
+  })
+
+  it('names the tag in the recipe’s OWN casing, matched case-insensitively', () => {
+    // The map is keyed lowercase so it tracks a tag through whatever casing a recipe
+    // stored — but « Souper » should read back as they typed it.
+    const test = slotPriorityLabel([], 'supper', noLove, { souper: ['supper'] })
+    expect(test(recipe(['SOUPER']))).toBe('SOUPER')
+  })
+
+  it('a tag mapped to several slots lifts at each of them, and only those', () => {
+    const map = { 'plat principal': ['lunch', 'supper'] as MealSlot[] }
+    const r = recipe(['Plat principal'])
+    expect(slotPriorityLabel([], 'lunch', noLove, map)(r)).toBe('Plat principal')
+    expect(slotPriorityLabel([], 'supper', noLove, map)(r)).toBe('Plat principal')
+    expect(slotPriorityLabel([], 'breakfast', noLove, map)(r)).toBeNull()
+  })
+
+  it('a PILL wins the naming when both match — it is the more specific statement', () => {
+    // …and it is the one the household can see in the pill row, so naming it is the
+    // answer that explains the order.
+    const test = slotPriorityLabel([souperPill], 'supper', noLove, { souper: ['supper'] })
+    expect(test(recipe(['Rapide', 'Souper']))).toBe('Soupers rapides')
+    // The tag still carries it on its own when no pill matches.
+    expect(test(recipe(['Souper']))).toBe('Souper')
+  })
+
+  it('an empty map changes nothing — pills behave exactly as before', () => {
+    expect(slotPriorityLabel([souperPill], 'supper', noLove, {})(recipe(['Rapide']))).toBe('Soupers rapides')
+    expect(slotPriorityLabel([], 'supper', noLove, {})(recipe(['Souper']))).toBeNull()
+  })
+
+  it('a tag mapped to NO slots never lifts', () => {
+    expect(slotPriorityLabel([], 'supper', noLove, { souper: [] })(recipe(['Souper']))).toBeNull()
   })
 })

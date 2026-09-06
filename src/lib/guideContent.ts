@@ -2386,8 +2386,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Pastilles proposées', en: 'Suggested pills' },
         detail: {
-          fr: 'Ajoute ou enlève les étiquettes offertes quand tu crées une recette (ex. Végé, Rapide). Glisse le ⠿ pour les réordonner — y compris les étiquettes déjà utilisées — et cet ordre décide aussi de l’ordre des collections.',
-          en: 'Add or remove the tags offered when you create a recipe (e.g. Veggie, Quick). Drag the ⠿ to reorder them — including tags already in use — and that order also sets the order of your collections.',
+          fr: 'Ajoute ou enlève les étiquettes offertes quand tu crées une recette (ex. Végé, Rapide). Glisse le ⠿ pour les réordonner — y compris les étiquettes déjà utilisées — et cet ordre décide aussi de l’ordre des collections. La fourchette dit à quels repas une étiquette appartient : « Souper » remonte alors ses recettes quand tu planifies un souper.',
+          en: 'Add or remove the tags offered when you create a recipe (e.g. Veggie, Quick). Drag the ⠿ to reorder them — including tags already in use — and that order also sets the order of your collections. The fork says which meals a tag belongs to: "Supper" then lifts its recipes when you plan a supper.',
         },
         why: {
           fr: 'Pour étiqueter vite, à partir de ton propre vocabulaire, et garder les mêmes mots d’une recette à l’autre.',

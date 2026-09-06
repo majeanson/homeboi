@@ -2371,6 +2371,11 @@ export const EN: typeof FR = {
     tagColor: 'Colour',
     tagColorPick: (tag: string) => `Colour for “${tag}”`,
     tagColorNone: 'No colour',
+    tagSlotsPick: (tag: string) => `Meals for "${tag}"`,
+    tagSlotsLabel: 'For these meals',
+    tagSlotsHint:
+      'When you plan one of these meals, recipes carrying this tag lead the list (just after leftovers).',
+    tagSlotsOn: (slots: string) => `For: ${slots}`,
     events: 'Events',
     addEvent: 'Add an event',
     eventWhat: 'What? (e.g. dentist)',

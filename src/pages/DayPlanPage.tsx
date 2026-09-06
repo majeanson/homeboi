@@ -852,6 +852,7 @@ export function DayPlanPage() {
                 lowItems={lowItems}
                 listItems={listItems}
                 pills={pillsQ.data?.pills ?? DEFAULT_PILLS}
+                tagSlots={pillsQ.data?.tagSlots ?? {}}
                 loved={lovedSet}
                 suppers={suppers}
                 mealsFor={mealsFor}

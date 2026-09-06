@@ -125,10 +125,32 @@ export const matchesCustom = (r: Recipe, p: CustomPill, loved: Set<string>): boo
 // reordering silently — a household member who never opened Réglages had no way to
 // know. `null` = not lifted; test with `!== null`, never for truthiness: a pill the
 // household left unnamed has an empty label and is still a lift.
-export function slotPriorityLabel(pills: Pill[], slot: MealSlot, loved: Set<string>): (r: Recipe) => string | null {
+export function slotPriorityLabel(
+  pills: Pill[],
+  slot: MealSlot,
+  loved: Set<string>,
+  // Which meal slots each TAG is preferred for (lowercase tag → slots), from
+  // Réglages ▸ Recettes ▸ Étiquettes. A tag is the plainest way to say « ceci est
+  // pour le souper » — you put the label on the recipe and you are done — so it
+  // lifts on its own, without needing a pill built around it.
+  tagSlots: Record<string, MealSlot[]> = {},
+): (r: Recipe) => string | null {
   const active = pills.filter(
     (p): p is CustomPill => !isBuiltinPill(p) && !p.off && !!p.slots?.includes(slot),
   )
-  if (active.length === 0) return () => null
-  return (r) => active.find((p) => matchesCustom(r, p, loved))?.label ?? null
+  const tagsForSlot = new Set(
+    Object.entries(tagSlots)
+      .filter(([, slots]) => slots.includes(slot))
+      .map(([tag]) => tag),
+  )
+  if (active.length === 0 && tagsForSlot.size === 0) return () => null
+  return (r) => {
+    // A pill wins the naming when both match: it is the more specific statement (a
+    // rule set the household wrote), and it is the one they can see in the pill row.
+    const byPill = active.find((p) => matchesCustom(r, p, loved))?.label
+    if (byPill != null) return byPill
+    // The tag's OWN casing is what gets shown — the map is keyed lowercase so it
+    // survives however a recipe stored it, but « Souper » should read as they typed it.
+    return (r.tags ?? []).find((tg) => tagsForSlot.has(tg.toLowerCase())) ?? null
+  }
 }

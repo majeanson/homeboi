@@ -107,10 +107,12 @@ export function mealPickOptions(
   // loved what — together they decide which recipes get lifted to the top of the
   // recipe group (see lib/recipePills.slotPriorityLabel). All optional: omit `slot` (or
   // leave `pills` empty) and the picker behaves exactly as before, cookable-ranked.
-  opts: { slot?: MealSlot; pills?: Pill[]; loved?: Set<string> } = {},
+  opts: { slot?: MealSlot; pills?: Pill[]; loved?: Set<string>; tagSlots?: Record<string, MealSlot[]> } = {},
 ): ComboOption<MealPick>[] {
   const both = recipes.length > 0 && leftovers.length > 0
-  const priority = opts.slot ? slotPriorityLabel(opts.pills ?? [], opts.slot, opts.loved ?? new Set()) : undefined
+  const priority = opts.slot
+    ? slotPriorityLabel(opts.pills ?? [], opts.slot, opts.loved ?? new Set(), opts.tagSlots ?? {})
+    : undefined
   // No "Prêt" checkmark here (readyBadge: false) — the compact meal-slot picker
   // doesn't need it; recipeOptions' other caller (MealIdeas) keeps the badge.
   const r: ComboOption<MealPick>[] = recipeOptions(recipes, lowItems, listItems, t, {

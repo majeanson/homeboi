@@ -14,6 +14,7 @@ import { ColorPicker } from '../ColorPicker'
 import { DragPill } from '../DragPill'
 import { EditField } from '../EditField'
 import { Chip } from '../Chip'
+import { MEAL_SLOTS, type MealSlot } from '../../lib/mealSlots'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
@@ -45,6 +46,8 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const presets = tagsQ.data?.presets ?? []
   const used = tagsQ.data?.used ?? []
   const colors = tagsQ.data?.colors ?? {}
+  // Which meal slots each tag is preferred for (lowercase tag → slots).
+  const tagSlots = tagsQ.data?.tagSlots ?? {}
   // The one list folds in every tag in use, not just saved presets — so the
   // operator can drag ANY tag into place and that order drives the recipe book's
   // chips AND the #11 collection sections (RecipesTab reads this order). A tag in
@@ -56,8 +59,10 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const [pillInput, setPillInput] = useState('')
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameTo, setRenameTo] = useState('')
-  // Which tag's colour picker is open (keyed by lowercased tag).
-  const [coloring, setColoring] = useState<string | null>(null)
+  // Which tag has a drawer open under it, and which one — the colour swatches or the
+  // meal-slot chips. ONE state for both, so opening the second closes the first
+  // instead of stacking two panes under a single row.
+  const [openPane, setOpenPane] = useState<{ key: string; pane: 'color' | 'slots' } | null>(null)
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: RECIPE_TAGS_KEY })
@@ -69,6 +74,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
       rename?: { from: string; to: string }
       remove?: string
       setColor?: { tag: string; color: string | null }
+      setTagSlots?: { tag: string; slots: MealSlot[] }
       // Through useWrite — renaming or recolouring a tag is a household
       // preference, so it queues and replays like any other write.
     }) => write('recipe-tags', { method: 'PATCH', body, affectedKeys: [RECIPE_TAGS_KEY, RECIPES_KEY] }),
@@ -106,6 +112,34 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
 
   const setColor = (tag: string, color: string | null) => patch.mutate({ setColor: { tag, color } })
 
+  // Which meal slots this tag is for. Toggling one writes the whole list (an empty
+  // list clears the preference server-side, so "none" is one state, not two).
+  const slotsFor = (tag: string): MealSlot[] => tagSlots[tag.toLowerCase()] ?? []
+  const toggleSlot = (tag: string, slot: MealSlot) => {
+    const cur = slotsFor(tag)
+    patch.mutate({ setTagSlots: { tag, slots: cur.includes(slot) ? cur.filter((x) => x !== slot) : [...cur, slot] } })
+  }
+  // The chip row dropped under a row when its meal drawer is open — the same control
+  // the pill editor uses for the same job (operator/recipePills), so the two read as
+  // one idea rather than two spellings of it.
+  const slotEditor = (tag: string) => (
+    <div className="tag-admin__slotedit">
+      <span className="tag-admin__slots-hint">{t.operator.tagSlotsHint}</span>
+      <div className="tag-admin__slotpick" role="group" aria-label={t.operator.tagSlotsPick(tag)}>
+        {MEAL_SLOTS.map((sl) => (
+          <Chip
+            key={sl}
+            className="tag-admin__slotopt"
+            selected={slotsFor(tag).includes(sl)}
+            onClick={() => toggleSlot(tag, sl)}
+          >
+            {t.kitchen.slots[sl]}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  )
+
   // The PALETTE dot row + a "no colour" clear, dropped under a row when open.
   const colorEditor = (tag: string) => {
     const cur = tagColor(colors, tag)
@@ -132,7 +166,9 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
             const key = tg.toLowerCase()
             const count = countFor.get(key)
             const inUse = count != null
-            const open = coloring === key
+            const openColor = openPane?.key === key && openPane.pane === 'color'
+            const openSlots = openPane?.key === key && openPane.pane === 'slots'
+            const mySlots = tagSlots[key] ?? []
             return (
               <DragPill
                 key={tg}
@@ -168,14 +204,33 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                           spare preset offered in the form but not used yet. */}
                       <span className="tag-admin__count mono">
                         {inUse ? t.operator.tagOnN(count) : t.operator.tagUnusedHint}
+                        {/* Say it on the row, so the preference reads without opening
+                            anything — a setting you have to go looking for is a setting
+                            nobody remembers making. */}
+                        {mySlots.length > 0 && (
+                          <span className="tag-admin__slots-on">
+                            {t.operator.tagSlotsOn(mySlots.map((sl) => t.kitchen.slots[sl]).join(', '))}
+                          </span>
+                        )}
                       </span>
                       {!ro && (
                         <button
                           type="button"
-                          className={`tag-admin__color-btn${open ? ' is-on' : ''}`}
-                          onClick={() => setColoring(open ? null : key)}
+                          className={`tag-admin__color-btn${openSlots ? ' is-on' : ''}`}
+                          onClick={() => setOpenPane(openSlots ? null : { key, pane: 'slots' })}
+                          aria-label={t.operator.tagSlotsPick(tg)}
+                          aria-expanded={openSlots}
+                        >
+                          <Icon name="fork-knife-bold" size={16} />
+                        </button>
+                      )}
+                      {!ro && (
+                        <button
+                          type="button"
+                          className={`tag-admin__color-btn${openColor ? ' is-on' : ''}`}
+                          onClick={() => setOpenPane(openColor ? null : { key, pane: 'color' })}
                           aria-label={t.operator.tagColorPick(tg)}
-                          aria-expanded={open}
+                          aria-expanded={openColor}
                         >
                           <Icon name="paint-brush-bold" size={16} />
                         </button>
@@ -204,7 +259,8 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                     </>
                   )}
                 </div>
-                {!ro && open && colorEditor(tg)}
+                {!ro && openColor && colorEditor(tg)}
+                {!ro && openSlots && slotEditor(tg)}
               </DragPill>
             )
           })}

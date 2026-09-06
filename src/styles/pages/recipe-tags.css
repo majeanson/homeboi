@@ -86,6 +86,34 @@
 .tag-admin__color-clear {
   flex: 0 0 auto;
 }
+/* « Pour ces repas » — which meal slots this TAG belongs to. Same drawer geometry as
+   the colour pane above (a full-width line under the row, since both are flex
+   children of the li) and the same chip control the PILL editor uses for the same
+   job, so the two read as one idea rather than two spellings of it. */
+.tag-admin__slotedit {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.2rem 0 0.4rem;
+}
+.tag-admin__slots-hint {
+  color: var(--ink-faint);
+  font-size: var(--text-sm);
+}
+.tag-admin__slotpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+/* The quiet « Pour : Souper, Collation » line on the row itself — the preference has
+   to read WITHOUT opening the drawer, or it becomes a setting nobody remembers making.
+   Its own line under the count so a long slot list never squeezes the tag chip. */
+.tag-admin__slots-on {
+  display: block;
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+}
 
 /* Réglages ▸ Recettes — recipe-tab PILLS config (migration 0045). An ordered list
    of built-in + custom pills: drag to reorder, an eye to show/hide, and a custom
