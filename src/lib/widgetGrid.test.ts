@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   colsFor,
   colWidth,
+  fitRows,
   isCompact,
   isNarrow,
   rowIndexAt,
@@ -180,27 +181,71 @@ describe('the compact tile shelf', () => {
     expect(WG_MINI_H).toBe(152)
   })
 
-  it('never promises more rows than the shelf can hold, even worst-case', () => {
-    // A row now wraps onto up to two lines instead of being clamped to one and
-    // ellipsized mid-word (BoardCard.tsx `cardmini__rowlabel`), and past
-    // `WG_MINI_MAX_ITEMS` full rows the rest fold into one trailing one-line
-    // "+N de plus" row. Worst case every full row goes the whole two lines — these
-    // numbers mirror widget-grid.css (`.cardmini--list`); if the cap ever outgrew the
-    // shelf the last row would clip, which is the one failure a fixed height can
-    // produce and a `min-height` never could.
+  it('the ceiling still leaves room for a shelf of one-line rows', () => {
+    // The shelf's own arithmetic, for orientation: a mini is WG_MINI_H tall, its header
+    // and padding take ~44px, and a one-line row plus its gap is 20px. So five is what
+    // fits when nothing wraps — the calm ceiling and the physical one agree.
     const HEADER = 24 // the tinted disc + the card's title
     const ROW1 = 17 // one line: 0.78rem at line-height 1.35
-    const ROW2 = 34 // the worst case: a full row wrapped onto two lines
     const GAP = 3 // .cardmini__rows gap, paid once between every row shown
     const PADDING = 20 // 0.62rem, top and bottom
-    const worst = WG_MINI_MAX_ITEMS * ROW2 + ROW1 + WG_MINI_MAX_ITEMS * GAP
-    expect(HEADER + PADDING + worst).toBeLessThanOrEqual(WG_MINI_H)
+    const best = WG_MINI_MAX_ITEMS * ROW1 + (WG_MINI_MAX_ITEMS - 1) * GAP
+    expect(HEADER + PADDING + best).toBeLessThanOrEqual(WG_MINI_H)
   })
 
   it('stays a glance, not a list view', () => {
-    // Calm: the cap is a ceiling on how many FULL rows a 142px tile may name before it
-    // switches to "+N de plus" — not just what fits.
+    // Calm: a ceiling on how many things a 142px tile may NAME, whatever fits.
     expect(WG_MINI_MAX_ITEMS).toBeLessThanOrEqual(5)
+  })
+})
+
+// How many rows a mini actually shows is MEASURED, not assumed — this is the
+// arithmetic half. It used to be the constant above, which had to be the number that
+// survives the WORST case (every row wrapping onto two lines); most rows are one line,
+// so a card of short things showed two and « +3 de plus » where five had fitted.
+describe('fitRows — as many as fit, then say how many are left', () => {
+  // Rows 20px apart (a one-line row plus its gap), a one-line "+N" row worth 20px.
+  const evenly = (n: number) => Array.from({ length: n }, (_, i) => (i + 1) * 20 - 3)
+  const MORE = 20
+
+  it('shows everything when everything fits, with no summary row at all', () => {
+    expect(fitRows(evenly(3), MORE, 108)).toBe(3)
+  })
+
+  it('shows as many as fit BESIDE the summary row when some are left over', () => {
+    // 8 rows want 160px; 108px holds four rows (77px) plus the 20px summary.
+    expect(fitRows(evenly(8), MORE, 108)).toBe(4)
+  })
+
+  it('reserves the summary row even when every row it was HANDED fits', () => {
+    // The bug this argument exists for: the caller had already sliced the list to the
+    // ceiling, so all five fitted, nothing was reserved — and the "+3 de plus" the
+    // caller rendered anyway hung below the tile's clip.
+    expect(fitRows(evenly(5), MORE, 108, true)).toBe(4)
+    expect(fitRows(evenly(5), MORE, 108, false)).toBe(5)
+  })
+
+  it('a wrapped row costs two lines, and the fit shrinks with it', () => {
+    // Row 1 wraps (34px + gap), the rest are one line.
+    const bottoms = [34, 54, 74, 94, 114]
+    expect(fitRows(bottoms, MORE, 108)).toBe(3)
+  })
+
+  it('never claims a remainder it does not have', () => {
+    // Uncapped, one row must stay behind to be counted — "+0 de plus" is nonsense.
+    const k = fitRows(evenly(4), MORE, 200, false)
+    expect(k).toBe(4)
+    expect(fitRows(evenly(4), MORE, 61, false)).toBeLessThan(4)
+  })
+
+  it('always names at least one thing, even in a box too small for it', () => {
+    // A bare count is the all-or-nothing fallback this replaced; one clipped row beats it.
+    expect(fitRows(evenly(5), MORE, 5)).toBe(1)
+    expect(fitRows(evenly(5), MORE, 0, true)).toBe(1)
+  })
+
+  it('an empty list shows nothing rather than an empty summary', () => {
+    expect(fitRows([], MORE, 108)).toBe(0)
   })
 })
 

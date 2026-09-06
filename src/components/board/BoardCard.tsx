@@ -1,9 +1,9 @@
-import { type CSSProperties, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { Icon, type IconName } from '../Icon'
 import { type HelpMode } from '../../lib/helpMode'
-import { WG_MINI_MAX_ITEMS } from '../../lib/widgetGrid'
+import { fitRows, WG_MINI_MAX_ITEMS } from '../../lib/widgetGrid'
 import { useCardLens } from './CardLens'
 
 // One row of a compact list face. A bare string names a thing (a leading dot anchors
@@ -201,9 +201,69 @@ export function CardMini({
   // Index keys: this is a static, never-reordered projection of the card's rows, rebuilt
   // whole on every data change. A stable id would buy nothing and cost every call site.
   const rows = items && items.length > 0 ? items.slice(0, WG_MINI_MAX_ITEMS) : null
-  // What's left past the full rows above — named by a trailing "+N de plus" row instead
-  // of a further title getting shown at all (never a silent drop).
-  const moreCount = items ? Math.max(0, items.length - WG_MINI_MAX_ITEMS) : 0
+  // HOW MANY OF THOSE ROWS ACTUALLY FIT — measured, not assumed.
+  //
+  // The count used to be the constant above, which had to be the number that survives
+  // the WORST case (every row wrapping onto two lines). Most rows are one line, so a
+  // card of short things ("Lait", "Pain", "Œufs"…) showed two and « +3 de plus » where
+  // five had fitted before: information lost to arithmetic that assumed the worst about
+  // text it could simply look at.
+  //
+  // The tile is a fixed height that clips (widget-grid.css), so this is a real
+  // measurement, and a safe one: nothing here can change the tile's height or the row
+  // span its slot already claimed. The arithmetic lives in `fitRows` (lib/widgetGrid).
+  const listRef = useRef<HTMLUListElement>(null)
+  const [fit, setFit] = useState<number | null>(null)
+  // Keyed on the rows' CONTENT, never their identity: callers rebuild the array inline
+  // on every render, so an identity dep would re-measure forever.
+  const sig = rows ? rows.map((r) => (typeof r === 'string' ? r : `${r.lead ?? ''}~${r.label}`)).join('|') : ''
+  useLayoutEffect(() => {
+    const ul = listRef.current
+    if (!ul) return
+    const measure = () => {
+      const lis = Array.from(ul.querySelectorAll<HTMLLIElement>('[data-mini-row]'))
+      if (lis.length === 0) return
+      const more = ul.querySelector<HTMLLIElement>('[data-mini-more]')
+      // Un-hide everything to measure the FULL list, then put it back — all inside one
+      // layout effect, so this happens before paint and React never sees the mutation.
+      // Measuring the already-trimmed list would be measuring our own answer, and the
+      // rows could then only ever shrink, never grow back.
+      const was = lis.map((li) => li.hidden)
+      const wasMore = more?.hidden ?? true
+      lis.forEach((li) => (li.hidden = false))
+      if (more) more.hidden = false
+      const top = ul.getBoundingClientRect().top
+      const bottoms = lis.map((li) => li.getBoundingClientRect().bottom - top)
+      const gap = parseFloat(getComputedStyle(ul).rowGap) || 0
+      const moreH = more ? more.getBoundingClientRect().height + gap : 0
+      // The room the list has is the TILE's, not the list's own box — the list is a flex
+      // child that happily grows past the tile and gets clipped.
+      const tile = ul.closest('.cardmini') as HTMLElement | null
+      const avail = tile
+        ? tile.getBoundingClientRect().bottom - parseFloat(getComputedStyle(tile).paddingBottom || '0') - top
+        : ul.getBoundingClientRect().height
+      lis.forEach((li, i) => (li.hidden = was[i]!))
+      if (more) more.hidden = wasMore
+      // `capped`: the slice above may already have dropped rows, so a remainder exists
+      // however well these fit — and the summary row has to be paid for either way.
+      const k = fitRows(bottoms, moreH, avail, (items?.length ?? 0) > lis.length)
+      setFit((prev) => (prev === k ? prev : k))
+    }
+    measure()
+    // The tile's width changes with the column count (a rotation, a resize, a card
+    // resized in edit mode) and rewrapping changes what fits.
+    const ro = new ResizeObserver(measure)
+    ro.observe(ul)
+    return () => ro.disconnect()
+  }, [sig, items?.length])
+
+  // Before the first measurement, render every row: the effect runs before paint, so
+  // this state is never seen — and if it somehow were, showing too much and clipping
+  // beats showing too little.
+  const shown = fit == null ? (rows?.length ?? 0) : fit
+  // What's left past the rows shown — named by a trailing "+N de plus" row instead of a
+  // further title getting shown at all (never a silent drop).
+  const moreCount = items ? Math.max(0, items.length - shown) : 0
   const glyph = icon ? <Icon name={icon} size={15} /> : iconNode
   // BOTH faces share one header — the tinted disc pinned TOP-LEFT beside the title, with an
   // optional trailing extra (the weather chip). The glance face used to centre a big icon
@@ -234,12 +294,14 @@ export function CardMini({
     <>
       {header}
       {rows ? (
-        <ul className="cardmini__rows">
+        <ul className="cardmini__rows" ref={listRef}>
           {rows.map((row, i) => {
             const lead = typeof row === 'string' ? undefined : row.lead
             const text = typeof row === 'string' ? row : row.label
             return (
-              <li key={i} className="cardmini__row">
+              // Every row stays MOUNTED — the ones past the fit are `hidden`, not
+              // dropped, so the effect above can un-hide them and re-measure.
+              <li key={i} className="cardmini__row" data-mini-row="" hidden={i >= shown}>
                 {lead ? (
                   <span className="cardmini__lead mono">{lead}</span>
                 ) : (
@@ -249,8 +311,8 @@ export function CardMini({
               </li>
             )
           })}
-          {moreCount > 0 && (
-            <li className="cardmini__row cardmini__row--more">
+          {rows.length > 0 && (
+            <li className="cardmini__row cardmini__row--more" data-mini-more="" hidden={moreCount <= 0}>
               <span className="cardmini__dot" aria-hidden="true" />
               <span className="cardmini__rowlabel">{t.board.moreN(moreCount)}</span>
             </li>

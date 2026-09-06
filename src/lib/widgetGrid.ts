@@ -128,19 +128,60 @@ export const WG_MINI_ROWS = 7
 export const WG_MINI_H = WG_MINI_ROWS * WG_ROW + (WG_MINI_ROWS - 1) * WG_GAP
 
 /**
- * How many FULL item rows a compact tile names before it stops and adds a quiet
- * "+N de plus" summary row instead of a further row.
+ * The CEILING on how many item rows a compact tile will name — a calm limit, not a fit
+ * one. How many it actually shows is MEASURED (see `fitRows`).
  *
- * A mini's job is to ANSWER at a glance ("À finir: les restants de pâté chinois"), not to
- * promise an answer behind a tap — and not to clip a title mid-word either (a row used to
- * be forced onto one line and ellipsized, which cut "Rendez-vous chez le dentiste" down to
- * "Rendez-vous chez l…"). A row now wraps onto up to two lines instead of truncating, so
- * the cap has to shrink to match: 2 full rows can each go the worst-case two lines and
- * still leave room for a trailing one-line "+N de plus" under `WG_MINI_H` (see the shelf
- * test in widgetGrid.test.ts for the exact arithmetic). Naming two of nine and saying so
- * ("+7 de plus") beats both a mid-word cut and the old all-or-nothing icon+count fallback.
+ * This was 2 for a while and that was the bug: a row may wrap onto two lines, so 2 was
+ * the number that survives the WORST case (every row wrapping) — and the worst case is
+ * rare. Cards whose rows are short ("Lait", "Pain", "Œufs") used to show five and
+ * suddenly showed two and "+3 de plus", which is information lost to arithmetic that
+ * assumed the worst about text it could simply look at.
+ *
+ * 5 is both the calm ceiling and, as it happens, the physical one: five one-line rows
+ * plus their gaps are 97px of the ~108px a shelf leaves under the header. A mini's job
+ * is to ANSWER at a glance, not to become a list view.
  */
-export const WG_MINI_MAX_ITEMS = 2
+export const WG_MINI_MAX_ITEMS = 5
+
+/**
+ * How many of a mini's rows to actually show, given where each one ENDS.
+ *
+ * The tile is a fixed height (`WG_MINI_H`) that clips, so "how many fit" is a
+ * measurement, not a guess — this is the arithmetic half of it, kept pure so the
+ * awkward cases can be tested without a browser.
+ *
+ * `bottoms[i]` is row i's bottom edge in px from the list's content top (so it already
+ * carries whether that row wrapped). `moreH` is what a trailing "+N de plus" row would
+ * add, its gap included. `avail` is the height the list actually has.
+ *
+ * `capped` says the caller ALREADY dropped rows to obey `WG_MINI_MAX_ITEMS`, so a
+ * remainder exists no matter what fits. Getting that wrong is not cosmetic: with eight
+ * items and a ceiling of five, all five fitted, the "everything fits" branch reserved
+ * nothing — and the "+3 de plus" row the caller rendered anyway hung 5px below the
+ * tile's clip. The list can only see the rows it was handed.
+ *
+ * Three rules that are easy to get wrong:
+ *  • the "+N" row only costs anything when there IS a remainder — if everything fits
+ *    and nothing was capped, there is no summary row and no space reserved for one;
+ *  • when something WAS capped, always reserve it, however well the rest fit;
+ *  • never return every row while claiming a remainder ("+0 de plus"), and never return
+ *    zero — a mini that names nothing and only counts is exactly the all-or-nothing
+ *    fallback this replaced. One named row beats a bare count even when it has to clip.
+ */
+export function fitRows(bottoms: number[], moreH: number, avail: number, capped = false): number {
+  const all = bottoms.length
+  if (all === 0) return 0
+  if (!capped) {
+    let free = 0
+    while (free < all && bottoms[free]! <= avail) free++
+    if (free === all) return all // everything fits; no summary row is needed at all
+  }
+  let withMore = 0
+  while (withMore < all && bottoms[withMore]! + moreH <= avail) withMore++
+  // Capped: every row may be shown and still be followed by "+N". Uncapped: showing all
+  // of them would leave "+0 de plus", so one has to stay behind to be counted.
+  return capped ? Math.max(1, withMore) : Math.min(Math.max(1, withMore), all - 1)
+}
 
 /**
  * Which grid row (1-based) a slot sitting `offsetTop` px below the grid's content top

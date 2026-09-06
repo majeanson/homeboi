@@ -535,6 +535,13 @@
   font-size: 0.78rem;
   line-height: 1.35;
 }
+/* A row past what fits stays MOUNTED and `hidden` (BoardCard measures the full list
+   before trimming it). This rule is what makes `hidden` bite: the UA's own
+   `[hidden] { display: none }` is a lower-specificity rule than the `display: flex`
+   above it, so without this the "hidden" rows would render normally. */
+.wg-slot .cardmini__row[hidden] {
+  display: none;
+}
 .wg-slot .cardmini__dot {
   flex: none;
   width: 5px;
@@ -547,8 +554,9 @@
 }
 /* A row used to be forced onto one line and ellipsized — "Rendez-vous chez le
    dentiste" cut down to "Rendez-vous chez l…". Wrap onto up to two lines instead (same
-   no-mid-word-break rule as the header title above); `WG_MINI_MAX_ITEMS` caps how many
-   FULL rows a mini shows so this can never outgrow `WG_MINI_H` (see widgetGrid.test.ts). */
+   no-mid-word-break rule as the header title above). What keeps the list inside
+   `WG_MINI_H` is no longer a constant guessing the worst case but a MEASUREMENT of
+   these very boxes — see `fitRows` (lib/widgetGrid) and BoardCard's layout effect. */
 .wg-slot .cardmini__rowlabel {
   display: -webkit-box;
   -webkit-line-clamp: 2;

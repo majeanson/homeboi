@@ -151,7 +151,9 @@ test.describe('board compact lens', () => {
     await expect(tile).toHaveClass(/cardmini--list/)
     await expect(tile.locator('.cardmini__title')).toHaveText('À finir')
 
-    const rows = tile.locator('.cardmini__row')
+    // VISIBLE rows: every row stays mounted (the fit is measured by un-hiding them —
+    // see BoardCard), so a bare element count would also count what is hidden.
+    const rows = tile.locator('.cardmini__row:not([hidden])')
     await expect(rows).toHaveCount(1)
     await expect(rows.first()).toHaveText('Pâté chinois')
     // The list face replaces the count hint — a tile never says both.
@@ -170,7 +172,7 @@ test.describe('board compact lens', () => {
     // « Demain » is the card under test, NOT « Aujourd'hui ». This asserted the today tile
     // until « Aujourd'hui » absorbed the day's timeline: it now names the timed events, the
     // work windows, the chores AND the all-day items, so the fixture's busy day runs past
-    // WG_MINI_MAX_ITEMS (2) full rows — it still names what fits and folds the rest into a
+    // what the shelf holds — it still names what fits and folds the rest into a
     // trailing "+N de plus" row rather than falling back to a bare count (lib/widgetGrid).
     // « Demain » is the same chronological + weather-chipped tile with a day short enough to
     // list in full, so it still guards exactly what this test is for. The today tile's
@@ -412,4 +414,68 @@ test.describe('board compact lens — bespoke band cards', () => {
     await expect(reglerSlot).not.toHaveAttribute('data-expanded', /.*/)
     await expect(reglerSlot.locator('.cardmini')).toBeVisible()
   })
+})
+
+// ── How many rows a mini names ───────────────────────────────────────────────────
+// Reported: "we changed how widgets showed their info (+N more if too big), however
+// there were cases where I could see 5 items and now only 2 show + 3 more — loss of
+// information." The cap was a CONSTANT that had to survive the worst case (every row
+// wrapping onto two lines), and the worst case is rare. It is measured now (`fitRows`,
+// lib/widgetGrid), so a tile of short things names as many as physically fit.
+const SHORT_TODOS = {
+  todos: {
+    todos: ['Lait', 'Pain', 'Œufs', 'Beurre', 'Café', 'Miel'].map((title, i) => ({
+      id: `s${i}`, title, day: null, member_id: null, done_at: null, position: i, section: null, source_template_id: null,
+    })),
+  },
+}
+const LONG_TODOS = {
+  todos: {
+    todos: [
+      'Rendez-vous chez le dentiste pour Noah',
+      'Rapporter les livres à la bibliothèque',
+      'Vider et nettoyer la piscine avant lundi',
+      'Changer les pneus d’hiver de la voiture',
+    ].map((title, i) => ({
+      id: `l${i}`, title, day: null, member_id: null, done_at: null, position: i, section: null, source_template_id: null,
+    })),
+  },
+}
+
+async function miniRows(page: Page, overrides: Record<string, unknown>) {
+  await page.setViewportSize({ width: 390, height: 900 })
+  await mockApi(page, { overrides })
+  await seedState(page, { cardPrefs: { size: { todos: 1 } } })
+  await page.goto('/board')
+  await page.waitForSelector('.board-grid .wg-slot')
+  const mini = page.locator('.wg-slot[data-card="todos"] .cardmini--list')
+  await expect(mini).toBeVisible()
+  return mini.evaluate((el) => {
+    const rows = Array.from(el.querySelectorAll('[data-mini-row]')) as HTMLElement[]
+    const more = el.querySelector('[data-mini-more]') as HTMLElement | null
+    const shown = rows.filter((r) => !r.hidden)
+    const moreShown = more && !more.hidden ? more : null
+    const bottoms = [...shown, ...(moreShown ? [moreShown] : [])].map((r) => r.getBoundingClientRect().bottom)
+    return {
+      shown: shown.length,
+      more: moreShown?.textContent?.trim() ?? null,
+      // Positive = everything the tile draws ends inside it. The tile clips, so a
+      // negative number is a summary row (or a title) cut in half.
+      spare: el.getBoundingClientRect().bottom - Math.max(...bottoms, 0),
+    }
+  })
+}
+
+test('a mini of SHORT rows names as many as fit, not a fixed two', async ({ page }) => {
+  const m = await miniRows(page, SHORT_TODOS)
+  expect(m.shown, 'more than the old fixed cap of 2').toBeGreaterThan(2)
+  expect(m.spare, 'and nothing is cut off by the tile').toBeGreaterThanOrEqual(0)
+})
+
+test('a mini of LONG rows names fewer — the wrap is what costs, not a constant', async ({ page }) => {
+  const long = await miniRows(page, LONG_TODOS)
+  const short = await miniRows(page, SHORT_TODOS)
+  expect(long.shown, 'wrapping rows take two lines each').toBeLessThan(short.shown)
+  expect(long.spare).toBeGreaterThanOrEqual(0)
+  expect(long.more, 'and the rest are still counted, never silently dropped').toMatch(/\+\d/)
 })
