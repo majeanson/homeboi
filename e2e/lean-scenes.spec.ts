@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, MMID } from './mocks'
 
 // The 2026-08-26 lean pass over the scenes the state matrix had never opened. Each
 // test here pins ONE find, so a regression names itself instead of showing up as a
@@ -255,11 +255,14 @@ test("« Aujourd'hui » leads with the day, not with a stack of buttons", async 
 
   // No pill row in the body…
   await expect(card.locator('.board-actions')).toHaveCount(0)
-  // …and the doors are all in the header, as discs.
+  // …and the doors are in the header, as discs.
   const discs = card.locator('.sec-label__act > *')
-  await expect(discs).toHaveCount(3) // plan · cook · before-you-leave
+  await expect(discs).toHaveCount(2) // plan · before-you-leave
   await expect(card.getByLabel(/Planifier aujourd/)).toBeVisible()
   await expect(card.getByLabel(/Avant de partir/)).toBeVisible()
+
+  // Cooking is NOT one of them — it is a ROW, because a disc cannot say what supper
+  // is. See the next test.
 
   // Each disc holds the 44px touch floor and does not eat its neighbour's: the visible
   // circle is 28px, widened by an invisible ::after, so the GAP has to be ≥ 2× that
@@ -282,12 +285,16 @@ test('« Demain » does the same — one door, in the header', async ({ page }) 
   await expect(card.getByLabel(/Planifier demain/)).toBeVisible()
 })
 
-test('on a 320px phone the doors take their own line rather than push the row off screen', async ({ page }) => {
-  // Three 44px touch targets are 132px whatever diameter you draw inside them. At
-  // 320px that leaves ~53px for a 94px title, so the header cannot fit on one line —
-  // and it bled off the screen (CI: layout-overflow « lo-board-w320 »). It wraps now:
-  // title whole, doors whole, hard right on the second line. Nothing clipped, nothing
-  // unreachable, one extra row of header on the phones that need it.
+test('on a 320px phone the card header neither clips its title nor bleeds off screen', async ({ page }) => {
+  // The invariant, not the mechanism. Three 44px touch targets are 132px whatever
+  // diameter you draw inside them; add a 26px glyph and a 94px title and a 320px
+  // phone's 223px header cannot hold them on one line — it bled off the screen (CI:
+  // layout-overflow « lo-board-w320 »). `.sec-label` wraps when it has to, so the
+  // title stays whole and the doors stay whole and hard right, on one line or two.
+  //
+  // Asserting the WRAP itself would be asserting today's door count: the card carries
+  // two now (cooking moved to a row that can name the dish), which fits on one line at
+  // 320px. What must hold either way is that nothing is clipped and nothing escapes.
   await boot(page)
   await page.setViewportSize({ width: 320, height: 700 })
   await page.goto('/board')
@@ -300,13 +307,56 @@ test('on a 320px phone the doors take their own line rather than push the row of
     const act = el.querySelector('.sec-label__act')!.getBoundingClientRect()
     return {
       titleClipped: b.scrollWidth > b.clientWidth + 1,
-      actWrapped: act.top - r.top > 8,
       actRightGap: r.right - act.right,
       actPastEdge: act.right - r.right,
     }
   })
   expect(m.titleClipped, 'the title reads in full').toBe(false)
-  expect(m.actWrapped, 'the doors moved to their own line').toBe(true)
-  expect(m.actRightGap, 'and stayed hard right').toBeLessThan(2)
   expect(m.actPastEdge, 'nothing bleeds off the header').toBeLessThanOrEqual(0)
+  expect(m.actRightGap, 'and the doors stay hard right').toBeLessThan(2)
+})
+
+test(`« Aujourd’hui » SAYS what is being cooked — a row, not a bare icon`, async ({ page }) => {
+  // Reported after the button cull: "meal preparations in Aujourd'hui and Demain
+  // widgets are completely gone". They were: « Préparer le repas · <plat> » had become
+  // an unlabelled pot in the header, and that line was the ONLY place this card ever
+  // named the dish — its own list carries the déjeuner/dîner/collation, while the hero
+  // supper lives in « Ce soir ». The button went and took the information with it.
+  //
+  // The rule the cull was FOR ("information in the board, not buttons") is the same
+  // rule that puts it back: a row that names the dish is information, a pot glyph is
+  // not.
+  await boot(page)
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible' })
+  const card = page.locator('.wg-slot[data-card="today"]')
+  const prep = card.locator('.act', { hasText: 'Préparer le repas' })
+  await expect(prep).toHaveCount(1)
+  // It names the dish, not just the action.
+  await expect(prep).toContainText('Spaghetti maison')
+  // …and it is a door: tapping goes to cook mode for that recipe.
+  await prep.click()
+  await expect(page).toHaveURL(/cook$/)
+})
+
+test('…and never says it twice', async ({ page }) => {
+  // The pill this replaces printed « Préparer le repas · X » above a « Collation · X »
+  // row for the SAME meal — the duplication visible in the original report. The row
+  // stands down when that meal is already listed.
+  //
+  // The clock is frozen to breakfast time on purpose: the next meal is then the
+  // déjeuner, which IS one of the card's own rows (the hero supper never is — it lives
+  // in « Ce soir »), so this is the only way to actually exercise the branch. Without
+  // the freeze the test passes whether the dedupe exists or not.
+  await boot(page)
+  await page.clock.setFixedTime(new Date((MMID + 7 * 3600) * 1000))
+  await page.goto('/board')
+  await page.locator('.hub').waitFor({ state: 'visible' })
+  const card = page.locator('.wg-slot[data-card="today"]')
+  const prep = card.locator('.act', { hasText: 'Préparer le repas' })
+  const titles = await card.locator('.act .title').allInnerTexts()
+  const crepes = titles.filter((x) => x.includes('Crêpes'))
+  expect(crepes.length, 'the déjeuner is named once, by its own row').toBe(1)
+  // …and the prep row stood down rather than repeating it.
+  if ((await prep.count()) > 0) await expect(prep).not.toContainText('Crêpes')
 })

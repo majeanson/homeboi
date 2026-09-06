@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
 import { liveInterval } from '../lib/query'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -368,6 +368,7 @@ export function Board() {
   // view: a quick action beside « Prochainement », never a dead end (a planned
   // leftover has nothing to cook, so the CTA hides for it).
   const cook = useNextMeal()
+  const nav = useNavigate()
   // "La galerie" door, shown in the Grille view. It rides as a small trailing
   // chip inside the drawings strip (beside the photos on tablet, under them on
   // mobile) so it never claims its own row; when there are no drawings yet it
@@ -1037,6 +1038,28 @@ export function Board() {
       }
     />
   )
+  // « Préparer le repas · <plat> » — the next thing to cook, as a row rather than a
+  // button, so the card SAYS what supper is instead of only offering a door to it.
+  // Returns null when there is nothing cookable, or when that meal is already listed
+  // below (it would otherwise print a collation twice, which the pill this replaces
+  // did). `cook.target` is cook mode; without a linked recipe it falls back to the
+  // kitchen and the row reads « Choisir une recette ».
+  const prepAct = () => {
+    const m = cook.meal
+    if (!m || m.is_leftover) return null
+    if (liveMeals.some((x) => x.id === m.id)) return null
+    return (
+      <Act
+        key="cook-next"
+        cat="meal"
+        icon="cooking-pot-bold"
+        when={cook.target ? t.board.cook : t.board.cookPlan}
+        title={m.title}
+        color={mealPrefs.color(m.slot)}
+        onOpen={() => nav(cook.target ?? '/kitchen')}
+      />
+    )
+  }
   // Today's line-crossed items fold into a calm « Déjà passé aujourd'hui »
   // Disclosure so the card stays on now + next (the lifecycle keeps them as a quiet
   // record until midnight — see lib/itemLife). Only TIMED things fold: past-slot
@@ -1108,25 +1131,16 @@ export function Board() {
       // opened « Aujourd'hui » and read three buttons before reaching a single fact
       // about the day. The body is the day now; the doors live up here.
       //
-      // The cooking pot only appears when there is something to cook (a planned,
-      // non-leftover meal) — and it goes to COOK MODE, which the meal's own row below
-      // does not: that row opens the recipe. Two different destinations, so this is a
-      // shortcut, not a duplicate.
+      // Cooking is NOT one of them, though it briefly was: an icon cannot say WHAT
+      // is for supper, and « Préparer le repas · <plat> » was the only place this card
+      // ever named the dish (its list carries the déjeuner/dîner/collation — the hero
+      // supper lives in « Ce soir »). Turning that line into a bare pot took the button
+      // away and the information with it. It is a ROW again now — see `prepAct`.
       action={
         <>
           <Link to={`/kitchen/day/${todayDay}`} className="sec-label__actbtn" aria-label={t.board.planToday} title={t.board.planToday}>
             <Icon name="pencil-simple-bold" size={14} />
           </Link>
-          {!dayClear && cook.meal && !cook.meal.is_leftover && (
-            <Link
-              to={cook.target ?? '/kitchen'}
-              className="sec-label__actbtn"
-              aria-label={`${cook.target ? t.board.cook : t.board.cookPlan} · ${cook.meal.title}`}
-              title={`${cook.target ? t.board.cook : t.board.cookPlan} · ${cook.meal.title}`}
-            >
-              <Icon name="cooking-pot-bold" size={14} />
-            </Link>
-          )}
           <Link to="/board/departure" className="sec-label__actbtn" aria-label={t.departure.title} title={t.departure.title}>
             <Icon name="key-bold" size={14} />
           </Link>
@@ -1157,6 +1171,14 @@ export function Board() {
   <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
 ) : (
   <>
+    {/* WHAT IS BEING COOKED, named. The card's own list holds the déjeuner/dîner/
+        collation; the hero supper lives in « Ce soir », so without this row the card
+        could show a full day and never say what's for supper. It leads the meals
+        because it is the one people ask about, and it taps straight into cook mode
+        (the listed rows open the meal's peek instead — a different door).
+        Suppressed when that meal is already one of the rows below, so a collation is
+        never printed twice (which is what the old « Préparer le repas » pill did). */}
+    {prepAct()}
     {/* Today's still-to-come meals (déjeuner/dîner/collation) — supper is the
         "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
         Each carries its slot food icon so the slots read apart, like La cuisine. */}
