@@ -327,6 +327,14 @@ test(`« Aujourd’hui » SAYS what is being cooked — a row, not a bare icon`,
   // rule that puts it back: a row that names the dish is information, a pot glyph is
   // not.
   await boot(page)
+  // Mid-afternoon on purpose: the next meal is then the hero supper (the one carrying
+  // a recipe), which is the case this row exists for. Unfrozen it read the real wall
+  // clock and went red every evening: past 19 h (souper 17 h 30 + SLOT_GRACE_MIN) the
+  // day has moved on to the dessert slot, nothing is planned there, so pickNextMeal
+  // falls back to the LAST planned meal — the second souper, which the card already
+  // lists — and the row correctly stands down. Zero rows, and the guard read that as a
+  // regression. CI caught it; the sibling below was already frozen for the same reason.
+  await page.clock.setFixedTime(new Date((MMID + 15 * 3600) * 1000))
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible' })
   const card = page.locator('.wg-slot[data-card="today"]')

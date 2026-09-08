@@ -403,6 +403,18 @@ one measured VOCABULARY, and the four tracks all ran:
   17 reverts. A rule that applies to one language must be applied per LITERAL, not per
   line.
 
+E2E caught two things on that push, and only one of them was the copy. The first was:
+a spec still clicked « Enlever ce rappel » — renaming a label means grepping `e2e/`
+for it, every time. The second was **a guard that read the wall clock**, the same trap
+as the three « journée vide » gardes fixed the day before (`bacee8f`): « Aujourd'hui »
+SAYS what is being cooked never froze its clock, and past **19 h** (souper 17 h 30 +
+`SLOT_GRACE_MIN`) the day moves on to the dessert slot, nothing is planned there, so
+`pickNextMeal` falls back to the LAST planned meal — the second souper, which the card
+already lists — and the prep row correctly stands down. Zero rows; the guard read a
+correct behaviour as a regression. It passed here all afternoon and failed in CI that
+evening. **A board guard that depends on the hour freezes its clock** (`page.clock
+.setFixedTime`) — its own sibling already did, which is how the shape was recognized.
+
 ---
 
 ## 4. What still needs improvement — consolidated and ranked

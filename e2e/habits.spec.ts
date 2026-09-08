@@ -277,7 +277,7 @@ test.describe('the habit form', () => {
     await page.locator('.reminders__time').nth(1).fill('07:30')
     await expect(page.locator('.reminders__time').first()).toHaveValue('07:30')
 
-    await page.getByRole('button', { name: 'Enlever ce rappel' }).first().click()
+    await page.getByRole('button', { name: 'Retirer ce rappel' }).first().click()
     await expect(page.locator('.reminders__time')).toHaveCount(1)
     await expect(page.locator('.reminders__time')).toHaveValue('09:00')
   })
