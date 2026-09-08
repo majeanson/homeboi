@@ -496,14 +496,44 @@ test('revoking a live guest link posts revokeId (the token dies at once)', async
 })
 
 test('the sitter info block patches household with the typed fields', async ({ page }) => {
+  // The block seeds itself from a mount fetch, so wait for that to land before
+  // typing: the field must hold what we typed at the moment we save, not whatever
+  // the seed put there. (The product no longer clobbers a keystroke either — see
+  // `typed` in ShareInfoEditor — but a spec that types into a half-loaded form is
+  // testing the race, not the write.)
+  const seeded = page.waitForResponse((r) => r.url().includes('/api/household') && r.request().method() === 'GET')
   await page.goto('/settings?tab=settings&focus=guestLinks')
+  await seeded
   const card = page.locator('.operator__section', { hasText: 'Infos à partager' })
-  await card.getByLabel('Réseau Wi-Fi').fill('Maison-5G')
+  const wifi = card.getByLabel('Réseau Wi-Fi')
+  await wifi.fill('Maison-5G')
+  await expect(wifi).toHaveValue('Maison-5G')
   const [req] = await Promise.all([
     page.waitForRequest(isApi('PATCH', 'household'), { timeout: 20_000 }),
     card.getByRole('button', { name: 'Enregistrer' }).click(),
   ])
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ wifiSsid: 'Maison-5G' })
+})
+
+test('a keystroke typed while the sitter block is still loading survives the seed', async ({ page }) => {
+  // The block starts EMPTY and fills itself from a mount fetch. Hold that fetch open,
+  // type into the field the way a fast operator on a slow phone would, THEN let the
+  // household answer: the seed must not overwrite what was typed — or the save would
+  // PATCH the value the operator thought they had replaced. Found on CI 2026-09-08,
+  // where the runner is slow enough to lose the race every time (green locally).
+  let release = () => {}
+  const held = new Promise<void>((r) => (release = r))
+  await page.route('**/api/household**', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    await held
+    return route.fallback()
+  })
+  await page.goto('/settings?tab=settings&focus=guestLinks')
+  const wifi = page.locator('.operator__section', { hasText: 'Infos à partager' }).getByLabel('Réseau Wi-Fi')
+  await wifi.fill('Maison-5G')
+  release()
+  await page.waitForResponse((r) => r.url().includes('/api/household') && r.request().method() === 'GET')
+  await expect(wifi, 'the seed clobbered a keystroke').toHaveValue('Maison-5G')
 })
 
 test('« Tester l’IA » probes the binding with a POST (never a queued write)', async ({ page }) => {

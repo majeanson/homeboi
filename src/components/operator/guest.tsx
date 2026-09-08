@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
@@ -750,12 +750,18 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
   const [saving, setSaving] = useState(false)
   const write = useWrite()
   const [saved, setSaved] = useState(false)
+  // Has anyone typed yet? The seed below must never overwrite a keystroke: these
+  // four fields start EMPTY and are filled by a mount fetch, so on a slow phone
+  // (or a slow CI runner — this is how it was found, 2026-09-08) a fast typer
+  // could lose their first characters the moment the household answered, and the
+  // save would then PATCH the value they thought they had replaced.
+  const typed = useRef(false)
 
   useEffect(() => {
     let alive = true
     api<Partial<Record<keyof ShareFields, string | null>>>('household')
       .then((h) => {
-        if (!alive) return
+        if (!alive || typed.current) return
         setFields({
           wifiSsid: h.wifiSsid ?? '',
           wifiPassword: h.wifiPassword ?? '',
@@ -772,6 +778,7 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
   }, [])
 
   const set = (k: keyof ShareFields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    typed.current = true
     setFields((f) => ({ ...f, [k]: e.target.value }))
     setSaved(false)
   }
