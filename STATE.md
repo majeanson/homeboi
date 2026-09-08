@@ -20,23 +20,23 @@
 | | |
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
-| **Code** | ~145k lines across 834 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
+| **Code** | ~148k lines across 853 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1895 unit tests in 149 files · 125 Playwright spec files |
+| **Tests** | 1954 unit tests in 152 files · 125 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
-### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-04)
+### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
 
-- `npm run typecheck` · `npm test` (1895) · `npm run build` · `npm run knip` — green.
-- `npm run check:bundle` — **3871 KB** of JS across `dist/assets`, **748 KB eager**; every
+- `npm run typecheck` · `npm test` (1954) · `npm run build` · `npm run knip` — green.
+- `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1128 passed, 13 skipped** *(that figure is still the
   2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
   CI's E2E job is the standing whole-suite signal)*.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Twelve build-gating invariants** (this is the codebase's best feature — see §5):
+- **Thirteen build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -57,7 +57,10 @@
   the same commit)**, and **`layer-order.test.ts` (added 2026-09-04 — the fixed-overlay
   sandwich: every full-screen scene below `.scrim`/`.sheet`, every dialog that must
   interrupt an open sheet above it; it discovers new overlays itself rather than
-  trusting a list)**. `knip` now runs in CI too.
+  trusting a list)**, and **`chip-rule.test.ts` (added 2026-09-08 — the `.chip` class
+  belongs to `Chip.tsx`; a hand-rolled one fails the build, and its detector is itself
+  pinned against a fixture carrying the three near-misses that made the first version
+  cry wolf)**. `knip` now runs in CI too.
 
 ---
 
@@ -162,6 +165,68 @@ And one guard **reported green over the very defect it was written for** (an ind
 walk where a tag-depth walk was needed). Re-checked against the bug, it found a THIRD
 nested interactive nobody had reported, in cook mode. A guard that has never been red
 proves nothing — that rule earned its keep twice in one day.
+
+---
+
+## 3-bis. What shipped since this file last spoke (2026-09-04 → 09-08)
+
+**Eighteen commits landed between `3c9b903` and here without STATE.md moving** — the
+exact rot §5-1 warns about, in this file's own §"Keep it living" rule. Recorded now,
+grouped, with the verdict rather than the diff.
+
+**The wave (Sep 4–6, sixteen commits), all CI-green and deployed.** Its through-line
+is *a door should land on the thing, and a row should spend its width on what it
+names*:
+
+- **Doors land ON the thing** (`57117ed`): a board card's door used to open the page
+  that contains the thing; it now opens the thing (`?item=`/`?date=` landings, with
+  `ACTIONS.md` + `DISCOVERY.md` updated in the same commit — the rule this repo keeps
+  asking for). `ae23074` made « Aujourd'hui » show the day itself instead of three
+  buttons, and `6872992` let a meal with **no recipe** be cooked at all (its « Cuisiner »
+  had been recipe-only, so a free-text supper was a dead end).
+- **Rows spend width on content**: notes rows (`07a003a`), the board mini-card naming as
+  many things as fit instead of assuming two (`18c8a1c`), « Préparer le repas » back to a
+  row that NAMES the dish (`1b614f2`).
+- **Phone-width fixes**: the three-door header at 320px (`31aea09`) and Réglages' recipe-tag
+  rows (`be08820`) — that one also fixed the SWEEP that should have caught it, which is
+  the better half of the commit.
+- **One feature**: a recipe **étiquette can declare which meals it belongs to**
+  (`a5c165f`) — « déjeuner » stops being offered for supper. Extends F15, no new entity.
+- Plus: a 401 offering the pairing door instead of crashing the board (`4f5a81c`), the
+  tour painting BEHIND the ＋ sheet it explains (`0c34723`), `/api/meal-staples` removed
+  as dead (`f87100a`), one drag-and-drop vocabulary with page-scroll-while-holding
+  (`f008f05`), and a deal preview no longer writing the product name twice (`589e94f`).
+
+**2026-09-08 — the DevKit ↔ code audit Marc queued on 09-03** (`0a33180`), run in both
+directions. The finding was not a stale gallery entry but a **primitive that could only
+say one thing**: `Chip` knew "toggle", so 10 action chips that HAD gone through it
+announced *toggle button, not pressed* for ever, and 18 more sites had forked the
+`.chip` class precisely because the primitive could not say what they were. Chip grew
+the four missing shapes (action · link · static · expander), the 18 converged, and
+**`chip-rule.test.ts`** now fails the build on the next hand-rolled one (proven red on a
+planted violation first). Also found: a habit's **picto was TYPED** into a 2-character
+text field (now `EmojiField` — a wall tablet may have no emoji keyboard at all), the
+DevKit **DragPill specimen wore classes deleted in `04068e9`**, three stale claims in
+`COMPONENTS.md` (the « Mois » density toggle, ToddlerCookBook's printable half,
+`pages/Cercle.tsx`), and three shared kitchen seams named in no document. What the audit
+did NOT find matters too: nothing lives only by the gallery, and all 23 « In DevKit »
+claims are true. The memory-queued guard idea — *every component imported by 2+ pages
+must appear in DevKit* — is **rejected**: it would fire on ~50 page orchestrators the
+gallery excludes on purpose.
+
+**2026-09-08 — the visual sweep** (`cdde27d`), `npm run e2e:matrix` + a diff against
+Monday's CI artifact. Two states red, and the cause was **the harness, not the wave**:
+three specs computed midnight in **Node's** zone while all four Playwright configs pin
+the browser to `America/Toronto`, so on CI (UTC) the day scene asked for YESTERDAY — CI
+screenshotted « Dimanche 6 » on a Monday, the weather strip never rendered, and the
+entry's 228px chrome budget had been baselined against a screen the app never shows.
+`localDayStart` replaces all three hand-rolled midnights; the budget is re-baselined at
+244px on the real screen. Two more, found by looking: the notes fixture had **no
+authors**, so both lenses painted every note the same teal and the review called the
+tint seen — and with authors seeded, the **toddler lens showed three identical pictures**
+(a hard-coded teal), which now follows the same `author_member_id → colour` rule the
+parent row uses. And **« Quoi de neuf » had skipped the whole wave** (`lib/whatsNew.ts`
+carries that discipline in its own header): three entries added.
 
 ---
 
