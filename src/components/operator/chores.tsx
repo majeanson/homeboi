@@ -9,6 +9,7 @@ import { useRecordUndo } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
 import { InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { RowActions } from '../RowActions'
 import { ListRow } from '../ListRow'
 import { EmptyState } from '../EmptyState'
@@ -176,19 +177,18 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
                   toggle, not a CRUD affordance); ✏️/🗑️ edit and remove. For a guest
                   it reads as an inert badge (the cue is shown, but can't be cycled). */}
               {ro ? (
-                <span className="chip mono" title={t.routines.todLabel}>
+                <Chip className="mono" title={t.routines.todLabel}>
                   {todContent}
-                </span>
+                </Chip>
               ) : (
-                <button
-                  type="button"
-                  className="chip mono"
+                <Chip
+                  className="mono"
                   onClick={() => cycleTod(r)}
                   title={t.routines.todLabel}
-                  aria-label={`${t.routines.todLabel} ${todText}`}
+                  ariaLabel={`${t.routines.todLabel} ${todText}`}
                 >
                   {todContent}
-                </button>
+                </Chip>
               )}
               {/* Edit opens the full-screen builder scene (/routine/:id), not an
                   inline form: the card deck was "the worst sheet offender" under the

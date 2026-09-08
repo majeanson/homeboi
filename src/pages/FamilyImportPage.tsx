@@ -20,6 +20,7 @@ import { StatusMessage } from '../components/StatusMessage'
 import { EmptyState } from '../components/EmptyState'
 import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
+import { Chip } from '../components/Chip'
 import { EditField } from '../components/EditField'
 import { genderedRelLabel, type Contact, type Member, type RelationshipType } from '../lib/cercle'
 import { matchIntakePerson, type IntakeSubmission, type IntakePersonInput, type IntakePetInput, type IntakeMatch } from '../lib/intake'
@@ -313,9 +314,9 @@ export function FamilyImportPage() {
                       {item.relType ? genderedRelLabel(item.relType, item.person.gender, lang) : ''}
                     </span>
                     {item.candidate && (
-                      <button
-                        type="button"
-                        className={'chip intake-review__merge' + (decision[item.index] !== 'new' ? ' is-on' : '')}
+                      <Chip
+                        className="intake-review__merge"
+                        selected={decision[item.index] !== 'new'}
                         onClick={(e) => {
                           e.stopPropagation()
                           setDecision((d) => ({ ...d, [item.index]: d[item.index] === 'new' ? matchKey(item.candidate!) : 'new' }))
@@ -323,7 +324,7 @@ export function FamilyImportPage() {
                       >
                         <Icon name={decision[item.index] !== 'new' ? 'check-bold' : 'plus-bold'} size={12} />
                         {decision[item.index] !== 'new' ? t.familyShare.mergeInto(item.candidate.name) : t.familyShare.createNew}
-                      </button>
+                      </Chip>
                     )}
                   </>
                 )

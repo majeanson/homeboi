@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { Icon } from '../Icon'
+import { Chip } from '../Chip'
 import { Sheet } from '../Sheet'
 import { ActionMenu } from '../ActionMenu'
 import { Avatar } from '../Avatar'
@@ -165,9 +166,9 @@ function Block({ block, onAction }: { block: DetailBlock; onAction: (a: DetailAc
               // RecipeSheet/RecipesTab do; absent → the default berry chip.
               const hex = block.tones?.[i]
               return (
-                <span key={i} className="chip" style={hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined}>
+                <Chip key={i} style={hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined}>
                   {c}
-                </span>
+                </Chip>
               )
             })}
           </span>
@@ -236,11 +237,10 @@ function ToggleChips({ block }: { block: Extract<DetailBlock, { kind: 'togglechi
         {block.options.map((o) => {
           const active = on[o.id]
           return (
-            <button
+            <Chip
               key={o.id}
-              type="button"
-              className={'chip chip--toggle' + (active ? ' is-on' : '')}
-              aria-pressed={active}
+              className="chip--toggle"
+              selected={active}
               onClick={() => {
                 const next = !active
                 setOn((s) => ({ ...s, [o.id]: next }))
@@ -248,7 +248,7 @@ function ToggleChips({ block }: { block: Extract<DetailBlock, { kind: 'togglechi
               }}
             >
               <Icon name={active ? 'check-bold' : 'plus-bold'} size={11} /> {o.label}
-            </button>
+            </Chip>
           )
         })}
       </span>

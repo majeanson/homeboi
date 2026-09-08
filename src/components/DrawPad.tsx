@@ -18,6 +18,7 @@ import {
   zoomAt,
 } from '../lib/drawViewport'
 import { Icon } from './Icon'
+import { Chip } from './Chip'
 
 // The family draw pad for a fridge note (#14) — useful + educational, ~80% for the
 // kids. Tools: freehand PEN (perfect-freehand), tap-to-stamp STICKER packs, chunky
@@ -1767,7 +1768,7 @@ export function DrawPad({
               </div>
             )}
             {mode === 'pixel' && (
-              <button type="button" className={'chip drawpad__fill' + (fill ? ' is-on' : '')} onClick={() => setFill((v) => !v)} aria-pressed={fill}>{t.memo.fillTool}</button>
+              <Chip className="drawpad__fill" selected={fill} onClick={() => setFill((v) => !v)}>{t.memo.fillTool}</Chip>
             )}
             <div className="drawpad__colors">
               {COLORS.map((c) => (
@@ -1814,7 +1815,7 @@ export function DrawPad({
         <div className="drawpad__tplbar">
           <span className="drawpad__tpllabel mono" aria-hidden="true"><Icon name="book-open-bold" size={15} /> {t.memo.template}</span>
           {TEMPLATES.map((tp) => (
-            <button key={tp.key} type="button" className={'chip' + (tpl === tp.key ? ' is-on' : '')} onClick={() => setTpl(tp.key)} aria-pressed={tpl === tp.key}>{tp.label}</button>
+            <Chip key={tp.key} selected={tpl === tp.key} onClick={() => setTpl(tp.key)}>{tp.label}</Chip>
           ))}
           {tpl === 'trace' && (
             <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplTrace}>
@@ -1831,7 +1832,7 @@ export function DrawPad({
                 <>
                   <span className="drawpad__traceword-label mono" aria-hidden="true">{t.memo.traceWords}</span>
                   {traceWords.map((word) => (
-                    <button key={word} type="button" className={'chip' + (traceCh === word ? ' is-on' : '')} onClick={() => setTraceCh(word)} aria-pressed={traceCh === word}>{word}</button>
+                    <Chip key={word} selected={traceCh === word} onClick={() => setTraceCh(word)}>{word}</Chip>
                   ))}
                 </>
               )}
@@ -1840,7 +1841,7 @@ export function DrawPad({
           {tpl === 'coloring' && (
             <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplColoring}>
               {COLORING.map((sh) => (
-                <button key={sh} type="button" className={'chip' + (shape === sh ? ' is-on' : '')} onClick={() => setShape(sh)} aria-pressed={shape === sh}>{t.memo.shapes[sh]}</button>
+                <Chip key={sh} selected={shape === sh} onClick={() => setShape(sh)}>{t.memo.shapes[sh]}</Chip>
               ))}
             </div>
           )}
@@ -1892,9 +1893,9 @@ export function DrawPad({
             aria-label={t.memo.photoOpacity}
           />
           {([['photoFaint', 0.2], ['photoSoft', 0.4], ['photoStrong', 0.7], ['photoFull', 1]] as const).map(([label, v]) => (
-            <button key={label} type="button" className={'chip' + (Math.abs(photoAlpha - v) < 0.03 ? ' is-on' : '')} onClick={() => setPhotoAlpha(v)} aria-pressed={Math.abs(photoAlpha - v) < 0.03}>{t.memo[label]}</button>
+            <Chip key={label} selected={Math.abs(photoAlpha - v) < 0.03} onClick={() => setPhotoAlpha(v)}>{t.memo[label]}</Chip>
           ))}
-          <button type="button" className="chip drawpad__photoremove" onClick={removePhoto}><Icon name="trash-bold" size={14} /> {t.memo.photoRemove}</button>
+          <Chip className="drawpad__photoremove" onClick={removePhoto}><Icon name="trash-bold" size={14} /> {t.memo.photoRemove}</Chip>
         </div>
       )}
 
@@ -1904,7 +1905,7 @@ export function DrawPad({
         <div className="drawpad__draft" role="status">
           <Icon name="arrow-counter-clockwise-bold" size={15} />
           <span>{t.memo.draftRestored}</span>
-          <button type="button" className="chip" onClick={() => { clear(); setShowDraftHint(false) }}>{t.memo.draftDiscard}</button>
+          <Chip onClick={() => { clear(); setShowDraftHint(false) }}>{t.memo.draftDiscard}</Chip>
           <button type="button" className="drawpad__draftx" onClick={() => setShowDraftHint(false)} aria-label={t.common.close}><Icon name="x-bold" size={14} /></button>
         </div>
       )}

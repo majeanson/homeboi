@@ -84,6 +84,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Edit/delete icon pair on a row | **`RowActions`** | `components/RowActions.tsx` |
 | "Tap an item → detail peek" | **`useEntityDetail()`** + adapters | `components/detail/*`, `lib/detail.ts` |
 | Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
+| A small pill / tag / badge (toggle · action · link · label · expander) | **`Chip`** — pick the shape with the prop (`selected` / `onClick` / `to` / neither / `expanded`); a **test** enforces it (`src/lib/chip-rule.test.ts`): a hand-rolled `className="chip"` fails the build. If a call site does not fit, EXTEND Chip — that is how the five shapes got there | `components/Chip.tsx` |
 | Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
 | In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Maison) |
 | A horizontal row of buttons / chips / controls | **`Cluster`** (wraps) / **`Rail`** (scrolls one line) — never a hand-rolled flex row | `components/Layout.tsx` (`.cluster`/`.rail` in `core.css`; see [Horizontal overflow](#horizontal-overflow)) |
@@ -614,7 +615,7 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
 - **A new guard must be run against the bug it was written for, before it is
   trusted** (standing rule). The build-gating grep tests (`calm-tenets`,
   `field-fit`, `keyboard-fit`, `write-rule`, `write-owners`, `intl-rule`,
-  `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`) are the best
+  `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`) are the best
   thing in this codebase — and a green
   one proves nothing on its own. `nested-interactive.test.ts` was written to catch
   a control-inside-a-control on the routines grid and reported GREEN over exactly

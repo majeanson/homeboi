@@ -30,6 +30,7 @@ import { ReviewChecklist } from '../ReviewChecklist'
 import { StatusMessage } from '../StatusMessage'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
+import { Chip } from '../Chip'
 
 // Operator review of family-info forms relatives sent back (the 'intake' share kind).
 // Lives in Réglages ▸ Partage. Calm: a passive "N fiches à réviser" count, never a
@@ -278,9 +279,9 @@ export function IntakeReview({ help }: { help?: HelpMode }) {
                     : ''}
               </span>
               {item.candidate && (
-                <button
-                  type="button"
-                  className={'chip intake-review__merge' + (decision[item.index] !== 'new' ? ' is-on' : '')}
+                <Chip
+                  className="intake-review__merge"
+                  selected={decision[item.index] !== 'new'}
                   onClick={(e) => {
                     e.stopPropagation()
                     setDecision((d) => ({
@@ -291,7 +292,7 @@ export function IntakeReview({ help }: { help?: HelpMode }) {
                 >
                   <Icon name={decision[item.index] !== 'new' ? 'check-bold' : 'plus-bold'} size={12} />
                   {decision[item.index] !== 'new' ? t.intake.mergeInto(item.candidate.name) : t.intake.createNew}
-                </button>
+                </Chip>
               )}
             </>
           )

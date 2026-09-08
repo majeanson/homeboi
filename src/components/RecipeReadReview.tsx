@@ -5,6 +5,7 @@ import { SubTabs } from './SubTabs'
 import { findMeasures, measuresDisagree } from '../lib/measure'
 import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
+import { Chip } from './Chip'
 import { ZoomableImg } from './ZoomableImg'
 
 // Verify-against-the-photo gate for a recipe read (Pillar 3 of the faithful-import
@@ -219,7 +220,7 @@ export function RecipeReadReview({
           onChange={(v) => editLine(set, i, sec ? SECTION_PREFIX + v : v)}
           ariaLabel={kind === 'ingredients' ? t.recipes.ingredients : t.recipes.steps}
         />
-        {reason && <span className="chip read-review__chiptag">{t.recipes.reviewConfirm}</span>}
+        {reason && <Chip className="read-review__chiptag">{t.recipes.reviewConfirm}</Chip>}
       </div>
     )
   }

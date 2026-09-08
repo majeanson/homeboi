@@ -36,6 +36,7 @@ import { SubTabs } from '../SubTabs'
 import { Cluster } from '../Layout'
 import { Avatar } from '../Avatar'
 import { Icon, InlineIcon, type IconName } from '../Icon'
+import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { LoadError } from '../Fallback'
 import { RowActions } from '../RowActions'
@@ -322,23 +323,22 @@ function RecipeRows({
               <InlineIcon name={row.icon} size={14} color={row.iconColor} />
             </Link>
             {readOnly ? (
-              <span className="chip kitchen__idea-name" aria-disabled="true">
+              <Chip className="kitchen__idea-name" disabled>
                 {row.title}
                 {row.sub && <span className="mono kitchen__suggestion-sub"> · {row.sub}</span>}
-              </span>
+              </Chip>
             ) : (
-              <button
-                type="button"
-                className={'chip kitchen__idea-name' + (isOpen(row.key) ? ' is-open' : '')}
+              <Chip
+                className={'kitchen__idea-name' + (isOpen(row.key) ? ' is-open' : '')}
                 onClick={() => toggle(row.key)}
-                aria-expanded={isOpen(row.key)}
+                expanded={isOpen(row.key)}
               >
                 {row.title}
                 {row.sub && <span className="mono kitchen__suggestion-sub"> · {row.sub}</span>}
                 <span className="kitchen__idea-caret" aria-hidden="true">
                   <Icon name="caret-down-bold" size={12} />
                 </span>
-              </button>
+              </Chip>
             )}
             {faces?.(row.key)}
           </div>
@@ -467,23 +467,22 @@ function PastChip({
                 <InlineIcon name="clock-counter-clockwise-bold" size={14} color="var(--terracotta-deep)" />
               )}
               {readOnly ? (
-                <span className="chip kitchen__idea-name" aria-disabled="true">
+                <Chip className="kitchen__idea-name" disabled>
                   {dish.title}
                   <span className="mono kitchen__suggestion-sub"> · {sub}</span>
-                </span>
+                </Chip>
               ) : (
-                <button
-                  type="button"
-                  className={'chip kitchen__idea-name' + (isOpen(key) ? ' is-open' : '')}
+                <Chip
+                  className={'kitchen__idea-name' + (isOpen(key) ? ' is-open' : '')}
                   onClick={() => toggle(key)}
-                  aria-expanded={isOpen(key)}
+                  expanded={isOpen(key)}
                 >
                   {dish.title}
                   <span className="mono kitchen__suggestion-sub"> · {sub}</span>
                   <span className="kitchen__idea-caret" aria-hidden="true">
                     <Icon name="caret-down-bold" size={12} />
                   </span>
-                </button>
+                </Chip>
               )}
             </div>
             {!readOnly && isOpen(key) && (
@@ -548,21 +547,20 @@ function AiChip({
             <li key={title} className="kitchen__idea">
               <div className="kitchen__idea-row">
                 {readOnly ? (
-                  <span className="chip kitchen__idea-name" aria-disabled="true">
+                  <Chip className="kitchen__idea-name" disabled>
                     <InlineIcon name="sparkle-bold" size={14} color="#D9842A" /> {title}
-                  </span>
+                  </Chip>
                 ) : (
-                  <button
-                    type="button"
-                    className={'chip kitchen__idea-name' + (isOpen(title) ? ' is-open' : '')}
+                  <Chip
+                    className={'kitchen__idea-name' + (isOpen(title) ? ' is-open' : '')}
                     onClick={() => toggle(title)}
-                    aria-expanded={isOpen(title)}
+                    expanded={isOpen(title)}
                   >
                     <InlineIcon name="sparkle-bold" size={14} color="#D9842A" /> {title}
                     <span className="kitchen__idea-caret" aria-hidden="true">
                       <Icon name="caret-down-bold" size={12} />
                     </span>
-                  </button>
+                  </Chip>
                 )}
                 {!readOnly && (
                   <button
@@ -634,23 +632,22 @@ function KidChip({
             <div className="kitchen__idea-row">
               <Avatar kind={who?.avatar_kind} photo={who?.avatar_ref} colour={who?.colour} name={who?.display_name} size={28} />
               {readOnly ? (
-                <span className="chip kitchen__idea-name" aria-disabled="true">
+                <Chip className="kitchen__idea-name" disabled>
                   {idea.title}
                   {dayLabel && <span className="mono kitchen__suggestion-sub"> · {dayLabel}</span>}
-                </span>
+                </Chip>
               ) : (
-                <button
-                  type="button"
-                  className={'chip kitchen__idea-name' + (isOpen(idea.id) ? ' is-open' : '')}
+                <Chip
+                  className={'kitchen__idea-name' + (isOpen(idea.id) ? ' is-open' : '')}
                   onClick={() => toggle(idea.id)}
-                  aria-expanded={isOpen(idea.id)}
+                  expanded={isOpen(idea.id)}
                 >
                   {idea.title}
                   {dayLabel && <span className="mono kitchen__suggestion-sub"> · {dayLabel}</span>}
                   <span className="kitchen__idea-caret" aria-hidden="true">
                     <Icon name="caret-down-bold" size={12} />
                   </span>
-                </button>
+                </Chip>
               )}
               <RowActions onDelete={() => onDismiss(idea)} deleteLabel={t.kitchen.removeIdea} readOnly={readOnly} />
             </div>

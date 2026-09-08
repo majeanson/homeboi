@@ -21,6 +21,7 @@ import { ARegler } from '../components/board/ARegler'
 import { MotsCard } from '../components/mots/MotsCard'
 import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
+import { Chip } from '../components/Chip'
 import { TOD_ICON } from '../lib/cats'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { useNextMeal } from '../lib/nextMeal'
@@ -374,7 +375,7 @@ export function Board() {
   // mobile) so it never claims its own row; when there are no drawings yet it
   // still appears so saved gallery drawings stay reachable.
   const galleryLink = (
-    <Link to="/drawings" className="chip"><InlineIcon name="paint-brush-bold" /> {t.memo.galleryLink}</Link>
+    <Chip to="/drawings" icon="paint-brush-bold">{t.memo.galleryLink}</Chip>
   )
 
   // A-2 (bmad/09): les fêtes QC/CA — DERIVED on-device (lib/year, the D-16

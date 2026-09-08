@@ -5,6 +5,7 @@ import { useConfirm } from '../../lib/confirm'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { ColorPicker } from '../ColorPicker'
 import { EditField } from '../EditField'
+import { EmojiField } from '../EmojiPicker'
 import { Cluster } from '../Layout'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { StatusMessage } from '../StatusMessage'
@@ -180,18 +181,16 @@ export function HabitForm({
         ariaLabel={fn.titleLabel}
       />
 
-      <label className="recur__row mono">
+      {/* The pictogram is PICKED, not typed (2026-09-08): this was a 2-character
+          text input, which asks for the OS emoji keyboard — a keyboard a wall
+          tablet may not have at all, and a detour on a phone. `EmojiField` is the
+          shared tap-the-glyph trigger the carnets already use (searchable grid on
+          a Modal surface); a div, not a label, so the picker button isn't a
+          control nested in a label that would re-trigger it. */}
+      <div className="recur__row mono">
         <span>{fn.iconLabel}</span>
-        <input
-          className="input habit-form__icon"
-          type="text"
-          value={icon}
-          maxLength={2}
-          placeholder="🚶"
-          aria-label={fn.iconLabel}
-          onChange={(e) => setIcon(e.target.value)}
-        />
-      </label>
+        <EmojiField value={icon} onPick={setIcon} ariaLabel={fn.iconLabel} fallback="🚶" />
+      </div>
 
       {/* Whose habit? « Toute la maisonnée » (null) is the neutral default; a face
           makes it that member's, and private-ish on the check-in scene. */}

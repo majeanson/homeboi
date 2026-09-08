@@ -14,6 +14,7 @@ import { useKeepInGalleryToast, useKeepKeysInGalleryToast } from '../../lib/draw
 import { useDrawEdit } from '../../lib/drawEdit'
 import { useAddSheet } from '../../lib/addSheet'
 import { Icon, InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { DrawPad } from '../DrawPad'
@@ -371,9 +372,9 @@ export function Notes({
         {(canDraw || action) && (
           <div className="notes__action">
             {canDraw && (
-              <button type="button" className="chip" onClick={() => setCreating(true)}>
-                <InlineIcon name="pencil-simple-bold" /> {t.memo.draw}
-              </button>
+              <Chip onClick={() => setCreating(true)} icon="pencil-simple-bold">
+                {t.memo.draw}
+              </Chip>
             )}
             {action}
           </div>

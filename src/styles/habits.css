@@ -252,11 +252,8 @@
 }
 
 /* --- The habit form ------------------------------------------------------- */
-.habit-form__icon {
-  width: 4.5rem;
-  text-align: center;
-  font-size: 1.2rem;
-}
+/* (.habit-form__icon sized the old 2-char emoji INPUT; the picto is an EmojiField
+   trigger now — .emoji-field carries its own size. Removed 2026-09-08.) */
 
 /* Four kind cards, each with its example. They wrap on a phone; on a wide screen
    they sit two-up. Radios stay real radios (keyboard + screen reader). */

@@ -700,6 +700,7 @@ export function DevKit() {
   const [recur, setRecur] = useState<RecurValue | null>({ freq: 'weekly', interval: 1, weekdays: [3] })
   const [lead, setLead] = useState<number | null>(10800)
   const [chipOn, setChipOn] = useState<string[]>(['préféré'])
+  const [chipExpanded, setChipExpanded] = useState(false)
   const [subtab, setSubtab] = useState<'meals' | 'pantry' | 'recipes'>('meals')
   const [miniTab, setMiniTab] = useState<'aa' | 'coll'>('aa')
   const [face, setFace] = useState<string | null>(null)
@@ -1798,16 +1799,36 @@ export function DevKit() {
       cat: 'Fondations',
       name: 'Chip · ChipGroup',
       file: 'components/Chip.tsx',
-      kw: 'chip tag pill pastille filtre toggle',
+      kw: 'chip tag pill pastille filtre toggle action lien étiquette déplier',
       render: () => (
         <>
-          <Demo label="toggle chips">
+          <Demo label="toggle chips — `selected` is what makes it a toggle (aria-pressed)">
             <ChipGroup label="Filtres">
               {['déjeuner', 'préféré', 'rapide'].map((k) => (
                 <Chip key={k} selected={chipOn.includes(k)} onClick={() => toggleChip(k)}>
                   {k}
                 </Chip>
               ))}
+            </ChipGroup>
+          </Demo>
+          {/* The four other shapes. They exist because everything that was not a
+              toggle used to hand-roll a bare .chip button around the
+              primitive — and the action chips that DID go through it announced
+              "not pressed" for ever (2026-09-08 audit; guarded by
+              `lib/chip-rule.test.ts`). */}
+          <Demo label="action · link · static · expander — no aria-pressed on any of them">
+            <ChipGroup>
+              <Chip onClick={() => setChipExpanded((v) => !v)} icon="plus-bold">
+                action (remplit un champ)
+              </Chip>
+              <Chip to="/dev/kit" icon="paint-brush-bold">
+                lien
+              </Chip>
+              <Chip>étiquette</Chip>
+              <Chip disabled>étiquette inerte (lecture seule)</Chip>
+              <Chip expanded={chipExpanded} onClick={() => setChipExpanded((v) => !v)}>
+                déplie un panneau
+              </Chip>
             </ChipGroup>
           </Demo>
           <Demo label="removable tag pills">
@@ -2037,24 +2058,32 @@ export function DevKit() {
       name: 'DragPill',
       file: 'components/DragPill.tsx',
       kw: 'drag reorder grip ⠿ glisser réordonner pill tag pointer dnd',
+      // The specimen mirrors the LIVE call site (Réglages ▸ Recettes ▸ Apparence,
+      // operator/recipesTags.tsx): an as="li" row wrapping the grip and a Chip name.
+      // It used to demo as="span" pills wearing `chip tag-admin__pill` /
+      // `tag-admin__pill-grip` — classes deleted from recipe-tags.css back in
+      // 04068e9, so the gallery was showing a variant the app no longer has (found
+      // by the 2026-09-08 DevKit ↔ code audit).
       render: () => (
-        <Demo label="drag the ⠿ grip to reorder, or Tab to it + ↑/↓ (span chips here; also renders as <li> rows via as='li')">
-          <div className="tag-admin__pills">
+        <Demo label="drag the ⠿ grip to reorder, or Tab to it + ↑/↓ (rows via as='li', as Réglages ▸ Recettes does)">
+          <ul className="operator__list tag-admin__list">
             {dragPills.map((p, i) => (
               <DragPill
                 key={p}
-                as="span"
+                as="li"
                 dnd={dragPillDnd}
                 index={i}
                 label={p}
-                className="chip tag-admin__pill"
-                gripClassName="tag-admin__pill-grip"
+                className="tag-admin__row-wrap"
+                gripClassName="tag-admin__grip"
                 onMove={(dir) => moveDragPill(i, dir === 'up' ? i - 1 : i + 1)}
               >
-                <span className="tag-admin__pill-name">{p}</span>
+                <div className="tag-admin__row">
+                  <Chip className="tag-admin__name">{p}</Chip>
+                </div>
               </DragPill>
             ))}
-          </div>
+          </ul>
           <DragGhost ghost={dragPillDnd.ghost} />
         </Demo>
       ),

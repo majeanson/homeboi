@@ -8,6 +8,7 @@ import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeI
 import { isGuest } from '../lib/device'
 import { useAudience } from '../lib/audience'
 import { wash, tintInk, edge } from '../lib/colors'
+import { Chip } from './Chip'
 import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
 import { useRecipeToRoutine } from '../lib/recipeToRoutine'
@@ -349,13 +350,13 @@ export function RecipeSheet({
               {recipe.tags.map((tg) => {
                 const hex = tagColor(tagColors, tg)
                 return (
-                  <span
+                  <Chip
                     key={tg}
-                    className="chip recipe-view__tag"
+                    className="recipe-view__tag"
                     style={hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined}
                   >
                     {tg}
-                  </span>
+                  </Chip>
                 )
               })}
             </div>

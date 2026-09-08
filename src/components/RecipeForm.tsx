@@ -1115,30 +1115,26 @@ export function RecipeForm({
             <span className="recipe-tags-edit__label mono">{t.recipes.tagsLabel}</span>
             <div className="recipe-tags-edit__chips">
               {pills.map((tag) => (
-                <button
+                <Chip
                   key={tag}
-                  type="button"
-                  className={'chip' + (hasTag(tag) ? ' is-on' : '')}
+                  selected={hasTag(tag)}
                   style={tagChipStyle(tag, hasTag(tag))}
                   onClick={() => toggleTag(tag)}
-                  aria-pressed={hasTag(tag)}
                 >
                   {tag}
-                </button>
+                </Chip>
               ))}
               {tags
                 .filter((tag) => !pills.some((p) => p.toLowerCase() === tag.toLowerCase()))
                 .map((tag) => (
-                  <button
+                  <Chip
                     key={tag}
-                    type="button"
-                    className="chip is-on"
+                    selected
                     style={tagChipStyle(tag, true)}
                     onClick={() => toggleTag(tag)}
-                    aria-pressed
                   >
                     {tag} <InlineIcon name="x-bold" size={12} />
-                  </button>
+                  </Chip>
                 ))}
             </div>
             {/* Type a new tag OR pick an existing one as you type — the suggestions

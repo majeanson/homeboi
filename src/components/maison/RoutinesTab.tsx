@@ -9,6 +9,7 @@ import { live } from '../../lib/query'
 import { ROUTINES_KEY } from '../../lib/queryKeys'
 import { Loading, PairPrompt } from '../Fallback'
 import { InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { SectionHeader } from '../SectionHeader'
 import { Avatar } from '../Avatar'
 import { RoutineRing } from '../RoutineRing'
@@ -156,7 +157,7 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
           // surface — with no cue, that silence read as a bug. Name the state on
           // the PARENT card: a calm « À compléter » chip + why (never a warning).
           <div className="routine-card__steps routine-card__steps--empty mono">
-            <span className="chip routine-card__draft">{t.routines.draftBadge}</span> {t.routines.draftHint}
+            <Chip className="routine-card__draft">{t.routines.draftBadge}</Chip> {t.routines.draftHint}
           </div>
         )}
         <div className="routine-card__foot">

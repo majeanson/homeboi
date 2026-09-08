@@ -68,13 +68,12 @@ export function RecipeIngredientPick({
     <div className="recipe-list-pick">
       <div className="recipe-list-pick__head">
         <span className="recipe-list-pick__label mono">{t.recipes.addWhich}</span>
-        <button
-          type="button"
-          className="chip recipe-list-pick__all"
+        <Chip
+          className="recipe-list-pick__all"
           onClick={() => setOn(Object.fromEntries(names.map((n) => [n, !allOn])))}
         >
           {allOn ? t.recipes.selectNone : t.recipes.selectAll}
-        </button>
+        </Chip>
       </div>
       <div className="recipe-list-pick__items">
         {names.map((item) => (

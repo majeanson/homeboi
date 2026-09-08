@@ -2,6 +2,7 @@ import { useT } from '../../i18n'
 import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { Icon } from '../Icon'
+import { Chip } from '../Chip'
 
 // Pick which meal a recipe is planned into (déjeuner / dîner / collation /
 // souper). Shared by the recipe sheet's "Planifier" and the ideas pool's
@@ -17,16 +18,14 @@ export function SlotPicker({ value, onChange }: { value: MealSlot; onChange: (s:
       {mealPrefs.order.map((s) => {
         const c = mealPrefs.color(s)
         return (
-          <button
+          <Chip
             key={s}
-            type="button"
-            className={'chip' + (value === s ? ' is-on' : '')}
+            selected={value === s}
             onClick={() => onChange(s)}
-            aria-pressed={value === s}
             style={value === s ? { borderColor: c, color: c } : undefined}
           >
             <Icon name={SLOT_ICON_NAME[s]} size={16} color={c} /> {t.kitchen.slots[s]}
-          </button>
+          </Chip>
         )
       })}
     </div>

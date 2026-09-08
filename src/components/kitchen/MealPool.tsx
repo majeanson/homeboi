@@ -11,6 +11,7 @@ import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { EmptyState } from '../EmptyState'
 import { MealPlanPicker } from './MealPlanPicker'
 import { Icon } from '../Icon'
+import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { useInlineEdit } from '../../lib/useInlineEdit'
 import { RowActions } from '../RowActions'
@@ -221,23 +222,22 @@ export function MealPool<T extends { id: string; title: string }, O>({
                       </Link>
                     )}
                     {ro ? (
-                      <span className="chip kitchen__idea-name" aria-disabled="true">
+                      <Chip className="kitchen__idea-name" disabled>
                         {!to && lead}
                         {item.title}
-                      </span>
+                      </Chip>
                     ) : (
-                      <button
-                        type="button"
-                        className={'chip kitchen__idea-name' + (isOpen(item.id) ? ' is-open' : '')}
+                      <Chip
+                        className={'kitchen__idea-name' + (isOpen(item.id) ? ' is-open' : '')}
                         onClick={() => toggle(item.id)}
-                        aria-expanded={isOpen(item.id)}
+                        expanded={isOpen(item.id)}
                       >
                         {!to && lead}
                         {item.title}
                         <span className="kitchen__idea-caret" aria-hidden="true">
                           <Icon name="caret-down-bold" size={12} />
                         </span>
-                      </button>
+                      </Chip>
                     )}
                     {advanced && (
                       <RowActions

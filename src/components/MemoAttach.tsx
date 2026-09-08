@@ -5,6 +5,7 @@ import { imgUrl } from '../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { Icon } from './Icon'
 import { Cluster } from './Layout'
+import { Chip } from './Chip'
 import { StatusMessage } from './StatusMessage'
 import { DrawPad } from './DrawPad'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
@@ -392,23 +393,21 @@ export function useMemoAttach({
         {draft.kind !== 'audio' && (
           <Cluster className="memo-attach__keeps">
             {gallery && draft.kind === 'image' && (
-              <button
-                type="button"
-                className={'chip' + (kept ? ' is-on' : '')}
+              <Chip
+                selected={kept}
                 onClick={() => void keepToPhotos()}
                 // Keeping uploads a second copy — offline it would just fail. The note
                 // itself still posts (it rides the outbox); only this extra keep waits.
                 disabled={kept || !online}
-                aria-pressed={kept}
               >
                 <Icon name={kept ? 'check-bold' : 'image-square-bold'} size={14} />{' '}
                 {kept ? t.memo.keptInPhotos : t.memo.keepInPhotos}
-              </button>
+              </Chip>
             )}
-            <button type="button" className={'chip' + (saved ? ' is-on' : '')} onClick={() => void saveDeviceCopy()}>
+            <Chip selected={saved} onClick={() => void saveDeviceCopy()}>
               <Icon name={saved ? 'check-bold' : 'download-simple-bold'} size={14} />{' '}
               {saved ? t.memo.savedToDevice : t.memo.saveToDevice}
-            </button>
+            </Chip>
           </Cluster>
         )}
         </>
