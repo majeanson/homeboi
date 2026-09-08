@@ -364,11 +364,11 @@ look points up by French label).
 deployed; E2E red on ONE test, deterministically). The sitter-info coverage test I had
 just added typed into « Infos à partager » — a block that starts EMPTY and seeds itself
 from a mount fetch — and CI is slow enough to lose that race every time: the seed
-landed after the keystroke and overwrote it, so the save PATCHed . The
+landed after the keystroke and overwrote it, so the save PATCHed `wifiSsid: ''`. The
 spec was only the messenger; the PRODUCT lost the keystroke, on any slow phone, for
-any fast typer.  now refuses to seed once anyone has typed
-(a  ref), the spec waits for the seed before typing, and a new regression test
-holds the fetch open, types, then releases it — run against the bug (,
+any fast typer. `ShareInfoEditor` now refuses to seed once anyone has typed
+(a `typed` ref), the spec waits for the seed before typing, and a new regression test
+holds the fetch open, types, then releases it — run against the bug (`Received: ""`,
 the exact CI shape). The lesson is the one this file keeps relearning: a mount fetch
 that fills a form is a race with the user, and only a slow runner shows it.
 
