@@ -30,8 +30,9 @@ export interface MemberFace {
   dot?: boolean
 }
 
-/** The snake_case `/api/members` row — only the fields a face needs. */
-interface RawMember {
+/** The snake_case `/api/members` row — only the fields a face needs. Exported so a
+ *  surface reading the endpoint itself can type its query without restating it. */
+export interface RawMember {
   id: string
   display_name: string
   colour?: string | null

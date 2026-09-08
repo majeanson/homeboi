@@ -21,6 +21,30 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'notes-un-editeur',
+    text: {
+      fr: 'Nouveau : Les notes s’écrivent dans UN seul éditeur — touche une note, elle s’ouvre pour être lue et modifiée au même endroit.',
+      en: 'New: Notes now open in ONE editor — tap a note and it opens to read and edit in the same place.',
+    },
+    card: 'notes',
+  },
+  {
+    id: 'etiquette-repas',
+    text: {
+      fr: 'Nouveau : une étiquette de recette peut dire à quels repas elle appartient — « déjeuner » ne se propose plus pour le souper.',
+      en: 'New: a recipe tag can say which meals it belongs to — “breakfast” stops being suggested for supper.',
+    },
+    card: 'recipes',
+  },
+  {
+    id: 'aujourdhui-la-journee',
+    text: {
+      fr: 'Nouveau : « Aujourd’hui » montre la journée elle-même, et une porte atterrit sur la chose touchée — pas seulement sur la page qui la contient.',
+      en: 'New: “Today” shows the day itself, and a door lands on the thing you tapped — not just the page holding it.',
+    },
+    card: 'board',
+  },
+  {
     id: 'cercle-rendez-vous',
     text: {
       fr: 'Nouveau : dans Le cercle, touche une personne ou un commerce puis « Planifier un rendez-vous » — il apparaît au babillard et à l’agenda, avec rappel.',

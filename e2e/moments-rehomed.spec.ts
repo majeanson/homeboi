@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { localDayStart } from '../src/lib/localDay'
 
 // « Moments » is retired (2026-08-25). Two things it owned had to survive the deletion,
 // and neither had a guard anywhere else — this file is that guard:
@@ -13,7 +14,8 @@ import { mockApi, seedState } from './mocks'
 // (The third leg — an old /moment link redirecting to the board — lives in
 // board-customize.spec.ts beside the rest of the board-layout coverage.)
 
-const today = () => Math.floor(new Date(new Date().setHours(0, 0, 0, 0)).getTime() / 1000)
+// Local midnight in the household zone, not Node's (UTC on CI — a day off there).
+const today = () => localDayStart(new Date())
 
 async function boot(page: import('@playwright/test').Page, guest = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' })

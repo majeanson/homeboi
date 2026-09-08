@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
+import { FAMILY_NOTES_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
+import { facesFromMembers, type RawMember } from '../../lib/faces'
 import { type FamilyNote, visibleNotes } from '../../lib/familyNotes'
 import { plainText } from '../../lib/noteMarkdown'
 import { useSpeak, playNarration } from '../../lib/speak'
@@ -33,6 +34,12 @@ export function NotesKidView() {
     ...live,
   })
   const notes = useMemo(() => visibleNotes(data?.notes ?? [], null), [data])
+
+  // Household faces, for the author tint below. Same shared key + shape every other
+  // surface reads, so this rides the existing cache rather than adding a poll.
+  const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: RawMember[] }>('members') })
+  const faces = useMemo(() => facesFromMembers(membersQ.data?.members ?? []), [membersQ.data])
+  const colorOf = (id: string | null) => faces.find((f) => f.id === id)?.colour ?? null
 
   // Title if set, else the body's first non-blank line (plain text), else a media
   // label — mirrors NotesList's own title-derivation rule so the same note reads
@@ -68,10 +75,16 @@ export function NotesKidView() {
           <div className="cercle-kid__grid">
             {notes.map((n) => (
               <button type="button" key={n.id} className="cercle-kid__card" onClick={() => tap(n)}>
+                {/* The picture wears its AUTHOR's colour — the same `author_member_id
+                    → colour` rule the parent row tints with (NotesList). It used to be
+                    one hard-coded teal for every note, so a pre-reader who can't read
+                    the title saw three identical pictures and could only pick by
+                    position; « la note de maman » is now pink and papa's is blue.
+                    Teal stays the fallback for a Maisonnée note with no author. */}
                 <Icon
                   name={n.media_kind === 'audio' ? 'speaker-high-bold' : n.media_kind === 'image' || n.media_kind === 'drawing' ? 'image-square-bold' : 'file-text-bold'}
                   size={56}
-                  color="#2A8F85"
+                  color={colorOf(n.author_member_id) ?? '#2A8F85'}
                 />
                 <span className="cercle-kid__name">{titleOf(n)}</span>
               </button>

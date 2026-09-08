@@ -23,7 +23,7 @@ export const BASE = 1_749_369_600 // 2025-06-08T08:00:00Z (a fixed PAST anchor, 
 // Exported so a spec needing another local-day-keyed fixture (school-year bounds,
 // a break window…) can build off the SAME anchor as the frozen clock instead of
 // re-deriving a slightly-off local midnight by hand.
-export const MMID = 1_749_355_200 // 2026-06-08T00:00:00-04:00
+export const MMID = 1_749_355_200 // 2025-06-08T00:00:00-04:00 (a Sunday — the same day as BASE)
 // An ISO date N days from the real clock — for flyer run dates, since the store
 // browser's current/upcoming split keys on the live Date.now() (not BASE).
 const flyerIso = (days: number): string => new Date(Date.now() + days * DAY * 1000).toISOString()

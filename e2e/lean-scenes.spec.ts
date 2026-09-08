@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, MMID } from './mocks'
+import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // The 2026-08-26 lean pass over the scenes the state matrix had never opened. Each
 // test here pins ONE find, so a regression names itself instead of showing up as a
@@ -171,11 +172,10 @@ test('a read-only guest gets a carnet with no ＋ at all', async ({ page }) => {
 
 // ── /voyage/:id ▸ Itinéraire ────────────────────────────────────────────────────
 
-const FUTURE = (() => {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return Math.floor(d.getTime() / 1000) + 20 * 86_400
-})()
+// Local midnight in the household zone (America/Toronto), then 20 days on — never
+// Node's own zone, which is UTC on CI and lands the trip a day early there.
+// `addLocalDays` rather than `+ 20 * 86400` for the DST rule (CLAUDE.md).
+const FUTURE = addLocalDays(localDayStart(new Date()), 20)
 const TRIP = {
   trips: {
     trips: [

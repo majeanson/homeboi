@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { mockApi, seedState, type Audience, type Lang, type Surface, type Theme } from './mocks'
 import { installVvStub, openKeyboard } from './kb'
+import { localDayStart } from '../src/lib/localDay'
 import { worstRightBleed } from './overflow'
 
 // The STATE MATRIX — a declarative sweep of "the app in a state": a route, an
@@ -64,10 +65,21 @@ type Entry = {
 // « Les notes » ships with an EMPTY family-notes fixture (the behavioural specs want
 // it that way), so this entry seeds its own: the tab's whole lean brief was "maximum
 // note content per pixel", and an empty page cannot show whether we delivered it.
-const NOTE_SEED = (id: string, title: string, text: string, position: number, at = 1_700_000_000) => ({
+// Two of the three carry an AUTHOR: both lenses tint a note by author_member_id
+// (the parent row s dot, the toddler card s picture), and with every seed author-less
+// the sweep photographed three identical teal notes and called the tint reviewed.
+// A fixture that never exercises attribution hides attribution (2026-09-08).
+const NOTE_SEED = (
+  id: string,
+  title: string,
+  text: string,
+  position: number,
+  at = 1_700_000_000,
+  author: string | null = null,
+) => ({
   id,
   member_id: null,
-  author_member_id: null,
+  author_member_id: author,
   title,
   text,
   media_kind: null,
@@ -82,8 +94,8 @@ const NOTES_FIXTURE = {
     notes: [
       // Two on one day, one on another: the rows must show the date ONCE per run of
       // the same day, and print it again when the day changes.
-      NOTE_SEED('n1', 'Couture', 'kit été rouge : short en twill, doublure coton', 0),
-      NOTE_SEED('n2', 'Garderie', 'apporter les bottes de pluie lundi', 1),
+      NOTE_SEED('n1', 'Couture', 'kit été rouge : short en twill, doublure coton', 0, 1_700_000_000, 'm1'),
+      NOTE_SEED('n2', 'Garderie', 'apporter les bottes de pluie lundi', 1, 1_700_000_000, 'm2'),
       NOTE_SEED('n3', 'Épicerie', 'la marque de yogourt que Léa mange est la bleue', 2, 1_700_000_000 - 2 * 86_400),
     ],
   },
@@ -128,11 +140,14 @@ const CARNETS_FIXTURE = {
 // for « Le fil du jour » to draw the ribbon, the busy-day shape), one of them carrying
 // a note (migration 0121), an all-day row for the bucket below the ribbon, and a
 // corvée. The todos fixture already pins two items to today.
-const TODAY_MIDNIGHT = (() => {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return Math.floor(d.getTime() / 1000)
-})()
+// LOCAL midnight in the HOUSEHOLD zone — `localDayStart` pins America/Toronto, the
+// same zone `sm.config.ts` gives the browser. Node's own `setHours(0,0,0,0)` used
+// to build this, which is the machine's zone: identical here, four hours off on
+// CI's UTC runner. The route then asked for YESTERDAY, so `dayOffset !== 0` and the
+// scene rendered without its weather strip — CI screenshotted « Dimanche 6 » on a
+// Monday and baselined this entry's chrome budget (228px) against a screen the app
+// never shows. Found 2026-09-08 by comparing the CI artifact with a local run.
+const TODAY_MIDNIGHT = localDayStart(new Date())
 const DAY_FIXTURE = {
   month: {
     events: [
@@ -312,8 +327,11 @@ const MATRIX: Entry[] = [
   // 2026-09-02: budget raised 178 → 228 for the ONE deliberate chrome addition —
   // the « Journée | Repas » sub-tab row (?vue=) that split the scene's two jobs
   // (the agenda vs the meal planner); the first agenda row now sits under it.
-  { name: 'day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, content: '.day-plan__sec .act', budgetPx: 228, themes: ['day'], api: DAY_FIXTURE },
-  { name: 'day-plan-wall', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'kiosk', viewport: WALL, content: '.day-plan__sec .act', budgetPx: 228, themes: ['day'], api: DAY_FIXTURE },
+  // 244px, re-baselined 2026-09-08 against the day the app actually shows: the old
+  // 228 was measured on CI's off-by-one YESTERDAY page, which renders no weather strip
+  // (`dayOffset === 0` gates it) — 27px of real chrome that no budget was watching.
+  { name: 'day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, content: '.day-plan__sec .act', budgetPx: 244, themes: ['day'], api: DAY_FIXTURE },
+  { name: 'day-plan-wall', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'kiosk', viewport: WALL, content: '.day-plan__sec .act', budgetPx: 244, themes: ['day'], api: DAY_FIXTURE },
 
   // — THE SCENES THE SWEEP HAD NEVER OPENED. `day-plan` was found by asking what this
   //   table does NOT list (LEAN.md), and the same question turned up seventeen more:
