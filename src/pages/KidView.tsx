@@ -23,6 +23,9 @@ import { colourFor } from '../lib/things'
 // special to the locked toddler kiosk — auto-identifying the child, ordering by
 // the moment of day, and drifting back to the picker after a finished routine.
 interface Card {
+  // The parent-voice clip + photo ride ON the card (clipKey / photoKey, Wave D).
+  clipKey?: string
+  photoKey?: string
   icon: string
   label: string
   narration?: string
@@ -39,12 +42,7 @@ interface Routine {
   name: string
   timeOfDay: string | null
   cards: Card[]
-  // Parallel parent-voice clip keys (feature #17 A), one per card ('' = none →
-  // on-device TTS). Optional: older payloads predate it.
-  cardsNarration?: string[]
-  // Parallel card photo keys (feature #17 C), one per card ('' = none → the
-  // card's emoji). Optional: older payloads predate it.
-  cardsPhoto?: string[]
+  // (the parent-voice clip + photo ride ON each card: clipKey / photoKey)
   doneIdx: number[]
 }
 type RoutinesData = { routines: Routine[] }
@@ -163,7 +161,7 @@ export function KidView() {
               const doneCount = r.doneIdx.filter((i) => i >= 0 && i < total).length
               const done = total > 0 && doneCount >= total
               // A familiar-voice hint when the parent recorded any card (feature #17 A).
-              const hasVoice = (r.cardsNarration ?? []).some((k) => !!k)
+              const hasVoice = r.cards.some((c) => !!c.clipKey)
               const tint = colourFor('routine', r.color)
               return (
                 <button
@@ -211,8 +209,8 @@ export function KidView() {
                           key={i}
                           className={'kid__routine-slot' + (r.doneIdx.includes(i) ? ' is-done' : '')}
                         >
-                          {r.cardsPhoto?.[i] ? (
-                            <img className="kid__routine-thumb" src={imgUrl(r.cardsPhoto[i])} alt="" />
+                          {c.photoKey ? (
+                            <img className="kid__routine-thumb" src={imgUrl(c.photoKey)} alt="" />
                           ) : (
                             <span className="kid__routine-emoji">{c.icon || '○'}</span>
                           )}

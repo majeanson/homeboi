@@ -15,6 +15,11 @@ export interface DeckCard {
   // warm line. Templates leave it unset on purpose: the catalog already covers 🪥 and
   // 🛁 better than a duplicate string here would, and it stays in ONE place.
   tip?: string
+  // The parent-voice clip and the card photo live ON the card (PARITY Wave D,
+  // 2026-09-08) — R2 keys, '' or absent = none (the player falls back to TTS /
+  // the emoji). They used to be two side arrays kept positional to the deck.
+  clipKey?: string
+  photoKey?: string
 }
 
 interface RawTemplate {

@@ -733,8 +733,6 @@ export function DevKit() {
     { icon: '👕', label: "S'habiller" },
     { icon: '🛏️', label: 'Au lit' },
   ])
-  const [deckClips, setDeckClips] = useState<string[]>(['', '', ''])
-  const [deckPhotos, setDeckPhotos] = useState<string[]>(['', '', ''])
   function moveDragPill(from: number, to: number) {
     if (from < 0 || to < 0 || from >= dragPills.length || to >= dragPills.length) return
     setDragPills((ps) => {
@@ -3211,10 +3209,6 @@ export function DevKit() {
           <CardDeckEditor
             cards={deck}
             onChange={setDeck}
-            narration={deckClips}
-            onNarrationChange={setDeckClips}
-            photo={deckPhotos}
-            onPhotoChange={setDeckPhotos}
           />
         </Demo>
       ),

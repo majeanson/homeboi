@@ -25,11 +25,9 @@ export interface RoutineRow {
   color: string | null
   avatarPhoto: string | null
   timeOfDay: string | null
-  cards: { icon?: string }[]
-  // Parallel per-card photo keys (feature #17 C), one R2 key per card ('' = none).
-  // When set, the photo replaces the emoji in the step preview — same rule the
-  // toddler view follows, so the two surfaces never disagree.
-  cardsPhoto?: string[]
+  // A card's photo rides ON the card (photoKey, Wave D); when set it replaces the
+  // emoji in the step preview — same rule the toddler view follows.
+  cards: { icon?: string; photoKey?: string }[]
   // Today's completed step indices — already on the GET payload (from routine_runs,
   // which EMPTIES nightly, NFR-CALM-4). Drives the calm "où on est rendu" ring:
   // proportion done today, NEVER a streak/count-over-time.
@@ -141,8 +139,8 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
                 {/* A parent's photo of the real thing wins over the emoji
                     when set (feature #17 C) — the same rule the toddler
                     view follows, so both surfaces show the same picture. */}
-                {r.cardsPhoto?.[i] ? (
-                  <img className="routine-card__step-photo" src={imgUrl(r.cardsPhoto[i])} alt="" />
+                {c.photoKey ? (
+                  <img className="routine-card__step-photo" src={imgUrl(c.photoKey)} alt="" />
                 ) : (
                   c.icon || '○'
                 )}

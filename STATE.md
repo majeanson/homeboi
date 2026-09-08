@@ -287,6 +287,18 @@ firing `pagehide` for the write. The revoke test was watched fail on a planted b
 without `revokeId`. Two writes stay unasserted and are named in `REVIEW-PASS.md`: a
 member DELETE and a photo UPLOAD — the only `- [ ]` left in that file.
 
+**Then PARITY Wave D, the last queue item — and the verdict split it.** The two
+"parallel arrays" were never the same case: recipe `steps_json` is a `string[]` by
+design (inline « ## » headings, 45 readers), so its side array can only go by
+reshaping every step reader — the churn-only wave PARITY forbids, and
+`parallel-array-rule.test.ts` (Sep 3) already argues the containment; that half is a
+`[~]`. Routine cards are OBJECTS, so their two side columns (0040/0042) simply fold
+ONTO each card as `clipKey` / `photoKey` (`functions/_lib/routineCards.ts`, no DDL:
+the columns stay locked, read as a fallback for a pre-fold deck, blanked on the first
+write so a cleared key can't come back). Every client side array is gone; the demo
+sweep reads keys off the cards; the guard shrinks to recipes. Marc picked this split
+when asked. Unit-tested; e2e below.
+
 ---
 
 ## 4. What still needs improvement — consolidated and ranked

@@ -8,8 +8,9 @@
 // undefined/null) for "no media at this slot", so the array is always the same
 // length as its source and a heading row simply carries an empty slot.
 //
-// Used by: routine card deck (cards ↔ cardsNarration) and the recipe steps editor
-// (steps ↔ stepImages). See feature #17 (A + B).
+// Used by: the recipe steps editor (steps ↔ stepImages, feature #17 B). The routine
+// deck used to be the second caller; since 2026-09-08 (PARITY Wave D) a card carries
+// its own clipKey / photoKey, so nothing there is positional any more.
 
 const EMPTY = ''
 

@@ -6,7 +6,6 @@ import { useT, useLang } from '../i18n'
 import { suggestedTip } from '../lib/routineTips'
 import { usePointerDnd, DragGhost, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { useOnline } from '../lib/online'
-import { sideInsert, sideRemove, sideMove, sideSet, alignSide } from '../lib/parallelArray'
 import { imgUrl, MAX_UPLOAD_BYTES } from '../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { EditField } from './EditField'
@@ -18,35 +17,28 @@ import { Icon, InlineIcon } from './Icon'
 // handle (touch-friendly — works on the wall tablet) or the ↑/↓ buttons.
 // Controlled: the parent owns the cards array.
 //
-// Feature #17 A — per-card PARENT-VOICE narration clips. When the parent passes
-// `narration` + `onNarrationChange`, each card grows a 🎙️ control (record / play /
-// re-record / clear). `narration` is a string[] kept rigorously PARALLEL to
-// `cards` — same length, same index — so a clip never mis-attaches to the wrong
-// card across add / remove / reorder (the sync ops live in lib/parallelArray, the
-// deck just calls them on both arrays together). The clip is the parent's own
-// voice reading the card aloud for a pre-reader; the kid view plays it on tap and
-// falls back to on-device TTS when a slot is empty (or R2 is unset).
+// Feature #17 A — per-card PARENT-VOICE narration clips: each card grows a 🎙️
+// control (record / play / re-record / clear). The clip is the parent's own voice
+// reading the card aloud for a pre-reader; the kid view plays it on tap and falls
+// back to on-device TTS when there is none (or R2 is unset).
 //
-// Feature #17 C — per-card PHOTOS, the same parallel-array discipline as the
-// clips. When the parent passes `photo` + `onPhotoChange`, each card grows a 📷
-// control (add / change / remove) and the kid view shows the photo in place of
-// the emoji. `photo` is a string[] kept rigorously PARALLEL to `cards` too, so a
-// photo never mis-attaches across add / remove / reorder — every deck mutation
-// moves cards, clips, and photos together.
+// Feature #17 C — per-card PHOTOS: each card grows a 📷 control (add / change /
+// remove) and the kid view shows the photo in place of the emoji.
+//
+// Both keys live ON the card (`clipKey` / `photoKey`, PARITY Wave D 2026-09-08).
+// They used to be two side arrays kept positional to the deck, with every deck
+// mutation re-indexing three arrays in lockstep through lib/parallelArray; a
+// card that carries its own media can be added, removed or reordered like any
+// other object and nothing can drift. `media` = false hides both controls (a
+// caller that has no R2 path for them).
 export function CardDeckEditor({
   cards,
   onChange,
-  narration,
-  onNarrationChange,
-  photo,
-  onPhotoChange,
+  media = true,
 }: {
   cards: DeckCard[]
   onChange: (cards: DeckCard[]) => void
-  narration?: string[]
-  onNarrationChange?: (narration: string[]) => void
-  photo?: string[]
-  onPhotoChange?: (photo: string[]) => void
+  media?: boolean
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -63,46 +55,23 @@ export function CardDeckEditor({
   // R2 photo storage off (a photo upload 503'd) → hide every photo control too;
   // the kid view falls back to the card's emoji.
   const [photoOff, setPhotoOff] = useState(false)
-  const clips = onNarrationChange ? alignSide(narration, cards.length) : null
-  const photos = onPhotoChange ? alignSide(photo, cards.length) : null
-
-  // Mutate cards and the parallel media arrays TOGETHER so an index never drifts.
-  // A `null` side means "leave that array untouched" (a clip-only edit doesn't
-  // disturb photos and vice-versa); a deck change passes BOTH so they ride along.
-  const commit = (nextCards: DeckCard[], nextClips: string[] | null, nextPhotos: string[] | null) => {
-    onChange(nextCards)
-    if (nextClips && onNarrationChange) onNarrationChange(nextClips)
-    if (nextPhotos && onPhotoChange) onPhotoChange(nextPhotos)
-  }
   const update = (i: number, patch: Partial<DeckCard>) =>
     onChange(cards.map((c, idx) => (idx === i ? { ...c, ...patch } : c)))
   const remove = (i: number) => {
-    commit(
-      cards.filter((_, idx) => idx !== i),
-      clips ? sideRemove(clips, i) : null,
-      photos ? sideRemove(photos, i) : null,
-    )
+    onChange(cards.filter((_, idx) => idx !== i))
     setPaletteFor(null)
   }
-  const add = () =>
-    commit(
-      [...cards, { icon: '⭐', label: '' }],
-      clips ? sideInsert(clips) : null,
-      photos ? sideInsert(photos) : null,
-    )
+  const add = () => onChange([...cards, { icon: '⭐', label: '' }])
   const move = (from: number, to: number) => {
     if (to < 0 || to >= cards.length || from === to) return
     const next = [...cards]
     const [m] = next.splice(from, 1)
     next.splice(to, 0, m)
-    commit(next, clips ? sideMove(clips, from, to) : null, photos ? sideMove(photos, from, to) : null)
+    onChange(next)
   }
-  const setClip = (i: number, key: string) => {
-    if (clips) commit(cards, sideSet(clips, i, key), null)
-  }
-  const setPhoto = (i: number, key: string) => {
-    if (photos) commit(cards, null, sideSet(photos, i, key))
-  }
+  // '' clears: the key is dropped from the card so the saved deck stays clean.
+  const setClip = (i: number, key: string) => update(i, { clipKey: key || undefined })
+  const setPhoto = (i: number, key: string) => update(i, { photoKey: key || undefined })
 
   // Reorder by dragging a card's grip onto another card (commit on drop, not a
   // live swap) — the same pointer DnD the meal plan uses, so it works on touch.
@@ -149,7 +118,7 @@ export function CardDeckEditor({
                   </span>
                   <button
                     type="button"
-                    className={'deck__emoji' + (photos?.[i] ? ' deck__emoji--photo' : '')}
+                    className={'deck__emoji' + (card.photoKey ? ' deck__emoji--photo' : '')}
                     onClick={() => setPaletteFor(paletteFor === i ? null : i)}
                     aria-label={t.operator.emojiPick}
                   >
@@ -157,8 +126,8 @@ export function CardDeckEditor({
                         shows exactly what the kid + parent surfaces will show
                         (feature #17 C). Tapping still opens the emoji palette —
                         the emoji is the fallback when no photo is attached. */}
-                    {photos?.[i] ? (
-                      <img className="deck__emoji-photo" src={imgUrl(photos[i])} alt="" />
+                    {card.photoKey ? (
+                      <img className="deck__emoji-photo" src={imgUrl(card.photoKey)} alt="" />
                     ) : (
                       card.icon || '⭐'
                     )}
@@ -199,9 +168,9 @@ export function CardDeckEditor({
             >
               <InlineIcon name="lightbulb-bold" size={15} /> {t.routines.tip}
             </button>
-            {clips && !audioOff && (
+            {media && !audioOff && (
                 <ClipControl
-                  clipKey={clips[i]}
+                  clipKey={card.clipKey ?? ''}
                   cardLabel={card.label || card.icon}
                   onUploaded={(key) => setClip(i, key)}
                   onClear={() => setClip(i, '')}
@@ -211,9 +180,9 @@ export function CardDeckEditor({
               {/* A photo (or a drawing — a drawn step IS the card photo) replaces the
                   emoji on the kid surface, so a pre-reader spots the real toothbrush
                   / their own drawing, not a generic glyph. */}
-              {photos && !photoOff && (
+              {media && !photoOff && (
                 <PhotoControl
-                  photoKey={photos[i]}
+                  photoKey={card.photoKey ?? ''}
                   onUploaded={(key) => setPhoto(i, key)}
                   onClear={() => setPhoto(i, '')}
                   onPhotoOff={() => setPhotoOff(true)}

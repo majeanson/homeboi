@@ -7,7 +7,6 @@ import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from '../../lib/routineTod'
-import { alignSide } from '../../lib/parallelArray'
 import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
@@ -38,10 +37,8 @@ export interface RoutineInit {
   cards?: { icon: string; label: string; narration?: string; seconds?: number; tip?: string }[]
   // Parallel parent-voice clip keys (feature #17 A), one R2 key per card
   // ('' = none). Same length as cards; prefills the deck's recorded clips on edit.
-  cardsNarration?: string[]
   // Parallel card photo keys (feature #17 C), one R2 key per card ('' = none).
   // Same length as cards; prefills the deck's attached photos on edit.
-  cardsPhoto?: string[]
 }
 
 export function RoutineForm({
@@ -58,7 +55,7 @@ export function RoutineForm({
   // Pre-fill a NEW routine's deck (create mode only) — e.g. a fridge drawing turned
   // into the first card's photo (#14 → #17 C, see lib/drawingToRoutine). Ignored
   // when `value` is set (that's edit/PATCH mode).
-  seed?: { cards: DeckCard[]; cardsPhoto: string[]; name?: string } | null
+  seed?: { cards: DeckCard[]; name?: string } | null
   onSaved: () => void
   onCancel?: () => void
   // Edit mode only: a delete affordance so a routine can be removed from the same
@@ -84,19 +81,8 @@ export function RoutineForm({
       seed?.cards ??
       [],
   )
-  // Parallel parent-voice clip keys (feature #17 A), kept rigorously the SAME
-  // length as `cards` — CardDeckEditor mutates both arrays together on every
-  // add/remove/reorder. Seed (and pad) from the loaded routine so an edit keeps
-  // its recorded clips; a brand-new routine starts all-empty.
-  const [cardsNarration, setCardsNarration] = useState<string[]>(() =>
-    alignSide(value?.cardsNarration, value?.cards?.length ?? 0),
-  )
-  // Parallel card photo keys (feature #17 C), kept the SAME length as `cards` —
-  // CardDeckEditor mutates this array alongside cards + clips on every
-  // add/remove/reorder. Seeded (and padded) from the loaded routine on edit.
-  const [cardsPhoto, setCardsPhoto] = useState<string[]>(() =>
-    value ? alignSide(value.cardsPhoto, value.cards?.length ?? 0) : alignSide(seed?.cardsPhoto, seed?.cards?.length ?? 0),
-  )
+  // A card's clip and photo live ON the card (clipKey / photoKey, Wave D) — the
+  // loaded deck already carries them; nothing to seed or keep aligned here.
   // The moment-of-day cue (null = anytime). Orders the kid view; never a gate.
   const initTod = isRoutineTod(value?.timeOfDay) ? value?.timeOfDay : null
   const [tod, setTod] = useState<RoutineTod | null>(initTod)
@@ -108,11 +94,8 @@ export function RoutineForm({
     setMemberIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
   }
   function applyTemplate(tpl: { name: string; tod: RoutineTod | null; cards: DeckCard[] }) {
+    // A template's cards carry no recorded clips or photos.
     setCards(tpl.cards.map((c) => ({ ...c })))
-    // A template's cards carry no recorded clips or photos — reset both parallel
-    // arrays to a fresh all-empty set of the new length so they never drift.
-    setCardsNarration(alignSide(undefined, tpl.cards.length))
-    setCardsPhoto(alignSide(undefined, tpl.cards.length))
     // The template knows its moment (Matin → morning, Dodo → evening).
     setTod(tpl.tod)
     if (!name.trim()) {
@@ -123,18 +106,16 @@ export function RoutineForm({
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
     if ((!editing && !memberIds.length) || !name.trim() || busy) return
-    // Zip the deck with its parallel clip keys BEFORE filtering, so dropping an
-    // empty card drops its clip slot too — cards and cardsNarration stay aligned
-    // index-for-index in the saved payload (feature #17 A). Empty cards never had
-    // a clip, so nothing is lost.
+    // An empty card is dropped with whatever it carried (it never had a clip or a
+    // photo worth keeping: those ride ON the card, so nothing can mis-attach).
     const kept = cards
-      .map((c, i) => ({
+      .map((c) => ({
         icon: c.icon,
         label: c.label.trim(),
         seconds: c.seconds,
         tip: c.tip?.trim(),
-        clip: cardsNarration[i] ?? '',
-        photo: cardsPhoto[i] ?? '',
+        clipKey: c.clipKey,
+        photoKey: c.photoKey,
       }))
       .filter((c) => c.label || c.icon)
     const payload = kept.map((c) => ({
@@ -147,9 +128,9 @@ export function RoutineForm({
       // here is silently dropped on save — the timer, and now the « truc ».
       ...(c.seconds ? { seconds: c.seconds } : {}),
       ...(c.tip ? { tip: c.tip } : {}),
+      ...(c.clipKey ? { clipKey: c.clipKey } : {}),
+      ...(c.photoKey ? { photoKey: c.photoKey } : {}),
     }))
-    const narrationPayload = kept.map((c) => c.clip)
-    const photoPayload = kept.map((c) => c.photo)
     setBusy(true)
     setErr(false)
     try {
@@ -160,8 +141,6 @@ export function RoutineForm({
             routineId: value!.id,
             name: name.trim(),
             cards: payload,
-            cardsNarration: narrationPayload,
-            cardsPhoto: photoPayload,
             timeOfDay: tod ?? null,
           },
           affectedKeys: [ROUTINES_KEY],
@@ -173,16 +152,12 @@ export function RoutineForm({
             memberIds,
             name: name.trim(),
             cards: payload,
-            cardsNarration: narrationPayload,
-            cardsPhoto: photoPayload,
             timeOfDay: tod ?? undefined,
           },
           affectedKeys: [ROUTINES_KEY],
         })
         setName('')
         setCards([])
-        setCardsNarration([])
-        setCardsPhoto([])
         setMemberIds([])
         setTod(null)
       }
@@ -254,17 +229,9 @@ export function RoutineForm({
         </div>
       )}
 
-      {/* The deck + its per-card parent-voice clips (feature #17 A). The two
-          arrays are mutated together inside CardDeckEditor so a clip never drifts
-          off its card; the control hides itself where R2 audio is unset. */}
-      <CardDeckEditor
-        cards={cards}
-        onChange={setCards}
-        narration={cardsNarration}
-        onNarrationChange={setCardsNarration}
-        photo={cardsPhoto}
-        onPhotoChange={setCardsPhoto}
-      />
+      {/* The deck, each card carrying its own parent-voice clip + photo (feature
+          #17 A/C); the media controls hide themselves where R2 is unset. */}
+      <CardDeckEditor cards={cards} onChange={setCards} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       {/* Delete (edit mode only) recedes quietly to the footer's separated slot — the

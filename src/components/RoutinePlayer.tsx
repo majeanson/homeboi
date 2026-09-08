@@ -52,6 +52,8 @@ interface PlayerCard {
   // card's emoji (lib/routineTips), because a parent knows the real one. Stored inline
   // in cards_json, like `seconds` — no migration.
   tip?: string
+  clipKey?: string
+  photoKey?: string
 }
 export interface PlayerRoutine {
   id: string
@@ -63,10 +65,7 @@ export interface PlayerRoutine {
   avatarPhoto?: string | null
   name: string
   cards: PlayerCard[]
-  // Parallel parent-voice clip keys (feature #17 A), one per card ('' = none → TTS).
-  cardsNarration?: string[]
-  // Parallel card photo keys (feature #17 C), one per card ('' = none → emoji).
-  cardsPhoto?: string[]
+  // (the parent-voice clip + photo ride ON each card: clipKey / photoKey)
   doneIdx: number[]
   // Server-persisted per-step countdown state (card idx → {endsAt}|{left}), so a
   // started timer keeps real wall-clock time across leaving and reopening the app.
@@ -211,7 +210,7 @@ export function RoutinePlayer({
     if (idx < 0 || idx >= routine.cards.length) return
     const text = routine.cards[idx].narration ?? routine.cards[idx].label
     flashSpeaking(idx)
-    playNarration(routine.cardsNarration?.[idx], text, (raw) => speak(raw, undefined, { onEnd: endSpeaking }))
+    playNarration(routine.cards[idx].clipKey, text, (raw) => speak(raw, undefined, { onEnd: endSpeaking }))
   }
   // A short, gentle pulse when a step settles — the same one the step Countdown gives
   // at zero, so the app feels the same in the hand. Guarded: no vibration API is fine.
@@ -481,11 +480,11 @@ export function RoutinePlayer({
                     key={i}
                     type="button"
                     className="tdl-recap__step"
-                    onClick={() => playNarration(routine.cardsNarration?.[i], c.narration ?? c.label, speak)}
+                    onClick={() => playNarration(c.clipKey, c.narration ?? c.label, speak)}
                     aria-label={c.label}
                   >
-                    {routine.cardsPhoto?.[i] ? (
-                      <img className="tdl-recap__photo" src={imgUrl(routine.cardsPhoto[i])} alt="" aria-hidden="true" />
+                    {c.photoKey ? (
+                      <img className="tdl-recap__photo" src={imgUrl(c.photoKey)} alt="" aria-hidden="true" />
                     ) : (
                       <span aria-hidden="true">{c.icon || '○'}</span>
                     )}
@@ -548,8 +547,8 @@ export function RoutinePlayer({
                 onClick={() => readAloud(curIdx)}
                 aria-label={stepLabel(curIdx, t.kid.stepNow)}
               >
-                {routine.cardsPhoto?.[curIdx] ? (
-                  <img className="tdl-illus-photo" src={imgUrl(routine.cardsPhoto[curIdx])} alt="" />
+                {routine.cards[curIdx]?.photoKey ? (
+                  <img className="tdl-illus-photo" src={imgUrl(routine.cards[curIdx].photoKey!)} alt="" />
                 ) : (
                   <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
                 )}
@@ -608,8 +607,8 @@ export function RoutinePlayer({
                       aria-label={armed ? t.kid.backTo(c.label) : stepLabel(k, word)}
                     >
                       <span className="tdl-step__pic">
-                        {routine.cardsPhoto?.[k] ? (
-                          <img src={imgUrl(routine.cardsPhoto[k])} alt="" />
+                        {routine.cards[k]?.photoKey ? (
+                          <img src={imgUrl(routine.cards[k].photoKey!)} alt="" />
                         ) : (
                           <span className="tdl-step__emoji">{c.icon || '○'}</span>
                         )}

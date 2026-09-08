@@ -31,7 +31,7 @@ async function copyStepPhoto(srcKey: string): Promise<string> {
 // photo, so a toddler can "cook" the recipe as a read-aloud picture routine. The
 // builder still asks WHO it's for. Reuses the same seed channel as
 // lib/drawingToRoutine (router state → RoutineFormPage → RoutineForm), so no new
-// route, store, or migration — the routine's existing cardsPhoto field carries it.
+// route, store, or migration — each seeded card carries its photoKey.
 export function useRecipeToRoutine() {
   const nav = useNavigate()
   return async (recipe: Recipe) => {
@@ -41,16 +41,16 @@ export function useRecipeToRoutine() {
     const real = steps
       .map((step, i) => ({ step, i }))
       .filter(({ step }) => step.trim() && !isSectionHeading(step))
-    const cards = real.map(({ step }) => ({ icon: '👩‍🍳', label: step.trim() }))
-    // Copy each step's photo (if any) to a fresh, independent key — in parallel;
-    // '' where the step has none. Empty keys leave the card on its emoji.
-    const cardsPhoto = await Promise.all(
-      real.map(({ i }) => {
+    // Copy each step's photo (if any) to a fresh, independent key, ON its card;
+    // a step without one leaves the card on its emoji.
+    const cards = await Promise.all(
+      real.map(async ({ step, i }) => {
         const src = recipe.stepImages?.[i]
-        return src ? copyStepPhoto(src) : Promise.resolve('')
+        const photoKey = src ? await copyStepPhoto(src) : ''
+        return { icon: '👩‍🍳', label: step.trim(), ...(photoKey ? { photoKey } : {}) }
       }),
     )
-    const seed: RoutineSeed = { name: `👩‍🍳 ${recipe.title}`, cards, cardsPhoto }
+    const seed: RoutineSeed = { name: `👩‍🍳 ${recipe.title}`, cards }
     nav('/routine/new', { state: { routineSeed: seed } })
   }
 }

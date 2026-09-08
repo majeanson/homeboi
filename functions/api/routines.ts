@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
 import { isValidR2Key } from '../_lib/validate'
+import { foldCardMedia, cardMediaKeys, type RoutineCard } from '../_lib/routineCards'
 
 // Kid-view visual routines. GET returns each routine with TODAY's completion
 // set (which resets daily — the day empties, NFR-CALM-4). "Today" is the
@@ -12,20 +13,8 @@ import { isValidR2Key } from '../_lib/validate'
 // routine (operator). PATCH toggles one card done for today (kiosk-friendly:
 // the three-year-old taps it) — or, operator-only, retags the routine's
 // time-of-day cue.
-interface Card {
-  icon: string
-  label: string
-  narration?: string
-  // Optional per-step countdown in seconds (e.g. 120 = a 2-minute teeth brush).
-  // The player offers a tap-to-start timer; it's a calm aid, never a gate. A
-  // missing/0 value means "no timer". Stored inline in cards_json (no migration).
-  seconds?: number
-  // Optional « truc » — the trick the child's companion speaks for this step when
-  // tapped. The parent's own words; beats the built-in catalog keyed on the card's
-  // emoji (src/lib/routineTips). Absent = fall back to that catalog, then to a warm
-  // line. Stored inline in cards_json, exactly like `seconds` — no migration.
-  tip?: string
-}
+// The card shape (with its media ON the card — see _lib/routineCards).
+type Card = RoutineCard
 
 const isNumber = (v: unknown): v is number => typeof v === 'number'
 
@@ -35,19 +24,34 @@ const isNumber = (v: unknown): v is number => typeof v === 'number'
 // or dropped — it gets SPOKEN aloud and drawn in a bubble, so an unbounded string is
 // both a wall of text on a tablet and a very long thing to say to a three-year-old).
 // Every other field (icon / label / narration) passes through unchanged, as it always has.
+// The two media keys ON the card (clipKey / photoKey, Wave D) are validated as
+// R2-key-shaped tokens and dropped otherwise, so a client can't stuff junk in.
 const MAX_TIMER = 3600 // an hour: a sane ceiling — no routine step needs more
 const MAX_TIP = 200 // a trick is one sentence a child can hold, not a paragraph
 function sanitizeCards(cards: Card[]): Card[] {
   return cards.map((c) => {
-    const { seconds, tip, ...rest } = c ?? ({} as Card)
+    const { seconds, tip, clipKey, photoKey, ...rest } = c ?? ({} as Card)
     const okSecs = typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0
     const trimmed = typeof tip === 'string' ? tip.trim().slice(0, MAX_TIP) : ''
     return {
       ...rest,
       ...(okSecs ? { seconds: Math.min(Math.round(seconds as number), MAX_TIMER) } : {}),
       ...(trimmed ? { tip: trimmed } : {}),
+      ...(isValidR2Key(clipKey) ? { clipKey } : {}),
+      ...(isValidR2Key(photoKey) ? { photoKey } : {}),
     }
   })
+}
+// Legacy payload shape: a client from before Wave D sends the two media arrays
+// beside the deck. Fold them onto the cards so the one write path serves both.
+function foldLegacyArrays(cards: Card[], narration: unknown, photo: unknown): Card[] {
+  const n = Array.isArray(narration) ? narration : []
+  const p = Array.isArray(photo) ? photo : []
+  return cards.map((c, i) => ({
+    ...c,
+    ...(c.clipKey === undefined && isValidR2Key(n[i]) ? { clipKey: n[i] as string } : {}),
+    ...(c.photoKey === undefined && isValidR2Key(p[i]) ? { photoKey: p[i] as string } : {}),
+  }))
 }
 // Per-step countdown timer state, persisted on today's run row so a tap-to-start
 // timer survives leaving + reopening the app. A RUNNING (or just-finished) timer is
@@ -91,19 +95,13 @@ const todOrNull = (v: unknown): string | null =>
 // reads or writes them any more (and no handler mints an `rsf_` blob), so they
 // simply sit NULL. A future migration may drop them.
 
-// Per-card media key arrays kept PARALLEL to cards: side[i] is the R2 key for
-// card i, or '' when that card has no media. Two of them today — parent-voice
-// narration clips (feature #17 A, migration 0040) and card photos (feature #17 C,
-// migration 0042) — share this one normalizer. We keep each the SAME LENGTH as
-// the deck so the kid view can index it positionally — pad/trim to `count` and
-// validate each entry is an R2-key-shaped token ('' otherwise) so a client can't
-// stuff junk into the column. Defensive on read: a bad/short row reads as all-''.
-function normalizeKeys(v: unknown, count: number): string[] {
-  const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
-  const out: string[] = []
-  for (let i = 0; i < count; i++) out.push(isValidR2Key(src[i]) ? (src[i] as string) : '')
-  return out
-}
+// Compat for a client from before Wave D that still reads the two positional
+// arrays: derived from the cards, never stored. Drop once every device has
+// refreshed past 2026-09-08.
+const sideArrays = (cards: readonly Card[]) => ({
+  cardsNarration: cards.map((c) => c.clipKey ?? ''),
+  cardsPhoto: cards.map((c) => c.photoKey ?? ''),
+})
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
@@ -147,7 +145,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const timersByRoutine = new Map(runs.results.map((r) => [r.routine_id, r.timers_json]))
 
   const out = routines.results.map((r) => {
-    const cards = parseJsonArray<Card>(r.cards_json)
+    // The media rides ON each card (clipKey / photoKey); the two legacy side
+    // columns are only a fallback for a deck saved before Wave D.
+    const cards = foldCardMedia(r.cards_json, r.cards_narration_json, r.cards_photo_json)
     return {
       id: r.id,
       memberId: r.member_id,
@@ -161,10 +161,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       // to progress (see lib/companions). Additive; older clients ignore it.
       companion: r.companion,
       cards,
-      // Parallel parent-voice clips, one R2 key per card ('' = none → TTS).
-      cardsNarration: normalizeKeys(r.cards_narration_json, cards.length),
-      // Parallel card photos, one R2 key per card ('' = none → the card's emoji).
-      cardsPhoto: normalizeKeys(r.cards_photo_json, cards.length),
+      // Compat only (derived from the cards) — see sideArrays.
+      ...sideArrays(cards),
       doneIdx: parseJsonArray<number>(doneByRoutine.get(r.id), isNumber),
       // Per-step countdown timers (card idx → {endsAt}|{left}); {} when none started.
       timers: sanitizeTimers(timersByRoutine.get(r.id)),
@@ -194,12 +192,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .filter((m): m is string => typeof m === 'string' && m.length > 0)
     .slice(0, 8)
   if (!memberIds.length || !body?.name?.trim()) return badRequest('memberId(s) + nom requis.')
-  const cards = sanitizeCards((body.cards ?? []).slice(0, 12))
+  const cards = sanitizeCards(foldLegacyArrays((body.cards ?? []).slice(0, 12), body.cardsNarration, body.cardsPhoto))
   const name = body.name.trim()
   const cardsJson = JSON.stringify(cards)
-  // Keep the clip + photo arrays parallel + same-length as the deck (feature #17 A/C).
-  const narrationJson = JSON.stringify(normalizeKeys(body.cardsNarration, cards.length))
-  const photoJson = JSON.stringify(normalizeKeys(body.cardsPhoto, cards.length))
+  // The media lives ON the cards now; the two legacy side columns are written
+  // blank so a read never falls back to them for this row.
+  const narrationJson = '[]'
+  const photoJson = '[]'
   const tod = todOrNull(body.timeOfDay)
   const ts = nowSec()
   const ids = memberIds.map(() => newId())
@@ -280,37 +279,27 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       sets.push('name = ?')
       binds.push(body.name.trim())
     }
-    // The deck whose length governs the parallel clip array: the freshly sent
-    // cards when editing them, else the routine's current deck.
-    const newCards = Array.isArray(body.cards) ? sanitizeCards(body.cards.slice(0, 12)) : null
-    const deckLen = (newCards ?? parseJsonArray<Card>(owns.cards_json)).length
-    if (newCards) {
-      sets.push('cards_json = ?')
-      binds.push(JSON.stringify(newCards))
+    // The current deck, media folded on (side columns as fallback for an old row).
+    const prevCards = foldCardMedia(owns.cards_json, owns.cards_narration_json, owns.cards_photo_json)
+    // The next deck: freshly sent cards (a legacy client's side arrays folded on),
+    // else the current one with a legacy media-only edit folded on. Either way the
+    // media rides ON the cards, and the two side columns are written blank.
+    let nextCards: Card[] | null = null
+    if (Array.isArray(body.cards)) nextCards = sanitizeCards(foldLegacyArrays(body.cards.slice(0, 12), body.cardsNarration, body.cardsPhoto))
+    else if (body.cardsNarration !== undefined || body.cardsPhoto !== undefined) {
+      const stripped = prevCards.map((c) => {
+        const { clipKey, photoKey, ...rest } = c
+        return {
+          ...rest,
+          ...(body.cardsNarration === undefined && clipKey ? { clipKey } : {}),
+          ...(body.cardsPhoto === undefined && photoKey ? { photoKey } : {}),
+        } as Card
+      })
+      nextCards = sanitizeCards(foldLegacyArrays(stripped, body.cardsNarration, body.cardsPhoto))
     }
-    // Clips: a fresh array re-aligns to the deck; otherwise re-pad the existing
-    // one to the (possibly new) deck length so a card add/remove never desyncs.
-    // Same free-the-dropped-blob discipline as photos below — clearing/swapping/
-    // removing a card's voice clip must free its R2 audio, or it leaks.
-    const prevNarration = normalizeKeys(owns.cards_narration_json, parseJsonArray<Card>(owns.cards_json).length)
-    let nextNarration: string[] | null = null
-    if (body.cardsNarration !== undefined) nextNarration = normalizeKeys(body.cardsNarration, deckLen)
-    else if (newCards) nextNarration = normalizeKeys(owns.cards_narration_json, deckLen)
-    if (nextNarration) {
-      sets.push('cards_narration_json = ?')
-      binds.push(JSON.stringify(nextNarration))
-    }
-    // Photos: same alignment discipline as the clips above (feature #17 C). We
-    // resolve the new key list now (when the edit touches it) so any photo no
-    // longer referenced can be freed from R2 after the write — a swapped or
-    // removed card photo would otherwise leak its blob.
-    const prevPhotos = normalizeKeys(owns.cards_photo_json, parseJsonArray<Card>(owns.cards_json).length)
-    let nextPhotos: string[] | null = null
-    if (body.cardsPhoto !== undefined) nextPhotos = normalizeKeys(body.cardsPhoto, deckLen)
-    else if (newCards) nextPhotos = normalizeKeys(owns.cards_photo_json, deckLen)
-    if (nextPhotos) {
-      sets.push('cards_photo_json = ?')
-      binds.push(JSON.stringify(nextPhotos))
+    if (nextCards) {
+      sets.push('cards_json = ?', 'cards_narration_json = ?', 'cards_photo_json = ?')
+      binds.push(JSON.stringify(nextCards), '[]', '[]')
     }
     if ('timeOfDay' in body) {
       sets.push('time_of_day = ?')
@@ -321,16 +310,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare(`UPDATE routines SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`)
       .bind(...binds)
       .run()
-    // Free any card photo this edit dropped (best-effort, mirrors the recipe
-    // step-image cleanup). Only when the edit actually resolved a new photo list.
-    if (ctx.env.PHOTOS && nextPhotos) {
-      const kept = new Set(nextPhotos)
-      for (const k of prevPhotos) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
-    }
-    // Same for narration clips — free any voice clip this edit dropped.
-    if (ctx.env.PHOTOS && nextNarration) {
-      const kept = new Set(nextNarration)
-      for (const k of prevNarration) if (k && !kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
+    // Free every clip or photo this edit dropped (best-effort, mirrors the recipe
+    // step-image cleanup) — a swapped, cleared or removed card's blob would leak.
+    if (ctx.env.PHOTOS && nextCards) {
+      const kept = new Set(cardMediaKeys(nextCards))
+      for (const k of cardMediaKeys(prevCards)) if (!kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
     }
     return ok({ ok: true })
   }
@@ -407,9 +391,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
       .bind(body.id, actor.householdId)
       .first<{ cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
     if (owns) {
-      const cards = parseJsonArray<Card>(owns.cards_json)
-      for (const key of normalizeKeys(owns.cards_narration_json, cards.length)) await deleteR2Blob(ctx.env.PHOTOS, key)
-      for (const key of normalizeKeys(owns.cards_photo_json, cards.length)) await deleteR2Blob(ctx.env.PHOTOS, key)
+      for (const key of cardMediaKeys(foldCardMedia(owns.cards_json, owns.cards_narration_json, owns.cards_photo_json)))
+        await deleteR2Blob(ctx.env.PHOTOS, key)
     }
   }
   // routine_runs.routine_id FK-references this routine, so D1 blocks the delete

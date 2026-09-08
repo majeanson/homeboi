@@ -201,6 +201,23 @@ async function collectMediaKeys(env: Env, householdId: string): Promise<string[]
       .all<Record<string, string | null>>()
     for (const row of results) for (const c of columns) if (row[c]) keys.add(row[c] as string)
   }
+  // Keys ON JSON objects: routine cards carry clipKey / photoKey (Wave D) — the two
+  // cards_*_json side columns above still cover a deck saved before the fold.
+  {
+    const { results } = await env.DB.prepare('SELECT cards_json AS v FROM routines WHERE household_id = ?')
+      .bind(householdId)
+      .all<{ v: string }>()
+    for (const row of results) {
+      try {
+        for (const c of JSON.parse(row.v) as { clipKey?: unknown; photoKey?: unknown }[]) {
+          if (typeof c?.clipKey === 'string' && c.clipKey) keys.add(c.clipKey)
+          if (typeof c?.photoKey === 'string' && c.photoKey) keys.add(c.photoKey)
+        }
+      } catch {
+        /* malformed JSON — nothing to free */
+      }
+    }
+  }
   for (const [table, column] of MEDIA_JSON_COLUMNS) {
     const { results } = await env.DB.prepare(
       `SELECT ${column} AS v FROM ${table} WHERE household_id = ? AND ${column} IS NOT NULL`,

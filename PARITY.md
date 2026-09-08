@@ -886,7 +886,25 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         **DONE — mig 0087.**
   - [x] `notes.dismissed_at`: **keep + commented** (sanctioned distinct semantic,
         like `carnets.archived_at`) — not a rename target.
-  - [ ] media parallel arrays → trio. **Halved on inspection, 2026-08-28** — the four
+  - [x] **The routine deck — DONE 2026-09-08.** A card is a JSON object, so its
+        clip and photo now ride ON it (`cards_json[i].clipKey` / `.photoKey`,
+        `functions/_lib/routineCards.ts`). No DDL: the two side columns (0040/0042)
+        stay filename-locked, are read only as a fallback for a deck saved before
+        (`foldCardMedia`), and go blank on the first write so a cleared key can never
+        be resurrected. Client side arrays gone (`CardDeckEditor`, `RoutineForm`,
+        the player, the kid view, both seeds, the share import); the demo sweep reads
+        keys off the cards; `parallel-array-rule.test.ts` shrinks to recipes.
+        Unit-tested (`routineCards.test.ts`); the GET still emits the two arrays
+        DERIVED for a not-yet-refreshed client — drop after 2026-09-08 + a week.
+  - [~] **The recipe steps — reviewed and parked, 2026-09-08.** `steps_json` is a
+        `string[]` BY DESIGN (inline « ## » section headings; 45 readers + 11
+        heading-aware iterators), so `steps_images_json` can only stop being
+        positional by reshaping every step reader — the churn-only wave this file
+        forbids. It is CONTAINED instead: the sync ops live once in
+        `lib/parallelArray.ts` (unit-tested), the server re-aligns on every write
+        (`normalizeStepImages`), and `parallel-array-rule.test.ts` fails the build
+        on a writer that bypasses the helper. Marc's call when asked.
+  - [x] ~~media parallel arrays → trio.~~ **Halved on inspection, 2026-08-28** — the four
         names are three different shapes, and two of them are correct as they stand:
         - **REAL, and the anti-pattern the item means — positional arrays indexed by
           another array's position.** `recipes.steps_images_json` is parallel to

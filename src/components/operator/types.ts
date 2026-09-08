@@ -64,13 +64,9 @@ export interface Routine {
   timeOfDay: string | null
   // Present in the routines GET payload; needed so the edit form can prefill the
   // existing card deck (the Settings list still only renders name/member/tod).
+  // Each card carries its own clip + photo (clipKey / photoKey, Wave D) — the
+  // edit form prefills straight from the deck.
   cards?: RoutineCard[]
-  // Parallel parent-voice clip keys, one R2 key per card ('' = none → TTS).
-  // Same length as cards; lets the edit form prefill recorded clips (feature #17 A).
-  cardsNarration?: string[]
-  // Parallel card photo keys, one R2 key per card ('' = none → emoji). Same
-  // length as cards; lets the edit form prefill attached photos (feature #17 C).
-  cardsPhoto?: string[]
 }
 export interface EventRow {
   id: string

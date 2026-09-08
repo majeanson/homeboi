@@ -222,11 +222,13 @@ export interface RoutineSnapshotSource {
   name: string
   timeOfDay: string | null
   cards: unknown // [{ icon, label, seconds?, ... }]
-  cardsPhoto: unknown // parallel R2-key array (or '')
+  cardsPhoto?: unknown // parallel R2-key array (or '')
 }
 
 export function buildRoutineSnapshot(src: RoutineSnapshotSource): RoutineSharePayload {
   const rawCards = Array.isArray(src.cards) ? src.cards : []
+  // Legacy callers may still pass the positional photo array; a card's own
+  // photoKey (Wave D) wins when present.
   const rawPhotos = Array.isArray(src.cardsPhoto) ? src.cardsPhoto : []
   const cards: RoutineShareCard[] = rawCards.slice(0, 12).map((c, i) => {
     const o = (c ?? {}) as Record<string, unknown>
@@ -236,7 +238,7 @@ export function buildRoutineSnapshot(src: RoutineSnapshotSource): RoutineSharePa
     const card: RoutineShareCard = {
       icon: s(o.icon, 40),
       label: s(o.label, 80),
-      photoKey: isR2(rawPhotos[i]) ? (rawPhotos[i] as string) : '',
+      photoKey: isR2(o.photoKey) ? (o.photoKey as string) : isR2(rawPhotos[i]) ? (rawPhotos[i] as string) : '',
     }
     if (secs) card.seconds = secs
     return card

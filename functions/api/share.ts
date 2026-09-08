@@ -11,6 +11,7 @@ import {
   remapSnapshotBlobKeys,
   type ShareKind,
 } from '../_lib/shareSnapshots'
+import { foldCardMedia } from '../_lib/routineCards'
 import { countLiveShares, insertShare, listLiveShares, readLiveShare, revokeShareById, MAX_SHARES } from '../_lib/shareStore'
 import { materializeFamilyShare } from '../_lib/familyShare'
 
@@ -117,17 +118,18 @@ async function buildContentShare(
   // routine
   if (!isStr(body.routineId)) return null
   const rt = await env.DB.prepare(
-    'SELECT name, time_of_day, cards_json, cards_photo_json FROM routines WHERE id = ? AND household_id = ?',
+    'SELECT name, time_of_day, cards_json, cards_narration_json, cards_photo_json FROM routines WHERE id = ? AND household_id = ?',
   )
     .bind(body.routineId, hh)
-    .first<{ name: string; time_of_day: string | null; cards_json: string; cards_photo_json: string | null }>()
+    .first<{ name: string; time_of_day: string | null; cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
   if (!rt) return null
+  // The photo rides ON each card (Wave D); the fold reads the legacy side column
+  // for a deck saved before. Narration clips deliberately not shared — a parent's
+  // voice isn't shared (v1): the snapshot builder only reads photoKey.
   const built = buildRoutineSnapshot({
     name: rt.name,
     timeOfDay: rt.time_of_day,
-    cards: parseJsonArray<unknown>(rt.cards_json),
-    cardsPhoto: parseJsonArray<string>(rt.cards_photo_json, isStr),
-    // Narration clips deliberately not read — a parent's voice isn't shared (v1).
+    cards: foldCardMedia(rt.cards_json, rt.cards_narration_json, rt.cards_photo_json),
   })
   const copied = await copySnapshotMedia(env, 'routine', built)
   return { payloadJson: JSON.stringify(copied), label: built.name }

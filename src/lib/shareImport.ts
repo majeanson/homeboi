@@ -63,12 +63,16 @@ export async function importEventShare(p: EventSharePayload): Promise<void> {
 // Add a shared routine to my routines, assigned to the picked members. Re-hosts each
 // card photo under my account (best-effort); narration was never shared.
 export async function importRoutineShare(p: RoutineSharePayload, memberIds: string[]): Promise<void> {
-  const cardsPhoto = await Promise.all(
-    p.cards.map((c) => (c.photoKey ? copySharedImage('routine-card-photo', c.photoKey) : Promise.resolve(''))),
+  const cards = await Promise.all(
+    p.cards.map(async (c) => {
+      const photoKey = c.photoKey ? await copySharedImage('routine-card-photo', c.photoKey) : ''
+      return {
+        icon: c.icon,
+        label: c.label,
+        ...(c.seconds ? { seconds: c.seconds } : {}),
+        ...(photoKey ? { photoKey } : {}),
+      }
+    }),
   )
-  const cards = p.cards.map((c) => (c.seconds ? { icon: c.icon, label: c.label, seconds: c.seconds } : { icon: c.icon, label: c.label }))
-  await api('routines', {
-    method: 'POST',
-    body: { memberIds, name: p.name, cards, cardsPhoto, timeOfDay: p.timeOfDay ?? undefined },
-  })
+  await api('routines', { method: 'POST', body: { memberIds, name: p.name, cards, timeOfDay: p.timeOfDay ?? undefined } })
 }

@@ -41,7 +41,12 @@ const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 // The state setters that hold a positional side array. A new side array MUST be
 // added here — that is the one manual step, and it is the same shape as
 // write-rule's endpoint list.
-const SIDE_SETTERS = ['setStepImages', 'setCardsNarration', 'setCardsPhoto']
+// Recipes only since 2026-09-08: the routine deck's two side arrays were folded
+// ONTO the cards (clipKey / photoKey — a card is an object, so its media can ride
+// with it), which is the convergence PARITY Wave D asked for where the data shape
+// allows it. `steps_json` is a string[] by design (inline « ## » headings), so its
+// side array stays positional and this guard keeps holding it.
+const SIDE_SETTERS = ['setStepImages']
 
 // The sync vocabulary. A setter call is well-formed when its value flows through
 // one of these (they all live in lib/parallelArray and are covered by its tests).
@@ -62,15 +67,7 @@ const HAND_ROLLED = /\.map\(\s*\([^)]*\)\s*=>\s*(['"])\1\s*\)/
 // Sites that legitimately bypass the helper, each with the reason it is right.
 // Adding an entry is a DECISION: say why keeping the side array in lockstep would
 // be WRONG here, never "we didn't get to it".
-const ALLOWED: Record<string, string> = {
-  // Whole-form reset after a successful save: setCards([]) empties the source in
-  // the same block, so there is no source left to stay aligned with. This entry
-  // exists so the pairing is checked rather than silently accepted.
-  'components/forms/RoutineForm.tsx → setCardsNarration([])':
-    'whole-form reset; setCards([]) empties the source in the same block',
-  'components/forms/RoutineForm.tsx → setCardsPhoto([])':
-    'whole-form reset; setCards([]) empties the source in the same block',
-}
+const ALLOWED: Record<string, string> = {}
 
 // Read the argument text of a call starting at the '(' that follows `at`, by
 // matching parens. String literals are skipped so a ')' inside one can't end it.

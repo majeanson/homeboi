@@ -12,8 +12,8 @@ import type { DeckCard } from './routineTemplates'
 // open the routine builder pre-seeded with one card carrying that photo. The
 // builder still asks WHO it's for + a name — a routine needs a child + a title.
 export interface RoutineSeed {
+  // A seeded card carries its photo ON the card (photoKey, Wave D).
   cards: DeckCard[]
-  cardsPhoto: string[]
   // Optional pre-fill for the routine's name (create mode only). A drawing leaves
   // it blank; a recipe→routine seed (#19, lib/recipeToRoutine) prefills the recipe
   // title so the parent doesn't retype it.
@@ -42,7 +42,7 @@ export function useDrawingToRoutine() {
       const file = new File([png], 'dessin.png', { type: 'image/png' })
       const small = await resizeImage(file, PHOTO_MAX)
       const { key } = await api<{ key: string }>('routine-card-photo', { method: 'POST', body: small })
-      const seed: RoutineSeed = { cards: [{ icon: '🎨', label: '' }], cardsPhoto: [key] }
+      const seed: RoutineSeed = { cards: [{ icon: '🎨', label: '', photoKey: key }] }
       nav('/routine/new', { state: { routineSeed: seed } })
     } catch {
       // R2 unset / offline (503) — the photo can't be stored, so don't navigate to
