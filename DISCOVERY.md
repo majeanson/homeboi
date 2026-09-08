@@ -209,3 +209,15 @@ spells the retired pill.
    the host id + PRECISE new point index — never leave one on the alias.
 4. Drop the old id from `CONCEPT_THEMES`; re-check the alias bases of every
    OTHER alias pointing into any card whose points you shifted.
+5. **Re-check every `guidePoint(card, frLabel)` in `tourContent.ts`** — tours look a
+   point up by its FRENCH LABEL, so a merged or renamed point is a module-load throw
+   (`tourContent: no "…" point`), caught by `helpRegistry.test.ts` at build.
+
+**The drill ran in full on 2026-09-08** (six cards over their cap merged down —
+routines 13 → 8, cercle 13 → 8, capture 10 → 8, recipes 10 → 8, share-access 9 → 8,
+set-display 13 → 11 — and every detail trimmed to two sentences). What it found while
+re-checking bases: `capture`'s three aliases (`type-or-choose`, `ask`, `a-regler`)
+and `cookmode` had been sitting ONE POINT OFF since an earlier trim — `helpRegistry`
+only proves a base is in range, not that it lands on the right card. The lesson is
+step 4 above, and it is why `guideBudget.test.ts` now refuses a card over its cap
+outright: a card that never grows past eight points never needs a shift.

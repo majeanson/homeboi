@@ -313,7 +313,7 @@ export const TOURS: Tour[] = [
         icon: 'timer-bold',
         card: 'routines',
         title: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
-        body: guidePoint('routines', 'Une minuterie sur une étape'),
+        body: guidePoint('routines', 'Une étape à la fois'),
       },
       // Maison's ＋ now offers a whole chooser (routines + the cercle add-set),
       // not routines alone — so this closes on the generic add-sheet pair like
@@ -369,7 +369,7 @@ export const TOURS: Tour[] = [
         icon: 'sparkle-bold',
         card: 'cercle',
         title: { fr: 'Notre monde', en: 'Our world' },
-        body: guidePoint('cercle', 'Notre monde'),
+        body: guidePoint('cercle', 'Liste, Liens, Arbre, Notre monde'),
       },
       ...addSheetSteps('cercle'),
     ],

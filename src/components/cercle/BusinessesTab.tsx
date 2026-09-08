@@ -113,7 +113,7 @@ export function BusinessesTab({
     <section className="cercle-group cercle-business">
       {shown.length === 0 ? (
         <EmptyState
-          guide={{ card: 'cercle', point: 11 }}
+          guide={{ card: 'cercle', point: 7 }}
           action={{ to: '/maison?section=business&plus=business', label: bz.add, icon: 'plus-bold' }}
         >
           {bz.empty}

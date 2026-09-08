@@ -89,7 +89,7 @@ export const KITCHEN_TAB_HELP = {
   // ── headings on the Recettes tab ──
   recipesBook: {
     card: 'recipes',
-    point: 6,
+    point: 5,
     body: {
       fr: '« Filtrer » ouvre les pastilles (Quoi cuisiner ?, Favoris, ≤ 30 min…) et tes étiquettes : elles se cumulent, et le chiffre sur le bouton dit combien sont actives. Fermé, c’est le livre au complet — touche une recette pour l’ouvrir ou la planifier comme repas.',
       en: '« Filter » pops the pills (What can I cook?, Favorites, ≤ 30 min…) and your tags: they stack, and the number on the button says how many are on. Closed, it’s the whole book — tap a recipe to open it or plan it as a meal.',

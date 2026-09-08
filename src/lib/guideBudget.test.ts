@@ -18,9 +18,11 @@ import { GUIDE } from './guideContent'
 // Words carry a letter or a digit — « », « : », « — » and « ? » are typography, not
 // words, and they made « Mode calme : ce qui change » read as six.
 const words = (s: string) => s.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length
-// Sentences: a terminal mark followed by a space or the end. « ex. » and « … »
-// inside a sentence are the known false splits; the ratchet absorbs them.
-const sentences = (s: string) => s.split(/[.!?…]\s|[.!?…]$/).filter((x) => x.trim()).length
+// Sentences: a terminal mark followed by a space and a capital (or an opening
+// quote / bracket), or the end. A « ? » inside « … ? » and an « ex. » mid-sentence
+// are not sentence ends — the first draft counted them, and read « qu’est-ce qu’on
+// mange vendredi ? » as two sentences.
+const sentences = (s: string) => s.split(/[.!?…](?=\s+[A-ZÀ-ÝŒ«“(])|[.!?…]$/).filter((x) => x.trim()).length
 
 type Over = { where: string; what: string }
 function measure() {
@@ -39,7 +41,6 @@ function measure() {
   }
   return over
 }
-const fmt = (list: Over[]) => list.map((o) => `${o.where}: ${o.what}`).join('\n')
 
 describe('guide concision budgets (DISCOVERY.md)', () => {
   const over = measure()
@@ -52,13 +53,13 @@ describe('guide concision budgets (DISCOVERY.md)', () => {
     expect(over.label.map((o) => `${o.where}: ${o.what}`)).toEqual([])
   })
 
-  // The two classes not yet at zero. Each number was read off the real count the
-  // day this test landed; lower it in the same commit as a trim, never raise it.
-  it('point details over 2 sentences do not grow (ratchet)', () => {
-    expect(over.detail.length, 'a new detail ran past two sentences — move the rest into the card’s prose, or split the point:\n' + fmt(over.detail)).toBeLessThanOrEqual(62)
+  // Both classes reached zero on 2026-09-08 (the alias drill: six cards merged
+  // down to their cap, every long detail trimmed) — so these are hard now too.
+  it('every point detail is ≤ 2 sentences', () => {
+    expect(over.detail.map((o) => `${o.where}: ${o.what}`), 'a detail ran past two sentences — say less, or split the point').toEqual([])
   })
 
-  it('cards over their point cap do not grow (ratchet)', () => {
-    expect(over.points.length, 'a card gained a point past its cap — merge two points, or move one to a neighbour:\n' + fmt(over.points)).toBeLessThanOrEqual(6)
+  it('no card exceeds its point cap (concept ≤ 8, section ≤ 12)', () => {
+    expect(over.points.map((o) => `${o.where}: ${o.what}`), 'a card gained a point past its cap — merge two points, or move one to a neighbour (DISCOVERY.md, the alias drill)').toEqual([])
   })
 })

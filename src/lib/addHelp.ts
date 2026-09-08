@@ -95,7 +95,7 @@ export const ADD_HELP = {
   },
   cook: {
     card: 'recipes',
-    point: 7,
+    point: 1,
     body: { fr: 'Passe en mode cuisson plein écran pour un repas prévu aujourd’hui.', en: 'Jump into full-screen cook mode for a meal planned today.' },
   },
   recipe: {
@@ -182,17 +182,17 @@ export const ADD_HELP = {
   },
   connect: {
     card: 'cercle',
-    point: 5,
+    point: 4,
     body: { fr: 'Relie deux personnes (donc deux familles) d’un seul lien ; le reste se déduit.', en: 'Connect two people (so two families) with one link; the rest is inferred.' },
   },
   group: {
     card: 'cercle',
-    point: 8,
+    point: 2,
     body: { fr: 'Crée un groupe nommé (Famille Tremblay, Collègues…) avec sa couleur.', en: 'Create a named group (Tremblay family, Coworkers…) with its colour.' },
   },
   business: {
     card: 'cercle',
-    point: 11,
+    point: 7,
     body: { fr: 'Ajoute un commerce ou service (vét, plombier, garderie) : catégorie, téléphone, adresse, carte d’affaires.', en: 'Add a business or service (vet, plumber, daycare): category, phone, address, business card.' },
   },
   pet: {

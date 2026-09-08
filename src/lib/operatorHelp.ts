@@ -84,7 +84,7 @@ export const OPERATOR_HELP = {
   },
   measureColors: {
     card: 'recipes',
-    point: 4,
+    point: 3,
     body: {
       fr: `Donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Toutes les pastilles et les ronds de recettes suivent, partout.`,
       en: `Give each spoon and cup the colour of your real tools. Every recipe pill and scoop circle follows, everywhere.`,
@@ -264,7 +264,7 @@ export const OPERATOR_HELP = {
   houseDiary: {
     // « La maison cette année » — the cercle card's diary point (12).
     card: 'cercle',
-    point: 12,
+    point: 6,
     body: {
       fr: `Le journal calme de l'année : les soins notés aux carnets, les corvées faites, les voyages terminés, les dessins gardés — mois par mois. Des noms et des dates, jamais des comptes. Rien à tenir : ça s'écrit tout seul.`,
       en: `The year's calm journal: the care noted in the carnets, the chores done, the trips taken, the drawings kept — month by month. Names and dates, never counts. Nothing to maintain: it writes itself.`,
@@ -282,7 +282,7 @@ export const OPERATOR_HELP = {
   },
   cercleGroups: {
     card: 'cercle',
-    point: 8,
+    point: 2,
     body: {
       fr: `Tous tes groupes du cercle, même ceux que le répertoire cache (un groupe « famille » entièrement composé de la maisonnée). Supprime ici n'importe quel groupe — les personnes restent dans le cercle.`,
       en: `All your circle groups, even the ones the directory hides (a "family" group made up entirely of the household). Delete any group here — the people stay in the circle.`,

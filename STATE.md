@@ -348,6 +348,18 @@ of 30–56 words cut to one or two sentences (the guide card beside them carries
 rest), sound.hint 56 → 22, calmHint 55 → 24, castIntro 47 → 20. What stays: the
 generic buttons (« Suivant » on a sequence, « Oui / Non » on a toggle pair) are right.
 
+**The alias drill, run in full (the pass the copy commit had left ratcheted).** Six
+cards over their point cap merged down — routines 13 → 8, cercle 13 → 8, capture
+10 → 8, recipes 10 → 8, share-access 9 → 8, set-display 13 → 11 — and every detail
+trimmed to two sentences, so `guideBudget.test.ts`'s last two rules are hard now, not
+ratchets. Every `(card, point)` reference re-pointed (cercleHelp ×14, addHelp ×4,
+operatorHelp ×3, kitchenTabHelp, BusinessesTab), nine alias bases re-based, two tour
+lookups renamed — and the re-check found what the drill exists for: `capture`'s
+three aliases and `cookmode` had been one point off since an earlier trim, unseen
+because the guard only proved « in range ». The sentence counter also learned that a
+« ? » inside « … ? » is not a sentence end. DISCOVERY.md's drill gained step 5 (tours
+look points up by French label).
+
 ---
 
 ## 4. What still needs improvement — consolidated and ranked
