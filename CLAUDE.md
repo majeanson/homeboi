@@ -61,7 +61,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
    Maison sections in `src/components/{maison,cercle}/*`. Grep the feature name first.
 2. **Look for the primitive that already exists.** Check **`COMPONENTS.md`** (the
    living inventory + uniformization backlog) and open **`/dev/kit`**
-   (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Système ▸ Affichage) — it renders
+   (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Système ▸ Affichage & veille) — it renders
    every shared component live across theme/surface/audience/locale. If a primitive fits,
    use it; if it _almost_ fits, **extend the primitive**, don't fork a copy.
 3. **Check the lib helper / convention** that governs the behaviour (table below).
@@ -114,7 +114,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Calm guarantees | structural ones are non-negotiable (a **test** enforces no streak/points/badge/push/inventory) | …add counts, ranks, streaks, points, push, or a quantity column |
 | Backend endpoint | handler under `functions/api/` **+** `authed()` wrapper **+** a `TABLE` row in `worker/routes.ts` | …hand-roll the auth guard, or forget the route table |
 | Delete / clear a row from a **live-polled** list | **`useDeferredRemoval(queryKey)`** (`lib/useDeferredRemoval.ts`) — `visible()` filters the rows, `remove()` holds the write behind the undo toast + awaits a refetch | …optimistically `setQueryData` then defer the write: the next poll resurrects the row mid-undo (flash-back glitch) |
-| A full-screen surface where the user **types** | be a **`.scene`** (`FormScene`/`SceneHead`) — or add **`.vv-fit`** on the fixed shell + **`.vv-slack`** on its scroller. Fit + trailing slack live in ONE place (`core.css` « Keyboard fit »); the caret pin/follow is global (`lib/viewportVars.ts`), nothing to wire per field. On-device debug: Réglages ▸ Système ▸ Version → « diagnostic clavier » | …shrink the shell under `.kb-open` (`height: var(--vvh)` — the page behind shows through the keyboard strip) or skip the slack (a last-line caret has no room to rise). `src/styles/keyboard-fit.test.ts` fails the build on both |
+| A full-screen surface where the user **types** | be a **`.scene`** (`FormScene`/`SceneHead`) — or add **`.vv-fit`** on the fixed shell + **`.vv-slack`** on its scroller. Fit + trailing slack live in ONE place (`core.css` « Keyboard fit »); the caret pin/follow is global (`lib/viewportVars.ts`), nothing to wire per field. On-device debug: Réglages ▸ Système ▸ Appareils & accès → « diagnostic clavier » | …shrink the shell under `.kb-open` (`height: var(--vvh)` — the page behind shows through the keyboard strip) or skip the slack (a last-line caret has no room to rise). `src/styles/keyboard-fit.test.ts` fails the build on both |
 | A new full-screen overlay, sheet or dialog | **a tier from the ONE layer scale** (written out in `styles/sheets/capture.css`) — every scene sits below `.scrim`/`.sheet`, every dialog that must interrupt an open sheet sits above it | …pick a z-index by looking at the neighbour you happen to overlap: a Sheet opened from inside a scene rendered BEHIND it, and lifting the sheet then put `.confirm` behind the peek that awaits it. `src/styles/layer-order.test.ts` fails the build on either direction |
 | A container that already holds buttons | **plain `<div onClick>`** (mouse convenience only) | …give it `role="button"`+`tabIndex`: a control inside a control announces as "a button whose contents are buttons", and `stopPropagation` on the inner handlers fixes the MOUSE while hiding the semantics. Same for `role="img"` on an SVG with interactive children — an `img` role makes its whole subtree presentational, so those children vanish from the a11y tree (use `role="group"`). `src/lib/nested-interactive.test.ts` fails the build on both |
 | Format a date/time/amount for the UI | the **cached** helpers: `lib/format.ts` / `lib/money.ts` (client), `functions/_lib/ids.ts` / `askContext.ts` (Worker) — a new shape gets a new cached helper THERE | …construct `new Intl.*` inline (~100 µs each, paid per row/day — `/api/year` burned 1.8 s of a ~10 ms Worker CPU budget this way; `intl-rule.test.ts` fails the build) or casually add `toLocaleDateString` calls (same construction hidden in a convenience method — ratcheted by the same test) |
@@ -483,7 +483,7 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 | **Liste**    | `/liste`    | La liste     | The single active shared list (see below).                                                   |
 | **Notes**    | `/notes`    | Les notes    | The durable family-notes board (`family_notes`), for one member or the whole Maisonnée — rich notes, voice memos, drawings. Teal, inherited from Le cercle, where it used to be a sub-tab. Comprendre-only in Réglages (no settings subs). Distinct from the board's fridge **mots**. |
 | **Maison**   | `/maison`   | Maison       | Routines **and** the rest of Le cercle, behind five pills (`?section=`): **routines** (default) · family · social · business · carnets. Kid picture-card routines read aloud on-device (absorbed the old `/kid` view) + the family & contacts directory: people, pets, groups, businesses, links/tree. Berry, inherited from Routines. |
-| **Réglages** | `/settings` | Réglages     | Operator hub, rebuilt as **Découvrir + six colour-themed tabs** (one per hub section, same order/colours as the nav). Each themed tab has a **« Comprendre / Régler »** lens toggle: Comprendre = that theme's slice of the in-app guide (`ComprendrePanel`), Régler = its settings sub-sections (`?tab=<SectionKey>&lens=&sub=`; old ids fold via `LEGACY_TAB`). The sage « Système » tab holds device/household-wide machinery (pairing, guests, display, veille, photos, IA, voix, calme, diagnostics). Operator-only; a kiosk sees all tabs but the member-admin/pairing/guest subs drop (per-sub gating). |
+| **Réglages** | `/settings` | Réglages     | Operator hub, rebuilt as **Découvrir + six colour-themed tabs** (one per hub section, same order/colours as the nav). Each themed tab has a **« Comprendre / Régler »** lens toggle: Comprendre = that theme's slice of the in-app guide (`ComprendrePanel`), Régler = its settings sub-sections (`?tab=<SectionKey>&lens=&sub=`; old ids fold via `LEGACY_TAB`). The sage « Système » tab holds device/household-wide machinery in three pills (Appareils & accès · Affichage & veille · Voix & IA). **The pill map is `SETTINGS_TREE` in `lib/settingsNav.ts` — 14 pills, each a stack of section cards, each card with an `access` (`device`/`household`/`operator`) the viewer's pill row DERIVES from** (a link guest gets device cards, a kiosk everything but operator cards; no allowlist). Link to a SECTION with `?focus=<key>` (the sub is derived) so the link survives the next reshuffle; `DISCOVERY.md` carries the map. |
 
 ### Domain concepts (carry specific meaning here — see project memory)
 
@@ -558,7 +558,7 @@ The mirror-image bug. Every side-scrolling row here hides its scrollbar for calm
 (`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`). On a touch screen you
 swipe it. **On a desktop that hides content outright**: there's no bar to drag, no swipe,
 and a mouse wheel only ever emits `deltaY` — which no browser maps onto a *horizontal*
-scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable with a mouse.
+scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply unclickable with a mouse.
 
 - **Any hidden-scrollbar horizontal row gets `useHScroll()`** (`lib/hscroll.ts`). It maps
   the wheel, hands it back to the page at either end (never a wheel trap), and exposes
@@ -607,7 +607,8 @@ scroller. Réglages ▸ Régler ▸ Système's nine subs were simply unclickable
   [A scrolling row must be reachable with a mouse](#a-scrolling-row-must-be-reachable-with-a-mouse-not-just-a-thumb);
   the full action × door matrix (with each gesture's mirror) is **`ACTIONS.md`**.
 - **A new Réglages setting merges into an existing sub, never a new pill**
-  (standing rule, C-15). Réglages already counts 30-ish subs; find the themed
+  (standing rule, C-15). Réglages counts 14 pills (down from 28 on 2026-09-08 — each
+  is a STACK of section cards, `SETTINGS_TREE` in `lib/settingsNav.ts`); find the themed
   tab + sub that already owns the concept (e.g. any kitchen colour/appearance
   setting → `kitchen ▸ apparence`, stacked `OperatorSection` bodies under one
   pill, the board▸thisweek / settings▸system precedent) and stack your section's

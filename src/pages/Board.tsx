@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
 import { liveInterval } from '../lib/query'
+import { settingsHref } from '../lib/settingsNav'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
@@ -1733,7 +1734,7 @@ export function Board() {
               </div>
               <Cluster>
                 {hiddenCount > 0 && (
-                  <Link className="btn btn--ghost btn--sm" to="/settings?tab=board&sub=layout">
+                  <Link className="btn btn--ghost btn--sm" to={settingsHref({ tab: 'board', focus: 'boardLayout' })}>
                     {t.board.editHiddenN(hiddenCount)} · {t.board.editRestore}
                   </Link>
                 )}

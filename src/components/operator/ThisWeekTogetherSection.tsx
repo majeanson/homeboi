@@ -98,7 +98,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
     !!behind && (behind.chores.length || behind.routines.length || behind.projects.length)
 
   return (
-    <OperatorSection title={t.operator.thisWeekTitle} help={help}>
+    <OperatorSection title={t.operator.thisWeekTitle} help={help} helpKey="thisWeek">
       <p className="operator__hint mono">{t.operator.thisWeekHint}</p>
 
       {/* « À régler » — the few cross-domain frictions to resolve first, each a one-tap

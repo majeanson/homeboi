@@ -16,7 +16,7 @@ export function TakeoutSection() {
   const online = useOnline()
   if (isGuest() || isPaired()) return null
   return (
-    <OperatorSection title={t.operator.takeoutTitle}>
+    <OperatorSection title={t.operator.takeoutTitle} helpKey="takeout">
       <p className="operator__hint mono">{t.operator.takeoutHint}</p>
       {/* A plain link: GET rides the operator session cookie, and the endpoint's
           content-disposition makes it a straight download. Online-only (there is

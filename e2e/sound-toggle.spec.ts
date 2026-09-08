@@ -72,7 +72,7 @@ test('the choice is per-device and survives a reload', async ({ page }) => {
 test('Réglages ▸ Voix mirrors the same switch', async ({ page }) => {
   // The bar toggles are where you REACH for it; this is the calm door, and both
   // must be the same flag — two switches that disagree would be worse than one.
-  await boot(page, '/settings?tab=settings&sub=voice')
+  await boot(page, '/settings?tab=settings&sub=ai&focus=voice')
   const inSettings = page.locator('.operator__section .sound-toggle')
   await expect(inSettings).toBeVisible()
   await inSettings.click()

@@ -59,7 +59,7 @@ test.describe('guest link mint — durable (standing) links', () => {
   })
 
   test('the durable option exists for every kind, and switching kind resets off it', async ({ page }) => {
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     const ttlSelect = page.getByLabel('Durée')
     await expect(ttlSelect).toBeVisible()
     await expect(ttlSelect.locator('option', { hasText: 'Durable' })).toHaveCount(1)
@@ -98,7 +98,7 @@ test.describe('guest link mint — durable (standing) links', () => {
       })
     })
 
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     await page.getByLabel('Durée').selectOption({ label: 'Durable — jusqu’à révocation' })
 
     // Required name — Generate refuses (client-side, no request fires) without one.
@@ -130,7 +130,7 @@ test.describe('guest link mint — durable (standing) links', () => {
       })
     })
 
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     const row = page.locator('.operator__guest-links').filter({ hasText: 'Mamie' })
     await expect(row).toBeVisible()
     await expect(row.getByText('N’expire pas')).toBeVisible()
@@ -206,7 +206,7 @@ test.describe('guest link mint — sitter card gaps + reach-parent (D-19)', () =
     })
 
     // 'sitter' is the default kind — the notice should already be visible.
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     await expect(page.getByText('Il manque :')).toBeVisible()
     // wifi.ssid is set above, so that gap is absent; the other four are present.
     await expect(page.getByRole('button', { name: 'Contacts d’urgence — Compléter' })).toBeVisible()
@@ -233,7 +233,7 @@ test.describe('guest link mint — sitter card gaps + reach-parent (D-19)', () =
 
   test('a per-gap link navigates to complete that section', async ({ page }) => {
     await page.route('**/api/guest/window**', (route) => route.fulfill(json({ kind: 'sitter', wifi: {} })))
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     await expect(page.getByRole('button', { name: 'Contacts d’urgence — Compléter' })).toBeVisible()
     await page.getByRole('button', { name: 'Contacts d’urgence — Compléter' }).click()
     // Emergency contacts live under Maison's Famille section now (the nav restructure).
@@ -255,7 +255,7 @@ test.describe('guest link mint — sitter card gaps + reach-parent (D-19)', () =
         }),
       ),
     )
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     await expect(page.getByText('Il manque :')).toHaveCount(0)
   })
 
@@ -283,7 +283,7 @@ test.describe('guest link mint — sitter card gaps + reach-parent (D-19)', () =
       )
     })
 
-    await page.goto('/settings?tab=settings&sub=guest')
+    await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
     const checkbox = page.getByRole('checkbox', { name: 'Joindre un parent' })
     const picker = page.getByRole('combobox', { name: 'Joindre un parent' })
     await expect(picker).toHaveCount(0) // the select isn't shown until checked

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
+import { settingsHref } from '../lib/settingsNav'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useTour } from '../lib/tour'
@@ -76,9 +77,9 @@ export function resetWelcome(): void {
 }
 
 const STEPS: { id: 'members' | 'meals' | 'pair'; to: string; icon: IconName }[] = [
-  { id: 'members', to: '/settings?tab=maison&sub=members', icon: 'users-three-bold' },
-  { id: 'meals', to: '/settings?tab=kitchen&sub=meals', icon: 'fork-knife-bold' },
-  { id: 'pair', to: '/settings?tab=settings&sub=tablets', icon: 'device-tablet-bold' },
+  { id: 'members', to: settingsHref({ tab: 'maison', focus: 'members' }), icon: 'users-three-bold' },
+  { id: 'meals', to: settingsHref({ tab: 'kitchen', focus: 'mealSlots' }), icon: 'fork-knife-bold' },
+  { id: 'pair', to: settingsHref({ tab: 'settings', focus: 'claimTablet' }), icon: 'device-tablet-bold' },
 ]
 
 // The sandbox try-this list — tuned to the SEEDED data, every target a link the

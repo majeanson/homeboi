@@ -39,9 +39,9 @@ settings) are one tap back.** No dead-end prose.
 | --- | --- | --- |
 | `?tab=<SectionKey>` | `/settings` | Which themed Réglages tab (retired ids fold via `LEGACY_TAB`). |
 | `?lens=comprendre\|regler` | `/settings` | The tab's lens; default `regler` (stored as no param). |
-| `?sub=<id>` | `/settings` | The Régler sub-section (ids in `SETTINGS_SUBS`; retired ids fold via `LEGACY_SUB`). |
+| `?sub=<id>` | `/settings` | The Régler pill (ids in `SETTINGS_TREE` → `SETTINGS_SUBS`; retired ids fold via `LEGACY_SUB`). **Optional when `?focus=` is given** — the sub is then derived from the section (`subOfFocus`), which is what lets a link survive a pill reshuffle. |
 | `?card=<guideId>&point=<n>` | `/settings` | Land on ONE guide card (+ sub-point): forces the card's home tab + Comprendre lens, opens/scrolls/highlights. Retired ids resolve through `GUIDE_CARD_ALIAS`. |
-| `?focus=<helpKey>` | `/settings` | Land on ONE section card inside a stacked sub: scroll + accent ring (`SETTINGS_FOCUS`; anchor is `id="op-<helpKey>"` from `OperatorSection`). |
+| `?focus=<sectionKey>` | `/settings` | Land on ONE section card: scroll + accent ring. The key is the card's entry in `SETTINGS_TREE` (its helpKey, or its explicit `anchor` where a helpKey is shared — `guestLinks`); anchor is `id="op-<key>"` from `OperatorSection`. **This is the stable address** — name the section, not the pill: `guideLinks.test.ts` requires it whenever the sub stacks two or more cards. |
 | `?focus=note|meal` | `/kitchen/day/:date` | **Open** that composer on the day scene (the note headline, or the hero slot's meal), seeded and ready. Same one-shot shape as the Réglages one: act, then consume the param with one functional `setParams` so a refresh or a back-nav doesn't reopen it. |
 | `?plus=1\|<mode>` | any hub tab | Open the ＋ sheet: `1` = the section's chooser, a mode name = that tile (`/board?plus=mot`). Validated against `ADD_MODES`; ignored where the FAB is hidden; operator-grade modes fall back to the chooser when not signed in. |
 
@@ -53,7 +53,7 @@ settings) are one tap back.** No dead-end prose.
 
 **Comprehension → action** (the 2026-07 rework): every guide card carries
 - `route` → « Ouvrir » (the live feature),
-- `settings` → « Régler » (`/settings?tab=&sub=&focus=`),
+- `settings` → « Régler » (`/settings?tab=&sub=&focus=` — `focus` names the section; see the grammar above),
 - per-point `route` → « Essayer » (that point's one concrete action),
 
 and every Réglages sub with a live counterpart shows « Voir dans l'app »
@@ -84,38 +84,66 @@ cards. 25 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 | --- | --- | --- | --- |
 | — | first-time | — | — |
 | board | **board** (section; +search, +reminders as points) | /board | ?tab=board |
-| board | board-widgets | /board?edit=1 | board▸layout |
-| board | capture (+type-or-choose, +ask, +a-regler) | /board | settings▸ai |
+| board | board-widgets | /board?edit=1 | board▸layout&focus=boardLayout |
+| board | capture (+type-or-choose, +ask, +a-regler) | /board | settings▸ai&focus=ai |
 | board | mots (+drawings) | /board?plus=mot | — |
-| board | habits | /board/habitudes | settings▸ambient&focus=habits |
+| board | habits | /board/habitudes | settings▸display&focus=habits |
 | kitchen | **kitchen** (section; +leftovers, +reserve as points) | /kitchen | ?tab=kitchen |
-| kitchen | recipes (+cookmode, +favorites) | /kitchen | kitchen▸apparence |
+| kitchen | recipes (+cookmode, +favorites) | /kitchen | kitchen▸apparence&focus=recipeTags |
 | liste | **liste** (section; +ghost as two points) | /liste | ?tab=liste |
-| liste | deals (+flyers, +cashier) | /liste/circulaires | liste▸shop |
+| liste | deals (+flyers, +cashier) | /liste/circulaires | liste▸shop&focus=shop |
 | notes | **notes** (section) | /notes | — (Comprendre-only) |
 | maison | **maison** (section) | /maison | ?tab=maison |
-| maison | routines (was a section card) | /maison | maison▸routines |
-| maison | cercle (was a section card) | /maison?section=family | maison▸members |
+| maison | routines (was a section card) | /maison | maison▸routines&focus=routines |
+| maison | cercle (was a section card) | /maison?section=family | maison▸members&focus=members |
 | maison | voyage | /voyage/new | — |
-| maison | auto | /voiture | maison▸cars |
+| maison | auto | /voiture | maison▸cars&focus=cars |
 | maison | carnets | /maison?section=carnets | — |
-| maison | todos | /board | maison▸todos |
+| maison | todos | /board | maison▸routines&focus=todoTemplates |
 | settings | **settings** (section; +offline) | /settings | — |
-| settings | ai | — | settings▸ai |
-| settings | calm (+undo) | — | settings▸calm |
-| settings | audience (+surface) | — | settings▸display |
-| settings | screensaver (+apod) | — | settings▸ambient&focus=ambient |
-| settings | share-access (+share, +share-target) | — | settings▸guest |
-| set-* | set-household (+account) | — | maison▸members |
-| set-* | set-agenda (+activities) | — | board▸events |
-| set-* | set-chores (+home-projects) | — | maison▸chores |
-| set-* | set-shopping | — | liste▸shop |
-| set-* | set-recipes | — | kitchen▸apparence |
-| set-* | set-devices (+pairing, +cast-tv) | — | settings▸tablets |
-| set-* | set-ai | — | settings▸ai |
-| set-* | set-display | — | settings▸display |
+| settings | ai | — | settings▸ai&focus=ai |
+| settings | calm (+undo) | — | settings▸display&focus=calm |
+| settings | audience (+surface) | — | settings▸display&focus=display |
+| settings | screensaver (+apod) | — | settings▸display&focus=ambient |
+| settings | share-access (+share, +share-target) | — | settings▸tablets&focus=guestLinks |
+| set-* | set-household (+account) | — | maison▸members&focus=members |
+| set-* | set-agenda (+activities) | — | board▸events&focus=events |
+| set-* | set-chores (+home-projects) | — | maison▸routines&focus=chores |
+| set-* | set-shopping | — | liste▸shop&focus=shop |
+| set-* | set-recipes | — | kitchen▸apparence&focus=recipeTags |
+| set-* | set-devices (+pairing, +cast-tv) | — | settings▸tablets&focus=devices |
+| set-* | set-ai | — | settings▸ai&focus=ai |
+| set-* | set-display | — | settings▸display&focus=display |
 
-(`tab▸sub` is shorthand for `/settings?tab=<tab>&sub=<sub>`.)
+(`tab▸sub&focus=key` is shorthand for `/settings?tab=<tab>&sub=<sub>&focus=<key>`.)
+
+**The pill map (28 → 14, 2026-09-08)** — `SETTINGS_TREE` in `lib/settingsNav.ts` is
+the one source; this is a reading of it, not a second copy:
+
+| Tab | Pill (id → label) | Sections stacked, in order |
+| --- | --- | --- |
+| board | `events` → Agenda & semaine | events · schoolYear · thisWeek · recap |
+| board | `layout` → Disposition du babillard | boardLayout |
+| kitchen | `apparence` → Apparence | recipeTags · recipePills · measureColors |
+| kitchen | `meals` → Couleurs des repas | mealSlots · mealWindow |
+| kitchen | `reserve` → Emplacements de la réserve | reserveLocations |
+| liste | `shop` → Magasinage | shop · aisleOrder · storeFilter |
+| liste | `history` → Historique & suivi | history · ghost |
+| maison | `routines` → Tâches de la maison | routines · chores · todoTemplates |
+| maison | `members` → La maisonnée | members · cercleGroups |
+| maison | `cars` → L'auto & horaires | cars · schedule |
+| maison | `annee` → Cette année | houseDiary |
+| settings | `tablets` → Appareils & accès | claimTablet · devices · guestLinks · health · buildInfo · takeout · micTest · kbDebug · aiLog |
+| settings | `display` → Affichage & veille | display · ambient · habits · photos · calm |
+| settings | `ai` → Voix & IA | ai · voice |
+
+Each section carries an `access` (`device` / `household` / `operator`): a viewer's pill
+row and stacks DERIVE from it — a link guest sees only `device` cards (and only pills
+that have one), a paired kiosk everything but `operator` cards. There is no allowlist
+to keep in step. **Moving a card is one line in `SETTINGS_TREE` plus a line in
+`LEGACY_SUB`**; every link that named the card by `?focus=` keeps landing, and
+`settingsNav.test.ts` + `guideLinks.test.ts` fail the build on anything that still
+spells the retired pill.
 
 ## Invariants (tests enforce these — keep them green)
 

@@ -71,7 +71,7 @@ export function EventsSection({
   const memberColor = (id: string | null) => members.find((m) => m.id === id)?.colour
 
   return (
-    <OperatorSection title={t.operator.events}>
+    <OperatorSection title={t.operator.events} helpKey="events">
       {events.length === 0 ? (
         <EmptyState>{t.operator.noEvents}</EmptyState>
       ) : (

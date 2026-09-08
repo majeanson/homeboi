@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'reglages-14-pastilles',
+    text: {
+      fr: 'Réglages respire : 14 pastilles au lieu de 28 — chaque réglage est resté, regroupé avec ses voisins (Affichage & veille, Tâches de la maison, Voix & IA…).',
+      en: 'Settings breathe: 14 pills instead of 28 — every setting stayed, grouped with its neighbours (Display & idle, Household tasks, Voice & AI…).',
+    },
+    card: 'settings',
+  },
+  {
     id: 'notes-un-editeur',
     text: {
       fr: 'Nouveau : Les notes s’écrivent dans UN seul éditeur — touche une note, elle s’ouvre pour être lue et modifiée au même endroit.',

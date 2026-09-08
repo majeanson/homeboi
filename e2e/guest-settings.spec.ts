@@ -24,12 +24,15 @@ const MAISON_TAB = 'Maison'
 const SYSTEM_TAB = 'Système'
 
 const LAYOUT_SUB = 'Disposition du babillard'
-const DISPLAY_SUB = 'Affichage'
-const CALM_SUB = 'Mode calme'
-const EVENTS_SUB = 'Rendez-vous'
-const TABLETS_SUB = 'Tablettes jumelées'
-const AI_SUB = 'Intelligence artificielle'
-const SYSTEM_SUB = 'Version & diagnostics'
+// 28 → 14 (2026-09-08): the pills a guest sees are the MERGED ones. A pill shows
+// for a guest iff one of its stacked sections is device-local (lib/settingsNav
+// `access`), and only those sections render inside it — so « Affichage & veille »
+// appears (theme/lens/idle/calm are theirs) with « Photos de la maison » cut out,
+// and « Voix & IA » appears for its voice half with the household's AI switch gone.
+const DISPLAY_SUB = 'Affichage & veille'
+const VOICE_AI_SUB = 'Voix & IA'
+const EVENTS_SUB = 'Agenda & semaine'
+const TABLETS_SUB = 'Appareils & accès'
 
 async function bootGuestSettings(page: Page, tab = 'decouvrir') {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -89,18 +92,24 @@ test('a guest gets « Disposition » on the board tab, and nothing that writes t
   await expect(page.locator('.board-layout__end').first()).toBeVisible()
 })
 
-test('a guest gets the device-local subs under Système and none of the machinery', async ({ page }) => {
+test('a guest gets the device-local cards under Système and none of the machinery', async ({ page }) => {
   await bootGuestSettings(page, 'settings')
 
   const subs = page.locator('.subtabs')
   await expect(subs.getByRole('tab', { name: DISPLAY_SUB, exact: true })).toBeVisible()
-  await expect(subs.getByRole('tab', { name: CALM_SUB, exact: true })).toBeVisible()
-
-  // Pairing, IA, and « Version & diagnostics » (which carries the household export)
-  // must never appear for a read-only viewer.
+  await expect(subs.getByRole('tab', { name: VOICE_AI_SUB, exact: true })).toBeVisible()
+  // Pairing / guest links / the household export stack under ONE operator pill —
+  // it must never appear for a read-only viewer.
   await expect(subs.getByRole('tab', { name: TABLETS_SUB, exact: true })).toHaveCount(0)
-  await expect(subs.getByRole('tab', { name: AI_SUB, exact: true })).toHaveCount(0)
-  await expect(subs.getByRole('tab', { name: SYSTEM_SUB, exact: true })).toHaveCount(0)
+
+  // Inside « Affichage & veille »: the device cards, not the household's photos.
+  await expect(page.locator('#op-display')).toBeVisible()
+  await expect(page.locator('#op-calm')).toBeVisible()
+  await expect(page.locator('#op-photos')).toHaveCount(0)
+  // Inside « Voix & IA »: the voice, not the AI switch (a household PATCH).
+  await subs.getByRole('tab', { name: VOICE_AI_SUB, exact: true }).click()
+  await expect(page.locator('#op-voice')).toBeVisible()
+  await expect(page.locator('#op-ai')).toHaveCount(0)
 })
 
 test('a guest can flip this device to English and to the toddler lens', async ({ page }) => {
@@ -135,7 +144,11 @@ test('the operator still sees every sub (the guest narrowing is not a global reg
 
   const subs = page.locator('.subtabs')
   await expect(subs.getByRole('tab', { name: TABLETS_SUB, exact: true })).toBeVisible()
-  await expect(subs.getByRole('tab', { name: SYSTEM_SUB, exact: true })).toBeVisible()
+  await expect(subs.getByRole('tab', { name: VOICE_AI_SUB, exact: true })).toBeVisible()
+  // …and inside them, everything: the operator's AI switch beside the voice card.
+  await subs.getByRole('tab', { name: VOICE_AI_SUB, exact: true }).click()
+  await expect(page.locator('#op-ai')).toBeVisible()
+  await expect(page.locator('#op-voice')).toBeVisible()
   // And the lens toggle is back, because Régler has something to show.
   await expect(page.locator('.operator__lens')).toBeVisible()
 

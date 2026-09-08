@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { LEGACY_SUB, LEGACY_TAB, SETTINGS_TREE } from '../src/lib/settingsNav'
 
 // Regression net for the themed-Réglages restructure: EVERY pre-restructure
 // deep-link — the 9 old task tabs, the 12 previously-retired ids, the ?sub=
@@ -59,47 +60,62 @@ for (const [old, target] of TAB_CASES) {
   })
 }
 
-// The three old tabs whose subs SPLIT across themes: the raw ?sub picks the host.
-test('?tab=agenda&sub=cars lands on Maison with the vehicles sub', async ({ page }) => {
-  await boot(page, '/settings?tab=agenda&sub=cars')
-  await expectTab(page, 'maison')
-  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Tes véhicules' })).toHaveAttribute('aria-selected', 'true')
-})
+// A landed sub is asserted by ANCHOR — the first section card of the target sub is
+// on screen (`id="op-<key>"`, from SETTINGS_TREE) — never by pill label, so the
+// next rename or reshuffle changes this file's data, not its assertions.
+const firstAnchor = (tab: keyof typeof SETTINGS_TREE, sub: string) =>
+  `#op-${(SETTINGS_TREE[tab] as Record<string, readonly { key: string }[]>)[sub][0].key}`
+const expectSub = (page: Page, tab: keyof typeof SETTINGS_TREE, sub: string) =>
+  expect(page.locator(firstAnchor(tab, sub))).toBeVisible()
 
-test('?tab=display&sub=layout lands on Le babillard with the layout sub', async ({ page }) => {
-  await boot(page, '/settings?tab=display&sub=layout')
-  await expectTab(page, 'board')
-  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Disposition du babillard' })).toHaveAttribute('aria-selected', 'true')
-})
+// The three old tabs whose subs SPLIT across themes: the raw ?sub picks the host
+// (LEGACY_TAB.bySub) — walked from the data, so a re-pointed target updates this.
+for (const [oldTab, entry] of Object.entries(LEGACY_TAB)) {
+  for (const [oldSub, target] of Object.entries(entry.bySub ?? {})) {
+    test(`?tab=${oldTab}&sub=${oldSub} lands on ${target.tab} ▸ ${target.sub}`, async ({ page }) => {
+      await boot(page, `/settings?tab=${oldTab}&sub=${oldSub}`)
+      await expectTab(page, target.tab)
+      await expectSub(page, target.tab, target.sub)
+    })
+  }
+}
 
-test('?tab=ai&sub=thisweek lands on Le babillard with La semaine', async ({ page }) => {
-  await boot(page, '/settings?tab=ai&sub=thisweek')
-  await expectTab(page, 'board')
-  await expect(page.locator('.subtabs').getByRole('tab', { name: 'La semaine' })).toHaveAttribute('aria-selected', 'true')
-})
-
-// A ?sub that stays within its old tab's theme passes straight through.
-test('?tab=ai&sub=calm lands on Système with the calm sub', async ({ page }) => {
+// A retired ?sub reached through a retired TAB: the tab folds first (LEGACY_TAB),
+// then the sub (LEGACY_SUB) — ?tab=ai&sub=calm must end on Système ▸ Affichage & veille.
+test('?tab=ai&sub=calm folds tab, then sub, onto Système ▸ « Affichage & veille »', async ({ page }) => {
   await boot(page, '/settings?tab=ai&sub=calm')
   await expectTab(page, 'settings')
-  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Mode calme' })).toHaveAttribute('aria-selected', 'true')
+  await expectSub(page, 'settings', 'display')
+  await expect(page.locator('#op-calm')).toBeVisible()
 })
 
-// C-15 — kitchen's three retired colour subs (tags/pills/measure) all fold onto
-// the ONE « Apparence » sub via LEGACY_SUB, and the old ?tab=recipes alias (which
-// used to target sub=tags) now lands there too. Nothing 404s.
-for (const oldSub of ['tags', 'pills', 'measure']) {
-  test(`?tab=kitchen&sub=${oldSub} lands on Apparence`, async ({ page }) => {
-    await boot(page, `/settings?tab=kitchen&sub=${oldSub}`)
-    await expectTab(page, 'kitchen')
-    await expect(page.locator('.subtabs').getByRole('tab', { name: 'Apparence' })).toHaveAttribute('aria-selected', 'true')
-  })
+// EVERY retired within-tab sub id (LEGACY_SUB — kitchen's 2026-07 colour subs and
+// the 2026-09 28 → 14 agglomeration) folds onto its host, walked from the data so
+// the next merge adds a line there and a case here for free. Nothing 404s.
+for (const [tab, folds] of Object.entries(LEGACY_SUB)) {
+  for (const [oldSub, host] of Object.entries(folds ?? {})) {
+    test(`?tab=${tab}&sub=${oldSub} folds onto ${tab} ▸ ${host}`, async ({ page }) => {
+      await boot(page, `/settings?tab=${tab}&sub=${oldSub}`)
+      await expectTab(page, tab)
+      await expectSub(page, tab as keyof typeof SETTINGS_TREE, host)
+    })
+  }
 }
 
 test('?tab=recipes (legacy) lands on La cuisine ▸ Apparence', async ({ page }) => {
   await boot(page, '/settings?tab=recipes')
   await expectTab(page, 'kitchen')
-  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Apparence' })).toHaveAttribute('aria-selected', 'true')
+  await expectSub(page, 'kitchen', 'apparence')
+})
+
+// ?focus= ALONE resolves the sub (subOfFocus): a link may name just the section and
+// survive the next pill reshuffle — the day a card moves, its old ?sub would have
+// pointed at the wrong pill while the section itself is still exactly findable.
+test('?focus= without ?sub lands on the section, sub derived', async ({ page }) => {
+  await boot(page, '/settings?tab=settings&focus=calm')
+  await expectTab(page, 'settings')
+  await expectSub(page, 'settings', 'display')
+  await expect(page.locator('#op-calm')).toBeInViewport()
 })
 
 // ?card= guide links home onto the card's themed tab, Comprendre lens, and the
@@ -154,7 +170,7 @@ test('a merged concept card id (+point) still lands on its host card', async ({ 
 test('?focus=measureColors lands inside kitchen ▸ Apparence on the exact card', async ({ page }) => {
   await boot(page, '/settings?tab=kitchen&sub=apparence&focus=measureColors')
   await expectTab(page, 'kitchen')
-  await expect(page.locator('.subtabs').getByRole('tab', { name: 'Apparence' })).toHaveAttribute('aria-selected', 'true')
+  await expectSub(page, 'kitchen', 'apparence')
   await expect(page.locator('#op-measureColors')).toBeVisible()
   await expect(page).not.toHaveURL(/focus=/)
 })

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -44,7 +44,18 @@ import { useHelpMode } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
 import { useHScroll } from '../lib/hscroll'
-import { SETTINGS_SUBS, SUB_GOTO, type SettingsTabId } from '../lib/settingsNav'
+import {
+  SETTINGS_SUBS,
+  SUB_GOTO,
+  SUB_LABEL_KEY,
+  LEGACY_TAB,
+  LEGACY_SUB,
+  subOfFocus,
+  visibleSections,
+  visibleSubs,
+  type SettingsTabId,
+  type SettingsSectionKey,
+} from '../lib/settingsNav'
 import { scrollBehavior } from '../lib/motion'
 import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY, HEALTH_KEY } from '../lib/queryKeys'
 import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
@@ -61,65 +72,20 @@ import type { Member, Device, Chore, Routine, EventRow } from '../components/ope
 // settings sub-sections, the default). The tab `id` IS the SectionKey, so the
 // taxonomy, the tints and the ?card= homing all share one id space; every
 // retired id lives on in LEGACY_TAB so old /settings?tab=… links still land.
+// What each tab's pills hold is SETTINGS_TREE (lib/settingsNav) — the one taxonomy.
 const SECTIONS: { id: string; icon: IconName }[] = [
   { id: 'decouvrir', icon: 'book-open-bold' }, // search-all + feature map + première fois
-  { id: 'board', icon: 'sun-bold' }, //           events + layout + la semaine
-  { id: 'kitchen', icon: 'carrot-bold' }, //      apparence (tags+pastilles+mesures) + repas + réserve
-  { id: 'liste', icon: 'sparkle-bold' }, //       liste + allées + magasins + historique + ghost
+  { id: 'board', icon: 'sun-bold' }, //           agenda & semaine · disposition
+  { id: 'kitchen', icon: 'carrot-bold' }, //      apparence · repas · réserve
+  { id: 'liste', icon: 'sparkle-bold' }, //       magasinage · historique & suivi
   { id: 'notes', icon: 'file-text-bold' }, //     Comprendre-only — les notes du cercle, aucun Régler
-  { id: 'maison', icon: 'house-bold' }, //        routines + corvées + à-compléter + membres + groupes + autos + horaires
-  { id: 'settings', icon: 'gear-six-bold' }, //   Système: appareils + invités + affichage + veille + photos + IA + voix + calme + diagnostics
+  { id: 'maison', icon: 'house-bold' }, //        tâches · maisonnée · l'auto & horaires · cette année
+  { id: 'settings', icon: 'gear-six-bold' }, //   Système: appareils & accès · affichage & veille · voix & IA
 ]
 
-// Every retired tab id → the themed tab (and sub-section) that hosts it now, so
-// ANY old /settings?tab=… link still lands right. `bySub` handles the three old
-// tabs whose sub-sections split across themes (agenda, display, ai): the raw
-// ?sub= picks the real target; sub keys themselves never changed, so a ?sub that
-// stays within the base tab passes through useTabParam's valid-set untouched.
-const LEGACY_TAB: Record<string, { tab: string; sub?: string; bySub?: Record<string, { tab: string; sub: string }> }> = {
-  guide: { tab: 'decouvrir' },
-  household: { tab: 'maison', sub: 'members' },
-  devices: { tab: 'settings', sub: 'tablets' },
-  agenda: {
-    tab: 'board',
-    sub: 'events',
-    bySub: { cars: { tab: 'maison', sub: 'cars' }, schedule: { tab: 'maison', sub: 'schedule' } },
-  },
-  chores: { tab: 'maison', sub: 'chores' },
-  recipes: { tab: 'kitchen', sub: 'apparence' },
-  shopping: { tab: 'liste', sub: 'shop' },
-  display: { tab: 'settings', sub: 'display', bySub: { layout: { tab: 'board', sub: 'layout' } } },
-  ai: { tab: 'settings', sub: 'ai', bySub: { thisweek: { tab: 'board', sub: 'thisweek' } } },
-  // The previously-retired ids, re-pointed at their themed homes:
-  guest: { tab: 'settings', sub: 'guest' },
-  auto: { tab: 'maison', sub: 'cars' },
-  todos: { tab: 'maison', sub: 'todos' },
-  meals: { tab: 'kitchen', sub: 'meals' },
-  reserve: { tab: 'kitchen', sub: 'reserve' },
-  ghost: { tab: 'liste', sub: 'ghost' },
-  calm: { tab: 'settings', sub: 'calm' },
-  photos: { tab: 'settings', sub: 'photos' },
-  week: { tab: 'board', sub: 'thisweek' },
-  'ai-log': { tab: 'settings', sub: 'system' },
-  // 'cercle' and 'routines' DEMOTED back from real tab ids to aliases by the nav
-  // restructure (Le cercle + Routines merged into Maison): no bySub needed here
-  // — every old cercle/routines sub id lives on verbatim inside maison, so a raw
-  // ?sub still in the valid set passes useTabParam untouched, and the sub named
-  // below is only the no-?sub fallback (members first for the old cercle alias —
-  // it used to mean the groups sub; routines first for the old routines alias).
-  cercle: { tab: 'maison', sub: 'members' },
-  routines: { tab: 'maison', sub: 'routines' },
-}
-
-// C-15 — retired ?sub= ids WITHIN a still-current tab (unlike LEGACY_TAB, whose
-// keys are retired TAB ids). Kitchen's three colour subs (tags/pills/measure)
-// folded into one « Apparence » sub; each old sub id resolves here regardless of
-// which one a link named (order-independent — a Set would do, this stays
-// self-documenting per source sub). Consulted only as a fallback for the
-// current tab's sub picker; a still-valid ?sub takes priority.
-const LEGACY_SUB: Record<string, Record<string, string>> = {
-  kitchen: { tags: 'apparence', pills: 'apparence', measure: 'apparence' },
-}
+// Retired TAB ids (LEGACY_TAB) and retired SUB ids (LEGACY_SUB) both live in
+// lib/settingsNav now, beside the tree they fold into — plain data, so the
+// guide-link guard and the alias spec read the same map this page does.
 
 // Operator hub. Reached two ways: the signed-in operator (phone/laptop, full
 // access) OR a parent-mode kiosk (a paired wall tablet — device token, no cookie),
@@ -136,7 +102,8 @@ export function Operator() {
 
   // A paired wall tablet may open Réglages too; `signedIn` is the full operator.
   // A read-only LINK guest (the public demo) may open it as well — for the guide and
-  // the device-local knobs, and nothing else. See GUEST_SUBS below.
+  // the device-local knobs, and nothing else (each section's `access` in
+  // lib/settingsNav decides; see `viewer` below).
   const paired = isPaired()
   const guest = isGuestLocked()
   const canEnter = signedIn || paired || guest
@@ -259,13 +226,18 @@ export function Operator() {
         (prev) => {
           const next = new URLSearchParams(prev)
           next.delete('focus')
+          // The pill this focus DERIVED (a link may name only the section — see the
+          // sub fallback below) is pinned now, or dropping the param would fold the
+          // URL back to the tab's first pill and unmount the card we just reached.
+          const derived = subOfFocus(tab, focus)
+          if (derived && !next.get('sub')) next.set('sub', derived)
           return next
         },
         { replace: true },
       )
     }, 120)
     return () => window.clearInterval(timer)
-  }, [params, setParams])
+  }, [params, setParams, tab])
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
       reserveLocations: t.operator.reserveTitle,
@@ -323,184 +295,122 @@ export function Operator() {
   // Sections are homed on the theme they configure: the board tab owns what the
   // board SHOWS (agenda, layout, la semaine), Système owns the device/
   // household-wide machinery (access, display, veille, IA, diagnostics).
-  const subBodies: { [T in SettingsTabId]: Record<(typeof SETTINGS_SUBS)[T][number], { label: string; node: ReactNode }> } = {
-    board: {
-      // D-17 « La rentrée »: SchoolYearSection stacks under the SAME 'events' pill
-      // as EventsSection (C-15 standing rule — a new setting merges into an
-      // existing sub, never adds a pill; same board▸thisweek precedent).
-      events: {
-        label: t.operator.events,
-        node: (
-          <>
-            <EventsSection events={events} members={members} onChange={load} />
-            <SchoolYearSection help={operatorHelp} />
-          </>
-        ),
-      },
-      layout: { label: t.operator.boardLayout, node: <BoardLayoutSection help={operatorHelp} /> },
-      // « La semaine » — the calm week glance + the AI weekly recap, one pill.
-      thisweek: {
-        label: t.operator.weekTabTitle,
-        node: (
-          <>
-            <ThisWeekTogetherSection help={operatorHelp} />
-            <RecapSection help={operatorHelp} />
-          </>
-        ),
-      },
-    },
-    kitchen: {
-      // C-15 — étiquettes + pastilles + couleurs de mesure were three separate
-      // colour-tinkering pills; folded into ONE « Apparence » sub (stacked
-      // bodies under one pill, the board▸thisweek / settings▸system precedent —
-      // no nested SubTabs). Listed first so it's the useTabParam fallback.
-      apparence: {
-        label: t.operator.kitchenLookTitle,
-        node: (
-          <>
-            <RecipeTagsSection help={operatorHelp} />
-            <RecipePillsSection help={operatorHelp} />
-            <MeasureColorsSection help={operatorHelp} />
-          </>
-        ),
-      },
-      // « Jours affichés » stacks under the SAME 'meals' pill as MealSlotsSection
-      // (C-15 standing rule — a new setting merges into the sub that already owns
-      // the concept, never adds a pill; the board▸events / SchoolYearSection
-      // precedent). The slots section owns the meals OF a day; this one owns how
-      // many days the grid reaches.
-      meals: {
-        label: t.operator.mealColors,
-        node: (
-          <>
-            <MealSlotsSection help={operatorHelp} />
-            <MealWindowSection help={operatorHelp} />
-          </>
-        ),
-      },
-      reserve: { label: t.operator.reserveTitle, node: <ReserveLocationsSection help={operatorHelp} /> },
-    },
-    liste: {
-      shop: { label: t.operator.shopping, node: <ShopSection help={operatorHelp} /> },
-      aisles: { label: t.operator.aisleOrder, node: <AisleOrderSection /> },
-      stores: { label: t.operator.storeFilter, node: <StoreFilterSection help={operatorHelp} /> },
-      history: { label: t.operator.history, node: <HistorySection help={operatorHelp} /> },
-      ghost: { label: t.operator.ghost, node: <GhostSection help={operatorHelp} /> },
-    },
-    // Maison merges the old cercle + routines tabs (nav restructure); sub ORDER
-    // follows SETTINGS_SUBS.maison — the namesake « routines » sub leads (also
-    // keeps legacy ?tab=routines landing here), then the old cercle subs. « Les
-    // notes » (the old Social/Famille notes point) moved out to its own
-    // Comprendre-only tab, so it has no body here.
-    maison: {
-      routines: { label: t.operator.routines, node: <RoutinesSection routines={routines} onChange={load} /> },
-      chores: { label: t.operator.chores, node: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} /> },
-      todos: { label: t.todos.templatesTitle, node: <TodoTemplatesSection help={operatorHelp} /> },
-      members: { label: t.operator.members, node: <MembersSection members={members} onChange={load} /> },
-      cercle: { label: t.operator.cercleGroupsTitle, node: <CercleGroupsSection help={operatorHelp} /> },
-      // L'auto + per-member hours live in Maison's world (getting-around, berry).
-      cars: { label: t.operator.carsTitle, node: <CarsSection help={operatorHelp} /> },
-      schedule: { label: t.operator.schedTitle, node: <ScheduleSection help={operatorHelp} /> },
-      // « La maison cette année » (B-8, bmad/09) — the house's diary, a read view.
-      annee: { label: t.operator.diaryTab, node: <HouseDiarySection help={operatorHelp} /> },
-    },
-    settings: {
-      tablets: {
-        label: t.operator.devices,
-        node: (
-          <>
-            <ClaimTablet onClaimed={load} />
-            <DevicesSection devices={devices} onChange={load} />
-          </>
-        ),
-      },
-      guest: { label: t.guest.title, node: <GuestSection help={operatorHelp} /> },
-      display: { label: t.operator.display, node: <DisplaySection help={operatorHelp} /> },
-      // « Mode veille » — two stacked bodies under ONE pill (C-15): what the idle
-      // screen does on its own, then when « Le point du jour » opens on its own.
-      ambient: {
-        label: t.operator.ambientTitle,
-        node: (
-          <>
-            <AmbientSettingsSection help={operatorHelp} />
-            <HabitCheckinSection help={operatorHelp} />
-          </>
-        ),
-      },
-      photos: { label: t.operator.photos, node: <PhotosSection help={operatorHelp} /> },
-      ai: { label: t.operator.aiTitle, node: <AiSection help={operatorHelp} /> },
-      voice: { label: t.operator.voiceTitle, node: <VoiceSection help={operatorHelp} /> },
-      calm: { label: t.operator.calmTitle, node: <CalmSection help={operatorHelp} /> },
-      // « Version & diagnostics » — service health (which optional pieces are wired,
-      // and what quietly hides without them) + build info + « Emporter mes données »
-      // (E-35) + mic self-test + (when AI is on) the error log, grouped as one pill.
-      system: {
-        label: t.operator.sysTabTitle,
-        node: (
-          <>
-            <HealthSection />
-            <BuildInfoSection />
-            <TakeoutSection />
-            <MicSelfTest help={operatorHelp} />
-            <KbDebugSection help={operatorHelp} />
-            {aiEnabled && <AiErrorLogSection help={operatorHelp} />}
-          </>
-        ),
-      },
-    },
+  // ONE node per SECTION, keyed by its helpKey — exhaustive against SETTINGS_TREE
+  // (a section in the tree with no node here, or a node for no section, fails
+  // tsc). Which sections stack under which pill, in what order, and who may see
+  // each, is the tree's business, not this map's: moving a card between pills is
+  // an edit in lib/settingsNav and nothing here.
+  const sectionNodes: Record<SettingsSectionKey, ReactNode> = {
+    // board
+    events: <EventsSection events={events} members={members} onChange={load} />,
+    schoolYear: <SchoolYearSection help={operatorHelp} />,
+    thisWeek: <ThisWeekTogetherSection help={operatorHelp} />,
+    recap: <RecapSection help={operatorHelp} />,
+    boardLayout: <BoardLayoutSection help={operatorHelp} />,
+    // kitchen
+    recipeTags: <RecipeTagsSection help={operatorHelp} />,
+    recipePills: <RecipePillsSection help={operatorHelp} />,
+    measureColors: <MeasureColorsSection help={operatorHelp} />,
+    mealSlots: <MealSlotsSection help={operatorHelp} />,
+    mealWindow: <MealWindowSection help={operatorHelp} />,
+    reserveLocations: <ReserveLocationsSection help={operatorHelp} />,
+    // liste
+    shop: <ShopSection help={operatorHelp} />,
+    aisleOrder: <AisleOrderSection />,
+    storeFilter: <StoreFilterSection help={operatorHelp} />,
+    history: <HistorySection help={operatorHelp} />,
+    ghost: <GhostSection help={operatorHelp} />,
+    // maison
+    routines: <RoutinesSection routines={routines} onChange={load} />,
+    chores: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />,
+    todoTemplates: <TodoTemplatesSection help={operatorHelp} />,
+    members: <MembersSection members={members} onChange={load} />,
+    cercleGroups: <CercleGroupsSection help={operatorHelp} />,
+    cars: <CarsSection help={operatorHelp} />,
+    schedule: <ScheduleSection help={operatorHelp} />,
+    houseDiary: <HouseDiarySection help={operatorHelp} />,
+    // settings (Système)
+    claimTablet: <ClaimTablet onClaimed={load} />,
+    devices: <DevicesSection devices={devices} onChange={load} />,
+    guestLinks: <GuestSection help={operatorHelp} />,
+    health: <HealthSection />,
+    buildInfo: <BuildInfoSection />,
+    takeout: <TakeoutSection />,
+    micTest: <MicSelfTest help={operatorHelp} />,
+    kbDebug: <KbDebugSection help={operatorHelp} />,
+    // The error log only exists while AI is on; the tree still lists it (the anchor
+    // must stay stable), the node just renders nothing when there's nothing to log.
+    aiLog: aiEnabled ? <AiErrorLogSection help={operatorHelp} /> : null,
+    display: <DisplaySection help={operatorHelp} />,
+    ambient: <AmbientSettingsSection help={operatorHelp} />,
+    habits: <HabitCheckinSection help={operatorHelp} />,
+    photos: <PhotosSection help={operatorHelp} />,
+    calm: <CalmSection help={operatorHelp} />,
+    ai: <AiSection help={operatorHelp} />,
+    voice: <VoiceSection help={operatorHelp} />,
   }
+  // Pill labels, from the taxonomy's i18n keys (SUB_LABEL_KEY) — typed against the
+  // tree, so a pill can't lose its label in a reshuffle.
+  const subLabel = (tab: SettingsTabId, subId: string): string =>
+    (t.operator as Record<string, unknown>)[(SUB_LABEL_KEY[tab] as Record<string, string>)[subId]] as string
+
+  // Who is looking: the viewer decides which sections (and therefore which pills)
+  // exist at all — lib/settingsNav's `access` per section, not a hand-kept
+  // allowlist. A LINK guest gets device-local cards only (the demo must still be
+  // able to flip its theme, lens, voice and calm — and read the guide); a paired
+  // kiosk gets everything but the operator-only cards (member admin, pairing,
+  // guest links, the household export), whose writes the server refuses anyway.
+  const viewer = { guest, operator: fullAccess }
+
+  // The sub rows, from the tree: per tab, the pills this viewer may open, each with
+  // its visible sections stacked in tree order.
   const subSections: Record<string, { key: string; label: string; node: ReactNode }[]> = Object.fromEntries(
-    (Object.keys(subBodies) as SettingsTabId[]).map((tabId) => [
+    (Object.keys(SETTINGS_SUBS) as SettingsTabId[]).map((tabId) => [
       tabId,
-      SETTINGS_SUBS[tabId].map((k) => ({ key: k, ...(subBodies[tabId] as Record<string, { label: string; node: ReactNode }>)[k] })),
+      visibleSubs(tabId, viewer).map((subId) => ({
+        key: subId,
+        label: subLabel(tabId, subId),
+        node: (
+          <>
+            {visibleSections(tabId, subId, viewer).map((section) => (
+              <Fragment key={section.key}>{sectionNodes[section.key as SettingsSectionKey]}</Fragment>
+            ))}
+          </>
+        ),
+      })),
     ]),
   )
-
-  // Kiosk gating, per-sub: member/group admin, tablet pairing and guest links are
-  // operator-only — dropped from the pill row AND the valid ?sub set, so a deep
-  // link folds to the tab's first visible sub instead of bypassing the gate.
-  const gatedSubs: Record<string, string[]> = fullAccess ? {} : { maison: ['members', 'cercle'], settings: ['tablets', 'guest'] }
-
-  // Guest gating, per-sub — an ALLOWLIST, not a denylist, because the safe set is the
-  // small one and a sub added later must not silently open itself to the demo. These
-  // five are exactly the subs whose every control writes localStorage: « Disposition »
-  // (lib/boardCards), « Affichage » (theme/lang/lens/a11y), « Mode veille »
-  // (lib/ambient), « Voix » (lib/speak) and « Calme ». Everything else reads or writes
-  // the household — Membres, Tablettes, Invités, Photos, IA, and « Version &
-  // diagnostics » (which carries « Emporter mes données », an export of the whole
-  // household). Note « Apparence » stays out: it looks device-local, but
-  // MeasureColorsSection PATCHes /api/household.
-  //
-  // Comprendre — the guide — stays open on every tab, and Découvrir has no subs at
-  // all, so a guest always has something to read even where Régler is empty.
-  const GUEST_SUBS: Record<string, string[]> = { board: ['layout'], settings: ['display', 'ambient', 'voice', 'calm'] }
-
   // The current tab's sub-sections + which one is open, held in the URL (?sub=<key>)
   // so a sub-tab survives a refresh / return-from-scene and composes with ?tab=. The
-  // sub fallback comes from a retired-tab fold when the URL used one and named no
-  // explicit ?sub (so /settings?tab=chores opens Routines ▸ Corvées), else the tab's
-  // first sub. useTabParam folds an out-of-set ?sub (e.g. left over from another tab)
-  // to that fallback, so switching tabs always lands on a valid sub.
+  // sub fallback is worked out just below (a retired sub, a ?focus= section, a
+  // retired-tab alias, else the tab's first pill — so /settings?tab=chores opens
+  // Maison ▸ « Tâches de la maison »). useTabParam folds an out-of-set ?sub (e.g.
+  // left over from another tab) to that fallback, so switching tabs always lands on
+  // a valid sub.
   //
   // `subs` is null when this tab offers the viewer no Régler side at all (Découvrir,
   // or any tab a guest can't configure) — the lens toggle then drops to Comprendre
   // alone rather than rendering an empty pill row.
-  const visibleSubs = subSections[tab]
-    ? subSections[tab].filter((s) => (guest ? (GUEST_SUBS[tab] ?? []).includes(s.key) : !gatedSubs[tab]?.includes(s.key)))
-    : null
-  const subs = visibleSubs && visibleSubs.length > 0 ? visibleSubs : null
+  const subs = subSections[tab] && subSections[tab].length > 0 ? subSections[tab] : null
   const subKeys = subs ? subs.map((s) => s.key) : []
   const aliasSub = legacyTarget?.sub
-  // A retired within-tab sub (e.g. /settings?tab=kitchen&sub=tags) folds via
-  // LEGACY_SUB before falling to the tab's first sub — checked ahead of the
-  // LEGACY_TAB alias since it's the more specific match (same tab, old sub).
-  const legacySub = rawSub ? LEGACY_SUB[tab]?.[rawSub] : undefined
+  // Where a URL lands when its ?sub is missing or stale, most specific first:
+  //   1. a retired within-tab sub (?tab=kitchen&sub=tags) folds via LEGACY_SUB;
+  //   2. a ?focus= names a SECTION — the sub that holds it today is derived
+  //      (subOfFocus), so a link may skip ?sub entirely and survive a reshuffle;
+  //   3. a LEGACY_TAB alias names its own default sub;
+  //   4. the tab's first pill.
+  // A still-valid ?sub takes priority over all of these (useTabParam keeps it).
+  const legacySub = rawSub ? (LEGACY_SUB[tab as SettingsTabId] as Record<string, string> | undefined)?.[rawSub] : undefined
+  const focusSub = params.get('focus') ? subOfFocus(tab, params.get('focus')!) : undefined
   const subFallback =
     legacySub && subKeys.includes(legacySub)
       ? legacySub
-      : aliasSub && subKeys.includes(aliasSub)
-        ? aliasSub
-        : (subKeys[0] ?? '')
+      : focusSub && subKeys.includes(focusSub)
+        ? focusSub
+        : aliasSub && subKeys.includes(aliasSub)
+          ? aliasSub
+          : (subKeys[0] ?? '')
   const [sub, setSub] = useTabParam('sub', subFallback, subKeys)
   const activeSub = subs?.find((s) => s.key === sub) ?? subs?.[0]
 
@@ -617,7 +527,8 @@ export function Operator() {
             <DiscoverSection />
           ) : (
             <>
-              {/* No Régler side on this tab for this viewer (a guest outside GUEST_SUBS):
+              {/* No Régler side on this tab for this viewer (a guest on a tab with no
+                  device-local card — lib/settingsNav `visibleSubs`):
                   drop the lens toggle rather than offer a pill that opens nothing, and
                   let the guide stand on its own. */}
               {subs && (
@@ -658,6 +569,10 @@ export function Operator() {
               {lens === 'regler' && subs ? (
                 <>
                   <SubTabs
+                    // THE pill row's hook (`.operator__subs`): `.subtabs` alone also matches
+                    // the lens toggle above and any SubTabs a stacked card renders inside
+                    // itself (the guest link kinds, corvées ▸ projets ▸ entretien).
+                    className="operator__subs"
                     options={subs.map((s) => ({ key: s.key, label: s.label }))}
                     value={activeSub?.key ?? subs[0].key}
                     onSelect={setSub}

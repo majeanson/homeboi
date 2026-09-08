@@ -16,7 +16,7 @@ export function BuildInfoSection() {
       ? when.toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'long', timeStyle: 'short' })
       : t.operator.buildNever
   return (
-    <OperatorSection title={t.operator.buildTitle}>
+    <OperatorSection title={t.operator.buildTitle} helpKey="buildInfo">
       <p className="lead">
         {t.operator.buildBuilt} : {formatted}
       </p>

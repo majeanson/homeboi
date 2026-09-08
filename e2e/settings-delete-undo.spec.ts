@@ -52,7 +52,7 @@ test('a deleted event stays gone across a remount, then « Annuler » restores i
   const pill = (name: string) => page.locator('.subtabs__opt', { hasText: name })
   await pill('Disposition du babillard').click()
   await expect(page.locator('.operator__list li', { hasText: title })).toHaveCount(0)
-  await pill('Rendez-vous').click()
+  await pill('Agenda & semaine').click()
   await expect(page.locator('.operator__list li').first()).toBeVisible()
   await expect(row(), 'a remount must not resurrect a row held behind the undo').toHaveCount(0)
 

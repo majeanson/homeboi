@@ -1,5 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useT } from '../i18n'
+import { settingsHref } from '../lib/settingsNav'
 import { InlineIcon } from './Icon'
 
 // Reads the operator's `?preview=<kind>` on a share scene (HandoffPage / WelcomePage
@@ -22,7 +23,7 @@ export function SharePreviewBar() {
       <span className="share-preview__note mono">
         <InlineIcon name="magnifying-glass-bold" /> {t.shareMode.previewNote}
       </span>
-      <button type="button" className="btn btn--sm" onClick={() => navigate('/settings?tab=settings&sub=guest')}>
+      <button type="button" className="btn btn--sm" onClick={() => navigate(settingsHref({ tab: 'settings', focus: 'guestLinks' }))}>
         <InlineIcon name="x-bold" /> {t.shareMode.closePreview}
       </button>
     </div>

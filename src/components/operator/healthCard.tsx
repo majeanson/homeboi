@@ -54,7 +54,7 @@ export function HealthSection() {
     },
   ]
   return (
-    <OperatorSection title={t.operator.healthTitle} hint={t.operator.healthHint}>
+    <OperatorSection title={t.operator.healthTitle} hint={t.operator.healthHint} helpKey="health">
       <ul className="health-list">
         {rows.map((r) => (
           <li key={r.name} className="health-list__row">

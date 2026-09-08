@@ -39,7 +39,7 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   }
 
   return (
-    <OperatorSection title={t.operator.chores}>
+    <OperatorSection title={t.operator.chores} helpKey="chores">
       <ul className="operator__list">
         {removal.visible(chores).map((c) => (
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
@@ -153,7 +153,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   }
 
   return (
-    <OperatorSection title={t.operator.routines}>
+    <OperatorSection title={t.operator.routines} helpKey="routines">
       {routines.length === 0 && <EmptyState>{t.operator.noRoutines}</EmptyState>}
       <ul className="operator__list">
         {routines.map((r) => {

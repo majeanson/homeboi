@@ -75,6 +75,7 @@ export function AisleOrderSection() {
 
   return (
     <OperatorSection
+      helpKey="aisleOrder"
       title={t.operator.aisleOrder}
       hint={t.operator.aisleOrderHint}
       action={

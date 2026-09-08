@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
+import { settingsHref } from '../../lib/settingsNav'
 import { useARegler, frictionRow } from '../../lib/aRegler'
 import { Icon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
@@ -34,7 +35,7 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
   // The first friction is the headline; with a SINGLE friction, tap goes straight to
   // its one-tap fix; with several, to « Cette semaine » for the full list.
   const first = frictionRow(signals[0], t)
-  const to = signals.length === 1 ? signals[0].href : '/settings?tab=board&sub=thisweek'
+  const to = signals.length === 1 ? signals[0].href : settingsHref({ tab: 'board', focus: 'thisWeek' })
   const aria = `${t.aRegler.title} (${signals.length})`
 
   // Card: a hero-style tile (marigold = a warm heads-up), label + the lead friction as

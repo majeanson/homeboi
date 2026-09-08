@@ -92,10 +92,14 @@ Tier 3 — polish (fix opportunistically, or bundle with the tier above).
 > built. **Four were stale** — the same ratio tier 2 had, and the same reason: the fix
 > landed in the file that owned it and this list was never re-read. Verdicts inline.
 
-- Cashier ✓ is a second ephemeral check-state disjoint from the list (shop). *(not
-  re-checked — a design question, not a defect.)*
-- Staples chips re-ask what pantry-low/list already know (plan). *(not re-checked —
-  same.)*
+- [~] Cashier ✓ is a second ephemeral check-state disjoint from the list (shop).
+  **Won't do (Marc, 2026-09-08).** The till's tick is deliberately its own, in-store
+  check — it says "scanned" while the shared list keeps saying "to buy" for whoever
+  is still shopping elsewhere. Reviewed and parked, not deferred.
+- [~] Staples chips re-ask what pantry-low/list already know (plan). **Won't do
+  (Marc, 2026-09-08).** The chips are a planning prompt, not an inventory question;
+  folding them into pantry-low would make a glance at the week depend on the pantry's
+  bookkeeping. Reviewed and parked.
 - ✅ **2026-08-28** Gather tick ~27px beside a read-aloud zone — **stale, and settled by
   MEASUREMENT rather than by reading the CSS.** The « Magasiner la semaine » ticks render
   **46px** tall at 390px (`.chip` carries `min-height: 40px`, and the icon + padding take
@@ -104,11 +108,11 @@ Tier 3 — polish (fix opportunistically, or bundle with the tier above).
   the measurement is now a guard in `interactions.spec.ts` › « shop the week », asserting
   each tick against `--touch-target` read from the live stylesheet (not a hard-coded 44).
   *Still open:* cook-bar icons crowded (cook).
-- 🔶 No meal-done — the supper hero headlines an eaten meal all evening (cook).
-  **Half stale:** « Marquer mangé » exists as a detail-peek action
-  (`components/detail/adapters.ts:417`, `t.detail.markEaten`). Whether the board's
-  supper hero *reflects* it is the part still open — the door was the missing piece
-  the item described, and it is there.
+- [~] No meal-done — the supper hero headlines an eaten meal all evening (cook).
+  **Re-verified 2026-09-08, and the earlier note was itself wrong:** « Marquer mangé »
+  is a LEFTOVER action (`buildLeftover`, `adapters.ts:422`) — a planned meal has no
+  done state at all, so there was nothing for the hero to reflect. **Declined (Marc,
+  2026-09-08): the hero is a plan, not a tracker.** Reviewed and parked.
 - ✅ **2026-08-28** Cold kitchen grid flashes a Jan-1970 week (`weekStart ?? 0`) (plan).
   **The named site was already fixed** (`pages/Kitchen.tsx` holds a `Skeleton` until the
   meals payload lands, with the comment explaining why). Sweeping the RULE instead of the

@@ -162,7 +162,7 @@ test('the window picker only offers what the rest of the app supports', async ({
 // hand (NoteEditor's swallowed auto-save, the trip cover that could never be set).
 
 test('excluding a store patches household with the remaining allowlist', async ({ page }) => {
-  await page.goto('/settings?tab=liste&sub=stores')
+  await page.goto('/settings?tab=liste&sub=shop&focus=storeFilter')
   const section = page.locator('#operator-panel')
   // The flyer fixture holds Super C + IGA (two IGA flyers fold to one store row),
   // sorted by merchant — so row 0 is IGA. The household has includedStores: [],
@@ -186,7 +186,7 @@ test('the à-la-caisse flag is independent of the include allowlist', async ({ p
   // only hides its deals from the till surface — the store you shop at yourself.
   // Wiring the till toggle into includedStores would silently drop that store's
   // deals everywhere, which is exactly the mistake a screenshot cannot see.
-  await page.goto('/settings?tab=liste&sub=stores')
+  await page.goto('/settings?tab=liste&sub=shop&focus=storeFilter')
   const row = page.locator('#operator-panel').locator('.store-filter__row').first()
   await expect(row).toBeVisible()
   const [req] = await Promise.all([
@@ -206,7 +206,7 @@ test('« Remettre l’ordre par défaut » patches household with the full aisle
   // The aisle order is otherwise reorderable only by dragging, so the reset button
   // is the one mouse/keyboard-reachable write in this panel — and the only handle
   // a test can pull without simulating a pointer drag.
-  await page.goto('/settings?tab=liste&sub=aisles')
+  await page.goto('/settings?tab=liste&sub=shop&focus=aisleOrder')
   const section = page.locator('#operator-panel')
   // The reset now confirms first (2026-09-03 predictability audit — a one-tap
   // factory reset sharing undo's icon, with no confirm, was finding #1).
@@ -232,7 +232,7 @@ test('« Remettre l’ordre par défaut » patches household with the full aisle
 // with a swallowed .catch), so nothing on screen changes if the write is lost.
 
 test('adding a todo template posts it', async ({ page }) => {
-  await page.goto('/settings?tab=maison&sub=todos')
+  await page.goto('/settings?tab=maison&sub=routines&focus=routines&focus=todoTemplates')
   const section = page.locator('#operator-panel')
   const add = section.getByLabel('Nom de la liste').last()
   await expect(add).toBeVisible()
@@ -249,7 +249,7 @@ test('adding a todo template posts it', async ({ page }) => {
 })
 
 test('renaming a todo template patches it by id', async ({ page }) => {
-  await page.goto('/settings?tab=maison&sub=todos')
+  await page.goto('/settings?tab=maison&sub=routines&focus=routines&focus=todoTemplates')
   const section = page.locator('#operator-panel')
   // Row 0 is « Avant de partir » (tpl1) in the fixture; its title is an inline
   // editable field. The id must ride along or the rename lands on the wrong list.
@@ -266,7 +266,7 @@ test('renaming a todo template patches it by id', async ({ page }) => {
 })
 
 test('the routine moment chip patches that routine’s timeOfDay', async ({ page }) => {
-  await page.goto('/settings?tab=maison&sub=routines')
+  await page.goto('/settings?tab=maison&sub=routines&focus=routines')
   const section = page.locator('#operator-panel')
   // « Matin » (r1) starts timeOfDay 'morning'; the chip cycles
   // anytime → matin → après-midi → soir → anytime, one write per tap. The routineId

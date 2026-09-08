@@ -44,7 +44,7 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
   }
 
   return (
-    <OperatorSection title={t.pair.claimTitle} hint={t.pair.claimLead} className="operator__claim">
+    <OperatorSection title={t.pair.claimTitle} hint={t.pair.claimLead} className="operator__claim" helpKey="claimTablet">
       <form className="operator__inline-form" onSubmit={submit}>
         <input
           className="input"
@@ -97,7 +97,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
     })
   }
   return (
-    <OperatorSection title={t.operator.devices}>
+    <OperatorSection title={t.operator.devices} helpKey="devices">
       {active.length === 0 ? (
         <EmptyState>{t.operator.noDevices}</EmptyState>
       ) : (

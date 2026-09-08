@@ -5,6 +5,7 @@
 // useEntityDetail().open(). Colours/icons reuse the one source (lib/cats), dates
 // the shared formatters (lib/format), images imgUrl()/recipeImg().
 import { CATS } from '../../lib/cats'
+import { settingsHref } from '../../lib/settingsNav'
 import { colourFor } from '../../lib/things'
 import { imgUrl } from '../../lib/image'
 import { type Contact, type Person, type Pet, daysUntilBirthday, ageOnNextBirthday, formatBirthday, formatAddress, mapsUrl, parseContactAddress, fullName } from '../../lib/cercle'
@@ -805,7 +806,7 @@ export function buildMemberPerson(
   // « Planifier un rendez-vous » — an appointment concerning this member, opening
   // the shared EventForm with them pre-selected.
   if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', run: opts.onSchedule })
-  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', overflow: true, href: '/settings?tab=maison&sub=members' })
+  actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', overflow: true, href: settingsHref({ tab: 'maison', focus: 'members' }) })
   return {
     kind: 'contact',
     title: p.name,

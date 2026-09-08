@@ -7,26 +7,30 @@ import { mockApi, seedState } from './mocks'
 // birthday strip, the DrawPad bars) hides its scrollbar for calm. On a touch screen
 // you swipe them. On a DESKTOP that used to hide content outright: no scrollbar to
 // drag, no swipe, and a mouse wheel only emits deltaY — which no browser maps onto a
-// horizontal scroller. Réglages ▸ Régler ▸ Système has nine subs (« Tablettes
+// horizontal scroller. Réglages ▸ Régler ▸ Système had nine subs then (« Tablettes
 // jumelées » … « Diagnostics »); the ones past the right edge were unclickable.
 //
 // The fix is lib/hscroll.ts (`useHScroll`): it maps the wheel and drives the ‹ ›
 // chevrons SubTabs renders while the row overflows. Guard both paths here.
 //
-// A desktop viewport ≥60rem is deliberate: that's where the Réglages nav becomes a
-// sidebar, so the panel (and its sub row) is narrower than the window — the exact
-// geometry that made the row overflow on a big screen.
-const DESKTOP = { width: 1024, height: 800 }
+// The row under test moved (2026-09-08): Réglages went 28 → 14 pills and no pill row
+// outgrows a desktop any more, so the geometry that made the bug is a PHONE width,
+// where Maison's four (« Tâches de la maison · La maisonnée · L'auto & horaires ·
+// Cette année ») still outgrow 390px. The mechanics under test are identical: a
+// mouse (fine pointer) on a hidden-scrollbar row. Playwright's desktop Chromium keeps
+// a fine pointer at any viewport size, so the chevrons render.
+const PHONE = { width: 390, height: 844 }
 
-// The subs row, not the « Comprendre / Régler » lens toggle above it (`.operator__lens`).
-const SUBS = '.operator__panel .subtabs:not(.operator__lens)'
+// THE pill row (`.operator__subs`, set by Operator) — not the « Comprendre / Régler »
+// lens toggle above it, nor a SubTabs a stacked card renders inside itself.
+const SUBS = '.operator__subs'
 
 async function boot(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(DESKTOP)
+  await page.setViewportSize(PHONE)
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto('/settings?tab=settings&lens=regler')
+  await page.goto('/settings?tab=maison&lens=regler')
   await page.locator(SUBS).waitFor({ state: 'visible', timeout: 15_000 })
   await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
 }
@@ -39,12 +43,12 @@ const metrics = (page: Page) =>
   }))
 
 test.describe('side-scrolling rows stay reachable with a mouse', () => {
-  test('the Système sub row really does overflow on a desktop', async ({ page }) => {
+  test('the Maison pill row really does overflow at phone width', async ({ page }) => {
     await boot(page)
     const m = await metrics(page)
     // The precondition of the whole bug. If this ever stops being true the row got
     // narrower/shorter and the rest of this file is testing nothing — fail loudly.
-    expect(m.scrollWidth, 'nine subs must outgrow the settings panel').toBeGreaterThan(m.clientWidth + 1)
+    expect(m.scrollWidth, 'four Maison pills must outgrow a 390px panel').toBeGreaterThan(m.clientWidth + 1)
   })
 
   test('a vertical mouse wheel scrolls the row sideways', async ({ page }) => {
@@ -99,11 +103,11 @@ test.describe('side-scrolling rows stay reachable with a mouse', () => {
 
   test('a deep-linked sub is scrolled into view instead of hiding off-edge', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
-    await page.setViewportSize(DESKTOP)
+    // Maison's last pill is off the right edge of a 390px row on first paint.
+    await page.setViewportSize(PHONE)
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-    // 'system' is the LAST of the nine subs — off the right edge on first paint.
-    await page.goto('/settings?tab=settings&lens=regler&sub=system')
+    await page.goto('/settings?tab=maison&lens=regler&sub=annee')
     await page.locator(SUBS).waitFor({ state: 'visible', timeout: 15_000 })
     const active = page.locator(`${SUBS} [role="tab"][aria-selected="true"]`)
     await expect(active).toBeInViewport()

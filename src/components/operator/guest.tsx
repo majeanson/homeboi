@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
+import { settingsHref } from '../../lib/settingsNav'
 import { OperatorSection } from './OperatorSection'
 import { IntakeReview } from './IntakeReview'
 import { PostboxReview } from './PostboxReview'
@@ -140,7 +141,7 @@ const GUEST_LINKS_KEY = ['guest-links']
 // `null` means "scroll to the in-page ShareInfoEditor below" rather than navigate.
 const GAP_ROUTE: Record<HandoffGap, string | null> = {
   emergency: '/maison?section=family',
-  toKnow: '/settings?tab=maison&sub=members',
+  toKnow: settingsHref({ tab: 'maison', focus: 'members' }),
   bedtimeRoutines: '/maison',
   wifiSsid: null,
   pins: '/maison?section=carnets',
@@ -332,7 +333,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
 
       {subTab === 'phone' && (
         <>
-      <OperatorSection title={t.guest.title} help={help} helpKey="guest">
+      <OperatorSection title={t.guest.title} help={help} helpKey="guest" anchor="guestLinks">
         <label className="operator__seg">
           <span className="operator__seg-label mono">{t.guest.kindLabel}</span>
           <select className="input" value={kind} onChange={(e) => chooseKind(e.target.value as GuestKind)} disabled={busy}>

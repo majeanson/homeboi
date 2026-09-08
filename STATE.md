@@ -230,6 +230,55 @@ carries that discipline in its own header): three entries added.
 
 ---
 
+## 3-ter. Réglages, 28 → 14 pills — and the taxonomy that survives the next one (2026-09-08)
+
+Marc's step-4 answers, recorded: **meal-done is declined** (the supper hero is a plan,
+not a tracker — don't re-propose without a new observation); the cashier's second
+✓ and the staples chips are **won't-do** (both `[~]` in bmad/11); the queue after
+this is settings write coverage, then PARITY Wave D. And a new ask: « far too many
+tabs in Réglages — agglomerate », with the aggressive option chosen (28 → 14) and
+one condition — *make sure it survives another refactor easily (hints, tools, guides,
+concepts)*.
+
+**The model, not the merge, is the deliverable.** `lib/settingsNav.ts` is now the ONE
+map: `SETTINGS_TREE` — tab → pill → section cards, each card with an `access`
+(`device` / `household` / `operator`). A **section is the stable thing**, a pill is
+packaging. Everything derives: the pill ids and order, the `?focus=` anchors, the
+guest and kiosk narrowing (no allowlist — `visibleSubs`/`visibleSections` read the
+access), the pill labels (`SUB_LABEL_KEY`), and `subOfFocus`, which lets a link name
+just the section and have the pill follow it. `settingsHref({ tab, focus })` is how
+src spells a settings link now (10 sites converted); the guide's 38 « Régler » links
+name their section; retired ids fold forward-only (`LEGACY_TAB` moved beside
+`LEGACY_SUB`). Moving a card next time is one line in the tree plus one in
+LEGACY_SUB — and then four guards say what else to touch: `settingsNav.test.ts`
+(tree well-formed, legacy targets live, **nothing in src/ or e2e/ spells a retired
+pill**), `guideLinks.test.ts` (a link into a stacked pill names its card, and the
+sub it spells is the card's), `e2e/settings-tree.spec.ts` (every tree key mints its
+`#op-<key>` card, in tree order, and `?focus=` alone reaches it), and
+`e2e/settings-aliases.spec.ts` (every retired id still lands — walked from the data).
+
+**Proven red before trusted, all four:** a planted retired literal, a planted
+focus-less link, and — without planting — the tree spec found `AisleOrderSection`
+had no anchor (a multi-line open tag the helpKey sweep missed) and the focus walk
+found a REAL bug in the new fallback: consuming `?focus=` dropped the pill it had
+derived, unmounting the card just scrolled to. Both fixed; both would have shipped
+green otherwise.
+
+Two things the merge itself taught: `.subtabs` alone is no longer "the pills" — the
+lens toggle and any SubTabs a stacked card renders inside itself (guest link kinds,
+corvées ▸ projets ▸ entretien) match it too, so the pill row carries
+`.operator__subs` and specs scope to a card by its `#op-<key>`; and a 31-character
+pill label (« Appareils, accès & diagnostics ») filled a 390px row on its own, so the
+merge had bought nothing there until it became « Appareils & accès ». The hscroll
+spec, whose premise was Système's nine-sub overflow on a desktop, now tests Maison's
+four at phone width — same mechanics, honest geometry.
+
+Guards: 1970 unit · the Réglages e2e set 271 + 132 + 5 ✓ at `--workers=1 --retries=0`
+· matrix settings states 6/6. `DISCOVERY.md` carries the pill map; « Quoi de neuf »
+has the entry.
+
+---
+
 ## 4. What still needs improvement — consolidated and ranked
 
 Deduplicated across every source above. Ranked by **user harm**, not by which document
@@ -989,6 +1038,14 @@ and a qty-column | name-column print layout could still read as two columns. Bot
 real-photo corpora to tune against — not guessed at.
 
 ### D. Judgement calls waiting on Marc, not on code
+
+- ~~**A done state for a planned meal** (the supper hero headlines tonight's supper all
+  evening; « Marquer mangé » exists only on a leftover peek).~~ ✅ **answered
+  2026-09-08: leave it — the hero is a plan, not a tracker.** Declined, not deferred;
+  don't re-propose without a new observation.
+- ~~**The cashier's second ✓ / the staples chips** (bmad/11 tier 3, the two flow-audit
+  design questions).~~ ✅ **answered 2026-09-08: won't do**, both. Recorded as `[~]` in
+  bmad/11 so they stop being re-litigated.
 
 - ~~**`ARM_MS` 6s → 10s** on the toddler tiles.~~ ✅ **answered 2026-08-28: 6 s stands.**
   `bmad/history/AUJOURDHUI.md` now has no open boxes at all. Declined, not deferred — don't

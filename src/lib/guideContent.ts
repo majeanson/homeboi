@@ -609,7 +609,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'smiley-bold',
     group: 'concepts',
     route: '/maison',
-    settings: '/settings?tab=maison&sub=routines',
+    settings: '/settings?tab=maison&sub=routines&focus=routines',
     title: { fr: 'Routines', en: 'Routines' },
     what: {
       fr: 'Des routines en cartes-images pour les enfants (matin, dodo…), lues à voix haute. Un pré-lecteur les fait seul.',
@@ -660,7 +660,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'L’enfant touche sa créature pendant la routine : elle dit le truc de l’étape où il est rendu — « en haut, en bas… et la langue aussi ! » pour 🪥, « les deux souliers font un cœur » pour 👟. Chaque pictogramme a le sien. Dans Réglages ▸ Routines, 💡 « Le truc » te laisse écrire le tien sur une carte : c’est lui qui sera dit. La créature ne parle que si on la touche, et ne commente jamais si l’étape a été faite — elle tient compagnie et donne un coup de main, elle ne note pas.',
           en: 'The child taps their creature during a routine: it says the trick for the step they’re on — “top teeth, bottom teeth… and your tongue too!” for 🪥, “your shoes make a heart shape” for 👟. Every pictogram has its own. In Settings ▸ Routines, 💡 “The trick” lets you write your own on a card, and that’s what gets said. The creature only speaks when tapped, and never comments on whether a step got done — it keeps company and lends a hand, it doesn’t grade.',
         },
-        route: '/settings?tab=maison&sub=routines',
+        route: '/settings?tab=maison&sub=routines&focus=routines',
       },
       {
         label: { fr: 'Une minuterie sur une étape', en: 'A timer on a step' },
@@ -696,7 +696,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Les étapes et les images se montent dans Réglages ▸ Routines.',
           en: 'Steps and pictures are built in Settings ▸ Routines.',
         },
-        route: '/settings?tab=maison&sub=routines',
+        route: '/settings?tab=maison&sub=routines&focus=routines',
       },
       {
         label: { fr: 'Jouer', en: 'Play' },
@@ -722,7 +722,7 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'Le cercle', en: 'The circle' },
     route: '/maison?section=family',
-    settings: '/settings?tab=maison&sub=members',
+    settings: '/settings?tab=maison&sub=members&focus=members',
     what: {
       fr: 'Le carnet des proches : famille, amis et animaux, avec photo, fête, courriel et téléphone.',
       en: 'The directory of the people close to you: family, friends and pets, with photo, birthday, email and phone.',
@@ -796,7 +796,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Crée des groupes nommés (Famille Tremblay, Collègues…) et range les gens dedans d’un toucher. Une fiche garde aussi l’adresse, des photos, et s’exporte ou s’importe (vCard). Cherche par prénom OU nom.',
           en: 'Create named groups (Tremblay family, Coworkers…) and drop people in with a tap. A card also keeps the address and photos, and exports or imports (vCard). Search by first OR last name.',
         },
-        route: '/settings?tab=maison&sub=cercle',
+        route: '/settings?tab=maison&sub=members&focus=cercleGroups',
       },
       {
         label: { fr: 'Les fêtes, en douceur', en: 'Birthdays, gently' },
@@ -909,7 +909,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Le bouton « Allées », sous la boîte d’ajout, ouvre l’ordre de la liste : « Par allée » trie les articles dans l’ordre de TON magasin (réglé une fois dans Réglages ▸ Magasinage), et tu peux y afficher l’allée sous chaque article.',
           en: 'The “Aisles” button under the add box opens the list’s order: “By aisle” sorts items in YOUR store’s order (set once in Settings ▸ Shopping), and you can show each item’s aisle under its name from there.',
         },
-        route: '/settings?tab=liste&sub=aisles',
+        route: '/settings?tab=liste&sub=shop&focus=aisleOrder',
       },
       {
         // Appended as point 9 — LISTE_HELP.mode deep-links here. The twin of the
@@ -935,7 +935,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Pour ne plus oublier le lait juste parce que tu n’y as pas pensé en faisant la liste — sans notification ni badge : ça ne sort qu’ici.',
           en: 'So you stop forgetting the milk just because it slipped your mind at list time — no notification, no badge: it only surfaces here.',
         },
-        route: '/settings?tab=liste&sub=ghost',
+        route: '/settings?tab=liste&sub=history&focus=ghost',
       },
       {
         label: { fr: '« Toujours » (essentiels)', en: '“Always” (staples)' },
@@ -947,7 +947,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Un tap à chaque épicerie pour les indispensables — et jamais d’ajout automatique : la liste se vide et reste vide.',
           en: 'One tap each grocery run for the must-haves — and never auto-added: the list empties and stays empty.',
         },
-        route: '/settings?tab=liste&sub=shop',
+        route: '/settings?tab=liste&sub=shop&focus=shop',
       },
     ],
   },
@@ -1066,7 +1066,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Ajoute les membres, leur couleur et leur photo — c’est ce qui peuple les visages partout dans l’app.',
           en: 'Add the members, their colour and photo — it’s what populates the faces everywhere in the app.',
         },
-        route: '/settings?tab=maison&sub=members',
+        route: '/settings?tab=maison&sub=members&focus=members',
       },
       {
         label: { fr: 'Appareils', en: 'Devices' },
@@ -1074,7 +1074,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Approuve une tablette qui demande à se jumeler, et retire-la quand tu veux — sans lui confier ton mot de passe.',
           en: 'Approve a tablet asking to pair, and remove it whenever you like — without trusting it with your password.',
         },
-        route: '/settings?tab=settings&sub=tablets',
+        route: '/settings?tab=settings&sub=tablets&focus=devices',
       },
       {
         label: { fr: 'Corvées & routines', en: 'Chores & routines' },
@@ -1082,7 +1082,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Monte la rotation des corvées et les routines d’enfants une fois; ça tourne ensuite tout seul.',
           en: 'Build the chore rotation and the kid routines once; they then run on their own.',
         },
-        route: '/settings?tab=maison&sub=chores',
+        route: '/settings?tab=maison&sub=routines&focus=chores',
       },
       {
         label: { fr: 'Réservé au parent', en: 'Parent-only' },
@@ -1114,7 +1114,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'sparkle-bold',
     group: 'concepts',
     title: { fr: 'L’intelligence (l’IA)', en: 'The AI' },
-    settings: '/settings?tab=settings&sub=ai',
+    settings: '/settings?tab=settings&sub=ai&focus=ai',
     what: {
       fr: 'L’IA donne un coup de main à quelques endroits — toujours sur demande, jamais en arrière-plan. Tu peux la couper : tout marche sans elle.',
       en: 'AI lends a hand in a few spots — always on demand, never in the background. You can turn it off: everything works without it.',
@@ -1154,7 +1154,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Un petit journal d’entretien note ce qui a brisé et quand — tu vois la vraie cause au lieu de deviner.',
           en: 'A small maintenance log records what broke and when — you see the real cause instead of guessing.',
         },
-        route: '/settings?tab=settings&sub=system&focus=aiLog',
+        route: '/settings?tab=settings&sub=tablets&focus=aiLog',
       },
     ],
   },
@@ -1163,7 +1163,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'microphone-bold',
     group: 'concepts',
     route: '/board',
-    settings: '/settings?tab=settings&sub=ai',
+    settings: '/settings?tab=settings&sub=ai&focus=ai',
     title: { fr: 'Ajouter & demander (écrire ou parler)', en: 'Add & ask (type or speak)' },
     what: {
       fr: 'Dis ou écris une phrase — « souper spaghetti vendredi » — et l’app la range à la bonne place toute seule.',
@@ -1241,7 +1241,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Une petite carte du babillard signale ce qui mérite ton attention — une sortie sans conducteur, un souper vide. La liste complète, avec un raccourci par correction, vit dans Réglages ▸ « Cette semaine ». Elle se vide quand c’est réglé — et si quelque chose ne peut pas se régler aujourd’hui, « Plus tard » le fait taire jusqu’à demain, sur tous les appareils de la maison.',
           en: 'A small board card flags what deserves your attention — a ride with no driver, an empty supper. The full list, with a one-tap fix each, lives in Settings ▸ “This week”. It empties as you sort it — and when something simply can’t be sorted today, “Later” quiets it until tomorrow, on every device in the house.',
         },
-        route: '/settings?tab=board&sub=thisweek',
+        route: '/settings?tab=board&sub=events&focus=thisWeek',
       },
     ],
   },
@@ -1301,7 +1301,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'repeat-bold',
     group: 'concepts',
     route: '/board/habitudes',
-    settings: '/settings?tab=settings&sub=ambient&focus=habits',
+    settings: '/settings?tab=settings&sub=display&focus=habits',
     title: { fr: 'Mes habitudes', en: 'My habits' },
     what: {
       fr: 'Les petits rythmes qu’on tient — marcher, boire de l’eau, deux sorties à vélo par semaine, fumer moins, éviter le chocolat. « Le point du jour » les rassemble en un écran, et un tap suffit.',
@@ -1423,7 +1423,7 @@ export const GUIDE: GuideEntry[] = [
     ],
     // The card lives on the board; its "À compléter" templates are the Régler side.
     route: '/board',
-    settings: '/settings?tab=maison&sub=todos',
+    settings: '/settings?tab=maison&sub=routines&focus=todoTemplates',
   },
   {
     id: 'voyage',
@@ -1555,7 +1555,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'screensaver',
     icon: 'clock-bold',
     group: 'concepts',
-    settings: '/settings?tab=settings&sub=ambient&focus=ambient',
+    settings: '/settings?tab=settings&sub=display&focus=ambient',
     title: { fr: 'Le mode veille', en: 'The screensaver' },
     what: {
       fr: 'Au repos, la tablette se transforme en joli cadran : une grande horloge, la date et tes photos qui défilent doucement. Touche l’écran pour la réveiller.',
@@ -1631,7 +1631,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'share-access',
     icon: 'key-bold',
     group: 'concepts',
-    settings: '/settings?tab=settings&sub=guest',
+    settings: '/settings?tab=settings&sub=tablets&focus=guestLinks',
     title: { fr: 'Partager & inviter', en: 'Share & invite' },
     what: {
       fr: 'Donne un lien à un proche sans lui ouvrir toute la maison : tu choisis ce qu’il voit, et le lien s’éteint tout seul.',
@@ -1710,7 +1710,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'audience',
     icon: 'smiley-bold',
     group: 'concepts',
-    settings: '/settings?tab=settings&sub=display',
+    settings: '/settings?tab=settings&sub=display&focus=display',
     title: { fr: 'Tablette, téléphone & vue enfant', en: 'Tablet, phone & kid view' },
     what: {
       fr: 'La même information, montrée pour un parent, pour un tout-petit, ou en version « Simple » (gros boutons, gros texte).',
@@ -1760,7 +1760,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'calm',
     icon: 'tree-bold',
     group: 'concepts',
-    settings: '/settings?tab=settings&sub=calm',
+    settings: '/settings?tab=settings&sub=display&focus=calm',
     title: { fr: 'Le calme (par choix)', en: 'Calm (by design)' },
     what: {
       fr: 'L’app refuse volontairement ce qui rend accro : pas de points, pas de pastilles rouges, pas de notifications, pas de fil sans fin.',
@@ -1811,7 +1811,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'tag-bold',
     group: 'concepts',
     route: '/liste/circulaires',
-    settings: '/settings?tab=liste&sub=shop',
+    settings: '/settings?tab=liste&sub=shop&focus=shop',
     title: { fr: 'Rabais, circulaires & caissier', en: 'Deals, flyers & cashier' },
     what: {
       fr: 'Trouve les rabais d’épicerie près de chez toi, accroche-les à ta liste, et présente-les à la caisse.',
@@ -1832,7 +1832,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Mets ton code postal une fois dans Réglages ▸ Magasinage : les rabais viennent des magasins proches de chez toi.',
           en: 'Set your postal code once in Settings ▸ Shopping: deals come from the stores near you.',
         },
-        route: '/settings?tab=liste&sub=shop',
+        route: '/settings?tab=liste&sub=shop&focus=shop',
       },
       {
         label: { fr: 'La vraie circulaire', en: 'The real flyer' },
@@ -1880,7 +1880,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'book-open-bold',
     group: 'concepts',
     route: '/kitchen',
-    settings: '/settings?tab=kitchen&sub=apparence',
+    settings: '/settings?tab=kitchen&sub=apparence&focus=recipeTags',
     title: { fr: 'Recettes & mode cuisson', en: 'Recipes & cook mode' },
     what: {
       fr: 'Garde tes recettes et cuisine-les en plein écran, les mains à la pâte, sans rien toucher de fin.',
@@ -2018,7 +2018,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-household',
     icon: 'users-three-bold',
     group: 'settings',
-    settings: '/settings?tab=maison&sub=members',
+    settings: '/settings?tab=maison&sub=members&focus=members',
     title: { fr: 'La maisonnée', en: 'The household' },
     what: {
       fr: 'Qui fait partie de la famille, et le cercle autour d’elle. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
@@ -2102,7 +2102,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-agenda',
     icon: 'calendar-dots-bold',
     group: 'settings',
-    settings: '/settings?tab=board&sub=events',
+    settings: '/settings?tab=board&sub=events&focus=events',
     title: { fr: 'Agenda & auto', en: 'Agenda & car' },
     what: {
       fr: 'Les rendez-vous et événements de la famille, plus l’auto partagée et les horaires de travail. Ce qui s’affiche dans « Aujourd’hui / À venir » sur le babillard.',
@@ -2161,7 +2161,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Entre une fois les heures récurrentes de chacun (travail, garderie) et coche « prend l’auto » au besoin; ça dit à [[card:auto|L’auto]] quand la voiture n’est pas là et façonne chaque journée tout seul.',
           en: 'Enter everyone’s recurring hours once (work, daycare) and tick “takes the car” where it applies; it tells [[card:auto|The car]] when the vehicle is away and shapes each day on its own.',
         },
-        route: '/settings?tab=maison&sub=schedule',
+        route: '/settings?tab=maison&sub=cars&focus=schedule',
       },
       // Appended: the retired 'activities' card (alias base 5).
       {
@@ -2190,7 +2190,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-chores',
     icon: 'broom-bold',
     group: 'settings',
-    settings: '/settings?tab=maison&sub=chores',
+    settings: '/settings?tab=maison&sub=routines&focus=chores',
     title: { fr: 'Corvées & routines', en: 'Chores & routines' },
     what: {
       fr: 'Les tâches de la maison et leur horaire, les routines en images des enfants, et les listes « À compléter ». Les corvées tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
@@ -2290,7 +2290,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-shopping',
     icon: 'shopping-bag-bold',
     group: 'settings',
-    settings: '/settings?tab=liste&sub=shop',
+    settings: '/settings?tab=liste&sub=shop&focus=shop',
     title: { fr: 'Magasinage', en: 'Shopping' },
     what: {
       fr: 'Tout ce qui alimente la liste et les rabais : ton code postal, les magasins à garder, l’ordre des allées, l’historique d’achats, et le suivi fantôme opt-in.',
@@ -2376,7 +2376,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-recipes',
     icon: 'tag-bold',
     group: 'settings',
-    settings: '/settings?tab=kitchen&sub=apparence',
+    settings: '/settings?tab=kitchen&sub=apparence&focus=recipeTags',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
       fr: 'Les réglages de cuisine : les étiquettes de recettes, la couleur des cuillères et tasses, la couleur et l’affichage de chaque repas, et la réserve.',
@@ -2449,7 +2449,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-devices',
     icon: 'device-tablet-bold',
     group: 'settings',
-    settings: '/settings?tab=settings&sub=tablets',
+    settings: '/settings?tab=settings&sub=tablets&focus=devices',
     title: { fr: 'Accès & appareils', en: 'Access & devices' },
     what: {
       fr: 'Les tablettes jumelées et les liens de partage temporaires (gardienne, accueil, famille). C’est ici que tu donnes — ou reprends — l’accès au babillard.',
@@ -2544,7 +2544,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-ai',
     icon: 'sparkle-bold',
     group: 'settings',
-    settings: '/settings?tab=settings&sub=ai',
+    settings: '/settings?tab=settings&sub=ai&focus=ai',
     title: { fr: 'IA & système', en: 'AI & system' },
     what: {
       fr: '« Cette semaine » par visages, le bilan IA sur demande, l’interrupteur marche/arrêt de l’IA, et les outils de mise au point (journal d’entretien, mode veille).',
@@ -2634,7 +2634,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-display',
     icon: 'paint-brush-bold',
     group: 'settings',
-    settings: '/settings?tab=settings&sub=display',
+    settings: '/settings?tab=settings&sub=display&focus=display',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
       fr: 'L’apparence de cet appareil et du babillard : thème jour/nuit, langue, vue parent/enfant, accessibilité, disposition des cartes, mode veille, voix de lecture, photos de famille et mode calme.',
@@ -2784,7 +2784,7 @@ export const GUIDE: GuideEntry[] = [
     icon: 'key-bold',
     group: 'concepts',
     route: '/voiture',
-    settings: '/settings?tab=maison&sub=cars',
+    settings: '/settings?tab=maison&sub=cars&focus=cars',
     title: { fr: 'L’auto', en: 'The car' },
     what: {
       fr: 'Une seule auto pour la maisonnée ? L’auto sait quand elle est prise, quand elle est libre, et qui reconduit qui — sans cinq fils de textos.',
@@ -2808,7 +2808,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Réglé une fois, ça façonne chaque journée tout seul — tu n’y reviens que pour une semaine différente.',
           en: 'Set once, it shapes every day on its own — you only return for an off week.',
         },
-        route: '/settings?tab=maison&sub=schedule',
+        route: '/settings?tab=maison&sub=cars&focus=schedule',
       },
       {
         label: { fr: 'Visible partout', en: 'Visible everywhere' },

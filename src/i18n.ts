@@ -2729,6 +2729,17 @@ export const FR = {
     // Sub-tab labels that GROUP several sections under one pill (IA & système).
     weekTabTitle: 'La semaine',
     sysTabTitle: 'Version & diagnostics',
+    // The merged Réglages pills (28 → 14, 2026-09-08). Each names what its stack
+    // holds, in the order it holds it — lib/settingsNav SUB_LABEL_KEY points here.
+    subAgendaWeek: 'Agenda & semaine',
+    subHistoryTracking: 'Historique & suivi',
+    subHomeTasks: 'Tâches de la maison',
+    subCarsHours: 'L’auto & horaires',
+    // Short on purpose: at 31 characters the first Système pill alone filled a 390px
+    // row and the merge had bought nothing — the cards inside say the rest.
+    subDevicesAccess: 'Appareils & accès',
+    subDisplayIdle: 'Affichage & veille',
+    subVoiceAi: 'Voix & IA',
     ambientTitle: 'Mode veille',
     ambientHint: 'Ce que le kiosque affiche au repos : un économiseur (horloge, date, photos) après un délai, et le retour à « Maisonnée ».',
     ambientScreensaver: 'Économiseur',

@@ -28,7 +28,7 @@ test('« Plus tard » quiets one friction, behind an undo', async ({ page }) => 
     return route.fallback()
   })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/settings?tab=board&sub=thisweek')
+  await page.goto('/settings?tab=board&sub=events&focus=thisWeek')
 
   const rows = page.locator('.tweek__regler .a-regler__row')
   await expect(rows).toHaveCount(2)
@@ -62,7 +62,7 @@ test('letting the undo lapse writes the snooze, keyed on the signal', async ({ p
     return route.fallback()
   })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/settings?tab=board&sub=thisweek')
+  await page.goto('/settings?tab=board&sub=events&focus=thisWeek')
 
   await page.locator('.tweek__regler .a-regler__row').first().locator('.a-regler__snooze').click()
   // DEFAULT_UNDO_MS is 15 s; wait past it for the held write to fire.

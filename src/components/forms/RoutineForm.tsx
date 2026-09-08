@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWrite } from '../../lib/write'
 import { ROUTINES_KEY } from '../../lib/queryKeys'
+import { settingsHref } from '../../lib/settingsNav'
 import { useLang, useT } from '../../i18n'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
@@ -201,7 +202,7 @@ export function RoutineForm({
   if (!editing && children.length === 0)
     return (
       <EmptyState>
-        {t.operator.needChild} <Link to="/settings?tab=maison&sub=members">{t.board.welcomeCta}</Link>
+        {t.operator.needChild} <Link to={settingsHref({ tab: 'maison', focus: 'members' })}>{t.board.welcomeCta}</Link>
       </EmptyState>
     )
 

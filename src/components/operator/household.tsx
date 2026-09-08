@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { settingsHref } from '../../lib/settingsNav'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
@@ -94,7 +95,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   }
 
   return (
-    <OperatorSection title={t.operator.members}>
+    <OperatorSection title={t.operator.members} helpKey="members">
       {/* The household's own name (set at signup) — renamable here. Operator-only. */}
       {!isGuest() && <HouseholdNameField />}
 
@@ -108,7 +109,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
             <li>{t.operator.welcomeStep1}</li>
             <li>
               {t.operator.welcomeStep2}{' '}
-              <Link to="/settings?tab=settings&sub=tablets" className="mono">
+              <Link to={settingsHref({ tab: 'settings', focus: 'claimTablet' })} className="mono">
                 {t.operator.devices}
               </Link>
             </li>

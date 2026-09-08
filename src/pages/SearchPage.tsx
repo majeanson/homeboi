@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useIsFetching } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
+import { settingsHref } from '../lib/settingsNav'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { SEARCH_INDEX, drawingFields, type SearchFields, type PantryRow } from '../lib/searchIndex'
@@ -509,7 +510,7 @@ export function SearchPage() {
                 {res!.projects.items.map((p) => (
                   <Link
                     key={p.id}
-                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : '/settings?tab=maison&sub=chores'}
+                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : settingsHref({ tab: 'maison', focus: 'chores' })}
                     className="search__row"
                   >
                     <span className="search__pic" aria-hidden="true" style={{ color: p.color ?? undefined }}>

@@ -22,6 +22,7 @@ export function OperatorSection({
   action,
   help,
   helpKey,
+  anchor: anchorProp,
   className,
   children,
 }: {
@@ -31,6 +32,10 @@ export function OperatorSection({
   /** With `helpKey`: render the heading as a help-mode `HelpTitle` + its bubble. */
   help?: HelpMode
   helpKey?: string
+  /** The `?focus=` anchor key when it must differ from `helpKey` — for a card whose
+   *  helpKey is SHARED (`guest` names five cards): only the one that passes
+   *  `anchor="guestLinks"` mints a DOM id. Must be a key in SETTINGS_TREE. */
+  anchor?: string
   /** Extra modifier class(es) appended to `surface operator__section`. */
   className?: string
   children: ReactNode
@@ -45,9 +50,11 @@ export function OperatorSection({
     )
   // ?focus= anchor: a guide « Régler » link can land on THIS card inside a
   // stacked sub. The helpKey doubles as the anchor id — but only for keys the
-  // taxonomy lists as focusable (SETTINGS_FOCUS), so the five sections sharing
-  // helpKey "guest" never mint duplicate DOM ids.
-  const anchor = helpKey && FOCUSABLE_HELP_KEYS.has(helpKey) ? `op-${helpKey}` : undefined
+  // taxonomy lists (SETTINGS_TREE, via FOCUSABLE_HELP_KEYS), so the five sections
+  // sharing helpKey "guest" never mint duplicate DOM ids; the one of them that IS
+  // a tree section names its key through `anchor` instead.
+  const anchorKey = anchorProp ?? helpKey
+  const anchor = anchorKey && FOCUSABLE_HELP_KEYS.has(anchorKey) ? `op-${anchorKey}` : undefined
   return (
     <section id={anchor} className={'surface operator__section' + (className ? ` ${className}` : '')}>
       {action ? (

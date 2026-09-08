@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { GUIDE, GUIDE_CARD_ALIAS, CONCEPT_THEMES, FEATURE_MAP_TILES } from './guideContent'
-import { SETTINGS_SUBS, SETTINGS_FOCUS, SUB_GOTO, ROUTE_PREFIXES } from './settingsNav'
+import { SETTINGS_SUBS, SETTINGS_FOCUS, SUB_GOTO, ROUTE_PREFIXES, RETIRED_SUB_IDS, subOfFocus } from './settingsNav'
 import { ADD_MODES } from './addSheet'
 
 // The other half of the guide-orphan kill (helpRegistry.test.ts guards the
@@ -32,13 +32,22 @@ const checkLink = (link: string, where: string): string | null => {
     if (tab && !SETTINGS_TABS.has(tab)) return `${where}: unknown settings tab "${tab}" in "${link}"`
     if (sub) {
       if (!tab) return `${where}: ?sub without ?tab in "${link}"`
+      if (RETIRED_SUB_IDS.has(sub)) return `${where}: sub "${sub}" is RETIRED (LEGACY_SUB) — name the live pill, or just the section via ?focus= in "${link}"`
       const subs: readonly string[] = SETTINGS_SUBS[tab as keyof typeof SETTINGS_SUBS] ?? []
       if (!subs.includes(sub)) return `${where}: sub "${sub}" is not in tab "${tab}" in "${link}"`
     }
+    // ?focus= names the SECTION — the stable address. The sub is optional beside it
+    // (Operator derives it, subOfFocus); when spelled, it must be the one that holds
+    // the section today. And a link INTO a pill that stacks two or more cards must
+    // say which one — that is what keeps the next reshuffle from stranding it on the
+    // wrong card while the URL still "works".
     if (focus) {
-      if (!tab || !sub) return `${where}: ?focus needs ?tab and ?sub in "${link}"`
-      const keys = SETTINGS_FOCUS[`${tab}/${sub}`] ?? []
-      if (!keys.includes(focus)) return `${where}: focus "${focus}" is not anchored under "${tab}/${sub}" in "${link}"`
+      if (!tab) return `${where}: ?focus needs ?tab in "${link}"`
+      const home = subOfFocus(tab, focus)
+      if (!home) return `${where}: focus "${focus}" is no section of tab "${tab}" in "${link}"`
+      if (sub && sub !== home) return `${where}: focus "${focus}" lives under "${tab}/${home}", not "${tab}/${sub}" in "${link}"`
+    } else if (tab && sub && (SETTINGS_FOCUS[`${tab}/${sub}`] ?? []).length > 1) {
+      return `${where}: "${tab}/${sub}" stacks ${SETTINGS_FOCUS[`${tab}/${sub}`].length} cards — name one with ?focus= in "${link}"`
     }
     if (card && !guideById.has(card) && !GUIDE_CARD_ALIAS[card]) return `${where}: unknown card "${card}" in "${link}"`
     return null

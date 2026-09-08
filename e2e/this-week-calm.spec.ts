@@ -35,7 +35,7 @@ test('« Cette semaine » shows WHICH faces helped — and never a count', async
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(WEEK) }),
   )
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/settings?tab=board&lens=regler&sub=thisweek')
+  await page.goto('/settings?tab=board&lens=regler&sub=events&focus=thisWeek')
   await page.locator('.operator').waitFor({ state: 'visible', timeout: 15_000 })
 
   const week = page.locator('.tweek')

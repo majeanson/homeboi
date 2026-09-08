@@ -230,6 +230,13 @@ export const OPERATOR_HELP = {
       en: `A temporary read-only link for the babysitter. She sees the board and routines without changing anything. The link expires on its own.`,
     },
   },
+  thisWeek: {
+    card: 'board',
+    body: {
+      fr: `Le coup d'œil calme sur la semaine : qui a fait quoi, ce qui s'en vient, et ce qu'il reste à régler — par visages, jamais par comptes.`,
+      en: `The calm look at the week: who did what, what's coming, and what's still to settle — by faces, never by counts.`,
+    },
+  },
   choreLedger: {
     card: 'set-chores',
     point: 3,

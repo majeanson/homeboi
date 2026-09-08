@@ -277,9 +277,9 @@ test.describe('toggles', () => {
   })
 
   test('calm toggle flips and persists the opt-out', async ({ page }) => {
-    // Calm mode lives under « IA & système » now, as its own sub-section — deep-link
-    // straight to it (?tab=ai&sub=calm) so only the calm panel renders.
-    await APP('/settings?tab=ai&sub=calm')(page)
+    // Calm mode stacks under Système ▸ « Affichage & veille » (28 → 14, 2026-09-08);
+    // ?focus= names its card, so the link survives the next pill reshuffle.
+    await APP('/settings?tab=settings&sub=display&focus=calm')(page)
     await settle(page, '.operator__tabs')
     const btn = page.locator('.operator__section', { hasText: 'Mode calme' }).locator('button[aria-pressed]')
     await expect(btn).toHaveAttribute('aria-pressed', 'true')
@@ -320,10 +320,11 @@ test.describe('settings forms', () => {
     // Members live under Maison now (the merged Le cercle + Routines tab), on
     // its « La maisonnée » sub — Routines (the tab's default section) shows first.
     await page.locator('.operator__tabs').getByRole('tab', { name: 'Maison', exact: true }).click()
-    await page.locator('.subtabs').getByRole('tab', { name: 'La maisonnée', exact: true }).click()
-    // The member-add box is now the shared EditField (form.edit-field), no longer a
-    // hand-rolled operator__inline-form.
-    const form = page.locator('.operator__panel form.edit-field')
+    await page.locator('.operator__subs').getByRole('tab', { name: 'La maisonnée', exact: true }).click()
+    // The member-add box is the shared EditField (form.edit-field) inside the
+    // members CARD — scoped by its #op-members anchor, since the pill stacks the
+    // cercle groups (and their own EditField) under the same row.
+    const form = page.locator('#op-members form.edit-field')
     await form.locator('input.input').first().fill('Mamie')
     await expectApi(page, 'POST', 'members', () => form.locator('button[type="submit"]').click())
   })
@@ -345,13 +346,14 @@ test.describe('settings forms', () => {
   })
 
   test('add a chore', async ({ page }) => {
-    // Chores are the « Corvées » sub of the Maison themed tab now (Routines +
-    // Le cercle merged).
+    // Chores stack under Maison ▸ « Tâches de la maison » (routines · corvées ·
+    // à compléter, 2026-09-08) — the chores card is addressed by its #op-chores
+    // anchor, since the routines card above it has an .operator__add of its own.
     await page.locator('.operator__tabs').getByRole('tab', { name: 'Maison', exact: true }).click()
-    await page.locator('.subtabs').getByRole('tab', { name: 'Corvées', exact: true }).click()
+    await page.locator('.operator__subs').getByRole('tab', { name: 'Tâches de la maison', exact: true }).click()
     // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
     // edit/remove only).
-    await page.locator('.operator__add').first().click()
+    await page.locator('#op-chores .operator__add').first().click()
     await page.waitForURL(/\/chore\/new/)
     const form = page.locator('.scene .operator__chore-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')
@@ -381,8 +383,8 @@ test.describe('settings forms', () => {
   })
 
   test('add a ghost-list staple', async ({ page }) => {
-    // Ghost tracking is its own sub-section under « Magasinage » — deep-link to it.
-    await APP('/settings?tab=shopping&sub=ghost')(page)
+    // Ghost tracking stacks under La liste ▸ « Historique & suivi »; ?focus= names its card.
+    await APP('/settings?tab=liste&sub=history&focus=ghost')(page)
     await settle(page, '.operator__tabs')
     const form = page.locator('.operator__section', { hasText: 'Liste fantôme' }).locator('form.operator__inline-form')
     await form.locator('input.input').first().fill('Savon à vaisselle')
@@ -390,7 +392,7 @@ test.describe('settings forms', () => {
   })
 
   test('a frequent buy is offered for tracking — one deliberate tap tracks it', async ({ page }) => {
-    await APP('/settings?tab=shopping&sub=ghost')(page)
+    await APP('/settings?tab=liste&sub=history&focus=ghost')(page)
     await settle(page, '.operator__tabs')
     // Tracking is conscious: candidates sit apart from the tracked rows, and
     // nothing enters the set until this tap.
@@ -400,8 +402,8 @@ test.describe('settings forms', () => {
   })
 
   test('rename a bought-item history entry to a generic name (merge)', async ({ page }) => {
-    // The grocery-history list is its own sub-section under « Magasinage ».
-    await APP('/settings?tab=shopping&sub=history')(page)
+    // The grocery-history list leads La liste ▸ « Historique & suivi ».
+    await APP('/settings?tab=liste&sub=history&focus=history')(page)
     await settle(page, '.operator__tabs')
     // "Yogourt grec" is in the grocery history → rename it to the generic "Yogourt"
     // so quick-add folds it in and suggests the generic item.
@@ -417,7 +419,7 @@ test.describe('settings forms', () => {
   })
 
   test('remove a bought-item history entry so quick-add stops suggesting it', async ({ page }) => {
-    await APP('/settings?tab=shopping&sub=history')(page)
+    await APP('/settings?tab=liste&sub=history&focus=history')(page)
     await settle(page, '.operator__tabs')
     const [req] = await Promise.all([
       // « Retirer » holds the DELETE behind the undo toast now (deferred removal),
@@ -438,8 +440,8 @@ test.describe('settings forms', () => {
   })
 
   test('generate the weekly recap', async ({ page }) => {
-    // The AI recap now sits with the week glance under one « La semaine » pill.
-    await APP('/settings?tab=ai&sub=thisweek')(page)
+    // The AI recap sits with the week glance under Le babillard ▸ « Agenda & semaine ».
+    await APP('/settings?tab=board&sub=events&focus=thisWeek')(page)
     await settle(page, '.operator__tabs')
     await expectApi(page, 'GET', 'recap', () => page.getByRole('button', { name: 'Générer le bilan' }).click())
     await expect(page.locator('.operator__panel')).toContainText('Belle semaine')
@@ -1514,16 +1516,17 @@ test.describe('recurring chores on the board', () => {
   })
 
   test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
-    // The legacy ?tab=chores deep-link folds to Maison ▸ Corvées directly (its
-    // panel opens on the Corvées SubTab), so no tab click is needed.
-    await APP('/settings?tab=chores')(page)
+    // Name the chores SECTION: the pill it lives under is derived (subOfFocus), so
+    // this link survives the next pill reshuffle untouched.
+    await APP('/settings?tab=maison&focus=chores')(page)
     await settle(page, '.operator__tabs')
     // The "Céduler"-only expander is gone — a chore row is now a ListRow whose
     // RowActions ✏️ ("Modifier la corvée") expands the SAME full ChoreForm (one
     // editor) with the RecurPicker. The .operator__chore-row class only appears on
-    // the row while it's editing, so target the edit button via the chores list.
+    // the row while it's editing, so target the edit button via the chores CARD's
+    // list (#op-chores — the routines card above it has a list of its own).
     await page
-      .locator('.operator__list')
+      .locator('#op-chores .operator__list')
       .first()
       .locator('li')
       .first()
