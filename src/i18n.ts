@@ -115,7 +115,7 @@ export const FR = {
     // « Le défi du jour » — un petit défi qui dure toute la journée (« porte du
     // jaune », « salue une nouvelle personne »), que toute la maisonnée peut
     // relever. Le matin, on pige (jusqu’à 3 fois — la troisième est la bonne),
-    // puis on essaie ; chacun coche quand c’est fait. Pas de série, pas de points
+    // puis on essaie; chacun coche quand c’est fait. Pas de série, pas de points
     // (calm) : on éclaire les visages qui l’ont tenu, jamais un score.
     defi: {
       title: 'Le défi du jour',
@@ -226,7 +226,7 @@ export const FR = {
     remindersSub: 'Le rythme dit quand l’habitude revient ; le rappel dit à quelle heure te faire signe.',
     reminderAt: 'Heure du rappel',
     addReminder: 'Ajouter un rappel',
-    removeReminder: 'Enlever ce rappel',
+    removeReminder: 'Retirer ce rappel',
     // Pas de notification poussée : l'écran allumé s'en aperçoit, c'est tout.
     remindersHint: 'Le rappel apparaît sur l’écran allumé, jamais dans ta poche.',
     pause: 'Mettre en pause',
@@ -234,7 +234,7 @@ export const FR = {
     // Une habitude en pause disparaît de partout ailleurs (Le point du jour, le
     // calendrier) — ce repli est la SEULE porte pour la retrouver et la reprendre.
     paused: 'En pause',
-    deleteConfirm: (title: string) => `Supprimer « ${title} » et son historique ?`,
+    deleteConfirm: (title: string) => `Supprimer l’habitude « ${title} » ? Son historique s’en va avec elle.`,
   },
   // « À régler » — le coup d'œil transversal : les quelques frictions à régler.
   aRegler: {
@@ -536,6 +536,7 @@ export const FR = {
     addTerm: 'Ajouter un terme…',
     unlinkDeal: 'Retirer le rabais',
     deleteItem: 'Supprimer de la liste',
+    deleteItemConfirm: 'Retirer cet article de la liste ? Il faudra le réécrire pour le remettre.',
     openFlyer: 'Voir les rabais',
     share: 'Partager la liste',
   },
@@ -643,10 +644,10 @@ export const FR = {
     routine: 'En routine',
     keep: 'Garder',
     galleryTitle: 'Mes dessins',
-    galleryEmpty: 'Aucun dessin gardé pour l’instant. Touche ＋ pour en faire un!',
+    galleryEmpty: 'Aucun dessin gardé pour l’instant. Touche ＋ pour en faire un !',
     // B-11 (bmad/09) — l'âge de l'enfant au moment du dessin (« Léa · 3 ans »).
     ageN: (n: number) => (n === 1 ? '1 an' : `${n} ans`),
-    galleryDelete: 'Supprimer ce dessin pour de bon?',
+    galleryDelete: 'Supprimer ce dessin pour de bon ?',
     galleryLink: 'La galerie',
     // #14 — convert a drawing both ways (gallery ↔ fridge note), keeping a copy so
     // a drawing is never lost. Each makes an INDEPENDENT copy (own R2 blobs).
@@ -658,7 +659,7 @@ export const FR = {
     // en faire une copie identique, ou le calquer en filigrane (les deux derniers
     // gardent l’original intact).
     editChoiceTitle: 'Continuer le dessin',
-    editChoiceSub: 'Que veux-tu faire avec ce dessin?',
+    editChoiceSub: 'Que veux-tu faire avec ce dessin ?',
     editChoiceModify: 'Modifier l’original',
     editChoiceModifyHint: 'Change ce dessin-ci.',
     editChoiceCopy: 'En faire une copie',
@@ -666,7 +667,7 @@ export const FR = {
     editChoiceTrace: 'Calquer',
     editChoiceTraceHint: 'L’original en filigrane pour redessiner par-dessus — l’original reste.',
     // La photo jointe : une pic prise vite, mise sur le babillard — puis gardée.
-    // « Photo » attache la photo telle quelle (un geste) ; pour dessiner par-dessus,
+    // « Photo » attache la photo telle quelle (un geste); pour dessiner par-dessus,
     // l'outil 🖼 du pad la charge en filigrane.
     photoAttach: 'Photo',
     // Les deux « et garde-la » offerts sur la photo jointe : dans le cadre de la
@@ -1057,7 +1058,7 @@ export const FR = {
     edit: 'Modifier le carnet',
     delete: 'Supprimer le carnet',
     techSheet: 'Fiche technique',
-    deleteConfirm: (name: string) => `Supprimer « ${name} » et ses choses ?`,
+    deleteConfirm: (name: string) => `Supprimer le carnet « ${name} » ? Ses choses, son entretien et ses factures partent avec lui.`,
     name: 'Nom',
     namePh: 'Notre maison, la Civic…',
     kindLabel: 'Type',
@@ -1115,7 +1116,7 @@ export const FR = {
     logNote: 'Détails',
     cost: 'Coût',
     costPh: 'ex. 140',
-    installer: 'Installateur (un business)',
+    installer: 'Installateur (un commerce)',
     addDoc: 'Joindre une facture / un manuel',
     docTitle: 'Document',
     openInTab: 'Ouvrir en plein écran',
@@ -1275,7 +1276,7 @@ export const FR = {
     clearText: 'Effacer le texte',
     note: 'Note du jour',
     notePlaceholder: 'Une note pour ce jour…',
-    clearNote: 'Effacer la note',
+    clearNote: 'Supprimer la note',
     // The day scene's two faces (?vue= on /kitchen/day/:date) — the day's agenda
     // vs its meal planner. Meal doors land on « Repas », day doors on « Journée ».
     dayVues: { jour: 'Journée', repas: 'Repas' },
@@ -1491,7 +1492,7 @@ export const FR = {
     cookStart: 'Commencer',
     stepLabel: 'Étape',
     cookDone: 'Bon appétit !',
-    deleteConfirm: 'Supprimer cette recette ?',
+    deleteConfirm: 'Supprimer cette recette ? Elle disparaît du livre et des repas déjà planifiés.',
     // Backdrop/Esc on an edited (dirty) recipe editor — a stray tap on the scrim
     // must not silently discard the work.
     discardConfirm: 'Fermer sans enregistrer ? Tes changements seront perdus.',
@@ -1557,7 +1558,7 @@ export const FR = {
     toGather: 'À prendre',
     hearLine: 'Écouter l’ingrédient',
     // « Il en manque » — signaler un manque SANS quitter la recette (palier 2 nº10).
-    // On découvre qu'on est à court les mains dans le bol ; jusqu'ici les seules
+    // On découvre qu'on est à court les mains dans le bol; jusqu'ici les seules
     // portes étaient le garde-manger et la feuille ＋, deux façons d'abandonner la
     // cuisson en plein milieu. Un manque, jamais une quantité (tenet du calme).
     flagLow: 'Il en manque',
@@ -1787,7 +1788,7 @@ export const FR = {
     addToGroup: 'Ajouter à un groupe',
     removeFromGroup: 'Retirer du groupe',
     groupCreated: 'Groupe créé',
-    groupDeleteConfirm: (name: string) => `Supprimer le groupe « ${name} » ?`,
+    groupDeleteConfirm: (name: string) => `Supprimer le groupe « ${name} » ? Les personnes restent dans le cercle.`,
     groupEmpty: 'Aucune personne dans ce groupe.',
     dragToGroup: 'Glisser vers un groupe',
     droppedInGroup: (name: string, group: string) => `${name} ajouté·e à « ${group} »`,
@@ -1878,19 +1879,19 @@ export const FR = {
     familyLinksOnlyHint: 'Dis qui est le parent, l’enfant, le frère ou la sœur de qui dans ta maisonnée. Aucun groupe créé — juste les liens.',
     familyLinkCount: (n: number) => ` · +${n} lien${n > 1 ? 's' : ''}`,
     // Primary Social / Famille split (the new top-level segmented control).
-    section: { social: 'Social', family: 'Famille', notes: 'Notes', business: 'Business', carnets: 'Carnets' },
+    section: { social: 'Social', family: 'Famille', notes: 'Notes', business: 'Commerces', carnets: 'Carnets' },
     sectionSocialHint: 'Amis, collègues et autres groupes',
     sectionFamilyHint: 'Ta Maisonnée et tes familles',
     sectionNotesHint: 'Notes & recommandations — pour toi ou la Maisonnée',
     sectionBusinessHint: 'Tes commerces et services — vét, hôpital, plombier',
     // Le cercle → Business: a standalone services/vendors directory (NOT people).
     business: {
-      title: 'Business',
+      title: 'Commerces',
       servicedCarnets: 'A servi',
       addHint: 'Tes commerces et services — pour les joindre vite, tout noter et y prendre rendez-vous',
-      add: 'Ajouter un business',
-      edit: 'Modifier le business',
-      empty: 'Aucun business pour l’instant. Ajoute le vétérinaire, le plombier, la clinique…',
+      add: 'Ajouter un commerce',
+      edit: 'Modifier le commerce',
+      empty: 'Aucun commerce encore. Ajoute le vétérinaire, le plombier, la clinique — pour les joindre d’un toucher.',
       name: 'Nom',
       category: 'Catégorie (vét, plombier…)',
       phone: 'Téléphone',
@@ -1901,8 +1902,8 @@ export const FR = {
       addPhoto: 'Photo de la carte',
       uploading: 'Envoi…',
       colour: 'Couleur',
-      delete: 'Supprimer le business',
-      deleted: 'Business supprimé',
+      delete: 'Supprimer le commerce',
+      deleted: 'Commerce supprimé',
       importLabel: 'Coller un lien Google Maps',
       importBtn: 'Importer',
       importHint: 'Partage un lieu depuis Maps et colle le lien : le nom, l’adresse et la photo se remplissent. Le téléphone s’ajoute à la main.',
@@ -1927,7 +1928,7 @@ export const FR = {
       feeding: 'Horaire des repas',
       sitterNotes: 'Consignes pour la gardienne',
       vet: 'Vétérinaire',
-      vetPick: 'Choisir un business…',
+      vetPick: 'Choisir un commerce…',
       // « Planifier un rendez-vous » from a pet peek — seeds the vet Business + a title.
       vetRdv: 'Rendez-vous vétérinaire',
       vetRdvTitle: (name: string) => `Vétérinaire — ${name}`,
@@ -2044,7 +2045,7 @@ export const FR = {
     kept: 'Gardé',
     delete: 'Supprimer le mot',
     deleted: 'Mot supprimé',
-    deleteSavedConfirm: 'Supprimer ce mot gardé ?',
+    deleteSavedConfirm: 'Supprimer ce mot gardé ? Son texte et son enregistrement partent avec lui.',
     // Schedule (« Plus tard ») + reply.
     later: 'Plus tard',
     when: 'Quand',
@@ -2067,9 +2068,9 @@ export const FR = {
   },
   routines: {
     tag: 'Le rythme du jour',
-    add: 'Ajouter une routine',
+    add: 'Partir d’un modèle',
     // The ＋ picker (Routines tab): build a new one, or modify an existing one.
-    newRoutine: 'Nouvelle routine',
+    newRoutine: 'Partir de zéro',
     editExisting: 'Modifier une routine',
     editTitle: 'Modifier la routine',
     delete: 'Supprimer la routine',
@@ -2120,7 +2121,7 @@ export const FR = {
     // « Le truc du compagnon » — le conseil par pictogramme (lib/routineTips), et le
     // champ où un parent écrit le SIEN (il gagne toujours sur le catalogue).
     tip: 'Le truc',
-    tipOff: 'Enlever le truc',
+    tipOff: 'Retirer le truc',
     tipPlaceholder: 'Écris ton truc à toi…',
     tipHint: 'Ton compagnon le dira quand l’enfant le touchera.',
     // The sticker wall (opt-in — visible only when « Mode calme » est désactivé).
@@ -2419,7 +2420,7 @@ export const FR = {
     // customization in one tap (disposition, allées, repas, couleurs) — added
     // 2026-09-03 after an audit found these sharing the undo icon with genuine
     // undo, with no confirm behind any of them (STATE.md's predictability entry).
-    resetConfirm: 'Effacer tes changements et remettre la disposition de départ ?',
+    resetConfirm: 'Effacer tes changements et remettre la disposition de départ ? Les cartes cachées reviennent.',
     boardLayoutBand: 'Bandeau du haut',
     boardLayoutGrid: 'Cartes',
     // Drop target at the end of a group, so a card can be moved into an emptied one.
@@ -2445,7 +2446,7 @@ export const FR = {
     langLabel: 'Langue',
     viewLabel: 'Vue',
     voiceTitle: 'Voix de lecture',
-    voiceHint: 'La voix qui lit les routines et les cartes à voix haute. Tout reste sur l’appareil; rien n’est envoyé en ligne.',
+    voiceHint: 'La voix qui lit les routines et les cartes à voix haute. Tout reste sur l’appareil ; rien n’est envoyé en ligne.',
     voiceLabel: 'Voix',
     readLangLabel: 'Langue de lecture',
     voiceAuto: 'Automatique (meilleure voix)',
@@ -2510,6 +2511,7 @@ export const FR = {
     historyRename: 'Renommer',
     historyRemove: 'Retirer',
     ghost: 'Liste fantôme',
+    ghostStopConfirm: 'Arrêter de suivre cet article ? Il cesse de remonter dans l’Ajout rapide ; son historique reste.',
     mealsTab: 'Repas',
     mealColors: 'Couleurs des repas',
     // « Jours affichés » — the rolling meal-plan window (functions/_lib/mealSlots).
@@ -2597,7 +2599,7 @@ export const FR = {
     pillColor: 'Couleur de la pastille',
     pillEdit: 'Modifier la pastille',
     pillRemove: 'Supprimer la pastille',
-    pillRemoveConfirm: (label: string) => `Supprimer la pastille « ${label} » ?`,
+    pillRemoveConfirm: (label: string) => `Supprimer la pastille « ${label} » ? Les recettes qui la portent la perdent.`,
     pillRuleField: 'Critère',
     pillRuleOp: 'Comparaison',
     pillRuleValue: 'Valeur',
@@ -2631,14 +2633,14 @@ export const FR = {
     tagUnusedHint: 'Proposée',
     tagRename: 'Renommer',
     tagRemove: 'Retirer',
-    tagRemoveConfirm: (tag: string) => `Retirer « ${tag} » de toutes les recettes ?`,
+    tagRemoveConfirm: (tag: string) => `Retirer l’étiquette « ${tag} » de toutes les recettes ? Les recettes elles-mêmes restent.`,
     tagColor: 'Couleur',
     tagColorPick: (tag: string) => `Couleur de « ${tag} »`,
     tagColorNone: 'Aucune couleur',
     // Une étiquette peut dire à quels repas elle appartient. C'était déjà possible
     // via une PASTILLE portant une règle sur cette étiquette — mais ça demandait de
     // modéliser un filtre pour énoncer un fait sur un mot. L'étiquette est l'endroit
-    // où on met le sens ; c'est donc là que la préférence appartient.
+    // où on met le sens; c'est donc là que la préférence appartient.
     tagSlotsPick: (tag: string) => `Repas de « ${tag} »`,
     tagSlotsLabel: 'Pour ces repas',
     tagSlotsHint:
@@ -2649,7 +2651,7 @@ export const FR = {
     addEvent: 'Ajouter un rendez-vous',
     eventWhat: 'Quoi ? (ex. dentiste)',
     eventContact: '…ou quelqu’un du cercle',
-    eventWith: '…ou avec une personne ou un business',
+    eventWith: '…ou avec une personne ou un commerce',
     eventAllDay: 'Toute la journée',
     eventDateLabel: 'Date',
     eventTimeLabel: 'Heure (optionnel)',
@@ -3099,7 +3101,7 @@ export const FR = {
     shareVia: 'Partager via…',
     linkHint: 'Le lien expire de lui-même après un an. Tu peux le retirer quand tu veux.',
     recipeIntro:
-      'Crée un vrai lien vers cette recette. N’importe qui peut la voir; ceux qui ont Babillard peuvent l’ajouter à leur livre.',
+      'Crée un vrai lien vers cette recette. N’importe qui peut la voir ; ceux qui ont Babillard peuvent l’ajouter à leur livre.',
     kinds: { recipe: 'Recette', event: 'Rendez-vous', routine: 'Routine', family: 'Famille' },
     // « Mes partages » — Réglages ▸ Système ▸ Appareils & accès : la liste à retirer.
     myShares: 'Mes partages',
@@ -3227,7 +3229,7 @@ export const FR = {
     searchOffline: 'Hors ligne — la recherche d’aubaines a besoin d’Internet.',
     was: 'avant',
     until: 'jusqu’au',
-    // Le « ! » sur la ligne de liste + l’aperçu zoomé / le peek : le jour validTo
+    // Le «! » sur la ligne de liste + l’aperçu zoomé / le peek : le jour validTo
     // de l’aubaine agrafée est passé — le prix affiché ne tient probablement plus.
     dealEnded: 'Aubaine terminée',
     dateRangeTo: 'au',
@@ -3280,7 +3282,7 @@ export const FR = {
     byStore: 'Par magasin',
     share: 'Partager',
   },
-  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', done: 'Terminé', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ?', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', moreActions: 'Plus d’actions', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiNone: 'Aucun emoji', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.', tooLong: (max: number) => `Texte trop long — il serait coupé à ${max} caractères. Raccourcis-le avant d’enregistrer.` },
+  common: { loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', done: 'Terminé', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ? On ne pourra pas revenir en arrière.', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', moreActions: 'Plus d’actions', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiNone: 'Aucun emoji', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.', tooLong: (max: number) => `Texte trop long — il serait coupé à ${max} caractères. Raccourcis-le avant d’enregistrer.` },
   share: {
     title: 'Ajouter à Babillard',
     lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',

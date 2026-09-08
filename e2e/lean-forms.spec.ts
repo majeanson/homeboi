@@ -224,7 +224,7 @@ test('the board’s edit hint sits under the cards, not over them', async ({ pag
 // ── La cuisine · Le cercle ──────────────────────────────────────────────────────
 
 test('Business + Carnets drop the heading their section pill already says', async ({ page }) => {
-  for (const [section, pill] of [['business', 'Business'], ['carnets', 'Carnets']] as const) {
+  for (const [section, pill] of [['business', 'Commerces'], ['carnets', 'Carnets']] as const) {
     await phone(page, `/maison?section=${section}`)
     const body = page.locator('.hub__body')
     await expect(body).toBeVisible()
@@ -243,7 +243,7 @@ test('arming « ? » on a section pill paints ONE bubble, not two', async ({ pag
   await phone(page, '/maison?section=business')
   await page.locator('.hub__body').waitFor({ state: 'visible' })
   await page.getByRole('button', { name: /Aide|aide|\?/ }).first().click()
-  await page.getByRole('tab', { name: 'Business' }).click()
+  await page.getByRole('tab', { name: 'Commerces' }).click()
   await expect(page.locator('.help-bubble')).toHaveCount(1)
 })
 

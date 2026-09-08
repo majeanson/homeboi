@@ -42,7 +42,7 @@ test('creating a business posts to businesses', async ({ page }) => {
   await expect(dialog).toBeVisible()
   await dialog.getByLabel('Nom', { exact: true }).fill('Garage Roy')
   await expectApi(page, 'POST', 'businesses', () =>
-    dialog.getByRole('button', { name: 'Ajouter un business' }).click(),
+    dialog.getByRole('button', { name: 'Ajouter un commerce' }).click(),
   )
 })
 

@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
 test('sharing a Maps link offers « Ajouter un business » → the form opens pre-filled', async ({ page }) => {
   // The query-param fallback path (no service worker in the e2e harness).
   await page.goto(`/share?text=${encodeURIComponent(MAPS_URL)}`)
-  const bizBtn = page.getByRole('button', { name: 'Ajouter un business' })
+  const bizBtn = page.getByRole('button', { name: 'Ajouter un commerce' })
   await expect(bizBtn).toBeVisible()
 
   // The import runs on open — the POST carries the shared link.
@@ -58,5 +58,5 @@ test('sharing a Maps link offers « Ajouter un business » → the form opens pr
 test('a shared non-Maps text gets no business button — capture stays the one path', async ({ page }) => {
   await page.goto(`/share?text=${encodeURIComponent('acheter du lait demain')}`)
   await expect(page.getByRole('button', { name: 'Ajouter' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Ajouter un business' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Ajouter un commerce' })).toHaveCount(0)
 })

@@ -444,7 +444,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
   }
   async function remove(item: GhostManageItem) {
     // Removing a tracked staple is permanent (no undo here) — confirm first.
-    if (!(await confirm({ message: t.common.deleteConfirm, tone: 'danger' }))) return
+    if (!(await confirm({ message: t.operator.ghostStopConfirm, tone: 'danger' }))) return
     await write('ghost', { method: 'DELETE', body: { key: item.key }, affectedKeys: [GHOSTS_KEY] }).catch(() => {})
     load()
   }

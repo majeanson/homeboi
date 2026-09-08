@@ -195,7 +195,7 @@ export function featureMapRoute(key: string): string {
 
 // ── Legacy theme keys ────────────────────────────────────────────────────────
 // The taxonomy used to be 5 descriptive buckets ('everyday', 'kitchen-shop', …)
-// plus two synthetic jump-grid tiles ('sections', 'settings'). Old ?theme= links
+// plus two synthetic jump-grid tiles ('sections', 'settings'). Old?theme= links
 // (bookmarks — no in-code producers remain) resolve through this map to the
 // section-keyed bucket that absorbed them.
 export const THEME_ALIAS: Record<string, string> = {
@@ -206,13 +206,13 @@ export const THEME_ALIAS: Record<string, string> = {
   'ai-calm': 'settings',
   sections: 'decouvrir',
   // The nav restructure retired these two hub tabs into Maison — old
-  // ?theme=cercle / ?theme=routines bookmarks land there too.
+  //?theme=cercle /?theme=routines bookmarks land there too.
   cercle: 'maison',
   routines: 'maison',
 }
 
 // Which of the 8 consolidated `set-*` cards ("the Réglages reference") lives on
-// which THEMED Réglages tab — i.e. where a ?card=set-… deep-link should land now
+// which THEMED Réglages tab — i.e. where a?card=set-… deep-link should land now
 // that the settings manual renders inside each theme's Comprendre lens instead of
 // one collapsed group. Keys are post-SETTINGS_CARD_ALIAS ids (guide.tsx resolves
 // retired card ids first).
@@ -230,7 +230,7 @@ const SET_CARD_HOME: Record<string, string> = {
 // The Réglages tab a (already alias-resolved) guide card calls home: a section
 // card homes on its own themed tab, a concept on its bucket's tab, a set-* card
 // per SET_CARD_HOME, and the start/overview card on Découvrir. Operator uses this
-// to turn any ?card= deep-link into "open that theme, Comprendre lens".
+// to turn any?card= deep-link into "open that theme, Comprendre lens".
 export function cardHomeTab(id: string): string {
   const e = GUIDE.find((g) => g.id === id)
   if (!e || e.group === 'start') return 'decouvrir'
@@ -242,7 +242,7 @@ export function cardHomeTab(id: string): string {
 // ── Retired card ids ─────────────────────────────────────────────────────────
 // Every card the manual has ever RETIRED lives on here: old id → the card that
 // absorbed it + the point index where its content now starts (`base`), so a
-// bookmarked ?card=<old>&point=<n> deep-link still lands on the exact line
+// bookmarked?card=<old>&point=<n> deep-link still lands on the exact line
 // (resolveGuideCard in components/operator/guide.tsx adds base + n). In-code
 // references (the 7 help registries, tours, whatsNew, discovery) NEVER use
 // these ids — they point at the live card directly; helpRegistry.test.ts
@@ -587,7 +587,7 @@ export const GUIDE: GuideEntry[] = [
       },
       // Absorbed: the old `reserve` card, condensed to one point (guide merge
       // 2026-08-27, back under the ~32 ceiling). GUIDE_CARD_ALIAS `reserve`
-      // lands its old ?card=&point= links here; the kitchen▸reserve Réglages
+      // lands its old?card=&point= links here; the kitchen▸reserve Réglages
       // sub is unchanged.
       {
         label: { fr: 'La réserve', en: 'The stash' },
@@ -751,9 +751,9 @@ export const GUIDE: GuideEntry[] = [
         route: '/settings?tab=maison&sub=annee',
       },
       {
-        label: { fr: 'Business : tes services', en: 'Business: your services' },
+        label: { fr: 'Commerces : tes services', en: 'Business: your services' },
         detail: {
-          fr: 'Ton carnet de commerces — vétérinaire, dentiste, plombier, garderie. Touche pour appeler, écrire ou ouvrir l’itinéraire; un rendez-vous peut s’y relier.',
+          fr: 'Ton carnet de commerces — vétérinaire, dentiste, plombier, garderie. Touche pour appeler, écrire ou ouvrir l’itinéraire ; un rendez-vous peut s’y relier.',
           en: 'Your directory of businesses — vet, dentist, plumber, daycare. Tap to call, write or open directions; an appointment can link to one.',
         },
       },
@@ -852,7 +852,7 @@ export const GUIDE: GuideEntry[] = [
       },
       // Absorbed: the old `ghost` card, condensed to two points (guide merge
       // 2026-08-27, back under the ~32 ceiling). GUIDE_CARD_ALIAS `ghost` lands
-      // its old ?card=&point= links here; the liste▸ghost Réglages sub is
+      // its old?card=&point= links here; the liste▸ghost Réglages sub is
       // unchanged.
       {
         label: { fr: 'Suivi fantôme (achats)', en: 'Ghost tracking (purchases)' },
@@ -963,7 +963,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Cinq sous-onglets', en: 'Five sub-tabs' },
         detail: {
-          fr: 'Routines (les cartes-images des enfants), Famille (ta parenté), Social (les amis et leurs familles à eux), Business (tes commerces) et Carnets (maison, auto…) — voir [[card:routines|Routines]], [[card:cercle|Le cercle]] et [[card:carnets|Les carnets]] pour le détail de chacun.',
+          fr: 'Routines (les cartes-images des enfants), Famille (ta parenté), Social (les amis et leurs familles à eux), Commerces (tes commerces) et Carnets (maison, auto…) — voir [[card:routines|Routines]], [[card:cercle|Le cercle]] et [[card:carnets|Les carnets]] pour le détail de chacun.',
           en: 'Routines (the kids’ picture cards), Family (your kin), Social (friends and their own families), Business (your businesses) and Carnets (home, car…) — see [[card:routines|Routines]], [[card:cercle|The circle]] and [[card:carnets|The carnets]] for each one’s detail.',
         },
       },
@@ -1008,7 +1008,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Corvées & routines', en: 'Chores & routines' },
         detail: {
-          fr: 'Monte la rotation des corvées et les routines d’enfants une fois; ça tourne ensuite tout seul.',
+          fr: 'Monte la rotation des corvées et les routines d’enfants une fois ; ça tourne ensuite tout seul.',
           en: 'Build the chore rotation and the kid routines once; they then run on their own.',
         },
         route: '/settings?tab=maison&sub=routines&focus=chores',
@@ -1059,7 +1059,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ce qu’elle envoie', en: 'What it sends' },
         detail: {
-          fr: 'Seulement ce qu’il faut pour la tâche, et seulement quand TU touches le bouton — puis c’est oublié. Rien ne sert à entraîner des modèles ni à faire de la pub; évite quand même d’y écrire un mot de passe.',
+          fr: 'Seulement ce qu’il faut pour la tâche, et seulement quand TU touches le bouton — puis c’est oublié. Rien ne sert à entraîner des modèles ni à faire de la pub ; évite quand même d’y écrire un mot de passe.',
           en: 'Only what the task needs, and only when YOU tap the button — then it’s dropped. Nothing trains models or feeds ads; still, don’t type a password into it.',
         },
       },
@@ -1175,7 +1175,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Déposer un mot', en: 'Leave a note' },
         detail: {
-          fr: 'Touche le ＋ → « Laisse un mot », choisis à qui, puis écris ou enregistre. « Plus tard » le programme (un « bonne fête » au matin); « Me le rappeler » se laisse un mot à soi-même.',
+          fr: 'Touche le ＋ → « Laisse un mot », choisis à qui, puis écris ou enregistre. « Plus tard » le programme (un « bonne fête » au matin) ; « Me le rappeler » se laisse un mot à soi-même.',
           en: 'Tap ＋ → “Leave a note”, choose who it’s for, then type or record. “Later” schedules it (a “happy birthday” in the morning); “Remind me” leaves one to yourself.',
         },
         route: '/board?plus=mot',
@@ -1536,7 +1536,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La photo du jour', en: 'The picture of the day' },
         detail: {
-          fr: 'Derrière la météo, une belle photo change chaque jour (Bing, Wikipédia, la NASA). Le ⟳ en change; touche la carte pour l’histoire de l’image, toutes les images du jour et la météo en détail; ça se cache dans Réglages ▸ Système ▸ Affichage & veille.',
+          fr: 'Derrière la météo, une belle photo change chaque jour (Bing, Wikipédia, la NASA). Le ⟳ en change ; touche la carte pour l’histoire de l’image, toutes les images du jour et la météo en détail ; ça se cache dans Réglages ▸ Système ▸ Affichage & veille.',
           en: 'Behind the weather, a beautiful photo changes every day (Bing, Wikipedia, NASA). The ⟳ swaps it; tap the card for the picture’s story, all of today’s pictures and the weather in detail; hide it in Settings ▸ System ▸ Display & idle.',
         },
       },
@@ -1585,7 +1585,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Un lien durable et nommé', en: 'A durable, named link' },
         detail: {
-          fr: '« Durable — jusqu’à révocation » : un accès qui ne s’éteint pas tout seul, pour Mamie ou la gardienne régulière. Nomme-le; « Révoquer » est la seule façon de le fermer.',
+          fr: '« Durable — jusqu’à révocation » : un accès qui ne s’éteint pas tout seul, pour Mamie ou la gardienne régulière. Nomme-le ; « Révoquer » est la seule façon de le fermer.',
           en: '“Durable — until revoked”: access that never turns itself off, for Grandma or the regular sitter. Name it; “Revoke” is the only way to close it.',
         },
       },
@@ -1744,7 +1744,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La vraie circulaire', en: 'The real flyer' },
         detail: {
-          fr: 'L’app reconstruit les rabais; pour la page officielle complète, elle te renvoie vers le site du marchand.',
+          fr: 'L’app reconstruit les rabais ; pour la page officielle complète, elle te renvoie vers le site du marchand.',
           en: 'The app reconstructs the deals; for the full official page it links you out to the merchant’s site.',
         },
       },
@@ -1943,7 +1943,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Photo de visage', en: 'Face photo' },
         detail: {
-          fr: 'Touche [[icon:camera-bold]] pour prendre/choisir une photo (redimensionnée petite); le [[icon:x-bold]] la retire.',
+          fr: 'Touche [[icon:camera-bold]] pour prendre/choisir une photo (redimensionnée petite) ; le [[icon:x-bold]] la retire.',
           en: 'Tap [[icon:camera-bold]] to take/pick a photo (resized small); the [[icon:x-bold]] removes it.',
         },
         why: {
@@ -1965,11 +1965,11 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le cercle et les groupes', en: 'The circle and groups' },
         detail: {
-          fr: 'Sous les membres, « Le cercle » garde la famille élargie et les amis (grands-parents, gardienne, voisins) et les regroupe en familles. Voir [[card:cercle|Le cercle]] pour le détail; tu peux y défaire un groupe sans perdre les personnes.',
+          fr: 'Sous les membres, « Le cercle » garde la famille élargie et les amis (grands-parents, gardienne, voisins) et les regroupe en familles. Voir [[card:cercle|Le cercle]] pour le détail ; tu peux y défaire un groupe sans perdre les personnes.',
           en: 'Below the members, “The circle” keeps extended family and friends (grandparents, sitter, neighbours) and clusters them into families. See [[card:cercle|The circle]] for the detail; you can break a group here without losing the people.',
         },
         why: {
-          fr: 'La maisonnée, c’est le noyau qui a des corvées et des routines; le cercle, c’est tout le monde autour qu’on relie à un événement ou une fête.',
+          fr: 'La maisonnée, c’est le noyau qui a des corvées et des routines ; le cercle, c’est tout le monde autour qu’on relie à un événement ou une fête.',
           en: 'The household is the core that gets chores and routines; the circle is everyone around it you can attach to an event or a birthday.',
         },
       },
@@ -2039,7 +2039,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'L’auto partagée', en: 'The shared car' },
         detail: {
-          fr: 'Donne un nom et une couleur à l’auto que la maisonnée se partage; un rendez-vous qui coche « Prend l’auto » s’y rattache. Voir [[card:auto|L’auto]] pour tout le détail.',
+          fr: 'Donne un nom et une couleur à l’auto que la maisonnée se partage ; un rendez-vous qui coche « Prend l’auto » s’y rattache. Voir [[card:auto|L’auto]] pour tout le détail.',
           en: 'Name and colour the car the household shares; an appointment that ticks “Takes the car” attaches to it. See [[card:auto|The car]] for the full detail.',
         },
         why: {
@@ -2050,7 +2050,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Les horaires de travail', en: 'Work schedules' },
         detail: {
-          fr: 'Entre une fois les heures récurrentes de chacun (travail, garderie) et coche « prend l’auto » au besoin; ça dit à [[card:auto|L’auto]] quand la voiture n’est pas là et façonne chaque journée tout seul.',
+          fr: 'Entre une fois les heures récurrentes de chacun (travail, garderie) et coche « prend l’auto » au besoin ; ça dit à [[card:auto|L’auto]] quand la voiture n’est pas là et façonne chaque journée tout seul.',
           en: 'Enter everyone’s recurring hours once (work, daycare) and tick “takes the car” where it applies; it tells [[card:auto|The car]] when the vehicle is away and shapes each day on its own.',
         },
         route: '/settings?tab=maison&sub=cars&focus=schedule',
@@ -2203,7 +2203,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Filtre de magasins', en: 'Store filter' },
         detail: {
-          fr: 'Garde seulement les magasins où tu vas; ceux que tu retires ne reviennent plus dans les rabais. Rien de coché = tous gardés.',
+          fr: 'Garde seulement les magasins où tu vas ; ceux que tu retires ne reviennent plus dans les rabais. Rien de coché = tous gardés.',
           en: 'Keep only the stores you shop; ones you drop never come back in deals. Nothing ticked = all kept.',
         },
         why: {
@@ -2289,7 +2289,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Renommer ou supprimer partout', en: 'Rename or remove everywhere' },
         detail: {
-          fr: 'Renomme une étiquette une fois et toutes les recettes suivent; la supprimer l’enlève partout d’un coup (avec confirmation).',
+          fr: 'Renomme une étiquette une fois et toutes les recettes suivent ; la supprimer l’enlève partout d’un coup (avec confirmation).',
           en: 'Rename a tag once and every recipe follows; removing it takes it off everywhere at once (with confirmation).',
         },
       },
@@ -2352,14 +2352,14 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Approuver un code', en: 'Approve a code' },
         detail: {
-          fr: 'La tablette affiche un code à 6 chiffres; entre-le ici, nomme-la, et touche Jumeler. Elle garde un jeton révocable — jamais ton mot de passe.',
+          fr: 'La tablette affiche un code à 6 chiffres ; entre-le ici, nomme-la, et touche Jumeler. Elle garde un jeton révocable — jamais ton mot de passe.',
           en: 'The tablet shows a 6-digit code; enter it here, name it, and tap Pair. It keeps a revocable token — never your password.',
         },
       },
       {
         label: { fr: 'Retirer un appareil', en: 'Revoke a device' },
         detail: {
-          fr: 'Un tap retire l’accès (annulable par le bandeau d’annulation); la tablette devra se re-jumeler.',
+          fr: 'Un tap retire l’accès (annulable par le bandeau d’annulation) ; la tablette devra se re-jumeler.',
           en: 'One tap removes access (undoable via the undo toast); the tablet will have to re-pair.',
         },
         why: {
@@ -2406,7 +2406,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Aperçu et QR', en: 'Preview and QR' },
         detail: {
-          fr: 'Le bouton « Aperçu » montre exactement ce que le visiteur verra; un code QR accompagne chaque lien pour le scanner ou le coller près de la porte.',
+          fr: 'Le bouton « Aperçu » montre exactement ce que le visiteur verra ; un code QR accompagne chaque lien pour le scanner ou le coller près de la porte.',
           en: 'The “Preview” button shows exactly what the visitor will see; a QR code rides along with each link to scan it or tape it by the door.',
         },
         why: {
@@ -2573,7 +2573,7 @@ export const GUIDE: GuideEntry[] = [
           en: '“View recent” [[icon:clock-bold]] opens a calm look back at your latest actions this session — what, and how long ago. The ones still recent keep an “Undo”.',
         },
         why: {
-          fr: 'Le bandeau « Annuler » disparaît vite; ceci te laisse rattraper une action manquée. Rien n’est gardé après le rechargement — un aide-mémoire, pas un journal.',
+          fr: 'Le bandeau « Annuler » disparaît vite ; ceci te laisse rattraper une action manquée. Rien n’est gardé après le rechargement — un aide-mémoire, pas un journal.',
           en: 'The “Undo” toast fades fast; this lets you catch one you missed. Nothing is kept after a reload — a memory aid, not an audit log.',
         },
       },
@@ -2646,7 +2646,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Mode calme : ce qui reste', en: 'Calm mode: what stays' },
         detail: {
-          fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées. Ce réglage adoucit une seule friction; il ne déverrouille jamais le calme structurel.',
+          fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées. Ce réglage adoucit une seule friction ; il ne déverrouille jamais le calme structurel.',
           en: 'No points, no notifications, no inventory: those guarantees are locked. This toggle softens one friction; it never unlocks the structural calm.',
         },
       },

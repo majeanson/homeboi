@@ -21,6 +21,14 @@ export type WhatsNewEntry = {
 // Newest FIRST.
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'business-devient-commerces',
+    text: {
+      fr: 'Dans Maison, l’onglet « Business » s’appelle « Commerces » — le même carnet de vétérinaires, plombiers et cliniques, dit en français.',
+      en: 'In Maison, the “Business” tab is now “Commerces” — the same book of vets, plumbers and clinics, said in French.',
+    },
+    card: 'cercle',
+  },
+  {
     id: 'reglages-14-pastilles',
     text: {
       fr: 'Réglages respire : 14 pastilles au lieu de 28 — chaque réglage est resté, regroupé avec ses voisins (Affichage & veille, Tâches de la maison, Voix & IA…).',

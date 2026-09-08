@@ -707,13 +707,14 @@ test.describe('add sheet', () => {
     await settle(page, '.hub')
     // Maison's ＋ now opens the merged chooser (routines + the cercle add-set) —
     // the "Routines" tile leads it and drills into the manage picker (new + edit
-    // existing routines) in place; its "Nouvelle routine" goes to the full-screen
-    // routine scene.
+    // existing routines) in place; its « Partir de zéro » goes to the full-screen
+    // routine scene. (The two doors used to read « Ajouter une routine » and
+    // « Nouvelle routine » — two words for one idea; they say what they DO now.)
     await page.locator('.add-fab').click()
     await page.getByRole('dialog').locator('.cat-pick[data-mode="routine-pick"]').click()
     await Promise.all([
       page.waitForURL(/\/routine\/new/),
-      page.getByRole('dialog').getByRole('button', { name: 'Nouvelle routine' }).click(),
+      page.getByRole('dialog').getByRole('button', { name: 'Partir de zéro' }).click(),
     ])
     await expect(page.locator('.scene .operator__routine-form')).toBeVisible()
   })

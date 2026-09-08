@@ -142,7 +142,7 @@ export function ListEditPage() {
   async function remove() {
     // Deleting the line from the edit scene is permanent (no undo toast here, unlike the
     // list row's own swipe) — confirm so a stray tap can't drop a grocery item silently.
-    if (!(await confirm({ message: t.common.deleteConfirm, tone: 'danger' }))) return
+    if (!(await confirm({ message: t.list.deleteItemConfirm, tone: 'danger' }))) return
     setBusy(true)
     setErr(false)
     try {

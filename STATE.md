@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~148k lines across 853 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1981 unit tests in 155 files · 126 Playwright spec files |
+| **Tests** | 1987 unit tests in 156 files · 126 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -36,7 +36,7 @@
   2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
   CI's E2E job is the standing whole-suite signal)*.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Fifteen build-gating invariants** (this is the codebase's best feature — see §5):
+- **Sixteen build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -66,7 +66,9 @@
   prove the page agrees with the tree, for the operator and for a paired tablet)**, and
   **`guideBudget.test.ts` (added 2026-09-08 — the guide's concision budgets, listed in
   DISCOVERY.md as enforced for months with no test behind them: a card's one-liner
-  ≤ 15 words and a point label ≤ 5 are hard, the rest ratchets down)**.
+  ≤ 15 words and a point label ≤ 5 are hard, the rest ratchets down)**, and
+  **`confirmCopy.test.ts` (added 2026-09-08 — a destructive dialog says what is lost:
+  every `…Confirm` string, in both languages, is ≥ 6 words and carries a consequence)**.
   `knip` now runs in CI too.
 
 ---
@@ -371,6 +373,35 @@ any fast typer. `ShareInfoEditor` now refuses to seed once anyone has typed
 holds the fetch open, types, then releases it — run against the bug (`Received: ""`,
 the exact CI shape). The lesson is the one this file keeps relearning: a mount fetch
 that fills a form is a race with the user, and only a slow runner shows it.
+
+**Second copy sweep, fresh eyes (2026-09-08).** The first pass measured LENGTH; this
+one measured VOCABULARY, and the four tracks all ran:
+
+- **A destructive dialog now says what is lost.** Four had drifted back to a bare
+  question — the shared fallback « Supprimer ? » (reached from a grocery row AND a
+  tracked staple), « Supprimer cette recette ? », « Supprimer ce mot gardé ? » — and
+  the new guard found **seven more the first audit could not see**, because they are
+  FUNCTIONS (`(name) => …`) rather than plain strings. All rewritten on the model the
+  app already had (« Supprimer ce groupe ? Les personnes restent dans le cercle. »),
+  and `confirmCopy.test.ts` holds the rule in both languages: a `…Confirm` string is
+  ≥ 6 words and carries a consequence, with an exemption list for the three keys that
+  are buttons or chips rather than questions. Proven red on a planted « Supprimer ? ».
+- **« Business » → « Commerces »** (Marc's call): the last English word in the French
+  UI, and it named a whole Maison section — 14 strings, the sub-tab, the card title,
+  the empty state, the ＋ tile. The guide had described it in French all along
+  (« ton carnet de commerces »); only the label never followed. Ids and routes stay
+  `business`; « Quoi de neuf » carries the rename so a returning user finds it.
+- **One word per idea.** The delete family runs on a real system (retirer = off this
+  surface · supprimer = gone · vider = empty · révoquer = kill a link), so the fix was
+  the two strays: « Enlever » → « Retirer », and « Effacer la note » → « Supprimer la
+  note » (it destroys). And the routines empty screen offered « ＋ Ajouter une
+  routine » beside « ＋ Nouvelle routine » — two words, one idea to a newcomer; they
+  now say what each DOES: « Partir d'un modèle » and « Partir de zéro ».
+- **French spacing** before « ; ? ! » in 29 places. Worth recording how it went wrong:
+  the scripted pass ran per LINE, so a `{ fr: '…', en: '…' }` one-liner had its
+  ENGLISH half spaced too (« What's for supper ? »), and one English comment with it —
+  17 reverts. A rule that applies to one language must be applied per LITERAL, not per
+  line.
 
 ---
 
