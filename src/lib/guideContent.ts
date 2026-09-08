@@ -300,8 +300,8 @@ export const GUIDE: GuideEntry[] = [
     resetOnboarding: true,
     title: { fr: 'Première fois', en: 'First time' },
     what: {
-      fr: 'Tout Babillard en bref — ce que c’est, les six sections, comment ajouter, et la promesse « calme ».',
-      en: 'All of Babillard in brief — what it is, the six sections, how to add, and the “calm” promise.',
+      fr: 'Babillard en bref : les six sections, comment ajouter, et la promesse calme.',
+      en: 'Babillard in short: the six sections, how to add, and the calm promise.',
     },
     points: [
       {
@@ -378,8 +378,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=board',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
-      fr: 'L’écran « coup d’œil » de la maison : l’heure, l’agenda du jour, le souper de ce soir et les corvées, sur un même mur.',
-      en: 'The home’s glance screen: the time, today’s agenda, tonight’s supper and the chores, on one wall.',
+      fr: 'L’écran coup d’œil : l’heure, la journée, le souper et les corvées.',
+      en: 'The glance screen: the time, the day, supper and the chores.',
     },
     points: [
       // ⚠ Help registries + GUIDE_CARD_ALIAS deep-link into this card BY POINT
@@ -474,7 +474,7 @@ export const GUIDE: GuideEntry[] = [
         route: '/settings?tab=board&sub=events&focus=schoolYear',
       },
       {
-        label: { fr: 'Le mois : lire une journée, et y ajouter', en: 'The month: read a day, and add to it' },
+        label: { fr: 'Le mois, jour par jour', en: 'The month, day by day' },
         detail: {
           fr: 'Dans la vue Mois, touche une date : elle s’allume et le détail de la journée s’ouvre juste en dessous — à côté du calendrier sur grand écran ; touche-la de nouveau pour le refermer. Le ⋯ de la journée ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date-là, et mène à tes habitudes. Le calendrier RACONTE : il nomme les habitudes que la journée a vraiment faites — cocher, ça se passe au « point du jour ». Et la légende sous le calendrier est aussi un projecteur : touche « Rendez-vous » (ou Repas, Corvées, À compléter, Notes, Voyages) et toutes les journées qui en portent s’allument d’un coup — le panneau du bas rassemble alors ce type-là pour TOUT le mois, date par date. Touche une date du rassemblement (ou le ✕) pour revenir à une seule journée.',
           en: 'In the Month view, tap a date: it lights up and the day’s detail opens right below — beside the calendar on a big screen; tap it again to close it. The day’s ⋯ adds an event, a chore, a meal or the day note to THAT date, and leads to your habits. The calendar RECORDS: it names the habits the day actually did — checking one off happens in the daily check-in. And the legend under the calendar is a spotlight too: tap “Events” (or Meals, Chores, To complete, Notes, Trips) and every day carrying one lights up at once — the panel below then gathers that kind for the WHOLE month, date by date. Tap a date in the roll-up (or the ✕) to go back to a single day.',
@@ -491,8 +491,8 @@ export const GUIDE: GuideEntry[] = [
     route: '/kitchen',
     settings: '/settings?tab=kitchen',
     what: {
-      fr: 'Tu planifies les soupers et tu signales ce qui achève; la cuisine remplit ta liste d’épicerie pour toi.',
-      en: 'You plan the suppers and flag what’s running low; the kitchen fills your grocery list for you.',
+      fr: 'Planifie les soupers, note ce qui achève : la liste d’épicerie se remplit seule.',
+      en: 'Plan the suppers, note what’s running out: the grocery list fills itself.',
     },
     points: [
       // ⚠ Registries + GUIDE_CARD_ALIAS index into this card — append only.
@@ -612,8 +612,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=maison&sub=routines&focus=routines',
     title: { fr: 'Routines', en: 'Routines' },
     what: {
-      fr: 'Des routines en cartes-images pour les enfants (matin, dodo…), lues à voix haute. Un pré-lecteur les fait seul.',
-      en: 'Picture-card routines for kids (morning, bedtime…), read aloud. A pre-reader runs them alone.',
+      fr: 'Des routines en images pour les enfants, lues à voix haute — matin, dodo.',
+      en: 'Picture routines for the kids, read aloud — morning, bedtime.',
     },
     points: [
       // ⚠ Registries index into this card — append only.
@@ -776,7 +776,7 @@ export const GUIDE: GuideEntry[] = [
         route: '/maison?connect=1',
       },
       {
-        label: { fr: 'Trois vues : Liste, Liens, Arbre', en: 'Three views: List, Links, Tree' },
+        label: { fr: 'Liste, Liens ou Arbre', en: 'List, Links or Tree' },
         detail: {
           fr: 'Liste (le répertoire par famille), Liens (touche un visage, ses liens s’affichent autour) et Arbre (les générations). La rangée de visages relit tout du point de vue de la personne choisie. Dans Social, Liens montre plutôt tes cercles — chaque famille, chaque groupe — et Arbre la famille de chaque ami, reliée aux autres par les amitiés.',
           en: 'List (the directory by family), Links (tap a face, their ties fan out) and Tree (the generations). The face row rereads everything from the picked person’s perspective. Under Social, Links instead shows your circles — every family, every group — and Tree shows each friend’s family, joined to the others by the friendships between them.',
@@ -806,7 +806,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Famille et Social, deux sous-onglets de la maison', en: 'Family and Social, two of the home’s sub-tabs' },
+        label: { fr: 'Famille et Social', en: 'Family and Social' },
         detail: {
           fr: 'Le cercle vit maintenant sous « Maison » aux côtés de Routines, Business et Carnets : Famille (ta parenté) et Social (les amis et leurs familles à eux). Les notes rapides pour toi ou toute la Maisonnée — photo, dessin, mémo vocal — ont maintenant leur propre onglet : [[card:notes|Les notes]].',
           en: 'The circle now lives under “Maison” alongside Routines, Business and Carnets: Family (your kin) and Social (friends and their own families). Quick notes for you or the whole Household — photo, drawing, voice memo — now have their own tab: [[card:notes|Notes]].',
@@ -839,8 +839,8 @@ export const GUIDE: GuideEntry[] = [
     route: '/liste',
     settings: '/settings?tab=liste',
     what: {
-      fr: 'Une seule liste partagée (l’épicerie, le plus souvent). Tout le monde la voit et l’ajoute, sur tous les appareils.',
-      en: 'One shared list (groceries, usually). Everyone sees it and adds to it, on every device.',
+      fr: 'Une seule liste d’épicerie, que tout le monde voit et remplit.',
+      en: 'One grocery list, that everyone sees and fills.',
     },
     points: [
       // ⚠ Registries index into this card — append only.
@@ -960,8 +960,8 @@ export const GUIDE: GuideEntry[] = [
     // tab, nothing to régler beyond the notes themselves. No `tour` either.
     title: { fr: 'Les notes', en: 'Notes' },
     what: {
-      fr: 'Des notes et des recommandations qui durent — pour toi ou pour toute la Maisonnée. Différent des « mots » du babillard : un mot attend une personne précise et se referme une fois lu, une note vit tant que tu la gardes.',
-      en: 'Notes and recommendations meant to last — for you or the whole Household. Different from the board’s “mots”: a mot waits for one person and closes once read, a note stays as long as you keep it.',
+      fr: 'Des notes qui durent, pour toi ou pour toute la maisonnée.',
+      en: 'Notes that last, for you or for the whole household.',
     },
     points: [
       // ⚠ Registries index into this card — append only.
@@ -988,7 +988,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Un mémo vocal, un dessin, une photo', en: 'A voice memo, a drawing, a photo' },
+        label: { fr: 'Vocal, dessin ou photo', en: 'Voice, drawing or photo' },
         detail: {
           fr: 'Reste appuyé sur le ＋ pour dicter une note à voix haute. Une photo ou un dessin se joint dans la note elle-même, une fois ouverte.',
           en: 'Hold the ＋ to dictate a note out loud. A photo or a drawing clips onto the note itself, once it’s open.',
@@ -1019,8 +1019,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=maison',
     title: { fr: 'Maison', en: 'Home' },
     what: {
-      fr: 'La maison au quotidien : les routines des enfants, ta famille et tes amis, tes commerces et tes carnets — cinq sous-onglets, une seule section.',
-      en: 'The everyday home: the kids’ routines, your family and friends, your businesses and your carnets — five sub-tabs, one section.',
+      fr: 'Les routines des enfants, ta famille, tes commerces et tes carnets.',
+      en: 'The kids’ routines, your family, your businesses and your notebooks.',
     },
     points: [
       {
@@ -1055,8 +1055,8 @@ export const GUIDE: GuideEntry[] = [
     route: '/settings',
     title: { fr: 'Réglages', en: 'Settings' },
     what: {
-      fr: 'Le poste de pilotage du parent : les personnes, les appareils, les corvées, l’affichage. Réservé à l’opérateur.',
-      en: 'The parent’s control panel: people, devices, chores, display. Operator-only.',
+      fr: 'Le poste du parent : les personnes, les appareils, les corvées, l’affichage.',
+      en: 'The parent’s station: people, devices, chores, display.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('offline' → base 4) indexes into this card — append only.
@@ -1116,8 +1116,8 @@ export const GUIDE: GuideEntry[] = [
     title: { fr: 'L’intelligence (l’IA)', en: 'The AI' },
     settings: '/settings?tab=settings&sub=ai&focus=ai',
     what: {
-      fr: 'L’IA donne un coup de main à quelques endroits — toujours sur demande, jamais en arrière-plan. Tu peux la couper : tout marche sans elle.',
-      en: 'AI lends a hand in a few spots — always on demand, never in the background. You can turn it off: everything works without it.',
+      fr: 'L’IA aide quand tu le demandes, jamais dans ton dos. Tout marche sans elle.',
+      en: 'AI helps when you ask, never behind your back. Everything works without it.',
     },
     points: [
       {
@@ -1166,8 +1166,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=ai&focus=ai',
     title: { fr: 'Ajouter & demander (écrire ou parler)', en: 'Add & ask (type or speak)' },
     what: {
-      fr: 'Dis ou écris une phrase — « souper spaghetti vendredi » — et l’app la range à la bonne place toute seule.',
-      en: 'Say or type a line — “spaghetti supper Friday” — and the app files it in the right place on its own.',
+      fr: 'Dis « souper spaghetti vendredi » et l’app le range à la bonne place.',
+      en: 'Say “spaghetti supper Friday” and the app files it in the right place.',
     },
     points: [
       // ⚠ Registries + GUIDE_CARD_ALIAS index into this card — append only.
@@ -1208,14 +1208,14 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Joindre un mémo, un dessin ou une photo', en: 'Clip on a memo, a drawing or a photo' },
+        label: { fr: 'Joindre un mémo, une photo', en: 'Attach a memo, a photo' },
         detail: {
           fr: 'Le trombone 📎 dans le champ de texte joint un mémo vocal, un dessin ou une photo à ta note — sans effacer ce que tu as écrit. « Photo » attache la pic telle quelle, d’un geste; pour dessiner par-dessus, ouvre « Dessiner » et charge-la avec l’outil 🖼. Un mémo tout seul est une note valide aussi.',
           en: 'The 📎 in the text field clips a voice memo, a drawing or a photo onto your note — without erasing what you wrote. “Photo” attaches the shot as-is, in one tap; to draw over it, open “Draw” and load it with the 🖼 tool. A memo on its own is a valid note too.',
         },
       },
       {
-        label: { fr: 'Garder la photo (deux fois plutôt qu’une)', en: 'Keep the photo (twice, not once)' },
+        label: { fr: 'Garder la photo', en: 'Keep the photo' },
         detail: {
           fr: 'Une photo jointe à une note ne vivait que sur cette note-là : effacer la note l’emportait, et une pic prise dans l’app ne se rendait jamais dans la pellicule du téléphone. Sous la photo, deux petits choix : « Garder dans les photos » l’ajoute au cadre de la maison (elle dérive au babillard et en veille — [[card:screensaver|mode veille]]), et « Enregistrer sur l’appareil » te la redonne dans tes photos à toi. Chacune est une copie indépendante : effacer la note n’efface plus rien d’autre.',
           en: 'A photo clipped to a note used to live only on that note: clearing the note took it away, and a shot snapped inside the app never reached the phone’s camera roll. Under the photo, two small choices: “Keep in the photos” adds it to the household frame (it drifts across the board and the screensaver — [[card:screensaver|idle mode]]), and “Save to my device” hands it back to your own photos. Each is an independent copy: clearing the note no longer erases anything else.',
@@ -1252,8 +1252,8 @@ export const GUIDE: GuideEntry[] = [
     route: '/board?plus=mot',
     title: { fr: 'Mots & dessins', en: 'Notes & drawings' },
     what: {
-      fr: 'Un petit message qu’un membre laisse à un autre — écrit, vocal, dessiné ou en photo — et qui l’attend, fermé, sur son visage.',
-      en: 'A little message one member leaves for another — typed, spoken, drawn or a photo — waiting, unopened, on their face.',
+      fr: 'Un petit message laissé à quelqu’un, qui l’attend sur son visage.',
+      en: 'A little message left for someone, waiting on their face.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('drawings' → base 3) indexes into this card — append only.
@@ -1273,7 +1273,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Différent de la boîte aux lettres', en: 'Different from the mailbox' },
+        label: { fr: 'Pas la boîte aux lettres', en: 'Not the postbox' },
         detail: {
           fr: '« Laisse un mot » reste entre membres de la maisonnée. La boîte aux lettres reçoit les mots des proches de l’extérieur (voir [[card:share-access|Partager & inviter]]).',
           en: '“Leave a note” stays between household members. The mailbox receives notes from relatives outside (see [[card:share-access|Share & invite]]).',
@@ -1287,7 +1287,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'La galerie « Mes dessins »', en: 'The “My drawings” gallery' },
+        label: { fr: 'La galerie de dessins', en: 'The drawings gallery' },
         detail: {
           fr: 'Un dessin gardé va dans la galerie : rouvre-le pour continuer dessus (les enfants aussi), affiche-le au babillard ou en mode veille.',
           en: 'A kept drawing goes to the gallery: reopen it to keep drawing (kids too), show it on the board or the screensaver.',
@@ -1304,8 +1304,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=display&focus=habits',
     title: { fr: 'Mes habitudes', en: 'My habits' },
     what: {
-      fr: 'Les petits rythmes qu’on tient — marcher, boire de l’eau, deux sorties à vélo par semaine, fumer moins, éviter le chocolat. « Le point du jour » les rassemble en un écran, et un tap suffit.',
-      en: 'The little rhythms you keep — walking, drinking water, two bike rides a week, smoking less, avoiding chocolate. “Today’s check-in” gathers them on one screen, and one tap is enough.',
+      fr: 'Les petits rythmes qu’on tient — marcher, boire de l’eau — cochés d’un toucher.',
+      en: 'The little rhythms you keep — walking, drinking water — checked with one tap.',
     },
     points: [
       {
@@ -1356,7 +1356,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'À toi, ou à la maisonnée', en: 'Yours, or the household’s' },
+        label: { fr: 'À toi ou à tous', en: 'Yours or everyone’s' },
         detail: {
           fr: 'Une habitude appartient à un visage ou à toute la maisonnée. Les tiennes ne s’affichent qu’une fois ton visage choisi — le babillard nomme alors ce qui te reste (« 0 sur 2 verres »), et jamais les habitudes de quelqu’un d’autre.',
           en: 'A habit belongs to one face or to the whole household. Yours only show once your face is picked — the board then names what’s left (“0 of 2 glasses”), and never anyone else’s habits.',
@@ -1377,12 +1377,12 @@ export const GUIDE: GuideEntry[] = [
     group: 'concepts',
     title: { fr: 'À faire & à compléter', en: 'To do & to complete' },
     what: {
-      fr: 'Sur le babillard, la carte « À faire » tient les p’tites tâches ponctuelles (souvent dictées — « appeler le dentiste ») et tes cochables du quotidien. Tes listes de départ réutilisables vivent à part, sur la carte « Avant de partir ». Coche quand c’est fait, puis « Effacer cochées » nettoie.',
-      en: 'On the board, the “À faire” card holds small one-off tasks (often dictated — “call the dentist”) and your everyday check-offs. Your reusable leaving checklists live apart, on the “Before you go” card. Check things off when done, then “Clear checked” tidies up.',
+      fr: 'Les p’tites tâches du jour — « appeler le dentiste » — à cocher.',
+      en: 'The day’s small tasks — “call the dentist” — to check off.',
     },
     points: [
       {
-        label: { fr: '« À faire » ou une liste de départ ?', en: '“À faire” or a leaving checklist?' },
+        label: { fr: 'Tâche ou liste de départ ?', en: 'Task, or leaving list?' },
         detail: {
           fr: '« À faire » : une chose ponctuelle — tu la dictes ou la captures, tu coches, c’est fini. Une liste de départ (sac de piscine, avant de partir) : préparée une fois, réutilisable d’un tap — elle vit sur la carte « [[card:board|Avant de partir]] », un jour à la fois. En cas de doute, touche le « ? » du babillard puis le titre de la carte.',
           en: '“À faire”: a one-off thing — dictate or capture it, tick it, done. A leaving checklist (pool bag, before leaving): set up once, reusable in one tap — it lives on the “[[card:board|Before you go]]” card, one day at a time. If unsure, tap the board’s “?” then the card title.',
@@ -1432,12 +1432,12 @@ export const GUIDE: GuideEntry[] = [
     route: '/voyage/new',
     title: { fr: 'Voyage', en: 'Trip' },
     what: {
-      fr: 'Un carnet de voyage pour la famille : tout au même endroit, du rendez-vous de planification jusqu’au retour. Un itinéraire jour par jour qui apparaît sur ton calendrier, des infos par catégorie (vols, hôtel, auto, à apporter…), une liste de bagages par personne, et tes documents (réservations, passeports) disponibles même hors-ligne.',
-      en: 'A family trip notebook: everything in one place, from the planning meeting to the trip home. A day-by-day itinerary that shows on your calendar, info by category (flights, hotel, car, what to bring…), a packing list per person, and your documents (reservations, passports) available even offline.',
+      fr: 'Le carnet de voyage de la famille : itinéraire, bagages, documents.',
+      en: 'The family’s trip notebook: itinerary, bags, documents.',
     },
     points: [
       {
-        label: { fr: 'Noter, comme une note du frigo', en: 'Jot it, like a fridge note' },
+        label: { fr: 'Noter en route', en: 'Jot as you go' },
         detail: {
           fr: 'Chaque info se note avec le même petit bloc-notes que les notes du frigo : écris, dicte à la voix, dessine ou prends une photo. Choisis une catégorie (Vols, Hébergement, Transport…) et, au besoin, à qui ça s’adresse (les enfants, les parents).',
           en: 'Each info is jotted with the same little notepad as a fridge note: type, dictate by voice, draw or snap a photo. Pick a category (Flights, Lodging, Transport…) and, if you like, who it’s for (the kids, the parents).',
@@ -1445,7 +1445,7 @@ export const GUIDE: GuideEntry[] = [
         why: { fr: 'Au rendez-vous de planification, tu captes tout vite, sans nouveau système à apprendre.', en: 'At the planning meeting you capture everything fast, with no new system to learn.' },
       },
       {
-        label: { fr: 'Jour par jour, sur le calendrier', en: 'Day by day, on the calendar' },
+        label: { fr: 'Jour par jour', en: 'Day by day' },
         detail: {
           fr: 'Donne les dates du voyage : il s’affiche comme une bande sur le calendrier, et chaque journée du voyage te laisse ajouter son programme. Ouvre une journée sur le calendrier et l’info de ce jour-là est juste là.',
           en: 'Give the trip dates: it shows as a band across the calendar, and each trip day lets you add its plan. Open a day on the calendar and that day’s info is right there.',
@@ -1467,7 +1467,7 @@ export const GUIDE: GuideEntry[] = [
         why: { fr: 'À l’aéroport ou à l’hôtel, ta réservation s’ouvre sans dépendre du wifi.', en: 'At the airport or hotel, your reservation opens without depending on wifi.' },
       },
       {
-        label: { fr: 'Partager en direct avec d’autres maisonnées', en: 'Share it live with other households' },
+        label: { fr: 'Partager en direct', en: 'Share live' },
         detail: {
           fr: 'Touche « Partager en direct » pour ouvrir le voyage à d’autres familles (jusqu’à 6) qui ont leur propre Babillard. Chacune reçoit un lien d’invitation ; vous modifiez ensuite l’itinéraire, les infos et les documents ensemble, en direct. Les bagages restent par maisonnée : tu vois les valises des autres, mais tu ne modifies que les tiennes. Chaque maisonnée peut quitter le voyage (en gardant une copie si elle veut) ; le propriétaire peut réinitialiser le lien ou dissoudre le voyage.',
           en: 'Tap “Share live” to open the trip to other families (up to 6) who have their own Babillard. Each gets an invite link; you then edit the itinerary, info and documents together, live. Packing stays per household: you see the others’ bags but only edit your own. Any household can leave (keeping a copy if it wants); the owner can reset the link or dissolve the trip.',
@@ -1494,8 +1494,8 @@ export const GUIDE: GuideEntry[] = [
     route: '/maison?section=carnets',
     title: { fr: 'Les carnets', en: 'The carnets' },
     what: {
-      fr: 'Dans Maison, tes choses dont on prend soin — la maison, l’auto… et le chauffe-eau ou la toiture à l’intérieur d’une maison. Chacune garde son carnet, comme un carnet d’entretien d’auto : son identité, ses factures, son entretien qui revient, et « le long jeu » (quand la remplacer).',
-      en: 'In Maison, your cared-for things — the house, the car… and the water heater or roof inside a house. Each keeps a carnet, like a car’s maintenance booklet: its identity, its invoices, its recurring upkeep, and “the long game” (when to replace it).',
+      fr: 'Un carnet d’entretien pour chaque chose — la maison, l’auto, le chauffe-eau.',
+      en: 'A maintenance booklet for each thing — the house, the car, the water heater.',
     },
     points: [
       {
@@ -1558,8 +1558,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=display&focus=ambient',
     title: { fr: 'Le mode veille', en: 'The screensaver' },
     what: {
-      fr: 'Au repos, la tablette se transforme en joli cadran : une grande horloge, la date et tes photos qui défilent doucement. Touche l’écran pour la réveiller.',
-      en: 'At rest the tablet becomes a pretty clock face: a big clock, the date and your photos drifting gently by. Touch the screen to wake it.',
+      fr: 'Au repos, la tablette devient une horloge avec tes photos. Touche-la pour la réveiller.',
+      en: 'At rest the tablet becomes a clock with your photos. Touch it to wake it.',
     },
     points: [
       {
@@ -1634,8 +1634,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=tablets&focus=guestLinks',
     title: { fr: 'Partager & inviter', en: 'Share & invite' },
     what: {
-      fr: 'Donne un lien à un proche sans lui ouvrir toute la maison : tu choisis ce qu’il voit, et le lien s’éteint tout seul.',
-      en: 'Give a relative a link without opening the whole house: you pick what they see, and the link expires on its own.',
+      fr: 'Un lien pour un proche : tu choisis ce qu’il voit, puis il s’éteint.',
+      en: 'A link for a relative: you choose what they see, then it turns off.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('share' → 6, 'share-target' → 8) — append only.
@@ -1675,7 +1675,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'La carte gardienne montre ses trous', en: 'The sitter card shows its gaps' },
+        label: { fr: 'Les trous de la carte', en: 'The card’s gaps' },
         detail: {
           fr: 'En choisissant « Gardienne », un petit avis liste ce qui manque (urgences, routines, wifi) — touche un élément pour aller le compléter avant d’envoyer.',
           en: 'When you pick “Sitter”, a small notice lists what’s missing (emergencies, routines, wifi) — tap an item to go complete it before sending.',
@@ -1683,7 +1683,7 @@ export const GUIDE: GuideEntry[] = [
       },
       // Appended: the retired 'share' card (outbound share links — alias base 6).
       {
-        label: { fr: 'Partager une recette ou une famille', en: 'Share a recipe or a family' },
+        label: { fr: 'Partager une recette', en: 'Share a recipe' },
         detail: {
           fr: '« Partager » crée un vrai lien — une belle page que n’importe qui ouvre, même sans Babillard. Un ami qui a Babillard l’ajoute à son compte d’un bouton.',
           en: '“Share” creates a real link — a proper page anyone opens, even without Babillard. A friend with Babillard adds it to their account with one button.',
@@ -1713,8 +1713,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=display&focus=display',
     title: { fr: 'Tablette, téléphone & vue enfant', en: 'Tablet, phone & kid view' },
     what: {
-      fr: 'La même information, montrée pour un parent, pour un tout-petit, ou en version « Simple » (gros boutons, gros texte).',
-      en: 'The same information, shown for a parent, for a toddler, or as a “Simple” view (big buttons, large text).',
+      fr: 'La même chose, montrée pour un parent, un tout-petit, ou en gros et simple.',
+      en: 'The same thing, shown for a parent, a toddler, or big and simple.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('surface' → base 4) — append only.
@@ -1748,7 +1748,7 @@ export const GUIDE: GuideEntry[] = [
       },
       // Appended: the retired 'surface' card (device role — alias base 4).
       {
-        label: { fr: 'Tablette ou téléphone (la « surface »)', en: 'Tablet or phone (the “surface”)' },
+        label: { fr: 'Tablette ou téléphone', en: 'Tablet or phone' },
         detail: {
           fr: 'Chaque appareil a un rôle, choisi une fois : la tablette au mur montre le grand babillard, le téléphone une barre d’onglets sous le pouce. C’est de la présentation — la sécurité, c’est la connexion et le jumelage.',
           en: 'Each device has a role, chosen once: the wall tablet shows the big board, the phone a thumb-reach tab bar. It’s presentation — security is the login and the pairing.',
@@ -1763,8 +1763,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=display&focus=calm',
     title: { fr: 'Le calme (par choix)', en: 'Calm (by design)' },
     what: {
-      fr: 'L’app refuse volontairement ce qui rend accro : pas de points, pas de pastilles rouges, pas de notifications, pas de fil sans fin.',
-      en: 'The app deliberately refuses the addictive stuff: no points, no red badges, no notifications, no endless feed.',
+      fr: 'Pas de points, pas de pastilles rouges, pas de notifications, pas de fil sans fin.',
+      en: 'No points, no red badges, no notifications, no endless feed.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('undo' → base 4) — append only.
@@ -1814,8 +1814,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=liste&sub=shop&focus=shop',
     title: { fr: 'Rabais, circulaires & caissier', en: 'Deals, flyers & cashier' },
     what: {
-      fr: 'Trouve les rabais d’épicerie près de chez toi, accroche-les à ta liste, et présente-les à la caisse.',
-      en: 'Find grocery deals near you, attach them to your list, and show them at the till.',
+      fr: 'Les rabais d’épicerie près de chez toi, accrochés à ta liste, montrés à la caisse.',
+      en: 'The grocery deals near you, hooked to your list, shown at the till.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('flyers' → 3, 'cashier' → 5) — append only.
@@ -1883,8 +1883,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=kitchen&sub=apparence&focus=recipeTags',
     title: { fr: 'Recettes & mode cuisson', en: 'Recipes & cook mode' },
     what: {
-      fr: 'Garde tes recettes et cuisine-les en plein écran, les mains à la pâte, sans rien toucher de fin.',
-      en: 'Keep your recipes and cook them full-screen, hands in the dough, without any fiddly tapping.',
+      fr: 'Garde tes recettes et cuisine-les en plein écran, les mains à la pâte.',
+      en: 'Keep your recipes and cook them full-screen, hands in the dough.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('cookmode' → 7, 'favorites' → 9) — append only.
@@ -1904,7 +1904,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Envoyer les ingrédients à La liste', en: 'Send ingredients to the list' },
+        label: { fr: 'Les ingrédients sur la liste', en: 'Ingredients to the list' },
         detail: {
           fr: '« Ajouter les ingrédients » verse la recette sur [[card:liste|la liste]] d’un coup : « 15 ml de beurre » devient « Beurre », et les doublons fusionnent.',
           en: '“Add ingredients” pours the recipe onto [[card:liste|the list]] at once: “15 ml butter” becomes “Butter”, and duplicates merge.',
@@ -1973,8 +1973,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=board&sub=layout',
     title: { fr: 'Ton babillard, tes cartes', en: 'Your board, your cards' },
     what: {
-      fr: 'Le babillard est un espace de cartes, comme l’écran d’accueil d’un téléphone : chaque carte se déplace, se redimensionne ou se retire — et chaque écran garde SA disposition (le frigo n’affiche pas la même chose que ton téléphone).',
-      en: 'The board is a card space, like a phone’s home screen: every card can be moved, resized or removed — and each screen keeps ITS layout (the fridge doesn’t show the same thing as your phone).',
+      fr: 'Le babillard, ce sont des cartes : déplace-les, agrandis-les, retire-les — par appareil.',
+      en: 'The board is cards: move them, resize them, remove them — per device.',
     },
     points: [
       {
@@ -1997,7 +1997,7 @@ export const GUIDE: GuideEntry[] = [
       },
       // Appended: the empty-card tri-state (condensed from the old board card).
       {
-        label: { fr: 'Une carte vide : la garder ou non', en: 'An empty card: keep it or not' },
+        label: { fr: 'Garder une carte vide ?', en: 'Keep an empty card?' },
         detail: {
           fr: 'Chaque carte choisit quoi faire quand elle n’a rien à dire : « Si non vide » s’efface d’elle-même, « Toujours » garde sa place avec une ligne tranquille, « Jamais » ne vient pas du tout.',
           en: 'Each card decides what to do when it has nothing to say: “If not empty” steps aside, “Always” holds its place with a calm line, “Never” doesn’t come at all.',
@@ -2021,8 +2021,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=maison&sub=members&focus=members',
     title: { fr: 'La maisonnée', en: 'The household' },
     what: {
-      fr: 'Qui fait partie de la famille, et le cercle autour d’elle. C’est ce qui peuple les visages, les couleurs et les agendas partout dans l’app.',
-      en: 'Who’s in the family, and the circle around it. This populates the faces, colours and agendas everywhere in the app.',
+      fr: 'Qui fait partie de la famille — les visages et les couleurs de toute l’app.',
+      en: 'Who’s in the family — the faces and colours across the whole app.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('account' → base 5) — append only.
@@ -2105,8 +2105,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=board&sub=events&focus=events',
     title: { fr: 'Agenda & auto', en: 'Agenda & car' },
     what: {
-      fr: 'Les rendez-vous et événements de la famille, plus l’auto partagée et les horaires de travail. Ce qui s’affiche dans « Aujourd’hui / À venir » sur le babillard.',
-      en: 'The family’s appointments and events, plus the shared car and work schedules. What shows under “Today / Upcoming” on the board.',
+      fr: 'Les rendez-vous de la famille — ce que le babillard montre dans « Aujourd’hui ».',
+      en: 'The family’s appointments — what the board shows under “Today”.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('activities' → base 5) — append only.
@@ -2193,8 +2193,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=maison&sub=routines&focus=chores',
     title: { fr: 'Corvées & routines', en: 'Chores & routines' },
     what: {
-      fr: 'Les tâches de la maison et leur horaire, les routines en images des enfants, et les listes « À compléter ». Les corvées tournent et s’affichent sur le babillard avec « c’est le tour de… ».',
-      en: 'The house tasks and their schedule, the kids’ picture routines, and the “To complete” lists. Chores rotate and show on the board with “whose turn it is…”.',
+      fr: 'Les corvées, les routines des enfants et les listes « À compléter ».',
+      en: 'Chores, the kids’ routines and the “To complete” lists.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('home-projects' → base 8, 'set-routines' → base 4) — append only.
@@ -2293,8 +2293,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=liste&sub=shop&focus=shop',
     title: { fr: 'Magasinage', en: 'Shopping' },
     what: {
-      fr: 'Tout ce qui alimente la liste et les rabais : ton code postal, les magasins à garder, l’ordre des allées, l’historique d’achats, et le suivi fantôme opt-in.',
-      en: 'Everything feeding the list and deals: your postal code, which stores to keep, the aisle order, the purchase history, and opt-in ghost tracking.',
+      fr: 'Ce qui nourrit la liste : ton code postal, tes magasins, tes allées.',
+      en: 'What feeds the list: your postal code, your stores, your aisles.',
     },
     points: [
       {
@@ -2379,8 +2379,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=kitchen&sub=apparence&focus=recipeTags',
     title: { fr: 'La cuisine', en: 'The kitchen' },
     what: {
-      fr: 'Les réglages de cuisine : les étiquettes de recettes, la couleur des cuillères et tasses, la couleur et l’affichage de chaque repas, et la réserve.',
-      en: 'The kitchen settings: recipe tags, the colour of spoons and cups, each meal’s colour and display, and the reserve.',
+      fr: 'Les étiquettes de recettes, les couleurs des mesures et des repas, la réserve.',
+      en: 'Recipe tags, measure and meal colours, the reserve.',
     },
     points: [
       {
@@ -2452,8 +2452,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=tablets&focus=devices',
     title: { fr: 'Accès & appareils', en: 'Access & devices' },
     what: {
-      fr: 'Les tablettes jumelées et les liens de partage temporaires (gardienne, accueil, famille). C’est ici que tu donnes — ou reprends — l’accès au babillard.',
-      en: 'The paired tablets and the temporary share links (sitter, welcome, family). This is where you grant — or revoke — board access.',
+      fr: 'Les tablettes jumelées et les liens pour tes proches : donner ou reprendre l’accès.',
+      en: 'Paired tablets and links for relatives: give or take back access.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('pairing' → 0, 'set-guest' → 2, 'cast-tv' → 7) — append only.
@@ -2532,7 +2532,7 @@ export const GUIDE: GuideEntry[] = [
         route: '/cast',
       },
       {
-        label: { fr: 'La télé se révoque comme une tablette', en: 'The TV revokes like a tablet' },
+        label: { fr: 'Retirer la télé', en: 'Remove the TV' },
         detail: {
           fr: 'La télé apparaît dans Réglages ▸ Système ▸ Appareils & accès : un bouton la révoque, et son lien court cesse aussitôt de fonctionner.',
           en: 'The TV appears in Settings ▸ System ▸ Devices & access: one button revokes it, and its short link stops working at once.',
@@ -2547,8 +2547,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=ai&focus=ai',
     title: { fr: 'IA & système', en: 'AI & system' },
     what: {
-      fr: '« Cette semaine » par visages, le bilan IA sur demande, l’interrupteur marche/arrêt de l’IA, et les outils de mise au point (journal d’entretien, mode veille).',
-      en: '“This week” by faces, the AI recap on demand, the household AI on/off switch, and the troubleshooting tools (maintenance log, idle mode).',
+      fr: 'L’interrupteur de l’IA, le bilan de la semaine et les outils de dépannage.',
+      en: 'The AI switch, the week’s recap and the troubleshooting tools.',
     },
     points: [
       {
@@ -2637,8 +2637,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=settings&sub=display&focus=display',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
-      fr: 'L’apparence de cet appareil et du babillard : thème jour/nuit, langue, vue parent/enfant, accessibilité, disposition des cartes, mode veille, voix de lecture, photos de famille et mode calme.',
-      en: 'How this device and the board look: day/night theme, language, parent/kid view, accessibility, card layout, idle mode, reading voice, family photos and calm mode.',
+      fr: 'L’apparence de cet appareil : jour ou nuit, langue, vue enfant, veille, voix.',
+      en: 'How this device looks: day or night, language, kid view, idle, voice.',
     },
     points: [
       {
@@ -2759,7 +2759,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Mode calme — ce que ça change', en: 'Calm mode — what it changes' },
+        label: { fr: 'Mode calme : ce qui change', en: 'Calm mode: what changes' },
         detail: {
           fr: 'Une seule chose (activé par défaut) : l’autocollant à la fin d’une routine d’enfant. Activé, la routine se termine sans récompense — le récap en images, le temps, et « Recommencer » si l’enfant veut. Désactivé, l’enfant colle un autocollant sur son mur.',
           en: 'One thing (on by default): the sticker at the end of a kid routine. On, the routine ends reward-free — the picture recap, the time it took, and “Start over” if they want. Off, the child places a sticker on their wall.',
@@ -2770,7 +2770,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Mode calme — ce que ça ne touche pas', en: 'Calm mode — what it never touches' },
+        label: { fr: 'Mode calme : ce qui reste', en: 'Calm mode: what stays' },
         detail: {
           fr: 'Pas de points, pas de notifications, pas d’inventaire : ces garanties sont verrouillées. Ce réglage adoucit une seule friction; il ne déverrouille jamais le calme structurel.',
           en: 'No points, no notifications, no inventory: those guarantees are locked. This toggle softens one friction; it never unlocks the structural calm.',
@@ -2787,8 +2787,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=maison&sub=cars&focus=cars',
     title: { fr: 'L’auto', en: 'The car' },
     what: {
-      fr: 'Une seule auto pour la maisonnée ? L’auto sait quand elle est prise, quand elle est libre, et qui reconduit qui — sans cinq fils de textos.',
-      en: 'One car for the household? The car knows when it’s taken, when it’s free, and who drives whom — without five text threads.',
+      fr: 'Une seule auto ? Elle sait quand elle est prise, et qui reconduit qui.',
+      en: 'One car? It knows when it’s taken, and who drives whom.',
     },
     points: [
       {

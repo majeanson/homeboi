@@ -208,7 +208,7 @@ test('the à-la-caisse flag is independent of the include allowlist', async ({ p
   expect(body.includedStores).toBeUndefined()
 })
 
-test('« Remettre l’ordre par défaut » patches household with the full aisle order', async ({ page }) => {
+test('« Remettre l’ordre de départ » patches household with the full aisle order', async ({ page }) => {
   // The aisle order is otherwise reorderable only by dragging, so the reset button
   // is the one mouse/keyboard-reachable write in this panel — and the only handle
   // a test can pull without simulating a pointer drag.
@@ -216,10 +216,10 @@ test('« Remettre l’ordre par défaut » patches household with the full aisle
   const section = page.locator('#operator-panel')
   // The reset now confirms first (2026-09-03 predictability audit — a one-tap
   // factory reset sharing undo's icon, with no confirm, was finding #1).
-  await section.getByRole('button', { name: 'Remettre l’ordre par défaut' }).click()
+  await section.getByRole('button', { name: 'Remettre l’ordre de départ' }).click()
   const [req] = await Promise.all([
     page.waitForRequest(isApi('PATCH', 'household'), { timeout: 20_000 }),
-    page.locator('.confirm').getByRole('button', { name: 'Remettre l’ordre par défaut', exact: true }).click(),
+    page.locator('.confirm').getByRole('button', { name: 'Remettre l’ordre de départ', exact: true }).click(),
   ])
   const body = JSON.parse(req.postData() || '{}') as { aisleOrder?: string[] }
   expect(Array.isArray(body.aisleOrder)).toBe(true)

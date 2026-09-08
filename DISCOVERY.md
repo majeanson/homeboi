@@ -169,9 +169,15 @@ spells the retired pill.
   retired three restructures earlier (« ▸ Guide », « ▸ Courses », « ▸ Le cercle »).
 - **A concept id must sit in a `CONCEPT_THEMES` bucket** or it's invisible to
   the FeatureMap jump-grid.
-- Concision budgets: `what` ≤ ~15 words, point label ≤ ~5, `detail` ≤ 2 plain
-  sentences, `why` ≤ 1 and only when it earns it; concept cards ≤ 8 points,
-  section cards ≤ 12. Plain FR-CA (souper, céduler, courriel).
+- Concision budgets — **held by `guideBudget.test.ts` since 2026-09-08** (they had
+  been listed here as enforced with no test behind them, and 30 of 32 `what` lines
+  were over): `what` ≤ 15 words and point label ≤ 5 are HARD; `detail` ≤ 2
+  sentences and the point caps (concept ≤ 8, section ≤ 12) are RATCHETS pinned at
+  the day's count, lowered with each trim, never raised. `why` ≤ 1 and only when it
+  earns it. Plain FR-CA (souper, céduler, courriel). The `what` is the one line a
+  first-time grandparent reads before deciding to open the card — say it in fifteen
+  plain words, and « L’écran coup d’œil : l’heure, la journée, le souper et les
+  corvées » beats a paragraph.
 
 ## Adding a feature's comprehension wiring (checklist)
 

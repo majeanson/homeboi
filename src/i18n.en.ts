@@ -315,7 +315,7 @@ export const EN: typeof FR = {
   },
   sample: {
     title: 'Sample data to explore',
-    hint: 'We’ve filled the board with a demo family so you can see the app in action. Explore the sections — supper, chores, routines — then clear the examples when you’re ready to start with your real household.',
+    hint: 'We’ve filled the board with a demo family. Explore, then clear the examples when you’re ready to start with your real household.',
     later: 'Later',
     clearStart: 'Clear & start',
     keep: 'Keep',
@@ -363,7 +363,7 @@ export const EN: typeof FR = {
     kiosk: {
       step: 'Step 2 — once your account is ready',
       title: 'Wall tablet',
-      body: 'Always on, in plain sight. You approve it from your already-set-up device (a 6-digit code), just once.',
+      body: 'Always on, in plain sight. You approve it from your phone (a 6-digit code), just once.',
     },
   },
   profile: {
@@ -424,11 +424,11 @@ export const EN: typeof FR = {
     rushNone: 'No rush',
     reorderHint: 'Reorder — drag, or ↑/↓ on the keyboard',
     rushHint:
-      'Reads in pale grey and sinks to the bottom of the list: we grab it if a good deal comes up, otherwise we let it go. You can drag it back up in “My order”.',
+      'Reads in grey and sinks to the bottom of the list: grab it if a deal comes up, otherwise let it go.',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     // Saying items with "and" between them helps the recognizer separate + spell them.
     voiceHint: 'Say them with "and" — e.g. "milk and potato and marshmallow". Tap 🎤 to stop.',
-    voiceDenied: 'Mic blocked. Allow the microphone in your browser.',
+    voiceDenied: 'Mic blocked. When the device asks for microphone permission, tap “Allow”.',
     // iOS won't let the page re-prompt — recovery has to go through Settings.
     voiceDeniedIos: 'Mic blocked. Open Settings → Safari → Microphone to allow it again.',
     voiceNoSpeech: 'Didn’t catch that. Try again, closer to the mic.',
@@ -473,7 +473,7 @@ export const EN: typeof FR = {
   memo: {
     record: 'Voice memo',
     stop: 'Stop',
-    micDenied: 'Mic blocked. Allow the microphone in your browser.',
+    micDenied: 'Mic blocked. When the device asks for microphone permission, tap “Allow”.',
     uploadFailed: 'The file didn’t upload — try again.',
     attach: 'Attach',
     recording: 'Recording…',
@@ -1020,7 +1020,7 @@ export const EN: typeof FR = {
     staysHome: 'Stays home',
     whoHasCar: 'Who has the car?',
     copyLastWeek: '← Copy last week',
-    resetWeek: 'Reset to template',
+    resetWeek: 'Back to the template',
     resetWeekConfirm: 'Reset the whole week to the template? This week’s day adjustments will be cleared.',
     prevWeek: 'Previous week',
     nextWeek: 'Next week',
@@ -1081,7 +1081,7 @@ export const EN: typeof FR = {
     low: 'Running low',
     lowHint: 'Tick an item to add it to the grocery list.',
     lowAdd: 'Add something that’s low',
-    lowEmpty: 'Nothing low right now.',
+    lowEmpty: 'Nothing low right now. When something runs out, note it here — it goes on the list.',
     addToList: '→ add to the list',
     setMeal: 'Set',
     clearMeal: 'Clear meal',
@@ -1153,7 +1153,7 @@ export const EN: typeof FR = {
     useSoon: 'Use soon',
     useSoonHint: 'What you have and want to finish — suggests recipes, never touches the list.',
     useSoonAdd: 'Add something to use up',
-    useSoonEmpty: 'Nothing to use up right now.',
+    useSoonEmpty: 'Nothing to use up right now. Note what’s about to turn — “the cream” — and the kitchen suggests what to make.',
     useSoonCheck: 'Mark as used',
     reserveCheck: 'Mark as used or tossed',
     // The reserve — the reminder for food "hidden" in the freezer / back of the
@@ -1161,7 +1161,7 @@ export const EN: typeof FR = {
     reserve: 'The reserve',
     reserveHint: 'What’s tucked in the freezer or the back of the pantry — a reminder so it stops getting forgotten.',
     reserveAdd: 'Add to the reserve',
-    reserveEmpty: 'Nothing in the reserve.',
+    reserveEmpty: 'Nothing in the reserve. Note what sleeps in the freezer or the back of the pantry — “spaghetti sauce” — so you don’t buy it twice.',
     reserveWhere: 'Where?',
     reserveOther: 'Other',
     reserveDefaultPantry: 'Pantry',
@@ -1187,7 +1187,7 @@ export const EN: typeof FR = {
       chipAi: 'AI',
       chipKid: 'Suggested by',
       chipPast: 'Had before',
-      emptyFavorites: 'No favorites yet.',
+      emptyFavorites: 'No favourites yet. Tap ❤ on a recipe — it shows up here for a quickly chosen supper.',
       emptyPast: 'Nothing yet — plan meals and your go-tos will show up here.',
       lastServedOn: (day: string) => `last had: ${day}`,
       emptyAi: 'Tap to ask for ideas.',
@@ -1199,7 +1199,7 @@ export const EN: typeof FR = {
   },
   recipes: {
     title: 'Recipes',
-    empty: 'No recipes yet.',
+    empty: 'No recipes yet. Add one with ＋: type it, photograph it or paste a link.',
     addFirst: 'Add a recipe',
     noMatch: 'No recipes match.',
     clearFilters: 'Show all',
@@ -1688,7 +1688,7 @@ export const EN: typeof FR = {
       deleted: 'Business deleted',
       importLabel: 'Paste a Google Maps link',
       importBtn: 'Import',
-      importHint: 'Share a place from the Maps app and paste the link — we fill in the name, address, category and photo. (Phone and website aren’t shared by Google — add those by hand.)',
+      importHint: 'Share a place from Maps and paste the link: name, address and photo fill in. The phone number you add by hand.',
       importing: 'Importing…',
       importFailed: 'Link not found — try again or fill it in by hand.',
       importEmpty: 'Nothing to import from that link — fill it in by hand.',
@@ -1727,14 +1727,14 @@ export const EN: typeof FR = {
       // Settings ▸ Home ▸ The household: the "our animals" subsection.
       householdTitle: 'Household pets',
       householdHint: 'Your pets appear in the Maisonnée card of the circle.',
-      none: 'No pets yet.',
+      none: 'No pets. Add one with ＋ — it gets its card, its care and its birthday.',
     },
     familyNotes: {
       // No `title` — the section carries no heading of its own (the tab header
       // already says « Les notes »). Name the section with `nav.notes`.
       addHint: 'A quick note — for you or the Household',
       placeholder: 'Write a note…',
-      empty: 'No notes yet.',
+      empty: 'No notes. Tap ＋ to write one — a recommendation, an address, something not to forget.',
       emptyMine: 'No personal notes yet.',
       scopeSelf: 'Me',
       scopeFamily: 'Household',
@@ -1843,7 +1843,7 @@ export const EN: typeof FR = {
     editTitle: 'Edit routine',
     delete: 'Delete routine',
     deleteConfirm: (name: string) => `Delete the routine “${name}”? Its cards will be erased.`,
-    parentEmpty: 'No routines yet.',
+    parentEmpty: 'No routines yet. Make one with ＋ — “Morning”, “Bedtime” — and your child follows it alone, in pictures.',
     stepsN: (n: number) => `${n} step${n === 1 ? '' : 's'}`,
     empty: 'No cards',
     draftBadge: 'To finish',
@@ -1958,7 +1958,7 @@ export const EN: typeof FR = {
     firstTime: 'First time? Create your household on your phone first — or right here:',
     firstTimeCta: 'Create my household',
     lostTitle: 'This screen is no longer paired',
-    lostLead: 'The pairing was removed (or reset). Pair the screen again — approval happens from a parent’s phone.',
+    lostLead: 'The pairing was removed. Pair the screen again — approval happens from a parent’s phone.',
     repair: 'Re-pair this screen',
     retry: 'Try again',
   },
@@ -1968,7 +1968,7 @@ export const EN: typeof FR = {
     householdNameHint: 'Your family / household name, shown throughout the app.',
     welcomeTitle: 'Welcome! Three small steps:',
     welcomeStep1: 'Add the people in your household, right below.',
-    welcomeStep2: 'Pair the wall tablet (Paired tablets tab).',
+    welcomeStep2: 'Pair the wall tablet (Settings ▸ System ▸ Devices & access).',
     welcomeStep3: 'Open the board.',
     welcomeBoard: 'See the board',
     addMember: 'Add a person',
@@ -2010,14 +2010,14 @@ export const EN: typeof FR = {
     diaryDrawing: 'A kept drawing',
     editRoutine: 'Edit routine',
     deleteRoutine: 'Delete routine',
-    noRoutines: 'No routines yet.',
+    noRoutines: 'No routines yet. Make one with ＋ — “Morning”, “Bedtime” — and your child follows it alone, in pictures.',
     editEvent: 'Edit event',
     deleteEvent: 'Delete event',
     renameDevice: 'Rename tablet',
     colorLabel: 'Colour',
     colourTaken: 'already used',
     sections: 'Sections',
-    jumpAria: 'Sections in this tab',
+    jumpAria: 'Sections of this page',
     // Group labels that segment the section strip into calm clusters (findability).
     secDiscover: 'Discover',
     secKitchen: 'Kitchen',
@@ -2031,10 +2031,10 @@ export const EN: typeof FR = {
     lensSet: 'Adjust',
     lensAria: 'Understand or adjust',
     kioskNotice:
-      'Paired tablet: you can change most settings here. Members and tablet pairing need the operator account (sign in on a phone).',
+      'Paired tablet: you can change most settings here. Adding someone or pairing a tablet is done with the parent account (sign in on a phone).',
     guestNotice:
-      'Read-only: the guide is all yours, and so is this device’s own display (theme, language, view, board layout). None of it changes anything for the household.',
-    kioskSignIn: 'Sign in as operator',
+      'Read-only: the guide is yours, and so is this device’s own display. None of it changes anything for the household.',
+    kioskSignIn: 'Sign in with the parent account',
     needChild: 'Add a child first (check “Child”).',
     forWho: 'For whom:',
     tplStart: 'Template:',
@@ -2061,8 +2061,8 @@ export const EN: typeof FR = {
       deleteProjet: 'Delete plan',
       editEntretien: 'Edit maintenance',
       deleteEntretien: 'Delete maintenance',
-      emptyProjets: 'No plans yet.',
-      emptyEntretien: 'No maintenance yet.',
+      emptyProjets: 'No plans. A plan is a job with a date — “Repaint the bedroom”. Add one with the button above.',
+      emptyEntretien: 'No upkeep. Add what comes back — “Change the filter” — or tap a season idea above.',
       budgetLabel: 'Target budget',
       budgetPlaceholder: 'e.g. 15,000',
       notesLabel: 'Notes',
@@ -2114,12 +2114,12 @@ export const EN: typeof FR = {
     keepAwakeLabel: 'Keep the screen on',
     keepAwakeOn: 'On',
     keepAwakeOff: 'Normal sleep',
-    keepAwakeHint: 'Stops this device from sleeping while the board is showing — ideal for the wall tablet. On a phone, leave it on normal sleep to save battery (sleep resumes the moment the app goes to the background).',
+    keepAwakeHint: 'Keeps this screen on while the board is showing — for the wall tablet. On a phone, leave normal sleep on.',
     // "Cast to the living room" — a read-only TV link to show the board on the TV via
     // Chromecast (cast the tab from Chrome on the computer).
     castTitle: 'Cast to the living room',
     castIntro:
-      'Show a read-only view on the living-room TV — a calm extra screen. Pick the screen, generate the link, then open it in the TV’s browser (a cheap Google TV, a smart TV). On Chrome (computer), the “Cast” button launches it directly.',
+      'Show the board, read-only, on the living-room TV. Pick the screen, make the link, then open it on the TV.',
     // Which TV face the link shows — the full board, the ambient screensaver, or the
     // visitor welcome window. Mirrors the per-kind picker on the phone-link side.
     castSceneLabel: 'Screen',
@@ -2145,7 +2145,7 @@ export const EN: typeof FR = {
     castStep2: 'Menu ⋮ ▸ Cast… ▸ pick the Chromecast.',
     castStep3: 'Sources ▸ “Cast tab” — the board appears on the TV.',
     castCaveat:
-      'When casting the tab from Chrome, the computer must stay awake; opened directly in the TV’s browser, it needn’t. The board and ambience stay until you revoke them (Settings ▸ System ▸ Devices & access); welcome expires after 24 h.',
+      'Cast from Chrome, the computer must stay awake; opened on the TV, it needn’t. The link stays active until you revoke it here.',
     // Stage 2 — the "Cast now" button (Chrome only) launches the receiver directly.
     castNow: 'Cast now',
     castNowBusy: 'Casting…',
@@ -2156,12 +2156,12 @@ export const EN: typeof FR = {
     ocrDevice: 'On device',
     ocrCloud: 'High accuracy',
     ocrDeviceHint: 'Free, private reading right on the device — nothing is sent anywhere. Best for printed text.',
-    ocrCloudHint: 'Cloud reading (Mistral) — much better on tiny numbers and fractions. The photo is sent to the service to be read: free to try, then under a cent per recipe. Affects this device only.',
+    ocrCloudHint: 'Cloud reading (Mistral), much better on tiny numbers. The photo is sent to be read — free to try, then under a cent per recipe.',
     // Per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Board layout',
     boardLayoutHint: 'Choose which cards show, how wide they are, and in what order — specific to this device. Drag a handle to reorder, or even to move a card from one group to the other.',
     boardLayoutReset: 'Reset',
-    resetConfirm: 'Clear your customization and go back to the default layout?',
+    resetConfirm: 'Clear your changes and go back to the starting layout?',
     boardLayoutBand: 'Top band',
     boardLayoutGrid: 'Cards',
     boardLayoutDropHere: 'Drop here',
@@ -2194,7 +2194,7 @@ export const EN: typeof FR = {
     tapToHearLabel: 'Touch to hear',
     tapToHearHint: 'In the Kid or Simple view: hold a finger half a second on a line to hear it read aloud.',
     voiceNone: 'No “Français (Canada)” voice is installed on this device. Add one in the system settings to hear read-aloud.',
-    voiceNoneLang: 'No voice for this language on this device. Add one in the system settings (Accessibility ▸ Spoken Content). On iPad/iPhone the browser often only has the “default” voices — an “Enhanced” voice may not be available here.',
+    voiceNoneLang: 'No voice for this language on this device. Add one in the device settings (Accessibility ▸ Spoken Content). On iPad and iPhone only the basic voices are offered here.',
     tutorialTitle: 'Contextual help',
     tutorialHint: 'The little “?” marks near sections open the guide at the right page. Switch to expert mode to hide them.',
     tutorialLabel: 'Mode',
@@ -2202,7 +2202,7 @@ export const EN: typeof FR = {
     tutorialOff: 'Expert',
     calmTitle: 'Calm mode',
     calmHint:
-      'On: the child’s routine ends reward-free — the picture recap, the time it took, and “Start over” if they want. Off: the child also places a sticker on their wall. The calm guarantees (no points, no badges, no notifications) can’t be touched either way.',
+      'On: the routine ends reward-free. Off: the child also places a sticker on their wall. Nothing else changes — never points or notifications.',
     calmOn: 'On',
     calmOff: 'Off',
     aiOn: 'AI: on',
@@ -2225,7 +2225,7 @@ export const EN: typeof FR = {
     postalBad: 'Invalid postal code.',
     storeFilter: 'My stores',
     storeFilterHint:
-      'The stores found near you. Keep only the ones you shop — just those show up in deals, flyers, and the price-match proof. Leave them all on to see every store.',
+      'Keep only the stores you shop at: just those show up in deals and flyers.',
     storeFilterNoPostal: 'Set your postal code above first to see nearby stores.',
     storeFilterError: 'Flyer service unavailable — try again later.',
     storeFilterEmpty: 'No stores found near you.',
@@ -2233,8 +2233,8 @@ export const EN: typeof FR = {
     // "By aisle" then groups + sorts your items to follow that walk.
     aisleOrder: 'Aisle order',
     aisleOrderHint:
-      'Drag the aisles into YOUR store’s layout. In the list, “By aisle” groups and sorts your items in this order — a glance follows your walk through the store.',
-    aisleReset: 'Reset to default order',
+      'Drag the aisles into YOUR store’s layout; “By aisle” then sorts your list the way you walk.',
+    aisleReset: 'Back to the starting order',
     storeIncluded: 'Included',
     storeExcluded: 'Excluded',
     storeCashier: 'At the till',
@@ -2245,7 +2245,7 @@ export const EN: typeof FR = {
     history: 'Items bought before',
     historyHint:
       'What “Quick add” suggests. Rename a specific item to its generic name (e.g. “White eggs selection” → “Eggs”) to fold it in, or remove it.',
-    historyEmpty: 'Nothing in the history yet.',
+    historyEmpty: 'Nothing yet: the history fills in as you check items off, and it feeds Quick add ⚡.',
     historyRename: 'Rename',
     historyRemove: 'Remove',
     ghost: 'Ghost list',
@@ -2257,15 +2257,15 @@ export const EN: typeof FR = {
     mealWindowDays: (n: number) => `${n} days`,
     mealColorsHint:
       'Give each meal a colour (breakfast, lunch, snack, supper, dessert). It shows everywhere that meal appears — the board, the calendar, the kitchen.',
-    mealColorReset: 'Default colour',
+    mealColorReset: 'Starting colour',
     mealShow: 'Shown meals',
     mealShowHint:
       'Pick which meals show on the board and the kitchen. Uncheck the ones that clutter your glance (e.g. keep only supper). You can still plan them in the kitchen.',
     mealVisible: 'Shown',
     mealHidden: 'Hidden',
     mealOrderHint:
-      'Drag the meals into the order your day runs in — it’s respected everywhere: the kitchen, the board, the calendar. The star marks the headline meal (“Tonight”). The hour says when each meal starts: that, not the order, decides which meal to cook next.',
-    mealReset: 'Reset order & hours',
+      'Drag the meals into the order your day runs in. The star marks the headline meal; the hour decides which to cook next.',
+    mealReset: 'Back to the starting order & hours',
     mealHero: 'Headline',
     mealHeroHint: 'The day’s headline meal — the one the board leads with.',
     mealHeroHidden: 'The headline meal is hidden: the board won’t show a “Tonight” headline.',
@@ -2318,7 +2318,7 @@ export const EN: typeof FR = {
     schedEveryNWeeksShort: (n: number) => `every ${n} wks`,
     cercleTab: 'The circle',
     cercleGroupsTitle: 'Circle groups',
-    cercleGroupsEmpty: 'No groups yet.',
+    cercleGroupsEmpty: 'No groups. A group is “The cousins” or “The soccer team” — make one in Maison ▸ Family with ＋.',
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
     cercleGroupHidden: 'Hidden from the directory',
     recipesTab: 'Recipes',
@@ -2362,7 +2362,7 @@ export const EN: typeof FR = {
     tagPillsHint: 'These pills show in the recipe form; their order also sets the collections order. Drag the ⠿ to rearrange. Tags already in use join them automatically.',
     tagAddPill: 'Add a pill…',
     tagUsed: 'Tags in use',
-    tagNoneUsed: 'No tags yet.',
+    tagNoneUsed: 'No tags yet. Add “Veggie”, “Quick”… — they sort your recipes into collections.',
     tagOnN: (n: number) => `${n} recipe${n > 1 ? 's' : ''}`,
     tagUnusedHint: 'Suggested',
     tagRename: 'Rename',
@@ -2388,7 +2388,7 @@ export const EN: typeof FR = {
     noEvents: 'No upcoming events.',
     // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
     schoolYearTitle: 'School year',
-    schoolYearHint: 'The first day, the last day, and any breaks — once a year. The board can then say "school tomorrow" or "day off tomorrow", and the year view keeps the bounds too.',
+    schoolYearHint: 'The first day, the last day and the breaks, once a year: the board can then say “school tomorrow” or “day off tomorrow”.',
     schoolYearFirstDay: 'First day',
     schoolYearLastDay: 'Last day',
     schoolYearBreaksTitle: 'Breaks',
@@ -2464,7 +2464,7 @@ export const EN: typeof FR = {
     subDisplayIdle: 'Display & idle',
     subVoiceAi: 'Voice & AI',
     ambientTitle: 'Idle mode',
-    ambientHint: 'What the kiosk shows at rest: a screensaver (clock, date, photos) after a delay, and the drift back to “Household”.',
+    ambientHint: 'What the wall tablet shows at rest: a clock with the date and your photos after a delay, and the drift back to “Household”.',
     ambientScreensaver: 'Screensaver',
     ambientIdleBefore: 'Idle before screensaver',
     ambientShows: 'Show',
@@ -2480,7 +2480,7 @@ export const EN: typeof FR = {
     fetesHint: 'Québec and Canada holidays announce themselves on the board (Saint-Jean, Thanksgiving, Christmas…). Just a calm line — nothing to manage, nothing to create.',
     // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
     binAnnounceLabel: 'The evening announce (chores)',
-    binAnnounceHint: 'A recurring chore checked "Announce the evening before" (in its own editor) announces itself the night before — "it’s bin night". One more calm line — nothing to manage here.',
+    binAnnounceHint: 'A chore checked “Announce the evening before” reminds you by itself the night before — “it’s bin night”.',
     // E-35 — "Take my data" (Settings ▸ System ▸ Devices & access).
     takeoutTitle: 'Take my data',
     takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',
@@ -2511,7 +2511,7 @@ export const EN: typeof FR = {
     aiTestWhileOff: 'AI is switched off for the household (Settings ▸ System ▸ Voice & AI). This test still calls the model: it checks the wiring, not the switch.',
     micTestTitle: 'Microphone test',
     micTestHint:
-      'The mic fails on some iPhones/iPads with no clear error. Run this on the device that breaks, say “milk, eggs, bread”, then copy the report and send it to us: it says exactly why the mic did or didn’t work.',
+      'If the mic doesn’t work on this device, run the test, say “milk, eggs, bread”, then send us the report.',
     micTestBtn: 'Test the microphone',
     micTestStop: 'Stop',
     micTestListening: 'Listening… say “milk, eggs, bread”',
@@ -2552,7 +2552,7 @@ export const EN: typeof FR = {
     kindWelcomeHint: 'Just the basics for a visitor: wifi, bin day, house rules.',
     kindFamilyHint: 'For relatives: the kids’ upcoming dates, birthdays, and the latest photos. No settings.',
     kindIntakeHint: 'A relative fills in their details (and their household), then sends them back. You review and add to the circle. The only link kind that can write.',
-    kindPostboxHint: 'A relative leaves a note, a voice message, a drawing or a photo. You review it, then it lands on the board signed with their name. An open link the whole family can use.',
+    kindPostboxHint: 'A relative leaves a note, a voice message, a drawing or a photo; you review it, then it lands on the board, signed. The whole family can use it.',
     intakeForLabel: 'For whom?',
     intakeOpenPlaceholder: 'Everyone (open link)…',
     intakeOpenHint: 'Leave blank for an open link: anyone can add themselves.',
@@ -2595,7 +2595,7 @@ export const EN: typeof FR = {
     revoked: 'Link revoked',
     linkExpiresPrefix: 'Expires',
     limitation:
-      'Note: by default, access turns itself off at the end of its duration and can’t be revoked before then. Pick “Durable” for a named link that stays active until you revoke it.',
+      'A link turns itself off at the end of its duration and can’t be revoked before. Pick “Durable” for a named link that stays active until you revoke it.',
     banner: 'Guest access — read-only. You can look, but not change anything.',
     demoBadge: 'Demo — read-only',
     // D-19 (bmad/10) “The sitter card completes itself” — a quiet, non-blocking
@@ -2745,7 +2745,7 @@ export const EN: typeof FR = {
     // Operator review of received forms (Settings ▸ System ▸ Devices & access).
     reviewTitle: 'Forms received',
     reviewHint: 'What a relative sent you. Review, then add to the circle. Tip: afterwards, “Complete families” infers the rest (siblings, in-laws…).',
-    reviewNone: 'No forms yet.',
+    reviewNone: 'No forms received. They arrive when a relative fills in your “Family form” link.',
     reviewPending: (n: number) => (n === 1 ? '1 form to review' : `${n} forms to review`),
     reviewOne: 'Review',
     reviewItemTitle: (name: string) => `${name}’s form`,
@@ -2831,7 +2831,7 @@ export const EN: typeof FR = {
     badge: 'Shared',
     shareLive: 'Share live',
     promoteConfirm:
-      'Share this trip live with other households? It leaves your private trips for a shared space every household can edit. This can’t be undone. It stays visible on your calendar.',
+      'Share this trip live? It leaves your private trips for a space every household can edit — no way back.',
     promote: 'Share',
     invite: 'Invite',
     shareTitle: 'Invite a household',
@@ -3008,7 +3008,7 @@ export const EN: typeof FR = {
     templateDayHint: 'A checklist is added for the day — here, today.',
     templatesTitle: 'Checklists',
     templatesHint:
-      'Prep reusable lists (e.g. "Before leaving", "At grandpa\'s") and drop them in with one tap when things get hectic. A list can even include others — they become sections.',
+      'Prep reusable lists — “Before leaving”, “At grandpa’s” — and drop them in with one tap when things get hectic.',
     includeList: 'Include a list…',
     listDeleted: 'Deleted list',
     templateName: 'List name',
@@ -3027,7 +3027,7 @@ export const EN: typeof FR = {
     label: 'Sound on this device',
     on: 'Sound on',
     off: 'Silent',
-    hint: 'Mutes the app’s VOICE: read-aloud, the timer chime, vibration. A recording you press ▶ on yourself (a voice note, a memo) still plays — you just asked for it. Per device: the wall tablet and your phone each keep their own answer.',
+    hint: 'Mutes the app’s voice on this device: read-aloud, chimes, vibration. Anything you press ▶ on yourself still plays.',
   },
   undo: {
     action: 'Undo',
@@ -3060,8 +3060,8 @@ export const EN: typeof FR = {
   recents: {
     title: 'Recent',
     open: 'View recent',
-    empty: 'Nothing recent. Your latest actions will show here, for this session.',
-    note: 'Keeps your latest actions for the session — undo the ones still recent. Nothing is kept after a reload.',
+    empty: 'Nothing recent. Your latest actions will show here, until you close the app.',
+    note: 'Keeps your latest actions — undo the ones still recent. Nothing is kept once the app reloads.',
   },
   detail: {
     aria: 'Details',

@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~148k lines across 853 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1975 unit tests in 154 files · 126 Playwright spec files |
+| **Tests** | 1981 unit tests in 155 files · 126 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -36,7 +36,7 @@
   2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
   CI's E2E job is the standing whole-suite signal)*.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Fourteen build-gating invariants** (this is the codebase's best feature — see §5):
+- **Fifteen build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -63,7 +63,10 @@
   cry wolf)**, and **`settingsNav.test.ts` (added 2026-09-08 — the Réglages taxonomy is
   well-formed, every legacy fold points at a live pill, and NOTHING in `src/` or `e2e/`
   spells a retired pill; its e2e twins `settings-tree.spec.ts` / `kiosk-settings.spec.ts`
-  prove the page agrees with the tree, for the operator and for a paired tablet)**.
+  prove the page agrees with the tree, for the operator and for a paired tablet)**, and
+  **`guideBudget.test.ts` (added 2026-09-08 — the guide's concision budgets, listed in
+  DISCOVERY.md as enforced for months with no test behind them: a card's one-liner
+  ≤ 15 words and a point label ≤ 5 are hard, the rest ratchets down)**.
   `knip` now runs in CI too.
 
 ---
@@ -322,6 +325,28 @@ went red on the sweep's own first draft twice — an EN tab I had named « List 
 instead of « The list », and a crumb that ran into its sentence — which is the
 canary working. One label became a verb: the board edit bar's link now reads
 « Rétablir dans Réglages » rather than spelling a three-line path it already opens.
+
+**Then, Marc's question: « any other improvements for concise, direct, unambiguous
+copy for a first-time grandparent? »** Measured rather than guessed — 2659 FR strings
+and the 32 guide cards, swept for four smells, and all four tracks run the same day:
+(1) **the guide's one-liners** — DISCOVERY.md listed concision budgets as « invariants
+tests enforce » with no test behind them, and the `what` line (the one a grandparent
+reads before opening a card) was over 15 words on 30 of 32 cards (todos 53, voyage
+51, carnets 49); every one rewritten to ≤ 15 plain words, 21 point labels brought
+under 5, and `guideBudget.test.ts` now holds the budgets (hard for `what`/labels,
+ratcheted for the 60-odd details over two sentences and the 6 cards over their point
+cap); (2) **empty states that teach** — 14 section-level empties that stopped at
+« Aucun … pour l'instant » now follow the B-15 contract (what this is, one example,
+the one action: « Aucune routine encore. Crée-en une avec le ＋ — « Matin »,
+« Dodo » — et ton enfant la suivra seul, en images. »); cell-level ones (« Rien de
+prévu ») stay terse on purpose; (3) **jargon** — « navigateur » (the mic permission
+now says « quand l'appareil demande la permission, réponds Autoriser »), « opérateur »
+→ « compte parent », « kiosque » → « la tablette du mur », « réinitialiser / par
+défaut » → « remettre … de départ », « désactivée » → « éteinte », « session » →
+« jusqu'à ce que tu fermes l'app »; (4) **long on-screen hints** — 20 settings hints
+of 30–56 words cut to one or two sentences (the guide card beside them carries the
+rest), sound.hint 56 → 22, calmHint 55 → 24, castIntro 47 → 20. What stays: the
+generic buttons (« Suivant » on a sequence, « Oui / Non » on a toggle pair) are right.
 
 ---
 

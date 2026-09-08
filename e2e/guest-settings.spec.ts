@@ -60,7 +60,7 @@ test('a demo guest reaches Réglages instead of being bounced to the board', asy
   await expect(page.locator('.guide__sample')).toHaveCount(0)
   // The guest note replaces the kiosk one — a guest has no operator account to escalate to.
   await expect(page.locator('.operator__kiosk-note')).toBeVisible()
-  await expect(page.getByRole('button', { name: /Se connecter comme opérateur/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Se connecter avec le compte parent/ })).toHaveCount(0)
 })
 
 test('the Réglages nav tab is offered to a guest', async ({ page }) => {

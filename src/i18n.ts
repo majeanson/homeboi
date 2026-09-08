@@ -370,7 +370,7 @@ export const FR = {
   },
   sample: {
     title: 'Des exemples pour explorer',
-    hint: 'On a rempli le babillard d’une famille de démo pour que tu voies l’app en action. Explore les sections — le souper, les corvées, les routines — puis vide les exemples quand tu es prêt·e à partir avec ta vraie maisonnée.',
+    hint: 'On a rempli le babillard d’une famille de démo. Explore, puis vide les exemples quand tu es prêt·e à partir avec ta vraie maisonnée.',
     later: 'Plus tard',
     clearStart: 'Vider et commencer',
     keep: 'Garder',
@@ -419,7 +419,7 @@ export const FR = {
     kiosk: {
       step: 'Étape 2 — une fois ton compte prêt',
       title: 'Tablette au mur',
-      body: 'Toujours allumée, à la vue de tous. Tu l’approuves depuis ton appareil déjà configuré (un code à 6 chiffres), une seule fois.',
+      body: 'Toujours allumée, à la vue de tous. Tu l’approuves depuis ton téléphone (un code à 6 chiffres), une seule fois.',
     },
   },
   profile: {
@@ -498,12 +498,12 @@ export const FR = {
     // the keyboard mirror of the drag (ACTIONS.md ¹³), so the label names both.
     reorderHint: 'Réordonner — glisse, ou ↑/↓ au clavier',
     rushHint:
-      'Se lit en gris pâle et descend au bas de la liste : on le prend si une belle aubaine passe, sinon on l’oublie. Tu peux le remonter à la main dans « Mon ordre ».',
+      'Se lit en gris et descend au bas de la liste : on le prend si une aubaine passe, sinon on l’oublie.',
     // Voice add (continuous): hint while listening + why nothing landed on error.
     // Saying items with « et » between them helps the recognizer separate + spell
     // them (a flowing phrase, not isolated words) — e.g. « lait et patate et guimauve ».
     voiceHint: 'Dis-les avec « et » — ex. « lait et patate et guimauve ». Touche 🎤 pour arrêter.',
-    voiceDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
+    voiceDenied: 'Micro bloqué. Quand l’appareil demande la permission du micro, réponds « Autoriser ».',
     // iOS ne laisse pas la page redemander — il faut passer par les réglages.
     voiceDeniedIos: 'Micro bloqué. Ouvre Réglages → Safari → Microphone pour réautoriser.',
     voiceNoSpeech: 'Rien entendu. Réessaie plus près du micro.',
@@ -558,7 +558,7 @@ export const FR = {
   memo: {
     record: 'Mémo vocal',
     stop: 'Arrêter',
-    micDenied: 'Micro bloqué. Autorise le micro dans ton navigateur.',
+    micDenied: 'Micro bloqué. Quand l’appareil demande la permission du micro, réponds « Autoriser ».',
     // Shared by every media composer: the blob didn't land (a non-503 failure —
     // 503 hides the controls instead). The note/recipe text path still works.
     uploadFailed: 'Le fichier n’a pas pu être envoyé — réessaie.',
@@ -1192,7 +1192,7 @@ export const FR = {
     staysHome: 'Reste à la maison',
     whoHasCar: 'Qui a l’auto ?',
     copyLastWeek: '← Copier la semaine passée',
-    resetWeek: 'Réinitialiser au modèle',
+    resetWeek: 'Remettre comme le modèle',
     resetWeekConfirm: 'Réinitialiser toute la semaine au modèle ? Les ajustements de ces jours seront effacés.',
     prevWeek: 'Semaine précédente',
     nextWeek: 'Semaine suivante',
@@ -1258,7 +1258,7 @@ export const FR = {
     low: 'Ce qui s’achève',
     lowHint: 'Coche un article pour l’ajouter à la liste d’épicerie.',
     lowAdd: 'Ajouter un aliment',
-    lowEmpty: 'Rien ne manque, pour là.',
+    lowEmpty: 'Rien ne manque pour l’instant. Quand un produit achève, note-le ici — il ira sur la liste.',
     addToList: '→ ajouter à la liste',
     setMeal: 'Mettre',
     clearMeal: 'Effacer le repas',
@@ -1336,7 +1336,7 @@ export const FR = {
     useSoon: 'À utiliser bientôt',
     useSoonHint: 'Ce que tu as et veux finir — ça suggère des recettes, sans toucher à la liste.',
     useSoonAdd: 'Ajouter un aliment à finir',
-    useSoonEmpty: 'Rien à finir, pour là.',
+    useSoonEmpty: 'Rien à finir pour l’instant. Note ce qui achève — « la crème » — et la cuisine proposera quoi en faire.',
     useSoonCheck: 'Marquer comme utilisé',
     reserveCheck: 'Marquer comme utilisé ou jeté',
     // La réserve — le rappel des aliments « cachés » au congélateur / au fond du
@@ -1344,7 +1344,7 @@ export const FR = {
     reserve: 'La réserve',
     reserveHint: 'Ce qui est caché au congélateur ou au fond du garde-manger — un rappel pour ne plus l’oublier.',
     reserveAdd: 'Ajouter à la réserve',
-    reserveEmpty: 'Rien dans la réserve.',
+    reserveEmpty: 'Rien dans la réserve. Note ce qui dort au congélateur ou au fond du garde-manger — « sauce à spag » — pour ne pas le racheter.',
     reserveWhere: 'Où ?',
     reserveOther: 'Autres',
     reserveDefaultPantry: 'Garde-manger',
@@ -1374,7 +1374,7 @@ export const FR = {
       chipAi: 'IA',
       chipKid: 'Proposé par',
       chipPast: 'Déjà mangé',
-      emptyFavorites: 'Pas encore de favoris.',
+      emptyFavorites: 'Pas encore de coups de cœur. Touche le ❤ sur une recette — elle apparaîtra ici pour un souper vite choisi.',
       emptyPast: 'Rien encore — planifie des repas et tes valeurs sûres apparaîtront ici.',
       lastServedOn: (day: string) => `dernière fois : ${day}`,
       emptyAi: 'Touche pour demander des idées.',
@@ -1386,7 +1386,7 @@ export const FR = {
   },
   recipes: {
     title: 'Recettes',
-    empty: 'Pas encore de recettes.',
+    empty: 'Pas encore de recettes. Ajoute-en une avec le ＋ : tape-la, photographie-la ou colle un lien.',
     addFirst: 'Ajouter une recette',
     noMatch: 'Aucune recette ne correspond.',
     clearFilters: 'Tout afficher',
@@ -1905,7 +1905,7 @@ export const FR = {
       deleted: 'Business supprimé',
       importLabel: 'Coller un lien Google Maps',
       importBtn: 'Importer',
-      importHint: 'Partage un lieu depuis l’app Maps et colle le lien — on remplit le nom, l’adresse, la catégorie et la photo. (Le téléphone et le site web ne sont pas partagés par Google — à ajouter à la main.)',
+      importHint: 'Partage un lieu depuis Maps et colle le lien : le nom, l’adresse et la photo se remplissent. Le téléphone s’ajoute à la main.',
       importing: 'Importation…',
       importFailed: 'Lien introuvable — réessaie ou remplis à la main.',
       importEmpty: 'Rien à importer de ce lien — remplis à la main.',
@@ -1945,7 +1945,7 @@ export const FR = {
       // Réglages ▸ Maison ▸ La maisonnée: the "our animals" subsection.
       householdTitle: 'Animaux de la maisonnée',
       householdHint: 'Vos animaux apparaissent dans la carte Maisonnée du cercle.',
-      none: 'Aucun animal pour l’instant.',
+      none: 'Aucun animal. Ajoute-le avec le ＋ — il aura sa fiche, ses soins et sa fête.',
     },
     // Famille → "Notes & recommandations" (durable quick notes; CercleNotes).
     familyNotes: {
@@ -1953,7 +1953,7 @@ export const FR = {
       // l'onglet dit déjà « Les notes »). Pour nommer la section, c'est `nav.notes`.
       addHint: 'Une note rapide — pour toi ou pour la Maisonnée',
       placeholder: 'Écris une note…',
-      empty: 'Aucune note pour l’instant.',
+      empty: 'Aucune note. Touche le ＋ pour en écrire une — une recommandation, une adresse, un truc à ne pas oublier.',
       emptyMine: 'Aucune note personnelle pour l’instant.',
       scopeSelf: 'Moi',
       scopeFamily: 'Maisonnée',
@@ -2076,7 +2076,7 @@ export const FR = {
     deleteConfirm: (name: string) => `Supprimer la routine « ${name} » ? Ses cartes seront effacées.`,
     // Parent-surface empty (distinct from the toddler `kid.none`, which points at
     // the réglages — here the create button is right in the tab).
-    parentEmpty: 'Aucune routine pour l’instant.',
+    parentEmpty: 'Aucune routine encore. Crée-en une avec le ＋ — « Matin », « Dodo » — et ton enfant la suivra seul, en images.',
     stepsN: (n: number) => `${n} étape${n > 1 ? 's' : ''}`,
     empty: 'Aucune carte',
     // Une routine sans étapes n’apparaît JAMAIS côté enfant (le picker saute les
@@ -2200,7 +2200,7 @@ export const FR = {
     firstTime: 'Première fois ? Crée d’abord ta maisonnée sur ton téléphone — ou directement ici :',
     firstTimeCta: 'Créer ma maisonnée',
     lostTitle: 'Cet écran n’est plus jumelé',
-    lostLead: 'Le jumelage a été retiré (ou réinitialisé). Re-jumelle l’écran — l’approbation se fait depuis le téléphone d’un parent.',
+    lostLead: 'Le jumelage a été retiré. Re-jumelle l’écran — l’approbation se fait depuis le téléphone d’un parent.',
     repair: 'Re-jumeler cet écran',
     retry: 'Réessayer',
   },
@@ -2210,7 +2210,7 @@ export const FR = {
     householdNameHint: 'Le nom de ta famille / maisonnée, affiché un peu partout.',
     welcomeTitle: 'Bienvenue ! Trois petites étapes :',
     welcomeStep1: 'Ajoute les personnes de ta maisonnée, juste en bas.',
-    welcomeStep2: 'Jumelle la tablette du mur (onglet Tablettes jumelées).',
+    welcomeStep2: 'Jumelle la tablette du mur (Réglages ▸ Système ▸ Appareils & accès).',
     welcomeStep3: 'Ouvre le babillard.',
     welcomeBoard: 'Voir le babillard',
     addMember: 'Ajouter une personne',
@@ -2253,14 +2253,14 @@ export const FR = {
     diaryDrawing: 'Un dessin gardé',
     editRoutine: 'Modifier la routine',
     deleteRoutine: 'Supprimer la routine',
-    noRoutines: 'Aucune routine pour l’instant.',
+    noRoutines: 'Aucune routine encore. Crée-en une avec le ＋ — « Matin », « Dodo » — et ton enfant la suivra seul, en images.',
     editEvent: 'Modifier le rendez-vous',
     deleteEvent: 'Supprimer le rendez-vous',
     renameDevice: 'Renommer la tablette',
     colorLabel: 'Couleur',
     colourTaken: 'déjà utilisée',
     sections: 'Sections',
-    jumpAria: 'Sections de cet onglet',
+    jumpAria: 'Sections de cette page',
     // The themed Réglages tabs (one per hub section, same wording as the nav —
     // board/liste/cercle/routines reuse t.nav.* directly) + the Découvrir entry
     // tab and the per-tab « Comprendre / Régler » lens toggle.
@@ -2276,12 +2276,12 @@ export const FR = {
     lensSet: 'Régler',
     lensAria: 'Comprendre ou régler',
     kioskNotice:
-      'Tablette jumelée : tu peux ajuster la plupart des réglages ici. La maisonnée et le jumelage des tablettes demandent le compte opérateur (connexion sur un téléphone).',
+      'Tablette jumelée : tu peux ajuster la plupart des réglages ici. Ajouter quelqu’un ou jumeler une tablette se fait avec le compte parent (connexion sur un téléphone).',
     // A read-only guest (la démo) reaches Réglages for the guide + this device's own
     // display. Say what IS theirs rather than what isn't — they can't sign in anyway.
     guestNotice:
-      'Lecture seule : tu peux tout lire dans le guide, et régler l’affichage de cet appareil (thème, langue, vue, disposition du babillard). Rien de ça ne change quoi que ce soit pour la maisonnée.',
-    kioskSignIn: 'Se connecter comme opérateur',
+      'Lecture seule : tu peux lire le guide et régler l’affichage de cet appareil. Rien de ça ne change quoi que ce soit pour la maisonnée.',
+    kioskSignIn: 'Se connecter avec le compte parent',
     needChild: 'Ajoute d’abord un enfant (coche « Enfant »).',
     forWho: 'Pour qui :',
     tplStart: 'Modèle :',
@@ -2308,8 +2308,8 @@ export const FR = {
       deleteProjet: 'Supprimer le projet',
       editEntretien: 'Modifier l’entretien',
       deleteEntretien: 'Supprimer l’entretien',
-      emptyProjets: 'Aucun projet pour l’instant.',
-      emptyEntretien: 'Aucun entretien pour l’instant.',
+      emptyProjets: 'Aucun projet. Un projet, c’est un chantier avec une date — « Repeindre la chambre ». Ajoute-le avec le bouton ci-dessus.',
+      emptyEntretien: 'Aucun entretien. Ajoute ce qui revient — « Changer le filtre » — ou touche une idée de saison plus haut.',
       budgetLabel: 'Budget visé',
       budgetPlaceholder: 'ex. 15 000',
       notesLabel: 'Notes',
@@ -2363,16 +2363,16 @@ export const FR = {
     canvasLabel: 'Ambiance vivante',
     canvasHint: 'Un fond discret qui suit la saison, la météo et l’heure (une teinte douce, un peu de neige l’hiver). N’affecte que cet appareil.',
     canvasOn: 'Activée',
-    canvasOff: 'Désactivée',
+    canvasOff: 'Éteinte',
     keepAwakeLabel: 'Garder l’écran allumé',
     keepAwakeOn: 'Allumé',
     keepAwakeOff: 'Veille normale',
-    keepAwakeHint: 'Empêche cet appareil de se mettre en veille pendant que le babillard est affiché — idéal pour la tablette au mur. Sur un téléphone, laisse-le en veille normale pour épargner la pile (la veille reprend dès que l’app passe en arrière-plan).',
+    keepAwakeHint: 'Garde cet écran allumé tant que le babillard est affiché — pour la tablette du mur. Sur un téléphone, laisse la veille normale.',
     // « Diffuser au salon » — un lien TV (lecture seule) pour montrer le babillard sur
     // le téléviseur via Chromecast (diffuser l’onglet depuis Chrome sur l’ordinateur).
     castTitle: 'Diffuser au salon',
     castIntro:
-      'Affiche une vue en lecture seule sur le téléviseur du salon — un écran d’appoint calme. Choisis l’écran, génère le lien, puis ouvre-le dans le navigateur du téléviseur (un Google TV bon marché, une télé connectée). Sur Chrome (ordinateur), le bouton « Diffuser » le lance directement.',
+      'Montre le babillard, en lecture seule, sur la télé du salon. Choisis l’écran, crée le lien, puis ouvre-le sur la télé.',
     // Which TV face the link shows — the full board, the ambient screensaver, or the
     // visitor welcome window. Mirrors the per-kind picker on the phone-link side.
     castSceneLabel: 'Écran',
@@ -2399,7 +2399,7 @@ export const FR = {
     castStep2: 'Menu ⋮ ▸ Caster… ▸ choisis le Chromecast.',
     castStep3: 'Sources ▸ « Caster l’onglet » — le babillard s’affiche au salon.',
     castCaveat:
-      'En diffusant l’onglet depuis Chrome, l’ordinateur doit rester allumé ; ouvert directement dans le navigateur du téléviseur, non. Le babillard et l’ambiance restent jusqu’à ce que tu les révoques (Réglages ▸ Système ▸ Appareils & accès) ; l’accueil expire après 24 h.',
+      'Diffusé depuis Chrome, l’ordinateur doit rester allumé ; ouvert sur la télé, non. Le lien reste actif jusqu’à ce que tu le révoques ici.',
     // Stage 2 — le bouton « Diffuser maintenant » (Chrome seulement) lance le récepteur.
     castNow: 'Diffuser maintenant',
     castNowBusy: 'Diffusion…',
@@ -2410,7 +2410,7 @@ export const FR = {
     ocrDevice: 'Sur l’appareil',
     ocrCloud: 'Haute précision',
     ocrDeviceHint: 'Lecture gratuite et privée, directement sur l’appareil — rien n’est envoyé ailleurs. Idéal pour le texte imprimé.',
-    ocrCloudHint: 'Lecture nuage (Mistral) — bien meilleure sur les petits chiffres et fractions. La photo est envoyée au service pour être lue : gratuit pour l’essai, puis moins d’un sou par recette. N’affecte que cet appareil.',
+    ocrCloudHint: 'Lecture par le nuage (Mistral), bien meilleure sur les petits chiffres. La photo est envoyée pour être lue — gratuit à l’essai, puis moins d’un sou par recette.',
     // « Disposition du babillard » — per-device show/hide + reorder of the Grille cards.
     boardLayout: 'Disposition du babillard',
     boardLayoutHint: 'Choisis quelles cartes afficher, leur largeur et leur ordre — propre à cet appareil. Glisse une poignée pour réordonner, ou même pour déplacer une carte d’un groupe à l’autre.',
@@ -2419,7 +2419,7 @@ export const FR = {
     // customization in one tap (disposition, allées, repas, couleurs) — added
     // 2026-09-03 after an audit found these sharing the undo icon with genuine
     // undo, with no confirm behind any of them (STATE.md's predictability entry).
-    resetConfirm: 'Effacer ta personnalisation et revenir à la disposition par défaut ?',
+    resetConfirm: 'Effacer tes changements et remettre la disposition de départ ?',
     boardLayoutBand: 'Bandeau du haut',
     boardLayoutGrid: 'Cartes',
     // Drop target at the end of a group, so a card can be moved into an emptied one.
@@ -2455,7 +2455,7 @@ export const FR = {
     tapToHearLabel: 'Toucher pour entendre',
     tapToHearHint: 'En vue Enfant ou Simple : garde le doigt une demi-seconde sur une ligne pour l’entendre à voix haute.',
     voiceNone: 'Aucune voix « Français (Canada) » n’est installée sur cet appareil. Ajoute-en une dans les réglages du système pour entendre la lecture.',
-    voiceNoneLang: 'Aucune voix pour cette langue sur cet appareil. Ajoute-en une dans les réglages du système (Accessibilité ▸ Contenu énoncé). Sur iPad/iPhone, le navigateur n’a souvent accès qu’aux voix « par défaut » — une voix « Améliorée » peut ne pas être disponible ici.',
+    voiceNoneLang: 'Aucune voix pour cette langue sur cet appareil. Ajoute-en une dans les réglages de l’appareil (Accessibilité ▸ Contenu énoncé). Sur iPad et iPhone, seules les voix de base sont offertes ici.',
     tutorialTitle: 'Aide contextuelle',
     tutorialHint: 'Les petits « ? » près des sections ouvrent le guide à la bonne page. Passe en mode expert pour les masquer.',
     tutorialLabel: 'Mode',
@@ -2463,7 +2463,7 @@ export const FR = {
     tutorialOff: 'Expert',
     calmTitle: 'Mode calme',
     calmHint:
-      'Activé : la routine de l’enfant se termine sans récompense — le récapitulatif en images, le temps, et « Recommencer » si l’enfant veut. Désactivé : en plus, l’enfant colle un autocollant sur son mur. Les garanties calme (pas de points, pas de pastilles, pas de notifications) ne se touchent pas, peu importe le réglage.',
+      'Allumé : la routine se termine sans récompense. Éteint : l’enfant colle en plus un autocollant sur son mur. Rien d’autre ne change — jamais de points ni de notifications.',
     calmOn: 'Activé',
     calmOff: 'Désactivé',
     aiOn: 'IA : active',
@@ -2476,7 +2476,7 @@ export const FR = {
     aiToggleHintOn: 'L’IA est active. Touche pour la couper pour toute la maisonnée.',
     aiToggleHintOff:
       'L’IA est coupée. Les fonctions IA sont masquées et rien n’est envoyé pour analyse. Touche pour la réactiver.',
-    aiToggleTitle: 'Activer / désactiver l’IA',
+    aiToggleTitle: 'Allumer / éteindre l’IA',
     aiLearnMore: 'En savoir plus sur l’IA',
     shopping: 'Magasinage',
     shopHint: 'Ton code postal sert à trouver les circulaires près de chez toi (preuve de prix à la caisse).',
@@ -2486,7 +2486,7 @@ export const FR = {
     postalBad: 'Code postal invalide.',
     storeFilter: 'Mes magasins',
     storeFilterHint:
-      'Les magasins trouvés près de chez toi. Garde seulement ceux où tu magasines : eux seuls paraîtront dans les rabais, les circulaires et la preuve de prix. Laisse-les tous activés pour voir tous les magasins.',
+      'Garde seulement les magasins où tu magasines : eux seuls paraîtront dans les rabais et les circulaires.',
     storeFilterNoPostal: 'Règle d’abord ton code postal ci-dessus pour voir les magasins du coin.',
     storeFilterError: 'Service de circulaires indisponible — réessaie plus tard.',
     storeFilterEmpty: 'Aucun magasin trouvé près de chez toi.',
@@ -2494,8 +2494,8 @@ export const FR = {
     // « Par allée » then groups + sorts your items to follow that walk.
     aisleOrder: 'Ordre des allées',
     aisleOrderHint:
-      'Glisse les allées dans l’ordre de TON magasin. Dans La liste, « Par allée » regroupe et trie tes articles selon cet ordre — ton coup d’œil suit ton parcours en magasin.',
-    aisleReset: 'Remettre l’ordre par défaut',
+      'Glisse les allées dans l’ordre de TON magasin ; « Par allée » trie ensuite ta liste comme ton parcours.',
+    aisleReset: 'Remettre l’ordre de départ',
     storeIncluded: 'Inclus',
     storeExcluded: 'Exclu',
     storeCashier: 'À la caisse',
@@ -2506,7 +2506,7 @@ export const FR = {
     history: 'Articles déjà achetés',
     historyHint:
       'Ce que l’« Ajout rapide » propose. Renomme un article spécifique vers son nom générique (ex. « Oeuf blanc sélection » → « Oeufs ») pour le regrouper, ou retire-le.',
-    historyEmpty: 'Rien dans l’historique pour l’instant.',
+    historyEmpty: 'Rien encore : l’historique se remplit à mesure que tu coches des articles, et il nourrit l’Ajout rapide ⚡.',
     historyRename: 'Renommer',
     historyRemove: 'Retirer',
     ghost: 'Liste fantôme',
@@ -2521,15 +2521,15 @@ export const FR = {
     mealWindowDays: (n: number) => `${n} jours`,
     mealColorsHint:
       'Donne une couleur à chaque repas (déjeuner, dîner, collation, souper, dessert). Elle paraît partout où ce repas apparaît — babillard, calendrier, cuisine.',
-    mealColorReset: 'Couleur par défaut',
+    mealColorReset: 'Couleur de départ',
     mealShow: 'Repas affichés',
     mealShowHint:
       'Choisis les repas à voir sur le babillard et la cuisine. Décoche ceux qui t’encombrent (ex. ne garder que le souper). Tu peux quand même les planifier dans La cuisine.',
     mealVisible: 'Affiché',
     mealHidden: 'Masqué',
     mealOrderHint:
-      'Glisse les repas dans l’ordre de ta journée — il est respecté partout : la cuisine, le babillard, le calendrier. L’étoile marque le repas vedette (« Ce soir »). L’heure dit quand chaque repas commence : c’est elle, pas l’ordre, qui décide du prochain repas à cuisiner.',
-    mealReset: 'Ordre et heures par défaut',
+      'Glisse les repas dans l’ordre de ta journée. L’étoile marque le repas vedette ; l’heure décide lequel cuisiner ensuite.',
+    mealReset: 'Ordre et heures de départ',
     mealHero: 'Vedette',
     mealHeroHint: 'Le repas vedette de la journée — celui qui fait la manchette du babillard.',
     mealHeroHidden: 'Le repas vedette est masqué : le babillard n’affichera pas de manchette « Ce soir ».',
@@ -2582,7 +2582,7 @@ export const FR = {
     schedEveryNWeeksShort: (n: number) => `aux ${n} sem.`,
     cercleTab: 'Le cercle',
     cercleGroupsTitle: 'Groupes du cercle',
-    cercleGroupsEmpty: 'Aucun groupe pour l’instant.',
+    cercleGroupsEmpty: 'Aucun groupe. Un groupe, c’est « Les cousins » ou « L’équipe de soccer » — crée-le dans Maison ▸ Famille avec le ＋.',
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'personne' : 'personnes'}`,
     cercleGroupHidden: 'Masqué du répertoire',
     recipesTab: 'Recettes',
@@ -2626,7 +2626,7 @@ export const FR = {
     tagPillsHint: 'Ces pastilles apparaissent dans le formulaire de recette ; leur ordre décide aussi de l’ordre des collections. Glisse le ⠿ pour réorganiser. Les étiquettes déjà utilisées s’ajoutent automatiquement.',
     tagAddPill: 'Ajouter une pastille…',
     tagUsed: 'Étiquettes utilisées',
-    tagNoneUsed: 'Aucune étiquette encore.',
+    tagNoneUsed: 'Aucune étiquette encore. Ajoute « Végé », « Rapide »… — elles classent tes recettes en collections.',
     tagOnN: (n: number) => `${n} recette${n > 1 ? 's' : ''}`,
     tagUnusedHint: 'Proposée',
     tagRename: 'Renommer',
@@ -2657,7 +2657,7 @@ export const FR = {
     noEvents: 'Aucun rendez-vous à venir.',
     // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
     schoolYearTitle: 'Année scolaire',
-    schoolYearHint: 'La rentrée, le dernier jour et les relâches — une fois par année. Le babillard sait alors dire « école demain » ou « congé demain », et l’année en garde les repères.',
+    schoolYearHint: 'La rentrée, le dernier jour et les relâches, une fois par année : le babillard sait alors dire « école demain » ou « congé demain ».',
     schoolYearFirstDay: 'Rentrée (premier jour)',
     schoolYearLastDay: 'Dernier jour',
     schoolYearBreaksTitle: 'Relâches',
@@ -2741,7 +2741,7 @@ export const FR = {
     subDisplayIdle: 'Affichage & veille',
     subVoiceAi: 'Voix & IA',
     ambientTitle: 'Mode veille',
-    ambientHint: 'Ce que le kiosque affiche au repos : un économiseur (horloge, date, photos) après un délai, et le retour à « Maisonnée ».',
+    ambientHint: 'Ce que la tablette du mur montre au repos : une horloge avec la date et tes photos après un délai, et le retour à « Maisonnée ».',
     ambientScreensaver: 'Économiseur',
     ambientIdleBefore: 'Délai avant la veille',
     ambientShows: 'Afficher',
@@ -2757,7 +2757,7 @@ export const FR = {
     fetesHint: 'Les fêtes du Québec et du Canada s’annoncent d’elles-mêmes sur le babillard (Saint-Jean, Action de grâce, Noël…). Juste une ligne calme — rien à gérer, rien à créer.',
     // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
     binAnnounceLabel: 'L’annonce du soir (corvées)',
-    binAnnounceHint: 'Une corvée récurrente cochée « Annoncer la veille au soir » (dans son éditeur) s’annonce d’elle-même le soir d’avant — « c’est le soir du bac bleu ». Une ligne calme de plus — rien à gérer ici.',
+    binAnnounceHint: 'Une corvée cochée « Annoncer la veille au soir » se rappelle d’elle-même le soir d’avant — « c’est le soir du bac bleu ».',
     // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Appareils & accès).
     takeoutTitle: 'Emporter mes données',
     takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',
@@ -2796,7 +2796,7 @@ export const FR = {
     aiTestWhileOff: 'L’IA est éteinte pour la maisonnée (Réglages ▸ Système ▸ Voix & IA). Ce test parle quand même au modèle : il vérifie le branchement, pas l’interrupteur.',
     micTestTitle: 'Test du micro',
     micTestHint:
-      'Le micro échoue sur certains iPhone/iPad sans message clair. Lance ce test sur l’appareil qui bogue, dis « lait, œufs, pain », puis copie le rapport et envoie-le-nous : il dit exactement pourquoi le micro a marché ou non.',
+      'Si le micro ne marche pas sur cet appareil, lance le test, dis « lait, œufs, pain », puis envoie-nous le rapport.',
     micTestBtn: 'Tester le micro',
     micTestStop: 'Arrêter',
     micTestListening: 'J’écoute… dis « lait, œufs, pain »',
@@ -2840,7 +2840,7 @@ export const FR = {
     kindWelcomeHint: 'Juste l’essentiel pour un visiteur : Wi-Fi, jour des poubelles, règles de la maison.',
     kindFamilyHint: 'Pour la parenté : les prochaines dates des enfants, les anniversaires et les dernières photos. Pas de réglages.',
     kindIntakeHint: 'Un proche remplit ses coordonnées (et sa maisonnée), puis te les renvoie. Tu révises et tu ajoutes au cercle. Seul type de lien qui peut écrire.',
-    kindPostboxHint: 'Un proche laisse un mot, un message vocal, un dessin ou une photo. Tu révises, puis ça se pose sur le babillard, signé de son nom. Lien ouvert : toute la famille peut s’en servir.',
+    kindPostboxHint: 'Un proche laisse un mot, un vocal, un dessin ou une photo ; tu révises, puis ça se pose sur le babillard, signé. Toute la famille peut s’en servir.',
     intakeForLabel: 'Pour qui ?',
     intakeOpenPlaceholder: 'Tout le monde (lien ouvert)…',
     intakeOpenHint: 'Laisse vide pour un lien ouvert : n’importe qui peut s’ajouter.',
@@ -2884,7 +2884,7 @@ export const FR = {
     revoked: 'Lien révoqué',
     linkExpiresPrefix: 'Expire',
     limitation:
-      'Note : par défaut, l’accès s’éteint tout seul à la fin de la durée et ne peut pas être révoqué avant. Choisis « Durable » pour un lien nommé qui reste actif jusqu’à ce que tu le révoques.',
+      'Un lien s’éteint tout seul à la fin de sa durée, sans pouvoir être révoqué avant. Choisis « Durable » pour un lien nommé qui reste actif jusqu’à ce que tu le révoques.',
     banner: 'Accès invité — lecture seule. Tu peux regarder, mais pas modifier.',
     demoBadge: 'Démo — lecture seule',
     // D-19 (bmad/10) « La carte de la gardienne se complète » — a quiet, non-blocking
@@ -3039,7 +3039,7 @@ export const FR = {
     // Operator review of received forms (Réglages ▸ Système ▸ Appareils & accès).
     reviewTitle: 'Fiches reçues',
     reviewHint: 'Ce qu’un proche t’a envoyé. Révise, puis ajoute au cercle. Astuce : ensuite, « Compléter les familles » déduit le reste (frères, beaux-parents…).',
-    reviewNone: 'Aucune fiche pour l’instant.',
+    reviewNone: 'Aucune fiche reçue. Elles arrivent quand un proche remplit ton lien « Fiche famille ».',
     reviewPending: (n: number) => (n === 1 ? '1 fiche à réviser' : `${n} fiches à réviser`),
     reviewOne: 'Réviser',
     reviewItemTitle: (name: string) => `Fiche de ${name}`,
@@ -3136,7 +3136,7 @@ export const FR = {
     // VoyagePage — promouvoir un voyage privé vers l’espace partagé (un DÉPLACEMENT).
     shareLive: 'Partager en direct',
     promoteConfirm:
-      'Partager ce voyage en direct avec d’autres maisonnées ? Il quitte tes voyages privés pour un espace partagé que chaque maisonnée peut modifier. On ne peut pas revenir en arrière. Il reste visible sur ton calendrier.',
+      'Partager ce voyage en direct ? Il quitte tes voyages privés pour un espace que chaque maisonnée peut modifier — sans retour en arrière.',
     promote: 'Partager',
     // Le panneau « Inviter ».
     invite: 'Inviter',
@@ -3345,7 +3345,7 @@ export const FR = {
     // Réglages ▸ Maison ▸ Tâches de la maison (modèles de listes).
     templatesTitle: 'Listes à compléter',
     templatesHint:
-      'Prépare des listes réutilisables (ex. « Avant de partir », « Chez grand-papa ») et ajoute-les en un geste quand ça presse. Une liste peut même en inclure d’autres : elles deviennent des sections.',
+      'Prépare des listes réutilisables — « Avant de partir », « Chez grand-papa » — et ajoute-les en un geste quand ça presse.',
     includeList: 'Inclure une liste…',
     listDeleted: 'Liste supprimée',
     templateName: 'Nom de la liste',
@@ -3370,7 +3370,7 @@ export const FR = {
     label: 'Son de l’appareil',
     on: 'Son actif',
     off: 'Silencieux',
-    hint: 'Coupe la VOIX de l’app : la lecture à voix haute, le carillon des minuteries, les vibrations. Un enregistrement que tu fais jouer toi-même avec ▶ (un mot vocal, un mémo) joue quand même — tu viens de le demander. Propre à cet appareil : la tablette du mur et ton téléphone gardent chacun leur réponse.',
+    hint: 'Coupe la voix de l’app sur cet appareil : lecture à voix haute, carillons, vibrations. Ce que tu fais jouer toi-même avec ▶ joue quand même.',
   },
   undo: {
     action: 'Annuler',
@@ -3409,8 +3409,8 @@ export const FR = {
   recents: {
     title: 'Récents',
     open: 'Voir les récents',
-    empty: 'Rien de récent. Tes dernières actions s’afficheront ici, le temps de la session.',
-    note: 'Garde tes dernières actions de la session — annule celles encore récentes. Rien n’est conservé après le rechargement.',
+    empty: 'Rien de récent. Tes dernières actions s’afficheront ici, jusqu’à ce que tu fermes l’app.',
+    note: 'Garde tes dernières actions — annule celles encore récentes. Rien n’est conservé quand l’app se recharge.',
   },
   // The entity-detail peek (lib/detail + components/detail): tap any board/kitchen
   // item to see a picture, a date, the relevant text + a couple of smart actions.
