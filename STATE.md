@@ -277,6 +277,16 @@ Guards: 1970 unit · the Réglages e2e set 271 + 132 + 5 ✓ at `--workers=1 --r
 · matrix settings states 6/6. `DISCOVERY.md` carries the pill map; « Quoi de neuf »
 has the entry.
 
+**Then, settings write coverage (the queue's next item), same day.** Re-measured on the
+merged pills: 17 writing sections, nine still asserting nothing. Ten tests appended
+to `e2e/config-panels.spec.ts` (member rename · device revoke · season-seed upkeep ·
+work-hours block · cercle-group delete · guest-link revoke · sitter info · AI probe ·
+AI-log clear · photo delete), each navigating by `?focus=` and scoped to its
+`#op-<key>` card, the two deferred deletes asserting the HOLD (nothing sent) before
+firing `pagehide` for the write. The revoke test was watched fail on a planted body
+without `revokeId`. Two writes stay unasserted and are named in `REVIEW-PASS.md`: a
+member DELETE and a photo UPLOAD — the only `- [ ]` left in that file.
+
 ---
 
 ## 4. What still needs improvement — consolidated and ranked

@@ -1,4 +1,4 @@
-import { test, expect, type Request } from '@playwright/test'
+import { test, expect, type Page, type Request } from '@playwright/test'
 import { mockApi, seedState, BASE, MMID } from './mocks'
 
 // Behavioural coverage for the Réglages config panels that were screenshot-only, so
@@ -14,6 +14,12 @@ import { mockApi, seedState, BASE, MMID } from './mocks'
 // that day: 24 subs in SETTINGS_SUBS, 17 panels that write, and only a handful (here
 // plus interactions.spec) asserted a request at all. Adding a panel to Réglages means
 // adding its write here.
+//
+// Re-measured 2026-09-08, after the 28 → 14 merge: 17 writing sections, and with the
+// second sweep at the foot of this file every one of them asserts its write (the
+// a-regler snooze in a-regler-snooze.spec, the recipe-tag slots in
+// recipe-tag-slots.spec). Left unasserted, deliberately named: a member DELETE (the
+// confirm-gated cascade) and a photo UPLOAD (a multipart POST the mock can't shape).
 //
 // Every assertion below has been run against a planted bug — the wrong field name, a
 // dropped id, a missing colour — and seen to fail. A green settings test that has
@@ -343,3 +349,213 @@ test('renaming a paired tablet patches it by id', async ({ page }) => {
   expect(body.id).toBe('d1')
   expect(body.label).toBe('Tablette du salon')
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE SECOND SWEEP (2026-09-08). Re-measured after the 28 → 14 merge: of the 17
+// panels that write, these nine still asserted nothing — a settings card commits
+// optimistically, so each read « saved » whether or not its write ever left.
+// Every test below navigates by SECTION (?tab=&focus=, the address that survives a
+// pill reshuffle) and scopes to the card's #op-<key> anchor, never to a pill label.
+// Each was run against a planted bug (the id dropped from the body, the endpoint
+// misspelled) and seen to fail before it was trusted.
+//
+// Deferred deletes (a device revoke, a photo) HOLD their write behind the undo
+// toast; the test asserts the hold (nothing sent), then fires `pagehide` — the
+// teardown flush every held write commits on (lib/toast) — and asserts the write.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const flushHeldWrites = (page: Page) => page.evaluate(() => window.dispatchEvent(new Event('pagehide')))
+
+test('renaming a member patches it by id, keeping colour and child flag', async ({ page }) => {
+  await page.goto('/settings?tab=maison&focus=members')
+  const card = page.locator('#op-members')
+  await card.getByRole('button', { name: 'Modifier la personne' }).first().click()
+  const field = card.locator('.member-card--editing').getByLabel('Nom', { exact: true })
+  await expect(field).toHaveValue('Maman')
+  await field.fill('Maman R.')
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('PATCH', 'members'), { timeout: 20_000 }),
+    field.press('Enter'),
+  ])
+  const body = JSON.parse(req.postData() || '{}') as { id?: string; name?: string; colour?: string; isChild?: boolean }
+  expect(body.id).toBe('m1')
+  expect(body.name).toBe('Maman R.')
+  // A rename must not silently reset the face: colour + child flag ride along.
+  expect(body.colour).toBeTruthy()
+  expect(typeof body.isChild).toBe('boolean')
+})
+
+test('revoking a paired tablet is held behind the undo, then posts revokeId on teardown', async ({ page }) => {
+  let posts = 0
+  await page.goto('/settings?tab=settings&focus=devices')
+  await page.route('**/api/pair/devices**', async (route) => {
+    if (route.request().method() === 'GET') return route.fallback()
+    posts += 1
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+  })
+  const card = page.locator('#op-devices')
+  await card.getByRole('button', { name: 'Révoquer' }).first().click()
+  await expect(page.locator('.undo-toast')).toBeVisible()
+  // Held: a mis-tap must cost nothing, so nothing has left yet.
+  expect(posts).toBe(0)
+  const [req] = await Promise.all([page.waitForRequest(isApi('POST', 'pair/devices'), { timeout: 20_000 }), flushHeldWrites(page)])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ revokeId: 'd1' })
+})
+
+test('a season seed posts a dated upkeep with its cadence and lead time', async ({ page }) => {
+  await page.goto('/settings?tab=maison&focus=chores')
+  // ChoresTabPanel's own inner row (corvées · projets · entretien) sits ABOVE the
+  // #op-chores card and swaps it for Entretien's — so go through the panel, and
+  // scope the seed to the Entretien card by its title.
+  const panel = page.locator('#operator-panel')
+  await expect(page.locator('#op-chores')).toBeVisible()
+  await panel.getByRole('tab', { name: 'Entretien' }).click()
+  const card = panel.locator('.operator__section', { hasText: 'Idées de saison' })
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('POST', 'home-projects'), { timeout: 20_000 }),
+    card.getByRole('button', { name: /Poser les pneus/ }).click(),
+  ])
+  const body = JSON.parse(req.postData() || '{}') as { kind?: string; title?: string; at?: number; recur?: unknown; leadSeconds?: number }
+  expect(body.kind).toBe('upkeep')
+  expect(body.title).toBe('Poser les pneus d’hiver / d’été')
+  expect(typeof body.at).toBe('number')
+  expect(body.recur).toEqual({ freq: 'monthly', interval: 6 })
+  // A-6: an annual ritual gets a week-scale « Bientôt » — three weeks for the tires.
+  expect(body.leadSeconds).toBe(3 * 7 * 86_400)
+})
+
+test('a new work-hours block posts the member, the minutes and holdsCar', async ({ page }) => {
+  await page.goto('/settings?tab=maison&focus=schedule')
+  await page.locator('#op-schedule').getByRole('button', { name: 'Ajouter un horaire' }).click()
+  const form = page.locator('.operator__inline-form').last()
+  await form.getByRole('button', { name: 'Papa', exact: true }).click()
+  const times = form.locator('input[type="time"]')
+  await times.nth(0).fill('08:00')
+  await times.nth(1).fill('16:30')
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('POST', 'schedule'), { timeout: 20_000 }),
+    form.getByRole('button', { name: 'Ajouter', exact: true }).click(),
+  ])
+  const body = JSON.parse(req.postData() || '{}') as { memberId?: string; startMin?: number; endMin?: number; weekdays?: number[]; holdsCar?: boolean }
+  expect(body.memberId).toBe('m2')
+  // Minutes since midnight, not "HH:MM" — the car planner does arithmetic on these.
+  expect(body.startMin).toBe(8 * 60)
+  expect(body.endMin).toBe(16 * 60 + 30)
+  expect(Array.isArray(body.weekdays)).toBe(true)
+  expect(typeof body.holdsCar).toBe('boolean')
+})
+
+test('deleting a cercle group confirms first, then deletes it by id', async ({ page }) => {
+  await page.route('**/api/cercle**', (route) =>
+    route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/api/cercle'
+      ? route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            contacts: [],
+            links: [],
+            members: [],
+            groups: [{ id: 'g1', name: 'Les cousins', kind: 'family', colour: null, memberKeys: [] }],
+          }),
+        })
+      : route.fallback(),
+  )
+  await page.goto('/settings?tab=maison&focus=cercleGroups')
+  const card = page.locator('#op-cercleGroups')
+  await card.getByRole('button', { name: 'Supprimer le groupe — Les cousins' }).click()
+  // A heavy delete: the confirm dialog, not the undo toast.
+  const dialog = page.locator('.confirm')
+  await expect(dialog).toBeVisible()
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('DELETE', 'cercle-groups'), { timeout: 20_000 }),
+    dialog.getByRole('button', { name: /^(Supprimer|Confirmer)$/ }).click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'g1' })
+})
+
+test('revoking a live guest link posts revokeId (the token dies at once)', async ({ page }) => {
+  await page.route('**/api/guest-links**', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            links: [{ id: 'l1', kind: 'sitter', target_key: null, standing: 0, label: 'Mamie', created_at: BASE, expires_at: BASE + 86_400 }],
+          }),
+        })
+      : route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }),
+  )
+  await page.goto('/settings?tab=settings&focus=guestLinks')
+  const list = page.locator('.operator__guest-links')
+  await expect(list).toBeVisible()
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('POST', 'guest-links'), { timeout: 20_000 }),
+    list.getByRole('button', { name: 'Révoquer' }).first().click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ revokeId: 'l1' })
+})
+
+test('the sitter info block patches household with the typed fields', async ({ page }) => {
+  await page.goto('/settings?tab=settings&focus=guestLinks')
+  const card = page.locator('.operator__section', { hasText: 'Infos à partager' })
+  await card.getByLabel('Réseau Wi-Fi').fill('Maison-5G')
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('PATCH', 'household'), { timeout: 20_000 }),
+    card.getByRole('button', { name: 'Enregistrer' }).click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ wifiSsid: 'Maison-5G' })
+})
+
+test('« Tester l’IA » probes the binding with a POST (never a queued write)', async ({ page }) => {
+  await page.route('**/api/ai-test**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ checks: [] }) }),
+  )
+  await page.goto('/settings?tab=settings&focus=aiLog')
+  await Promise.all([
+    page.waitForRequest(isApi('POST', 'ai-test'), { timeout: 20_000 }),
+    page.getByRole('button', { name: 'Tester l’IA' }).click(),
+  ])
+})
+
+test('« Effacer le journal » DELETEs the AI error log', async ({ page }) => {
+  await page.route('**/api/ai-errors**', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ errors: [{ id: 'e1', feature: 'capture', message: 'boom', created_at: BASE }] }),
+        })
+      : route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }),
+  )
+  await page.goto('/settings?tab=settings&focus=aiLog')
+  const card = page.locator('#op-aiLog')
+  await expect(card.locator('.ai-log__row')).toHaveCount(1)
+  await Promise.all([
+    page.waitForRequest(isApi('DELETE', 'ai-errors'), { timeout: 20_000 }),
+    card.getByRole('button', { name: 'Effacer le journal' }).click(),
+  ])
+})
+
+test('removing a household photo is held behind the undo, then DELETEs by id on teardown', async ({ page }) => {
+  const deletes: string[] = []
+  await page.route('**/api/photos**', (route) => {
+    const m = route.request().method()
+    if (m === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ photos: [{ id: 'p1', key: 'k1', created_at: BASE }] }),
+      })
+    deletes.push(route.request().postData() || '')
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+  })
+  await page.goto('/settings?tab=settings&focus=photos')
+  const card = page.locator('#op-photos')
+  await expect(card.locator('.photo-grid__item')).toHaveCount(1)
+  await card.getByRole('button', { name: 'Supprimer' }).first().click()
+  await expect(page.locator('.undo-toast')).toBeVisible()
+  expect(deletes).toEqual([])
+  await Promise.all([page.waitForRequest(isApi('DELETE', 'photos'), { timeout: 20_000 }), flushHeldWrites(page)])
+  expect(JSON.parse(deletes[0] || '{}')).toMatchObject({ id: 'p1' })
+})
+

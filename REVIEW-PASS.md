@@ -1041,14 +1041,24 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   at 390px lit a tab beyond the right edge with nothing to show the page had responded. Fixed on
   both the deep link and the arrow keys (`focus({preventScroll})` + `toView`, mirroring SubTabs).
   Guarded in `e2e/hscroll.spec.ts`, run against the bug.
-- [ ] **e2e gaps** — the "stale section ids" half is **a misread (verified 2026-08-28)**: those
+- [x] **e2e gaps** — the "stale section ids" half is **a misread (verified 2026-08-28)**: those
   ids are DELIBERATE alias regressions, labelled as such in the file ("Legacy ids, kept as alias
   regressions: each must still render a panel"). They cost a duplicate screenshot each, which is
-  the price of proving every old deep link still lands. The rest of the bullet stands and is
-  genuinely open. Original: stale section ids in `settings-sections.spec.ts:10` (retired ids alias to hosts
-  → duplicate screenshots under different filenames); **no** device-revoke / member-delete-rename
+  the price of proving every old deep link still lands. **The coverage half closed 2026-09-08**
+  (`e2e/config-panels.spec.ts`, the second sweep — every one of the 17 writing settings
+  sections now asserts its request, each run against a planted bug): device revoke (held
+  behind the undo, then `revokeId` on teardown) · member rename by id · a season-seed upkeep
+  POST (kind, cadence, lead time) · a work-hours block POST (member, minutes, holdsCar) · a
+  cercle-group DELETE behind the confirm · a guest-link revoke · the sitter-info PATCH · the
+  AI probe POST · the AI-log DELETE · a photo DELETE held behind the undo. Cars and
+  todo-templates were already asserted on 09-03; the chore ledger is a read view. Original:
+  stale section ids in `settings-sections.spec.ts:10`; **no** device-revoke / member-delete-rename
   round-trip; untested config sub-panels (schedule, cars, todo-templates, home-projects
   Projets/Entretien, the chore ledger); photo upload+delete+undo only smoke-rendered.
+- [ ] **Two settings writes still unasserted, named so they stay visible:** a member DELETE
+  (the confirm-gated cascade — routines go, events/chores detach) and a photo UPLOAD (a
+  multipart POST the route mock can't shape without a real file). Both need a richer harness
+  than a body assertion; neither is a regression risk the sweep found evidence of.
   - ✅ **`ThisWeek` asserts faces-not-counts now** (`e2e/this-week-calm.spec.ts`). It is the
     one sub-item here that guards a TENET rather than coverage: the section widens the
     chore-ledger pattern to the whole household and inherits its hard rule — say WHO, never
