@@ -205,3 +205,90 @@ describe('nothing spells a retired pill', () => {
     ).toEqual([])
   })
 })
+
+// The PROSE layer — the part every earlier reshuffle rotted. A hint, a guide point
+// or a confirm string says « Réglages ▸ Tablettes » and nobody re-reads it when the
+// pill becomes « Appareils & accès »; the 2026-09-08 sweep found breadcrumbs still
+// naming pills retired THREE restructures ago (« Réglages ▸ Guide », « ▸ Courses »,
+// « ▸ Le cercle »). So: every « Réglages ▸ A ▸ B » / « Settings ▸ A ▸ B » in a
+// user-facing string names a live tab (A) and, when it goes on, a live pill of that
+// tab (B) — in either language. A third segment (a card title, an inner tab) is
+// free: cards don't move, pills do. A two-segment crumb may name a pill directly
+// (« Réglages ▸ Magasinage ») when that label belongs to exactly one tab.
+describe('prose breadcrumbs name live Réglages destinations', () => {
+  const tabLabels = new Map<string, string>() // label → tab id (both languages)
+  const navKey: Record<string, string> = { liste: 'list', notes: 'notes', maison: 'maison' }
+  const opKey: Record<string, string> = { decouvrir: 'secDiscover', board: 'secBoard', kitchen: 'secKitchen', settings: 'secSystem' }
+  for (const L of [FR, EN]) {
+    for (const [tab, k] of Object.entries(opKey)) tabLabels.set((L.operator as unknown as Record<string, string>)[k], tab)
+    for (const [tab, k] of Object.entries(navKey)) tabLabels.set((L.nav as unknown as Record<string, string>)[k], tab)
+  }
+  const pillLabels = new Map<string, Set<string>>() // tab → its pill labels (both languages)
+  const pillOwners = new Map<string, Set<string>>() // pill label → tabs that own it
+  for (const tab of TABS) {
+    const set = new Set<string>()
+    for (const sub of SETTINGS_SUBS[tab]) {
+      const k = (SUB_LABEL_KEY[tab] as Record<string, string>)[sub]
+      for (const L of [FR, EN]) {
+        const label = (L.operator as unknown as Record<string, string>)[k]
+        set.add(label)
+        if (!pillOwners.has(label)) pillOwners.set(label, new Set())
+        pillOwners.get(label)!.add(tab)
+      }
+    }
+    pillLabels.set(tab, set)
+  }
+
+  const CRUMB = /(?:Réglages|Settings) ▸ ([^▸.;:'"«»()\n]+?)(?: ▸ ([^▸.;:'"«»()\n]+?))?(?: ▸ ([^▸.;:'"«»()\n]+?))?(?=[.;:'"«»(),\n]|$| —| -|$)/g
+  const clean = (x: string | undefined) => (x ?? '').trim().replace(/\s+$/, '')
+
+  // A crumb inside a sentence runs straight into the prose (« Réglages ▸ Magasinage
+  // et il reste… »), so a segment is matched by live-label PREFIX: the label, then
+  // either the end or a word boundary. Longest label first, so « Voix & IA » beats
+  // « Voix ».
+  const startsWithLabel = (segment: string, labels: Iterable<string>): string | undefined =>
+    [...labels].sort((x, y) => y.length - x.length).find((l) => segment === l || segment.startsWith(l + ' '))
+  // Returns a problem or null for one crumb.
+  const check = (a: string, b: string | undefined): string | null => {
+    const tabLabel = startsWithLabel(a, tabLabels.keys())
+    if (tabLabel) {
+      const tab = tabLabels.get(tabLabel)!
+      if (!b) return null
+      return startsWithLabel(b, pillLabels.get(tab)!) ? null : `« ${tabLabel} ▸ ${b} » — no pill of ${tab} starts it`
+    }
+    const pill = startsWithLabel(a, pillOwners.keys())
+    const owners = pill ? pillOwners.get(pill)! : undefined
+    if (owners && owners.size === 1 && !b) return null
+    if (owners && owners.size > 1) return `« ${pill} » is a pill of several tabs — name the tab`
+    return `« ${a} » is neither a tab nor a pill`
+  }
+
+  const scan = (src: string): string[] => {
+    const out: string[] = []
+    for (const m of src.matchAll(CRUMB)) {
+      const problem = check(clean(m[1]), m[2] ? clean(m[2]) : undefined)
+      if (problem) out.push(`${src.slice(0, m.index).split('\n').length}: ${problem}`)
+    }
+    return out
+  }
+
+  it('the scanner reads a crumb and knows a retired pill from a live one (the canary)', () => {
+    expect(scan('x « Réglages ▸ Tablettes ». y').length).toBe(1)
+    expect(scan('x Réglages ▸ Système ▸ Appareils & accès. y')).toEqual([])
+    expect(scan('x Settings ▸ System ▸ Devices & access: y')).toEqual([])
+    expect(scan('x dans Réglages ▸ Magasinage : y')).toEqual([])
+    expect(scan('x Réglages ▸ Maison ▸ Tâches de la maison ▸ Entretien montrent y')).toEqual([])
+    expect(scan('x Réglages ▸ Guide.').length).toBe(1)
+  })
+
+  it('i18n (fr + en), the guide and the help registries only name live destinations', () => {
+    const files = ['src/i18n.ts', 'src/i18n.en.ts', 'src/lib/guideContent.ts', 'src/lib/operatorHelp.ts', ...sourceFiles(srcDir).filter((f) => /[a-zA-Z]Help\.ts$/.test(f)).map((f) => rel(f))]
+    const problems: string[] = []
+    for (const f of new Set(files)) {
+      // Strings only: readScanned blanks comments, and a comment's crumb is not a hint.
+      for (const p of scan(readScanned(join(rootDir, f)))) problems.push(`${f}:${p}`)
+    }
+    expect(problems, 'a breadcrumb names a retired tab or pill — re-point it at the live one (DISCOVERY.md carries the map)').toEqual([])
+  })
+})
+

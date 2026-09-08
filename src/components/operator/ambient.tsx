@@ -7,7 +7,7 @@ import { useAmbient, setAmbient, type AmbientSettings } from '../../lib/ambient'
 import { useHabitCheckin, setHabitCheckin, replayHabitCheckin } from '../../lib/habitCheckin'
 import { forceIdle } from '../../lib/idleDebug'
 
-// Réglages ▸ Affichage ▸ "Mode veille" — tune what the kiosk does when idle: the
+// Réglages ▸ Système ▸ Affichage & veille ▸ « Mode veille » — tune what the kiosk does when idle: the
 // screensaver (clock / date / photos / next-up), how long before it appears, and
 // whether the picked face drifts back to Maisonnée. Reads/writes lib/ambient; the
 // change re-arms HubLayout's idle timers live. Calm: every behaviour is opt-out.

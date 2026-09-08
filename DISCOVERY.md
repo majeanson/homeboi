@@ -156,6 +156,17 @@ spells the retired pill.
   exists with base < host point count; every `[[card:id]]` token resolves.
 - **Every section card keeps a « ＋ » point** (`guidePlusActions` throws at
   module load without it).
+- **A prose breadcrumb names a LIVE destination** (`settingsNav.test.ts`, the
+  « prose breadcrumbs » block): every « Réglages ▸ A ▸ B » / « Settings ▸ A ▸ B » in
+  a user-facing string (both i18n files, the guide, the help registries) has A = a
+  themed-tab label and B = one of that tab's pill labels — in either language; a
+  third segment (a card title, an inner tab) is free, and a two-segment crumb may
+  name a pill directly when its label belongs to one tab. Comments aren't scanned
+  (a comment's crumb is not a hint) but were re-pointed anyway. Spell the pill as
+  it is labelled (« Disposition du babillard », not « Disposition »); a link that
+  already goes there needs no crumb at all — say the verb (« Rétablir dans
+  Réglages »). Added 2026-09-08, when the sweep found crumbs still naming pills
+  retired three restructures earlier (« ▸ Guide », « ▸ Courses », « ▸ Le cercle »).
 - **A concept id must sit in a `CONCEPT_THEMES` bucket** or it's invisible to
   the FeatureMap jump-grid.
 - Concision budgets: `what` ≤ ~15 words, point label ≤ ~5, `detail` ≤ 2 plain

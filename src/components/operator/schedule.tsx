@@ -17,7 +17,7 @@ import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
 
-// Réglages ▸ L'auto ▸ Horaires. The quiet weekly schedule backdrop (migration 0069):
+// Réglages ▸ Maison ▸ L'auto & horaires. The quiet weekly schedule backdrop (migration 0069):
 // each member's recurring work/away window, and whether it TAKES the shared car.
 // These never show as agenda items — they only shape « L'auto »'s availability
 // (free gaps + conflicts) and the derived "who's home" glance. A single odd week is

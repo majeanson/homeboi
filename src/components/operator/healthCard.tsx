@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { HEALTH_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
 
-// Réglages ▸ Système ▸ Version & diagnostics — « État des services » (E-34, bmad/08).
+// Réglages ▸ Système ▸ Appareils & accès — « État des services » (E-34, bmad/08).
 // The optional bindings degrade SILENTLY by design (right for guests, mystifying
 // for the operator): AI-unset hides capture's sparkle, R2-unset hides every photo/
 // memo/document control, DO-unset quietly falls back to polling. This card is

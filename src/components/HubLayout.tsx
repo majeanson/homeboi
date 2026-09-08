@@ -300,7 +300,7 @@ export function HubLayout() {
     // Idle behaviours run on EVERY surface (mobile included), not just the kiosk:
     // a wall tablet is often signed in as the operator (surface=mobile after
     // Login), and we still want it to drift/screensave. Each behaviour is
-    // individually opt-out in Réglages ▸ Affichage ▸ Mode veille, so anyone who
+    // individually opt-out in Réglages ▸ Système ▸ Affichage & veille, so anyone who
     // doesn't want a screensaver on their phone just turns it off. The Debug tab's
     // speed override still collapses the windows to seconds for observability.
     const override = idleOverrideMs()

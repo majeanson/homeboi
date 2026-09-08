@@ -825,7 +825,7 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
 //   ambient → the screensaver    — the same permanent display device (/cast?scene=ambient)
 //   welcome → the visitor window — a time-boxed WELCOME guest link (24 h), /welcome
 // board/ambient ride a display DEVICE token (never expires; killed from the paired-
-// devices list, Réglages ▸ Tablettes); they read board+meals+recipes+household, which a
+// devices list, Réglages ▸ Système ▸ Appareils & accès); they read board+meals+recipes+household, which a
 // kiosk-scope device can. welcome needs the guest-curated /welcome window → guest token.
 type CastScene = 'board' | 'ambient' | 'welcome'
 const CAST_SCENES: Record<

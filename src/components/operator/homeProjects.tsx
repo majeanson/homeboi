@@ -29,7 +29,7 @@ import { ChoreLedger } from '../ChoreLedger'
 import { HomeProjectForm } from '../forms/HomeProjectForm'
 import type { Chore, HomeProject } from './types'
 
-// The Réglages ▸ Corvées tab body — sub-tabbed into Corvées (the chores + the
+// The Réglages ▸ Maison ▸ Tâches de la maison ▸ Corvées body — sub-tabbed into Corvées (the chores + the
 // fairness ledger, unchanged) · Projets · Entretien. The two home-project lists
 // share ONE table (kind-filtered); chores keep their own (tasks). One calm pill
 // row, "one job at a time".
@@ -61,7 +61,7 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
   )
 }
 
-// Réglages ▸ Corvées ▸ Projets / Entretien — the longer-horizon home work
+// Réglages ▸ Maison ▸ Tâches de la maison ▸ Projets / Entretien — the longer-horizon home work
 // (home_projects). ONE component, parameterized by `kind`: 'plan' (Projets) or
 // 'upkeep' (Entretien). Reads the shared ['home-projects'] cache and filters by
 // kind; the dated upkeep rows ALSO surface on the board/month. Mirrors

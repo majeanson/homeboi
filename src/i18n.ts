@@ -376,7 +376,7 @@ export const FR = {
     keep: 'Garder',
     clear: 'Vider les exemples',
     clearing: 'On vide…',
-    clearConfirm: 'Vider les exemples et partir avec ta maisonnée ? Tu pourras toujours les recharger dans Réglages ▸ Guide.',
+    clearConfirm: 'Vider les exemples et partir avec ta maisonnée ? Tu pourras toujours les recharger dans Réglages ▸ Découvrir.',
     load: 'Charger des exemples',
     present: 'Données d’exemple présentes.',
     absent: 'Aucune donnée d’exemple.',
@@ -670,7 +670,7 @@ export const FR = {
     // l'outil 🖼 du pad la charge en filigrane.
     photoAttach: 'Photo',
     // Les deux « et garde-la » offerts sur la photo jointe : dans le cadre de la
-    // maison (Réglages ▸ Photos, l'écran de veille) et dans les photos du téléphone —
+    // maison (Réglages ▸ Système ▸ Affichage & veille ▸ Photos, l'écran de veille) et dans les photos du téléphone —
     // une photo prise dans l'app ne se rend jamais toute seule dans la pellicule.
     keepInPhotos: 'Garder dans les photos',
     keptInPhotos: 'Gardée dans les photos',
@@ -799,7 +799,7 @@ export const FR = {
     // face. Kept to a couple of glyphs; the full phrasing lives in `editResize`'s label.
     editSizeFull: 'Max',
     editHiddenN: (n: number) => (n === 1 ? '1 carte cachée' : `${n} cartes cachées`),
-    editRestore: 'Réglages ▸ Disposition',
+    editRestore: 'Rétablir dans Réglages',
     allClearSub: 'Rien de prévu aujourd’hui — profitez-en.',
     // The all-clear reassurance drifts gently by daypart or notable weather — same
     // calm tone, never a prompt, never a count. Keyed by daypart + weather bucket.
@@ -905,7 +905,7 @@ export const FR = {
     },
     empty: 'L’horizon est libre — les fêtes s’annonceront toutes seules.',
   },
-  // Card names for « Disposition du babillard » (Réglages ▸ Affichage) — show/hide +
+  // Card names for « Disposition du babillard » (Réglages ▸ Le babillard ▸ Disposition) — show/hide +
   // reorder the Grille cards per device.
   boardCard: {
     notes: 'Notes (frigo)',
@@ -1509,7 +1509,7 @@ export const FR = {
     cookable: 'Quoi cuisiner ?',
     ready: 'Prêt',
     missingN: (n: number) => `il manque ${n}`,
-    // The meal-slot picker's pill-priority lift (Réglages ▸ Recettes ▸ une pastille
+    // The meal-slot picker's pill-priority lift (Réglages ▸ La cuisine ▸ Apparence ▸ une pastille
     // ciblant ce repas) had no visible reason a recipe jumped to the top — this
     // names the pill so the reorder isn't silent.
     pillLifted: (pill: string) => `Remontée par la pastille « ${pill} »`,
@@ -1942,7 +1942,7 @@ export const FR = {
       uploading: 'Envoi…',
       delete: 'Supprimer l’animal',
       detailsHealth: 'Détails / santé',
-      // Réglages ▸ La maisonnée: the "our animals" subsection.
+      // Réglages ▸ Maison ▸ La maisonnée: the "our animals" subsection.
       householdTitle: 'Animaux de la maisonnée',
       householdHint: 'Vos animaux apparaissent dans la carte Maisonnée du cercle.',
       none: 'Aucun animal pour l’instant.',
@@ -2380,9 +2380,9 @@ export const FR = {
     castSceneAmbient: 'L’ambiance — horloge & photos',
     castSceneWelcome: 'L’accueil — wifi & consignes',
     castSceneHint: {
-      board: 'Le babillard complet, en lecture seule. Écran permanent — révocable depuis Réglages ▸ Tablettes.',
+      board: 'Le babillard complet, en lecture seule. Écran permanent — révocable depuis Réglages ▸ Système ▸ Appareils & accès.',
       ambient:
-        'L’écran de veille : grande horloge, date et cadre photo qui défile. Écran permanent — révocable depuis Réglages ▸ Tablettes.',
+        'L’écran de veille : grande horloge, date et cadre photo qui défile. Écran permanent — révocable depuis Réglages ▸ Système ▸ Appareils & accès.',
       welcome:
         'La fenêtre d’accueil pour les visiteurs : wifi, jour des poubelles et consignes. Lien temporaire (24 h).',
     },
@@ -2392,14 +2392,14 @@ export const FR = {
     // The short /tv/<code> link — the one to actually type on a TV remote.
     castShortReady: 'Lien court — tape-le dans le navigateur du téléviseur (facile à la télécommande) :',
     castShortLink: 'Lien TV court',
-    castShortHint: 'Tape ce lien une fois sur la télé, puis garde-le en favori. Pour le révoquer : Réglages ▸ Tablettes.',
+    castShortHint: 'Tape ce lien une fois sur la télé, puis garde-le en favori. Pour le révoquer : Réglages ▸ Système ▸ Appareils & accès.',
     castFullLink: 'Lien complet (à copier-coller) :',
     castReady: 'Lien TV prêt — ouvre-le dans le navigateur du téléviseur, ou diffuse-le depuis Chrome :',
     castStep1: 'Ouvre ce lien dans Google Chrome sur l’ordinateur.',
     castStep2: 'Menu ⋮ ▸ Caster… ▸ choisis le Chromecast.',
     castStep3: 'Sources ▸ « Caster l’onglet » — le babillard s’affiche au salon.',
     castCaveat:
-      'En diffusant l’onglet depuis Chrome, l’ordinateur doit rester allumé ; ouvert directement dans le navigateur du téléviseur, non. Le babillard et l’ambiance restent jusqu’à ce que tu les révoques (Réglages ▸ Tablettes) ; l’accueil expire après 24 h.',
+      'En diffusant l’onglet depuis Chrome, l’ordinateur doit rester allumé ; ouvert directement dans le navigateur du téléviseur, non. Le babillard et l’ambiance restent jusqu’à ce que tu les révoques (Réglages ▸ Système ▸ Appareils & accès) ; l’accueil expire après 24 h.',
     // Stage 2 — le bouton « Diffuser maintenant » (Chrome seulement) lance le récepteur.
     castNow: 'Diffuser maintenant',
     castNowBusy: 'Diffusion…',
@@ -2568,7 +2568,7 @@ export const FR = {
     schedTitle: 'Horaires',
     schedEmpty: 'Aucun horaire. Ajoute les heures de travail pour savoir quand l’auto est prise.',
     schedAdd: 'Ajouter un horaire',
-    schedNoMembers: 'Ajoute d’abord une personne à la maisonnée — un horaire appartient à quelqu’un. Réglages ▸ Maison ▸ Membres.',
+    schedNoMembers: 'Ajoute d’abord une personne à la maisonnée — un horaire appartient à quelqu’un. Réglages ▸ Maison ▸ La maisonnée.',
     schedLabel: 'Étiquette (Travail, Garderie…)',
     schedFrom: 'De',
     schedTo: 'à',
@@ -2586,7 +2586,7 @@ export const FR = {
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'personne' : 'personnes'}`,
     cercleGroupHidden: 'Masqué du répertoire',
     recipesTab: 'Recettes',
-    // Recipe-tab pills config (migration 0045) — Réglages ▸ Recettes.
+    // Recipe-tab pills config (migration 0045) — Réglages ▸ La cuisine ▸ Apparence.
     pillsTitle: 'Pastilles de recettes',
     pillsHint:
       'Les filtres au-dessus des recettes. Glisse pour les réordonner, masque ceux que tu n’utilises pas, ou crée tes propres pastilles selon le temps, le nombre d’ingrédients, une étiquette…',
@@ -2758,7 +2758,7 @@ export const FR = {
     // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
     binAnnounceLabel: 'L’annonce du soir (corvées)',
     binAnnounceHint: 'Une corvée récurrente cochée « Annoncer la veille au soir » (dans son éditeur) s’annonce d’elle-même le soir d’avant — « c’est le soir du bac bleu ». Une ligne calme de plus — rien à gérer ici.',
-    // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Diagnostics).
+    // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Appareils & accès).
     takeoutTitle: 'Emporter mes données',
     takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',
     takeoutBtn: 'Télécharger mes données (JSON)',
@@ -2792,8 +2792,8 @@ export const FR = {
     aiTestVision: 'Photo (lire une recette)',
     aiTestUnavailable: 'L’IA n’est pas configurée sur ce déploiement.',
     // The probe tests the deployment's AI binding, not the household switch: it
-    // can pass green while Réglages ▸ IA has AI off for everyone.
-    aiTestWhileOff: 'L’IA est éteinte pour la maisonnée (Réglages ▸ IA). Ce test parle quand même au modèle : il vérifie le branchement, pas l’interrupteur.',
+    // can pass green while Réglages ▸ Système ▸ Voix & IA has AI off for everyone.
+    aiTestWhileOff: 'L’IA est éteinte pour la maisonnée (Réglages ▸ Système ▸ Voix & IA). Ce test parle quand même au modèle : il vérifie le branchement, pas l’interrupteur.',
     micTestTitle: 'Test du micro',
     micTestHint:
       'Le micro échoue sur certains iPhone/iPad sans message clair. Lance ce test sur l’appareil qui bogue, dis « lait, œufs, pain », puis copie le rapport et envoie-le-nous : il dit exactement pourquoi le micro a marché ou non.',
@@ -2925,7 +2925,7 @@ export const FR = {
     sending: 'Envoi…',
     sentTitle: 'Merci !',
     sentSub: 'Ton mot a été envoyé. La famille le verra bientôt sur son babillard.',
-    // Operator review of received messages (Réglages ▸ Partage).
+    // Operator review of received messages (Réglages ▸ Système ▸ Appareils & accès).
     reviewTitle: 'Messages reçus',
     reviewHint: 'Ce qu’un proche a laissé dans la boîte aux lettres. Accepte pour l’afficher sur le babillard, ou ignore.',
     reviewPending: (n: number) => (n === 1 ? '1 message à voir' : `${n} messages à voir`),
@@ -3036,7 +3036,7 @@ export const FR = {
     petSpeciesHint: 'Chien, chat, lapin…',
     addPet: 'Ajouter un animal',
     petFallback: 'Nouvel animal',
-    // Operator review of received forms (Réglages ▸ Partage).
+    // Operator review of received forms (Réglages ▸ Système ▸ Appareils & accès).
     reviewTitle: 'Fiches reçues',
     reviewHint: 'Ce qu’un proche t’a envoyé. Révise, puis ajoute au cercle. Astuce : ensuite, « Compléter les familles » déduit le reste (frères, beaux-parents…).',
     reviewNone: 'Aucune fiche pour l’instant.',
@@ -3101,7 +3101,7 @@ export const FR = {
     recipeIntro:
       'Crée un vrai lien vers cette recette. N’importe qui peut la voir; ceux qui ont Babillard peuvent l’ajouter à leur livre.',
     kinds: { recipe: 'Recette', event: 'Rendez-vous', routine: 'Routine', family: 'Famille' },
-    // « Mes partages » — Réglages ▸ Partage : la liste à retirer.
+    // « Mes partages » — Réglages ▸ Système ▸ Appareils & accès : la liste à retirer.
     myShares: 'Mes partages',
     mySharesHint: 'Tes liens de partage actifs. Retire-en un quand tu veux — le lien cesse alors de fonctionner.',
     noShares: 'Aucun partage actif.',
@@ -3342,7 +3342,7 @@ export const FR = {
     // Feuille ＋ : une LISTE piochée est toujours pour une journée (mig 0116) — sous
     // « En tout temps » elle s’ajoute pour aujourd’hui, et cette ligne le dit.
     templateDayHint: 'Une liste s’ajoute pour la journée — ici, aujourd’hui.',
-    // Réglages ▸ À compléter (modèles de listes).
+    // Réglages ▸ Maison ▸ Tâches de la maison (modèles de listes).
     templatesTitle: 'Listes à compléter',
     templatesHint:
       'Prépare des listes réutilisables (ex. « Avant de partir », « Chez grand-papa ») et ajoute-les en un geste quand ça presse. Une liste peut même en inclure d’autres : elles deviennent des sections.',

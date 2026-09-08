@@ -27,7 +27,7 @@ import { EmptyState } from '../EmptyState'
 import { Modal } from '../Modal'
 import { OperatorSection } from './OperatorSection'
 
-// Réglages ▸ À compléter. Reusable check-off checklists ("Avant de partir", "Chez
+// Réglages ▸ Maison ▸ Tâches de la maison ▸ À compléter. Reusable check-off checklists ("Avant de partir", "Chez
 // grand-papa"): a title + an ordered list of items. An item is a plain label OR a
 // reference to ANOTHER list (compose lists from lists). Instantiating a composed
 // list flattens to one todo list grouped BY SECTION — each included list becomes a

@@ -303,6 +303,26 @@ write so a cleared key can't come back). Every client side array is gone; the de
 sweep reads keys off the cards; the guard shrinks to recipes. Marc picked this split
 when asked. Unit-tested; e2e below.
 
+**Then Marc's next ask: « look at sections/tabs/subtabs/pages/screens and check if
+help or cross-links to Réglages (through help) are still needed ».** The walk, by
+layer: the "?" help doors (17 files render one) speak through 8 registries whose
+entries carry `card`/`point` only — they never spell a Réglages path, so the merge
+cost them nothing; the guide's 38 « Régler » links name their section (`?focus=`)
+and are build-validated; « Voir dans l'app » (`SUB_GOTO`) covers 11 of the 14 pills,
+and the three without (Appareils & accès, Voix & IA, Cette année) have no live
+surface to go back to — correct as they stand. **The rotten layer was PROSE**: the
+breadcrumbs written INTO hint and guide text. 40-odd « Réglages ▸ … » crumbs across
+both i18n files and the guide named pills that no longer exist — not just today's
+(« ▸ Tablettes », « ▸ Système ▸ Mode veille », « ▸ À compléter », « ▸ L'auto ▸
+Horaires ») but ones retired three restructures ago (« ▸ Guide », « ▸ Courses »,
+« ▸ Suivi », « ▸ Le cercle »). All re-pointed at the live map, comments included,
+and a guard now holds the layer (`settingsNav.test.ts` « prose breadcrumbs »): every
+crumb in a user-facing string must name a live tab and pill in either language. It
+went red on the sweep's own first draft twice — an EN tab I had named « List »
+instead of « The list », and a crumb that ran into its sentence — which is the
+canary working. One label became a verb: the board edit bar's link now reads
+« Rétablir dans Réglages » rather than spelling a three-line path it already opens.
+
 ---
 
 ## 4. What still needs improvement — consolidated and ranked

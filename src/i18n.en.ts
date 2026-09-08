@@ -321,7 +321,7 @@ export const EN: typeof FR = {
     keep: 'Keep',
     clear: 'Clear the examples',
     clearing: 'Clearing…',
-    clearConfirm: 'Clear the examples and start with your household? You can always reload them in Settings ▸ Guide.',
+    clearConfirm: 'Clear the examples and start with your household? You can always reload them in Settings ▸ Discover.',
     load: 'Load sample data',
     present: 'Sample data present.',
     absent: 'No sample data.',
@@ -670,7 +670,7 @@ export const EN: typeof FR = {
     collapseCard: (card: string) => `Collapse “${card}”`,
     editSizeFull: 'Max',
     editHiddenN: (n: number) => (n === 1 ? '1 hidden card' : `${n} hidden cards`),
-    editRestore: 'Settings ▸ Layout',
+    editRestore: 'Restore in Settings',
     allClearSub: 'Nothing planned today — enjoy it.',
     allClearMoods: {
       morning: 'The morning is yours.',
@@ -762,7 +762,7 @@ export const EN: typeof FR = {
     },
     empty: 'The horizon is clear — the holidays will announce themselves.',
   },
-  // Card names for the board-layout panel (Settings ▸ Display).
+  // Card names for the board-layout panel (Settings ▸ The board ▸ Layout).
   boardCard: {
     notes: 'Notes (fridge)',
     heroes: 'Tonight + weather',
@@ -1724,7 +1724,7 @@ export const EN: typeof FR = {
       uploading: 'Uploading…',
       delete: 'Delete pet',
       detailsHealth: 'Details / health',
-      // Settings ▸ Household: the "our animals" subsection.
+      // Settings ▸ Home ▸ The household: the "our animals" subsection.
       householdTitle: 'Household pets',
       householdHint: 'Your pets appear in the Maisonnée card of the circle.',
       none: 'No pets yet.',
@@ -2127,9 +2127,9 @@ export const EN: typeof FR = {
     castSceneAmbient: 'Ambience — clock & photos',
     castSceneWelcome: 'Welcome — wifi & house rules',
     castSceneHint: {
-      board: 'The full board, read-only. A permanent screen — revocable from Réglages ▸ Tablettes.',
+      board: 'The full board, read-only. A permanent screen — revocable from Settings ▸ System ▸ Devices & access.',
       ambient:
-        'The screensaver: a big clock, date and a slow photo frame. A permanent screen — revocable from Réglages ▸ Tablettes.',
+        'The screensaver: a big clock, date and a slow photo frame. A permanent screen — revocable from Settings ▸ System ▸ Devices & access.',
       welcome: 'The visitor welcome window: wifi, bin day and house rules. A temporary link (24 h).',
     },
     // Label given to a permanent TV (a read-only 'display' device) in the devices list.
@@ -2138,14 +2138,14 @@ export const EN: typeof FR = {
     // The short /tv/<code> link — the one to actually type on a TV remote.
     castShortReady: 'Short link — type it in the TV’s browser (easy on a remote):',
     castShortLink: 'Short TV link',
-    castShortHint: 'Type this once on the TV, then bookmark it. To revoke: Réglages ▸ Tablettes.',
+    castShortHint: 'Type this once on the TV, then bookmark it. To revoke: Settings ▸ System ▸ Devices & access.',
     castFullLink: 'Full link (to copy-paste):',
     castReady: 'TV link ready — open it in the TV’s browser, or cast it from Chrome:',
     castStep1: 'Open this link in Google Chrome on the computer.',
     castStep2: 'Menu ⋮ ▸ Cast… ▸ pick the Chromecast.',
     castStep3: 'Sources ▸ “Cast tab” — the board appears on the TV.',
     castCaveat:
-      'When casting the tab from Chrome, the computer must stay awake; opened directly in the TV’s browser, it needn’t. The board and ambience stay until you revoke them (Réglages ▸ Tablettes); welcome expires after 24 h.',
+      'When casting the tab from Chrome, the computer must stay awake; opened directly in the TV’s browser, it needn’t. The board and ambience stay until you revoke them (Settings ▸ System ▸ Devices & access); welcome expires after 24 h.',
     // Stage 2 — the "Cast now" button (Chrome only) launches the receiver directly.
     castNow: 'Cast now',
     castNowBusy: 'Casting…',
@@ -2304,7 +2304,7 @@ export const EN: typeof FR = {
     schedTitle: 'Schedules',
     schedEmpty: 'No schedules yet. Add work hours so you know when the car is taken.',
     schedAdd: 'Add a schedule',
-    schedNoMembers: 'Add someone to the household first — a schedule belongs to a person. Settings ▸ Maison ▸ Members.',
+    schedNoMembers: 'Add someone to the household first — a schedule belongs to a person. Settings ▸ Home ▸ The household.',
     schedLabel: 'Label (Work, Daycare…)',
     schedFrom: 'From',
     schedTo: 'to',
@@ -2322,7 +2322,7 @@ export const EN: typeof FR = {
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
     cercleGroupHidden: 'Hidden from the directory',
     recipesTab: 'Recipes',
-    // Recipe-tab pills config (migration 0045) — Réglages ▸ Recettes.
+    // Recipe-tab pills config (migration 0045) — Settings ▸ Kitchen ▸ Appearance.
     pillsTitle: 'Recipe pills',
     pillsHint:
       'The filters above your recipes. Drag to reorder, hide the ones you don’t use, or build your own by time, ingredient count, a tag…',
@@ -2481,7 +2481,7 @@ export const EN: typeof FR = {
     // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
     binAnnounceLabel: 'The evening announce (chores)',
     binAnnounceHint: 'A recurring chore checked "Announce the evening before" (in its own editor) announces itself the night before — "it’s bin night". One more calm line — nothing to manage here.',
-    // E-35 — "Take my data" (Settings ▸ System ▸ Diagnostics).
+    // E-35 — "Take my data" (Settings ▸ System ▸ Devices & access).
     takeoutTitle: 'Take my data',
     takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',
     takeoutBtn: 'Download my data (JSON)',
@@ -2508,7 +2508,7 @@ export const EN: typeof FR = {
     aiTestText: 'Text (capture, ideas, recipes)',
     aiTestVision: 'Photo (reading a recipe)',
     aiTestUnavailable: 'AI is not configured on this deployment.',
-    aiTestWhileOff: 'AI is switched off for the household (Réglages ▸ IA). This test still calls the model: it checks the wiring, not the switch.',
+    aiTestWhileOff: 'AI is switched off for the household (Settings ▸ System ▸ Voice & AI). This test still calls the model: it checks the wiring, not the switch.',
     micTestTitle: 'Microphone test',
     micTestHint:
       'The mic fails on some iPhones/iPads with no clear error. Run this on the device that breaks, say “milk, eggs, bread”, then copy the report and send it to us: it says exactly why the mic did or didn’t work.',
@@ -2636,7 +2636,7 @@ export const EN: typeof FR = {
     sending: 'Sending…',
     sentTitle: 'Thank you!',
     sentSub: 'Your note has been sent. The family will see it on their board soon.',
-    // Operator review of received messages (Réglages ▸ Partage).
+    // Operator review of received messages (Settings ▸ System ▸ Devices & access).
     reviewTitle: 'Messages received',
     reviewHint: 'What a relative left in the postbox. Accept to show it on the board, or dismiss it.',
     reviewPending: (n: number) => (n === 1 ? '1 message to see' : `${n} messages to see`),
@@ -2742,7 +2742,7 @@ export const EN: typeof FR = {
     petSpeciesHint: 'Dog, cat, rabbit…',
     addPet: 'Add a pet',
     petFallback: 'New pet',
-    // Operator review of received forms (Settings ▸ Sharing).
+    // Operator review of received forms (Settings ▸ System ▸ Devices & access).
     reviewTitle: 'Forms received',
     reviewHint: 'What a relative sent you. Review, then add to the circle. Tip: afterwards, “Complete families” infers the rest (siblings, in-laws…).',
     reviewNone: 'No forms yet.',
