@@ -22,7 +22,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~148k lines across 853 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 123 forward-only migrations |
-| **Tests** | 1954 unit tests in 152 files · 125 Playwright spec files |
+| **Tests** | 1975 unit tests in 154 files · 126 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -36,7 +36,7 @@
   2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
   CI's E2E job is the standing whole-suite signal)*.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Thirteen build-gating invariants** (this is the codebase's best feature — see §5):
+- **Fourteen build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -60,7 +60,11 @@
   trusting a list)**, and **`chip-rule.test.ts` (added 2026-09-08 — the `.chip` class
   belongs to `Chip.tsx`; a hand-rolled one fails the build, and its detector is itself
   pinned against a fixture carrying the three near-misses that made the first version
-  cry wolf)**. `knip` now runs in CI too.
+  cry wolf)**, and **`settingsNav.test.ts` (added 2026-09-08 — the Réglages taxonomy is
+  well-formed, every legacy fold points at a live pill, and NOTHING in `src/` or `e2e/`
+  spells a retired pill; its e2e twins `settings-tree.spec.ts` / `kiosk-settings.spec.ts`
+  prove the page agrees with the tree, for the operator and for a paired tablet)**.
+  `knip` now runs in CI too.
 
 ---
 
