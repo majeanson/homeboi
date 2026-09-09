@@ -35,17 +35,24 @@ const KB = 1024
 const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: drawpad ~134 KB)
 const EAGER_CHUNKS = [
   // name pattern → its own budget (all three load before first paint)
-  // ⚠ 2026-09-09: this one is at **420.0 KB against a 420 KB cap — 181 bytes of room**.
-  // The « ~386 KB » that stood here was two months stale, which is how it read as
-  // comfortable. It is not: the glossary mark (a Réglages-only component) went over the
-  // line on its own, and the fix was to lazy-load it, not to raise the number.
-  // THE NEXT THING ADDED TO THE EAGER PATH WILL FAIL THIS. That is the budget working —
-  // reach for `lazy()` first, and only re-base if boot genuinely needs the code.
-  { re: /^index-/, cap: 420 * KB, label: 'eager entry' }, // today 420.0 KB — see above
+  // 2026-09-09, and the whole story is worth keeping because it happened in one hour.
+  // The « ~386 KB » that stood here was two months stale, so a chunk sitting at 420.0 KB
+  // against a 420 KB cap — 181 bytes — read as comfortable. It wasn't: the glossary mark,
+  // a Réglages-only component, went over the line on its own.
+  //
+  // Then the eager graph was actually WALKED instead of guessed at, and « Mois » and
+  // « Année » turned out to be statically imported by the board even though both sit
+  // behind a view switch the board does not open on. Making the two lazy took the entry
+  // chunk 430 KB → **340 KB**: 82 KB, four times the two files' own weight, because they
+  // dragged the whole month/year helper set with them.
+  //
+  // Ratcheted here, in the same commit that earned it: **365 KB** (~25 KB of room).
+  // The rule is unchanged — reach for `lazy()` before you reach for a bigger number.
+  { re: /^index-/, cap: 365 * KB, label: 'eager entry' }, // today ~340 KB
   { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
   { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' }, // today ~101 KB
 ]
-const EAGER_TOTAL_BUDGET = 760 * KB // combined index + react-vendor + i18n (today ~718 KB)
+const EAGER_TOTAL_BUDGET = 700 * KB // combined index + react-vendor + i18n (today ~677 KB, ratcheted 760 → 700 by the Mois/Année lazy pass, 2026-09-09)
 // fix(ci): re-based a SECOND time, for the same reason as the first — the number
 // moved because the accounting boundary moved, not because boot got heavier.
 // Retiring « Moments » deleted three lazy routes (MomentScene/MomentsView/MomentPeek),

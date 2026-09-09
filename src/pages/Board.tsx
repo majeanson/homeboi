@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
 import { liveInterval } from '../lib/query'
 import { settingsHref } from '../lib/settingsNav'
@@ -57,8 +57,12 @@ import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { Skeleton } from '../components/Skeleton'
 import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
-import { MonthView } from '../components/board/MonthView'
-import { YearView } from '../components/board/YearView'
+// « Mois » and « Année » are BEHIND A VIEW SWITCH — the board opens on its widget
+// grid, so neither calendar is on the first-paint path, and together they were ~65 KB
+// of the eager entry chunk. Lazy, with the same Skeleton the board already shows while
+// its own data lands, so the swap reads as loading rather than as a blank frame.
+const MonthView = lazy(() => import('../components/board/MonthView').then((m) => ({ default: m.MonthView })))
+const YearView = lazy(() => import('../components/board/YearView').then((m) => ({ default: m.YearView })))
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { SimpleBoard } from '../components/board/SimpleBoard'
@@ -1759,19 +1763,23 @@ export function Board() {
           <Skeleton variant="card" count={6} />
         </>
       ) : view === 'month' ? (
-        <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        <Suspense fallback={<Skeleton variant="card" count={6} />}>
+          <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        </Suspense>
       ) : view === 'annee' ? (
-        <YearView
-          lang={lang}
-          t={t}
-          todayDay={todayDay}
-          onOpenMonth={(monthStart) => {
-            // Drill into Mois ON that month WITHOUT persisting the view — the
-            // année stays this device's chosen glance across reloads.
-            setMonthDate(monthStart)
-            setView('month')
-          }}
-        />
+        <Suspense fallback={<Skeleton variant="card" count={6} />}>
+          <YearView
+            lang={lang}
+            t={t}
+            todayDay={todayDay}
+            onOpenMonth={(monthStart) => {
+              // Drill into Mois ON that month WITHOUT persisting the view — the
+              // année stays this device's chosen glance across reloads.
+              setMonthDate(monthStart)
+              setView('month')
+            }}
+          />
+        </Suspense>
       ) : (
         <>
           {/* The edit-mode bar. ✕ removes a card from THIS device only, so the way back is
