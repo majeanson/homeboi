@@ -182,14 +182,36 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
       moment it is declared — and generalising it immediately caught a SECOND spec, still
       pinning « En enlever un », which day 2 would have shipped red into CI.
 
-### Day 4 — One mechanism per act
-- [ ] Fold `useUndoableRemove`'s **6** sites into `useDeferredRemoval`; delete
-      `lib/undoRemove.ts`; `knip` confirms. Read `agenda.tsx:49-57`'s own argument first —
-      if a site is genuinely safe, that becomes a `[~]` with its why, not a silent drop.
-- [ ] Business deletes the same way from the peek and from the form (deferred vs confirm today).
-- [ ] Guard: no file may pair an optimistic cache splice with an undo toast. **Red on
-      today's tree before the fold** — that is the strongest proof available.
-- [ ] `ACTIONS.md` Part 1 gains the mechanism table (it documents 4 of 5).
+### Day 4 — One mechanism per act · ✅ shipped
+- [x] **Five delete mechanisms are four.** `lib/undoRemove.ts` is deleted and its **5**
+      call sites (`operator/chores`, `operator/devices`, `operator/homeProjects`,
+      `operator/media`, `board/SeasonUpkeepCard`) now hold their deletes with
+      `useDeferredRemoval` — pending set, and no un-hide until a genuinely FRESH frame.
+      Two of them sat on `HOME_PROJECTS_KEY`, which the board polls: exactly the
+      resurrection shape this repo has fixed twice. Each site also gained the `visible()`
+      wiring, which is the half that actually hides the row.
+- [x] **It was 5 sites, not the 6 I "corrected" the audit to.** My regex matched
+      `useUndoableRemove (` inside a COMMENT in `agenda.tsx` — the very file that
+      documents why it does NOT use it. The audit's 5 was right; my correction was the
+      same class of error as everything else this week.
+- [x] Guard `src/lib/undoTier.test.ts`, **red on the pre-fold tree** (git stash, run,
+      restore) and green after. It bans the retired hook by name AND holds the raw
+      undo-toast hook to a short allow-list, each entry saying what it undoes.
+- [x] Its first draft flagged three innocents (`ReserveSection`, `drawingGallery`,
+      `DayPlanPage`) — every one using `useWrite`'s sanctioned `optimistic` callback for
+      an EDIT, not a removal — and four "unknown" keys that are legitimate PAGE-LOCAL
+      keys per CLAUDE.md. Narrowed before trusting.
+- [x] `ACTIONS.md` door 14 rewritten: four tiers, the fold recorded, and the rule that
+      decides which tier a door takes.
+
+### Day 4's verdict on Business — parked, and it reverses the plan
+- [~] **Business's two delete tiers are CORRECT, not drift.** The plan said "one entity,
+      one tier". The layer scale says otherwise: `.undo-toast` is z-index **40** on
+      purpose (a lingering bottom pill), a sheet is **156**, a scene 50–150 — so an undo
+      offered from inside a sheet is unreachable, which is why cook mode uses a toggle.
+      `BusinessForm` lives in a Modal, so its delete must **confirm**; the row peek is at
+      page level, so it can be **deferred**. The tier follows the SURFACE. Recorded in
+      `ACTIONS.md` door 14 so the next pass doesn't "fix" it.
 
 ### Day 5 — A door where the thing is seen
 - [ ] Corvée, projet maison, routine, habitude, à-compléter gain edit + delete where they

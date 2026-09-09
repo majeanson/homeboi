@@ -4,7 +4,7 @@ import { useWrite, type WriteResult } from './write'
 import { useRecordUndo } from './toast'
 import { recordTmpId } from './tmpIds'
 
-// The create-side companion to useUndoableRemove / useDeferredRemoval: POST a new
+// The create-side companion to useDeferredRemoval: POST a new
 // row, then offer a COMPENSATING undo that DELETEs exactly that row. The subtle bit
 // — easy to get wrong by hand, and re-spelled at ~9 call sites — is that the server
 // id only exists on a real, non-queued response:

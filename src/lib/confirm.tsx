@@ -7,7 +7,7 @@ import { Icon } from '../components/Icon'
 // unstyled, blocks the JS thread, invisible to e2e) for the few HEAVY deletes
 // that warrant a deliberate yes/no rather than the forgiving undo toast: losing
 // a whole recipe, a household member (cascades to their routines), or a tag
-// across every recipe. Light deletes still use the undo toast (useUndoableRemove).
+// across every recipe. Light deletes still use the undo toast (useDeferredRemoval).
 //
 // Promise-based so a caller reads naturally:
 //   const confirm = useConfirm()

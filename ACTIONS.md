@@ -49,7 +49,26 @@ five spellings of delete).
 | 11 | **Réglages sub** — the admin/SR-grade mirror, `SUB_GOTO` linking back | `pages/Operator.tsx`, `lib/settingsNav.ts` |
 | 12 | **Deep link** — `?edit= ?item= ?add= ?plus= ?tab/sub/lens/card/point/focus` | `DISCOVERY.md` owns the grammar |
 | 13 | **⚙ Simple ↔ Avancé face** — the default face reads/does (row = content + one action); Avancé restores the managing furniture. **This toggle IS the non-touch door** for a surface whose simple face relies on a gesture | **`ModeToggle`** + a `createDeviceStore` flag (`lib/listeMode.ts`, `lib/surfaceMode.ts` factory) — Les notes DROPPED this door (2026-09-04): tap-to-edit + a "..." menu on every row made the split redundant, see the Les notes section below | `components/ModeToggle.tsx` |
-| 14 | **Undo tier** (every destructive door declares one): **deferred** `useDeferredRemoval` (live-polled lists) · **compensating** `recordUndo`/`useCreateWithUndo` (must-show-instantly) · **confirm** `useConfirm` (heavy: series, cascades, freed R2 blobs) · **none** (needs a recorded ➖) | `lib/useDeferredRemoval.ts`, `lib/toast.tsx`, `lib/confirm.tsx` |
+| 14 | **Undo tier** (every destructive door declares one): **deferred** `useDeferredRemoval` (any list a poll can refill) · **compensating** `recordUndo`/`useCreateWithUndo` (must-show-instantly) · **confirm** `useConfirm` (heavy: series, cascades, freed R2 blobs — **and anything raised from inside a sheet or scene**, see below) · **none** (needs a recorded ➖) | `lib/useDeferredRemoval.ts`, `lib/toast.tsx`, `lib/confirm.tsx` |
+
+> **FOUR tiers, and only one way to hold a delete** (2026-09-09, UNIFY.md day 4). There
+> used to be a fifth mechanism nobody had written down: `lib/undoRemove.ts`
+> (`useUndoableRemove`), which spliced the row out of the QUERY CACHE optimistically
+> instead of holding a pending set. On a polled key the next poll refills the cache and
+> the row flashes back mid-undo — the resurrection class fixed twice already
+> (`STATE.md` C-quater / C-sexies) — and two of its five sites sat on
+> `HOME_PROJECTS_KEY`, which the board polls. All five moved to `useDeferredRemoval`
+> and the file is deleted. `src/lib/undoTier.test.ts` keeps it gone: the raw undo-toast
+> hook has a short allow-list, each entry saying what it undoes.
+>
+> **Which tier a door takes is decided by the SURFACE, not by the entity** — the thing
+> day 4 set out to "unify" before reading the layer scale. `.undo-toast` lives at
+> z-index **40** deliberately ("a bottom pill that lingers"), while a sheet is **156**
+> and a scene 50–150: *an undo offered from inside a sheet or a full-screen scene is
+> literally unreachable.* So the same entity legitimately has two tiers — a business
+> deletes **deferred** from its row peek (page level) and **confirm** from its edit form
+> (inside a Modal). Cook mode's « Il en manque » toggle is the same rule, recorded
+> earlier. Do not "unify" these; the alternative is an undo nobody can tap.
 
 **Non-touch column below** = the desktop-reachability verdict for the whole
 row: every one of its actions is reachable by mouse + keyboard (✅), only via a

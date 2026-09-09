@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { useUndoableRemove } from '../../lib/undoRemove'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import { currentSeason, SEASON_EMOJI, seasonUpkeepItems } from '../../lib/season'
 import { formatDayMaybeYear } from '../../lib/format'
@@ -27,41 +27,35 @@ export function SeasonUpkeepCard() {
   const nav = useNavigate()
   const qc = useQueryClient()
   const write = useWrite()
-  const undoableRemove = useUndoableRemove()
+  const removal = useDeferredRemoval(HOME_PROJECTS_KEY)
   const { data } = useQuery({
     queryKey: HOME_PROJECTS_KEY,
     queryFn: () => api<{ projects: HomeProject[] }>('home-projects'),
     staleTime: 5 * 60_000,
   })
   const s = currentSeason()
-  const items = seasonUpkeepItems(data?.projects ?? [])
+  const items = removal.visible(seasonUpkeepItems(data?.projects ?? []))
   const empty = items.length === 0
   useReportEmpty(empty)
   if (empty) return null
 
-  // Check = the board's markHomeDone semantics, via the Réglages undo pattern:
-  // the row leaves the cached list at once, the toast holds the PATCH, undo
-  // restores with zero round-trips; the refetch then re-derives nextAt/overdue.
+  // Check = the board's markHomeDone semantics, through the ONE deferred-removal
+  // mechanism: the row hides on every surface in this scope at once, the toast holds
+  // the PATCH, and the un-hide waits for a genuinely FRESH frame. That last part is
+  // why this site had to move — HOME_PROJECTS_KEY is polled, and the optimistic cache
+  // splice it used before could be refilled by the next poll mid-undo, flashing the
+  // row back (the resurrection class this repo has already fixed twice).
   const markDone = (p: HomeProject) =>
-    undoableRemove({
-      queryKey: HOME_PROJECTS_KEY,
-      listProp: 'projects',
-      id: p.id,
-      label: p.title,
-      message: t.undo.choreDone(p.title),
+    removal.remove([p.id], t.undo.choreDone(p.title), async () => {
       // The full HomeProjectForm list: the stamped last_done_at re-derives nextAt,
       // which the month grid and a carnet's rows display too — BOARD alone left
       // them stale until their next poll (invalidation-drift class, 2026-09-03).
-      commit: () =>
-        write('home-projects', {
-          method: 'PATCH',
-          body: { id: p.id },
-          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-        }),
-      after: () => {
-        void qc.refetchQueries({ queryKey: HOME_PROJECTS_KEY })
-        void qc.refetchQueries({ queryKey: BOARD_KEY })
-      },
+      await write('home-projects', {
+        method: 'PATCH',
+        body: { id: p.id },
+        affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+      })
+      void qc.refetchQueries({ queryKey: BOARD_KEY })
     })
 
   return (

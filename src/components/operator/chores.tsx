@@ -4,7 +4,6 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
-import { useUndoableRemove } from '../../lib/undoRemove'
 import { useRecordUndo } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
@@ -106,20 +105,18 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
 export function RoutinesSection({ routines, onChange }: { routines: Routine[]; onChange: () => void }) {
   const t = useT()
   const { open } = useAddSheet()
-  const undoableRemove = useUndoableRemove()
+  const removal = useDeferredRemoval(ROUTINES_KEY)
   const recordUndo = useRecordUndo()
   const write = useWrite()
   const navigate = useNavigate()
   // Read-only guest: hide the ToD cycle chip (a write) + the add-routine button.
   const ro = isGuest()
   function remove(r: Routine) {
-    undoableRemove({
-      queryKey: ROUTINES_KEY,
-      listProp: 'routines',
-      id: r.id,
-      label: r.name,
-      commit: () => write('routines', { method: 'DELETE', body: { id: r.id }, affectedKeys: [ROUTINES_KEY] }),
-      after: onChange,
+    // No .catch: a rejected delete must un-hide the row (useDeferredRemoval reads the
+    // rejection to tell "gone, refetch failed" from "the delete failed").
+    removal.remove([r.id], t.undo.cleared(r.name), async () => {
+      await write('routines', { method: 'DELETE', body: { id: r.id }, affectedKeys: [ROUTINES_KEY] })
+      onChange()
     })
   }
   // Cycle the moment cue: anytime → matin → après-midi → soir → anytime.
@@ -156,7 +153,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
     <OperatorSection title={t.operator.routines} helpKey="routines">
       {routines.length === 0 && <EmptyState>{t.operator.noRoutines}</EmptyState>}
       <ul className="operator__list">
-        {routines.map((r) => {
+        {removal.visible(routines).map((r) => {
           // The moment-of-day cue's inner label — one definition, rendered either as
           // an inert guest badge or the operator's tap-to-cycle button below.
           const todText = isRoutineTod(r.timeOfDay) ? t.routines.tod[r.timeOfDay] : t.routines.tod.any

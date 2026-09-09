@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test'
 import { mockApi, seedState, ROUTES } from './mocks'
 
 // REVIEW-PASS: deleting an event or a chore in Réglages hid the row by mutating the
-// query cache (`useUndoableRemove` → `setQueryData`). That is safe only while nothing
+// query cache (`useUndoableRemove` → `setQueryData`; that hook was FOLDED into
+// useDeferredRemoval and deleted on 2026-09-09 — UNIFY.md day 4 — so this paragraph is
+// history, not a live alternative). That was safe only while nothing
 // refills the key inside the undo window — and things do: a RealtimeHub `invalidate`
 // from another device refetches an ACTIVE query whether or not it polls, and simply
 // leaving the sub and coming back re-runs it. The server frame legitimately still

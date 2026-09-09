@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { useUndoableRemove } from '../../lib/undoRemove'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useAuth } from '../../lib/auth'
 import { isGuest } from '../../lib/device'
 import { type HelpMode } from '../../lib/helpMode'
@@ -77,9 +77,11 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
     queryKey: HOME_PROJECTS_KEY,
     queryFn: () => api<{ projects: HomeProject[] }>('home-projects'),
   })
-  const undoableRemove = useUndoableRemove()
+  const removal = useDeferredRemoval(HOME_PROJECTS_KEY)
   const write = useWrite()
-  const rows = (projectsQ.data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === kind)
+  // `visible` drops the rows still settling behind the undo toast — the half that makes
+  // the deferred hook work on a key the board also polls.
+  const rows = removal.visible((projectsQ.data?.projects ?? []).filter((p) => (p.kind ?? 'plan') === kind))
   // A-4 (bmad/09): the FR-CA season-ritual SEEDS (lib/year). Offered here —
   // inside the normal Entretien section — and accepting one just POSTs a
   // normal upkeep row (recurrence + week-scale lead + carnet link), so it
@@ -124,14 +126,15 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
   const emptyLabel = kind === 'upkeep' ? t.operator.home.emptyEntretien : t.operator.home.emptyProjets
 
   function remove(p: HomeProject) {
-    undoableRemove({
-      queryKey: HOME_PROJECTS_KEY,
-      listProp: 'projects',
-      id: p.id,
-      label: p.title,
-      commit: () => write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY] }),
-      after: () => {},
-    })
+    // No .catch: a rejected delete must un-hide the row rather than leave the list
+    // claiming the project is gone.
+    removal.remove([p.id], t.undo.cleared(p.title), () =>
+      write('home-projects', {
+        method: 'DELETE',
+        body: { id: p.id },
+        affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY],
+      }),
+    )
   }
 
   return (

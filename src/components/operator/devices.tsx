@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
-import { useUndoableRemove } from '../../lib/undoRemove'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { DEVICES_KEY } from '../../lib/queryKeys'
 import { InlineIcon } from '../Icon'
@@ -81,19 +81,20 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
 
 export function DevicesSection({ devices, onChange }: { devices: Device[]; onChange: () => void }) {
   const t = useT()
-  const undoableRemove = useUndoableRemove()
-  const active = devices.filter((d) => !d.revoked_at)
+  const removal = useDeferredRemoval(DEVICES_KEY)
+  // `visible` is the half that makes the deferred hook work: it drops the rows whose
+  // removal is still settling, on every surface in this scope, until a FRESH frame
+  // proves the write landed. Without it the row would sit there until the next fetch.
+  const active = removal.visible(devices.filter((d) => !d.revoked_at))
   // A mis-tapped revoke forces someone to re-pair the wall tablet — defer it
   // behind the undo toast like the other destructive rows. (Revoke IS the
   // device's delete; the trash glyph reads the same as everywhere.)
   function revoke(d: Device) {
-    undoableRemove({
-      queryKey: DEVICES_KEY,
-      listProp: 'devices',
-      id: d.id,
-      label: d.label,
-      commit: () => api('pair/devices', { method: 'POST', body: { revokeId: d.id } }),
-      after: onChange,
+    // No .catch: the hook must SEE a rejection — a failed revoke has to un-hide the
+    // row rather than leave the list claiming a device is gone when it isn't.
+    removal.remove([d.id], t.undo.cleared(d.label), async () => {
+      await api('pair/devices', { method: 'POST', body: { revokeId: d.id } })
+      onChange()
     })
   }
   return (

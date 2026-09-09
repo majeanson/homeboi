@@ -46,7 +46,7 @@ export function EventsSection({
   const ro = isGuest()
   const [editing, setEditing] = useState<EventRow | null>(null)
 
-  // useDeferredRemoval, NOT useUndoableRemove (REVIEW-PASS, 2026-08-28). The latter
+  // useDeferredRemoval — and since 2026-09-09 there is no other choice (REVIEW-PASS, 2026-08-28). The latter
   // hides the row by mutating the cache (`setQueryData`), which is fine while the only
   // reader is this Réglages list — its queries are not `live`. But `DayPlanPage` reads
   // EVENTS_KEY with `...live` (staleTime 0, ~10 s poll), so a poll or a RealtimeHub

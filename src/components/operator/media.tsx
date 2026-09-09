@@ -5,7 +5,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useAi } from '../../lib/ai'
-import { useUndoableRemove } from '../../lib/undoRemove'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useWrite } from '../../lib/write'
 import { imgUrl } from '../../lib/image'
 import { uploadMedia, MediaUnavailableError } from '../../lib/uploadMedia'
@@ -57,8 +57,9 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const qc = useQueryClient()
   const { data, isPending } = usePhotos()
-  const photos = data?.photos ?? []
-  const undoableRemove = useUndoableRemove()
+  const removal = useDeferredRemoval(PHOTOS_KEY)
+  // The rows still settling drop out here — see the note on `remove` below.
+  const photos = removal.visible(data?.photos ?? [])
   const write = useWrite()
   // Read-only guest: photos are viewable, but no delete-per-tile and no upload.
   const ro = isGuest()
@@ -95,18 +96,13 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
   // a mis-tap costs nothing and needs no re-upload. (The hook snapshots just this
   // row, so two quick deletes stacking in one window can't resurrect each other.)
   function remove(id: string) {
-    undoableRemove({
-      queryKey: PHOTOS_KEY,
-      listProp: 'photos',
-      id,
-      label: '', // a photo has no name — use the dedicated copy instead
-      message: t.undo.photoRemoved,
+    removal.remove([id], t.undo.photoRemoved, async () => {
       // Through `useWrite`, not `api()`: a delete confirmed on a tablet that has
       // just lost its uplink is queued and replayed on reconnect instead of
       // throwing (the tile is already gone from the grid by then, so a silent
       // throw left the photo back on the next poll).
-      commit: () => write('photos', { method: 'DELETE', body: { id }, affectedKeys: [PHOTOS_KEY] }),
-      after: () => qc.invalidateQueries({ queryKey: PHOTOS_KEY }),
+      await write('photos', { method: 'DELETE', body: { id }, affectedKeys: [PHOTOS_KEY] })
+      qc.invalidateQueries({ queryKey: PHOTOS_KEY })
     })
   }
 
