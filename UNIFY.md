@@ -91,7 +91,7 @@ scanners above; these are exact.)*
 | --- | --- | --- | --- |
 | `fr:Enlever` | **0** ✅ | 0 | was a habit counter's « En enlever un » |
 | `fr:Événement` | **0** ✅ | 0 | search + capture; « rendez-vous » is the entity |
-| `fr:Tâche` | 2 | 0 | day 4 — and NOT the « Tâches de la maison » pill, which is a container name |
+| `fr:Tâche` | **1** ✅ | 1 (floor) | spent 2 → 1 on 2026-09-09. The survivor is « Tâches de la maison », a Réglages pill stacking routines · corvées · modèles de liste — a container over THREE entity types, verified against `SETTINGS_TREE`. Its target was written « 0 », which it must never reach; corrected to a floor |
 | `fr:effacer` | 14 | 14 (floor) | all legitimate: prose, DrawPad ink, the field ✕, typed dates |
 | `fr:le cercle` | 6 | 6 (floor) | it names the PEOPLE — see the correction below |
 | `en:the circle` | 16 | 16 (floor) | same, and every one reads « …in the circle », not a tab |

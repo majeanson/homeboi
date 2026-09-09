@@ -2304,7 +2304,10 @@ export const FR = {
       addEntretien: 'Ajouter un entretien',
       // A-4 (bmad/09) — les rituels de saison offerts (pneus, gouttières, abris).
       seedsTitle: 'Idées de saison',
-      seedsHint: 'Les grands rituels d’ici, prêts à ajouter — un toucher les met dans l’Entretien, comme n’importe quelle tâche. Le ✕ les cache pour de bon.',
+      // « comme n'importe quelle tâche » disait le mot d'une AUTRE chose : la section
+      // ajoute des entretiens, et « tâche » est la forme perdante de « corvée ». Dit
+      // sans répéter « entretien » deux fois dans la même phrase (UNIFY, 2026-09-09).
+      seedsHint: 'Les grands rituels d’ici, prêts à ajouter — un toucher les met dans l’Entretien, comme si tu l’avais inscrit toi-même. Le ✕ les cache pour de bon.',
       seedDismiss: 'Cacher cette idée',
       editProjet: 'Modifier le projet',
       deleteProjet: 'Supprimer le projet',

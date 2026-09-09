@@ -106,7 +106,14 @@ const occurrences = (haystack: string[], form: string) => {
 // a floor rather than to zero. Day 2 of UNIFY.md spends these down.
 const RIVAL_CEILING: Record<string, number> = {
   'fr:Enlever': 0,
-  'fr:Tâche': 2,
+  // Spent 2 → 1 on 2026-09-09. The one left is « Tâches de la maison », a Réglages pill
+  // stacking THREE different entity types (routines · corvées · modèles de liste), so it
+  // is a container name rather than a second word for corvée — checked against
+  // `SETTINGS_TREE`, not assumed. It is a FLOOR, not a target: writing « target 0 » for
+  // a line that must never reach 0 is how a ratchet comes to look permanently unfinished
+  // and stops being read. The one spent was prose in the Entretien section calling an
+  // entretien « n'importe quelle tâche ».
+  'fr:Tâche': 1,
   'fr:Événement': 0,
   // Pinned at 0 on the day it was swept (2026-09-09), not at its old 17: Marc settled
   // « rendez-vous » → Appointment, and the EN copy was fixed in the same commit that
@@ -227,6 +234,63 @@ describe('glossary — the ratchets (they only go down)', () => {
     const en = enValues.filter((v) => /the circle/i.test(v)).length
     expect(fr, 'FR « le cercle » may not grow past its 6 naming uses').toBeLessThanOrEqual(6)
     expect(en, 'EN "the circle" may not grow past its 16 naming uses').toBeLessThanOrEqual(16)
+  })
+
+  // A KEY NAMED AFTER A CONCEPT MUST NOT WEAR ANOTHER CONCEPT'S WORD.
+  //
+  // From a real miss found on 2026-09-09, one day after the EN sweep that was supposed to
+  // end it: `boardCard.mots` — the board-layout name for the « mots » card — still read
+  // 'Notes' in English, so Réglages ▸ Le babillard ▸ Disposition listed « Notes (fridge) »
+  // and « Notes » one under the other. The sweep had fixed the whole `mots.*` block and
+  // never looked here, because a card's NAME lives with the layout panel rather than with
+  // the feature it names.
+  //
+  // Narrow on purpose: it only checks entries whose KEY is exactly a term's frozen code
+  // id — those are the ones that unambiguously name that concept — and only fails when
+  // the value is exactly a DIFFERENT term's winning word. It does not try to police
+  // prose, which is the line every guard in this file is careful not to cross.
+  it('a key named after a concept does not wear a rival concept’s word', () => {
+    // Compare on the BARE word: lowercased, article dropped, plural dropped. The first
+    // draft compared exact strings and was green over the very defect it was written for
+    // — the term is « Note » and the bad label read « Notes ». A guard that cannot be
+    // made red by its own bug is a decoration, which is why every one of these gets
+    // planted before it is trusted.
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/^(the|les|le|la|l’|l')\s*/, '')
+        .replace(/s$/, '')
+        .trim()
+    const enWord = new Map(GLOSSARY.map((t) => [norm(t.en), t.id]))
+    const frWord = new Map(GLOSSARY.map((t) => [norm(t.fr), t.id]))
+    const byCodeId = new Map<string, string>()
+    for (const t of GLOSSARY) for (const id of t.codeIds ?? []) byCodeId.set(id, t.id)
+
+    // Keys that legitimately wear another concept's word, with the reason. `cercle` is
+    // the frozen code id of « maison » (the tab was renamed; ids never move), and ALSO
+    // the name of a live concept — the PEOPLE. `i18n.ts` says so in its own comment above
+    // the line: the frozen `/cercle/*` scenes still head themselves with that word.
+    const ALLOWED_KEY: Record<string, string> = {
+      cercle: 'maison’s frozen id, but the label names the cercle CONCEPT — the /cercle/* scenes still use it (see the comment above nav in i18n.ts)',
+    }
+
+    const wrong: string[] = []
+    const walk = (node: unknown, key: string, lang: 'fr' | 'en') => {
+      if (typeof node === 'string') {
+        const owner = byCodeId.get(key)
+        if (!owner || ALLOWED_KEY[key]) return
+        const claimed = (lang === 'en' ? enWord : frWord).get(norm(node))
+        if (claimed && claimed !== owner) {
+          wrong.push(`${lang}: \`${key}\` names « ${owner} » but reads "${node}", which is « ${claimed} »'s word`)
+        }
+        return
+      }
+      if (node && typeof node === 'object')
+        for (const [k, v] of Object.entries(node as Record<string, unknown>)) walk(v, k, lang)
+    }
+    walk(FR, '', 'fr')
+    walk(EN, '', 'en')
+    expect(wrong, 'give the key its own concept’s word — two concepts sharing one label is the bug this week existed to end').toEqual([])
   })
 
   it('no e2e spec pins a word that is on its way out', () => {

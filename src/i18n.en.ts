@@ -768,7 +768,11 @@ export const EN: typeof FR = {
   boardCard: {
     notes: 'Notes (fridge)',
     heroes: 'Tonight + weather',
-    mots: 'Notes',
+    // Was 'Notes', which put « Notes (fridge) » and « Notes » next to each other in the
+    // same list — the exact EN collapse the `mot` → Message decision exists to end. The
+    // 2026-09-09 sweep fixed the `mots.*` block and missed this one, because a board-card
+    // NAME lives here rather than with the feature it names.
+    mots: 'Messages',
     aRegler: 'To settle',
     autoCard: 'The car',
     today: 'Today',
