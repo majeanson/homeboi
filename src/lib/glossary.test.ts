@@ -293,6 +293,51 @@ describe('glossary — the ratchets (they only go down)', () => {
     expect(wrong, 'give the key its own concept’s word — two concepts sharing one label is the bug this week existed to end').toEqual([])
   })
 
+  // THE ENGLISH COPY DOES NOT CARRY THE FRENCH WORD FOR A TERM THAT HAS AN ENGLISH ONE.
+  //
+  // The rival ratchets above hunt a losing word inside ONE language. This is the other
+  // leak, and nothing was watching it: an EN string keeping the French word for a concept
+  // that has a perfectly good English one. Found 2026-09-09 by scanning for it — four
+  // real hits, no false positives:
+  //
+  //   • « book a rendez-vous » (businesses) — the very word settled that morning;
+  //   • « the Maisonnée card » (pets) — the ONLY « Maisonnée » in 2 840 EN values, while
+  //     every other one says Household;
+  //   • « Full profile in Maison ▸ Family » and « make one in Maison ▸ Family » — worse
+  //     than a translation slip: the EN tab bar says **Home**, so those two breadcrumbs
+  //     pointed an English reader at a tab that does not exist under that name.
+  //
+  // Only terms whose FR and EN words actually differ are checked, so « Babillard » (the
+  // product name, same in both) and any term we deliberately left untranslated cannot
+  // trip it. Plural-tolerant, letter-bounded — the same matcher the rivals use.
+  it('the English copy does not keep a term’s French word', () => {
+    const translated = GLOSSARY.filter((t) => t.fr.toLowerCase() !== t.en.toLowerCase())
+    const leaks: string[] = []
+    const walk = (node: unknown, path: string) => {
+      if (typeof node === 'string') {
+        for (const t of translated) {
+          if (new RegExp(`(?<!\\p{L})${escape(t.fr)}s?(?!\\p{L})`, 'iu').test(node)) {
+            leaks.push(`${path}: « ${t.fr} » should read "${t.en}" — "${node.slice(0, 70)}"`)
+          }
+        }
+        return
+      }
+      if (typeof node === 'function') {
+        try {
+          const r = (node as (...a: unknown[]) => unknown)('Machin', 2, 'Truc')
+          if (typeof r === 'string') walk(r, path)
+        } catch {
+          /* shape we can't fake */
+        }
+        return
+      }
+      if (node && typeof node === 'object')
+        for (const [k, v] of Object.entries(node as Record<string, unknown>)) walk(v, path ? `${path}.${k}` : k)
+    }
+    walk(EN, '')
+    expect(leaks, 'translate it — the EN reader never sees the French word for a concept the app names in English').toEqual([])
+  })
+
   it('no e2e spec pins a word that is on its way out', () => {
     // Decoupled E2E is why this matters: such a spec goes red AFTER the deploy.
     //

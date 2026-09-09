@@ -1676,7 +1676,7 @@ export const EN: typeof FR = {
     business: {
       title: 'Business',
       servicedCarnets: 'Serviced',
-      addHint: 'Your businesses and services — to reach them fast, keep notes, and book a rendez-vous',
+      addHint: 'Your businesses and services — to reach them fast, keep notes, and book an appointment',
       add: 'Add a business',
       edit: 'Edit business',
       empty: 'No businesses yet. Add the vet, the plumber, the clinic…',
@@ -1732,7 +1732,7 @@ export const EN: typeof FR = {
       detailsHealth: 'Details / health',
       // Settings ▸ Home ▸ The household: the "our animals" subsection.
       householdTitle: 'Household pets',
-      householdHint: 'Your pets appear in the Maisonnée card of the circle.',
+      householdHint: 'Your pets appear in the Household card of the circle.',
       none: 'No pets. Add one with ＋ — it gets its card, its care and its birthday.',
     },
     familyNotes: {
@@ -1995,7 +1995,7 @@ export const EN: typeof FR = {
     addRoutine: 'Create a routine',
     routineName: 'Routine name',
     editMember: 'Edit person',
-    detailInCercle: 'Full profile in Maison ▸ Family',
+    detailInCercle: 'Full profile in Home ▸ Family',
     detailInCercleHint: 'Contact info, birthday, gender and family links live there.',
     deleteMember: 'Remove person',
     deleteMemberConfirm: (name: string) =>
@@ -2324,7 +2324,7 @@ export const EN: typeof FR = {
     schedEveryNWeeks: (n: number) => `Every ${n} weeks`,
     schedEveryNWeeksShort: (n: number) => `every ${n} wks`,
     cercleGroupsTitle: 'Circle groups',
-    cercleGroupsEmpty: 'No groups. A group is “The cousins” or “The soccer team” — make one in Maison ▸ Family with ＋.',
+    cercleGroupsEmpty: 'No groups. A group is “The cousins” or “The soccer team” — make one in Home ▸ Family with ＋.',
     cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`,
     cercleGroupHidden: 'Hidden from the directory',
     recipesTab: 'Recipes',

@@ -69,6 +69,21 @@ five spellings of delete).
 > deletes **deferred** from its row peek (page level) and **confirm** from its edit form
 > (inside a Modal). Cook mode's « Il en manque » toggle is the same rule, recorded
 > earlier. Do not "unify" these; the alternative is an undo nobody can tap.
+>
+> **Audited app-wide 2026-09-09 and the law holds everywhere** — it is not a Business
+> one-off. Every delete site was read: **routine** defers from its Réglages row and
+> confirms from `RoutineFormPage` (a scene); **habitude** confirms from `HabitForm`,
+> which only ever renders inside `HabitFormPage`; **corvée**, **projet maison** and the
+> carnet's upkeep rows defer everywhere, because every one of their doors is at page
+> level. All 27 `useDeferredRemoval` sites wire both halves (`remove` **and**
+> `visible`/`isPending`) — a `remove` without the filter leaves the row on screen until
+> the next poll.
+>
+> **No grep guards this**, deliberately. Whether a `remove()` is raised from inside a
+> modal is not something a scanner can see: `BusinessesTab` correctly holds BOTH — the
+> page-level rows defer, its Modal's delete confirms — so any file-level rule would
+> either flag it wrongly or pass everything. That is the `nested-interactive` failure
+> mode, and a confidently-wrong guard is worse here than the checklist.
 
 **Non-touch column below** = the desktop-reachability verdict for the whole
 row: every one of its actions is reachable by mouse + keyboard (✅), only via a
