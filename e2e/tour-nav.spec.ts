@@ -78,16 +78,67 @@ test('the Maison first-visit card offers its own tour, spotlighting the sub-tabs
   await expect(page.locator('.tour__ring')).toBeVisible()
 })
 
-test('the Les notes first-visit card has no tour to offer', async ({ page }) => {
+// Les notes was the ONE hub tab with no tour — this test used to pin that absence
+// ("no tour to offer"), which is exactly the asymmetry reported on 2026-09-09: the
+// guided tour looked like a board feature. It has its own tour now, so the same test
+// pins the opposite, and the intro card offers it like every other section's does.
+test('the Les notes first-visit card offers its own tour, like every other section', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', intros: true })
   await page.goto('/notes')
   await expect(page.locator('.section-intro')).toBeVisible()
-  await expect(page.locator('.section-intro__tour')).toHaveCount(0)
   await expect(page.locator('.section-intro__more')).toBeVisible()
+  const tourBtn = page.locator('.section-intro__tour')
+  await expect(tourBtn).toBeVisible()
+  await tourBtn.click()
+  await page.locator('.tour').waitFor({ state: 'visible' })
+  // Step 0 is the centred welcome; step 1 spotlights « Pour qui » (data-tour="notes-face").
+  await page.getByRole('button', { name: /Suivant|Next/ }).click()
+  await expect(page.locator('.tour__ring')).toBeVisible()
 })
+
+// ── The « ? » bar: the same three doors on every hub tab ─────────────────────────
+//
+// What the report was really about. Arming « ? » used to mean HINTS ONLY, so a
+// section's tour was reachable from two places you had to know about already
+// (Réglages ▸ Découvrir, and the intro card that vanishes once dismissed). Every tab
+// now offers, from the same control: tap-to-explain, « Faire le tour » for THIS
+// section, and « Le guide ». The static half is guarded in src/lib/tour-rule.test.ts;
+// this is the half that proves the door actually opens the right tour.
+const HELP_TABS: { name: string; url: string; firstStep: RegExp }[] = [
+  { name: 'board', url: '/board', firstStep: /Le babillard/ },
+  { name: 'kitchen', url: '/kitchen', firstStep: /La cuisine/ },
+  { name: 'liste', url: '/liste', firstStep: /La liste/ },
+  { name: 'notes', url: '/notes', firstStep: /Les notes/ },
+  // Maison offers the tour of the SECTION you are on, not the tab's generic one.
+  { name: 'maison ▸ routines', url: '/maison?section=routines', firstStep: /Routines/ },
+  { name: 'maison ▸ famille', url: '/maison?section=family', firstStep: /Le cercle/ },
+]
+
+for (const tab of HELP_TABS) {
+  test(`« ? » on ${tab.name} offers hints, its own tour and the guide`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+    await page.goto(tab.url)
+    await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+
+    await page.locator('.help-toggle').first().click()
+    const bar = page.locator('.help-hint')
+    await expect(bar).toBeVisible()
+    // 1. the hint (tap anything to have it explained), 2. the tour, 3. the guide.
+    await expect(bar.locator('.help-hint__line')).toBeVisible()
+    await expect(bar.getByRole('link', { name: /guide/i })).toBeVisible()
+
+    // …and the tour door opens THIS section's tour, not the board's.
+    await bar.getByRole('button', { name: /Faire le tour/ }).click()
+    await expect(page.locator('.tour')).toBeVisible()
+    await expect(page.locator('.tour__head')).toContainText(tab.firstStep)
+  })
+}
 
 test('tour card names itself (capture)', async ({ page }) => {
   await boot(page)
@@ -99,4 +150,36 @@ test('tour card names itself (capture)', async ({ page }) => {
   await page.locator('.tour__ring').waitFor({ state: 'visible' })
   await page.waitForTimeout(200)
   await page.screenshot({ path: 'e2e/screenshots/tour-spotlight.png' })
+})
+
+test('Réglages has a « ? » at last — and arming it reaches its section help', async ({ page }) => {
+  // Réglages carried a 34-entry help registry (lib/operatorHelp) that NOTHING could
+  // arm: `HelpTitle` only becomes tappable while help mode is active, and no surface
+  // ever called toggle(). So every one of those explanations was unreachable — the
+  // same defect as the missing tours, one level up. The « ? » now rides the lens row
+  // (Comprendre · Régler), on the Régler face only: on Comprendre the guide text IS
+  // the explanation, and two explainers for one question is not help.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/settings?tab=board&lens=regler')
+  await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
+
+  const toggle = page.locator('.operator__lensrow .help-toggle')
+  await expect(toggle).toBeVisible()
+  await toggle.click()
+
+  // The same bar as every hub tab: the hint line + the two doors.
+  const bar = page.locator('.help-hint')
+  await expect(bar).toBeVisible()
+  await expect(bar.getByRole('link', { name: /guide/i })).toBeVisible()
+
+  // The registry is REACHABLE now: a section heading became a help target.
+  await expect(page.locator('.help-title').first()).toBeVisible()
+
+  // …and the tour door opens Réglages' own tour.
+  await bar.getByRole('button', { name: /Faire le tour/ }).click()
+  await expect(page.locator('.tour')).toBeVisible()
+  await expect(page.locator('.tour__head')).toContainText(/Réglages/)
 })

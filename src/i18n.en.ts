@@ -241,7 +241,7 @@ export const EN: typeof FR = {
     exitCancel: 'Stay',
     exitWrong: 'Not quite. Try again.',
   },
-  help: { learnMore: 'Help for this section', gotIt: 'Got it', goToGuide: 'See the guide', helpMode: 'Help', tapForHelp: 'Tap a button to see what it does.', takeTour: 'Take the tour' },
+  help: { learnMore: 'Help for this section', gotIt: 'Got it', goToGuide: 'See the guide', helpMode: 'Help', tapForHelp: 'Tap a button to see what it does.', takeTour: 'Take the tour', guideShort: 'The guide' },
   subtabs: { prev: 'Previous tabs', next: 'Next tabs' },
   tour: { label: 'Guided tour', stepOf: (n: number, total: number) => `Step ${n} of ${total}`, skip: 'Skip', back: 'Back', next: 'Next', done: 'Done', learnMore: 'Learn more' },
   today: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },

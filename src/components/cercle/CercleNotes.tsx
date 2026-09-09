@@ -14,6 +14,7 @@ import { Cluster } from '../Layout'
 import { SearchField } from '../SearchField'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
+import { type HelpMode } from '../../lib/helpMode'
 import { NoteEditor } from './NoteEditor'
 import { NotesList } from './NotesList'
 
@@ -57,11 +58,17 @@ export function CercleNotes({
   // while already ON /notes is a same-route navigation: the search param changes, the
   // page never remounts. See the Notes page for the other half.
   composeNonce = 0,
+  help,
 }: {
   members: Member[]
   focusId?: string | null
   onFocused?: () => void
   composeNonce?: number
+  // The page's armed « ? » (pages/Notes.tsx). Passed down so the controls that
+  // actually live HERE — the « Pour qui » face and a note row — explain themselves
+  // in place like every other tab's do; without it the armed help mode reached
+  // nothing but the header magnifier.
+  help?: HelpMode<'search' | 'face' | 'note'>
 }) {
   const t = useT()
   const { surface } = useSurface()
@@ -177,10 +184,23 @@ export function CercleNotes({
             still being announced here — and "Notes & recommandations" never described
             a face picker anyway. */}
         {surface === 'kiosk' ? (
-          <MemberSwitcher faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.forWhom} />
+          <MemberSwitcher
+            faces={faces}
+            value={face}
+            onChange={(id) => (help ? help.pick('face', () => setFace(id))() : setFace(id))}
+            allLabel={fn.scopeFamily}
+            ariaLabel={fn.forWhom}
+            tour="notes-face"
+          />
         ) : (
-          <div className="cercle-notes__face">
-            <FaceSelect faces={faces} value={face} onChange={setFace} allLabel={fn.scopeFamily} ariaLabel={fn.forWhom} />
+          <div className="cercle-notes__face" data-tour="notes-face">
+            <FaceSelect
+              faces={faces}
+              value={face}
+              onChange={(id) => (help ? help.pick('face', () => setFace(id))() : setFace(id))}
+              allLabel={fn.scopeFamily}
+              ariaLabel={fn.forWhom}
+            />
           </div>
         )}
 
@@ -190,6 +210,7 @@ export function CercleNotes({
         {searchable && (
           <SearchField
             className="cercle-notes__search"
+            tour="notes-search"
             value={query}
             onChange={setQuery}
             collapsible
@@ -210,7 +231,7 @@ export function CercleNotes({
         readOnly={ro}
         openOnTap
         canReorder={query.trim() === ''}
-        onEdit={openEdit}
+        onEdit={help ? (n) => help.pick('note', () => openEdit(n))() : openEdit}
         focusId={focusId}
         onFocused={onFocused}
         empty={<p className="cercle-notes__empty mono">{query.trim() ? fn.noMatch : face ? fn.emptyMine : fn.empty}</p>}

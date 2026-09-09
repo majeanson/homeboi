@@ -728,7 +728,7 @@ export function Liste() {
 
       <SectionIntro card="liste" />
 
-      {help.hint && <HelpHint />}
+      {help.hint && <HelpHint card="liste" />}
 
       {/* Add a line right here — type it or speak it. The direct path; the ＋
           capture sheet still works for the AI-routed quick note. */}

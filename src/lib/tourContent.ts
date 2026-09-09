@@ -146,8 +146,8 @@ export const TOURS: Tour[] = [
         icon: 'sparkle-bold',
         title: { fr: 'Un « ? » quand tu bloques', en: 'A “?” when you’re stuck' },
         body: {
-          fr: 'En haut de chaque section, la pastille colorée porte un petit « ? ». Touche-le, puis touche ce qui t’intrigue : l’app t’explique juste là, à sa place. Il s’efface une fois que tu connais l’app.',
-          en: 'At the top of every section, the coloured disc carries a small “?”. Tap it, then tap whatever puzzles you: the app explains it right there, in place. It fades once you know the app.',
+          fr: 'En haut de chaque section, un petit « ? ». Touche-le, puis touche ce qui t’intrigue : l’app t’explique juste là. Il offre aussi la visite de CETTE section et son guide. Il s’efface une fois que tu connais l’app.',
+          en: 'At the top of every section, a small “?”. Tap it, then tap whatever puzzles you: the app explains it right there. It also offers THIS section’s tour and its guide. It fades once you know the app.',
         },
       },
       {
@@ -401,6 +401,87 @@ export const TOURS: Tour[] = [
         body: guidePoint('liste', 'Choisir les meilleurs prix'),
       },
       ...addSheetSteps('liste'),
+    ],
+  },
+  // Réglages had no tour either — and worse, no « ? » at all: its 34-entry help
+  // registry could never be ARMED (HelpTitle only becomes tappable while help mode is
+  // active, and nothing called toggle()). Both fixed 2026-09-09; this is the tour that
+  // door now offers. Its bodies are its own: the « settings » guide card's points are
+  // about the household/devices/offline, not about how Réglages is laid out.
+  {
+    id: 'settings',
+    startRoute: '/settings',
+    steps: [
+      { icon: 'gear-six-bold', card: 'settings', title: { fr: 'Réglages', en: 'Settings' }, body: guideWhat('settings') },
+      {
+        target: 'settings-tabs',
+        icon: 'stack-bold',
+        card: 'settings',
+        title: { fr: 'Une couleur par section', en: 'A colour per section' },
+        body: {
+          fr: 'Découvrir, puis une pastille par section de l’app, dans le même ordre et les mêmes couleurs que la barre du bas. Ce qui touche à la cuisine se règle dans la pastille de la cuisine.',
+          en: 'Discover, then one pill per section of the app, in the same order and colours as the bottom bar. Anything about the kitchen is set in the kitchen’s pill.',
+        },
+      },
+      {
+        target: 'settings-lens',
+        icon: 'book-open-bold',
+        card: 'settings',
+        title: { fr: 'Comprendre ou régler', en: 'Understand or set' },
+        body: {
+          fr: '« Comprendre » explique cette section en mots ; « Régler » ouvre ses réglages. Deux faces de la même pastille — tu n’as jamais à choisir entre lire et faire.',
+          en: '“Understand” explains this section in words; “Set” opens its settings. Two faces of the same pill — you never choose between reading and doing.',
+        },
+      },
+    ],
+  },
+  // Les notes had NO tour at all until 2026-09-09 — the one hub tab whose « ? »
+  // offered hints and nothing else, which is the asymmetry the report « the tour
+  // only ever approaches one section » was pointing at. Its ＋ is not the generic
+  // chooser (the tab's only tile IS the composer, lib/addHelp `cnote`), so it closes
+  // on that composer rather than on addSheetSteps' tile grid.
+  {
+    id: 'notes',
+    startRoute: '/notes',
+    steps: [
+      { icon: 'file-text-bold', card: 'notes', title: { fr: 'Les notes', en: 'The notes' }, body: guideWhat('notes') },
+      {
+        target: 'notes-face',
+        icon: 'users-three-bold',
+        card: 'notes',
+        title: { fr: 'Pour toi ou la Maisonnée', en: 'For you or the Household' },
+        body: guidePoint('notes', 'Pour toi ou la Maisonnée'),
+      },
+      {
+        icon: 'pencil-simple-bold',
+        card: 'notes',
+        title: { fr: 'La note riche', en: 'The rich note' },
+        body: guidePoint('notes', 'La note riche'),
+      },
+      {
+        target: 'notes-search',
+        icon: 'magnifying-glass-bold',
+        card: 'notes',
+        title: { fr: 'Retrouver une note', en: 'Find a note' },
+        body: guidePoint('notes', 'Chercher'),
+      },
+      {
+        target: 'add-fab',
+        icon: 'plus-bold',
+        title: { fr: 'Le bouton ＋', en: 'The ＋ button' },
+        body: {
+          fr: 'Ici le ＋ ne demande pas quoi ajouter : il ouvre la note tout de suite. « Suivant » te la montre.',
+          en: 'Here the ＋ doesn’t ask what to add: it opens the note straight away. “Next” shows you.',
+        },
+      },
+      {
+        target: 'add-cnote',
+        sheet: true,
+        icon: 'microphone-bold',
+        card: 'notes',
+        title: { fr: 'Vocal, dessin ou photo', en: 'Voice, drawing or photo' },
+        body: guidePoint('notes', 'Vocal, dessin ou photo'),
+      },
     ],
   },
 ]

@@ -135,11 +135,22 @@
 .help-toggle:active {
   transform: scale(0.94);
 }
-/* The shared "tap a button to learn what it does" hint (HelpHint). */
+/* THE « ? » BAR (HelpHint): the hint line plus this section's two doors — its tour
+   and its Guide card. One block, so every hub tab's help looks and behaves the same;
+   see the comment on HelpHint in lib/helpMode.tsx for why the doors live here. */
 .help-hint {
   margin: 0 0 12px;
   text-align: center;
   color: var(--ink-soft);
+}
+.help-hint__line {
+  margin: 0;
+}
+/* Centred, and wrapping on a narrow phone — Cluster's own rule, just centred here
+   (the bar is a centred block, not a left-aligned row of furniture). */
+.help-hint__doors {
+  justify-content: center;
+  margin-top: 8px;
 }
 /* In-place help box (HelpBubble): a calm card with a "→ Voir le guide" link out. */
 .help-bubble {

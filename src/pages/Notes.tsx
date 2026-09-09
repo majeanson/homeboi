@@ -101,17 +101,21 @@ function NotesParent() {
 
       <SectionIntro card="notes" />
 
-      {help.hint && <HelpHint />}
+      {help.hint && <HelpHint card="notes" />}
       {/* Only the header's own target renders here — `bubbleFor`, never the `bubble`
           catch-all (the two together would double-render): CercleNotes anchors the
           « notes » bubble under its OWN title, which is where that explanation belongs. */}
       {help.bubbleFor('search')}
+
+      {help.bubbleFor('face')}
+      {help.bubbleFor('note')}
 
       <CercleNotes
         members={members}
         focusId={focusItem}
         onFocused={() => setFocusItem(null)}
         composeNonce={composeNonce}
+        help={help}
       />
     </main>
   )

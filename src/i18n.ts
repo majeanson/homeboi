@@ -292,7 +292,7 @@ export const FR = {
     exitCancel: 'Rester',
     exitWrong: 'Pas tout à fait. Réessaie.',
   },
-  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris', goToGuide: 'Voir le guide', helpMode: 'Aide', tapForHelp: 'Touche un bouton pour savoir ce qu’il fait.', takeTour: 'Faire le tour' },
+  help: { learnMore: 'Aide sur cette section', gotIt: 'Compris', goToGuide: 'Voir le guide', helpMode: 'Aide', tapForHelp: 'Touche un bouton pour savoir ce qu’il fait.', takeTour: 'Faire le tour', guideShort: 'Le guide' },
   // Chevrons on a sub-tab row that's too wide to show every tab at once (mouse only —
   // a touch surface swipes the row instead). See useHScroll / SubTabs.
   subtabs: { prev: 'Onglets précédents', next: 'Onglets suivants' },

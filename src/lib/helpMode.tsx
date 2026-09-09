@@ -1,7 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useLang, useT } from '../i18n'
 import { useHelp } from './help'
+import { useTour } from './tour'
+import { TOURS } from './tourContent'
 import { HelpBubble } from '../components/HelpBubble'
+import { Chip } from '../components/Chip'
+import { Cluster } from '../components/Layout'
+import { Icon } from '../components/Icon'
 
 // Reusable "?" contextual help mode (first shipped in AddSheet, now app-wide). A
 // surface calls useHelpMode(content, label): tapping its HelpToggle arms help mode,
@@ -167,9 +172,46 @@ export function HelpToggle({
   )
 }
 
-// A shared "tap a button to learn what it does" hint line, shown while help mode is
-// armed and nothing's been tapped yet.
-export function HelpHint() {
+// THE « ? » BAR — what arming help mode offers, identically on every hub tab.
+//
+// It used to be one sentence ("tap a button to learn what it does"), which made the
+// « ? » mean *hints only*, and left each section's guided tour reachable from exactly
+// two places a person has to already know about: Réglages ▸ Découvrir, and the intro
+// card that disappears once dismissed. So the tour read as a board-only feature —
+// the report that opened this work (2026-09-09) was « the guided tour only ever
+// approaches the Auj. section ».
+//
+// Now one component carries all three doors a section's help has, and every tab gets
+// them by rendering the same thing:
+//   · tap anything → it explains itself in place (the hint line, unchanged),
+//   · « Faire le tour » → THIS section's tour, if one exists,
+//   · « Tout savoir » → this section's full Guide card.
+//
+// `card` is the section's GUIDE id — the same value the tab hands HubHead. The tour
+// id matches it by the app's own convention (SectionIntro has looked tours up that
+// way since #32), so a section gains a tour door the moment a Tour with its id
+// exists, with nothing to wire per tab. `src/lib/tour-rule.test.ts` holds both ends:
+// every hub card has a tour, and every step's anchor exists.
+export function HelpHint({ card }: { card?: string }) {
   const t = useT()
-  return <p className="help-hint mono">{t.help.tapForHelp}</p>
+  const { start } = useTour()
+  // A tour whose id IS the section's card id (the SectionIntro convention).
+  const hasTour = !!card && TOURS.some((tr) => tr.id === card)
+  return (
+    <div className="help-hint">
+      <p className="help-hint__line mono">{t.help.tapForHelp}</p>
+      {card && (
+        <Cluster className="help-hint__doors">
+          {hasTour && (
+            <Chip onClick={() => start(card)}>
+              <Icon name="play-bold" size={13} /> {t.help.takeTour}
+            </Chip>
+          )}
+          <Chip to={`/settings?tab=guide&card=${card}`}>
+            <Icon name="book-open-bold" size={13} /> {t.help.guideShort}
+          </Chip>
+        </Cluster>
+      )}
+    </div>
+  )
 }

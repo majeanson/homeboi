@@ -419,6 +419,46 @@ evening. **A board guard that depends on the hour freezes its clock** (`page.clo
 
 ## 4. What still needs improvement — consolidated and ranked
 
+**« Le ? ne sert qu'au babillard » — reported 2026-09-09, and it was true.** Arming
+the « ? » meant HINTS ONLY. A section's guided tour existed for six sections but was
+reachable from two places you had to already know: Réglages ▸ Découvrir, and the
+first-visit card that disappears once dismissed. So the tour read as a board feature,
+which is exactly how it was reported. Fixed as one uniform thing rather than six:
+
+- **`HelpHint` is now the « ? » bar** — the tap-to-explain line plus two doors,
+  « Faire le tour » (THIS section's tour) and « Le guide ». Every hub tab already
+  rendered `HelpHint`, so one component made all of them equal; it takes the section's
+  `card`, and the tour id IS that card id (the convention `SectionIntro` has used
+  since #32, now load-bearing).
+- **Les notes had no tour at all** — the last hub tab without one. It has a five-step
+  one, single-sourced from its guide points like every other. An e2e that used to pin
+  the ABSENCE (« no tour to offer ») now pins the opposite.
+- **Maison's « ? » offers the tour of the SECTION you are on**, not the tab's:
+  routines and the cercle each own one. The route→card table is shared with the ＋
+  sheet (`lib/sectionCard.ts`) so two spellings can't drift apart.
+- **Réglages had no « ? » AT ALL — and 34 help entries nothing could reach.**
+  `lib/operatorHelp` has an entry per settings section, `HelpTitle` makes a heading
+  tappable *while help mode is armed*… and nothing in Réglages ever called `toggle()`.
+  The registry had been unreachable for as long as it has existed. The « ? » now rides
+  the lens row (Comprendre · Régler), on the Régler face only — on Comprendre the guide
+  text IS the explanation — and Réglages got its own tour so its bar offers what every
+  other one does.
+- **Guard: `tour-rule.test.ts`** — every surface with a « ? » has a tour, every
+  `<HelpHint>` names its card (fail-closed), every step's anchor exists, no anchor is
+  orphaned. Proven red three ways (a bar with no card, a step pointing at a dead
+  anchor, an anchor deleted from the page); the Réglages e2e was proven red by
+  removing the toggle again.
+
+**And the guard's first draft was wrong in the repo's favourite way.** It scanned only
+literal `data-tour="…"` and reported three orphans — `kitchen-tabs`,
+`maison-sections`, `cercle-views`. All three exist: they are passed as `tour="…"` to
+SubTabs, which forwards `data-tour={tour}`. I nearly "fixed" three anchors that were
+already there. The scan follows both spellings now, and the real findings were
+elsewhere (notes had no tour; `add-routines` was an anchor no step named). **A grep
+guard that walks the wrong shape reports the wrong thing with total confidence** —
+the third time this file records that lesson.
+
+
 **Coverage + Wave D pass, 2026-09-08 (evening).** Three of the six "honest coverage
 backlog" gaps this file listed were **stale**: device-revoke, member-rename and the
 note auto-save round-trip are all covered (the first two were written earlier the same

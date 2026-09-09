@@ -1627,7 +1627,7 @@ export function Board() {
         {/* The help "?" lives in the HubHead action slot (like La liste), NOT here:
             appended to this row it wrapped to a stranded second line on mobile. */}
       </div>
-      {help.hint && <HelpHint />}
+      {help.hint && <HelpHint card="board" />}
       {help.bubble}
 
       {/* The board poll failed but we're still rendering the last good frame —

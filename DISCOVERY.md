@@ -20,7 +20,9 @@ settings) are one tap back.** No dead-end prose.
 | Réglages shell | `src/pages/Operator.tsx` | Découvrir + 6 themed tabs, « Comprendre / Régler » lens, sub pill rows, `?focus=` landing, « Voir dans l'app » backlinks, `LEGACY_TAB`/`LEGACY_SUB` folding. |
 | Settings taxonomy | `src/lib/settingsNav.ts` | PLAIN DATA: `SETTINGS_SUBS` (sub ids + order, the one source), `SETTINGS_FOCUS` (focusable section anchors = operatorHelp helpKeys), `SUB_GOTO` (sub → live surface), `ROUTE_PREFIXES` (valid link targets, mirrors `router.tsx`). |
 | "?" help-mode | `src/lib/helpMode.tsx` + `HelpBubble`/`HelpDot` | Tap "?" then a control → in-place bubble + « Voir le guide » deep-link. |
-| Help registries | `src/lib/{board,liste,routines,kitchenTab,operator,add,cercle,notes}Help.ts` | 8 maps of `{ body, card, point? }` — every hint names its guide card/point. Maison merges two of them (`{...CERCLE_HELP, ...ROUTINES_HELP}`) since one page now hosts both worlds. |
+| The « ? » BAR | `HelpHint` in `src/lib/helpMode.tsx` | What arming "?" shows, identically on every hub tab: the tap-to-explain line **plus two doors** — « Faire le tour » (THIS section's tour) and « Le guide » (its card). It takes `card`; the tour id IS that card id (the SectionIntro convention). Added 2026-09-09 — before it, the "?" meant hints only, and a section's tour was reachable only from Réglages ▸ Découvrir or the intro card that disappears once dismissed, which made the tour read as a board-only feature. |
+| Section → card | `src/lib/sectionCard.ts` | `sectionCardFor(pathname, search)` — ONE table saying which guide card (and so which tour) a surface belongs to. Maison answers per `?section=` (routines → `routines`, family/social → `cercle`, else `maison`), so its « ? » offers the tour of the section you're looking at. Read by Maison and the ＋ sheet. |
+| Help registries | `src/lib/{board,liste,routines,kitchenTab,operator,add,cercle,notes}Help.ts` | 8 maps of `{ body, card, point? }` — every hint names its guide card/point. Maison merges two of them (`{...CERCLE_HELP, ...ROUTINES_HELP}`) since one page now hosts both worlds. **A registry is only alive if some surface renders a `HelpToggle`**: `OPERATOR_HELP`'s 34 entries were unreachable until 2026-09-09 because Réglages had none. |
 | Tours | `src/lib/tour.tsx`, `src/lib/tourContent.ts`, `components/tour/TourOverlay.tsx` | Spotlight walkthroughs; steps anchor `data-tour` keys, can end on a guide card. `guidePoint(id, frLabel)` reuses any guide point's detail verbatim as a step body (`guidePlusActions(id)` = the « ＋ » point). A step with `sheet: true` walks INSIDE the ＋ sheet — HubLayout holds the section chooser open for it (in-sheet anchors: `add-note`, `add-tiles`, `add-week`, `add-routines`). |
 | ＋ sheet | `src/lib/addSheet.tsx` + `components/AddSheet.tsx` | `SECTION_MODES` tiles; `ADD_MODES` (all modes, validates `?plus=`); tile explanations live in `ADD_HELP` + guide points, not on the tiles. |
 
@@ -169,6 +171,15 @@ spells the retired pill.
   retired three restructures earlier (« ▸ Guide », « ▸ Courses », « ▸ Le cercle »).
 - **A concept id must sit in a `CONCEPT_THEMES` bucket** or it's invisible to
   the FeatureMap jump-grid.
+- **Help means the same thing on every tab** (`tour-rule.test.ts`, added
+  2026-09-09): every hub section has a tour whose id is its guide card
+  (board · kitchen · liste · notes · maison, plus routines/cercle inside Maison);
+  every `<HelpHint>` names its `card` (fail-closed — no card, no doors); every step's
+  `data-tour` anchor EXISTS, counting both spellings (`data-tour="x"` and `tour="x"`
+  forwarded by SubTabs/MemberSwitcher/SearchField); no anchor is orphaned; and every
+  route `sectionCardFor` answers for has both a guide card and a tour.
+  *The engine renders a step with a missing anchor as a centred card rather than
+  failing — kind at runtime, silent about typos, which is why this is a build gate.*
 - Concision budgets — **held by `guideBudget.test.ts` since 2026-09-08** (they had
   been listed here as enforced with no test behind them, and 30 of 32 `what` lines
   were over): `what` ≤ 15 words and point label ≤ 5 are HARD; `detail` ≤ 2

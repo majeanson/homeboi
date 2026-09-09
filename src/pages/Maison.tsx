@@ -61,6 +61,7 @@ import { useProfile } from '../lib/profile'
 import { Modal } from '../components/Modal'
 import { imgUrl } from '../lib/image'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
+import { sectionCardFor } from '../lib/sectionCard'
 import { CERCLE_HELP } from '../lib/cercleHelp'
 import { ROUTINES_HELP } from '../lib/routinesHelp'
 // Routines — self-contained (own ROUTINES_KEY query, own help.hint/HelpHint,
@@ -167,6 +168,10 @@ function MaisonParent() {
   // is the default now (the merged tab's primary door — matches the toddler lens'
   // own default) — Famille used to be, back when this page was just Le cercle.
   const [section, setSection] = useTabParam<Section>('section', 'routines', ['routines', 'family', 'social', 'business', 'carnets'])
+  // Which GUIDE card (and so which TOUR — same id, the SectionIntro convention) the
+  // « ? » bar offers here: the section you are LOOKING at, not the tab in general.
+  // The table is shared with the ＋ sheet (lib/sectionCard) so the two can't disagree.
+  const sectionCard = sectionCardFor('/maison', `?section=${section}`)
   // The "focus lens": pick a household member (the same MemberSwitcher as the board /
   // Notes) to re-read every relationship FROM their perspective — Léa's row becomes
   // "Fille" when Marc is focused. null = Maisonnée (each person's own relations, the
@@ -815,7 +820,7 @@ function MaisonParent() {
         trailing={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
         tour="maison-sections"
       />
-      {help.hint && <HelpHint />}
+      {help.hint && <HelpHint card={sectionCard} />}
       {help.bubbleFor('social')}
       {help.bubbleFor('family')}
       {help.bubbleFor('business')}

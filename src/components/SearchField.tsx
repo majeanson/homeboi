@@ -22,6 +22,7 @@ export function SearchField({
   collapsible = false,
   autoFocus = false,
   className,
+  tour,
 }: {
   value: string
   onChange: (v: string) => void
@@ -33,6 +34,8 @@ export function SearchField({
   /** Focus the field on mount (an always-open field that IS the page's job). */
   autoFocus?: boolean
   className?: string
+  /** `data-tour` anchor id for the guided tour (same prop name SubTabs uses). */
+  tour?: string
 }) {
   const t = useT()
   const [open, setOpen] = useState(false)
@@ -58,6 +61,7 @@ export function SearchField({
       <button
         type="button"
         className={'searchfield__open' + (className ? ` ${className}` : '')}
+        data-tour={tour}
         onClick={() => setOpen(true)}
         aria-label={ariaLabel}
         aria-expanded={false}
@@ -69,7 +73,7 @@ export function SearchField({
     )
   }
   return (
-    <div className={'searchfield' + (className ? ` ${className}` : '')} id={id}>
+    <div className={'searchfield' + (className ? ` ${className}` : '')} id={id} data-tour={tour}>
       <InlineIcon name="magnifying-glass-bold" size={16} />
       <input
         ref={inputRef}

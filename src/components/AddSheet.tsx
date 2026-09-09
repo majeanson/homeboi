@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, ApiError } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
+import { sectionCardFor } from '../lib/sectionCard'
 import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
 import { weekDates } from './kitchen/week'
@@ -237,6 +238,10 @@ export function AddSheet({
   // Compensating undo (the row is already live server-side): records a "routed to
   // X" entry in the shared Récents toast whose onUndo deletes what was created.
   const nav = useNavigate()
+  const loc = useLocation()
+  // The sheet is opened FROM a section but is handed only its modes, so its « ? »
+  // doors read the route (lib/sectionCard — the same table Maison uses).
+  const sectionCard = sectionCardFor(loc.pathname, loc.search)
   const { signedIn } = useAuth()
   // AI on/off (binding present AND household hasn't switched it off). When off, the
   // "AI ideas" tile is hidden outright — capture still works (it degrades to a note).
@@ -952,7 +957,7 @@ export function AddSheet({
         {!drilled && (
           <>
             {/* Help mode: a hint, then (once a tile is tapped) the in-place help box. */}
-            {help.hint && <HelpHint />}
+            {help.hint && <HelpHint card={sectionCard} />}
             {help.bubble}
 
             {/* Fast path: the note box rides ABOVE the chooser on the board, so a quick
@@ -1121,13 +1126,15 @@ export function AddSheet({
             tap opens a blank note in the full editor instead. Scoped to the picked
             face — a face → a personal note, « Maisonnée » → a family-wide one. */}
         {mode === 'cnote' && (
-          <NoteQuickAdd
-            memberId={profileId}
-            drawDraftId="sheet-cnote"
-            autoFocus
-            autoVoice={autoVoice}
-            onSubmitted={close}
-          />
+          <div data-tour="add-cnote">
+            <NoteQuickAdd
+              memberId={profileId}
+              drawDraftId="sheet-cnote"
+              autoFocus
+              autoVoice={autoVoice}
+              onSubmitted={close}
+            />
+          </div>
         )}
 
         {mode === 'pantry' && (
@@ -1379,7 +1386,7 @@ export function AddSheet({
             /routine/<id>. Listing the routines here is the "modify existing" ask:
             you pick the one to change instead of hunting it down in Réglages. */}
         {mode === 'routine-pick' && (
-          <div className="addsheet__cook" data-tour="add-routines">
+          <div className="addsheet__cook">
             <button
               type="button"
               className="btn btn--primary btn--block"

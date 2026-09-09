@@ -218,7 +218,7 @@ first**, per `DISCOVERY.md`); (b) coverage by one of the **8** help registries
 (`addHelp/boardHelp/cercleHelp/kitchenTabHelp/listeHelp/notesHelp/operatorHelp/routinesHelp.ts`)
 **or by the `SceneHead card=` / `HelpDot` channel** — counting registries alone is what
 made five features look dark in Appendix A for six weeks;
-(c) a tour step (`lib/tourContent.ts`, **7** tours; optional — see Appendix A ➖ᵀ). Guards:
+(c) a tour step (`lib/tourContent.ts`, **9** tours; optional — see Appendix A ➖ᵀ). Guards:
 `helpRegistry.test.ts`, `guideLinks.test.ts`. Known candidates from exploration:
 Voyage, Mots, Carnets, Habitudes, L'auto, Dessins have thin/no help-mode
 coverage — verify per row. Read `DISCOVERY.md` before fixing anything here.
@@ -1095,7 +1095,9 @@ Gold-standard check (PARITY Part 6):
 Exact per-feature mapping of the three discovery channels. Sources:
 `src/lib/guideContent.ts` (**32** GUIDE cards), the 8 `*Help.ts` registries, **plus the
 `SceneHead card=` / `HelpDot` channel** (see ᴰ), and `src/lib/tourContent.ts`
-(**7** tours: essentials/board/kitchen/**maison**/routines/cercle/liste).
+(**9** tours: essentials/board/kitchen/**maison**/routines/cercle/liste/**notes**/**settings**
+— notes and settings both joined 2026-09-09; Réglages had neither a tour nor a « ? »
+that could be armed at all, so its 34-entry help registry was unreachable).
 
 **Legend.** ✅ covered · 🔶 partial · ➖ deliberately not applicable (footnoted) ·
 ❌ a real gap. There is **no bare ❌ left in this table**, and that is the point:

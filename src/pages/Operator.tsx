@@ -40,7 +40,7 @@ import { DiscoverSection, ComprendrePanel, resolveGuideCard } from '../component
 import { SECTION_TINT, THEME_ALIAS, cardHomeTab, type SectionKey } from '../lib/guideContent'
 import { InlineIcon, type IconName } from '../components/Icon'
 import { SubTabs } from '../components/SubTabs'
-import { useHelpMode } from '../lib/helpMode'
+import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { OPERATOR_HELP } from '../lib/operatorHelp'
 import { useTabParam } from '../lib/tabParam'
 import { useHScroll } from '../lib/hscroll'
@@ -474,6 +474,7 @@ export function Operator() {
         <nav
           ref={tabsScroll.ref}
           className="operator__tabs mono"
+          data-tour="settings-tabs"
           role="tablist"
           aria-label={t.operator.sections}
           onKeyDown={(e) => {
@@ -536,6 +537,7 @@ export function Operator() {
                   <SubTabs
                     size="mini"
                     className="operator__lens"
+                    tour="settings-lens"
                     options={[
                       { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
                       { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
@@ -545,6 +547,13 @@ export function Operator() {
                     ariaLabel={t.operator.lensAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
                   />
+                  {/* The « ? »: arms the section-card help on the Régler face, the same
+                      control every hub tab carries. Régler only — on Comprendre the
+                      guide text IS the explanation, so a second explainer would be two
+                      answers to one question. */}
+                  {lens === 'regler' && operatorHelp.available && (
+                    <HelpToggle active={operatorHelp.active} onToggle={operatorHelp.toggle} />
+                  )}
                   {/* « Voir dans l'app » — the way back to the live surface this sub
                       configures (SUB_GOTO, the board▸Disposition mirror generalized).
                       Subs that are pure machinery have no entry. It used to own a whole
@@ -566,6 +575,7 @@ export function Operator() {
                   )}
                 </div>
               )}
+              {operatorHelp.hint && <HelpHint card="settings" />}
               {lens === 'regler' && subs ? (
                 <>
                   <SubTabs

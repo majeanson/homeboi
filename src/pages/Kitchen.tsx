@@ -387,7 +387,7 @@ export function Kitchen() {
           tour="kitchen-tabs"
           trailing={tabHelp.available && <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} />}
         />
-        {tabHelp.hint && <HelpHint />}
+        {tabHelp.hint && <HelpHint card="kitchen" />}
         {/* The sub-tab bubbles render HERE (next to the nav). Heading bubbles render
             next to their own heading via bubbleFor, so a concept explained deep in
             the page doesn't pop up off-screen at the top. */}

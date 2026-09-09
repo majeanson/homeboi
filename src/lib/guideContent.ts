@@ -351,8 +351,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Besoin d’aide : touche l’icône', en: 'Need help: tap the icon' },
         detail: {
-          fr: 'En haut à droite de chaque section, la pastille colorée (le soleil, la carotte, etc.) porte un petit « ? » : touche-la pour ouvrir l’aide de cette section, ici dans le Guide.',
-          en: 'Top-right of every section, the coloured disc (the sun, the carrot, etc.) carries a small “?”: tap it to open that section’s help, right here in the Guide.',
+          fr: 'En haut à droite de chaque section, un petit « ? ». Touche-le : touche ensuite n’importe quoi pour que l’app te l’explique sur place, ou prends « Faire le tour » — la visite de CETTE section — ou « Le guide » pour tout savoir.',
+          en: 'Top-right of every section, a small “?”. Tap it: then tap anything to have the app explain it in place, or take “Take the tour” — THIS section’s tour — or “The guide” for the whole reference.',
         },
         why: {
           fr: 'Une seule cible calme au lieu d’un bouton d’aide en plus — et elle disparaît quand tu connais l’app (Réglages ▸ Système ▸ Affichage & veille).',

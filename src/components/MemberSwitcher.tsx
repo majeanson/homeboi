@@ -28,6 +28,7 @@ export function MemberSwitcher({
   ariaLabel,
   toggleOff = true,
   className,
+  tour,
 }: {
   faces: MemberFace[]
   // Selected member id, or null = Maisonnée (everyone).
@@ -40,9 +41,16 @@ export function MemberSwitcher({
   // pass false for a plain radio-style pick.
   toggleOff?: boolean
   className?: string
+  /** `data-tour` anchor id for the guided tour (same prop name SubTabs uses). */
+  tour?: string
 }) {
   return (
-    <div className={'mswitch' + (className ? ' ' + className : '')} role="group" aria-label={ariaLabel}>
+    <div
+      className={'mswitch' + (className ? ' ' + className : '')}
+      role="group"
+      aria-label={ariaLabel}
+      data-tour={tour}
+    >
       <button
         type="button"
         className={'mswitch__opt' + (value === null ? ' is-on' : '')}
