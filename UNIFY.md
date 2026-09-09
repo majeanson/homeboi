@@ -386,6 +386,25 @@ touched. The first ASCII rival hit all three within a minute:
    copy. That is this file's own principle applied honestly — *the ratchet counts, it
    does not classify* — instead of an exemption list that would grow a line per spec.
 
+### 🔧 And the lexicon failed CI on a budget, which was the budget being right
+
+The first push of this went red on `check:bundle`: the eager entry chunk came to
+**432 KB against a 420 KB cap**. `GlossaryTerm.tsx` imported the term table statically,
+and `renderRich` is reachable from the *board* — so the whole glossary, including every
+term's `why` (prose written for whoever edits the file), was shipped to every household
+on every boot for a feature that only ever renders in Réglages.
+
+Fixed in the two places it was wrong, neither of which is "raise the number":
+
+- the **table** loads on tap (`import()` inside the click, memoised) — a definition is
+  only ever wanted by someone who just asked for one;
+- the **mark itself** is `lazy()` behind a `Suspense` whose fallback is the plain word,
+  so a Réglages-only component is no longer in the chunk that gates first paint.
+
+Back to 429 899 bytes — **181 under the cap**. The stale « today ~386 KB » note beside
+that budget is now corrected to say exactly how little room is left, because a comment
+claiming comfort is what let this land in the first place.
+
 And the sweep script made the census's original mistake a fourth time: its patterns were
 single-quote anchored, so it missed `` `New event: ${title}` `` — the one **template
 literal**. The ratchet caught it immediately, which is the entire argument for pinning a

@@ -1,8 +1,20 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, Suspense, lazy, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { InlineIcon, type IconName } from '../components/Icon'
-import { GlossaryTermMark } from '../components/GlossaryTerm'
 import { foldRanges } from './normalize'
+
+// `renderRich` is reachable from the BOARD (the welcome card, the tour), so everything
+// it imports statically lands in the eager entry chunk. The glossary mark is the exact
+// opposite of that: it only ever renders in Réglages / Comprendre. Importing it here
+// directly put it — and, through it, the whole term table — in front of every boot, and
+// pushed the entry chunk 371 bytes past its 420 KB budget on CI.
+//
+// So it is lazy, and the fallback is the plain word: a household reading the manual sees
+// the term the instant the text paints, and it grows its dotted underline a tick later
+// when the chunk lands. Nothing is missing in between.
+const GlossaryTermMark = lazy(() =>
+  import('../components/GlossaryTerm').then((m) => ({ default: m.GlossaryTermMark })),
+)
 
 // Inline tokens in long-form prose (the Guide + the guided tour share this):
 //   [[icon:name]]     → the app's own Phosphor glyph, so a sentence that points
@@ -69,7 +81,11 @@ export function renderRich(text: string, hl?: string): ReactNode {
       const bar = body.indexOf('|')
       const id = bar === -1 ? body : body.slice(0, bar)
       const label = bar === -1 ? body : body.slice(bar + 1)
-      out.push(<GlossaryTermMark key={m.index} id={id} label={label} />)
+      out.push(
+        <Suspense key={m.index} fallback={label}>
+          <GlossaryTermMark id={id} label={label} />
+        </Suspense>,
+      )
     } else {
       const bar = body.indexOf('|')
       const id = bar === -1 ? body : body.slice(0, bar)

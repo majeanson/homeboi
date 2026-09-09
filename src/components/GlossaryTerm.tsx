@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
-import { GLOSSARY } from '../lib/glossary'
+import type { GlossaryTerm } from '../lib/glossary'
 import { Icon } from './Icon'
 
 // A WORD YOU CAN TAP, in Réglages and Comprendre only.
@@ -20,12 +20,29 @@ import { Icon } from './Icon'
 // rendered inside another control: `renderRich` refuses to mark a word inside a
 // [[card:…]] label, because a control inside a control is what nested-interactive
 // exists to stop.
+// THE TABLE IS LOADED ON TAP, NEVER EAGERLY.
+//
+// A static `import { GLOSSARY }` here cost **12 KB in the EAGER chunk** and failed the
+// bundle budget on CI (432 KB > 420 KB) — because `renderRich` is reachable from the
+// board, so anything this file imports statically lands in the entry chunk. The whole
+// table rides along: every term's FR and EN definition, and its `why`, which is prose
+// written for whoever edits the glossary and has no business in a household's browser.
+//
+// A definition is only ever needed once someone TAPS a word, which makes this the rare
+// case where a dynamic import is exactly right rather than a micro-optimisation: the
+// mark itself is a dotted <button> and costs nothing, and the data arrives with the
+// gesture that asks for it. `import type` above is erased at build time, so the shape
+// still typechecks against the real table.
+let cached: Promise<typeof import('../lib/glossary')> | null = null
+const loadGlossary = () => (cached ??= import('../lib/glossary'))
+
 export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
   const t = useT()
   const { lang } = useLang()
   const [open, setOpen] = useState(false)
-  const term = GLOSSARY.find((x) => x.id === id)
-  if (!term) return <>{label}</>
+  const [term, setTerm] = useState<GlossaryTerm | null>(null)
+  // An unknown id cannot ship — `glossary.test.ts` fails the build on a [[mot:…]] that
+  // names no term — so the mark renders without waiting to confirm the lookup.
   return (
     <span className="gloss">
       <button
@@ -36,12 +53,17 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
           // The manual's `what` line is itself a <summary>; explaining a word must not
           // also fold the card it sits in.
           e.stopPropagation()
-          setOpen((v) => !v)
+          if (open) {
+            setOpen(false)
+            return
+          }
+          setOpen(true)
+          if (!term) void loadGlossary().then((m) => setTerm(m.GLOSSARY.find((x) => x.id === id) ?? null))
         }}
       >
         {label}
       </button>
-      {open && (
+      {open && term && (
         <span className="gloss__pop" role="status">
           <span className="gloss__def">{term.def[lang]}</span>
           {term.card && (

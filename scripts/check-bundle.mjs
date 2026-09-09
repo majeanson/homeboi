@@ -35,7 +35,13 @@ const KB = 1024
 const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: drawpad ~134 KB)
 const EAGER_CHUNKS = [
   // name pattern → its own budget (all three load before first paint)
-  { re: /^index-/, cap: 420 * KB, label: 'eager entry' }, // today ~386 KB
+  // ⚠ 2026-09-09: this one is at **420.0 KB against a 420 KB cap — 181 bytes of room**.
+  // The « ~386 KB » that stood here was two months stale, which is how it read as
+  // comfortable. It is not: the glossary mark (a Réglages-only component) went over the
+  // line on its own, and the fix was to lazy-load it, not to raise the number.
+  // THE NEXT THING ADDED TO THE EAGER PATH WILL FAIL THIS. That is the budget working —
+  // reach for `lazy()` first, and only re-base if boot genuinely needs the code.
+  { re: /^index-/, cap: 420 * KB, label: 'eager entry' }, // today 420.0 KB — see above
   { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
   { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' }, // today ~101 KB
 ]
