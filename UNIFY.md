@@ -342,7 +342,22 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
 | something at a given time | **Rendez-vous** / **Appointment** | Événement · EN "Event" | FR settled day 3; the EN half was confirmed 2026-09-09 and swept the same day (17 strings), with `Event` pinned as an EN rival |
 | the tab | **Maison** / Home | Le cercle · The circle | Renamed in the nav restructure; the copy never followed. Ids/routes frozen |
 
-## Part 3 — Questions for Marc — **both answered 2026-09-09** ✅
+## Part 3 — Questions for Marc — the first two answered 2026-09-09 ✅, a third opened
+
+- ❓ **The English word for a postbox item.** Found while scanning the mirror direction
+  (FR copy carrying an English word — six hits, all the ordinary French noun « message »,
+  all false positives; the guard was deliberately NOT made symmetric because of them).
+  Underneath sat something real: **English uses "message" for two different concepts.**
+  A `mot` is a message left for someone IN the household (board card « Messages »,
+  « Leave a message »). A **postbox** item is mail from OUTSIDE — a relative through a
+  guest link — waiting in quarantine for the operator (« Your message », « Messages
+  received », « 1 message to see »). French keeps them apart without trying: « mot » vs
+  « message ». English collapsed them, which is the exact failure « Message » was chosen
+  to END for mot / fridge note / family note.
+  **Proposed: « letter » for the postbox** — « Your letter », « Letters received », « 1
+  letter to see ». It matches the concept's own French name (« La boîte aux lettres »,
+  a letterbox) and cannot be confused with a fridge message. Not done unilaterally: this
+  is a new user-visible word, and naming is Marc's call by the week's own rule.
 
 - [x] **EN word for `mot` → « Message ».** Approved. Already swept on day 4 (the whole
       `mots.*` EN subtree says *message*); the answer is what lets the injectivity rule
