@@ -25,6 +25,9 @@ const guideCards = () => {
 }
 const tours = () => new Set([...read('src/lib/tourContent.ts').matchAll(/^ {4}id: '([a-z-]+)',$/gm)].map((m) => m[1])).size
 const registries = () => readdirSync(join(ROOT, 'src', 'lib')).filter((f) => f.endsWith('Help.ts')).length
+// The term table (UNIFY.md day 1). Its size is quoted in UNIFY.md's census; a census
+// number that drifts from the data is the very thing this week exists to stop.
+const glossaryTerms = () => new Set([...read('src/lib/glossary.ts').matchAll(/^ {4}id: '([a-z0-9-]+)',$/gm)].map((m) => m[1])).size
 
 describe('the docs quote the real counts', () => {
   // Each claim: the file, a regex whose FIRST capture group is the number as written,
@@ -36,6 +39,7 @@ describe('the docs quote the real counts', () => {
     { file: 'PARITY.md', what: 'guide cards (Appendix A)', re: /`src\/lib\/guideContent\.ts` \(\*\*(\d+)\*\* GUIDE cards\)/, actual: guideCards },
     { file: 'PARITY.md', what: 'tours (Appendix A)', re: /\(\*\*(\d+)\*\* tours: essentials/, actual: tours },
     { file: 'CLAUDE.md', what: 'guide cards (jargon table)', re: /\*\*(\d+)\*\* guide cards today against/, actual: guideCards },
+    { file: 'UNIFY.md', what: 'glossary terms (census)', re: /glossary \*\*(\d+)\*\* terms/, actual: glossaryTerms },
     { file: 'DISCOVERY.md', what: 'guide cards (add-a-feature step 1)', re: /there\s+are \*\*(\d+)\*\* today/, actual: guideCards },
   ]
 
@@ -54,5 +58,6 @@ describe('the docs quote the real counts', () => {
     expect(guideCards()).toBeGreaterThan(20)
     expect(tours()).toBeGreaterThan(3)
     expect(registries()).toBeGreaterThan(3)
+    expect(glossaryTerms()).toBeGreaterThan(15)
   })
 })

@@ -75,7 +75,7 @@
 
 ## 2. The document map
 
-**Ten** root `.md` files (was thirteen — three finished ledgers moved to
+**Eleven** root `.md` files (`UNIFY.md` joined 2026-09-09; was thirteen before three finished ledgers moved to
 `bmad/history/` on 2026-08-28). They are **not** interchangeable. Read this table
 before opening any of them.
 
@@ -94,7 +94,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust — it reads **3** today (1 in `REVIEW-PASS.md`, 2 in `PARITY.md`'s
+> a number you can trust. It read **3** on 2026-09-08 (1 in `REVIEW-PASS.md`, 2 in `PARITY.md`'s
 > Wave D), and that is the whole of the repo's written open work. It was 75 before the
 > convention, and 17 the moment the convention landed. Note what `[~]` may NOT be used for:
 > a bullet that still lists "Still open: …" is open work, not a park — four were flipped back
@@ -103,6 +103,7 @@ before opening any of them.
 | File | Kind | Status |
 | --- | --- | --- |
 | **STATE.md** | ← you are here | The front door. Start here. |
+| `UNIFY.md` | **Ledger + playbook** | 🟡 **The current week's work** (from 2026-09-09): one word, one mechanism, one door per idea. Carries the vocabulary census, the LEAN baseline, and the day-by-day boxes. `src/lib/glossary.ts` is its data. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
 | `REVIEW-PASS.md` | Ledger | 🟡 **1 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
 | `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — tiers 1 and 2 fully resolved; tier 3 swept the same day (five re-checked, four stale). See §4-B. |

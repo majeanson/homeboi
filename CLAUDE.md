@@ -456,6 +456,12 @@ known limitations.**
 
 ## Shared jargon
 
+> **Words on screen are governed by `src/lib/glossary.ts`, not by this table.** The two
+> jobs are different: this table explains CONCEPTS to whoever is writing code ("capture
+> spine", "surface", "audience"); the glossary decides which WORD a household reads, in
+> both languages, and `src/lib/glossary.test.ts` holds the losing spellings to a ratchet
+> that only goes down. Naming something a user will read? Start there. See `UNIFY.md`.
+
 Use these names in conversation and code so we mean the same thing. Many already
 appear as code identifiers, route names, or `bmad/` requirement tags.
 
