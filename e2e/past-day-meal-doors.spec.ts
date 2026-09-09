@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState, MMID } from './mocks'
+import { boxOf } from './measure'
 import { todayLocalDay, addLocalDays } from '../src/lib/localDay'
 
 // Two DOORS into the same editable day scene for a PAST date — La cuisine ▸
@@ -163,4 +164,37 @@ test('planning a meal invalidates the calendar so its dot actually appears', asy
   await page.goBack()
   await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
   await expect.poll(() => monthGets, { message: 'the calendar should refetch after a meal write' }).toBeGreaterThan(before)
+})
+
+test('…and that pencil sits in the day HEADER, on the date’s line — the Repas anatomy', async ({ page }) => {
+  // Reported from the phone 2026-09-09: in Historique the pencil hung on a line of
+  // its OWN, under the meal chips, where the week grid puts it in the header beside
+  // the date. The cause was structural — the day row wrapped the pencil in an
+  // unstyled `.kitchen__day-top` div inside the body, so it wrapped instead of
+  // sitting in `.kitchen__day-head` like every other kitchen day row.
+  //
+  // Asserted on GEOMETRY, not only on the class: what was wrong was where the button
+  // LANDED, and a `.kitchen__day-head` that lost its flex row would put it back on a
+  // second line while still passing a "is it inside the header?" check.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/kitchen?tab=history')
+  const row = page.locator('.kitchen__day').first()
+  await row.waitFor({ state: 'visible', timeout: 15_000 })
+
+  const pencil = row.locator('.kitchen__day-manage')
+  await expect(pencil, 'the pencil is inside the row header').toHaveCount(1)
+  await expect(row.locator('.kitchen__day-head .kitchen__day-manage')).toHaveCount(1)
+
+  const date = await boxOf(row.locator('.kitchen__day-date'))
+  const pen = await boxOf(pencil)
+  const chips = await boxOf(row.locator('.meal-chip').first())
+
+  const midOf = (b: { y: number; height: number }) => b.y + b.height / 2
+  expect(Math.abs(midOf(pen) - midOf(date)), 'the pencil shares the date’s line').toBeLessThan(10)
+  expect(pen.x, 'and is clustered hard right of it').toBeGreaterThan(date.x + date.width - 1)
+  // The control: the chips are a separate line BELOW that header, so "same line as
+  // the date" can't pass by everything having collapsed into one row.
+  expect(chips.y, 'the meals stay below the header').toBeGreaterThan(pen.y + pen.height - 1)
 })

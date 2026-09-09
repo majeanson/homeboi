@@ -155,57 +155,29 @@ export function HistoryTab({
                     'surface kitchen__day' + (isToday ? ' is-today' : '') + (dow === 0 || dow === 6 ? ' is-weekend' : '')
                   }
                 >
-                  {/* The date badge IS the peek door here (the chips took the
-                      "tap the meal" gesture for « Encore ? »). */}
-                  <button
-                    type="button"
-                    className="kitchen__day-date kitchen__day-datebtn"
-                    onClick={() => openDayPeek(date, meals)}
-                    aria-label={`${t.detail.openDay} · ${formatDay(date, lang)}`}
-                    title={`${t.detail.openDay} · ${formatDay(date, lang)}`}
-                  >
-                    {isToday && <span className="kitchen__day-rel mono">{t.kitchen.todayShort}</span>}
-                    <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
-                    <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
-                  </button>
-                  <div className="kitchen__day-body">
-                    <div className="kitchen__day-top">
-                      <div className="kitchen__day-sum-main">
-                        <span className="kitchen__day-slots">
-                          {meals.map((m) => {
-                            const c = mealPrefs.color(m.slot as MealSlot) ?? 'var(--terracotta-deep)'
-                            const inner = (
-                              <>
-                                <InlineIcon name={SLOT_ICON_NAME[m.slot as MealSlot] ?? 'bowl-food-bold'} /> {m.title}
-                                {m.is_leftover ? (
-                                  <InlineIcon name="arrow-counter-clockwise-bold" size={12} />
-                                ) : null}
-                              </>
-                            )
-                            const tint = { color: tintInk(c), background: faint(c), borderColor: hairline(c) }
-                            // « Encore ? » — the chip reveals the plan picker; a
-                            // read-only guest keeps the plain display chip.
-                            return ro ? (
-                              <span key={m.id} className="meal-chip" style={tint}>
-                                {inner}
-                              </span>
-                            ) : (
-                              <button
-                                key={m.id}
-                                type="button"
-                                className="meal-chip kitchen__hist-chip"
-                                style={tint}
-                                onClick={() => toggle(m.id)}
-                                aria-expanded={isOpen(m.id)}
-                                title={`${t.kitchen.planAgain} · ${m.title}`}
-                              >
-                                {inner}
-                                <InlineIcon name="caret-down-bold" size={10} />
-                              </button>
-                            )
-                          })}
-                        </span>
-                      </div>
+                  {/* THE SAME HEADER ANATOMY AS THE REPAS GRID (`.kitchen__day-head`):
+                      the date on the left, the day's doors clustered hard right. The
+                      pencil used to sit inside the body under an unstyled
+                      `.kitchen__day-top` wrapper, so it wrapped onto a line of its own
+                      beneath the meal chips — a floating button with nothing to anchor
+                      it, where the week grid has a header. Reported from the phone
+                      2026-09-09; no new CSS, the two rows are now the same component
+                      shape. The one difference stays: here the date badge is ALSO the
+                      peek door (the chips took the meal tap for « Encore ? »), so it is
+                      a button wearing the badge's clothes rather than a span. */}
+                  <div className="kitchen__day-head">
+                    <button
+                      type="button"
+                      className="kitchen__day-date kitchen__day-datebtn"
+                      onClick={() => openDayPeek(date, meals)}
+                      aria-label={`${t.detail.openDay} · ${formatDay(date, lang)}`}
+                      title={`${t.detail.openDay} · ${formatDay(date, lang)}`}
+                    >
+                      {isToday && <span className="kitchen__day-rel mono">{t.kitchen.todayShort}</span>}
+                      <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
+                      <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>
+                    </button>
+                    <div className="kitchen__day-head-actions">
                       <button
                         type="button"
                         className="kitchen__day-manage"
@@ -215,6 +187,44 @@ export function HistoryTab({
                       >
                         <Icon name="pencil-simple-bold" size={16} />
                       </button>
+                    </div>
+                  </div>
+                  <div className="kitchen__day-body">
+                    <div className="kitchen__day-sum-main">
+                      <span className="kitchen__day-slots">
+                        {meals.map((m) => {
+                          const c = mealPrefs.color(m.slot as MealSlot) ?? 'var(--terracotta-deep)'
+                          const inner = (
+                            <>
+                              <InlineIcon name={SLOT_ICON_NAME[m.slot as MealSlot] ?? 'bowl-food-bold'} /> {m.title}
+                              {m.is_leftover ? (
+                                <InlineIcon name="arrow-counter-clockwise-bold" size={12} />
+                              ) : null}
+                            </>
+                          )
+                          const tint = { color: tintInk(c), background: faint(c), borderColor: hairline(c) }
+                          // « Encore ? » — the chip reveals the plan picker; a
+                          // read-only guest keeps the plain display chip.
+                          return ro ? (
+                            <span key={m.id} className="meal-chip" style={tint}>
+                              {inner}
+                            </span>
+                          ) : (
+                            <button
+                              key={m.id}
+                              type="button"
+                              className="meal-chip kitchen__hist-chip"
+                              style={tint}
+                              onClick={() => toggle(m.id)}
+                              aria-expanded={isOpen(m.id)}
+                              title={`${t.kitchen.planAgain} · ${m.title}`}
+                            >
+                              {inner}
+                              <InlineIcon name="caret-down-bold" size={10} />
+                            </button>
+                          )
+                        })}
+                      </span>
                     </div>
                     {openMeal && (
                       <MealPlanPicker
