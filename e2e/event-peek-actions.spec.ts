@@ -1,5 +1,6 @@
 import { test, expect, type Route } from '@playwright/test'
 import { mockApi, seedState, BASE } from './mocks'
+import { boxOf } from './measure'
 
 // The event detail peek now offers basic actions — Modify / Delete / Share — alongside
 // « Voir la journée ». Opened from a board activity row (.act__hit → .detail-sheet). We
@@ -110,4 +111,35 @@ test('« Itinéraire » opens Google Maps directions when the rendez-vous has an
   await page.locator('.detail-sheet').waitFor({ state: 'visible' })
   await openPeekMenu(page)
   await expect(page.getByRole('menuitem', { name: 'Itinéraire' })).toHaveCount(0)
+})
+
+test('at phone width the peek’s buttons fill the sheet — the ⋯/✕ float steals no width', async ({ page }) => {
+  // Reported from the phone 2026-09-09: the peek's action buttons stopped ~100px short
+  // of the right edge and read as off-centre. The cause was pure CSS mechanics, and
+  // worth naming because it will happen again: the head cluster (⋯ + ✕) is
+  // `float: right` so the TITLE can flow beside it, and `.detail-sheet__body` was a
+  // flex column. A flex container establishes a block formatting context, and a BFC may
+  // not overlap a float — so the body shrank by the cluster's width for its WHOLE
+  // height, not just the title's line. A quarter of a 390px sheet.
+  //
+  // The body is a block now; the HEAD still shrinks (the title must not run under the
+  // buttons), which is why this asserts on both halves rather than on one width.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await openEventPeek(page)
+
+  const sheet = await boxOf(page.locator('.detail-sheet'))
+  const actions = await boxOf(page.locator('.detail-sheet__actions'))
+  const head = await boxOf(page.locator('.detail-sheet__head'))
+  const menu = await boxOf(page.locator('.detail-sheet .sheet__head-actions'))
+
+  // Symmetric gutters: whatever padding the sheet has on the left, the buttons end the
+  // same distance from the right. The bug read as 16px left / 118px right.
+  const left = actions.x - sheet.x
+  const right = sheet.x + sheet.width - (actions.x + actions.width)
+  expect(Math.abs(right - left), `action row gutters: ${left} left vs ${right} right`).toBeLessThan(8)
+
+  // …and the head still yields to the ⋯/✕ cluster, so the title never runs under it.
+  expect(head.x + head.width, 'the head stops before the ⋯/✕').toBeLessThanOrEqual(menu.x + 1)
 })

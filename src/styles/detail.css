@@ -4,10 +4,25 @@
    the default button chrome while the .act .check disc rules still win. */
 
 /* The peek renders inside the shared .sheet shell (sheets/capture.css). */
+/* BLOCK, not a flex column — and that is load-bearing, not a style preference.
+   The sheet's ⋯/✕ cluster (.sheet__head-actions) is `float: right` so the title can
+   flow beside it. A flex container establishes a block formatting context, and a BFC
+   may not overlap a float: this body therefore shrank by the cluster's width for its
+   WHOLE height, not just the title's line. At 390px that is ~100px — a quarter of the
+   sheet — so the action buttons stopped short of the right edge and read as
+   off-centre (reported from the phone, 2026-09-09).
+   As a block, the body spans the full width while the HEAD (still flex) keeps
+   shrinking beside the cluster, which is exactly what should happen: the title must
+   not run under the buttons. Measured against the two alternatives — `width: 100%`
+   on the body, and an absolutely-positioned cluster — both of which widen the head
+   too and slide the title under the ⋯/✕.
+   The gap becomes a margin between siblings; every child here sets `margin: 0`, so
+   nothing collapses into it. */
 .detail-sheet__body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: block;
+}
+.detail-sheet__body > * + * {
+  margin-top: 14px;
 }
 
 .detail-sheet__head {
