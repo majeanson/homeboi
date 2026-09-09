@@ -17,6 +17,7 @@
 
 import { isValidR2Key } from './validate'
 import { intakeMediaKeys, type IntakeSubmission } from './intake'
+import { normalizeStepImages } from './recipeStepImages'
 
 export type ShareKind = 'family' | 'recipe' | 'event' | 'routine'
 export const SHARE_KINDS: readonly ShareKind[] = ['family', 'recipe', 'event', 'routine']
@@ -95,6 +96,8 @@ export interface RoutineSharePayload {
 
 const HTTPS = /^https?:\/\//i
 const isR2 = (v: unknown): v is string => typeof v === 'string' && !HTTPS.test(v) && isValidR2Key(v)
+// Step photos ride the ONE step-image rule (pad/trim to the step count + validate).
+
 
 // Every SHARE-OWNED R2 key a stored payload references — freed on revoke/expire, and
 // (before the copy) the source keys to duplicate at create time. Never returns an https
@@ -180,9 +183,10 @@ export interface RecipeSnapshotSource {
 
 export function buildRecipeSnapshot(src: RecipeSnapshotSource): RecipeSharePayload {
   const steps = strList(src.steps, 60, 500)
-  // stepImages kept parallel to steps: pad/trim to the step count, validate each entry.
-  const rawStepImages = Array.isArray(src.stepImages) ? src.stepImages : []
-  const stepImages = steps.map((_, i) => (isR2(rawStepImages[i]) ? (rawStepImages[i] as string) : ''))
+  // stepImages kept parallel to steps: pad/trim to the step count, validate each
+  // entry — through THE shared rule, so a snapshot can never disagree with what
+  // /api/recipes serves for the same row.
+  const stepImages = normalizeStepImages(src.stepImages, steps.length)
   const image = typeof src.image === 'string' && (HTTPS.test(src.image) || isR2(src.image)) ? src.image : null
   return {
     title: s(src.title, 200).trim() || 'Recette',

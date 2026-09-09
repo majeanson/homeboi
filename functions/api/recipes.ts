@@ -4,6 +4,9 @@ import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
 import { isValidR2Key } from '../_lib/validate'
 import { MAX_STEP_LEN, healTruncatedSteps } from '../_lib/recipeImport'
+// The step-image lockstep rule lives in ONE server home (its client twin is
+// src/lib/parallelArray.ts) — see functions/_lib/recipeStepImages.ts.
+import { normalizeStepImages, stepImageKeys } from '../_lib/recipeStepImages'
 
 // Recipe book CRUD (the "consultation + meal-planning helper" layer). A recipe is
 // a household card: title + ingredient lines + prep steps (both string[] stored
@@ -108,21 +111,6 @@ function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
     .slice(0, max)
 }
 const cleanSteps = (v: unknown): string[] => cleanList(v, 40, MAX_STEP_LEN)
-
-// Per-step photos (feature #17 B, migration 0041): a PARALLEL array to steps,
-// stepImages[i] is the R2 key for step i, or '' when that step has no photo. We
-// keep it the SAME LENGTH as steps (a heading row's slot is simply empty) so the
-// cook view indexes it positionally — pad/trim to `count`, validate each entry is
-// an R2-key-shaped token ('' otherwise). Defensive on read: a bad/short row reads
-// as all-''. Remote URLs aren't accepted here — step photos are always uploads.
-function normalizeStepImages(v: unknown, count: number): string[] {
-  const src = parseJsonArray<unknown>(typeof v === 'string' ? v : JSON.stringify(v ?? []))
-  const out: string[] = []
-  for (let i = 0; i < count; i++) out.push(isValidR2Key(src[i]) ? (src[i] as string) : '')
-  return out
-}
-// The R2 keys actually present in a step-image array — for cleanup on delete.
-const stepImageKeys = (v: unknown): string[] => normalizeStepImages(v, 40).filter((k) => k.length > 0)
 
 // The read-from photo's R2 key inside a stored original snapshot, if any — so it's
 // freed with the row (and when a re-import during edit replaces the snapshot).

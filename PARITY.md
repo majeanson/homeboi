@@ -904,6 +904,18 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         `lib/parallelArray.ts` (unit-tested), the server re-aligns on every write
         (`normalizeStepImages`), and `parallel-array-rule.test.ts` fails the build
         on a writer that bypasses the helper. Marc's call when asked.
+        **Containment re-verified the same evening — a `[~]` is a verdict, not a fact.**
+        The client guard was RUN against the bug it names (a hand-built
+        `rows.map(() => '')` fed to `setStepImages`): red, naming the file:line. The
+        server was the weaker half — the rule had TWO spellings there
+        (`api/recipes.ts`'s `normalizeStepImages` and an inline `steps.map(…)` inside
+        `buildRecipeSnapshot`), which is one edit from disagreeing. Both now import
+        **`functions/_lib/recipeStepImages.ts`** — the server twin of the client's
+        `lib/parallelArray.ts` — with `recipeStepImages.test.ts` pinning pad/trim/
+        validate AND that a share snapshot agrees with what `/api/recipes` serves for
+        the same row (proven red by dropping the trim). Checked and found already safe:
+        `share.ts` passes the column RAW, but the builder aligns it, so no snapshot can
+        carry a key past the last step; `recipe-step-image.ts` only mints a key.
   - [x] ~~media parallel arrays → trio.~~ **Halved on inspection, 2026-08-28** — the four
         names are three different shapes, and two of them are correct as they stand:
         - **REAL, and the anti-pattern the item means — positional arrays indexed by

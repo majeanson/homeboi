@@ -419,6 +419,28 @@ evening. **A board guard that depends on the hour freezes its clock** (`page.clo
 
 ## 4. What still needs improvement — consolidated and ranked
 
+**Coverage + Wave D pass, 2026-09-08 (evening).** Three of the six "honest coverage
+backlog" gaps this file listed were **stale**: device-revoke, member-rename and the
+note auto-save round-trip are all covered (the first two were written earlier the same
+day). The three real ones are now closed, each verified red against planted defects:
+
+- **`/cercle/import` had ZERO tests** — the worst place in the app for that, since the
+  URL lives in links already TEXTED to relatives and behind one tap sits the longest
+  write chain in the codebase (create-or-merge each person → copy each photo → each
+  relationship → each pet + its owner link → the family group). Six cases read the
+  WRITES, not the screen (`e2e/family-import.spec.ts`).
+- **Both toddler surfaces** — the kitchen's rule is *a child's pick is an IDEA, never a
+  plan* (nothing may reach `/api/meals`), plus "one tap never commits" and "a day that
+  already has a supper is taken"; Maison's is that a relative's label is read from the
+  OTHER person's side (« Mère », not « Fille ») and that closed links put a grandmother
+  on a grandchild's card. A kid kiosk has no in-app escape, so a stray write there is
+  both unattributable and unreachable.
+- **Wave D's last item stays parked, but its containment was CHECKED rather than
+  trusted.** The client guard went red on the bug it names; the server had two spellings
+  of the lockstep rule, now one (`functions/_lib/recipeStepImages.ts`). Details in
+  PARITY.md's own entry.
+
+
 Deduplicated across every source above. Ranked by **user harm**, not by which document
 it happens to live in.
 
