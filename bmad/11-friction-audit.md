@@ -123,8 +123,16 @@ Tier 3 — polish (fix opportunistically, or bundle with the tier above).
   didn't. Fixed + `e2e/cold-week-anchor.spec.ts` (and its first assertion, looking for
   the string "1970", passed with the bug planted — `formatWeekday` renders « jeudi », no
   year — so it is structural now: no anchor, no day chip to tap).
-- Abandoned routine stopwatch logs absurd laps; empty shell routine invisible to
-  the kid with no cue (kids). ✅ the third clause, "`calm.ts` comment contradicts actual
+- ~~Abandoned routine stopwatch logs absurd laps; empty shell routine invisible to
+  the kid with no cue (kids).~~ ✅ **both clauses closed, verified 2026-09-08.** The
+  stopwatch is GONE (Marc's call 2026-09-03 — elapsed time per run is the raw material
+  a personal-best score would be built from; `RoutinePlayer.tsx:175` records it, and
+  only the per-step countdown ring remains). The cue SHIPPED as "kids seam #6": a
+  card-less routine is deliberately filtered off the kid surface (`KidView.tsx:107`,
+  with the reason), and the silence is named on the PARENT card instead — an « À
+  compléter » chip plus « L'enfant la verra quand elle aura des étapes. »
+  (`RoutinesTab.tsx:153`), with the card's own tap opening the builder rather than a
+  stage with nothing on it. Neither was ticked here. ✅ the third clause, "`calm.ts` comment contradicts actual
   behaviour", is **stale** — that header now documents the contradiction as a past error
   ("it used to claim otherwise in three places, while the code did the opposite").
 - « Par allée » hides the drag grip — **a recorded decision, not a gap.** ✅ "online-only
@@ -133,7 +141,12 @@ Tier 3 — polish (fix opportunistically, or bundle with the tier above).
   `t.shop.searchOffline` (:223, :228, :232).
 - 🔶 **2026-08-27** an AGE marker shipped on fridge notes (bmad/12 #25); an ORIGIN marker still needs a column — out of scope. Capture-routed notes carry no origin marker after the sheet closes (tidy).
 - ✅ **2026-08-27** Stale cook/multi-cook deep-links bounce to /kitchen silently (cook).
-- No "last week" review anywhere in the kitchen (grid is forward-only) (plan).
+- ~~No "last week" review anywhere in the kitchen (grid is forward-only) (plan).~~
+  ✅ **stale, verified 2026-09-08.** « Historique » (`components/kitchen/HistoryTab.tsx`)
+  is every planned meal since the household began, newest first, grouped by month — and
+  it is not merely a read: the date badge opens the day peek, and a meal chip is
+  « Encore ? », which re-plans that dish (recipe link included) onto an upcoming day.
+  The grid is forward-only on purpose; the backward view is its own tab.
 
 ## Verified healthy (the audits checked, and these hold)
 

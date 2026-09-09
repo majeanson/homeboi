@@ -504,10 +504,15 @@ flash **was** already fixed at the named site (`Kitchen.tsx` holds a Skeleton), 
 sweeping the *rule* turned up a fifth `weekStart ?? 0` consumer that wasn't guarded —
 `IdeasPage`, where the epoch week became the ideas drawer's "plan it on…" chips, so a tap
 on a cold open **wrote a meal dated 1 Jan 1970**. Fixed, with `e2e/cold-week-anchor.spec.ts`.
-Still genuinely open: the cashier's second check-state, staples chips, the gather tick's
-27px target, whether the supper hero reflects « Marquer mangé » (the action itself exists),
-the abandoned routine stopwatch, the empty shell routine's missing cue, and "last week"
-review. « Par allée »'s drag grip is a recorded decision, not a gap.
+~~Still genuinely open: …~~ **tier 3 is CLOSED, 2026-09-08 (evening).** Every one of the
+seven resolved, and only one of them by writing code: the cashier's second check-state and
+the staples chips are Marc's « won't do »; the supper hero's done state is his « leave it —
+the hero is a plan, not a tracker »; the gather tick MEASURES 46px against a 44 floor and is
+now guarded against the live `--touch-target`; the routine stopwatch was dropped on his call
+and is gone from `RoutinePlayer`; the empty shell routine's cue SHIPPED as "kids seam #6"
+(« À compléter » + why, on the parent card); and « Historique » is the "last week" review,
+with an « Encore ? » that re-plans a past dish. Six of the seven were verdicts or already-done
+work that nobody ticked — the ratio this file keeps re-learning. « Par allée »'s drag grip is a recorded decision, not a gap.
 
 ### C. Section debt — `REVIEW-PASS.md`, **1 finding left** (swept three times, 2026-08-28)
 
