@@ -63,6 +63,28 @@ import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
 // its own data lands, so the swap reads as loading rather than as a blank frame.
 const MonthView = lazy(() => import('../components/board/MonthView').then((m) => ({ default: m.MonthView })))
 const YearView = lazy(() => import('../components/board/YearView').then((m) => ({ default: m.YearView })))
+
+// …and then fetched anyway, once the board has settled. Splitting them keeps 82 KB out
+// of the path to FIRST PAINT, which is the number that matters on a slow wall tablet;
+// it does not follow that the tablet should then wait for a network round trip the first
+// time someone taps « Mois ». Warmed on idle: the boot is light AND the switch is
+// instant, which is the whole point of splitting rather than a trade against it.
+//
+// `requestIdleCallback` where it exists (not Safari), a plain timeout otherwise. Fired
+// once per document, never on the critical path, and harmless if it races the real
+// import — the module cache dedupes it.
+let warmed = false
+function warmCalendars() {
+  if (warmed) return
+  warmed = true
+  const go = () => {
+    void import('../components/board/MonthView')
+    void import('../components/board/YearView')
+  }
+  const ric = (window as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback
+  if (ric) ric(go, { timeout: 4000 })
+  else window.setTimeout(go, 1500)
+}
 import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { SimpleBoard } from '../components/board/SimpleBoard'
@@ -192,6 +214,9 @@ export function Board() {
   const recipeFor = useRecipeForMeal()
   // The board layout for this device (bento = Grille | month = Mois), remembered locally.
   const [view, setView] = useState<BoardView>(() => readBoardView())
+  // Pull « Mois » and « Année » down once the board is quiet, so the first tap on the
+  // view toggle does not wait for the network (see warmCalendars above).
+  useEffect(warmCalendars, [])
   // Which Grille cards this device shows + their order (Réglages ▸ Affichage ▸
   // Disposition). Per-device, live via useSyncExternalStore (lib/boardCards).
   const boardCards = useBoardCards()

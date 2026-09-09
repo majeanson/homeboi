@@ -394,18 +394,38 @@ mark.hl {
 .gloss__word:focus-visible {
   text-decoration-color: var(--accent);
 }
-/* The definition sits INLINE, as its own block under the paragraph — not a
-   floating popover: a tooltip that hangs over the next line is unreadable on a
-   phone, and a bottom sheet for two sentences is a whole surface for a word. */
+/* The definition FLOATS over the paragraph, anchored to the word (Marc's call,
+   2026-09-09). It first shipped inline, which pushed the rest of the sentence down
+   the screen — the paragraph you were mid-way through moved under your eye. Floating
+   costs nothing to the layout: nothing reflows, and the sentence stays put.
+   Two things floating owes back, both handled:
+   • it must never leave the screen — the word can sit anywhere on a line, so
+     `--gloss-dx` (set after layout in GlossaryTerm.tsx) shifts it back inside, and the
+     width is capped against the gutter so a 390px phone always fits it;
+   • it must be dismissible — Escape and an outside tap, same file. */
 .gloss__pop {
+  /* FIXED and portaled to <body> — see GlossaryTerm.tsx. Absolute positioning inside the
+     paragraph measured perfectly and was still clipped on both sides, because the guide
+     card clips its own overflow and no amount of viewport clamping escapes an ancestor.
+     `top`/`left` are written by the layout effect from the WORD's rect. */
+  position: fixed;
+  z-index: 45; /* above the undo toast (40), far below any scene (50+) or sheet (155+) */
+  top: 0;
+  left: 0;
   display: block;
-  margin: 6px 0 2px;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 2 * var(--gutter)));
   padding: 10px 12px;
   border-radius: var(--radius-md);
   background: var(--paper-deep);
-  box-shadow: inset 0 0 0 1.5px var(--line);
+  /* It sits ON the text now, so it needs to read as a layer: a real border plus a
+     shadow, where the inline version could get away with an inset hairline. */
+  box-shadow:
+    inset 0 0 0 1.5px var(--line),
+    0 6px 20px -6px rgb(0 0 0 / 0.28);
   font-size: var(--text-sm);
   color: var(--ink);
+  text-align: left;
 }
 .gloss__def {
   display: block;

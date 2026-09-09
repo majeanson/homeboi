@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import type { GlossaryTerm } from '../lib/glossary'
@@ -54,12 +55,77 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
   const { lang } = useLang()
   const [open, setOpen] = useState(false)
   const [term, setTerm] = useState<GlossaryTerm | null>(null)
+  const wrapRef = useRef<HTMLSpanElement>(null)
+  const popRef = useRef<HTMLSpanElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  // THE POPOVER FLOATS OVER THE TEXT, so nothing reflows when a word is tapped — the
+  // sentence you were reading stays exactly where it was.
+  //
+  // IT PORTALS TO <body>, and that is not optional. The first attempt positioned it
+  // absolutely inside the paragraph and clamped it to the VIEWPORT, which measured
+  // clean — x=24, right=312 inside a 320px screen, `scrollWidth === clientWidth` — and
+  // was still clipped on BOTH sides on screen. The clipper was never the viewport: it is
+  // the guide card's own `overflow`, and an element cannot escape an ancestor's clip by
+  // being clamped to something wider than that ancestor. `ActionMenu` learned this and
+  // portals for the same reason.
+  //
+  // So the position is `fixed`, measured from the WORD, and clamped to the viewport in
+  // one layout effect (before paint — no flash). Same clamp, but now it is the only
+  // boundary that still applies.
+  useLayoutEffect(() => {
+    const el = popRef.current
+    const btn = btnRef.current
+    if (!open || !term || !el || !btn) return
+    const b = btn.getBoundingClientRect()
+    const pad = 8
+    el.style.top = `${Math.round(b.bottom + 6)}px`
+    el.style.left = `${Math.round(Math.max(pad, Math.min(b.left, window.innerWidth - el.offsetWidth - pad)))}px`
+  }, [open, term, lang])
+
+  // A fixed layer anchored to a word must not outlive the word's position: once the page
+  // scrolls, the definition would point at a different line. Closing is honest and
+  // cheaper than following.
+  useEffect(() => {
+    if (!open) return
+    const close = () => setOpen(false)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [open])
+
+  // Overlaying the text earns the two ways out a floating layer owes the reader: Escape,
+  // and a tap anywhere else. (Tapping the word itself still toggles — the wrapper holds
+  // the button, so a pointerdown inside it is not "outside".)
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    const onDown = (e: PointerEvent) => {
+      // The panel is PORTALED, so it is not inside the wrapper any more — a tap on its
+      // own « Voir le guide » link would read as "outside" and close it mid-tap.
+      const n = e.target as Node
+      if (!wrapRef.current?.contains(n) && !popRef.current?.contains(n)) setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('pointerdown', onDown)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('pointerdown', onDown)
+    }
+  }, [open])
+
   // An unknown id cannot ship — `glossary.test.ts` fails the build on a [[mot:…]] that
   // names no term — so the mark renders without waiting to confirm the lookup.
   return (
-    <span className="gloss">
+    <span className="gloss" ref={wrapRef}>
       <button
         type="button"
+        ref={btnRef}
         className="gloss__word"
         // Reflects what is ON SCREEN, not what was intended: between the tap and the
         // chunk landing there is no panel, and a screen reader told "expanded" about
@@ -87,20 +153,23 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
       >
         {label}
       </button>
-      {open && term && (
-        <span className="gloss__pop" role="status">
-          <span className="gloss__def">{term.def[lang]}</span>
-          {term.card && (
-            <Link
-              className="gloss__guide"
-              to={`/settings?tab=guide&card=${term.card}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />
-            </Link>
-          )}
-        </span>
-      )}
+      {open &&
+        term &&
+        createPortal(
+          <span className="gloss__pop" role="status" ref={popRef}>
+            <span className="gloss__def">{term.def[lang]}</span>
+            {term.card && (
+              <Link
+                className="gloss__guide"
+                to={`/settings?tab=guide&card=${term.card}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />
+              </Link>
+            )}
+          </span>,
+          document.body,
+        )}
     </span>
   )
 }

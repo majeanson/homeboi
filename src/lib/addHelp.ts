@@ -256,7 +256,7 @@ export const ADD_HELP = {
     card: 'mots',
     body: {
       fr: 'Laisse un mot à quelqu’un de la maison — écrit, dicté, dessiné ou en photo. Il attend sa face, et n’apparaît que pour elle.',
-      en: 'Leave a note for someone in the house — typed, spoken, drawn or a photo. It waits for their face, and shows up only for them.',
+      en: 'Leave a message for someone in the house — typed, spoken, drawn or a photo. It waits for their face, and shows up only for them.',
     },
   },
   habit: {

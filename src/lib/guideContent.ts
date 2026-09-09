@@ -1173,10 +1173,10 @@ export const GUIDE: GuideEntry[] = [
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('drawings' → base 3) indexes into this card — append only.
       {
-        label: { fr: 'Déposer un mot', en: 'Leave a note' },
+        label: { fr: 'Déposer un mot', en: 'Leave a message' },
         detail: {
           fr: 'Touche le ＋ → « Laisse un mot », choisis à qui, puis écris ou enregistre. « Plus tard » le programme (un « bonne fête » au matin) ; « Me le rappeler » se laisse un mot à soi-même.',
-          en: 'Tap ＋ → “Leave a note”, choose who it’s for, then type or record. “Later” schedules it (a “happy birthday” in the morning); “Remind me” leaves one to yourself.',
+          en: 'Tap ＋ → “Leave a message”, choose who it’s for, then type or record. “Later” schedules it (a “happy birthday” in the morning); “Remind me” leaves one to yourself.',
         },
         route: '/board?plus=mot',
       },
@@ -1184,14 +1184,14 @@ export const GUIDE: GuideEntry[] = [
         label: { fr: 'Il attend, sans presser', en: 'It waits, no pressure' },
         detail: {
           fr: 'Le mot reste fermé sur le visage du destinataire — jamais de pastille de compte — et on l’ouvre quand on passe, avec une réponse possible ; un mot dit à voix haute s’écrit tout seul. Une fois vus, ils descendent dans « Déjà vus », qu’un balai vide d’un coup, sauf ceux que tu as gardés.',
-          en: 'The note stays closed on the recipient’s face — never an unread count — and you open it when you pass by, reply if you like; a spoken note writes itself down. Once seen, notes drop into “Already seen”, which one broom empties, except the ones you kept.',
+          en: 'The message stays closed on the recipient’s face — never an unread count — and you open it when you pass by, reply if you like; a spoken message writes itself down. Once seen, they drop into “Already seen”, which one broom empties, except the ones you kept.',
         },
       },
       {
         label: { fr: 'Pas la boîte aux lettres', en: 'Not the postbox' },
         detail: {
           fr: '« Laisse un mot » reste entre membres de la maisonnée. La boîte aux lettres reçoit les mots des proches de l’extérieur (voir [[card:share-access|Partager & inviter]]).',
-          en: '“Leave a note” stays between household members. The mailbox receives notes from relatives outside (see [[card:share-access|Share & invite]]).',
+          en: '“Leave a message” stays between household members. The postbox receives letters from relatives outside (see [[card:share-access|Share & invite]]).',
         },
       },
       {
