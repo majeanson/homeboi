@@ -38,22 +38,37 @@ export function sourceFiles(dir: string): string[] {
 // Line comments are then blanked only when the WHOLE trimmed line is one (a
 // trailing `// note` after real code is left alone) — unchanged from before.
 export function blankComments(s: string): string {
+  // LINE COMMENTS GO FIRST, and the order is load-bearing — it was the other way round
+  // until 2026-09-09 and that made this helper destroy French files. The string walk
+  // below treats any `'` as a string opener, including the apostrophe in « pour
+  // l'instant » inside a `//` comment: from there the walk is desynchronised and eats
+  // real code up to the next apostrophe. On `src/i18n.ts` that turned 171 488 chars into
+  // 3 673 — 98 % of the file gone — so every guard scanning it was reading almost
+  // nothing and passing for that reason. The breadcrumb rule in settingsNav.test.ts saw
+  // ZERO « Réglages ▸ » crumbs where the file has seven.
+  // Blanking whole-line comments first is safe (a `//` inside a string never starts a
+  // line, and the rule was already "only when the WHOLE trimmed line is a comment"), and
+  // it leaves the string-aware block-comment pass below exactly as it was.
+  const s2 = s
+    .split('\n')
+    .map((l) => (l.trim().startsWith('//') ? '' : l))
+    .join('\n')
   let stripped = ''
   let i = 0
-  while (i < s.length) {
-    const c = s[i]
+  while (i < s2.length) {
+    const c = s2[i]
     if (c === '"' || c === "'" || c === '`') {
       const quote = c
       let j = i + 1
-      while (j < s.length && s[j] !== quote) j += s[j] === '\\' ? 2 : 1
-      stripped += s.slice(i, Math.min(j + 1, s.length))
+      while (j < s2.length && s2[j] !== quote) j += s2[j] === '\\' ? 2 : 1
+      stripped += s2.slice(i, Math.min(j + 1, s2.length))
       i = j + 1
       continue
     }
-    if (c === '/' && s[i + 1] === '*') {
+    if (c === '/' && s2[i + 1] === '*') {
       let j = i + 2
-      while (j < s.length && !(s[j] === '*' && s[j + 1] === '/')) j++
-      stripped += s.slice(i, j).replace(/[^\n]/g, '')
+      while (j < s2.length && !(s2[j] === '*' && s2[j + 1] === '/')) j++
+      stripped += s2.slice(i, j).replace(/[^\n]/g, '')
       i = j + 2
       continue
     }

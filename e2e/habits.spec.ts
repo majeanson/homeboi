@@ -67,7 +67,7 @@ test.describe('Le point du jour', () => {
 
     // Still asking — a partial day is not settled.
     await expect(water).not.toHaveClass(/habit-row--settled/)
-    await water.getByRole('button', { name: 'En enlever un' }).click()
+    await water.getByRole('button', { name: 'En retirer un' }).click()
     await expect(water.locator('.habit-row__sub')).toHaveText('0 sur 8 verres')
   })
 

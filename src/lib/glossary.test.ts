@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { GLOSSARY, rivalForms } from './glossary'
 import { GUIDE } from './guideContent'
 import { sourceFiles } from './buildGuardScan'
+import { FR } from '../i18n'
+import { EN } from '../i18n.en'
 
 // ONE WORD PER IDEA — held by a ratchet, not by good intentions.
 //
@@ -28,19 +30,47 @@ import { sourceFiles } from './buildGuardScan'
 //    number may only go DOWN, each `floor` records where it should stop, and the semantic
 //    triage stays human work.
 
-const SRC = join(__dirname, '..')
 const E2E = join(__dirname, '..', '..', 'e2e')
 
-// Every user-visible VALUE, both quote styles. Missing template literals is not a
-// detail: every pluralising string in this app is a backtick (`${n} note effacée`), so
-// a scanner that reads only 'quotes' misses exactly the strings that report a delete.
-const values = (src: string): string[] => [
-  ...[...src.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]),
-  ...[...src.matchAll(/`((?:[^`\\]|\\.)*)`/g)].map((m) => m[1]),
-]
+// THE VALUES COME FROM THE DICTIONARY, NOT FROM THE SOURCE TEXT.
+//
+// Three drafts to get here, and the two dead ends are worth keeping written down
+// because both looked right and produced confident numbers:
+//
+// 1. Regex over `'…'` only. Every pluralising string in this app is a TEMPLATE literal
+//    (`${n} note effacée`) — exactly the strings that report a delete. Missed all of them.
+// 2. Regex over both quote styles, comments blanked. Better, still wrong: a French
+//    apostrophe (« d'essai », and in comments « pour l'instant ») ends a `'…'` match
+//    early, so the next match pairs across code and swallows source fragments as if they
+//    were UI copy. The tell was a planted string that could not move the count.
+//
+// Walking the imported dictionary removes the whole class: FR and EN are plain objects,
+// so their values ARE the strings, no parsing involved. `confirmCopy.test.ts` already
+// walks them this way, including calling interpolating strings with a stand-in.
+//
+// (The dead end paid for itself anyway: chasing it found that `blankComments` destroyed
+// 98% of a French file, which had silently blinded the breadcrumb guard. Fixed in
+// buildGuardScan.ts the same day.)
+function dictValues(dict: unknown): string[] {
+  const out: string[] = []
+  const walk = (v: unknown) => {
+    if (typeof v === 'string') out.push(v)
+    else if (typeof v === 'function') {
+      // An interpolating string: render it with stand-ins, the way a screen would.
+      try {
+        const r = (v as (...a: unknown[]) => unknown)('Machin', 2, 'Truc')
+        if (typeof r === 'string') out.push(r)
+      } catch {
+        /* takes a shape we can't fake — skipped; the canary below notices a collapse */
+      }
+    } else if (v && typeof v === 'object') Object.values(v as Record<string, unknown>).forEach(walk)
+  }
+  walk(dict)
+  return out
+}
 
-const frValues = values(readFileSync(join(SRC, 'i18n.ts'), 'utf8'))
-const enValues = values(readFileSync(join(SRC, 'i18n.en.ts'), 'utf8'))
+const frValues = dictValues(FR)
+const enValues = dictValues(EN)
 
 // e2e specs assert user-visible text; a rival asserted there is a rename waiting to break.
 const e2eText = sourceFiles(E2E)
@@ -54,21 +84,23 @@ const occurrences = (haystack: string[], form: string) => {
 }
 
 // ── The ratchets, pinned 2026-09-09. Lower them; never raise them. ───────────
-// A rival's target is 0 — it is a word that lost. `effacer` is the exception: it keeps
+// A rival's target is 0 — it is a word that LOST. Two words that look like rivals are
+// not: « effacer » keeps the eraser (day 2), and « le cercle » keeps the PEOPLE (day 3,
+// see its own ratchet below). `effacer` is the exception: it keeps
 // a legitimate job (the drawing eraser, and consequence prose), so its number falls to
 // a floor rather than to zero. Day 2 of UNIFY.md spends these down.
 const RIVAL_CEILING: Record<string, number> = {
   'fr:Enlever': 0,
   'fr:Tâche': 2,
-  'fr:Événement': 4,
-  'fr:Le cercle': 9,
-  'en:The circle': 13,
+  'fr:Événement': 0,
 }
 
-// Day 2 spent this from 20 to its floor: the 8 that remain are consequence prose, the
-// DrawPad's ink eraser, and the ✕ that clears typed text — every one of them a MARK.
-const EFFACER_CEILING = 8
-const EFFACER_FLOOR_NOTE = '~8 are consequence prose (« sera effacé ») and are correct'
+// Day 2 spent this down to its floor, and day 3 learned the floor was 14 rather than 8 —
+// the earlier numbers came from a scanner that was reading comments as copy. Every one of
+// the 14 is legitimate: consequence prose (« sera effacé »), the DrawPad ink eraser, the ✕
+// that clears typed text, and the school-year dates. All MARKS, never objects.
+const EFFACER_CEILING = 14
+const EFFACER_FLOOR_NOTE = 'all 14 are legitimate: prose, the DrawPad ink, the field ✕, typed dates'
 
 // Rival forms asserted by e2e specs — every one is a rename that would break a spec
 // after the deploy, because E2E is decoupled here.
@@ -79,9 +111,14 @@ describe('glossary — shape', () => {
     expect(frValues.length, 'FR i18n values').toBeGreaterThan(2000)
     expect(enValues.length, 'EN i18n values').toBeGreaterThan(2000)
     expect(e2eText.length, 'e2e specs').toBeGreaterThan(100_000)
-    // …and the value scanner really does see template literals, which the first draft
-    // of the census did not.
-    expect(values("a = `${n} note effacée`")).toContain('${n} note effacée')
+    // …and an interpolating string really is RENDERED, not skipped. Those are the
+    // strings that report a delete (`${n} note retirée`), so missing them would blind
+    // the ratchets to exactly the words they hunt — which is what the first two drafts
+    // of this scanner did.
+    expect(
+      frValues.some((v) => v.includes('Machin')),
+      'no interpolating string was rendered — the walk is skipping functions',
+    ).toBe(true)
   })
 
   it('every term is complete, and its definition is short enough to read', () => {
@@ -164,12 +201,35 @@ describe('glossary — the ratchets (they only go down)', () => {
     )
   })
 
-  it('no NEW e2e spec pins a word that is on its way out', () => {
-    // Decoupled E2E is why this matters: the spec would go red after the deploy.
-    const n = (e2eText.match(/'Effacer[^']*'/g) ?? []).length
+  // « Le cercle » is NOT on its way out — day 3 established that it names the PEOPLE,
+  // not the tab (the tab is Maison). What must not happen is the word SPREADING back
+  // into strings that navigate: « Fiche complète dans Le cercle » pointed at a place
+  // that no longer exists under that name. A count cannot tell a naming use from a
+  // navigating one, so this holds the line rather than pretending to judge: the word
+  // may stay exactly where it is, and may not grow.
+  it('« cercle » names the people and does not spread back into navigation', () => {
+    const fr = frValues.filter((v) => /le cercle/i.test(v)).length
+    const en = enValues.filter((v) => /the circle/i.test(v)).length
+    expect(fr, 'FR « le cercle » may not grow past its 6 naming uses').toBeLessThanOrEqual(6)
+    expect(en, 'EN "the circle" may not grow past its 16 naming uses').toBeLessThanOrEqual(16)
+  })
+
+  it('no e2e spec pins a word that is on its way out', () => {
+    // Decoupled E2E is why this matters: such a spec goes red AFTER the deploy.
+    //
+    // This rule was hard-coded to « Effacer » for a day, and a spec pinning
+    // « Événements » sailed straight past it into a red run. It reads the glossary now,
+    // so every rival is covered the moment it is declared — a guard that knows one word
+    // is a guard for one word.
+    const pinned: string[] = []
+    for (const { form, term } of rivalForms()) {
+      // Only assertions, not prose: a rival inside a spec's own comment is a note.
+      const re = new RegExp(`['\`"][^'\`"]*\\b${form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b[^'\`"]*['\`"]`, 'gi')
+      for (const m of e2eText.match(re) ?? []) pinned.push(`${term}: ${m.slice(0, 60)}`)
+    }
     expect(
-      n,
-      `${n} e2e assertions pin an « Effacer … » label (ceiling ${E2E_RIVAL_CEILING}). Rename the label and the spec in ONE commit`,
-    ).toBeLessThanOrEqual(E2E_RIVAL_CEILING)
+      pinned,
+      'rename the label and the spec that asserts it in ONE commit — E2E runs after the deploy here',
+    ).toEqual([])
   })
 })

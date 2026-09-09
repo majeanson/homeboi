@@ -53,35 +53,55 @@ stops being a signal exactly when the edits are most invasive).
 
 ## Part 0 — The census (2026-09-09)
 
-**Method** — user-visible VALUES only (both quote styles: `'…'` **and** backticks), from
-`src/i18n.ts` / `src/i18n.en.ts`. Command:
-`node scratchpad/census.mjs`, reproduced by `src/lib/glossary.test.ts`'s own scanner.
+**Method** — the FR/EN dictionaries are walked as OBJECTS (`src/lib/glossary.test.ts`
+`dictValues`), interpolating strings rendered with a stand-in. No source parsing.
 
-> The first draft of this census read single quotes only and reported « effacer » **6×**
-> when the true number is **20** — every pluralising string in this app is a template
-> literal (`${n} note effacée`), which is exactly where a delete reports itself. A word
-> census that misses backticks misses the strings that name the act.
+> ### The census was wrong twice before it was right, and both drafts sounded confident
+>
+> 1. **Single quotes only** → « effacer » read **6**. Every pluralising string here is a
+>    template literal (`${n} note effacée`) — exactly the strings that report a delete.
+> 2. **Both quote styles, comments blanked** → read **20**. Also wrong: a French
+>    apostrophe (« d'essai ») ends a `'…'` match early, so the next match pairs across
+>    code and swallows source fragments as UI copy.
+> 3. **Walking the dictionary objects** → **14**, and that one is exact.
+>
+> The tell was a PLANTED string that could not move the count. A ratchet whose number
+> cannot be moved by the bug it guards is a decoration — and chasing it found a real
+> defect in a shared helper (below).
 
-**Verbs (FR · user-visible values):** supprimer **30** · retirer **43** · effacer **20** ·
-vider **15** · révoquer **2** · enlever **1**
-**Verbs (EN):** remove **49** · delete **40** · clear **34** · revoke **13** · erase **6**
+> ### 🔧 It also uncovered a blind guard: `blankComments` destroyed French files
+>
+> `buildGuardScan.ts`'s `blankComments` walked quotes BEFORE blanking line comments, so
+> an apostrophe inside a French `//` comment (« pour l'instant ») opened a phantom string
+> and ate everything to the next apostrophe. On `src/i18n.ts` it turned **171 488 chars
+> into 3 673** — 98 % of the file gone. The prose-breadcrumb rule in
+> `settingsNav.test.ts` scans that file through this helper and was seeing **zero**
+> « Réglages ▸ » crumbs where there are seven: it had been passing because it saw
+> nothing. Fixed (line comments first); the full suite stayed green, so nothing had been
+> hiding behind the blindness — but the guard is a guard again.
+
+**Verbs (FR · dictionary values, 2 839 of them):** retirer **75** · supprimer **43** ·
+vider **29** · effacer **14** · enlever **0**
+*(Earlier drafts of this table said 43 / 30 / 15 / 20 / 1. Those came from the broken
+scanners above; these are exact.)*
 
 **Rival forms, pinned as ratchet ceilings in `glossary.test.ts`:**
 
-| Form | Day 1 | Now | Target | Where |
-| --- | --- | --- | --- | --- |
-| `fr:Enlever` | 1 | **0** ✅ | 0 | was a habit counter's « En enlever un » |
-| `fr:Tâche` | 2 | 2 | 0 | not the « Tâches de la maison » pill — that is a container name |
-| `fr:Événement` | 4 | 4 | 0 | search + capture, vs 14 « rendez-vous » |
-| `fr:Le cercle` | 9 | 9 | 0 | a tab renamed Maison ▸ Famille; route + card id stay frozen |
-| `en:The circle` | 13 | 13 | 0 | the same, worse, plus untranslated leaks |
-| `fr:effac*` | 20 | **8** ✅ | 8 (floor) | the floor is prose + the ink eraser + the field ✕ |
-| e2e specs pinning « Effacer … » | 2 | **0** ✅ | 0 | fixed in the same commit as their labels |
+| Form | Now (exact) | Target | Where |
+| --- | --- | --- | --- |
+| `fr:Enlever` | **0** ✅ | 0 | was a habit counter's « En enlever un » |
+| `fr:Événement` | **0** ✅ | 0 | search + capture; « rendez-vous » is the entity |
+| `fr:Tâche` | 2 | 0 | day 4 — and NOT the « Tâches de la maison » pill, which is a container name |
+| `fr:effacer` | 14 | 14 (floor) | all legitimate: prose, DrawPad ink, the field ✕, typed dates |
+| `fr:le cercle` | 6 | 6 (floor) | it names the PEOPLE — see the correction below |
+| `en:the circle` | 16 | 16 (floor) | same, and every one reads « …in the circle », not a tab |
+| `en:carnet` untranslated | **0** ✅ | 0 | → « Logbook » |
+| e2e specs pinning a dying label | **0** ✅ | 0 | fixed in the same commit as their labels |
 
 **Also counted:** EN strings that are exactly `'Notes'` **10** (three concepts wear it) ·
 EN `carnet` untranslated **8** · `EmptyState` **108** sites (5 `action=`, 18 `guide=`) ·
 `useUndoableRemove` **6** call sites · guide **32** cards · tours **9** · help registries
-**8 / 122** entries · glossary **24** terms (5 verbs · 14 entities · 5 surfaces).
+**8 / 122** entries · glossary **25** terms (5 verbs · 15 entities · 5 surfaces).
 
 **LEAN baseline — full matrix, 92 states, 0 failing (`npm run e2e:matrix`, 2.7 min):**
 
@@ -135,14 +155,32 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
 - [x] Ratchets lowered in the same commit and **proven to hold**: restoring « Effacer
       cochées » is now red, where day 1's ceiling of 20 would have allowed it.
 
-### Day 3 — One noun per thing
-- [ ] « Événement » → « Rendez-vous » (4).
-- [ ] « Le cercle » → Maison / Famille per site (9 FR + 13 EN). Route `/cercle/*` and guide
-      card id `cercle` stay **frozen** — they live in already-texted family links.
-- [ ] EN gaps: `Commerces` never reached English; `Carnet` → « Logbook » (8).
-- [ ] The EN note collapse: `mot` → **Message**, fridge note, `note` → Note. ❓ below.
-- [ ] Guide title collision: « La cuisine » titles both `kitchen` and `set-recipes`.
-- [ ] One « Quoi de neuf » line per rename wave — not per string.
+### Day 3 — One noun per thing · ✅ shipped
+- [x] « Événement » → « Rendez-vous » everywhere it named the entity (search, capture): **0** left.
+- [x] **The day's correction, and it saved ~35 strings of churn:** « le cercle » is NOT a
+      rival of « Maison ». It names the PEOPLE; Maison names the place that holds them.
+      Only a string that POINTS somewhere must say the live place — « Fiche complète dans
+      Le cercle » did (→ Maison ▸ Famille), « Personne dans le cercle pour l'instant » does
+      not. Day 1 had it down as a rival to drive to zero, which would have rewritten every
+      sentence that simply names the circle. `cercle` is a glossary TERM now, with its own
+      ratchet: the word may stay where it is and may not spread back into navigation.
+- [x] The capture destination and the search category name the live surface (« Famille »,
+      « Personnes »); an ORPHAN key naming the retired tab (`cercleTab`, rendered by
+      nothing in either language) deleted.
+- [x] EN gaps closed: « Carnet » was standing untranslated in 8 strings → **Logbook** (0
+      left); `search.businesses` said "Services & places" where the concept is Commerces →
+      **Businesses**.
+- [x] The EN note collapse: `mot` is **Message** in English, so a reader can tell a message
+      left for someone from a note on a board — FR had three words for three tables, EN had
+      one for all three.
+- [x] The scanner rebuilt on the dictionaries (see the method note): the ratchets now
+      measure what a person actually reads, and the plant that exposed the flaw goes red.
+- [x] 🔧 `blankComments` fixed in `buildGuardScan.ts` — it had been destroying French files
+      and blinding the breadcrumb guard.
+- [x] **The e2e rule was hard-coded to ONE word**, and a spec pinning « Événements » sailed
+      past it into a red run. It reads the glossary now, so every rival is covered the
+      moment it is declared — and generalising it immediately caught a SECOND spec, still
+      pinning « En enlever un », which day 2 would have shipped red into CI.
 
 ### Day 4 — One mechanism per act
 - [ ] Fold `useUndoableRemove`'s **6** sites into `useDeferredRemoval`; delete

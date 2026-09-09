@@ -291,6 +291,23 @@ const ENTITIES: GlossaryTerm[] = [
     why: 'FR renamed « Business » → « Commerces » on 2026-09-08; ids and routes stayed `business`.',
   },
   {
+    id: 'cercle',
+    scope: 'entity',
+    fr: 'Le cercle',
+    en: 'The circle',
+    def: {
+      fr: 'Le monde autour de la maisonnée : la parenté, les amis, les voisins, et les liens entre eux. Il vit dans Maison ▸ Famille et ▸ Social.',
+      en: 'The world around the household: relatives, friends, neighbours, and the ties between them. It lives in Maison ▸ Family and ▸ Social.',
+    },
+    card: 'cercle',
+    codeIds: ['contacts', 'cercle_links', 'cercle_groups'],
+    why:
+      'A CONCEPT, not a place — which is why it survived the tab rename. « Ajouter au cercle » is right; ' +
+      '« Fiche complète dans Le cercle » was not, because it points at a place, and that place is now ' +
+      'Maison ▸ Famille. A string that NAVIGATES names the live surface; a string that names the people ' +
+      'says le cercle.',
+  },
+  {
     id: 'invite',
     scope: 'entity',
     fr: 'Invité',
@@ -329,10 +346,12 @@ const SURFACES: GlossaryTerm[] = [
     },
     card: 'maison',
     codeIds: ['cercle'],
-    rivals: { fr: ['Le cercle'], en: ['The circle'] },
     why:
-      'The old « Le cercle » tab became Maison ▸ Famille in the nav restructure. The ROUTE /cercle/* and ' +
-      'the guide card id `cercle` are frozen (they are in already-texted family links); only the words move.',
+      'The old « Le cercle » TAB became Maison ▸ Famille. Day 3 corrected a day-1 assumption here: ' +
+      '« le cercle » is NOT a rival of « Maison » — it names the PEOPLE (see the `cercle` term), while ' +
+      'Maison names the place that holds them. Only a string that POINTS somewhere must say the live ' +
+      'place; « Personne dans le cercle pour l’instant » was right all along. The route /cercle/* and the ' +
+      'guide card id `cercle` are frozen — they sit in family links people have already texted.',
   },
   {
     id: 'cuisine',

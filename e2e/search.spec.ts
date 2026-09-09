@@ -40,7 +40,7 @@ test('a query surfaces rows across sections, including the drawings gallery', as
 
   // An event (« Fête de Léa », from the board fixture) AND a drawing (dg1, drawn by Léa —
   // matched on its AUTHOR since a drawing carries no text) both surface.
-  await expect(page.getByRole('heading', { name: 'Événements' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Rendez-vous' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mes dessins' })).toBeVisible()
   // The drawing hit links to the gallery.
   await expect(page.locator('.search__row[href="/drawings"]').first()).toBeVisible()
