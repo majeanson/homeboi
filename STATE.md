@@ -442,6 +442,14 @@ day). The three real ones are now closed, each verified red against planted defe
   membership too — a guard defended twice tests neither layer. Re-aimed at what canDrop
   alone owns (the drop CUE), with the allowed drag as a control so it can't pass by the
   highlight never appearing at all; now red on the deletion.
+- **La galerie photo d'une personne** (`e2e/contact-photos.spec.ts`) — the last line on
+  the backlog. A caption saves on blur by id and trimmed; an UNCHANGED caption writes
+  nothing (this surface blurs constantly — tab away, tap another photo, close the scene —
+  so a write per blur would be a write per glance); and the delete asks first, with
+  « Annuler » costing nothing, because deleting frees the R2 blob server-side and there
+  is no undo behind it. Gotcha for the next session: the gallery lives inside the
+  « Cadeaux, étiquettes et groupes » disclosure, closed unless the person has gift ideas
+  or tags — the spec opens it rather than depending on fixture data.
 - **Wave D's last item stays parked, but its containment was CHECKED rather than
   trusted.** The client guard went red on the bug it names; the server had two spellings
   of the lockstep rule, now one (`functions/_lib/recipeStepImages.ts`). Details in
