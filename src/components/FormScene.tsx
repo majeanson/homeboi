@@ -48,11 +48,18 @@ export function FormScene({
   title,
   icon,
   fallback,
+  card,
   children,
 }: {
   title: string
   icon: IconName
   fallback: string
+  // The GUIDE card this form belongs to. Until 2026-09-09 this shell rendered its
+  // SceneHead with no card at all, so EVERY operator form — event, chore, habit,
+  // home project, routine — was the one kind of screen with no « ? » and no way to
+  // the guide: precisely the screens where a first-timer meets fields she must
+  // interpret. One prop, five scenes.
+  card?: string
   // Render-prop so the page can wire the form's onSaved (invalidate + close).
   children: (members: FormMember[], close: () => void) => ReactNode
 }) {
@@ -75,7 +82,7 @@ export function FormScene({
   const members = data?.members ?? []
   return (
     <div className="scene" aria-label={title}>
-      <SceneHead title={title} icon={icon} onClose={close} />
+      <SceneHead title={title} icon={icon} card={card} onClose={close} />
       <div className="scene__body">{children(members, close)}</div>
     </div>
   )

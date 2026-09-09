@@ -45,6 +45,7 @@ export function RoutineFormPage() {
 
   return (
     <FormScene
+      card="routines"
       title={editing ? t.routines.editTitle : t.routines.add}
       icon={CATS.routine.icon}
       fallback="/maison"

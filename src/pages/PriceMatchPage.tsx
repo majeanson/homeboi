@@ -131,7 +131,7 @@ export function PriceMatchPage() {
     <div className="scene" aria-label={t.shop.proofTitle}>
       {/* In-store scene, outside HubLayout: opt into the shared offline/stale bar
           (shop seam #2) — dead in-store signal must read as "not live", not "no deal". */}
-      <SceneHead title={t.shop.proofTitle} subtitle={query} card="cashier" onClose={close} closeLabel={t.shop.close} offline />
+      <SceneHead title={t.shop.proofTitle} subtitle={query} card="deals" onClose={close} closeLabel={t.shop.close} offline />
 
       <div className="scene__body">
         {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}

@@ -155,3 +155,90 @@ describe('tour rule', () => {
     expect(unused, 'these elements carry a data-tour no tour step names').toEqual([])
   })
 })
+
+// ── Every full-screen scene offers help, or says why not ────────────────────
+//
+// `SceneHead`'s `card` is what puts a « ? » on a scene and a door into the guide.
+// Until 2026-09-09 `FormScene` — the shell behind event, chore, habit, home-project
+// and routine — passed none, so the screens where a first-timer meets fields she must
+// interpret were the ONLY ones with no help at all. Ten renders had no card; seven
+// gained one (all naming cards that already exist — the 32-card ceiling holds), and
+// the rest are listed here with the reason.
+const SCENE_NO_CARD: Record<string, string> = {
+  'pages/DevKit.tsx': 'the component gallery — a developer surface, never a household one',
+  'pages/QuickAddPage.tsx': 'the ⚡ chips ARE the explanation; its guide door lives on the liste card it came from',
+}
+
+// One <SceneHead …/> element's own attributes. Written the long way ON PURPOSE: a
+// `[\s\S]*?/>` match ends at the FIRST `/>` it meets, and several of these headers carry
+// an `<Icon … />` INSIDE their `title={…}` — so the lazy regex stopped mid-tag and
+// reported three headers as card-less that carry `card="voyage"` eight lines further
+// down. I "fixed" those by adding a second attribute before typecheck caught it. The
+// tag ends at the first line whose `/>` is at or left of the opening indent.
+function sceneHeadTags(src: string): string[] {
+  const lines = src.split('\n')
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const at = lines[i].indexOf('<SceneHead')
+    if (at < 0) continue
+    let tag = lines[i]
+    // Only a one-line tag ends on its opening line; otherwise walk until the close
+    // that belongs to THIS element. The test is per APPENDED LINE, never on the
+    // accumulated text — testing the whole tag is what let a nested `<Icon … />`
+    // terminate the walk mid-element (this reader's own first bug).
+    if (!/\/>\s*$/.test(lines[i])) {
+      for (let j = i + 1; j < lines.length; j++) {
+        tag += '\n' + lines[j]
+        // A nested element sits further right than the opening tag; this element's
+        // own close is at or left of it.
+        if (/\/>\s*$/.test(lines[j]) && lines[j].search(/\S/) <= at) break
+        // `<SceneHead …>` with children: the close is a bare `>`.
+        if (/^\s*>\s*$/.test(lines[j])) break
+      }
+    }
+    out.push(tag)
+  }
+  return out
+}
+
+describe('scene help', () => {
+  const renders: { path: string; hasCard: boolean }[] = []
+  for (const f of files.filter((x) => x.path.endsWith('.tsx'))) {
+    for (const tag of sceneHeadTags(f.raw)) {
+      renders.push({ path: f.path, hasCard: /\bcard=/.test(tag) })
+    }
+  }
+
+  it('the scan found the scenes (canary)', () => {
+    expect(renders.length, 'no <SceneHead> renders found — the scan broke').toBeGreaterThan(20)
+    expect(renders.some((r) => r.hasCard), 'none carried a card — the attribute check broke').toBe(true)
+  })
+
+  it('every scene names a guide card, or is listed with its reason', () => {
+    const bare = [...new Set(renders.filter((r) => !r.hasCard).map((r) => r.path))].filter(
+      (p) => !(p in SCENE_NO_CARD),
+    )
+    expect(
+      bare,
+      'pass card="<guide id>" to SceneHead so the scene has a « ? » and a door to the guide — ' +
+        'or add it to SCENE_NO_CARD with the reason it needs none',
+    ).toEqual([])
+  })
+
+  it('every scene card names a live GUIDE entry', () => {
+    const ids = new Set(GUIDE.map((e) => e.id))
+    const dead: string[] = []
+    for (const f of files.filter((x) => x.path.endsWith('.tsx'))) {
+      for (const tag of sceneHeadTags(f.raw)) {
+        const m = tag.match(/card="([a-z0-9-]+)"/)
+        if (m && !ids.has(m[1])) dead.push(`${f.path} → card="${m[1]}"`)
+      }
+    }
+    expect(dead, 'a « ? » that opens nothing is worse than none').toEqual([])
+  })
+
+  it('every SCENE_NO_CARD entry still exists (the list cannot rot)', () => {
+    const known = new Set(files.map((f) => f.path))
+    expect(Object.keys(SCENE_NO_CARD).filter((p) => !known.has(p))).toEqual([])
+  })
+})

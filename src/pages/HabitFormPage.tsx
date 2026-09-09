@@ -23,7 +23,7 @@ export function HabitFormPage() {
   const back = () => nav('/board/habitudes', { replace: true })
 
   return (
-    <FormScene title={id ? t.habits.edit : t.habits.add} icon="repeat-bold" fallback="/board/habitudes">
+    <FormScene card="habits" title={id ? t.habits.edit : t.habits.add} icon="repeat-bold" fallback="/board/habitudes">
       {(members, close) => (
         <HabitForm
           // Re-init the fields once the edited habit arrives from the cache/poll.

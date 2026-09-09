@@ -249,14 +249,35 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
       labels, and an allow-list that long is one nobody maintains. Recorded in the guard.
 - [x] Proven red on the real breakage that slipped through every earlier rule.
 
-### Day 6 — The screens that never explained themselves
-- [ ] `FormScene` passes a `card` → 8 form scenes gain a « ? » and a guide door (zero new
-      guide cards; the 32-ceiling holds).
-- [ ] The 9 card-less scenes each get a card or a recorded ➖.
-- [ ] Section-level empties get their door (clusters: `operator/shopping` 7, `DealsBrowser`
-      5, `IdeasDrawer` 5, `CercleCarnetPage` 5). **Cell empties stay bare** — that half is
-      as load-bearing as the other.
-- [ ] Guard: a `SceneHead` without a card is allow-listed or fails; bare-empty count ratchets.
+### Day 6 — The screens that never explained themselves · ✅ shipped
+- [x] **`FormScene` forwards a `card`** — five form scenes (event, corvée, habitude,
+      projet maison, routine) gained a « ? » and a door into the guide. They were the only
+      screens in the app with no help at all, which is exactly backwards: they are where a
+      first-timer meets fields she has to interpret. Zero new guide cards — every one names
+      a card that already exists, so the 32-card ceiling holds.
+- [x] Seven standalone scenes carded too (caisse, la liste ▸ modifier, recherche, voyage,
+      voyage partagé, l'auto, avant de partir). Two entries kept a recorded ➖: DevKit (a
+      developer surface) and QuickAddPage (the ⚡ chips ARE the explanation).
+- [x] Three « ? » doors pointed at **alias** ids (`cashier`, `drawings`) rather than the
+      live cards they redirect to. They worked, but this repo's rule is that in-code refs
+      stay PRECISE (`helpRegistry.test.ts` says so for registries) — now `deals` and `mots`.
+- [x] Guard in `tour-rule.test.ts`: every `SceneHead` names a live card or is listed with
+      its reason, **proven red by making the shell stop forwarding** — after first removing
+      an exemption of my own that had blinded it to exactly that regression.
+
+### Day 6's verdict on the empty states — measured, and mostly already right
+- [~] **"89 of 108 EmptyStates are bare" is not a list of 89 defects.** I read all four
+      clusters the audit named before touching them:
+      · `operator/shopping` — loading / no-postal-code / error / no-results: **status**
+        messages, correctly bare;
+      · `DealsBrowser` — search states (start, no results, no flyers): the same;
+      · `IdeasDrawer` — the picker's own tabs (favourites, past, AI, kid): cell empties;
+      · `CercleCarnetPage` — every one of its sections **already carries a `SectionAdd` ＋
+        in its header**, 20px above the empty line. A door inside the text would duplicate
+        an affordance already on screen — LEAN smell #8, which the doctrine forbids.
+      `EmptyState`'s own header comment says a CELL empty stays bare and only a SECTION
+      dead-end takes a door; the doctrine was being followed. The honest work was to check,
+      not to add 80 chips. **If a genuine section dead-end turns up, it takes a door then.**
 
 ### Day 7 — The lexicon, the returning user, honest documents
 - [ ] `[[mot:<id>]]` in `lib/richText.tsx` — a third token beside `[[icon:]]` and

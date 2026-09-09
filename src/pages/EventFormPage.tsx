@@ -22,7 +22,12 @@ export function EventFormPage() {
   // apporter) expanded.
   const activity = params.get('activity') === '1'
   return (
-    <FormScene title={activity ? t.operator.addActivity : ride ? t.auto.addRide : t.operator.addEvent} icon="calendar-blank-bold" fallback="/board">
+    <FormScene
+      card={ride ? 'auto' : 'set-agenda'}
+      title={activity ? t.operator.addActivity : ride ? t.auto.addRide : t.operator.addEvent}
+      icon="calendar-blank-bold"
+      fallback="/board"
+    >
       {(members, close) => (
         <EventForm
           members={members}

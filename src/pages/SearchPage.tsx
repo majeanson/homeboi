@@ -330,7 +330,7 @@ export function SearchPage() {
 
   return (
     <div className="scene search" aria-label={t.search.title}>
-      <SceneHead title={t.search.title} icon="magnifying-glass-bold" onClose={close} />
+      <SceneHead card="board" title={t.search.title} icon="magnifying-glass-bold" onClose={close} />
       <div className="scene__body search__body">
         {/* No autoFocus — house rule: the keyboard only ever opens on an
             explicit tap, never when a scene mounts. On a tablet, programmatic

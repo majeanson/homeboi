@@ -15,7 +15,7 @@ export function ChoreFormPage() {
   const [params] = useSearchParams()
   const startSeed = Number(params.get('start'))
   return (
-    <FormScene title={t.operator.addChore} icon="hand-heart-bold" fallback="/board">
+    <FormScene card="set-chores" title={t.operator.addChore} icon="hand-heart-bold" fallback="/board">
       {(members, close) => (
         <ChoreForm
           members={members}

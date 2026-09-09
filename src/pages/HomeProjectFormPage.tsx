@@ -20,7 +20,7 @@ export function HomeProjectFormPage() {
   const carnetId = params.get('carnet')
   const title = kind === 'upkeep' ? t.operator.home.addEntretien : t.operator.home.addProjet
   return (
-    <FormScene title={title} icon={kind === 'upkeep' ? 'gear-six-bold' : 'paint-brush-bold'} fallback="/board">
+    <FormScene card="set-chores" title={title} icon={kind === 'upkeep' ? 'gear-six-bold' : 'paint-brush-bold'} fallback="/board">
       {(_members, close) => (
         <HomeProjectForm
           kind={kind}

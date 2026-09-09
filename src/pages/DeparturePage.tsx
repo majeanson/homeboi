@@ -82,7 +82,7 @@ export function DeparturePage() {
 
   return (
     <div className="scene departure" aria-label={title}>
-      <SceneHead title={title} icon="key-bold" onClose={close} />
+      <SceneHead card="todos" title={title} icon="key-bold" onClose={close} />
       <div className="scene__body departure__body">
         {/* Weather + the one dressing tip — the first glance before the door. */}
         {isToday && weather && (

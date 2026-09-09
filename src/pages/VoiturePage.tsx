@@ -127,7 +127,7 @@ export function VoiturePage() {
     const driverId = firstRide?.memberId ?? null
     return (
       <div className="scene voiture voiture--kid" aria-label={t.auto.title}>
-        <SceneHead title={t.auto.toddlerWho} onClose={close} />
+        <SceneHead card="auto" title={t.auto.toddlerWho} onClose={close} />
         <div className="scene__body voiture__kid-body">
           {firstRide ? (
             <div className="voiture__kid-card">
@@ -159,6 +159,7 @@ export function VoiturePage() {
           BELOW seven day rows — a scroll away from the week they act on. They ride
           the head ⋯ now; reset keeps its danger tone + its own confirm. */}
       <SceneHead
+        card="auto"
         title={t.auto.weekTitle}
         // The car's NAME — but only when it SAYS something the title has not. An
         // unrenamed car is seeded « L'auto » (t.operator.carDefaultName), so under the

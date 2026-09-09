@@ -2483,7 +2483,7 @@ export function DevKit() {
             <SceneHead
               title="Preuve de prix"
               subtitle="beurre d'arachide Kraft 1 kg"
-              card="cashier"
+              card="deals"
               onClose={() => {}}
             />
           </Demo>

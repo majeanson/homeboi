@@ -160,7 +160,7 @@ export function ListEditPage() {
 
   return (
     <div className="scene" aria-label={t.list.editTitle}>
-      <SceneHead title={t.list.editTitle} subtitle={item.text} onClose={close} closeLabel={t.shop.close} />
+      <SceneHead card="liste" title={t.list.editTitle} subtitle={item.text} onClose={close} closeLabel={t.shop.close} />
 
       <div className="scene__body">
         {ro ? (
