@@ -1,7 +1,8 @@
 import { expect, type Locator } from '@playwright/test'
 
-// `(await locator.boundingBox())!` — **1 site left in this suite** (2026-09-09), and it
-// can throw « Cannot read properties of null (reading 'y') ».
+// `(await locator.boundingBox())!` — **0 sites left in this suite** (2026-09-09). It
+// throws « Cannot read properties of null (reading 'y') » when the node is detached
+// between the two selector resolves.
 //
 // It said « 74 sites » for weeks after the real number fell to 40, which is how the
 // standing "convert one whenever you touch it" rule read as hopeless rather than nearly
@@ -9,9 +10,11 @@ import { expect, type Locator } from '@playwright/test'
 // asserts the count from the suite itself, so this sentence cannot drift again — and it
 // is a RATCHET: the number may fall to 0 and never rise.
 //
-// The one holdout is `hold()` in board-edit.spec.ts, left deliberately while a CI run
-// judged a flake in the test it feeds — changing the helper mid-verdict would have made
-// that verdict unreadable.
+// The last holdout was `hold()` in board-edit.spec.ts, held back deliberately while a CI
+// run judged a flake in the test it feeds — changing the helper mid-verdict would have
+// made that verdict unreadable. The verdict came in (one failure at 6.6s, i.e. the press
+// hit nothing and the 5s assertion timed out; then a pass at 1.7s), and it is exactly the
+// shape of a stale measurement. Converted with the evidence, not on the hunch.
 //
 // The trap is NOT "the element isn't visible yet": Playwright's visibility already
 // means a non-empty box, and lean-forms.spec.ts:112 threw on a locator whose

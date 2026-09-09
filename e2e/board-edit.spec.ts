@@ -31,7 +31,13 @@ const open = async (page: Page) => {
 async function hold(page: Page, card: string, ms = HOLD) {
   const sel = `.wg-slot[data-card="${card}"]`
   await page.locator(sel).evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }))
-  const box = (await page.locator(sel).boundingBox())!
+  // The LAST bare `boundingBox()!` in the suite, converted 2026-09-09 once CI had ruled
+  // on it rather than on a hunch. Evidence: this helper's test failed once on CI in
+  // **6.6s** — 5s of that is the `.board-edit` timeout, so the press landed on nothing
+  // and edit mode never armed — then passed on the next run in 1.7s, and 4/4 locally. A
+  // measurement taken from a node React detached between the two selector resolves is
+  // exactly that shape, and it is the one thing here that is machine-speed dependent.
+  const box = await boxOf(page.locator(sel))
   await page.mouse.move(box.x + box.width / 2, box.y + 12)
   await page.mouse.down()
   await page.waitForTimeout(ms)

@@ -641,8 +641,9 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   measure. Waiting for visibility does NOT prevent it — `lean-forms.spec.ts` threw one
   line under its own passing `toBeVisible()`. Two CI reds in two days (`cbed72c`, then
   again the next morning) came from this one pattern. **The sweep is done (2026-09-09):
-  1 bare call site is left**, `hold()` in `board-edit.spec.ts`, held back while CI judged
-  a flake in the test it feeds. The count is asserted from the suite by
+  0 bare call sites are left** — the last one, `hold()` in `board-edit.spec.ts`, was held
+  back until CI ruled on a flake in the test it feeds, then converted with that evidence.
+  The count is asserted from the suite by
   `docCounts.test.ts` and is a ratchet — it may fall to 0, never rise. This entry read
   « 74 » long after the real number was 40, which made a nearly-finished job look
   hopeless; that is the whole reason the number is derived now instead of typed.
