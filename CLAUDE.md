@@ -625,7 +625,10 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`,
   `chip-rule`, and — added by the UNIFY week — `glossary` (one word per idea, ratcheted),
   `undoTier` (one delete mechanism per entity), `tour-rule` (no help anchor without its
-  step) and `docCounts` (a number in prose must be derivable from code)) are the best
+  step), `docCounts` (a number in prose must be derivable from code) and `link-button-rule`
+  (a class worn by BOTH a `<button>` and a `<Link>` must reset the UA button chrome — from
+  a real defect that shipped, was photographed by the matrix, and passed every assertion
+  because a border moves no measurement)) are the best
   thing in this codebase — and a green
   one proves nothing on its own. `nested-interactive.test.ts` was written to catch
   a control-inside-a-control on the routines grid and reported GREEN over exactly

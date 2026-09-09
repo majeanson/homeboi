@@ -76,6 +76,18 @@ lens and the deliberate first-run empties belong there. The question it asks is
 "sparse by design, or sparse because the fixture is empty?" — answer it, don't
 silence it.
 
+> **A green matrix is not a look, and 2026-09-09 proved it the embarrassing way.** A
+> control shipped wearing the browser's default button chrome — boxed, grey, centred —
+> right next to the bare text link it was supposed to match, so the rarer action shouted
+> louder than the primary one. The sweep **photographed it**, asserted everything it
+> knows how to assert, and reported green: a border and a background move no
+> `contentTopPx`, bleed no edge, and throw no page error. The manifest was read; the PNG
+> was not opened. **When you change a surface, open THAT surface's PNG** — the manifest
+> tells you what broke, never what looks wrong. (That particular defect is now a build
+> guard, `src/lib/link-button-rule.test.ts`, because it turned out to be structural after
+> all: a class worn by both a `<button>` and a `<Link>` must reset the UA chrome. Most
+> visual defects will not be so lucky.)
+
 **What pulls the ratchet.** The sweep is too slow to gate every push, so Actions ▸
 **State matrix** runs it **weekly (Mondays 06:00 UTC)** as well as on demand. That
 is a deliberate trade: chrome creeps back over weeks rather than inside one push,

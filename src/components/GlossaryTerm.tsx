@@ -33,8 +33,21 @@ import { Icon } from './Icon'
 // mark itself is a dotted <button> and costs nothing, and the data arrives with the
 // gesture that asks for it. `import type` above is erased at build time, so the shape
 // still typechecks against the real table.
+//
+// The cache DROPS A FAILURE on purpose. `cached ??= import(...)` alone memoises a
+// REJECTED promise, so one bad fetch would kill the lexicon for the rest of the session
+// and every later tap would replay the same rejection. That is not hypothetical here: a
+// service worker serving the SPA fallback (200, text/html) for a hashed chunk deleted by
+// a deploy is a failure this app has already had once, and it is exactly what a kiosk
+// left open across a deploy would hit.
 let cached: Promise<typeof import('../lib/glossary')> | null = null
-const loadGlossary = () => (cached ??= import('../lib/glossary'))
+const loadGlossary = () => {
+  cached ??= import('../lib/glossary').catch((e) => {
+    cached = null // let the next tap try again
+    throw e
+  })
+  return cached
+}
 
 export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
   const t = useT()
@@ -48,7 +61,10 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
       <button
         type="button"
         className="gloss__word"
-        aria-expanded={open}
+        // Reflects what is ON SCREEN, not what was intended: between the tap and the
+        // chunk landing there is no panel, and a screen reader told "expanded" about
+        // nothing has been lied to.
+        aria-expanded={open && !!term}
         onClick={(e) => {
           // The manual's `what` line is itself a <summary>; explaining a word must not
           // also fold the card it sits in.
@@ -58,7 +74,15 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
             return
           }
           setOpen(true)
-          if (!term) void loadGlossary().then((m) => setTerm(m.GLOSSARY.find((x) => x.id === id) ?? null))
+          if (!term) {
+            loadGlossary()
+              .then((m) => setTerm(m.GLOSSARY.find((x) => x.id === id) ?? null))
+              // A definition that cannot be fetched is not worth an error message — the
+              // word itself is still readable in its sentence, which is the whole point
+              // of marking prose rather than replacing it. Fold back to the plain word
+              // so the mark stays honest and the next tap simply retries.
+              .catch(() => setOpen(false))
+          }
         }}
       >
         {label}
