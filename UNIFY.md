@@ -37,6 +37,20 @@ Three audits on 2026-09-09 found, and I re-verified before writing this:
 
 ---
 
+## Working rule for the week — how e2e is handled
+
+Decided 2026-09-09, because a week of renames touches a lot of specs and E2E here is
+**decoupled** (it runs after the deploy, so it never blocks a push — and a suite left red
+stops being a signal exactly when the edits are most invasive).
+
+| Kind of e2e change | When | Why |
+| --- | --- | --- |
+| **Label assertions** (days 2–3) | **Same commit as the rename** | `glossary.test.ts` already NAMES the specs pinning a dying label, so finding them is free and the fix is one line. This is what keeps the suite trustworthy all week. |
+| **Structural** (days 5–6: doors, empty states) | **Batched to day 7** | Those surfaces move twice; rewriting a spec against a moving target is waste. |
+| **Running the suite** | Only the specs touched (seconds) + one full `npm run e2e:ci` on day 7 | CI's decoupled run covers the rest for free. |
+
+---
+
 ## Part 0 — The census (2026-09-09)
 
 **Method** — user-visible VALUES only (both quote styles: `'…'` **and** backticks), from
@@ -54,15 +68,15 @@ vider **15** · révoquer **2** · enlever **1**
 
 **Rival forms, pinned as ratchet ceilings in `glossary.test.ts`:**
 
-| Form | Today | Target | Where |
-| --- | --- | --- | --- |
-| `fr:Enlever` | 1 | 0 | one stray at `i18n.ts:151` |
-| `fr:Tâche` | 2 | 0 | not the « Tâches de la maison » pill — that is a container name |
-| `fr:Événement` | 4 | 0 | search + capture, vs 14 « rendez-vous » |
-| `fr:Le cercle` | 9 | 0 | a tab renamed Maison ▸ Famille; route + card id stay frozen |
-| `en:The circle` | 13 | 0 | the same, worse, plus untranslated leaks |
-| `fr:effac*` | 20 | ~8 | the floor is consequence prose (« sera effacé ») + the eraser |
-| e2e specs pinning « Effacer … » | 2 | 0 | `config-panels`, `meals` — **E2E is decoupled, so these break AFTER a deploy** |
+| Form | Day 1 | Now | Target | Where |
+| --- | --- | --- | --- | --- |
+| `fr:Enlever` | 1 | **0** ✅ | 0 | was a habit counter's « En enlever un » |
+| `fr:Tâche` | 2 | 2 | 0 | not the « Tâches de la maison » pill — that is a container name |
+| `fr:Événement` | 4 | 4 | 0 | search + capture, vs 14 « rendez-vous » |
+| `fr:Le cercle` | 9 | 9 | 0 | a tab renamed Maison ▸ Famille; route + card id stay frozen |
+| `en:The circle` | 13 | 13 | 0 | the same, worse, plus untranslated leaks |
+| `fr:effac*` | 20 | **8** ✅ | 8 (floor) | the floor is prose + the ink eraser + the field ✕ |
+| e2e specs pinning « Effacer … » | 2 | **0** ✅ | 0 | fixed in the same commit as their labels |
 
 **Also counted:** EN strings that are exactly `'Notes'` **10** (three concepts wear it) ·
 EN `carnet` untranslated **8** · `EmptyState` **108** sites (5 `action=`, 18 `guide=`) ·
@@ -100,13 +114,26 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
       « Effacer » label, a new e2e assertion on a dying label, two terms claiming one word.
 - [x] `UNIFY.md` + `STATE.md` §2 registration + `CLAUDE.md` pointer.
 
-### Day 2 — One verb per act
-- [ ] Triage the 20 « effacer » sites: labels move to `vider`/`supprimer` by meaning, prose
-      stays. The smoking gun first — `todos.clearChecked` → « Vider les cochés ».
-- [ ] The last « Enlever » (`i18n.ts:151`).
-- [ ] EN follows the FR concept, not EN taste (remove 49 vs delete 40 with no mapping today).
-- [ ] The two e2e specs renamed **in the same commit** as their labels.
-- [ ] Lower every ratchet touched, in the same commit.
+### Day 2 — One verb per act · ✅ shipped
+- [x] Triaged all 20 « effacer » sites **by reading the code behind each one**, not by
+      spelling. 12 labels moved; 8 stayed. « effac* » 20 → 8.
+- [x] The rule got SHARPER in the doing, and this is the day's real finding:
+      **« effacer » erases MARKS you made** — ink on a drawing, text typed in a field,
+      dates you entered — **never an object of the household**. That line is what tells
+      DrawPad's « Tout effacer » (correct — it is ink) from « Effacer cochées » (wrong — a
+      container of items → « Vider »). Day 1 had written the rule as "the eraser only",
+      which would have churned three correct labels.
+- [x] The smoking gun closed: `todos.clearChecked` = « Vider les cochés », matching
+      `liste.clearChecked` — same key name, same act, one word at last.
+- [x] A label that contradicted its own question: the fridge-note ✕ said « Effacer » while
+      the confirm it raises says « Retirer cette note ? ». Now both say retirer.
+- [x] The last « Enlever » (a habit counter) → « En retirer un ». That rival is at **0**.
+- [x] EN followed the FR concept: Remove where FR says retirer, Clear where it says vider.
+- [x] Both e2e specs renamed in the same commit (ratchet 2 → **0**).
+- [x] A stale COMMENT quoting the old label (`i18n.ts:554`) re-synced — exactly the drift
+      this week exists to stop.
+- [x] Ratchets lowered in the same commit and **proven to hold**: restoring « Effacer
+      cochées » is now red, where day 1's ceiling of 20 would have allowed it.
 
 ### Day 3 — One noun per thing
 - [ ] « Événement » → « Rendez-vous » (4).
@@ -164,7 +191,7 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
 | gone for good | **Supprimer** / Delete | — | The confirm must say what is lost (`confirmCopy.test.ts`) |
 | empty a container | **Vider** / Clear | Effacer *(as a label)* | The list stays, it is simply empty |
 | kill an access | **Révoquer** / Revoke | — | A link, a paired tablet |
-| take ink off a drawing | **Effacer** / Erase | — | Kept as a **fifth** verb on purpose, scoped to the eraser + consequence prose |
+| erase a MARK you made | **Effacer** / Erase | Effacer *(on an object)* | Ink, typed text, typed dates — never a thing of the household. Sharpened on day 2, after reading all 20 sites |
 | a message left for someone | **Mot** / **Message** | EN "note" | FR keeps three words for three tables; EN had one for all three |
 | the tab | **Maison** / Home | Le cercle · The circle | Renamed in the nav restructure; the copy never followed. Ids/routes frozen |
 

@@ -58,21 +58,21 @@ const occurrences = (haystack: string[], form: string) => {
 // a legitimate job (the drawing eraser, and consequence prose), so its number falls to
 // a floor rather than to zero. Day 2 of UNIFY.md spends these down.
 const RIVAL_CEILING: Record<string, number> = {
-  'fr:Enlever': 1,
+  'fr:Enlever': 0,
   'fr:Tâche': 2,
   'fr:Événement': 4,
   'fr:Le cercle': 9,
   'en:The circle': 13,
 }
 
-// The overused word: 20 FR values carry « effac » today; about 8 of them are consequence
-// prose and stay. The rest are button labels that mean « vider » or « supprimer ».
-const EFFACER_CEILING = 20
+// Day 2 spent this from 20 to its floor: the 8 that remain are consequence prose, the
+// DrawPad's ink eraser, and the ✕ that clears typed text — every one of them a MARK.
+const EFFACER_CEILING = 8
 const EFFACER_FLOOR_NOTE = '~8 are consequence prose (« sera effacé ») and are correct'
 
 // Rival forms asserted by e2e specs — every one is a rename that would break a spec
 // after the deploy, because E2E is decoupled here.
-const E2E_RIVAL_CEILING = 2
+const E2E_RIVAL_CEILING = 0
 
 describe('glossary — shape', () => {
   it('the scanners found the app (canary)', () => {

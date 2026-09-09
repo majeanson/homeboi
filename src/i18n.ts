@@ -148,7 +148,7 @@ export const FR = {
     doneToday: 'Fait aujourd’hui',
     // count / limit
     plusOne: 'Encore un',
-    minusOne: 'En enlever un',
+    minusOne: 'En retirer un',
     noneToday: 'Aucune aujourd’hui',
     ofTarget: (v: number, target: number, unit: string) => `${v} sur ${target}${unit ? ' ' + unit : ''}`,
     ofCeiling: (v: number, target: number, unit: string) => `${v} de ${target}${unit ? ' ' + unit : ''}`,
@@ -545,16 +545,16 @@ export const FR = {
     // Short enough to survive a 390px field that also carries the mic + 📎 icons —
     // « Écris une note pour le babillard… » truncated to « Écris une n ».
     addPlaceholder: 'Écris ou dicte une note…',
-    clear: 'Effacer',
+    clear: 'Retirer',
     memo: 'Mémo vocal',
     drawing: 'Dessin',
     drawings: 'Dessins',
     photo: 'Photo',
     dismissMediaConfirm: 'Retirer cette note ? Le média joint sera effacé.',
-    // « Tout effacer » : le grand ménage du frigo en UN geste, défaisable en un
+    // « Tout retirer » : le grand ménage du frigo en UN geste, défaisable en un
     // seul « Annuler » (les écritures attendent derrière le toast).
-    clearAll: 'Tout effacer',
-    clearedN: (n: number) => `${n} note${n > 1 ? 's' : ''} effacée${n > 1 ? 's' : ''}`,
+    clearAll: 'Tout retirer',
+    clearedN: (n: number) => `${n} note${n > 1 ? 's' : ''} retirée${n > 1 ? 's' : ''}`,
   },
   memo: {
     record: 'Mémo vocal',
@@ -1262,7 +1262,7 @@ export const FR = {
     lowEmpty: 'Rien ne manque pour l’instant. Quand un produit achève, note-le ici — il ira sur la liste.',
     addToList: '→ ajouter à la liste',
     setMeal: 'Mettre',
-    clearMeal: 'Effacer le repas',
+    clearMeal: 'Retirer le repas',
     addAnother: 'Ajouter un autre',
     clearSlot: 'Vider ce repas',
     // Clears the MEALS of the day, not the day — it lives on the « Repas » face only
@@ -2038,9 +2038,9 @@ export const FR = {
     // INSIDE the fold, so a collapsed card costs nothing for it. A KEPT mot is a
     // keepsake and is never swept — the label says so, and clearN counts only what
     // will actually go.
-    clearSeen: 'Effacer les déjà vus',
-    clearSeenKept: 'Effacer les déjà vus (les gardés restent)',
-    clearedN: (n: number) => `${n} mot${n > 1 ? 's' : ''} effacé${n > 1 ? 's' : ''}`,
+    clearSeen: 'Retirer les déjà vus',
+    clearSeenKept: 'Retirer les déjà vus (les gardés restent)',
+    clearedN: (n: number) => `${n} mot${n > 1 ? 's' : ''} retiré${n > 1 ? 's' : ''}`,
     keep: 'Garder',
     kept: 'Gardé',
     delete: 'Supprimer le mot',
@@ -2703,7 +2703,7 @@ export const FR = {
     aiLogHint:
       'Quand une fonction IA échoue (modèle retiré, panne), une note apparaît à l’écran ; une fois acceptée, elle s’inscrit ici. Efface quand tu l’as lue.',
     aiLogEmpty: 'Aucune erreur enregistrée.',
-    aiLogClear: 'Effacer le journal',
+    aiLogClear: 'Vider le journal',
     buildTitle: 'Version',
     buildBuilt: 'Dernière mise à jour',
     buildNever: 'Inconnue',
@@ -3325,13 +3325,13 @@ export const FR = {
     addTodayShort: 'Pour ajd',
     check: 'Cocher',
     uncheck: 'Décocher',
-    clearChecked: 'Effacer cochées',
+    clearChecked: 'Vider les cochés',
     templatesLabel: 'Modèles :',
     // Summary of the collapsed-by-default toggle that tucks the checklist chips away.
     templatesToggle: 'Listes prêtes',
     added: (s: string) => `« ${s} » ajouté`,
     removed: (s: string) => `« ${s} » retiré`,
-    clearedN: (n: number) => `${n} effacé${n > 1 ? 's' : ''}`,
+    clearedN: (n: number) => `${n} retiré${n > 1 ? 's' : ''}`,
     fromTemplate: (s: string) => `Liste « ${s} » ajoutée`,
     // Portée choisie dans la feuille ＋ : standing (en tout temps), aujourd’hui, ou une date précise.
     scopeGlobal: 'En tout temps',
@@ -3378,7 +3378,7 @@ export const FR = {
     action: 'Annuler',
     more: (n: number) => `Récents (${n})`,
     hide: 'Masquer',
-    clearAll: 'Tout effacer',
+    clearAll: 'Tout vider',
     // Hide the toast bar from the screen (double-tap it, or this ✕) so you can reach
     // what's underneath. Nothing is undone — held gestes finalisent normalement et
     // « Récents » reste dans Réglages.
@@ -3395,9 +3395,9 @@ export const FR = {
     postponed: (s: string) => `« ${s} » reporté`,
     todoDone: (s: string) => `« ${s} » fait`,
     mealRemoved: (s: string) => `« ${s} » retiré du menu`,
-    slotCleared: 'Repas effacés',
-    dayCleared: 'Journée effacée',
-    dayNoteCleared: 'Note du jour effacée',
+    slotCleared: 'Repas retirés',
+    dayCleared: 'Journée vidée',
+    dayNoteCleared: 'Note du jour retirée',
     mealIdeaRemoved: (s: string) => `« ${s} » retiré des idées`,
     leftoverAdded: (s: string) => `« ${s} » mis dans les restants`,
     leftoverRemoved: (s: string) => `« ${s} » retiré des restants`,

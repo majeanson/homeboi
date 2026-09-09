@@ -547,7 +547,7 @@ test('« Tester l’IA » probes the binding with a POST (never a queued write)'
   ])
 })
 
-test('« Effacer le journal » DELETEs the AI error log', async ({ page }) => {
+test('« Vider le journal » DELETEs the AI error log', async ({ page }) => {
   await page.route('**/api/ai-errors**', (route) =>
     route.request().method() === 'GET'
       ? route.fulfill({
@@ -562,7 +562,7 @@ test('« Effacer le journal » DELETEs the AI error log', async ({ page }) => {
   await expect(card.locator('.ai-log__row')).toHaveCount(1)
   await Promise.all([
     page.waitForRequest(isApi('DELETE', 'ai-errors'), { timeout: 20_000 }),
-    card.getByRole('button', { name: 'Effacer le journal' }).click(),
+    card.getByRole('button', { name: 'Vider le journal' }).click(),
   ])
 })
 

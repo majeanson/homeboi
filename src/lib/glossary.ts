@@ -103,13 +103,15 @@ const VERBS: GlossaryTerm[] = [
     fr: 'Effacer',
     en: 'Erase',
     def: {
-      fr: 'Le geste de la gomme à effacer : enlever du trait sur un dessin. C’est le seul emploi du mot — ailleurs, c’est vider ou supprimer.',
-      en: 'The eraser’s gesture: taking ink off a drawing. That is the word’s only job — elsewhere it is clear or delete.',
+      fr: 'Enlever une marque que tu as faite : l’encre d’un dessin, le texte tapé dans une case, des dates entrées. Jamais une chose de la maisonnée.',
+      en: 'Take off a mark you made: ink on a drawing, text typed in a field, dates you entered. Never a thing belonging to the household.',
     },
     why:
-      'Kept as a FIFTH verb on purpose, scoped to the drawing eraser. It is also legitimate in ' +
-      'consequence prose (« le média joint sera effacé »), where it describes what happens rather ' +
-      'than naming a button. Everywhere else it is a rival — see the ratchet in glossary.test.ts.',
+      'Kept as a FIFTH verb, and day 2 sharpened what it means: it erases MARKS (ink, typed text, ' +
+      'typed values), never OBJECTS. That line is what tells the DrawPad’s « Tout effacer » and the ' +
+      'field ✕ « Effacer le texte » (both correct) from « Effacer cochées » (a container of items — ' +
+      '« Vider »). It is also legitimate in consequence prose (« le média joint sera effacé »), ' +
+      'which describes what happens rather than naming a button.',
   },
 ]
 

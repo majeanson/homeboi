@@ -63,7 +63,7 @@ test('removing one meal deletes just that row', async ({ page }) => {
   const del = waitMeals(page, 'DELETE', (b) => typeof b.id === 'string')
   // A row's management verbs live behind its ⋯ overflow now (❤ + 📖 stay visible).
   await sheet.locator('.kitchen__meal-row').first().locator('.action-menu__btn').click()
-  await page.getByRole('menuitem', { name: 'Effacer le repas' }).click()
+  await page.getByRole('menuitem', { name: 'Retirer le repas' }).click()
   await del
 })
 
