@@ -220,11 +220,23 @@
 .section-intro__points li {
   margin: 2px 0;
 }
+/* Worn by BOTH a <Link> and a <button> (« Revoir les cartes de première visite »), so it
+   resets the UA button chrome. Without these it arrived bordered, grey-filled and
+   centre-aligned beside a plain text link — which made the RARER of the two actions the
+   loud one. Caught by looking at a 390px screenshot, not by a test: nothing here was
+   broken, it was merely shouting (2026-09-09). */
 .section-intro__more {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin-top: 10px;
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   color: var(--marigold-deep, var(--ink));
   font-weight: 600;
   font-size: 0.9rem;
