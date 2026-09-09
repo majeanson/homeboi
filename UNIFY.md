@@ -342,7 +342,28 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
 | something at a given time | **Rendez-vous** / **Appointment** | Événement · EN "Event" | FR settled day 3; the EN half was confirmed 2026-09-09 and swept the same day (17 strings), with `Event` pinned as an EN rival |
 | the tab | **Maison** / Home | Le cercle · The circle | Renamed in the nav restructure; the copy never followed. Ids/routes frozen |
 
-## Part 3 — Questions for Marc — the first two answered 2026-09-09 ✅, a third opened
+## Part 3 — Questions for Marc — all answered 2026-09-09 ✅
+
+- [~] **The French « Laisse un mot » collision STAYS — decided, not overlooked.** The ＋
+      tile for the internal fridge feature and the guest-facing letterbox page are worded
+      almost identically in French. The person it could confuse does not exist: someone
+      writing in from outside only ever sees the guest page, and « laisse un mot » is the
+      warmest, most natural Québécois for what they are doing. Only the operator meets
+      both, in two different places. English needed the split because it had collapsed
+      the two onto one word EVERYWHERE, including in front of the operator; French never
+      did. **Do not "finish the symmetry" here.**
+- [~] **The English surface stays « Postbox » while its contents became « letters ».**
+      Already consistent across the share-link kind, the Réglages hint and two guide
+      labels, and it matches the frozen `postbox` code id. A mailbox holding mail is not
+      a collision — the container and its contents are allowed to differ.
+- [x] **The lexicon marks only what cannot be guessed** (Marc, 2026-09-09): the four
+      original terms plus **mot · carnet · cercle · habitude** — each names something the
+      app invented rather than an ordinary noun. Eight in total, not twenty-five: a
+      manual speckled with dotted words is noise, which is the opposite of the point.
+      **`à-compléter` was considered and skipped** — the phrase only ever appears in a
+      card's `what` and a point's `label`, both of which render inside a `<summary>`, and
+      a button inside a summary is a control inside a control. Contorting a sentence to
+      make room for a mark would cost more than the mark is worth.
 
 - ❓ **The English word for a postbox item.** Found while scanning the mirror direction
   (FR copy carrying an English word — six hits, all the ordinary French noun « message »,

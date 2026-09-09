@@ -389,7 +389,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ (en bas) ajoute : une note, un rendez-vous, une corvée, un à-faire, un mot à laisser, un voyage, ou planifier la journée.',
+          fr: 'Le ＋ (en bas) ajoute : une note, un rendez-vous, une corvée, un à-faire, un [[mot:mot|mot]] à laisser, un voyage, ou planifier la journée.',
           en: 'The ＋ (bottom) adds: a note, an appointment, a chore, a to-do, a note to leave, a trip, or plan the day.',
         },
         route: '/board?plus=1',
@@ -697,7 +697,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ ajoute : une personne, bâtir une famille, relier deux personnes, un groupe, un business (vétérinaire, plombier…), un animal, ou un carnet (maison, auto…).',
+          fr: 'Le ＋ ajoute : une personne, bâtir une famille, relier deux personnes, un groupe, un business (vétérinaire, plombier…), un animal, ou un [[mot:carnet|carnet]] (maison, auto…).',
           en: 'The ＋ adds: a person, build a family, connect two people, a group, a business (vet, plumber…), a pet, or a carnet (home, car…).',
         },
         route: '/maison?plus=1',
@@ -1244,7 +1244,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le rythme que tu veux', en: 'Whatever rhythm you want' },
         detail: {
-          fr: 'Chaque jour, certains jours de la semaine, un jour sur trois — ou sans jour fixe, « 2 fois par semaine », et l’habitude attend que la semaine soit remplie. À l’intérieur d’une journée aussi : « 3 fois par jour », ou « aux 4 heures » entre 8 h et 20 h, et les rappels suivent tout seuls.',
+          fr: 'Chaque jour, certains jours de la semaine, un jour sur trois — ou sans jour fixe, « 2 fois par semaine », et l’[[mot:habitude|habitude]] attend que la semaine soit remplie. À l’intérieur d’une journée aussi : « 3 fois par jour », ou « aux 4 heures » entre 8 h et 20 h, et les rappels suivent tout seuls.',
           en: 'Every day, certain weekdays, every third day — or with no fixed day, “2 times a week”, and the habit waits until the week is filled. Inside a single day too: “3 times a day”, or “every 4 hours” between 8am and 8pm, and the reminders follow on their own.',
         },
       },
@@ -1424,7 +1424,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'L’historique', en: 'The history' },
         detail: {
-          fr: 'Chaque entretien ou installation s’ajoute à l’historique avec la date, le coût, l’installateur (un business du cercle) et la facture ou le manuel joint — photo ou PDF, touche-le pour le lire. Un nouveau chauffe-eau devient une entrée « Installation » avec sa facture, gardée pour toujours.',
+          fr: 'Chaque entretien ou installation s’ajoute à l’historique avec la date, le coût, l’installateur (un business du [[mot:cercle|cercle]]) et la facture ou le manuel joint — photo ou PDF, touche-le pour le lire. Un nouveau chauffe-eau devient une entrée « Installation » avec sa facture, gardée pour toujours.',
           en: 'Each service or install adds to the history with the date, the cost, the installer (a cercle business) and the invoice or manual attached — photo or PDF, tap it to read. A new water heater becomes one “Install” entry with its invoice, kept forever.',
         },
         why: { fr: 'Quand tu rappelles le plombier, tu sais déjà tout — et tu retrouves la facture en un geste.', en: 'When you call the plumber back, you already know everything — and the invoice is one tap away.' },
