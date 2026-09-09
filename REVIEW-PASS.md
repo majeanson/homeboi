@@ -1,7 +1,13 @@
 # REVIEW-PASS — a slow, section-by-section audit of the whole app
 
-> 📍 **15 findings still open here** (P2/P3, section debt — no data loss). For where they
-> rank against everything else in the repo, read [`STATE.md`](./STATE.md) § 4.
+> 📍 **1 finding still open here** (P2/P3, section debt — no data loss). For where it
+> ranks against everything else in the repo, read [`STATE.md`](./STATE.md) § 4.
+>
+> That number is **counted from the `- [ ]` boxes below by `src/lib/docCounts.test.ts`**,
+> not typed. It read « 15 » here until 2026-09-09 — two sweeps after the boxes had gone
+> from 15 to 1, and while `STATE.md` had been correctly saying 1 for twelve days. The
+> headline of a ledger is the part everyone reads and nobody re-derives, so it is the
+> part that must not be hand-maintained.
 >
 > **Swept 2026-08-28.** Every open box was grepped against code before anything was built.
 > It said 29; **eight were already fixed and never ticked**, and one named a component that

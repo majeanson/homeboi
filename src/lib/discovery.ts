@@ -10,7 +10,7 @@
 // Pure module: the fetching hook lives with its only consumer
 // (components/operator/discover.tsx); everything here is testable without React.
 import { GUIDE, type GuideEntry } from './guideContent'
-import { CAR_KEY, CARNETS_KEY, LOVES_KEY, MOTS_KEY, TODOS_KEY, TRIPS_KEY } from './queryKeys'
+import { CAR_KEY, CARNETS_KEY, HABITS_KEY, LOVES_KEY, MOTS_KEY, TODOS_KEY, TRIPS_KEY } from './queryKeys'
 import type { Tour } from './tourContent'
 
 // "Provably untouched" = the endpoint answered AND the rows are an empty array.
@@ -44,6 +44,12 @@ export const DISCOVERY_PROBES: DiscoveryProbe[] = [
   { card: 'carnets', key: CARNETS_KEY, path: 'carnets', unused: noRows('carnets') },
   { card: 'auto', key: CAR_KEY, path: 'car', unused: noRows('cars') },
   { card: 'todos', key: TODOS_KEY, path: 'todos', unused: noRows('todos') },
+  // « Mes habitudes » — added 2026-09-09 (UNIFY day 7). A returning user is the window
+  // this list serves, and habits is the feature most often never found: it has its own
+  // page, its own card, and no board presence until one exists. ONE more probe, not
+  // twenty: the header above is right that this is a whisper, and an audit's « 6 of 23
+  // concepts » reads that design as a gap when it is a choice.
+  { card: 'habits', key: HABITS_KEY, path: 'habits', unused: noRows('habits') },
 ]
 
 // Deterministic daily rotation — the same day shows the same card (no flicker

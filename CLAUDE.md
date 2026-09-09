@@ -622,7 +622,10 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
 - **A new guard must be run against the bug it was written for, before it is
   trusted** (standing rule). The build-gating grep tests (`calm-tenets`,
   `field-fit`, `keyboard-fit`, `write-rule`, `write-owners`, `intl-rule`,
-  `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`) are the best
+  `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`,
+  `chip-rule`, and — added by the UNIFY week — `glossary` (one word per idea, ratcheted),
+  `undoTier` (one delete mechanism per entity), `tour-rule` (no help anchor without its
+  step) and `docCounts` (a number in prose must be derivable from code)) are the best
   thing in this codebase — and a green
   one proves nothing on its own. `nested-interactive.test.ts` was written to catch
   a control-inside-a-control on the routines grid and reported GREEN over exactly

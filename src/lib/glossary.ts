@@ -161,8 +161,14 @@ const ENTITIES: GlossaryTerm[] = [
     },
     card: 'set-agenda',
     codeIds: ['events'],
-    rivals: { fr: ['Événement'] },
-    why: 'The app says « rendez-vous » wherever the entity is named. « Événement » survived in search + capture until day 3; the ratchet holds it at zero.',
+    rivals: { fr: ['Événement'], en: ['Event'] },
+    why:
+      'The app says « rendez-vous » wherever the entity is named. « Événement » survived in search + capture ' +
+      'until day 3; the ratchet holds it at zero. EN was the worse half and went unnoticed behind it: FR had ' +
+      'been clean for days while English still said "Event" in 17 places (search, capture, the calendar ' +
+      'legend, edit/delete/add, the empty state, two confirms). Marc settled it on 2026-09-09 — Appointment — ' +
+      'and declaring the EN rival here is what makes the English side enforced rather than merely documented. ' +
+      'The `events` code id stays frozen, as every code id here does.',
   },
   {
     id: 'mot',

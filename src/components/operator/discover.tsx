@@ -9,6 +9,7 @@ import { useTour } from '../../lib/tour'
 import { GUIDE, SECTION_TINT, cardHomeTab, type SectionKey } from '../../lib/guideContent'
 import { DISCOVERY_PROBES, buildDiscoveryTour, dayIndexNow, pickDaily } from '../../lib/discovery'
 import { WHATS_NEW } from '../../lib/whatsNew'
+import { resetIntrosSeen } from '../SectionIntro'
 import { renderRich } from '../../lib/richText'
 import { Icon } from '../Icon'
 
@@ -62,6 +63,11 @@ export function WhatsNewLine() {
     markSeen(WHATSNEW_KEY, entry.id)
     setSeen(readSeen(WHATSNEW_KEY))
   }
+  // The section intros are per-device and were one-way; this is the way back.
+  const replayIntros = () => {
+    resetIntrosSeen()
+    // The cards read the flag on mount, so the next hub visit shows them again.
+  }
   return (
     <aside className="section-intro" aria-label={t.discover.whatsNew}>
       <div className="section-intro__head">
@@ -75,14 +81,21 @@ export function WhatsNewLine() {
         </button>
       </div>
       <p className="section-intro__what">{renderRich(entry.text[lang])}</p>
-      {entry.card && (
-        <div className="section-intro__actions">
+      <div className="section-intro__actions">
+        {entry.card && (
           <Link className="section-intro__more" to={`/settings?tab=guide&card=${entry.card}`}>
             <span>{t.help.learnMore}</span>
             <Icon name="arrow-right-bold" size={16} />
           </Link>
-        </div>
-      )}
+        )}
+        {/* Bring the first-visit cards back — for the user returning after a month,
+            or on a device that never saw them. One tap, no confirm: nothing is lost,
+            the cards simply reappear and can be dismissed again. */}
+        <button type="button" className="section-intro__more" onClick={replayIntros}>
+          <Icon name="arrow-counter-clockwise-bold" size={16} />
+          <span>{t.welcome.replayIntros}</span>
+        </button>
+      </div>
     </aside>
   )
 }

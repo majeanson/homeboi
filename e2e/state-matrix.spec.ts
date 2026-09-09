@@ -60,6 +60,14 @@ type Entry = {
    *  hero simply carries a bigger number. Tighten it in the same commit as a lean
    *  pass; it only ever moves down. See LEAN.md. */
   budgetPx?: number
+  /** Why this entry measures `contentTopPx` and then deliberately does NOT hold it to a
+   *  ceiling. Required (by the invariant test below) on any entry that sets `content`
+   *  without a `budgetPx`, because silence is ambiguous in the expensive direction: an
+   *  absent number reads identically whether it is a considered decision or a surface
+   *  nobody got to, and the second kind grows unnoticed. `voyage` sat unbudgeted at
+   *  212px for two weeks on exactly that ambiguity — LEAN.md analysed the surface at
+   *  length and the table never got the number (UNIFY.md day 7). */
+  noBudgetWhy?: string
 }
 
 // « Les notes » ships with an EMPTY family-notes fixture (the behavioural specs want
@@ -352,7 +360,7 @@ const MATRIX: Entry[] = [
   // the fixture holds — one — not how much chrome the surface spends. A budget read
   // off that number would guard the fixture. Screenshot + bleed + crash guards only,
   // until the shared list fixture stages more than a single deal.
-  { name: 'cashier', route: '/liste/cashier', content: '.cashier__tile, .bigcard', themes: ['day'] },
+  { name: 'cashier', route: '/liste/cashier', content: '.cashier__tile, .bigcard', themes: ['day'], noBudgetWhy: 'the one tile is vertically CENTRED at thumb height, so contentTopPx measures how few deals the fixture stages, not chrome — a number here would invite "fixing" the one screen whose emptiness is the design (looked at again 2026-09-09: still true)' },
   // « Les circulaires » opens on an EMPTY search (nothing to browse until you type),
   // so measure the half that has rows: « Par magasin », the flyer list.
   {
@@ -386,7 +394,10 @@ const MATRIX: Entry[] = [
   // …and the rest of the router's scenes, so "what this table does NOT list" is a
   // question with a short answer. « Voyage » needs its own fixture (the shared trips
   // route is empty); the others read caches the default fixture already fills.
-  { name: 'voyage', route: '/voyage/tp1', content: '.voyage-note, .voyage__day, .sec-label', themes: ['day'], api: TRIP_FIXTURE },
+  // Budgeted 2026-09-09 at its measured 212px + 10%. It had been measured-but-unheld
+  // since the table was written — the one entry where that was an oversight rather than
+  // a decision, and the surface LEAN.md spends its longest paragraph on.
+  { name: 'voyage', route: '/voyage/tp1', content: '.voyage-note, .voyage__day, .sec-label', budgetPx: 233, themes: ['day'], api: TRIP_FIXTURE },
   { name: 'price-match', route: '/liste/deals/l1', content: '.pm__deal, .bigcard, .scene__body > *', budgetPx: 32, themes: ['day'] },
   { name: 'multicook', route: '/kitchen/cook/multi?r=rc1,rc2', content: '.mcook__step, .cook__full-ings li, .scene__body > *', budgetPx: 178, themes: ['day'] },
   { name: 'person-edit', route: '/cercle/person/c1', content: '.cf__input', budgetPx: 156, themes: ['day'] },
@@ -394,8 +405,8 @@ const MATRIX: Entry[] = [
   // « La fenêtre famille » and « Bienvenue » are GUEST-link scenes: with an ordinary
   // operator fixture they land on their empty state, and the matrix's own guard refuses
   // to budget one (rightly — see LEAN.md). Reported-only until a guest fixture exists.
-  { name: 'family-window', route: '/family', content: '.scene__body > *, .page > *', themes: ['day'] },
-  { name: 'welcome', route: '/welcome', content: '.scene__body > *, .page > *', themes: ['day'] },
+  { name: 'family-window', route: '/family', content: '.scene__body > *, .page > *', themes: ['day'], noBudgetWhy: 'guest-link scene: an operator fixture lands it on its empty state, and an empty state may not be budgeted' },
+  { name: 'welcome', route: '/welcome', content: '.scene__body > *, .page > *', themes: ['day'], noBudgetWhy: 'guest-link scene: same as family-window — reported-only until a guest fixture exists' },
   { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
 
   // — THE TWO LENSES CLAUDE.md CALLS STANDING RULES, and which the sweep had only
@@ -459,6 +470,23 @@ const MATRIX: Entry[] = [
 ]
 
 mkdirSync(OUT, { recursive: true })
+
+// The table checks itself before it photographs anything. Pure data, no browser, so it
+// costs nothing and fails first. The rule: measuring a surface and then holding it to
+// nothing must be a SENTENCE someone wrote, never an omission — those two look the same
+// in a diff, and the second kind is how `voyage` sat unheld at 212px while LEAN.md
+// analysed it at length (UNIFY.md day 7).
+test('every measured entry is either budgeted or says why not', () => {
+  const unstated = MATRIX.filter((e) => e.content && e.budgetPx == null && !e.noBudgetWhy).map((e) => e.name)
+  expect(
+    unstated,
+    `these entries measure contentTopPx but neither hold a budget nor say why: ${unstated.join(', ')}. ` +
+      `Give each a budgetPx (its measured value + ~10%) or a noBudgetWhy naming the reason a ceiling would be wrong.`,
+  ).toEqual([])
+  // …and the converse, so the field cannot become decoration on an entry that IS held.
+  const both = MATRIX.filter((e) => e.budgetPx != null && e.noBudgetWhy).map((e) => e.name)
+  expect(both, `these carry a budget AND a reason not to have one: ${both.join(', ')}`).toEqual([])
+})
 
 for (const entry of MATRIX) {
   for (const theme of entry.themes ?? (['day', 'night'] as Theme[])) {

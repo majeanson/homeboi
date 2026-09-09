@@ -307,7 +307,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'C’est quoi, Babillard', en: 'What Babillard is' },
         detail: {
-          fr: 'Un centre de commande familial pour une tablette laissée au mur : l’agenda du jour, le souper de ce soir, les listes, les corvées et les routines des enfants.',
+          fr: 'Un centre de commande familial pour une tablette laissée au mur : l’agenda du jour, le souper de ce soir, les listes, les [[mot:corvee|corvées]] et les routines des enfants.',
           en: 'A household command-centre for a tablet left on the wall: today’s agenda, tonight’s supper, the lists, the chores and the kids’ routines.',
         },
         why: {
@@ -446,7 +446,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Trois zooms : la Grille (la journée), le Mois et L’année. Le visage choisi filtre tout — Maisonnée montre tout le monde, un visage montre ses affaires à lui.',
+          fr: 'Trois zooms : la Grille (la journée), le Mois et L’année. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui.',
           en: 'Three zooms: the Grid (the day), the Month and The year. The picked face filters everything — Household shows everyone, a face shows just their things.',
         },
       },
@@ -499,7 +499,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ ajoute : cuisiner une recette, ajouter une recette, le livre illustré, planifier un repas, des restants, un aliment qui achève, ou un article de la réserve.',
+          fr: 'Le ＋ ajoute : cuisiner une recette, ajouter une recette, le livre illustré, planifier un repas, des [[mot:restant|restants]], un aliment qui achève, ou un article de la réserve.',
           en: 'The ＋ adds: cook a recipe, add a recipe, the picture book, plan a meal, leftovers, a running-low item, or a réserve item.',
         },
         route: '/kitchen?plus=1',
@@ -592,7 +592,7 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La réserve', en: 'The stash' },
         detail: {
-          fr: 'Ce qui dort au congélateur ou au fond du garde-manger, noté par endroit — un rappel, pas un inventaire (aucun chiffre à tenir). Quand tu le sors, retire-le ; s’il achève, le [[icon:shopping-bag-bold]] sur la rangée l’envoie direct à la liste.',
+          fr: 'Ce qui dort au congélateur ou au fond du [[mot:garde-manger|garde-manger]], noté par endroit — un rappel, pas un inventaire (aucun chiffre à tenir). Quand tu le sors, retire-le ; s’il achève, le [[icon:shopping-bag-bold]] sur la rangée l’envoie direct à la liste.',
           en: 'What sleeps in the freezer or at the back of the pantry, noted by spot — a reminder, not an inventory (no counts to keep). When you pull it out, clear it; if it’s running low, the [[icon:shopping-bag-bold]] on the row sends it straight to the list.',
         },
         why: {

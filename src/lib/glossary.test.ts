@@ -78,8 +78,23 @@ const e2eText = sourceFiles(E2E)
   .map((f) => readFileSync(f, 'utf8'))
   .join('\n')
 
+const escape = (form: string) => form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// A LETTER boundary, deliberately not `\b`.
+//
+// `\b` is defined on ASCII `\w`, so `\bÉvénement` can NEVER match: É is not a word
+// character, so the boundary demands a word character immediately before it. This repo
+// has been bitten by the same ASCII-dead boundary before (`à\b` in the OCR work). The
+// Unicode property escape does what `\b` was meant to do here.
+//
+// It was a plain substring test until 2026-09-09, which was fine while every rival was
+// French — and stopped being fine the moment « Event » was declared, because a substring
+// « Event » also counts "prevent" and "eventually". There are none in the copy today, so
+// the ratchet would have read 0 and looked healthy while being wrong for the first
+// author who writes one. The trailing `s?` keeps a PLURAL counting — « Tâches » and
+// « Événements » are the rival, not a different word.
 const occurrences = (haystack: string[], form: string) => {
-  const re = new RegExp(form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+  const re = new RegExp(`(?<!\\p{L})${escape(form)}s?(?!\\p{L})`, 'iu')
   return haystack.filter((v) => re.test(v)).length
 }
 
@@ -93,6 +108,10 @@ const RIVAL_CEILING: Record<string, number> = {
   'fr:Enlever': 0,
   'fr:Tâche': 2,
   'fr:Événement': 0,
+  // Pinned at 0 on the day it was swept (2026-09-09), not at its old 17: Marc settled
+  // « rendez-vous » → Appointment, and the EN copy was fixed in the same commit that
+  // declared the rival. A ceiling is only allowed to start where the code already is.
+  'en:Event': 0,
 }
 
 // Day 2 spent this down to its floor, and day 3 learned the floor was 14 rather than 8 —
@@ -217,15 +236,76 @@ describe('glossary — the ratchets (they only go down)', () => {
     // « Événements » sailed straight past it into a red run. It reads the glossary now,
     // so every rival is covered the moment it is declared — a guard that knows one word
     // is a guard for one word.
+    // A CODE ID IS NOT A LABEL. The binding rule of the rename week is that ids and
+    // routes never move while words do, so `kind: 'event'` and `isApi('POST', 'events')`
+    // are correct forever — and they are exactly what an EN rival « Event » matches.
+    // Declaring that rival lit up 17 specs that had nothing wrong with them. The term
+    // already names its frozen ids, so the scan reads them from there rather than
+    // growing an exemption list that would need a line per spec.
+    // FRENCH RIVALS ONLY, and the reason is a limit of the method rather than a gap.
+    //
+    // The specs run in French: the four English states in the suite (`board-en`, the
+    // `-en` screenshot spot-checks, the 360/390 overflow sweep) take screenshots and
+    // measure boxes — not one of them asserts English copy. So an EN rival cannot be
+    // pinned by a spec, and looking for one finds only the spec's OWN English: test
+    // titles (`test('add an event')`), CSS selectors (`.event-note textarea`) and
+    // fixture ids. Declaring « Event » produced 84 such hits and zero real ones.
+    //
+    // That is not a bug to filter away — it is this file's own principle (« the ratchet
+    // counts, it does not classify ») applied honestly. A scan that cannot tell an
+    // asserted label from a test's own title has no business guessing, and an exemption
+    // list would have to grow a line per spec forever.
+    //
+    // REVISIT THE DAY A SPEC ASSERTS ENGLISH TEXT. The canary below is what notices.
     const pinned: string[] = []
-    for (const { form, term } of rivalForms()) {
+    for (const { form, term, lang } of rivalForms()) {
+      if (lang !== 'fr') continue
       // Only assertions, not prose: a rival inside a spec's own comment is a note.
-      const re = new RegExp(`['\`"][^'\`"]*\\b${form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b[^'\`"]*['\`"]`, 'gi')
+      //
+      // `[^'\`"\n]` — the character class MUST exclude the newline. Without it the scan
+      // pairs an apostrophe in one line's French comment with a quote several lines
+      // down and reports the code in between as an asserted label. That is the same
+      // quote-pairing bug the census hit twice (Part 0), sitting here unnoticed because
+      // every rival so far was an accented French word that code never contains. The
+      // first ASCII rival (« Event ») produced 84 hits, most of them nonsense spans.
+      const re = new RegExp(`['\`"][^'\`"\\n]*\\b${escape(form)}\\b[^'\`"\\n]*['\`"]`, 'gi')
       for (const m of e2eText.match(re) ?? []) pinned.push(`${term}: ${m.slice(0, 60)}`)
     }
     expect(
       pinned,
       'rename the label and the spec that asserts it in ONE commit — E2E runs after the deploy here',
+    ).toEqual([])
+  })
+
+  // The condition the rule above is scoped on, asserted instead of assumed.
+  //
+  // « The specs never assert English » is true today and is the whole reason EN rivals
+  // are skipped. If a spec ever seeds `lang: 'en'` AND asserts text, that sentence
+  // quietly stops being true and the EN half of « one word per idea » loses its e2e
+  // cover — silently, which is the failure mode this whole file exists to prevent.
+  //
+  // The four English states are listed by name: they screenshot and measure. Adding a
+  // fifth is fine; adding one that asserts copy means the rule above needs a real
+  // answer (scan only `getByText`/`getByRole({name})` arguments), not a bigger list.
+  it('no spec asserts English copy — the premise the rival scan is scoped on', () => {
+    // Not "does an English-running file assert any text" — the first draft asked that
+    // and flagged two innocents, because one file holds both FR and EN tests and the
+    // only text it asserts in the English one is « Spaghetti maison », a FIXTURE recipe
+    // name that is the same word in both languages. The question that actually matters
+    // is narrower: does an English-running spec assert a string that IS dictionary copy?
+    const enCopy = new Set(enValues)
+    const asserting: string[] = []
+    for (const f of sourceFiles(E2E).filter((f) => f.endsWith('.spec.ts'))) {
+      const src = readFileSync(f, 'utf8')
+      if (!/lang: 'en'|'en'\s*as Lang|\['fr', 'en'\]/.test(src)) continue
+      const re = /(?:getByText\(|toHaveText\(|hasText:\s*|name:\s*)'([^'\n]+)'/g
+      for (const m of src.matchAll(re)) if (enCopy.has(m[1])) asserting.push(`${f.split(/[\\/]/).pop()}: « ${m[1]} »`)
+    }
+    expect(
+      asserting,
+      'a spec now seeds English AND asserts a string that comes from the EN dictionary. ' +
+        'The EN rivals are skipped in the scan above BECAUSE no spec did that. Re-scope that ' +
+        'rule (match only assertion arguments) rather than widening an exemption list.',
     ).toEqual([])
   })
 })
@@ -327,5 +407,39 @@ describe('e2e asserts labels the app can render', () => {
   it('every E2E_LABEL_ALLOWED entry is still asserted somewhere', () => {
     const stale = Object.keys(E2E_LABEL_ALLOWED).filter((lit) => !literals.has(lit))
     expect(stale, 'an exemption nothing asserts any more is noise — drop it').toEqual([])
+  })
+})
+
+// ── The in-app lexicon: [[mot:id]] ──────────────────────────────────────────
+//
+// A term the manual marks pops its definition where it stands. Three things have to
+// hold, and each has bitten this repo in another form:
+//   · the id resolves (a « ? » that opens nothing is worse than none — helpRegistry);
+//   · the mark stays in Réglages/Comprendre, never a hub surface (teaching that costs
+//     a daily user a glance is the tax this week refused to add);
+//   · a term nobody can reach is a definition nobody reads.
+describe('the in-app lexicon', () => {
+  const guideSrc = readFileSync(join(__dirname, 'guideContent.ts'), 'utf8')
+  const tokens = [...guideSrc.matchAll(/\[\[mot:([a-z0-9-]+)(?:\|[^\]]*)?\]\]/g)].map((m) => m[1])
+
+  it('marks exist at all (canary)', () => {
+    expect(tokens.length, 'no [[mot:…]] tokens — the lexicon is wired but unused').toBeGreaterThan(0)
+  })
+
+  it('every [[mot:…]] names a live term', () => {
+    const ids = new Set(GLOSSARY.map((t) => t.id))
+    expect(tokens.filter((id) => !ids.has(id))).toEqual([])
+  })
+
+  it('the mark never reaches a hub surface', () => {
+    // The help registries are read on the tabs themselves; the guide is Réglages.
+    const hubCopy = sourceFiles(join(__dirname))
+      .filter((f) => /[a-zA-Z]Help\.ts$/.test(f))
+      .map((f) => readFileSync(f, 'utf8'))
+      .join('\n')
+    expect(
+      [...hubCopy.matchAll(/\[\[mot:([a-z0-9-]+)/g)].map((m) => m[1]),
+      'a dotted word on a hub surface taxes every glance a daily user takes — Réglages only',
+    ).toEqual([])
   })
 })

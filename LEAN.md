@@ -84,7 +84,10 @@ runs is a comment with a number in it.
 
 **Windows and the Linux runner agree — checked, not assumed.** The worry was that
 budgets baselined locally would be quietly loose or quietly red on CI, since font
-metrics differ. The first full CI sweep (2026-08-26, 64 states, 44 budgeted) came
+metrics differ. The first full CI sweep (2026-08-26, 64 states, 44 budgeted — a dated
+record of that run, deliberately not updated; **today the sweep is 80 entries → 92
+states, 65 of them budgeted**, and those three live numbers are asserted from the spec by
+`src/lib/docCounts.test.ts`) came
 back with every entry at exactly its tolerance — the same numbers to the pixel.
 That is not luck: `contentTopPx` is a sum of BOX heights (padding, margins, fixed
 control heights), and only a value that wraps differently between platforms would
@@ -253,6 +256,17 @@ And two verdicts that are NOT cuts, recorded so nobody re-opens them: `habitudes
 a thing you do, both content; `cashier` is left **unbudgeted** because its tiles are
 vertically centred, so its `contentTopPx` measures how few deals the fixture stages,
 not how much chrome the surface spends.
+
+**And "unbudgeted" is now a sentence, not a silence** (2026-09-09). An entry that
+measures `content` and holds no `budgetPx` must carry a **`noBudgetWhy`**, enforced by a
+data test at the top of the spec that runs before any browser opens. The reason is that
+the two cases are indistinguishable in a diff: `cashier` had a paragraph of argument
+behind its missing number, and `voyage` had nothing behind its own — the table simply
+never got one, while this file spent its longest paragraph analysing that very surface.
+It sat at 212px, free to grow, for two weeks. It is budgeted at **233** now, and the
+three entries that stay unbudgeted (`cashier`, `family-window`, `welcome`) each say why
+in the table itself. Re-looked at `cashier`'s screenshot before keeping the verdict: one
+card, centred, deliberate — the metric still is not measuring chrome there.
 
 **The two lenses, now swept** (2026-08-26): the toddler lens and the 1280px wall
 were standing requirements in `CLAUDE.md` with exactly one matrix entry each, both

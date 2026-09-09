@@ -1,11 +1,17 @@
 import { Fragment, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { InlineIcon, type IconName } from '../components/Icon'
+import { GlossaryTermMark } from '../components/GlossaryTerm'
 import { foldRanges } from './normalize'
 
 // Inline tokens in long-form prose (the Guide + the guided tour share this):
 //   [[icon:name]]     → the app's own Phosphor glyph, so a sentence that points
 //                       at a button shows the *same* icon the button shows.
+//   [[mot:id|label]]  → a glossary term: a quiet dotted word that pops its two-sentence
+//                       definition where it stands (components/GlossaryTerm). The id
+//                       must match a term in lib/glossary.ts. Réglages/Comprendre only
+//                       — reading the manual is a one-off, so the mark costs a daily
+//                       user nothing; the same underline on the board would be a tax.
 //   [[card:id|label]] → a calm in-text link that opens another Guide card. It
 //                       deep-links to /settings?tab=guide&card=<id>; inside the
 //                       Guide the ?card effect opens + scrolls to that card. This
@@ -15,10 +21,14 @@ import { foldRanges } from './normalize'
 // `stripTokens` (used for search + length math) drops icon tokens entirely and
 // keeps a card token's visible LABEL, so a search still matches the words a reader
 // actually sees.
-const TOKEN = /\[\[(icon|card):([^\]]+)\]\]/g
+const TOKEN = /\[\[(icon|card|mot):([^\]]+)\]\]/g
 
 export const stripTokens = (s: string) =>
-  s.replace(TOKEN, (_m, kind: string, body: string) => (kind === 'card' ? (body.split('|')[1] ?? body) : ''))
+  // A card link and a glossary term both keep the words a reader SEES, so Guide search
+  // still matches them; an icon token leaves nothing behind.
+  s.replace(TOKEN, (_m, kind: string, body: string) =>
+    kind === 'card' || kind === 'mot' ? (body.split('|')[1] ?? body) : '',
+  )
 
 // Wrap every fold-match of `needle` in a calm <mark class="hl"> — the Guide
 // search highlight. Accent/case-insensitive via foldRanges, so « Réglages »
@@ -55,6 +65,11 @@ export function renderRich(text: string, hl?: string): ReactNode {
     const body = m[2]
     if (kind === 'icon') {
       out.push(<InlineIcon key={m.index} name={body as IconName} />)
+    } else if (kind === 'mot') {
+      const bar = body.indexOf('|')
+      const id = bar === -1 ? body : body.slice(0, bar)
+      const label = bar === -1 ? body : body.slice(bar + 1)
+      out.push(<GlossaryTermMark key={m.index} id={id} label={label} />)
     } else {
       const bar = body.indexOf('|')
       const id = bar === -1 ? body : body.slice(0, bar)

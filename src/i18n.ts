@@ -359,6 +359,7 @@ export const FR = {
     later: 'Plus tard',
     discover: 'Tout ce que Babillard fait',
     replayTour: 'Revoir la visite guidée',
+    replayIntros: 'Revoir les cartes de première visite',
     // The demo-sandbox try-this face (lib/demo.ts) — invitations, never a checklist.
     demoTitle: 'Bienvenue ! Essaie-le pour vrai',
     demoIntro: 'On a rempli le babillard pour toi. Quelques idées pour le sentir vivre :',

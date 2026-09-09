@@ -40,6 +40,18 @@ function readSeen(): string[] {
 function hasIntroSeen(id: string): boolean {
   return readSeen().includes(id)
 }
+// Bring every first-visit card back. The flag says "you have seen this", which is a
+// statement about a MOMENT, not about a person — so it has to be revocable. Exported
+// for Réglages ▸ Découvrir, beside « Quoi de neuf »: the place someone already goes to
+// re-orient after time away (UNIFY day 7).
+export function resetIntrosSeen(): void {
+  try {
+    localStorage.removeItem(SEEN_KEY)
+  } catch {
+    /* noop */
+  }
+}
+
 function markIntroSeen(id: string): void {
   try {
     const seen = readSeen()

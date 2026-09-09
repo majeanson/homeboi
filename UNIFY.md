@@ -122,7 +122,8 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
 ## Part 1 — The week
 
 ### Day 1 — The word list · ✅ shipped
-- [x] `src/lib/glossary.ts` — 24 terms as DATA: winner FR + EN, a two-sentence definition
+- [x] `src/lib/glossary.ts` — the word list as DATA (24 rows that day; the census above
+      carries the live count, which is the only one asserted): winner FR + EN, a two-sentence definition
       (the text the in-app lexicon will pop on day 7), the frozen `codeIds` each concept
       wears, and the `rivals` that lost. Every rival and every id divergence carries a
       **why**, so the next session can't "fix" it by accident.
@@ -279,17 +280,52 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
       dead-end takes a door; the doctrine was being followed. The honest work was to check,
       not to add 80 chips. **If a genuine section dead-end turns up, it takes a door then.**
 
-### Day 7 — The lexicon, the returning user, honest documents
-- [ ] `[[mot:<id>]]` in `lib/richText.tsx` — a third token beside `[[icon:]]` and
-      `[[card:]]`, popping the glossary definition in the existing `HelpBubble`. **Réglages /
-      Comprendre only**: a one-off read, so it costs a daily user nothing.
-- [ ] Widen `DISCOVERY_PROBES` (6 of ~23 concepts) and make `SectionIntro`'s "seen" flag
-      replayable — the returning user's whole problem in two changes.
-- [ ] Full matrix re-run, diffed against Part 0. Spend `cashier-day` (412px, unbudgeted)
-      and give it a budget.
-- [ ] Doc honesty: `REVIEW-PASS.md`'s banner says "15 findings still open" against **1**
-      real box; `LEAN.md` says "64 states, 44 budgeted" against 92/67. Put whatever can be
-      derived behind `docCounts.test.ts`.
+### Day 7 — The lexicon, the returning user, honest documents · ✅ shipped
+- [x] `[[mot:<id>]]` in `lib/richText.tsx` — a third token beside `[[icon:]]` and
+      `[[card:]]`, popping the glossary definition where the word stands
+      (`components/GlossaryTerm.tsx`). **Réglages / Comprendre only**: a one-off read, so
+      it costs a daily user nothing. Four terms marked at their first appearance; three
+      guard rules (id resolves · label matches the term's own word · no mark outside the
+      two surfaces), each proven red.
+- [x] Widened `DISCOVERY_PROBES` and made `SectionIntro`'s "seen" flag replayable
+      (`resetIntrosSeen()` → Réglages ▸ Découvrir, « Revoir les cartes de première
+      visite »). The flag had been doing two jobs — "don't nag me" and "this household is
+      past onboarding" — with no way back short of clearing site data.
+- [x] Full matrix re-run (92 states, 0 failing), diffed against the Day-1 baseline:
+      **zero `contentTopPx` changes**. A week of renames, four new edit/delete doors, the
+      lexicon token and help on every form scene cost no surface a single pixel of chrome
+      — which is the result the week was aiming at: the doors went behind furniture that
+      already existed (peek ⋯, `RowActions`, `SceneHead`'s "?"), so none of them is new
+      chrome on a daily path.
+- [~] **`cashier-day` (412px) stays unbudgeted — the plan's instruction was wrong, and
+      the screenshot is why.** LEAN's own rule is to look before ratcheting, so I opened
+      the PNG: one card, vertically centred at thumb height, one item in the fixture.
+      `contentTopPx` there measures how few deals are staged, not chrome. Budgeting it
+      would invite someone to "fix" the one screen whose emptiness IS the design — the
+      spec has argued this since 2026-08-27 and the argument holds.
+- [x] **But the audit found a real one next door.** Four entries measure `content` and
+      hold no budget; three had a stated reason, `voyage` had none — it was an oversight,
+      not a decision, and it sat free to grow at 212px while `LEAN.md` spent its longest
+      paragraph on that exact surface. Budgeted at **233**. « No budget » is now a
+      required `noBudgetWhy` sentence enforced by a data test that runs before any
+      browser opens, because an omission and a decision look identical in a diff.
+- [x] Doc honesty. `REVIEW-PASS.md`'s banner said "15 findings still open" against **1**
+      real box — twelve days after `STATE.md` had it right. Fixed, and **counted from its
+      own boxes** by `docCounts.test.ts` now: the headline of a ledger is the part
+      everyone reads and nobody re-derives.
+- [~] **`LEAN.md`'s "64 states, 44 budgeted" was NOT stale** — the plan called it drift,
+      but read in place the sentence is dated ("the first full CI sweep (2026-08-26…)"),
+      i.e. a historical record of that run. Rewriting it would have destroyed a fact to
+      fix a phantom. What was actually missing was any statement of the sweep's *current*
+      size, so that was added beside it — 80 entries → 92 states, 65 budgeted — and all
+      three numbers are now asserted from the spec.
+- [x] The matrix parser written for those assertions **reported `0 entries`, confidently,
+      twice**: the array is declared `Entry[] = [`, so `indexOf('[')` anchors on the
+      *type's* brackets and reads an empty body; and three entries span several lines, so
+      the per-line fallback was short by exactly three. Both are now comments on the
+      extractor and a floor in the sanity block — the week's recurring lesson, one last
+      time: a scanner that walks the wrong shape reports the wrong number and never
+      throws.
 
 ---
 
@@ -302,17 +338,94 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
 | empty a container | **Vider** / Clear | Effacer *(as a label)* | The list stays, it is simply empty |
 | kill an access | **Révoquer** / Revoke | — | A link, a paired tablet |
 | erase a MARK you made | **Effacer** / Erase | Effacer *(on an object)* | Ink, typed text, typed dates — never a thing of the household. Sharpened on day 2, after reading all 20 sites |
-| a message left for someone | **Mot** / **Message** | EN "note" | FR keeps three words for three tables; EN had one for all three |
+| a message left for someone | **Mot** / **Message** | EN "note" | FR keeps three words for three tables; EN had one for all three. Confirmed by Marc 2026-09-09 |
+| something at a given time | **Rendez-vous** / **Appointment** | Événement · EN "Event" | FR settled day 3; the EN half was confirmed 2026-09-09 and swept the same day (17 strings), with `Event` pinned as an EN rival |
 | the tab | **Maison** / Home | Le cercle · The circle | Renamed in the nav restructure; the copy never followed. Ids/routes frozen |
 
-## Part 3 — Questions for Marc (❓ — not tasks)
+## Part 3 — Questions for Marc — **both answered 2026-09-09** ✅
 
-- ❓ **EN word for `mot`.** « Message » is proposed (clean, and it keeps mot / fridge note /
-  family note distinct in English). It flirts with chat semantics — say the word if you'd
-  rather have "Word" or "Fridge note".
-- ❓ **EN word for `rendez-vous`.** « Appointment » is proposed over "Event": the app's FR
-  entity is a rendez-vous, and « événement » is the losing form.
+- [x] **EN word for `mot` → « Message ».** Approved. Already swept on day 4 (the whole
+      `mots.*` EN subtree says *message*); the answer is what lets the injectivity rule
+      *keep* it — mot / fridge note / family note now hold three distinct EN words where
+      English had collapsed all three onto "note".
+- [x] **EN word for `rendez-vous` → « Appointment ».** Approved, and this one was **not**
+      cosmetic: FR has said « rendez-vous » everywhere since day 3, while EN still said
+      "Event" in **17** places — the search placeholder and category, the capture kind,
+      the calendar legend, « Rendez-vous annuels », edit/delete/add, the empty state, the
+      delete confirm, the stale-link toast, the share lead and the member-delete confirm.
+      Swept, and `Event` is now a declared **EN rival** on the term, so the ratchet holds
+      it at zero the way `fr:Événement` already was. Until today the guard was FR-only:
+      the English half of « one word per idea » was documented and unenforced.
+
+### What declaring the first ENGLISH rival exposed
+
+Every rival until now was an accented French word. Those never appear in code, in a CSS
+selector or in a spec's own title — so three weaknesses in the guard had never once been
+touched. The first ASCII rival hit all three within a minute:
+
+1. **The rival matcher was a plain substring test**, so « Event » also counted "prevent"
+   and "eventually". There are none in the copy today, so the ratchet would have read 0
+   and looked healthy while being wrong for the first author who writes one. It now uses
+   a **Unicode letter boundary with an optional plural** — deliberately not `\b`, which
+   is ASCII-only and can never match `\bÉvénement` (É is not a word character, so the
+   boundary demands one before it; this repo has been bitten by the same ASCII-dead
+   boundary before). Proven both ways: "eventually" no longer counts, « Events » still does.
+2. **The e2e scan paired quotes across NEWLINES.** A French apostrophe in one line's
+   comment matched a quote several lines below and reported the code between them as an
+   asserted label — the same quote-pairing bug the census hit twice in Part 0, sitting
+   latent here the whole time because no French rival ever appears in code. It produced
+   84 hits, most of them nonsense spans. The character class excludes `\n` now, which
+   matters most for **French**, where the apostrophe is the trigger.
+3. **The scan cannot judge English, and now says so.** With the spans fixed, the
+   remaining hits were the specs' own English: test titles (`test('add an event')`), CSS
+   selectors (`.event-note textarea`), route segments (`/event/e1`). None is a label. The
+   suite runs in French — its four English states screenshot and measure, and the only
+   text any of them asserts is « Spaghetti maison », a fixture recipe name. So EN rivals
+   are **skipped** there, and the premise is asserted rather than assumed: a new canary
+   fails the build if an English-running spec ever asserts a string that is EN dictionary
+   copy. That is this file's own principle applied honestly — *the ratchet counts, it
+   does not classify* — instead of an exemption list that would grow a line per spec.
+
+And the sweep script made the census's original mistake a fourth time: its patterns were
+single-quote anchored, so it missed `` `New event: ${title}` `` — the one **template
+literal**. The ratchet caught it immediately, which is the entire argument for pinning a
+ceiling at 0 in the same commit as the sweep rather than trusting the sweep.
 
 ## Part 4 — Parked, with the why
 
-*(nothing yet)*
+- [~] **Business's two delete tiers** — see *Day 4's verdict on Business* above; the split
+      is correct, not drift.
+- [~] **`cashier-day`'s 412px** — deliberate centred layout, re-looked at on 2026-09-09
+      (Day 7). The metric is not measuring chrome on that screen.
+- [~] **`LEAN.md`'s first-sweep numbers** — dated history, kept verbatim; the *current*
+      numbers were added beside them rather than overwriting them (Day 7).
+- [~] **`family-window` / `welcome` unbudgeted** — guest-link scenes that land on their
+      empty state under an operator fixture, and an empty state may not be budgeted. They
+      become budgetable the day a guest fixture exists; until then the reason is written
+      in the table.
+
+---
+
+## Part 5 — What the week actually changed
+
+Seven days, one theme: **the app said the same thing more than one way, and nothing was
+written down.** What shipped:
+
+| | Before | After |
+| --- | --- | --- |
+| Delete verbs | 6, one key spelled two ways | 5, each with an assigned meaning, guarded |
+| Delete mechanisms | 5 (one undocumented, splicing polled caches) | 4, `undoRemove.ts` gone |
+| The word list | none | `lib/glossary.ts` (size in the census above), ratcheted so synonyms cannot grow back |
+| Fixable where you see it | corvée, projet, routine, habitude: no | all four: yes |
+| Form scenes with help | 0 | all of them |
+| A user's way back to the intros | clear site data | one control in Découvrir |
+| Doc numbers | typed by hand, three stale | derived from code by `docCounts.test.ts` |
+| The English copy | "Event" ×17 while FR said rendez-vous; one EN word for three FR note concepts | *Appointment* and *Message*, both **ratcheted** — the EN half is enforced, not just documented |
+
+**The method that made it checkable, and the one thing to carry forward:** every guard
+this week was **planted against the bug it was written for before being trusted**, and
+that is not ceremony — it caught a blind guard that had been passing on 98 % of a deleted
+file, a census that was wrong twice while sounding certain, a tour rule that invented
+three orphans, and a matrix parser that read an empty array as zero. Five guards, five
+times the first draft was green for the wrong reason. **A guard that has never been red
+proves nothing.**

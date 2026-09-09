@@ -94,8 +94,11 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It read **3** on 2026-09-08 (1 in `REVIEW-PASS.md`, 2 in `PARITY.md`'s
-> Wave D), and that is the whole of the repo's written open work. It was 75 before the
+> a number you can trust. It reads **2** (1 in `REVIEW-PASS.md`, 1 in `PARITY.md`'s
+> Wave D) — and since 2026-09-09 that number is **asserted from the boxes themselves** by
+> `src/lib/docCounts.test.ts`, so this sentence can no longer drift the way
+> `REVIEW-PASS.md`'s own banner did (it claimed 15 for twelve days against one box).
+> That is the whole of the repo's written open work. It was 75 before the
 > convention, and 17 the moment the convention landed. Note what `[~]` may NOT be used for:
 > a bullet that still lists "Still open: …" is open work, not a park — four were flipped back
 > from `[~]` to `[ ]` on the day the convention shipped, for exactly that reason.
@@ -103,7 +106,7 @@ before opening any of them.
 | File | Kind | Status |
 | --- | --- | --- |
 | **STATE.md** | ← you are here | The front door. Start here. |
-| `UNIFY.md` | **Ledger + playbook** | 🟡 **The current week's work** (from 2026-09-09): one word, one mechanism, one door per idea. Carries the vocabulary census, the LEAN baseline, and the day-by-day boxes. `src/lib/glossary.ts` is its data. |
+| `UNIFY.md` | **Ledger + playbook** | ✅ **Closed 2026-09-09** — seven days, all boxes settled: one word, one mechanism, one door per idea. Now **reference**: the vocabulary census, the verb table, the parked verdicts (Part 4) and what the week changed (Part 5). `src/lib/glossary.ts` is its data and stays live. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
 | `REVIEW-PASS.md` | Ledger | 🟡 **1 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
 | `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — tiers 1 and 2 fully resolved; tier 3 swept the same day (five re-checked, four stale). See §4-B. |
@@ -121,7 +124,52 @@ now, so the repo-wide count is honest for the first time.
 
 ---
 
-## 3. What just shipped (2026-08-27)
+## 3. What just shipped
+
+### The UNIFY week (2026-09-09) — one word, one mechanism, one door per idea
+
+Seven days, eight commits, closed in [`UNIFY.md`](./UNIFY.md) (read Part 5 for the table
+and Part 4 for what was deliberately *not* done). The short version:
+
+- **Vocabulary is now data.** `src/lib/glossary.ts` holds **25** terms; `glossary.test.ts`
+  ratchets every rival synonym so a second word for an existing idea cannot come back.
+  The delete family went from six verbs — with one key spelled two ways — to five, each
+  with an assigned meaning (`effacer` erases a **mark you made**, never a thing).
+- **The English copy stopped being the neglected half.** Marc settled the two open naming
+  questions on 2026-09-09: `mot` → *Message*, `rendez-vous` → *Appointment*. FR had been
+  clean for days while EN still said "Event" in **17** places, because every ratchet was
+  FR-only — the English side of « one word per idea » was documented and unenforced. Both
+  are now declared rivals, and declaring the first ASCII one immediately exposed three
+  latent weaknesses in the guard itself (a substring matcher that would have counted
+  "eventually", a quote-scan that paired across newlines, and a scan that cannot tell an
+  asserted label from a spec's own test title). All three fixed; see `UNIFY.md` Part 3.
+- **Five delete mechanisms became four.** `lib/undoRemove.ts` is gone; its sites moved to
+  `useDeferredRemoval`. Two of them were splicing **polled** query keys, which is the
+  resurrection bug this repo had already fixed twice and was still latent in.
+- **Four entities became fixable where you see them** (corvée, projet maison, routine,
+  habitude) instead of only in Réglages or only inside their own editor.
+- **Every form scene has help**, and the in-app lexicon (`[[mot:id|label]]`) pops a term's
+  definition where the word stands — Réglages/Comprendre only, so a daily user pays
+  nothing for it.
+- **The returning user has a way back**: `SectionIntro`'s "seen" flag is replayable from
+  Découvrir. It used to mean both "don't nag me" and "past onboarding", with no undo.
+- **Doc numbers are derived, not typed.** `docCounts.test.ts` now asserts guide cards,
+  tours, registries, glossary size, the matrix's size, and each ledger's own headline
+  count against the code. `REVIEW-PASS.md` had claimed "15 findings still open" for twelve
+  days against **one** box.
+- **Zero chrome cost**: the closing 92-state matrix diffed against the Day-1 baseline with
+  **no `contentTopPx` change anywhere**.
+
+> **The one lesson to carry out of the week.** Five guards were written; **five times the
+> first draft was green for the wrong reason** — a helper that had silently destroyed 98 %
+> of every French file it scanned (so the breadcrumb rule saw *zero* crumbs and passed), a
+> census that read 6 then 20 before reading the true 14, a tour rule that invented three
+> orphans, a nesting rule that ended its walk on an element's own first line, and a matrix
+> parser that anchored on `Entry[]`'s brackets and confidently reported an empty array.
+> None of them threw. **Plant the bug, watch the guard go red, then trust it** — this is
+> now the house rule in `CLAUDE.md`, and it earned its place four separate times this week.
+
+### 2026-08-27 — four waves
 
 Four waves, each its own commit, all green, no rollbacks.
 

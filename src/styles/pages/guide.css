@@ -369,3 +369,52 @@ mark.hl {
   padding: 0 0.08em;
 }
 
+
+/* ── The lexicon: a word you can tap, in the manual only ─────────────────────
+   Deliberately QUIETER than `.guide-link` (which navigates): a term explains
+   itself in place, so it wears the dotted underline of the surrounding ink
+   rather than the accent colour. Réglages/Comprendre only — see
+   components/GlossaryTerm.tsx for why it never marks a hub surface. */
+.gloss {
+  position: relative;
+}
+.gloss__word {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: help;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--ink-faint);
+  text-underline-offset: 2px;
+}
+.gloss__word:hover,
+.gloss__word:focus-visible {
+  text-decoration-color: var(--accent);
+}
+/* The definition sits INLINE, as its own block under the paragraph — not a
+   floating popover: a tooltip that hangs over the next line is unreadable on a
+   phone, and a bottom sheet for two sentences is a whole surface for a word. */
+.gloss__pop {
+  display: block;
+  margin: 6px 0 2px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  font-size: var(--text-sm);
+  color: var(--ink);
+}
+.gloss__def {
+  display: block;
+}
+.gloss__guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  color: var(--marigold-deep, var(--accent));
+  font-weight: 600;
+}
