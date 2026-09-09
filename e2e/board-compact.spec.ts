@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, BASE } from './mocks'
+import { boxOf } from './measure'
 
 // The board's compact lens (lib/widgetGrid.isCompact + components/board/CardLens): a
 // card halved on a phone renders a genuinely small tile — icon + title + at most one
@@ -23,15 +24,17 @@ const open = async (page: Page, size: Record<string, number> = { today: 1 }) => 
 
 // `page.mouse` works in viewport coordinates and never scrolls — bring the element into
 // view first, same rule board-edit.spec.ts follows.
-const boxOf = async (page: Page, sel: string) => {
+// Named for what it ADDS — the scroll — now that the measuring half is the shared
+// retrying `boxOf` (e2e/measure.ts) instead of a second local copy wearing the same name.
+const scrolledBox = async (page: Page, sel: string) => {
   const loc = page.locator(sel)
   await loc.scrollIntoViewIfNeeded()
-  return (await loc.boundingBox())!
+  return boxOf(loc)
 }
 
 /** Press and hold the top edge of a card, without moving, to arm edit mode. */
 async function hold(page: Page, card: string, ms = HOLD) {
-  const box = await boxOf(page, `.wg-slot[data-card="${card}"]`)
+  const box = await scrolledBox(page, `.wg-slot[data-card="${card}"]`)
   await page.mouse.move(box.x + box.width / 2, box.y + 12)
   await page.mouse.down()
   await page.waitForTimeout(ms)
@@ -97,14 +100,14 @@ test.describe('board compact lens', () => {
     await open(page)
     const slot = page.locator('.wg-slot[data-card="today"]')
     const tile = slot.locator('.cardmini')
-    const compactBox = await boxOf(page, '.wg-slot[data-card="today"] .cardmini')
-    const gridBox = await boxOf(page, '.board-grid')
+    const compactBox = await scrolledBox(page, '.wg-slot[data-card="today"] .cardmini')
+    const gridBox = await scrolledBox(page, '.board-grid')
 
     await expect(slot).not.toHaveAttribute('data-expanded', /.*/)
     await tile.click()
 
     await expect(slot).toHaveAttribute('data-expanded', '')
-    const grownBox = (await slot.boundingBox())!
+    const grownBox = await boxOf(slot)
     expect(grownBox.width).toBeGreaterThan(compactBox.width * 1.5)
     // The zone's full measured width — same grid the neighbours reflow inside.
     expect(grownBox.width).toBeCloseTo(gridBox.width, 0)
@@ -118,7 +121,7 @@ test.describe('board compact lens', () => {
     await reduce.click()
     await expect(slot).not.toHaveAttribute('data-expanded', /.*/)
     await expect(slot.locator('.cardmini')).toBeVisible()
-    const backBox = (await slot.boundingBox())!
+    const backBox = await boxOf(slot)
     // Back to a half column, not necessarily the exact same sub-pixel width (a
     // neighbour's row-span can nudge the grid's rounding by a pixel or two).
     expect(Math.abs(backBox.width - compactBox.width)).toBeLessThan(6)

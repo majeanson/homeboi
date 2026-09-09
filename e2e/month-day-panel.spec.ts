@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // The Mois (calendar) day panel — the surface behind two reported frictions:
 //
@@ -219,7 +220,7 @@ test.describe('Mois — the day panel', () => {
 
     // No cell may push the grid wider than the board (per-child bounds, not scrollWidth:
     // the hub body clips overflow-x, so scrollWidth reads 0 — see CLAUDE.md).
-    const gridBox = (await page.locator('.monthv__grid').boundingBox())!
+    const gridBox = await boxOf(page.locator('.monthv__grid'))
     for (const cell of await page.locator('.monthv__cell').all()) {
       const b = await cell.boundingBox()
       if (b) expect(b.x + b.width, 'a cell bleeds past the grid').toBeLessThanOrEqual(gridBox.x + gridBox.width + 1)
@@ -417,9 +418,9 @@ test.describe('Mois — the legend lens', () => {
 
     // Per-child bounds vs the legend's own box (the hub body clips overflow-x, so
     // scrollWidth reads 0 — see CLAUDE.md § Horizontal overflow).
-    const row = (await page.locator('.monthv__legend').boundingBox())!
+    const row = await boxOf(page.locator('.monthv__legend'))
     for (const it of await page.locator('.monthv__legend-item').all()) {
-      const b = (await it.boundingBox())!
+      const b = await boxOf(it)
       expect(b.x + b.width, 'a legend chip bleeds past the row').toBeLessThanOrEqual(row.x + row.width + 1)
       expect(b.height, 'a legend chip is too small to tap').toBeGreaterThanOrEqual(26)
     }

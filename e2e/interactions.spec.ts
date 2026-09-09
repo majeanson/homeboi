@@ -628,7 +628,7 @@ test.describe('add sheet', () => {
     for (const label of ['Idées', 'Favoris', 'À écouler', 'IA', 'Proposé par']) {
       await page.locator('.ideas-drawer .subtabs__opt', { hasText: label }).click()
       await expect(page.locator('.ideas-drawer .subtabs__opt.is-on', { hasText: label })).toBeVisible()
-      ys[label] = (await tabs.boundingBox())!.y
+      ys[label] = (await boxOf(tabs)).y
     }
     expect([...new Set(Object.values(ys))], `tab row moved: ${JSON.stringify(ys)}`).toHaveLength(1)
   })

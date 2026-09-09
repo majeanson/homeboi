@@ -163,19 +163,19 @@ test('Réglages has no « Réglages » heading and no sign-out at the top', asyn
   await expect(h1).toHaveClass(/sr-only/)
   // sr-only clips to a 1px box rather than display:none (that is what keeps it in
   // the accessibility tree), so assert the SPACE it takes, which is the real claim.
-  expect((await h1.boundingBox())!.height).toBeLessThanOrEqual(1)
+  expect((await boxOf(h1)).height).toBeLessThanOrEqual(1)
   await expect(page.getByRole('link', { name: 'Réglages' })).toBeVisible()
 
   // Sign-out is at the FOOT, under the settings — not second from the top.
   const out = page.locator('.operator__signout')
   await expect(out).toBeVisible()
   const head = page.locator('.operator__head')
-  expect((await out.boundingBox())!.y).toBeGreaterThan((await head.boundingBox())!.y)
+  expect((await boxOf(out)).y).toBeGreaterThan((await boxOf(head)).y)
   const firstCard = page.locator('.operator__section').first()
-  expect((await out.boundingBox())!.y).toBeGreaterThan((await firstCard.boundingBox())!.y)
+  expect((await boxOf(out)).y).toBeGreaterThan((await boxOf(firstCard)).y)
 
   // …and the first setting is now within the first screen.
-  expect((await firstCard.boundingBox())!.y).toBeLessThan(400)
+  expect((await boxOf(firstCard)).y).toBeLessThan(400)
 })
 
 test('« Voir dans l’app » rides the lens row, and keeps a name when its label hides', async ({ page }) => {
@@ -185,8 +185,8 @@ test('« Voir dans l’app » rides the lens row, and keeps a name when its labe
 
   // Same row as Comprendre / Régler — not a line of its own above the settings.
   const lens = page.locator('.operator__lens')
-  const a = (await goto.boundingBox())!
-  const b = (await lens.boundingBox())!
+  const a = await boxOf(goto)
+  const b = await boxOf(lens)
   expect(Math.abs(a.y - b.y), 'the goto shares the lens row').toBeLessThan(24)
 
   // On a narrow phone the word hides; the control must NOT go unnamed.
@@ -205,7 +205,7 @@ test('the board’s edit hint sits under the cards, not over them', async ({ pag
 
   // Below the grid it describes — it used to displace the first card.
   const grid = page.locator('.board-grid')
-  expect((await hint.boundingBox())!.y).toBeGreaterThan((await grid.boundingBox())!.y)
+  expect((await boxOf(hint)).y).toBeGreaterThan((await boxOf(grid)).y)
 
   // Still one-time + per-device: dismissing retires the INSTRUCTION — but its slot
   // keeps a permanent quiet « Organiser » door (ACTIONS.md Wave C: the keyboard/
@@ -305,8 +305,8 @@ test('a picked day keeps the grid’s shape — no pop-out tile', async ({ page 
   // them, which changed the calendar's shape under the finger).
   const on = page.locator('.monthv__cell.is-on')
   const other = page.locator('.monthv__cell:not(.is-on)').nth(10)
-  const a = (await on.boundingBox())!
-  const b = (await other.boundingBox())!
+  const a = await boxOf(on)
+  const b = await boxOf(other)
   expect(Math.abs(a.height - b.height), 'the picked cell does not grow').toBeLessThan(2)
   expect(Math.abs(a.width - b.width), 'the picked cell does not widen').toBeLessThan(2)
 })
@@ -341,7 +341,7 @@ test('La liste: the three shortcuts are icons on one row', async ({ page }) => {
   // One row: every chip shares the same top edge (they used to be three full-width
   // orange bars stacked 2+1, then labelled chips wrapping onto two lines).
   const tops: number[] = []
-  for (const b of await icons.all()) tops.push((await b.boundingBox())!.y)
+  for (const b of await icons.all()) tops.push((await boxOf(b)).y)
   expect(Math.max(...tops) - Math.min(...tops), 'all three on one line').toBeLessThan(4)
 
   // Icon-only, but never unnamed.
@@ -363,7 +363,7 @@ test('La liste: « Allées » rows all share one left margin', async ({ page }) 
   const lefts: number[] = []
   for (const it of await items.all()) {
     const icon = it.locator('svg').last()
-    lefts.push((await icon.boundingBox())!.x)
+    lefts.push((await boxOf(icon)).x)
   }
   expect(Math.max(...lefts) - Math.min(...lefts), 'one column, one margin').toBeLessThan(2)
 })

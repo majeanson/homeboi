@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // Verifies the DrawPad zoom/pan + pen-takeover (#14) in the running app. Multi-touch
 // pinch can't be driven headlessly, but the wheel zoom exercises the same viewport,
@@ -30,7 +31,7 @@ test('the wheel zooms the canvas; the zoom badge taps back to fit', async ({ pag
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   const canvas = await openPad(page)
-  const box = (await canvas.boundingBox())!
+  const box = await boxOf(canvas)
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.wheel(0, -600) // zoom in
@@ -49,7 +50,7 @@ test('a freehand stroke is detected and saved (pen takeover at 1×)', async ({ p
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   const canvas = await openPad(page)
-  const box = (await canvas.boundingBox())!
+  const box = await boxOf(canvas)
 
   await drawStroke(page, box)
 
@@ -67,7 +68,7 @@ test('a stroke drawn WHILE zoomed in still saves', async ({ page }) => {
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   const canvas = await openPad(page)
-  const box = (await canvas.boundingBox())!
+  const box = await boxOf(canvas)
 
   // Zoom in first…
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)

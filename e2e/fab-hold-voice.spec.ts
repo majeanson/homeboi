@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // Hold the ＋ and speak (bmad/12 #18).
 //
@@ -16,7 +17,7 @@ const PHONE = { width: 390, height: 780 }
 
 async function hold(page: Page, ms = 700) {
   const fab = page.locator('.add-fab')
-  const box = (await fab.boundingBox())!
+  const box = await boxOf(fab)
   const x = box.x + box.width / 2
   const y = box.y + box.height / 2
   await page.mouse.move(x, y)

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // « Réorganise ton babillard » — the on-board widget editor. Holding any card arms edit
 // mode (lib/useLongPress); from there a card can be dragged (between zones, not just
@@ -78,8 +79,8 @@ async function dragOnto(
     const sc = el.closest('.hub__body') as HTMLElement | null
     if (sc) sc.scrollTop = Math.max(0, sc.scrollTop - 150)
   })
-  const grip = (await page.locator(`${fromSel} .wg-slot__grip`).boundingBox())!
-  const target = (await page.locator(toSel).boundingBox())!
+  const grip = await boxOf(page.locator(`${fromSel} .wg-slot__grip`))
+  const target = await boxOf(page.locator(toSel))
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
   await page.mouse.down()
   // Clear the 6px engage threshold, then land on the target.
@@ -271,7 +272,7 @@ test.describe('board edit mode', () => {
     })
     const card = await reachableCard(page)
     expect(card, 'a grip clear of the band and the tab bar').not.toBeNull()
-    const grip = (await page.locator(`.wg-slot[data-card="${card}"] .wg-slot__grip`).boundingBox())!
+    const grip = await boxOf(page.locator(`.wg-slot[data-card="${card}"] .wg-slot__grip`))
 
     await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
     await page.mouse.down()
@@ -351,19 +352,19 @@ test.describe('board edit mode', () => {
     // Un-sized on a phone reads « Max »: the chip shows what the grid will RENDER, so the
     // first tap does something visible instead of jumping to a 2 that clamps back to full.
     await expect(chip).toHaveText('Max')
-    const full = (await slot.boundingBox())!.width
+    const full = (await boxOf(slot)).width
 
     await chip.click()
     await expect(chip).toHaveText('1')
     await expect(slot).toHaveAttribute('style', /--wg-span-cols: ?1/)
-    const half = (await slot.boundingBox())!.width
+    const half = (await boxOf(slot)).width
     expect(half).toBeLessThan(full * 0.6)
 
     // 2 and 3 clamp to the same width here, so the chip toggles half ↔ full instead of
     // sitting dead for two taps.
     await chip.click()
     await expect(chip).toHaveText('Max')
-    expect((await slot.boundingBox())!.width).toBeCloseTo(full, 0)
+    expect((await boxOf(slot)).width).toBeCloseTo(full, 0)
   })
 
   test('two half cards sit side by side on a phone', async ({ page }) => {
@@ -384,8 +385,8 @@ test.describe('board edit mode', () => {
       await expect(page.locator(`.wg-slot[data-card="${card}"]`)).toHaveAttribute('style', /--wg-span-cols: ?1/)
     }
 
-    const a = (await page.locator('.wg-slot[data-card="today"]').boundingBox())!
-    const b = (await page.locator(`.wg-slot[data-card="${other}"]`).boundingBox())!
+    const a = await boxOf(page.locator('.wg-slot[data-card="today"]'))
+    const b = await boxOf(page.locator(`.wg-slot[data-card="${other}"]`))
     // Same row, different columns — the whole point of giving a phone two of them.
     expect(Math.abs(a.y - b.y), `${other} did not share a row with today`).toBeLessThan(4)
     expect(b.x).toBeGreaterThan(a.x + a.width - 4)

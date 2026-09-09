@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, ROUTES } from './mocks'
+import { boxOf } from './measure'
 
 // « En retard » — a loose to-do left on a day that has passed.
 //
@@ -55,9 +56,9 @@ test('a loose to-do left on a past day shows under « En retard », above the re
   await expect(overdue).toContainText('Rapporter les livres')
 
   // It leads the card: the overdue group is painted above the standing ones.
-  const overdueY = (await overdue.boundingBox())!.y
+  const overdueY = (await boxOf(overdue)).y
   const standing = page.locator('.todo-group', { hasText: 'En tout temps' }).first()
-  if (await standing.count()) expect(overdueY).toBeLessThan((await standing.boundingBox())!.y)
+  if (await standing.count()) expect(overdueY).toBeLessThan((await boxOf(standing)).y)
 
   // Calm: it says what it is and nothing more — no count, no badge, no alarm colour.
   await expect(overdue.locator('.todo-grouphead')).not.toContainText(/[0-9]/)

@@ -74,6 +74,23 @@ const matrixEntries = (): { entries: number; states: number; budgetedStates: num
     budgetedStates: objs.reduce((n, o) => n + (/budgetPx:/.test(o) ? width(o) : 0), 0),
   }
 }
+// The e2e measurement debt: `(await x.boundingBox())!`, which throws when React detaches
+// the node between the two resolves (see e2e/measure.ts). Counted from the suite, not
+// typed into prose — CLAUDE.md and measure.ts both said « 74 » long after the real number
+// was 40, which made a nearly-finished sweep read as hopeless.
+const bareBoxSites = () => {
+  const dir = join(ROOT, 'e2e')
+  let n = 0
+  for (const f of readdirSync(dir).filter((f) => f.endsWith('.ts'))) {
+    for (const line of readFileSync(join(dir, f), 'utf8').split('\n')) {
+      // Never count the prose that DOCUMENTS the anti-pattern — measure.ts quotes it.
+      if (/^\s*(\/\/|\*)/.test(line)) continue
+      n += (line.match(/\.boundingBox\(\)\)!/g) ?? []).length
+    }
+  }
+  return n
+}
+
 // A ledger's headline, counted from its own boxes. `- [ ]` means exactly one thing
 // repo-wide (STATE.md §2), which is what makes this countable at all.
 const openBoxes = (file: string) => (read(file).match(/^\s*- \[ \] /gm) ?? []).length
@@ -117,6 +134,8 @@ describe('the docs quote the real counts', () => {
     // both files reached zero on 2026-09-09, so « 0 in X, 0 in Y » would be noise. The
     // total still carries the whole claim, and REVIEW-PASS keeps its own banner check.
     { file: 'STATE.md', what: 'repo-wide open boxes', re: /It reads \*\*(\d+)\*\* —/, actual: () => rootOpenBoxes().total },
+    { file: 'CLAUDE.md', what: 'bare boundingBox sites', re: /\*\*The sweep is done \(2026-09-09\):\s*\n?\s*(\d+) bare call site/, actual: bareBoxSites },
+    { file: 'e2e/measure.ts', what: 'bare boundingBox sites', re: /\*\*(\d+) site[s]? left in this suite\*\*/, actual: bareBoxSites },
   ]
 
   for (const c of claims) {

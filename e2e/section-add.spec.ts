@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // SectionAdd — the shared "open this section's composer" ＋. A permanently-open add
 // field is the one thing on a glance surface you can't scan past, and the
@@ -88,13 +89,13 @@ test('La liste’s shortcuts are quiet chips, not full-width bars', async ({ pag
   await expect(row).toBeVisible()
   // Each shortcut sits at its NATURAL width — none of them claims the whole line
   // (the regression: three solid bars stacked above the list they exist to fill).
-  const rowW = (await row.boundingBox())!.width
+  const rowW = (await boxOf(row)).width
   for (const b of await row.locator('.btn').all()) {
-    const w = (await b.boundingBox())!.width
+    const w = (await boxOf(b)).width
     expect(w, 'a shortcut chip must not span the row').toBeLessThan(rowW * 0.75)
   }
   // …and the first list item still starts above the fold.
   const first = page.locator('.list-rows > *').first()
-  const top = (await first.boundingBox())!.y
+  const top = (await boxOf(first)).y
   expect(top, 'the list starts on the first screen').toBeLessThan(400)
 })

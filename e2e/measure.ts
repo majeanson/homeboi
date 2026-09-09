@@ -1,7 +1,17 @@
 import { expect, type Locator } from '@playwright/test'
 
-// `(await locator.boundingBox())!` — 74 sites across this suite, and every one of
-// them can throw « Cannot read properties of null (reading 'y') ».
+// `(await locator.boundingBox())!` — **1 site left in this suite** (2026-09-09), and it
+// can throw « Cannot read properties of null (reading 'y') ».
+//
+// It said « 74 sites » for weeks after the real number fell to 40, which is how the
+// standing "convert one whenever you touch it" rule read as hopeless rather than nearly
+// done. The 42 remaining calls were converted in one pass; `docCounts.test.ts` now
+// asserts the count from the suite itself, so this sentence cannot drift again — and it
+// is a RATCHET: the number may fall to 0 and never rise.
+//
+// The one holdout is `hold()` in board-edit.spec.ts, left deliberately while a CI run
+// judged a flake in the test it feeds — changing the helper mid-verdict would have made
+// that verdict unreadable.
 //
 // The trap is NOT "the element isn't visible yet": Playwright's visibility already
 // means a non-empty box, and lean-forms.spec.ts:112 threw on a locator whose

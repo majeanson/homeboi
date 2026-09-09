@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { BOARD, mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // « La liste » wears two faces, one device flag (src/lib/listeMode) — the same shape
 // as « Les notes », through the same shared ModeToggle:
@@ -124,7 +125,7 @@ test('a live deal shows no ended flag', async ({ page }) => {
 test('press and hold a row opens the peek; « Modifier » inside it opens the editor', async ({ page }) => {
   await openListe(page)
   const row = page.locator('.list-row').first()
-  const box = (await row.boundingBox())!
+  const box = await boxOf(row)
   const x = box.x + box.width / 2
   const y = box.y + box.height / 2
 

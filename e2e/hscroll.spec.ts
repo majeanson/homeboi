@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // Desktop reachability of the side-scrolling rows.
 //
@@ -54,7 +55,7 @@ test.describe('side-scrolling rows stay reachable with a mouse', () => {
   test('a vertical mouse wheel scrolls the row sideways', async ({ page }) => {
     await boot(page)
     const row = page.locator(SUBS)
-    const box = (await row.boundingBox())!
+    const box = await boxOf(row)
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
     await page.mouse.wheel(0, 240) // deltaY only — what a mouse (not a trackpad) emits
     await expect.poll(async () => (await metrics(page)).scrollLeft).toBeGreaterThan(0)
@@ -63,7 +64,7 @@ test.describe('side-scrolling rows stay reachable with a mouse', () => {
   test('the wheel is handed back to the page at the end of the row (no wheel trap)', async ({ page }) => {
     await boot(page)
     const row = page.locator(SUBS)
-    const box = (await row.boundingBox())!
+    const box = await boxOf(row)
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
     // Overscroll hard: once pinned at the right edge the row must stop swallowing the
     // wheel, otherwise hovering it would freeze the page's own scrolling.

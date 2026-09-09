@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 test.use({ hasTouch: true })
 
@@ -31,7 +32,7 @@ test('cercle drawing zoom overlay portals to body and closes', async ({ page }) 
   expect(await page.locator('.cnote .zoom-overlay').count()).toBe(0)
 
   // The overlay covers the full viewport (proof it escaped the small card box).
-  const box = (await page.locator('.zoom-overlay').boundingBox())!
+  const box = await boxOf(page.locator('.zoom-overlay'))
   expect(box.width).toBeGreaterThan(700)
   expect(box.height).toBeGreaterThan(1100)
 
