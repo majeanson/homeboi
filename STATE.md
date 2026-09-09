@@ -435,6 +435,13 @@ day). The three real ones are now closed, each verified red against planted defe
   OTHER person's side (« Mère », not « Fille ») and that closed links put a grandmother
   on a grandchild's card. A kid kiosk has no in-app escape, so a stray write there is
   both unattributable and unreachable.
+- **Glisser une personne dans un groupe** (`e2e/cercle-drag-group.spec.ts`) — the last
+  uncovered cercle write, driven with the MOUSE (the reachability half of the standing
+  rule). Its third case is the session's cleanest catch: « a person already in the group
+  posts nothing » passed with `canDrop` **deleted**, because `onDrop` re-checks
+  membership too — a guard defended twice tests neither layer. Re-aimed at what canDrop
+  alone owns (the drop CUE), with the allowed drag as a control so it can't pass by the
+  highlight never appearing at all; now red on the deletion.
 - **Wave D's last item stays parked, but its containment was CHECKED rather than
   trusted.** The client guard went red on the bug it names; the server had two spellings
   of the lockstep rule, now one (`functions/_lib/recipeStepImages.ts`). Details in
