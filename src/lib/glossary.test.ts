@@ -102,10 +102,6 @@ const RIVAL_CEILING: Record<string, number> = {
 const EFFACER_CEILING = 14
 const EFFACER_FLOOR_NOTE = 'all 14 are legitimate: prose, the DrawPad ink, the field ✕, typed dates'
 
-// Rival forms asserted by e2e specs — every one is a rename that would break a spec
-// after the deploy, because E2E is decoupled here.
-const E2E_RIVAL_CEILING = 0
-
 describe('glossary — shape', () => {
   it('the scanners found the app (canary)', () => {
     expect(frValues.length, 'FR i18n values').toBeGreaterThan(2000)

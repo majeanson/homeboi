@@ -7,10 +7,11 @@ import type { Bi } from './guideContent'
 // this file governs WORDS on screen, and it is what the guards read. The two are not
 // the same job: "capture spine" is a concept, « Ajouter » is a word.
 //
-// Why it exists (census, 2026-09-09, `values()` over both quote styles in i18n):
-// the delete family alone ran six verbs — supprimer 30 · retirer 43 · effacer 20 ·
-// vider 15 · révoquer 2 · enlever 1 — with `effacer` doing all three jobs and no
-// assigned meaning. The smoking gun was one key spelled two ways: `liste.clearChecked`
+// Why it exists (census, 2026-09-09, walking the FR/EN dictionaries as objects — the
+// only method that proved exact; see glossary.test.ts for the two that did not):
+// the delete family ran six verbs — retirer 75 · supprimer 43 · vider 29 · effacer 14 ·
+// enlever 1 · révoquer — with `effacer` doing three different jobs and no assigned
+// meaning. The smoking gun was one key spelled two ways: `liste.clearChecked`
 // = « Vider les cochés » and `todos.clearChecked` = « Effacer cochées ». Same key name,
 // same act, two words.
 //
@@ -64,7 +65,7 @@ const VERBS: GlossaryTerm[] = [
       en: 'Take something off THIS screen without destroying it: the person stays in the circle, the meal stays in the recipes.',
     },
     rivals: { fr: ['Enlever'] },
-    why: '« Enlever » says the same thing with a second word; one stray survives at i18n.ts:151.',
+    why: '« Enlever » says the same thing with a second word. The last stray (a habit counter) went on day 2; the ratchet holds it at zero.',
   },
   {
     id: 'supprimer',
@@ -161,7 +162,7 @@ const ENTITIES: GlossaryTerm[] = [
     card: 'set-agenda',
     codeIds: ['events'],
     rivals: { fr: ['Événement'] },
-    why: 'The app says « rendez-vous » everywhere the entity is named; « événement » survives in search + capture.',
+    why: 'The app says « rendez-vous » wherever the entity is named. « Événement » survived in search + capture until day 3; the ratchet holds it at zero.',
   },
   {
     id: 'mot',
@@ -391,8 +392,6 @@ const SURFACES: GlossaryTerm[] = [
 ]
 
 export const GLOSSARY: GlossaryTerm[] = [...VERBS, ...ENTITIES, ...SURFACES]
-
-export const termById = (id: string): GlossaryTerm | undefined => GLOSSARY.find((t) => t.id === id)
 
 /** Every rival spelling, flattened — what the ratchet in glossary.test.ts hunts. */
 export function rivalForms(): { term: string; lang: 'fr' | 'en'; form: string }[] {
