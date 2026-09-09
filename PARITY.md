@@ -875,8 +875,16 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
       `buildRecipe`. Cell ❌→➖ (footnote 57). **D2 now has zero ❌.**
       **SUPERSEDED 2026-08-03**: the card's rows became tappable → `buildHabit` peek
       shipped (edit-accessibility ask); the ➖ is a ✅ now. See footnote 57's revision.
-- [ ] **Wave D — Schema/media convergence (opportunistic only)** _(entries 12–17;
-      never a churn-only wave)_. When another wave touches one of these tables, fold
+- [~] **Wave D — Schema/media convergence — PARKED 2026-09-09, and it was never open
+      work.** Every child below is `[x]` or `[~]`; what is left is, in this entry's own
+      words, "opportunistic only — never a churn-only wave", and the recipe-steps item
+      spells out that converging it would mean reshaping 45 step readers to fix a shape
+      that is already guarded structurally (`parallel-array-rule.test.ts`). A `- [ ]`
+      repo-wide means *work someone still has to do* (`STATE.md` §2); this is a standing
+      policy — fold the convergence in when a wave already touches recipes or routines.
+      Leaving it ticked as open made the repo's headline count read 1 higher than the
+      work that actually existed, which is the same drift `docCounts.test.ts` was built
+      to stop. _(entries 12–17; never a churn-only wave)_. When another wave touches one of these tables, fold
       in its convergence. **Reconciled 2026-07-10: the two scalar-rename items below
       already shipped in migs 0086/0087 before this audit was written — the audit
       just hadn't caught up. What genuinely remains is opportunistic media-shape work + the SILENT_PATHS cleanup.**

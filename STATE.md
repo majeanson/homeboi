@@ -94,11 +94,19 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **2** (1 in `REVIEW-PASS.md`, 1 in `PARITY.md`'s
-> Wave D) — and since 2026-09-09 that number is **asserted from the boxes themselves** by
+> a number you can trust. It reads **0** — as of 2026-09-09 the repo has **no written
+> open work left**. `REVIEW-PASS.md`'s last finding closed (both settings writes are
+> asserted, each proven red), and `PARITY.md`'s Wave D became a `[~]`: every child was
+> already settled and what remains is a standing *opportunistic* policy, which is not a
+> task. That number is **asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence can no longer drift the way
-> `REVIEW-PASS.md`'s own banner did (it claimed 15 for twelve days against one box).
-> That is the whole of the repo's written open work. It was 75 before the
+> `REVIEW-PASS.md`'s own banner did (it claimed 15 for twelve days against one box) —
+> and it went red the moment those two closed, which is how it should behave.
+>
+> **Zero written boxes is not "nothing to do."** It means the backlog now lives in
+> judgement rather than in a list: the idea pools (`bmad/`), the parity matrix's own
+> cells, and whatever a device pass turns up. Read §4 before picking work.
+> It was 75 before the
 > convention, and 17 the moment the convention landed. Note what `[~]` may NOT be used for:
 > a bullet that still lists "Still open: …" is open work, not a park — four were flipped back
 > from `[~]` to `[ ]` on the day the convention shipped, for exactly that reason.
@@ -108,9 +116,9 @@ before opening any of them.
 | **STATE.md** | ← you are here | The front door. Start here. |
 | `UNIFY.md` | **Ledger + playbook** | ✅ **Closed 2026-09-09** — seven days, all boxes settled: one word, one mechanism, one door per idea. Now **reference**: the vocabulary census, the verb table, the parked verdicts (Part 4) and what the week changed (Part 5). `src/lib/glossary.ts` is its data and stays live. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
-| `REVIEW-PASS.md` | Ledger | 🟡 **1 open** P2/P3 findings (was "31" → 29 → 20 → 15 as two sweeps grepped every claim against code). **The only substantial written debt pool left.** |
+| `REVIEW-PASS.md` | **Reference** | ✅ **Closed 2026-09-09 — 0 open** (31 → 29 → 20 → 15 → 4 → 1 → 0, every step a sweep that grepped each claim against code). Kept as the record of what was audited and decided. |
 | `bmad/11-friction-audit.md` | Ledger | ✅ **CLOSED 2026-08-28** — tiers 1 and 2 fully resolved; tier 3 swept the same day (five re-checked, four stale). See §4-B. |
-| `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. **2 open items** (Part 4 Wave D, opportunistic). Parts 5–6 are a template — copy, don't tick. |
+| `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. **0 open** — Wave D is a `[~]` standing policy (opportunistic convergence), not a task. Parts 5–6 are a template — copy, don't tick. |
 | `ACTIONS.md` | **Playbook** | The action × door matrix. **No open items** — Part 5 is a template. |
 | `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed-but-unbuilt features (A5–D2), never started. Not a backlog. |
 | `bmad/05` + `bmad/06` | ⚪ Idea pools | Brainstorms. Nothing committed. Not a backlog. |
@@ -618,7 +626,7 @@ and is gone from `RoutinePlayer`; the empty shell routine's cue SHIPPED as "kids
 with an « Encore ? » that re-plans a past dish. Six of the seven were verdicts or already-done
 work that nobody ticked — the ratio this file keeps re-learning. « Par allée »'s drag grip is a recorded decision, not a gap.
 
-### C. Section debt — `REVIEW-PASS.md`, **1 finding left** (swept three times, 2026-08-28)
+### C. Section debt — `REVIEW-PASS.md`, **closed 2026-09-09** (swept four times)
 
 > **Second sweep, same day (evening).** 31 → 29 → 20 → 15 → **4**. Marc decided the four
 > judgement calls and picked three of four bigger items; everything else was re-verified
@@ -730,7 +738,7 @@ how it should be reachable.
 
 ### C-ter. The third sweep — the ledger is effectively empty (2026-08-28, evening)
 
-`REVIEW-PASS.md` went 31 → 29 → 20 → 15 → 4 → **1**. The last pass settled the residual
+`REVIEW-PASS.md` went 31 → 29 → 20 → 15 → 4 → 1 → **0**. The last pass settled the residual
 nit bullets, and the ratio held to the end: of the sub-claims re-checked, **five more were
 stale or misread** — `firstLine` recomputed inline (it is not), the NoteEditor body
 mislabelled in edit mode (it is not; the cited line no longer exists), `HomeProjectForm`

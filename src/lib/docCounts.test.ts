@@ -113,9 +113,10 @@ describe('the docs quote the real counts', () => {
     { file: 'LEAN.md', what: 'budgeted states (current size)', re: /states, (\d+) of them budgeted/, actual: () => matrixEntries().budgetedStates },
     // STATE.md §2's headline: the repo's entire written open work, in one number. It is
     // the first thing a session reads, so it is the worst one to let drift.
-    { file: 'STATE.md', what: 'repo-wide open boxes', re: /It reads \*\*(\d+)\*\* \(\d+ in `REVIEW-PASS/, actual: () => rootOpenBoxes().total },
-    { file: 'STATE.md', what: 'open boxes in REVIEW-PASS.md', re: /It reads \*\*\d+\*\* \((\d+) in `REVIEW-PASS/, actual: () => openBoxes('REVIEW-PASS.md') },
-    { file: 'STATE.md', what: 'open boxes in PARITY.md', re: /in `REVIEW-PASS\.md`, (\d+) in `PARITY/, actual: () => openBoxes('PARITY.md') },
+    // The per-file breakdown that used to sit here is gone with the boxes it counted:
+    // both files reached zero on 2026-09-09, so « 0 in X, 0 in Y » would be noise. The
+    // total still carries the whole claim, and REVIEW-PASS keeps its own banner check.
+    { file: 'STATE.md', what: 'repo-wide open boxes', re: /It reads \*\*(\d+)\*\* —/, actual: () => rootOpenBoxes().total },
   ]
 
   for (const c of claims) {
@@ -140,6 +141,12 @@ describe('the docs quote the real counts', () => {
     expect(m.entries).toBeGreaterThan(50)
     expect(m.states).toBeGreaterThanOrEqual(m.entries)
     expect(m.budgetedStates).toBeGreaterThan(30)
-    expect(openBoxes('REVIEW-PASS.md')).toBeGreaterThan(0)
+    // The box counter needs a floor too — but NOT "at least one box is open". That was
+    // the floor until 2026-09-09, when the last two closed and a correct 0 turned this
+    // canary red for being right. A counter must not require the thing it counts to
+    // exist. What actually proves the scanner works is that it still finds boxes at all,
+    // so it counts the DONE ones instead: those only ever accumulate.
+    const done = (read('REVIEW-PASS.md').match(/^\s*- \[x\] /gm) ?? []).length
+    expect(done, 'the box scanner found no [x] either — the regex is broken, not the ledger').toBeGreaterThan(10)
   })
 })

@@ -1,7 +1,8 @@
 # REVIEW-PASS — a slow, section-by-section audit of the whole app
 
-> 📍 **1 finding still open here** (P2/P3, section debt — no data loss). For where it
-> ranks against everything else in the repo, read [`STATE.md`](./STATE.md) § 4.
+> 📍 **0 findings still open here** — this ledger is **closed** (2026-09-09). It stays as
+> reference: what was audited, what was found, and what was decided. For where the repo's
+> remaining work sits, read [`STATE.md`](./STATE.md) § 4.
 >
 > That number is **counted from the `- [ ]` boxes below by `src/lib/docCounts.test.ts`**,
 > not typed. It read « 15 » here until 2026-09-09 — two sweeps after the boxes had gone
@@ -1061,10 +1062,17 @@ reused. **One confirmed real bug** (the CERCLE_KEY seam §3 flagged), plus a rec
   stale section ids in `settings-sections.spec.ts:10`; **no** device-revoke / member-delete-rename
   round-trip; untested config sub-panels (schedule, cars, todo-templates, home-projects
   Projets/Entretien, the chore ledger); photo upload+delete+undo only smoke-rendered.
-- [ ] **Two settings writes still unasserted, named so they stay visible:** a member DELETE
-  (the confirm-gated cascade — routines go, events/chores detach) and a photo UPLOAD (a
-  multipart POST the route mock can't shape without a real file). Both need a richer harness
-  than a body assertion; neither is a regression risk the sweep found evidence of.
+- [x] ~~**Two settings writes still unasserted**~~ — **both asserted 2026-09-09**
+  (`e2e/config-panels.spec.ts`, foot of file). The member DELETE proves the half that
+  actually protects someone: **backing out of the confirm sends nothing at all**, and only
+  the accepted dialog DELETEs by id — planted red by making `remove()` ignore the answer.
+  The photo UPLOAD proves real bytes go up — planted red by uploading an empty blob.
+  **Both parking reasons were wrong, and how they were wrong is the point.** "Needs a
+  richer harness than a body assertion" came to one `setInputFiles` and one route counter.
+  And the note called the upload "a multipart POST the route mock can't shape without a
+  real file" — but `lib/uploadMedia.ts` POSTs a **raw blob**, and Playwright synthesises a
+  file from a Buffer. The blocker was a *description of the code* that no longer matched
+  it, written once and inherited twice. Grep the claim.
   - ✅ **`ThisWeek` asserts faces-not-counts now** (`e2e/this-week-calm.spec.ts`). It is the
     one sub-item here that guards a TENET rather than coverage: the section widens the
     chore-ledger pattern to the whole household and inherits its hard rule — say WHO, never

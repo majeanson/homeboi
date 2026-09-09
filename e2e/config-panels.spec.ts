@@ -18,8 +18,11 @@ import { mockApi, seedState, BASE, MMID } from './mocks'
 // Re-measured 2026-09-08, after the 28 → 14 merge: 17 writing sections, and with the
 // second sweep at the foot of this file every one of them asserts its write (the
 // a-regler snooze in a-regler-snooze.spec, the recipe-tag slots in
-// recipe-tag-slots.spec). Left unasserted, deliberately named: a member DELETE (the
-// confirm-gated cascade) and a photo UPLOAD (a multipart POST the mock can't shape).
+// recipe-tag-slots.spec). **The last two closed 2026-09-09** — the member DELETE and the
+// photo UPLOAD, at the foot of this file. They had been parked as "needing a richer
+// harness"; they needed one `setInputFiles` and one route counter. The note parking them
+// was also wrong about the mechanism (it called the upload multipart; it is a raw blob),
+// which is why the standing rule is to grep the claim rather than inherit it.
 //
 // Every assertion below has been run against a planted bug — the wrong field name, a
 // dropped id, a missing colour — and seen to fail. A green settings test that has
@@ -589,3 +592,61 @@ test('removing a household photo is held behind the undo, then DELETEs by id on 
   expect(JSON.parse(deletes[0] || '{}')).toMatchObject({ id: 'p1' })
 })
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE LAST TWO, closed 2026-09-09 (REVIEW-PASS.md's final open box).
+//
+// Both had stood as "needs a richer harness than a body assertion". Neither did — and
+// the note explaining why was itself wrong about the mechanism: the photo upload was
+// filed as "a multipart POST the mock can't shape without a real file", but
+// `uploadMedia` POSTs a RAW BLOB (lib/uploadMedia.ts), and Playwright synthesises a
+// file from a Buffer. The blocker was a description, not a limitation. Grep the claim.
+
+/** The smallest real PNG: 1×1, so `resizeImage` has actual pixels to decode. */
+const PNG_1x1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+test('deleting a member asks first, says what is lost, and only then DELETEs by id', async ({ page }) => {
+  let deletes = 0
+  await page.route('**/api/members**', async (route) => {
+    if (route.request().method() !== 'DELETE') return route.fallback()
+    deletes += 1
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+  })
+  await page.goto('/settings?tab=maison&focus=members')
+  const card = page.locator('#op-members')
+  await card.getByRole('button', { name: 'Supprimer la personne' }).first().click()
+
+  // This is a CASCADE (their routines go; rendez-vous and corvées detach), so it is
+  // confirm-gated rather than undo-gated. Two halves, and the first is the one that
+  // actually protects someone: backing out must send nothing at all.
+  const dialog = page.locator('.confirm')
+  await expect(dialog).toBeVisible()
+  // …and the dialog must NAME the loss — `confirmCopy.test.ts` owns that rule for the
+  // string; this proves the string is what reaches the screen.
+  await expect(dialog.locator('.confirm__msg')).toContainText('routines')
+  await dialog.getByRole('button', { name: 'Annuler' }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(deletes, 'cancelling a cascade must not send the DELETE').toBe(0)
+
+  await card.getByRole('button', { name: 'Supprimer la personne' }).first().click()
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('DELETE', 'members'), { timeout: 20_000 }),
+    page.locator('.confirm').getByRole('button', { name: 'Supprimer la personne' }).click(),
+  ])
+  expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'm1' })
+})
+
+test('adding a photo uploads the blob to photos', async ({ page }) => {
+  await page.goto('/settings?tab=settings&focus=photos')
+  const card = page.locator('#op-photos')
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('POST', 'photos'), { timeout: 20_000 }),
+    card.locator('input[type="file"]').setInputFiles({ name: 'frigo.png', mimeType: 'image/png', buffer: PNG_1x1 }),
+  ])
+  // The body is the resized image itself, not a JSON envelope — so the assertion is
+  // that real bytes went up. An empty POST is exactly what a broken resize produces.
+  expect((req.postDataBuffer() ?? Buffer.alloc(0)).byteLength, 'the upload sent no bytes').toBeGreaterThan(0)
+})
