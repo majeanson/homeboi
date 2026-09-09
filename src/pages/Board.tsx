@@ -107,6 +107,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
 import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY } from '../lib/queryKeys'
+import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
 import { useUndoToast, useRecordUndo } from '../lib/toast'
@@ -421,14 +422,24 @@ export function Board() {
   // below reads them the same way it always did — the derivations themselves
   // now live in ONE place (lib/boardModel), not re-implemented per lens.
   const todayEvents = model.today.events
-  const todayChores = model.today.chores
+  // Same for a projet maison / entretien — its own scope, so the board card, Réglages
+  // and the month grid all hide the row together while the undo is open.
+  const homeRemoval = useDeferredRemoval(HOME_PROJECTS_KEY)
+
+  // Removing a corvée rides the ONE held-delete mechanism, scoped to the chores key so
+  // the row also disappears from Réglages and the day page while the undo is open.
+  // Declared here, above the derivations that filter through it.
+  const choreRemoval = useDeferredRemoval(CHORES_KEY)
+  // Rows whose removal is still settling drop out here (and on every other surface in
+  // the chores scope) until a fresh frame proves the DELETE landed.
+  const todayChores = choreRemoval.visible(model.today.chores)
   const todayTodos = model.today.todos
-  const todayHome = model.today.home
-  const overdueHome = model.today.homeOverdue
+  const todayHome = homeRemoval.visible(model.today.home)
+  const overdueHome = homeRemoval.visible(model.today.homeOverdue)
   const tomorrowEvents = model.tomorrow.events
   const upcomingEvents = model.upcoming.events
-  const upcomingChores = model.upcoming.chores
-  const upcomingHome = model.upcoming.home
+  const upcomingChores = choreRemoval.visible(model.upcoming.chores)
+  const upcomingHome = homeRemoval.visible(model.upcoming.home)
   const leftovers = model.leftovers
   const otherMeals = model.meals.otherToday
   const otherTomorrowMeals = model.meals.otherTomorrow
@@ -765,9 +776,44 @@ export function Board() {
       mine={!!profileId && c.who_id === profileId}
       soon={c.soon}
       onCheck={withDay || ro ? undefined : () => markChoreDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { upcoming: withDay, onDone: withDay || ro ? undefined : () => markChoreDone(c) }))}
+      onOpen={() =>
+        detail.open(
+          buildChore(c, detailCtx, {
+            upcoming: withDay,
+            onDone: withDay || ro ? undefined : () => markChoreDone(c),
+            // A corvée is edited inline in Réglages ▸ Corvées & routines — this names
+            // that place rather than leaving someone to hunt for it (door #11).
+            editHref: ro ? undefined : settingsHref({ tab: 'maison', focus: 'chores' }),
+            onDelete: ro ? undefined : () => removeChore(c),
+          }),
+        )
+      }
     />
   )
+
+  // Removing a corvée from where you SEE it. Deferred, matching the tier its own
+  // check uses on this surface: the row goes at once, the DELETE waits behind the undo
+  // toast, and a poll can't bring it back mid-window (useDeferredRemoval's fresh-frame
+  // fence). Réglages keeps the same delete on its own row — same endpoint, same tier.
+  const removeChore = (c: ChoreInstance) => {
+    choreRemoval.remove([c.id], t.undo.cleared(c.title), () =>
+      write('chores', {
+        method: 'DELETE',
+        body: { id: c.id },
+        affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
+      }),
+    )
+  }
+
+  const removeHomeProject = (c: ChoreInstance) => {
+    homeRemoval.remove([c.id], t.undo.cleared(c.title), () =>
+      write('home-projects', {
+        method: 'DELETE',
+        body: { id: c.id },
+        affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+      }),
+    )
+  }
 
   // A one-off to-do (non-recurring task). Checking it marks it done server-side
   // (same /chores PATCH — sets last_done_at), so it drops off the next board read.
@@ -904,6 +950,10 @@ export function Board() {
             // cycle » only when the row actually recurs.
             onPostponeWeek: withDay || ro ? undefined : () => postponeHome(c, 'week'),
             onPostponeCycle: withDay || ro || !c.recurring ? undefined : () => postponeHome(c, 'cycle'),
+            // Same two doors the corvée just gained: a projet/entretien is edited in
+            // Réglages ▸ Corvées & routines, and removable from where it is seen.
+            editHref: ro ? undefined : settingsHref({ tab: 'maison', focus: 'homeProjects' }),
+            onDelete: ro ? undefined : () => removeHomeProject(c),
           }),
         )
       }

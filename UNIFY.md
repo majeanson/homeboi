@@ -213,12 +213,41 @@ at all. Day 7 diffs against these numbers; nothing may end the week higher.*
       page level, so it can be **deferred**. The tier follows the SURFACE. Recorded in
       `ACTIONS.md` door 14 so the next pass doesn't "fix" it.
 
-### Day 5 — A door where the thing is seen
-- [ ] Corvée, projet maison, routine, habitude, à-compléter gain edit + delete where they
-      appear — through the peek's ⋯, not new row furniture (chrome is the tax).
-- [ ] Voyage and voiture join the ACTIONS matrix at all (7 destructive sites, unaudited).
-- [ ] Re-verify each cell before building: **4 of 7 sampled cells were stale**.
-- [ ] Guard: every destructive call site is named in `ACTIONS.md` or allow-listed with a why.
+### Day 5 — A door where the thing is seen · ✅ shipped
+- [x] **A corvée and a projet maison can be fixed where they are SEEN.** Both could only
+      be CHECKED from the board — not renamed, not removed — and their edit lived in
+      Réglages with no door pointing at it. `buildChore` gained `editHref` + `onDelete`,
+      both riding the peek's ⋯ (a glance surface keeps its row furniture; ACTIONS door #8
+      puts the overflow split in the adapter). The delete is **deferred**, the same tier
+      the board's own check already uses for that row, with `visible()` wired on all five
+      derivations so the row vanishes everywhere in scope at once.
+- [x] A corvée is edited INLINE in Réglages (its row expands into the ＋ form) — there is
+      no edit scene to open. « Modifier » therefore names that place via `settingsHref`
+      (door #11, the Réglages mirror). Removing the hunt is the win; inventing a second
+      editor would not have been.
+- [~] **Routine and habitude keep their delete inside the editor**, and that is right:
+      both already have a reachable EDIT door on the surface (the routine card's ✎, the
+      habit peek's « Modifier »), and the delete is one tap further in. The rule worth
+      holding is « fixable where seen », not « every destructive action on every glance
+      surface » — a board that offers delete beside « Fait » is how a mis-tap becomes a
+      loss. Recorded rather than built.
+- [~] **Todo's delete stays inside its tap-to-edit state** for the same reason: the row
+      opens to an editor on tap, so the delete is one gesture away and never hidden
+      behind a hunt.
+
+### Day 5's other half — the guard the week kept needing
+- [x] **Four times this week a label moved and a spec kept asserting the old words**
+      (« Effacer le journal », « Événements », « En enlever un », « Tout effacer »). E2E
+      is decoupled here, so each shipped first and went red later. Two new rules in
+      `glossary.test.ts`:
+      **(a)** every ACCENTED `name: '…'` literal in a spec must exist in FR or EN — 78 of
+      them, 16 exemptions, all fixture data or composed labels;
+      **(b)** any literal opening with a DELETE-FAMILY verb must exist too — which is what
+      catches the unaccented ones the first rule cannot see.
+- [x] Measured before deciding: a strict "every literal must exist" rule is NOT viable —
+      **133 of 352** are fixture data (« Lait 2% 4L », « Papa »), test ids or composed
+      labels, and an allow-list that long is one nobody maintains. Recorded in the guard.
+- [x] Proven red on the real breakage that slipped through every earlier rule.
 
 ### Day 6 — The screens that never explained themselves
 - [ ] `FormScene` passes a `card` → 8 form scenes gain a « ? » and a guide door (zero new

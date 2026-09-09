@@ -88,7 +88,7 @@ at all (❌).
 | Event · delete | — | — | ✅ peek ⋯ dangerᴳ | — | — | confirm¹ | ✅ |
 | Event · create | — | — | — | ✅ ＋ `event`; day-page `SectionAdd` | — | — | ✅ |
 | Fête / announce · open | ❌ static `Act`, no `onOpen` (Board.tsx:591) | — | ❌² | — | — | — | ✅ |
-| Chore · check | ✅ disc | — | ✅ « Fait » | — | — | deferred | ✅ |
+| Chore · check / **edit** / **delete** | ✅ disc | — | ✅ « Fait » + **« Modifier » → Réglages ▸ Corvées (mirror)** + **🗑 (⋯)** | — | ✅ Réglages row | deferred | ✅ |
 | Chore · edit | ❌ no door on board³ | — | ➖³ peek = Fait/Reporter only | — | ✅ maison▸chores | — | ✅ |
 | Chore · postpone | — | — | ✅ Reporter ×2 (peek only) | — | — | — | ✅ |
 | Todo « À compléter » · check / rename / delete | ✅ disc; tap name → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` + ＋ `todo` | maison▸todos (templates) | deferred | ✅ |

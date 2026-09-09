@@ -344,6 +344,14 @@ export function buildChore(
     // Cycle only shows for a recurring row (c.recurring); week always pairs onDone.
     onPostponeWeek?: () => void
     onPostponeCycle?: () => void
+    // « Modifier » — a corvée is edited INLINE in Réglages (its row expands into the
+    // same ＋ form), so there is no edit scene to open: this door names that place
+    // instead of leaving someone to hunt for it. Door #11, the Réglages mirror.
+    editHref?: string
+    // « Supprimer » — deferred, matching the tier the board's own check already uses
+    // for this row. Overflow, because a glance surface must not put a destructive tap
+    // beside a « Fait ».
+    onDelete?: () => void
   },
 ): DetailModel {
   const { t, lang, members } = ctx
@@ -356,6 +364,17 @@ export function buildChore(
     actions.push({ key: 'postpone-week', label: t.detail.postponeWeek, icon: 'clock-bold', run: opts.onPostponeWeek })
   if (opts?.onPostponeCycle)
     actions.push({ key: 'postpone-cycle', label: t.detail.postponeCycle, icon: 'arrow-counter-clockwise-bold', run: opts.onPostponeCycle })
+  if (opts?.editHref)
+    actions.push({ key: 'edit', label: t.common.edit, icon: 'pencil-simple-bold', href: opts.editHref, overflow: true })
+  if (opts?.onDelete)
+    actions.push({
+      key: 'delete',
+      label: t.common.delete,
+      icon: 'trash-bold',
+      tone: 'danger',
+      overflow: true,
+      run: opts.onDelete,
+    })
   return {
     kind: opts?.todo ? 'todo' : 'chore',
     title: c.title,

@@ -1560,14 +1560,14 @@ test.describe('fridge notes', () => {
   // Tidy seam #1: « Tout effacer » empties the whole strip as ONE undoable action —
   // the notes hide at once, the writes wait behind the single undo toast, and
   // « Annuler » brings every note back (nothing was deleted server-side yet).
-  test('« Tout effacer » batch-dismisses the strip behind one undo toast', async ({ page }) => {
+  test('« Tout retirer » batch-dismisses the strip behind one undo toast', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     // Scope to the fridge-notes strip — the DAY note (DayNote, .notes.day-note)
     // wears .note-card too but is read-only and must survive the sweep.
     const notes = page.locator('.notes:not(.day-note) .note-card')
     await expect(notes).toHaveCount(2)
-    await page.getByRole('button', { name: 'Tout effacer' }).click()
+    await page.getByRole('button', { name: 'Tout retirer' }).click()
     await expect(notes).toHaveCount(0)
     await expect(page.locator('.undo-toast')).toBeVisible()
     await page.locator('.undo-toast__btn').click()

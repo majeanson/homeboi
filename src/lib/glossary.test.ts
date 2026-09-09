@@ -229,3 +229,103 @@ describe('glossary — the ratchets (they only go down)', () => {
     ).toEqual([])
   })
 })
+
+// ── A spec may only assert a label the app can actually render ───────────────
+//
+// The week's most repeated mistake, four times over: a label moved, and a spec kept
+// asserting the old words. E2E here is DECOUPLED (it runs after the deploy), so each
+// one shipped first and went red later — « Effacer le journal », « Événements », « En
+// enlever un », « Tout effacer ».
+//
+// The rival rule above only knows words the glossary declared as losers, so it could
+// not see the last two: « effacer » is a legitimate term, and « Tout effacer » simply
+// became « Tout retirer ». This is the general form of that rule — every accented
+// (French) `name: '…'` literal in a spec must appear in FR or EN. Nothing else can
+// stay green while the copy moves under it.
+//
+// The exemptions are the two honest kinds: FIXTURE data the specs invent, and labels
+// COMPOSED at runtime from a fixture name plus a dictionary word.
+const E2E_LABEL_ALLOWED: Record<string, string> = {
+  'Pain tranché blé entier': 'cashier fixture item',
+  'Couches Pampers méga': 'cashier fixture item',
+  'Clinique Vétérinaire du Coin': 'search fixture business',
+  'Clinique Vétérinaire Animalia': 'share-business fixture',
+  'Clinique vétérinaire Papineau': 'state-matrix fixture',
+  'La maisonnée démo': 'the demo household’s own name',
+  'board ▸ à compléter': 'composer-fit’s own surface id, not a UI label',
+  'cuisine ▸ la réserve': 'composer-fit’s own surface id, not a UI label',
+  'À la caisse: Oui': 'a composed assertion (label + state)',
+  'Ajouter la sélection (2)': 'composed: the label carries a live count',
+  'Ouvrir la vérification': 'composed from the recipe-review fixture',
+  'Contacts d’urgence — Compléter': 'fixture form name + « Compléter »',
+  'Allergies / à savoir — Compléter': 'fixture form name + « Compléter »',
+  'Routines du soir — Compléter': 'fixture form name + « Compléter »',
+  'En cas de pépin — Compléter': 'fixture form name + « Compléter »',
+  'Wi-Fi — Compléter': 'fixture form name + « Compléter »',
+}
+
+describe('e2e asserts labels the app can render', () => {
+  const FRENCH = /[àâçéèêëîïôûùüÿœ]/i
+  const literals = new Map<string, Set<string>>()
+  // The same scan without the accent filter — the delete-family rule below needs the
+  // unaccented labels too, and they are exactly the ones the accented rule cannot see.
+  const allLiterals = new Map<string, Set<string>>()
+  for (const f of sourceFiles(E2E).filter((p) => p.endsWith('.spec.ts'))) {
+    const raw = readFileSync(f, 'utf8')
+    const path = f.split(/[\/]/).pop()!
+    for (const m of raw.matchAll(/name:\s*'([^']{3,60})'/g)) {
+      if (!allLiterals.has(m[1])) allLiterals.set(m[1], new Set())
+      allLiterals.get(m[1])!.add(path)
+      if (!FRENCH.test(m[1])) continue
+      if (!literals.has(m[1])) literals.set(m[1], new Set())
+      literals.get(m[1])!.add(path)
+    }
+  }
+  const dict = [...frValues, ...enValues]
+
+  it('the probe found the specs (canary)', () => {
+    expect(literals.size, 'no accented name: literals found — the scan broke').toBeGreaterThan(40)
+  })
+
+  it('every asserted label still exists in the copy', () => {
+    const orphans = [...literals.entries()]
+      .filter(([lit]) => !(lit in E2E_LABEL_ALLOWED))
+      .filter(([lit]) => !dict.some((v) => v === lit || v.includes(lit)))
+      .map(([lit, files]) => `« ${lit} » (${[...files].join(', ')})`)
+    expect(
+      orphans,
+      'this spec asserts words the app no longer says. Rename the spec in the SAME commit as the label — ' +
+        'or, if it is fixture data, add it to E2E_LABEL_ALLOWED with the reason',
+    ).toEqual([])
+  })
+
+  // The rule above cannot see an UNACCENTED French label — « Effacer le journal »,
+  // « Tout retirer », « Vider les cochés » carry no accent — and a strict "every literal
+  // must exist" rule is not viable either: 133 of 352 name literals are fixture data
+  // (« Lait 2% 4L », « Papa »), test ids, or labels composed at runtime, and an
+  // allow-list that long is one nobody maintains. Measured before deciding.
+  //
+  // So this narrows to the words this week actually moves: a spec asserting a
+  // DELETE-FAMILY label must assert one the app really says. That is the class that
+  // broke four times, and it needs no exemptions at all.
+  it('a spec that asserts a delete-family label asserts a real one', () => {
+    const verbs = GLOSSARY.filter((t) => t.scope === 'verb').flatMap((t) => [t.fr, t.en])
+    const opens = new RegExp(`^(tout\\s+)?(${verbs.join('|')})\\b`, 'i')
+    const stale: string[] = []
+    for (const [lit, files] of allLiterals) {
+      if (!opens.test(lit)) continue
+      // A composed accessible name — « Supprimer le groupe — Les cousins » — is the
+      // dictionary label plus a row's own name. Judge it on the part the copy owns.
+      const owned = lit.split(' — ')[0]
+      if (!dict.some((v) => v === lit || v.includes(lit) || v === owned || v.includes(owned))) {
+        stale.push(`« ${lit} » (${[...files].join(', ')})`)
+      }
+    }
+    expect(stale, 'the app no longer says this — rename the spec in the same commit as the label').toEqual([])
+  })
+
+  it('every E2E_LABEL_ALLOWED entry is still asserted somewhere', () => {
+    const stale = Object.keys(E2E_LABEL_ALLOWED).filter((lit) => !literals.has(lit))
+    expect(stale, 'an exemption nothing asserts any more is noise — drop it').toEqual([])
+  })
+})
