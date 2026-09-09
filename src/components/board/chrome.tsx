@@ -3,7 +3,7 @@ import { facesFromMembers } from '../../lib/faces'
 import { useFaceHasWaiting } from '../../lib/mots'
 import { type BoardView } from '../../lib/boardview'
 import { Icon, type IconName } from '../Icon'
-import { MemberSwitcher as FaceSwitcher } from '../MemberSwitcher'
+import { MemberSwitcher } from '../MemberSwitcher'
 import { type Dict, type Member } from './types'
 
 // A tiny segmented control in the board header — three zoom levels on the same
@@ -59,12 +59,19 @@ export function BoardViewToggle({
 // it, or Maisonnée, returns to everyone. The face row itself is the shared
 // MemberSwitcher (components/MemberSwitcher); this only wires the profile + maps the
 // board's snake_case members to its normalized face shape.
-export function MemberSwitcher({ members, t }: { members: Member[]; t: Dict }) {
+// The board's « Aujourd'hui » face row: the shared MemberSwitcher bound to THIS
+// device's profile, plus the one accent only this surface has (the waiting-mot dot).
+//
+// It was itself called `MemberSwitcher` until 2026-09-09, which forced this file to
+// import the real primitive under an alias — so inside board/, `FaceSwitcher` meant
+// the shared component and `MemberSwitcher` meant the four-line board wrapper, the
+// exact reverse of everywhere else. One name, one component (devkitParity.test.ts).
+export function TodayFaceRow({ members, t }: { members: Member[]; t: Dict }) {
   const { memberId, setMemberId } = useProfile()
   // A calm presence dot on a face that has « un mot t'attend » — boolean, never a count.
   const hasWaiting = useFaceHasWaiting()
   return (
-    <FaceSwitcher
+    <MemberSwitcher
       // The waiting-mot dot is this surface's own accent, layered on the shared mapping.
       faces={facesFromMembers(members).map((f) => ({ ...f, dot: hasWaiting(f.id) }))}
       value={memberId}

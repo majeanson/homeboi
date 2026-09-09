@@ -9,7 +9,8 @@ import { live } from '../lib/query'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { Loading, LoadError, PairPrompt } from '../components/Fallback'
+import { Loading, PairPrompt } from '../components/Fallback'
+import { LoadError } from '../components/LoadError'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
 import { useAudience } from '../lib/audience'
 import {
@@ -50,7 +51,7 @@ export function CercleWorldPage() {
   const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
-  const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const { data, error, refetch } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   const { data: household } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ name: string }>('household') })
 
   const contacts = useMemo(() => data?.contacts ?? [], [data])
@@ -102,7 +103,7 @@ export function CercleWorldPage() {
 
   if (isUnauthorized(error)) return <PairPrompt />
   // A non-401 failure with no cached frame surfaces as an error, not a blank world map.
-  if (error && !data) return <LoadError />
+  if (error && !data) return <LoadError onRetry={() => void refetch()} />
   if (!data) return <Loading />
 
   return (

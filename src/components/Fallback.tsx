@@ -11,18 +11,15 @@ export function Loading() {
   return <p className="loading mono">{t.common.loading}</p>
 }
 
-// Shown when a page's data fetch failed for a NON-auth reason (network / 5xx) and
-// there's no cached frame to fall back on — so a failure surfaces instead of reading
-// as a calm "empty" page (which quietly hides real data). Pair with `!data` so a
-// stale-but-good frame from a prior poll still renders. role=alert so a SR hears it.
-export function LoadError() {
-  const t = useT()
-  return (
-    <p className="loading mono" role="alert">
-      {t.common.loadFailed}
-    </p>
-  )
-}
+// The failed-fetch state used to live here too, as a bare role="alert" line. It was
+// a SECOND `LoadError`, same name, same job, told apart only by which module you
+// imported — and it kept the two behaviours `components/LoadError.tsx` was written
+// (2026-08-27/28, from Marc's phone) to refuse: it shouted in an error tone while
+// the device was merely OFFLINE, and it offered no « Réessayer » on surfaces whose
+// query has no poll to retry itself. Five call sites were still on it.
+//
+// There is now ONE: `components/LoadError.tsx`. Import it from there.
+// `src/lib/devkitParity.test.ts` keeps the name from being re-declared here.
 
 // Shown when the API says 401 — this device has no household. The right door
 // depends on the device's ROLE: a wall tablet pairs (device token), a phone

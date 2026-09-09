@@ -28,7 +28,7 @@
 
 ### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
 
-- `npm run typecheck` · `npm test` (1954) · `npm run build` · `npm run knip` — green.
+- `npm run typecheck` · `npm test` (2054 in 162 files, 2026-09-09) · `npm run build` · `npm run knip` — green.
 - `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
@@ -36,7 +36,7 @@
   2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
   CI's E2E job is the standing whole-suite signal)*.
 - Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
-- **Sixteen build-gating invariants** (this is the codebase's best feature — see §5):
+- **Seventeen build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
   (every `/api/*` write goes through `useWrite`, added 2026-08-27)**,
@@ -68,7 +68,11 @@
   DISCOVERY.md as enforced for months with no test behind them: a card's one-liner
   ≤ 15 words and a point label ≤ 5 are hard, the rest ratchets down)**, and
   **`confirmCopy.test.ts` (added 2026-09-08 — a destructive dialog says what is lost:
-  every `…Confirm` string, in both languages, is ≥ 6 words and carries a consequence)**.
+  every `…Confirm` string, in both languages, is ≥ 6 words and carries a consequence)**,
+  and **`devkitParity.test.ts` (added 2026-09-09 — a shared primitive is in `/dev/kit`
+  or says why not; a gallery entry's file exists and exports what it advertises; and a
+  component name may live in exactly ONE file, which is how the second `LoadError` and
+  the second `MemberSwitcher` were found)**.
   `knip` now runs in CI too.
 
 ---
@@ -133,6 +137,60 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### The DevKit parity audit (2026-09-09) — the gallery rule had quietly stopped being true
+
+Marc's queued task: audit `/dev/kit` ↔ code **both ways**. The standing rule in
+`CLAUDE.md` — "a new primitive that isn't in the gallery is invisible to the next
+session and will get re-invented" — was prose with nothing behind it, and both
+directions had drifted.
+
+**Direction 1 (gallery → code) came back clean**, but only on the second pass: the
+first scan reported `AskSheet` and `GlossaryTermMark` as gallery-only orphans, because
+it followed `from '…'` and not `import('…')`. Both are lazy-loaded. *A scan that walks
+the wrong shape reports the wrong thing with total confidence* — the fourth time this
+file records that, and the reason nothing here was "fixed" on that first reading.
+
+**Direction 2 (code → gallery) is where the rot was.** `COMPONENTS.md`'s primitive
+table sat under a heading that said « gallery-suitable »: 140 rows, 91 with a live
+specimen, and **no way to tell an oversight from a deliberate exemption** — so both
+kinds accumulated silently for months. What that hid:
+
+- **Eight primitives `CLAUDE.md` itself tells you to reach for had no specimen** —
+  `FormScene` (10 importers across 4 areas; the law names it for any typing surface),
+  `Loading`/`PairPrompt`, `TopBar`, `HelpDot` (while its neighbour `HelpBubble` was in),
+  `SectionIntro`, `SwipeDeletePane`, `DocUploadButton`, `DrawPad`. All eight added.
+- **`LoadError` existed TWICE** — `components/Fallback.tsx` and `components/LoadError.tsx`,
+  same name, same job, told apart only by which module a page imported. They had drifted:
+  the Fallback copy kept an error TONE while the device was merely offline and offered no
+  « Réessayer » — the exact two behaviours the other was written to refuse (2026-08-27/28,
+  from Marc's phone, after « clicking from the yearly calendar into a month, then nothing
+  loads »). **Six surfaces were still on the wrong one**: Maison, Les notes, Notre monde,
+  the kitchen's history tab + ideas drawer, and « Cette semaine ». All six migrated, each
+  given the retry door; the losing copy is gone. `THIS_WEEK_KEY` has no poll, so on that
+  one the button was the only door there was.
+- **`MemberSwitcher` was declared twice too** — found by the new guard on its first run.
+  `board/chrome.tsx` exported a four-line board wrapper under the primitive's name, which
+  forced that file to import the real one aliased: inside `board/`, `FaceSwitcher` meant
+  the shared component and `MemberSwitcher` meant the wrapper, the reverse of everywhere
+  else. The wrapper is now `TodayFaceRow` (it renders the « Aujourd'hui » face row).
+- **The gallery had two names for one category** — « Champs & saisie » beside « Saisie »,
+  stranding two entries in a section of their own. Folded.
+
+**The guard: `src/lib/devkitParity.test.ts`.** A primitive row either has a specimen or
+ends with `*(no specimen: <reason>)*`; every entry's `file` exists; every name an entry
+advertises is exported by a file it cites; no component name lives in two files; one name
+per category. The 41 rows that legitimately can't have a specimen now say so, in three
+words that cover almost all of them — *a route, not a primitive* · *needs live household
+data* · *a seam, not a component*. `docCounts.test.ts` now asserts the two numbers the
+doc quotes, and caught a stale one within a minute of being written.
+
+> **The lesson, again, and it was mine this time.** All six assertions were proven red
+> against planted violations — but the *first* prover reported all six "green" while
+> actually crashing vitest at startup on a `--reporter=basic` that doesn't exist in
+> vitest 4. It printed six confident greens over a harness that never ran a test. The
+> prover now refuses to return a verdict from a run whose output has no `Test Files`
+> line. Plant the bug, watch it go red — **and check that "red" came from the test.**
 
 ### The UNIFY week (2026-09-09) — one word, one mechanism, one door per idea
 

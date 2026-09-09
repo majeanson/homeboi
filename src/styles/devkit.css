@@ -249,3 +249,18 @@
 .devkit-panzoom {
   height: 220px;
 }
+
+/* SwipeDeletePane specimen: the pane is normally REVEALED behind a sliding row, so
+   on its own it has no box to sit in. Give it the row's height and let it show. */
+.devkit__swipe-demo {
+  position: relative;
+  height: 56px;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* A specimen that only makes sense INSIDE a line of text (the HelpDot "?"). */
+.devkit__inline-demo {
+  margin: 0;
+  font-size: 1.05rem;
+}

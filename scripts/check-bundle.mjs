@@ -93,7 +93,14 @@ const ONLINE_ONLY = [
   { re: /^heic2any-/, cap: 1600 * KB },
   // B-11 (bmad/10) — /dev/kit is a dev-only component gallery, never a kiosk
   // surface; accept no offline gallery rather than tax every install.
-  { re: /^DevKit-/, cap: 90 * KB },
+  //
+  // 90 → 105 KB on 2026-09-09: the parity pass added the eight specimens
+  // COMPONENTS.md already claimed were gallery-suitable (FormScene, Loading/
+  // PairPrompt, TopBar, HelpDot, SectionIntro, SwipeDeletePane, DocUploadButton,
+  // DrawPad) and it landed at 94 KB. Almost all of that is the specimen PROSE,
+  // which is the point of the page. Raised deliberately, not to unblock a push —
+  // this chunk is lazy, un-precached, and reachable only from Réglages ▸ Système.
+  { re: /^DevKit-/, cap: 105 * KB },
 ]
 
 // Lazy chunks that ARE required in the precache (unlike ONLINE_ONLY) but are too

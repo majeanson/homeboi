@@ -126,7 +126,14 @@ Before implementing ANY change, do this first — it's faster than the rework it
 **When you DO add a new shared component:** register it in `src/pages/DevKit.tsx`,
 add it to `COMPONENTS.md`, and (if user-facing) document it in the in-app Guide
 (`lib/guideContent.ts`). A new primitive that isn't in the gallery is invisible to
-the next session and will get re-invented.
+the next session and will get re-invented. **A test enforces this now**
+(`src/lib/devkitParity.test.ts`, 2026-09-09): a `COMPONENTS.md` primitive row either
+has a live specimen or ends with `*(no specimen: <reason>)*`, every gallery entry's
+`file` exists, every name it advertises is actually exported by that file, and no
+component name is declared in two files. The rule had been prose-only for months and
+had stopped being true — eight primitives this very page tells you to reach for
+(`FormScene` among them) had no specimen, and `LoadError` existed **twice**, the two
+copies drifted apart, with the import path as the only tell.
 
 **When a feature needs explaining (guide card/point, "?" help hint, tour step,
 Réglages deep-link):** read **`DISCOVERY.md`** first — it maps the whole
@@ -625,7 +632,10 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`,
   `chip-rule`, and — added by the UNIFY week — `glossary` (one word per idea, ratcheted),
   `undoTier` (one delete mechanism per entity), `tour-rule` (no help anchor without its
-  step), `docCounts` (a number in prose must be derivable from code) and `link-button-rule`
+  step), `docCounts` (a number in prose must be derivable from code), `devkitParity`
+  (a primitive is in the gallery or says why not, and one name = one file — it found the
+  `MemberSwitcher` fork on its first run, and the prover meant to prove it red first
+  called six vitest STARTUP CRASHES "green") and `link-button-rule`
   (a class worn by BOTH a `<button>` and a `<Link>` must reset the UA button chrome — from
   a real defect that shipped, was photographed by the matrix, and passed every assertion
   because a border moves no measurement)) are the best

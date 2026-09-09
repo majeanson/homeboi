@@ -31,7 +31,8 @@ import { JoindreRail } from '../components/cercle/JoindreRail'
 import { EventForm, type EventSeedWith, type EventInit } from '../components/forms/EventForm'
 import { nextRdvFor } from '../lib/nextRdv'
 import { CERCLE_KEY, HOUSEHOLD_KEY, BUSINESSES_KEY, MEMBERS_KEY, BOARD_KEY, EVENTS_KEY } from '../lib/queryKeys'
-import { Loading, LoadError, PairPrompt } from '../components/Fallback'
+import { Loading, PairPrompt } from '../components/Fallback'
+import { LoadError } from '../components/LoadError'
 import { EmptyState } from '../components/EmptyState'
 import { SearchField } from '../components/SearchField'
 import { HubHead } from '../components/HubHead'
@@ -280,7 +281,7 @@ function MaisonParent() {
     setParams(next, { replace: true })
   }, [params, setParams])
 
-  const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const { data, error, refetch } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   // The household name (set in Réglages) titles the Maisonnée family card below. Same
   // query key as HouseholdNameField, so a rename there refreshes here reactively.
   const { data: household } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ name: string }>('household') })
@@ -543,7 +544,7 @@ function MaisonParent() {
     // A non-401 failure with no cached frame must NOT fall through to render an empty
     // circle (reads as "you know nobody") — surface it. A stale-but-good `data` from a
     // prior poll still renders (kept over the error), the calm live-poll behaviour.
-    if (error && !data) return <LoadError />
+    if (error && !data) return <LoadError onRetry={() => void refetch()} />
     if (!data) return <Loading />
   }
 

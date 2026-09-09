@@ -56,7 +56,7 @@ import { WonderBand, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { Skeleton } from '../components/Skeleton'
-import { BoardViewToggle, MemberSwitcher } from '../components/board/chrome'
+import { BoardViewToggle, TodayFaceRow } from '../components/board/chrome'
 // « Mois » and « Année » are BEHIND A VIEW SWITCH — the board opens on its widget
 // grid, so neither calendar is on the first-paint path, and together they were ~65 KB
 // of the eager entry chunk. Lazy, with the same Skeleton the board already shows while
@@ -1737,7 +1737,7 @@ export function Board() {
         // `board-faces` key sits on the mobile profile chip above — exactly one
         // of the two renders per surface, so the spotlight finds the right one.
         <div data-tour="board-faces">
-          <MemberSwitcher members={data.members} t={t} />
+          <TodayFaceRow members={data.members} t={t} />
         </div>
       )}
 

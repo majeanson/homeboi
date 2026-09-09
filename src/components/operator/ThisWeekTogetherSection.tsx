@@ -10,7 +10,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { A_REGLER_KEY } from '../../lib/queryKeys'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
-import { StatusMessage } from '../StatusMessage'
+import { LoadError } from '../LoadError'
 import { Icon } from '../Icon'
 import { colourFor } from '../../lib/things'
 
@@ -48,7 +48,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
-  const { data, isLoading, isError } = useQuery({ queryKey: THIS_WEEK_KEY, queryFn: () => api<WeekData>('this-week') })
+  const { data, isLoading, isError, refetch } = useQuery({ queryKey: THIS_WEEK_KEY, queryFn: () => api<WeekData>('this-week') })
   // « À régler » — the cross-domain heads-up rides at the top of the ritual: resolve
   // these few frictions first, then read the week. Always enabled here (Réglages is
   // operator-only). One-tap fix links per row; empties to « Tout est sous contrôle ».
@@ -138,7 +138,8 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
         // A failed fetch must NOT read as "an empty, calm week" — that quietly hides
         // real chores/meals/events. Show it as an error (only when we have no cached
         // frame to fall back on; a stale poll keeps showing the last good week).
-        <StatusMessage tone="error">{t.common.loadFailed}</StatusMessage>
+        // THIS_WEEK_KEY has no `live` poll, so the retry door is the only one there is.
+        <LoadError onRetry={() => void refetch()} />
       ) : (
         <div className="tweek">
           {/* ---- Week ahead ---- */}

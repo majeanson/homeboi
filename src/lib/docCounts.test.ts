@@ -107,6 +107,37 @@ const rootOpenBoxes = () => {
 // number that drifts from the data is the very thing this week exists to stop.
 const glossaryTerms = () => new Set([...read('src/lib/glossary.ts').matchAll(/^ {4}id: '([a-z0-9-]+)',$/gm)].map((m) => m[1])).size
 
+// The component gallery and the primitive table it is supposed to mirror. COMPONENTS.md
+// states both sizes in the sentence explaining WHY the parity guard exists (2026-09-09),
+// and a wrong number there would undercut exactly that argument. Parsed the way
+// devkitParity.test.ts parses them — the two must not grow separate ideas of "an entry".
+const PATHS = /[A-Za-z0-9_/.-]+\.(?:tsx?|css)/g
+const kitFiles = () =>
+  new Set(
+    [...read('src/pages/DevKit.tsx').matchAll(/\n\s+file: '([^']+)',/g)].flatMap((m) => m[1].match(PATHS) ?? []),
+  )
+const primitiveRows = () => {
+  const lines = read('COMPONENTS.md').split(/\r?\n/)
+  const a = lines.findIndex((l) => l.startsWith('## Shared primitives'))
+  const b = lines.findIndex((l) => l.startsWith('### Page orchestrators'))
+  const kit = kitFiles()
+  let rows = 0
+  let specimens = 0
+  for (let i = a; i < b; i++) {
+    const l = lines[i]
+    if (!l.startsWith('|')) continue
+    const cells = l.split('|').map((c) => c.trim())
+    if (cells.length < 4) continue
+    const name = cells[1].replace(/\*\*/g, '').trim()
+    if (!name || /^-+$/.test(name) || name === 'Component') continue
+    const files = cells[2].match(PATHS) ?? []
+    if (!files.length) continue
+    rows++
+    if (files.some((f) => kit.has(f))) specimens++
+  }
+  return { rows, specimens }
+}
+
 describe('the docs quote the real counts', () => {
   // Each claim: the file, a regex whose FIRST capture group is the number as written,
   // and the live value it must equal. Keep the regex tight enough that it only matches
@@ -136,6 +167,13 @@ describe('the docs quote the real counts', () => {
     { file: 'STATE.md', what: 'repo-wide open boxes', re: /It reads \*\*(\d+)\*\* —/, actual: () => rootOpenBoxes().total },
     { file: 'CLAUDE.md', what: 'bare boundingBox sites', re: /\*\*The sweep is done \(2026-09-09\):\s*\n?\s*(\d+) bare call site/, actual: bareBoxSites },
     { file: 'e2e/measure.ts', what: 'bare boundingBox sites', re: /\*\*(\d+) site[s]? left in this suite\*\*/, actual: bareBoxSites },
+    // The parity pass's own argument, in numbers (2026-09-09). "140 rows, 91 specimens"
+    // is the evidence that the section's « gallery-suitable » heading was not true of
+    // itself; let either drift and the sentence stops being evidence and becomes folklore.
+    // `specimens` is deliberately the LIVE count, not a frozen 91: the sentence says what
+    // the pass found, so if it ever reads differently the sentence needs rewriting anyway.
+    { file: 'COMPONENTS.md', what: 'primitive rows (parity preamble)', re: /contents: (\d+) rows, \d+ specimens/, actual: () => primitiveRows().rows },
+    { file: 'COMPONENTS.md', what: 'rows with a live specimen', re: /contents: \d+ rows, (\d+) specimens/, actual: () => primitiveRows().specimens },
   ]
 
   for (const c of claims) {
@@ -154,6 +192,11 @@ describe('the docs quote the real counts', () => {
     expect(tours()).toBeGreaterThan(3)
     expect(registries()).toBeGreaterThan(3)
     expect(glossaryTerms()).toBeGreaterThan(15)
+    // Both parsers walk hand-written prose/JSX, so both can fall silently to a
+    // plausible zero — floors, not just equality against a doc that would then agree.
+    expect(kitFiles().size).toBeGreaterThan(100)
+    expect(primitiveRows().rows).toBeGreaterThan(130)
+    expect(primitiveRows().specimens).toBeGreaterThan(80)
     // The matrix parser is the one here that fails SILENTLY into a plausible zero (see
     // its comment); a floor is the whole difference between a guard and a decoration.
     const m = matrixEntries()

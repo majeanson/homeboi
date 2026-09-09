@@ -135,6 +135,14 @@ import { HelpBubble } from '../components/HelpBubble'
 import { OfflineBanner } from '../components/OfflineBanner'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { HeartButton } from '../components/HeartButton'
+import { Loading, PairPrompt } from '../components/Fallback'
+import { TopBar } from '../components/TopBar'
+import { SwipeDeletePane } from '../components/SwipeDeletePane'
+import { HelpDot } from '../components/HelpDot'
+import { SectionIntro } from '../components/SectionIntro'
+import { DocUploadButton } from '../components/DocUploadButton'
+import { FormScene } from '../components/FormScene'
+import { DrawPad } from '../components/DrawPad'
 
 // A tiny inline placeholder image for the image-bearing specimens (DealCard,
 // ZoomableImg) — no network asset needed in the gallery.
@@ -645,6 +653,61 @@ function HelpBubbleDemo() {
 // boundary. (Don't click the fallback's own Recharger/Aller au babillard — those act
 // on the whole gallery. In Vite dev the error overlay also pops; dismiss it, the
 // boundary fallback is underneath.)
+// FormScene + DrawPad are FULL-SCREEN. A specimen can't sit inline in the gallery
+// list, so both open on a tap and hand back a close that returns here — FormScene's
+// `fallback` is '/dev/kit' on purpose (it closes by NAVIGATING, so any other value
+// would eject you from the gallery), and it self-bounces for a guest or a signed-out
+// dev, which renders as "nothing happens" rather than a broken page.
+function FormSceneDemo() {
+  const [open, setOpen] = useState(false)
+  if (!open)
+    return (
+      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+        Ouvrir une scène de formulaire
+      </button>
+    )
+  return (
+    <FormScene title="Exemple de scène" icon="pencil-simple-bold" fallback="/dev/kit" card="board">
+      {(members, close) => (
+        <>
+          <p className="mono" style={{ color: 'var(--ink-soft)' }}>
+            La coquille fournit le SceneHead (avec son « ? » depuis `card`), la sortie par Échap,
+            le renvoi d'un invité en lecture seule, et la liste des membres — ici {members.length}.
+            Le formulaire lui-même est l'enfant, en render-prop, pour brancher son onSaved.
+          </p>
+          <button
+            type="button"
+            className="btn btn--sm btn--ghost"
+            onClick={() => {
+              setOpen(false)
+              close()
+            }}
+          >
+            Fermer
+          </button>
+        </>
+      )}
+    </FormScene>
+  )
+}
+
+function DrawPadDemo() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+        Ouvrir le pad à dessin
+      </button>
+      <DrawPad
+        open={open}
+        onCancel={() => setOpen(false)}
+        // Rien n'est écrit depuis la galerie : on referme, sans poster le PNG.
+        onSave={() => setOpen(false)}
+      />
+    </>
+  )
+}
+
 function Boom(): ReactNode {
   throw new Error('Démo : un composant a planté.')
 }
@@ -766,7 +829,7 @@ export function DevKit() {
     {
       cat: 'Fondations',
       name: 'WidgetGrid · CardSlot',
-      file: 'components/board/WidgetGrid.tsx',
+      file: 'components/board/WidgetGrid.tsx, components/board/CardSlot.tsx',
       kw: 'board grid masonry widget span row size colonnes babillard disposition carte slot',
       render: () => (
         <>
@@ -3140,7 +3203,7 @@ export function DevKit() {
       ),
     },
     {
-      cat: 'Champs & saisie',
+      cat: 'Saisie',
       name: 'PhotoField',
       file: 'components/PhotoField.tsx',
       kw: 'photo image upload r2 cover couverture carnet commerce voyage téléverser',
@@ -3158,7 +3221,7 @@ export function DevKit() {
       ),
     },
     {
-      cat: 'Champs & saisie',
+      cat: 'Saisie',
       name: 'RecipeIngredientPick',
       file: 'components/RecipeIngredientPick.tsx',
       kw: 'recipe ingredients grocery list checklist tick ingrédients épicerie cocher quels',
@@ -3285,6 +3348,110 @@ export function DevKit() {
       render: () => (
         <Demo label="Filet de sécurité de l'app — un throw de rendu devient un écran calme et récupérable. Touche pour déclencher un throw contenu, puis « Réinitialiser » (pas les boutons du fallback, qui rechargent toute la galerie).">
           <BoundaryDemo />
+        </Demo>
+      ),
+    },
+    // ── The 2026-09-09 parity pass: primitives COMPONENTS.md already called
+    // « gallery-suitable » that had no live specimen here. See devkitParity.test.ts.
+    {
+      cat: 'Feedback',
+      name: 'Loading · PairPrompt',
+      file: 'components/Fallback.tsx',
+      kw: 'chargement loading appairer pair 401 sans maisonnée états page fallback',
+      render: () => (
+        <>
+          <Demo label="« Chargement… » — le seul état pendant que la PREMIÈRE requête est en vol. Une requête qui a ÉCHOUÉ sans données n'est plus « en chargement » : c'est LoadError (juste au-dessus), et l'oublier a déjà fait tourner Mois et L'auto dans le vide sur un wifi à une barre.">
+            <Loading />
+          </Demo>
+          <Demo label="401 = cet appareil n'a pas de maisonnée. La porte dépend du RÔLE : bascule l'axe Surface ci-dessus — une tablette murale (kiosk) propose « Appairer » en premier, un téléphone (mobile) « Se connecter ». L'autre porte reste dessous, jamais cachée.">
+            <PairPrompt />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'TopBar',
+      file: 'components/TopBar.tsx',
+      kw: 'entête chrome marque thème langue topbar barre haut',
+      render: () => (
+        <Demo label="Le chrome minimal des surfaces hors-hub (/, /login, /pair, /partage) : marque, jour/nuit, FR/EN. Volontairement sans badge ni compteur. `children` glisse une action de plus à gauche des deux boutons.">
+          <TopBar />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'SwipeDeletePane',
+      file: 'components/SwipeDeletePane.tsx',
+      kw: 'glisser supprimer swipe delete pane rouge rangée liste',
+      render: () => (
+        <Demo label="Le panneau rouge que `useSwipeToDelete` découvre DERRIÈRE une `.list-row` quand l'avant glisse vers la gauche. Le hook tient le geste, ce composant tient le décor — il était copié à la main dans La liste et Ajout rapide. `aria-hidden` + inerte par choix : le doigt le pilote, et chaque appelant garde un miroir non-tactile (RowActions, un Supprimer de feuille d'édition).">
+          <div className="devkit__swipe-demo">
+            <SwipeDeletePane label="Supprimer" />
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'HelpDot',
+      file: 'components/HelpDot.tsx',
+      kw: 'aide help point interrogation guide tutoriel comprendre ?',
+      render: () => (
+        <Demo label="Le « ? » posé après un titre de section : lien direct vers SA carte du guide. Deux conditions le cachent — le mode tutoriel éteint (Réglages ▸ Affichage) et la lentille bambin. Bascule l'axe Audience ci-dessus sur « toddler » : il disparaît, et c'est le comportement attendu, pas un bug de la galerie.">
+          <p className="devkit__inline-demo">
+            Le babillard <HelpDot card="board" />
+          </p>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'SectionIntro',
+      file: 'components/SectionIntro.tsx',
+      kw: 'première visite accueil section onboarding intro carte bienvenue découvrir',
+      render: () => (
+        <Demo label="La carte de PREMIÈRE visite d'un onglet — la moitié progressive et en contexte de l'accueil (le tour couvre les bases transversales). Elle relit le contenu de la carte de guide correspondante, donc les deux ne dérivent jamais. Rejetée une fois, elle ne revient pas… sauf depuis Réglages ▸ Découvrir, parce que « déjà vu » décrit un MOMENT, pas une personne. Rien ici si tu l'as déjà rejetée pour cette section — c'est le vrai état de cet appareil.">
+          <SectionIntro card="kitchen" />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'DocUploadButton',
+      file: 'components/DocUploadButton.tsx',
+      kw: 'document pdf joindre téléverser fichier billet voyage plusieurs',
+      render: () => (
+        <Demo label="« Joindre un document » — la seule pièce jointe qui n'est PAS un memo (useMemoAttach) : des FICHIERS que tu as déjà, plusieurs d'un coup, chacun devenant sa propre note nommée par son nom de fichier, postée tout de suite. C'est cette pluralité qui l'empêche de partager le modèle à un-seul-brouillon. R2 absent → la puce se cache d'elle-même. ⚠ un fichier choisi ici écrit vraiment dans TA maisonnée.">
+          <DocUploadButton
+            label="Joindre un document"
+            endpoint="trip-notes"
+            mediaEndpoint="trip-doc-media"
+            affectedKey={['devkit-doc-demo']}
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'FormScene',
+      file: 'components/FormScene.tsx',
+      kw: 'scène formulaire plein écran ajout rendez-vous corvée routine projet coquille shell',
+      render: () => (
+        <Demo label="La coquille `.scene` des formulaires d'ajout de l'opérateur (rendez-vous / corvée / routine / projet maison). Elle apporte le SceneHead, Échap, le renvoi d'un invité, la liste des membres — et depuis 2026-09-09 un `card`, parce que ces cinq écrans étaient les SEULS sans « ? » : précisément là où une première venue rencontre des champs à interpréter. Elle porte aussi le contrat clavier (`.scene` = `.vv-fit` + `.vv-slack` gratuits).">
+          <FormSceneDemo />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'DrawPad',
+      file: 'components/DrawPad.tsx',
+      kw: 'dessin dessiner pad crayon pinceau remplir calquer aplatir note dessinée scene',
+      render: () => (
+        <Demo label="Le pad à dessin (#14) : crayon (perfect-freehand), remplissage SOUS l'encre, calques, « Aplatir ». Il rend deux choses à l'appelant — le PNG plat (coup d'œil sur le babillard, partage) ET le JSON de scène ré-éditable — d'où `media_key` + `scene_key` côté schéma. `filigrane` charge un dessin existant en calque de traçage estompé au lieu de traits éditables : on redessine par-dessus, l'original ne bouge pas. Ici rien n'est enregistré : « Enregistrer » referme.">
+          <DrawPadDemo />
         </Demo>
       ),
     },

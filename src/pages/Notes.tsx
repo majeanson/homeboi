@@ -11,7 +11,8 @@ import { useAudience } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { CERCLE_KEY } from '../lib/queryKeys'
-import { LoadError, PairPrompt } from '../components/Fallback'
+import { PairPrompt } from '../components/Fallback'
+import { LoadError } from '../components/LoadError'
 import { Skeleton } from '../components/Skeleton'
 import { HubHead } from '../components/HubHead'
 import { SectionIntro } from '../components/SectionIntro'
@@ -77,14 +78,14 @@ function NotesParent() {
     setParams(next, { replace: true })
   }, [params, setParams])
 
-  const { data, error } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const { data, error, refetch } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
   const members = useMemo(() => data?.members ?? [], [data])
 
   if (isUnauthorized(error)) return <PairPrompt />
   // A non-401 failure with no cached frame must NOT fall through to render an empty
   // face row (reads as "you know nobody") — surface it. A stale-but-good `data` from
   // a prior poll still renders (kept over the error), the calm live-poll behaviour.
-  if (error && !data) return <LoadError />
+  if (error && !data) return <LoadError onRetry={() => void refetch()} />
   if (!data) return <Skeleton count={4} />
 
   return (
