@@ -60,6 +60,20 @@ const ledgerSrc = [
   .toLowerCase()
 
 describe('calm tenets (chore fairness ledger)', () => {
+  // THE SCAN IS READING THE LEDGER, not four husks.
+  //
+  // The schema half above canaries itself by accident — it asserts `pantry_low` IS
+  // present, so an empty read fails. This half had no such control: every assertion is
+  // "the forbidden word is absent", which is precisely what reading nothing reports.
+  // A missing FILE throws (readFileSync), so a rename is loud; what is silent is the
+  // ledger being refactored OUT of these four paths, leaving the guard to scan leftovers
+  // and pass while the real code goes unwatched. `task_participants` is the table the
+  // whole fairness view is built on — if it is not in here, this list is stale.
+  it('is scanning the real ledger (canary)', () => {
+    expect(ledgerSrc.length, 'the ledger sources read empty').toBeGreaterThan(5000)
+    expect(ledgerSrc.includes('task_participants'), 'the ledger no longer reads task_participants — has it moved out of these four files?').toBe(true)
+  })
+
   // No scoreboard vocabulary in the live ledger code (comments are stripped above).
   const banned = ['leaderboard', 'scoreboard', 'ranking', 'tally', 'streak', 'points', 'badge']
   for (const word of banned) {

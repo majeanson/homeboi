@@ -131,6 +131,26 @@ function sideSetterCalls(): Site[] {
 }
 
 describe('parallel-array rule', () => {
+  // THE SCAN FOUND THE APP.
+  //
+  // Both rules below are "this list of violations is empty", which is exactly what a
+  // BLIND scan reports. Proven on 2026-09-09 by replacing the file walk with `[]`: the
+  // suite went green, 2 passed, guarding nothing. A moved directory or a changed
+  // `sourceFiles` would do the same silently.
+  //
+  // The second assertion is the sharper one: it is not enough that SOME files were read,
+  // the scan must still see the SITES this rule exists for. A setter that is declared
+  // here and found nowhere means either the scan broke or the code moved — and both
+  // deserve a red build, not a quiet pass. (`demoHousehold.test.ts` protects itself the
+  // same way, by checking its declared tables against the migrations.)
+  it('the scan found the app, and every declared setter is really there (canary)', () => {
+    expect(files.length, 'no source files scanned — the walk is broken, and both rules below are vacuous').toBeGreaterThan(50)
+    const seen = new Set<string>()
+    for (const { raw } of files) for (const s of SIDE_SETTERS) if (raw.includes(`${s}(`)) seen.add(s)
+    const missing = SIDE_SETTERS.filter((s) => !seen.has(s))
+    expect(missing, 'declared in SIDE_SETTERS but called nowhere the scan can see — the rule is guarding a ghost').toEqual([])
+  })
+
   it('every side-array setter derives its value through lib/parallelArray', () => {
     const violations = sideSetterCalls()
       .filter((s) => {
