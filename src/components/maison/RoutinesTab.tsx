@@ -7,7 +7,8 @@ import { api, isUnauthorized } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { live } from '../../lib/query'
 import { ROUTINES_KEY } from '../../lib/queryKeys'
-import { Loading, PairPrompt } from '../Fallback'
+import { PairPrompt } from '../Fallback'
+import { Skeleton } from '../Skeleton'
 import { InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { SectionHeader } from '../SectionHeader'
@@ -51,7 +52,10 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
   })
 
   if (isUnauthorized(error)) return <PairPrompt />
-  if (!data && !error) return <Loading />
+  // Routine CARDS, a shape the reader already knows — so reserve it rather than
+  // popping a centred « Chargement… » out for a grid (Skeleton.tsx's own rule; this
+  // body renders under a tab bar that is already painted, which is where the jump was).
+  if (!data && !error) return <Skeleton variant="card" count={4} />
   const routines = data?.routines ?? []
 
   // Group the overview into the moments of the day, and float the CURRENT moment

@@ -132,6 +132,29 @@ describe('/dev/kit ↔ COMPONENTS.md parity', () => {
     expect(dupes, 'Two components share a name. One of them is a fork waiting to drift.').toEqual([])
   })
 
+  it('every gallery category is declared in COMPONENTS.md', () => {
+    // COMPONENTS.md groups by role, the gallery adds domain buckets, and the file used
+    // to claim they were the same taxonomy. They are not — so the mapping is written
+    // down, and a category that appears in the gallery without joining it fails here.
+    // That is the exact route « Champs & saisie » took in beside « Saisie ».
+    // The table's OWN rows, not "everything down to the next heading": the prose under
+    // it is full of backticked component names, and slicing to `### Inputs` swallowed
+    // them — the guard's first run reported the eight new specimens as stray categories.
+    const head = mdLines.findIndex((l) => l.startsWith("| This file's section |"))
+    expect(head, 'the category mapping table is gone from COMPONENTS.md').toBeGreaterThan(-1)
+    // Start past the header + separator: the header cell itself says `/dev/kit`, which
+    // the scan then read as a retired category. (Second self-inflicted false positive
+    // in one assertion — a backtick scan does not know what it is looking at.)
+    const rows: string[] = []
+    for (let i = head + 2; i < mdLines.length && mdLines[i].startsWith('|'); i++) rows.push(mdLines[i])
+    const declared = new Set(rows.flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1])))
+    const undeclared = [...new Set(ENTRIES.map((e) => e.cat))].filter((c) => !declared.has(c))
+    expect(undeclared, 'A gallery category is not in the mapping table in COMPONENTS.md.').toEqual([])
+    // …and the mapping must not name categories the gallery has retired.
+    const live = new Set(ENTRIES.map((e) => e.cat))
+    expect([...declared].filter((c) => !live.has(c)), 'The mapping table names a category the gallery no longer uses.').toEqual([])
+  })
+
   it('the gallery has one name per category', () => {
     // « Champs & saisie » had grown beside « Saisie », stranding two entries in a
     // section of their own. One word per idea (UNIFY.md), inside the gallery too.

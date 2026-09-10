@@ -2,68 +2,40 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useProfile } from '../lib/profile'
-import { imgUrl } from '../lib/image'
+import { facesFromMembers } from '../lib/faces'
 import { useFaceHasWaiting } from '../lib/mots'
 import { type Member } from '../lib/members'
 import { MEMBERS_KEY } from '../lib/queryKeys'
-import { Icon } from './Icon'
-import { Sheet } from './Sheet'
+import { FaceSheet } from './FaceSheet'
 
-// "Qui es-tu ?" — pick-your-face. A bottom sheet of the household's members (the
-// same faces as the toddler routine picker), so a phone knows who's holding it.
-// Reuses the shared .sheet/.scrim chrome (see AddSheet). Selecting sets the
-// device profile (lib/profile); "tout le monde" clears it.
-
+// "Qui es-tu ?" — pick-your-face on a phone, so the device knows who is holding it.
+// The BOUND sibling of `FaceSelect`: same sheet, but wired to the device profile
+// (`lib/profile`) and fetching the household itself instead of taking `faces` as a
+// prop. « tout le monde » clears the profile.
+//
+// The sheet body used to be a hand-copy of FaceSelect's (2026-09-09 parity audit found
+// them character-for-character alike, down to the 250 ms close delay) and the copies
+// had already drifted: only the chip marked a waiting-mot dot that belonged to a face
+// other than the shown one. Both now render `FaceSheet`, so the face grid, the presence
+// dot and the everyone tile exist once. This file is the fetch + the identity binding,
+// which is the only part that was ever really its own.
 export function ProfilePicker({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT()
   const { memberId, setMemberId } = useProfile()
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: open })
-  const members = data?.members ?? []
   // « un mot t'attend » presence dot per face — boolean only (NFR-CALM).
   const hasWaiting = useFaceHasWaiting()
-
-  function pick(id: string | null) {
-    setMemberId(id)
-    // Let the picked face show its selected state for a beat before the sheet
-    // slides away — an instant close reads as "did that even register?".
-    window.setTimeout(onClose, 250)
-  }
+  const faces = facesFromMembers(data?.members ?? []).map((f) => ({ ...f, dot: hasWaiting(f.id) }))
 
   return (
-    <Sheet open={open} onClose={onClose} ariaLabel={t.profile.who} showClose={false}>
-      <h3>{t.profile.who}</h3>
-      <div className="profile-faces">
-        {members.map((m) => {
-            const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
-            const sel = m.id === memberId
-            return (
-              <button
-                key={m.id}
-                type="button"
-                className={'profile-face' + (sel ? ' is-sel' : '')}
-                onClick={() => pick(m.id)}
-                aria-pressed={sel}
-              >
-                <span className="profile-face__av" style={{ background: photo ? undefined : m.colour }}>
-                  {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
-                </span>
-                {hasWaiting(m.id) && <span className="face-dot" aria-hidden="true" />}
-                <span className="profile-face__name">{m.display_name}</span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            className={'profile-face' + (memberId === null ? ' is-sel' : '')}
-            onClick={() => pick(null)}
-            aria-pressed={memberId === null}
-          >
-            <span className="profile-face__av profile-face__av--all" aria-hidden="true">
-              <Icon name="users-three-bold" size={24} />
-            </span>
-            <span className="profile-face__name">{t.profile.household}</span>
-          </button>
-        </div>
-    </Sheet>
+    <FaceSheet
+      open={open}
+      onClose={onClose}
+      faces={faces}
+      value={memberId}
+      onChange={setMemberId}
+      allLabel={t.profile.household}
+      ariaLabel={t.profile.who}
+    />
   )
 }

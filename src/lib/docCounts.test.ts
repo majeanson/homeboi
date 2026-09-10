@@ -167,13 +167,13 @@ describe('the docs quote the real counts', () => {
     { file: 'STATE.md', what: 'repo-wide open boxes', re: /It reads \*\*(\d+)\*\* —/, actual: () => rootOpenBoxes().total },
     { file: 'CLAUDE.md', what: 'bare boundingBox sites', re: /\*\*The sweep is done \(2026-09-09\):\s*\n?\s*(\d+) bare call site/, actual: bareBoxSites },
     { file: 'e2e/measure.ts', what: 'bare boundingBox sites', re: /\*\*(\d+) site[s]? left in this suite\*\*/, actual: bareBoxSites },
-    // The parity pass's own argument, in numbers (2026-09-09). "140 rows, 91 specimens"
-    // is the evidence that the section's « gallery-suitable » heading was not true of
-    // itself; let either drift and the sentence stops being evidence and becomes folklore.
-    // `specimens` is deliberately the LIVE count, not a frozen 91: the sentence says what
-    // the pass found, so if it ever reads differently the sentence needs rewriting anyway.
-    { file: 'COMPONENTS.md', what: 'primitive rows (parity preamble)', re: /contents: (\d+) rows, \d+ specimens/, actual: () => primitiveRows().rows },
-    { file: 'COMPONENTS.md', what: 'rows with a live specimen', re: /contents: \d+ rows, (\d+) specimens/, actual: () => primitiveRows().specimens },
+    // The size of the primitive table and how much of it the gallery actually shows.
+    // The pass's own evidence sentence ("140 rows against 91 specimens", 2026-09-09) is
+    // deliberately NOT asserted: it is dated history, like LEAN.md's first-sweep numbers,
+    // and freezing the live claim to it would make the doc lie the next time a row lands.
+    // These two are the LIVE pair, one line above it.
+    { file: 'COMPONENTS.md', what: 'primitive rows (live)', re: /holds (\d+) rows, of which \d+ have a live specimen/, actual: () => primitiveRows().rows },
+    { file: 'COMPONENTS.md', what: 'rows with a live specimen', re: /holds \d+ rows, of which (\d+) have a live specimen/, actual: () => primitiveRows().specimens },
   ]
 
   for (const c of claims) {

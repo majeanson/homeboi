@@ -12,7 +12,7 @@ import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { Icon, InlineIcon } from '../Icon'
 import { SectionHeader } from '../SectionHeader'
 import { EmptyState } from '../EmptyState'
-import { Loading } from '../Fallback'
+import { Skeleton } from '../Skeleton'
 import { LoadError } from '../LoadError'
 import { useSingleOpen } from '../Disclosure'
 import { useEntityDetail } from '../detail/DetailProvider'
@@ -125,7 +125,8 @@ export function HistoryTab({
     )
   }
 
-  if (historyQ.isLoading) return <Loading />
+  // Past suppers are ROWS grouped by month — a known shape, so hold its space.
+  if (historyQ.isLoading) return <Skeleton count={5} />
   // A failed read is NOT an empty history: without this, a household with years of
   // suppers is told « Aucun repas passé » AND « Le tout début de vos repas » (the
   // exhausted-pages foot), with nothing to retry. Same split every other cold-path

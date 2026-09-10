@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Icon } from './Icon'
-import { Sheet } from './Sheet'
+import { FaceSheet } from './FaceSheet'
 import { type MemberFace } from './MemberSwitcher'
 
 // The COLLAPSED "pick-a-face" control — a small chip showing the current face that
-// opens a bottom sheet of the household's faces on tap. It's the same tap-to-select
+// opens the shared face sheet (`FaceSheet`) on tap. It's the same tap-to-select
 // behaviour as the board's "Aujourd'hui" header on mobile (the profile chip +
 // ProfilePicker sheet), but CONTROLLED + identity-agnostic: callers pass `faces` +
 // `value`/`onChange`, so a surface can drive its OWN local pick (Le cercle's focus
@@ -13,8 +13,8 @@ import { type MemberFace } from './MemberSwitcher'
 // Pairs with MemberSwitcher (the always-in-view face ROW): use the row on a kiosk
 // wall where space is cheap and a glanceable switch helps, and this chip on mobile
 // where the row would crowd the page — mirroring how the board picks between them.
-// Reuses the .profile-chip / .profile-faces / .profile-face chrome (styles/profile.css).
-
+// Reuses the .profile-chip chrome (styles/profile.css); the sheet body itself lives
+// in FaceSheet, shared with ProfilePicker (it was copied into both until 2026-09-09).
 export function FaceSelect({
   faces,
   value,
@@ -39,18 +39,11 @@ export function FaceSelect({
   // collapsed chip too, so a waiting mot is discoverable without opening the sheet.
   const anyDot = faces.some((f) => f.dot && f.id !== value)
 
-  function pick(id: string | null) {
-    onChange(id)
-    // Let the picked face show its selected state for a beat before the sheet slides
-    // away — an instant close reads as "did that even register?" (mirrors ProfilePicker).
-    window.setTimeout(() => setOpen(false), 250)
-  }
-
   return (
     <>
       <button type="button" className="profile-chip profile-chip--labeled" onClick={() => setOpen(true)} aria-label={ariaLabel}>
         {sel ? (
-          <span className="profile-chip__av" style={{ background: sel.photoUrl ? undefined : sel.colour ?? undefined }}>
+          <span className="profile-chip__av" style={{ background: sel.photoUrl ? undefined : (sel.colour ?? undefined) }}>
             {sel.photoUrl ? <img src={sel.photoUrl} alt="" /> : (sel.name?.[0] ?? '?').toUpperCase()}
           </span>
         ) : (
@@ -63,40 +56,16 @@ export function FaceSelect({
         <Icon name="caret-down-bold" size={12} />
       </button>
 
-      <Sheet open={open} onClose={() => setOpen(false)} ariaLabel={ariaLabel} showClose={false}>
-        <h3>{title ?? ariaLabel}</h3>
-        <div className="profile-faces">
-          {faces.map((f) => {
-            const s = f.id === value
-            return (
-              <button
-                key={f.id}
-                type="button"
-                className={'profile-face' + (s ? ' is-sel' : '')}
-                onClick={() => pick(f.id)}
-                aria-pressed={s}
-              >
-                <span className="profile-face__av" style={{ background: f.photoUrl ? undefined : f.colour ?? undefined }}>
-                  {f.photoUrl ? <img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
-                </span>
-                {f.dot && <span className="face-dot" aria-hidden="true" />}
-                <span className="profile-face__name">{f.name}</span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            className={'profile-face' + (value === null ? ' is-sel' : '')}
-            onClick={() => pick(null)}
-            aria-pressed={value === null}
-          >
-            <span className="profile-face__av profile-face__av--all" aria-hidden="true">
-              <Icon name="users-three-bold" size={24} />
-            </span>
-            <span className="profile-face__name">{allLabel}</span>
-          </button>
-        </div>
-      </Sheet>
+      <FaceSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        faces={faces}
+        value={value}
+        onChange={onChange}
+        allLabel={allLabel}
+        ariaLabel={ariaLabel}
+        title={title}
+      />
     </>
   )
 }

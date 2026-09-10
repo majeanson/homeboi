@@ -38,6 +38,7 @@ import { MemberPicker } from '../components/MemberPicker'
 import { FormFooter } from '../components/FormFooter'
 import { EmojiPicker, EmojiField } from '../components/EmojiPicker'
 import { FaceSelect } from '../components/FaceSelect'
+import { FaceSheet } from '../components/FaceSheet'
 import { GroupForm } from '../components/cercle/GroupForm'
 import { FamilyShareModal } from '../components/cercle/FamilyShareModal'
 import { ShareModal } from '../components/ShareModal'
@@ -143,6 +144,10 @@ import { SectionIntro } from '../components/SectionIntro'
 import { DocUploadButton } from '../components/DocUploadButton'
 import { FormScene } from '../components/FormScene'
 import { DrawPad } from '../components/DrawPad'
+import { CarnetDocs } from '../components/cercle/CarnetDocs'
+import { MealPlanPicker } from '../components/kitchen/MealPlanPicker'
+import { type MealSlot } from '../lib/mealSlots'
+import { useWeekLabeled } from '../components/kitchen/week'
 
 // A tiny inline placeholder image for the image-bearing specimens (DealCard,
 // ZoomableImg) — no network asset needed in the gallery.
@@ -704,6 +709,63 @@ function DrawPadDemo() {
         // Rien n'est écrit depuis la galerie : on referme, sans poster le PNG.
         onSave={() => setOpen(false)}
       />
+    </>
+  )
+}
+
+// The shared « pick a face » sheet. Opens on a tap like it does in the app, and the
+// third face carries a presence dot so the calm boolean accent is visible here.
+function FaceSheetDemo() {
+  const [open, setOpen] = useState(false)
+  const [value, setValue] = useState<string | null>(null)
+  // The SAME stand-ins the MemberSwitcher / FaceSelect / MemberPicker specimens use,
+  // plus a presence dot on the child face so the calm boolean accent
+  // (« un mot t'attend ») is visible here without inventing a second fixture.
+  const faces = DEMO_MEMBERS.map((m) => ({ id: m.id, name: m.displayName, colour: m.colour, dot: m.isChild }))
+  const picked = faces.find((f) => f.id === value)
+  return (
+    <>
+      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+        Ouvrir la feuille des visages
+      </button>
+      <p className="mono" style={{ color: 'var(--ink-soft)', margin: '.5rem 0 0' }}>
+        {picked ? `visage : ${picked.name}` : 'visage : Maisonnée (tout le monde)'}
+      </p>
+      <FaceSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        faces={faces}
+        value={value}
+        onChange={setValue}
+        allLabel="Toute la maisonnée"
+        ariaLabel="Qui es-tu ?"
+      />
+    </>
+  )
+}
+
+// « Mettre sur un jour » : a slot, then a day. Both halves are controlled, so the
+// specimen owns the state and shows the pick coming back out.
+function MealPlanPickerDemo() {
+  const { lang } = useLang()
+  const [slot, setSlot] = useState<MealSlot>('supper')
+  const [picked, setPicked] = useState<number | null>(null)
+  // The REAL window builder every planning surface uses — not a hand-rolled seven days.
+  // It steps by local calendar days, which is the whole reason it exists (a fixed 86 400
+  // lands a DST day at 23:00/01:00 and the picked date then matches nothing).
+  const week = useWeekLabeled(todayLocalDay(), 7, lang)
+  return (
+    <>
+      <Demo label="Le picker « place ceci sur la semaine », partagé par le « Planifier » de la fiche recette et le « Mettre sur un jour » du bassin d'idées — mêmes libellés, même vocabulaire de créneaux que la feuille Gérer, qui est le format de référence.">
+        <MealPlanPicker slot={slot} onSlot={setSlot} week={week} onPickDay={setPicked} />
+        <p className="mono" style={{ color: 'var(--ink-soft)', margin: '.5rem 0 0' }}>
+          créneau : {slot}
+          {picked ? ` · jour choisi : ${week.find((w) => w.date === picked)?.label ?? picked}` : ' · aucun jour choisi'}
+        </p>
+      </Demo>
+      <Demo label="`band` : le même picker en surface encastrée, la variante utilisée dans le pied du modal recette (l'autre, en ligne, convient sous une puce dans la liste d'idées).">
+        <MealPlanPicker slot={slot} onSlot={setSlot} week={week} onPickDay={setPicked} band />
+      </Demo>
     </>
   )
 }
@@ -3432,6 +3494,40 @@ export function DevKit() {
           />
         </Demo>
       ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'FaceSheet',
+      file: 'components/FaceSheet.tsx',
+      kw: 'visage face qui es-tu profil maisonnée feuille choisir personne pastille mot',
+      render: () => <FaceSheetDemo />,
+    },
+    {
+      cat: 'Affichage',
+      name: 'CarnetDocs',
+      file: 'components/cercle/CarnetDocs.tsx',
+      kw: 'documents pièces jointes pdf facture manuel carnet voyage vignettes liste',
+      render: () => (
+        <>
+          <Demo label="La bande de documents attachés à un carnet (facture, manuel, photo). Elle est partagée telle quelle entre Le cercle et Voyage — un vrai primitif inter-sections, et c'est pourquoi elle a rejoint cette galerie. Une tuile PDF ouvre une feuille de lecture avec un <iframe> ; une tuile image zoome en plein écran. Ici les clés sont des `.pdf` fictives : la tuile PDF se dessine sans réseau, une image demanderait une vraie clé R2.">
+            <CarnetDocs keys={['exemple-facture.pdf', 'exemple-manuel.pdf']} onRemove={() => {}} />
+          </Demo>
+          <Demo label="`variant='list'` : mêmes vignettes, mais le NOM du fichier à côté — la façon lisible de vérifier une pile de documents de voyage sur un téléphone, où des petits carrés anonymes se ressemblent tous.">
+            <CarnetDocs
+              keys={['billet-avion.pdf', 'reservation-hotel.pdf']}
+              variant="list"
+              labelFor={(k) => (k.startsWith('billet') ? 'Billet d’avion.pdf' : 'Réservation hôtel.pdf')}
+            />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'MealPlanPicker',
+      file: 'components/kitchen/MealPlanPicker.tsx',
+      kw: 'planifier repas jour créneau semaine souper dîner mettre sur un jour',
+      render: () => <MealPlanPickerDemo />,
     },
     {
       cat: 'Overlays & chrome',

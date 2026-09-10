@@ -28,7 +28,7 @@
 
 ### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
 
-- `npm run typecheck` · `npm test` (2054 in 162 files, 2026-09-09) · `npm run build` · `npm run knip` — green.
+- `npm run typecheck` · `npm test` (2055 in 162 files, 2026-09-09) · `npm run build` · `npm run knip` — green.
 - `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
@@ -184,6 +184,38 @@ per category. The 41 rows that legitimately can't have a specimen now say so, in
 words that cover almost all of them — *a route, not a primitive* · *needs live household
 data* · *a seam, not a component*. `docCounts.test.ts` now asserts the two numbers the
 doc quotes, and caught a stale one within a minute of being written.
+
+**The follow-ups, worked the same day.** The audit's own leads, each grepped before
+being believed — and two of the six turned out to be non-findings, which is the point
+of checking:
+
+- **`ProfilePicker` was a hand-copy of `FaceSelect`'s sheet** — the same `Sheet`, the
+  same `.profile-faces` grid, the same everyone tile, the same 250 ms beat; FaceSelect's
+  own comment said « mirrors ProfilePicker », a fork admitting what it is. They had
+  already drifted: only the chip marked a waiting-mot dot on a face other than the shown
+  one. Extracted to **`FaceSheet`**; ProfilePicker is now the fetch + the `useProfile`
+  binding, which is the only part that was ever its own. Same shape as the
+  `MemberSwitcher` fork — a controlled primitive plus an identity-bound sibling that
+  re-implements instead of wrapping. 212 e2e cases over that DOM, unchanged and green.
+- **`Loading` vs `Skeleton` is NOT two mechanisms for one idea** — `Skeleton.tsx`'s own
+  header carries the rule ("a skeleton is a promise about shape… which is why both still
+  exist"). But the rule lived only there, and it wasn't being applied: the routines
+  overview and the kitchen history tab are section BODIES under an already-painted tab
+  bar — exactly where a centred line jumps — and both were on `<Loading/>`. Converted.
+  The other sites were re-checked and are correct (a whole scene replaces its own
+  SceneHead, so a body skeleton there promises a shape that isn't coming). The rule is
+  now in `CLAUDE.md`'s reach-for table, where someone choosing actually looks.
+- **The two `comboOptions.tsx` files are not a duplication** — same filename, different
+  domains, each already "the one place they agree" for its own entities. Recorded so it
+  isn't re-litigated.
+- **Three components were in NEITHER list** — `CarnetDocs` (shared cercle ↔ voyage, a
+  real cross-section primitive), `MealPlanPicker`, `useAiWake`. All three documented;
+  the first two got specimens.
+- **The doc's taxonomy claim was false.** It said the primitive table was "categorised as
+  the gallery is": 5 role sections against 10 gallery categories. The real mapping is
+  written down now, and the guard holds it closed in both directions — a new category
+  must join the table, and a retired one must leave it. That is the exact route
+  « Champs & saisie » took in beside « Saisie ».
 
 > **The lesson, again, and it was mine this time.** All six assertions were proven red
 > against planted violations — but the *first* prover reported all six "green" while
