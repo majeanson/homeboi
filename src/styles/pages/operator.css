@@ -624,3 +624,12 @@ a.ledger__chore--link {
   width: 100%;
   font-size: 0.8rem;
 }
+.flipp__phase {
+  margin: 14px 0 6px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1rem;
+}
+.operator__steps li .cluster {
+  margin-top: 6px;
+}

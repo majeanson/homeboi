@@ -295,7 +295,6 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   // renders the flyers home (shipped that way for an hour; the probe that found the
   // real list view is the same one that proved a crafted list renders there).
   await expect(list).toHaveAttribute('href', 'https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
-  await expect(list).not.toHaveClass(/btn--primary/)
   await expectNoOverflow(page)
   const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
   await popup.close()
@@ -310,7 +309,7 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
 test('every pick on the list → the list door leads, and « Reprendre du début » restarts', async ({ page }) => {
   await openGrid(page, { clipped: [101, 102, 103] })
   await expect(page.locator('a.cashier__clip')).toHaveCount(0)
-  await expect(page.locator('a.cashier__flipp-list')).toHaveClass(/btn--primary/)
+  await expect(page.locator('button.cashier__copy')).toBeVisible()
   await page.getByRole('button', { name: /Reprendre du début/ }).click()
   await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 3/)
 })
@@ -323,9 +322,10 @@ test('« Ma liste Flipp » copies the picks in Flipp\'s list shape, and says so'
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await stubFlipp(page)
   await openGrid(page)
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__flipp-list').click()])
-  await popup.close()
-  await expect(page.getByText(/Rabais copiés/)).toBeVisible()
+  // Its own button (Marc: « make it a separate action ») — nothing opens.
+  await page.locator('button.cashier__copy').click()
+  // Under the row and PERSISTENT — the toast is behind the flipp.com window by then.
+  await expect(page.locator('.cashier__flipp-hint')).toContainText(/Liste copiée/)
   const text = await page.evaluate(() => navigator.clipboard.readText())
   const payload = JSON.parse(text) as { v: number; clippings: { flyerItemId: number; name: string; price: string; merchantName: string }[] }
   expect(payload.v).toBe(1)
@@ -369,10 +369,8 @@ test('every deal ended: no loop, no restart — the list door alone, still carry
   await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(4)
   await expect(page.locator('a.cashier__clip')).toHaveCount(0)
   await expect(page.locator('.cashier__clip-reset')).toHaveCount(0)
-  const list = page.locator('a.cashier__flipp-list')
-  await expect(list).toHaveClass(/btn--primary/)
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), list.click()])
-  await popup.close()
+  await expect(page.locator('a.cashier__flipp-list')).toBeVisible()
+  await page.locator('button.cashier__copy').click()
   const payload = JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as { clippings: unknown[]; items: { term: string }[] }
   expect(payload.clippings).toEqual([])
   expect(payload.items.map((i) => i.term)).toEqual(['Lait', 'Pain', 'Pommes', 'Couches', 'Oeufs'])

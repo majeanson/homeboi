@@ -621,23 +621,37 @@ export function FlippSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.operator.flippTitle} help={help} helpKey="flipp">
       <p className="operator__hint">{t.operator.flippIntro}</p>
+      {/* Two phases, in the order a household lives them: the one-time setup (the
+          copy button sits right at its first step), then every trip. Marc walked
+          exactly this on an iPhone on 2026-09-10 and the list landed in the Flipp app. */}
+      <h4 className="flipp__phase">{t.operator.flippOnceTitle}</h4>
       <ol className="operator__steps">
-        <li>{t.operator.flippStep1}</li>
-        <li>{t.operator.flippStep2}</li>
-        <li>{t.operator.flippStep3}</li>
+        <li>
+          {t.operator.flippOnce1}
+          <Cluster>
+            <button type="button" className="btn btn--primary flipp__copy" onClick={copy}>
+              {copied ? <InlineIcon name="check-bold" /> : null} {copied ? t.operator.flippBookmarkletCopied : t.operator.flippCopyBookmarklet}
+            </button>
+          </Cluster>
+          <input
+            className="input mono flipp__bookmarklet"
+            readOnly
+            value={FLIPP_BOOKMARKLET}
+            onFocus={(e) => e.target.select()}
+            aria-label={t.operator.flippBookmarkletLabel}
+          />
+        </li>
+        <li>{t.operator.flippOnce2}</li>
+        <li>{t.operator.flippOnce3}</li>
+        <li>{t.operator.flippOnce4}</li>
       </ol>
-      <Cluster>
-        <button type="button" className="btn btn--primary flipp__copy" onClick={copy}>
-          {copied ? <InlineIcon name="check-bold" /> : null} {copied ? t.operator.flippBookmarkletCopied : t.operator.flippCopyBookmarklet}
-        </button>
-      </Cluster>
-      <input
-        className="input mono flipp__bookmarklet"
-        readOnly
-        value={FLIPP_BOOKMARKLET}
-        onFocus={(e) => e.target.select()}
-        aria-label={t.operator.flippBookmarkletLabel}
-      />
+      <h4 className="flipp__phase">{t.operator.flippEachTitle}</h4>
+      <ol className="operator__steps">
+        <li>{t.operator.flippEach1}</li>
+        <li>{t.operator.flippEach2}</li>
+        <li>{t.operator.flippEach3}</li>
+      </ol>
+      <p className="operator__hint">{t.operator.flippWhat}</p>
     </OperatorSection>
   )
 }

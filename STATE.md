@@ -144,6 +144,45 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### « The flow end to end works, I have a list on my Flipp » — and then the words for it (2026-09-10, night, last)
+
+Marc, iPhone, Flipp app installed, account made with « Connexion avec Google »:
+bookmark installed in Safari, signed in on flipp.com, « Ma liste Flipp » tapped in
+Babillard, the bookmark run and pasted — **« i have a list on my flipp app at the
+end »**. That is the half no probe could exercise (a Google account has no Flipp
+password; test 4 of the contract waits for a throwaway email one), confirmed by
+the only channel that could: the phone. `joinLocalList` does what their code says.
+
+Three things his run changed, each shipped tonight:
+
+- **« i dont see the notice »** — the copy's confirmation was a toast that fires
+  while the flipp.com window COVERS the page and dismisses itself before anyone
+  comes back; a confirmation nobody can see. The paste had worked. The word now
+  lives under the row and stays (« Liste copiée ✓ — dans Safari, sur flipp.com,
+  lance le signet… »), with an honest « le téléphone a refusé la copie » branch.
+- **« make it a separate action »** — copying was the list door's side effect.
+  Now **« Copier pour Flipp »** (primary) is its own button and **« Ma liste
+  Flipp »** only opens their list; the tap-by-tap « Ajouter à Flipp · n de N »
+  loop wraps under them at 390px. A side effect nobody sees is one nobody trusts.
+- **« can we reinforce and explain, a full step by step »** — one text, three
+  doors: the Réglages card (liste ▸ Magasinage ▸ « Ma liste Flipp ») is now two
+  numbered phases, **« Une seule fois »** (copy the bookmark — the button sits at
+  step 1 — Safari, add bookmark, edit its address, sign in) and **« À chaque
+  épicerie »** (Copier pour Flipp → Signets → coller → the Flipp app), plus one
+  line on what Flipp receives; a point on the « Rabais » guide card says the same;
+  and a « Comment ça marche » chip under the till's confirmation deep-links to
+  the card (`?tab=liste&focus=flipp`). No 33rd guide card; the point rides `deals`.
+
+Earlier the same evening, from the same phone: every deal on his list had ended,
+so the loop was empty — and the row still offered « Reprendre du début », a
+restart of nothing (`fd2fdb6`: no loop → no restart; the list door alone, still
+carrying the whole list as typed items).
+
+Guards: `cashier.spec.ts` 16/16 (the copy button, the persistent line, the
+all-ended state, the how-it-works chip's href); `flippList.test.ts` 14 on the
+bookmarklet string; contract 3/3 live; `lo-settings-liste-shop@360` on the
+longer card; `operatorHelpCoverage`, `discovery`, `guideLinks`, `docCounts` green.
+
 ### From the iPhone: an ended deal is a dead door — and the WHOLE list goes to Flipp now (2026-09-10, night, later)
 
 Marc, with the Flipp app installed and an account made, from the phone: his third

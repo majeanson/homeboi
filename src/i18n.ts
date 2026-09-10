@@ -2504,12 +2504,18 @@ export const FR = {
     flippTitle: 'Ma liste Flipp',
     flippIntro:
       'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Une fois installé : à la caisse, touche « Ma liste Flipp », puis sur Flipp lance le signet et colle — toute ta liste y passe, rabais choisis et articles.',
-    flippStep1: 'Copie le signet ci-dessous.',
-    flippStep2: 'Dans le navigateur du téléphone, ajoute n’importe quelle page aux signets, renomme-la « Coller de Babillard » et remplace son adresse par ce que tu as copié.',
-    // « Dans Safari / Chrome » on purpose: from Babillard installed as an app, a link
-    // opens in an in-app browser window that has no bookmarks (seen on the iPhone,
-    // 2026-09-10). The paste works there too — it is system-wide.
-    flippStep3: 'Dans Safari ou Chrome (pas la fenêtre qui s’ouvre depuis Babillard), va sur flipp.com et ouvre ce signet : il demande de coller, puis affiche ta liste. Connecté à Flipp, elle se retrouve aussi dans leur app.',
+    // The walkthrough, in the words a household reads on the phone (Marc did the
+    // whole loop on an iPhone on 2026-09-10 and the list landed in the Flipp app).
+    flippOnceTitle: 'Une seule fois',
+    flippOnce1: 'Touche « Copier le signet » ci-dessous.',
+    flippOnce2: 'Ouvre Safari (ou Chrome) — pas la fenêtre qui s’ouvre depuis Babillard — et va sur flipp.com. Partage ▸ « Ajouter un signet », nomme-le « Coller de Babillard ».',
+    flippOnce3: 'Signets ▸ Modifier ▸ touche « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié (elle commence par javascript:). Terminé.',
+    flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite). C’est ce qui envoie la liste dans l’app Flipp.',
+    flippEachTitle: 'À chaque épicerie',
+    flippEach1: 'Dans Babillard : La liste ▸ « Montrer à la caisse » ▸ « Copier pour Flipp ». Une ligne sous le bouton confirme.',
+    flippEach2: 'Dans Safari, sur flipp.com : Signets ▸ « Coller de Babillard » ▸ colle dans la boîte ▸ OK. La page se recharge avec ta liste.',
+    flippEach3: 'Ouvre l’app Flipp ▸ Liste : tout y est.',
+    flippWhat: 'Ce que Flipp reçoit : les rabais choisis avec leur photo, classés par magasin ; le reste de la liste en articles ; rien de ce qui est déjà coché.',
     flippCopyBookmarklet: 'Copier le signet',
     flippBookmarkletCopied: 'Signet copié',
     flippBookmarkletLabel: 'Adresse du signet',
@@ -3280,10 +3286,13 @@ export const FR = {
     clipNext: (n: number, total: number) => `Ajouter à Flipp · ${n} de ${total}`,
     clipAgain: 'Reprendre du début',
     flippList: 'Ma liste Flipp',
+    copyForFlipp: 'Copier pour Flipp',
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
-    flippCopied: 'Rabais copiés — sur Flipp, lance le signet « Coller de Babillard ».',
+    flippCopied: 'Liste copiée ✓ — dans Safari, sur flipp.com, lance le signet « Coller de Babillard » et colle.',
+    flippHow: 'Comment ça marche',
+    flippCopyRefused: 'Le téléphone a refusé la copie — reviens ici et touche « Ma liste Flipp » de nouveau.',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',

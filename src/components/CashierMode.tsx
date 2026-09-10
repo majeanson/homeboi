@@ -11,6 +11,7 @@ import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { Cluster } from './Layout'
+import { Chip } from './Chip'
 import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
 
@@ -76,24 +77,28 @@ export function CashierMode({
   const clippable = picks.filter((p) => p.deal.id != null && !isEnded(p))
   const clipDone = clippable.filter((p) => clipped.includes(p.deal.id!)).length
   const clipNext = clippable.find((p) => !clipped.includes(p.deal.id!))
-  // « Ma liste Flipp » also COPIES the picks in Flipp's own list shape, for the
-  // bookmark set up in Réglages (lib/flippList): on flipp.com the bookmark pastes
-  // them straight into « Ma liste ». One tap opens their list and readies the paste;
-  // a phone without the bookmark loses nothing. Said once in the notice bar — the
-  // clipboard is invisible otherwise. Clipboard refused (no gesture, no permission):
-  // the link still opens, silently — a notice about a copy that did not happen
-  // would be a lie.
+  // « Copier pour Flipp » copies the list in Flipp's own shape, for the bookmark set
+  // up in Réglages (lib/flippList): on flipp.com the bookmark pastes it straight
+  // into « Ma liste ». Its own button — it was the list door's side effect for an
+  // hour, and a side effect nobody sees is one nobody trusts.
   // THE WHOLE LIST goes (Marc: « my full list exported in my flipp app »): a row
   // with a live clipping goes as that clipping; every other unchecked row — plain,
   // or its deal ended, or its store hidden at the till — as a typed item.
   const clippedRows = new Set(clippable.map((p) => p.itemId))
   const terms = rows.filter((r) => !r.checked_at && !clippedRows.has(r.id)).map((r) => r.text)
+  // The notice fires while the flipp.com window COVERS this page and is gone before
+  // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
+  // the paste had worked). So the word lives under the button, and stays.
   const notice = useNotice()
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'refused'>('idle')
   const copyForFlipp = () => {
     navigator.clipboard
       ?.writeText(flippListPayload(clippable, terms))
-      .then(() => notice(t.shop.flippCopied))
-      .catch(() => {})
+      .then(() => {
+        setCopyState('copied')
+        notice(t.shop.flippCopied)
+      })
+      .catch(() => setCopyState('refused'))
   }
 
   // Opened at home on wifi → warm each pick's flyer + clipping images so the
@@ -154,9 +159,17 @@ export function CashierMode({
           {postal && (clippable.length > 0 || terms.length > 0) && (
             <div className="cashier__flipp">
               <Cluster className="cashier__flipp-row">
+                {/* Order = reading order at 390px, where the row wraps: the bookmark
+                    path (copy, then their list) first, the tap-by-tap loop under it. */}
+                <button type="button" className="btn btn--primary cashier__copy" onClick={copyForFlipp}>
+                  <InlineIcon name="check-bold" /> {t.shop.copyForFlipp}
+                </button>
+                <a className="btn cashier__flipp-list" href={flippListUrl(postal)!} target="_blank" rel="noopener noreferrer">
+                  <InlineIcon name="shopping-bag-bold" /> {t.shop.flippList}
+                </a>
                 {clipNext ? (
                   <a
-                    className="btn btn--primary cashier__clip"
+                    className="btn cashier__clip"
                     href={flippItemUrl(clipNext.deal.id, postal)!}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -169,17 +182,14 @@ export function CashierMode({
                     <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.clipAgain}
                   </button>
                 ) : null /* nothing live to step through (every deal ended) — no loop, no restart; the list door alone */}
-                {/* Primary once the loop is done — the list is then the thing to show. */}
-                <a
-                  className={'btn cashier__flipp-list' + (clipNext ? '' : ' btn--primary')}
-                  href={flippListUrl(postal)!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={copyForFlipp}
-                >
-                  <InlineIcon name="shopping-bag-bold" /> {t.shop.flippList}
-                </a>
               </Cluster>
+              {copyState !== 'idle' && (
+                <p className="cashier__flipp-hint mono">
+                  {copyState === 'copied' ? t.shop.flippCopied : t.shop.flippCopyRefused}{' '}
+                  {/* The whole walkthrough is one Réglages card away (DISCOVERY: ?focus= names the card). */}
+                  <Chip to="/settings?tab=liste&focus=flipp">{t.shop.flippHow}</Chip>
+                </p>
+              )}
             </div>
           )}
           <ul className="cashier__grid">

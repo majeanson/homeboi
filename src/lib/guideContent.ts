@@ -1780,6 +1780,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'The card shows the flyer image, the store, the price and the dates — enough to claim the price-match, proof in hand.',
         },
       },
+      {
+        label: { fr: 'Ta liste dans Flipp', en: 'Your list in Flipp' },
+        detail: {
+          fr: 'Une seule fois : dans Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp », copie le signet ; dans Safari, ajoute flipp.com aux signets, nomme-le « Coller de Babillard » et remplace son adresse par ce que tu as copié ; connecte-toi sur flipp.com. À chaque épicerie : « Montrer à la caisse » ▸ « Copier pour Flipp », puis dans Safari sur flipp.com ouvre le signet et colle — ta liste est dans Flipp, sur le web et dans leur app.',
+          en: 'Once: in Settings ▸ The list ▸ Shopping ▸ “My Flipp list”, copy the bookmark; in Safari, bookmark flipp.com, name it “Paste from Babillard” and replace its address with what you copied; sign in on flipp.com. Every trip: “Show the cashier” ▸ “Copy for Flipp”, then in Safari on flipp.com open the bookmark and paste — your list is in Flipp, on the web and in their app.',
+        },
+        why: {
+          fr: 'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Les rabais choisis arrivent avec leur photo, par magasin ; le reste de la liste en articles ; rien de ce qui est coché.',
+          en: 'Flipp lets nothing fill its list from outside — except a bookmark that runs on flipp.com. Chosen deals arrive with their photo, by store; the rest of the list as items; nothing already checked.',
+        },
+      },
     ],
   },
   {
