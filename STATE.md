@@ -144,6 +144,51 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Both ways, and a week later (2026-09-10, night — the last four)
+
+Marc: « what else could we do towards this » — and picked all four. Each shipped
+with its guard red on a plant, in one commit:
+
+**The way back: Flipp → Babillard.** The same bookmark, second answer. Leave the
+paste box empty and OK — or say « Annuler » when it offers to paste — and it reads
+Flipp's list and opens `<this Babillard>/liste#flipp=<base64url>`: a hash (never a
+server log), OUR origin (no clipboard — we control the reader). `lib/flippImport`
+plans what would change against the live list through the picks seam — a clipping
+made IN Flipp becomes the deal on its matching line (`stageDeal`, never a duplicate
+line), a typed item not here becomes a line (`ensureListLine`), anything CHECKED at
+the store is checked here (a mark, never a logged buy) — and asks first, in words
+that say the consequence: « Rapporter de Flipp sur ta liste ? 1 rabais accroché,
+1 article ajouté, 1 coché — rien n'est retiré. » A guest gets nothing written and
+nothing asked; the hash is consumed before the answer so a refresh cannot ask
+twice. The bookmark now carries the household's origin (`flippBookmarklet(origin)`,
+refused unless it is a plain origin — a quote there would be a bookmark that
+breaks). `e2e/flipp-import.spec.ts` reads the WRITES: none before « Rapporter »,
+none after « Annuler », then exactly the three; red on the plant (the answer
+ignored → a write before it).
+
+**A week later: refresh the ended deals on the till.** His list that night: every
+staged deal from an earlier flyer, a grid of « Aubaine terminée », nothing to hold
+up or send. One button — « 3 rabais terminés · chercher ceux de cette semaine » —
+re-runs the auto-pick lookup for exactly those lines (`refreshEndedDeals` in
+lib/picks: this week's best deal replaces the old one; a line with none is
+UNSTAGED rather than kept as a week-old proof); the board refetch redraws the
+tiles. Not for a guest. Red on the plant (the lookup found, nothing staged).
+
+**One less paste.** The bookmark reads the clipboard first (`readText`, one
+« Coller » permission tap on a phone): a Babillard list there → « Coller ta liste
+Babillard dans Flipp ? » OK = paste, Annuler = the way back; anything else, or
+no permission → the prompt as before. Twenty unit cases run the exact string:
+both directions, both entries, refusals, the readable twin.
+
+**The other phones.** The Réglages card gained « De Flipp vers Babillard » and a
+folded « Autres chemins »: Android Chrome (a bookmark run by typing its name in
+the address bar) and an iOS Shortcut (« Exécuter JavaScript sur la page web »
+from the share sheet, for whoever would rather not edit a bookmark's address).
+Longer card, still one screen's worth of steps; `lo-settings-liste-shop@360`.
+
+Live contract re-run with the v2 body: 2/2 (the clipboard path rejects in a
+headless context and falls to the prompt, as designed).
+
 ### « The flow end to end works, I have a list on my Flipp » — and then the words for it (2026-09-10, night, last)
 
 Marc, iPhone, Flipp app installed, account made with « Connexion avec Google »:

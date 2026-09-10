@@ -1,5 +1,5 @@
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
-import { FLIPP_BOOKMARKLET_BODY, flippListPayload, type FlippPayload } from '../src/lib/flippList'
+import { flippBookmarkletBody, flippListPayload, type FlippPayload } from '../src/lib/flippList'
 import type { Deal, Pick } from '../src/lib/deals'
 
 // THE FLIPP LIVE CONTRACT — what flipp.com must still do for « Ma liste Flipp » to
@@ -103,13 +103,15 @@ async function runBookmarklet(page: Page, payload: string) {
   await page.evaluate(
     ([body, pasted]) => {
       window.prompt = () => pasted
+      window.confirm = () => true
       window.alert = (m: string) => {
         throw new Error('bookmarklet refused the payload: ' + m)
       }
       // eslint-disable-next-line no-eval
       eval(body)
     },
-    [FLIPP_BOOKMARKLET_BODY, payload] as const,
+    // A headless context has no clipboard permission: readText rejects → the prompt.
+    [flippBookmarkletBody('https://babillard.invalid'), payload] as const,
   )
   await page.waitForURL(/\/liste_dachats/, { timeout: 60_000 })
   await page.waitForTimeout(2_500)

@@ -394,6 +394,17 @@ export const EN: typeof FR = {
   list: {
     // The contextual ＋ sheet (Liste section).
     addTitle: 'Add to the list',
+    flippImportConfirm: (deals: number, lines: number, checks: number) =>
+      `Bring this back from Flipp onto your list? ${[
+        deals ? `${deals} deal${deals > 1 ? 's' : ''} attached` : '',
+        lines ? `${lines} item${lines > 1 ? 's' : ''} added` : '',
+        checks ? `${checks} checked` : '',
+      ]
+        .filter(Boolean)
+        .join(', ')} — nothing is removed.`,
+    flippImportNothing: 'Nothing new from Flipp — your list already has all of it.',
+    flippImportGo: 'Bring back',
+    flippImported: (n: number) => `Brought back from Flipp: ${n} change${n > 1 ? 's' : ''} on your list.`,
     addPlaceholder: 'Add to the list… (e.g. milk)',
     addPlaceholderShort: 'E.g. milk, bread…',
     check: 'Check off',
@@ -2243,6 +2254,11 @@ export const EN: typeof FR = {
     flippEach2: 'In Safari, on flipp.com: Bookmarks ▸ “Paste from Babillard” ▸ paste into the box ▸ OK. The page reloads with your list.',
     flippEach3: 'Open the Flipp app ▸ List: it is all there.',
     flippWhat: 'What Flipp receives: your chosen deals with their photo, grouped by store; the rest of the list as items; nothing already checked.',
+    flippBackTitle: 'From Flipp back to Babillard',
+    flippBack1: 'On flipp.com, run the bookmark and leave the box empty, then OK (or “Cancel” when it offers to paste): Babillard opens and shows what would change — deals attached, items added, checked — before writing anything.',
+    flippOtherTitle: 'Other paths',
+    flippAndroid: 'Android (Chrome): bookmark any page, edit it (name “Paste from Babillard”, address = the copied bookmark). To run it on flipp.com, type “Paste” in the address bar and pick the bookmark.',
+    flippShortcut: 'iPhone, without touching bookmarks: the Shortcuts app ▸ new shortcut ▸ “Run JavaScript on Web Page” ▸ paste the bookmark’s code without the leading “javascript:” ▸ turn on “Show in Share Sheet”. On flipp.com: Share ▸ your shortcut.',
     flippCopyBookmarklet: 'Copy the bookmark',
     flippBookmarkletCopied: 'Bookmark copied',
     flippBookmarkletLabel: 'Bookmark address',
@@ -2982,6 +2998,9 @@ export const EN: typeof FR = {
     showAgain: 'Show all again',
     matchFor: 'Price for',
     clearPicks: 'Clear',
+    refreshEnded: (n: number) => `${n} ended deal${n > 1 ? 's' : ''} · find this week’s`,
+    refreshing: 'Finding this week’s deals…',
+    refreshed: (found: number, dropped: number) => `${found} found${dropped ? ` · ${dropped} with no deal this week` : ''}`,
     browse: 'Browse flyers',
     browseShort: 'Flyers',
     browseTitle: 'Flyers',

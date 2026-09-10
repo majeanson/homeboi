@@ -328,6 +328,9 @@
 }
 /* The copy's word, under the row, only AFTER the tap — it must survive the window
    that covers the page (a toast does not). */
+.cashier__refresh-row {
+  margin: 0 0 12px;
+}
 .cashier__flipp-hint {
   margin: 8px 0 0;
   text-align: center;

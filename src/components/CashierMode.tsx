@@ -6,6 +6,8 @@ import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl,
 import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
 import { flippListPayload } from '../lib/flippList'
+import { refreshEndedDeals } from '../lib/picks'
+import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
@@ -73,8 +75,23 @@ export function CashierMode({
   // list row already knows (« Aubaine terminée », lib/deals dealEnded: the validTo
   // day fully past); the till now reads the same fact: no item page, not in the
   // loop, not in the paste — and the card says so instead of the dates.
+  const notice = useNotice()
   const isEnded = (p: Pick) => dealEnded(p.deal.validTo)
   const clippable = picks.filter((p) => p.deal.id != null && !isEnded(p))
+  // REFRESH THE ENDED ONES (2026-09-10): a week after « Choisir les meilleurs » the
+  // grid is all « Aubaine terminée » — Marc's list that night. One tap re-runs this
+  // week's best price for exactly those lines (lib/picks refreshEndedDeals); a line
+  // with none is unstaged rather than kept as a week-old proof. Writes → not for a
+  // guest. The board refetch behind stageDeal redraws the tiles.
+  const endedRows = picks.filter(isEnded).map((p) => rows.find((r) => r.id === p.itemId)).filter((r): r is ListItem => !!r)
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshEnded = async () => {
+    if (refreshing) return
+    setRefreshing(true)
+    const { found, dropped } = await refreshEndedDeals(qc, endedRows)
+    setRefreshing(false)
+    notice(t.shop.refreshed(found, dropped))
+  }
   const clipDone = clippable.filter((p) => clipped.includes(p.deal.id!)).length
   const clipNext = clippable.find((p) => !clipped.includes(p.deal.id!))
   // « Copier pour Flipp » copies the list in Flipp's own shape, for the bookmark set
@@ -89,7 +106,6 @@ export function CashierMode({
   // The notice fires while the flipp.com window COVERS this page and is gone before
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
-  const notice = useNotice()
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'refused'>('idle')
   const copyForFlipp = () => {
     navigator.clipboard
@@ -156,6 +172,13 @@ export function CashierMode({
 
         <div className="cashier__grid-wrap">
           <p className="cashier__hint mono">{t.shop.tapToShow}</p>
+          {endedRows.length > 0 && !isGuest() && (
+            <Cluster className="cashier__flipp-row cashier__refresh-row">
+              <button type="button" className="btn cashier__refresh" onClick={refreshEnded} disabled={refreshing}>
+                <InlineIcon name="arrow-counter-clockwise-bold" /> {refreshing ? t.shop.refreshing : t.shop.refreshEnded(endedRows.length)}
+              </button>
+            </Cluster>
+          )}
           {postal && (clippable.length > 0 || terms.length > 0) && (
             <div className="cashier__flipp">
               <Cluster className="cashier__flipp-row">

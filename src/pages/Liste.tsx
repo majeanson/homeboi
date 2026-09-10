@@ -30,6 +30,7 @@ import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
 import { money, dealDate, dealEnded, type Deal } from '../lib/deals'
 import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms, sameItemName } from '../lib/picks'
+import { useFlippImport } from '../lib/flippImport'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
@@ -378,6 +379,9 @@ export function Liste() {
   // before un-hiding so the poll can't flash a just-removed row back.
   const removal = useDeferredRemoval(BOARD_KEY)
   const qc = useQueryClient()
+  // The way back from Flipp: `/liste#flipp=…` (lib/flippImport) — shows what would
+  // change, asks, then stages / adds / checks through the picks seam.
+  useFlippImport()
   // SIMPLE ↔ AVANCÉ (lib/listeMode) — the same device-local flag « Les notes » uses.
   const advanced = useListeAdvanced()
   const detail = useEntityDetail()

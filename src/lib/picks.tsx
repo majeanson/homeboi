@@ -264,3 +264,46 @@ async function stageDealNow(qc: QueryClient, name: string, deal: Deal): Promise<
 export async function unstageDeal(qc: QueryClient, itemId: string): Promise<void> {
   await writeWith(qc, 'list', { method: 'PATCH', body: { id: itemId, deal: null }, affectedKeys: [BOARD_KEY] })
 }
+
+// Check a line (a MARK — the item stays on the list; « Vider les cochés » is what
+// logs a buy). The way back from Flipp (lib/flippImport) checks here what was
+// checked there. Same PATCH the list page's own toggle sends; no optimistic flip —
+// the caller refreshes the board through `affectedKeys`. Resolves false when the
+// line is gone server-side (a stale frame) instead of throwing.
+export async function checkListLine(qc: QueryClient, id: string): Promise<boolean> {
+  try {
+    await writeWith(qc, 'list', { method: 'PATCH', body: { id, checked: true }, affectedKeys: [BOARD_KEY] })
+    return true
+  } catch {
+    return false
+  }
+}
+
+// REFRESH THE ENDED DEALS (2026-09-10). A week after « Choisir les meilleurs », every
+// staged deal has ended and the till shows a grid of « Aubaine terminée »: nothing to
+// hold up, nothing to send to Flipp. For each of those lines, the same lookup the
+// auto-pick tile runs (`/api/deals?q=&terms=`): this week's best deal replaces the
+// old one on the line; a line with NO deal this week is unstaged — the honest
+// state, rather than a proof that is a week old. Returns what happened, for the
+// notice. Sequential on purpose (one lookup at a time, like the tile).
+export async function refreshEndedDeals(qc: QueryClient, rows: ListItem[]): Promise<{ found: number; dropped: number }> {
+  let found = 0
+  let dropped = 0
+  for (const row of rows) {
+    try {
+      const terms = parseTerms(row.search_terms)
+      const qs = `deals?q=${encodeURIComponent(row.text)}${terms.length ? `&terms=${encodeURIComponent(terms.join(','))}` : ''}`
+      const r = await api<{ deals: Deal[] }>(qs)
+      if (r.deals[0]) {
+        await stageDeal(qc, row.text, r.deals[0])
+        found++
+      } else {
+        await unstageDeal(qc, row.id)
+        dropped++
+      }
+    } catch {
+      /* a lookup that fails leaves the line as it was — the next tap retries */
+    }
+  }
+  return { found, dropped }
+}

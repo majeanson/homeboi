@@ -375,3 +375,28 @@ test('every deal ended: no loop, no restart — the list door alone, still carry
   expect(payload.clippings).toEqual([])
   expect(payload.items.map((i) => i.term)).toEqual(['Lait', 'Pain', 'Pommes', 'Couches', 'Oeufs'])
 })
+
+// REFRESH THE ENDED DEALS. A week after « Choisir les meilleurs » the grid is all
+// « Aubaine terminée » (Marc's list, 2026-09-10). One tap re-runs this week's best
+// price for exactly those lines — read from the WRITE: the mock's /api/deals answers
+// its Lait deal (id 101) to any query, so the ended « Couches » line (l4) gets it
+// PATCHed on, and the live lines are never touched.
+test('« rabais terminés · chercher ceux de cette semaine » re-stages only the ended lines', async ({ page }) => {
+  const writes: { id?: string; deal?: { id: number } | null }[] = []
+  page.on('request', (r) => {
+    if (r.method() === 'PATCH' && new URL(r.url()).pathname === '/api/list') writes.push(JSON.parse(r.postData() ?? '{}'))
+  })
+  await openGrid(page)
+  const btn = page.locator('button.cashier__refresh')
+  await expect(btn).toHaveText(/1 rabais terminé · chercher ceux de cette semaine/)
+  await btn.click()
+  await expect.poll(() => writes.length, { timeout: 10_000 }).toBeGreaterThanOrEqual(1)
+  expect(writes).toEqual([{ id: 'l4', deal: expect.objectContaining({ id: 101 }) }])
+  await expect(page.getByText(/1 retrouvé/)).toBeVisible()
+})
+
+test('a guest sees no refresh button (it writes)', async ({ page }) => {
+  await openGrid(page, { guest: true })
+  await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(1)
+  await expect(page.locator('button.cashier__refresh')).toHaveCount(0)
+})

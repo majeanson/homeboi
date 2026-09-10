@@ -459,6 +459,18 @@ export const FR = {
   list: {
     // The contextual ＋ sheet (Liste section).
     addTitle: 'Ajouter à la liste',
+    // The way back from Flipp (lib/flippImport): what would change, asked first.
+    flippImportConfirm: (deals: number, lines: number, checks: number) =>
+      `Rapporter de Flipp sur ta liste ? ${[
+        deals ? `${deals} rabais accroché${deals > 1 ? 's' : ''}` : '',
+        lines ? `${lines} article${lines > 1 ? 's' : ''} ajouté${lines > 1 ? 's' : ''}` : '',
+        checks ? `${checks} coché${checks > 1 ? 's' : ''}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ')} — rien n’est retiré.`,
+    flippImportNothing: 'Rien de nouveau depuis Flipp — ta liste a déjà tout ça.',
+    flippImportGo: 'Rapporter',
+    flippImported: (n: number) => `Rapporté de Flipp : ${n} changement${n > 1 ? 's' : ''} sur ta liste.`,
     addPlaceholder: 'Ajouter à la liste… (ex. lait)',
     // Narrow phone input: the field sits BESIDE its own « Ajouter » button, so a
     // placeholder that repeats the verb both truncates mid-word (« Ajouter… (ex. l »)
@@ -2516,6 +2528,12 @@ export const FR = {
     flippEach2: 'Dans Safari, sur flipp.com : Signets ▸ « Coller de Babillard » ▸ colle dans la boîte ▸ OK. La page se recharge avec ta liste.',
     flippEach3: 'Ouvre l’app Flipp ▸ Liste : tout y est.',
     flippWhat: 'Ce que Flipp reçoit : les rabais choisis avec leur photo, classés par magasin ; le reste de la liste en articles ; rien de ce qui est déjà coché.',
+    // The way back, and the other phones.
+    flippBackTitle: 'De Flipp vers Babillard',
+    flippBack1: 'Sur flipp.com, lance le signet et laisse la boîte vide, puis OK (ou « Annuler » quand il propose de coller) : Babillard s’ouvre et te montre ce qui changerait — rabais accrochés, articles ajoutés, cochés — avant d’écrire quoi que ce soit.',
+    flippOtherTitle: 'Autres chemins',
+    flippAndroid: 'Android (Chrome) : ajoute n’importe quelle page aux favoris, modifie-la (nom « Coller de Babillard », adresse = le signet copié). Pour la lancer sur flipp.com, tape « Coller » dans la barre d’adresse et choisis le favori.',
+    flippShortcut: 'iPhone, sans toucher aux signets : l’app Raccourcis ▸ nouveau raccourci ▸ « Exécuter JavaScript sur la page web » ▸ colle le code du signet sans le « javascript: » du début ▸ active « Afficher dans la feuille de partage ». Sur flipp.com : Partager ▸ ton raccourci.',
     flippCopyBookmarklet: 'Copier le signet',
     flippBookmarkletCopied: 'Signet copié',
     flippBookmarkletLabel: 'Adresse du signet',
@@ -3330,6 +3348,12 @@ export const FR = {
     showAgain: 'Tout réafficher',
     matchFor: 'Prix pour',
     clearPicks: 'Vider',
+    // The ended-deals refresh on the till (2026-09-10): a week later the grid is all
+    // « Aubaine terminée » — one tap re-runs this week's best price for those lines.
+    refreshEnded: (n: number) => `${n} rabais terminé${n > 1 ? 's' : ''} · chercher ceux de cette semaine`,
+    refreshing: 'Je cherche les rabais de cette semaine…',
+    refreshed: (found: number, dropped: number) =>
+      `${found} retrouvé${found > 1 ? 's' : ''}${dropped ? ` · ${dropped} sans rabais cette semaine` : ''}`,
     browse: 'Parcourir les circulaires',
     browseShort: 'Circulaires',
     browseTitle: 'Les circulaires',

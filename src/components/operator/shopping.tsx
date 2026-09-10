@@ -17,7 +17,8 @@ import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { Cluster } from '../Layout'
-import { FLIPP_BOOKMARKLET } from '../../lib/flippList'
+import { flippBookmarklet } from '../../lib/flippList'
+import { Disclosure } from '../Disclosure'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -609,9 +610,11 @@ function GhostRow({
 export function FlippSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const [copied, setCopied] = useState(false)
+  // THIS household's Babillard: the way back lands here (lib/flippList's one hole).
+  const bookmarklet = flippBookmarklet(window.location.origin)
   async function copy() {
     try {
-      await navigator.clipboard.writeText(FLIPP_BOOKMARKLET)
+      await navigator.clipboard.writeText(bookmarklet)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -636,7 +639,7 @@ export function FlippSection({ help }: { help?: HelpMode }) {
           <input
             className="input mono flipp__bookmarklet"
             readOnly
-            value={FLIPP_BOOKMARKLET}
+            value={bookmarklet}
             onFocus={(e) => e.target.select()}
             aria-label={t.operator.flippBookmarkletLabel}
           />
@@ -652,6 +655,13 @@ export function FlippSection({ help }: { help?: HelpMode }) {
         <li>{t.operator.flippEach3}</li>
       </ol>
       <p className="operator__hint">{t.operator.flippWhat}</p>
+      <h4 className="flipp__phase">{t.operator.flippBackTitle}</h4>
+      <p className="operator__hint">{t.operator.flippBack1}</p>
+      {/* Folded: most households have one phone, and it is the one above. */}
+      <Disclosure label={t.operator.flippOtherTitle}>
+        <p className="operator__hint">{t.operator.flippAndroid}</p>
+        <p className="operator__hint">{t.operator.flippShortcut}</p>
+      </Disclosure>
     </OperatorSection>
   )
 }

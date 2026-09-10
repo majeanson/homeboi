@@ -1,6 +1,6 @@
 import type { Pick } from './deals'
 
-// « MA LISTE FLIPP », FILLED FROM HERE — through Flipp's own storage, by a bookmarklet.
+// « MA LISTE FLIPP », BOTH WAYS — through Flipp's own storage, by a bookmarklet.
 //
 // Marc, 2026-09-10: « any way to populate the localstorage with what they want? »
 // Probed against flipp.com in a real browser, and yes, with one boundary that the
@@ -9,30 +9,32 @@ import type { Pick } from './deals'
 // every page load. No page on our origin can write it — same-origin policy — but a
 // bookmarklet RUNS on theirs. So the loop is:
 //
-//   1. Babillard copies the list (« Ma liste Flipp » on the till grid copies, then
-//      opens their list page);
-//   2. on flipp.com the household runs the one-time bookmark below, pastes, and
-//      Flipp's list page renders it — clippings with their photo under their store,
-//      plain lines as typed items under « Ma liste »;
+//   1. Babillard copies the list (« Copier pour Flipp » on the till grid);
+//   2. on flipp.com the household runs the one-time bookmark below — it reads the
+//      clipboard itself when the phone allows, else asks for a paste — and Flipp's
+//      list page renders it: clippings with their photo under their store, plain
+//      lines as typed items under « Ma liste »;
 //   3. LOGGED IN on flipp.com, Flipp itself then merges a local list into the account
 //      (`joinLocalList` → `createAllItemOps`, the path they wrote for "added while
-//      logged out, then signed in"), which is how the PHONE APP gets it. No token,
-//      no API of theirs is ever called by us.
+//      logged out, then signed in"), which is how the PHONE APP gets it. Confirmed
+//      on Marc's iPhone the same night. No token, no API of theirs is ever called.
 //
-// THE WHOLE LIST, not just the deals (Marc: « so I have my full list exported in my
-// flipp app »). Two kinds of thing in their storage, both dumped from a real session
-// on 2026-09-10: `flyerItemClippings[]` = `SLFlyerItemClipping` (`id` is
-// `item-clipping-<flyerItemId>`, `price` a STRING) and `listItems[]` = `SLListItem`
-// (`{ id, term, checked }`, unique by term; their own id is
+// THE WAY BACK (same bookmark, second answer): leave the paste box empty — or say
+// « Annuler » when it offers to paste — and it reads Flipp's list and OPENS Babillard
+// with it in the URL (`/liste#flipp=…`). No clipboard needed there: we control the
+// reader (lib/flippImport), which shows what would change and asks before writing.
+//
+// THE WHOLE LIST, not just the deals. Two kinds of thing in their storage, both
+// dumped from a real session on 2026-09-10: `flyerItemClippings[]` = `SLFlyerItemClipping`
+// (`id` is `item-clipping-<flyerItemId>`, `price` a STRING) and `listItems[]` =
+// `SLListItem` (`{ id, term, checked }`, unique by term; their own id is
 // `<term lowercased, spaces stripped>-<uuid>`, "clobbered by the server on save").
-// A list line with a LIVE clipping goes as the clipping (that clipping IS the line);
-// every other unchecked line goes as a typed item — including a line whose deal
-// has ended, which the till no longer shows as a deal at all.
 //
 // Fragile by nature — their storage schema is private and may change — and the
-// failure mode is benign: an empty list, never a broken page. The bookmarklet
-// refuses anything that is not a Babillard payload, never touches their `photos` or
-// `ecomItems`, and only ever ADDS to their typed items.
+// failure mode is benign: an empty list, never a broken page. e2e/flipp-live.spec.ts
+// checks the real site weekly. The bookmarklet refuses anything that is not a
+// Babillard payload, never touches their `photos` or `ecomItems`, and only ever ADDS
+// to their typed items.
 
 /** One clipping, in Flipp's own list-storage shape. */
 export interface FlippClipping {
@@ -57,13 +59,33 @@ export interface FlippItem {
   term: string
 }
 
+/** Babillard → Flipp: what « Copier pour Flipp » puts on the clipboard. */
 export interface FlippPayload {
   v: 1
   clippings: FlippClipping[]
   items: FlippItem[]
 }
 
-/** The text « Ma liste Flipp » puts on the clipboard: every pick that carries a
+/** Flipp → Babillard: what the bookmark's second answer puts in `/liste#flipp=`. */
+export interface FlippExport {
+  v: 1
+  from: 'flipp'
+  clippings: {
+    flyerItemId: number
+    name: string
+    flyerId: number | null
+    price: string | null
+    merchantId: number | null
+    merchantName: string
+    merchantLogoUrl: string | null
+    thumbnailUrl: string | null
+    validTo: string | null
+    checked: boolean
+  }[]
+  items: { term: string; checked: boolean }[]
+}
+
+/** The text « Copier pour Flipp » puts on the clipboard: every pick that carries a
  *  Flipp id as a clipping, in Flipp's shape, plus every plain line as a typed item.
  *  Older staged deals (before `merchantId`/`box` were kept, 2026-09-10) still clip —
  *  those fields ride as null and the page copes. */
@@ -102,17 +124,59 @@ export function flippListPayload(picks: Pick[], terms: string[] = []): string {
 }
 
 // THE BOOKMARKLET BODY. Plain ES5, self-contained, no outer scope: it is a string
-// the household saves as a bookmark, not code Vite compiles. The unit test runs this
-// exact string against a fake page, so the logic cannot drift from `mergeFlippList`
-// below (the readable twin the test also checks it against). Markers bound it so a
-// live probe can lift it straight out of this file.
+// the household saves as a bookmark, not code Vite compiles. `__BABILLARD__` is the
+// one hole — this app's origin, filled by `flippBookmarkletBody(origin)` when the
+// Réglages card renders — so the way back lands on the household's own Babillard.
+// The unit test runs this exact string against a fake page, so the logic cannot
+// drift from `mergeFlippList` below (the readable twin the test also checks it
+// against). Markers bound it so a live probe can lift it straight out of this file.
+//
+// What it does, in order:
+//   · clipboard first (`navigator.clipboard.readText`, one « Coller » permission tap
+//     on a phone): a Babillard payload there → « Coller dans Flipp ? » OK = paste,
+//     Annuler = the way back; anything else, or no clipboard access → the prompt;
+//   · the prompt: paste = import; EMPTY + OK = the way back; Cancel = nothing;
+//   · import merges into a LOCAL list (a signed-in user's stored list is a server
+//     proxy, `_delegate: true` — replaced by a local one, which Flipp then merges
+//     into the account itself) and goes to `/liste_dachats`;
+//   · the way back reads their list and opens `<origin>/liste#flipp=<base64url>`.
 /*BOOKMARKLET-START*/
 export const FLIPP_BOOKMARKLET_BODY =
-  '(function(){var t=prompt("Colle ici ce que Babillard a copié (« Ma liste Flipp »)");if(!t)return;var d=null;try{d=JSON.parse(t)}catch(e){}var cl=d&&d.v===1&&d.clippings||[];var it=d&&d.v===1&&d.items||[];if(!d||d.v!==1||(!cl.length&&!it.length)){alert("Ce n’est pas une liste Babillard — retourne dans Babillard, touche « Ma liste Flipp », puis reviens coller.");return}var s=localStorage;var c={};try{c=JSON.parse(s.getItem("shopping_list")||"{}")||{}}catch(e){}if(c._delegate){c={}}var l={_outstandingOps:[],flyerItemClippings:c.flyerItemClippings||[],listItems:c.listItems||[],photos:c.photos||[],ecomItems:c.ecomItems||[],_delegate:false};var h={};var i;for(i=0;i<l.flyerItemClippings.length;i++){h[l.flyerItemClippings[i].flyerItemId]=1}for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}x.id="item-clipping-"+x.flyerItemId;l.flyerItemClippings.push(x);h[x.flyerItemId]=1}var g={};for(i=0;i<l.listItems.length;i++){g[String(l.listItems[i].term||"").toLowerCase()]=1}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}l.listItems.push({id:k.replace(/\\s/g,"")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2),term:String(q),checked:false});g[k]=1}s.setItem("shopping_list",JSON.stringify(l));location.href="/liste_dachats"})()'
+  '(function(){var B="__BABILLARD__";function fail(m){alert(m)}function parse(t){var d=null;try{d=JSON.parse(t)}catch(e){}if(!d||d.v!==1||d.from){return null}var cl=d.clippings||[],it=d.items||[];if(!cl.length&&!it.length){return null}return d}function imp(d){var cl=d.clippings||[],it=d.items||[];var s=localStorage;var c={};try{c=JSON.parse(s.getItem("shopping_list")||"{}")||{}}catch(e){}if(c._delegate){c={}}var l={_outstandingOps:[],flyerItemClippings:c.flyerItemClippings||[],listItems:c.listItems||[],photos:c.photos||[],ecomItems:c.ecomItems||[],_delegate:false};var h={};var i;for(i=0;i<l.flyerItemClippings.length;i++){h[l.flyerItemClippings[i].flyerItemId]=1}for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}x.id="item-clipping-"+x.flyerItemId;l.flyerItemClippings.push(x);h[x.flyerItemId]=1}var g={};for(i=0;i<l.listItems.length;i++){g[String(l.listItems[i].term||"").toLowerCase()]=1}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}l.listItems.push({id:k.replace(/\\s/g,"")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2),term:String(q),checked:false});g[k]=1}s.setItem("shopping_list",JSON.stringify(l));location.href="/liste_dachats"}function exp(){var c={};try{c=JSON.parse(localStorage.getItem("shopping_list")||"{}")||{}}catch(e){}var cl=c.flyerItemClippings||[],li=c.listItems||[],o={v:1,from:"flipp",clippings:[],items:[]},i;for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId){continue}o.clippings.push({flyerItemId:x.flyerItemId,name:x.name||"",flyerId:x.flyerId||null,price:x.price==null?null:String(x.price),merchantId:x.merchantId||null,merchantName:x.merchantName||"",merchantLogoUrl:x.merchantLogoUrl||null,thumbnailUrl:x.thumbnailUrl||null,validTo:x.validTo||null,checked:!!x.checked})}for(i=0;i<li.length;i++){var y=li[i];if(!y||!y.term){continue}o.items.push({term:String(y.term),checked:!!y.checked})}if(!o.clippings.length&&!o.items.length){fail("Ta liste Flipp est vide — rien à rapporter vers Babillard.");return}var e=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");location.href=B+"/liste#flipp="+e}function ask(){var t=prompt("Colle ici ce que Babillard a copié (« Copier pour Flipp ») — ou laisse vide et OK pour rapporter ta liste Flipp vers Babillard.");if(t===null){return}if(!t.replace(/\\s/g,"")){exp();return}var d=parse(t);if(!d){fail("Ce n’est pas une liste Babillard — retourne dans Babillard, touche « Copier pour Flipp », puis reviens coller.");return}imp(d)}function go(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){var d=parse(t||"");if(!d){ask();return}if(confirm("Coller ta liste Babillard dans Flipp ?\\n\\nOK = coller · Annuler = plutôt rapporter ta liste Flipp vers Babillard")){imp(d)}else{exp()}},function(){ask()})}else{ask()}}go()})()'
 /*BOOKMARKLET-END*/
 
+/** The bookmarklet body for ONE household: their Babillard origin filled in. */
+export function flippBookmarkletBody(origin: string): string {
+  // The origin lands inside a JS string literal; anything but a plain URL origin
+  // is refused rather than escaped (a quote here would be a bookmark that breaks).
+  if (!/^https?:\/\/[A-Za-z0-9.\-:]+$/.test(origin)) throw new Error('flippBookmarkletBody: not a plain origin: ' + origin)
+  return FLIPP_BOOKMARKLET_BODY.replace('__BABILLARD__', origin)
+}
+
 /** The bookmark's URL — what a household copies into a bookmark once. */
-export const FLIPP_BOOKMARKLET = 'javascript:' + encodeURIComponent(FLIPP_BOOKMARKLET_BODY)
+export function flippBookmarklet(origin: string): string {
+  return 'javascript:' + encodeURIComponent(flippBookmarkletBody(origin))
+}
+
+/** The way back, decoded: the `#flipp=` hash of `/liste` → the export, or null. */
+export function parseFlippHash(hash: string): FlippExport | null {
+  const m = /^#flipp=([A-Za-z0-9\-_]+)$/.exec(hash || '')
+  if (!m) return null
+  try {
+    const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(escape(atob(b64)))
+    const d = JSON.parse(json) as Partial<FlippExport>
+    if (!d || d.v !== 1 || d.from !== 'flipp') return null
+    return { v: 1, from: 'flipp', clippings: Array.isArray(d.clippings) ? d.clippings : [], items: Array.isArray(d.items) ? d.items : [] }
+  } catch {
+    return null
+  }
+}
+
+/** The readable twin of the bookmarklet's export encoding (tests, and a probe). */
+export function encodeFlippExport(e: FlippExport): string {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(e)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
 
 /** The readable twin of the bookmarklet's merge: Flipp's stored list (raw JSON or
  *  null) + a Babillard payload → the list to store, and how many things it added.
