@@ -183,3 +183,48 @@ test('Réglages has a « ? » at last — and arming it reaches its section help
   await expect(page.locator('.tour')).toBeVisible()
   await expect(page.locator('.tour__head')).toContainText(/Réglages/)
 })
+
+// Asked for 2026-09-10: « Première fois » should walk ALL the sections, both the
+// first time it runs by itself and when someone replays it from Réglages ▸ Découvrir
+// — so a household meets every tab on day one instead of only the board.
+//
+// The tour is BUILT from the six section tours (lib/tourContent `sectionChain`), so
+// this walks it end to end and pins that every hub route is actually visited. What it
+// really guards is the engine half: a step carrying a `route` has to navigate on
+// ENTERING it, or the tour spotlights anchors that are not on the page.
+test('« Première fois » walks every section, and lands back where it started', async ({ page }) => {
+  test.setTimeout(180_000)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  // Tour NOT seen → « Première fois » auto-starts, which is the first-run path itself.
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', tour: true })
+  await page.goto('/board')
+  await page.locator('.tour').waitFor({ state: 'visible', timeout: 15_000 })
+
+  // The advance button is « Suivant » until the LAST step, where it becomes
+  // « Terminé » — matching only the first leaves the walk stranded on the final card
+  // (which is how the first version of this test failed: every section visited, tour
+  // still open).
+  const next = page.getByRole('button', { name: /Suivant|Next|Terminé|Done/ })
+  const visited = new Set<string>()
+  const routeOf = () => new URL(page.url()).pathname
+
+  visited.add(routeOf())
+  // Walk to the end. The bound is generous but finite: a tour that never finishes is
+  // itself the failure, and an infinite click loop would just hang the suite.
+  for (let i = 0; i < 200; i++) {
+    if (!(await page.locator('.tour').isVisible())) break
+    visited.add(routeOf())
+    if (!(await next.isVisible())) break
+    await next.click()
+    await page.waitForTimeout(120)
+  }
+
+  // Every hub tab, seen without the user having to find it.
+  for (const route of ['/board', '/kitchen', '/liste', '/notes', '/maison', '/settings']) {
+    expect([...visited], `the grand tour never visited ${route}`).toContain(route)
+  }
+  // …and it ends: the overlay is gone rather than stuck on a step whose anchor never came.
+  await expect(page.locator('.tour')).toHaveCount(0)
+})

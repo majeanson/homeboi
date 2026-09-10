@@ -105,6 +105,21 @@ export function TourProvider({ children }: { children: ReactNode }) {
     [startTour],
   )
 
+  // A step may live on another route (the « Première fois » grand tour walks all six
+  // sections). Navigate on ENTERING the step rather than inside next(), so stepping
+  // BACKWARD across a section boundary returns you to that section too — a back button
+  // that leaves you spotlighting an anchor on the wrong page is worse than no back.
+  //
+  // Same-route steps never navigate: `nav` to the path you are already on would push a
+  // history entry per step and turn the browser Back button into a step-rewind.
+  const step = activeTour?.steps[stepIndex]
+  const stepRoute = step?.route
+  useEffect(() => {
+    if (!stepRoute) return
+    const here = window.location.pathname + window.location.search
+    if (here !== stepRoute) nav(stepRoute)
+  }, [stepRoute, nav])
+
   const next = useCallback(() => {
     if (!activeTour) return
     if (stepIndex + 1 >= activeTour.steps.length) end('finished')

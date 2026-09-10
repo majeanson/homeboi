@@ -48,6 +48,11 @@ type TourStep = {
   // (deep reference: tell me everything), via the same ?card= path as HelpDot.
   // Pair it with `body: guideWhat(<id>)` to single-source the one-liner too.
   card?: string
+  // Navigate here BEFORE spotlighting this step. A tour that walks the whole app
+  // (the « Première fois » grand tour below) changes section mid-run; the engine
+  // applies this on entering the step, going forward AND backward, so stepping back
+  // across a boundary returns you to the section that step belongs to.
+  route?: string
   // This step happens INSIDE the ＋ quick-add sheet: while it's active, HubLayout
   // holds the current section's chooser open (and lets it go on the next non-sheet
   // step / tour end). Pair with an in-sheet target (`add-note`, `add-tiles`,
@@ -90,7 +95,7 @@ function addSheetSteps(id: string, extra: TourStep[] = []): TourStep[] {
   ]
 }
 
-export const TOURS: Tour[] = [
+const BASE_TOURS: Tour[] = [
   {
     id: 'essentials',
     startRoute: '/board',
@@ -99,8 +104,8 @@ export const TOURS: Tour[] = [
         icon: 'sun-bold',
         title: { fr: 'Bienvenue sur Babillard', en: 'Welcome to Babillard' },
         body: {
-          fr: 'Babillard, c’est toute la maisonnée d’un coup d’œil : l’agenda, le souper, les listes, les corvées et les routines des enfants. Pas de points, pas de notifications. Voici un petit tour en 30 secondes — tu peux le passer en tout temps.',
-          en: 'Babillard is your whole household at a glance: the agenda, supper, lists, chores and the kids’ routines. No points, no notifications. Here’s a 30-second tour — you can skip it anytime.',
+          fr: 'Babillard, c’est toute la maisonnée d’un coup d’œil : l’agenda, le souper, les listes, les corvées et les routines des enfants. Pas de points, pas de notifications. Ce tour passe par les six sections, une à une, pour que tu saches ce qu’il y a où — tu peux l’arrêter en tout temps et le reprendre depuis Réglages ▸ Découvrir.',
+          en: 'Babillard is your whole household at a glance: the agenda, supper, lists, chores and the kids’ routines. No points, no notifications. This tour walks all six sections, one by one, so you know what lives where — stop it anytime and pick it up again from Settings ▸ Discover.',
         },
       },
       {
@@ -485,3 +490,44 @@ export const TOURS: Tour[] = [
     ],
   },
 ]
+
+// ── « Première fois » walks the WHOLE app ────────────────────────────────────
+//
+// Asked for 2026-09-10: the first-run tour should show every section, so a household
+// meets all six on day one — and the same when someone replays it from Réglages ▸
+// Découvrir ▸ « Première fois ».
+//
+// It is BUILT from the section tours rather than written again: each section's steps
+// are already single-sourced from its Guide card (guideWhat / guidePoint), so chaining
+// them means the grand tour can never drift from the per-section tours or from the
+// guide. Add a step to « La cuisine » and the grand tour gains it for free.
+//
+// Order is the canonical one (CLAUDE.md: the nav, the themed Réglages tabs and the
+// guide taxonomy all use it), so the tour walks the tabs left to right exactly as the
+// bar below the thumb does.
+//
+// Only the SIX HUB TABS are chained. « Routines » and « Le cercle » are tours of
+// sections INSIDE Maison; including them would double the length to show places you
+// reach from a tab you have just been shown. They keep their own « ? » offer.
+const GRAND_ORDER = ['board', 'kitchen', 'liste', 'notes', 'maison', 'settings'] as const
+
+function sectionChain(): TourStep[] {
+  const out: TourStep[] = []
+  for (const id of GRAND_ORDER) {
+    const tour = BASE_TOURS.find((t) => t.id === id)
+    // Fail loudly at module load rather than silently shipping a shorter tour — the
+    // same stance guidePoint takes. A renamed tour id must not quietly drop a section.
+    if (!tour) throw new Error(`tourContent: the grand tour names "${id}", which is not a tour`)
+    out.push(
+      ...tour.steps.map((step, i) =>
+        // The first step of each block carries the hop; the rest are already there.
+        i === 0 && tour.startRoute ? { ...step, route: tour.startRoute } : step,
+      ),
+    )
+  }
+  return out
+}
+
+export const TOURS: Tour[] = BASE_TOURS.map((t) =>
+  t.id === 'essentials' ? { ...t, steps: [...t.steps, ...sectionChain()] } : t,
+)
