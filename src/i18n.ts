@@ -3257,6 +3257,16 @@ export const FR = {
     dealSource: (store: string) => `Circulaire ${store} · via Flipp`,
     // The till card's PRIMARY action (2026-09-10): open Flipp's own page for this item.
     showFlipp: 'Montrer Flipp',
+    // The Flipp loop on the till grid (2026-09-10). Marc asked to pre-fill a Flipp list
+    // from here; probed, there is no way in (no URL param, no API — Flipp's web list is
+    // that browser's own localStorage). So the grid steps through the picks with
+    // Flipp's OWN button: this opens the next pick's Flipp page. The label counts a
+    // finite loop — where it stands — never a score.
+    // Short on purpose: both doors share one line above the grid at 390px, and the
+    // page this opens explains the next tap itself (its own « Ajouter à la liste »).
+    clipNext: (n: number, total: number) => `Ajouter à Flipp · ${n} de ${total}`,
+    clipAgain: 'Reprendre du début',
+    flippList: 'Ma liste Flipp',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',

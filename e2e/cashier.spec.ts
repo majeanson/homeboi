@@ -90,9 +90,17 @@ const boardWithDeals = (long: boolean) => ({
 // a deal on every line, so no write is needed (writes are blocked for a guest anyway).
 async function openGrid(
   page: Page,
-  opts: { theme?: Theme; surface?: Surface; viewport?: { width: number; height: number }; longText?: boolean; guest?: boolean } = {},
+  opts: {
+    theme?: Theme
+    surface?: Surface
+    viewport?: { width: number; height: number }
+    longText?: boolean
+    guest?: boolean
+    /** Flipp ids already opened by the loop on this device (see the Flipp loop tests). */
+    clipped?: number[]
+  } = {},
 ) {
-  const { theme = 'day', surface = 'mobile', viewport = PHONE, longText = false, guest = false } = opts
+  const { theme = 'day', surface = 'mobile', viewport = PHONE, longText = false, guest = false, clipped } = opts
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(viewport)
   await mockApi(page, { longText })
@@ -103,6 +111,7 @@ async function openGrid(
   )
   await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface })
   if (guest) await page.addInitScript(() => localStorage.setItem('babillard-guest-preview', '1'))
+  if (clipped) await page.addInitScript((ids) => localStorage.setItem('babillard-flipp-clipped', JSON.stringify(ids)), clipped)
   await page.goto('/liste')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
@@ -237,6 +246,9 @@ test('without a postal code the Flipp door does not render at all', async ({ pag
   await mockApi(page, { overrides: { household: { name: 'Maison Tremblay', postal: null, includedStores: [], aiEnabled: true } } })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/liste/cashier')
+  await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
+  // The grid's Flipp loop needs the same postal code, so it is not built either.
+  await expect(page.locator('.cashier__flipp')).toHaveCount(0)
   await page.locator('.cashier__tile').first().click()
   await expect(page.locator('.bigcard__price')).toBeVisible()
   await expect(page.locator('a.bigcard__flipp')).toHaveCount(0)
@@ -244,4 +256,46 @@ test('without a postal code the Flipp door does not render at all', async ({ pag
   // not by losing its evidence.
   await expect(page.locator('.bigcard__valid')).toBeVisible()
   await expect(page.locator('.bigcard__flyer')).toBeVisible()
+})
+
+// THE FLIPP LOOP (2026-09-10). Marc: « any way to pre-create the list and then show
+// it from flipp? ». Probed in a real browser: no. flipp.com's « Ajouter à la liste »
+// writes that browser's OWN localStorage (`shopping_list`) and makes no request; the
+// list page `/fr-ca/liste_dachats` ignores every URL param tried; the app's list is
+// account-synced behind an undocumented backend. So the grid steps through the picks
+// with Flipp's own button — one tap opens the NEXT pick's item page — and where the
+// loop stands is remembered per device (a clipping lives in that same browser).
+// The popup would load the real flipp.com: it is stubbed, the loop is what's tested.
+const stubFlipp = (page: Page) =>
+  page.context().route('https://flipp.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>flipp</title>' }))
+
+test('the Flipp loop: one tap opens the next pick, and the step survives a reload', async ({ page }) => {
+  await stubFlipp(page)
+  await openGrid(page) // four picks, Flipp ids 101..104; household postal 'H2X 1Y4'
+  const step = page.locator('a.cashier__clip')
+  await expect(step).toHaveText(/1 de 4/)
+  await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
+  await expect(step).toHaveAttribute('target', '_blank')
+  // The list door sits beside it, on Flipp's list page for this postal code — and
+  // it is the plain button while a step remains.
+  const list = page.locator('a.cashier__flipp-list')
+  await expect(list).toHaveAttribute('href', 'https://flipp.com/fr-ca/liste_dachats?postal_code=H2X%201Y4')
+  await expect(list).not.toHaveClass(/btn--primary/)
+  await expectNoOverflow(page)
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
+  await popup.close()
+  await expect(step).toHaveText(/2 de 4/)
+  await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/102?postal_code=H2X%201Y4')
+  // Come back tomorrow, same phone: the loop is where it was left.
+  await page.reload()
+  await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await expect(page.locator('a.cashier__clip')).toHaveText(/2 de 4/)
+})
+
+test('every pick on the list → the list door leads, and « Reprendre du début » restarts', async ({ page }) => {
+  await openGrid(page, { clipped: [101, 102, 103, 104] })
+  await expect(page.locator('a.cashier__clip')).toHaveCount(0)
+  await expect(page.locator('a.cashier__flipp-list')).toHaveClass(/btn--primary/)
+  await page.getByRole('button', { name: /Reprendre du début/ }).click()
+  await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 4/)
 })

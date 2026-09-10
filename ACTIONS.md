@@ -147,6 +147,7 @@ at all (❌).
 | Item · reorder | ✅ ⠿ hold-drag, grip focus + ↑/↓ (« Mon ordre » only) | ✅ | — | — | liste▸aisles (aisle order) | — | ✅¹³ |
 | List · clear checked / sort / cashier / flyers | ✅ « Vider les cochés »; ⋯ « Allées »; buttons | — | — | ＋ `flyer` / `share` / `auto-pick` | liste▸stores/shop/ghost | deferred | ✅ |
 | List · search | ❌ no in-page search¹⁴ (global 🔍 only) | | | | | | |
+| Till (`/liste/cashier`) · show Flipp / add to Flipp list / see Flipp list | ✅ card « Montrer Flipp » → Flipp's item page; grid stepper « Ajouter à ma liste Flipp · n de N » (opens the NEXT pick's Flipp page — Flipp's list can only be filled from Flipp's own button, probed 2026-09-10) + « Voir ma liste Flipp »; all three link-outs need the household postal | — | ✅ the card IS the peek | — | système▸household (postal) | n/a (external); the step bookmark is device-local, « Reprendre du début » clears it | ✅ |
 
 ### Les notes (`components/cercle/CercleNotes.tsx`, `NotesList.tsx`) — ONE face, iOS-Notes style (2026-09-04: dropped the Simple/Avancé split)
 

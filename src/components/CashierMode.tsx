@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money, dealValidity, flippFlyerUrl, flippItemUrl } from '../lib/deals'
+import { type Pick, money, dealValidity, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
+import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
@@ -44,6 +45,22 @@ export function CashierMode({
   // closes), and carries NO count/score, so it stays calm (no streak/points).
   const [shown, setShown] = useState<Set<string>>(() => new Set())
   const [flyerOpen, setFlyerOpen] = useState(false)
+  // THE FLIPP LOOP (2026-09-10). Marc: « any way to pre-create the list and then
+  // show it from flipp? » No — probed in a real browser: flipp.com's « Ajouter à la
+  // liste » writes that browser's own localStorage and makes no request, the list
+  // page reads no URL parameter, the app's list is account-synced behind an
+  // undocumented backend. Nothing outside Flipp writes a Flipp list. What CAN be
+  // made easy is stepping through it with THEIR button: one tap here opens the
+  // next pick's Flipp page, one tap there adds it, come back — and « Voir ma liste
+  // Flipp » then shows the clippings the way Flipp shows them. Where the loop
+  // stands is remembered per device (a clipping lives in that same browser);
+  // only picks that carry a Flipp id can take part, and the whole row needs the
+  // postal code the item page needs. ONE row, no hint line: the grid is scanned
+  // at a till, and the page the step opens carries the next instruction itself.
+  const clipped = useFlippClipped()
+  const clippable = picks.filter((p) => p.deal.id != null)
+  const clipDone = clippable.filter((p) => clipped.includes(p.deal.id!)).length
+  const clipNext = clippable.find((p) => !clipped.includes(p.deal.id!))
 
   // Opened at home on wifi → warm each pick's flyer + clipping images so the
   // full-flyer proof is ready at the till even on poor signal. Re-runs only when
@@ -100,6 +117,36 @@ export function CashierMode({
 
         <div className="cashier__grid-wrap">
           <p className="cashier__hint mono">{t.shop.tapToShow}</p>
+          {postal && clippable.length > 0 && (
+            <div className="cashier__flipp">
+              <Cluster className="cashier__flipp-row">
+                {clipNext ? (
+                  <a
+                    className="btn btn--primary cashier__clip"
+                    href={flippItemUrl(clipNext.deal.id, postal)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => markFlippClipped(clipNext.deal.id!)}
+                  >
+                    <InlineIcon name="arrow-up-right-bold" /> {t.shop.clipNext(clipDone + 1, clippable.length)}
+                  </a>
+                ) : (
+                  <button type="button" className="btn btn--ghost cashier__clip-reset" onClick={resetFlippClipped}>
+                    <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.clipAgain}
+                  </button>
+                )}
+                {/* Primary once the loop is done — the list is then the thing to show. */}
+                <a
+                  className={'btn cashier__flipp-list' + (clipNext ? '' : ' btn--primary')}
+                  href={flippListUrl(postal)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <InlineIcon name="shopping-bag-bold" /> {t.shop.flippList}
+                </a>
+              </Cluster>
+            </div>
+          )}
           <ul className="cashier__grid">
             {picks.map((p) => {
               const isShown = shown.has(p.itemId)

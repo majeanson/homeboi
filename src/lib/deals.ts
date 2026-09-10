@@ -132,3 +132,15 @@ export function flippItemUrl(flyerItemId: number | null, postal: string | null |
   if (flyerItemId == null || !postal) return null
   return `https://flipp.com/fr-ca/item/${flyerItemId}?postal_code=${encodeURIComponent(postal)}`
 }
+
+// « Voir ma liste Flipp » — Flipp's own shopping-list page. What it shows is whatever
+// THIS browser (or, on Android, the Flipp app that claims flipp.com links) has
+// clipped: probed 2026-09-10, « Ajouter à la liste » on flipp.com writes that
+// browser's localStorage and makes no request, the page reads no URL parameter, and
+// there is no API that writes a Flipp list. So this door is the END of a loop that
+// runs through Flipp's own button, never a list we filled. Same postal rule as the
+// item page (see above) — the page was only ever seen rendering with one.
+export function flippListUrl(postal: string | null | undefined): string | null {
+  if (!postal) return null
+  return `https://flipp.com/fr-ca/liste_dachats?postal_code=${encodeURIComponent(postal)}`
+}

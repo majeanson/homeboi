@@ -316,3 +316,19 @@
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
+
+/* The Flipp loop under the grid hint (2026-09-10): the stepper + the list door on
+   ONE centred row (labels kept short so both fit a 390px phone), no hint line —
+   the grid is scanned at a till; every pixel above the tiles is paid for. */
+.cashier__flipp {
+  margin: 0 0 16px;
+}
+.cashier__flipp-row {
+  justify-content: center;
+}
+/* The reset's compact size (8px 12px, .9rem): at that size the two labels share
+   one line on a 390px phone (measured: they wrapped at the .btn default). */
+.cashier__flipp .btn {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}

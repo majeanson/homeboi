@@ -144,6 +144,50 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### « Any way to pre-create the list and show it from Flipp? » — no, and here is the loop instead (2026-09-10, night)
+
+Marc, after the card shipped: Flipp lets you add items to a list — can Babillard fill
+that list and then show Flipp's list at the till? Probed in a real browser, not docs
+(Flipp's help centre 403s every fetcher; the Zendesk API and a headless Chromium
+answered). **Three facts, each closing a door:**
+
+- **flipp.com's « Ajouter à la liste » is client-side.** No login, and NO request —
+  it writes a `shopping_list` key into flipp.com's own localStorage (the payload
+  carries the item's name, price, flyer box, merchant logo, validity: everything
+  the page then renders). Another origin; nothing we ship can write it.
+- **The list page reads no URL parameter.** `/fr-ca/liste_dachats` with `?items=`,
+  `?clippings=`, `?flyer_item_id=`, `?item=` in a fresh profile: empty every time.
+- **The app's list is account-synced behind the undocumented backend**, and
+  « Partager ma liste » is a one-time invite that MERGES two Flipp accounts'
+  lists — receiver accepts; there is no outside-in path. Deep links: iOS registers
+  only `/action` (its bundle reads one param, `sourceAction`); Android's
+  `assetlinks.json` claims ALL flipp.com URLs, so « Montrer Flipp » may already
+  open inside the app there.
+
+**What CAN be made easy is the loop through Flipp's own button.** The till grid now
+carries one row above the tiles: **« Ajouter à Flipp · 1 de 4 »** opens the NEXT
+pick's Flipp item page (their « Ajouter à la liste » is right there; come back, the
+label reads « 2 de 4 »), and **« Ma liste Flipp »** opens `/fr-ca/liste_dachats` —
+Flipp's own list, grouped by store with price and dates, which is the screen Marc
+wanted to hold up. Where the loop stands is a device-local bookmark
+(`lib/flippClipped.ts`, `createDeviceStore`): a clipping lives in the browser that
+made it, so the wall has nothing to show for a phone's loop. It is a bookmark, not
+a score — « Reprendre du début » clears it — and the whole row needs the same
+postal code the item page needs. Marc picked this shape himself (« 1, 3. anything
+automatic or easier ») once the probe had ruled the automatic version out.
+
+**Looked at, then trimmed.** The first cut stacked two full-size buttons and an
+instruction line above the grid — ~150px before the first tile on a surface that
+is SCANNED at a till. Shorter labels, the reset's compact button size, and no hint
+(the page the step opens carries the next instruction itself) put both doors on one
+line at 390px; read on the phone and wall screenshots before shipping.
+
+Guards: `e2e/cashier.spec.ts` +2 — the step's exact href, the popup advancing it,
+the bookmark surviving a reload, the done state (list door leads, restart works);
+the no-postal case now also asserts the row is absent. Red on the plant (a tap
+that never bookmarks: « 1 de 4 » stayed « 1 de 4 »). `ACTIONS.md` gained the till's
+three link-out doors — « Montrer Flipp » had shipped without a row.
+
 ### The till card wears the shape a cashier already knows (2026-09-10, night)
 
 Marc, after « Montrer Flipp » shipped: « make sure it looks 90% like flipp ui ». The
@@ -2078,6 +2122,11 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
         exclusions: still unknown. Paste the terms and the card can be scored against them.
       ❓ Whether Babillard may present Flipp-sourced data as a price-match source AT ALL
         is licensing, not layout (the data limit: cutouts only, link out). Unsettled.
+      **Settled 2026-09-10 (night): a Flipp list cannot be pre-filled from outside** —
+        flipp.com's add is that browser's own localStorage (no request), the list page
+        reads no URL param, the app's list is account-synced with no write API. The
+        till grid steps through it with Flipp's own button instead (« Ajouter à Flipp ·
+        n de N » + « Ma liste Flipp »); see §3 « Any way to pre-create the list… ».
       ~~❓ Store logo and product picture are null in the fixture, so the card has never
         been photographed looking like an ad rather than a receipt.~~ **Closed 2026-09-10
         (night):** the fixture carries both now and `cashier-peek` was read wearing them —
