@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { openKitEntry } from './kit'
 import { installVvStub, openKeyboard } from './kb'
 
 // « Perte du footer » (Marc, 2026-08-28), caught on-device with ?kbdebug reading
@@ -100,8 +101,9 @@ test('offline, LoadError states the fact — no alarm tone, no dead retry', asyn
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/dev/kit')
-  const entry = page.locator('details.kit-entry').filter({ hasText: 'LoadError' })
-  await entry.locator('summary').click()
+  // By NAME, never by any text in the card: a neighbouring specimen's prose mentions
+  // « LoadError » on purpose, and a hasText filter matched both (red in CI, 2026-09-09).
+  const entry = await openKitEntry(page, 'LoadError')
   const err = entry.locator('.load-error')
   await err.waitFor({ state: 'visible', timeout: 15_000 })
 

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { openKitEntry } from './kit'
 
 // Two surfaces that told the truth badly, both fixed 2026-08-28 (REVIEW-PASS).
 //
@@ -76,8 +77,7 @@ test('past four loved-by faces the row says « et d’autres », never a number'
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
   await page.goto('/dev/kit')
 
-  const entry = page.locator('details.kit-entry').filter({ hasText: 'HeartButton' })
-  await entry.locator('summary').click()
+  const entry = await openKitEntry(page, 'HeartButton')
   const faces = entry.locator('.hearts__faces')
   await expect(faces).toBeVisible()
 
@@ -114,8 +114,7 @@ test('four or fewer loved-by faces show no overflow cue at all', async ({ page }
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
   await page.goto('/dev/kit')
 
-  const entry = page.locator('details.kit-entry').filter({ hasText: 'HeartButton' })
-  await entry.locator('summary').click()
+  const entry = await openKitEntry(page, 'HeartButton')
   const faces = entry.locator('.hearts__faces')
   await expect(faces.locator('.hearts__face')).toHaveCount(3)
   await expect(faces.locator('.hearts__face--more')).toHaveCount(0)

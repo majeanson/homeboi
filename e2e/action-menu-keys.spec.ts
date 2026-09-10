@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { openKitEntry } from './kit'
 
 // Keyboard reachability of the shared ⋯ overflow menu (components/ActionMenu.tsx).
 //
@@ -30,8 +31,7 @@ test('the ⋯ overflow menu opens, walks and closes on the keyboard', async ({ p
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/dev/kit')
 
-  const entry = page.locator('details.kit-entry').filter({ hasText: 'ActionMenu' }).first()
-  await entry.locator('summary').click()
+  const entry = await openKitEntry(page, 'ActionMenu')
   const trigger = entry.locator('.action-menu__btn')
   await trigger.waitFor({ state: 'visible', timeout: 15_000 })
 

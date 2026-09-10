@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { openKitEntry } from './kit'
 
 // The shared « quels ingrédients ? » checklist body (`RecipeIngredientPick`), driven
 // off its /dev/kit specimen — the same drill recipe-read-review.spec.ts uses to reach
@@ -23,8 +24,7 @@ async function openSpecimen(page: import('@playwright/test').Page) {
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
   await page.goto('/dev/kit')
-  const entry = page.locator('details.kit-entry').filter({ hasText: 'RecipeIngredientPick' })
-  await entry.locator('summary').click()
+  const entry = await openKitEntry(page, 'RecipeIngredientPick')
   const pick = entry.locator('.recipe-list-pick')
   await pick.waitFor({ state: 'visible', timeout: 15_000 })
   return pick
