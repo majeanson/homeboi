@@ -1880,11 +1880,26 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
       conscripts whoever happens to share the word. (The missing picto is left: a pantry
       row is a word a parent typed, not a catalogued item, so `pictoFor` has less to go
       on there than on the list.)
-- [ ] **« Show the cashier (1) » reads wrong in English.** FR « Montrer à la caisse »
-      means *show it AT the till* — the button opens the in-store price-match surface.
-      The EN reads as *display the cashier*, i.e. the person. Found by the EN lens twin
-      on 2026-09-10. It is a WORD, so it waits for Marc the way « Maisonnée » did:
-      « At the till » and « Show at the till » are the candidates.
+- [ ] **« Show the cashier » — model it on a price-match UI a cashier already accepts.**
+      Marc, 2026-09-10, pointing at Maxi's « prix imbattable » program: rather than
+      re-word the button, make the surface *look like the thing a till already honours*.
+      The EN copy problem is real but downstream of that — FR « Montrer à la caisse »
+      means *show it AT the till*, while EN « Show the cashier » reads as *display the
+      cashier*, the person (found by the EN lens twin the same day).
+
+      **What the surface already has** (`components/CashierMode.tsx`, and this is why
+      the work is presentation rather than data): per pick — the STORE, the product
+      picture, a big price, the unit price, the validity DATES, and « voir la
+      circulaire » onto the flyer page itself. Random-access grid → full-screen peek,
+      oversized and low-text on purpose, because the customer holds the phone and items
+      hit the belt in no particular order.
+
+      **Unverified, and needed before designing**: the actual acceptance rules.
+      `https://www.maxi.ca/fr/unbeatable-legal` renders as an SPA shell, so a fetch
+      returns the page title and nothing else — the policy text was NOT read, and
+      nothing here should be treated as knowing what a cashier must be shown (identical
+      vs comparable item, printed vs on-screen ad, per-visit limits, exclusions).
+      Get that first; the layout follows from it.
 - [x] Smaller, all photographed — and **four of the five were wrong**, which is the
       entry worth reading. Only the first was real: **the drawings tile footer
       collided** (the 📌 is `position:absolute` and `.drawgallery__item` — its
