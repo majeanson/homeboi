@@ -140,7 +140,12 @@ export function flippItemUrl(flyerItemId: number | null, postal: string | null |
 // there is no API that writes a Flipp list. So this door is the END of a loop that
 // runs through Flipp's own button, never a list we filled. Same postal rule as the
 // item page (see above) — the page was only ever seen rendering with one.
+//
+// NO locale prefix. `/fr-ca/liste_dachats` is the marketing shell (it renders the
+// flyers home with a list BADGE, which is how the wrong route shipped for an hour on
+// 2026-09-10); the app route table maps `/liste_dachats` and `/shopping_list` — bare —
+// to the list view, and that is where Flipp's own list icon navigates.
 export function flippListUrl(postal: string | null | undefined): string | null {
   if (!postal) return null
-  return `https://flipp.com/fr-ca/liste_dachats?postal_code=${encodeURIComponent(postal)}`
+  return `https://flipp.com/liste_dachats?postal_code=${encodeURIComponent(postal)}`
 }

@@ -279,7 +279,10 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   // The list door sits beside it, on Flipp's list page for this postal code — and
   // it is the plain button while a step remains.
   const list = page.locator('a.cashier__flipp-list')
-  await expect(list).toHaveAttribute('href', 'https://flipp.com/fr-ca/liste_dachats?postal_code=H2X%201Y4')
+  // Bare route, no locale prefix: `/fr-ca/liste_dachats` is the marketing shell and
+  // renders the flyers home (shipped that way for an hour; the probe that found the
+  // real list view is the same one that proved a crafted list renders there).
+  await expect(list).toHaveAttribute('href', 'https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
   await expect(list).not.toHaveClass(/btn--primary/)
   await expectNoOverflow(page)
   const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
