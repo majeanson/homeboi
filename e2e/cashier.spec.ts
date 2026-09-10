@@ -59,7 +59,7 @@ const DEALS = [
   // on its list from last week's flyer — Marc's mini-concombres at Provigo.
   { id: 104, flyerId: 5002, name: 'Couches Pampers méga', price: 24.97, unitPrice: null, unitLabel: null, merchant: 'Walmart', endedDaysAgo: 2 },
 ]
-const stagedDeal = (d: (typeof DEALS)[number], long: boolean) => ({
+const stagedDeal = (d: (typeof DEALS)[number], long: boolean, allEnded = false) => ({
   id: d.id,
   flyerId: d.flyerId,
   name: long ? `${d.name} ${LONG}` : d.name,
@@ -78,15 +78,15 @@ const stagedDeal = (d: (typeof DEALS)[number], long: boolean) => ({
   // Live-clock dates (the fixture doctrine of 2026-09-10): a fixed June date reads
   // as ENDED on every surface once the calendar passes it, silently.
   validFrom: flyerIso(-2),
-  validTo: 'endedDaysAgo' in d && d.endedDaysAgo ? flyerIso(-d.endedDaysAgo) : flyerIso(4),
+  validTo: allEnded || ('endedDaysAgo' in d && d.endedDaysAgo) ? flyerIso(-(('endedDaysAgo' in d && d.endedDaysAgo) || 2)) : flyerIso(4),
 })
-const boardWithDeals = (long: boolean) => ({
+const boardWithDeals = (long: boolean, allEnded = false) => ({
   ...BOARD,
   list: [
     ...BOARD.list.map((item, i) => ({
       ...item,
       text: long ? `${item.text} ${LONG}` : item.text,
-      deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0], long)),
+      deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0], long, allEnded)),
     })),
     // Two plain lines — no deal — so « Ma liste Flipp » has typed items to carry;
     // the checked one must NOT go (it is already bought).
@@ -108,16 +108,18 @@ async function openGrid(
     guest?: boolean
     /** Flipp ids already opened by the loop on this device (see the Flipp loop tests). */
     clipped?: number[]
+    /** Every staged deal from a PAST flyer — the list a household forgot for a week. */
+    allEnded?: boolean
   } = {},
 ) {
-  const { theme = 'day', surface = 'mobile', viewport = PHONE, longText = false, guest = false, clipped } = opts
+  const { theme = 'day', surface = 'mobile', viewport = PHONE, longText = false, guest = false, clipped, allEnded = false } = opts
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(viewport)
   await mockApi(page, { longText })
   // Override the (static) mock board with one that has a deal on every line. Registered
   // AFTER mockApi so this handler wins for the board read; all other paths fall to mockApi.
   await page.route(/\/api\/board(\?|$)/, (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(boardWithDeals(longText)) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(boardWithDeals(longText, allEnded)) }),
   )
   await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface })
   if (guest) await page.addInitScript(() => localStorage.setItem('babillard-guest-preview', '1'))
@@ -354,4 +356,24 @@ test('an ended deal: the tile says so, the card swaps the dates for the word, an
   await expect(page.locator('.bigcard__flyer')).toBeVisible()
   await shot(page, 'peek-ended')
   await expectNoOverflow(page)
+})
+
+// EVERY deal ended — Marc's list on 2026-09-10, a week after staging: « i only see
+// my liste flipp ». Right: nothing is live, so there is no loop — and therefore no
+// « Reprendre du début » either (it shipped showing one, a restart of nothing). The
+// list door stands alone, primary, and still carries the whole list as typed items.
+test('every deal ended: no loop, no restart — the list door alone, still carrying the list', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await stubFlipp(page)
+  await openGrid(page, { allEnded: true })
+  await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(4)
+  await expect(page.locator('a.cashier__clip')).toHaveCount(0)
+  await expect(page.locator('.cashier__clip-reset')).toHaveCount(0)
+  const list = page.locator('a.cashier__flipp-list')
+  await expect(list).toHaveClass(/btn--primary/)
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), list.click()])
+  await popup.close()
+  const payload = JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as { clippings: unknown[]; items: { term: string }[] }
+  expect(payload.clippings).toEqual([])
+  expect(payload.items.map((i) => i.term)).toEqual(['Lait', 'Pain', 'Pommes', 'Couches', 'Oeufs'])
 })

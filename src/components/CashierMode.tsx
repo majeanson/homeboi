@@ -164,11 +164,11 @@ export function CashierMode({
                   >
                     <InlineIcon name="arrow-up-right-bold" /> {t.shop.clipNext(clipDone + 1, clippable.length)}
                   </a>
-                ) : (
+                ) : clippable.length > 0 ? (
                   <button type="button" className="btn btn--ghost cashier__clip-reset" onClick={resetFlippClipped}>
                     <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.clipAgain}
                   </button>
-                )}
+                ) : null /* nothing live to step through (every deal ended) — no loop, no restart; the list door alone */}
                 {/* Primary once the loop is done — the list is then the thing to show. */}
                 <a
                   className={'btn cashier__flipp-list' + (clipNext ? '' : ' btn--primary')}
