@@ -5,7 +5,14 @@ import '../styles/cercle.css'
 import '../styles/voyage.css'
 // devkit.css — the gallery's own scaffolding chrome (never leaked into the app).
 import '../styles/devkit.css'
-import { useState, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { loadFixtureRoutes, installFixtureFetch } from '../lib/devFixtures'
+import { DayNote } from '../components/board/DayNote'
+import { ActivityBring } from '../components/board/ActivityBring'
+import { DepartureCard } from '../components/board/DepartureCard'
+import { ARegler } from '../components/board/ARegler'
+import { type Member as BoardMember } from '../lib/members'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { useSurface, type Surface } from '../lib/surface'
@@ -299,6 +306,15 @@ function SectionAddDemo() {
 const DEMO_MEMBERS: Member[] = [
   { id: 'm1', displayName: 'Camille', avatarKind: 'color', avatarRef: '#C45E86', colour: '#C45E86', isChild: false, email: null, phone: null, birthday: null, notes: null, gender: 'f' },
   { id: 'm2', displayName: 'Léa', avatarKind: 'color', avatarRef: '#6C8EBF', colour: '#6C8EBF', isChild: true, email: null, phone: null, birthday: null, notes: null, gender: 'f' },
+]
+
+// The board's own member shape — snake_case, straight off `/api/members`, which is a
+// documented standing rule (never remapped to camelCase; the raw row IS the contract).
+// So it cannot reuse DEMO_MEMBERS above, which is the camelCase cercle person. Two
+// shapes, deliberately, per `lib/faces`'s note on the three member shapes in play.
+const DEMO_BOARD_MEMBERS: BoardMember[] = [
+  { id: 'm1', display_name: 'Camille', colour: '#C45E86', is_child: 0 },
+  { id: 'm2', display_name: 'Léa', colour: '#6C8EBF', is_child: 1 },
 ]
 
 // « Voyage partagé » stand-ins — one shared trip with two member households, and a
@@ -803,6 +819,34 @@ function BoundaryDemo() {
   )
 }
 
+// « Données : Réelles | Exemple ». While on, every /api/* GET answers from the e2e
+// fixtures and writes go nowhere — so a card that fetches its OWN data (the departure
+// card, « À régler », the month grid) can finally be looked at in the gallery. Both
+// edges invalidate every query, so flipping the switch re-reads through the new source
+// instead of leaving whatever was cached on screen (which would silently show the real
+// household under a toolbar claiming « Exemple », the worst of both).
+function useFixtures(): [boolean, (on: boolean) => void] {
+  const [on, setOn] = useState(false)
+  const qc = useQueryClient()
+  useEffect(() => {
+    if (!on) return
+    let restore: (() => void) | null = null
+    let cancelled = false
+    void loadFixtureRoutes().then((routes) => {
+      // null = a production build, where the fixtures are compiled out entirely.
+      if (cancelled || !routes) return
+      restore = installFixtureFetch(routes)
+      void qc.invalidateQueries()
+    })
+    return () => {
+      cancelled = true
+      restore?.()
+      void qc.invalidateQueries()
+    }
+  }, [on, qc])
+  return [on, setOn]
+}
+
 export function DevKit() {
   const t = useT()
   const { lang, setLang } = useLang()
@@ -810,6 +854,7 @@ export function DevKit() {
   const { audience, setAudience, locked } = useAudience()
   const [theme, setThemeMirror] = useState<Theme>(() => getTheme())
   const [query, setQuery] = useState('')
+  const [fixtures, setFixtures] = useFixtures()
 
   // Live state for the interactive specimens.
   const [text1, setText1] = useState('')
@@ -3495,6 +3540,77 @@ export function DevKit() {
         </Demo>
       ),
     },
+    // ── Board cards ─────────────────────────────────────────────────────
+    // The parity audit excused ~22 components with « needs live household data ».
+    // Two of those excuses were simply wrong — DayNote and ActivityBring take props
+    // and always did. The rest now have the « Données : Exemple » switch above.
+    {
+      cat: 'Affichage',
+      name: 'DayNote',
+      file: 'components/board/DayNote.tsx',
+      kw: 'note du jour cuisine babillard mémo journée demain préparation',
+      render: () => (
+        <>
+          <Demo label="La note d'une journée, écrite dans La cuisine et relue en lecture seule sur le babillard. Teintée par la personne qu'elle concerne (ici Camille) ; sans personne, elle prend la teinte neutre de la Maisonnée.">
+            <DayNote
+              note={{ id: 'dn1', text: 'Sortir le bac bleu · Léa a sa collation spéciale', member_id: 'm1' }}
+              members={DEMO_BOARD_MEMBERS}
+            />
+          </Demo>
+          <Demo label="`label` réécrit l'entête — c'est ainsi que la note de PRÉPARATION de demain apparaît aujourd'hui sans se faire passer pour celle d'aujourd'hui.">
+            <DayNote
+              note={{ id: 'dn2', text: 'Préparer les sacs de piscine ce soir', member_id: null }}
+              members={DEMO_BOARD_MEMBERS}
+              label="Note · Demain"
+            />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'ActivityBring',
+      file: 'components/board/ActivityBring.tsx',
+      kw: 'à apporter avant de partir activité soccer gourde liste modèle todo',
+      render: () => (
+        <Demo label="« À apporter » dans « Avant de partir » : une activité est un rendez-vous récurrent portant un `bring_template_id` (une liste todo enregistrée), et la carte en montre les items. « Ajouter à cocher » instancie la liste sur la journée en vraies tâches cochables. Sans données d'exemple les modèles arrivent vides — bascule « Données : Exemple » en haut pour voir les items.">
+          <ActivityBring
+            events={[
+              { id: 'ev1', title: 'Soccer de Léa', bring_template_id: 'tpl-soccer' },
+              { id: 'ev2', title: 'Piscine', bring_template_id: 'tpl-piscine' },
+            ]}
+            day={todayLocalDay()}
+          />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'DepartureCard',
+      file: 'components/board/DepartureCard.tsx',
+      kw: 'avant de partir départ matin lunchs sacs météo carte babillard',
+      render: () => (
+        <Demo label="« Avant de partir » — la carte pré-vol du matin. Elle va chercher SES propres données (le payload du babillard, que la page sondait déjà : zéro requête de plus), donc à vide elle ne montre rien. C'est exactement le genre de carte que la galerie ne pouvait pas montrer avant l'interrupteur « Données : Exemple » en haut de page — allume-le.">
+          <DepartureCard />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'ARegler',
+      file: 'components/board/ARegler.tsx',
+      kw: 'à régler frictions signaux anniversaire cadeau manquant babillard puce carte',
+      render: () => (
+        <>
+          <Demo label="« À régler » — les petites frictions que la maison a laissées en plan (une fête sans idée de cadeau, un projet en retard). Elle se lit depuis son propre hook ; allume « Données : Exemple » pour la remplir. Vide, elle ne rend RIEN : c'est une carte qui a le droit de disparaître (useReportEmpty), pas une carte qui affiche « rien à régler ».">
+            <ARegler enabled variant="card" />
+          </Demo>
+          <Demo label="`variant='chip'` — la même chose en une puce en ligne, hors CardSlot (elle ne signale donc pas son vide au babillard).">
+            <ARegler enabled variant="chip" />
+          </Demo>
+        </>
+      ),
+    },
     {
       cat: 'Overlays & chrome',
       name: 'FaceSheet',
@@ -3627,8 +3743,25 @@ export function DevKit() {
             ]}
             onChange={setLang}
           />
+          <AxisToggle<'off' | 'on'>
+            label="Données"
+            value={fixtures ? 'on' : 'off'}
+            options={[
+              { v: 'off', label: 'Réelles' },
+              { v: 'on', label: 'Exemple' },
+            ]}
+            onChange={(v) => setFixtures(v === 'on')}
+          />
         </div>
         {locked && <p className="devkit__warn mono">Kiosk verrouillé (?kid=1) — l’audience est figée.</p>}
+        {fixtures && (
+          <p className="devkit__warn mono">
+            Données d’exemple : les lectures /api/* répondent depuis les fixtures e2e et les écritures ne
+            partent pas. Les cartes qui vont chercher leurs propres données s’affichent enfin remplies —
+            c’est la moitié de la galerie qui n’était pas regardable autrement. Ta vraie maisonnée n’est
+            pas touchée ; coupe l’interrupteur pour la revoir.
+          </p>
+        )}
       </header>
 
       <main className="devkit__body">

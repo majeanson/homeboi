@@ -94,13 +94,21 @@ const ONLINE_ONLY = [
   // B-11 (bmad/10) — /dev/kit is a dev-only component gallery, never a kiosk
   // surface; accept no offline gallery rather than tax every install.
   //
+  // 105 → 120 KB later the same day: the fixture switch (« Données : Exemple ») and the
+  // first four board-card specimens it unlocks took it to 104 KB, which leaves no room
+  // for the next entry. The catalogue is SUPPOSED to keep growing — that is the whole
+  // point of the parity guard — so the cap is set with headroom rather than being nudged
+  // by a kilobyte per specimen. The e2e fixtures themselves are NOT in here: they sit
+  // behind `import.meta.env.DEV` and compile out (`grep "Clinique dentaire Sourire"
+  // dist/assets` finds nothing — that string exists only in e2e/mocks.ts).
+  //
   // 90 → 105 KB on 2026-09-09: the parity pass added the eight specimens
   // COMPONENTS.md already claimed were gallery-suitable (FormScene, Loading/
   // PairPrompt, TopBar, HelpDot, SectionIntro, SwipeDeletePane, DocUploadButton,
   // DrawPad) and it landed at 94 KB. Almost all of that is the specimen PROSE,
   // which is the point of the page. Raised deliberately, not to unblock a push —
   // this chunk is lazy, un-precached, and reachable only from Réglages ▸ Système.
-  { re: /^DevKit-/, cap: 105 * KB },
+  { re: /^DevKit-/, cap: 120 * KB },
 ]
 
 // Lazy chunks that ARE required in the precache (unlike ONLINE_ONLY) but are too

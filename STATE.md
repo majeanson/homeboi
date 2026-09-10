@@ -28,7 +28,7 @@
 
 ### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
 
-- `npm run typecheck` · `npm test` (2055 in 162 files, 2026-09-09) · `npm run build` · `npm run knip` — green.
+- `npm run typecheck` · `npm test` (2062 in 163 files, 2026-09-09) · `npm run build` · `npm run knip` — green.
 - `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
@@ -216,6 +216,19 @@ of checking:
   written down now, and the guard holds it closed in both directions — a new category
   must join the table, and a retired one must leave it. That is the exact route
   « Champs & saisie » took in beside « Saisie ».
+- **The gallery grew a fourth axis: « Données : Réelles | Exemple ».** The audit had
+  excused ~20 components with *needs live household data* — and those are the ones most
+  worth looking at across theme × lens × locale, so the excuse was the problem. While the
+  switch is on, every `/api/*` GET answers from `e2e/mocks.ts`'s `ROUTES` (borrowed, not
+  re-invented — a parallel fixture set would drift, which is what this whole audit was
+  about) and writes go nowhere. It compiles out of production behind
+  `import.meta.env.DEV`; the proof is that `grep "Clinique dentaire Sourire" dist/assets`
+  finds nothing while the string does exist in the fixtures. **Two of my own excuses were
+  simply wrong**: `DayNote` and `ActivityBring` take props and always did. Four board
+  cards now have specimens (those two, plus `DepartureCard` and `ARegler` through the
+  switch), and **`e2e/devkit.spec.ts` expands every specimen and fails on a `pageerror`** —
+  until now a broken specimen only surfaced when a human happened to open it, and read as
+  "this primitive is broken" rather than "the demo is".
 
 > **The lesson, again, and it was mine this time.** All six assertions were proven red
 > against planted violations — but the *first* prover reported all six "green" while

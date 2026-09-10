@@ -451,6 +451,11 @@ const E2E_LABEL_ALLOWED: Record<string, string> = {
   'Routines du soir — Compléter': 'fixture form name + « Compléter »',
   'En cas de pépin — Compléter': 'fixture form name + « Compléter »',
   'Wi-Fi — Compléter': 'fixture form name + « Compléter »',
+  // /dev/kit's toolbar is DEV-ONLY chrome and deliberately outside i18n — the whole
+  // gallery hard-codes its own French (« Thème », « Jour », « Nuit »), because it is a
+  // developer tool, not a surface a household reads. This rule protects the copy a
+  // household reads, so the toolbar's own axis labels are exempt by that same logic.
+  Réelles: 'the /dev/kit data-source toolbar (dev-only chrome, not app copy)',
 }
 
 describe('e2e asserts labels the app can render', () => {
