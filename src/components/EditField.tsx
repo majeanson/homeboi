@@ -1,7 +1,8 @@
-import { useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
+import { revealOnOpen } from '../lib/motion'
 import { Icon, type IconName } from './Icon'
 import { Reorder } from './Reorder'
 import { StatusMessage } from './StatusMessage'
@@ -140,6 +141,10 @@ export function EditField({
 }: EditFieldProps) {
   const t = useT()
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+  // A field that auto-focuses is a field someone just OPENED — an inline rename on
+  // the last row of a long list, a SectionAdd near the foot of a page. Bring it on
+  // screen if it isn't; `block: 'nearest'` means an already-visible field never moves.
+  useEffect(() => (autoFocus ? revealOnOpen(inputRef.current) : undefined), [autoFocus])
   // After the hooks (rules-of-hooks): a guest sees no add/edit box at all.
   const hidden = readOnly ?? isGuest()
   const isForm = as === 'form'

@@ -79,3 +79,30 @@ export function scrollIntoViewSettled(
     window.clearTimeout(timer)
   }
 }
+
+// « The thing I just opened must be ON SCREEN. »
+//
+// Reported from the device (2026-09-10): tap ＋ on an empty day low in the kitchen
+// week and the inline planner opens with its dropdown hanging below the fold — the
+// field is focused, the options are rendered, and you can see none of it. The same
+// shape exists anywhere a composer opens in place: a `SectionAdd` near the foot of a
+// long list, an inline rename on the last row, a combobox whose list is taller than
+// the room under it.
+//
+// `block: 'nearest'` is the whole point and is deliberately NOT 'center' or 'start':
+// it scrolls the MINIMUM needed, so a field that is already comfortably visible does
+// not move at all. A composer that yanks the page every time you tap it is worse than
+// one that occasionally sits low. It also means this is safe to call unconditionally
+// from a shared primitive — the common case is a no-op.
+//
+// Deferred one frame: the element that must be revealed (a dropdown, an expanded
+// composer) is usually being mounted by the very render that calls this, so its box
+// does not exist yet. Returns a cancel for the effect cleanup.
+export function revealOnOpen(el: HTMLElement | null): () => void {
+  if (!el) return () => {}
+  const raf = requestAnimationFrame(() => {
+    if (!el.isConnected) return
+    el.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest', inline: 'nearest' })
+  })
+  return () => cancelAnimationFrame(raf)
+}

@@ -1,10 +1,11 @@
-import { useDeferredValue, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useDeferredValue, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { fold } from '../lib/normalize'
 import { bumpFrequent, frequentScores } from '../lib/frequents'
 import { isGuest } from '../lib/device'
 import type { VoiceInput } from '../lib/useVoiceInput'
+import { revealOnOpen } from '../lib/motion'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { StatusMessage } from './StatusMessage'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
@@ -173,6 +174,7 @@ export function EntityCombobox<T>({
 }: EntityComboboxProps<T>) {
   const t = useT()
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const listId = useId()
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
@@ -309,6 +311,23 @@ export function EntityCombobox<T>({
   const canOpen = typeaheadOnly ? !!value.trim() : true
   const listOpen = open && canOpen && !disabled && (shown.length > 0 || (!!value.trim() && !!noMatchLabel))
 
+  // Reported from the device (2026-09-10): tap ＋ on an empty kitchen day low in the
+  // week and the planner opens with its dropdown hanging below the fold — focused,
+  // rendered, invisible. The field is only half the answer: the OPTIONS are what you
+  // opened it for, and they are what falls off the screen, so the reveal follows the
+  // menu once it exists and the input while there is no menu yet.
+  //
+  // `revealOnOpen` scrolls the MINIMUM (block: 'nearest'), so a composer already in
+  // view never jumps — which is what makes this safe to do from the shared primitive
+  // for every call site instead of per-surface.
+  useEffect(() => {
+    if (disabled) return
+    return revealOnOpen(listOpen ? menuRef.current : autoFocus ? inputRef.current : null)
+    // `listOpen` flips as options filter; re-running is the point (the menu changes
+    // height as you type, and a taller menu can push itself off screen again).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listOpen, autoFocus, disabled])
+
   if (hidden) return null
 
   return (
@@ -434,7 +453,7 @@ export function EntityCombobox<T>({
       {voice && <VoiceStatus voice={voice} />}
 
       {listOpen && (
-        <div className="combobox__menu">
+        <div className="combobox__menu" ref={menuRef}>
           {/* A header control (the souper « + ingrédients » opt-in) is a plain
               <button>, and a plain button does NOT take focus on mousedown in Safari
               or Firefox. Pressing it therefore fired the wrapper's blur with a null
