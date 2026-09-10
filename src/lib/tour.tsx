@@ -45,6 +45,8 @@ type TourValue = {
   stepIndex: number
   isActive: boolean
   start: (id: string) => void
+  /** Swap to another tour from inside one, marking the one you leave as seen. */
+  branchTo: (id: string) => void
   // Run a Tour VALUE that isn't in the static TOURS list — the adaptive
   // « tour des trouvailles » (lib/discovery buildDiscoveryTour) assembles its
   // steps at runtime from this household's data, so it can't be registered
@@ -60,6 +62,7 @@ const TourContext = createContext<TourValue>({
   stepIndex: 0,
   isActive: false,
   start: () => {},
+  branchTo: () => {},
   startTour: () => {},
   next: () => {},
   prev: () => {},
@@ -100,6 +103,26 @@ export function TourProvider({ children }: { children: ReactNode }) {
     (id: string) => {
       const tour = TOURS.find((tr) => tr.id === id)
       if (!tour) return
+      startTour(tour)
+    },
+    [startTour],
+  )
+
+  // Swap tours from inside one (the welcome card's « Voir les six sections »).
+  //
+  // It marks the tour you are LEAVING as seen, which matters: the auto-launch gates on
+  // `essentials` having been seen, and someone who deliberately chose the long tour has
+  // answered that question — without this they would be greeted by the same welcome
+  // card again on the next load, having just taken the tour. Generic on purpose: any
+  // future branch means "this tour has done its job", whatever it branched into.
+  const branchTo = useCallback(
+    (id: string) => {
+      const tour = TOURS.find((tr) => tr.id === id)
+      if (!tour) return
+      setActiveTour((cur) => {
+        if (cur) markTourSeen(cur.id)
+        return cur
+      })
       startTour(tour)
     },
     [startTour],
@@ -158,6 +181,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     stepIndex,
     isActive: activeTour != null,
     start,
+    branchTo,
     startTour,
     next,
     prev,

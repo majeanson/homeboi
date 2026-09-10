@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
+import { TOURS } from './tourContent'
 import { join } from 'node:path'
 
 // Numbers written in prose go stale silently, and a stale number is worse than no
@@ -23,7 +24,12 @@ const guideCards = () => {
   const body = s.slice(s.indexOf('export const GUIDE'))
   return new Set([...body.matchAll(/^ {4}id: '([a-z0-9-]+)'/gm)].map((m) => m[1])).size
 }
-const tours = () => new Set([...read('src/lib/tourContent.ts').matchAll(/^ {4}id: '([a-z-]+)',$/gm)].map((m) => m[1])).size
+// Counted from the MODULE, not from its text. The textual scan this used to do (a
+// 4-space `id: '…'` literal) went blind the moment a tour stopped being a literal:
+// « le grand tour » is DERIVED (tourContent's `sectionChain` builds it from the section
+// tours), so the docs kept claiming 9 tours while the app shipped 10 — and the guard
+// that exists to stop exactly that stayed green, because it could not see the tenth.
+const tours = () => TOURS.length
 const registries = () => readdirSync(join(ROOT, 'src', 'lib')).filter((f) => f.endsWith('Help.ts')).length
 // The state matrix, parsed from its own table. Two traps, both hit while writing this,
 // and both of the kind that report a confident wrong number rather than throwing:

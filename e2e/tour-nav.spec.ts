@@ -192,15 +192,59 @@ test('Réglages has a « ? » at last — and arming it reaches its section help
 // this walks it end to end and pins that every hub route is actually visited. What it
 // really guards is the engine half: a step carrying a `route` has to navigate on
 // ENTERING it, or the tour spotlights anchors that are not on the page.
+test('the welcome card offers a QUICK tour or the full one', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', tour: true })
+  await page.goto('/board')
+  await page.locator('.tour').waitFor({ state: 'visible', timeout: 15_000 })
+
+  // Both doors are on the FIRST card, and only there — a tour that asked again at
+  // every step would be nagging, not offering.
+  const full = page.getByRole('button', { name: /Voir les six sections|See all six/ })
+  await expect(full, 'the welcome card must offer the full tour').toBeVisible()
+  await page.getByRole('button', { name: /Suivant|Next/ }).click()
+  await expect(full, 'the choice belongs to the welcome card alone').toHaveCount(0)
+})
+
+test('the quick tour stays quick — it never leaves the board', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', tour: true })
+  await page.goto('/board')
+  await page.locator('.tour').waitFor({ state: 'visible', timeout: 15_000 })
+
+  const next = page.getByRole('button', { name: /Suivant|Next|Terminé|Done/ })
+  const routes = new Set<string>()
+  for (let i = 0; i < 60; i++) {
+    if (!(await page.locator('.tour').isVisible())) break
+    routes.add(new URL(page.url()).pathname)
+    if (!(await next.isVisible())) break
+    await next.click()
+    await page.waitForTimeout(100)
+  }
+  // The short tour is the 30-second orientation it says it is: it introduces the six
+  // tabs, it does not WALK them. Someone who wanted that has the other door.
+  expect([...routes], 'the quick tour should not tour the sections').toEqual(['/board'])
+})
+
 test('« Première fois » walks every section, and lands back where it started', async ({ page }) => {
   test.setTimeout(180_000)
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page)
-  // Tour NOT seen → « Première fois » auto-starts, which is the first-run path itself.
+  // Tour NOT seen → the welcome card auto-starts, which is the first-run path itself.
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', tour: true })
   await page.goto('/board')
   await page.locator('.tour').waitFor({ state: 'visible', timeout: 15_000 })
+
+  // Take the full-tour door. The default is the QUICK tour: the app ASKS rather than
+  // deciding that a ~40-step walk is what every new household wants on first load.
+  await page.getByRole('button', { name: /Voir les six sections|See all six/ }).click()
+  await page.locator('.tour').waitFor({ state: 'visible' })
 
   // The advance button is « Suivant » until the LAST step, where it becomes
   // « Terminé » — matching only the first leaves the walk stranded on the final card

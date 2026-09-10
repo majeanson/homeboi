@@ -54,7 +54,7 @@ function placeCard(rect: Rect, cardW: number, cardH: number): Pos {
 }
 
 export function TourOverlay() {
-  const { activeTour, stepIndex, isActive, next, prev, end } = useTour()
+  const { activeTour, stepIndex, isActive, next, prev, end, branchTo } = useTour()
   const { audience } = useAudience()
   const { surface } = useSurface()
   const t = useT()
@@ -235,6 +235,14 @@ export function TourOverlay() {
             {!isFirst && (
               <button type="button" className="btn btn--ghost" onClick={prev}>
                 {t.tour.back}
+              </button>
+            )}
+            {/* « … or show me everything »: the welcome card's second door, which swaps
+                the quick tour for the full six-section one. Ghost, not primary — the
+                short tour stays the default answer for someone who just wants in. */}
+            {step.branch && (
+              <button type="button" className="btn btn--ghost tour__branch" onClick={() => branchTo(step.branch!.toTour)}>
+                {step.branch.label[lang]}
               </button>
             )}
             <button type="button" className="btn btn--primary" onClick={next}>

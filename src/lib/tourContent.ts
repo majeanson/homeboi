@@ -48,6 +48,13 @@ type TourStep = {
   // (deep reference: tell me everything), via the same ?card= path as HelpDot.
   // Pair it with `body: guideWhat(<id>)` to single-source the one-liner too.
   card?: string
+  // A second door on this step: « … or show me everything ». Renders beside
+  // « Suivant » and switches to another tour (TourOverlay + lib/tour's startTour).
+  // Used once — the welcome card offers the quick tour or the full one — because a
+  // first-run tour that walks all six sections is right for someone settling in and
+  // wrong for someone who just wants to get to their list. Asking costs one tap and
+  // beats guessing on their behalf.
+  branch?: { toTour: string; label: Bi }
   // Navigate here BEFORE spotlighting this step. A tour that walks the whole app
   // (the « Première fois » grand tour below) changes section mid-run; the engine
   // applies this on entering the step, going forward AND backward, so stepping back
@@ -102,10 +109,18 @@ const BASE_TOURS: Tour[] = [
     steps: [
       {
         icon: 'sun-bold',
+        // The one place the app asks « how much do you want right now? ». « Suivant »
+        // keeps the short orientation; the second door walks all six sections. Both
+        // are stoppable at any step and replayable from Réglages ▸ Découvrir, so
+        // neither choice is a commitment.
+        branch: {
+          toTour: 'grand',
+          label: { fr: 'Voir les six sections', en: 'See all six sections' },
+        },
         title: { fr: 'Bienvenue sur Babillard', en: 'Welcome to Babillard' },
         body: {
-          fr: 'Babillard, c’est toute la maisonnée d’un coup d’œil : l’agenda, le souper, les listes, les corvées et les routines des enfants. Pas de points, pas de notifications. Ce tour passe par les six sections, une à une, pour que tu saches ce qu’il y a où — tu peux l’arrêter en tout temps et le reprendre depuis Réglages ▸ Découvrir.',
-          en: 'Babillard is your whole household at a glance: the agenda, supper, lists, chores and the kids’ routines. No points, no notifications. This tour walks all six sections, one by one, so you know what lives where — stop it anytime and pick it up again from Settings ▸ Discover.',
+          fr: 'Babillard, c’est toute la maisonnée d’un coup d’œil : l’agenda, le souper, les listes, les corvées et les routines des enfants. Pas de points, pas de notifications. Un tour rapide en 30 secondes, ou la visite complète des six sections — au choix, et tu peux arrêter n’importe quand.',
+          en: 'Babillard is your whole household at a glance: the agenda, supper, lists, chores and the kids’ routines. No points, no notifications. A quick 30-second tour, or the full walk through all six sections — your call, and you can stop anytime.',
         },
       },
       {
@@ -528,6 +543,17 @@ function sectionChain(): TourStep[] {
   return out
 }
 
-export const TOURS: Tour[] = BASE_TOURS.map((t) =>
-  t.id === 'essentials' ? { ...t, steps: [...t.steps, ...sectionChain()] } : t,
-)
+const ESSENTIALS = BASE_TOURS.find((t) => t.id === 'essentials')
+if (!ESSENTIALS) throw new Error('tourContent: the essentials tour is gone')
+
+// « Le grand tour » — the same welcome, then every section. A separate tour rather
+// than a longer `essentials`, so the short one stays exactly what it was for anyone
+// who wants 30 seconds and their list. Its own welcome step drops the branch button:
+// you are already on the long road.
+const GRAND: Tour = {
+  id: 'grand',
+  startRoute: ESSENTIALS.startRoute,
+  steps: [...ESSENTIALS.steps.map(({ branch: _branch, ...step }) => step), ...sectionChain()],
+}
+
+export const TOURS: Tour[] = [...BASE_TOURS, GRAND]

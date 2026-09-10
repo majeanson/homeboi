@@ -103,8 +103,13 @@ describe('tour rule', () => {
 
   it('every tour id is a real GUIDE card, so « En savoir plus » has somewhere to land', () => {
     const cards = new Set(GUIDE.map((e) => e.id))
-    // `essentials` is the app-wide welcome tour: it belongs to no single section.
-    const orphans = TOURS.map((t) => t.id).filter((id) => id !== 'essentials' && !cards.has(id))
+    // Two tours belong to no single SECTION, so no single guide card can back them:
+    // `essentials` (the 30-second welcome) and `grand` (the same welcome, then all six
+    // sections — the « Voir les six sections » door on the welcome card). Both are
+    // app-wide by definition. Anything else must name a real card, or its
+    // « En savoir plus » is a door onto nothing.
+    const APP_WIDE = new Set(['essentials', 'grand'])
+    const orphans = TOURS.map((t) => t.id).filter((id) => !APP_WIDE.has(id) && !cards.has(id))
     expect(orphans).toEqual([])
   })
 
