@@ -2126,6 +2126,12 @@ export const FR = {
     // « Le truc du compagnon » — le conseil par pictogramme (lib/routineTips), et le
     // champ où un parent écrit le SIEN (il gagne toujours sur le catalogue).
     tip: 'Le truc',
+    // The per-card aids fold (2026-09-10). Four controls — minuterie, truc, voix,
+    // photo — under EVERY card meant three wrapped rows of secondary buttons per
+    // step at 390px, so a four-step routine opened as twelve rows of things you
+    // are not doing. They live behind this now, and the fold opens itself the
+    // moment a card actually carries one (a fold never hides a filled field).
+    aids: 'Minuterie, truc, voix, photo…',
     tipOff: 'Retirer le truc',
     tipPlaceholder: 'Écris ton truc à toi…',
     tipHint: 'Ton compagnon le dira quand l’enfant le touchera.',

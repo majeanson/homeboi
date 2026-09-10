@@ -47,6 +47,12 @@ export function CardDeckEditor({
   // being asked (you can't edit what you can't see); this state is only what opens an
   // empty one. 0 is a valid index, so guard on !== null.
   const [tipFor, setTipFor] = useState<number | null>(null)
+  // Which card's AIDS row is open. Same shape as tipFor, same reason: four controls
+  // under every card wrapped to three rows each at 390px, so a four-step routine
+  // opened as twelve rows of secondary buttons before its footer. A card that
+  // already carries an aid shows the row unasked — a fold never hides a filled
+  // field (LEAN.md) — so this only opens an EMPTY one.
+  const [aidsFor, setAidsFor] = useState<number | null>(null)
   // R2 audio storage off (the upload 503'd once) → hide every clip control for
   // the rest of this edit, the same way PhotosSection hides on a 503. The kid
   // view already falls back to TTS, so nothing breaks — the control just isn't
@@ -149,6 +155,26 @@ export function CardDeckEditor({
               indented row under the card so the affordances read as a single group
               and wrap together instead of as separate stacked strips. The timer
               always shows; the media controls hide where R2 audio/photo is unset. */}
+          {/* The aids fold. `hasAid` is what keeps the invariant: a card carrying a
+              timer, a truc, a clip or a photo renders the row open and without the
+              summary, because a fold that hides a filled field is how a household
+              loses track of what it set. */}
+          {(() => {
+            const hasAid = !!(card.seconds || card.tip || card.clipKey || card.photoKey)
+            const open = hasAid || aidsFor === i
+            return (
+              <>
+                {!hasAid && (
+                  <button
+                    type="button"
+                    className="deck__aids-toggle mono"
+                    onClick={() => setAidsFor(aidsFor === i ? null : i)}
+                    aria-expanded={open}
+                  >
+                    <InlineIcon name={open ? 'caret-up-bold' : 'caret-down-bold'} size={12} /> {t.routines.aids}
+                  </button>
+                )}
+                {open && (
           <div className="deck__media">
             <TimerControl
               seconds={card.seconds}
@@ -189,6 +215,10 @@ export function CardDeckEditor({
                 />
               )}
             </div>
+                )}
+              </>
+            )
+          })()}
           {/* The tip field sits on its OWN row under the controls, not inside them: it's
               a full-width text box, and stuffing it into the wrapping button row is
               exactly the hand-rolled-flex-row overflow this codebase keeps re-learning. */}

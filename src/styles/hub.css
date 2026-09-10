@@ -698,6 +698,25 @@
    inner control wrappers collapse (display:contents) so every pill — record /
    play / add-photo / change / draw / remove — flows directly into this row and
    wraps together. The note spans (offline / error) ride along at the end. */
+/* The aids summary — one quiet line where four wrapped rows of buttons used to sit
+   under every card. Shares the deck's 56px indent so it reads as part of the card,
+   not as a new section, and it only exists while the card carries no aid at all
+   (see CardDeckEditor: a filled card shows its row outright). */
+.deck__aids-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 6px 56px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.deck__aids-toggle:hover {
+  color: var(--ink);
+}
 .deck__media {
   display: flex;
   flex-wrap: wrap;

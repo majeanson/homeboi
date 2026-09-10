@@ -109,6 +109,11 @@ test('a parent’s own « truc » reaches the saved POST body', async ({ page })
   await form.getByLabel('mot', { exact: true }).fill('Manteau')
 
   // …then open 💡 « Le truc » and type the parent's own. Theirs beats the catalog.
+  // The aids (minuterie · truc · voix · photo) live behind a per-card fold since
+  // 2026-09-10 — a fresh card carries none, so this is the door a parent takes too.
+  // A card that ALREADY has one shows its controls without the fold; that half is
+  // held by e2e/routine-aids-fold.spec.ts.
+  await form.locator('.deck__aids-toggle').first().click()
   await form.getByRole('button', { name: 'Le truc', exact: true }).click()
   await form.getByLabel('Le truc', { exact: true }).fill('regarde derrière la porte')
 

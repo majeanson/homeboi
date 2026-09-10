@@ -65,10 +65,16 @@
   line-height: 0;
   box-shadow: var(--shadow-sm);
 }
-/* "Épingler au babillard" — bottom-left, mirroring the delete corner. */
+/* « Épingler au babillard » — the TOP-left corner, mirroring the delete across the
+   image's top edge. It used to say bottom-left « mirroring the delete corner », but
+   the two corners are not mirrors: `.drawgallery__item` is the positioned ancestor
+   and it is taller than the drawing, so `bottom` landed the pin on the CREDIT row —
+   measured 2026-09-10, the pin's box (x 21–45) sat straight over the author's face
+   and the first letters of their name (x 16–59). Both overlays belong over the
+   picture, where the tile's own controls live. */
 .drawgallery__pin {
   position: absolute;
-  bottom: 0.3rem;
+  top: 0.3rem;
   left: 0.3rem;
   display: inline-flex;
   padding: 0.3rem;

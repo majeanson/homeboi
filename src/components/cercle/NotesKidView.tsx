@@ -7,6 +7,8 @@ import { FAMILY_NOTES_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
 import { facesFromMembers, type RawMember } from '../../lib/faces'
 import { type FamilyNote, visibleNotes } from '../../lib/familyNotes'
 import { plainText } from '../../lib/noteMarkdown'
+import { pictoFor } from '../../lib/picto'
+import { imgUrl } from '../../lib/image'
 import { useSpeak, playNarration } from '../../lib/speak'
 import { EmptyState } from '../EmptyState'
 import { Icon } from '../Icon'
@@ -55,6 +57,14 @@ export function NotesKidView() {
     )
   }
 
+  // Tier 2 of the tile picture (see the grid below): the same title-to-emoji map the
+  // list rows use. '' when it knows nothing, which is the signal to fall through.
+  // The BODY is a second source, and a fair one here: a pre-reader picks by picture,
+  // so « Épicerie · la marque de yogourt que Léa mange » drawing a 🥛 beats a third
+  // identical document glyph. Title first — it is what the tile is labelled with —
+  // and the body only when the title knows nothing.
+  const picto = (n: FamilyNote): string => pictoFor(titleOf(n), '') || pictoFor(plainText(n.text), '')
+
   function tap(n: FamilyNote) {
     if (n.media_kind === 'audio' && n.media_key) {
       playNarration(n.media_key, titleOf(n), speak)
@@ -75,17 +85,35 @@ export function NotesKidView() {
           <div className="cercle-kid__grid">
             {notes.map((n) => (
               <button type="button" key={n.id} className="cercle-kid__card" onClick={() => tap(n)}>
-                {/* The picture wears its AUTHOR's colour — the same `author_member_id
-                    → colour` rule the parent row tints with (NotesList). It used to be
-                    one hard-coded teal for every note, so a pre-reader who can't read
-                    the title saw three identical pictures and could only pick by
-                    position; « la note de maman » is now pink and papa's is blue.
-                    Teal stays the fallback for a Maisonnée note with no author. */}
-                <Icon
-                  name={n.media_kind === 'audio' ? 'speaker-high-bold' : n.media_kind === 'image' || n.media_kind === 'drawing' ? 'image-square-bold' : 'file-text-bold'}
-                  size={56}
-                  color={colorOf(n.author_member_id) ?? '#2A8F85'}
-                />
+                {/* PICTURE-FIRST, in three tiers — because « touche l'image » was a
+                    promise the tile did not keep: with no media and no picto every
+                    note drew the same document glyph, so a pre-reader could tell two
+                    notes apart only by a WORD they cannot read (2026-09-10 matrix
+                    pass; the kitchen and liste toddler views are genuinely
+                    picture-first, this one was not).
+                      1. the note's OWN picture, when it has one — a drawing or a
+                         shared photo IS the thing, and a generic 🖼 glyph in front of
+                         a real drawing is the worst of the three.
+                      2. a picto derived from the title, reusing `pictoFor` (the same
+                         map the list rows use): « Garderie » → 🏫, « Dentiste » → 🦷.
+                         It covers about half of real titles and returns nothing for
+                         the rest, which is why tier 3 stays.
+                      3. the kind glyph, in the AUTHOR's colour (unchanged).
+                    Only tier 3 is tinted: a photo and an emoji carry their own
+                    colours, and tinting them would fight the picture. */}
+                {(n.media_kind === 'image' || n.media_kind === 'drawing') && n.media_key ? (
+                  <img className="cercle-kid__pic" src={imgUrl(n.media_key)} alt="" />
+                ) : picto(n) ? (
+                  <span className="cercle-kid__emoji" aria-hidden="true">
+                    {picto(n)}
+                  </span>
+                ) : (
+                  <Icon
+                    name={n.media_kind === 'audio' ? 'speaker-high-bold' : 'file-text-bold'}
+                    size={56}
+                    color={colorOf(n.author_member_id) ?? '#2A8F85'}
+                  />
+                )}
                 <span className="cercle-kid__name">{titleOf(n)}</span>
               </button>
             ))}

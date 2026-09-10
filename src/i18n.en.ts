@@ -1883,6 +1883,7 @@ export const EN: typeof FR = {
       evening: ['Shhh… it’s nearly bedtime.', 'The house is settling, and so are we.'],
     },
     tip: 'The trick',
+    aids: 'Timer, trick, voice, photo…',
     tipOff: 'Remove the trick',
     tipPlaceholder: 'Write your own trick…',
     tipHint: 'Your companion will say it when the child taps them.',

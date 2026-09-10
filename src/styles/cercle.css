@@ -275,6 +275,21 @@
 .cercle-kid__card:active {
   transform: scale(0.96);
 }
+/* The toddler note tile's picture (NotesKidView). Both wear the 56px the kind glyph
+   already used, so the grid rhythm is unchanged — only what fills it differs.
+   The photo is cropped square: a drawing or a shared photo IS the note here, and a
+   letterboxed thumbnail reads as a broken image to a pre-reader. */
+.cercle-kid__pic {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+.cercle-kid__emoji {
+  font-size: 44px;
+  line-height: 56px;
+  height: 56px;
+}
 .cercle-kid__name {
   font-size: 1.15rem;
   font-weight: 700;

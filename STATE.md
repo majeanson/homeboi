@@ -98,10 +98,11 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **5** — §4-G wrote nine on 2026-09-10 (the pass that
-> opened all 100 state-matrix screenshots instead of sampling them) and four closed the
-> same day: the greeting, the invisible glyph, the clipped year, and the one that only
-> needed Marc's word. It had
+> a number you can trust. It reads **2** — §4-G wrote nine on 2026-09-10 (the pass that
+> opened all 100 state-matrix screenshots instead of sampling them) and seven closed the
+> same day. The two left are the ones that need a look on real glass rather than a
+> screenshot: Maison ▸ Routines wasting the wall, and the pantry's square tick against
+> La liste's round one. It had
 > read **0** for one day (2026-09-09), when `REVIEW-PASS.md`'s last finding closed and
 > `PARITY.md`'s Wave D became a `[~]`. That zero was true and is worth keeping in view:
 > the ledgers really are settled, and everything open now was found by LOOKING at the
@@ -140,6 +141,50 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### Two design changes, one real defect — and four findings that were WRONG (2026-09-10)
+
+The rest of §4-G, and the honest ratio: of the five items left, two were worth
+building, one was a real defect, and **four of the "smaller" five did not survive
+contact with the code**.
+
+**The routine builder folds its per-card aids.** Four controls (minuterie · truc ·
+voix · photo) under EVERY card wrapped to three rows each at 390px, so a four-step
+routine opened as twelve rows of things you are not doing. One quiet summary line per
+card now, single-open — the whole routine fits on one screen with its footer. The
+half worth testing is the invariant, not the fold: a card that CARRIES an aid renders
+its row open and shows no summary at all, because a fold in front of a filled field is
+how a household loses what it set. `routine-tips.spec.ts` learned the new door in the
+same commit — the path a parent takes moved, so the spec that drives it moved with it.
+
+**Toddler « Les notes » is picture-first at last.** It promised « Touche l'image » and
+then drew the same document glyph on every tile, so a pre-reader could tell two notes
+apart only by a word they cannot read. A picture now comes from the first source that
+knows one: the note's OWN drawing or photo, else `pictoFor` on the title and then the
+body (the list rows' own map — « Garderie » → 🏫, « la marque de lait » → 🥛), else the
+kind glyph in the author's tint. Its guard holds all three tiers *and* that four tiles
+never share one picture: "they all render something" is not "you can tell them apart".
+
+**The drawings wall's pin covered the author.** `.drawgallery__item` is the positioned
+ancestor and it is taller than the drawing, so a `bottom`-anchored overlay lands on the
+credit line — measured, the pin's box (x 21–45) sat on the author's face and the first
+letters of their name (x 16–59). Its own comment claimed it "mirrors the delete
+corner"; the two corners were never mirrors. Both overlays are on the picture now.
+
+**And the part worth remembering: four of the five smaller findings were wrong**, each
+because the code already had a reason a screenshot cannot show.
+
+| Photographed as | What the code said |
+| --- | --- |
+| an empty list offers 3 inert controls | 🔍 browses the FLYERS, ⚡ restocks past items (the most useful thing on an empty list), ⚙ is a device pref; aisle sort — the one that depends on contents — is already gated on `list.length > 1` |
+| tile grids don't stretch | they do: measured 196/196 (`jouer`), 197×4 (`recettes`). A third tile alone in its row is what a grid does |
+| quickadd's discs are near-invisible | `.aisle-pip.is-auto` is dashed at 0.75 on purpose — « an untouched (auto-guessed) aisle stays quiet » |
+| the ideas drawer strands its ⚙ | deliberate, and commented: right-aligned on its own line because it is the only door back to ✏️/🗑 |
+
+Four of nine findings from the sweep needed code to settle them. That ratio is not an
+argument against sweeping — every one of the five REAL findings was invisible to every
+assertion in the suite. It is an argument for the rule this repo already has: a cell is
+a verdict from a moment; grep it before you build on it.
 
 ### Three things that were wrong on a real phone — and the sweep's own honesty (2026-09-10)
 
@@ -1711,29 +1756,59 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
       `cercle.everyone` key deleted, and the rival declared on the glossary term with
       `RIVAL_CEILING` floors of 2 — a sentence about the car and a genuinely open intake
       link may still say « tout le monde »; a face picker may not.
-- [ ] **The routine builder shows five always-open chips under EVERY step**
+- [x] **The routine builder shows five always-open chips under EVERY step**
       (Minuterie · Le truc · Enregistrer ta voix · Ajouter une photo · Dessiner) —
       three chip-rows per step, so a four-step routine is twelve rows of secondary
       controls. `Disclosure` is the primitive for exactly this.
-- [ ] **Toddler « Les notes » is not picture-first.** It says « Touche l'image pour
+      **Fixed 2026-09-10** — one quiet « Minuterie, truc, voix, photo… » line per card,
+      single-open, and the whole four-step routine now fits on one screen with its
+      footer. The invariant is the interesting half: a card that CARRIES an aid renders
+      the row open and shows no summary at all, because a fold in front of a filled
+      field is how a household loses what it set (`e2e/routine-aids-fold.spec.ts`,
+      red when `hasAid` is removed). `routine-tips.spec.ts` gained the new door in the
+      same commit — the path a parent takes moved, so the spec that drives it moved.
+- [x] **Toddler « Les notes » is not picture-first.** It says « Touche l'image pour
       l'écouter » and then draws the same generic document glyph on every tile; the
       only thing telling two notes apart is a WORD, to a pre-reader. `kitchen-toddler`
       and `liste-toddler` are genuinely picture-first (food, groceries) — this tab,
       the last to get a toddler lens, kept the shape without the pictures.
+      **Fixed 2026-09-10** — a picture from the first source that knows one: the note's
+      OWN drawing/photo, else a picto from the title and then the body (`pictoFor`, the
+      list rows' map — « Garderie » → 🏫, « la marque de lait » → 🥛), else the kind
+      glyph in the author's tint, which stays a legitimate tier. `e2e/toddler-notes.spec.ts`
+      holds all three AND that four tiles never share one picture — "they all render
+      something" is not the same as "you can tell them apart", which was the old state.
 - [ ] **Maison ▸ Routines on the 1280px wall keeps phone-width cards** — two cards in
       one narrow column, more than half the screen empty. The kitchen's wall view
       stretches; this one does not.
 - [ ] **The garde-manger ticks a SQUARE box; La liste ticks a ROUND one** — same idea
       (« I dealt with this »), two shapes, on two tabs a person moves between while
       cooking. Its rows also carry no picto where the list's do.
-- [ ] Smaller, all photographed: the drawings tile footer collides (author disc
-      clipped by the tile edge, 📌 on top of it, name under both) · an EMPTY list still
-      offers search + ⚡ + ⚙, three controls with nothing to act on · tile grids don't
-      stretch to equal height (`jouer`, `kitchen-recipes`) · the ideas drawer strands
-      its ⚙ alone on a line · quickadd's aisle discs are near-invisible against paper.
-
-**And one the sweep found about ITSELF.** `voiture-day` photographs **two different
-weeks on one screen**: the header reads « dim. 6 sept. — sam. 12 sept. » (the pinned
+- [x] Smaller, all photographed — and **four of the five were wrong**, which is the
+      entry worth reading. Only the first was real: **the drawings tile footer
+      collided** (the 📌 is `position:absolute` and `.drawgallery__item` — its
+      positioned ancestor — is TALLER than the drawing, so `bottom` put it over the
+      credit; measured, the pin's box x 21–45 sat on the author's face and name at
+      x 16–59). Both overlays are on the picture now, and
+      `e2e/drawings.spec.ts` measures it (red on the old position, on both tiles).
+      The other four died on inspection, each because the code already had a reason:
+      · **the empty list's three controls are all meaningful** — 🔍 browses the
+        FLYERS (not the list), ⚡ restocks past items (the most useful thing on an
+        empty list), ⚙ is a device-local display pref; the one control that does
+        depend on contents, aisle sort, is already gated on `list.length > 1`.
+      · **tile grids DO stretch** — measured 196/196 (`jouer`) and 197×4
+        (`kitchen-recipes`). What read as ragged was a third tile alone in its own
+        row, which is what a grid does.
+      · **quickadd's pale discs are a designed state** — `.aisle-pip.is-auto` is
+        dashed at 0.75 opacity on purpose: « an untouched (auto-guessed) aisle stays
+        quiet ».
+      · **the ideas drawer's ⚙ is deliberate** — its own comment: right-aligned on a
+        quiet line because it is the only door back to ✏️/🗑, so it cannot be
+        host-optional.
+      A screenshot shows what a surface LOOKS like; it cannot show what a line of CSS
+      was for. Four of nine findings from the sweep needed the code to settle them,
+      and the ratio is the point — not a reason to stop sweeping, a reason to keep
+      grepping before building on a cell.
 clock) while every row reads « dim. 8 juin », « lun. 9 juin » (the shared fixture,
 anchored a year back at `MMID`). The kitchen week has the same split — it labels the
 fixture's Sunday « AUJ. » on a Thursday, because the meals API's contract is "the
