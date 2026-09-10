@@ -184,8 +184,11 @@ app, a link opens in an in-app browser window (the screenshot's chrome) that has
 no bookmarks — the bookmark runs in Safari/Chrome proper; the copied list is
 system-wide, so the paste works there. Step 3 says so now, FR + EN.
 
-**Still Marc's:** the sign-in half (test 4 of the contract) with the account he
-just made — one command with two variables, or two repository secrets.
+**Still Marc's:** the sign-in half (test 4 of the contract). His account turned out
+to be a « Connexion avec Google » one — no Flipp password, and Google refuses a
+headless OAuth popup — so that half is exercised BY HAND on the phone (bookmark in
+Safari, signed in, then the Flipp app), and test 4 waits for a throwaway
+email + password account as repository secrets.
 
 ### The Flipp contract, checked against the real site every week (2026-09-10, late night)
 

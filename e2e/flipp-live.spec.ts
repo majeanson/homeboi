@@ -193,6 +193,11 @@ test('3 · the routes still hold: item page needs a postal; bare /liste_dachats 
 test('4 · signed in, Flipp merges the local list into the account (the half that reaches the app)', async ({ page, request }) => {
   const email = process.env.FLIPP_EMAIL
   const password = process.env.FLIPP_PASSWORD
+  // An EMAIL + PASSWORD account, made with « Inscrivez-vous » on /signin. One created
+  // with « Connexion avec Google » has no Flipp password and Google refuses a
+  // headless OAuth popup — Marc's own account is one of those (2026-09-10), so this
+  // half was exercised by hand on the phone instead; a throwaway email account
+  // makes it run here weekly.
   test.skip(!email || !password, 'needs a Flipp account: FLIPP_EMAIL + FLIPP_PASSWORD (never committed)')
 
   const hits = await liveDeals(request, ['lait', 'pain', 'poulet'], 2)
