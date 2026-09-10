@@ -97,7 +97,7 @@ runs is a comment with a number in it.
 **Windows and the Linux runner agree — checked, not assumed.** The worry was that
 budgets baselined locally would be quietly loose or quietly red on CI, since font
 metrics differ. The first full CI sweep (2026-08-26, 64 states, 44 budgeted — a dated
-record of that run, deliberately not updated; **today the sweep is 80 entries → 92
+record of that run, deliberately not updated; **today the sweep is 88 entries → 100
 states, 65 of them budgeted**, and those three live numbers are asserted from the spec by
 `src/lib/docCounts.test.ts`) came
 back with every entry at exactly its tolerance — the same numbers to the pixel.

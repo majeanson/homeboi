@@ -10,6 +10,7 @@ import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routin
 import { InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { RowActions } from '../RowActions'
+import { type HelpMode } from '../../lib/helpMode'
 import { ListRow } from '../ListRow'
 import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
@@ -20,7 +21,7 @@ import { recurLabel } from '../../lib/recurLabel'
 import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Chore, type Routine } from './types'
 
-export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange: () => void }) {
+export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode }) {
   const t = useT()
   const { open } = useAddSheet()
   const removal = useDeferredRemoval(CHORES_KEY)
@@ -38,7 +39,7 @@ export function ChoresSection({ chores, onChange }: { chores: Chore[]; onChange:
   }
 
   return (
-    <OperatorSection title={t.operator.chores} helpKey="chores">
+    <OperatorSection title={t.operator.chores} help={help} helpKey="chores">
       <ul className="operator__list">
         {removal.visible(chores).map((c) => (
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
@@ -102,7 +103,7 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
   )
 }
 
-export function RoutinesSection({ routines, onChange }: { routines: Routine[]; onChange: () => void }) {
+export function RoutinesSection({ routines, onChange, help }: { routines: Routine[]; onChange: () => void; help?: HelpMode }) {
   const t = useT()
   const { open } = useAddSheet()
   const removal = useDeferredRemoval(ROUTINES_KEY)
@@ -150,7 +151,7 @@ export function RoutinesSection({ routines, onChange }: { routines: Routine[]; o
   }
 
   return (
-    <OperatorSection title={t.operator.routines} helpKey="routines">
+    <OperatorSection title={t.operator.routines} help={help} helpKey="routines">
       {routines.length === 0 && <EmptyState>{t.operator.noRoutines}</EmptyState>}
       <ul className="operator__list">
         {removal.visible(routines).map((r) => {

@@ -138,6 +138,44 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Réglages' « ? » reached five cards that said nothing (2026-09-10)
+
+Found by putting help mode into the state matrix and then LOOKING at the picture:
+under an armed « ? », « Rendez-vous » had no tap affordance while « Année scolaire »,
+one card below it, had one.
+
+`OperatorSection`'s `helpKey` does two jobs — the help-registry key AND the `?focus=`
+anchor id — and it renders a `HelpTitle` only when `help` AND `helpKey` are both
+passed. Ten cards passed `helpKey` alone. **Four are right to**: `aisleOrder`,
+`health`, `takeout` and `claimTablet` each carry an always-on `hint` that already IS
+the explanation, and a bubble repeating it is the always-on-hint smell LEAN.md names
+(`buildInfo` — « Version » + « Dernière mise à jour » — explains itself). **Five were
+not**, and they are the most-used cards in Réglages: « Rendez-vous », « La maisonnée »,
+« Tablettes jumelées », « Corvées », « Routines (mode enfant) ». Each now has bilingual
+copy pointing at the guide card + point that was already written for it (`set-agenda`,
+`set-household`, `set-devices`, `set-chores`, `routines`).
+
+Nobody could SEE this before 2026-09-09 — Réglages had no « ? » to arm, so the whole
+registry was unreachable. The fix that made it reachable is what exposed what it
+didn't reach.
+
+**Two guards, both proven red first.** `src/lib/operatorHelpCoverage.test.ts` reads the
+JSX: a `helpKey` either names an entry AND gets `help`, or is listed `ANCHOR_ONLY`
+with its reason — so "not written yet" stops looking exactly like "anchor on purpose",
+the same ambiguity `COMPONENTS.md` carried until `*(no specimen: …)*`. Its tag walk is
+brace-aware and pinned against a fixture tag holding `onClick={() => …}` and a nested
+`<button>`, because the naive slice-to-first-`>` passes that file and lies — the
+`nested-interactive` lesson, fifth entry. And an e2e case reads the SCREEN
+(`tour-nav.spec.ts`): arm the « ? », tap « Rendez-vous », get a bubble. Planted
+defects: `help=` removed → the JSX guard reds; an ANCHOR_ONLY reason deleted → the
+second reds; the brace-aware walk replaced by the naive one → the parser fixture reds;
+`help=` removed → the e2e reds.
+
+**And `docCounts.test.ts` caught me.** The matrix commit an hour earlier grew the sweep
+80 → 88 entries / 92 → 100 states, and LEAN.md quotes both. It went red on `main` and
+was fixed forward inside the hour. Working exactly as designed — that number is derived
+precisely because a typed one drifts.
+
 ### The state matrix measured itself against the wall clock (2026-09-10)
 
 The sweep whose numbers are RATCHETS was reading them off whatever o'clock someone

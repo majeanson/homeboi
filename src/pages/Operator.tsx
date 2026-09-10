@@ -302,7 +302,7 @@ export function Operator() {
   // an edit in lib/settingsNav and nothing here.
   const sectionNodes: Record<SettingsSectionKey, ReactNode> = {
     // board
-    events: <EventsSection events={events} members={members} onChange={load} />,
+    events: <EventsSection events={events} members={members} onChange={load} help={operatorHelp} />,
     schoolYear: <SchoolYearSection help={operatorHelp} />,
     thisWeek: <ThisWeekTogetherSection help={operatorHelp} />,
     recap: <RecapSection help={operatorHelp} />,
@@ -321,17 +321,17 @@ export function Operator() {
     history: <HistorySection help={operatorHelp} />,
     ghost: <GhostSection help={operatorHelp} />,
     // maison
-    routines: <RoutinesSection routines={routines} onChange={load} />,
+    routines: <RoutinesSection routines={routines} onChange={load} help={operatorHelp} />,
     chores: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />,
     todoTemplates: <TodoTemplatesSection help={operatorHelp} />,
-    members: <MembersSection members={members} onChange={load} />,
+    members: <MembersSection members={members} onChange={load} help={operatorHelp} />,
     cercleGroups: <CercleGroupsSection help={operatorHelp} />,
     cars: <CarsSection help={operatorHelp} />,
     schedule: <ScheduleSection help={operatorHelp} />,
     houseDiary: <HouseDiarySection help={operatorHelp} />,
     // settings (Système)
     claimTablet: <ClaimTablet onClaimed={load} />,
-    devices: <DevicesSection devices={devices} onChange={load} />,
+    devices: <DevicesSection devices={devices} onChange={load} help={operatorHelp} />,
     guestLinks: <GuestSection help={operatorHelp} />,
     health: <HealthSection />,
     buildInfo: <BuildInfoSection />,

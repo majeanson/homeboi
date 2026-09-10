@@ -31,10 +31,12 @@ export function EventsSection({
   events,
   members,
   onChange,
+  help,
 }: {
   events: EventRow[]
   members: Member[]
   onChange: () => void
+  help?: HelpMode
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -71,7 +73,7 @@ export function EventsSection({
   const memberColor = (id: string | null) => members.find((m) => m.id === id)?.colour
 
   return (
-    <OperatorSection title={t.operator.events} helpKey="events">
+    <OperatorSection title={t.operator.events} help={help} helpKey="events">
       {events.length === 0 ? (
         <EmptyState>{t.operator.noEvents}</EmptyState>
       ) : (

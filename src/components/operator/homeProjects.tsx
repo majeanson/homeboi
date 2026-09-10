@@ -51,7 +51,7 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
       />
       {sub === 'corvees' && (
         <>
-          <ChoresSection chores={chores} onChange={onChange} />
+          <ChoresSection chores={chores} onChange={onChange} help={help} />
           <ChoreLedger help={help} />
         </>
       )}

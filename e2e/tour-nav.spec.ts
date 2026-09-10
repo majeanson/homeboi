@@ -184,6 +184,36 @@ test('Réglages has a « ? » at last — and arming it reaches its section help
   await expect(page.locator('.tour__head')).toContainText(/Réglages/)
 })
 
+// The other half of « le ? ne sert qu'au babillard », found 2026-09-10 by putting help
+// mode in the state matrix and LOOKING: « Rendez-vous » sat under an armed « ? » with
+// no tap affordance while « Année scolaire », one card below it, had one. Five of the
+// most-used Réglages cards were like that — they passed a helpKey for the ?focus=
+// anchor, never the `help` prop, and OperatorSection needs both to render a HelpTitle.
+// Nobody could see it before 2026-09-09, because Réglages had no « ? » to arm.
+//
+// The unit guard (src/lib/operatorHelpCoverage.test.ts) reads the JSX; this reads the
+// SCREEN, which is the half that proves the copy actually reaches a thumb.
+test('a Réglages card that was inert now answers when tapped', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/settings?tab=board&lens=regler')
+  await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator('.operator__lensrow .help-toggle').click()
+
+  // « Rendez-vous » — the card the screenshot caught. Its heading must BE the help
+  // target, not merely sit next to one.
+  const heading = page.locator('.help-title', { hasText: 'Rendez-vous' }).first()
+  await expect(heading).toBeVisible()
+  await heading.click()
+  const bubble = page.locator('.help-bubble').first()
+  await expect(bubble).toBeVisible()
+  // And it lands somewhere real in the guide — the dead-deep-link half is held by
+  // helpRegistry.test.ts, so here we only need the door to exist.
+  await expect(bubble.locator('.help-bubble__guide')).toBeVisible()
+})
+
 // Asked for 2026-09-10: « Première fois » should walk ALL the sections, both the
 // first time it runs by itself and when someone replays it from Réglages ▸ Découvrir
 // — so a household meets every tab on day one instead of only the board.

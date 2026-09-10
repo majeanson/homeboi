@@ -8,6 +8,7 @@ import { DEVICES_KEY } from '../../lib/queryKeys'
 import { InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
+import { type HelpMode } from '../../lib/helpMode'
 import { ListRow } from '../ListRow'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
@@ -79,7 +80,7 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
   )
 }
 
-export function DevicesSection({ devices, onChange }: { devices: Device[]; onChange: () => void }) {
+export function DevicesSection({ devices, onChange, help }: { devices: Device[]; onChange: () => void; help?: HelpMode }) {
   const t = useT()
   const removal = useDeferredRemoval(DEVICES_KEY)
   // `visible` is the half that makes the deferred hook work: it drops the rows whose
@@ -98,7 +99,7 @@ export function DevicesSection({ devices, onChange }: { devices: Device[]; onCha
     })
   }
   return (
-    <OperatorSection title={t.operator.devices} helpKey="devices">
+    <OperatorSection title={t.operator.devices} help={help} helpKey="devices">
       {active.length === 0 ? (
         <EmptyState>{t.operator.noDevices}</EmptyState>
       ) : (

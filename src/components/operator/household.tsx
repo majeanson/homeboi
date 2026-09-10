@@ -9,6 +9,7 @@ import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
 import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY, ROUTINES_KEY } from '../../lib/queryKeys'
 import { isGuest } from '../../lib/device'
+import { type HelpMode } from '../../lib/helpMode'
 import { colourFor } from '../../lib/things'
 import { petOwners, isHouseholdPet, personKey, type Pet, type ContactLink } from '../../lib/cercle'
 import { nextFreeColour } from '../../lib/colors'
@@ -25,7 +26,7 @@ import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
 import { type Member } from './types'
 
-export function MembersSection({ members, onChange }: { members: Member[]; onChange: () => void }) {
+export function MembersSection({ members, onChange, help }: { members: Member[]; onChange: () => void; help?: HelpMode }) {
   const t = useT()
   const confirm = useConfirm()
   const [name, setName] = useState('')
@@ -95,7 +96,7 @@ export function MembersSection({ members, onChange }: { members: Member[]; onCha
   }
 
   return (
-    <OperatorSection title={t.operator.members} helpKey="members">
+    <OperatorSection title={t.operator.members} help={help} helpKey="members">
       {/* The household's own name (set at signup) — renamable here. Operator-only. */}
       {!isGuest() && <HouseholdNameField />}
 
