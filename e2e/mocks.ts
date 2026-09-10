@@ -84,7 +84,7 @@ export const BOARD = {
       // as expired on every surface that asks « est-ce encore l’aubaine ? ». Both were
       // null until 2026-09-10 — so the till PEEK, the one screen whose whole job is to
       // be read by someone else across a counter, was photographed with no validity.
-      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) }),
+      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 96 24%22%3E%3Crect width%3D%2296%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23d33%22%2F%3E%3Ctext x%3D%2248%22 y%3D%2217%22 font-size%3D%2214%22 font-weight%3D%22700%22 fill%3D%22%23fff%22 text-anchor%3D%22middle%22 font-family%3D%22sans-serif%22%3ESUPER C%3C%2Ftext%3E%3C%2Fsvg%3E', premium: true, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', validFrom: flyerIso(-2), validTo: flyerIso(4) }),
     },
     { id: 'l2', text: 'Pain', source: 'manual' },
     { id: 'l3', text: 'Pommes', source: 'ghost' },
@@ -647,7 +647,7 @@ export const ROUTES: Record<string, unknown> = {
   businesses: { businesses: [] },
   deals: {
     deals: [
-      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) },
+      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 96 24%22%3E%3Crect width%3D%2296%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23d33%22%2F%3E%3Ctext x%3D%2248%22 y%3D%2217%22 font-size%3D%2214%22 font-weight%3D%22700%22 fill%3D%22%23fff%22 text-anchor%3D%22middle%22 font-family%3D%22sans-serif%22%3ESUPER C%3C%2Ftext%3E%3C%2Fsvg%3E', premium: true, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', validFrom: flyerIso(-2), validTo: flyerIso(4) },
       { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) },
     ],
   },

@@ -166,146 +166,153 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
-  /* Stretch + small padding so the proof uses the whole screen (phone-first), not a
-     small card adrift in big margins. */
   align-items: stretch;
   justify-content: center;
-  padding: 10px 12px;
+  padding: 6px var(--gutter, 14px) 24px;
 }
+/* THE PROOF CARD — the item page a cashier already knows, in our colours.
+   Rewritten 2026-09-10 to the composition of Flipp's item screen (verified in a real
+   browser that day): everything LEFT-aligned on a quiet ground, a small store logo
+   first, the photo on a pale block, the name, a big price, a filled + outlined action
+   pair, then the dates and the fine print in small grey. The old card was a centred
+   stack of marigold pills with a 144px price; a cashier who knows the item page reads
+   this one without re-learning it. What is deliberately NOT theirs: the palette, the
+   wordmark, the chrome — the real page is one tap away, which beats a copy. */
 .bigcard {
   width: 100%;
-  /* Fills a wall tablet instead of stranding a thin column in the middle. */
   max-width: min(96vw, 56rem);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(10px, 2.4vh, 20px);
+  align-items: stretch;
+  gap: 14px;
 }
-/* Picture | facts side-by-side on a wide tablet (no dead margins); stacked on a
-   phone. */
+/* Picture | facts side by side on a wide tablet (the wall), stacked on a phone. */
 @media (min-width: 760px) {
   .bigcard {
     flex-direction: row;
-    justify-content: center;
+    align-items: flex-start;
     gap: 40px;
   }
-  .bigcard__info {
-    align-items: flex-start;
-    text-align: left;
+  .bigcard__media {
+    flex: 0 0 min(44vw, 460px);
   }
-  /* Beside the facts on a wide tablet the picture can be large — it fills its half. */
-  .bigcard__img {
-    width: min(44vw, 460px);
+  .bigcard__pic {
     height: min(58vh, 460px);
   }
 }
 .bigcard__media {
-  flex: 0 1 auto;
-  display: flex;
-}
-.bigcard__img {
-  /* Stacked on a phone: keep the picture modest so the hero PRICE stays high on the
-     screen, not pushed below the fold. */
-  width: min(74vw, 320px);
-  height: min(34vh, 320px);
-  object-fit: contain;
-  background: #fff;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-.bigcard__info {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 34rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 8px;
-}
-.bigcard__store {
-  display: flex;
-  align-items: center;
   gap: 10px;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: clamp(22px, 3.4vw, 34px);
-  color: var(--ink);
+}
+/* The store: small, first, left — the first thing read, not the loudest. */
+.bigcard__store {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
   max-width: 100%;
   overflow-wrap: anywhere;
 }
 .bigcard__logo {
-  width: 1.4em;
-  height: 1.4em;
+  height: 22px;
+  width: auto;
+  max-width: 96px;
   object-fit: contain;
-  border-radius: var(--radius-sm);
   flex: 0 0 auto;
 }
-.bigcard__for {
-  font-size: clamp(15px, 2vw, 20px);
-  color: var(--ink-soft);
-  max-width: 100%;
-  overflow-wrap: anywhere;
+/* The photo sits on a pale block that is the card's one large shape. */
+.bigcard__pic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: min(38vh, 300px);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
 }
-.bigcard__for strong {
-  color: var(--ink);
-  font-weight: 800;
+.bigcard__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.bigcard__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 8px;
 }
 .bigcard__name {
-  font-size: clamp(18px, 2.6vw, 28px);
+  font-size: clamp(17px, 2.2vw, 22px);
   font-weight: 700;
+  line-height: 1.25;
   color: var(--ink);
-  max-width: 100%;
   overflow-wrap: anywhere;
 }
+/* The price: big, but the page's big — not a billboard. Still reads across a counter. */
 .bigcard__price {
   font-family: var(--display);
   font-weight: 800;
-  /* The hero — huge on a phone, capped on a wall. */
-  font-size: clamp(80px, 24vw, 144px);
-  line-height: 0.92;
+  font-size: clamp(40px, 9vw, 56px);
+  line-height: 1;
   color: var(--ink);
 }
-/* Validity is high-level info (a cashier checks the deal is still good before
-   adjusting), so it's a LOUD marigold pill, second only to the price — never fine
-   print. Dark text on marigold reads in day AND night. */
-/* The provenance line under the store: quiet, mono, a link. It is the card's whole
-   argument at a till — « this is Super C's own flyer, via Flipp » — so it sits with
-   the store name, not in a footer. */
-.bigcard__source {
+.bigcard__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
   font-size: var(--text-sm);
   color: var(--ink-soft);
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
 }
+.bigcard__unit--approx {
+  opacity: 0.8;
+  font-style: italic;
+}
+.bigcard__was {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+/* The action pair: filled + outlined, side by side, left — the page's own two
+   buttons. Cluster wraps them on a narrow phone. */
+.bigcard__actions {
+  margin-top: 6px;
+}
+.bigcard__flipp,
+.bigcard__flyer {
+  font-size: 1rem;
+  padding: 0.7rem 1.1rem;
+}
+.bigcard__for {
+  margin-top: 8px;
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+}
+.bigcard__for strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+/* The dates a cashier checks — a plain dated line in the page's register, one size
+   up from theirs so it reads at arm's length. Never fine print, never a pill. */
 .bigcard__valid {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 2px;
-  padding: 14px 28px;
-  border-radius: var(--radius-pill);
-  background: var(--marigold);
-  color: #3a2f12;
-  font-weight: 800;
-  font-size: clamp(24px, 7vw, 40px);
-  line-height: 1;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
 }
-.bigcard__flyer {
-  margin-top: 8px;
-  padding: 14px 24px;
-  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-}
-
-/* « Montrer Flipp » — the till card's PRIMARY door, so it wears the dates pill's
-   width and weight rather than reading as a small extra beneath it: at a counter the
-   two things a cashier is handed are the validity and the accepted source, and they
-   should look like a pair. */
-.bigcard__flipp {
-  width: 100%;
-  max-width: 20rem;
-  justify-content: center;
-  font-size: 1.15rem;
-  padding-block: 0.75rem;
+/* Provenance at the foot, where the page keeps its own fine print: small, quiet,
+   a link. « Circulaire Super C · via Flipp » is the card's whole argument. */
+.bigcard__source {
+  margin-top: 6px;
+  font-size: var(--text-xs);
+  color: var(--ink-soft);
+  font-style: italic;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }

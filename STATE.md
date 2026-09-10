@@ -100,7 +100,7 @@ before opening any of them.
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
 > a number you can trust. It reads **0** — again, as of the same evening: the last box,
 > the till card, closed when it names and links its source now, which was the honest answer to
-> « don't let a cashier refuse it ». What remains there are three ❓, not tasks.
+> « don't let a cashier refuse it ». What remains there are two ❓ (terms, licensing), not tasks.
 > §4-G wrote nine on 2026-09-10 — the pass that opened all 100 state-matrix screenshots
 > instead of sampling them — and all nine are settled: seven fixed, two dissolved once
 > the code was actually read (the wall was never wasting width; the « ragged » grids
@@ -143,6 +143,41 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### The till card wears the shape a cashier already knows (2026-09-10, night)
+
+Marc, after « Montrer Flipp » shipped: « make sure it looks 90% like flipp ui ». The
+card had every FACT the item page shows; it had them in its own order, with the
+photo beside the text on a wall and the source line up top. A cashier who has seen
+Flipp's item page a hundred times reads by shape before reading a word, so the card
+now follows that page's composition, verified in a real browser with a live item:
+**small store logo first, then the clipping on a pale block, then the name, then
+the big price with the unit price and the « avant » line under it, then the filled
++ outlined action pair, then « prix pour … », the dates, and the provenance as fine
+print at the foot.** Left-aligned throughout, as the page is. `CashierMode.tsx` was
+reordered to that reading order; `.bigcard*` in `cashier.css` rewritten around it
+(the picture is a fixed-height pale band, the price `clamp(40px, 9vw, 56px)`, the
+two buttons an `.btn--primary` beside a plain `.btn` in a `Cluster`). On a wall
+≥ 760px the media and the facts still sit side by side — that is the page's own
+tablet layout too.
+
+**The 10% left out is on purpose and was said so at the time: Flipp's palette and
+wordmark.** The card keeps Babillard's marigold and paper. It is recognisably the
+same kind of screen; it is not pretending to be the same screen — the real one is
+one tap away on the row beneath, and that is the honest version of the argument.
+
+**❓ #3 of the till box is closed by this.** The fixture deal now carries a logo and
+a product picture (two inline SVG data URIs in `e2e/mocks.ts`, so the matrix stays
+offline), and `cashier-peek` has been photographed for the first time looking like
+an ad rather than a receipt: SUPER C · 🥛 on the pale block · Lait 2% 4L · 4,99 $ ·
+1,25 $/L avant 6,49 $ · « Montrer Flipp » filled beside « Voir la circulaire » ·
+8 sept. au 14 sept. · « Circulaire Super C · via Flipp ↗ ». Read, not assumed.
+
+Guards unchanged and still red-tested from the two commits before: `cashier.spec.ts`
+(the item URL's exact shape; no door without a postal), `cashier-peek` +
+`cashier-flyer` in the matrix. Nothing about behaviour moved — this is order and
+shape only — so no new guard: a guard on "the logo precedes the photo" would pin a
+layout, and layouts here are pinned by looking (LEAN.md's rule), not by DOM order.
 
 ### Two things the phone found that 142 screenshots could not (2026-09-10, late)
 
@@ -2043,8 +2078,10 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
         exclusions: still unknown. Paste the terms and the card can be scored against them.
       ❓ Whether Babillard may present Flipp-sourced data as a price-match source AT ALL
         is licensing, not layout (the data limit: cutouts only, link out). Unsettled.
-      ❓ Store logo and product picture are null in the fixture, so the card has never
-        been photographed looking like an ad rather than a receipt.
+      ~~❓ Store logo and product picture are null in the fixture, so the card has never
+        been photographed looking like an ad rather than a receipt.~~ **Closed 2026-09-10
+        (night):** the fixture carries both now and `cashier-peek` was read wearing them —
+        see §3 « The till card wears the shape a cashier already knows ».
 - [x] Smaller, all photographed — and **four of the five were wrong**, which is the
       entry worth reading. Only the first was real: **the drawings tile footer
       collided** (the 📌 is `position:absolute` and `.drawgallery__item` — its

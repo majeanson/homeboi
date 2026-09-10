@@ -6,6 +6,7 @@ import { type Pick, money, dealValidity, flippFlyerUrl, flippItemUrl } from '../
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
+import { Cluster } from './Layout'
 import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
 
@@ -150,93 +151,102 @@ export function CashierMode({
         </button>
       </div>
 
-      {/* Proof = picture | facts. Side-by-side on a wide tablet (fills the space, no
-          dead margins); stacked on a phone. Big type + numbers throughout so it reads
-          across the counter (NFR accessibility). */}
+      {/* THE PROOF CARD, in the reading order of the item page a cashier already
+          knows — Flipp's, verified in a real browser 2026-09-10: small store logo,
+          then the photo on a pale block, then name, then a big price, then the
+          action row, then the dates and the fine print. Same SHAPE, our colours: a
+          cashier who knows that screen recognises this one instantly, without the
+          card pretending to be it — the real one is one tap away on the row below.
+          (Marc: « make sure it looks 90% like flipp ui ». The 10% left out is their
+          palette and wordmark, on purpose.) */}
       <div className="cashier__stage">
         <div className="bigcard">
-          {d.image && (
-            <div className="bigcard__media">
-              <ZoomableImg className="bigcard__img" src={d.image} alt={d.name} />
-            </div>
-          )}
-          <div className="bigcard__info">
-            {/* Source flyer band: logo + store, so "where this deal is from" reads at
-                a glance before the cashier even taps "Voir la circulaire". */}
+          <div className="bigcard__media">
+            {/* Logo small and first, as on the page it echoes — the store is the
+                first thing read, not the loudest. */}
             <span className="bigcard__store">
               {d.logo && <img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
               {d.merchant}
             </span>
-            {/* WHERE THIS AD COMES FROM, said out loud and linked. The apps a till already
-                honours (Flipp, reebee, Glouton) are trusted for what they show — the
-                store's own flyer — so the card names that source and gives a cashier the
-                official page in one tap, instead of dressing itself as one of them. Our
-                own « Voir la circulaire » below stays the fast path: it opens ON the item,
-                which the official page does not. */}
+            {d.image && (
+              <div className="bigcard__pic">
+                <ZoomableImg className="bigcard__img" src={d.image} alt={d.name} />
+              </div>
+            )}
+          </div>
+          <div className="bigcard__info">
+            <span className="bigcard__name">{d.name}</span>
+            <span className="bigcard__price">{money(d.price)}</span>
+            {/* Below the price, as the page does: what the ad also states. The unit
+                price is what a match actually turns on (sizes rarely agree); an
+                AI-INFERRED size wears ≈ — at a till, a guess must never present itself
+                as printed fact. « avant … » is Flipp's sale line, from the field we
+                already ingest. */}
+            <span className="bigcard__facts mono">
+              {d.unitPrice != null && (
+                <span className={'bigcard__unit' + (d.unitApprox ? ' bigcard__unit--approx' : '')}>
+                  {d.unitApprox && (
+                    <>
+                      <InlineIcon name="approximate-equals-bold" size={14} />{' '}
+                    </>
+                  )}
+                  {money(d.unitPrice)}
+                  {d.unitLabel}
+                </span>
+              )}
+              {d.wasPrice != null && d.wasPrice > (d.price ?? 0) && (
+                <span className="bigcard__was">
+                  {t.shop.was} {money(d.wasPrice)}
+                </span>
+              )}
+            </span>
+            {/* The action row — filled + outlined, side by side, like the page's
+                own pair. « MONTRER FLIPP » is the primary door and the answer to "a
+                cashier won't take an app that isn't one of the three": one tap opens
+                Flipp's own page for THIS item. Built by lib/deals; null without a
+                postal code, on purpose. « Voir la circulaire » stays the fast in-app
+                path — it opens ON the item, circled. */}
+            <Cluster className="bigcard__actions">
+              {flippItemUrl(d.id, postal) && (
+                <a
+                  className="btn btn--primary bigcard__flipp"
+                  href={flippItemUrl(d.id, postal)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.showFlipp}
+                </a>
+              )}
+              {d.flyerId != null && (
+                <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>
+                  <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
+                </button>
+              )}
+            </Cluster>
+            <span className="bigcard__for">
+              {t.shop.matchFor} <strong>{selected.itemText}</strong>
+            </span>
+            {/* The dates a cashier checks, as the ad states them (« du 8 au 14 sept. »,
+                never just an end) — in the page's own register: a plain dated line,
+                not a pill. One size up from theirs so it still reads at arm's length. */}
+            {(d.validFrom || d.validTo) && (
+              <span className="bigcard__valid">
+                <InlineIcon name="calendar-dots-bold" size={18} />{' '}
+                {dealValidity(d.validFrom, d.validTo, lang, { rangeTo: t.shop.dateRangeTo, until: t.shop.until })}
+              </span>
+            )}
+            {/* WHERE THIS AD COMES FROM — at the foot, where the page keeps its own
+                fine print. Naming the source is the honest form of the argument the
+                accepted apps make by being the store's channel. */}
             {d.flyerId != null && (
               <a
-                className="bigcard__source mono"
+                className="bigcard__source"
                 href={flippFlyerUrl(d.flyerId, d.merchant, lang)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {t.shop.dealSource(d.merchant)} <InlineIcon name="arrow-up-right-bold" size={13} />
+                {t.shop.dealSource(d.merchant)} <InlineIcon name="arrow-up-right-bold" size={12} />
               </a>
-            )}
-            <span className="bigcard__for">
-              {t.shop.matchFor} <strong>{selected.itemText}</strong>
-            </span>
-            <span className="bigcard__name">{d.name}</span>
-            <span className="bigcard__price">{money(d.price)}</span>
-            {/* The unit price, which is what a price-match comparison actually turns
-                on (the sizes rarely match exactly). This component's own docstring has
-                promised it since it was written; the peek never rendered it.
-                `unitApprox` = the size was INFERRED by AI rather than stated in the
-                ad, and it wears the same ≈ DealCard gives it: at a till, a number
-                we guessed must never present itself as printed fact. */}
-            {d.unitPrice != null && (
-              <span className={'bigcard__unit mono' + (d.unitApprox ? ' bigcard__unit--approx' : '')}>
-                {d.unitApprox && (
-                  <>
-                    <InlineIcon name="approximate-equals-bold" size={16} />{' '}
-                  </>
-                )}
-                {money(d.unitPrice)}
-                {d.unitLabel}
-              </span>
-            )}
-            {/* Validity is high-level info — a cashier checks the deal is still valid
-                before adjusting — so it's the loud, prominent dated pill, not fine
-                print. No edit/delete here: the peek is a clean proof to hold up. */}
-            {/* The dates a cashier checks, as the ad states them: « du 5 au 11 sept. »,
-                not just an end. FlyerViewer's header already did this — the surface
-                actually held up at the till did not (2026-09-10). */}
-            {(d.validFrom || d.validTo) && (
-              <span className="bigcard__valid">
-                <InlineIcon name="calendar-dots-bold" size={28} />{' '}
-                {dealValidity(d.validFrom, d.validTo, lang, { rangeTo: t.shop.dateRangeTo, until: t.shop.until })}
-              </span>
-            )}
-            {/* « MONTRER FLIPP » — the primary door, and the answer to "a cashier won't
-                take an app that isn't one of the three": one tap opens Flipp's own
-                page for THIS item — logo, clipping, price, dates, format — the accepted
-                channel, already on the item. Our « Voir la circulaire » below stays
-                as the fast in-app path (it opens on the item, circled). The link is
-                built by lib/deals and is null without a postal code, on purpose. */}
-            {flippItemUrl(d.id, postal) && (
-              <a
-                className="btn btn--primary bigcard__flipp"
-                href={flippItemUrl(d.id, postal)!}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <InlineIcon name="arrow-up-right-bold" /> {t.shop.showFlipp}
-              </a>
-            )}
-            {d.flyerId != null && (
-              <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>
-                <InlineIcon name="file-text-bold" /> {t.shop.viewFlyer}
-              </button>
             )}
           </div>
         </div>
