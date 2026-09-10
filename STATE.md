@@ -230,6 +230,35 @@ of checking:
   until now a broken specimen only surfaced when a human happened to open it, and read as
   "this primitive is broken" rather than "the demo is".
 
+**And then the gallery was actually LOOKED at** — the second half of the same pass, and
+the half that only became possible once the fixture switch existed. Eleven more rows got
+specimens (`SimpleBoard`, `ToddlerBoard`, « Mois », « L'année », the routines overview,
+`NotesKidView`, `MotsCard`, `SampleBanner`, `WelcomeCard`, « Le savais-tu ? », « Quoi de
+neuf »), taking the table to **117 of 144 rows with a live specimen**. Then screenshots at
+390px, day and night, per LEAN.md's rule — *look, don't reason* — and looking found four
+things reasoning had not:
+
+- **`MotsCard` and « À régler » were still empty with the switch ON.** Both fixtures are
+  deliberately empty upstream, and for a good reason: a mot or a friction signal makes a
+  board card appear, so a populated default would put them into every board screenshot
+  the suite takes. The gallery's need is the exact opposite of a calm screenshot, so it
+  layers `GALLERY_ONLY` overrides on top — the same move `help.spec.ts` already makes
+  per-test. The e2e defaults keep their meaning.
+- **A fabricated fixture crashed the whole gallery.** The invented `a-regler` kind fell
+  through `frictionRow`'s five-way switch, which has no default, so it returned undefined
+  and the caller read `.text` off it. Worth carrying beyond the fixture: **the same would
+  happen if the server ever emitted a `FrictionKind` this client doesn't ship yet.**
+- **The `ToddlerBoard` specimen was 5206px tall**, nearly all of it empty, with every
+  later entry stranded behind that scroll. Whole-page lenses now render in a bounded
+  `.devkit__lens` window.
+- **My own banner ran seven lines at 390px** and pushed every card off the screen — on a
+  page whose entire point is the cards. One line now. The lean rule applies to the
+  developer tools too.
+
+**And the state matrix was re-run against all of it** (93 states): 0 failures, 0 page
+errors, 0 bleed, and its own ratchet reported « nothing new to look at » — so the
+`LoadError` and `Skeleton` conversions cost no chrome anywhere.
+
 > **The lesson, again, and it was mine this time.** All six assertions were proven red
 > against planted violations — but the *first* prover reported all six "green" while
 > actually crashing vitest at startup on a `--reporter=basic` that doesn't exist in

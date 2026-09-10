@@ -264,3 +264,16 @@
   margin: 0;
   font-size: 1.05rem;
 }
+
+/* A whole-page LENS as a specimen (SimpleBoard, ToddlerBoard, Mois, Année, l'aperçu
+   des routines) renders at its natural full height — the ToddlerBoard card measured
+   5206px, nearly all of it empty, and every entry after it sat behind that scroll.
+   Box them: a window onto the lens, scrollable, with the gallery's own inset. */
+.devkit__lens {
+  max-height: 62vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 0.4rem;
+}

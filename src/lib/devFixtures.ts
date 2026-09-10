@@ -20,12 +20,51 @@ export type FixtureRoutes = Record<string, unknown>
 
 let cached: FixtureRoutes | null = null
 
+// Two fixtures are EMPTY upstream on purpose, and the reason is good: a mot and an
+// « À régler » signal both make a board card appear, so a populated default would put
+// them into every board screenshot the suite takes. `e2e/help.spec.ts` handles that by
+// registering a per-test override after `mockApi` — the same move, made here for the
+// gallery, whose need is the exact opposite of a calm screenshot: a card that renders
+// nothing is indistinguishable from a card that is broken.
+//
+// Overrides, never edits to the shared fixtures: the e2e defaults keep their meaning.
+const GALLERY_ONLY: FixtureRoutes = {
+  mots: {
+    mots: [
+      {
+        id: 'demo-mot-1',
+        member_id: null,
+        author_member_id: 'm2',
+        text: 'J’ai sorti le bac bleu — pas besoin d’y penser ce soir.',
+        transcript: null,
+        media_kind: null,
+        media_key: null,
+        scene_key: null,
+        created_at: 1_749_369_600,
+        updated_at: null,
+        opened_at: null,
+        saved_at: null,
+        surface_at: null,
+        reply_to: null,
+      },
+    ],
+  },
+  // `kind` must be one of lib/aRegler's five (`ride` | `car-clash` | `meal-empty` |
+  // `meal-low` | `birthday`). An invented sixth crashed the whole gallery on the first
+  // try: `frictionRow` switches on the union with no default, so an unknown kind returns
+  // undefined and the caller reads `.text` off it. Worth knowing beyond this fixture —
+  // the same would happen if the SERVER ever emitted a kind this client doesn't ship yet.
+  'a-regler': {
+    signals: [{ kind: 'birthday', key: 'm3', label: 'Léa', href: '/maison?section=family' }],
+  },
+}
+
 /** The e2e fixture payloads, or null in a production build (where they don't exist). */
 export async function loadFixtureRoutes(): Promise<FixtureRoutes | null> {
   if (!import.meta.env.DEV) return null
   if (cached) return cached
   const mod = await import('../../e2e/mocks')
-  cached = mod.ROUTES
+  cached = { ...mod.ROUTES, ...GALLERY_ONLY }
   return cached
 }
 

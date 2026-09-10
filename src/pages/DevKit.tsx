@@ -13,6 +13,21 @@ import { ActivityBring } from '../components/board/ActivityBring'
 import { DepartureCard } from '../components/board/DepartureCard'
 import { ARegler } from '../components/board/ARegler'
 import { type Member as BoardMember } from '../lib/members'
+import { SimpleBoard } from '../components/board/SimpleBoard'
+import { ToddlerBoard } from '../components/board/ToddlerBoard'
+import { MonthView } from '../components/board/MonthView'
+import { YearView } from '../components/board/YearView'
+import { RoutinesTab } from '../components/maison/RoutinesTab'
+import { NotesKidView } from '../components/cercle/NotesKidView'
+import { MotsCard } from '../components/mots/MotsCard'
+import { SampleBanner } from '../components/SampleBanner'
+import { WelcomeCard } from '../components/WelcomeCard'
+import { DidYouKnowCard, WhatsNewLine } from '../components/operator/discover'
+import { useBoardData } from '../lib/queryHooks'
+import { useBoardModel } from '../lib/boardModel'
+import { useMealPrefs } from '../lib/mealPrefs'
+import { useHelpMode } from '../lib/helpMode'
+import { ROUTINES_HELP } from '../lib/routinesHelp'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import { useSurface, type Surface } from '../lib/surface'
@@ -726,6 +741,106 @@ function DrawPadDemo() {
         onSave={() => setOpen(false)}
       />
     </>
+  )
+}
+
+// The board's two whole-lens components (SimpleBoard, ToddlerBoard) and DayHeroes take
+// a BoardData + the ONE BoardModel. Rather than hand-build a model — which would be a
+// second implementation of the thing lib/boardModel exists to centralise, and would rot
+// the moment a field is added — the specimen calls the REAL hooks. With « Données :
+// Exemple » on they read the fixtures; off, they read the household. Either way the
+// derivation is the app's own.
+function useBoardSpecimen() {
+  const { lang } = useLang()
+  const { data } = useBoardData()
+  const mealPrefs = useMealPrefs()
+  const model = useBoardModel({
+    data,
+    lang,
+    profileId: null,
+    fetesOn: true,
+    binAnnounceOn: true,
+    mealPrefs,
+    hasWeather: false,
+    hasTomorrowWx: false,
+    openTodosCount: 0,
+    tomorrowTodoCount: 0,
+  })
+  return { data, model }
+}
+
+function SimpleBoardDemo() {
+  const { data, model } = useBoardSpecimen()
+  return (
+    <Demo label="La lentille SIMPLE — la face post-lecteur (« grand-maman ») du même babillard, sur les mêmes données : plus grand, moins de choses, aucune commande d'édition. Elle ne re-dérive rien : le modèle du babillard (lib/boardModel) lui donne prochain-truc, souper et journée déjà résolus.">
+      <BoardLensNote />
+      <div className="devkit__lens">
+        <SimpleBoard data={data} model={model} greet="Bonjour" />
+      </div>
+    </Demo>
+  )
+}
+
+function ToddlerBoardDemo() {
+  const { data, model } = useBoardSpecimen()
+  return (
+    <Demo label="La lentille BAMBIN, extraite de Board.tsx sans changer un comportement (C-12). Un pré-lecteur y voit des images et s'y fait lire la journée ; il n'y a AUCUNE sortie en app depuis un kiosque verrouillé (?kid=1), ce qui est voulu. Bascule l'axe Audience ci-dessus pour comparer les deux faces des mêmes données.">
+      <BoardLensNote />
+      <div className="devkit__lens">
+        <ToddlerBoard data={data} model={model} greet="Allô" weather={null} openTodos={[]} />
+      </div>
+    </Demo>
+  )
+}
+
+function MonthViewDemo() {
+  const t = useT()
+  const { lang } = useLang()
+  const { data } = useBoardSpecimen()
+  return (
+    <Demo label="« Mois » — la grille du mois et son panneau de journée. Elle va chercher son propre mois (MONTH_KEY, sans sondage : d'où la porte « Réessayer » de LoadError, la seule qu'elle ait). Elle a longtemps été importée STATIQUEMENT par le babillard derrière un sélecteur qu'il n'ouvre pas ; la rendre paresseuse avec « Année » a fait fondre le chunk d'entrée de 430 à 340 Ko.">
+      <BoardLensNote />
+      <div className="devkit__lens">
+        <MonthView members={data?.members ?? []} lang={lang} t={t} todayDay={todayLocalDay()} />
+      </div>
+    </Demo>
+  )
+}
+
+function YearViewDemo() {
+  const t = useT()
+  const { lang } = useLang()
+  return (
+    <Demo label="« L'année » — douze mini-mois. Toucher un mois ouvre « Mois » sur SA première journée (jamais un décalage : le mois affiché se dérive de la journée choisie, et un décalage pourrait le contredire).">
+      <BoardLensNote />
+      <div className="devkit__lens">
+        <YearView lang={lang} t={t} todayDay={todayLocalDay()} onOpenMonth={() => {}} />
+      </div>
+    </Demo>
+  )
+}
+
+function RoutinesTabDemo() {
+  const t = useT()
+  const help = useHelpMode(ROUTINES_HELP, (k) => (k === 'card' ? t.nav.routines : k))
+  return (
+    <Demo label="L'aperçu des routines dans Maison : les cartes groupées par moment de la journée, le moment COURANT remonté en tête — le même classement (todRank) que le sélecteur bambin et l'écran de veille, pour que les trois surfaces ne se contredisent jamais. Un indice, pas une barrière : un moment vide ne s'affiche pas, rien ne se cache.">
+      <BoardLensNote />
+      <div className="devkit__lens">
+        <RoutinesTab help={help} />
+      </div>
+    </Demo>
+  )
+}
+
+// A board lens with nothing behind it renders an empty shell, and that reads as a broken
+// specimen rather than an honest empty state — so say which switch fills it.
+function BoardLensNote() {
+  return (
+    <p className="mono" style={{ color: 'var(--ink-soft)', margin: '0 0 .5rem' }}>
+      Vide ? C’est que la maisonnée n’a rien aujourd’hui — bascule « Données : Exemple »
+      dans la barre du haut.
+    </p>
   )
 }
 
@@ -3540,6 +3655,106 @@ export function DevKit() {
         </Demo>
       ),
     },
+    // ── The lenses and cards the fixture switch unlocked ────────────────
+    {
+      cat: 'Affichage',
+      name: 'SimpleBoard',
+      file: 'components/board/SimpleBoard.tsx',
+      kw: 'simple lentille grand-maman post-lecteur babillard agrandi',
+      render: () => <SimpleBoardDemo />,
+    },
+    {
+      cat: 'Toddler',
+      name: 'ToddlerBoard',
+      file: 'components/board/ToddlerBoard.tsx',
+      kw: 'bambin babillard tuiles images lecture à voix haute journée',
+      render: () => <ToddlerBoardDemo />,
+    },
+    {
+      cat: 'Affichage',
+      name: 'MonthView',
+      file: 'components/board/MonthView.tsx',
+      kw: 'mois calendrier grille jour panneau rendez-vous repas',
+      render: () => <MonthViewDemo />,
+    },
+    {
+      cat: 'Affichage',
+      name: 'YearView',
+      file: 'components/board/YearView.tsx',
+      kw: 'année douze mois vue densité anniversaire scolaire',
+      render: () => <YearViewDemo />,
+    },
+    {
+      cat: 'Affichage',
+      name: 'RoutinesTab',
+      file: 'components/maison/RoutinesTab.tsx',
+      kw: 'routines aperçu moments matin soir cartes maison',
+      render: () => <RoutinesTabDemo />,
+    },
+    {
+      cat: 'Toddler',
+      name: 'NotesKidView',
+      file: 'components/cercle/NotesKidView.tsx',
+      kw: 'bambin notes famille lecture à voix haute écouter',
+      render: () => (
+        <Demo label="Les notes de la famille pour un pré-lecteur : on écoute plutôt qu'on lit. Elle va chercher ses propres notes.">
+          <BoardLensNote />
+          <div className="devkit__lens">
+            <NotesKidView />
+          </div>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'MotsCard',
+      file: 'components/mots/MotsCard.tsx',
+      kw: 'mot message laisser répondre répondeur visage attente babillard',
+      render: () => (
+        <Demo label="« Laisse un mot » : la carte-répondeur du babillard. Un mot attend une PERSONNE — la pastille de présence est booléenne, jamais un compte (NFR-CALM). Cachée pour un invité en lecture seule — un opérateur peut se partager un lien vers SA propre maisonnée.">
+          <BoardLensNote />
+          <MotsCard />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'SampleBanner',
+      file: 'components/SampleBanner.tsx',
+      kw: 'exemple bandeau démo bac à sable garder ma maisonnée effacer',
+      render: () => (
+        <Demo label="Le bandeau des données d'exemple — et, dans un bac à sable de démo, son autre visage : « Garder ma maisonnée ». Il ne s'affiche que si la maisonnée porte encore des données semées, ou si la session est un bac à sable : ici, le plus souvent, rien. C'est le bon comportement, pas un specimen cassé.">
+          <SampleBanner />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'WelcomeCard',
+      file: 'components/WelcomeCard.tsx',
+      kw: 'accueil première fois installation étapes maisonnée nouvelle démarrer',
+      render: () => (
+        <Demo label="La carte de premier démarrage d'une maisonnée toute neuve : trois étapes, cochées d'après de VRAIS progrès (pas un drapeau local), plus les portes vers le tour guidé et les données d'exemple. Elle disparaît d'elle-même une fois la maison habitée — donc ici, si ta maisonnée est établie, elle ne rend rien.">
+          <WelcomeCard members={[{ id: 'm1' }]} />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Feedback',
+      name: 'DidYouKnowCard · WhatsNewLine',
+      file: 'components/operator/discover.tsx',
+      kw: 'découvrir savais-tu quoi de neuf réglages astuce nouveauté',
+      render: () => (
+        <>
+          <Demo label="« Le savais-tu ? » — une astuce à la fois dans Réglages ▸ Découvrir, tirée du guide lui-même pour que les deux ne dérivent jamais.">
+            <DidYouKnowCard />
+          </Demo>
+          <Demo label="« Quoi de neuf » — une ligne par nouveauté non vue, puis plus rien. Pas un fil, pas une pastille : une fois lue, elle s'efface pour de bon.">
+            <WhatsNewLine />
+          </Demo>
+        </>
+      ),
+    },
     // ── Board cards ─────────────────────────────────────────────────────
     // The parity audit excused ~22 components with « needs live household data ».
     // Two of those excuses were simply wrong — DayNote and ActivityBring take props
@@ -3573,7 +3788,7 @@ export function DevKit() {
       file: 'components/board/ActivityBring.tsx',
       kw: 'à apporter avant de partir activité soccer gourde liste modèle todo',
       render: () => (
-        <Demo label="« À apporter » dans « Avant de partir » : une activité est un rendez-vous récurrent portant un `bring_template_id` (une liste todo enregistrée), et la carte en montre les items. « Ajouter à cocher » instancie la liste sur la journée en vraies tâches cochables. Sans données d'exemple les modèles arrivent vides — bascule « Données : Exemple » en haut pour voir les items.">
+        <Demo label="« À apporter » dans « Avant de partir » : une activité est un rendez-vous récurrent portant un `bring_template_id` (une liste todo enregistrée), et la carte en montre les items. « Ajouter à cocher » instancie la liste sur la journée en vraies tâches cochables. Les modèles de listes arrivent avec les données d'exemple.">
           <ActivityBring
             events={[
               { id: 'ev1', title: 'Soccer de Léa', bring_template_id: 'tpl-soccer' },
@@ -3590,7 +3805,7 @@ export function DevKit() {
       file: 'components/board/DepartureCard.tsx',
       kw: 'avant de partir départ matin lunchs sacs météo carte babillard',
       render: () => (
-        <Demo label="« Avant de partir » — la carte pré-vol du matin. Elle va chercher SES propres données (le payload du babillard, que la page sondait déjà : zéro requête de plus), donc à vide elle ne montre rien. C'est exactement le genre de carte que la galerie ne pouvait pas montrer avant l'interrupteur « Données : Exemple » en haut de page — allume-le.">
+        <Demo label="« Avant de partir » — la carte pré-vol du matin. Elle va chercher SES propres données (le payload du babillard, que la page sondait déjà : zéro requête de plus), donc à vide elle ne montre rien. C'est exactement le genre de carte que la galerie ne pouvait pas montrer avant l'interrupteur « Données ».">
           <DepartureCard />
         </Demo>
       ),
@@ -3602,7 +3817,7 @@ export function DevKit() {
       kw: 'à régler frictions signaux anniversaire cadeau manquant babillard puce carte',
       render: () => (
         <>
-          <Demo label="« À régler » — les petites frictions que la maison a laissées en plan (une fête sans idée de cadeau, un projet en retard). Elle se lit depuis son propre hook ; allume « Données : Exemple » pour la remplir. Vide, elle ne rend RIEN : c'est une carte qui a le droit de disparaître (useReportEmpty), pas une carte qui affiche « rien à régler ».">
+          <Demo label="« À régler » — les petites frictions que la maison a laissées en plan (une fête sans idée de cadeau, un projet en retard). Elle se lit depuis son propre hook. Vide, elle ne rend RIEN : c'est une carte qui a le droit de disparaître (useReportEmpty), pas une carte qui affiche « rien à régler ».">
             <ARegler enabled variant="card" />
           </Demo>
           <Demo label="`variant='chip'` — la même chose en une puce en ligne, hors CardSlot (elle ne signale donc pas son vide au babillard).">
@@ -3754,12 +3969,12 @@ export function DevKit() {
           />
         </div>
         {locked && <p className="devkit__warn mono">Kiosk verrouillé (?kid=1) — l’audience est figée.</p>}
+        {/* One line, on a page whose point is the specimens below it. The first draft
+            ran seven lines at 390px and pushed every card off the screen — the same
+            lean rule the app's own surfaces live under (LEAN.md). */}
         {fixtures && (
           <p className="devkit__warn mono">
-            Données d’exemple : les lectures /api/* répondent depuis les fixtures e2e et les écritures ne
-            partent pas. Les cartes qui vont chercher leurs propres données s’affichent enfin remplies —
-            c’est la moitié de la galerie qui n’était pas regardable autrement. Ta vraie maisonnée n’est
-            pas touchée ; coupe l’interrupteur pour la revoir.
+            Fixtures e2e en lecture, écritures avalées. Ta maisonnée n’est pas touchée.
           </p>
         )}
       </header>

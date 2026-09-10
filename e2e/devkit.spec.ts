@@ -62,11 +62,11 @@ test('the « Données : Exemple » switch flips both ways without emptying the g
 
   await onBtn.click()
   // The banner is the honest part of the switch: it says the household is untouched.
-  await expect(page.locator('.devkit__warn').filter({ hasText: 'Données d’exemple' })).toBeVisible()
+  await expect(page.locator('.devkit__warn').filter({ hasText: 'Fixtures e2e' })).toBeVisible()
   await expect(page.locator('.kit-entry').first()).toBeVisible()
 
   await offBtn.click()
-  await expect(page.locator('.devkit__warn').filter({ hasText: 'Données d’exemple' })).toHaveCount(0)
+  await expect(page.locator('.devkit__warn').filter({ hasText: 'Fixtures e2e' })).toHaveCount(0)
   await expect(page.locator('.kit-entry').first()).toBeVisible()
 
   expect(errors, 'flipping the data source threw').toEqual([])
