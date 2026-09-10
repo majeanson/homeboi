@@ -142,6 +142,43 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### The sweep had one language and one width (2026-09-10)
+
+100 states: **99 French, 1 English**, all but nine at 390px, **none at 360**. And its
+single English state is what caught the truncated greeting — which, once measured, was
+cut in FRENCH too, at a width the sweep never shot. One language and one width is not a
+lens; it is a blind spot with a screenshot in front of it.
+
+The states whose chrome is built out of WORDS — the six tabs, the sub-tab rows, the
+empty states, the forms, the ＋ sheet, and the two scenes whose headers carry a date and
+controls — now get two more shots each: **EN at 390, and FR at 360**. 100 → 140 states,
+3.5 min. The twins carry `noBudgetWhy` rather than a budget, and the reason is stated:
+a ratchet is pinned at one width in one language, so holding a twin to it would ratchet
+the wrong screen. A renamed state throws instead of silently dropping its twins — the
+exact way this coverage would rot back to 99:1.
+
+**Two real finds from the new lenses, and the second fix was wrong twice before it was
+right.**
+
+- **Maison's view switch lost a segment at 360.** « Arbre » sat entirely off-screen with
+  no cue, because `.subtabs { flex: 1 }` made the segmented control the only thing that
+  shrank while the loupe and « Notre monde » shared its row. *Attempt 1 — chevrons —
+  made it WORSE*: `SubTabs` suppresses them on `mini` for a stated reason, and turning
+  them on cost ~72px of a 320px line, leaving ONE segment visible where two had been.
+  Reverted. *Attempt 2 — let the control size to its content so the extras wrap —
+  then cost 43px at 390px*, and `contentTopPx` went red within a minute (417 against a
+  411 budget). Scoped below 380px it is right: at 360 you pay a line and see all three
+  segments; at 390 nothing moves. The ratchet refused a bad trade twice; that is the
+  job.
+- **Réglages stranded its « ↗ »** on a line of its own at 360 — a lone control under an
+  otherwise full row. The « ? » and « Voir dans l'app » are one group now: either both
+  sit beside the lens toggle or both drop together.
+
+**And a third suspicion that dissolved.** The EN Réglages tab looked like it rendered a
+missing-glyph box before « Discover ». Probed the DOM: byte-identical SVG in both
+languages — the pill was clipped at the rail's left edge. Sixth of the day, against
+nine that were real.
+
 ### Two design changes, one real defect — and four findings that were WRONG (2026-09-10)
 
 The rest of §4-G, and the honest ratio: of the five items left, two were worth

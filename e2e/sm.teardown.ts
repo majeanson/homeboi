@@ -38,6 +38,12 @@ const LOW_CONTENT_EXPECTED: { match: RegExp; why: string }[] = [
   { match: /^price-match/, why: '« Preuve de prix » is two deal cards — a store, a size and a price each; that IS the proof' },
   { match: /^person-edit/, why: 'a form is fields, not prose (and this one opens its « Coordonnées » fold because the phone is filled)' },
   { match: /^(welcome|family-window)/, why: 'GUEST-link scenes: an operator fixture lands them on their empty state, so neither carries a budget' },
+  // The EN lens twins (added 2026-09-10). English is simply SHORTER above the fold —
+  // « Meals · Pantry · Recipes · History » against « Repas · Garde-manger · Recettes ·
+  // Historique », « The list » against « La liste ». Opened all three: same surface,
+  // same rows, fewer characters. A twin's job is to be looked at, not budgeted, so a
+  // low count on one is expected rather than a signal.
+  { match: /-en(-|$)/, why: 'an EN lens twin: English says the same surface in fewer characters, and twins hold no budget' },
 ]
 const explain = (name: string) => LOW_CONTENT_EXPECTED.find((r) => r.match.test(name))?.why ?? null
 

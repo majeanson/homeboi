@@ -578,7 +578,61 @@ test('every measured entry is either budgeted or says why not', () => {
   expect(both, `these carry a budget AND a reason not to have one: ${both.join(', ')}`).toEqual([])
 })
 
-for (const entry of MATRIX) {
+// ── THE OTHER LENSES: English, and a narrow phone ───────────────────────────
+//
+// The sweep was 99 FRENCH states out of 100, all but nine at 390px, and NONE at
+// 360 — and on 2026-09-10 its single English state (`board-en`) is what caught the
+// truncated greeting. Measured afterwards, that greeting was cut in FRENCH too, at
+// 360px: a width this sweep never shot. One language and one width is not a lens,
+// it is a blind spot with a screenshot in front of it.
+//
+// So the states where TEXT LENGTH is load-bearing get two more shots each: the same
+// state in EN at 390, and in FR at 360. Not every state — a recipe's ingredient list
+// says nothing new in English — but every surface whose chrome is built out of
+// words: headers, sub-tab rows, button rows, empty states, forms and the ＋ sheet.
+const NARROW = { w: 360, h: 844 }
+const TEXT_STRESS = [
+  // the six tabs' own chrome (board already has `board-en`, so it takes the narrow
+  // shot only — see BOARD_NARROW_ONLY below)
+  'kitchen', 'liste', 'notes', 'maison', 'settings',
+  // sub-tab rows: the labels ARE the nav, and they are the first thing to clip
+  'kitchen-pantry', 'kitchen-recipes', 'maison-family', 'settings-board',
+  // empty states: a sentence with nothing under it, so its wrap is the whole surface
+  'first-kitchen', 'first-liste', 'first-maison', 'first-notes',
+  // forms + the sheet: labels beside fields, and a labeled CTA that must not squeeze
+  'form-event', 'form-person', 'board-addsheet', 'board-composer-todo',
+  // the two scenes whose headers carry a date AND controls
+  'day-plan', 'voiture',
+]
+const BOARD_NARROW_ONLY = ['board']
+
+const lensVariants = (): Entry[] => {
+  const byName = new Map(MATRIX.map((e) => [e.name, e]))
+  const missing = [...TEXT_STRESS, ...BOARD_NARROW_ONLY].filter((n) => !byName.has(n))
+  // Fail loudly rather than silently sweeping less: a renamed state must not quietly
+  // drop its EN/narrow twin (the exact way this coverage would rot back to 99:1).
+  if (missing.length) throw new Error(`TEXT_STRESS names no such state: ${missing.join(', ')}`)
+  const out: Entry[] = []
+  for (const name of [...TEXT_STRESS, ...BOARD_NARROW_ONLY]) {
+    const base = byName.get(name)!
+    // A budget is a ratchet pinned at ONE width in ONE language; a twin at another
+    // width would be measuring a different screen against it. These twins exist to be
+    // LOOKED at, so they measure `contentTopPx` and hold no ceiling — which is a
+    // decision, and the invariant test above demands it be said out loud.
+    const why =
+      'a lens twin of another state: budgets are pinned at 390px in FR, so holding this ' +
+      'one to that number would ratchet the wrong screen. Here to be read, not to gate.'
+    if (!BOARD_NARROW_ONLY.includes(name)) {
+      out.push({ ...base, name: `${name}-en`, lang: 'en', themes: ['day'], budgetPx: undefined, noBudgetWhy: base.content ? why : undefined })
+    }
+    out.push({ ...base, name: `${name}-narrow`, viewport: NARROW, themes: ['day'], budgetPx: undefined, noBudgetWhy: base.content ? why : undefined })
+  }
+  return out
+}
+
+const ALL: Entry[] = [...MATRIX, ...lensVariants()]
+
+for (const entry of ALL) {
   for (const theme of entry.themes ?? (['day', 'night'] as Theme[])) {
     const id = `${entry.name}-${theme}`
     test(`state ${id}`, async ({ page }) => {

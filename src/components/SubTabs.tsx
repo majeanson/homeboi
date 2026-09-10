@@ -35,6 +35,7 @@ export function SubTabs<K extends string>({
   trailing,
   tour,
   size,
+  arrows,
   className,
   tint,
 }: {
@@ -58,6 +59,10 @@ export function SubTabs<K extends string>({
   tour?: string
   // 'mini' = the compact variant (`.subtabs--mini`), e.g. the recipe-book Aa/Collections toggle.
   size?: 'mini'
+  /** Force the paging chevrons on (or off). Defaults to "on unless mini" — see the
+   *  block above `arrow`: mini rows usually hold 2–3 segments and nothing else, but a
+   *  mini row that ALSO carries trailing controls can overflow like any other. */
+  arrows?: boolean
   // Extra class on the `.subtabs` group (e.g. `deal-tabs`, `flyer-tabs`).
   className?: string
   // A section colour (e.g. SECTION_TINT[...].ink) applied as a local `--accent`
@@ -119,11 +124,18 @@ export function SubTabs<K extends string>({
   // purely to give a mouse a target. Disabled (not hidden) at an end, so the row
   // doesn't jump as you page along it.
   //
-  // Never on a `mini` toggle: those are 2–3 segments that don't need paging, and
-  // `.recipe-view-toggle` flattens `.subtabs-row` with `display:contents`, which would
-  // turn a chevron into a stray segment of that pill. The wheel still works there.
+  // Off by default on a `mini` toggle: those are usually 2–3 segments and nothing
+  // else, and `.recipe-view-toggle` flattens `.subtabs-row` with `display:contents`,
+  // which would turn a chevron into a stray segment of that pill.
+  //
+  // But "mini" was never the same question as "can this row overflow". Maison's view
+  // switch is mini AND carries a search loupe and « Notre monde » in the same row: at
+  // 360px its third segment (« Arbre ») sits entirely off-screen with no cue at all —
+  // photographed 2026-09-10 the day the sweep first shot a narrow phone. So the host
+  // decides, and a row that can overflow says `arrows`.
+  const showArrows = arrows ?? size !== 'mini'
   const arrow = (dir: -1 | 1) =>
-    hs.overflowing && size !== 'mini' ? (
+    hs.overflowing && showArrows ? (
       <button
         type="button"
         className="subtabs-row__arrow"

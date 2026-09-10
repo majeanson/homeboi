@@ -596,3 +596,13 @@ a.ledger__chore--link {
 .operator__schoolbreak .input {
   max-width: 12rem;
 }
+
+/* The lens row's two round controls (« ? » + « Voir dans l'app ») as ONE unit: loose
+   siblings of a wrapping flex row, the ↗ wrapped alone onto its own line at 360px.
+   Grouped, they either both fit beside Comprendre · Régler or both drop below it. */
+.operator__lenstools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}

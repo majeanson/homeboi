@@ -37,6 +37,27 @@ const registries = () => readdirSync(join(ROOT, 'src', 'lib')).filter((f) => f.e
 // TYPE's brackets and reads an empty body (it said 0 entries, twice); and three entries
 // span several lines, so a per-line count is short by exactly those three. Hence: strip
 // line comments, anchor on `= [`, then walk brace depth.
+// The EN / narrow LENS TWINS are generated, not literal, so `matrixEntries` — which
+// parses the MATRIX array — cannot see them. Without this the docs could say "100
+// states" while the sweep runs 140, and every guard would stay green: the exact drift
+// this file exists to refuse (added 2026-09-10, the day the twins landed).
+const lensTwins = (): number => {
+  const src = read('e2e/state-matrix.spec.ts')
+  const list = (name: string): number => {
+    const at = src.indexOf('const ' + name + ' = [')
+    if (at < 0) throw new Error('docCounts: ' + name + ' is gone from state-matrix.spec.ts')
+    // Strip the line comments FIRST: split-on-comma otherwise glues a comment line to
+    // the name under it, and every commented name goes uncounted (this read 29 where
+    // the truth was 39, on its first run — a parser walking the wrong shape, again).
+    const body = src
+      .slice(src.indexOf('[', at) + 1, src.indexOf(']', at))
+      .replace(/\/\/[^\n]*/g, '')
+    return body.split(',').filter((x) => x.trim().startsWith("'")).length
+  }
+  // every TEXT_STRESS name gets an -en and a -narrow; board takes the narrow one only
+  return list('TEXT_STRESS') * 2 + list('BOARD_NARROW_ONLY')
+}
+
 const matrixEntries = (): { entries: number; states: number; budgetedStates: number } => {
   const src = read('e2e/state-matrix.spec.ts')
   const raw = src
@@ -165,6 +186,7 @@ describe('the docs quote the real counts', () => {
     { file: 'LEAN.md', what: 'matrix entries (current size)', re: /today the sweep is (\d+) entries/, actual: () => matrixEntries().entries },
     { file: 'LEAN.md', what: 'matrix states (current size)', re: /entries → (\d+)\s*\n?states/, actual: () => matrixEntries().states },
     { file: 'LEAN.md', what: 'budgeted states (current size)', re: /states, (\d+) of them budgeted/, actual: () => matrixEntries().budgetedStates },
+    { file: 'LEAN.md', what: 'lens twins (EN + narrow)', re: /plus (\d+) lens twins/, actual: lensTwins },
     // STATE.md §2's headline: the repo's entire written open work, in one number. It is
     // the first thing a session reads, so it is the worst one to let drift.
     // The per-file breakdown that used to sit here is gone with the boxes it counted:

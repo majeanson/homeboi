@@ -547,6 +547,13 @@ export function Operator() {
                     ariaLabel={t.operator.lensAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
                   />
+                  {/* The « ? » and « Voir dans l'app » travel TOGETHER. They are two round
+                      controls sharing the line with the lens toggle, and as loose siblings
+                      of a wrapping row the ↗ wrapped ALONE onto a line of its own at 360px
+                      (photographed 2026-09-10, the first narrow-phone sweep) — a stranded
+                      control under an otherwise full row. Grouped, either both sit beside
+                      the toggle or both drop below it. */}
+                  <div className="operator__lenstools">
                   {/* The « ? »: arms the section-card help on the Régler face, the same
                       control every hub tab carries. Régler only — on Comprendre the
                       guide text IS the explanation, so a second explainer would be two
@@ -573,6 +580,7 @@ export function Operator() {
                       <span>{t.operator.gotoFeature}</span>
                     </Link>
                   )}
+                  </div>
                 </div>
               )}
               {operatorHelp.hint && <HelpHint card="settings" />}

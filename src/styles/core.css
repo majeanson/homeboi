@@ -1668,3 +1668,25 @@ textarea.input {
   white-space: nowrap;
   border: 0;
 }
+
+/* A MINI segmented control keeps its segments; the row's other furniture wraps.
+   Maison's view switch is `mini` AND shares its row with a search loupe and the
+   « Notre monde » launcher. With `.subtabs { flex: 1 }` the segmented control was the
+   only thing that shrank, so at 360px its third segment (« Arbre ») sat entirely
+   off-screen with no cue — photographed 2026-09-10, the first time the sweep shot a
+   narrow phone. Chevrons are not the answer here: they cost ~72px of a 320px line and
+   left ONE segment visible where two had been (measured, then reverted).
+   `flex: 0 1 auto` lets the control size to its content — `.subtabs-row` already wraps,
+   so the trailing controls drop to a second line instead, which is what Cluster would
+   have done. The full-size rows are untouched: they are the tab's primary nav and are
+   meant to page.
+   And it is scoped to the narrow case ON PURPOSE: unscoped, the trailing controls
+   wrapped at 390px too and cost 43px of chrome at the most common width — the
+   contentTopPx ratchet caught that within a minute (417px against a 411 budget), which
+   is exactly the trade it exists to refuse. Below 380px there is no such trade: the
+   choice there is a wrapped line or an invisible segment. */
+@media (max-width: 380px) {
+  .subtabs-row .subtabs--mini {
+    flex: 0 1 auto;
+  }
+}
