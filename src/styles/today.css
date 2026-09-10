@@ -1122,7 +1122,19 @@
   color: var(--marigold-ink, #8a5a00);
   background: var(--marigold-faint, #f6e7c4);
 }
-.act .check {
+/* THE tick. One shape for one idea: "I dealt with this". It was scoped to `.act`, so
+   the garde-manger's rows — a different component (CheckRow) for the same gesture —
+   drew a bare square GLYPH: no disc, no sage fill, and none of the 44px hit area
+   below, on the surface a parent taps while cooking. CheckRow joins it (2026-09-10).
+
+   The hosts are NAMED, not dropped. Making this a bare `.check` looked equivalent and
+   was not: `TodoSection` also writes `className="check"` and had never been inside an
+   `.act`, so the class was inert there and its rows drew their own empty circle — the
+   moment the rule went global they became bare ✓ glyphs. Caught in the very next
+   screenshot of `day-plan`. A selector list says who opted in; a bare class conscripts
+   whoever happens to share the word. */
+.act .check,
+.checkrow__check .check {
   margin-left: auto;
   width: 30px;
   height: 30px;
@@ -1140,11 +1152,14 @@
      a 30px target was the worst offender (AUJOURDHUI §5 touch targets). */
   position: relative;
 }
-.act .check::before {
+.act .check::before,
+.checkrow__check .check::before {
   content: '';
   position: absolute;
   inset: -7px;
 }
+/* …and the done fill, for a row that HAS a done state (an act). CheckRow's tick is
+   an action, not a state — the row leaves the list — so it never wears this. */
 .act.done .check {
   background: var(--sage);
   border-color: var(--sage);

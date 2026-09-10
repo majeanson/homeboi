@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { OPERATOR_HELP } from './operatorHelp'
+import { openTags } from './buildGuardScan'
 
 // Réglages' « ? » answers on EVERY card, or says out loud why one is silent.
 //
@@ -37,31 +38,10 @@ const ANCHOR_ONLY: Record<string, string> = {
   buildInfo: '« Version » + « Dernière mise à jour » — two read-only lines that explain themselves',
 }
 
-// Walk the OPEN TAG of each <OperatorSection>, brace-aware. A naive slice to the first
-// '>' is wrong here in the way this repo keeps re-learning (`nested-interactive`'s
-// indentation walk): attribute values hold arrow functions and whole JSX subtrees, so
-// `action={<button onClick={() => …}>…}` carries several '>' that are not the tag's.
-// Depth counts { [ ( — the tag ends at the first '>' seen at depth 0.
-function openTags(src: string): string[] {
-  const out: string[] = []
-  let i = 0
-  for (;;) {
-    const at = src.indexOf('<OperatorSection', i)
-    if (at < 0) break
-    let depth = 0
-    let j = at + '<OperatorSection'.length
-    for (; j < src.length; j++) {
-      const c = src[j]
-      if (c === '{' || c === '[' || c === '(') depth++
-      else if (c === '}' || c === ']' || c === ')') depth--
-      else if (c === '>' && depth === 0) break
-    }
-    out.push(src.slice(at, j + 1))
-    i = j + 1
-  }
-  return out
-}
-
+// The tag walk lives in buildGuardScan (shared + tested): a naive slice to the first
+// '>' is wrong here, because attribute values hold arrow functions and whole JSX
+// subtrees. Three guards walked a wrong shape before that module existed — one of
+// them reported GREEN over the very defect it was written for.
 const DIR = join(process.cwd(), 'src/components/operator')
 const FILES = [
   ...readdirSync(DIR)
@@ -73,7 +53,7 @@ const FILES = [
 type Site = { file: string; key: string; hasHelp: boolean }
 const sites: Site[] = []
 for (const file of FILES) {
-  for (const tag of openTags(readFileSync(file, 'utf8'))) {
+  for (const tag of openTags(readFileSync(file, 'utf8'), 'OperatorSection')) {
     const key = /helpKey="([^"]+)"/.exec(tag)?.[1]
     if (!key) continue
     sites.push({ file: file.split(/[\\/]/).slice(-1)[0], key, hasHelp: /(^|\s)help=\{/.test(tag) })
@@ -81,25 +61,7 @@ for (const file of FILES) {
 }
 
 describe('Réglages help coverage', () => {
-  // The parser is the part most likely to be quietly wrong — a scan that walks the
-  // wrong shape reports the wrong thing with total confidence (this repo has recorded
-  // that four times). Pin it against a tag shaped like the real hard case.
-  it('reads an open tag whose attributes contain > and JSX', () => {
-    const src = `
-      <OperatorSection
-        title={t.x}
-        action={<button onClick={() => go('a')}>{'>'}</button>}
-        help={help}
-        helpKey="demo"
-      >
-        <p>body</p>
-      </OperatorSection>`
-    const tags = openTags(src)
-    expect(tags).toHaveLength(1)
-    expect(tags[0]).toContain('helpKey="demo"')
-    expect(tags[0]).not.toContain('<p>body</p>')
-  })
-
+  // (The tag walk's own trap fixture moved to buildGuardScan.test.ts with the walk.)
   it('finds every OperatorSection that declares a helpKey', () => {
     // A floor, not an exact count: it only has to prove the walk didn't collapse.
     expect(sites.length).toBeGreaterThanOrEqual(40)

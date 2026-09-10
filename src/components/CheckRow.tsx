@@ -96,8 +96,10 @@ export function CheckRow({
   return (
     <li className="kitchen__pantry-row">
       <button type="button" className="checkrow__check" onClick={onCheck} aria-label={checkLabel}>
-        <span className="board__check" aria-hidden="true">
-          <Icon name="square-bold" size={18} />
+        {/* The SAME tick as the board and the list: one shape for « I dealt with
+            this », and with it the 44px hit area the bare glyph never had. */}
+        <span className="check" aria-hidden="true">
+          <Icon name="check-bold" size={18} />
         </span>
       </button>
       <span className="checkrow__body">

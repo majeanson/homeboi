@@ -724,9 +724,16 @@
     flex: 1 1 auto;
   }
   /* Two recipe cards still fit a phone; this keeps them from going too narrow
-     to read the title when an image is present. */
+     to read the title when an image is present.
+     132px, not 150: the grid is 290px wide at 360px of viewport, and two 150px
+     columns plus the 12.8px gap need 312.8 — so the book collapsed to ONE column
+     with a 300px-tall thumb, showing one and a half recipes where 390px shows four.
+     It missed by 22px, and the BASE rule's 140px floor missed by 2.8. Measured
+     2026-09-10, the first time the sweep shot a narrow phone. At 132 the columns
+     come out ~138px wide at 360 — wider than the 140px floor the base rule asks for
+     at 390, so nothing is actually narrower than it was designed to be. */
   .recipe-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   }
 }
 

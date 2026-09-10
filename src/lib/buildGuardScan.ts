@@ -86,3 +86,78 @@ export function blankComments(s: string): string {
 export function readScanned(file: string): string {
   return blankComments(readFileSync(file, 'utf8'))
 }
+
+// ── Two SHAPE readers, because three guards walked the wrong shape ────────────
+//
+// A grep guard is only as honest as the shape it walks, and this repo keeps proving
+// it the hard way — a scan that reads the wrong shape reports the wrong thing with
+// total confidence, and its green is worth nothing:
+//
+//   · nested-interactive.test.ts once walked JSX by INDENTATION and reported green
+//     over the exact defect it was written for (prettier breaks a multi-attribute
+//     open tag after the tag name, so `<div` was the whole line and the walk ended
+//     on the element's own first line). Re-counted by tag depth it went red — and
+//     found a third case nobody had reported.
+//   · tour-rule.test.ts's first draft scanned only literal `data-tour="…"` and
+//     reported three orphans that were all passed as `tour="…"` to SubTabs. It
+//     nearly "fixed" three anchors that were already there.
+//   · docCounts' first list reader split an array on commas WITHOUT blanking the
+//     comments, so every name sitting under a `//` line went uncounted: it read 29
+//     where the truth was 39 (2026-09-10).
+//
+// So the two shapes that keep coming up live here, once, with `buildGuardScan.test.ts`
+// pinning each against a fixture that carries the exact trap. Adding a third guard
+// that needs either one: import it, don't re-walk it.
+
+/**
+ * Every OPEN TAG of `<Name …>` in `src`, brace-aware.
+ *
+ * The trap: a naive slice to the first `>` is wrong, because attribute values hold
+ * arrow functions and whole JSX subtrees — `action={<button onClick={() => …}>…}`
+ * carries several `>` that are not the tag's. Depth counts `{ [ (`, so the tag ends
+ * at the first `>` seen at depth 0.
+ *
+ * The name must END where it is asked for: `<Chip` is not `<ChipGroup`, and a prefix
+ * match counts a container as one of the things it contains. This file's own test
+ * caught that in the first version, which is the entire argument for the file.
+ */
+export function openTags(src: string, name: string): string[] {
+  const out: string[] = []
+  let i = 0
+  for (;;) {
+    const at = src.indexOf('<' + name, i)
+    if (at < 0) break
+    const after = src[at + name.length + 1]
+    // a real tag ends the name here: whitespace, a self-close, or the tag's own >
+    if (after !== undefined && /[A-Za-z0-9_$.-]/.test(after)) {
+      i = at + name.length + 1
+      continue
+    }
+    let depth = 0
+    let j = at + name.length + 1
+    for (; j < src.length; j++) {
+      const c = src[j]
+      if (c === '{' || c === '[' || c === '(') depth++
+      else if (c === '}' || c === ']' || c === ')') depth--
+      else if (c === '>' && depth === 0) break
+    }
+    out.push(src.slice(at, j + 1))
+    i = j + 1
+  }
+  return out
+}
+
+/**
+ * The quoted string items of `const <name> = [ … ]`.
+ *
+ * The trap: comments. Split the array text on commas and any item written under a
+ * `// …` line arrives glued to that comment, so it no longer starts with a quote and
+ * silently vanishes from the count. Blank the comments first, then read the quotes.
+ */
+export function arrayStrings(src: string, name: string): string[] {
+  const at = src.indexOf('const ' + name + ' = [')
+  if (at < 0) throw new Error(`arrayStrings: no \`const ${name} = [\` in this source`)
+  const open = src.indexOf('[', at)
+  const body = blankComments(src.slice(open + 1, src.indexOf(']', open)))
+  return [...body.matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] ?? m[2])
+}

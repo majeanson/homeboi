@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
+import { arrayStrings } from './buildGuardScan'
 import { TOURS } from './tourContent'
 import { join } from 'node:path'
 
@@ -43,17 +44,7 @@ const registries = () => readdirSync(join(ROOT, 'src', 'lib')).filter((f) => f.e
 // this file exists to refuse (added 2026-09-10, the day the twins landed).
 const lensTwins = (): number => {
   const src = read('e2e/state-matrix.spec.ts')
-  const list = (name: string): number => {
-    const at = src.indexOf('const ' + name + ' = [')
-    if (at < 0) throw new Error('docCounts: ' + name + ' is gone from state-matrix.spec.ts')
-    // Strip the line comments FIRST: split-on-comma otherwise glues a comment line to
-    // the name under it, and every commented name goes uncounted (this read 29 where
-    // the truth was 39, on its first run — a parser walking the wrong shape, again).
-    const body = src
-      .slice(src.indexOf('[', at) + 1, src.indexOf(']', at))
-      .replace(/\/\/[^\n]*/g, '')
-    return body.split(',').filter((x) => x.trim().startsWith("'")).length
-  }
+  const list = (name: string): number => arrayStrings(src, name).length
   // every TEXT_STRESS name gets an -en and a -narrow; board takes the narrow one only
   return list('TEXT_STRESS') * 2 + list('BOARD_NARROW_ONLY')
 }

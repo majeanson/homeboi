@@ -98,11 +98,12 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **2** — §4-G wrote nine on 2026-09-10 (the pass that
-> opened all 100 state-matrix screenshots instead of sampling them) and seven closed the
-> same day. The two left are the ones that need a look on real glass rather than a
-> screenshot: Maison ▸ Routines wasting the wall, and the pantry's square tick against
-> La liste's round one. It had
+> a number you can trust. It reads **1** — and it is a WORD, waiting on Marc the way
+> « Maisonnée » did (« Show the cashier » reads as *display the cashier* in English).
+> §4-G wrote nine on 2026-09-10 — the pass that opened all 100 state-matrix screenshots
+> instead of sampling them — and all nine are settled: seven fixed, two dissolved once
+> the code was actually read (the wall was never wasting width; the « ragged » grids
+> stretch). It had
 > read **0** for one day (2026-09-09), when `REVIEW-PASS.md`'s last finding closed and
 > `PARITY.md`'s Wave D became a `[~]`. That zero was true and is worth keeping in view:
 > the ledgers really are settled, and everything open now was found by LOOKING at the
@@ -141,6 +142,45 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### Reading the 39 new twins, the last two findings, and one scanner to share (2026-09-10)
+
+**The twins earned their place immediately.** Two more real defects out of the 39, and
+both were invisible at 390px in French:
+
+- **The recipe book collapsed to ONE column at 360px** — a 300px-tall thumb, one and a
+  half recipes on screen where 390 shows four. The grid is 290px wide there and two
+  150px columns plus the gap need 312.8; the BASE rule's 140px floor missed by 2.8px
+  too. Floor is 132px now (columns come out ~138px at 360 — wider than the 140 the base
+  rule asks for at 390, so nothing is narrower than designed).
+- **`first-kitchen` still showed the fixture's June week** while the board beside it
+  said September: the `fresh` branch built its empty meals payload from the module
+  constant, discarding the matrix's rebase. It reads `DATA[path]` now — the same
+  override-aware source the generic fresh branch already used. The two-weeks-on-one-
+  screen bug, hiding one branch further down.
+
+**The last two §4-G findings — one real, one wrong.**
+
+- **The pantry's square tick is now the app's round disc**, and it was never only
+  cosmetic: `.act .check` carries a 44px hit area (AUJOURDHUI §5's touch-target fix)
+  that CheckRow's bare glyph never had, on the surface a parent taps mid-recipe. *The
+  first attempt made it a bare `.check` and broke a third surface*: `TodoSection` writes
+  the same class and had never been inside an `.act`, so the class was inert there — the
+  moment it went global its empty circles became bare ✓ glyphs. Caught in the next
+  screenshot. The hosts are named now.
+- **Maison ▸ Routines was never wasting the wall.** Measured: three columns of 318px
+  across 986px. The fixture simply has one routine per moment bucket, and each bucket
+  renders its own grid. Parked, so the next reader of that PNG doesn't re-find it.
+
+**And one scanner, shared and tested.** Three guards walked a wrong shape this session
+alone — `nested-interactive`'s old indentation walk (green over its own defect),
+`tour-rule`'s literal-only attribute scan (three phantom orphans), and `docCounts`'
+comma split that read 29 where the truth was 39. The two shapes that keep recurring
+now live once in `buildGuardScan`: `openTags` (brace-aware, because attribute values
+hold arrow functions and whole JSX subtrees) and `arrayStrings` (comments blanked
+first). `buildGuardScan.test.ts` pins both against the exact traps — **and caught a
+real bug in `openTags` on its first run**: `<Chip` matched `<ChipGroup`, so a container
+counted as one of the things it contains. That is the whole argument for the file.
 
 ### The sweep had one language and one width (2026-09-10)
 
@@ -1815,12 +1855,36 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
       glyph in the author's tint, which stays a legitimate tier. `e2e/toddler-notes.spec.ts`
       holds all three AND that four tiles never share one picture — "they all render
       something" is not the same as "you can tell them apart", which was the old state.
-- [ ] **Maison ▸ Routines on the 1280px wall keeps phone-width cards** — two cards in
+- [~] **Maison ▸ Routines on the 1280px wall keeps phone-width cards** — two cards in
       one narrow column, more than half the screen empty. The kitchen's wall view
       stretches; this one does not.
-- [ ] **The garde-manger ticks a SQUARE box; La liste ticks a ROUND one** — same idea
+      **WRONG — measured 2026-09-10 and parked.** On the wall the grid IS three columns
+      of 318px across 986px (`.routines-grid` is `auto-fill, minmax(15rem, 1fr)` and the
+      width cap is lifted for this page in hub.css). What the screenshot shows is the
+      FIXTURE: one routine in « Soir », one in « Matin », and each moment bucket renders
+      its own grid — so every row holds one card because there is one card to hold. A
+      household with three morning routines gets three across. Nothing to fix; parked so
+      it is not re-found by the next person who looks at that PNG.
+- [x] **The garde-manger ticks a SQUARE box; La liste ticks a ROUND one** — same idea
       (« I dealt with this »), two shapes, on two tabs a person moves between while
       cooking. Its rows also carry no picto where the list's do.
+      **Fixed 2026-09-10, and it was not only cosmetic**: `.act .check` is a 30px disc
+      with a 44px hit area (a documented touch-target fix, AUJOURDHUI §5) and a sage
+      done-fill; CheckRow drew a bare `square-bold` GLYPH with neither, on the surface a
+      parent taps while cooking. The disc now names its hosts —
+      `.act .check, .checkrow__check .check`. The first attempt made it a bare `.check`,
+      which looked equivalent and was not: `TodoSection` also writes `className="check"`
+      and had never sat inside an `.act`, so the class was INERT there and its rows drew
+      their own empty circle. Going global turned them into bare ✓ glyphs — caught in the
+      next screenshot of `day-plan`. A selector list says who opted in; a bare class
+      conscripts whoever happens to share the word. (The missing picto is left: a pantry
+      row is a word a parent typed, not a catalogued item, so `pictoFor` has less to go
+      on there than on the list.)
+- [ ] **« Show the cashier (1) » reads wrong in English.** FR « Montrer à la caisse »
+      means *show it AT the till* — the button opens the in-store price-match surface.
+      The EN reads as *display the cashier*, i.e. the person. Found by the EN lens twin
+      on 2026-09-10. It is a WORD, so it waits for Marc the way « Maisonnée » did:
+      « At the till » and « Show at the till » are the candidates.
 - [x] Smaller, all photographed — and **four of the five were wrong**, which is the
       entry worth reading. Only the first was real: **the drawings tile footer
       collided** (the 📌 is `position:absolute` and `.drawgallery__item` — its

@@ -1007,8 +1007,14 @@ export async function mockApi(
     // showed 2 of its 3 setup steps already ✓ on a first-run screenshot: the fixture
     // was teaching "skip these". Empty what a fresh household actually lacks.
     // (Derived from the real fixtures — an invented shape crashed the board.)
+    // `DATA[path]`, not the module-level MEALS: a per-call OVERRIDE has to survive
+    // `fresh`, and spreading the constant silently threw it away. The state matrix
+    // rebases the meal week onto its own clock, so `first-kitchen` was photographing
+    // the fixture's June week (« AUJ. DIM 8 ») while the board beside it said
+    // « jeu. 10 sept. » — the same two-weeks-on-one-screen bug the rebase was for,
+    // hiding one branch further down (2026-09-10).
     if (opts.fresh && path === 'meals') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...MEALS, days: [] }) })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...(DATA[path] as object), days: [] }) })
       return
     }
     if (opts.fresh && path === 'pair/devices') {
