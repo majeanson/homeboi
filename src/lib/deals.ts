@@ -138,13 +138,15 @@ export function flippItemUrl(flyerItemId: number | null, postal: string | null |
   return `https://flipp.com/fr-ca/item/${flyerItemId}?postal_code=${encodeURIComponent(postal)}`
 }
 
-// « Voir ma liste Flipp » — Flipp's own shopping-list page. What it shows is whatever
+// « Ma liste Flipp » — Flipp's own shopping-list page. What it shows is whatever
 // THIS browser (or, on Android, the Flipp app that claims flipp.com links) has
 // clipped: probed 2026-09-10, « Ajouter à la liste » on flipp.com writes that
 // browser's localStorage and makes no request, the page reads no URL parameter, and
-// there is no API that writes a Flipp list. So this door is the END of a loop that
-// runs through Flipp's own button, never a list we filled. Same postal rule as the
-// item page (see above) — the page was only ever seen rendering with one.
+// there is no API that writes a Flipp list from outside. So this door is the END of
+// a loop: either Flipp's own button, pick by pick, or the bookmark from
+// lib/flippList that pastes the picks into that same storage on their origin (the
+// till's « Ma liste Flipp » copies the payload as it opens this). Same postal rule
+// as the item page (see above) — the page was only ever seen rendering with one.
 //
 // NO locale prefix. `/fr-ca/liste_dachats` is the marketing shell (it renders the
 // flyers home with a list BADGE, which is how the wrong route shipped for an hour on

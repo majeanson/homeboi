@@ -51,9 +51,10 @@ export function CashierMode({
   // show it from flipp? » No — probed in a real browser: flipp.com's « Ajouter à la
   // liste » writes that browser's own localStorage and makes no request, the list
   // page reads no URL parameter, the app's list is account-synced behind an
-  // undocumented backend. Nothing outside Flipp writes a Flipp list. What CAN be
-  // made easy is stepping through it with THEIR button: one tap here opens the
-  // next pick's Flipp page, one tap there adds it, come back — and « Voir ma liste
+  // undocumented backend. Nothing on OUR origin writes a Flipp list (the one thing
+  // that can is a bookmark running on theirs — lib/flippList, below). What is easy
+  // without any setup is stepping through it with THEIR button: one tap here opens
+  // the next pick's Flipp page, one tap there adds it, come back — and « Ma liste
   // Flipp » then shows the clippings the way Flipp shows them. Where the loop
   // stands is remembered per device (a clipping lives in that same browser);
   // only picks that carry a Flipp id can take part, and the whole row needs the
