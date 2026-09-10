@@ -332,3 +332,24 @@
   padding: 8px 12px;
   font-size: 0.9rem;
 }
+
+/* An ENDED deal at the till (2026-09-10): the tile dims and says so; on the card
+   the word replaces the dates and the Flipp door is gone (their item page for an
+   expired item is a dead redirect — seen on the phone). */
+.cashier__tile.is-ended {
+  opacity: 0.55;
+}
+.cashier__tile-ended {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.bigcard__ended {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.1rem;
+}

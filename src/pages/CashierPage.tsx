@@ -59,5 +59,5 @@ export function CashierPage() {
       </div>
     )
   }
-  return <CashierMode picks={picks} onClose={close} postal={household?.postal ?? null} />
+  return <CashierMode picks={picks} onClose={close} postal={household?.postal ?? null} rows={board.list} />
 }

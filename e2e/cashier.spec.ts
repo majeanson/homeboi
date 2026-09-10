@@ -1,5 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test'
-import { BOARD, mockApi, seedState, type Theme, type Surface } from './mocks'
+import { BOARD, mockApi, seedState, flyerIso, type Theme, type Surface } from './mocks'
 
 // Dedicated capture + guards for « Montrer à la caisse » — a CORE, high-stress moment
 // (standing at the till with the cashier waiting). The mode is random-access: a GRID
@@ -55,7 +55,9 @@ const DEALS = [
   { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', merchant: 'Super C' },
   { id: 102, flyerId: 5002, name: 'Pain tranché blé entier', price: 2.49, unitPrice: 0.5, unitLabel: '/100g', merchant: 'IGA' },
   { id: 103, flyerId: 5001, name: 'Pommes Gala 3 lb', price: 3.99, unitPrice: 1.32, unitLabel: '/lb', merchant: 'Metro' },
-  { id: 104, flyerId: 5002, name: 'Couches Pampers méga', price: 24.97, unitPrice: null, unitLabel: null, merchant: 'Walmart' },
+  // ENDED on purpose (validTo two days back): the staged deal a household forgot
+  // on its list from last week's flyer — Marc's mini-concombres at Provigo.
+  { id: 104, flyerId: 5002, name: 'Couches Pampers méga', price: 24.97, unitPrice: null, unitLabel: null, merchant: 'Walmart', endedDaysAgo: 2 },
 ]
 const stagedDeal = (d: (typeof DEALS)[number], long: boolean) => ({
   id: d.id,
@@ -73,16 +75,24 @@ const stagedDeal = (d: (typeof DEALS)[number], long: boolean) => ({
   // The mock serves /api/flyer-img as a tiny SVG, so the tile thumbnail + the peek's
   // two-column picture|facts layout both render (and the wide layout fills the space).
   image: `/api/flyer-img?d=${d.id}`,
-  validFrom: null,
-  validTo: '2026-06-30T23:59:59-04:00',
+  // Live-clock dates (the fixture doctrine of 2026-09-10): a fixed June date reads
+  // as ENDED on every surface once the calendar passes it, silently.
+  validFrom: flyerIso(-2),
+  validTo: 'endedDaysAgo' in d && d.endedDaysAgo ? flyerIso(-d.endedDaysAgo) : flyerIso(4),
 })
 const boardWithDeals = (long: boolean) => ({
   ...BOARD,
-  list: BOARD.list.map((item, i) => ({
-    ...item,
-    text: long ? `${item.text} ${LONG}` : item.text,
-    deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0], long)),
-  })),
+  list: [
+    ...BOARD.list.map((item, i) => ({
+      ...item,
+      text: long ? `${item.text} ${LONG}` : item.text,
+      deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0], long)),
+    })),
+    // Two plain lines — no deal — so « Ma liste Flipp » has typed items to carry;
+    // the checked one must NOT go (it is already bought).
+    { id: 'l5', text: 'Oeufs', source: 'manual' },
+    { id: 'l6', text: 'Beurre', source: 'manual', checked_at: 1_700_000_000 },
+  ],
 })
 
 // Open the till GRID with several picks. Both operator and guest just tap "Montrer à
@@ -156,7 +166,7 @@ test('proof peek @phone', async ({ page }) => {
   await expect(page.locator('.bigcard__store')).toContainText('Super C')
   await expect(page.locator('.bigcard__for')).toContainText('Lait')
   await expect(page.locator('.bigcard__price')).toContainText('4,99')
-  await expect(page.locator('.bigcard__valid')).toContainText('juin') // date is high-level, not fine print
+  await expect(page.locator('.bigcard__valid')).toContainText(/[0-9]/) // a dated line, not fine print
   await expect(page.getByRole('button', { name: /Voir la circulaire/ })).toBeVisible()
   // The peek is a clean proof: NO edit/delete buttons anywhere.
   await expect(page.locator('.row-actions__btn')).toHaveCount(0)
@@ -273,7 +283,7 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   await stubFlipp(page)
   await openGrid(page) // four picks, Flipp ids 101..104; household postal 'H2X 1Y4'
   const step = page.locator('a.cashier__clip')
-  await expect(step).toHaveText(/1 de 4/)
+  await expect(step).toHaveText(/1 de 3/) // four picks, one ended — it is not in the loop
   await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
   await expect(step).toHaveAttribute('target', '_blank')
   // The list door sits beside it, on Flipp's list page for this postal code — and
@@ -287,20 +297,20 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   await expectNoOverflow(page)
   const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
   await popup.close()
-  await expect(step).toHaveText(/2 de 4/)
+  await expect(step).toHaveText(/2 de 3/)
   await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/102?postal_code=H2X%201Y4')
   // Come back tomorrow, same phone: the loop is where it was left.
   await page.reload()
   await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await expect(page.locator('a.cashier__clip')).toHaveText(/2 de 4/)
+  await expect(page.locator('a.cashier__clip')).toHaveText(/2 de 3/)
 })
 
 test('every pick on the list → the list door leads, and « Reprendre du début » restarts', async ({ page }) => {
-  await openGrid(page, { clipped: [101, 102, 103, 104] })
+  await openGrid(page, { clipped: [101, 102, 103] })
   await expect(page.locator('a.cashier__clip')).toHaveCount(0)
   await expect(page.locator('a.cashier__flipp-list')).toHaveClass(/btn--primary/)
   await page.getByRole('button', { name: /Reprendre du début/ }).click()
-  await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 4/)
+  await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 3/)
 })
 
 // « MA LISTE FLIPP » ALSO COPIES THE PICKS — for the bookmark (lib/flippList) that
@@ -317,6 +327,31 @@ test('« Ma liste Flipp » copies the picks in Flipp\'s list shape, and says so'
   const text = await page.evaluate(() => navigator.clipboard.readText())
   const payload = JSON.parse(text) as { v: number; clippings: { flyerItemId: number; name: string; price: string; merchantName: string }[] }
   expect(payload.v).toBe(1)
-  expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103, 104])
+  expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103]) // the ended one is not pasted as a clipping…
+  // …it rides as a TYPED item instead, with the plain unchecked line; the checked line stays home.
+  expect((payload as unknown as { items: { term: string }[] }).items.map((i) => i.term)).toEqual(['Couches', 'Oeufs'])
   expect(payload.clippings[0]).toMatchObject({ name: 'Lait 2% 4L', price: '4.99', merchantName: 'Super C' })
+})
+
+// AN ENDED DEAL AT THE TILL. Marc, from the iPhone (2026-09-10): a staged deal from
+// last week's Provigo flyer opened Flipp's « This item is expired » → « Circulaires
+// de Undefined » page — a dead screen held up to a cashier. The list row already
+// says « Aubaine terminée » (lib/deals dealEnded); the till now reads the same fact.
+test('an ended deal: the tile says so, the card swaps the dates for the word, and there is no Flipp door', async ({ page }) => {
+  await openGrid(page)
+  const tile = page.locator('.cashier__tile', { hasText: 'Couches' })
+  await expect(tile).toHaveClass(/is-ended/)
+  await expect(tile.locator('.cashier__tile-ended')).toHaveText(/Aubaine terminée/)
+  // The live tiles are untouched.
+  await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(1)
+  await tile.click()
+  await page.locator('.bigcard').waitFor({ state: 'visible' })
+  await expect(page.locator('.bigcard__ended')).toContainText(/Aubaine terminée/)
+  await expect(page.locator('.bigcard__valid')).toHaveCount(0)
+  await expect(page.locator('a.bigcard__flipp')).toHaveCount(0)
+  // The rest of the proof stays: the price, the in-app flyer, the source.
+  await expect(page.locator('.bigcard__price')).toContainText('24,97')
+  await expect(page.locator('.bigcard__flyer')).toBeVisible()
+  await shot(page, 'peek-ended')
+  await expectNoOverflow(page)
 })

@@ -2232,10 +2232,10 @@ export const EN: typeof FR = {
     storeFilter: 'My stores',
     flippTitle: 'My Flipp list',
     flippIntro:
-      'Flipp lets nothing fill its list from outside — except a bookmark that runs on flipp.com. Once set up: at the till, tap “My Flipp list”, then on Flipp run the bookmark and paste.',
+      'Flipp lets nothing fill its list from outside — except a bookmark that runs on flipp.com. Once set up: at the till, tap “My Flipp list”, then on Flipp run the bookmark and paste — your whole list goes, chosen deals and items.',
     flippStep1: 'Copy the bookmark below.',
     flippStep2: 'In the phone’s browser, bookmark any page, rename it “Paste from Babillard” and replace its address with what you copied.',
-    flippStep3: 'On flipp.com, open that bookmark: it asks you to paste, then shows your list. Signed in to Flipp, it reaches their app too.',
+    flippStep3: 'In Safari or Chrome (not the window that opens from Babillard), go to flipp.com and open that bookmark: it asks you to paste, then shows your list. Signed in to Flipp, it reaches their app too.',
     flippCopyBookmarklet: 'Copy the bookmark',
     flippBookmarkletCopied: 'Bookmark copied',
     flippBookmarkletLabel: 'Bookmark address',

@@ -144,6 +144,49 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### From the iPhone: an ended deal is a dead door — and the WHOLE list goes to Flipp now (2026-09-10, night, later)
+
+Marc, with the Flipp app installed and an account made, from the phone: his third
+pick — mini-concombres, Provigo — opened Flipp's « This item is expired. You have
+been redirected to the relevant store flyers » onto a « Circulaires de Undefined à
+Montsainthilaire » page with zero flyers. A dead screen, held up to a cashier: the
+exact thing the postal rule was written against, from the other side. The deal had
+been staged from last week's flyer and sat on the list past its `validTo`.
+
+**The till now reads the fact the list row already knew.** `dealEnded` (lib/deals —
+the validTo DAY fully past, the « ! » on the row) drives the till too: an ended
+pick's tile dims and says « Aubaine terminée »; its card swaps the dates for that
+word and drops « Montrer Flipp » (a page that redirects to nothing is not a door);
+it is out of the Flipp loop and out of the paste as a clipping. « Voir la
+circulaire » stays — the in-app reconstruction degrades to « Circulaire
+indisponible » on its own, which is honest. Guard: `cashier.spec.ts` « an ended
+deal… » + the loop counts (« 1 de 3 » with four picks, one ended); red on the
+plant (filter removed → the door came back, the count read 4). And the spec's own
+fixture had been carrying `validTo: 2026-06-30` on every deal since June — read as
+ENDED on every surface once the calendar passed it, silently; it rides `flyerIso`
+now, with one deal ended on purpose.
+
+**« so I have my full list exported in my flipp app »** — the paste carries the
+whole list now, not the deals. Flipp's storage has two kinds of thing, both read
+from their bundle: a clipping (`SLFlyerItemClipping`) and a typed line
+(`SLListItem`: `{ id, term, checked }`, unique by term, their id `<term, spaces
+stripped>-<uuid>`, "clobbered by the server on save"). A row with a LIVE clipping
+goes as the clipping; every other unchecked row — plain, its deal ended, its store
+hidden at the till — goes as a typed item under their « Ma liste ». Checked rows
+stay home. `flippListPayload(picks, terms)`, the bookmarklet merges both (typed
+items deduped case-insensitively against theirs, never edited), `mergeFlippList`
+twin, `CashierPage` hands the till its rows. **Proven live:** test 2 of the
+contract now pastes a typed « Oeufs Babillard » beside three stores' clippings on
+flipp.com's real list page, and it renders. Unit test: 14 cases on the exact string.
+
+**Seen on the phone, stated in the setup steps:** from Babillard installed as an
+app, a link opens in an in-app browser window (the screenshot's chrome) that has
+no bookmarks — the bookmark runs in Safari/Chrome proper; the copied list is
+system-wide, so the paste works there. Step 3 says so now, FR + EN.
+
+**Still Marc's:** the sign-in half (test 4 of the contract) with the account he
+just made — one command with two variables, or two repository secrets.
+
 ### The Flipp contract, checked against the real site every week (2026-09-10, late night)
 
 Everything « Ma liste Flipp » rests on lives on flipp.com and is documented nowhere:

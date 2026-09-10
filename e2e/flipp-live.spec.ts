@@ -147,13 +147,15 @@ test('1 · a real « Ajouter à la liste » still stores the shape lib/flippList
 
 test('2 · the bookmarklet renders a payload on their real list page, by store', async ({ page, request }) => {
   const hits = await liveDeals(request, ['lait', 'pain', 'poulet', 'pommes'], 3)
-  const payload = flippListPayload(hits.map(asPick))
+  const payload = flippListPayload(hits.map(asPick), ['Oeufs Babillard'])
   await open(page, `/liste_dachats?postal_code=${POSTAL}`)
   await runBookmarklet(page, payload)
 
   for (const it of hits) {
     await expect(page.getByText(it.merchant_name!, { exact: false }).first(), `store "${it.merchant_name}" on the list page`).toBeVisible({ timeout: 30_000 })
   }
+  // The typed line too — their « Ma liste » group, the shape SLListItem reads.
+  await expect(page.getByText('Oeufs Babillard', { exact: false }).first()).toBeVisible({ timeout: 30_000 })
   // The clippings render as their photos, not as text — count the photo tiles.
   const photos = page.locator('img[src*="wishabi.net/page_items"], img[src*="clean_image"]')
   await expect.poll(() => photos.count(), { timeout: 30_000 }).toBeGreaterThanOrEqual(hits.length)

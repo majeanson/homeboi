@@ -2503,10 +2503,13 @@ export const FR = {
     // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
     flippTitle: 'Ma liste Flipp',
     flippIntro:
-      'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Une fois installé : à la caisse, touche « Ma liste Flipp », puis sur Flipp lance le signet et colle.',
+      'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Une fois installé : à la caisse, touche « Ma liste Flipp », puis sur Flipp lance le signet et colle — toute ta liste y passe, rabais choisis et articles.',
     flippStep1: 'Copie le signet ci-dessous.',
     flippStep2: 'Dans le navigateur du téléphone, ajoute n’importe quelle page aux signets, renomme-la « Coller de Babillard » et remplace son adresse par ce que tu as copié.',
-    flippStep3: 'Sur flipp.com, ouvre ce signet : il demande de coller, puis affiche ta liste. Connecté à Flipp, elle se retrouve aussi dans leur app.',
+    // « Dans Safari / Chrome » on purpose: from Babillard installed as an app, a link
+    // opens in an in-app browser window that has no bookmarks (seen on the iPhone,
+    // 2026-09-10). The paste works there too — it is system-wide.
+    flippStep3: 'Dans Safari ou Chrome (pas la fenêtre qui s’ouvre depuis Babillard), va sur flipp.com et ouvre ce signet : il demande de coller, puis affiche ta liste. Connecté à Flipp, elle se retrouve aussi dans leur app.',
     flippCopyBookmarklet: 'Copier le signet',
     flippBookmarkletCopied: 'Signet copié',
     flippBookmarkletLabel: 'Adresse du signet',

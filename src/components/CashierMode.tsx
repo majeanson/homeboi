@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money, dealValidity, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
+import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
+import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
 import { flippListPayload } from '../lib/flippList'
 import { useNotice } from '../lib/toast'
@@ -25,9 +26,13 @@ export function CashierMode({
   picks,
   onClose,
   postal,
+  rows = [],
 }: {
   picks: Pick[]
   onClose: () => void
+  /** Every list row (the ['board'] cache), so « Ma liste Flipp » can carry the WHOLE
+   *  list: an unchecked row without a live clipping rides as a typed item. */
+  rows?: ListItem[]
   /** The household's postal code — Flipp's item page needs it, so without one the
    *  « Montrer Flipp » door does not render at all (a dead link at a till is worse
    *  than none). */
@@ -61,7 +66,14 @@ export function CashierMode({
   // postal code the item page needs. ONE row, no hint line: the grid is scanned
   // at a till, and the page the step opens carries the next instruction itself.
   const clipped = useFlippClipped()
-  const clippable = picks.filter((p) => p.deal.id != null)
+  // AN ENDED DEAL GETS NO FLIPP DOOR. Marc, from the phone (2026-09-10): a staged
+  // deal from last week's Provigo flyer opened Flipp's « This item is expired » →
+  // « Circulaires de Undefined » page — a dead screen, in front of a cashier. The
+  // list row already knows (« Aubaine terminée », lib/deals dealEnded: the validTo
+  // day fully past); the till now reads the same fact: no item page, not in the
+  // loop, not in the paste — and the card says so instead of the dates.
+  const isEnded = (p: Pick) => dealEnded(p.deal.validTo)
+  const clippable = picks.filter((p) => p.deal.id != null && !isEnded(p))
   const clipDone = clippable.filter((p) => clipped.includes(p.deal.id!)).length
   const clipNext = clippable.find((p) => !clipped.includes(p.deal.id!))
   // « Ma liste Flipp » also COPIES the picks in Flipp's own list shape, for the
@@ -71,10 +83,15 @@ export function CashierMode({
   // clipboard is invisible otherwise. Clipboard refused (no gesture, no permission):
   // the link still opens, silently — a notice about a copy that did not happen
   // would be a lie.
+  // THE WHOLE LIST goes (Marc: « my full list exported in my flipp app »): a row
+  // with a live clipping goes as that clipping; every other unchecked row — plain,
+  // or its deal ended, or its store hidden at the till — as a typed item.
+  const clippedRows = new Set(clippable.map((p) => p.itemId))
+  const terms = rows.filter((r) => !r.checked_at && !clippedRows.has(r.id)).map((r) => r.text)
   const notice = useNotice()
   const copyForFlipp = () => {
     navigator.clipboard
-      ?.writeText(flippListPayload(clippable))
+      ?.writeText(flippListPayload(clippable, terms))
       .then(() => notice(t.shop.flippCopied))
       .catch(() => {})
   }
@@ -134,7 +151,7 @@ export function CashierMode({
 
         <div className="cashier__grid-wrap">
           <p className="cashier__hint mono">{t.shop.tapToShow}</p>
-          {postal && clippable.length > 0 && (
+          {postal && (clippable.length > 0 || terms.length > 0) && (
             <div className="cashier__flipp">
               <Cluster className="cashier__flipp-row">
                 {clipNext ? (
@@ -168,11 +185,12 @@ export function CashierMode({
           <ul className="cashier__grid">
             {picks.map((p) => {
               const isShown = shown.has(p.itemId)
+              const ended = isEnded(p)
               return (
                 <li key={p.itemId}>
                   <button
                     type="button"
-                    className={`cashier__tile${isShown ? ' is-shown' : ''}`}
+                    className={`cashier__tile${isShown ? ' is-shown' : ''}${ended ? ' is-ended' : ''}`}
                     onClick={() => show(p)}
                   >
                     {p.deal.image && (
@@ -182,6 +200,7 @@ export function CashierMode({
                     <span className="cashier__tile-name mono">{p.deal.name}</span>
                     <span className="cashier__tile-price">{money(p.deal.price)}</span>
                     <span className="cashier__tile-store mono">{p.deal.merchant}</span>
+                    {ended && <span className="cashier__tile-ended mono">{t.shop.dealEnded}</span>}
                     {isShown && (
                       <span className="cashier__tile-check" aria-label={t.shop.shown}>
                         <Icon name="check-bold" size={14} />
@@ -199,6 +218,7 @@ export function CashierMode({
 
   // ---- Peek: the picked deal blown up, the proof to hold up at the till -----
   const d = selected.deal
+  const ended = isEnded(selected)
 
   return (
     <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
@@ -272,7 +292,7 @@ export function CashierMode({
                 postal code, on purpose. « Voir la circulaire » stays the fast in-app
                 path — it opens ON the item, circled. */}
             <Cluster className="bigcard__actions">
-              {flippItemUrl(d.id, postal) && (
+              {!ended && flippItemUrl(d.id, postal) && (
                 <a
                   className="btn btn--primary bigcard__flipp"
                   href={flippItemUrl(d.id, postal)!}
@@ -294,7 +314,16 @@ export function CashierMode({
             {/* The dates a cashier checks, as the ad states them (« du 8 au 14 sept. »,
                 never just an end) — in the page's own register: a plain dated line,
                 not a pill. One size up from theirs so it still reads at arm's length. */}
-            {(d.validFrom || d.validTo) && (
+            {/* Ended: the dates give way to the word — the one thing a cashier must
+                not be shown as still true. Same predicate as the list row's « ! ». */}
+            {ended && (
+              <span className="bigcard__ended">
+                <InlineIcon name="warning-bold" size={18} />{' '}
+                {t.shop.dealEnded}
+                {d.validTo && <> — {dealValidity(d.validFrom, d.validTo, lang, { rangeTo: t.shop.dateRangeTo, until: t.shop.until })}</>}
+              </span>
+            )}
+            {!ended && (d.validFrom || d.validTo) && (
               <span className="bigcard__valid">
                 <InlineIcon name="calendar-dots-bold" size={18} />{' '}
                 {dealValidity(d.validFrom, d.validTo, lang, { rangeTo: t.shop.dateRangeTo, until: t.shop.until })}

@@ -151,8 +151,8 @@ export const OPERATOR_HELP = {
     card: 'set-shopping',
     point: 0,
     body: {
-      fr: `Un signet à garder dans le navigateur du téléphone : sur flipp.com, il colle tes rabais choisis dans « Ma liste » de Flipp — leur liste, leurs photos, par magasin. Connecté à Flipp, la liste se retrouve aussi dans leur app.`,
-      en: `A bookmark to keep in the phone's browser: on flipp.com it pastes your chosen deals into Flipp's own "My list" — their list, their photos, by store. Signed in to Flipp, the list reaches their app too.`,
+      fr: `Un signet à garder dans le navigateur du téléphone : sur flipp.com, il colle toute ta liste dans « Ma liste » de Flipp — les rabais choisis avec leur photo, par magasin, et les autres articles tels quels. Connecté à Flipp, la liste se retrouve aussi dans leur app.`,
+      en: `A bookmark to keep in the phone's browser: on flipp.com it pastes your whole list into Flipp's own "My list" — chosen deals with their photo, by store, and the other items as typed. Signed in to Flipp, the list reaches their app too.`,
     },
   },
   history: {
