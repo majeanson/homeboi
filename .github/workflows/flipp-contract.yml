@@ -1,0 +1,52 @@
+name: Flipp live contract
+
+# The weekly check of what flipp.com must still do for « Ma liste Flipp » to work
+# (e2e/flipp-live.spec.ts under e2e/flipp.config.ts). It drives the REAL site in a
+# real Chromium — no Vite, no stubs, no account — because the facts it pins live
+# on their side: the shape `localSave()` writes into localStorage, the bare
+# `/liste_dachats` list route, the item page needing a postal code, and our
+# bookmarklet rendering a payload on their real list page.
+#
+# Deliberately NOT chained to pushes: nothing we commit changes their site, and a
+# network-bound run has no place gating a deploy. Weekly is the trade — their
+# schema drifts over weeks, and a week-late red names the fact that moved before a
+# household finds an empty list. A red run here is never "fix the test": re-dump
+# `shopping_list` after a real add (the first test prints it) and update
+# lib/flippList to the new shape, out loud, in a commit that says what changed.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 07:00 UTC — an hour after the State matrix, same review morning.
+    - cron: '0 7 * * 1'
+
+concurrency:
+  group: flipp-contract-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Flipp live contract (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      # Test 4 (the sign-in merge that reaches the phone app) runs only when a
+      # Flipp TEST account is set as repository secrets; unset, it skips itself.
+      # Never a household's real account — a throwaway made for this.
+      - run: npm run e2e:flipp
+        env:
+          FLIPP_EMAIL: ${{ secrets.FLIPP_EMAIL }}
+          FLIPP_PASSWORD: ${{ secrets.FLIPP_PASSWORD }}
+      - name: Upload the pages as seen
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: flipp-contract
+          path: e2e/screenshots/flipp
+          retention-days: 14

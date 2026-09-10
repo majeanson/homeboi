@@ -182,6 +182,11 @@ npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts,
                        #   Claude review pass (read the manifest, open flagged PNGs). Never runs
                        #   per-push; CI twin = Actions ▸ "State matrix" (dispatch + WEEKLY,
                        #   Mondays — the contentTopPx ratchet needs something to pull it).
+npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (e2e/flipp-live.spec.ts, own
+                       #   harness, NO Vite/stubs): pins the list-storage shape lib/flippList
+                       #   writes, the bare /liste_dachats route, the item page's postal rule,
+                       #   and runs our bookmarklet on their real list page. CI twin = Actions ▸
+                       #   "Flipp live contract" (dispatch + WEEKLY, Mondays). Never per-push.
 npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
 ```
 

@@ -144,6 +144,36 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### The Flipp contract, checked against the real site every week (2026-09-10, late night)
+
+Everything « Ma liste Flipp » rests on lives on flipp.com and is documented nowhere:
+the storage shape `localSave()` writes, the bare `/liste_dachats` route, the item
+page's postal rule, whether our bookmark string still renders there. A comment
+saying so would stay green for months after it stopped being true — the exact
+drift the build guards exist to stop, except that no grep of OUR code can see it.
+So a harness goes and looks. `e2e/flipp-live.spec.ts` under `e2e/flipp.config.ts`
+(`npm run e2e:flipp`): no Vite, no stubs, a real Chromium on the real site, one
+worker, one retry, never per-push. CI twin: Actions ▸ « Flipp live contract »,
+dispatch + Mondays 07:00 UTC, an hour after the State matrix.
+
+Four tests, three green tonight: **1** a real « Ajouter à la liste » still stores
+the shape our payload writes (theirs ⊇ ours, key by key; `price` a string; a
+mismatch PRINTS their dump so the fix is a re-read, not a guess); **2** the exact
+bookmarklet string renders a three-store payload on their real list page — stores
+named, photos counted, storage still the local shape; **3** the routes hold — and
+the first run corrected ME: the item page without a postal errors only in a FRESH
+browser; once any page has been opened with one, flipp.com remembers it
+(`location_info`) and the bare URL renders. The check now runs first, and the
+comment in lib/deals is still right for the case that matters (a phone that has
+never been to flipp.com). **4** — the sign-in merge, the half that reaches the
+phone app — skips itself without `FLIPP_EMAIL` + `FLIPP_PASSWORD`. It is written
+against the `/signin` form (email, password, the two consent boxes) and asserts
+what `joinLocalList` promises: after sign-in the stored list is a server proxy
+that still carries our ids, a write hit the accounts server, the stores render.
+Marc is creating a throwaway account for it; as repository secrets it runs weekly,
+locally it runs with the two variables set for one command. Never a household's
+real account.
+
 ### « Any way to populate the localstorage with what they want? » — yes: a bookmark that runs on flipp.com (2026-09-10, late night)
 
 The previous entry said Flipp's list cannot be pre-filled from outside. True as far

@@ -11,7 +11,9 @@ export default defineConfig({
   // (e2e/sw.config.ts, `npm run e2e:sw`) and would fail against this DEV server.
   // state-matrix.spec.ts is the ON-DEMAND visual state sweep (e2e/sm.config.ts,
   // `npm run e2e:matrix`) — kept out of the per-push run by design.
-  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts'],
+  // flipp-live.spec.ts drives the REAL flipp.com (e2e/flipp.config.ts, `npm run
+  // e2e:flipp`, weekly) — network-bound, no Vite, never per-push.
+  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // CI runs serially (workers:1 below) and is the authoritative, strict run.

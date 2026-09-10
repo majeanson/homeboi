@@ -22,6 +22,7 @@ e2e/test-results/
 e2e/test-results-realdata/
 e2e/test-results-sw/
 e2e/test-results-matrix/
+e2e/test-results-flipp/
 playwright-report/
 test-results/
 
