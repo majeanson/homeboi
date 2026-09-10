@@ -367,6 +367,7 @@ export function Kitchen() {
           background="var(--terracotta-wash)"
           card="kitchen"
           searchPick={(run) => tabHelp.pick('search', run)}
+          action={tabHelp.available ? <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} /> : undefined}
         />
         {tabHelp.bubbleFor('search')}
 
@@ -385,7 +386,6 @@ export function Kitchen() {
           armed={tabHelp.active}
           ariaLabel={t.kitchen.title}
           tour="kitchen-tabs"
-          trailing={tabHelp.available && <HelpToggle active={tabHelp.active} onToggle={tabHelp.toggle} />}
         />
         {tabHelp.hint && <HelpHint card="kitchen" />}
         {/* The sub-tab bubbles render HERE (next to the nav). Heading bubbles render

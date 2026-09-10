@@ -818,7 +818,6 @@ function MaisonParent() {
         ariaLabel={t.nav.maison}
         pick={help.pick}
         armed={help.active}
-        trailing={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
         tour="maison-sections"
       />
       {help.hint && <HelpHint card={sectionCard} />}
@@ -838,6 +837,7 @@ function MaisonParent() {
         background="var(--berry-wash)"
         card="maison"
         searchPick={(run) => help.pick('globalSearch', run)}
+        action={help.available ? <HelpToggle active={help.active} onToggle={help.toggle} /> : undefined}
       />
       {help.bubbleFor('globalSearch')}
 

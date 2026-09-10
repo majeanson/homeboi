@@ -98,18 +98,19 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **0** — as of 2026-09-09 the repo has **no written
-> open work left**. `REVIEW-PASS.md`'s last finding closed (both settings writes are
-> asserted, each proven red), and `PARITY.md`'s Wave D became a `[~]`: every child was
-> already settled and what remains is a standing *opportunistic* policy, which is not a
-> task. That number is **asserted from the boxes themselves** by
-> `src/lib/docCounts.test.ts`, so this sentence can no longer drift the way
-> `REVIEW-PASS.md`'s own banner did (it claimed 15 for twelve days against one box) —
-> and it went red the moment those two closed, which is how it should behave.
+> a number you can trust. It reads **9** — all nine written on 2026-09-10 by §4-G, the
+> pass that opened all 100 state-matrix screenshots instead of sampling them. It had
+> read **0** for one day (2026-09-09), when `REVIEW-PASS.md`'s last finding closed and
+> `PARITY.md`'s Wave D became a `[~]`. That zero was true and is worth keeping in view:
+> the ledgers really are settled, and everything open now was found by LOOKING at the
+> app rather than by mining a document. That number is **asserted from the boxes
+> themselves** by `src/lib/docCounts.test.ts`, so this sentence can no longer drift the
+> way `REVIEW-PASS.md`'s own banner did (it claimed 15 for twelve days against one box)
+> — it went red within a minute of §4-G being written, which is how it should behave.
 >
-> **Zero written boxes is not "nothing to do."** It means the backlog now lives in
-> judgement rather than in a list: the idea pools (`bmad/`), the parity matrix's own
-> cells, and whatever a device pass turns up. Read §4 before picking work.
+> **A written box is now the RARE case, not the backlog.** Most of what is worth doing
+> still lives in judgement: the idea pools (`bmad/`), the parity matrix's own cells, a
+> device pass, and the next sweep of screenshots. Read §4 before picking work.
 > It was 75 before the
 > convention, and 17 the moment the convention landed. Note what `[~]` may NOT be used for:
 > a bullet that still lists "Still open: …" is open work, not a park — four were flipped back
@@ -137,6 +138,33 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### The « ? » was eating the nav it sat in (2026-09-10)
+
+Asked for as "a third lean pass on Maison", and the measurement said the surface's
+problem was not the one the eye reports. Maison ▸ Famille at 390px: the four stacked
+control rows are **188px of controls** and the first person sits at 374px — most of
+the rest is inter-row margin and the group header, and this codebase is *deliberately*
+generous with whitespace, so compressing that rhythm is not a lean pass, it is just a
+tighter app. The two earlier passes (2026-08-26/27) had already taken the 168px that
+was really chrome.
+
+What WAS broken was horizontal, and no screenshot says it out loud — you have to
+measure: the section pill row is a `useHScroll` scroller **189px wide holding 456px of
+pills**, because two chevrons and the « ? » take 116px of the 320px line. The tab's
+PRIMARY navigation was showing about 40% of itself.
+
+`HubHead` has carried an `action` slot since it was written, documented as « e.g. the
+in-place help-mode "?" toggle » — Board and La liste use it. La cuisine and Maison,
+the two tabs with sub-tabs, spent it on the nav row instead. Moved both into the head:
+**189 → 234px of nav (+24%)**, three pills visible where there was one and two halves,
+nothing removed, no earlier decision reversed, and the two remaining tabs now agree
+with the other four. `contentTopPx` is unchanged (374 / 382) — this was never vertical.
+
+And the « ? » bar itself, now that it is on seven surfaces: its one centred sentence
+was dropping « fait. » alone onto line two on every tab at 390px. `text-wrap: balance`
+(the call `.kit-h` and the hub heads already make). The centring stays — that is a
+stated decision in `help.css`, not an accident.
 
 ### Réglages' « ? » reached five cards that said nothing (2026-09-10)
 
@@ -1571,6 +1599,67 @@ real-photo corpora to tune against — not guessed at.
   file outside git's safety net on a guess would have been the wrong kind of clean-up.
   Now `./PlannerOrSomething.code-workspace` (repo root), `path` corrected `"../.."` →
   `"."`. Still git-ignored; nothing to commit.
+
+### G. The 100-screenshot pass — 2026-09-10, and what LOOKING found
+
+Marc asked for every PNG in the sweep to be opened, not sampled. All 100 were. Each
+claim below was then **grepped against code before being written down** — two of the
+first candidates died that way (the toddler nav's icon-only exit is documented and
+keeps its `aria-label`; « Système » vs « Réglages » is the settings THEME's name, and
+the six themed tabs mirror the hub on purpose). What survived, ranked by user harm:
+
+- [ ] **The EN board greeting truncates: « Good afterno… »** at 390px, where FR
+      « Bon après-midi » fits. `.greet` carries `clamp(16px, 4.4vw, 32px)`, added
+      2026-07-14 for exactly this bug in FR (« Bon apr… ») — the fix under-shoots by a
+      few px in the other language. A viewport `vw` clamp is a guess at the room left
+      by four fixed-width round buttons; a container query would know.
+- [ ] **« Maisonnée » has an invisible glyph in LIGHT theme** — the mobile face
+      dropdown (`FaceSelect`'s collapsed chip) draws a white household glyph on a white
+      disc. `notes-night` renders it fine and so does the wall's face ROW, which is how
+      it was caught: the day/night pair is the tell. Board, habits and the wall all
+      show the icon; only the light-theme dropdown eats it.
+- [ ] **The birthday YEAR field clips its own placeholder** — « Année (o| » on the
+      new-person, new-pet AND intake forms (one shared three-up row: Mois · Jour ·
+      Année at 390px). A filled year fits; only the placeholder is cut, which is the
+      one thing an empty form has to say. `composer-fit.spec.ts` already holds « the
+      placeholder must fit » for composers — this row is outside its reach.
+- [ ] **Three words for one idea: everyone.** « Maisonnée » (board · Notes · Maison),
+      « Toute la maisonnée » (the habit form's scope), « Tout le monde » (Voyage's face
+      picker, `i18n` `everyone`). `glossary.ts` settles the winner — `maisonnee` — and
+      its own definition spends « tout le monde de la maison » as the EXPLANATION of
+      the winning word. UNIFY's `RIVAL_CEILING` never declared this rival, so the
+      ratchet cannot see it. Declaring it is the fix; renaming a user-facing word is
+      Marc's call, which is why this is a box and not a commit.
+- [ ] **The routine builder shows five always-open chips under EVERY step**
+      (Minuterie · Le truc · Enregistrer ta voix · Ajouter une photo · Dessiner) —
+      three chip-rows per step, so a four-step routine is twelve rows of secondary
+      controls. `Disclosure` is the primitive for exactly this.
+- [ ] **Toddler « Les notes » is not picture-first.** It says « Touche l'image pour
+      l'écouter » and then draws the same generic document glyph on every tile; the
+      only thing telling two notes apart is a WORD, to a pre-reader. `kitchen-toddler`
+      and `liste-toddler` are genuinely picture-first (food, groceries) — this tab,
+      the last to get a toddler lens, kept the shape without the pictures.
+- [ ] **Maison ▸ Routines on the 1280px wall keeps phone-width cards** — two cards in
+      one narrow column, more than half the screen empty. The kitchen's wall view
+      stretches; this one does not.
+- [ ] **The garde-manger ticks a SQUARE box; La liste ticks a ROUND one** — same idea
+      (« I dealt with this »), two shapes, on two tabs a person moves between while
+      cooking. Its rows also carry no picto where the list's do.
+- [ ] Smaller, all photographed: the drawings tile footer collides (author disc
+      clipped by the tile edge, 📌 on top of it, name under both) · an EMPTY list still
+      offers search + ⚡ + ⚙, three controls with nothing to act on · tile grids don't
+      stretch to equal height (`jouer`, `kitchen-recipes`) · the ideas drawer strands
+      its ⚙ alone on a line · quickadd's aisle discs are near-invisible against paper.
+
+**And one the sweep found about ITSELF.** `voiture-day` photographs **two different
+weeks on one screen**: the header reads « dim. 6 sept. — sam. 12 sept. » (the pinned
+clock) while every row reads « dim. 8 juin », « lun. 9 juin » (the shared fixture,
+anchored a year back at `MMID`). The kitchen week has the same split — it labels the
+fixture's Sunday « AUJ. » on a Thursday, because the meals API's contract is "the
+window starts today" and the app honours it. Neither is an app bug; both mean a
+reviewer cannot judge the one thing those screens are FOR. The fix is a matrix-local
+fixture override (rebase `MEALS`/the car week onto the sweep's clock), not a change to
+the shared mocks 126 other specs freeze at `BASE`.
 
 ### F. Not a backlog — do not mine these for work
 

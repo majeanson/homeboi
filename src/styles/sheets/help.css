@@ -145,6 +145,10 @@
 }
 .help-hint__line {
   margin: 0;
+  /* One short centred sentence, so let the two lines share the words rather than
+     dropping « fait. » alone on line two — the orphan the 2026-09-10 matrix pass
+     photographed on all six tabs at 390px. Same call as .kit-h/.hub's own heads. */
+  text-wrap: balance;
 }
 /* Centred, and wrapping on a narrow phone — Cluster's own rule, just centred here
    (the bar is a centred block, not a left-aligned row of furniture). */
