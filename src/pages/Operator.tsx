@@ -10,7 +10,7 @@ import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
 import { AmbientSettingsSection, HabitCheckinSection } from '../components/operator/ambient'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
-import { ShopSection, StoreFilterSection, HistorySection, GhostSection } from '../components/operator/shopping'
+import { ShopSection, StoreFilterSection, FlippSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { AisleOrderSection } from '../components/operator/aisles'
 import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
@@ -253,6 +253,7 @@ export function Operator() {
       recipeTags: t.operator.tagsTitle,
       shop: t.operator.shopping,
       storeFilter: t.operator.storeFilter,
+      flipp: t.operator.flippTitle,
       history: t.operator.history,
       ghost: t.operator.ghost,
       recipePills: t.operator.pillsTitle,
@@ -318,6 +319,7 @@ export function Operator() {
     shop: <ShopSection help={operatorHelp} />,
     aisleOrder: <AisleOrderSection />,
     storeFilter: <StoreFilterSection help={operatorHelp} />,
+    flipp: <FlippSection help={operatorHelp} />,
     history: <HistorySection help={operatorHelp} />,
     ghost: <GhostSection help={operatorHelp} />,
     // maison

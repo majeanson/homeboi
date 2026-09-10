@@ -62,7 +62,9 @@ export const SETTINGS_TREE = {
   },
   liste: {
     // Magasinage: what to buy, in which aisle order, from which stores.
-    shop: [s('shop', 'household'), s('aisleOrder', 'household'), s('storeFilter', 'household')],
+    // `flipp` is device-level: a bookmark lives in this phone's browser, it writes
+    // nothing to the household — so a link guest may set it up too.
+    shop: [s('shop', 'household'), s('aisleOrder', 'household'), s('storeFilter', 'household'), s('flipp', 'device')],
     // Historique & suivi: what was bought, and the opt-in ghost tracking.
     history: [s('history', 'household'), s('ghost', 'household')],
   },

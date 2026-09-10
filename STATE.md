@@ -144,6 +144,60 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### « Any way to populate the localstorage with what they want? » — yes: a bookmark that runs on flipp.com (2026-09-10, late night)
+
+The previous entry said Flipp's list cannot be pre-filled from outside. True as far
+as it went — and Marc's follow-up found the edge of "outside". Their web list is a
+`shopping_list` object in flipp.com's localStorage, written by `ShoppingList.
+localSave()` and read back on every load. Our origin cannot touch it; **a bookmarklet
+runs on theirs.** Read out of their bundle (saved, 4.2 MB, six chunks):
+
+- the stored shape — `flyerItemClippings[]` of `SLFlyerItemClipping` (`id:
+  "item-clipping-<flyerItemId>"`, name, flyerId, box, `price` as a STRING, merchant
+  id/name/logo, thumbnail, validTo) plus `listItems`, `photos`, `ecomItems`,
+  `_outstandingOps`, `_delegate`;
+- `_outstandingOps` is NOT restored from storage (the constructor resets it), so
+  seeding sync ops is pointless — but **`joinLocalList`** is: when a user is signed
+  in and the stored list is LOCAL (`_delegate: false`), the list page itself runs
+  `createAllItemOps(localList)` and merges every local clipping into the account
+  list. That is the path Flipp wrote for "added while logged out, then signed in",
+  and it is how the phone APP receives what the bookmark wrote. We call no API of
+  theirs and hold no token (theirs live in `flipp-user`/`flipp-login` cookies; we
+  never read them);
+- the list route is `/liste_dachats` BARE — `/fr-ca/liste_dachats` is a marketing
+  shell that shows the flyers home with a list badge, which is exactly why the door
+  shipped wrong for an hour (`c0983b4` fixed it); the real route ignores every URL
+  parameter tried, re-tested on the right page this time;
+- the three `message` listeners are a setImmediate polyfill, an embed-analytics
+  handshake, and OAuth popups: nothing writes the list from a message.
+
+**Shipped.** `lib/flippList.ts`: `flippListPayload(picks)` (their clipping shape,
+one per pick with a Flipp id — `/api/deals` now also keeps `merchant_id` and the box,
+optional so older staged deals still clip) and `FLIPP_BOOKMARKLET` — ES5, self-
+contained, refuses anything that is not a `{v:1, clippings}` payload, merges into a
+local list (dedupe by flyer item; their typed items untouched), replaces a server
+proxy list with a local one so Flipp merges it on load, then goes to
+`/liste_dachats`. « Ma liste Flipp » on the till grid now COPIES the payload as it
+opens their list (notice: « Rabais copiés — sur Flipp, lance le signet… »); Réglages
+▸ La liste ▸ Magasinage gained the one-time « Ma liste Flipp » card (device-level:
+three steps, « Copier le signet », the address read-only). React refuses
+`javascript:` hrefs, rightly, so it is text to copy, never a link.
+
+**Proven live, not assumed.** The exact string lifted from the source file between
+its markers, run on flipp.com's real list page with three live deals from three
+stores (Adonis, Metro, Super C), `prompt` stubbed: « MA LISTE » rendered all three
+with their clipping photos, badge 3 (`flipp-bookmarklet-result.png` in the session
+scratchpad). The sign-in merge is READ from their code, not exercised — that half is
+Marc's to try with his Flipp account.
+
+Guards: `src/lib/flippList.test.ts` runs the bookmarklet STRING against a fake page
+(merge, dedupe, proxy replacement, refusal of every non-payload, agreement with its
+readable twin `mergeFlippList`, ES5-only); `cashier.spec.ts` reads the clipboard
+back after « Ma liste Flipp » (Chromium grants it) and sees the notice.
+`operatorHelpCoverage` holds the new section's « ? ». Fragility, stated: their
+storage schema is private; a change breaks this into an EMPTY list, never a broken
+page, and the bookmark writes nothing it did not build itself.
+
 ### « Any way to pre-create the list and show it from Flipp? » — no, and here is the loop instead (2026-09-10, night)
 
 Marc, after the card shipped: Flipp lets you add items to a list — can Babillard fill
@@ -2127,6 +2181,11 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
         reads no URL param, the app's list is account-synced with no write API. The
         till grid steps through it with Flipp's own button instead (« Ajouter à Flipp ·
         n de N » + « Ma liste Flipp »); see §3 « Any way to pre-create the list… ».
+        **Then reopened and answered the other way (late night):** a BOOKMARKLET runs on
+        flipp.com's origin and can write that storage — proven live on their real list
+        page with three stores. `lib/flippList.ts`; « Ma liste Flipp » copies, the
+        bookmark pastes, and a signed-in Flipp merges it into the account (their own
+        `joinLocalList`). See §3 « … yes: a bookmark that runs on flipp.com ».
       ~~❓ Store logo and product picture are null in the fixture, so the card has never
         been photographed looking like an ad rather than a receipt.~~ **Closed 2026-09-10
         (night):** the fixture carries both now and `cashier-peek` was read wearing them —

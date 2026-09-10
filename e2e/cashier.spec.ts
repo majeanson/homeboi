@@ -302,3 +302,21 @@ test('every pick on the list → the list door leads, and « Reprendre du début
   await page.getByRole('button', { name: /Reprendre du début/ }).click()
   await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 4/)
 })
+
+// « MA LISTE FLIPP » ALSO COPIES THE PICKS — for the bookmark (lib/flippList) that
+// pastes them into Flipp's own list on flipp.com. Read back from the clipboard: the
+// payload is Flipp's clipping shape, one per pick with a Flipp id, and the notice
+// says the copy happened. Chromium grants the clipboard to the test context.
+test('« Ma liste Flipp » copies the picks in Flipp\'s list shape, and says so', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await stubFlipp(page)
+  await openGrid(page)
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__flipp-list').click()])
+  await popup.close()
+  await expect(page.getByText(/Rabais copiés/)).toBeVisible()
+  const text = await page.evaluate(() => navigator.clipboard.readText())
+  const payload = JSON.parse(text) as { v: number; clippings: { flyerItemId: number; name: string; price: string; merchantName: string }[] }
+  expect(payload.v).toBe(1)
+  expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103, 104])
+  expect(payload.clippings[0]).toMatchObject({ name: 'Lait 2% 4L', price: '4.99', merchantName: 'Super C' })
+})

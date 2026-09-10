@@ -37,6 +37,13 @@ interface FlippItem {
   clipping_image_url?: string
   flyer_item_id?: number
   flyer_id?: number
+  merchant_id?: number
+  // The item's box on its flyer, in Flipp's page units — what their own list
+  // storage keeps per clipping (lib/flippList).
+  left?: number
+  right?: number
+  top?: number
+  bottom?: number
   pre_price_text?: string | null
   post_price_text?: string | null
   valid_from?: string
@@ -64,6 +71,10 @@ export interface Deal {
   image: string | null
   validFrom: string | null
   validTo: string | null
+  // For « Ma liste Flipp » (src/lib/flippList.ts): Flipp's list storage keeps the
+  // merchant id and the clipping's box. Optional — older staged deals lack them.
+  merchantId?: number | null
+  box?: { left: number; right: number; top: number; bottom: number } | null
 }
 
 // Flyer images are http://; upgrade so an https app doesn't drop them.
@@ -172,6 +183,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
         image: https(it.clean_image_url ?? it.clipping_image_url),
         validFrom: it.valid_from ?? null,
         validTo: it.valid_to ?? null,
+        merchantId: it.merchant_id ?? null,
+        box:
+          typeof it.left === 'number' && typeof it.right === 'number' && typeof it.top === 'number' && typeof it.bottom === 'number'
+            ? { left: it.left, right: it.right, top: it.top, bottom: it.bottom }
+            : null,
       }
     })
     .filter((d) => d.name && d.price !== null && (included.size === 0 || included.has(storeKey(d.merchant))))

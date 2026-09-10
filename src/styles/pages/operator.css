@@ -606,3 +606,21 @@ a.ledger__chore--link {
   gap: 0.5rem;
   flex: 0 0 auto;
 }
+
+/* Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » (2026-09-10): the one-time
+   bookmark setup reads as three short steps, then the copy button, then the address
+   itself (read-only, for a manual copy when the clipboard is refused). */
+.operator__steps {
+  margin: 0 0 12px;
+  padding-left: 1.25rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+.operator__steps li + li {
+  margin-top: 4px;
+}
+.flipp__bookmarklet {
+  margin-top: 10px;
+  width: 100%;
+  font-size: 0.8rem;
+}

@@ -2230,6 +2230,15 @@ export const EN: typeof FR = {
     postalSaved: 'Saved.',
     postalBad: 'Invalid postal code.',
     storeFilter: 'My stores',
+    flippTitle: 'My Flipp list',
+    flippIntro:
+      'Flipp lets nothing fill its list from outside — except a bookmark that runs on flipp.com. Once set up: at the till, tap “My Flipp list”, then on Flipp run the bookmark and paste.',
+    flippStep1: 'Copy the bookmark below.',
+    flippStep2: 'In the phone’s browser, bookmark any page, rename it “Paste from Babillard” and replace its address with what you copied.',
+    flippStep3: 'On flipp.com, open that bookmark: it asks you to paste, then shows your list. Signed in to Flipp, it reaches their app too.',
+    flippCopyBookmarklet: 'Copy the bookmark',
+    flippBookmarkletCopied: 'Bookmark copied',
+    flippBookmarkletLabel: 'Bookmark address',
     storeFilterHint:
       'Keep only the stores you shop at: just those show up in deals and flyers.',
     storeFilterNoPostal: 'Set your postal code above first to see nearby stores.',
@@ -2930,6 +2939,7 @@ export const EN: typeof FR = {
     clipNext: (n: number, total: number) => `Add to Flipp · ${n} of ${total}`,
     clipAgain: 'Start over',
     flippList: 'My Flipp list',
+    flippCopied: 'Deals copied — on Flipp, run the “Paste from Babillard” bookmark.',
     flyerThisWeek: 'This week',
     flyerUpcoming: 'Upcoming',
     flyerTabOffers: 'Deals',

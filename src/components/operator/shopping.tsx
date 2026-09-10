@@ -16,6 +16,8 @@ import { EditField } from '../EditField'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
+import { Cluster } from '../Layout'
+import { FLIPP_BOOKMARKLET } from '../../lib/flippList'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -595,5 +597,47 @@ function GhostRow({
         </button>
       )}
     </li>
+  )
+}
+
+// « Ma liste Flipp » — the ONE-TIME bookmark that lets the till's « Ma liste Flipp »
+// button fill Flipp's own list (lib/flippList explains the mechanism and why nothing
+// short of code running on flipp.com can do it). Device-level: the bookmark lives in
+// this phone's browser and nothing here writes to the household, so a link guest may
+// set it up too. React refuses `javascript:` hrefs (rightly), so the bookmark is
+// offered as text to copy, never as a link to tap.
+export function FlippSection({ help }: { help?: HelpMode }) {
+  const t = useT()
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(FLIPP_BOOKMARKLET)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard blocked — the address is shown in the field for manual copy */
+    }
+  }
+  return (
+    <OperatorSection title={t.operator.flippTitle} help={help} helpKey="flipp">
+      <p className="operator__hint">{t.operator.flippIntro}</p>
+      <ol className="operator__steps">
+        <li>{t.operator.flippStep1}</li>
+        <li>{t.operator.flippStep2}</li>
+        <li>{t.operator.flippStep3}</li>
+      </ol>
+      <Cluster>
+        <button type="button" className="btn btn--primary flipp__copy" onClick={copy}>
+          {copied ? <InlineIcon name="check-bold" /> : null} {copied ? t.operator.flippBookmarkletCopied : t.operator.flippCopyBookmarklet}
+        </button>
+      </Cluster>
+      <input
+        className="input mono flipp__bookmarklet"
+        readOnly
+        value={FLIPP_BOOKMARKLET}
+        onFocus={(e) => e.target.select()}
+        aria-label={t.operator.flippBookmarkletLabel}
+      />
+    </OperatorSection>
   )
 }

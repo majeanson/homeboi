@@ -16,6 +16,11 @@ export interface Deal {
   image: string | null
   validFrom: string | null
   validTo: string | null
+  // Kept since 2026-09-10 for « Ma liste Flipp » (lib/flippList): Flipp's own list
+  // storage wants the merchant id and the item's box on its flyer. Optional because
+  // a deal staged before that date sits in `deal_json` without them.
+  merchantId?: number | null
+  box?: { left: number; right: number; top: number; bottom: number } | null
 }
 
 // A store's current flyer near the household (from /api/flyers) — lets you open a

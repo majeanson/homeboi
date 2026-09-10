@@ -4,6 +4,8 @@ import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
+import { flippListPayload } from '../lib/flippList'
+import { useNotice } from '../lib/toast'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
@@ -61,6 +63,20 @@ export function CashierMode({
   const clippable = picks.filter((p) => p.deal.id != null)
   const clipDone = clippable.filter((p) => clipped.includes(p.deal.id!)).length
   const clipNext = clippable.find((p) => !clipped.includes(p.deal.id!))
+  // « Ma liste Flipp » also COPIES the picks in Flipp's own list shape, for the
+  // bookmark set up in Réglages (lib/flippList): on flipp.com the bookmark pastes
+  // them straight into « Ma liste ». One tap opens their list and readies the paste;
+  // a phone without the bookmark loses nothing. Said once in the notice bar — the
+  // clipboard is invisible otherwise. Clipboard refused (no gesture, no permission):
+  // the link still opens, silently — a notice about a copy that did not happen
+  // would be a lie.
+  const notice = useNotice()
+  const copyForFlipp = () => {
+    navigator.clipboard
+      ?.writeText(flippListPayload(clippable))
+      .then(() => notice(t.shop.flippCopied))
+      .catch(() => {})
+  }
 
   // Opened at home on wifi → warm each pick's flyer + clipping images so the
   // full-flyer proof is ready at the till even on poor signal. Re-runs only when
@@ -141,6 +157,7 @@ export function CashierMode({
                   href={flippListUrl(postal)!}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={copyForFlipp}
                 >
                   <InlineIcon name="shopping-bag-bold" /> {t.shop.flippList}
                 </a>

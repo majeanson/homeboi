@@ -2500,6 +2500,16 @@ export const FR = {
     postalSaved: 'Enregistré.',
     postalBad: 'Code postal invalide.',
     storeFilter: 'Mes magasins',
+    // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
+    flippTitle: 'Ma liste Flipp',
+    flippIntro:
+      'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Une fois installé : à la caisse, touche « Ma liste Flipp », puis sur Flipp lance le signet et colle.',
+    flippStep1: 'Copie le signet ci-dessous.',
+    flippStep2: 'Dans le navigateur du téléphone, ajoute n’importe quelle page aux signets, renomme-la « Coller de Babillard » et remplace son adresse par ce que tu as copié.',
+    flippStep3: 'Sur flipp.com, ouvre ce signet : il demande de coller, puis affiche ta liste. Connecté à Flipp, elle se retrouve aussi dans leur app.',
+    flippCopyBookmarklet: 'Copier le signet',
+    flippBookmarkletCopied: 'Signet copié',
+    flippBookmarkletLabel: 'Adresse du signet',
     storeFilterHint:
       'Garde seulement les magasins où tu magasines : eux seuls paraîtront dans les rabais et les circulaires.',
     storeFilterNoPostal: 'Règle d’abord ton code postal ci-dessus pour voir les magasins du coin.',
@@ -3267,6 +3277,10 @@ export const FR = {
     clipNext: (n: number, total: number) => `Ajouter à Flipp · ${n} de ${total}`,
     clipAgain: 'Reprendre du début',
     flippList: 'Ma liste Flipp',
+    // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
+    // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
+    // with the bookmark knows the paste is ready and one without loses nothing.
+    flippCopied: 'Rabais copiés — sur Flipp, lance le signet « Coller de Babillard ».',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',
