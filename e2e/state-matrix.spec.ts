@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { mockApi, seedState, type Audience, type Lang, type Surface, type Theme } from './mocks'
+import { mockApi, seedState, MEALS, CAR, MMID, type Audience, type Lang, type Surface, type Theme } from './mocks'
 import { installVvStub, openKeyboard } from './kb'
 import { localDayStart } from '../src/lib/localDay'
 import { worstRightBleed } from './overflow'
@@ -171,6 +171,42 @@ const TODAY_MIDNIGHT = localDayStart(new Date())
 // 13 h 20 — mid-afternoon, past the fixture's 9 h event and short of its 18 h one,
 // the ordinary shape of a day rather than either edge.
 const CLOCK_AT = TODAY_MIDNIGHT + 13 * 3600 + 20 * 60
+
+// — THE SWEEP'S OWN HONESTY. The shared fixture is anchored a year back (BASE/MMID),
+// which every other spec wants: 126 of them freeze the clock there and read it. This
+// sweep does the opposite — it pins the clock to TODAY (see CLOCK_AT) so the app
+// renders the day a household is actually looking at. The two collide on any surface
+// that PRINTS the fixture's dates:
+//
+//   · « L'auto cette semaine » photographed two different weeks on one screen — the
+//     header « dim. 6 sept. — sam. 12 sept. » (the clock) over rows reading
+//     « dim. 8 juin », « lun. 9 juin » (the fixture).
+//   · The meal week labels the fixture's Sunday « AUJ. » on a Thursday — correctly,
+//     since the API's contract is "the window starts today" and the app honours it.
+//
+// Neither is an app bug. Both mean a reviewer cannot judge the one thing those
+// screens are FOR, which makes the screenshot worse than useless. So the matrix —
+// and ONLY the matrix — shifts those two fixtures onto its own clock. `MMID` and
+// `TODAY_MIDNIGHT` are both LOCAL midnights, so the delta is a whole number of days
+// and every weekday label lands where the app would really put it.
+const REBASE = TODAY_MIDNIGHT - MMID
+// Shift anything that looks like a second-precision epoch in the fixture's era. The
+// bound matters: ids, positions, colours and prices are numbers too, and a blanket
+// "+ REBASE on every number" would quietly corrupt them.
+const EPOCH_LO = 1_600_000_000
+const EPOCH_HI = 1_800_000_000
+function rebased<T>(v: T): T {
+  if (typeof v === 'number') return (v > EPOCH_LO && v < EPOCH_HI ? v + REBASE : v) as unknown as T
+  if (Array.isArray(v)) return v.map(rebased) as unknown as T
+  if (v && typeof v === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) out[k] = rebased(val)
+    return out as unknown as T
+  }
+  return v
+}
+const REBASED_FIXTURES = { meals: rebased(MEALS), car: rebased(CAR) }
+
 const DAY_FIXTURE = {
   month: {
     events: [
@@ -436,7 +472,14 @@ const MATRIX: Entry[] = [
   // to budget one (rightly — see LEAN.md). Reported-only until a guest fixture exists.
   { name: 'family-window', route: '/family', content: '.scene__body > *, .page > *', themes: ['day'], noBudgetWhy: 'guest-link scene: an operator fixture lands it on its empty state, and an empty state may not be budgeted' },
   { name: 'welcome', route: '/welcome', content: '.scene__body > *, .page > *', themes: ['day'], noBudgetWhy: 'guest-link scene: same as family-window — reported-only until a guest fixture exists' },
-  { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 189, themes: ['day'] },
+  // 220px, re-baselined UP from 189 on 2026-09-10 — deliberately, and this is the
+  // reason. Rebasing the car fixture onto the sweep's clock (see REBASED_FIXTURES)
+  // made the page render a line it had never been photographed with: « À la maison :
+  // Maman, Léa, Noah » (`.voiture__presence`), which only appears when NOW falls
+  // inside the week being shown. With the fixture a year in the past it never did.
+  // So the old 189 was measured against a screen the app does not show — the same
+  // discovery as day-plan's missing weather strip (2026-09-08), found the same way.
+  { name: 'voiture', route: '/voiture', content: '.voiture__day, .voiture__week > *', budgetPx: 220, themes: ['day'] },
 
   // — THE TWO LENSES CLAUDE.md CALLS STANDING RULES, and which the sweep had only
   //   ever seen on the board. « Every UI change must be tablet-friendly, especially
@@ -553,7 +596,8 @@ for (const entry of MATRIX) {
         fresh: entry.fresh,
         sandbox: entry.sandbox,
         signedIn: entry.signedOut ? false : undefined,
-        overrides: entry.api,
+        // Every state gets the rebased week fixtures; an entry's own api still wins.
+        overrides: { ...REBASED_FIXTURES, ...entry.api },
       })
       await seedState(page, {
         theme,

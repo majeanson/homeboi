@@ -119,6 +119,13 @@ const RIVAL_CEILING: Record<string, number> = {
   // « rendez-vous » → Appointment, and the EN copy was fixed in the same commit that
   // declared the rival. A ceiling is only allowed to start where the code already is.
   'en:Event': 0,
+  // Declared 2026-09-10, when the 100-screenshot pass caught the same face-picker
+  // option wearing three names. Both numbers are FLOORS with a reason, not targets:
+  // FR keeps « Tout le monde est là » (the car page saying nobody is out) and
+  // « Tout le monde (lien ouvert)… » (an intake link that really is for anyone);
+  // EN keeps the same two. A sentence may say "everyone"; a face picker may not.
+  'fr:Tout le monde': 2,
+  'en:Everyone': 2,
 }
 
 // Day 2 spent this down to its floor, and day 3 learned the floor was 14 rather than 8 —

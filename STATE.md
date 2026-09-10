@@ -98,8 +98,10 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **9** — all nine written on 2026-09-10 by §4-G, the
-> pass that opened all 100 state-matrix screenshots instead of sampling them. It had
+> a number you can trust. It reads **5** — §4-G wrote nine on 2026-09-10 (the pass that
+> opened all 100 state-matrix screenshots instead of sampling them) and four closed the
+> same day: the greeting, the invisible glyph, the clipped year, and the one that only
+> needed Marc's word. It had
 > read **0** for one day (2026-09-09), when `REVIEW-PASS.md`'s last finding closed and
 > `PARITY.md`'s Wave D became a `[~]`. That zero was true and is worth keeping in view:
 > the ledgers really are settled, and everything open now was found by LOOKING at the
@@ -138,6 +140,66 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### Three things that were wrong on a real phone — and the sweep's own honesty (2026-09-10)
+
+The first four of §4-G's nine, plus the fixture fix that makes the next pass
+trustworthy. Every guard below was **proven red before being trusted**, and two of
+them went red on THIS work rather than on history.
+
+**The greeting was cut in both languages, not one.** The matrix photographed
+« Good afterno… » at 390px; measuring found FR cut at 360 and 320 too, and EN at
+390/360/320 — the sweep only shoots 390, so only the EN half was ever visible.
+`.greet` had `clamp(16px, 4.4vw, 32px)`, added 2026-07-14 for this same bug in FR.
+A `vw` clamp is a GUESS at the room; the room is knowable, because the header's
+right-hand cluster is a fixed 197px, so `.app-head__main` *is* the title's room
+(118px at 390, 88px at 360, measured). It now sizes off that container with `cqw`
+and may take a second line when one truly will not do — whole on two lines beats cut
+on one. 320px keeps the one-line ellipsis deliberately: below ~76px of room FR breaks
+« après-midi » at its own hyphen onto three lines, which is the 2026-07-14 complaint.
+`e2e/greet-fit.spec.ts` holds both languages at 360/390/430.
+
+*The first plant of that guard PASSED, and the reason is worth keeping*: planting
+`white-space: nowrap` beside the new `text-wrap: balance` does nothing, because
+`text-wrap` is part of the `white-space` shorthand family and reset it. A plant that
+does not reproduce the defect proves nothing. Re-planted from git — the true
+pre-change CSS — it went red on exactly the three measured cases.
+
+**« Maisonnée » had an invisible glyph in light theme.** All three everyone-avatars
+inherit `color: #fff`, right over a member's coloured disc and wrong over the
+everyone-disc's `--paper-deep`, which is PAPER in light theme. It only ever read when
+the face was selected (the accent tints it) or the theme was dark — and the mobile
+chip had no background rule at all, so it was white on the white card. Caught by
+comparing the day and night screenshots of the same state, which is the whole reason
+that pair exists.
+
+**The birthday year clipped its own placeholder** on the person, pet AND intake
+forms — one shared row, `flex: 0 0 6.5rem`, i.e. 104px for a placeholder needing
+109px. `CLAUDE.md` names the fixed flex-basis as the trap by name. It is a container
+query now. **The guard caught a regression the fix was about to ship**: a size
+container stops contributing its contents to its own intrinsic width, and while the
+person form's grid gives the row a definite width, the pet form's `.operator__inline-form`
+is a WRAPPING FLEX — the row collapsed to 0px wide. A full-line basis fixes it, and
+without the guard that would have shipped as "the year field is gone".
+
+**And the sweep now rebases the two week-shaped fixtures onto its own clock.**
+`voiture-day` had been photographing two different weeks on one screen — header
+« 6–12 sept. » (the pinned clock) over rows « 8 juin », « 9 juin » (the fixture) — and
+the meal week labelled the fixture's Sunday « AUJ. » on a Thursday. Matrix-local, never
+the shared mocks (126 specs freeze at `BASE` and want it). The kitchen now reads
+« AUJ. JEU 10 » beside the board's « jeu. 10 sept. », and the weekend tint finally
+lands on the weekend. That immediately exposed a budget measured against a screen the
+app never shows: `.voiture__presence` (« À la maison : Maman, Léa, Noah ») renders only
+when NOW falls inside the week shown, so 189 → **220px**, re-baselined deliberately —
+the same discovery as day-plan's missing weather strip, found the same way.
+
+**One word for one idea, settled by Marc: « Maisonnée ».** Four surfaces pass an
+`allLabel` to the same face picker and three spelled it differently — « Tout le
+monde » (Voyage), « Toute la maisonnée » (the habit form) — and in EN the board itself
+said "Everyone" while every other EN surface said "Household". One word per language
+now; the dead `cercle.everyone` key is gone; the rival is declared on the glossary term
+with `RIVAL_CEILING` floors of 2, because « Tout le monde est là » is a sentence about
+the car and « Tout le monde (lien ouvert) » is a link that really is for anyone.
 
 ### The « ? » was eating the nav it sat in (2026-09-10)
 
@@ -1608,28 +1670,47 @@ first candidates died that way (the toddler nav's icon-only exit is documented a
 keeps its `aria-label`; « Système » vs « Réglages » is the settings THEME's name, and
 the six themed tabs mirror the hub on purpose). What survived, ranked by user harm:
 
-- [ ] **The EN board greeting truncates: « Good afterno… »** at 390px, where FR
+- [x] **The EN board greeting truncates: « Good afterno… »** at 390px, where FR
       « Bon après-midi » fits. `.greet` carries `clamp(16px, 4.4vw, 32px)`, added
       2026-07-14 for exactly this bug in FR (« Bon apr… ») — the fix under-shoots by a
       few px in the other language. A viewport `vw` clamp is a guess at the room left
       by four fixed-width round buttons; a container query would know.
-- [ ] **« Maisonnée » has an invisible glyph in LIGHT theme** — the mobile face
+      **Fixed 2026-09-10** — sized off `.app-head__main` with `cqw`, which IS the room
+      (the button cluster is a fixed 197px), and allowed a second line when one truly
+      will not do. 320px keeps the ellipsis on purpose. `e2e/greet-fit.spec.ts` holds
+      both languages at 360/390/430; proven red on the old clamp in exactly the three
+      measured cases.
+- [x] **« Maisonnée » has an invisible glyph in LIGHT theme** — the mobile face
       dropdown (`FaceSelect`'s collapsed chip) draws a white household glyph on a white
       disc. `notes-night` renders it fine and so does the wall's face ROW, which is how
       it was caught: the day/night pair is the tell. Board, habits and the wall all
       show the icon; only the light-theme dropdown eats it.
-- [ ] **The birthday YEAR field clips its own placeholder** — « Année (o| » on the
+      **Fixed 2026-09-10** — all three `--all` avatars carry ink on paper, and the wall
+      face keeps its tint when selected. The chip had no rule at ALL, which is why it
+      was invisible rather than merely faint.
+- [x] **The birthday YEAR field clips its own placeholder** — « Année (o| » on the
       new-person, new-pet AND intake forms (one shared three-up row: Mois · Jour ·
       Année at 390px). A filled year fits; only the placeholder is cut, which is the
       one thing an empty form has to say. `composer-fit.spec.ts` already holds « the
       placeholder must fit » for composers — this row is outside its reach.
-- [ ] **Three words for one idea: everyone.** « Maisonnée » (board · Notes · Maison),
+      **Fixed 2026-09-10** — the fixed basis is a container query now, so the year takes
+      its own line on a phone. `composer-fit.spec.ts` grew a scene-form block for it,
+      and that guard immediately caught a regression the fix was about to ship: size
+      containment stopped the row feeding its own intrinsic width, and on the pet form
+      (a wrapping-flex parent, unlike the person form's grid) it collapsed to 0px.
+- [x] **Three words for one idea: everyone.** « Maisonnée » (board · Notes · Maison),
       « Toute la maisonnée » (the habit form's scope), « Tout le monde » (Voyage's face
       picker, `i18n` `everyone`). `glossary.ts` settles the winner — `maisonnee` — and
       its own definition spends « tout le monde de la maison » as the EXPLANATION of
       the winning word. UNIFY's `RIVAL_CEILING` never declared this rival, so the
       ratchet cannot see it. Declaring it is the fix; renaming a user-facing word is
       Marc's call, which is why this is a box and not a commit.
+      **Settled by Marc 2026-09-10: « Maisonnée » everywhere.** Four call sites feed one
+      picker; three spelled it differently, and EN's board said "Everyone" while every
+      other EN surface said "Household". One word per language now, the dead
+      `cercle.everyone` key deleted, and the rival declared on the glossary term with
+      `RIVAL_CEILING` floors of 2 — a sentence about the car and a genuinely open intake
+      link may still say « tout le monde »; a face picker may not.
 - [ ] **The routine builder shows five always-open chips under EVERY step**
       (Minuterie · Le truc · Enregistrer ta voix · Ajouter une photo · Dessiner) —
       three chip-rows per step, so a four-step routine is twelve rows of secondary

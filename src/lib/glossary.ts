@@ -223,7 +223,8 @@ const ENTITIES: GlossaryTerm[] = [
     },
     card: 'set-household',
     codeIds: ['households', 'members'],
-    why: 'Two tables (`households`, the tenant row, and `members`, the people) wear one word on screen, on purpose: a household is who is in it.',
+    rivals: { fr: ['Tout le monde'], en: ['Everyone'] },
+    why: 'Two tables (`households`, the tenant row, and `members`, the people) wear one word on screen, on purpose: a household is who is in it. The rival is the same FACE-PICKER option under another name: four surfaces pass an `allLabel` to the same picker and three of them spelled it differently — « Tout le monde » (Voyage), « Toute la maisonnée » (the habit form), and in EN the board itself said "Everyone" while every other surface said "Household" (settled 2026-09-10). The ceiling is a FLOOR, not a target: « Tout le monde est là » is a sentence about the car, and « Tout le monde (lien ouvert) » is an intake link that is genuinely for anyone — neither is a second name for the household lens.',
   },
   {
     id: 'garde-manger',

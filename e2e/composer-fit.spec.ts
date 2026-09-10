@@ -140,3 +140,44 @@ for (const width of [360, 390]) {
     })
   }
 }
+
+// — SCENE-FORM FIELDS, which the block above cannot reach: they are not behind the
+// ＋ sheet, they are a route you open. Same rule, same `measure()`: a field's own
+// placeholder must fit in the field.
+//
+// The bug that earned this (2026-09-10 matrix pass): the birthday row is three
+// controls — Mois · Jour · Année — and the year carried a FIXED `flex: 0 0 6.5rem`,
+// i.e. 104px for a placeholder needing ~109px. « Année (opt.) » rendered
+// « Année (o| ». A filled year fits, so the only state that was cut is the empty
+// one — the state an empty form exists to explain. `CLAUDE.md` names the fixed
+// flex-basis as the trap by name; the row wraps by container query now.
+const SCENE_FIELDS: { name: string; route: string; field: string }[] = [
+  // Both of these render the SAME <BirthdayPicker>, and so does /intake — but the
+  // guest intake route needs its own session, and two hosts already prove the
+  // shared component. Named separately so a failure says which form you can see it on.
+  // Plain names, no guillemets: glossary.test.ts scans specs for « quoted labels »
+  // and requires the app to really say them — a test's own description is not copy.
+  { name: 'person form birth year', route: '/cercle/person/new', field: '.cf__bday-year' },
+  { name: 'pet form birth year', route: '/cercle/pet/new', field: '.cf__bday-year' },
+]
+
+for (const width of [360, 390]) {
+  for (const f of SCENE_FIELDS) {
+    test(`scene form keeps its placeholder readable — ${f.name} @${width}`, async ({ page }) => {
+      await boot(page, width)
+      await page.goto(f.route)
+      await expect(page.locator(f.field).first()).toBeVisible({ timeout: 15_000 })
+
+      const m = await measure(page, f.field)
+      expect(m, `${f.name}: no field found at ${f.field}`).not.toBeNull()
+      expect(m!.placeholder.length, `${f.name}: the field has no placeholder to measure`).toBeGreaterThan(0)
+      console.log(`[scene-fit] ${f.name} @${width}: ${m!.width}px wide, placeholder « ${m!.placeholder} » needs ${m!.placeholderPx}px`)
+
+      // Same −3 slack as the composer block, for the same cross-platform reason.
+      expect(
+        m!.width,
+        `${f.name} @${width}: the placeholder « ${m!.placeholder} » needs ${m!.placeholderPx}px but the field is ${m!.width}px — it renders clipped.`,
+      ).toBeGreaterThanOrEqual(m!.placeholderPx - 3)
+    })
+  }
+}

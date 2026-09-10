@@ -146,7 +146,7 @@ export const EN: typeof FR = {
     titleLabel: 'The habit',
     titlePlaceholder: 'Walk outside',
     iconLabel: 'Picto',
-    forHousehold: 'The whole household',
+    forHousehold: 'Household',
     forWho: 'For whom?',
     kindLabel: 'What kind?',
     kind: {
@@ -369,7 +369,7 @@ export const EN: typeof FR = {
   },
   profile: {
     who: 'Who are you?',
-    household: 'Everyone',
+    household: 'Household',
     askShort: 'Who?',
     switch: 'Switch person',
   },
@@ -848,7 +848,7 @@ export const EN: typeof FR = {
       document: 'Documents',
       general: 'General',
     },
-    everyone: 'Everyone',
+    everyone: 'Household',
     forWhom: 'For whom',
     addInfo: 'Jot an info…',
     addInfoIn: (cat: string) => `Jot an info — ${cat}…`,
@@ -1523,7 +1523,6 @@ export const EN: typeof FR = {
     relationExists: 'That relationship already exists.',
     familyOf: (name: string) => `${name} family`,
     familyGeneric: 'Family',
-    everyone: 'Everyone',
     others: 'Other people',
     socialEmpty: 'Add friends, neighbours or colleagues — and their families — with the ＋ button.',
     // « Our world » — the big-picture overview scene (islands + bridges, narrated).

@@ -29,6 +29,11 @@
 .app-head__main {
   flex: 1 1 auto;
   min-width: 0;
+  /* The size container the greeting reads (see .greet). The head's right-hand
+     cluster is a FIXED 197px of round buttons, so this box is exactly "the room
+     the title has" — 118px at 390, 88px at 360 (measured). A vw guess cannot know
+     that; a container query does. */
+  container: app-head-main / inline-size;
 }
 .greet {
   font-family: var(--display);
@@ -38,13 +43,35 @@
      every load (UX review 2026-07-14). It now SCALES to the room it has, so the
      greeting reads whole on one line — letting it wrap instead just split
      « après-midi » across three lines, which is worse than the cut it fixed. */
-  font-size: clamp(16px, 4.4vw, 32px);
-  white-space: nowrap;
+  /* …and 4.4vw was still a GUESS at that room, so it under-shot in the other
+     language: 2026-09-10 measured « Good afternoon » cut at 390 AND 360, and
+     « Bon après-midi » cut at 360 and 320 — the matrix only shoots 390, which is
+     why only the EN half was ever photographed. Sized off the container instead,
+     the greeting knows the width it actually has. It may take a SECOND line when
+     one truly will not do (« Good » / « afternoon » at 360): whole on two lines
+     beats cut on one. The old note that wrapping split « après-midi » across
+     three lines was measured in a 48px box at 320px — that case is what the
+     2-line clamp + ellipsis below still catches. */
+  font-size: clamp(14px, 13.5cqw, 32px);
+  text-wrap: balance;
   overflow: hidden;
-  text-overflow: ellipsis; /* last-resort safety on a truly tiny screen */
   min-width: 0;
   line-height: 1.05;
   letter-spacing: -0.01em;
+}
+/* Below ~76px of room there is no honest wrap left: FR breaks « après-midi » at its
+   own hyphen and lands on THREE lines, which is the 2026-07-14 complaint that made
+   this a one-liner in the first place. That room runs out around a 320px viewport
+   (room = viewport − gutters − the fixed 197px button cluster), so this restores
+   exactly today's behaviour there — one line, ellipsis — and nothing wider moves.
+   -webkit-line-clamp cannot do this job here: .greet is a FLEX ITEM, so a
+   display:-webkit-box on it is blockified away and the clamp silently never
+   applies (measured — it still rendered 3 lines at 320 with the clamp set). */
+@container app-head-main (max-width: 76px) {
+  .greet {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }
 /* A-3 « Depuis ce matin »: the board greeting doubles as the peek trigger for a
    parent, non-guest device — reset the <button> chrome so it reads exactly like
@@ -55,11 +82,10 @@
   display: inline-block;
   max-width: 100%;
   cursor: pointer;
-  /* Truncation lives on .greet (which now scales to fit); this wrapper just must
-     not impose a SECOND, fixed-size clip of its own. */
-  white-space: nowrap;
+  /* Truncation lives on .greet (which now sizes off its container and may take a
+     second line); this wrapper just must not impose a SECOND clip of its own —
+     a nowrap here would forbid the wrap the greeting is allowed. */
   overflow: hidden;
-  text-overflow: ellipsis;
   vertical-align: bottom;
 }
 /* Title row. min-width:0 lets the greeting truncate (the "?" now lives in the

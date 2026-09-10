@@ -90,9 +90,6 @@
   height: 100%;
   object-fit: cover;
 }
-.profile-face__av--all {
-  background: var(--paper-deep);
-}
 .profile-face__name {
   font-size: var(--text-sm);
   color: var(--ink-soft);
@@ -164,8 +161,28 @@
   height: 100%;
   object-fit: cover;
 }
+/* The « Maisonnée » face — the ONE avatar in this family that is not a person, so it
+   carries a glyph instead of a photo or an initial. All three variants inherit
+   `color: #fff` from their base rule, which is right over a member's colour disc and
+   wrong here: the everyone-disc is `--paper-deep`, i.e. PAPER in light theme, so the
+   glyph was white on near-white. It only ever read when the face was selected (the
+   accent tints the disc) or the theme was dark — which is exactly how it hid: the
+   board chip, the wall face row and the habit form all show it SELECTED, and
+   notes-night showed it on a dark ground. The mobile dropdown, unselected, in light
+   theme, is the one place all three excuses run out (2026-09-10 matrix pass).
+   `.profile-chip__av--all` had no rule at all, so it inherited the chip's own white
+   card and was invisible outright. */
+.profile-chip__av--all,
+.profile-face__av--all,
 .mswitch__av--all {
   background: var(--paper-deep);
+  color: var(--ink-soft);
+}
+/* …and when the wall's face IS selected the accent owns the disc again, so the glyph
+   goes back to reading on the tint rather than staying ink on ink. */
+.mswitch__opt.is-on .mswitch__av--all {
+  background: var(--accent-ink);
+  color: var(--accent);
 }
 .mswitch__name {
   font-family: var(--display);

@@ -173,7 +173,10 @@ export const FR = {
     titleLabel: 'L’habitude',
     titlePlaceholder: 'Marcher dehors',
     iconLabel: 'Picto',
-    forHousehold: 'Toute la maisonnée',
+    // One word per idea: this labels the same "no face picked" option as the board's
+    // and Maison's face pickers, so it wears the glossary's winner (glossary.ts
+    // `maisonnee`). It read « Toute la maisonnée » until 2026-09-10.
+    forHousehold: 'Maisonnée',
     forWho: 'Pour qui ?',
     kindLabel: 'De quel genre ?',
     kind: {
@@ -996,7 +999,9 @@ export const FR = {
       document: 'Documents',
       general: 'Divers',
     },
-    everyone: 'Tout le monde',
+    // Same face-picker "everyone" option as the board / Notes / Maison, so it wears
+    // the same word (glossary.ts `maisonnee`). It read « Tout le monde » until 2026-09-10.
+    everyone: 'Maisonnée',
     forWhom: 'Pour qui',
     addInfo: 'Noter une info…',
     addInfoIn: (cat: string) => `Noter une info — ${cat}…`,
@@ -1725,7 +1730,6 @@ export const FR = {
     relationExists: 'Ce lien existe déjà.',
     familyOf: (name: string) => `Famille ${name}`,
     familyGeneric: 'Famille',
-    everyone: 'Tout le monde',
     others: 'Autres personnes',
     socialEmpty: 'Ajoute des amis, des voisins ou des collègues — et leurs familles — avec le bouton ＋.',
     // « Notre monde » — the big-picture overview scene (islands + bridges, narrated).

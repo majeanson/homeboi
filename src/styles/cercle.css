@@ -473,6 +473,27 @@
 .cf__bday {
   display: flex;
   gap: 0.4rem;
+  /* Mois · Jour · Année is three controls on one line, and the third carried a FIXED
+     `flex: 0 0 6.5rem` — 104px for a placeholder that needs ~109px, so « Année (opt.) »
+     rendered « Année (o| » on the person, pet AND intake forms (2026-09-10 matrix
+     pass; a FILLED year fits, so only the empty state — the one an empty form has to
+     explain — was cut). A fixed basis is the documented trap here: it holds the row
+     on one line and clips instead of wrapping. The row is a size container now, and
+     when there isn't room for three the year takes its own full line rather than
+     eating the month names beside it. */
+  flex-wrap: wrap;
+  /* A size container ONLY contributes its own definite width — its contents stop
+     feeding its intrinsic size. `.edit-field`'s note says the same thing from the
+     other side ("a row's width always comes from its parent"), and here that is true
+     on the person form (a grid item, stretched) but NOT on the pet form, whose
+     `.operator__inline-form` is a WRAPPING FLEX: as a flex item with basis auto this
+     row sized itself from its contents, so containment collapsed it to 0px wide.
+     A full-line basis gives it the definite width it already occupied — a no-op for
+     the grid host (flex properties are ignored on grid items), and the difference
+     between a field and nothing at all on the flex one. Caught by the guard added
+     with this fix, which is the only reason it is not shipping. */
+  flex: 1 1 100%;
+  container: cf-bday / inline-size;
 }
 .cf__bday > .cf__input {
   min-height: 2.6rem; /* comfortable tap target on a tablet */
@@ -483,6 +504,17 @@
 }
 .cf__bday-year {
   flex: 0 0 6.5rem;
+}
+/* ~24rem is where three controls stop fitting: below it the year drops to its own
+   line (full width, placeholder whole) and Mois · Jour share the first — which is
+   every phone, and no wider host, since `.cf__field--bday` already spans both grid
+   columns from 560px up. A scene form is the "generous inside" case: a second line
+   inside something you deliberately opened is the right trade for a label you can
+   read (LEAN.md). */
+@container cf-bday (max-width: 24rem) {
+  .cf__bday-year {
+    flex-basis: 100%;
+  }
 }
 /* The birthday field can span both grid columns so the three controls breathe. */
 @media (min-width: 560px) {

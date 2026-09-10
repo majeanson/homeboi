@@ -124,7 +124,7 @@ export const BOARD = {
   leftovers: [{ id: 'lo1', title: 'Pâté chinois' }],
 }
 
-const MEALS = {
+export const MEALS = {
   weekStart: MMID,
   windowDays: 10, // full 10-day countdown block (see functions/api/meals.ts)
   days: [
@@ -393,7 +393,7 @@ function emptyArrays(v: unknown): unknown {
 // no day. NOTE: this also makes the board mount the AutoCard (the old empty `{}`
 // fallthrough left it absent — and would in fact have CRASHED AutoCardView's
 // model.days.find if it had mounted); the real shape is the safe, covered state.
-const CAR = {
+export const CAR = {
   cars: [{ id: 'car1', name: 'La familiale', color: '#5891AC' }],
   primaryCarId: 'car1',
   hasSchedule: true,
