@@ -76,8 +76,10 @@ for (const theme of ['day', 'night'] as Theme[]) {
   test(`sheet-pricematch${sfx}`, async ({ page }) => {
     await boot(page, '/liste', theme)
     // The row's picture opens the edit scene now (compact-rows pass); the per-item
-    // deals lookup is the « Voir les rabais » button inside it.
-    await page.locator('.list-row__img').first().click()
+    // deals lookup is the « Voir les rabais » button inside it. `button.` because a
+    // row whose deal carries a clipping (« Lait », since 2026-09-10) shows the
+    // picture as a ZOOM instead — its edit door is press-and-hold / ⚙ Avancé.
+    await page.locator('button.list-row__img').first().click()
     await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
     await page.getByRole('button', { name: 'Voir les rabais' }).click()
     await page.locator('.scene').waitFor({ state: 'visible' })

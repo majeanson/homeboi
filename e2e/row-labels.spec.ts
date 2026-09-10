@@ -24,9 +24,16 @@ test('a liste row says WHICH item, not just the verb', async ({ page }) => {
   const row = page.locator('.list-row', { hasText: 'Lait' }).first()
   await expect(row).toBeVisible()
 
-  // The two labelled controls: verb — object.
-  await expect(row.locator('.list-row__img')).toHaveAccessibleName(/Modifier.*Lait/)
+  // The labelled controls: verb — object. « Lait » carries a staged deal WITH its
+  // clipping (the fixture got the picture on 2026-09-10, for the till card), and a
+  // row with a clipping shows the picture AS the picture — a zoom, named by its
+  // alt, not the « Modifier » door (that moved to press-and-hold / ⚙ Avancé). So the
+  // labelled edit door is checked on « Pain », a row with no deal. Both shapes are
+  // the product; the first version of this test only ever saw one.
+  await expect(row.locator('.list-row__img--zoom img')).toHaveAccessibleName(/Lait/)
   await expect(row.locator('.list-row__toggle')).toHaveAccessibleName(/Cocher.*Lait/)
+  const plain = page.locator('.list-row', { hasText: 'Pain' }).first()
+  await expect(plain.locator('button.list-row__img')).toHaveAccessibleName(/Modifier.*Pain/)
 
   // The row centre IS the row: its name comes from its content, so the item and
   // the quiet second line (here the staged Super C deal on « Lait ») survive.

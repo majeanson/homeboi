@@ -100,7 +100,10 @@ for (const theme of ['day', 'night'] as Theme[]) {
   // action buttons (compact-rows pass).
   test(`list-item-sheet${sfx}`, async ({ page }) => {
     await boot(page, '/liste', { theme })
-    await page.locator('.list-row__img').first().click()
+    // `button.`: the first row (« Lait ») carries a deal WITH its clipping since
+    // 2026-09-10, and a row with a clipping shows the picture as a zoom, not the
+    // edit door — the next row's picture is the button this state is about.
+    await page.locator('button.list-row__img').first().click()
     await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
     await page.waitForTimeout(250)
     await shoot(page, `list-item-sheet-phone${sfx}`, false)

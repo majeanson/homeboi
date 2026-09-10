@@ -271,6 +271,16 @@ an ad rather than a receipt: SUPER C · 🥛 on the pale block · Lait 2% 4L · 
 1,25 $/L avant 6,49 $ · « Montrer Flipp » filled beside « Voir la circulaire » ·
 8 sept. au 14 sept. · « Circulaire Super C · via Flipp ↗ ». Read, not assumed.
 
+**CI's E2E then failed five tests on this commit, and it was the fixture, not the
+card.** Giving the staged « Lait » deal its clipping flipped that list row into the
+product's OTHER shape — a row with a clipping shows the picture as a ZOOM (named by
+its alt) and moves « Modifier » to press-and-hold / ⚙ Avancé — which
+`row-labels`, `sheet-pricematch` ×2 and `list-item-sheet` ×2 had never seen:
+each clicked the first row's picture as the edit door. Corrected to say what the
+product does (`button.list-row__img`; the labelled door checked on « Pain »), not
+reverted: the till card's photo is the honest fixture, and the row shape it exposed
+had been un-photographed since the compact-rows pass.
+
 Guards unchanged and still red-tested from the two commits before: `cashier.spec.ts`
 (the item URL's exact shape; no door without a postal), `cashier-peek` +
 `cashier-flyer` in the matrix. Nothing about behaviour moved — this is order and
