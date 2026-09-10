@@ -218,14 +218,36 @@ export function Kitchen() {
   // can hold several hero meals, so moving the headline moves them ALL to the target
   // day (the intuitive "move this day's supper plan"). Touch-friendly, so it works
   // on the wall tablet, not just a mouse.
+  // Two drag identities share this one zone set (the days):
+  //   · a DATE key — the day's supper headline; dropping moves that day's WHOLE
+  //     supper plan to the target day (unchanged);
+  //   · a `meal:` key — ONE side meal (déjeuner, dîner, collation…), moved to the
+  //     target day in its own slot. Side meals had no grip on this grid at all, by
+  //     the comment that made them "full rows" (9a1c48f: "not draggable") — but a
+  //     row that LOOKS exactly like the draggable supper row and does not move is a
+  //     promise the layout makes and the gesture breaks (Marc, from the phone,
+  //     2026-09-10: « drag n dropping a snack no longer works »). It was never that
+  //     it worked; it was that the rows started looking like it should.
+  const MEAL_KEY = /^meal:(\d+):([^:]+):(.+)$/
   const dayDnd = usePointerDnd({
     onDrop: (fromKey, toKey) => {
-      const from = Number(fromKey)
       const to = Number(toKey)
-      if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) return
+      if (!Number.isFinite(to)) return
+      const one = MEAL_KEY.exec(fromKey)
+      if (one) {
+        const [, fromDate, slot, id] = one
+        if (Number(fromDate) === to) return
+        reschedule(qc, id, to, slot)
+        return
+      }
+      const from = Number(fromKey)
+      if (!Number.isFinite(from) || from === to) return
       for (const m of mealsFor(from, heroSlot)) reschedule(qc, m.id, to, heroSlot)
     },
-    canDrop: (fromKey, toKey) => fromKey !== toKey,
+    canDrop: (fromKey, toKey) => {
+      const one = MEAL_KEY.exec(fromKey)
+      return one ? one[1] !== toKey : fromKey !== toKey
+    },
     // Press-and-hold to move a day's plan — a calm, deliberate gesture, not a flick.
     holdMs: DND_HOLD_MS,
   })
@@ -482,9 +504,12 @@ export function Kitchen() {
               // recipe (or the day editor for a free-text meal); only the hero row
               // is also the day's drag handle (dragging reschedules the WHOLE day's
               // headline plan, never a single side meal — see dayDnd above).
-              const mealRow = (m: MealRow, icon: IconName, color: string | undefined, draggable: boolean) => {
+              // `hero`: the supper headline, whose drag moves the whole day's plan
+              // (keyed by DATE); a side meal drags as ITSELF (keyed `meal:date:slot:id`).
+              const mealRow = (m: MealRow, icon: IconName, color: string | undefined, hero: boolean, slot: string) => {
                 const r = recipeForMeal(m)
                 const go = () => nav(r ? `/kitchen/recipe/${r.id}` : `/kitchen/day/${date}?vue=repas`)
+                const draggable = !planRo
                 return (
                   <div
                     key={m.id}
@@ -497,7 +522,8 @@ export function Kitchen() {
                             // Remember where the press began so the click below can
                             // tell a tap (open the recipe) from a drag (reschedule).
                             tapDownRef.current = { x: e.clientX, y: e.clientY }
-                            dayDnd.start(String(date), suppers.map((s) => s.title).join(' · '), e)
+                            if (hero) dayDnd.start(String(date), suppers.map((s) => s.title).join(' · '), e)
+                            else dayDnd.start(`meal:${date}:${slot}:${m.id}`, m.title, e)
                           }
                         : undefined
                     }
@@ -625,10 +651,10 @@ export function Kitchen() {
                       {/* The hero slot icon in its slot colour — the same icon +
                           colour Réglages ▸ Repas uses, not a bare dot. It's also the
                           day's drag handle (no separate grip glyph). */}
-                      {showSupper && suppers.map((m) => mealRow(m, SLOT_ICON_NAME[heroSlot], supperColor, true))}
+                      {showSupper && suppers.map((m) => mealRow(m, SLOT_ICON_NAME[heroSlot], supperColor, true, heroSlot))}
                       {/* The lighter slots (déjeuner / dîner / collation…) — the SAME
                           row, just their own slot's icon + colour, not draggable. */}
-                      {sideMeals.map(({ slot, meal: m }) => mealRow(m, SLOT_ICON_NAME[slot], mealPrefs.color(slot), false))}
+                      {sideMeals.map(({ slot, meal: m }) => mealRow(m, SLOT_ICON_NAME[slot], mealPrefs.color(slot), false, slot))}
                     </div>
                   ) : planRo ? (
                     <span className="kitchen__day-sum-empty mono">{t.kitchen.planShort}</span>

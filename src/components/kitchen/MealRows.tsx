@@ -2,7 +2,7 @@ import { useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useT } from '../../i18n'
 import { type Recipe } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
-import { Icon, InlineIcon } from '../Icon'
+import { InlineIcon } from '../Icon'
 import { ActionMenu } from '../ActionMenu'
 import { EditField } from '../EditField'
 import { HeartButton } from '../HeartButton'
@@ -116,12 +116,23 @@ export function MealRows({
                 <button
                   type="button"
                   className="kitchen__meal-main"
+                  // A LINKED meal: the row IS the recipe door — the same contract the
+                  // week grid pins in e2e (« its row goes straight there, no peek in
+                  // between »). This surface used to make the tap a rename and hid the
+                  // recipe behind a small 📖; once the day scene became THE day door
+                  // (2026-09-02) that read as « we lost the recipe on tap » (Marc, from
+                  // the phone, 2026-09-10). Rename moved into the row's ⋯. An UNLINKED
+                  // meal keeps the in-place rename: free text has nothing else to show.
                   onClick={() => {
+                    if (r) {
+                      onOpenRecipe(r, m)
+                      return
+                    }
                     setEditId(m.id)
                     setEditText(m.title)
                   }}
-                  aria-label={t.common.edit}
-                  title={t.common.edit}
+                  aria-label={r ? `${t.recipes.open} · ${m.title}` : t.common.edit}
+                  title={r ? t.recipes.open : t.common.edit}
                 >
                   <span className="kitchen__meal-headline">
                     <span className="kitchen__meal-title">{m.title}</span>
@@ -142,17 +153,6 @@ export function MealRows({
                 <span className="kitchen__meal-ctl">
                   {/* A planned meal carries its linked recipe's ❤ (#21). */}
                   {r && <HeartButton recipeId={r.id} />}
-                  {r && (
-                    <button
-                      type="button"
-                      className="kitchen__meal-btn"
-                      onClick={() => onOpenRecipe(r, m)}
-                      aria-label={t.recipes.title}
-                      title={t.recipes.title}
-                    >
-                      <Icon name="book-open-bold" size={16} />
-                    </button>
-                  )}
                   {/* ❤ and 📖 stay visible — they're what a planned meal row is READ
                       for. The management verbs (reorder · leftovers · remove) fold into
                       a per-row ⋯: six glyphs on one row left no room for the title on a
@@ -162,6 +162,11 @@ export function MealRows({
                       ro
                         ? []
                         : [
+                            // A linked meal's tap opens the recipe now, so its rename
+                            // lives here — the same word the tap itself used to carry.
+                            ...(r
+                              ? [{ icon: 'pencil-simple-bold' as const, label: t.common.edit, onSelect: () => { setEditId(m.id); setEditText(m.title) } }]
+                              : []),
                             // Reorder only makes sense once there's another meal to swap with.
                             ...(meals.length > 1
                               ? [

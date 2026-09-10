@@ -144,6 +144,45 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Two things the phone found that 142 screenshots could not (2026-09-10, late)
+
+Marc, mid-session, from the device: « we lost the ability to see the recipe directly
+in La cuisine when tapping a meal » and « drag n dropping a snack no longer works ».
+Both true as experienced, neither what it first looked like — and each took a full
+trace to place on the right surface.
+
+**The recipe tap was missing on the DAY SCENE, not the week grid.** The grid's row
+already went straight to the recipe (`kitchen-meal-plan.spec.ts` pins it). The day
+scene — `/kitchen/day/:date`, THE day door since « Moments » retired on 2026-09-02 —
+made a meal tap an in-place RENAME and hid the recipe behind a small 📖. Structural
+reason it never took the shared `useOpenMeal` resolver: that route sits OUTSIDE
+`HubLayout`, hence outside `DetailProvider`, so the meal peek cannot open there at
+all. Now: a linked meal's row opens its recipe (the grid's tested contract — one
+door, the row; the 📖 is gone), a free-text meal still renames in place (nothing else
+to show), and « Modifier » for a linked meal moved into the row's ⋯ under the word the
+tap used to carry. `e2e/day-meal-tap.spec.ts` holds all three; red on the plant.
+
+**The snack never dragged on the week grid — and the same commit made it look like
+it should.** `9a1c48f` ("side meals render as full tap-to-recipe rows") gave side
+meals the supper row's exact look and set them `draggable: false` by its own comment.
+Rows that look identical where only one moves is a promise the layout makes and the
+gesture breaks. A side meal now drags to another day AS ITSELF (`meal:date:slot:id`,
+lands in its own slot); the supper headline keeps its older meaning (the day's whole
+plan, keyed by date). `e2e/grid-side-meal-drag.spec.ts` reads both from the WRITE —
+`id: 'meal4', slot: 'breakfast'` — not the screen; red on the plant.
+
+**Two of my own mistakes on the way, kept because they are the recurring shape:**
+a `head`-truncated grep that read « no `touch-action: none` on `.dnd-grip` » — the
+rule exists (kitchen.css:361); a cut-off listing read as an absence, and I nearly
+built on it. And the drag-key regex landed as `(d+)` — the backslash eaten by a
+template literal, the very trap `docCounts` fell into this morning — and the new
+spec caught it on its first run (the Crêpes row sat `[active]` with no write behind
+it). The day-scene row's `hasText` locator also stopped resolving once the row became
+an input: a title as a VALUE is invisible to text matching.
+
+**What the sweep could not see, stated plainly.** Both defects are about what a TAP
+or a HOLD does. A screenshot shows neither. 142 states, 0 failing, throughout.
+
 ### « Montrer Flipp » (2026-09-10, evening)
 
 Marc wanted a cashier never to refuse the app « just because it's not one of the
