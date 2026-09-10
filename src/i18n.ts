@@ -3255,6 +3255,8 @@ export const FR = {
     // card says where its ad comes from and links the official page, rather than
     // dressing itself as one of them. Naming the source IS the argument.
     dealSource: (store: string) => `Circulaire ${store} · via Flipp`,
+    // The till card's PRIMARY action (2026-09-10): open Flipp's own page for this item.
+    showFlipp: 'Montrer Flipp',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',

@@ -207,3 +207,41 @@ for (const f of [
     await expectNoOverflow(page)
   })
 }
+
+// « MONTRER FLIPP » — the till card's primary door, and the two facts a real-browser
+// probe of flipp.com established on 2026-09-10 that this must not drift from:
+//   · the route is `/fr-ca/item/{flyer_item_id}?postal_code=…` — `/flyer_item/…` is a
+//     404, `en-ca` redirected to a broken store page, and WITHOUT a postal code the
+//     page renders Flipp's error state;
+//   · so the link is built only when the household has a postal code. A dead link is
+//     worse than none at exactly the moment a cashier is waiting.
+// The fixture's deal id 101 is Flipp's flyer_item_id (deals.ts maps it to `deal.id`),
+// and the mock household's postal is 'H2X 1Y4'.
+test('« Montrer Flipp » opens Flipp\'s own item page — and only when a postal code exists', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/liste/cashier')
+  await page.locator('.cashier__tile').first().click()
+  const door = page.locator('a.bigcard__flipp')
+  await expect(door).toBeVisible()
+  await expect(door).toHaveText(/Montrer Flipp/)
+  await expect(door).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
+  await expect(door).toHaveAttribute('target', '_blank')
+  // The in-app path stays beside it — the door is an addition, not a replacement.
+  await expect(page.locator('.bigcard__flyer')).toBeVisible()
+})
+
+test('without a postal code the Flipp door does not render at all', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page, { overrides: { household: { name: 'Maison Tremblay', postal: null, includedStores: [], aiEnabled: true } } })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/liste/cashier')
+  await page.locator('.cashier__tile').first().click()
+  await expect(page.locator('.bigcard__price')).toBeVisible()
+  await expect(page.locator('a.bigcard__flipp')).toHaveCount(0)
+  // …and the rest of the proof is untouched: the card degrades by losing one door,
+  // not by losing its evidence.
+  await expect(page.locator('.bigcard__valid')).toBeVisible()
+  await expect(page.locator('.bigcard__flyer')).toBeVisible()
+})

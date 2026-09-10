@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money, dealValidity, flippFlyerUrl } from '../lib/deals'
+import { type Pick, money, dealValidity, flippFlyerUrl, flippItemUrl } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
@@ -20,9 +20,14 @@ import { useModal } from '../lib/useModal'
 export function CashierMode({
   picks,
   onClose,
+  postal,
 }: {
   picks: Pick[]
   onClose: () => void
+  /** The household's postal code — Flipp's item page needs it, so without one the
+   *  « Montrer Flipp » door does not render at all (a dead link at a till is worse
+   *  than none). */
+  postal?: string | null
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -211,6 +216,22 @@ export function CashierMode({
                 <InlineIcon name="calendar-dots-bold" size={28} />{' '}
                 {dealValidity(d.validFrom, d.validTo, lang, { rangeTo: t.shop.dateRangeTo, until: t.shop.until })}
               </span>
+            )}
+            {/* « MONTRER FLIPP » — the primary door, and the answer to "a cashier won't
+                take an app that isn't one of the three": one tap opens Flipp's own
+                page for THIS item — logo, clipping, price, dates, format — the accepted
+                channel, already on the item. Our « Voir la circulaire » below stays
+                as the fast in-app path (it opens on the item, circled). The link is
+                built by lib/deals and is null without a postal code, on purpose. */}
+            {flippItemUrl(d.id, postal) && (
+              <a
+                className="btn btn--primary bigcard__flipp"
+                href={flippItemUrl(d.id, postal)!}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <InlineIcon name="arrow-up-right-bold" /> {t.shop.showFlipp}
+              </a>
             )}
             {d.flyerId != null && (
               <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>

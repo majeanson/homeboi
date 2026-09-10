@@ -297,3 +297,15 @@
   padding: 14px 24px;
   font-size: clamp(1.05rem, 2.2vw, 1.3rem);
 }
+
+/* « Montrer Flipp » — the till card's PRIMARY door, so it wears the dates pill's
+   width and weight rather than reading as a small extra beneath it: at a counter the
+   two things a cashier is handed are the validity and the accepted source, and they
+   should look like a pair. */
+.bigcard__flipp {
+  width: 100%;
+  max-width: 20rem;
+  justify-content: center;
+  font-size: 1.15rem;
+  padding-block: 0.75rem;
+}

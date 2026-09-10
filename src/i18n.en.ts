@@ -2926,6 +2926,7 @@ export const EN: typeof FR = {
     flyerReconstructed: 'Preview',
     flyerFull: 'Full flyer',
     dealSource: (store: string) => `${store} flyer · via Flipp`,
+    showFlipp: 'Show Flipp',
     flyerThisWeek: 'This week',
     flyerUpcoming: 'Upcoming',
     flyerTabOffers: 'Deals',

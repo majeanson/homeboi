@@ -7,7 +7,7 @@ import { SceneHead } from '../components/SceneHead'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
-import { BOARD_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
 import { useSceneClose } from '../lib/sceneNav'
 
@@ -20,6 +20,13 @@ export function CashierPage() {
   const t = useT()
   const close = useSceneClose('/liste')
   const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  // The household's postal code, off the shared HOUSEHOLD_KEY cache (the aislePrefs
+  // idiom): « Montrer Flipp » cannot be built without it.
+  const { data: household } = useQuery({
+    queryKey: HOUSEHOLD_KEY,
+    queryFn: () => api<{ postal?: string | null }>('household'),
+    staleTime: 5 * 60_000,
+  })
   // Stores the household chose to hide at the till (Réglages ▸ Magasinage ▸ "À la
   // caisse: Non") — filtered via the SAME shared helpers as the « Montrer à la
   // caisse » button on La liste, so the button's count and this stepper agree.
@@ -52,5 +59,5 @@ export function CashierPage() {
       </div>
     )
   }
-  return <CashierMode picks={picks} onClose={close} />
+  return <CashierMode picks={picks} onClose={close} postal={household?.postal ?? null} />
 }

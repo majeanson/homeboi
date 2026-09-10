@@ -144,6 +144,28 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### « Montrer Flipp » (2026-09-10, evening)
+
+Marc wanted a cashier never to refuse the app « just because it's not one of the
+three », and rejected my first answer — hand them Flipp's flyer page — because on that
+page you still hunt for the item. So the real question was whether Flipp has a public
+**item** page. It does, and nothing on the web said so: `flipp.com` refuses non-browser
+fetchers with a generic error page, which is why every earlier probe read as "no such
+route". A real headless browser with a live id settled it: `flipp.com/fr-ca/item/{id}
+?postal_code=…` renders Flipp's own proof — logo, clipping, name, price, validity,
+format — on the item. The till card's primary door opens that. The accepted channel,
+already where a cashier needs it, and the card underneath it still names its source.
+
+The probe fixed three facts, each a guard now: `/flyer_item/…` is a 404; `en-ca` broke
+(fr-ca is pinned); and without a postal code the page errors — so the door is simply
+not built without one. We already held the id (`deal.id` is Flipp's `flyer_item_id`),
+and the live payload carries the merchant logo and clipping URLs the fixture nulls.
+
+**Two device findings from Marc arrived while this shipped**, queued next: tapping a
+meal in La cuisine no longer opens its recipe directly, and dragging a snack no
+longer works. Neither is visible in any of the 142 screenshots — the device pass
+finding what the sweep structurally cannot.
+
 ### The till card argues its own case (2026-09-10)
 
 Marc named the apps Maxi honours for « prix imbattable » — Flipp, reebee, Glouton —
@@ -1960,6 +1982,23 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
       UI while the card one tap back said « 4,99 $ » (the date formatter had been unified
       into lib/deals for exactly this reason; money hadn't); and the `flyer` detail
       fixture hard-coded June ISO dates, so the flow showed two weeks — both fixed.
+      **« Montrer Flipp » — shipped 2026-09-10 (evening), and it settles ❓ #2 as far
+      as a till is concerned.** Marc: « try it out as a clear Montrer Flipp ». The
+      question was whether Flipp has an ITEM-level public page, since his objection to
+      the flyer page was hunting for the item on it. Probed in a real browser with a
+      live id (Lactantia at Adonis, valid that week): **`flipp.com/fr-ca/item/{flyer_item_id}
+      ?postal_code=…` renders Flipp's own proof** — store logo, clipping photo, name,
+      price, « Valide du … au … », format in the description, Flipp's own "the flyer has
+      precedence" disclaimer. Three facts the probe fixed, each now a guard in
+      `e2e/cashier.spec.ts`: `/flyer_item/…` is a 404 (do not "fix" to that shape);
+      `en-ca` redirected to a broken "Undefined store" page, so the locale is pinned to
+      fr-ca whatever the UI language; and WITHOUT a postal code the page renders Flipp's
+      error state — so the door is not built at all without one (a dead link is worse
+      than none at the moment a cashier is waiting). Both guards proven red on the exact
+      wrong shapes. The postal rides the shared `HOUSEHOLD_KEY` cache (the aislePrefs
+      idiom). We already held the id: `deal.id` IS Flipp's `flyer_item_id`. The live
+      payload also carries `merchant_logo` and `clipping_image_url` — so ❓ #3's nulls
+      are only ever the fixture's.
       ❓ The acceptance RULES were never read — `maxi.ca/fr/unbeatable-legal` renders as
         an SPA shell. Identical vs comparable item, printed vs on-screen, limits,
         exclusions: still unknown. Paste the terms and the card can be scored against them.

@@ -112,3 +112,23 @@ export function flippFlyerUrl(
   const pc = postal ? `?postal_code=${encodeURIComponent(postal)}` : ''
   return `https://flipp.com/${lang}-ca/circulaire/${flyerId}-${slug}-circulaire${pc}`
 }
+
+
+// « Montrer Flipp » — Flipp's own PAGE for one flyer item: the store's logo, the
+// clipping, the name, the price, « Valide du … au … » and the format in its
+// description. Verified in a real browser on 2026-09-10 with a live id (Lactantia
+// at Adonis) — this is what a cashier who says "that's not one of the three apps"
+// gets handed: the accepted channel, already open on the item, no hunting.
+//
+// Two things the probe established, both load-bearing:
+//   · it NEEDS `postal_code`. Without it the page renders Flipp's error state, so
+//     the caller must not build a link it cannot make work — return null instead of
+//     a URL that fails in front of a cashier.
+//   · `fr-ca` renders; `en-ca` redirected to a broken "Undefined store" page in the
+//     same probe. So the locale is pinned to fr-ca whatever the UI language — the
+//     page is bilingual anyway (the item name carries both).
+// `/flyer_item/…` is NOT a route (404) — do not "fix" this to that shape.
+export function flippItemUrl(flyerItemId: number | null, postal: string | null | undefined): string | null {
+  if (flyerItemId == null || !postal) return null
+  return `https://flipp.com/fr-ca/item/${flyerItemId}?postal_code=${encodeURIComponent(postal)}`
+}
