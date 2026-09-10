@@ -156,6 +156,21 @@ const CARNETS_FIXTURE = {
 // Monday and baselined this entry's chrome budget (228px) against a screen the app
 // never shows. Found 2026-09-08 by comparing the CI artifact with a local run.
 const TODAY_MIDNIGHT = localDayStart(new Date())
+
+// …and the ZONE was only half of that trap. The HOUR is the other half, and it was
+// still unpinned: this sweep is the one whose numbers are RATCHETS, and every one of
+// them was read off whatever o'clock someone happened to run it. « Le fil du jour »
+// drops its « maintenant » marker BETWEEN what is behind us and what is ahead
+// (`Fil.tsx`, `nowIndex`), so on the day scene it sits ABOVE the first row until the
+// day's first event has passed and BELOW it after — a 25px swing in `contentTopPx`
+// with nothing in the code changing. The 244px budget was baselined after 9 h; the
+// 2026-09-10 run at 8 h 47 failed it, red on the clock and not on a regression. The
+// same exposure, unmeasured, sits on every daypart-, greeting- and « bientôt »-
+// sensitive state in the table. So: ONE fixed wall time for the whole sweep, on
+// TODAY's date so every `TODAY_MIDNIGHT`-relative fixture still lands on today.
+// 13 h 20 — mid-afternoon, past the fixture's 9 h event and short of its 18 h one,
+// the ordinary shape of a day rather than either edge.
+const CLOCK_AT = TODAY_MIDNIGHT + 13 * 3600 + 20 * 60
 const DAY_FIXTURE = {
   month: {
     events: [
@@ -225,6 +240,20 @@ const openComposer = (mode: string) => async (page: Page) => {
   await expect(tile).toHaveCount(1)
   await tile.click()
   await expect(page.locator('.sheet.show .addsheet__panel .edit-field__input').first()).toBeVisible()
+}
+
+// Arm HELP MODE — the « ? ». The sweep had never done this, which is how the whole
+// help layer stayed out of every picture: the hint line, and (since 2026-09-09) the two
+// doors « Faire le tour » + « Le guide » that HelpHint now puts on EVERY hub tab and on
+// Réglages. Réglages' 34 `operatorHelp` entries in particular had been unreachable for
+// as long as the registry existed — nothing there ever called toggle() — so they went
+// live having never been looked at on a screen at all.
+// The assertion is the point: without it a state where the toggle moved or stopped
+// arming photographs the ORDINARY page and passes, which is the failure this suite is
+// built to refuse (a blank capture, a crash screen — same family).
+const armHelp = (toggle = '.help-toggle') => async (page: Page) => {
+  await page.locator(toggle).first().click()
+  await expect(page.locator('.help-hint')).toBeVisible()
 }
 
 const openNoteEditor = async (page: Page) => {
@@ -454,6 +483,24 @@ const MATRIX: Entry[] = [
   // — THE DEMO: what a curious visitor actually gets. The sandbox is an ordinary
   //   operator session marked by its email, so the board wears the claim banner.
   { name: 'demo-board', route: '/board', sandbox: true, themes: ['day'] },
+  // — HELP ARMED. One per « ? » bar, because the bar is not one surface: it takes the
+  //   SECTION's guide card, and Maison's changes with the pill you are on (routines vs
+  //   the cercle, via lib/sectionCard). Réglages' rides the lens row and only on the
+  //   Régler face — on Comprendre the guide text IS the explanation — so it needs the
+  //   lens in the route and its own toggle selector. No `content`: an armed bar is a
+  //   transient state, not a surface you scroll, so a chrome ratchet would be measuring
+  //   the wrong thing. What these are FOR is the look — three chips and a mono line
+  //   landing on six differently-shaped headers.
+  { name: 'help-board', route: '/board', setup: armHelp(), themes: ['day'] },
+  { name: 'help-kitchen', route: '/kitchen', setup: armHelp(), themes: ['day'] },
+  { name: 'help-liste', route: '/liste', setup: armHelp(), themes: ['day'] },
+  { name: 'help-notes', route: '/notes', setup: armHelp(), themes: ['day'] },
+  { name: 'help-maison-routines', route: '/maison?section=routines', setup: armHelp(), themes: ['day'] },
+  { name: 'help-maison-cercle', route: '/maison?section=family', setup: armHelp(), themes: ['day'] },
+  { name: 'help-settings', route: '/settings?tab=board&lens=regler', setup: armHelp('.operator__lensrow .help-toggle'), themes: ['day'] },
+  // The wall tablet gets one too: the bar is a row of chips, and 1280px is where a
+  // Cluster stops wrapping and starts looking like an empty shelf.
+  { name: 'help-board-wall', route: '/board', surface: 'kiosk', viewport: WALL, setup: armHelp(), themes: ['day'] },
   // — keyboard-open states (the stub from kb.ts; setup must leave a field focused) —
   { name: 'note-editor-kb', route: '/notes', setup: openNoteEditor, scope: '.note-editor', keyboard: KB, themes: ['day'] },
   {
@@ -495,6 +542,9 @@ for (const entry of MATRIX) {
       const errors: string[] = []
       page.on('pageerror', (e) => errors.push(String(e)))
       const vp = entry.viewport ?? PHONE
+      // Pin the wall clock BEFORE anything renders (see CLOCK_AT): a budget that
+      // moves with the hour is not a ratchet.
+      await page.clock.setFixedTime(new Date(CLOCK_AT * 1000))
       await page.emulateMedia({ reducedMotion: 'reduce' })
       await page.setViewportSize({ width: vp.w, height: vp.h })
       if (entry.keyboard) await installVvStub(page)

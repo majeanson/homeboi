@@ -138,6 +138,38 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### The state matrix measured itself against the wall clock (2026-09-10)
+
+The sweep whose numbers are RATCHETS was reading them off whatever o'clock someone
+happened to run it. It went red this morning on `day-plan` / `day-plan-wall` — 269px
+of chrome against a 244px budget — and nothing had changed in the day scene. « Le fil
+du jour » drops its « maintenant » marker BETWEEN what is behind you and what is ahead
+(`Fil.tsx`, `nowIndex`), so it sits ABOVE the first row until the fixture's 9 h event
+has passed and BELOW it after: a 25px swing on the hour. The 244 was baselined after
+9 h; the run started at 8 h 47.
+
+This file already recorded the ZONE half of that same trap (2026-09-08: CI's UTC
+runner asked for YESTERDAY, so the day scene rendered with no weather strip and a
+budget got baselined against a screen the app never shows). The HOUR half was still
+open, and it was never only the day scene — every daypart-, greeting- and
+« bientôt »-sensitive state in the table carried it, unmeasured.
+
+**One fixed wall time for the whole sweep** — 13 h 20 on TODAY's date, so every
+`TODAY_MIDNIGHT`-relative fixture still lands on today, and mid-afternoon rather than
+either edge of the fixture's day. `day-plan` now measures a deterministic **234px**;
+no budget was re-baselined (244 already sits tighter than the +10% formula would give).
+100 states, 0 failing.
+
+**And the sweep had never armed help mode.** `grep -n help e2e/state-matrix.spec.ts`
+returned nothing, so the « ? » — including the bar that 2026-09-09 put on all six hub
+tabs and on Réglages, and Réglages' 34 `operatorHelp` entries that had been unreachable
+for as long as the registry existed — has never been in a picture. Eight `help-*` states
+now: the six tabs, Maison's two (its bar takes the SECTION's card, so routines and the
+cercle are different bars), Réglages' lens-row bar, and the wall. Each asserts
+`.help-hint` is visible — without that, a state where the toggle stops arming
+photographs the ordinary page and passes, which is the blank-capture failure this suite
+already refuses in two other forms.
+
 ### The DevKit parity audit (2026-09-09) — the gallery rule had quietly stopped being true
 
 Marc's queued task: audit `/dev/kit` ↔ code **both ways**. The standing rule in
