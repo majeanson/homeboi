@@ -3249,6 +3249,12 @@ export const FR = {
     flyerOfficial: 'Aperçu',
     flyerReconstructed: 'Aperçu',
     flyerFull: 'Circulaire complète',
+    // The till card's provenance line (2026-09-10). Marc: a cashier must not refuse
+    // the app « just because it's not one of the three » — Flipp, reebee, Glouton.
+    // Those are trusted for what they SHOW (the store's own flyer, unaltered), so the
+    // card says where its ad comes from and links the official page, rather than
+    // dressing itself as one of them. Naming the source IS the argument.
+    dealSource: (store: string) => `Circulaire ${store} · via Flipp`,
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',

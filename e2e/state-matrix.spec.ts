@@ -426,6 +426,33 @@ const MATRIX: Entry[] = [
   // off that number would guard the fixture. Screenshot + bleed + crash guards only,
   // until the shared list fixture stages more than a single deal.
   { name: 'cashier', route: '/liste/cashier', content: '.cashier__tile, .bigcard', themes: ['day'], noBudgetWhy: 'the one tile is vertically CENTRED at thumb height, so contentTopPx measures how few deals the fixture stages, not chrome — a number here would invite "fixing" the one screen whose emptiness is the design (looked at again 2026-09-09: still true)' },
+  // …and the PEEK behind it, which is the screen actually held up to a cashier: the
+  // grid is only how you pick which deal is being scanned. It had never been
+  // photographed (2026-09-10) — so the proof card, the one surface whose whole job is
+  // to be read by someone else across a counter, was outside the sweep.
+  {
+    name: 'cashier-peek',
+    route: '/liste/cashier',
+    setup: async (page) => {
+      await page.locator('.cashier__tile').first().click()
+      await expect(page.locator('.bigcard')).toBeVisible()
+    },
+    themes: ['day'],
+  },
+  // …and the FLYER that peek opens, with the item circled — the 2026-09-10 ask:
+  // « when you click it goes to the flyer with a yellow circle ». The ring is the whole
+  // point of that tap, so it is photographed, not assumed.
+  {
+    name: 'cashier-flyer',
+    route: '/liste/cashier',
+    setup: async (page) => {
+      await page.locator('.cashier__tile').first().click()
+      await page.locator('.bigcard__flyer').click()
+      await expect(page.locator('.flyer-item.is-hit')).toBeVisible()
+    },
+    scope: '.flyer-overlay',
+    themes: ['day'],
+  },
   // « Les circulaires » opens on an EMPTY search (nothing to browse until you type),
   // so measure the half that has rows: « Par magasin », the flyer list.
   {

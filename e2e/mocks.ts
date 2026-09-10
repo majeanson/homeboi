@@ -79,7 +79,12 @@ export const BOARD = {
       text: 'Lait',
       source: 'manual',
       added_by: 'm1',
-      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: null, validTo: null }),
+      // Its dates ride flyerIso (the LIVE clock, like the flyer fixtures) rather than
+      // BASE: they are the thing a cashier checks, and a deal dated a year back reads
+      // as expired on every surface that asks « est-ce encore l’aubaine ? ». Both were
+      // null until 2026-09-10 — so the till PEEK, the one screen whose whole job is to
+      // be read by someone else across a counter, was photographed with no validity.
+      deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) }),
     },
     { id: 'l2', text: 'Pain', source: 'manual' },
     { id: 'l3', text: 'Pommes', source: 'ghost' },
@@ -642,8 +647,8 @@ export const ROUTES: Record<string, unknown> = {
   businesses: { businesses: [] },
   deals: {
     deals: [
-      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: null, validTo: BASE + 5 * DAY },
-      { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', logo: null, premium: true, image: null, validFrom: null, validTo: BASE + 5 * DAY },
+      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) },
+      { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) },
     ],
   },
   flyers: {
@@ -661,8 +666,11 @@ export const ROUTES: Record<string, unknown> = {
     postal: 'H2X1Y4',
     // ISO strings (not the unix-seconds BASE) so the viewer's date header renders a
     // real range, like the live feed — the rest of the mock uses seconds for slotting.
-    validFrom: '2026-06-11T00:00:00-04:00',
-    validTo: '2026-06-17T23:59:59-04:00',
+    // …and relative to the LIVE clock (flyerIso), matching the staged deal and the
+    // flyers list: a June flyer under a September till card was two weeks on one flow
+    // (2026-09-10). The deal says -2/+4, so the flyer says the same.
+    validFrom: flyerIso(-2),
+    validTo: flyerIso(4),
     // Page 1 carries the item; page 2 is an empty cover/feature page (no item
     // clippings) — premium flyers open on one of these, and the viewer must SKIP
     // it instead of rendering a blank white box (the "blank pages" bug).

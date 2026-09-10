@@ -7,7 +7,7 @@ import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { SubTabs } from './SubTabs'
-import { type Deal, type FlyerSummary, dealDate } from '../lib/deals'
+import { type Deal, type FlyerSummary, dealDate, flippFlyerUrl, money } from '../lib/deals'
 import { type AddedTo } from '../lib/picks'
 import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
@@ -62,7 +62,11 @@ interface FlyerResponse {
   postal?: string | null
 }
 
-const money = (n: number | null) => (n == null ? '' : `$${n.toFixed(2)}`)
+// `money` comes from lib/deals — the fr-CA « 4,99 $ » every other deal surface
+// prints. This file kept a LOCAL copy that formatted `$4.99`, so the flyer's detail
+// card and its aria-labels read in US format under a French UI while the till card
+// one tap back said « 4,99 $ » (2026-09-10 matrix pass). The DATE formatter had been
+// unified into lib/deals for exactly this reason; the money one had not.
 
 // Clipping images live on f.wishabi.net (cross-origin), which the service worker
 // never caches. Route them through the same-origin proxy (functions/api/flyer-img)
@@ -336,17 +340,11 @@ export function FlyerViewer({
   // + postal_code, so the merchant slug is cosmetic; we build it from the store
   // name (accent-stripped, spaces → hyphens: "Super C" → "super-c", "Métro" →
   // "metro").
-  const officialUrl = useMemo(() => {
-    const slug =
-      (title ?? '')
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'circulaire'
-    const pc = data?.postal ? `?postal_code=${encodeURIComponent(data.postal)}` : ''
-    return `https://flipp.com/${lang}-ca/circulaire/${flyerId}-${slug}-circulaire${pc}`
-  }, [lang, flyerId, title, data?.postal])
+  // The official flyer link, built by lib/deals (the till peek needs the same one).
+  const officialUrl = useMemo(
+    () => flippFlyerUrl(flyerId, title ?? null, lang, data?.postal),
+    [lang, flyerId, title, data?.postal],
+  )
 
   return (
     <div ref={overlayRef} className="flyer-overlay" role="dialog" aria-modal="true" aria-label={title ?? 'flyer'}>

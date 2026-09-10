@@ -67,3 +67,48 @@ export function dealEnded(validTo: string | null | undefined, now = Date.now()):
 }
 
 export const money = (n: number | null): string => (n == null ? '' : `${n.toFixed(2).replace('.', ',')} $`)
+
+// The validity SPAN a cashier checks — "11 juin au 17 juin", or "jusqu'au 17 juin"
+// when the ad only states an end. One implementation for every surface that holds a
+// deal up as proof: FlyerViewer's header had it (« reebee shows it but our
+// reconstruction dropped it ») while CashierMode — the surface actually presented at
+// the till — showed only the end date, which is half of what makes an ad current.
+// Words are passed in rather than imported so this file stays free of i18n.
+export function dealValidity(
+  validFrom: string | null,
+  validTo: string | null,
+  lang: 'fr' | 'en',
+  words: { rangeTo: string; until: string },
+): string {
+  const from = dealDate(validFrom, lang)
+  const to = dealDate(validTo, lang)
+  if (from && to) return `${from} ${words.rangeTo} ${to}`
+  return to ? `${words.until} ${to}` : from
+}
+
+// The official Flipp web flyer for a store's circular — the dense scanned pages our
+// in-app reconstruction stands in for. ONE implementation: FlyerViewer's toolbar link
+// and the till peek's source line both need it, and the second was about to grow a
+// copy (2026-09-10).
+//
+// Flipp routes client-side on the numeric id + postal_code, so the merchant slug is
+// cosmetic; we build it from the store name (accents stripped, spaces → hyphens:
+// "Super C" → "super-c", "Métro" → "metro"). `postal` is optional because the till
+// card knows the deal but not the household's postal code — the link still resolves,
+// it just may not pre-pick the nearest store.
+export function flippFlyerUrl(
+  flyerId: number,
+  merchant: string | null,
+  lang: 'fr' | 'en',
+  postal?: string | null,
+): string {
+  const slug =
+    (merchant ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'circulaire'
+  const pc = postal ? `?postal_code=${encodeURIComponent(postal)}` : ''
+  return `https://flipp.com/${lang}-ca/circulaire/${flyerId}-${slug}-circulaire${pc}`
+}

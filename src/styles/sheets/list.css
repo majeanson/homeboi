@@ -441,3 +441,17 @@
   color: var(--clay, #b3463a);
 }
 
+
+/* The till peek's unit price — the number a price-match actually turns on, since the
+   sizes rarely match exactly. Sits under the big price, quieter than it but still
+   readable across a counter. `--approx` marks a size our AI INFERRED rather than one
+   the ad printed: at a till, a guess must not present itself as fact (same ≈ and same
+   muting DealCard gives it). */
+.bigcard__unit {
+  font-size: 1.25rem;
+  color: var(--ink-soft);
+}
+.bigcard__unit--approx {
+  opacity: 0.8;
+  font-style: italic;
+}

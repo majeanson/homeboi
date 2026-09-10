@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money, dealDate } from '../lib/deals'
+import { type Pick, money, dealValidity, flippFlyerUrl } from '../lib/deals'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
@@ -48,7 +48,6 @@ export function CashierMode({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyerKey, qc])
 
-  const fmtDate = (iso: string | null) => dealDate(iso, lang)
 
   // Show a pick: mark it shown (✓) and open its proof.
   const show = (p: Pick) => {
@@ -163,17 +162,54 @@ export function CashierMode({
               {d.logo && <img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
               {d.merchant}
             </span>
+            {/* WHERE THIS AD COMES FROM, said out loud and linked. The apps a till already
+                honours (Flipp, reebee, Glouton) are trusted for what they show — the
+                store's own flyer — so the card names that source and gives a cashier the
+                official page in one tap, instead of dressing itself as one of them. Our
+                own « Voir la circulaire » below stays the fast path: it opens ON the item,
+                which the official page does not. */}
+            {d.flyerId != null && (
+              <a
+                className="bigcard__source mono"
+                href={flippFlyerUrl(d.flyerId, d.merchant, lang)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t.shop.dealSource(d.merchant)} <InlineIcon name="arrow-up-right-bold" size={13} />
+              </a>
+            )}
             <span className="bigcard__for">
               {t.shop.matchFor} <strong>{selected.itemText}</strong>
             </span>
             <span className="bigcard__name">{d.name}</span>
             <span className="bigcard__price">{money(d.price)}</span>
+            {/* The unit price, which is what a price-match comparison actually turns
+                on (the sizes rarely match exactly). This component's own docstring has
+                promised it since it was written; the peek never rendered it.
+                `unitApprox` = the size was INFERRED by AI rather than stated in the
+                ad, and it wears the same ≈ DealCard gives it: at a till, a number
+                we guessed must never present itself as printed fact. */}
+            {d.unitPrice != null && (
+              <span className={'bigcard__unit mono' + (d.unitApprox ? ' bigcard__unit--approx' : '')}>
+                {d.unitApprox && (
+                  <>
+                    <InlineIcon name="approximate-equals-bold" size={16} />{' '}
+                  </>
+                )}
+                {money(d.unitPrice)}
+                {d.unitLabel}
+              </span>
+            )}
             {/* Validity is high-level info — a cashier checks the deal is still valid
                 before adjusting — so it's the loud, prominent dated pill, not fine
                 print. No edit/delete here: the peek is a clean proof to hold up. */}
-            {d.validTo && (
+            {/* The dates a cashier checks, as the ad states them: « du 5 au 11 sept. »,
+                not just an end. FlyerViewer's header already did this — the surface
+                actually held up at the till did not (2026-09-10). */}
+            {(d.validFrom || d.validTo) && (
               <span className="bigcard__valid">
-                <InlineIcon name="calendar-dots-bold" size={28} /> {t.shop.until} {fmtDate(d.validTo)}
+                <InlineIcon name="calendar-dots-bold" size={28} />{' '}
+                {dealValidity(d.validFrom, d.validTo, lang, { rangeTo: t.shop.dateRangeTo, until: t.shop.until })}
               </span>
             )}
             {d.flyerId != null && (

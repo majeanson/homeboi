@@ -270,6 +270,15 @@
 /* Validity is high-level info (a cashier checks the deal is still good before
    adjusting), so it's a LOUD marigold pill, second only to the price — never fine
    print. Dark text on marigold reads in day AND night. */
+/* The provenance line under the store: quiet, mono, a link. It is the card's whole
+   argument at a till — « this is Super C's own flyer, via Flipp » — so it sits with
+   the store name, not in a footer. */
+.bigcard__source {
+  font-size: var(--text-sm);
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
 .bigcard__valid {
   display: inline-flex;
   align-items: center;

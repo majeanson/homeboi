@@ -97,7 +97,7 @@ runs is a comment with a number in it.
 **Windows and the Linux runner agree — checked, not assumed.** The worry was that
 budgets baselined locally would be quietly loose or quietly red on CI, since font
 metrics differ. The first full CI sweep (2026-08-26, 64 states, 44 budgeted — a dated
-record of that run, deliberately not updated; **today the sweep is 88 entries → 100
+record of that run, deliberately not updated; **today the sweep is 90 entries → 102
 states, 65 of them budgeted, plus 39 lens twins (every text-heavy state re-shot in EN
 at 390px and in FR at 360px — 2026-09-10; twins are generated rather than listed, so
 they are counted on their own)**, and those three live numbers are asserted from the spec by

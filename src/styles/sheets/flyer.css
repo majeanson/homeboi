@@ -300,12 +300,26 @@
   object-fit: contain;
   display: block;
 }
+/* The item you came for, CIRCLED — the category convention a cashier already reads
+   (a ring around the clipping on the flyer page), asked for 2026-09-10. Drawn on a
+   pseudo-element rather than by rounding the item itself: a border-radius on the
+   element would clip the corners of the product photo, and the ring must sit AROUND
+   the ad, not eat it. Slightly larger than the box so it reads as a mark, not a
+   frame. */
 .flyer-item.is-hit {
-  outline: 3px solid var(--marigold);
-  outline-offset: 1px;
-  border-radius: 4px;
-  box-shadow: 0 0 0 4px var(--marigold-wash);
   z-index: 2;
+  /* The item clips its overflow (the photo is contained anyway); the ring is drawn
+     OUTSIDE the box, so the marked item must not. */
+  overflow: visible;
+}
+.flyer-item.is-hit::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 4px solid var(--marigold);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--marigold-wash);
+  pointer-events: none;
 }
 .flyer-item__pin {
   position: absolute;

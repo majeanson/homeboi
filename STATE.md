@@ -98,8 +98,9 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **1** — and it is a WORD, waiting on Marc the way
-> « Maisonnée » did (« Show the cashier » reads as *display the cashier* in English).
+> a number you can trust. It reads **0** — again, as of the same evening: the last box,
+> the till card, closed when it names and links its source now, which was the honest answer to
+> « don't let a cashier refuse it ». What remains there are three ❓, not tasks.
 > §4-G wrote nine on 2026-09-10 — the pass that opened all 100 state-matrix screenshots
 > instead of sampling them — and all nine are settled: seven fixed, two dissolved once
 > the code was actually read (the wall was never wasting width; the « ragged » grids
@@ -142,6 +143,67 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### The till card argues its own case (2026-09-10)
+
+Marc named the apps Maxi honours for « prix imbattable » — Flipp, reebee, Glouton —
+and did not want a cashier refusing his app for not being one of them, since it shows
+the same ad from the same source. Two rounds to land it. My first answer — make the
+official Flipp page one tap away — he pushed back on, correctly: on the official page
+you still have to FIND the item, which is the exact friction this app exists to remove.
+So the card stays primary, and instead it **names and links its source**:
+« Circulaire Super C · via Flipp ↗ ». The apps a till trusts are trusted for what they
+show; saying where the ad comes from is the honest form of that argument, where
+styling the card to read as one of them would be the dishonest one — and the one that
+fails the moment a cashier looks closely.
+
+**« Voir la circulaire » now opens on the item, circled.** The ring was a marigold
+box; it is an ellipse drawn on a pseudo-element, around the clipping rather than
+rounding it (a border-radius on the item would clip the product photo). The item
+also clips its overflow, so the marked one must not — the first render cut the ring
+off. Two matrix states photograph the flow now (`cashier-peek`, `cashier-flyer`):
+the one screen in this app whose job is to be read by someone else, across a counter,
+had never been in the sweep.
+
+**And the flow was lying in two places that only a photograph shows.** `FlyerViewer`
+kept a local `money` printing **$4.99** under a French UI while the card one tap back
+said « 4,99 $ » — `lib/deals` had unified the DATE formatter "for every deal surface"
+and left money behind. And the `flyer` detail fixture hard-coded June ISO strings
+(untouched by the epoch rebase), so the header said June over a September card. Both
+now share one source: `money` from lib/deals, dates from `flyerIso`.
+
+### The screen a cashier reads (2026-09-10)
+
+Marc named the apps Maxi honours for « prix imbattable » — **Flipp**, **reebee**,
+**Glouton** — and asked for a phone UI as presentable as theirs. The trap in that ask,
+worth writing down: those apps are accepted for what they SHOW (the retailer's own
+unaltered flyer, from a source the store recognizes), not for how they are styled.
+Copying the look confers nothing. What transfers is the evidence set, and the one-tap
+path to the ad.
+
+**Ours was missing two pieces of that set, and one of them the component's own
+docstring claimed it had.** `CashierMode`'s peek promised « store, picture, BIG price,
+unit price, dates » and rendered the unit price nowhere — while the unit price is
+exactly what a match turns on, since the sizes rarely agree. And validity showed only
+« jusqu'au X », half of what makes an ad current; `FlyerViewer`'s header already
+computed the full span, under a comment reading « This is the date the cashier checks;
+reebee shows it but our reconstruction dropped it ». The span formatter moved to
+`lib/deals` so both surfaces share one (`dealValidity`), and the peek now reads:
+store · what it matches · product + size · big price · unit price · « 8 sept. au
+14 sept. » · « Voir la circulaire ». An AI-INFERRED size wears the same ≈ `DealCard`
+gives it — at a till, a number we guessed must not present itself as printed fact.
+
+**The sweep had never opened it.** `cashier` photographed the GRID, which is only how
+you pick which deal is being scanned; the peek — the one screen in this app whose whole
+job is to be read by someone ELSE, across a counter — was outside the matrix. It is a
+state now.
+
+**And the fixture staged the proof card with none of its proof**: `validFrom` and
+`validTo` were both null on the staged deal, so every photograph of that surface showed
+an ad with no dates. Fixed — and the same pass found the deals-SEARCH copies passing an
+epoch NUMBER where `validTo` is declared `string | null`, which `new Date()` reads as
+milliseconds: « jusqu'au 21 janv. », 1970. Untyped fixture literals, so tsc never saw
+it. Both now ride `flyerIso`, the live-clock helper the flyer fixtures already used.
 
 ### Reading the 39 new twins, the last two findings, and one scanner to share (2026-09-10)
 
@@ -1880,26 +1942,31 @@ the six themed tabs mirror the hub on purpose). What survived, ranked by user ha
       conscripts whoever happens to share the word. (The missing picto is left: a pantry
       row is a word a parent typed, not a catalogued item, so `pictoFor` has less to go
       on there than on the list.)
-- [ ] **« Show the cashier » — model it on a price-match UI a cashier already accepts.**
-      Marc, 2026-09-10, pointing at Maxi's « prix imbattable » program: rather than
-      re-word the button, make the surface *look like the thing a till already honours*.
-      The EN copy problem is real but downstream of that — FR « Montrer à la caisse »
-      means *show it AT the till*, while EN « Show the cashier » reads as *display the
-      cashier*, the person (found by the EN lens twin the same day).
-
-      **What the surface already has** (`components/CashierMode.tsx`, and this is why
-      the work is presentation rather than data): per pick — the STORE, the product
-      picture, a big price, the unit price, the validity DATES, and « voir la
-      circulaire » onto the flyer page itself. Random-access grid → full-screen peek,
-      oversized and low-text on purpose, because the customer holds the phone and items
-      hit the belt in no particular order.
-
-      **Unverified, and needed before designing**: the actual acceptance rules.
-      `https://www.maxi.ca/fr/unbeatable-legal` renders as an SPA shell, so a fetch
-      returns the page title and nothing else — the policy text was NOT read, and
-      nothing here should be treated as knowing what a cashier must be shown (identical
-      vs comparable item, printed vs on-screen ad, per-visit limits, exclusions).
-      Get that first; the layout follows from it.
+- [x] **« Montrer à la caisse » — the evidence a till accepts, and where it comes from.**
+      Marc, 2026-09-10: a cashier must not refuse the app « just because it's not one of
+      the three » — Flipp, reebee, Glouton — « it does the same thing ». And his pushback
+      on my first answer was right: pointing a cashier at the OFFICIAL flyer page means
+      hunting for the item on it, which is precisely the friction this app removes.
+      **Shipped** — our card stays the thing shown at the till, and it now carries what
+      the three are trusted for: the store, what it matches, product + size, big price,
+      **unit price** (what a match turns on; an AI-inferred size wears ≈), the **validity
+      span**, and a provenance line — « Circulaire Super C · via Flipp ↗ » — that names
+      the source and links the official page in one tap. « Voir la circulaire » opens our
+      reconstruction **on the item, circled** in marigold (the category convention).
+      What I would not do, and said so: style it to read AS Flipp. That deceives the
+      cashier rather than convincing them, and collapses the moment anyone looks closely.
+      Naming the source is the honest version of the same argument.
+      Found on the way: `FlyerViewer` kept a LOCAL `money` printing `$4.99` under a French
+      UI while the card one tap back said « 4,99 $ » (the date formatter had been unified
+      into lib/deals for exactly this reason; money hadn't); and the `flyer` detail
+      fixture hard-coded June ISO dates, so the flow showed two weeks — both fixed.
+      ❓ The acceptance RULES were never read — `maxi.ca/fr/unbeatable-legal` renders as
+        an SPA shell. Identical vs comparable item, printed vs on-screen, limits,
+        exclusions: still unknown. Paste the terms and the card can be scored against them.
+      ❓ Whether Babillard may present Flipp-sourced data as a price-match source AT ALL
+        is licensing, not layout (the data limit: cutouts only, link out). Unsettled.
+      ❓ Store logo and product picture are null in the fixture, so the card has never
+        been photographed looking like an ad rather than a receipt.
 - [x] Smaller, all photographed — and **four of the five were wrong**, which is the
       entry worth reading. Only the first was real: **the drawings tile footer
       collided** (the 📌 is `position:absolute` and `.drawgallery__item` — its
