@@ -2525,7 +2525,7 @@ export const FR = {
     flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite) : connecté, le signet écrit directement dans la liste de ton compte — celle que l’app Flipp affiche.',
     flippEachTitle: 'À chaque épicerie',
     flippEach1: 'Dans Babillard : La liste ▸ « Montrer à la caisse » ▸ « Copier pour Flipp » (ou juste « Envoyer à Flipp », sans signet, pour la liste en mots). Une ligne sous le bouton confirme.',
-    flippEach2: 'Dans Safari, sur flipp.com : lance « Coller de Babillard » (Signets — ou tape « Coller » dans la barre d’adresse et choisis-le). Il lit le presse-papiers et t’offre le choix : « Remplacer ma liste Flipp » · « Ajouter à ma liste Flipp » · « Rapporter Flipp → Babillard ». La page se recharge.',
+    flippEach2: 'Dans Safari, sur flipp.com : lance « Coller de Babillard » (Signets — ou tape « Coller » dans la barre d’adresse et choisis-le). Touche « Coller ma liste Babillard », puis choisis : « Remplacer ma liste Flipp » · « Ajouter à ma liste Flipp » · « Rapporter Flipp → Babillard ». La page se recharge.',
     flippEach3: 'Ta liste est là, sur flipp.com — rabais avec photos par magasin, articles dessous. Connecté, elle est dans ton compte : l’app Flipp la montre après sa synchro (quitte et rouvre l’app).',
     flippWhat: 'Ce que Flipp reçoit : les rabais choisis avec leur photo, classés par magasin ; le reste de la liste en articles ; rien de ce qui est déjà coché.',
     // The way back, and the other phones.
@@ -2537,7 +2537,7 @@ export const FR = {
     flippTip1: 'Une fois copié, « Ouvrir flipp.com » sous le bouton envoie flipp.com à Safari lui-même (pas la fenêtre de Babillard, qui n’a pas tes signets).',
     flippTip2: 'Mets « Coller de Babillard » dans tes Favoris Safari : sur flipp.com, touche la barre d’adresse et il est là, un tap — pas besoin d’ouvrir le menu Signets.',
     flippTip3: 'Ou tape « Coller » dans la barre d’adresse : Safari propose le signet parmi les suggestions.',
-    flippTip4: 'Sans liste copiée, le signet offre « Vider ma liste Flipp » (il confirme d’abord) et « Coller un texte… ». Dans cette boîte, le mot « diag » montre les lignes brutes de ta liste, à coller dans une session Babillard si quelque chose s’affiche mal.',
+    flippTip4: 'Sur iPhone, le signet ne peut pas lire le presse-papiers tout seul au lancement : touche « Coller ma liste Babillard » sur la feuille — Safari montre sa petite bulle « Coller », un tap, et c’est lu. Si le téléphone refuse, une boîte s’ouvre pour coller à la main ; le mot « diag » y montre les lignes brutes de ta liste, à coller dans une session Babillard si quelque chose s’affiche mal.',
     flippTip5: 'Rien à faire deux fois : le signet est un chargeur qui va chercher la version à jour dans ton Babillard à chaque lancement. Une amélioration ici, il l’a déjà.',
     flippOtherTitle: 'Autres chemins',
     flippAndroid: 'Android (Chrome) : ajoute n’importe quelle page aux favoris, modifie-la (nom « Coller de Babillard », adresse = le signet copié). Pour la lancer sur flipp.com, tape « Coller » dans la barre d’adresse et choisis le favori.',

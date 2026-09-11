@@ -79,6 +79,8 @@ async function run(opts: {
   dom?: boolean
   /** What Flipp's item endpoint knows, by flyer item id (missing = 404): the hydration source for a box-less clipping. */
   items?: Record<number, Record<string, unknown>>
+  /** iOS: the FIRST clipboard read (at launch, no gesture) is refused; reads from a tap resolve to this. */
+  clipboardLater?: string
 }) {
   const store = new Map<string, string>()
   if (opts.stored != null) store.set('shopping_list', opts.stored)
@@ -103,10 +105,19 @@ async function run(opts: {
     return reply(500, null)
   }
   const location = { href: 'https://flipp.com/fr-ca/item/101', hostname: opts.hostname ?? 'flipp.com' }
+  let reads = 0
   const navigator =
     opts.clipboard === undefined
       ? {}
-      : { clipboard: { readText: () => (opts.clipboard === 'REFUSED' ? Promise.reject(new Error('denied')) : Promise.resolve(opts.clipboard)) } }
+      : {
+          clipboard: {
+            readText: () => {
+              reads++
+              if (opts.clipboardLater !== undefined && reads > 1) return Promise.resolve(opts.clipboardLater)
+              return opts.clipboard === 'REFUSED' ? Promise.reject(new Error('denied')) : Promise.resolve(opts.clipboard)
+            },
+          },
+        }
   // The body is SERVED (public/flipp-paste.js) and reads the household's origin off
   // its own <script src> — the fake document carries that, as flipp.com's page would.
   const fakeDoc = { currentScript: { src: ORIGIN + FLIPP_PASTE_PATH + '?v=1' }, cookie: opts.cookie ?? '' }
@@ -569,7 +580,17 @@ describe('the SHEET the bookmark draws on flipp.com — real buttons, the right 
     expect(after.location.href).toBe('/liste_dachats')
   })
 
-  it('« Coller un texte… » opens the paste box, and a pasted list gets the same four buttons', async () => {
+  it('« Coller ma liste Babillard » reads the clipboard INSIDE the tap (iOS refuses the launch-time read) — no box, straight to the four buttons', async () => {
+    const r = await run({ dom: true, clipboard: 'REFUSED', clipboardLater: payload })
+    expect(r.sheet()).toEqual(['paste', 'back', 'clear', 'cancel']) // the launch read was refused → the menu
+    await r.click('paste')
+    expect(r.prompts).toEqual([]) // no box: the tap's read worked
+    expect(r.sheet()).toEqual(['replace', 'add', 'back', 'cancel'])
+    const after = await r.click('add')
+    expect(after.list!.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
+  })
+
+  it('…and when that read is refused too, the paste box opens, and a pasted list gets the same four buttons', async () => {
     const r = await run({ dom: true, clipboard: 'REFUSED', prompt: payload })
     expect(r.prompts).toEqual([])
     await r.click('paste')
