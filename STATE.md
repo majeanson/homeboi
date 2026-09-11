@@ -225,7 +225,14 @@ each read from the live account, not inferred:
 
 **The guard that keeps it from recurring:** the account path now posts a clipping
 WITHOUT its four box numbers as a TYPED ITEM (its short name), never as a clipping —
-twin `flippAccountOps` agrees, unit-tested. `diag` stays in the bookmark: it is the
+twin `flippAccountOps` agrees, unit-tested. **And the guard's first evening bit Marc:
+« no deals follow through »** — his staged deals all predate the box being kept, so every
+one became a word (the account showed 0 clippings, 13 typed items with the deal names).
+Now the bookmark COMPLETES a box-less clipping first, from Flipp's own item endpoint
+(`…/bf/flipp/items/<id>`, CORS-open, no postal needed — checked): box, cutout picture,
+any missing price / flyer / merchant / date. Only an item Flipp no longer knows (404)
+still goes as a word. Both paths, before anything is written; tested with a fake item
+endpoint (a hit clips with the fetched box and cutout; a miss is a word). `diag` stays in the bookmark: it is the
 cheapest way to read the account when the phone is the only device at hand.
 
 **« Can 1 and 2 be streamlined? »** — yes, into one question. The paste asks, on

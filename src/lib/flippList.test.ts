@@ -77,6 +77,8 @@ async function run(opts: {
   failAt?: { step: string; status: number }
   /** A REAL page (happy-dom): the bookmark draws its sheet; the fake page (default) has no body → confirm/prompt fallbacks. */
   dom?: boolean
+  /** What Flipp's item endpoint knows, by flyer item id (missing = 404): the hydration source for a box-less clipping. */
+  items?: Record<number, Record<string, unknown>>
 }) {
   const store = new Map<string, string>()
   if (opts.stored != null) store.set('shopping_list', opts.stored)
@@ -84,14 +86,20 @@ async function run(opts: {
   const prompts: string[] = []
   const calls: FakeCall[] = []
   const reply = (status: number, json: unknown) => Promise.resolve({ status, text: () => Promise.resolve(json == null ? '' : JSON.stringify(json)) })
-  const fetch = (url: string, init: { method: string; body?: string }) => {
-    calls.push({ method: init.method, url, body: init.body ? JSON.parse(init.body) : undefined })
+  const fetch = (url: string, init: { method?: string; body?: string } = {}) => {
+    const method = init.method ?? 'GET'
+    calls.push({ method, url, body: init.body ? JSON.parse(init.body) : undefined })
     const fail = (step: string) => (opts.failAt?.step === step ? opts.failAt.status : null)
+    const item = /\/bf\/flipp\/items\/(\d+)/.exec(url)
+    if (item) {
+      const known = opts.items?.[Number(item[1])]
+      return Promise.resolve({ status: known ? 200 : 404, ok: !!known, text: () => Promise.resolve(known ? JSON.stringify({ item: known }) : ''), json: () => Promise.resolve(known ? { item: known } : null) })
+    }
     const isLists = /\/shopping_lists$/.test(url)
-    if (init.method === 'GET' && isLists) return reply(fail('lists') ?? 200, { shopping_lists: opts.account === null ? [] : [{ id: 'L1' }] })
-    if (init.method === 'POST' && isLists) return reply(fail('create') ?? 201, { id: 'L-new', commit_version: 0 })
-    if (init.method === 'GET') return reply(fail('list') ?? 200, opts.account ?? { commit_version: 7, flyer_item_clippings: [], list_items: [] })
-    if (init.method === 'PUT') return reply(fail('put') ?? 200, {})
+    if (method === 'GET' && isLists) return reply(fail('lists') ?? 200, { shopping_lists: opts.account === null ? [] : [{ id: 'L1' }] })
+    if (method === 'POST' && isLists) return reply(fail('create') ?? 201, { id: 'L-new', commit_version: 0 })
+    if (method === 'GET') return reply(fail('list') ?? 200, opts.account ?? { commit_version: 7, flyer_item_clippings: [], list_items: [] })
+    if (method === 'PUT') return reply(fail('put') ?? 200, {})
     return reply(500, null)
   }
   const location = { href: 'https://flipp.com/fr-ca/item/101', hostname: opts.hostname ?? 'flipp.com' }
@@ -387,10 +395,37 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
     expect(r.location.href).toBe('/liste_dachats')
   })
 
-  it('a clipping WITHOUT its box goes as a typed item (its short name), never as a clipping — one null-geometry row breaks their whole list layout', async () => {
+  it('a clipping WITHOUT its box is COMPLETED from Flipp\'s item endpoint — box, cutout, missing price — and clips (Marc\'s pre-09-10 deals: « no deals follow through »)', async () => {
+    const noBox = flippListPayload([pick('a', { box: null, cutout: null, image: 'https://f.wishabi.net/clean.jpg', price: null }), pick('b', { id: 102, name: 'Pain' })], ['Oeufs'])
+    const item101 = { id: 101, flyer_id: 5001, left: 100.5, right: 200.5, top: -10, bottom: -110, cutout_image_url: 'http://f.wishabi.net/page_items/1/cut.jpg', current_price: 4.49, valid_to: '2026-09-16T23:59:59-04:00', merchant_id: 3384 }
+    const r = await run({ cookie: SIGNED_IN, prompt: noBox, items: { 101: item101 } })
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'GET', 'PUT']) // item, lists, list, put
+    const put = r.calls[3].body as { _ops: { object: Record<string, unknown> }[] }
+    expect(put._ops.map((o) => [o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
+      ['flyer_item_clipping', 101],
+      ['flyer_item_clipping', 102],
+      ['list_item', 'Oeufs'],
+    ])
+    const clip = put._ops[0].object
+    expect([clip.left, clip.right, clip.top, clip.bottom]).toEqual([100.5, 200.5, -10, -110])
+    expect(clip.thumbnail_url).toBe('https://f.wishabi.net/page_items/1/cut.jpg') // the cutout, https
+    expect(clip.price).toBe('4.49') // the missing price, as a string
+    expect(clip.merchant_id).toBe(3384)
+  })
+
+  it('signed out, the same completion fills the LOCAL clipping', async () => {
+    const noBox = flippListPayload([pick('a', { box: null })])
+    const r = await run({ prompt: noBox, items: { 101: { left: 1, right: 2, top: 3, bottom: 4, cutout_image_url: 'https://c/x.jpg' } } })
+    const c = r.list!.flyerItemClippings[0] as unknown as Record<string, unknown>
+    expect([c.left, c.right, c.top, c.bottom]).toEqual([1, 2, 3, 4])
+    expect(c.thumbnailUrl).toBe('https://c/x.jpg')
+  })
+
+  it('a clipping WITHOUT its box that Flipp no longer knows (404) goes as a typed item (its short name), never as a clipping — one null-geometry row breaks their whole list layout', async () => {
     const noBox = flippListPayload([pick('a', { box: null, name: 'MIEL BILLY BEE | BILLY BEE HONEY 500 g' }), pick('b', { id: 102, name: 'Pain' })], ['Oeufs'])
-    const r = await run({ cookie: SIGNED_IN, prompt: noBox })
-    const put = r.calls[2].body as { _ops: { object: Record<string, unknown> }[] }
+    const r = await run({ cookie: SIGNED_IN, prompt: noBox }) // Flipp knows nothing of item 101 → 404 → a word
+    expect(r.calls[0].url).toMatch(/\/bf\/flipp\/items\/101\?locale=fr-ca$/)
+    const put = r.calls.find((c) => c.method === 'PUT')!.body as { _ops: { object: Record<string, unknown> }[] }
     expect(put._ops.map((o) => [o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
       ['flyer_item_clipping', 102],
       ['list_item', 'MIEL BILLY BEE'],
