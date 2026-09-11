@@ -228,6 +228,23 @@ WITHOUT its four box numbers as a TYPED ITEM (its short name), never as a clippi
 twin `flippAccountOps` agrees, unit-tested. `diag` stays in the bookmark: it is the
 cheapest way to read the account when the phone is the only device at hand.
 
+**« Can 1 and 2 be streamlined? »** — yes, into one question. The paste asks, on
+flipp.com: **OK = REPLACE** the Flipp list with Babillard's (signed in: a `delete` op per
+existing row + every payload row, ONE PUT; signed out: the local list becomes the payload)
+· **Annuler = ADD** only. « Vider » then « Coller » is therefore one run; the till's
+« Vider ma liste Flipp » stays for emptying without pasting. The way back (Flipp →
+Babillard) moved off that confirm's Annuler to the empty paste box alone (copy any word
+first if a Babillard list is still on the clipboard) — the how-to says so. Twins take a
+`replace` flag; tests pin the op order and the signed-out shape.
+
+**The how-to now lists every convenience an iPhone offers** (Marc: « clear up all we can
+do for convenience »): a folded « Plus pratique » — « Ouvrir flipp.com » hands Safari the
+page; the bookmark in Safari Favorites is one tap from the address bar; typing its name
+in the address bar offers it; the two words the box understands (« vider » / "clear",
+« diag »); and the loader means nothing is ever re-copied. Android + Shortcuts stay under
+« Autres chemins ». The glossary guard caught « vider » in the EN copy on the first run —
+the box accepts "clear" too now, and the EN text says that.
+
 Guards: `flippList.test.ts` runs the body against a fake page WITH a session and a
 recording fetch — the call sequence, the exact op object, uniqueness against the
 account's rows, list creation, a 401, the clear ops (twin: `flippAccountOps` /

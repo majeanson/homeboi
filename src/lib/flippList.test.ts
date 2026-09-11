@@ -208,7 +208,7 @@ describe('the bookmarklet, run against a fake flipp.com page — Babillard → F
       ecomItems: [],
       _delegate: false,
     })
-    const list = (await run({ stored: existing, prompt: payload })).list!
+    const list = (await run({ stored: existing, prompt: payload, confirm: false })).list! // Annuler = ADD
     expect(list.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
     expect(list.flyerItemClippings[0].name).toBe('déjà là') // theirs wins; ours only adds
     // « oeufs » already there (checked, even) — kept as is, case-insensitively; « Beurre » added.
@@ -263,7 +263,7 @@ describe('the bookmarklet, run against a fake flipp.com page — Babillard → F
   it('agrees with its readable twin, mergeFlippList', async () => {
     const existing = JSON.stringify({ flyerItemClippings: [{ id: 'item-clipping-101', flyerItemId: 101 }], listItems: [], _delegate: false })
     const twin = mergeFlippList(existing, JSON.parse(payload) as FlippPayload, (key) => key + '-ID')
-    const real = (await run({ stored: existing, prompt: payload })).list!
+    const real = (await run({ stored: existing, prompt: payload, confirm: false })).list!
     // The typed-item id carries a random suffix in the real one — compare everything else.
     const strip = (l: StoredList) => ({ ...l, listItems: l.listItems.map(({ id, ...rest }) => ({ ...rest, idPrefix: id.split('-')[0] })) })
     expect(strip(real)).toEqual(strip(JSON.parse(JSON.stringify(twin.list)) as StoredList))
@@ -368,7 +368,7 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
   })
 
   it('never re-posts a clipping or a term the account list already has (their own uniqueness)', async () => {
-    const r = await run({ cookie: SIGNED_IN, prompt: payload, account: { commit_version: 3, flyer_item_clippings: [{ id: 9, flyer_item_id: 101 }], list_items: [{ id: 8, term: 'oeufs' }] } })
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: false, account: { commit_version: 3, flyer_item_clippings: [{ id: 9, flyer_item_id: 101 }], list_items: [{ id: 8, term: 'oeufs' }] } })
     const put = r.calls[2].body as { _ops: { object: Record<string, unknown> }[] }
     expect(put._ops.map((o) => o.object.flyer_item_id ?? o.object.term)).toEqual([102, 'Beurre'])
   })
@@ -396,9 +396,43 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
 
   it('agrees with its readable twin, flippAccountOps', async () => {
     const account = { commit_version: 1, flyer_item_clippings: [{ id: 1, flyer_item_id: 102 }], list_items: [{ id: 2, term: 'Beurre' }] }
-    const r = await run({ cookie: SIGNED_IN, prompt: payload, account })
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: false, account })
     const put = r.calls[2].body as { _ops: unknown[] }
     expect(put._ops).toEqual(flippAccountOps(account, JSON.parse(payload) as FlippPayload))
+  })
+
+  it('OK on the paste question = REPLACE: one PUT with a delete per existing row, then every payload row — « Vider » and « Coller » in one run', async () => {
+    const account = {
+      commit_version: 4,
+      flyer_item_clippings: [{ id: 'old1', commit_version: 2, flyer_item_id: 101, name: 'Lait (vieux)' }, { id: 'old2', commit_version: 1, flyer_item_id: 555 }],
+      list_items: [{ id: 'oi', commit_version: 1, term: 'Oeufs', checked: true }],
+    }
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: true, account })
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT'])
+    const put = r.calls[2].body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
+    expect(put.commit_version).toBe(4)
+    expect(put._ops.map((o) => [o.verb, o.object.type, o.object.id ?? o.object.flyer_item_id ?? o.object.term])).toEqual([
+      ['delete', 'flyer_item_clipping', 'old1'],
+      ['delete', 'flyer_item_clipping', 'old2'],
+      ['delete', 'list_item', 'oi'],
+      ['post', 'flyer_item_clipping', 101], // re-posted fresh, even though 101 was there
+      ['post', 'flyer_item_clipping', 102],
+      ['post', 'list_item', 'Oeufs'],
+      ['post', 'list_item', 'Beurre'],
+    ])
+    expect(put._ops).toEqual(flippAccountOps(account, JSON.parse(payload) as FlippPayload, true))
+    expect(r.location.href).toBe('/liste_dachats')
+  })
+
+  it('REPLACE, signed out: the local list becomes exactly the payload (theirs dropped)', async () => {
+    const existing = JSON.stringify({ _delegate: false, flyerItemClippings: [{ id: 'item-clipping-777', flyerItemId: 777, name: 'vieux' }], listItems: [{ id: 'x', term: 'Vieux', checked: false }] })
+    const r = await run({ stored: existing, prompt: payload, confirm: true })
+    expect(r.calls).toEqual([])
+    expect(r.list!.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
+    expect(r.list!.listItems.map((i) => i.term)).toEqual(['Oeufs', 'Beurre'])
+    const twin = mergeFlippList(existing, JSON.parse(payload) as FlippPayload, (k) => k, true)
+    expect((twin.list.flyerItemClippings as { flyerItemId: number }[]).map((c) => c.flyerItemId)).toEqual([101, 102])
+    expect(twin.added).toBe(4)
   })
 })
 
@@ -438,9 +472,11 @@ describe('« Vider ma liste Flipp » — the clear payload, and « vider » in t
     expect(r.location.href).toBe('/liste_dachats')
   })
 
-  it('« vider » typed in the paste box (any case, spaces around) is the clear', async () => {
+  it('« vider » typed in the paste box (any case, spaces around) is the clear — and so is "clear", the word the EN how-to gives', async () => {
     const r = await run({ cookie: SIGNED_IN, prompt: '  Vider ', confirm: true, account })
     expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT'])
+    const en = await run({ cookie: SIGNED_IN, prompt: 'Clear', confirm: true, account })
+    expect(en.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT'])
   })
 
   it('« diag » typed in the paste box shows the account list\'s raw rows in a prompt, to copy', async () => {
@@ -492,11 +528,13 @@ describe('the way back — Flipp → Babillard', () => {
     ])
   })
 
-  it('a Babillard payload on the clipboard + Annuler = the way back instead of a paste', async () => {
+  it('a Babillard payload on the clipboard + Annuler = ADD to their list (the way back moved to the empty paste box)', async () => {
     const r = await run({ stored: theirs, clipboard: flippListPayload([pick('a')]), confirm: false })
     expect(r.prompts).toEqual([])
-    expect(r.location.href.startsWith(ORIGIN + '/liste#flipp=')).toBe(true)
-    expect(JSON.parse(r.stored!).flyerItemClippings).toHaveLength(2) // theirs untouched
+    expect(r.location.href).toBe('/liste_dachats')
+    const list = JSON.parse(r.stored!) as StoredList
+    expect(list.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([77, undefined, 101]) // theirs kept, ours added
+    expect(list.listItems.map((i) => i.term)).toEqual(['Pain', 'Oeufs'])
   })
 
   it('an empty Flipp list has nothing to bring back — says so, goes nowhere', async () => {

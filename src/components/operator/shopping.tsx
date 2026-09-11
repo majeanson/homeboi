@@ -657,6 +657,17 @@ export function FlippSection({ help }: { help?: HelpMode }) {
       <p className="operator__hint">{t.operator.flippWhat}</p>
       <h4 className="flipp__phase">{t.operator.flippBackTitle}</h4>
       <p className="operator__hint">{t.operator.flippBack1}</p>
+      {/* Folded: read once, then muscle memory (Marc, 2026-09-11: « clear up all we
+          can do for convenience »). */}
+      <Disclosure label={t.operator.flippTipsTitle}>
+        <ul className="operator__steps">
+          <li>{t.operator.flippTip1}</li>
+          <li>{t.operator.flippTip2}</li>
+          <li>{t.operator.flippTip3}</li>
+          <li>{t.operator.flippTip4}</li>
+          <li>{t.operator.flippTip5}</li>
+        </ul>
+      </Disclosure>
       {/* Folded: most households have one phone, and it is the one above. */}
       <Disclosure label={t.operator.flippOtherTitle}>
         <p className="operator__hint">{t.operator.flippAndroid}</p>
