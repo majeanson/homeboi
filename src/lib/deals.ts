@@ -133,9 +133,19 @@ export function flippFlyerUrl(
 //     same probe. So the locale is pinned to fr-ca whatever the UI language — the
 //     page is bilingual anyway (the item name carries both).
 // `/flyer_item/…` is NOT a route (404) — do not "fix" this to that shape.
-export function flippItemUrl(flyerItemId: number | null, postal: string | null | undefined): string | null {
+//
+// THROUGH `/action` since 2026-09-10 (night): `flipp.com/action?type=flyer_view
+// &flyer_ids=<flyerId>&item_ids=<id>&postal_code=…` is their own dispatch — on the
+// web it redirects to the very item page above (probed: the item renders), and
+// `/action` is the ONE path the Flipp iOS app claims as a universal link, so on a
+// phone with the app this opens THE ACCEPTED APP on the item, with its own
+// « Ajouter à la liste » (Marc: « it opens in Flipp »). Without a flyer id the old
+// direct page is the door; without a postal, none.
+export function flippItemUrl(flyerItemId: number | null, postal: string | null | undefined, flyerId?: number | null): string | null {
   if (flyerItemId == null || !postal) return null
-  return `https://flipp.com/fr-ca/item/${flyerItemId}?postal_code=${encodeURIComponent(postal)}`
+  const pc = `postal_code=${encodeURIComponent(postal)}`
+  if (flyerId != null) return `https://flipp.com/action?type=flyer_view&flyer_ids=${flyerId}&item_ids=${flyerItemId}&${pc}`
+  return `https://flipp.com/fr-ca/item/${flyerItemId}?${pc}`
 }
 
 // « Ma liste Flipp » — Flipp's own shopping-list page. What it shows is whatever

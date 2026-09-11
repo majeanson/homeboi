@@ -182,6 +182,11 @@ test('3 · the routes still hold: item page needs a postal; bare /liste_dachats 
   // With a postal code: the item.
   await open(page, `/fr-ca/item/${it.flyer_item_id}?postal_code=${POSTAL}`)
   await expect(page.getByText(it.name!.slice(0, 20), { exact: false }).first()).toBeVisible({ timeout: 30_000 })
+  // …and the /action dispatch the till links now (the Flipp app's universal-link
+  // path) redirects to that same item on the web.
+  await open(page, `/action?type=flyer_view&flyer_ids=${it.flyer_id}&item_ids=${it.flyer_item_id}&postal_code=${POSTAL}`)
+  await page.waitForURL(/\/item\//, { timeout: 60_000 })
+  await expect(page.getByText(it.name!.slice(0, 20), { exact: false }).first()).toBeVisible({ timeout: 30_000 })
 
   // A local list in storage: the bare route shows it, the prefixed shell does not.
   const payload = flippListPayload([asPick(it, 0)])

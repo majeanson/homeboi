@@ -191,6 +191,21 @@ what left (« Envoyé à Flipp · 7 lignes — a · b · c ») so "not sent" and
 can be told apart on the phone. Photos never travel this door; that is the
 bookmark's job.
 
+**« needed to uncheck » — the real reason the deal lines stayed home:** they were
+CHECKED (in the cart / bought), and « Envoyer à Flipp » skips a checked line on
+purpose while the till still shows its tile. Not Flipp's parser after all; the
+short-name rule stays because « % » is real. The till now says it after a send:
+« … · 2 cochées restent ici (décoche pour envoyer) ». **« I see the item but no deal,
+gotta do them all manually »** — words travel by /action, a clipping with its photo
+does not (their /action has no such command: `add_text_to_list`, `landing`, `query`
+are all it accepts, and the `type=` values open pages). The batch path for deals
+WITH photos is the bookmark (five taps for the whole list, confirmed into the app
+earlier tonight). What improved per item: « Montrer Flipp » and the « Ajouter à
+Flipp · n de N » loop now go through `/action?type=flyer_view&flyer_ids=&item_ids=`
+— on the web it redirects to the same item page (live test 3), and on a phone with
+the Flipp app it is their universal-link path, so each tap opens THE APP on the
+item with its own « Ajouter à la liste ».
+
 Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
 `flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
 landing under late data), live 5/5 exercisable (4 still waits for an account).

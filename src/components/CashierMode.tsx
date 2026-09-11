@@ -108,6 +108,11 @@ export function CashierMode({
   // and on a phone with the app that path opens the app. The photos of the staged
   // deals do not travel this way — that is what « Copier pour Flipp » is for.
   const sendTerms = rows.filter((r) => !r.checked_at).map((r) => flippSendText(r.text)).filter(Boolean)
+  // A CHECKED line is "in the cart / bought" and stays home — by design, and the
+  // reason Marc's deal lines "didn't get sent" (2026-09-10): the till still shows
+  // their tiles, so the sent line says how many stayed, instead of leaving a phone
+  // to guess. Unchecking a line is the way to send it.
+  const keptChecked = rows.filter((r) => !!r.checked_at).length
   const sendUrl = flippAddTextsUrl(sendTerms, postal) ?? flippListUrl(postal)
   // After the tap, the line under the row says exactly what went (count + words):
   // Marc's phone showed fewer lines in Flipp than were sent, and the only way to
@@ -203,7 +208,7 @@ export function CashierMode({
                 {clipNext ? (
                   <a
                     className="btn cashier__clip"
-                    href={flippItemUrl(clipNext.deal.id, postal)!}
+                    href={flippItemUrl(clipNext.deal.id, postal, clipNext.deal.flyerId)!}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => markFlippClipped(clipNext.deal.id!)}
@@ -219,6 +224,7 @@ export function CashierMode({
               {sent && (
                 <p className="cashier__flipp-hint mono cashier__sent">
                   {t.shop.sentToFlipp(sendTerms.length)} — {sendTerms.join(' · ')}
+                  {keptChecked > 0 && <> · {t.shop.sentKeptChecked(keptChecked)}</>}
                 </p>
               )}
               {copyState !== 'idle' && (
@@ -340,10 +346,10 @@ export function CashierMode({
                 postal code, on purpose. « Voir la circulaire » stays the fast in-app
                 path — it opens ON the item, circled. */}
             <Cluster className="bigcard__actions">
-              {!ended && flippItemUrl(d.id, postal) && (
+              {!ended && flippItemUrl(d.id, postal, d.flyerId) && (
                 <a
                   className="btn btn--primary bigcard__flipp"
-                  href={flippItemUrl(d.id, postal)!}
+                  href={flippItemUrl(d.id, postal, d.flyerId)!}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

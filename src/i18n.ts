@@ -3309,6 +3309,8 @@ export const FR = {
     // items — and on a phone with the app, that link opens the app.
     sendToFlipp: 'Envoyer à Flipp',
     sentToFlipp: (n: number) => `Envoyé à Flipp · ${n} ligne${n > 1 ? 's' : ''}`,
+    // The checked lines stay home on purpose (in the cart / bought) — said, not guessed.
+    sentKeptChecked: (n: number) => `${n} cochée${n > 1 ? 's' : ''} reste${n > 1 ? 'nt' : ''} ici (décoche pour envoyer)`,
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
