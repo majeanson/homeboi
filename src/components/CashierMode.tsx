@@ -4,7 +4,6 @@ import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
-import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
 import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl, FLIPP_CLEAR_PAYLOAD } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
@@ -68,20 +67,6 @@ export function CashierMode({
     setPagerAt(i)
     setShown((s) => (s.has(p.itemId) ? s : new Set(s).add(p.itemId)))
   }
-  // THE FLIPP LOOP (2026-09-10). Marc: « any way to pre-create the list and then
-  // show it from flipp? » No — probed in a real browser: flipp.com's « Ajouter à la
-  // liste » writes that browser's own localStorage and makes no request, the list
-  // page reads no URL parameter, the app's list is account-synced behind an
-  // undocumented backend. Nothing on OUR origin writes a Flipp list (the one thing
-  // that can is a bookmark running on theirs — lib/flippList, below). What is easy
-  // without any setup is stepping through it with THEIR button: one tap here opens
-  // the next pick's Flipp page, one tap there adds it, come back — and « Ma liste
-  // Flipp » then shows the clippings the way Flipp shows them. Where the loop
-  // stands is remembered per device (a clipping lives in that same browser);
-  // only picks that carry a Flipp id can take part, and the whole row needs the
-  // postal code the item page needs. ONE row, no hint line: the grid is scanned
-  // at a till, and the page the step opens carries the next instruction itself.
-  const clipped = useFlippClipped()
   // AN ENDED DEAL GETS NO FLIPP DOOR. Marc, from the phone (2026-09-10): a staged
   // deal from last week's Provigo flyer opened Flipp's « This item is expired » →
   // « Circulaires de Undefined » page — a dead screen, in front of a cashier. The
@@ -108,8 +93,6 @@ export function CashierMode({
     setRefreshing(false)
     notice(t.shop.refreshed(found, dropped))
   }
-  const clipDone = clippable.filter((p) => clipped.includes(p.deal.id!)).length
-  const clipNext = clippable.find((p) => !clipped.includes(p.deal.id!))
   // « Copier pour Flipp » copies the list in Flipp's own shape, for the bookmark set
   // up in Réglages (lib/flippList): on flipp.com the bookmark pastes it straight
   // into « Ma liste ». Its own button — it was the list door's side effect for an
@@ -137,7 +120,7 @@ export function CashierMode({
   // The notice fires while the flipp.com window COVERS this page and is gone before
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'refused' | 'clear'>('idle')
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'clear'>('idle')
   // « MA LISTE → FLIPP » (2026-09-11, evening): ONE tap. The button is a LINK that
   // opens flipp.com's list page (Safari itself on iOS — flippListOpenUrl) with the
   // whole list in the URL hash, where the bookmark reads it first: no copy step, no
@@ -226,38 +209,28 @@ export function CashierMode({
           {postal && (clippable.length > 0 || terms.length > 0) && (
             <div className="cashier__flipp">
               <Cluster className="cashier__flipp-row">
-                {/* Order = reading order at 390px, where the row wraps: SHOW first (what a
-                    till is for — Flipp's own page, framed, one pick after the other), then
-                    the words door, the bookmark copy, the tap-by-tap ADD loop under it. */}
+                {/* THE FLIPP ROW, settled 2026-09-11 (evening): four doors, in reading order
+                    at 390px where the row wraps. « Montrer Flipp » — what a till is for.
+                    « Ma liste → Flipp » — the ONE sync door (the list rides in the address;
+                    the bookmark does the rest). « Envoyer à Flipp » — the words-only
+                    shortcut, no bookmark needed, ghost unless nothing is live. « Vider ma
+                    liste Flipp » — rare, ghost. The tap-by-tap « Ajouter à Flipp · n de N »
+                    loop of 2026-09-10 retired here: « Ma liste → Flipp » puts every deal with
+                    its photo in the account in one go, so a per-item loop had no job left. */}
                 {clippable.length > 0 && (
                   <button type="button" className="btn btn--primary cashier__show-flipp" onClick={() => pageTo(pagerStart)}>
                     <InlineIcon name="storefront-bold" /> {t.shop.showFlipp}
                   </button>
                 )}
-                <a className={`btn${clippable.length ? '' : ' btn--primary'} cashier__send`} href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
-                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
-                </a>
                 <a className="btn cashier__copy" href={flippListOpenUrl(postal, undefined, flippPayload)} target="_blank" rel="noopener noreferrer" onClick={copyForFlipp}>
                   <InlineIcon name="arrow-up-right-bold" /> {t.shop.toFlipp}
+                </a>
+                <a className={`btn ${clippable.length ? 'btn--ghost' : 'btn--primary'} cashier__send`} href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
+                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
                 </a>
                 <a className="btn btn--ghost cashier__clear-flipp" href={flippListOpenUrl(postal, undefined, FLIPP_CLEAR_PAYLOAD)} target="_blank" rel="noopener noreferrer" onClick={copyClear}>
                   <InlineIcon name="trash-bold" /> {t.shop.flippClearList}
                 </a>
-                {clipNext ? (
-                  <a
-                    className="btn cashier__clip"
-                    href={flippItemUrl(clipNext.deal.id, postal)!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => markFlippClipped(clipNext.deal.id!)}
-                  >
-                    <InlineIcon name="arrow-up-right-bold" /> {t.shop.clipNext(clipDone + 1, clippable.length)}
-                  </a>
-                ) : clippable.length > 0 ? (
-                  <button type="button" className="btn btn--ghost cashier__clip-reset" onClick={resetFlippClipped}>
-                    <InlineIcon name="arrow-counter-clockwise-bold" /> {t.shop.clipAgain}
-                  </button>
-                ) : null /* nothing live to step through (every deal ended) — no loop, no restart; the list door alone */}
               </Cluster>
               {sent && (
                 <p className="cashier__flipp-hint mono cashier__sent">
@@ -267,14 +240,12 @@ export function CashierMode({
               )}
               {copyState !== 'idle' && (
                 <p className="cashier__flipp-hint mono">
-                  {copyState === 'copied' ? t.shop.flippCopied : copyState === 'clear' ? t.shop.flippClearCopied : t.shop.flippCopyRefused}{' '}
+                  {copyState === 'clear' ? t.shop.flippClearCopied : t.shop.flippCopied}{' '}
                   {/* The same door again, list included, for a window that did not open
                       (a blocked popup, a phone that ignored the Safari scheme). */}
-                  {copyState !== 'refused' && (
-                    <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal, undefined, copyState === 'clear' ? FLIPP_CLEAR_PAYLOAD : flippPayload)} target="_blank" rel="noopener noreferrer">
-                      <InlineIcon name="arrow-up-right-bold" /> {t.shop.openFlipp}
-                    </a>
-                  )}{' '}
+                  <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal, undefined, copyState === 'clear' ? FLIPP_CLEAR_PAYLOAD : flippPayload)} target="_blank" rel="noopener noreferrer">
+                    <InlineIcon name="arrow-up-right-bold" /> {t.shop.openFlipp}
+                  </a>{' '}
                   {/* The whole walkthrough is one Réglages card away (DISCOVERY: ?focus= names the card). */}
                   <Chip to="/settings?tab=liste&focus=flipp">{t.shop.flippHow}</Chip>
                 </p>

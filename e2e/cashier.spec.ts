@@ -107,13 +107,11 @@ async function openGrid(
     viewport?: { width: number; height: number }
     longText?: boolean
     guest?: boolean
-    /** Flipp ids already opened by the loop on this device (see the Flipp loop tests). */
-    clipped?: number[]
     /** Every staged deal from a PAST flyer — the list a household forgot for a week. */
     allEnded?: boolean
   } = {},
 ) {
-  const { theme = 'day', surface = 'mobile', viewport = PHONE, longText = false, guest = false, clipped, allEnded = false } = opts
+  const { theme = 'day', surface = 'mobile', viewport = PHONE, longText = false, guest = false, allEnded = false } = opts
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(viewport)
   await mockApi(page, { longText })
@@ -124,7 +122,6 @@ async function openGrid(
   )
   await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface })
   if (guest) await page.addInitScript(() => localStorage.setItem('babillard-guest-preview', '1'))
-  if (clipped) await page.addInitScript((ids) => localStorage.setItem('babillard-flipp-clipped', JSON.stringify(ids)), clipped)
   await page.goto('/liste')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
@@ -323,44 +320,9 @@ test('without a postal code the Flipp door does not render at all', async ({ pag
 // it from flipp? ». Probed in a real browser: no. flipp.com's « Ajouter à la liste »
 // writes that browser's OWN localStorage (`shopping_list`) and makes no request; the
 // list page `/fr-ca/liste_dachats` ignores every URL param tried; the app's list is
-// account-synced behind an undocumented backend. So the grid steps through the picks
-// with Flipp's own button — one tap opens the NEXT pick's item page — and where the
-// loop stands is remembered per device (a clipping lives in that same browser).
-// The popup would load the real flipp.com: it is stubbed, the loop is what's tested.
+// The doors open the real flipp.com in a popup: it is stubbed, the door is what's tested.
 const stubFlipp = (page: Page) =>
   page.context().route('https://flipp.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>flipp</title>' }))
-
-test('the Flipp loop: one tap opens the next pick, and the step survives a reload', async ({ page }) => {
-  await stubFlipp(page)
-  await openGrid(page) // four picks, Flipp ids 101..104; household postal 'H2X 1Y4'
-  const step = page.locator('a.cashier__clip')
-  await expect(step).toHaveText(/1 de 3/) // four picks, one ended — it is not in the loop
-  await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
-  await expect(step).toHaveAttribute('target', '_blank')
-  // « Envoyer à Flipp » beside it: ONE link that adds every unchecked line as a typed
-  // item through flipp.com/action (verified live 2026-09-10) — the till's five lines
-  // here, the ended « Couches » included, the checked « Beurre » not.
-  const send = page.locator('a.cashier__send')
-  await expect(send).toHaveAttribute('href', 'https://flipp.com/action?command=add_text_to_list&texts=Lait%2CPain%2CPommes%2CCouches%2COeufs&postal_code=H2X%201Y4')
-  await expect(send).toHaveAttribute('target', '_blank')
-  await expectNoOverflow(page)
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
-  await popup.close()
-  await expect(step).toHaveText(/2 de 3/)
-  await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/102?postal_code=H2X%201Y4')
-  // Come back tomorrow, same phone: the loop is where it was left.
-  await page.reload()
-  await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await expect(page.locator('a.cashier__clip')).toHaveText(/2 de 3/)
-})
-
-test('every pick on the list → the list door leads, and « Reprendre du début » restarts', async ({ page }) => {
-  await openGrid(page, { clipped: [101, 102, 103] })
-  await expect(page.locator('a.cashier__clip')).toHaveCount(0)
-  await expect(page.locator('a.cashier__copy')).toBeVisible()
-  await page.getByRole('button', { name: /Reprendre du début/ }).click()
-  await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 3/)
-})
 
 // « MA LISTE FLIPP » ALSO COPIES THE PICKS — for the bookmark (lib/flippList) that
 // pastes them into Flipp's own list on flipp.com. Read back from the clipboard: the
@@ -418,14 +380,18 @@ test('an ended deal: the tile says so, the card swaps the dates for the word, an
 // my liste flipp ». Right: nothing is live, so there is no loop — and therefore no
 // « Reprendre du début » either (it shipped showing one, a restart of nothing). The
 // list door stands alone, primary, and still carries the whole list as typed items.
-test('every deal ended: no loop, no restart — the list door alone, still carrying the list', async ({ page }) => {
+test('every deal ended: « Envoyer à Flipp » leads, and « Ma liste → Flipp » still carries the list as words', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await stubFlipp(page)
   await openGrid(page, { allEnded: true })
   await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(4)
-  await expect(page.locator('a.cashier__clip')).toHaveCount(0)
-  await expect(page.locator('.cashier__clip-reset')).toHaveCount(0)
-  await expect(page.locator('a.cashier__send')).toBeVisible()
+  // « Envoyer à Flipp » leads when nothing is live: ONE link that adds every unchecked
+  // line as a typed item through flipp.com/action (verified live 2026-09-10) — the
+  // till's five lines here, the ended « Couches » included, the checked « Beurre » not.
+  const send = page.locator('a.cashier__send')
+  await expect(send).toBeVisible()
+  await expect(send).toHaveClass(/btn--primary/)
+  await expect(send).toHaveAttribute('href', 'https://flipp.com/action?command=add_text_to_list&texts=Lait%2CPain%2CPommes%2CCouches%2COeufs&postal_code=H2X%201Y4')
   const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
   await popup.close()
   const payload = JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as { clippings: unknown[]; items: { term: string }[] }

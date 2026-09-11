@@ -255,6 +255,17 @@ English »; choosing re-stages every deal on the list through the till's own ref
 (`refreshEndedDeals` over the staged rows — the ids change with the language) and says
 how many. The how-to's first step now says to set it. Guard: `flippLang.test.ts`.
 
+**« Reframe the whole Flipp UI/UX now that it works — simpler, more direct — and we
+conclude » (2026-09-11, night).** Cut, not added. The tap-by-tap « Ajouter à Flipp · n de
+N » loop (+ « Reprendre du début », `lib/flippClipped`, its two e2e tests, its four i18n
+keys) is gone: « Ma liste → Flipp » puts every deal with its photo in the account in one
+go, so a per-item loop had no job left. The till's Flipp row is four doors in reading
+order — **Montrer Flipp** (show) · **Ma liste → Flipp** (sync) · **Envoyer à Flipp** (words,
+ghost unless nothing is live) · **Vider ma liste Flipp** (rare, ghost) — and its notice
+lines say one thing each. The dead « refused » copy state and its text went with the
+button it belonged to. The language hint in Réglages is two sentences. ACTIONS.md's till
+row is written once, top to bottom, instead of grown by accretion. Concluded here.
+
 **« Any other ideas to make this simpler or flawless for iOS? »** (2026-09-11, evening) —
 two, both shipped. **(1) The list rides in the address.** « Copier pour Flipp » became
 « Ma liste → Flipp », a LINK: it opens flipp.com/liste_dachats`#bb=<base64url list>` (Safari

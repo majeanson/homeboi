@@ -2515,7 +2515,7 @@ export const FR = {
     // The Flipp APP's language (2026-09-11): Flipp publishes each flyer once per
     // language with different ids; its app only recognizes a clipping from its own.
     flippLangLabel: 'Langue de ton app Flipp',
-    flippLangHint: 'Flipp existe en français et en anglais, et ses rabais n’ont pas les mêmes numéros dans les deux. Choisis la langue de TON app Flipp — sinon elle affiche tes rabais « non disponibles ».',
+    flippLangHint: 'Flipp existe en français et en anglais, et ses rabais n’ont pas les mêmes numéros dans les deux. Mets la langue de ton app Flipp — sinon elle affiche tes rabais « non disponibles ».',
     flippLangFr: 'Français',
     flippLangEn: 'English',
     flippLangRestaging: 'Langue enregistrée — je rebascule les rabais de ta liste…',
@@ -3324,9 +3324,6 @@ export const FR = {
     // finite loop — where it stands — never a score.
     // Short on purpose: both doors share one line above the grid at 390px, and the
     // page this opens explains the next tap itself (its own « Ajouter à la liste »).
-    clipNext: (n: number, total: number) => `Ajouter à Flipp · ${n} de ${total}`,
-    clipAgain: 'Reprendre du début',
-    flippList: 'Ma liste Flipp',
     copyForFlipp: 'Copier pour Flipp',
     // ONE tap (2026-09-11, evening): the list rides in the address the door opens.
     toFlipp: 'Ma liste → Flipp',
@@ -3339,14 +3336,13 @@ export const FR = {
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
-    flippCopied: 'Liste prête ✓ — dans Safari, lance le signet « Coller de Babillard » : il trouve ta liste tout seul et t’offre « Remplacer » ou « Ajouter ».',
+    flippCopied: 'Liste prête ✓ — dans Safari, lance « Coller de Babillard », puis « Remplacer ».',
     // « Vider ma liste Flipp » (2026-09-11): the till copies a CLEAR request; the
     // bookmark, on flipp.com, asks before emptying the list (account or local).
     flippClearList: 'Vider ma liste Flipp',
-    flippClearCopied: 'Vidage prêt ✓ — dans Safari, lance le signet « Coller de Babillard » : il te demandera de confirmer avant de vider.',
+    flippClearCopied: 'Vidage prêt ✓ — dans Safari, lance « Coller de Babillard » : il demande avant de vider.',
     openFlipp: 'Ouvrir flipp.com',
     flippHow: 'Comment ça marche',
-    flippCopyRefused: 'La fenêtre ne s’est pas ouverte — touche « Ouvrir flipp.com » ci-dessous.',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',
