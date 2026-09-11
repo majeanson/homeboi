@@ -235,6 +235,26 @@ still goes as a word. Both paths, before anything is written; tested with a fake
 endpoint (a hit clips with the fetched box and cutout; a miss is a word). `diag` stays in the bookmark: it is the
 cheapest way to read the account when the phone is the only device at hand.
 
+**« Deals show up as unavailable — but really they exist » (2026-09-11, evening) — the
+LANGUAGE.** Read on Marc's own account over CDP, with a perfect control he supplied (« I
+added the same cucumbers twice »): the app's row and ours are the same product, same box,
+same picture — and different ids: flyer 8123488 / item 1038553558 (app) vs 8123487 /
+1038553557 (ours). Provigo was +1, Metro +3, so not an offset. Not the store either: both
+variants name the same nearby store. Not `quantity` (a control row with `quantity: 1`
+stayed Unavailable). Not the server (a row written by Flipp's own web button was
+Unavailable too). **Flipp publishes every flyer once per language**, and `flyers?locale=
+en-ca` returns exactly the app's ids (Provigo 8123488, Metro 8123057) where `fr-ca`
+returns ours. Marc's Babillard is French; his Flipp app is English; the app only vouches
+for a clipping from its own language's flyer. **Fix:** a `flippLang` household
+preference (`household_preferences`, key `flippLang` — no new column, DB-6) that every
+Flipp lookup honours ahead of the UI language (deals search, flyers list, one flyer's
+items — `functions/_lib/flippLang.ts`, `resolveFlippLang`: explicit `?lang` → the pref
+→ the UI language; the AI sniper keeps the UI language, it writes words not ids). In
+Réglages ▸ La liste ▸ Magasinage, under the postal: « Langue de ton app Flipp · Français /
+English »; choosing re-stages every deal on the list through the till's own refresh
+(`refreshEndedDeals` over the staged rows — the ids change with the language) and says
+how many. The how-to's first step now says to set it. Guard: `flippLang.test.ts`.
+
 **« Can 1 and 2 be streamlined? »** — yes, into one question. The paste asks, on
 flipp.com: **OK = REPLACE** the Flipp list with Babillard's (signed in: a `delete` op per
 existing row + every payload row, ONE PUT; signed out: the local list becomes the payload)

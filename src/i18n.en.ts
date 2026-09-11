@@ -2236,6 +2236,14 @@ export const EN: typeof FR = {
     aiLearnMore: 'Learn more about AI',
     shopping: 'Shopping',
     shopHint: 'Your postal code finds flyers near you (price-match proof at the till).',
+    flippLangLabel: 'Your Flipp app’s language',
+    flippLangHint:
+      'Flipp publishes each flyer in two versions, French and English, under different ids — and the Flipp app only recognizes a deal from ITS language’s version (otherwise: “Unavailable”). Pick your app’s language: Babillard will search deals in that version.',
+    flippLangFr: 'French',
+    flippLangEn: 'English',
+    flippLangRestaging: 'Language saved — re-picking the deals on your list…',
+    flippLangSaved: (found: number, dropped: number) =>
+      `Flipp language saved · ${found} deal${found > 1 ? 's' : ''} re-picked${dropped ? ` · ${dropped} with no deal this week` : ''}`,
     postalLabel: 'Postal code',
     postalPlaceholder: 'H2X 1Y4',
     postalSaved: 'Saved.',
@@ -2245,6 +2253,7 @@ export const EN: typeof FR = {
     flippIntro:
       'Two ways to hand your list to Flipp. Simplest, at the till: “Send to Flipp” — one tap, your list as WORDS lands in the Flipp app. For deals WITH their photo, it’s the bookmark below: signed in on flipp.com, it writes straight into your account list — the one the Flipp app shows — and asks one thing: replace your Flipp list, or add to it.',
     flippOnceTitle: 'Once',
+    flippOnce0: 'Just above, under Shopping, pick your Flipp app’s language (French or English) — without it, the app marks your deals “Unavailable”.',
     flippOnce1: 'Tap “Copy the bookmark” below.',
     flippOnce2: 'Open Safari (or Chrome) — not the window that opens from Babillard — and go to flipp.com. Share ▸ “Add Bookmark”, name it “Paste from Babillard”.',
     flippOnce3: 'Bookmarks ▸ Edit ▸ tap “Paste from Babillard” ▸ clear the address and paste what you copied (it starts with javascript:). Done.',

@@ -1,4 +1,5 @@
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { computeUnitPrice, type UnitKind } from '../_lib/unitprice'
@@ -98,7 +99,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const url = new URL(ctx.request.url)
   const id = url.searchParams.get('id')?.trim()
   const postalRaw = url.searchParams.get('postal')?.trim()
-  const lang = url.searchParams.get('lang') === 'en' ? 'en' : 'fr'
+  // The Flipp-app language ahead of the default (functions/_lib/flippLang.ts): a
+  // flyer opened from a staged deal must be the SAME flyer object the deal came from.
+  const lang = resolveFlippLang(url.searchParams.get('lang'), await householdFlippLang(ctx.env, actor.householdId), 'fr')
 
   if (!id || !/^\d+$/.test(id)) return badRequest('id de circulaire requis.')
 

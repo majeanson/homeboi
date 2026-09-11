@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
+import { cleanFlippLang, householdFlippLang, setHouseholdFlippLang } from '../_lib/flippLang'
 import { householdIncludedStores, householdCashierExcludedStores, storeKey } from '../_lib/stores'
 import { householdMealSlotPrefs, cleanColors, cleanHidden, setHouseholdMealLayout } from '../_lib/mealSlots'
 import { householdMeasureColors, cleanMeasureColors } from '../_lib/measureColors'
@@ -54,6 +55,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   return ok({
     name,
     postal,
+    flippLang: await householdFlippLang(ctx.env, actor.householdId),
     includedStores,
     cashierExcludedStores,
     mealColors: meals.colors,
@@ -96,6 +98,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     houseRules?: string | null
     binDay?: string | null
     schoolYear?: unknown // { firstDay, lastDay, breaks: [{from,to,label?}] } | null (null clears)
+    flippLang?: unknown // 'fr' | 'en' — the Flipp APP's language (its flyer ids); null clears
   }>(ctx.request)
 
   // Household name: trimmed + capped at 60 (like signup). Blank is ignored — the
@@ -106,6 +109,18 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ? WHERE id = ?')
       .bind(name, nowSec(), actor.householdId)
       .run()
+  }
+
+  // The Flipp app's language — which flyer ids every Flipp lookup stages
+  // (functions/_lib/flippLang.ts). null clears back to "follow the UI language".
+  if (body && 'flippLang' in body) {
+    if (body.flippLang == null) {
+      await setHouseholdFlippLang(ctx.env, actor.householdId, null)
+    } else {
+      const lang = cleanFlippLang(body.flippLang)
+      if (!lang) return badRequest('Langue Flipp invalide (fr ou en).')
+      await setHouseholdFlippLang(ctx.env, actor.householdId, lang)
+    }
   }
 
   // Each field is only touched when its key is present, so the postal form and
@@ -300,6 +315,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   return ok({
     name,
     postal,
+    flippLang: await householdFlippLang(ctx.env, actor.householdId),
     includedStores,
     cashierExcludedStores,
     mealColors: meals.colors,

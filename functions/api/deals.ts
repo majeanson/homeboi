@@ -1,4 +1,5 @@
 import type { Env } from '../_lib/env'
+import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
@@ -105,7 +106,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Explicit ?lang wins; otherwise honour the X-Lang header the client sends on
   // every call (so an EN household gets en-ca flyer results, not fr-ca).
   const qlang = url.searchParams.get('lang')
-  const lang = qlang === 'en' || qlang === 'fr' ? qlang : resolveLang(ctx.env, ctx.request)
+  const uiLang = qlang === 'en' || qlang === 'fr' ? qlang : resolveLang(ctx.env, ctx.request)
+  // The FLIPP language, not the UI language: Flipp publishes every flyer once per
+  // language with different ids, and the Flipp app only recognizes a clipping from
+  // its own language's flyer (functions/_lib/flippLang.ts). The AI sniper below still
+  // speaks the UI language — it writes text for the household, not ids for Flipp.
+  const lang = resolveFlippLang(qlang, await householdFlippLang(ctx.env, actor.householdId), uiLang)
 
   if (!q) return badRequest('q requis.')
   // Search by the bare item word ("2 œufs" → "Œufs", "15 ml de beurre" → "Beurre")
@@ -198,7 +204,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // The AI size-sniper only runs when AI is on (binding present AND the household
   // hasn't switched it off) — otherwise deals just show without the ≈ unit price.
-  if (await aiUsable(ctx.env, actor)) await sniperFill(ctx.env, deals, lang)
+  if (await aiUsable(ctx.env, actor)) await sniperFill(ctx.env, deals, uiLang)
   sortBestFirst(deals)
   return ok({ query: q, postal, count: deals.length, deals })
 })

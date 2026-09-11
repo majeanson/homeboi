@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useLang, useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useUndoToast } from '../../lib/toast'
-import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
+import { refreshEndedDeals, type ListItem } from '../../lib/picks'
+import { useNotice } from '../../lib/toast'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
 import { Icon, InlineIcon } from '../Icon'
 import { EditField } from '../EditField'
-import { Chip } from '../Chip'
+import { Chip, ChipGroup } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { Cluster } from '../Layout'
@@ -24,15 +26,49 @@ import { Disclosure } from '../Disclosure'
 // price-match proof on the list knows where to search. Set once, used every trip.
 export function ShopSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const { lang: uiLang } = useLang()
   const write = useWrite()
+  const qc = useQueryClient()
+  const notice = useNotice()
   const [postal, setPostal] = useState('')
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
+  // THE FLIPP APP'S LANGUAGE (2026-09-11). Flipp publishes every flyer once per
+  // language, with different ids for the same product; its app only recognizes a
+  // clipping from ITS language's flyer. Marc's Babillard is French, his Flipp app is
+  // English, and every pasted deal read « Unavailable » until this was found (read on
+  // his own account: two identical cucumbers, ids one apart). Unset = the UI language.
+  const [flippLang, setFlippLang] = useState<'fr' | 'en' | null>(null)
+  const [restaging, setRestaging] = useState(false)
 
   useEffect(() => {
-    api<{ postal: string | null }>('household')
-      .then((r) => setPostal(r.postal ?? ''))
+    api<{ postal: string | null; flippLang?: 'fr' | 'en' | null }>('household')
+      .then((r) => {
+        setPostal(r.postal ?? '')
+        setFlippLang(r.flippLang ?? null)
+      })
       .catch(() => {})
   }, [])
+
+  // Save the language, then RE-STAGE every deal on the list: the ids it carries
+  // belong to the old language's flyers, so the same lookup the till's « rabais
+  // terminés » refresh runs re-picks each line in the new one (lib/picks).
+  async function chooseFlippLang(next: 'fr' | 'en') {
+    if (restaging) return
+    setFlippLang(next)
+    setRestaging(true)
+    try {
+      await write('household', { method: 'PATCH', body: { flippLang: next }, affectedKeys: [HOUSEHOLD_KEY, FLYERS_KEY] })
+      const board = await api<{ list: ListItem[] }>('board')
+      const staged = (board.list ?? []).filter((r) => r.deal_json && !r.checked_at)
+      const { found, dropped } = staged.length ? await refreshEndedDeals(qc, staged) : { found: 0, dropped: 0 }
+      await qc.invalidateQueries({ queryKey: BOARD_KEY })
+      notice(t.operator.flippLangSaved(found, dropped))
+    } catch {
+      setStatus('bad')
+    } finally {
+      setRestaging(false)
+    }
+  }
 
   async function save() {
     setStatus('idle')
@@ -70,6 +106,20 @@ export function ShopSection({ help }: { help?: HelpMode }) {
       )}
       {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
       {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      {!isGuest() && (
+        <>
+          <p className="operator__hint">{t.operator.flippLangHint}</p>
+          <ChipGroup label={t.operator.flippLangLabel}>
+            <Chip selected={(flippLang ?? uiLang) === 'fr'} onClick={() => chooseFlippLang('fr')}>
+              {t.operator.flippLangFr}
+            </Chip>
+            <Chip selected={(flippLang ?? uiLang) === 'en'} onClick={() => chooseFlippLang('en')}>
+              {t.operator.flippLangEn}
+            </Chip>
+          </ChipGroup>
+          {restaging && <StatusMessage tone="info">{t.operator.flippLangRestaging}</StatusMessage>}
+        </>
+      )}
     </OperatorSection>
   )
 }
@@ -629,6 +679,7 @@ export function FlippSection({ help }: { help?: HelpMode }) {
           exactly this on an iPhone on 2026-09-10 and the list landed in the Flipp app. */}
       <h4 className="flipp__phase">{t.operator.flippOnceTitle}</h4>
       <ol className="operator__steps">
+        <li>{t.operator.flippOnce0}</li>
         <li>
           {t.operator.flippOnce1}
           <Cluster>

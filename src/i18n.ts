@@ -2511,6 +2511,16 @@ export const FR = {
     postalPlaceholder: 'H2X 1Y4',
     postalSaved: 'Enregistré.',
     postalBad: 'Code postal invalide.',
+    // The Flipp APP's language (2026-09-11): Flipp publishes each flyer once per
+    // language with different ids; its app only recognizes a clipping from its own.
+    flippLangLabel: 'Langue de ton app Flipp',
+    flippLangHint:
+      'Flipp publie chaque circulaire en deux versions, française et anglaise, sous des numéros différents — et l’app Flipp ne reconnaît un rabais que dans la version de SA langue (sinon : « non disponible »). Choisis la langue de ton app : Babillard cherchera les rabais dans cette version.',
+    flippLangFr: 'Français',
+    flippLangEn: 'English',
+    flippLangRestaging: 'Langue enregistrée — je rebascule les rabais de ta liste…',
+    flippLangSaved: (found: number, dropped: number) =>
+      `Langue Flipp enregistrée · ${found} rabais rebasculé${found > 1 ? 's' : ''}${dropped ? ` · ${dropped} sans rabais cette semaine` : ''}`,
     storeFilter: 'Mes magasins',
     // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
     flippTitle: 'Ma liste Flipp',
@@ -2519,6 +2529,7 @@ export const FR = {
     // The walkthrough, in the words a household reads on the phone (Marc did the
     // whole loop on an iPhone on 2026-09-10 and the list landed in the Flipp app).
     flippOnceTitle: 'Une seule fois',
+    flippOnce0: 'Juste au-dessus, dans Magasinage, choisis la langue de ton app Flipp (français ou anglais) — sans ça, l’app marque tes rabais « non disponibles ».',
     flippOnce1: 'Touche « Copier le signet » ci-dessous.',
     flippOnce2: 'Ouvre Safari (ou Chrome) — pas la fenêtre qui s’ouvre depuis Babillard — et va sur flipp.com. Partage ▸ « Ajouter un signet », nomme-le « Coller de Babillard ».',
     flippOnce3: 'Signets ▸ Modifier ▸ touche « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié (elle commence par javascript:). Terminé.',

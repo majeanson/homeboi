@@ -1,4 +1,5 @@
 import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, storeKey } from '../_lib/stores'
@@ -51,7 +52,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // operator can toggle them. The normal feed drops non-included stores entirely.
   const manage = url.searchParams.get('manage') === '1'
   const qlang = url.searchParams.get('lang')
-  const lang = qlang === 'en' || qlang === 'fr' ? qlang : resolveLang(ctx.env, ctx.request)
+  // The Flipp-app language ahead of the UI language — the flyer ids differ per
+  // language, and the app only knows its own (functions/_lib/flippLang.ts).
+  const lang = resolveFlippLang(qlang, await householdFlippLang(ctx.env, actor.householdId), resolveLang(ctx.env, ctx.request))
 
   let postal: string | null = null
   if (postalRaw) {
