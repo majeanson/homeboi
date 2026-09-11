@@ -138,14 +138,16 @@ export function CashierMode({
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'refused' | 'clear'>('idle')
+  // « MA LISTE → FLIPP » (2026-09-11, evening): ONE tap. The button is a LINK that
+  // opens flipp.com's list page (Safari itself on iOS — flippListOpenUrl) with the
+  // whole list in the URL hash, where the bookmark reads it first: no copy step, no
+  // clipboard permission bubble. The clipboard still gets the list as a side effect
+  // (best effort — it is the fallback the bookmark's menu offers), and the line under
+  // the row says what to do next, because the notice fires under the Safari window.
+  const flippPayload = flippListPayload(clippable, terms)
   const copyForFlipp = () => {
-    navigator.clipboard
-      ?.writeText(flippListPayload(clippable, terms))
-      .then(() => {
-        setCopyState('copied')
-        notice(t.shop.flippCopied)
-      })
-      .catch(() => setCopyState('refused'))
+    setCopyState('copied')
+    navigator.clipboard?.writeText(flippPayload).catch(() => {})
   }
   // « VIDER MA LISTE FLIPP » (2026-09-11). Marc: « keep the delete all list ». It was
   // the linked account's button; the link is gone, and the one place code can still
@@ -155,13 +157,8 @@ export function CashierMode({
   // when signed in, the local one otherwise — lib/flippList). Nothing of the
   // household's is written here, so a guest may use it too.
   const copyClear = () => {
-    navigator.clipboard
-      ?.writeText(FLIPP_CLEAR_PAYLOAD)
-      .then(() => {
-        setCopyState('clear')
-        notice(t.shop.flippClearCopied)
-      })
-      .catch(() => setCopyState('refused'))
+    setCopyState('clear')
+    navigator.clipboard?.writeText(FLIPP_CLEAR_PAYLOAD).catch(() => {})
   }
 
   // Opened at home on wifi → warm each pick's flyer + clipping images so the
@@ -240,12 +237,12 @@ export function CashierMode({
                 <a className={`btn${clippable.length ? '' : ' btn--primary'} cashier__send`} href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
                   <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
                 </a>
-                <button type="button" className="btn cashier__copy" onClick={copyForFlipp}>
-                  <InlineIcon name="check-bold" /> {t.shop.copyForFlipp}
-                </button>
-                <button type="button" className="btn btn--ghost cashier__clear-flipp" onClick={copyClear}>
+                <a className="btn cashier__copy" href={flippListOpenUrl(postal, undefined, flippPayload)} target="_blank" rel="noopener noreferrer" onClick={copyForFlipp}>
+                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.toFlipp}
+                </a>
+                <a className="btn btn--ghost cashier__clear-flipp" href={flippListOpenUrl(postal, undefined, FLIPP_CLEAR_PAYLOAD)} target="_blank" rel="noopener noreferrer" onClick={copyClear}>
                   <InlineIcon name="trash-bold" /> {t.shop.flippClearList}
-                </button>
+                </a>
                 {clipNext ? (
                   <a
                     className="btn cashier__clip"
@@ -271,10 +268,10 @@ export function CashierMode({
               {copyState !== 'idle' && (
                 <p className="cashier__flipp-hint mono">
                   {copyState === 'copied' ? t.shop.flippCopied : copyState === 'clear' ? t.shop.flippClearCopied : t.shop.flippCopyRefused}{' '}
-                  {/* Copied → the next step is on flipp.com, in a browser that HAS the
-                      bookmark: Safari itself on iOS (lib/flippList flippListOpenUrl). */}
+                  {/* The same door again, list included, for a window that did not open
+                      (a blocked popup, a phone that ignored the Safari scheme). */}
                   {copyState !== 'refused' && (
-                    <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal)} target="_blank" rel="noopener noreferrer">
+                    <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal, undefined, copyState === 'clear' ? FLIPP_CLEAR_PAYLOAD : flippPayload)} target="_blank" rel="noopener noreferrer">
                       <InlineIcon name="arrow-up-right-bold" /> {t.shop.openFlipp}
                     </a>
                   )}{' '}

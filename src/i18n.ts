@@ -2534,8 +2534,8 @@ export const FR = {
     flippOnce3: 'Toujours sur flipp.com : Partage ▸ « Ajouter un signet », nomme-le « Coller de Babillard ».',
     flippOnce4: 'Signets ▸ Modifier ▸ « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié. C’est fait pour toujours.',
     flippEachTitle: 'À chaque épicerie',
-    flippEach1: 'Dans Babillard : « Montrer à la caisse » ▸ « Copier pour Flipp » ▸ « Ouvrir flipp.com ».',
-    flippEach2: 'Sur flipp.com : lance le signet « Coller de Babillard » ▸ « Coller ma liste Babillard » (Safari demande la permission de coller : accepte) ▸ « Remplacer ma liste Flipp ».',
+    flippEach1: 'Dans Babillard : « Montrer à la caisse » ▸ « Ma liste → Flipp ». Safari s’ouvre sur flipp.com, ta liste dans l’adresse.',
+    flippEach2: 'Lance le signet « Coller de Babillard » ▸ « Remplacer ma liste Flipp ». Rien à coller : il trouve ta liste tout seul.',
     flippEach3: 'C’est synchronisé : ta liste est dans ton compte Flipp, rabais avec photos par magasin. L’app Flipp la montre — quitte-la et rouvre-la si elle tarde.',
     flippWhat: 'Pressé ? « Envoyer à Flipp » sur la caisse envoie ta liste en mots, sans signet — mais sans les rabais. Ce que Flipp reçoit avec le signet : tes rabais avec leur photo, par magasin, le reste en articles, rien de ce qui est coché.',
     // The way back, and the other phones.
@@ -2546,8 +2546,8 @@ export const FR = {
     flippTipsTitle: 'Plus pratique',
     flippTip1: 'Mets « Coller de Babillard » dans tes Favoris Safari : sur flipp.com, touche la barre d’adresse, il est là — un tap.',
     flippTip2: 'Ou tape « Coller » dans la barre d’adresse : Safari le propose.',
-    flippTip3: 'Sans liste copiée, le signet propose aussi « Vider ma liste Flipp » (il demande d’abord) et « Rapporter Flipp → Babillard ».',
-    flippTip4: 'Tu n’as jamais à refaire le signet : il se met à jour tout seul.',
+    flippTip3: 'Lancé ailleurs que depuis Babillard, le signet propose « Coller ma liste Babillard » (Safari demande la permission de coller : accepte), « Vider ma liste Flipp » et « Rapporter Flipp → Babillard ».',
+    flippTip4: 'Si l’app Flipp marque tes rabais « non disponibles », le signet te le dit et pointe le réglage de langue. Tu n’as jamais à refaire le signet : il se met à jour tout seul.',
     flippOtherTitle: 'Autres chemins',
     flippAndroid: 'Android (Chrome) : ajoute n’importe quelle page aux favoris, modifie-la (nom « Coller de Babillard », adresse = le signet copié). Pour la lancer sur flipp.com, tape « Coller » dans la barre d’adresse et choisis le favori.',
     flippShortcut: 'iPhone, sans toucher aux signets : l’app Raccourcis ▸ nouveau raccourci ▸ « Exécuter JavaScript sur la page web » ▸ colle le code du signet sans le « javascript: » du début ▸ active « Afficher dans la feuille de partage ». Sur flipp.com : Partager ▸ ton raccourci.',
@@ -3328,6 +3328,8 @@ export const FR = {
     clipAgain: 'Reprendre du début',
     flippList: 'Ma liste Flipp',
     copyForFlipp: 'Copier pour Flipp',
+    // ONE tap (2026-09-11, evening): the list rides in the address the door opens.
+    toFlipp: 'Ma liste → Flipp',
     // The one-tap door (2026-09-10): flipp.com/action adds the list's lines as typed
     // items — and on a phone with the app, that link opens the app.
     sendToFlipp: 'Envoyer à Flipp',
@@ -3337,14 +3339,14 @@ export const FR = {
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
-    flippCopied: 'Liste copiée ✓ — sur flipp.com, lance le signet « Coller de Babillard » : il t’offre « Remplacer » ou « Ajouter ».',
+    flippCopied: 'Liste prête ✓ — dans Safari, lance le signet « Coller de Babillard » : il trouve ta liste tout seul et t’offre « Remplacer » ou « Ajouter ».',
     // « Vider ma liste Flipp » (2026-09-11): the till copies a CLEAR request; the
     // bookmark, on flipp.com, asks before emptying the list (account or local).
     flippClearList: 'Vider ma liste Flipp',
-    flippClearCopied: 'Vidage copié ✓ — sur flipp.com, lance le signet « Coller de Babillard » : il te demandera de confirmer avant de vider.',
+    flippClearCopied: 'Vidage prêt ✓ — dans Safari, lance le signet « Coller de Babillard » : il te demandera de confirmer avant de vider.',
     openFlipp: 'Ouvrir flipp.com',
     flippHow: 'Comment ça marche',
-    flippCopyRefused: 'Le téléphone a refusé la copie — reviens ici et touche « Ma liste Flipp » de nouveau.',
+    flippCopyRefused: 'La fenêtre ne s’est pas ouverte — touche « Ouvrir flipp.com » ci-dessous.',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',

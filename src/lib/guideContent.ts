@@ -1794,8 +1794,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Ta liste dans Flipp', en: 'Your list in Flipp' },
         detail: {
-          fr: 'Babillard garde ta liste ; Flipp la montre à la caisse. Une mise en place (la langue de ton app Flipp + un signet), puis trois taps par épicerie — « Copier pour Flipp » ▸ le signet sur flipp.com ▸ « Remplacer ma liste Flipp » — les étapes sont dans Réglages ▸ La liste ▸ Magasinage.',
-          en: 'Babillard keeps your list; Flipp shows it at the till. A one-time setup (your Flipp app’s language + a bookmark), then three taps per trip — “Copy for Flipp” ▸ the bookmark on flipp.com ▸ “Replace my Flipp list” — the steps are in Settings ▸ The list ▸ Shopping.',
+          fr: 'Babillard garde ta liste ; Flipp la montre à la caisse. Une mise en place (la langue de ton app Flipp + un signet), puis trois taps par épicerie — « Ma liste → Flipp » ▸ le signet sur flipp.com ▸ « Remplacer ma liste Flipp » — les étapes sont dans Réglages ▸ La liste ▸ Magasinage.',
+          en: 'Babillard keeps your list; Flipp shows it at the till. A one-time setup (your Flipp app’s language + a bookmark), then three taps per trip — “My list → Flipp” ▸ the bookmark on flipp.com ▸ “Replace my Flipp list” — the steps are in Settings ▸ The list ▸ Shopping.',
         },
         why: {
           fr: 'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Les rabais choisis arrivent avec leur photo, par magasin ; le reste de la liste en articles ; rien de ce qui est coché.',

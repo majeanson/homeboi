@@ -21,8 +21,8 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~148k lines across 853 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 123 forward-only migrations |
-| **Tests** | 1987 unit tests in 156 files · 126 Playwright spec files |
+| **Schema** | 126 forward-only migrations |
+| **Tests** | 2209 unit tests in 170 files · 142 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -254,6 +254,22 @@ Réglages ▸ La liste ▸ Magasinage, under the postal: « Langue de ton app Fl
 English »; choosing re-stages every deal on the list through the till's own refresh
 (`refreshEndedDeals` over the staged rows — the ids change with the language) and says
 how many. The how-to's first step now says to set it. Guard: `flippLang.test.ts`.
+
+**« Any other ideas to make this simpler or flawless for iOS? »** (2026-09-11, evening) —
+two, both shipped. **(1) The list rides in the address.** « Copier pour Flipp » became
+« Ma liste → Flipp », a LINK: it opens flipp.com/liste_dachats`#bb=<base64url list>` (Safari
+itself on iOS), and the bookmark reads the hash FIRST — probed: their router keeps a 6 KB
+hash on both list routes, and a hash never reaches their server. So a trip is: one tap in
+Babillard, the bookmark, « Remplacer ». No copy step, no clipboard permission bubble; the
+clipboard still gets the list as the fallback the menu offers, and the hash is stripped
+after reading so a relaunch cannot replay a stale list. « Vider ma liste Flipp » rides the
+same way. **(2) The bookmark names the language trap.** Rows the Flipp APP writes carry
+`quantity`; after a signed-in write, if such a row sits in a different flyer than ours for
+the same merchant and week, the sheet says the app runs in another language and points at
+Réglages ▸ La liste ▸ Magasinage ▸ « Langue de ton app Flipp » — the « Unavailable » a
+household would otherwise only meet at the till. Tests: the hash door (both UAs, a clear
+in the hash, a junk hash ignored, the strip), the warning (fires / does not fire / plain
+alert without a body); `cashier.spec` pins the link's shape and that address = clipboard.
 
 **« Can 1 and 2 be streamlined? »** — yes, into one question. The paste asks, on
 flipp.com: **OK = REPLACE** the Flipp list with Babillard's (signed in: a `delete` op per
@@ -1321,7 +1337,7 @@ errors, 0 bleed, and its own ratchet reported « nothing new to look at » — s
 Seven days, eight commits, closed in [`UNIFY.md`](./UNIFY.md) (read Part 5 for the table
 and Part 4 for what was deliberately *not* done). The short version:
 
-- **Vocabulary is now data.** `src/lib/glossary.ts` holds **25** terms; `glossary.test.ts`
+- **Vocabulary is now data.** `src/lib/glossary.ts` holds **28** terms; `glossary.test.ts`
   ratchets every rival synonym so a second word for an existing idea cannot come back.
   The delete family went from six verbs — with one key spelled two ways — to five, each
   with an assigned meaning (`effacer` erases a **mark you made**, never a thing).
@@ -1655,6 +1671,45 @@ evening. **A board guard that depends on the hour freezes its clock** (`page.clo
 .setFixedTime`) — its own sibling already did, which is how the shape was recognized.
 
 ---
+
+
+### « Les virements » — SHIPPED 2026-09-11 (F36, migrations 0126)
+
+Les notes gained a second section (`?section=virements`): what the household sends to
+its shared account. It replaces a hand-written note whose arithmetic was redone from
+memory every two weeks — and which carried its own correction line, because the
+numbers were TYPED. Here an *entente* is written once (amount, cadence, each person's
+share, an optional catch-up agreement) and everything else is DERIVED: the due dates,
+which of them a face has already sent for, the total, the catch-up projection, and the
+bank memo (« Hypotheque 13 27 aout renflou 2000 » — the household's own phrasing).
+
+Where it lives besides the tab: due dates are derived onto `/api/month` (the
+birthdays / upkeep / habits pattern, never stored rows) so the calendar and the day
+page show them, and an uncovered one becomes an « À régler » signal rather than a new
+board card. **Neither surface carries an amount** — the board is a kitchen wall
+tablet; the number is one tap away, on a screen you opened on purpose. Same call that
+keeps `care_log` invoice totals out of a showcase link, which is also where both
+transfer endpoints are denied.
+
+Five things worth keeping:
+
+- **The recurrence is the SHARED `Recur` shape**, not a bespoke cadence column, so due
+  dates expand through the one DST-correct expander. A planted `+86400` stepper turns
+  two DST tests and the monthly test red — the guard was proven before it was trusted.
+- **`parseMoney` had a hundredfold bug in the app's first language.** Every comma was
+  read as a thousands separator, so « 812,82 » parsed as 81 282 $. Found by writing the
+  money tests, fixed with the rightmost-separator rule, grouping behaviour unchanged.
+- **`CopyButton` is a new shared primitive** (DevKit + COMPONENTS.md). It would have
+  been the NINTH hand-rolled copy of the same eight lines; PARITY's extraction rule
+  fires at three. The confirmation STAYS rather than toasting, because you left the
+  page for your bank.
+- **e2e found three defects before they shipped**: the composer seeded its ticks before
+  the plans loaded (so nothing was ticked and the memo lost its mortgage line), a null
+  sender priced every line at zero, and the 390px screenshot showed browser fieldset
+  chrome plus a total squeezed beside a chip. Looking beat reasoning again.
+- **One ➖ recorded, not hidden**: a transfer is NOT in `SEARCH_INDEX` (PARITY
+  footnote 68). Finding a payment by its bank reference is the obvious want, but
+  `/search` has no privacy lens and this is the tab a guest is not even offered.
 
 ## 4. What still needs improvement — consolidated and ranked
 

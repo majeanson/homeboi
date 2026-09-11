@@ -357,7 +357,7 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
 test('every pick on the list → the list door leads, and « Reprendre du début » restarts', async ({ page }) => {
   await openGrid(page, { clipped: [101, 102, 103] })
   await expect(page.locator('a.cashier__clip')).toHaveCount(0)
-  await expect(page.locator('button.cashier__copy')).toBeVisible()
+  await expect(page.locator('a.cashier__copy')).toBeVisible()
   await page.getByRole('button', { name: /Reprendre du début/ }).click()
   await expect(page.locator('a.cashier__clip')).toHaveText(/1 de 3/)
 })
@@ -366,15 +366,23 @@ test('every pick on the list → the list door leads, and « Reprendre du début
 // pastes them into Flipp's own list on flipp.com. Read back from the clipboard: the
 // payload is Flipp's clipping shape, one per pick with a Flipp id, and the notice
 // says the copy happened. Chromium grants the clipboard to the test context.
-test('« Ma liste Flipp » copies the picks in Flipp\'s list shape, and says so', async ({ page }) => {
+test('« Ma liste → Flipp » opens flipp.com with the list in the address (and copies it too), in Flipp\'s list shape', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await stubFlipp(page)
   await openGrid(page)
-  // Its own button (Marc: « make it a separate action ») — nothing opens.
-  await page.locator('button.cashier__copy').click()
+  // ONE tap: a link to flipp.com's list page carrying the list as #bb= — the bookmark
+  // reads it there, no copy step, no paste permission. The clipboard is the fallback.
+  const door = page.locator('a.cashier__copy')
+  const href = await door.getAttribute('href')
+  expect(href).toMatch(/^https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=[A-Za-z0-9_-]+$/)
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), door.click()])
+  await popup.close()
   // Under the row and PERSISTENT — the toast is behind the flipp.com window by then.
-  await expect(page.locator('.cashier__flipp-hint')).toContainText(/Liste copiée/)
+  await expect(page.locator('.cashier__flipp-hint')).toContainText(/Liste prête/)
+  // The address carries exactly what the clipboard got.
   const text = await page.evaluate(() => navigator.clipboard.readText())
+  const fromHash = await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!)
+  expect(fromHash).toBe(text)
   const payload = JSON.parse(text) as { v: number; clippings: { flyerItemId: number; name: string; price: string; merchantName: string }[] }
   expect(payload.v).toBe(1)
   expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103]) // the ended one is not pasted as a clipping…
@@ -418,7 +426,8 @@ test('every deal ended: no loop, no restart — the list door alone, still carry
   await expect(page.locator('a.cashier__clip')).toHaveCount(0)
   await expect(page.locator('.cashier__clip-reset')).toHaveCount(0)
   await expect(page.locator('a.cashier__send')).toBeVisible()
-  await page.locator('button.cashier__copy').click()
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
+  await popup.close()
   const payload = JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as { clippings: unknown[]; items: { term: string }[] }
   expect(payload.clippings).toEqual([])
   expect(payload.items.map((i) => i.term)).toEqual(['Lait', 'Pain', 'Pommes', 'Couches', 'Oeufs'])
@@ -464,7 +473,9 @@ test('the « Comment ça marche » chip lands on the walkthrough card, even when
     await new Promise((r) => setTimeout(r, 1500))
     await route.fallback()
   })
-  await page.locator('button.cashier__copy').click()
+  await stubFlipp(page)
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
+  await popup.close()
   await page.locator('.cashier__flipp-hint a[href^="/settings"]').click() // the chip, not the « Ouvrir flipp.com » link beside it
   const card = page.locator('#op-flipp')
   await expect(card).toBeVisible({ timeout: 15_000 })
@@ -477,20 +488,25 @@ test('the « Comment ça marche » chip lands on the walkthrough card, even when
 // AFTER A COPY, THE JUMP TO WHERE THE BOOKMARK RUNS. From Babillard installed as an
 // app, a plain link opens an in-app window without bookmarks; on iOS the link hands
 // the page to Safari itself (x-safari-https, experimental). Elsewhere, the plain page.
-test('after « Copier pour Flipp », an « Ouvrir flipp.com » link appears — the plain page on a desktop UA', async ({ page }) => {
+test('after « Ma liste → Flipp », the « Ouvrir flipp.com » link repeats the door, list included — the plain page on a desktop UA', async ({ page }) => {
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await stubFlipp(page)
   await openGrid(page)
   await expect(page.locator('a.cashier__open-flipp')).toHaveCount(0)
-  await page.locator('button.cashier__copy').click()
-  await expect(page.locator('a.cashier__open-flipp')).toHaveAttribute('href', 'https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
+  await popup.close()
+  const again = await page.locator('a.cashier__open-flipp').getAttribute('href')
+  expect(again).toMatch(/^https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=[A-Za-z0-9_-]+$/)
+  expect(again).toBe(await page.locator('a.cashier__copy').getAttribute('href'))
 })
 
 test.describe('on an iPhone', () => {
   test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' })
-  test('the jump hands flipp.com to Safari itself', async ({ page }) => {
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  test('the door hands flipp.com to Safari itself, list included', async ({ page }) => {
     await openGrid(page)
-    await page.locator('button.cashier__copy').click()
-    await expect(page.locator('a.cashier__open-flipp')).toHaveAttribute('href', 'x-safari-https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+    const href = await page.locator('a.cashier__copy').getAttribute('href')
+    expect(href).toMatch(/^x-safari-https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=[A-Za-z0-9_-]+$/)
+    const clear = await page.locator('a.cashier__clear-flipp').getAttribute('href')
+    expect(clear).toMatch(/^x-safari-https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=/)
   })
 })

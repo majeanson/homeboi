@@ -5,6 +5,7 @@ import {
   flippBookmarklet,
   flippAddTextsUrl,
   flippListOpenUrl,
+  encodeFlippPayload,
   flippSendText,
   flippListPayload,
   mergeFlippList,
@@ -81,6 +82,8 @@ async function run(opts: {
   items?: Record<number, Record<string, unknown>>
   /** iOS: the FIRST clipboard read (at launch, no gesture) is refused; reads from a tap resolve to this. */
   clipboardLater?: string
+  /** The page's URL hash — « Ma liste → Flipp » puts the list there as `#bb=…`. */
+  hash?: string
 }) {
   const store = new Map<string, string>()
   if (opts.stored != null) store.set('shopping_list', opts.stored)
@@ -104,7 +107,9 @@ async function run(opts: {
     if (method === 'PUT') return reply(fail('put') ?? 200, {})
     return reply(500, null)
   }
-  const location = { href: 'https://flipp.com/fr-ca/item/101', hostname: opts.hostname ?? 'flipp.com' }
+  const location = { href: 'https://flipp.com/fr-ca/item/101', hostname: opts.hostname ?? 'flipp.com', hash: opts.hash ?? '', pathname: '/liste_dachats', search: '?postal_code=J3H4L3' }
+  const replaced: string[] = []
+  const history = { replaceState: (_s: unknown, _t: string, url: string) => replaced.push(url) }
   let reads = 0
   const navigator =
     opts.clipboard === undefined
@@ -134,7 +139,7 @@ async function run(opts: {
   })
   const document = opts.dom ? realDoc : fakeDoc
   if (opts.dom) globalThis.document.body.innerHTML = ''
-  const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', 'document', 'fetch', FLIPP_BOOKMARKLET_BODY)
+  const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', 'document', 'fetch', 'history', FLIPP_BOOKMARKLET_BODY)
   fn(
     { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) },
     (msg: string) => {
@@ -147,6 +152,7 @@ async function run(opts: {
     navigator,
     document,
     fetch,
+    history,
   )
   // The clipboard path and the account calls are promises; let them settle.
   const settle = async () => {
@@ -168,7 +174,7 @@ async function run(opts: {
     await settle()
     return snap()
   }
-  return { ...snap(), sheet, sheetTitle, click }
+  return { ...snap(), sheet, sheetTitle, click, replaced }
 }
 
 describe('flippListPayload — every pick with a Flipp id as a clipping, every line as a typed item', () => {
@@ -511,6 +517,74 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
     const twin = mergeFlippList(existing, JSON.parse(payload) as FlippPayload, (k) => k, true)
     expect((twin.list.flyerItemClippings as { flyerItemId: number }[]).map((c) => c.flyerItemId)).toEqual([101, 102])
     expect(twin.added).toBe(4)
+  })
+})
+
+describe('the list in the page ADDRESS — « Ma liste → Flipp » opens flipp.com#bb=…, no copy, no paste bubble', () => {
+  const payload = flippListPayload([pick('a'), pick('b', { id: 102, name: 'Pain' })], ['Oeufs', 'Beurre'])
+
+  it('flippListOpenUrl carries the payload as #bb=, on both the iOS and the plain door', () => {
+    const b = encodeFlippPayload(payload)
+    expect(b).toMatch(/^[A-Za-z0-9\-_]+$/)
+    expect(flippListOpenUrl('H2X 1Y4', 'Mozilla/5.0 (iPhone)', payload)).toBe(`x-safari-https://flipp.com/liste_dachats?postal_code=H2X%201Y4#bb=${b}`)
+    expect(flippListOpenUrl('H2X 1Y4', 'Mozilla/5.0 (Windows)', payload)).toBe(`https://flipp.com/liste_dachats?postal_code=H2X%201Y4#bb=${b}`)
+    expect(flippListOpenUrl('H2X 1Y4', 'Mozilla/5.0 (Windows)')).toBe('https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+  })
+
+  it('the bookmark reads #bb= first: no clipboard read, no prompt, straight to the four buttons; the hash is stripped so a relaunch does not replay it', async () => {
+    const r = await run({ dom: true, hash: '#bb=' + encodeFlippPayload(payload), clipboard: 'REFUSED' })
+    expect(r.prompts).toEqual([])
+    expect(r.sheet()).toEqual(['replace', 'add', 'back', 'cancel'])
+    expect(r.sheetTitle()).toBe('Liste Babillard : 2 rabais, 2 articles. Quoi faire ?')
+    expect(r.replaced).toEqual(['/liste_dachats?postal_code=J3H4L3'])
+    const after = await r.click('replace')
+    expect(after.list!.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
+  })
+
+  it('a clear request in the hash asks before emptying', async () => {
+    const r = await run({ dom: true, hash: '#bb=' + encodeFlippPayload(FLIPP_CLEAR_PAYLOAD), clipboard: 'REFUSED' })
+    expect(r.sheet()).toEqual(['clear', 'cancel'])
+  })
+
+  it('a hash that is not a Babillard list is ignored → the clipboard / menu path as before', async () => {
+    const r = await run({ dom: true, hash: '#bb=not-base64-json', clipboard: 'REFUSED' })
+    expect(r.sheet()).toEqual(['paste', 'back', 'clear', 'cancel'])
+  })
+})
+
+describe('the LANGUAGE check — rows the Flipp app wrote sit in another flyer than ours (2026-09-11)', () => {
+  const payload = flippListPayload([pick('a', { merchantId: 2338, flyerId: 8123487, validTo: '2026-09-16T23:59:59-04:00' })])
+  // The app's own row: same merchant, same week, the other language's flyer, and quantity set (only the app sets it).
+  const appRow = { id: 'app1', commit_version: 1, flyer_item_id: 999, flyer_id: 8123488, merchant_id: 2338, valid_to: '2026-09-16T23:59:59-04:00', quantity: 1 }
+
+  it('after the write, a one-button sheet names the cause and the setting — then the list page', async () => {
+    const r = await run({ dom: true, cookie: SIGNED_IN, clipboard: payload, account: { commit_version: 3, flyer_item_clippings: [appRow], list_items: [] } })
+    await r.click('add')
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT']) // the write still happens
+    expect(r.sheet()).toEqual(['ok'])
+    expect(r.sheetTitle()).toMatch(/autre langue.*Langue de ton app Flipp/s)
+    const after = await r.click('ok')
+    expect(after.location.href).toBe('/liste_dachats')
+  })
+
+  it('no app row in another flyer → no warning (same flyer, or a web-written row without quantity, or another week)', async () => {
+    for (const row of [
+      { ...appRow, flyer_id: 8123487 }, // same flyer
+      { ...appRow, quantity: null }, // not the app's
+      { ...appRow, valid_to: '2026-09-09T23:59:59-04:00' }, // last week's
+    ]) {
+      const r = await run({ dom: true, cookie: SIGNED_IN, clipboard: payload, account: { commit_version: 3, flyer_item_clippings: [row], list_items: [] } })
+      const after = await r.click('add')
+      expect(r.sheet()).toEqual([])
+      expect(after.location.href).toBe('/liste_dachats')
+    }
+  })
+
+  it('without a page body the same warning is a plain alert, and the list page still follows', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: false, account: { commit_version: 3, flyer_item_clippings: [appRow], list_items: [] } })
+    expect(r.alerts).toHaveLength(1)
+    expect(r.alerts[0]).toMatch(/autre langue/)
+    expect(r.location.href).toBe('/liste_dachats')
   })
 })
 
