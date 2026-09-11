@@ -5,11 +5,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
-import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl, type FlippClipping } from '../lib/flippList'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../lib/api'
-import { useWrite } from '../lib/write'
-import { FLIPP_LINK_KEY } from '../lib/queryKeys'
+import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
@@ -122,67 +118,6 @@ export function CashierMode({
   // Marc's phone showed fewer lines in Flipp than were sent, and the only way to
   // tell "not sent" from "not shown" is to see the list that left.
   const [sent, setSent] = useState(false)
-  // « LIER FLIPP » (migration 0124): if the household linked its Flipp account, the
-  // primary door PUSHES — deals WITH their clipping straight into the app, no bookmark
-  // — instead of the words-only /action link. Status rides its own shared key.
-  const { data: flippLink } = useQuery({
-    queryKey: FLIPP_LINK_KEY,
-    queryFn: () => api<{ linked: boolean }>('flipp-link'),
-    staleTime: 60_000,
-  })
-  const write = useWrite()
-  const linked = !!flippLink?.linked
-  // The clippings the push carries: every LIVE staged deal (clippable), in Flipp's
-  // shape — the same objects the copy payload builds.
-  const pushClippings: FlippClipping[] = JSON.parse(flippListPayload(clippable)).clippings
-  const [pushState, setPushState] = useState<'idle' | 'sending' | 'done' | 'failed' | 'empty' | 'cleared'>('idle')
-  const [pushAdded, setPushAdded] = useState(0)
-  const [pushSkipped, setPushSkipped] = useState(0)
-  const [pushDiag, setPushDiag] = useState<string | null>(null)
-  const pushTotal = pushClippings.length + sendTerms.length
-  const clearFlipp = async () => {
-    if (pushState === 'sending') return
-    setPushState('sending')
-    try {
-      const r = await write<{ ok?: boolean; diag?: string }>('flipp-push', {
-        method: 'POST',
-        body: { clippings: [], items: [], mode: 'clear' },
-        affectedKeys: [FLIPP_LINK_KEY],
-      })
-      setPushDiag(r.data?.diag ?? null)
-      setPushAdded(0); setPushSkipped(0)
-      setPushState(r.queued || r.data?.ok ? 'cleared' : 'failed')
-    } catch { setPushState('failed') }
-  }
-  const pushToFlipp = async () => {
-    if (pushState === 'sending') return
-    if (pushTotal === 0) {
-      // Nothing live to push (every deal ended, everything checked) — say so instead
-      // of a hollow « 0 ajouté » that reads as a failure.
-      setPushState('empty')
-      return
-    }
-    setPushState('sending')
-    try {
-      const r = await write<{ ok?: boolean; added?: number; skipped?: number; linked?: boolean; error?: string; diag?: string }>('flipp-push', {
-        method: 'POST',
-        body: { clippings: pushClippings, items: sendTerms, mode: 'replace' },
-        affectedKeys: [FLIPP_LINK_KEY],
-      })
-      if (r.queued) {
-        setPushAdded(pushTotal)
-        setPushSkipped(0)
-        setPushState('done')
-      } else if (r.data?.ok) {
-        setPushAdded(r.data.added ?? 0)
-        setPushSkipped(r.data.skipped ?? 0)
-        setPushDiag(r.data.diag ?? null)
-        setPushState('done')
-      } else { setPushDiag(r.data?.diag ?? r.data?.error ?? null); setPushState('failed') }
-    } catch {
-      setPushState('failed')
-    }
-  }
   // The notice fires while the flipp.com window COVERS this page and is gone before
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
@@ -264,20 +199,9 @@ export function CashierMode({
               <Cluster className="cashier__flipp-row">
                 {/* Order = reading order at 390px, where the row wraps: the bookmark
                     path (copy, then their list) first, the tap-by-tap loop under it. */}
-                {linked ? (
-                  <>
-                    <button type="button" className="btn btn--primary cashier__push" onClick={pushToFlipp} disabled={pushState === 'sending'}>
-                      <InlineIcon name="arrow-up-right-bold" /> {pushState === 'sending' ? t.shop.sending : t.shop.sendWithDeals}
-                    </button>
-                    <button type="button" className="btn btn--ghost cashier__clear-flipp" onClick={clearFlipp} disabled={pushState === 'sending'}>
-                      <InlineIcon name="x-bold" /> {t.shop.clearFlipp}
-                    </button>
-                  </>
-                ) : (
-                  <a className="btn btn--primary cashier__send" href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
-                    <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
-                  </a>
-                )}
+                <a className="btn btn--primary cashier__send" href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
+                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
+                </a>
                 <button type="button" className="btn cashier__copy" onClick={copyForFlipp}>
                   <InlineIcon name="check-bold" /> {t.shop.copyForFlipp}
                 </button>
@@ -297,21 +221,6 @@ export function CashierMode({
                   </button>
                 ) : null /* nothing live to step through (every deal ended) — no loop, no restart; the list door alone */}
               </Cluster>
-              {pushState === 'done' && (
-                <p className="cashier__flipp-hint mono cashier__sent">
-                  {pushAdded > 0
-                    ? t.shop.pushedToFlipp(pushAdded)
-                    : pushSkipped > 0
-                      ? t.shop.pushAlready(pushSkipped)
-                      : t.shop.pushEmpty}
-                </p>
-              )}
-              {pushState === 'empty' && <p className="cashier__flipp-hint mono">{t.shop.pushEmpty}</p>}
-              {pushState === 'cleared' && <p className="cashier__flipp-hint mono cashier__sent">{t.shop.flippCleared}</p>}
-              {pushState === 'failed' && <p className="cashier__flipp-hint mono">{t.shop.pushFailed}</p>}
-              {pushDiag && (pushState === 'done' || pushState === 'failed') && (
-                <p className="cashier__flipp-hint mono" style={{ opacity: 0.6, fontSize: '0.7rem' }}>{pushDiag}</p>
-              )}
               {sent && (
                 <p className="cashier__flipp-hint mono cashier__sent">
                   {t.shop.sentToFlipp(sendTerms.length)} — {sendTerms.join(' · ')}

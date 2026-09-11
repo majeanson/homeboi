@@ -55,8 +55,6 @@ import * as health from '../functions/api/health'
 import * as homePins from '../functions/api/home-pins'
 import * as homeProjects from '../functions/api/home-projects'
 import * as household from '../functions/api/household'
-import * as flippLink from '../functions/api/flipp-link'
-import * as flippPush from '../functions/api/flipp-push'
 import * as list from '../functions/api/list'
 import * as meals from '../functions/api/meals'
 import * as mealHistory from '../functions/api/meal-history'
@@ -189,8 +187,6 @@ const TABLE: Record<string, RouteMod> = {
   'home-pins': homePins,
   'home-projects': homeProjects,
   household,
-  'flipp-link': flippLink,
-  'flipp-push': flippPush,
   list,
   meals,
   'meal-history': mealHistory,

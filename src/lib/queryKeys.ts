@@ -25,9 +25,6 @@ export const HEALTH_KEY = ['health']
 // hide-list). Read on the board/kitchen (meal colours) AND in Réglages, so the
 // key is shared: a settings PATCH invalidates it and every meal surface re-tints.
 export const HOUSEHOLD_KEY = ['household']
-// « Lier Flipp » — whether this household has linked a Flipp account (functions/api/
-// flipp-link) and its last-push status. Read by the Réglages card and the till.
-export const FLIPP_LINK_KEY = ['flipp-link']
 // Family "favorites" hearts (#21): who loves which recipe. Read on the recipe
 // list/view AND on planned meals (board + kitchen), so the key is shared — a
 // heart toggle invalidates it and every surface re-renders its hearts at once.

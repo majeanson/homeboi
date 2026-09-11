@@ -82,9 +82,6 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   // A derived-signal acknowledgement (0122) — no FK, and it prunes itself, but a
   // sandbox must still leave nothing behind when it's swept.
   'a_regler_snoozes',
-  // « Lier Flipp » — the household's stored Flipp session (0124). A sandbox must
-  // leave no credential behind.
-  'flipp_links',
   // cercle content children → parents
   'contact_links',
   'contact_photos',
@@ -161,6 +158,7 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
 export const EXEMPT_TABLES: Readonly<Record<string, string>> = {
   households: 'deleted explicitly by id as the final statement',
   contact_links_new: 'transient 0050 rebuild table, renamed away in the same migration',
+  flipp_links: 'created 0124, dropped 0125 — the « Lier Flipp » account link was rolled back (Flipp cannot render externally-injected clippings)',
 }
 
 // ---- R2 blob inventory ------------------------------------------------------

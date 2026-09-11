@@ -222,37 +222,6 @@ list. The bookmark now forgives the mistake: anywhere but flipp.com it says so a
 takes you to flipp.com's list page — run it again there. Unit-tested on Google's and
 our own host; `www.flipp.com` still counts.
 
-### « Lier Flipp » — the account link, so deals follow with one tap (2026-09-11)
-
-Marc: « anything we can do from inside? » — and, told the only truly-automatic path
-means holding his Flipp credential, « anything that works best ». So: an OPT-IN
-account link. A one-time bookmark run on flipp.com while signed in reads Flipp's own
-`flipp-login` cookie (the bearer token for their private accounts API) and carries
-it to Babillard in a first-party URL hash (a cross-origin POST could not carry our
-session); a confirm names the account, and `POST /api/flipp-link` stores the token
-ENCRYPTED (`functions/_lib/secretBox`, AES-GCM keyed from SESSION_SECRET — a DB read
-alone yields nothing). From then on « Envoyer à Flipp » on a linked till PUSHES:
-`POST /api/flipp-push` → `functions/_lib/flippAccount` builds Flipp's own ops
-(`flyer_item_clipping` + `list_item`, read from their bundle) and applies them with
-`PUT …/shopping_lists/{id}` — deals WITH their photo into the app, no bookmark, no
-per-item tap. « Délier » (`DELETE`) forgets the token; the list stays in Flipp.
-
-Operator-only (holding a third-party credential is not a kiosk's to grant), and the
-costs are stated on the card and in this ledger: we hold a credential to Marc's
-Flipp account; their API is PRIVATE and may move (the push stamps `last_error`, the
-card shows it, the weekly contract would catch it); it is outside what Flipp exposes
-on purpose. Marc chose the trade for his own household knowing all three.
-
-Migration 0124 `flipp_links` (one row/household, in the demo sweep). Guards:
-`secretBox.test` (round-trip, tamper→null, refuses a short secret), `flippList.test`
-(the link bookmark + hash parser). Server verifies the token against `/v1/users/{id}`
-BEFORE storing it, so the card never shows "linked" for a credential that can't write.
-
-**Concurrency note:** a SECOND session was building the same feature a different way
-(`functions/api/flipp/link.ts`, `_lib/flippAccounts.ts` — plural) on this shared
-checkout; its incomplete files were set aside to the session scratchpad
-(`other-session-flipp/`), not deleted. If that work is wanted instead, it is there.
-
 Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
 `flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
 landing under late data), live 5/5 exercisable (4 still waits for an account).
@@ -442,6 +411,31 @@ that still carries our ids, a write hit the accounts server, the stores render.
 Marc is creating a throwaway account for it; as repository secrets it runs weekly,
 locally it runs with the two variables set for one command. Never a household's
 real account.
+
+### « Lier Flipp » built, then rolled back — Flipp won't render an injected clipping (2026-09-11)
+
+Marc asked for a fully-automatic "deals follow into the app". Built it (opt-in
+account link: a bookmark hands Flipp's own session token to Babillard, stored
+encrypted; the server writes the account list via Flipp's private accounts API —
+migration 0124, secretBox, flipp-link/flipp-push, buildOps). It PARTLY worked:
+typed words reached the account list and rendered on flipp.com. But **deal-clippings
+never rendered** — giant mis-sized image + an endless spinner on the web, empty in
+the app. Root cause, proven on Marc's own account: Flipp's list draws a clipping by
+HYDRATING it through their own item-details service (the spinner). A clipping in a
+LOCAL list (what the bookmark writes) renders from its stored fields; a clipping in
+a SERVER list (all the API can write) must hydrate, and an externally-injected one
+can't — no field in the write op (cutout_image_url, geometry, replace-mode all
+tried) turns a server clipping into a locally-rendered one. The app fails closed
+(empty) where the web fails open (spinner), which also answers Marc's « why aren't
+the two lists connected »: they sync only through the account server list, and an
+un-renderable clipping there shows as nothing.
+
+So the link held a third-party credential for a words-only result the free
+« Envoyer à Flipp » (/action) already delivers. **Rolled back** (revert of 191bfaf..
+aa8d8d6; 0124 kept per forward-only, 0125 drops the table + the stored token;
+flipp_links → demoHousehold EXEMPT). Kept: « Montrer Flipp » (their item page, till-
+accepted), the bookmark (clean local-list render), « Envoyer à Flipp » (words → app).
+Next: improve the bookmark flow + its explanations (Marc will retest).
 
 ### « Any way to populate the localstorage with what they want? » — yes: a bookmark that runs on flipp.com (2026-09-10, late night)
 

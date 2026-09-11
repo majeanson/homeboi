@@ -2514,26 +2514,6 @@ export const FR = {
     storeFilter: 'Mes magasins',
     // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
     flippTitle: 'Ma liste Flipp',
-    // « Lier Flipp » — the account link (deals follow automatically). It holds a
-    // credential to the household's Flipp account; the card says so, « Délier » removes it.
-    flippLinkTitle: 'Lier ton compte Flipp',
-    flippLinkIntro:
-      'Une fois lié, tes rabais partent dans Flipp d’un seul « Envoyer à Flipp » — photos comprises, sans signet à coller. Babillard garde alors une clé d’accès à ton compte Flipp (chiffrée) ; « Délier » la retire.',
-    flippLink1: 'Copie le signet de liaison ci-dessous et ajoute-le dans Safari (comme l’autre signet).',
-    flippLink2: 'Sur flipp.com, connecte-toi (l’icône de personne), puis lance ce signet une fois.',
-    flippLink3: 'Il te ramène ici et demande de confirmer — c’est tout.',
-    flippLinkCopy: 'Copier le signet de liaison',
-    flippLinkLabel: 'Adresse du signet de liaison',
-    flippLinkConfirm: (email: string | null) =>
-      `Lier ${email ? `le compte Flipp « ${email} »` : 'ton compte Flipp'} à cette maisonnée ? Babillard pourra alors écrire dans ta liste Flipp. Tu peux délier quand tu veux.`,
-    flippLinkGo: 'Lier',
-    flippLinked: 'Compte Flipp lié — « Envoyer à Flipp » envoie maintenant les rabais avec leurs photos.',
-    flippLinkFailed: 'La liaison n’a pas pris — reconnecte-toi sur flipp.com et relance le signet.',
-    flippLinkedAs: (email: string | null) => (email ? `Lié à ${email}.` : 'Compte Flipp lié.'),
-    flippLinkError: 'Le dernier envoi a échoué — Flipp a peut-être changé, ou la session a expiré. Relie ton compte.',
-    flippUnlink: 'Délier',
-    flippUnlinkConfirm: 'Délier ton compte Flipp ? Babillard oublie la clé d’accès ; ta liste Flipp reste intacte.',
-    flippManualTitle: 'Sans lier : le signet à coller',
     flippIntro:
       'Deux chemins. « Envoyer à Flipp », à la caisse : un tap, toute ta liste en mots arrive dans Flipp — et ouvre l’app Flipp si elle est installée. Le signet ci-dessous, une fois installé, fait le reste : tes rabais choisis avec leur photo, et le retour de Flipp vers Babillard.',
     // The walkthrough, in the words a household reads on the phone (Marc did the
@@ -3328,14 +3308,6 @@ export const FR = {
     // The one-tap door (2026-09-10): flipp.com/action adds the list's lines as typed
     // items — and on a phone with the app, that link opens the app.
     sendToFlipp: 'Envoyer à Flipp',
-    sendWithDeals: 'Envoyer à Flipp (rabais compris)',
-    clearFlipp: 'Vider ma liste Flipp',
-    flippCleared: 'Liste Flipp vidée — les articles cassés sont partis.',
-    sending: 'Envoi…',
-    pushedToFlipp: (n: number) => `Envoyé dans Flipp · ${n} article${n>1?'s':''} — ouvre l’app.`,
-    pushFailed: 'Flipp a refusé l’envoi — reconnecte ton compte dans Réglages ▸ La liste ▸ Magasinage.',
-    pushAlready: (n: number) => `Déjà dans Flipp · ${n} article${n>1?'s':''} y étaient — ouvre l’app.`,
-    pushEmpty: 'Rien de nouveau à envoyer — aucun rabais en cours ni article non coché.',
     sentToFlipp: (n: number) => `Envoyé à Flipp · ${n} ligne${n > 1 ? 's' : ''}`,
     // The checked lines stay home on purpose (in the cart / bought) — said, not guessed.
     sentKeptChecked: (n: number) => `${n} cochée${n > 1 ? 's' : ''} reste${n > 1 ? 'nt' : ''} ici (décoche pour envoyer)`,

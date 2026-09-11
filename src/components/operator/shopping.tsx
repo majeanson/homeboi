@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
-import { useNotice, useUndoToast } from '../../lib/toast'
-import { FLIPP_LINK_KEY, FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
+import { useUndoToast } from '../../lib/toast'
+import { FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
 import { type FlyerSummary } from '../../lib/deals'
 import { fetchGhostManage, type GhostCandidate, type GhostManageItem } from '../../lib/ghost'
 import { isGuest } from '../../lib/device'
@@ -17,7 +17,7 @@ import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { Cluster } from '../Layout'
-import { flippBookmarklet, flippLinkBookmarklet, parseFlippLinkHash } from '../../lib/flippList'
+import { flippBookmarklet } from '../../lib/flippList'
 import { Disclosure } from '../Disclosure'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
@@ -610,14 +610,8 @@ function GhostRow({
 export function FlippSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const [copied, setCopied] = useState(false)
-  const [copiedLink, setCopiedLink] = useState(false)
-  const qc = useQueryClient()
-  const write = useWrite()
-  const confirm = useConfirm()
-  const notice = useNotice()
-  // THIS household's Babillard: the way back + the link both land here (the one hole).
+  // THIS household's Babillard: the way back lands here (lib/flippList's one hole).
   const bookmarklet = flippBookmarklet(window.location.origin)
-  const linkBookmarklet = flippLinkBookmarklet(window.location.origin)
   async function copy() {
     try {
       await navigator.clipboard.writeText(bookmarklet)
@@ -627,100 +621,8 @@ export function FlippSection({ help }: { help?: HelpMode }) {
       /* clipboard blocked — the address is shown in the field for manual copy */
     }
   }
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(linkBookmarklet)
-      setCopiedLink(true)
-      setTimeout(() => setCopiedLink(false), 2000)
-    } catch {
-      /* the address is shown in the field for manual copy */
-    }
-  }
-
-  // « LIER FLIPP » — the account link (migration 0124). Its status (linked email +
-  // last error), and the one-shot reader for the `#flipp-link=` the link bookmark
-  // brings back from flipp.com: confirm, then store the harvested session server-side.
-  const { data: link } = useQuery({
-    queryKey: FLIPP_LINK_KEY,
-    queryFn: () => api<{ linked: boolean; email?: string | null; lastError?: string | null }>('flipp-link'),
-    staleTime: 60_000,
-  })
-  const linkDone = useRef(false)
-  useEffect(() => {
-    if (linkDone.current) return
-    const payload = parseFlippLinkHash(window.location.hash)
-    if (!payload) return
-    linkDone.current = true
-    // Consume the hash first — the token must not sit in the URL, or survive a refresh.
-    window.history.replaceState(null, '', window.location.pathname + window.location.search)
-    void (async () => {
-      const ok = await confirm({ message: t.operator.flippLinkConfirm(payload.email), confirmLabel: t.operator.flippLinkGo })
-      if (!ok) return
-      try {
-        await write('flipp-link', {
-          method: 'POST',
-          body: { userId: payload.userId, token: payload.token, email: payload.email },
-          affectedKeys: [FLIPP_LINK_KEY],
-        })
-        notice(t.operator.flippLinked)
-      } catch {
-        notice(t.operator.flippLinkFailed)
-      }
-    })()
-  }, [confirm, write, notice, t])
-  async function unlink() {
-    if (!(await confirm({ message: t.operator.flippUnlinkConfirm, tone: 'danger' }))) return
-    await write('flipp-link', { method: 'DELETE', affectedKeys: [FLIPP_LINK_KEY] })
-    void qc.invalidateQueries({ queryKey: FLIPP_LINK_KEY })
-  }
-
   return (
     <OperatorSection title={t.operator.flippTitle} help={help} helpKey="flipp">
-      {/* THE ACCOUNT LINK, first: once done, deals follow with one tap (« Envoyer à
-          Flipp »), no bookmark. It holds a credential to your Flipp account — the
-          card says so, and « Délier » removes it. */}
-      <h4 className="flipp__phase">{t.operator.flippLinkTitle}</h4>
-      {link?.linked ? (
-        <>
-          <StatusMessage tone="success">{t.operator.flippLinkedAs(link.email ?? null)}</StatusMessage>
-          {link.lastError && (
-            /^(put-|get-|create-|unauthorized|token-|unknown)/.test(link.lastError) ? (
-              <StatusMessage tone="error">{t.operator.flippLinkError}</StatusMessage>
-            ) : (
-              <p className="operator__hint mono" style={{ fontSize: '0.75rem', opacity: 0.7 }}>{link.lastError}</p>
-            )
-          )}
-          <Cluster>
-            <button type="button" className="btn btn--ghost" onClick={unlink}>
-              <InlineIcon name="x-bold" /> {t.operator.flippUnlink}
-            </button>
-          </Cluster>
-        </>
-      ) : (
-        <>
-          <p className="operator__hint">{t.operator.flippLinkIntro}</p>
-          <ol className="operator__steps">
-            <li>
-              {t.operator.flippLink1}
-              <Cluster>
-                <button type="button" className="btn btn--primary" onClick={copyLink}>
-                  {copiedLink ? <InlineIcon name="check-bold" /> : null} {copiedLink ? t.operator.flippBookmarkletCopied : t.operator.flippLinkCopy}
-                </button>
-              </Cluster>
-              <input
-                className="input mono flipp__bookmarklet"
-                readOnly
-                value={linkBookmarklet}
-                onFocus={(e) => e.target.select()}
-                aria-label={t.operator.flippLinkLabel}
-              />
-            </li>
-            <li>{t.operator.flippLink2}</li>
-            <li>{t.operator.flippLink3}</li>
-          </ol>
-        </>
-      )}
-      <h4 className="flipp__phase">{t.operator.flippManualTitle}</h4>
       <p className="operator__hint">{t.operator.flippIntro}</p>
       {/* Two phases, in the order a household lives them: the one-time setup (the
           copy button sits right at its first step), then every trip. Marc walked
