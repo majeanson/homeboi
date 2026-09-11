@@ -1711,6 +1711,45 @@ Five things worth keeping:
   footnote 68). Finding a payment by its bank reference is the obvious want, but
   `/search` has no privacy lens and this is the tab a guest is not even offered.
 
+
+### « Les virements » — SHIPPED 2026-09-11 (F36, migrations 0126)
+
+Les notes gained a second section (`?section=virements`): what the household sends to
+its shared account. It replaces a hand-written note whose arithmetic was redone from
+memory every two weeks — and which carried its own correction line, because the
+numbers were TYPED. Here an *entente* is written once (amount, cadence, each person's
+share, an optional catch-up agreement) and everything else is DERIVED: the due dates,
+which of them a face has already sent for, the total, the catch-up projection, and the
+bank memo (« Hypotheque 13 27 aout renflou 2000 » — the household's own phrasing).
+
+Where it lives besides the tab: due dates are derived onto `/api/month` (the
+birthdays / upkeep / habits pattern, never stored rows) so the calendar and the day
+page show them, and an uncovered one becomes an « À régler » signal rather than a new
+board card. **Neither surface carries an amount** — the board is a kitchen wall
+tablet; the number is one tap away, on a screen you opened on purpose. Same call that
+keeps `care_log` invoice totals out of a showcase link, which is also where both
+transfer endpoints are denied.
+
+Five things worth keeping:
+
+- **The recurrence is the SHARED `Recur` shape**, not a bespoke cadence column, so due
+  dates expand through the one DST-correct expander. A planted `+86400` stepper turns
+  two DST tests and the monthly test red — the guard was proven before it was trusted.
+- **`parseMoney` had a hundredfold bug in the app's first language.** Every comma was
+  read as a thousands separator, so « 812,82 » parsed as 81 282 $. Found by writing the
+  money tests, fixed with the rightmost-separator rule, grouping behaviour unchanged.
+- **`CopyButton` is a new shared primitive** (DevKit + COMPONENTS.md). It would have
+  been the NINTH hand-rolled copy of the same eight lines; PARITY's extraction rule
+  fires at three. The confirmation STAYS rather than toasting, because you left the
+  page for your bank.
+- **e2e found three defects before they shipped**: the composer seeded its ticks before
+  the plans loaded (so nothing was ticked and the memo lost its mortgage line), a null
+  sender priced every line at zero, and the 390px screenshot showed browser fieldset
+  chrome plus a total squeezed beside a chip. Looking beat reasoning again.
+- **One ➖ recorded, not hidden**: a transfer is NOT in `SEARCH_INDEX` (PARITY
+  footnote 68). Finding a payment by its bank reference is the obvious want, but
+  `/search` has no privacy lens and this is the tab a guest is not even offered.
+
 ## 4. What still needs improvement — consolidated and ranked
 
 **« Le ? ne sert qu'au babillard » — reported 2026-09-09, and it was true.** Arming

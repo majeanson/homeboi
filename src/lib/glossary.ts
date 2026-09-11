@@ -326,6 +326,53 @@ const ENTITIES: GlossaryTerm[] = [
     },
     card: 'share-access',
   },
+  {
+    id: 'virement',
+    scope: 'entity',
+    fr: 'Virement',
+    en: 'Transfer',
+    def: {
+      fr: 'Un envoi d’argent au compte commun, noté après coup : ce qu’il couvre, le message envoyé à la banque, et son numéro de référence.',
+      en: 'A payment sent to the shared account, noted afterwards: what it covers, the message sent to the bank, and its reference number.',
+    },
+    card: 'notes',
+    codeIds: ['transfers'],
+    why:
+      'The household already said « virement » in its own handwritten note and in every Interac memo, ' +
+      'so the app adopted their word rather than teaching them a new one. NO rival is declared, and ' +
+      'that is a decision: « paiement » looks like a synonym and is not one here — it names ONE ' +
+      'scheduled occurrence of an entente (« 300 $ de plus par paiement », « 3 paiements notés »), ' +
+      'which is the thing a virement COVERS. Banning it would have forced worse sentences and taught ' +
+      'the ratchet to cry wolf.',
+  },
+  {
+    id: 'entente',
+    scope: 'entity',
+    fr: 'Entente',
+    en: 'Agreement',
+    def: {
+      fr: 'Ce que vous vous partagez et comment : le montant, à quel rythme il revient, et la part de chaque personne. Écrite une fois, elle prépare chaque virement.',
+      en: 'What you split and how: the amount, how often it comes back, and each person’s share. Written once, it fills in every transfer.',
+    },
+    card: 'notes',
+    codeIds: ['transfer_plans'],
+    why:
+      '« Engagement » is already the rendez-vous noun in this app (ONE engagement model — see CLAUDE.md), ' +
+      'so it could not be reused here without making one word mean two things. « Plan » is the code id ' +
+      'and stays out of the copy.',
+  },
+  {
+    id: 'renflouement',
+    scope: 'entity',
+    fr: 'Renflouement',
+    en: 'Top-up',
+    def: {
+      fr: 'L’argent qu’on remet dans le compte commun pour le quotidien, en plus des ententes — le même montant des deux bords.',
+      en: 'Money put back into the shared account for day-to-day spending, on top of the agreements — the same amount from each of you.',
+    },
+    card: 'notes',
+    why: 'The word the household already used in its bank memos (« renflou 2000 »), kept verbatim.',
+  },
 ]
 
 // ── The places ──────────────────────────────────────────────────────────────

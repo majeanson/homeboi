@@ -325,6 +325,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | ✅³        | ➖        | ✅       | ✅⁵⁴    |
 | F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅⁶⁴    |
 | F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | ✅²¹       | 🔶²³      | ✅       | ✅      |
+| F36 Virements            | ✅      | ✅      | ✅⁶⁷    | ✅         | ✅    | ➖⁶⁸      | ✅       | ➖⁶⁹       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁷⁰       | ➖¹       | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
 
@@ -627,6 +628,33 @@ Footnotes (verdicts recorded so far):
     the return day previews on « À venir » when it lands within the week.
     Guards: snooze suite in `upkeep.test.ts`, the postpone case in
     `e2e/upkeep-overdue.spec.ts`.
+67. **Virements — two undo tiers, decided by the SURFACE, not the entity (F36).**
+    Deleting a transfer from the history list is `useDeferredRemoval(TRANSFERS_KEY)`:
+    a polled list, so the row hides now and the write waits behind the undo toast
+    (an optimistic `setQueryData` would let the next poll resurrect it mid-undo).
+    Deleting from INSIDE the composer scene is `useConfirm` instead — the toast sits
+    at z-index 40, a scene at 90, so an « Annuler » raised from there would be
+    literally unreachable. Same rule ACTIONS.md Part 1 states for every entity.
+68. **No search entry for a transfer (F36) — deliberate, revisit if asked.** The
+    obvious want is « find the payment with reference CArR4A3Q », and the reference
+    IS the point of the row. But `/search` has no privacy lens: everything it indexes
+    is reachable from the one box a kiosk shows, and this is the tab a guest is not
+    even offered. Money entering the global index is a bigger decision than the
+    feature needed, so the history's own list (short, dated, memo-bearing) is the
+    search for now. ➖, not 🔶 — a verdict, not an omission.
+69. **Toddler: the money face does not exist (F36).** `/notes` at toddler audience
+    renders `NotesKidView` and never reaches the sub-tabs at all, so there is no
+    surface to lens. Same shape as F34's ➖¹⁴.
+70. **Schema 0126 (F36)** — `transfer_plans` (the agreement) + `transfers` (the
+    receipts). Conventions: `created_at`/`updated_at`/`deleted_at`, `position`,
+    `colour` (one spelling), JSON columns `NOT NULL` with `'{}'`/`'[]'` defaults,
+    soft refs commented and no FK, DB-5 pattern 1 (the member ref IS the sender —
+    subject and author at once, nulled by `memberRefStatements` on delete). NO
+    balance / running-total / owed column anywhere: a « reste à rattraper » is
+    DERIVED from the recorded lines at read time (`_lib/transfers`
+    `catchupProjection`) and shown folded on exactly one surface. The recurrence
+    reuses the shared `Recur` shape rather than a bespoke cadence column, so due
+    dates expand through the one DST-correct expander.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

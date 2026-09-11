@@ -46,6 +46,7 @@ settings) are one tap back.** No dead-end prose.
 | `?card=<guideId>&point=<n>` | `/settings` | Land on ONE guide card (+ sub-point): forces the card's home tab + Comprendre lens, opens/scrolls/highlights. Retired ids resolve through `GUIDE_CARD_ALIAS`. |
 | `?focus=<sectionKey>` | `/settings` | Land on ONE section card: scroll + accent ring. The key is the card's entry in `SETTINGS_TREE` (its helpKey, or its explicit `anchor` where a helpKey is shared — `guestLinks`); anchor is `id="op-<key>"` from `OperatorSection`. **This is the stable address** — name the section, not the pill: `guideLinks.test.ts` requires it whenever the sub stacks two or more cards. |
 | `?focus=note|meal` | `/kitchen/day/:date` | **Open** that composer on the day scene (the note headline, or the hero slot's meal), seeded and ready. Same one-shot shape as the Réglages one: act, then consume the param with one functional `setParams` so a refresh or a back-nav doesn't reopen it. |
+| `?section=<id>` | `/maison`, `/notes` | Which section of a tab that has several. Maison: `routines\|family\|social\|business\|carnets`. Les notes: `notes\|virements` (the money face, 2026-09-11). `useTabParam`, so the default stores as NO param and a deep link, a guide « Ouvrir » and the back button all agree. |
 | `?plus=1\|<mode>` | any hub tab | Open the ＋ sheet: `1` = the section's chooser, a mode name = that tile (`/board?plus=mot`). Validated against `ADD_MODES`; ignored where the FAB is hidden; operator-grade modes fall back to the chooser when not signed in. |
 
 ## The two directions

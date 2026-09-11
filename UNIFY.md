@@ -101,7 +101,7 @@ scanners above; these are exact.)*
 **Also counted:** EN strings that are exactly `'Notes'` **10** (three concepts wear it) ·
 EN `carnet` untranslated **8** · `EmptyState` **108** sites (5 `action=`, 18 `guide=`) ·
 `useUndoableRemove` **6** call sites · guide **32** cards · tours **9** · help registries
-**8 / 122** entries · glossary **25** terms (5 verbs · 15 entities · 5 surfaces).
+**8 / 122** entries · glossary **28** terms (5 verbs · 18 entities · 5 surfaces).
 
 **LEAN baseline — full matrix, 92 states, 0 failing (`npm run e2e:matrix`, 2.7 min):**
 
