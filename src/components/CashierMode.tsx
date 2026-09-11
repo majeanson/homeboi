@@ -208,7 +208,7 @@ export function CashierMode({
                 {clipNext ? (
                   <a
                     className="btn cashier__clip"
-                    href={flippItemUrl(clipNext.deal.id, postal, clipNext.deal.flyerId)!}
+                    href={flippItemUrl(clipNext.deal.id, postal)!}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => markFlippClipped(clipNext.deal.id!)}
@@ -353,10 +353,10 @@ export function CashierMode({
                 postal code, on purpose. « Voir la circulaire » stays the fast in-app
                 path — it opens ON the item, circled. */}
             <Cluster className="bigcard__actions">
-              {!ended && flippItemUrl(d.id, postal, d.flyerId) && (
+              {!ended && flippItemUrl(d.id, postal) && (
                 <a
                   className="btn btn--primary bigcard__flipp"
-                  href={flippItemUrl(d.id, postal, d.flyerId)!}
+                  href={flippItemUrl(d.id, postal)!}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

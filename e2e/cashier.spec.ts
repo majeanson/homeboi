@@ -248,9 +248,10 @@ test('« Montrer Flipp » opens Flipp\'s own item page — and only when a posta
   const door = page.locator('a.bigcard__flipp')
   await expect(door).toBeVisible()
   await expect(door).toHaveText(/Montrer Flipp/)
-  // Through /action (their own dispatch, and the Flipp app's universal-link path):
-  // on the web it redirects to the item page; on a phone with the app, the app.
-  await expect(door).toHaveAttribute('href', 'https://flipp.com/action?type=flyer_view&flyer_ids=5001&item_ids=101&postal_code=H2X%201Y4')
+  // The DIRECT item page, not /action: /action is the Flipp iOS app's universal-link
+  // path and the app opened on its empty list instead of the item (2026-09-11) —
+  // the direct page renders the item in any browser (lib/deals flippItemUrl).
+  await expect(door).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
   await expect(door).toHaveAttribute('target', '_blank')
   // The in-app path stays beside it — the door is an addition, not a replacement.
   await expect(page.locator('.bigcard__flyer')).toBeVisible()
@@ -289,7 +290,7 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   await openGrid(page) // four picks, Flipp ids 101..104; household postal 'H2X 1Y4'
   const step = page.locator('a.cashier__clip')
   await expect(step).toHaveText(/1 de 3/) // four picks, one ended — it is not in the loop
-  await expect(step).toHaveAttribute('href', 'https://flipp.com/action?type=flyer_view&flyer_ids=5001&item_ids=101&postal_code=H2X%201Y4')
+  await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
   await expect(step).toHaveAttribute('target', '_blank')
   // « Envoyer à Flipp » beside it: ONE link that adds every unchecked line as a typed
   // item through flipp.com/action (verified live 2026-09-10) — the till's five lines
@@ -301,7 +302,7 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
   await popup.close()
   await expect(step).toHaveText(/2 de 3/)
-  await expect(step).toHaveAttribute('href', 'https://flipp.com/action?type=flyer_view&flyer_ids=5002&item_ids=102&postal_code=H2X%201Y4')
+  await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/102?postal_code=H2X%201Y4')
   // Come back tomorrow, same phone: the loop is where it was left.
   await page.reload()
   await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })

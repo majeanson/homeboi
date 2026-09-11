@@ -200,11 +200,19 @@ gotta do them all manually »** — words travel by /action, a clipping with its
 does not (their /action has no such command: `add_text_to_list`, `landing`, `query`
 are all it accepts, and the `type=` values open pages). The batch path for deals
 WITH photos is the bookmark (five taps for the whole list, confirmed into the app
-earlier tonight). What improved per item: « Montrer Flipp » and the « Ajouter à
-Flipp · n de N » loop now go through `/action?type=flyer_view&flyer_ids=&item_ids=`
-— on the web it redirects to the same item page (live test 3), and on a phone with
-the Flipp app it is their universal-link path, so each tap opens THE APP on the
-item with its own « Ajouter à la liste ».
+earlier tonight). What was TRIED per item, and undone: « Montrer Flipp »
+and the « Ajouter à Flipp · n de N » loop went through `/action?type=flyer_view
+&flyer_ids=&item_ids=` — on the web it redirects to the same item page (still true,
+re-checked 2026-09-11), and `/action` is the Flipp iOS app's one universal-link path,
+so the hope was that each tap opens THE APP on the item. **It does not (2026-09-11,
+Marc's iPhone): the app opened on its EMPTY list tab, the item nowhere** — the app's
+parser reads `command=add_text_to_list` (« Envoyer à Flipp » does reach it) but not
+the web's `type=flyer_view` grammar, and a dead screen at a till is the one thing the
+door must never be. Both doors are back on the direct `/fr-ca/item/<id>?postal_code=`
+page, which the app does not claim: it renders the item in the browser with Flipp's
+own « Ajouter à la liste ». Guards: `cashier.spec.ts` pins the direct href; the /action
+line was dropped from live test 3 (nothing of ours depends on it now). Re-route only
+with proof from a phone that the app lands on the item.
 
 **« Ouvrir flipp.com » after a copy (experimental).** From Babillard installed as an
 app, a plain link opens an in-app browser window that has no bookmarks — the exact

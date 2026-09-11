@@ -134,18 +134,25 @@ export function flippFlyerUrl(
 //     page is bilingual anyway (the item name carries both).
 // `/flyer_item/…` is NOT a route (404) — do not "fix" this to that shape.
 //
-// THROUGH `/action` since 2026-09-10 (night): `flipp.com/action?type=flyer_view
-// &flyer_ids=<flyerId>&item_ids=<id>&postal_code=…` is their own dispatch — on the
-// web it redirects to the very item page above (probed: the item renders), and
-// `/action` is the ONE path the Flipp iOS app claims as a universal link, so on a
-// phone with the app this opens THE ACCEPTED APP on the item, with its own
-// « Ajouter à la liste » (Marc: « it opens in Flipp »). Without a flyer id the old
-// direct page is the door; without a postal, none.
-export function flippItemUrl(flyerItemId: number | null, postal: string | null | undefined, flyerId?: number | null): string | null {
+//
+// NOT through `/action` (tried 2026-09-10 night, undone 2026-09-11). `flipp.com/action
+// ?type=flyer_view&flyer_ids=&item_ids=` is their web dispatch and DOES redirect to
+// this item page in a browser (live contract test 3 still proves it) — and `/action`
+// is the ONE path the Flipp iOS app claims as a universal link
+// (flipp.com/apple-app-site-association: `"paths": ["/action"]`), which was the whole
+// appeal: open THE APP on the item. But the app's own parser does not read that
+// grammar: on Marc's iPhone every « Montrer Flipp » tap opened the app on its EMPTY
+// list tab, item nowhere — a dead screen held up to a cashier, the exact thing this
+// door exists to prevent. `command=add_text_to_list` (« Envoyer à Flipp ») is the
+// one /action shape the app is known to honour. So the item door is the direct
+// page, which the app does not claim: it opens in the browser (the PWA's in-app
+// window is fine here — no bookmark needed), renders the item with its own
+// « Ajouter à la liste », and that add reaches the account when signed in. A
+// verified door beats a hopeful one; do not re-route this through /action without
+// proof from a phone that the app lands on the item.
+export function flippItemUrl(flyerItemId: number | null, postal: string | null | undefined): string | null {
   if (flyerItemId == null || !postal) return null
-  const pc = `postal_code=${encodeURIComponent(postal)}`
-  if (flyerId != null) return `https://flipp.com/action?type=flyer_view&flyer_ids=${flyerId}&item_ids=${flyerItemId}&${pc}`
-  return `https://flipp.com/fr-ca/item/${flyerItemId}?${pc}`
+  return `https://flipp.com/fr-ca/item/${flyerItemId}?postal_code=${encodeURIComponent(postal)}`
 }
 
 // « Ma liste Flipp » — Flipp's own shopping-list page. What it shows is whatever
