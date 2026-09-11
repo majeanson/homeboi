@@ -112,8 +112,12 @@ describe('keysForPath', () => {
     expect(keysForPath('schedule')).toEqual([['schedule'], ['board'], ['car'], ['month']])
     expect(keysForPath('car-day')).toEqual([['car'], ['board'], ['month']])
     expect(keysForPath('drawings')).toEqual([['drawings']])
+    // « Les virements »: its own read model, plus the two surfaces that DERIVE from it
+    // (calendar due dates, and the « À régler » heads-up for one not yet sent for).
+    expect(keysForPath('transfers')).toEqual([['transfers'], ['month'], ['a-regler']])
+    expect(keysForPath('transfer-plans')).toEqual([['transfers'], ['month'], ['a-regler']])
     // None of them should be the bare board default.
-    for (const p of ['pets', 'businesses', 'family-notes', 'schedule', 'car-day', 'drawings', 'recipe-loves']) {
+    for (const p of ['pets', 'businesses', 'family-notes', 'schedule', 'car-day', 'drawings', 'recipe-loves', 'transfers', 'transfer-plans']) {
       expect(keysForPath(p)).not.toEqual([['board']])
     }
   })

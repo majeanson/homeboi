@@ -105,6 +105,8 @@ import * as sharedTripNotes from '../functions/api/shared-trip-notes'
 import * as sharedTripPacking from '../functions/api/shared-trip-packing'
 import * as sharedTripMedia from '../functions/api/shared-trip-media'
 import * as trips from '../functions/api/trips'
+import * as transfers from '../functions/api/transfers'
+import * as transferPlans from '../functions/api/transfer-plans'
 import * as tripNotes from '../functions/api/trip-notes'
 import * as tripPacking from '../functions/api/trip-packing'
 import * as tripDocMedia from '../functions/api/trip-doc-media'
@@ -237,6 +239,10 @@ const TABLE: Record<string, RouteMod> = {
   'shared-trip-notes': sharedTripNotes,
   'shared-trip-packing': sharedTripPacking,
   'shared-trip-media': sharedTripMedia,
+  // « Les virements »: one composed read model (GET) + transfer CRUD; the plans
+  // behind them are write-only here and read through /api/transfers.
+  transfers,
+  'transfer-plans': transferPlans,
   trips,
   'trip-notes': tripNotes,
   'trip-packing': tripPacking,

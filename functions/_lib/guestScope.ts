@@ -22,6 +22,10 @@ export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
     // to show, so keep them OUT of showcase. The carnet tree + identity (`carnets`)
     // stays visible so the feature still demos.
     if (apiPath === 'home-pins' || apiPath === 'care-log') return false
+    // « Les virements » (0126) is the same call again, and the clearest case of it:
+    // what a household sends to its shared account, with a bank reference number
+    // attached. Amounts never belong in a public Démo link.
+    if (apiPath === 'transfers' || apiPath === 'transfer-plans') return false
     return true // otherwise the full hub, read-only
   }
   if (apiPath === 'guest/whoami') return true // every kind learns its own kind

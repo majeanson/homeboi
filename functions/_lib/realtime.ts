@@ -239,6 +239,12 @@ const PATH_KEYS: Record<string, string[][]> = {
   // (carResolve.workOccurrencesInRange), and an override changes what gets derived.
   schedule: [['schedule'], ['board'], ['car'], ['month']],
   'car-day': [['car'], ['board'], ['month']],
+  // « Les virements » — one composed read model (['transfers']) feeds the tab, the
+  // composer and the peek. A plan edit changes which due dates exist, so it nudges
+  // the same key; both also carry ['month'] (due dates are DERIVED onto the calendar,
+  // birthdays-style) and ['a-regler'] (an uncovered due date is a friction signal).
+  transfers: [['transfers'], ['month'], ['a-regler']],
+  'transfer-plans': [['transfers'], ['month'], ['a-regler']],
   // The kept-drawings gallery (GALLERY_KEY = ['drawings']).
   drawings: [['drawings']],
   // Sample/demo data (onboarding Phase 1): a seed or « Vider les exemples » touches

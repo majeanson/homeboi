@@ -58,6 +58,12 @@ export function memberRefStatements(env: Env, householdId: string, memberId: str
     P('UPDATE contacts SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE family_notes SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE family_notes SET author_member_id = NULL WHERE author_member_id = ? AND household_id = ?').bind(id, hh),
+    // A recorded virement outlives its sender: the money moved, and the bank
+    // reference on the row may be the only copy of that fact outside a statement.
+    // Detach rather than delete — it reads as « Maisonnée » afterwards. A departed
+    // member's key inside a plan's shares_json is left alone on purpose: the
+    // agreement is history too, and parseShares simply stops resolving it to a face.
+    P('UPDATE transfers SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE trip_notes SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE trip_packing SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE ai_errors SET profile = NULL WHERE profile = ? AND household_id = ?').bind(id, hh),

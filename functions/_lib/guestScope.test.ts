@@ -15,6 +15,10 @@ describe('guestKindAllows', () => {
     // The house map (spare-key/alarm locations) + service-invoice amounts stay OUT of the Démo view.
     expect(guestKindAllows('showcase', 'home-pins')).toBe(false)
     expect(guestKindAllows('showcase', 'care-log')).toBe(false)
+    // Same call for « Les virements » (0126): amounts sent to a shared account, with a
+    // bank reference attached, are not Démo material.
+    expect(guestKindAllows('showcase', 'transfers')).toBe(false)
+    expect(guestKindAllows('showcase', 'transfer-plans')).toBe(false)
   })
 
   it('showcase is read-only: denied every guest write/mint path (default-deny for writes)', () => {

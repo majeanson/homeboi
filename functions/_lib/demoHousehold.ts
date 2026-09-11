@@ -132,6 +132,11 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'ai_errors',
   'family_notes',
   'habits',
+  // « Les virements » (0126). transfers references transfer_plans only by id in its
+  // lines JSON (no FK), but the child-before-parent order is kept anyway. The demo
+  // sandbox deliberately seeds NO rows here: money is what a showcase link is denied.
+  'transfers',
+  'transfer_plans',
   // most-referenced content parents last
   'recipes',
   'members',
