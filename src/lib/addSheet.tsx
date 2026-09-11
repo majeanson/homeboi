@@ -110,6 +110,10 @@ export type AddSheetMode =
   // place mic + 📎 quick-capture still lives, now that the page itself has no
   // inline composer.
   | 'cnote'
+  // « Les virements » — logging what was sent to the shared account. A tall form
+  // (sender, the date chips per plan, a top-up, the memo, the reference), so it is
+  // a FORM_ROUTES navigation to a scene, never an in-sheet composer.
+  | 'virement'
 
 // What the ＋ offers, per hub section (keyed by the first path segment). One
 // action → the sheet skips the chooser and opens that form directly. Liste's ＋
@@ -150,7 +154,9 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // Les notes: a single mode, `cnote` — but its TAP is a FORM_ROUTES navigation
   // (a blank NoteEditor), so this list only matters for the HOLD (voice) and for
   // `?plus=cnote` deep-link validation.
-  notes: ['cnote'],
+  // Les notes offers both of its faces: a note, and a virement. The ＋ no longer
+  // skips the chooser here — two tiles is exactly the case a chooser is for.
+  notes: ['cnote', 'virement'],
 }
 
 // Hold the ＋ and speak (bmad/12 #18): which of the section's forms the long-press
@@ -180,7 +186,7 @@ export const VOICE_MODES: Record<string, AddSheetMode> = {
 // isn't signed in — showing the tile to an unsigned kiosk would lead to a dead
 // bounce. (Marking a habit done on the check-in scene needs no session.)
 // `habit-pick` rides along with `habit`: both of its doors land on the FormScene.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit', 'habit-pick'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit', 'habit-pick', 'virement'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
@@ -203,6 +209,7 @@ export const FORM_ROUTES: Partial<Record<AddSheetMode, string>> = {
   // FAB still bypasses this table entirely (VOICE_MODES.notes, wired straight in
   // HubLayout's useLongPress) and opens the quick composer with the mic armed.
   cnote: '/notes?add=1',
+  virement: '/virement/new',
 }
 
 // Every mode, as a runtime list — what validates a ?plus=<mode> deep-link
@@ -247,6 +254,7 @@ const ALL_MODES = {
   habit: 1,
   'habit-pick': 1,
   cnote: 1,
+  virement: 1,
 } as const satisfies Record<AddSheetMode, 1>
 export const ADD_MODES = Object.keys(ALL_MODES) as readonly AddSheetMode[]
 

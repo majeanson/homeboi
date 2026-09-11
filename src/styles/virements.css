@@ -108,3 +108,71 @@
   gap: 0.35rem;
   min-width: 0;
 }
+
+/* The composer. A form scene, so « généreux dedans » (LEAN.md): fields take the full
+   line and a labelled action sits under them, never squeezed alongside. */
+
+/* A fieldset here GROUPS controls for a screen reader — it must not also import the
+   browser's 1990s inset border, which nothing else in this app wears. The legend
+   keeps the same quiet mono voice every other field label uses. */
+.virements__form fieldset,
+.virements__shares-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.virements__form legend,
+.virements__shares-field legend {
+  padding: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+/* The number you check before hitting send gets its OWN line and real weight. It
+   was rendering inline beside the « Ajouter une ligne » chip — the total of the
+   transfer, tucked in as if it were another control. */
+.virements__total {
+  flex-basis: 100%;
+  width: 100%;
+  margin: 0.25rem 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.virements__total strong {
+  font-size: 1.35rem;
+}
+
+/* A free line: what it was for, how much, and a way to drop it. Wraps on a narrow
+   phone rather than crushing the label field to nothing. */
+.virements__other {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.virements__other .input {
+  flex: 1 1 auto; /* auto basis — a fixed rem basis is the documented no-wrap trap */
+  min-width: 0;
+}
+.virements__other-amount {
+  max-width: 7rem;
+}
+
+/* A share row's face + name, so the avatar and the name read as one label. A floor on
+   the width so the amount fields line up down the column instead of stepping in and
+   out with the length of each name — it is a table of numbers, and it should read
+   like one. Shrinkable below that floor on a very narrow phone. */
+.virements__share-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 0 1 6.5rem;
+}

@@ -129,6 +129,8 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   // « Les notes » ＋ — the quick composer, in the sheet; teal, like the rest of
   // the old cercle family it rode in on.
   cnote: { cat: 'cercle', icon: 'file-text-bold' },
+  // « Les virements » — teal like the rest of the Notes tab it lives in.
+  virement: { cat: 'cercle', icon: 'receipt-bold' },
 }
 
 // Modes with no in-sheet form — picking one leaves the sheet for a full-screen
@@ -812,6 +814,7 @@ export function AddSheet({
       // Only reachable by HOLDING the ＋ now (a tap is a FORM_ROUTES navigation to
       // a blank note) — this names the quick voice/text/📎 composer that opens.
       cnote: t.cercle.familyNotes.quickAdd,
+      virement: t.virements.add,
     }
     return labels[m]
   }

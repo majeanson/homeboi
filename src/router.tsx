@@ -64,6 +64,10 @@ const DeparturePage = lazy(() => import('./pages/DeparturePage').then((m) => ({ 
 // the habit create/edit form (a tall form, so a scene rather than a sheet).
 const HabitudesPage = lazy(() => import('./pages/HabitudesPage').then((m) => ({ default: m.HabitudesPage })))
 const HabitFormPage = lazy(() => import('./pages/HabitFormPage').then((m) => ({ default: m.HabitFormPage })))
+// « Les virements » — logging a transfer, and the standing agreement behind it.
+// Both are tall multi-field forms, so scenes rather than sheets (FORM_ROUTES).
+const TransferFormPage = lazy(() => import('./pages/TransferFormPage').then((m) => ({ default: m.TransferFormPage })))
+const TransferPlanFormPage = lazy(() => import('./pages/TransferFormPage').then((m) => ({ default: m.TransferPlanFormPage })))
 // #34 / #35 — typed read-only share links land here (standalone, no hub chrome):
 // a babysitter "handoff" card and a visitor "welcome" card. See lib/auth GuestKind.
 const HandoffPage = lazy(() => import('./pages/HandoffPage').then((m) => ({ default: m.HandoffPage })))
@@ -227,6 +231,12 @@ export function AppRoutes() {
         <Route path="/board/habitudes" element={<HabitudesPage />} />
         <Route path="/habitude/new" element={<HabitFormPage />} />
         <Route path="/habitude/:id/edit" element={<HabitFormPage />} />
+        {/* « Les virements » (Notes ▸ Virements). The plan routes sit under the same
+            prefix so the whole feature is one branch of the URL space. */}
+        <Route path="/virement/new" element={<TransferFormPage />} />
+        <Route path="/virement/plan/new" element={<TransferPlanFormPage />} />
+        <Route path="/virement/plan/:id/edit" element={<TransferPlanFormPage />} />
+        <Route path="/virement/:id/edit" element={<TransferFormPage />} />
         {/* #34 / #35 / #36 — typed share-link landings (sitter / visitor / family). */}
         <Route path="/handoff" element={<HandoffPage />} />
         <Route path="/welcome" element={<WelcomePage />} />

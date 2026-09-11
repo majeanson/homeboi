@@ -205,6 +205,17 @@ export const ADD_HELP = {
     body: { fr: 'Crée une routine, ou touche une routine existante pour la modifier.', en: 'Create a routine, or tap an existing one to edit it.' },
   },
   // « Les notes » ＋ — the tab's only tile: the quick composer, right here.
+  // « Les virements » — the tile leaves the sheet for the composer scene, so the
+  // armed help is the one chance to say what the screen will ask for before you are
+  // standing in it.
+  virement: {
+    card: 'notes',
+    point: 6,
+    body: {
+      fr: 'Note ce que tu viens d’envoyer au compte commun : coche les dates que le paiement couvre, ajoute un renflouement, et copie le message pour ta banque.',
+      en: 'Note what you just sent to the shared account: tick the dates the payment covers, add a top-up, and copy the message for your bank.',
+    },
+  },
   cnote: {
     card: 'notes',
     point: 0,
