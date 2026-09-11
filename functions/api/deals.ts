@@ -75,6 +75,9 @@ export interface Deal {
   // merchant id and the clipping's box. Optional — older staged deals lack them.
   merchantId?: number | null
   box?: { left: number; right: number; top: number; bottom: number } | null
+  // The flyer cutout — what Flipp's own list stores as a clipping's picture (see
+  // src/lib/deals.ts). `image` keeps preferring the clean product photo for our UI.
+  cutout?: string | null
 }
 
 // Flyer images are http://; upgrade so an https app doesn't drop them.
@@ -181,6 +184,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         logo: https(it.merchant_logo),
         premium: it.premium ?? false,
         image: https(it.clean_image_url ?? it.clipping_image_url),
+        cutout: https(it.clipping_image_url ?? it.clean_image_url),
         validFrom: it.valid_from ?? null,
         validTo: it.valid_to ?? null,
         merchantId: it.merchant_id ?? null,

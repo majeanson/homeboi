@@ -143,6 +143,11 @@ describe('flippListPayload — every pick with a Flipp id as a clipping, every l
     expect(out.items).toEqual([])
   })
 
+  it('the clipping picture is the flyer CUTOUT when the deal carries one (as Flipp\'s own add stores it), else the photo', () => {
+    const out = JSON.parse(flippListPayload([pick('a', { cutout: 'https://f.wishabi.net/page_items/1/cut.jpg' }), pick('b', { id: 102 })])) as FlippPayload
+    expect(out.clippings.map((c) => c.thumbnailUrl)).toEqual(['https://f.wishabi.net/page_items/1/cut.jpg', 'https://f.wishabi.net/p/1.jpg'])
+  })
+
   it('an older staged deal (no merchantId / box) still clips, with nulls', () => {
     const out = JSON.parse(flippListPayload([pick('a', { merchantId: undefined, box: undefined })])) as FlippPayload
     expect(out.clippings[0].merchantId).toBeNull()
@@ -424,6 +429,14 @@ describe('« Vider ma liste Flipp » — the clear payload, and « vider » in t
   it('« vider » typed in the paste box (any case, spaces around) is the clear', async () => {
     const r = await run({ cookie: SIGNED_IN, prompt: '  Vider ', confirm: true, account })
     expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT'])
+  })
+
+  it('« diag » typed in the paste box shows the account list\'s raw rows in a prompt, to copy', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: 'diag', account: { commit_version: 9, flyer_item_clippings: [{ id: 'c1', flyer_item_id: 101, thumbnail_url: null }], list_items: [] } })
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET'])
+    expect(r.prompts).toHaveLength(2) // the paste box, then the dump
+    expect(r.prompts[1]).toMatch(/^Copie ceci/)
+    expect(r.location.href).toBe('https://flipp.com/fr-ca/item/101')
   })
 
   it('an empty account list → no PUT at all, straight to their page', async () => {

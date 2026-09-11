@@ -188,6 +188,20 @@ from the server — the « Lier Flipp » architecture with a bot account instead
 harvested key, and the same open rendering question. Not built; noted as the one clean
 shape a server-side write could take if the framed/bookmark paths ever fall short.
 
+**Then, from the phone, minutes later: « same bad pictures overlays in the web list after
+the copy ».** The account-written clippings draw broken on flipp.com, as they did under
+« Lier Flipp ». Read against their code: the list row is one `<img class="clipping"
+src={item.imageUrl}>` sized by the clipping's box (`right − left`, `top − bottom`), and
+their own « Ajouter à la liste » stores the flyer CUTOUT there (`thumbnail_url:
+item.cutoutImageUrl`) — we stored the clean product photo. For the one item probed the
+two URLs are the same file, so that alone is unlikely to be the whole story; the deal
+shape now carries `cutout` (`clipping_image_url`, both sides, optional) and the payload
+prefers it, to match them field for field. What is still unknown is how Flipp's SERVER
+stores and echoes a row it did not create — so the bookmark grew « diag »: typed in its
+paste box, signed in, it shows the account list's raw rows in a prompt to copy and paste
+into a session. Marc's next step: add one item in the Flipp app, run « diag », paste —
+their row beside ours is the diff that answers this.
+
 Guards: `flippList.test.ts` runs the body against a fake page WITH a session and a
 recording fetch — the call sequence, the exact op object, uniqueness against the
 account's rows, list creation, a 401, the clear ops (twin: `flippAccountOps` /

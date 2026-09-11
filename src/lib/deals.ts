@@ -21,6 +21,11 @@ export interface Deal {
   // a deal staged before that date sits in `deal_json` without them.
   merchantId?: number | null
   box?: { left: number; right: number; top: number; bottom: number } | null
+  // The flyer CUTOUT (Flipp's `clipping_image_url` / `cutout_image_url`), kept since
+  // 2026-09-11: their own « Ajouter à la liste » stores exactly this as the clipping's
+  // picture (`thumbnail_url: item.cutoutImageUrl`), where `image` prefers the clean
+  // product photo for our tiles. Optional — older staged deals lack it; `image` stands in.
+  cutout?: string | null
 }
 
 // A store's current flyer near the household (from /api/flyers) — lets you open a
