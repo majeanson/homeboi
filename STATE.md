@@ -222,6 +222,37 @@ list. The bookmark now forgives the mistake: anywhere but flipp.com it says so a
 takes you to flipp.com's list page — run it again there. Unit-tested on Google's and
 our own host; `www.flipp.com` still counts.
 
+### « Lier Flipp » — the account link, so deals follow with one tap (2026-09-11)
+
+Marc: « anything we can do from inside? » — and, told the only truly-automatic path
+means holding his Flipp credential, « anything that works best ». So: an OPT-IN
+account link. A one-time bookmark run on flipp.com while signed in reads Flipp's own
+`flipp-login` cookie (the bearer token for their private accounts API) and carries
+it to Babillard in a first-party URL hash (a cross-origin POST could not carry our
+session); a confirm names the account, and `POST /api/flipp-link` stores the token
+ENCRYPTED (`functions/_lib/secretBox`, AES-GCM keyed from SESSION_SECRET — a DB read
+alone yields nothing). From then on « Envoyer à Flipp » on a linked till PUSHES:
+`POST /api/flipp-push` → `functions/_lib/flippAccount` builds Flipp's own ops
+(`flyer_item_clipping` + `list_item`, read from their bundle) and applies them with
+`PUT …/shopping_lists/{id}` — deals WITH their photo into the app, no bookmark, no
+per-item tap. « Délier » (`DELETE`) forgets the token; the list stays in Flipp.
+
+Operator-only (holding a third-party credential is not a kiosk's to grant), and the
+costs are stated on the card and in this ledger: we hold a credential to Marc's
+Flipp account; their API is PRIVATE and may move (the push stamps `last_error`, the
+card shows it, the weekly contract would catch it); it is outside what Flipp exposes
+on purpose. Marc chose the trade for his own household knowing all three.
+
+Migration 0124 `flipp_links` (one row/household, in the demo sweep). Guards:
+`secretBox.test` (round-trip, tamper→null, refuses a short secret), `flippList.test`
+(the link bookmark + hash parser). Server verifies the token against `/v1/users/{id}`
+BEFORE storing it, so the card never shows "linked" for a credential that can't write.
+
+**Concurrency note:** a SECOND session was building the same feature a different way
+(`functions/api/flipp/link.ts`, `_lib/flippAccounts.ts` — plural) on this shared
+checkout; its incomplete files were set aside to the session scratchpad
+(`other-session-flipp/`), not deleted. If that work is wanted instead, it is there.
+
 Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
 `flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
 landing under late data), live 5/5 exercisable (4 still waits for an account).

@@ -82,6 +82,9 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   // A derived-signal acknowledgement (0122) — no FK, and it prunes itself, but a
   // sandbox must still leave nothing behind when it's swept.
   'a_regler_snoozes',
+  // « Lier Flipp » — the household's stored Flipp session (0124). A sandbox must
+  // leave no credential behind.
+  'flipp_links',
   // cercle content children → parents
   'contact_links',
   'contact_photos',

@@ -224,6 +224,52 @@ export function flippBookmarklet(origin: string): string {
   return 'javascript:' + encodeURIComponent(loader)
 }
 
+/** Flipp → Babillard, the ACCOUNT link (« Lier Flipp », migration 0124): what the
+ *  link bookmark carries in `/settings…#flipp-link=`. The session Flipp keeps in its
+ *  own `flipp-login` cookie — a bearer token for their private accounts API. */
+export interface FlippLinkPayload {
+  v: 1
+  userId: string
+  token: string
+  email: string | null
+}
+
+/** The ONE-TIME « Lier Flipp » bookmark: run on flipp.com while signed in, it reads
+ *  Flipp's own login cookies and carries the session to THIS Babillard in the hash of
+ *  a first-party URL (a cross-origin POST could not carry Babillard's session, so the
+ *  token rides to us where we are first-party, and a confirm + authed write complete
+ *  the link). Short enough to be a plain bookmark address — no loader. */
+export function flippLinkBookmarklet(origin: string): string {
+  if (!/^https?:\/\/[A-Za-z0-9.\-:]+$/.test(origin)) throw new Error('flippLinkBookmarklet: not a plain origin: ' + origin)
+  const body =
+    '(function(){' +
+    'if(!/(^|\\.)flipp\\.com$/.test(location.hostname)){alert("Ouvre flipp.com et connecte-toi, puis relance ce signet.");location.href="https://flipp.com/";return}' +
+    'function c(n){var m=document.cookie.match(new RegExp("(^|; )"+n+"=([^;]+)"));return m?decodeURIComponent(m[2]):null}' +
+    'var t=null,e=null;try{t=(JSON.parse(c("flipp-login")||"{}")||{}).token}catch(x){}try{e=(JSON.parse(c("flipp-user")||"{}")||{}).email||null}catch(x){}' +
+    'if(!t||!t.access_token||!t.user_id){alert("Connecte-toi d’abord sur flipp.com (l’icône de personne), puis relance ce signet.");return}' +
+    'var d={v:1,userId:String(t.user_id),token:String(t.access_token),email:e};' +
+    'var b=btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");' +
+    'location.href="' +
+    origin +
+    '/settings?tab=liste&focus=flipp#flipp-link="+b' +
+    '})()'
+  return 'javascript:' + encodeURIComponent(body)
+}
+
+/** Decode `#flipp-link=` on the settings page → the link payload, or null. */
+export function parseFlippLinkHash(hash: string): FlippLinkPayload | null {
+  const m = /^#flipp-link=([A-Za-z0-9\-_]+)$/.exec(hash || '')
+  if (!m) return null
+  try {
+    const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
+    const d = JSON.parse(decodeURIComponent(escape(atob(b64)))) as Partial<FlippLinkPayload>
+    if (!d || d.v !== 1 || typeof d.userId !== 'string' || typeof d.token !== 'string' || !d.userId || !d.token) return null
+    return { v: 1, userId: d.userId, token: d.token, email: typeof d.email === 'string' ? d.email : null }
+  } catch {
+    return null
+  }
+}
+
 /** The way back, decoded: the `#flipp=` hash of `/liste` → the export, or null. */
 export function parseFlippHash(hash: string): FlippExport | null {
   const m = /^#flipp=([A-Za-z0-9\-_]+)$/.exec(hash || '')

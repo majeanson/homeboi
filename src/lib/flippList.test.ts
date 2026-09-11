@@ -5,6 +5,8 @@ import {
   flippBookmarklet,
   flippAddTextsUrl,
   flippListOpenUrl,
+  flippLinkBookmarklet,
+  parseFlippLinkHash,
   flippSendText,
   flippListPayload,
   mergeFlippList,
@@ -359,5 +361,30 @@ describe('the bookmark string itself — a LOADER, the body is served', () => {
   it('refuses an origin that is not a plain origin (a quote would break the bookmark)', () => {
     expect(() => flippBookmarklet('https://x.test/"+alert(1)+"')).toThrow()
     expect(() => flippBookmarklet('http://localhost:5173')).not.toThrow()
+  })
+})
+
+describe('the account link — Flipp → Babillard (« Lier Flipp »)', () => {
+  const ORIGIN2 = 'https://babillard.test'
+  it('the link bookmark is a short javascript: address that lands on settings with the session in the hash', () => {
+    const url = flippLinkBookmarklet(ORIGIN2)
+    expect(url.startsWith('javascript:')).toBe(true)
+    const body = decodeURIComponent(url.slice('javascript:'.length))
+    expect(body).toContain('flipp-login')
+    expect(body).toContain(ORIGIN2 + '/settings?tab=liste&focus=flipp#flipp-link=')
+    expect(body).not.toMatch(/=>|\bconst\b|\blet\b|`/) // ES5, runs in any phone browser
+    expect(url.length).toBeLessThan(1400)
+  })
+  it('refuses a non-plain origin', () => {
+    expect(() => flippLinkBookmarklet('https://x/"+alert(1)')).toThrow()
+  })
+  it('parseFlippLinkHash round-trips a payload and refuses anything else', () => {
+    const enc = (o: unknown) => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    expect(parseFlippLinkHash('#flipp-link=' + enc({ v: 1, userId: '42', token: 'Tok', email: 'a@b.c' }))).toEqual({ v: 1, userId: '42', token: 'Tok', email: 'a@b.c' })
+    expect(parseFlippLinkHash('#flipp-link=' + enc({ v: 1, userId: '42', token: 'Tok' }))).toEqual({ v: 1, userId: '42', token: 'Tok', email: null })
+    expect(parseFlippLinkHash('#flipp-link=' + enc({ v: 1, userId: '', token: 'x' }))).toBeNull()
+    expect(parseFlippLinkHash('#flipp-link=' + enc({ v: 2, userId: '1', token: 'x' }))).toBeNull()
+    expect(parseFlippLinkHash('#flipp=abc')).toBeNull()
+    expect(parseFlippLinkHash('#flipp-link=!!!')).toBeNull()
   })
 })
