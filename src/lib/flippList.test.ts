@@ -4,6 +4,7 @@ import {
   FLIPP_PASTE_PATH,
   flippBookmarklet,
   flippAddTextsUrl,
+  flippListOpenUrl,
   flippSendText,
   flippListPayload,
   mergeFlippList,
@@ -249,6 +250,17 @@ describe('flippAddTextsUrl — « Envoyer à Flipp », their /action door', () =
   it('nothing to send → null (the caller falls back to the plain list door)', () => {
     expect(flippAddTextsUrl([], 'H2X 1Y4')).toBeNull()
     expect(flippAddTextsUrl([' ', ','])).toBeNull()
+  })
+})
+
+describe('flippListOpenUrl — where the bookmark runs, as a link', () => {
+  const IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+  it('hands the page to Safari itself on iOS (an installed app opens an in-app window otherwise)', () => {
+    expect(flippListOpenUrl('H2X 1Y4', IOS)).toBe('x-safari-https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+  })
+  it('is the plain page elsewhere', () => {
+    expect(flippListOpenUrl('H2X 1Y4', 'Mozilla/5.0 (Linux; Android 14) Chrome/120')).toBe('https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+    expect(flippListOpenUrl(null, 'Mozilla/5.0 (X11)')).toBe('https://flipp.com/liste_dachats')
   })
 })
 

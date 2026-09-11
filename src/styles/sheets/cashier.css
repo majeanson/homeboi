@@ -331,6 +331,11 @@
 .cashier__refresh-row {
   margin: 0 0 12px;
 }
+.cashier__open-flipp {
+  padding: 4px 10px;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
 .cashier__flipp-hint {
   margin: 8px 0 0;
   text-align: center;

@@ -419,11 +419,32 @@ test('the « Comment ça marche » chip lands on the walkthrough card, even when
     await route.fallback()
   })
   await page.locator('button.cashier__copy').click()
-  await page.locator('.cashier__flipp-hint a').click()
+  await page.locator('.cashier__flipp-hint a[href^="/settings"]').click() // the chip, not the « Ouvrir flipp.com » link beside it
   const card = page.locator('#op-flipp')
   await expect(card).toBeVisible({ timeout: 15_000 })
   // Give the late rows time to land and the settle loop time to answer them.
   await page.waitForTimeout(3_000)
   const top = (await boxOf(card)).y // boxOf, never the bare call — the documented trap
   expect(Math.abs(top), `card top edge should sit at the top of the view, was ${top}px`).toBeLessThanOrEqual(40)
+})
+
+// AFTER A COPY, THE JUMP TO WHERE THE BOOKMARK RUNS. From Babillard installed as an
+// app, a plain link opens an in-app window without bookmarks; on iOS the link hands
+// the page to Safari itself (x-safari-https, experimental). Elsewhere, the plain page.
+test('after « Copier pour Flipp », an « Ouvrir flipp.com » link appears — the plain page on a desktop UA', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await openGrid(page)
+  await expect(page.locator('a.cashier__open-flipp')).toHaveCount(0)
+  await page.locator('button.cashier__copy').click()
+  await expect(page.locator('a.cashier__open-flipp')).toHaveAttribute('href', 'https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+})
+
+test.describe('on an iPhone', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' })
+  test('the jump hands flipp.com to Safari itself', async ({ page }) => {
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+    await openGrid(page)
+    await page.locator('button.cashier__copy').click()
+    await expect(page.locator('a.cashier__open-flipp')).toHaveAttribute('href', 'x-safari-https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+  })
 })

@@ -3314,7 +3314,8 @@ export const FR = {
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
-    flippCopied: 'Liste copiée ✓ — dans Safari, sur flipp.com, lance le signet « Coller de Babillard » et colle.',
+    flippCopied: 'Liste copiée ✓ — sur flipp.com, lance le signet « Coller de Babillard ».',
+    openFlipp: 'Ouvrir flipp.com',
     flippHow: 'Comment ça marche',
     flippCopyRefused: 'Le téléphone a refusé la copie — reviens ici et touche « Ma liste Flipp » de nouveau.',
     flyerThisWeek: 'Cette semaine',

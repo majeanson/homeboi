@@ -206,6 +206,15 @@ Flipp · n de N » loop now go through `/action?type=flyer_view&flyer_ids=&item_
 the Flipp app it is their universal-link path, so each tap opens THE APP on the
 item with its own « Ajouter à la liste ».
 
+**« Ouvrir flipp.com » after a copy (experimental).** From Babillard installed as an
+app, a plain link opens an in-app browser window that has no bookmarks — the exact
+chrome in Marc's screenshot — so the deals path had a "switch to Safari, type the
+address" step in the middle. After « Copier pour Flipp », the line now carries a
+link that hands flipp.com to Safari itself on iOS (`x-safari-https://`, an
+undocumented scheme — if a phone ignores it the tap does nothing and the manual
+step still stands) and the plain page elsewhere (`flippListOpenUrl`, UA-switched;
+unit + e2e under an iPhone UA). Marc's to confirm; if it does nothing, it goes.
+
 Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
 `flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
 landing under late data), live 5/5 exercisable (4 still waits for an account).

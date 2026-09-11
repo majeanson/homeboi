@@ -5,7 +5,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
-import { flippListPayload, flippAddTextsUrl, flippSendText } from '../lib/flippList'
+import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
@@ -230,6 +230,13 @@ export function CashierMode({
               {copyState !== 'idle' && (
                 <p className="cashier__flipp-hint mono">
                   {copyState === 'copied' ? t.shop.flippCopied : t.shop.flippCopyRefused}{' '}
+                  {/* Copied → the next step is on flipp.com, in a browser that HAS the
+                      bookmark: Safari itself on iOS (lib/flippList flippListOpenUrl). */}
+                  {copyState === 'copied' && (
+                    <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal)} target="_blank" rel="noopener noreferrer">
+                      <InlineIcon name="arrow-up-right-bold" /> {t.shop.openFlipp}
+                    </a>
+                  )}{' '}
                   {/* The whole walkthrough is one Réglages card away (DISCOVERY: ?focus= names the card). */}
                   <Chip to="/settings?tab=liste&focus=flipp">{t.shop.flippHow}</Chip>
                 </p>

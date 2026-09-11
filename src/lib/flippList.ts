@@ -196,6 +196,19 @@ export function flippAddTextsUrl(terms: string[], postal?: string | null): strin
   return `https://flipp.com/action?command=add_text_to_list&texts=${encodeURIComponent(texts.join(','))}${pc}`
 }
 
+/** « OUVRIR FLIPP.COM » after a copy — the page where the bookmark runs. From
+ *  Babillard installed as an app, a plain link opens an in-app browser window that
+ *  has no bookmarks (the phone's chrome in Marc's screenshot, 2026-09-10), so on iOS
+ *  the link uses the `x-safari-https://` scheme, which hands the URL to Safari
+ *  itself. EXPERIMENTAL: the scheme is undocumented; if a phone ignores it the tap
+ *  does nothing and the plain path (open Safari yourself) still stands. Elsewhere
+ *  (Android, desktop) the plain https link is right — the app or the browser takes it. */
+export function flippListOpenUrl(postal: string | null | undefined, ua: string = typeof navigator === 'undefined' ? '' : navigator.userAgent): string {
+  const pc = postal ? `?postal_code=${encodeURIComponent(postal)}` : ''
+  const path = `flipp.com/liste_dachats${pc}`
+  return /iPhone|iPad|iPod/.test(ua) ? `x-safari-https://${path}` : `https://${path}`
+}
+
 /** Where the body is served from, under the household's Babillard origin. */
 export const FLIPP_PASTE_PATH = '/flipp-paste.js'
 
