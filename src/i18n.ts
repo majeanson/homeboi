@@ -250,6 +250,7 @@ export const FR = {
     mealEmpty: (meal: string, when: string) => `${meal} ${when} à planifier`,
     mealLow: (meal: string, item: string) => `${meal} : il manque ${item}`,
     birthday: (who: string) => `${who} — fête bientôt, aucune idée de cadeau`,
+    transferDue: (what: string) => `${what} — un virement à envoyer`,
     // « Plus tard » — un signal qu'on a VU mais qu'on ne peut pas régler tout de
     // suite (un covoiturage encore à décider, une fête pour laquelle on a choisi de
     // ne rien acheter). Sans ça, la seule surface faite pour ALLÉGER la charge

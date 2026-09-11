@@ -61,9 +61,12 @@ interface MTripPlan { id: string; trip_id: string; category: string; label: stri
 // backfilling and editing all live in « Le point du jour », one tap away — which is why
 // this view no longer touches the real habits (useHabits/useMarkHabit) at all.
 interface MHabit { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[]; habits?: MHabit[] }
+// « Les virements » — a plan's due date, DERIVED on /api/month (never a stored row).
+// No amount rides along on purpose: the calendar is a kitchen wall surface.
+interface MTransfer { id: string; planId: string; title: string; colour: string | null; day: number }
+export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[]; habits?: MHabit[]; transfers?: MTransfer[] }
 
-interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[]; habits: MHabit[] }
+interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[]; habits: MHabit[]; transfers: MTransfer[] }
 // One day's slice of a trip band: the trip + whether this cell is its first/last
 // visible day (rounded ends + the title shows on the start).
 interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number; shared?: boolean }
@@ -77,7 +80,7 @@ interface TripSpan { id: string; title: string; colour: string; isStart: boolean
 // reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
 // a square and it carries which meal. Colour still carries who (events) / slot
 // (meals) / chore tint.
-type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work' | 'habit'
+type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work' | 'habit' | 'transfer'
 interface Dot {
   color: string
   kind: DotKind
@@ -117,6 +120,9 @@ const LENS_OF: Record<DotKind, LensKey | null> = {
   todo: 'todo',
   note: 'note',
   habit: null,
+  // No lens: « Virements » is not one of the six reading categories under the grid,
+  // and adding a seventh for it would put money in the legend of a wall calendar.
+  transfer: null,
 }
 
 // How many things of ONE lit kind a day holds — the same slices the panel prints, so a
@@ -196,6 +202,9 @@ function linesFor(
   // shape so a habit never reads as a chore you owe someone.
   for (const h of b.habits)
     out.push({ color: h.colour ?? CATS.routine.color, kind: 'habit', done: h.done, label: h.title })
+  // A due date reads as its own marker — the plan's NAME and nothing else. What it
+  // costs is one tap away, not on the wall.
+  for (const tr of b.transfers) out.push({ color: tr.colour ?? CATS.cercle.color, kind: 'transfer', label: tr.title })
   for (const n of b.notes) out.push({ color: CATS.list.color, kind: 'note', label: n.text })
   return out
 }
@@ -362,7 +371,7 @@ export function MonthView({
     const at = (d: number) => {
       let b = m.get(d)
       if (!b) {
-        b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [] }
+        b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [], transfers: [] }
         m.set(d, b)
       }
       return b
@@ -377,6 +386,7 @@ export function MonthView({
     // member's habits never surface on the calendar for whoever is standing there.
     for (const h of data?.habits ?? [])
       if (h.member_id === null || h.member_id === face) at(h.day).habits.push(h)
+    for (const tr of data?.transfers ?? []) at(tr.day).transfers.push(tr)
     for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
     return m
   }, [data, face])
@@ -864,6 +874,13 @@ export function MonthView({
                       // A derived « L'auto » work window → a clock, tinted by the member.
                       <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
                         <Icon name="clock-bold" size={12} color={dot.color} />
+                      </span>
+                    ) : dot.kind === 'transfer' ? (
+                      // A derived « virement » due date → the same receipt glyph the tab
+                      // and the ＋ tile wear, so the day says WHICH kind of thing is due
+                      // rather than adding one more anonymous coloured dot.
+                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
+                        <Icon name="receipt-bold" size={12} color={dot.color} />
                       </span>
                     ) : (
                       <span

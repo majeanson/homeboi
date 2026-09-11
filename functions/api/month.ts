@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 import { upkeepOccurrences } from '../_lib/upkeep'
+import { planOccurrences, type PlanRow as TransferPlanRow } from '../_lib/transfers'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
@@ -421,5 +422,26 @@ export const onRequestGet = authed(async (ctx, actor) => {
     for (const at of expandRange(h.anchor_at, rule, from, to)) cell(dayOf(at))
   }
 
-  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits })
+  // « Les virements » — the due dates of each standing agreement, DERIVED across the
+  // window (the birthdays / upkeep / habits pattern: never stored as event rows).
+  // Read-only on the calendar: a cell says a payment is due that day, and the tap goes
+  // to the tab — logging one stays in the composer.
+  //
+  // NO AMOUNT rides along, and that is deliberate: the calendar is the board's own
+  // surface on a kitchen wall tablet, read by kids, guests and whoever is standing
+  // there. The title and the day are what a glance needs; the number lives one tap
+  // away, on a surface someone opened on purpose.
+  const transferRows = await ctx.env.DB.prepare(
+    'SELECT id, household_id, title, amount_cents, recur_json, anchor_at, shares_json, catchup_json, colour, position FROM transfer_plans WHERE household_id = ? AND deleted_at IS NULL',
+  )
+    .bind(hh)
+    .all<TransferPlanRow>()
+  const transfers: { id: string; planId: string; title: string; colour: string | null; day: number }[] = []
+  for (const p of transferRows.results) {
+    for (const at of planOccurrences(p, from, to)) {
+      transfers.push({ id: `${p.id}#${at}`, planId: p.id, title: p.title, colour: p.colour, day: dayOf(at) })
+    }
+  }
+
+  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits, transfers })
 })

@@ -9,7 +9,7 @@ import type { IconName } from '../components/Icon'
 // returns STRUCTURED signals; the localized sentence + icon are composed here so all
 // copy stays in i18n. Shared by the board card (ARegler) and the « Cette semaine »
 // block, so neither re-derives the rendering.
-export type FrictionKind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday'
+export type FrictionKind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday' | 'transfer-due'
 
 export interface Friction {
   kind: FrictionKind
@@ -63,5 +63,9 @@ export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: strin
       return { icon: 'carrot-bold', text: t.aRegler.mealLow(f.label, f.sub ?? '') }
     case 'birthday':
       return { icon: 'cake-bold', text: t.aRegler.birthday(f.label) }
+    case 'transfer-due':
+      // The plan's name and nothing else. No amount on the board — see the scan's own
+      // comment: this line rides a kitchen wall tablet, the number does not.
+      return { icon: 'receipt-bold', text: t.aRegler.transferDue(f.label) }
   }
 }

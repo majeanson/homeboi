@@ -9,6 +9,7 @@ import { ingredientName } from '../_lib/ingredient'
 import { isSectionHeading } from '../_lib/recipeSections'
 import { householdMealLayout } from '../_lib/mealSlots'
 import { snoozeUntil, withoutSnoozed } from '../_lib/aReglerSnooze'
+import { coveredSet, coverKey, parseShares, planOccurrences, type PlanRow, type TransferRow } from '../_lib/transfers'
 
 // « À régler » — a calm, cross-domain heads-up: a SHORT, finite list of frictions
 // worth a parent's attention, each with a one-tap fix. The mental-load surface — it
@@ -25,7 +26,7 @@ import { snoozeUntil, withoutSnoozed } from '../_lib/aReglerSnooze'
 // We return STRUCTURED signals (kind + the entity data + a fix href); the frontend
 // (lib/aRegler) composes + localizes the sentence, so all copy stays in i18n.
 
-type Kind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday'
+type Kind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday' | 'transfer-due'
 interface Friction {
   kind: Kind
   key: string // stable id (React key / dedupe)
@@ -179,6 +180,39 @@ export const onRequestGet = authed(async (ctx, actor) => {
       // The first low ingredient this meal needs (loose contains match both ways).
       const hit = lowItems.find((low) => names.some((n) => n === low || n.includes(low) || low.includes(n)))
       if (hit) signals.push({ kind: 'meal-low', key: `low:${m.id}`, label: m.title, sub: hit, at: m.date, href: '/liste' })
+    }
+  }
+
+  // — A transfer due soon that nobody has sent for yet —
+  //
+  // NO AMOUNT on this line, deliberately. « À régler » rides the board, which is a
+  // wall tablet in a kitchen: kids, guests and whoever is standing there read it. The
+  // title and the day are enough to act on; the number lives one tap away, on a
+  // surface you opened on purpose — the same judgement that keeps care_log invoice
+  // totals out of a showcase link.
+  const planRows = await ctx.env.DB.prepare(
+    'SELECT id, household_id, title, amount_cents, recur_json, anchor_at, shares_json, catchup_json, colour, position FROM transfer_plans WHERE household_id = ? AND deleted_at IS NULL',
+  )
+    .bind(hh)
+    .all<PlanRow>()
+  if (planRows.results.length) {
+    const sentRows = await ctx.env.DB.prepare(
+      'SELECT id, member_id, sent_at, lines_json, memo, reference, note, created_at FROM transfers WHERE household_id = ? AND deleted_at IS NULL',
+    )
+      .bind(hh)
+      .all<TransferRow>()
+    const covered = coveredSet(sentRows.results)
+    for (const plan of planRows.results) {
+      // Who actually pays into this plan. A due date is owed by each payer
+      // SEPARATELY, so it stays a friction until every one of them has sent for it.
+      const payers = Object.keys(parseShares(plan.shares_json))
+      if (!payers.length) continue
+      // A week back (still unpaid = late) through a week ahead (worth knowing now).
+      for (const at of planOccurrences(plan, addLocalDays(today, -7), weekEnd)) {
+        const owing = payers.some((m) => !covered.has(coverKey(plan.id, at, m)))
+        if (!owing) continue
+        signals.push({ kind: 'transfer-due', key: `vir:${plan.id}:${at}`, label: plan.title, at, href: '/virement/new' })
+      }
     }
   }
 
