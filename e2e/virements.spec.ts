@@ -285,3 +285,26 @@ test('capture the two screens at 390px for review', async ({ page }) => {
   await expect(page.locator('.operator__inline-form')).toBeVisible()
   await page.screenshot({ path: 'e2e/screenshots/virements-plan.png', fullPage: true })
 })
+
+// The ＋ answers to the SECTION, and each face of Les notes has exactly one add — so
+// each gets the one-tap navigation, never a chooser offering the other one's verb.
+//
+// This pair exists because shipping the tile broke the note door: adding `virement` to
+// `SECTION_MODES.notes` turned « a blank note, instantly » into a two-tile sheet, and
+// `nav-restructure.spec.ts` caught it on CI. `modesFor` resolves path + `?section=`.
+test('the ＋ opens the transfer composer on the money face — one tap, no chooser', async ({ page }) => {
+  await openVirements(page)
+  await page.locator('.add-fab').click()
+  await expect(page.locator('.sheet.show')).toHaveCount(0)
+  await expect(page).toHaveURL(/\/virement\/new/)
+  await expect(page.locator('.virements__form')).toBeVisible()
+})
+
+test('…and the notes face still opens a blank note, untouched', async ({ page }) => {
+  await openVirements(page)
+  await page.locator('.subtabs').getByRole('tab', { name: 'Les notes' }).click()
+  await expect(page.locator('.cercle-notes')).toBeVisible()
+  await page.locator('.add-fab').click()
+  await expect(page.locator('.sheet.show')).toHaveCount(0)
+  await expect(page.locator('.note-editor')).toBeVisible()
+})

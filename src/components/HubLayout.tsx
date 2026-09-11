@@ -29,7 +29,7 @@ import { AddSheet } from './AddSheet'
 import { DetailProvider } from './detail/DetailProvider'
 import { KidExitGate } from './KidExitGate'
 import { OfflineBanner } from './OfflineBanner'
-import { AddSheetContext, SECTION_MODES, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, VOICE_MODES, type AddSheetMode } from '../lib/addSheet'
+import { AddSheetContext, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, modesFor, voiceModeFor, type AddSheetMode } from '../lib/addSheet'
 import { useAuth } from '../lib/auth'
 import {
   KitchenActionsContext,
@@ -185,7 +185,9 @@ export function HubLayout() {
   // Which section the ＋ serves, from the first path segment ('/kitchen/…' →
   // kitchen). Unknown paths fall back to the board's generic capture sheet.
   const section = loc.pathname.split('/')[1] || 'board'
-  const sectionModes = SECTION_MODES[section] ?? SECTION_MODES.board
+  // Path AND search: Les notes' two sections add different things, so the ＋ answers
+  // to `?section=` there (lib/addSheet modesFor). Every other tab is unaffected.
+  const sectionModes = modesFor(loc.pathname, loc.search)
 
   // Land every section at its top: switching tabs (or the ＋ that navigates into a
   // section) must start you at the beginning of the new section, not wherever the
@@ -219,7 +221,7 @@ export function HubLayout() {
   // The plain tap is untouched: useLongPress swallows only the click that ends a
   // completed hold, so the chooser still opens on a normal press.
   const [addVoice, setAddVoice] = useState(false)
-  const voiceMode = VOICE_MODES[section]
+  const voiceMode = voiceModeFor(loc.pathname, loc.search)
   useLongPress({
     targets: '.add-fab',
     // Nothing to dictate into on this section (Maison's adds are all structured

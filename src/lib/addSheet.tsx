@@ -154,9 +154,30 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // Les notes: a single mode, `cnote` — but its TAP is a FORM_ROUTES navigation
   // (a blank NoteEditor), so this list only matters for the HOLD (voice) and for
   // `?plus=cnote` deep-link validation.
-  // Les notes offers both of its faces: a note, and a virement. The ＋ no longer
-  // skips the chooser here — two tiles is exactly the case a chooser is for.
-  notes: ['cnote', 'virement'],
+  // Les notes: ONE mode, so the ＋ stays a straight navigation to a blank NoteEditor
+  // (iOS-Notes style, FORM_ROUTES.cnote) — adding a second tile here turned that one
+  // tap into a chooser and broke the behaviour nav-restructure.spec.ts pins.
+  notes: ['cnote'],
+  // …and the money face of the same tab answers on its own key, resolved by
+  // `modesFor` below. Also ONE mode, so it is also one tap: /virement/new.
+  'notes:virements': ['virement'],
+}
+
+// WHICH MODES THE ＋ OFFERS, for a surface that has more than one face.
+//
+// The ＋ is resolved from the first path segment, which is right for every tab whose
+// sections share one add-set (Maison offers the whole cercle set from all five of its
+// pills). Les notes is the exception: its two sections add entirely different things,
+// and each has exactly ONE, so each deserves the one-tap navigation rather than a
+// chooser offering the other section's verb.
+//
+// A path+search resolver rather than a second table, mirroring `sectionCardFor`
+// (lib/sectionCard) — which exists for this same shape of question, and whose header
+// says why a taxonomy must not be spelled twice. The composite key is `<section>:<param>`.
+export function modesFor(pathname: string, search: string): AddSheetMode[] {
+  const section = pathname.split('/')[1] || 'board'
+  const sub = new URLSearchParams(search).get('section')
+  return (sub && SECTION_MODES[`${section}:${sub}`]) || SECTION_MODES[section] || SECTION_MODES.board
 }
 
 // Hold the ＋ and speak (bmad/12 #18): which of the section's forms the long-press
@@ -173,6 +194,17 @@ export const VOICE_MODES: Record<string, AddSheetMode> = {
   liste: 'list-item',
   kitchen: 'pantry',
   notes: 'cnote',
+}
+
+// The HOLD, resolved the same way as the tiles. A section with no entry has no voice
+// door — « Les virements » is deliberately one of them: a sender, a set of ticked dates
+// and an amount is a structured form, and a sentence of speech cannot fill it (the same
+// reason Maison has no entry here). The hold there keeps its ordinary meaning.
+export function voiceModeFor(pathname: string, search: string): AddSheetMode | undefined {
+  const section = pathname.split('/')[1] || 'board'
+  const sub = new URLSearchParams(search).get('section')
+  if (sub) return VOICE_MODES[`${section}:${sub}`]
+  return VOICE_MODES[section]
 }
 
 // The operator-grade forms a kiosk that isn't signed in never sees as ＋ tiles.
