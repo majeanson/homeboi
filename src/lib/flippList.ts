@@ -145,15 +145,33 @@ export function flippListPayload(picks: Pick[], terms: string[] = []): string {
 //     on google.com/liste_dachats): says so, goes to flipp.com's list page, stops;
 //   · clipboard first (`navigator.clipboard.readText`, one « Coller » permission tap
 //     on a phone): a Babillard payload there → « Coller dans Flipp ? » OK = paste,
-//     Annuler = the way back; anything else, or no clipboard access → the prompt;
-//   · the prompt: paste = import; EMPTY + OK = the way back; Cancel = nothing;
-//   · import merges into a LOCAL list (a signed-in user's stored list is a server
-//     proxy, `_delegate: true` — replaced by a local one, which Flipp then merges
-//     into the account itself) and goes to `/liste_dachats`;
+//     Annuler = the way back; a CLEAR payload (« Vider ma liste Flipp » on the till)
+//     → its own confirm, naming what is lost; anything else, or no clipboard access
+//     → the prompt;
+//   · the prompt: paste = import; EMPTY + OK = the way back; « vider » = clear (after
+//     the same confirm); Cancel = nothing;
+//   · import, SIGNED OUT: merges into a LOCAL list and goes to `/liste_dachats`;
+//     Flipp merges that into the account at the next sign-in (`joinLocalList`, which
+//     their page runs on the 'login' event — and ONLY then);
+//   · import, SIGNED IN (2026-09-11): the ACCOUNT list, directly. Marc, already signed
+//     in on flipp.com, pasted and saw « the same clipped content »: with a session, the
+//     page rebuilds the list from the server on load and the local list the bookmark
+//     wrote is simply dropped — the merge only ever runs at login. So with a session
+//     the bookmark does what their login merge does: reads the bearer Flipp keeps in
+//     its own `flipp-login` cookie (on their origin, used from their origin, stored
+//     nowhere), GETs the account's lists (the first, or POSTs a new one), GETs its rows,
+//     and PUTs `{ commit_version, _ops }` — a `post` op per clipping / typed item not
+//     already there, the exact object `SLFlyerItemClipping.createOp('post')` builds.
+//     This is the same private API « Lier Flipp » used from our server (and was undone
+//     for: a stored third-party key); here nothing leaves flipp.com. A failed call says
+//     so with the step and status, and writes nothing;
+//   · clear: signed in → a `delete` op for every clipping and typed item on the
+//     account list (the rows echoed back with their id + commit_version); signed out
+//     → an empty local list. Then `/liste_dachats`;
 //   · the way back reads their list and opens `<origin>/liste#flipp=<base64url>`.
 /*BOOKMARKLET-START*/
 export const FLIPP_BOOKMARKLET_BODY =
-  '(function(){var B=(function(){var s=(typeof document!=="undefined"&&document.currentScript&&document.currentScript.src)||"";var m=/^(https?:\\/\\/[^\\/]+)/.exec(s);return m?m[1]:""})();function fail(m){alert(m)}if(!/(^|\\.)flipp\\.com$/.test(location.hostname)){fail("Ce signet s’utilise sur flipp.com — je t’y amène. Relance-le une fois là.");location.href="https://flipp.com/liste_dachats";return}function parse(t){var d=null;try{d=JSON.parse(t)}catch(e){}if(!d||d.v!==1||d.from){return null}var cl=d.clippings||[],it=d.items||[];if(!cl.length&&!it.length){return null}return d}function imp(d){var cl=d.clippings||[],it=d.items||[];var s=localStorage;var c={};try{c=JSON.parse(s.getItem("shopping_list")||"{}")||{}}catch(e){}if(c._delegate){c={}}var l={_outstandingOps:[],flyerItemClippings:c.flyerItemClippings||[],listItems:c.listItems||[],photos:c.photos||[],ecomItems:c.ecomItems||[],_delegate:false};var h={};var i;for(i=0;i<l.flyerItemClippings.length;i++){h[l.flyerItemClippings[i].flyerItemId]=1}for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}x.id="item-clipping-"+x.flyerItemId;l.flyerItemClippings.push(x);h[x.flyerItemId]=1}var g={};for(i=0;i<l.listItems.length;i++){g[String(l.listItems[i].term||"").toLowerCase()]=1}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}l.listItems.push({id:k.replace(/\\s/g,"")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2),term:String(q),checked:false});g[k]=1}s.setItem("shopping_list",JSON.stringify(l));location.href="/liste_dachats"}function exp(){var c={};try{c=JSON.parse(localStorage.getItem("shopping_list")||"{}")||{}}catch(e){}var cl=c.flyerItemClippings||[],li=c.listItems||[],o={v:1,from:"flipp",clippings:[],items:[]},i;for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId){continue}o.clippings.push({flyerItemId:x.flyerItemId,name:x.name||"",flyerId:x.flyerId||null,price:x.price==null?null:String(x.price),merchantId:x.merchantId||null,merchantName:x.merchantName||"",merchantLogoUrl:x.merchantLogoUrl||null,thumbnailUrl:x.thumbnailUrl||null,validTo:x.validTo||null,checked:!!x.checked})}for(i=0;i<li.length;i++){var y=li[i];if(!y||!y.term){continue}o.items.push({term:String(y.term),checked:!!y.checked})}if(!o.clippings.length&&!o.items.length){fail("Ta liste Flipp est vide — rien à rapporter vers Babillard.");return}var e=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");location.href=B+"/liste#flipp="+e}function ask(){var t=prompt("Colle ici ce que Babillard a copié (« Copier pour Flipp ») — ou laisse vide et OK pour rapporter ta liste Flipp vers Babillard.");if(t===null){return}if(!t.replace(/\\s/g,"")){exp();return}var d=parse(t);if(!d){fail("Ce n’est pas une liste Babillard — retourne dans Babillard, touche « Copier pour Flipp », puis reviens coller.");return}imp(d)}function go(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){var d=parse(t||"");if(!d){ask();return}if(confirm("Coller ta liste Babillard dans Flipp ?\\n\\nOK = coller · Annuler = plutôt rapporter ta liste Flipp vers Babillard")){imp(d)}else{exp()}},function(){ask()})}else{ask()}}go()})()'
+  '(function(){var B=(function(){var s=(typeof document!=="undefined"&&document.currentScript&&document.currentScript.src)||"";var m=/^(https?:\\/\\/[^\\/]+)/.exec(s);return m?m[1]:""})();var ACC="https://cdn-gateflipp.flippback.com/accounts";function fail(m){alert(m)}if(!/(^|\\.)flipp\\.com$/.test(location.hostname)){fail("Ce signet s’utilise sur flipp.com — je t’y amène. Relance-le une fois là.");location.href="https://flipp.com/liste_dachats";return}function tok(){var c=(typeof document!=="undefined"&&document.cookie)||"";var m=/(?:^|;\\s*)flipp-login=([^;]*)/.exec(c);if(!m){return null}var t=null;try{t=JSON.parse(decodeURIComponent(m[1]))}catch(e){}t=t&&t.token;return t&&t.access_token&&t.user_id?{a:String(t.access_token),u:String(t.user_id)}:null}function req(t,m,p,b){var o={method:m,headers:{"Content-Type":"application/json",Authorization:"Token token="+t.a}};if(b){o.body=JSON.stringify(b)}return fetch(ACC+"/v1/users/"+t.u+"/shopping_lists"+p,o).then(function(r){return r.text().then(function(x){var j=null;try{j=JSON.parse(x)}catch(e){}return{s:r.status,j:j}})})}function withList(t,f){return req(t,"GET","").then(function(r){if(r.s>=400){throw new Error("listes "+r.s)}var l=(r.j&&r.j.shopping_lists)||[];if(l.length&&l[0].id){return l[0].id}return req(t,"POST","").then(function(c){if(c.s>=400||!c.j||!c.j.id){throw new Error("création "+c.s)}return c.j.id})}).then(function(id){return req(t,"GET","/"+id).then(function(r){if(r.s>=400||!r.j){throw new Error("liste "+r.s)}var ops=f(r.j);if(!ops.length){return 0}return req(t,"PUT","/"+id,{commit_version:r.j.commit_version||0,_ops:ops}).then(function(p){if(p.s>=400){throw new Error("envoi "+p.s)}return ops.length})})})}function acctOps(cur,d){var cl=d.clippings||[],it=d.items||[],ops=[],h={},g={},i,x,ec=cur.flyer_item_clippings||[],ei=cur.list_items||[];for(i=0;i<ec.length;i++){h[ec[i].flyer_item_id]=1}for(i=0;i<ei.length;i++){g[String(ei[i].term||"").toLowerCase()]=1}for(i=0;i<cl.length;i++){x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}h[x.flyerItemId]=1;ops.push({verb:"post",object:{id:null,commit_version:null,type:"flyer_item_clipping",flyer_item_id:x.flyerItemId,name:x.name||"",flyer_id:x.flyerId==null?null:x.flyerId,right:x.right==null?null:x.right,left:x.left==null?null:x.left,top:x.top==null?null:x.top,bottom:x.bottom==null?null:x.bottom,price:x.price==null?null:String(x.price),merchant_id:x.merchantId==null?null:x.merchantId,merchant_name:x.merchantName||"",merchant_logo_url:x.merchantLogoUrl||null,thumbnail_url:x.thumbnailUrl||null,valid_to:x.validTo||null}})}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}g[k]=1;ops.push({verb:"post",object:{id:null,commit_version:null,type:"list_item",term:String(q),checked:false}})}return ops}function clearOps(cur){var ops=[],i,r,ec=cur.flyer_item_clippings||[],ei=cur.list_items||[];for(i=0;i<ec.length;i++){r=ec[i];if(r&&r.id!=null){ops.push({verb:"delete",object:{id:r.id,commit_version:r.commit_version==null?null:r.commit_version,type:"flyer_item_clipping",flyer_item_id:r.flyer_item_id==null?null:r.flyer_item_id,name:r.name||"",flyer_id:r.flyer_id==null?null:r.flyer_id,right:r.right==null?null:r.right,left:r.left==null?null:r.left,top:r.top==null?null:r.top,bottom:r.bottom==null?null:r.bottom,price:r.price==null?null:String(r.price),merchant_id:r.merchant_id==null?null:r.merchant_id,merchant_name:r.merchant_name||"",merchant_logo_url:r.merchant_logo_url||null,thumbnail_url:r.thumbnail_url||null,valid_to:r.valid_to||null}})}}for(i=0;i<ei.length;i++){r=ei[i];if(r&&r.id!=null){ops.push({verb:"delete",object:{id:r.id,commit_version:r.commit_version==null?null:r.commit_version,type:"list_item",term:r.term||"",checked:!!r.checked}})}}return ops}function parse(t){var d=null;try{d=JSON.parse(t)}catch(e){}if(!d||d.v!==1||d.from){return null}if(d.clear===true){return d}var cl=d.clippings||[],it=d.items||[];if(!cl.length&&!it.length){return null}return d}function done(){location.href="/liste_dachats"}function apiFail(e){fail("Flipp n’a pas pris la demande ("+((e&&e.message)||"?")+"). Réessaie — ou déconnecte-toi de flipp.com, relance le signet, puis reconnecte-toi.")}function impLocal(d){var cl=d.clippings||[],it=d.items||[];var s=localStorage;var c={};try{c=JSON.parse(s.getItem("shopping_list")||"{}")||{}}catch(e){}if(c._delegate){c={}}var l={_outstandingOps:[],flyerItemClippings:c.flyerItemClippings||[],listItems:c.listItems||[],photos:c.photos||[],ecomItems:c.ecomItems||[],_delegate:false};var h={};var i;for(i=0;i<l.flyerItemClippings.length;i++){h[l.flyerItemClippings[i].flyerItemId]=1}for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}x.id="item-clipping-"+x.flyerItemId;l.flyerItemClippings.push(x);h[x.flyerItemId]=1}var g={};for(i=0;i<l.listItems.length;i++){g[String(l.listItems[i].term||"").toLowerCase()]=1}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}l.listItems.push({id:k.replace(/\\s/g,"")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2),term:String(q),checked:false});g[k]=1}s.setItem("shopping_list",JSON.stringify(l));done()}function imp(d){var t=tok();if(!t){impLocal(d);return}withList(t,function(cur){return acctOps(cur,d)}).then(done,apiFail)}function clr(){if(!confirm("Vider ta liste Flipp ? Tout ce qui s’y trouve — rabais et articles — sera retiré.")){return}var t=tok();if(!t){localStorage.setItem("shopping_list",JSON.stringify({_outstandingOps:[],flyerItemClippings:[],listItems:[],photos:[],ecomItems:[],_delegate:false}));done();return}withList(t,clearOps).then(done,apiFail)}function act(d){if(d.clear===true){clr()}else{imp(d)}}function exp(){var c={};try{c=JSON.parse(localStorage.getItem("shopping_list")||"{}")||{}}catch(e){}var cl=c.flyerItemClippings||[],li=c.listItems||[],o={v:1,from:"flipp",clippings:[],items:[]},i;for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId){continue}o.clippings.push({flyerItemId:x.flyerItemId,name:x.name||"",flyerId:x.flyerId||null,price:x.price==null?null:String(x.price),merchantId:x.merchantId||null,merchantName:x.merchantName||"",merchantLogoUrl:x.merchantLogoUrl||null,thumbnailUrl:x.thumbnailUrl||null,validTo:x.validTo||null,checked:!!x.checked})}for(i=0;i<li.length;i++){var y=li[i];if(!y||!y.term){continue}o.items.push({term:String(y.term),checked:!!y.checked})}if(!o.clippings.length&&!o.items.length){fail("Ta liste Flipp est vide — rien à rapporter vers Babillard.");return}var e=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");location.href=B+"/liste#flipp="+e}function ask(){var t=prompt("Colle ici ce que Babillard a copié (« Copier pour Flipp ») — ou laisse vide et OK pour rapporter ta liste Flipp vers Babillard — ou écris « vider » pour vider ta liste Flipp.");if(t===null){return}var s=t.replace(/\\s/g,"");if(!s){exp();return}if(/^vider$/i.test(s)){clr();return}var d=parse(t);if(!d){fail("Ce n’est pas une liste Babillard — retourne dans Babillard, touche « Copier pour Flipp », puis reviens coller.");return}act(d)}function go(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){var d=parse(t||"");if(!d){ask();return}if(d.clear===true){clr();return}if(confirm("Coller ta liste Babillard dans Flipp ?\\n\\nOK = coller · Annuler = plutôt rapporter ta liste Flipp vers Babillard")){imp(d)}else{exp()}},function(){ask()})}else{ask()}}go()})()'
 /*BOOKMARKLET-END*/
 
 /** « ENVOYER À FLIPP » — the one-tap door, no bookmark. flipp.com's `/action`
@@ -290,4 +308,95 @@ export function mergeFlippList(
     added++
   }
   return { list, added }
+}
+
+/** « VIDER MA LISTE FLIPP » — what the till copies for the bookmark: a payload that
+ *  asks for a clear (the bookmark confirms on flipp.com, naming what is lost). */
+export const FLIPP_CLEAR_PAYLOAD = '{"v":1,"clear":true}'
+
+/** A row of Flipp's ACCOUNT list as their API returns it (snake_case). */
+export interface FlippServerList {
+  commit_version?: number
+  flyer_item_clippings?: { id?: string | number; commit_version?: number; flyer_item_id?: number; name?: string; flyer_id?: number | null; right?: number | null; left?: number | null; top?: number | null; bottom?: number | null; price?: string | number | null; merchant_id?: number | null; merchant_name?: string; merchant_logo_url?: string | null; thumbnail_url?: string | null; valid_to?: string | null }[]
+  list_items?: { id?: string | number; commit_version?: number; term?: string; checked?: boolean }[]
+}
+
+/** The readable twin of the bookmarklet's SIGNED-IN import: the ops it PUTs for a
+ *  payload against what the account list already holds — a clipping already there
+ *  (by flyer item) or a term already there (case-insensitive) is not sent again, the
+ *  same uniqueness Flipp's own merge applies. Each op is the object
+ *  `SLFlyerItemClipping.createOp('post')` / `SLListItem.createOp('post')` builds. */
+export function flippAccountOps(existing: FlippServerList, payload: FlippPayload): unknown[] {
+  const have = new Set((existing.flyer_item_clippings ?? []).map((c) => c.flyer_item_id))
+  const terms = new Set((existing.list_items ?? []).map((i) => String(i.term ?? '').toLowerCase()))
+  const ops: unknown[] = []
+  for (const x of payload.clippings ?? []) {
+    if (!x || !x.flyerItemId || have.has(x.flyerItemId)) continue
+    have.add(x.flyerItemId)
+    ops.push({
+      verb: 'post',
+      object: {
+        id: null,
+        commit_version: null,
+        type: 'flyer_item_clipping',
+        flyer_item_id: x.flyerItemId,
+        name: x.name || '',
+        flyer_id: x.flyerId ?? null,
+        right: x.right ?? null,
+        left: x.left ?? null,
+        top: x.top ?? null,
+        bottom: x.bottom ?? null,
+        price: x.price == null ? null : String(x.price),
+        merchant_id: x.merchantId ?? null,
+        merchant_name: x.merchantName || '',
+        merchant_logo_url: x.merchantLogoUrl || null,
+        thumbnail_url: x.thumbnailUrl || null,
+        valid_to: x.validTo || null,
+      },
+    })
+  }
+  for (const x of payload.items ?? []) {
+    const term = x?.term
+    if (!term) continue
+    const key = String(term).toLowerCase()
+    if (terms.has(key)) continue
+    terms.add(key)
+    ops.push({ verb: 'post', object: { id: null, commit_version: null, type: 'list_item', term: String(term), checked: false } })
+  }
+  return ops
+}
+
+/** The readable twin of the bookmarklet's CLEAR: a delete op per row of the account
+ *  list, each echoing the row (id + commit_version, as `createOp('delete', true)`). */
+export function flippClearOps(existing: FlippServerList): unknown[] {
+  const ops: unknown[] = []
+  for (const r of existing.flyer_item_clippings ?? []) {
+    if (!r || r.id == null) continue
+    ops.push({
+      verb: 'delete',
+      object: {
+        id: r.id,
+        commit_version: r.commit_version ?? null,
+        type: 'flyer_item_clipping',
+        flyer_item_id: r.flyer_item_id ?? null,
+        name: r.name || '',
+        flyer_id: r.flyer_id ?? null,
+        right: r.right ?? null,
+        left: r.left ?? null,
+        top: r.top ?? null,
+        bottom: r.bottom ?? null,
+        price: r.price == null ? null : String(r.price),
+        merchant_id: r.merchant_id ?? null,
+        merchant_name: r.merchant_name || '',
+        merchant_logo_url: r.merchant_logo_url || null,
+        thumbnail_url: r.thumbnail_url || null,
+        valid_to: r.valid_to || null,
+      },
+    })
+  }
+  for (const r of existing.list_items ?? []) {
+    if (!r || r.id == null) continue
+    ops.push({ verb: 'delete', object: { id: r.id, commit_version: r.commit_version ?? null, type: 'list_item', term: r.term || '', checked: !!r.checked } })
+  }
+  return ops
 }

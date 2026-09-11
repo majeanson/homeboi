@@ -2522,7 +2522,7 @@ export const FR = {
     flippOnce1: 'Touche « Copier le signet » ci-dessous.',
     flippOnce2: 'Ouvre Safari (ou Chrome) — pas la fenêtre qui s’ouvre depuis Babillard — et va sur flipp.com. Partage ▸ « Ajouter un signet », nomme-le « Coller de Babillard ».',
     flippOnce3: 'Signets ▸ Modifier ▸ touche « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié (elle commence par javascript:). Terminé.',
-    flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite) — c’est ce qui donne à l’app Flipp une chance de reprendre ta liste.',
+    flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite) : connecté, le signet écrit directement dans la liste de ton compte — celle que l’app Flipp affiche.',
     flippEachTitle: 'À chaque épicerie',
     flippEach1: 'Dans Babillard : La liste ▸ « Montrer à la caisse » ▸ « Copier pour Flipp » (ou juste « Envoyer à Flipp », sans signet, pour la liste en mots). Une ligne sous le bouton confirme.',
     flippEach2: 'Dans Safari, sur flipp.com : Signets ▸ « Coller de Babillard » ▸ colle dans la boîte ▸ OK. La page se recharge avec ta liste.',
@@ -3321,6 +3321,10 @@ export const FR = {
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
     flippCopied: 'Liste copiée ✓ — sur flipp.com, lance le signet « Coller de Babillard ».',
+    // « Vider ma liste Flipp » (2026-09-11): the till copies a CLEAR request; the
+    // bookmark, on flipp.com, asks before emptying the list (account or local).
+    flippClearList: 'Vider ma liste Flipp',
+    flippClearCopied: 'Vidage copié ✓ — sur flipp.com, lance le signet « Coller de Babillard » : il te demandera de confirmer avant de vider.',
     openFlipp: 'Ouvrir flipp.com',
     flippHow: 'Comment ça marche',
     flippCopyRefused: 'Le téléphone a refusé la copie — reviens ici et touche « Ma liste Flipp » de nouveau.',

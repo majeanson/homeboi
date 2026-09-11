@@ -5,7 +5,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
-import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl } from '../lib/flippList'
+import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl, FLIPP_CLEAR_PAYLOAD } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
@@ -137,13 +137,29 @@ export function CashierMode({
   // The notice fires while the flipp.com window COVERS this page and is gone before
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'refused'>('idle')
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'refused' | 'clear'>('idle')
   const copyForFlipp = () => {
     navigator.clipboard
       ?.writeText(flippListPayload(clippable, terms))
       .then(() => {
         setCopyState('copied')
         notice(t.shop.flippCopied)
+      })
+      .catch(() => setCopyState('refused'))
+  }
+  // « VIDER MA LISTE FLIPP » (2026-09-11). Marc: « keep the delete all list ». It was
+  // the linked account's button; the link is gone, and the one place code can still
+  // act on his Flipp list is the bookmark, on flipp.com. So this copies a CLEAR
+  // request the same way « Copier pour Flipp » copies the list; the bookmark reads it
+  // and asks, there, naming what is lost, before it empties the list (the account's
+  // when signed in, the local one otherwise — lib/flippList). Nothing of the
+  // household's is written here, so a guest may use it too.
+  const copyClear = () => {
+    navigator.clipboard
+      ?.writeText(FLIPP_CLEAR_PAYLOAD)
+      .then(() => {
+        setCopyState('clear')
+        notice(t.shop.flippClearCopied)
       })
       .catch(() => setCopyState('refused'))
   }
@@ -227,6 +243,9 @@ export function CashierMode({
                 <button type="button" className="btn cashier__copy" onClick={copyForFlipp}>
                   <InlineIcon name="check-bold" /> {t.shop.copyForFlipp}
                 </button>
+                <button type="button" className="btn btn--ghost cashier__clear-flipp" onClick={copyClear}>
+                  <InlineIcon name="trash-bold" /> {t.shop.flippClearList}
+                </button>
                 {clipNext ? (
                   <a
                     className="btn cashier__clip"
@@ -251,10 +270,10 @@ export function CashierMode({
               )}
               {copyState !== 'idle' && (
                 <p className="cashier__flipp-hint mono">
-                  {copyState === 'copied' ? t.shop.flippCopied : t.shop.flippCopyRefused}{' '}
+                  {copyState === 'copied' ? t.shop.flippCopied : copyState === 'clear' ? t.shop.flippClearCopied : t.shop.flippCopyRefused}{' '}
                   {/* Copied → the next step is on flipp.com, in a browser that HAS the
                       bookmark: Safari itself on iOS (lib/flippList flippListOpenUrl). */}
-                  {copyState === 'copied' && (
+                  {copyState !== 'refused' && (
                     <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal)} target="_blank" rel="noopener noreferrer">
                       <InlineIcon name="arrow-up-right-bold" /> {t.shop.openFlipp}
                     </a>

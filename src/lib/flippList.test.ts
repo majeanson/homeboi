@@ -8,6 +8,9 @@ import {
   flippSendText,
   flippListPayload,
   mergeFlippList,
+  flippAccountOps,
+  flippClearOps,
+  FLIPP_CLEAR_PAYLOAD,
   parseFlippHash,
   encodeFlippExport,
   type FlippPayload,
@@ -57,11 +60,38 @@ type StoredList = {
  *  navigator.clipboard.readText resolves to (undefined = no clipboard API, 'REFUSED'
  *  = the permission was denied); `prompt` = what the paste box returns; `confirm`
  *  = the answer to « Coller ta liste Babillard dans Flipp ? ». */
-async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED'; prompt?: string | null; confirm?: boolean; hostname?: string }) {
+type FakeCall = { method: string; url: string; body: unknown }
+/** A signed-in fake: Flipp's `flipp-login` cookie, as their page sets it. */
+const SIGNED_IN = 'flipp-login=' + encodeURIComponent(JSON.stringify({ token: { access_token: 'tok-abc', user_id: 4242 } })) + '; users=%5B%5D'
+async function run(opts: {
+  stored?: string | null
+  clipboard?: string | 'REFUSED'
+  prompt?: string | null
+  confirm?: boolean
+  hostname?: string
+  /** document.cookie on the fake page (SIGNED_IN = a session). */
+  cookie?: string
+  /** What the account list holds (signed in): lists → [{id}], the list → this. `null` = no list yet. */
+  account?: { commit_version?: number; flyer_item_clippings?: unknown[]; list_items?: unknown[] } | null
+  /** Force a status on one step: 'lists' | 'list' | 'put' | 'create'. */
+  failAt?: { step: string; status: number }
+}) {
   const store = new Map<string, string>()
   if (opts.stored != null) store.set('shopping_list', opts.stored)
   const alerts: string[] = []
   const prompts: string[] = []
+  const calls: FakeCall[] = []
+  const reply = (status: number, json: unknown) => Promise.resolve({ status, text: () => Promise.resolve(json == null ? '' : JSON.stringify(json)) })
+  const fetch = (url: string, init: { method: string; body?: string }) => {
+    calls.push({ method: init.method, url, body: init.body ? JSON.parse(init.body) : undefined })
+    const fail = (step: string) => (opts.failAt?.step === step ? opts.failAt.status : null)
+    const isLists = /\/shopping_lists$/.test(url)
+    if (init.method === 'GET' && isLists) return reply(fail('lists') ?? 200, { shopping_lists: opts.account === null ? [] : [{ id: 'L1' }] })
+    if (init.method === 'POST' && isLists) return reply(fail('create') ?? 201, { id: 'L-new', commit_version: 0 })
+    if (init.method === 'GET') return reply(fail('list') ?? 200, opts.account ?? { commit_version: 7, flyer_item_clippings: [], list_items: [] })
+    if (init.method === 'PUT') return reply(fail('put') ?? 200, {})
+    return reply(500, null)
+  }
   const location = { href: 'https://flipp.com/fr-ca/item/101', hostname: opts.hostname ?? 'flipp.com' }
   const navigator =
     opts.clipboard === undefined
@@ -69,8 +99,8 @@ async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED
       : { clipboard: { readText: () => (opts.clipboard === 'REFUSED' ? Promise.reject(new Error('denied')) : Promise.resolve(opts.clipboard)) } }
   // The body is SERVED (public/flipp-paste.js) and reads the household's origin off
   // its own <script src> — the fake document carries that, as flipp.com's page would.
-  const document = { currentScript: { src: ORIGIN + FLIPP_PASTE_PATH + '?v=1' } }
-  const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', 'document', FLIPP_BOOKMARKLET_BODY)
+  const document = { currentScript: { src: ORIGIN + FLIPP_PASTE_PATH + '?v=1' }, cookie: opts.cookie ?? '' }
+  const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', 'document', 'fetch', FLIPP_BOOKMARKLET_BODY)
   fn(
     { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) },
     (msg: string) => {
@@ -82,11 +112,12 @@ async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED
     location,
     navigator,
     document,
+    fetch,
   )
-  // The clipboard path is a promise; let it settle.
-  for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0))
+  // The clipboard path and the account calls are promises; let them settle.
+  for (let i = 0; i < 12; i++) await new Promise((r) => setTimeout(r, 0))
   const raw = store.get('shopping_list') ?? null
-  return { stored: raw, list: raw ? (JSON.parse(raw) as StoredList) : null, alerts, prompts, location }
+  return { stored: raw, list: raw ? (JSON.parse(raw) as StoredList) : null, alerts, prompts, location, calls }
 }
 
 describe('flippListPayload — every pick with a Flipp id as a clipping, every line as a typed item', () => {
@@ -274,6 +305,131 @@ describe('flippListOpenUrl — where the bookmark runs, as a link', () => {
   it('is the plain page elsewhere', () => {
     expect(flippListOpenUrl('H2X 1Y4', 'Mozilla/5.0 (Linux; Android 14) Chrome/120')).toBe('https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
     expect(flippListOpenUrl(null, 'Mozilla/5.0 (X11)')).toBe('https://flipp.com/liste_dachats')
+  })
+})
+
+describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT (2026-09-11)', () => {
+  const payload = flippListPayload([pick('a'), pick('b', { id: 102, name: 'Pain' })], ['Oeufs', 'Beurre'])
+
+  it('with a flipp-login cookie: GET lists → GET the first → PUT post ops, then their list page; the local list is left alone', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: payload })
+    expect(r.alerts).toEqual([])
+    expect(r.calls.map((c) => c.method + ' ' + c.url.replace('https://cdn-gateflipp.flippback.com/accounts', ''))).toEqual([
+      'GET /v1/users/4242/shopping_lists',
+      'GET /v1/users/4242/shopping_lists/L1',
+      'PUT /v1/users/4242/shopping_lists/L1',
+    ])
+    const put = r.calls[2].body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
+    expect(put.commit_version).toBe(7)
+    expect(put._ops.map((o) => [o.verb, o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
+      ['post', 'flyer_item_clipping', 101],
+      ['post', 'flyer_item_clipping', 102],
+      ['post', 'list_item', 'Oeufs'],
+      ['post', 'list_item', 'Beurre'],
+    ])
+    // The clipping op is the object their SLFlyerItemClipping.createOp('post') builds.
+    expect(put._ops[0].object).toEqual({
+      id: null,
+      commit_version: null,
+      type: 'flyer_item_clipping',
+      flyer_item_id: 101,
+      name: 'Lait 2% 4L',
+      flyer_id: 5001,
+      right: 20,
+      left: 10,
+      top: -5,
+      bottom: -15,
+      price: '4.99',
+      merchant_id: 3384,
+      merchant_name: 'Super C',
+      merchant_logo_url: 'https://images.wishabi.net/m/1.png',
+      thumbnail_url: 'https://f.wishabi.net/p/1.jpg',
+      valid_to: '2026-09-16T23:59:59-04:00',
+    })
+    expect(r.stored).toBeNull() // nothing written locally — the page rebuilds from the account
+    expect(r.location.href).toBe('/liste_dachats')
+  })
+
+  it('never re-posts a clipping or a term the account list already has (their own uniqueness)', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, account: { commit_version: 3, flyer_item_clippings: [{ id: 9, flyer_item_id: 101 }], list_items: [{ id: 8, term: 'oeufs' }] } })
+    const put = r.calls[2].body as { _ops: { object: Record<string, unknown> }[] }
+    expect(put._ops.map((o) => o.object.flyer_item_id ?? o.object.term)).toEqual([102, 'Beurre'])
+  })
+
+  it('no list on the account yet → POST one, then PUT into it', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, account: null })
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'POST', 'GET', 'PUT'])
+    expect(r.calls[3].url).toMatch(/\/shopping_lists\/L-new$/)
+  })
+
+  it('their API refusing (a 401 on the lists) → says so with the step and status, writes nothing, goes nowhere', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, failAt: { step: 'lists', status: 401 } })
+    expect(r.alerts).toHaveLength(1)
+    expect(r.alerts[0]).toMatch(/listes 401/)
+    expect(r.calls).toHaveLength(1)
+    expect(r.stored).toBeNull()
+    expect(r.location.href).toBe('https://flipp.com/fr-ca/item/101')
+  })
+
+  it('a cookie that is not a session (no token) → the local path, as signed out', async () => {
+    const r = await run({ cookie: 'flipp-login=' + encodeURIComponent('{"token":{}}'), prompt: payload })
+    expect(r.calls).toEqual([])
+    expect(r.list!.flyerItemClippings).toHaveLength(2)
+  })
+
+  it('agrees with its readable twin, flippAccountOps', async () => {
+    const account = { commit_version: 1, flyer_item_clippings: [{ id: 1, flyer_item_id: 102 }], list_items: [{ id: 2, term: 'Beurre' }] }
+    const r = await run({ cookie: SIGNED_IN, prompt: payload, account })
+    const put = r.calls[2].body as { _ops: unknown[] }
+    expect(put._ops).toEqual(flippAccountOps(account, JSON.parse(payload) as FlippPayload))
+  })
+})
+
+describe('« Vider ma liste Flipp » — the clear payload, and « vider » in the paste box', () => {
+  const account = {
+    commit_version: 5,
+    flyer_item_clippings: [{ id: 'c1', commit_version: 2, flyer_item_id: 101, name: 'Lait', merchant_name: 'Super C', price: 4.99 }, { id: 'c2', commit_version: 1, flyer_item_id: 555 }],
+    list_items: [{ id: 'i1', commit_version: 3, term: 'Oeufs', checked: true }],
+  }
+
+  it('the till payload parses as a clear; signed in → one delete op per row, echoing id + commit_version, then their list page', async () => {
+    const r = await run({ cookie: SIGNED_IN, clipboard: FLIPP_CLEAR_PAYLOAD, confirm: true, account })
+    expect(r.prompts).toEqual([])
+    const put = r.calls[2].body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
+    expect(put.commit_version).toBe(5)
+    expect(put._ops.map((o) => [o.verb, o.object.type, o.object.id, o.object.commit_version])).toEqual([
+      ['delete', 'flyer_item_clipping', 'c1', 2],
+      ['delete', 'flyer_item_clipping', 'c2', 1],
+      ['delete', 'list_item', 'i1', 3],
+    ])
+    expect(put._ops).toEqual(flippClearOps(account))
+    expect(r.location.href).toBe('/liste_dachats')
+  })
+
+  it('« Annuler » on the confirm clears nothing — no call, no write', async () => {
+    const r = await run({ cookie: SIGNED_IN, clipboard: FLIPP_CLEAR_PAYLOAD, confirm: false, account })
+    expect(r.calls).toEqual([])
+    expect(r.stored).toBeNull()
+    expect(r.location.href).toBe('https://flipp.com/fr-ca/item/101')
+  })
+
+  it('signed out → the local list is emptied (kept as a list, not removed)', async () => {
+    const stored = JSON.stringify({ _delegate: false, flyerItemClippings: [{ id: 'x', flyerItemId: 1 }], listItems: [{ id: 'y', term: 'Lait', checked: false }] })
+    const r = await run({ stored, prompt: 'vider', confirm: true })
+    expect(r.calls).toEqual([])
+    expect(r.list).toEqual({ _outstandingOps: [], flyerItemClippings: [], listItems: [], photos: [], ecomItems: [], _delegate: false })
+    expect(r.location.href).toBe('/liste_dachats')
+  })
+
+  it('« vider » typed in the paste box (any case, spaces around) is the clear', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: '  Vider ', confirm: true, account })
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT'])
+  })
+
+  it('an empty account list → no PUT at all, straight to their page', async () => {
+    const r = await run({ cookie: SIGNED_IN, prompt: 'vider', confirm: true, account: { commit_version: 1, flyer_item_clippings: [], list_items: [] } })
+    expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET'])
+    expect(r.location.href).toBe('/liste_dachats')
   })
 })
 
