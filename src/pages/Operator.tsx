@@ -206,8 +206,17 @@ export function Operator() {
   // sub (by its help key, e.g. measureColors in kitchen▸apparence): scroll to it
   // with a brief accent ring, then consume the param (one functional setParams
   // write — two setters in a row would race, see the openTheme note in guide.tsx).
-  // Polls a few beats: a conditional section (the AI log) can mount after its
-  // query answers, same late-anchor reasoning as TourOverlay.
+  // Polls: a conditional section (the AI log) can mount after its query answers,
+  // same late-anchor reasoning as TourOverlay — and on a phone the whole Réglages
+  // chunk is lazy, so 12 beats (1.4 s) gave up before the card existed and landed
+  // the link at the top of the pill (Marc, iPhone, 2026-09-10: « the link to comment
+  // ça marche doesn't go to the right spot »). Up to ~6 s now.
+  //
+  // Then the scroll is SETTLED, not just made once: a card low in a stack sits under
+  // cards that fill in from the network (« Mes magasins » fetches the flyers), and
+  // those rows arriving AFTER the first scroll push the target back off-screen —
+  // invisible with instant mocks, the whole story on a phone. Re-scroll a few beats
+  // while the target is still not at the top; stop the moment the reader scrolls.
   useEffect(() => {
     if (!params.get('focus')) return
     const focus = params.get('focus')!
@@ -215,12 +224,29 @@ export function Operator() {
     const timer = window.setInterval(() => {
       const el = document.getElementById(`op-${focus}`)
       tries += 1
-      if (!el && tries < 12) return
+      if (!el && tries < 50) return
       window.clearInterval(timer)
       if (el) {
         el.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
         el.classList.add('is-target')
         window.setTimeout(() => el.classList.remove('is-target'), 1800)
+        let settles = 0
+        let touched = false
+        const stop = () => {
+          touched = true
+        }
+        window.addEventListener('pointerdown', stop, { once: true })
+        window.addEventListener('wheel', stop, { once: true, passive: true })
+        const settle = window.setInterval(() => {
+          settles += 1
+          const top = el.getBoundingClientRect().top
+          if (touched || settles > 8) {
+            window.clearInterval(settle)
+            return
+          }
+          // Off the top edge by more than a hair — something above grew or shrank.
+          if (Math.abs(top) > 24) el.scrollIntoView({ behavior: 'auto', block: 'start' })
+        }, 400)
       }
       setParams(
         (prev) => {

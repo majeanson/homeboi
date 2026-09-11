@@ -400,3 +400,28 @@ test('a guest sees no refresh button (it writes)', async ({ page }) => {
   await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(1)
   await expect(page.locator('button.cashier__refresh')).toHaveCount(0)
 })
+
+// « COMMENT ÇA MARCHE » LANDS ON THE CARD — even when the cards above it fill in
+// late. Marc, iPhone (2026-09-10): « the link doesn't go to the right spot ». The
+// walkthrough card sits under « Mes magasins », which fetches the flyers; with
+// instant mocks the rows are there before the scroll, on a phone they arrive AFTER
+// it and push the card back down — and the lazy Réglages chunk can outlast a short
+// poll entirely. The flyers answer is delayed here so the card must be found late
+// and the scroll re-settled; the proof is the card's edge at the top of the view.
+test('the « Comment ça marche » chip lands on the walkthrough card, even when the cards above load late', async ({ page }) => {
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await openGrid(page)
+  // Registered after mockApi → wins: the store-filter card's data arrives 1.5 s late.
+  await page.route(/\/api\/flyers(\?|$)/, async (route) => {
+    await new Promise((r) => setTimeout(r, 1500))
+    await route.fallback()
+  })
+  await page.locator('button.cashier__copy').click()
+  await page.locator('.cashier__flipp-hint a').click()
+  const card = page.locator('#op-flipp')
+  await expect(card).toBeVisible({ timeout: 15_000 })
+  // Give the late rows time to land and the settle loop time to answer them.
+  await page.waitForTimeout(3_000)
+  const top = (await card.boundingBox())!.y
+  expect(Math.abs(top), `card top edge should sit at the top of the view, was ${top}px`).toBeLessThanOrEqual(40)
+})
