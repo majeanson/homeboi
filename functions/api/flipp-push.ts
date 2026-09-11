@@ -23,12 +23,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const body = (await ctx.request.json().catch(() => null)) as {
     clippings?: unknown
     items?: unknown
+    mode?: unknown
   } | null
   const clippings = Array.isArray(body?.clippings) ? (body!.clippings as never[]) : []
   const items = Array.isArray(body?.items) ? (body!.items as unknown[]).filter((t): t is string => typeof t === 'string') : []
-  if (!clippings.length && !items.length) return badRequest('Rien à envoyer.')
+  const mode = body?.mode === 'clear' || body?.mode === 'replace' ? body.mode : 'add'
+  if (mode !== 'clear' && !clippings.length && !items.length) return badRequest('Rien à envoyer.')
 
-  const result = await pushToFlipp(row, ctx.env.SESSION_SECRET, clippings, items)
+  const result = await pushToFlipp(row, ctx.env.SESSION_SECRET, clippings, items, mode)
   const now = nowSec()
   if (result.ok) {
     // Remember the resolved list id (saves a round-trip next time) and clear the error.

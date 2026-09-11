@@ -2983,6 +2983,8 @@ export const EN: typeof FR = {
     copyForFlipp: 'Copy for Flipp',
     sendToFlipp: 'Send to Flipp',
     sendWithDeals: 'Send to Flipp (with deals)',
+    clearFlipp: 'Clear my Flipp list',
+    flippCleared: 'Flipp list cleared — the broken items are gone.',
     sending: 'Sending…',
     pushedToFlipp: (n: number) => `Sent into Flipp · ${n} item${n>1?'s':''} — open the app.`,
     pushFailed: 'Flipp refused the send — re-link your account in Settings ▸ The list ▸ Shopping.',

@@ -105,6 +105,7 @@ describe('flippListPayload — every pick with a Flipp id as a clipping, every l
       merchantName: 'Super C',
       merchantLogoUrl: 'https://images.wishabi.net/m/1.png',
       thumbnailUrl: 'https://f.wishabi.net/p/1.jpg',
+      cutoutImageUrl: 'https://f.wishabi.net/p/1.jpg',
       validTo: '2026-09-16T23:59:59-04:00',
       left: 10,
       right: 20,

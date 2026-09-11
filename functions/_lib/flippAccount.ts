@@ -42,13 +42,30 @@ export interface Clipping {
   right?: number | null
   top?: number | null
   bottom?: number | null
+  // The cutout image Flipp's list renderer actually draws (`FlyerItem.cutout_image_url`),
+  // added 2026-09-11 to try to get an injected clipping to render without a details fetch.
+  cutoutImageUrl?: string | null
 }
 
-/** The current list, as GET returns it — for commit_version + de-dupe. */
+/** The current list, as GET returns it — for commit_version + de-dupe + replace/clear. */
 export interface ServerList {
   commit_version?: number
-  flyer_item_clippings?: { flyer_item_id?: number }[]
-  list_items?: { term?: string }[]
+  flyer_item_clippings?: { id?: string | number; flyer_item_id?: number; commit_version?: number; term?: string }[]
+  list_items?: { id?: string | number; term?: string; commit_version?: number }[]
+}
+
+/** A delete op for a row already on the list (its own id + commit_version). Used to
+ *  CLEAR the list and to REPLACE a stale clipping with a fresh one (new fields). */
+function deleteOp(type: 'flyer_item_clipping' | 'list_item', row: { id?: string | number; commit_version?: number }) {
+  return { verb: 'delete', object: { id: row.id ?? null, commit_version: row.commit_version ?? null, type } }
+}
+
+/** Every existing clipping + typed item as a delete op — « Vider ma liste Flipp ». */
+export function clearOps(existing: ServerList): unknown[] {
+  const ops: unknown[] = []
+  for (const c of existing.flyer_item_clippings ?? []) if (c.id != null) ops.push(deleteOp('flyer_item_clipping', c))
+  for (const i of existing.list_items ?? []) if (i.id != null) ops.push(deleteOp('list_item', i))
+  return ops
 }
 
 /** The ops to send for a payload against what the list already holds: a clipping
@@ -56,16 +73,23 @@ export interface ServerList {
  *  sent again — the same uniqueness Flipp's own merge applies. PURE, so tested in
  *  isolation (the fragile half of the push). Names/terms are length-capped defensively.
  *  Geometry rides through, matching `SLFlyerItemClipping.createOp('post')`. */
-export function buildOps(clippings: Clipping[], items: string[], existing: ServerList): { ops: unknown[]; skipped: number } {
-  const haveIds = new Set((existing.flyer_item_clippings ?? []).map((c) => c.flyer_item_id).filter((x): x is number => typeof x === 'number'))
+export function buildOps(clippings: Clipping[], items: string[], existing: ServerList, replace = false): { ops: unknown[]; skipped: number } {
+  const byId = new Map((existing.flyer_item_clippings ?? []).filter((c) => typeof c.flyer_item_id === 'number').map((c) => [c.flyer_item_id as number, c]))
+  const haveIds = new Set(byId.keys())
   const haveTerms = new Set((existing.list_items ?? []).map((i) => String(i.term ?? '').trim().toLowerCase()).filter(Boolean))
   const ops: unknown[] = []
   let skipped = 0
   for (const c of clippings) {
     if (!c || typeof c.flyerItemId !== 'number' || !c.name) continue
     if (haveIds.has(c.flyerItemId)) {
-      skipped++
-      continue
+      if (!replace) {
+        skipped++
+        continue
+      }
+      // REPLACE: drop the stale row first (a re-send with fresh fields — the fix for
+      // a clipping that rendered broken because it was injected without cutout data).
+      const existingRow = byId.get(c.flyerItemId)
+      if (existingRow?.id != null) ops.push(deleteOp('flyer_item_clipping', existingRow))
     }
     haveIds.add(c.flyerItemId)
     ops.push({
@@ -86,6 +110,7 @@ export function buildOps(clippings: Clipping[], items: string[], existing: Serve
         merchant_name: String(c.merchantName ?? ''),
         merchant_logo_url: c.merchantLogoUrl ?? null,
         thumbnail_url: c.thumbnailUrl ?? null,
+        cutout_image_url: c.cutoutImageUrl ?? c.thumbnailUrl ?? null,
         valid_to: c.validTo ?? null,
       },
     })
@@ -140,6 +165,7 @@ export async function pushToFlipp(
   secret: string | undefined,
   clippings: Clipping[],
   items: string[],
+  mode: 'add' | 'replace' | 'clear' = 'add',
 ): Promise<PushResult> {
   const token = await open(link.access_token_enc, secret)
   if (!token) return { ok: false, added: 0, error: 'token-unreadable' }
@@ -167,8 +193,11 @@ export async function pushToFlipp(
   const list = cur.json as ServerList
   const had = clipCount(list)
 
-  const { ops, skipped } = buildOps(clippings, items, list)
-  if (!ops.length) return { ok: true, listId, added: 0, skipped, diag: `lists:${ids.length} list:${listId} had:${had} ops:0` }
+  // « Vider ma liste Flipp » — delete every clipping + typed item (Marc's list stuck
+  // with un-renderable clippings, 2026-09-11). Otherwise add, or REPLACE (drop a
+  // stale clipping then re-post it with fresh fields, the render-fix attempt).
+  const { ops, skipped } = mode === 'clear' ? { ops: clearOps(list), skipped: 0 } : buildOps(clippings, items, list, mode === 'replace')
+  if (!ops.length) return { ok: true, listId, added: 0, skipped, diag: `lists:${ids.length} list:${listId} had:${had} ops:0 mode:${mode}` }
 
   // 3. Apply, then RE-READ to prove the server actually took the ops (now > had) —
   //    the fact that tells "app didn't sync" from "PUT was a silent no-op".
@@ -178,7 +207,7 @@ export async function pushToFlipp(
   })
   const after = await api(token, `${base}/${listId}`)
   const now = clipCount(after.json)
-  const diag = `lists:${ids.length} list:${listId} had:${had} ops:${ops.length} put:${put.status} now:${now}`
+  const diag = `lists:${ids.length} list:${listId} had:${had} ops:${ops.length} put:${put.status} now:${now} mode:${mode}`
   if (put.status >= 400) return { ok: false, listId, added: 0, error: `put-${put.status}`, diag }
   return { ok: true, listId, added: ops.length, skipped, diag }
 }

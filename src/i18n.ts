@@ -3329,6 +3329,8 @@ export const FR = {
     // items — and on a phone with the app, that link opens the app.
     sendToFlipp: 'Envoyer à Flipp',
     sendWithDeals: 'Envoyer à Flipp (rabais compris)',
+    clearFlipp: 'Vider ma liste Flipp',
+    flippCleared: 'Liste Flipp vidée — les articles cassés sont partis.',
     sending: 'Envoi…',
     pushedToFlipp: (n: number) => `Envoyé dans Flipp · ${n} article${n>1?'s':''} — ouvre l’app.`,
     pushFailed: 'Flipp a refusé l’envoi — reconnecte ton compte dans Réglages ▸ La liste ▸ Magasinage.',

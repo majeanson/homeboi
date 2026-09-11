@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildOps, type Clipping, type ServerList } from './flippAccount'
+import { buildOps, clearOps, type Clipping, type ServerList } from './flippAccount'
 
 // The op-builder is the fragile half of « Lier Flipp »: the exact objects we PUT to
 // Flipp's private accounts API, and the de-dupe that keeps a re-send from doubling.
@@ -45,6 +45,7 @@ describe('buildOps — Flipp accounts-API ops, with the same uniqueness their me
         merchant_name: 'Super C',
         merchant_logo_url: 'https://l',
         thumbnail_url: 'https://t',
+        cutout_image_url: 'https://t',
         valid_to: '2026-09-16T23:59:59-04:00',
       },
     })
@@ -87,5 +88,33 @@ describe('buildOps — Flipp accounts-API ops, with the same uniqueness their me
   it('drops a clipping with no id or no name, and a blank term', () => {
     const { ops } = buildOps([clip({ flyerItemId: undefined as unknown as number }), clip({ name: '' })], ['', '   '], {})
     expect(ops).toEqual([])
+  })
+})
+
+describe('cutout + replace + clear (2026-09-11 render-fix attempt)', () => {
+  const c = (over: Partial<Clipping> = {}): Clipping => clip({ ...over })
+  it('the op carries cutout_image_url (their renderer draws that), falling back to the thumbnail', () => {
+    const { ops } = buildOps([c({ cutoutImageUrl: 'https://cut', thumbnailUrl: 'https://thumb' })], [], {})
+    expect((ops[0] as { object: { cutout_image_url: string } }).object.cutout_image_url).toBe('https://cut')
+    const { ops: ops2 } = buildOps([c({ cutoutImageUrl: undefined, thumbnailUrl: 'https://thumb' })], [], {})
+    expect((ops2[0] as { object: { cutout_image_url: string } }).object.cutout_image_url).toBe('https://thumb')
+  })
+  it('replace: a clipping already present is deleted then re-posted (fresh fields)', () => {
+    const existing: ServerList = { flyer_item_clippings: [{ id: 'srv-1', flyer_item_id: 101, commit_version: 4 }] }
+    const { ops } = buildOps([c({})], [], existing, true)
+    expect(ops).toHaveLength(2)
+    expect((ops[0] as { verb: string; object: { id: string; type: string } }).verb).toBe('delete')
+    expect((ops[0] as { object: { id: string } }).object.id).toBe('srv-1')
+    expect((ops[1] as { verb: string }).verb).toBe('post')
+  })
+  it('clearOps deletes every clipping and typed item by id', () => {
+    const existing: ServerList = {
+      flyer_item_clippings: [{ id: 'a', flyer_item_id: 1 }, { id: 'b', flyer_item_id: 2 }],
+      list_items: [{ id: 'li1', term: 'Pain' }],
+    }
+    const ops = clearOps(existing)
+    expect(ops).toHaveLength(3)
+    expect(ops.every((o) => (o as { verb: string }).verb === 'delete')).toBe(true)
+    expect(ops.map((o) => (o as { object: { id: string } }).object.id)).toEqual(['a', 'b', 'li1'])
   })
 })

@@ -52,6 +52,7 @@ export interface FlippClipping {
   right: number | null
   top: number | null
   bottom: number | null
+  cutoutImageUrl: string | null
 }
 
 /** One typed line, in Flipp's shape minus the id (the bookmarklet mints that). */
@@ -108,6 +109,7 @@ export function flippListPayload(picks: Pick[], terms: string[] = []): string {
       right: d.box?.right ?? null,
       top: d.box?.top ?? null,
       bottom: d.box?.bottom ?? null,
+      cutoutImageUrl: d.image,
     })
   }
   const seen = new Set<string>()
