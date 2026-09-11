@@ -57,12 +57,12 @@ type StoredList = {
  *  navigator.clipboard.readText resolves to (undefined = no clipboard API, 'REFUSED'
  *  = the permission was denied); `prompt` = what the paste box returns; `confirm`
  *  = the answer to « Coller ta liste Babillard dans Flipp ? ». */
-async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED'; prompt?: string | null; confirm?: boolean }) {
+async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED'; prompt?: string | null; confirm?: boolean; hostname?: string }) {
   const store = new Map<string, string>()
   if (opts.stored != null) store.set('shopping_list', opts.stored)
   const alerts: string[] = []
   const prompts: string[] = []
-  const location = { href: 'https://flipp.com/fr-ca/item/101' }
+  const location = { href: 'https://flipp.com/fr-ca/item/101', hostname: opts.hostname ?? 'flipp.com' }
   const navigator =
     opts.clipboard === undefined
       ? {}
@@ -203,6 +203,19 @@ describe('the bookmarklet, run against a fake flipp.com page — Babillard → F
       expect(r.location.href).toBe('https://flipp.com/fr-ca/item/101')
       expect(r.alerts).toHaveLength(1)
     }
+  })
+
+  it('run anywhere but flipp.com: says so, goes to their list page, touches nothing (Marc ran it on Google)', async () => {
+    for (const host of ['www.google.com', 'babillard.marcportal.com']) {
+      const r = await run({ hostname: host, clipboard: payload, stored: '{"listItems":[]}' })
+      expect(r.alerts).toHaveLength(1)
+      expect(r.prompts).toEqual([])
+      expect(r.location.href).toBe('https://flipp.com/liste_dachats')
+      expect(r.stored).toBe('{"listItems":[]}') // that site's storage is not ours to write
+    }
+    // …and their own subdomain still counts as flipp.com.
+    const ok = await run({ hostname: 'www.flipp.com', prompt: payload })
+    expect(ok.list!.flyerItemClippings).toHaveLength(2)
   })
 
   it('Cancel on the paste box does nothing at all', async () => {

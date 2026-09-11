@@ -215,6 +215,13 @@ undocumented scheme — if a phone ignores it the tap does nothing and the manua
 step still stands) and the plain page elsewhere (`flippListOpenUrl`, UA-switched;
 unit + e2e under an iPhone UA). Marc's to confirm; if it does nothing, it goes.
 
+**« I get /liste_dachats 404 »** — the address bar said google.com: the bookmark had
+been run on Google's page, did its work there and sent him to google.com/liste_dachats.
+The production loader itself, run on flipp.com from here, pastes and lands on their
+list. The bookmark now forgives the mistake: anywhere but flipp.com it says so and
+takes you to flipp.com's list page — run it again there. Unit-tested on Google's and
+our own host; `www.flipp.com` still counts.
+
 Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
 `flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
 landing under late data), live 5/5 exercisable (4 still waits for an account).
