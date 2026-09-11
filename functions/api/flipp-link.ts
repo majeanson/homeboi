@@ -29,7 +29,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const row = await readLink(ctx.env, actor.householdId)
   if (!row) return ok({ linked: false })
   return ok({ linked: true, email: row.email, lastPushAt: row.last_push_at, lastError: row.last_error })
-}, 'operator')
+})  // any actor: the till decides which « Envoyer à Flipp » door to draw (a kiosk reads it too)
 
 // POST — link: verify the harvested token owns the user id, then store it encrypted.
 export const onRequestPost = authed(async (ctx, actor) => {

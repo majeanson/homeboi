@@ -26,7 +26,7 @@ export interface FlippLinkRow {
   email: string | null
 }
 
-interface Clipping {
+export interface Clipping {
   flyerItemId: number
   name: string
   flyerId: number | null
@@ -36,37 +36,72 @@ interface Clipping {
   merchantLogoUrl: string | null
   thumbnailUrl: string | null
   validTo: string | null
+  // The item's box on its flyer — kept so the pushed op matches a real clipping
+  // (Flipp's `createOp` carries it); optional, older staged deals lack it.
+  left?: number | null
+  right?: number | null
+  top?: number | null
+  bottom?: number | null
 }
 
-/** One clipping as Flipp's op — the exact object `SLFlyerItemClipping.createOp('post')`
- *  builds (snake_case, `id`/`commit_version` null for a create). */
-function clippingOp(c: Clipping) {
-  return {
-    verb: 'post',
-    object: {
-      id: null,
-      commit_version: null,
-      type: 'flyer_item_clipping',
-      flyer_item_id: c.flyerItemId,
-      name: c.name,
-      flyer_id: c.flyerId,
-      right: null,
-      left: null,
-      top: null,
-      bottom: null,
-      price: c.price,
-      merchant_id: c.merchantId,
-      merchant_name: c.merchantName,
-      merchant_logo_url: c.merchantLogoUrl,
-      thumbnail_url: c.thumbnailUrl,
-      valid_to: c.validTo,
-    },
+/** The current list, as GET returns it — for commit_version + de-dupe. */
+export interface ServerList {
+  commit_version?: number
+  flyer_item_clippings?: { flyer_item_id?: number }[]
+  list_items?: { term?: string }[]
+}
+
+/** The ops to send for a payload against what the list already holds: a clipping
+ *  already there (by flyer item) or a term already there (case-insensitive) is not
+ *  sent again — the same uniqueness Flipp's own merge applies. PURE, so tested in
+ *  isolation (the fragile half of the push). Names/terms are length-capped defensively.
+ *  Geometry rides through, matching `SLFlyerItemClipping.createOp('post')`. */
+export function buildOps(clippings: Clipping[], items: string[], existing: ServerList): { ops: unknown[]; skipped: number } {
+  const haveIds = new Set((existing.flyer_item_clippings ?? []).map((c) => c.flyer_item_id).filter((x): x is number => typeof x === 'number'))
+  const haveTerms = new Set((existing.list_items ?? []).map((i) => String(i.term ?? '').trim().toLowerCase()).filter(Boolean))
+  const ops: unknown[] = []
+  let skipped = 0
+  for (const c of clippings) {
+    if (!c || typeof c.flyerItemId !== 'number' || !c.name) continue
+    if (haveIds.has(c.flyerItemId)) {
+      skipped++
+      continue
+    }
+    haveIds.add(c.flyerItemId)
+    ops.push({
+      verb: 'post',
+      object: {
+        id: null,
+        commit_version: null,
+        type: 'flyer_item_clipping',
+        flyer_item_id: c.flyerItemId,
+        name: String(c.name).slice(0, 200),
+        flyer_id: c.flyerId ?? null,
+        right: c.right ?? null,
+        left: c.left ?? null,
+        top: c.top ?? null,
+        bottom: c.bottom ?? null,
+        price: c.price == null ? null : String(c.price),
+        merchant_id: c.merchantId ?? null,
+        merchant_name: String(c.merchantName ?? ''),
+        merchant_logo_url: c.merchantLogoUrl ?? null,
+        thumbnail_url: c.thumbnailUrl ?? null,
+        valid_to: c.validTo ?? null,
+      },
+    })
   }
-}
-
-/** One typed line as Flipp's op — `SLListItem.createOp('post')`. */
-function itemOp(term: string) {
-  return { verb: 'post', object: { id: null, commit_version: null, type: 'list_item', term, checked: false } }
+  for (const raw of items) {
+    const term = String(raw ?? '').replace(/\s+/g, ' ').trim().slice(0, 120)
+    const key = term.toLowerCase()
+    if (!term) continue
+    if (haveTerms.has(key)) {
+      skipped++
+      continue
+    }
+    haveTerms.add(key)
+    ops.push({ verb: 'post', object: { id: null, commit_version: null, type: 'list_item', term, checked: false } })
+  }
+  return { ops, skipped }
 }
 
 async function api(token: string, path: string, init?: RequestInit): Promise<{ status: number; json: unknown }> {
@@ -122,29 +157,9 @@ export async function pushToFlipp(
   const cur = await api(token, `/v1/users/${link.flipp_user_id}/shopping_lists/${listId}`)
   if (cur.status === 401) return { ok: false, added: 0, error: 'unauthorized' }
   if (cur.status >= 400) return { ok: false, added: 0, error: `get-${cur.status}` }
-  const list = cur.json as {
-    commit_version?: number
-    flyer_item_clippings?: { flyer_item_id: number }[]
-    list_items?: { term: string }[]
-  }
-  const haveIds = new Set((list.flyer_item_clippings ?? []).map((c) => c.flyer_item_id))
-  const haveTerms = new Set((list.list_items ?? []).map((i) => String(i.term ?? '').toLowerCase()))
+  const list = cur.json as ServerList
 
-  const ops: unknown[] = []
-  for (const c of clippings) {
-    if (c && c.flyerItemId && !haveIds.has(c.flyerItemId)) {
-      ops.push(clippingOp(c))
-      haveIds.add(c.flyerItemId)
-    }
-  }
-  for (const raw of items) {
-    const term = raw.trim()
-    const key = term.toLowerCase()
-    if (term && !haveTerms.has(key)) {
-      ops.push(itemOp(term))
-      haveTerms.add(key)
-    }
-  }
+  const { ops } = buildOps(clippings, items, list)
   if (!ops.length) return { ok: true, listId, added: 0 }
 
   // 3. Apply.
