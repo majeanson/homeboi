@@ -2515,18 +2515,18 @@ export const FR = {
     // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
     flippTitle: 'Ma liste Flipp',
     flippIntro:
-      'Deux chemins. « Envoyer à Flipp », à la caisse : un tap, toute ta liste en mots arrive dans Flipp — et ouvre l’app Flipp si elle est installée. Le signet ci-dessous, une fois installé, fait le reste : tes rabais choisis avec leur photo, et le retour de Flipp vers Babillard.',
+      'Deux façons de passer ta liste à Flipp. La plus simple, à la caisse : « Envoyer à Flipp » — un tap, ta liste en MOTS arrive dans l’app Flipp. Pour les rabais AVEC leur photo, c’est le signet ci-dessous : il remplit ta liste sur flipp.com (le site), que tu ouvres à la caisse. L’app Flipp reprend cette liste quand elle se synchronise, mais ça, c’est Flipp qui décide.',
     // The walkthrough, in the words a household reads on the phone (Marc did the
     // whole loop on an iPhone on 2026-09-10 and the list landed in the Flipp app).
     flippOnceTitle: 'Une seule fois',
     flippOnce1: 'Touche « Copier le signet » ci-dessous.',
     flippOnce2: 'Ouvre Safari (ou Chrome) — pas la fenêtre qui s’ouvre depuis Babillard — et va sur flipp.com. Partage ▸ « Ajouter un signet », nomme-le « Coller de Babillard ».',
     flippOnce3: 'Signets ▸ Modifier ▸ touche « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié (elle commence par javascript:). Terminé.',
-    flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite). C’est ce qui envoie la liste dans l’app Flipp.',
+    flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite) — c’est ce qui donne à l’app Flipp une chance de reprendre ta liste.',
     flippEachTitle: 'À chaque épicerie',
     flippEach1: 'Dans Babillard : La liste ▸ « Montrer à la caisse » ▸ « Copier pour Flipp » (ou juste « Envoyer à Flipp », sans signet, pour la liste en mots). Une ligne sous le bouton confirme.',
     flippEach2: 'Dans Safari, sur flipp.com : Signets ▸ « Coller de Babillard » ▸ colle dans la boîte ▸ OK. La page se recharge avec ta liste.',
-    flippEach3: 'Ouvre l’app Flipp ▸ Liste : tout y est.',
+    flippEach3: 'Ta liste est là, sur flipp.com — rabais avec photos par magasin, articles dessous. Ouvre-la à la caisse. Dans l’app Flipp, elle apparaît si l’app se synchronise (même compte, quitte et rouvre l’app) — pas toujours.',
     flippWhat: 'Ce que Flipp reçoit : les rabais choisis avec leur photo, classés par magasin ; le reste de la liste en articles ; rien de ce qui est déjà coché.',
     // The way back, and the other phones.
     flippBackTitle: 'De Flipp vers Babillard',
