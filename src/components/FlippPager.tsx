@@ -22,7 +22,11 @@ import { Loading } from './Fallback'
 // no app switch. Same shape as FlyerViewer (a full-screen overlay over the till,
 // z-index 70, classified BELOW_SHEET in layer-order.test.ts).
 //
-// Two honest limits, both designed around rather than hidden:
+// Three honest limits, all designed around rather than hidden:
+//   · Flipp's cookie-consent card (CookieYes) returns on every framed item — it lives in
+//     a cookie, and a framed third-party page keeps none — so the frame's viewport is
+//     340px taller than the space it is shown in and the card sits under the fold
+//     (cashier.css, « THE CONSENT CARD, BELOW THE FOLD »). Nothing is consented to.
 //   · A framed third-party page keeps PARTITIONED storage on iOS/Chrome: an « Ajouter
 //     à la liste » tapped inside the frame lands in a list Flipp's own tab and app
 //     never see. This pager is for SHOWING; adding to Flipp's list stays with the

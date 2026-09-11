@@ -425,16 +425,33 @@
     font-size: 16px;
   }
 }
+/* THE CONSENT CARD, BELOW THE FOLD (2026-09-11). Marc: « any way to accept cookies so
+   we don't have to each item ». Measured: flipp.com's CookieYes card is a 312px box
+   pinned to the BOTTOM of its viewport, and it comes back on EVERY framed item — with
+   third-party cookies allowed as much as blocked — because it keeps consent in a
+   cookie, and a framed third-party page never keeps one (its partitioned localStorage
+   does persist; CookieYes does not use it). Nothing on our side can accept it once, and
+   accepting it per item covered half the frame. So the frame gets a viewport 340px
+   TALLER than the space it is shown in: the card is pinned 340px under the fold, out of
+   sight, and the household neither accepts nor declines Flipp's cookies (CookieYes'
+   default = nothing non-essential). The body scrolls rather than clips, so the bottom
+   of a long item (and the card, if anyone wants it) stays reachable: the inner scroll
+   ends, then the touch chains out to this one. 340 = the card (312) + a margin for a
+   longer text; the phone item's fine print lands ~700px in, so nothing a cashier reads
+   is under the fold at rest. Re-measure if Flipp changes the card
+   (scratch probe: a host page with a 390×700 clip and a 1040px frame). */
 .flipp-pager__body {
   flex: 1 1 auto;
   min-height: 0;
   position: relative;
   background: #fff;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .flipp-pager__frame {
   display: block;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 340px);
   border: 0;
   background: #fff;
 }

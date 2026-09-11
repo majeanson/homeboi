@@ -266,6 +266,13 @@ test('« Montrer Flipp » frames Flipp\'s own item page and steps to the next pi
   await expect(open).toHaveAttribute('target', '_blank')
   await expect(pager.locator('.flipp-pager__count')).toHaveText('1 de 3')
   await expect(pager.locator('.flipp-pager__prev')).toBeDisabled()
+  // Flipp's cookie-consent card (312px, pinned to the frame's bottom, back on every
+  // item) sits UNDER the fold: the frame's viewport is taller than the body showing
+  // it, and the body scrolls (not clips) so a long item's foot stays reachable.
+  const body = await boxOf(pager.locator('.flipp-pager__body'))
+  const fr = await boxOf(frame)
+  expect(fr.height - body.height, 'the frame runs past the body by at least the consent card').toBeGreaterThanOrEqual(312)
+  await expect(pager.locator('.flipp-pager__body')).toHaveCSS('overflow-y', 'auto')
   await expectNoOverflow(page)
   await shot(page, 'flipp-pager')
   // Suivant → the next live pick's page, in place.

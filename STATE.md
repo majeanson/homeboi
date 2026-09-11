@@ -180,6 +180,20 @@ event, which a refusal also fires. « Envoyer à Flipp » is primary only when n
 live. Guard: `cashier.spec.ts` « frames Flipp's own item page and steps to the next
 pick » (frame src per step, the ← → keyboard mirror, the ✓ marks, the resume point).
 
+**« Any way to accept cookies so we don't have to each item? »** — measured, no:
+flipp.com's CookieYes card (312px, pinned to the frame's bottom) comes back on EVERY
+framed item, third-party cookies allowed or blocked alike, because it keeps consent in
+a cookie and a framed third-party page keeps none (its partitioned localStorage does
+persist — Flipp's own `shopping_list`/`location_info` survive across frames — but
+CookieYes does not use it). Nothing on our origin can accept it once, and per item it
+covered half the frame. So the frame's viewport is 340px taller than the body showing
+it: the card is pinned under the fold, the household consents to nothing (CookieYes'
+default), and the body SCROLLS rather than clips so a long item's foot stays reachable
+(inner scroll ends → chains out). Verified on the phone geometry (add button at 607 of
+700 at rest, fine print ~700 after the inner scroll) and the wall's (card at 706 of 640).
+The « Obtenez Flipp » bar at the top scrolls away with the content and was left alone.
+Guard: the spec asserts frame height − body height ≥ 312 and `overflow-y: auto`.
+
 **The « Lier Flipp » card Marc still saw in Réglages is not in the build.** The deployed
 bundle was pulled and grepped: no « Lier Flipp », no `flipp-link`, no `/action?type=`;
 the SW's `controllerchange` reload swaps a controlled page on its own. An installed
