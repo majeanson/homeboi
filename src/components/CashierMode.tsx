@@ -135,19 +135,32 @@ export function CashierMode({
   // The clippings the push carries: every LIVE staged deal (clippable), in Flipp's
   // shape — the same objects the copy payload builds.
   const pushClippings: FlippClipping[] = JSON.parse(flippListPayload(clippable)).clippings
-  const [pushState, setPushState] = useState<'idle' | 'sending' | 'done' | 'failed'>('idle')
+  const [pushState, setPushState] = useState<'idle' | 'sending' | 'done' | 'failed' | 'empty'>('idle')
   const [pushAdded, setPushAdded] = useState(0)
+  const [pushSkipped, setPushSkipped] = useState(0)
+  const pushTotal = pushClippings.length + sendTerms.length
   const pushToFlipp = async () => {
     if (pushState === 'sending') return
+    if (pushTotal === 0) {
+      // Nothing live to push (every deal ended, everything checked) — say so instead
+      // of a hollow « 0 ajouté » that reads as a failure.
+      setPushState('empty')
+      return
+    }
     setPushState('sending')
     try {
-      const r = await write<{ ok?: boolean; added?: number; linked?: boolean }>('flipp-push', {
+      const r = await write<{ ok?: boolean; added?: number; skipped?: number; linked?: boolean; error?: string }>('flipp-push', {
         method: 'POST',
         body: { clippings: pushClippings, items: sendTerms },
         affectedKeys: [FLIPP_LINK_KEY],
       })
-      if (r.queued || r.data?.ok) {
-        setPushAdded(r.queued ? pushClippings.length + sendTerms.length : (r.data?.added ?? 0))
+      if (r.queued) {
+        setPushAdded(pushTotal)
+        setPushSkipped(0)
+        setPushState('done')
+      } else if (r.data?.ok) {
+        setPushAdded(r.data.added ?? 0)
+        setPushSkipped(r.data.skipped ?? 0)
         setPushState('done')
       } else setPushState('failed')
     } catch {
@@ -264,11 +277,16 @@ export function CashierMode({
                 ) : null /* nothing live to step through (every deal ended) — no loop, no restart; the list door alone */}
               </Cluster>
               {pushState === 'done' && (
-                <p className="cashier__flipp-hint mono cashier__sent">{t.shop.pushedToFlipp(pushAdded)}</p>
+                <p className="cashier__flipp-hint mono cashier__sent">
+                  {pushAdded > 0
+                    ? t.shop.pushedToFlipp(pushAdded)
+                    : pushSkipped > 0
+                      ? t.shop.pushAlready(pushSkipped)
+                      : t.shop.pushEmpty}
+                </p>
               )}
-              {pushState === 'failed' && (
-                <p className="cashier__flipp-hint mono">{t.shop.pushFailed}</p>
-              )}
+              {pushState === 'empty' && <p className="cashier__flipp-hint mono">{t.shop.pushEmpty}</p>}
+              {pushState === 'failed' && <p className="cashier__flipp-hint mono">{t.shop.pushFailed}</p>}
               {sent && (
                 <p className="cashier__flipp-hint mono cashier__sent">
                   {t.shop.sentToFlipp(sendTerms.length)} — {sendTerms.join(' · ')}

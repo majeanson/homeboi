@@ -122,6 +122,8 @@ export interface PushResult {
   ok: boolean
   listId?: string
   added: number
+  /** Sent items already on the Flipp list (a re-send, not a failure). */
+  skipped?: number
   error?: string
 }
 
@@ -159,8 +161,8 @@ export async function pushToFlipp(
   if (cur.status >= 400) return { ok: false, added: 0, error: `get-${cur.status}` }
   const list = cur.json as ServerList
 
-  const { ops } = buildOps(clippings, items, list)
-  if (!ops.length) return { ok: true, listId, added: 0 }
+  const { ops, skipped } = buildOps(clippings, items, list)
+  if (!ops.length) return { ok: true, listId, added: 0, skipped }
 
   // 3. Apply.
   const put = await api(token, `/v1/users/${link.flipp_user_id}/shopping_lists/${listId}`, {
@@ -168,7 +170,7 @@ export async function pushToFlipp(
     body: JSON.stringify({ commit_version: list.commit_version ?? 0, _ops: ops }),
   })
   if (put.status >= 400) return { ok: false, listId, added: 0, error: `put-${put.status}` }
-  return { ok: true, listId, added: ops.length }
+  return { ok: true, listId, added: ops.length, skipped }
 }
 
 /** Verify a freshly-harvested token before we store it — one GET the token owns.

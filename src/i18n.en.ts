@@ -2986,6 +2986,8 @@ export const EN: typeof FR = {
     sending: 'Sending…',
     pushedToFlipp: (n: number) => `Sent into Flipp · ${n} item${n>1?'s':''} — open the app.`,
     pushFailed: 'Flipp refused the send — re-link your account in Settings ▸ The list ▸ Shopping.',
+    pushAlready: (n: number) => `Already in Flipp · ${n} item${n>1?'s':''} were there — open the app.`,
+    pushEmpty: 'Nothing new to send — no live deals and nothing unchecked.',
     sentToFlipp: (n: number) => `Sent to Flipp · ${n} line${n > 1 ? 's' : ''}`,
     sentKeptChecked: (n: number) => `${n} checked stay${n > 1 ? '' : 's'} here (uncheck to send)`,
     flippCopied: 'List copied ✓ — on flipp.com, run the “Paste from Babillard” bookmark.',

@@ -3332,6 +3332,8 @@ export const FR = {
     sending: 'Envoi…',
     pushedToFlipp: (n: number) => `Envoyé dans Flipp · ${n} article${n>1?'s':''} — ouvre l’app.`,
     pushFailed: 'Flipp a refusé l’envoi — reconnecte ton compte dans Réglages ▸ La liste ▸ Magasinage.',
+    pushAlready: (n: number) => `Déjà dans Flipp · ${n} article${n>1?'s':''} y étaient — ouvre l’app.`,
+    pushEmpty: 'Rien de nouveau à envoyer — aucun rabais en cours ni article non coché.',
     sentToFlipp: (n: number) => `Envoyé à Flipp · ${n} ligne${n > 1 ? 's' : ''}`,
     // The checked lines stay home on purpose (in the cart / bought) — said, not guessed.
     sentKeptChecked: (n: number) => `${n} cochée${n > 1 ? 's' : ''} reste${n > 1 ? 'nt' : ''} ici (décoche pour envoyer)`,
