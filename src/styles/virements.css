@@ -176,3 +176,21 @@
   min-width: 0;
   flex: 0 1 6.5rem;
 }
+
+/* The Rattrapage fold holds a real fieldset (« Qui rattrape » + the two faces), so it
+   needs the same chrome reset the composer's do — a browser fieldset border inside a
+   disclosure reads as a box inside a box. */
+.disclosure__body fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.disclosure__body legend {
+  padding: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}

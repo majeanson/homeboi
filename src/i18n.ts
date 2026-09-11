@@ -3603,6 +3603,16 @@ export const FR = {
     // Le rattrapage. Phrases pleines, repliées par défaut, jamais un graphique.
     math: 'La math',
     catchupFold: 'Rattrapage',
+    // Les trois champs du rattrapage. Ils ont porté « Montant complet », « Envoyé le »
+    // et « Première date » pendant une soirée — des clés empruntées au reste du
+    // formulaire, dont aucune ne décrivait le champ. Marc l'a vu sur son téléphone
+    // avant d'entrer de vrais montants. Un champ dit ce qu'il est.
+    catchupWho: 'Qui rattrape',
+    catchupGap: 'L’écart à rattraper',
+    catchupGapHint: 'Ce que l’autre a payé de plus, au moment où vous l’avez compté.',
+    catchupAsOf: 'Compté le',
+    catchupEnd: 'Fin de l’entente',
+    catchupEndHint: 'La date où l’arrangement se termine. Le reste se calcule tout seul.',
     mathAhead: (name: string, amount: string, when: string) => `${name} a payé ${amount} de plus, au ${when}.`,
     mathExtra: (name: string, amount: string) => `${name} envoie ${amount} de plus par paiement.`,
     mathSoFar: (payments: number, amount: string) =>

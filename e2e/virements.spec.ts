@@ -308,3 +308,11 @@ test('…and the notes face still opens a blank note, untouched', async ({ page 
   await expect(page.locator('.sheet.show')).toHaveCount(0)
   await expect(page.locator('.note-editor')).toBeVisible()
 })
+
+test('capture the Rattrapage fold, open, at 390px', async ({ page }) => {
+  await openVirements(page)
+  await page.goto('/virement/plan/new')
+  await expect(page.locator('.operator__inline-form')).toBeVisible()
+  await page.getByRole('button', { name: 'Rattrapage' }).click()
+  await page.screenshot({ path: 'e2e/screenshots/virements-plan-catchup.png', fullPage: true })
+})

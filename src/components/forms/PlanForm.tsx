@@ -170,27 +170,37 @@ export function PlanForm({
         ))}
       </fieldset>
 
-      {/* « Rattrapage » — folded, because most households never have one. */}
+      {/* « Rattrapage » — folded, because most households never have one.
+          Every label here is its OWN string. They used to borrow `planAmount`,
+          `sentOn` and `planWhen` from the fields above, so the fold read « Montant
+          complet · Envoyé le · Première date » — three labels, none of which named
+          the field under them, on the one screen where a mistyped number becomes a
+          wrong number about money. Caught on a real phone before real amounts. */}
       <Disclosure label={v.catchupFold} defaultOpen={!!value?.catchup}>
-        <Cluster>
-          {members.filter((m) => !m.is_child).map((m) => (
-            <Chip key={m.id} selected={behind === m.id} onClick={() => setBehind(behind === m.id ? null : m.id)}>
-              {m.display_name}
-            </Chip>
-          ))}
-        </Cluster>
+        <fieldset>
+          <legend className="mono">{v.catchupWho}</legend>
+          <Cluster>
+            {members.filter((m) => !m.is_child).map((m) => (
+              <Chip key={m.id} selected={behind === m.id} onClick={() => setBehind(behind === m.id ? null : m.id)}>
+                {m.display_name}
+              </Chip>
+            ))}
+          </Cluster>
+        </fieldset>
         <label className="recur__row mono">
-          <span>{v.planAmount}</span>
+          <span>{v.catchupGap}</span>
           <input className="input" inputMode="decimal" value={gap} onChange={(e) => setGap(e.target.value)} />
         </label>
+        <p className="operator__seg-hint mono">{v.catchupGapHint}</p>
         <label className="recur__row mono">
-          <span>{v.sentOn}</span>
+          <span>{v.catchupAsOf}</span>
           <input className="input" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
         </label>
         <label className="recur__row mono">
-          <span>{v.planWhen}</span>
+          <span>{v.catchupEnd}</span>
           <input className="input" type="date" value={termEnd} onChange={(e) => setTermEnd(e.target.value)} />
         </label>
+        <p className="operator__seg-hint mono">{v.catchupEndHint}</p>
       </Disclosure>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}

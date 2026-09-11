@@ -3200,6 +3200,12 @@ export const EN: typeof FR = {
     note: 'Note',
     math: 'The math',
     catchupFold: 'Catching up',
+    catchupWho: 'Who is catching up',
+    catchupGap: 'The gap to close',
+    catchupGapHint: 'What the other person paid ahead, as of the day you counted it.',
+    catchupAsOf: 'Counted on',
+    catchupEnd: 'Agreement ends',
+    catchupEndHint: 'The day the arrangement runs out. The rest is worked out for you.',
     mathAhead: (name: string, amount: string, when: string) => `${name} paid ${amount} more, as of ${when}.`,
     mathExtra: (name: string, amount: string) => `${name} sends ${amount} extra per payment.`,
     mathSoFar: (payments: number, amount: string) =>
