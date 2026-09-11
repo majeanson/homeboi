@@ -124,12 +124,21 @@ export function flippListPayload(picks: Pick[], terms: string[] = []): string {
 }
 
 // THE BOOKMARKLET BODY. Plain ES5, self-contained, no outer scope: it is a string
-// the household saves as a bookmark, not code Vite compiles. `__BABILLARD__` is the
-// one hole — this app's origin, filled by `flippBookmarkletBody(origin)` when the
-// Réglages card renders — so the way back lands on the household's own Babillard.
-// The unit test runs this exact string against a fake page, so the logic cannot
-// drift from `mergeFlippList` below (the readable twin the test also checks it
-// against). Markers bound it so a live probe can lift it straight out of this file.
+// that runs on flipp.com, not code Vite compiles. It is SERVED, not pasted: the
+// bookmark a household saves is the tiny loader below (`flippBookmarklet`), which
+// adds `<script src="<their Babillard>/flipp-paste.js">` to Flipp's page — their
+// CSP allows a script from any origin (`script-src … *`, checked 2026-09-10). Why:
+// the full body as a bookmark ADDRESS stopped running on Marc's iPhone once it grew
+// past ~3 KB — Safari showed the Favorites page, which is what a javascript: URL it
+// cannot run looks like. A loader has no such edge, and the body can change without
+// anyone re-copying a bookmark. `scripts/flipp-paste.mjs` copies this string into
+// `public/flipp-paste.js`; `flippPaste.test.ts` fails the build when they drift.
+//
+// The household's Babillard origin — where the way back lands — is read off the
+// script's own `src`. The unit test runs this exact string against a fake page, so
+// the logic cannot drift from `mergeFlippList` below (the readable twin the test
+// also checks it against). Markers bound it so the generator and a live probe can
+// lift it straight out of this file.
 //
 // What it does, in order:
 //   · clipboard first (`navigator.clipboard.readText`, one « Coller » permission tap
@@ -142,20 +151,43 @@ export function flippListPayload(picks: Pick[], terms: string[] = []): string {
 //   · the way back reads their list and opens `<origin>/liste#flipp=<base64url>`.
 /*BOOKMARKLET-START*/
 export const FLIPP_BOOKMARKLET_BODY =
-  '(function(){var B="__BABILLARD__";function fail(m){alert(m)}function parse(t){var d=null;try{d=JSON.parse(t)}catch(e){}if(!d||d.v!==1||d.from){return null}var cl=d.clippings||[],it=d.items||[];if(!cl.length&&!it.length){return null}return d}function imp(d){var cl=d.clippings||[],it=d.items||[];var s=localStorage;var c={};try{c=JSON.parse(s.getItem("shopping_list")||"{}")||{}}catch(e){}if(c._delegate){c={}}var l={_outstandingOps:[],flyerItemClippings:c.flyerItemClippings||[],listItems:c.listItems||[],photos:c.photos||[],ecomItems:c.ecomItems||[],_delegate:false};var h={};var i;for(i=0;i<l.flyerItemClippings.length;i++){h[l.flyerItemClippings[i].flyerItemId]=1}for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}x.id="item-clipping-"+x.flyerItemId;l.flyerItemClippings.push(x);h[x.flyerItemId]=1}var g={};for(i=0;i<l.listItems.length;i++){g[String(l.listItems[i].term||"").toLowerCase()]=1}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}l.listItems.push({id:k.replace(/\\s/g,"")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2),term:String(q),checked:false});g[k]=1}s.setItem("shopping_list",JSON.stringify(l));location.href="/liste_dachats"}function exp(){var c={};try{c=JSON.parse(localStorage.getItem("shopping_list")||"{}")||{}}catch(e){}var cl=c.flyerItemClippings||[],li=c.listItems||[],o={v:1,from:"flipp",clippings:[],items:[]},i;for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId){continue}o.clippings.push({flyerItemId:x.flyerItemId,name:x.name||"",flyerId:x.flyerId||null,price:x.price==null?null:String(x.price),merchantId:x.merchantId||null,merchantName:x.merchantName||"",merchantLogoUrl:x.merchantLogoUrl||null,thumbnailUrl:x.thumbnailUrl||null,validTo:x.validTo||null,checked:!!x.checked})}for(i=0;i<li.length;i++){var y=li[i];if(!y||!y.term){continue}o.items.push({term:String(y.term),checked:!!y.checked})}if(!o.clippings.length&&!o.items.length){fail("Ta liste Flipp est vide — rien à rapporter vers Babillard.");return}var e=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");location.href=B+"/liste#flipp="+e}function ask(){var t=prompt("Colle ici ce que Babillard a copié (« Copier pour Flipp ») — ou laisse vide et OK pour rapporter ta liste Flipp vers Babillard.");if(t===null){return}if(!t.replace(/\\s/g,"")){exp();return}var d=parse(t);if(!d){fail("Ce n’est pas une liste Babillard — retourne dans Babillard, touche « Copier pour Flipp », puis reviens coller.");return}imp(d)}function go(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){var d=parse(t||"");if(!d){ask();return}if(confirm("Coller ta liste Babillard dans Flipp ?\\n\\nOK = coller · Annuler = plutôt rapporter ta liste Flipp vers Babillard")){imp(d)}else{exp()}},function(){ask()})}else{ask()}}go()})()'
+  '(function(){var B=(function(){var s=(typeof document!=="undefined"&&document.currentScript&&document.currentScript.src)||"";var m=/^(https?:\\/\\/[^\\/]+)/.exec(s);return m?m[1]:""})();function fail(m){alert(m)}function parse(t){var d=null;try{d=JSON.parse(t)}catch(e){}if(!d||d.v!==1||d.from){return null}var cl=d.clippings||[],it=d.items||[];if(!cl.length&&!it.length){return null}return d}function imp(d){var cl=d.clippings||[],it=d.items||[];var s=localStorage;var c={};try{c=JSON.parse(s.getItem("shopping_list")||"{}")||{}}catch(e){}if(c._delegate){c={}}var l={_outstandingOps:[],flyerItemClippings:c.flyerItemClippings||[],listItems:c.listItems||[],photos:c.photos||[],ecomItems:c.ecomItems||[],_delegate:false};var h={};var i;for(i=0;i<l.flyerItemClippings.length;i++){h[l.flyerItemClippings[i].flyerItemId]=1}for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId||h[x.flyerItemId]){continue}x.id="item-clipping-"+x.flyerItemId;l.flyerItemClippings.push(x);h[x.flyerItemId]=1}var g={};for(i=0;i<l.listItems.length;i++){g[String(l.listItems[i].term||"").toLowerCase()]=1}for(i=0;i<it.length;i++){var q=it[i]&&it[i].term;if(!q){continue}var k=String(q).toLowerCase();if(g[k]){continue}l.listItems.push({id:k.replace(/\\s/g,"")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2),term:String(q),checked:false});g[k]=1}s.setItem("shopping_list",JSON.stringify(l));location.href="/liste_dachats"}function exp(){var c={};try{c=JSON.parse(localStorage.getItem("shopping_list")||"{}")||{}}catch(e){}var cl=c.flyerItemClippings||[],li=c.listItems||[],o={v:1,from:"flipp",clippings:[],items:[]},i;for(i=0;i<cl.length;i++){var x=cl[i];if(!x||!x.flyerItemId){continue}o.clippings.push({flyerItemId:x.flyerItemId,name:x.name||"",flyerId:x.flyerId||null,price:x.price==null?null:String(x.price),merchantId:x.merchantId||null,merchantName:x.merchantName||"",merchantLogoUrl:x.merchantLogoUrl||null,thumbnailUrl:x.thumbnailUrl||null,validTo:x.validTo||null,checked:!!x.checked})}for(i=0;i<li.length;i++){var y=li[i];if(!y||!y.term){continue}o.items.push({term:String(y.term),checked:!!y.checked})}if(!o.clippings.length&&!o.items.length){fail("Ta liste Flipp est vide — rien à rapporter vers Babillard.");return}var e=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"");location.href=B+"/liste#flipp="+e}function ask(){var t=prompt("Colle ici ce que Babillard a copié (« Copier pour Flipp ») — ou laisse vide et OK pour rapporter ta liste Flipp vers Babillard.");if(t===null){return}if(!t.replace(/\\s/g,"")){exp();return}var d=parse(t);if(!d){fail("Ce n’est pas une liste Babillard — retourne dans Babillard, touche « Copier pour Flipp », puis reviens coller.");return}imp(d)}function go(){if(navigator.clipboard&&navigator.clipboard.readText){navigator.clipboard.readText().then(function(t){var d=parse(t||"");if(!d){ask();return}if(confirm("Coller ta liste Babillard dans Flipp ?\\n\\nOK = coller · Annuler = plutôt rapporter ta liste Flipp vers Babillard")){imp(d)}else{exp()}},function(){ask()})}else{ask()}}go()})()'
 /*BOOKMARKLET-END*/
 
-/** The bookmarklet body for ONE household: their Babillard origin filled in. */
-export function flippBookmarkletBody(origin: string): string {
-  // The origin lands inside a JS string literal; anything but a plain URL origin
-  // is refused rather than escaped (a quote here would be a bookmark that breaks).
-  if (!/^https?:\/\/[A-Za-z0-9.\-:]+$/.test(origin)) throw new Error('flippBookmarkletBody: not a plain origin: ' + origin)
-  return FLIPP_BOOKMARKLET_BODY.replace('__BABILLARD__', origin)
+/** « ENVOYER À FLIPP » — the one-tap door, no bookmark. flipp.com's `/action`
+ *  entry handles `command=add_text_to_list&texts=A,B` (read in their bundle, verified
+ *  live 2026-09-10): it adds each text as a typed item to the list and lands on
+ *  `/shopping_list`; signed in, the page merges it into the account. And `/action` is
+ *  the ONE path the Flipp iOS app claims as a universal link, so on a phone with the
+ *  app this link may open the app itself with the list (Android claims every path).
+ *  Typed items only — a clipping with its photo still needs the bookmark. Their
+ *  splitter is a bare comma, so a comma inside a line becomes a space. */
+export function flippAddTextsUrl(terms: string[], postal?: string | null): string | null {
+  const seen = new Set<string>()
+  const texts: string[] = []
+  for (const raw of terms) {
+    const t = raw.replace(/,/g, ' ').replace(/\s+/g, ' ').trim()
+    const k = t.toLowerCase()
+    if (!t || seen.has(k)) continue
+    seen.add(k)
+    texts.push(t)
+  }
+  if (!texts.length) return null
+  const pc = postal ? `&postal_code=${encodeURIComponent(postal)}` : ''
+  return `https://flipp.com/action?command=add_text_to_list&texts=${encodeURIComponent(texts.join(','))}${pc}`
 }
 
-/** The bookmark's URL — what a household copies into a bookmark once. */
+/** Where the body is served from, under the household's Babillard origin. */
+export const FLIPP_PASTE_PATH = '/flipp-paste.js'
+
+/** The bookmark's URL — what a household copies into a bookmark ONCE: a loader that
+ *  pulls the body from their own Babillard, cache-busted per run. The origin lands
+ *  inside a JS string literal; anything but a plain URL origin is refused rather
+ *  than escaped (a quote here would be a bookmark that breaks). */
 export function flippBookmarklet(origin: string): string {
-  return 'javascript:' + encodeURIComponent(flippBookmarkletBody(origin))
+  if (!/^https?:\/\/[A-Za-z0-9.\-:]+$/.test(origin)) throw new Error('flippBookmarklet: not a plain origin: ' + origin)
+  const loader = `(function(){var s=document.createElement("script");s.src="${origin}${FLIPP_PASTE_PATH}?v="+Date.now();document.body.appendChild(s)})()`
+  return 'javascript:' + encodeURIComponent(loader)
 }
 
 /** The way back, decoded: the `#flipp=` hash of `/liste` → the export, or null. */

@@ -5,7 +5,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
-import { flippListPayload } from '../lib/flippList'
+import { flippListPayload, flippAddTextsUrl } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
@@ -103,6 +103,11 @@ export function CashierMode({
   // or its deal ended, or its store hidden at the till — as a typed item.
   const clippedRows = new Set(clippable.map((p) => p.itemId))
   const terms = rows.filter((r) => !r.checked_at && !clippedRows.has(r.id)).map((r) => r.text)
+  // « ENVOYER À FLIPP » — every unchecked line as text, in ONE link, no bookmark:
+  // flipp.com's /action adds them as typed items (lib/flippList flippAddTextsUrl),
+  // and on a phone with the app that path opens the app. The photos of the staged
+  // deals do not travel this way — that is what « Copier pour Flipp » is for.
+  const sendUrl = flippAddTextsUrl(rows.filter((r) => !r.checked_at).map((r) => r.text), postal) ?? flippListUrl(postal)
   // The notice fires while the flipp.com window COVERS this page and is gone before
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
@@ -184,12 +189,12 @@ export function CashierMode({
               <Cluster className="cashier__flipp-row">
                 {/* Order = reading order at 390px, where the row wraps: the bookmark
                     path (copy, then their list) first, the tap-by-tap loop under it. */}
-                <button type="button" className="btn btn--primary cashier__copy" onClick={copyForFlipp}>
+                <a className="btn btn--primary cashier__send" href={sendUrl!} target="_blank" rel="noopener noreferrer">
+                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
+                </a>
+                <button type="button" className="btn cashier__copy" onClick={copyForFlipp}>
                   <InlineIcon name="check-bold" /> {t.shop.copyForFlipp}
                 </button>
-                <a className="btn cashier__flipp-list" href={flippListUrl(postal)!} target="_blank" rel="noopener noreferrer">
-                  <InlineIcon name="shopping-bag-bold" /> {t.shop.flippList}
-                </a>
                 {clipNext ? (
                   <a
                     className="btn cashier__clip"

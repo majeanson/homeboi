@@ -144,6 +144,44 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Two phone findings, and the door that was there all along (2026-09-10, night — last)
+
+Marc, iPhone, with the re-copied v2 bookmark: **« now it doesn't get me to flipp
+when I paste »** — running the bookmark « brought me to my favorites ». That is what
+Safari does with a `javascript:` bookmark it cannot run: the v2 body had grown past
+~3 KB as a bookmark ADDRESS. So the bookmark is a ~200-character **loader** now
+(`flippBookmarklet(origin)`): it adds `<script src="<their Babillard>/flipp-paste.js">`
+to Flipp's page — their CSP allows a script from any origin (`script-src … *`,
+checked on the real list page). The body lives in ONE place (between the markers
+in `lib/flippList.ts`, where the unit test runs it), `scripts/flipp-paste.mjs`
+copies it into `public/flipp-paste.js`, and `flippPaste.test.ts` fails the build
+when the two drift. The origin for the way back is read off the script's own
+`src`. Consequence worth saying: **the bookmark's address never changes again** —
+the body can move without anyone re-copying anything. One more re-copy, the last.
+
+**« the link to comment ça marche doesn't go to the right spot »** — in the harness
+it landed; on a phone the card sits UNDER « Mes magasins », whose rows arrive from
+the network AFTER the scroll and push it away, and the lazy Réglages chunk could
+outlast a 1.4 s poll. Every `?focus=` link now polls ~6 s and re-settles the scroll
+for a few beats until the reader touches the screen (`ba157d2`; guarded with a
+delayed `/api/flyers`).
+
+**« could it open the flipp app too? »** — reading their `/action` route for that
+found the door that was there all along: `flipp.com/action?command=add_text_to_list
+&texts=A,B` adds each text as a typed item and lands on `/shopping_list` — a plain
+URL, no bookmark, verified live (test 5 of the contract; a comma inside a line
+becomes a space, their splitter is bare). And `/action` is the ONE path the Flipp
+iOS app claims as a universal link. So the till row's first door is now
+**« Envoyer à Flipp »** — one tap, every unchecked line as words, and on a phone
+with the app very likely the app itself (Marc's to confirm); « Copier pour Flipp »
++ the bookmark remain for the photos and the way back; the bare « Ma liste Flipp »
+door folded into it (the /action page IS the list). Card, guide point and ACTIONS
+say the two paths in that order.
+
+Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
+`flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
+landing under late data), live 5/5 exercisable (4 still waits for an account).
+
 ### Looked at under every lens, and a sweep for what a screenshot cannot see (2026-09-10, night — closing)
 
 **The new surfaces, seen in night, EN and 360px.** Tonight's till row (copy / list

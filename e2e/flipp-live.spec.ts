@@ -1,5 +1,5 @@
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test'
-import { flippBookmarkletBody, flippListPayload, type FlippPayload } from '../src/lib/flippList'
+import { FLIPP_BOOKMARKLET_BODY, flippListPayload, flippAddTextsUrl, type FlippPayload } from '../src/lib/flippList'
 import type { Deal, Pick } from '../src/lib/deals'
 
 // THE FLIPP LIVE CONTRACT — what flipp.com must still do for « Ma liste Flipp » to
@@ -111,7 +111,8 @@ async function runBookmarklet(page: Page, payload: string) {
       eval(body)
     },
     // A headless context has no clipboard permission: readText rejects → the prompt.
-    [flippBookmarkletBody('https://babillard.invalid'), payload] as const,
+    // Evaluated inline (no <script src>), so the body has no origin — import only.
+    [FLIPP_BOOKMARKLET_BODY, payload] as const,
   )
   await page.waitForURL(/\/liste_dachats/, { timeout: 60_000 })
   await page.waitForTimeout(2_500)
@@ -239,4 +240,17 @@ test('4 · signed in, Flipp merges the local list into the account (the half tha
     await expect(page.getByText(it.merchant_name!, { exact: false }).first()).toBeVisible({ timeout: 30_000 })
   }
   await shot(page, '4-signed-in-merged')
+})
+
+test('5 · « Envoyer à Flipp »: /action?command=add_text_to_list adds the lines as typed items and lands on the list', async ({ page }) => {
+  const url = flippAddTextsUrl(['Oeufs Babillard', 'Pain, tranché'], POSTAL)!
+  await page.goto(url, { waitUntil: 'domcontentloaded' })
+  await page.waitForURL(/\/shopping_list|\/liste_dachats/, { timeout: 60_000 })
+  await page.waitForTimeout(3_000)
+  const raw = await stored(page)
+  expect(raw, 'their /action wrote the list').not.toBeNull()
+  const items = (JSON.parse(raw!) as { listItems: { term: string }[] }).listItems.map((i) => i.term)
+  // The comma inside a line became a space: their splitter is a bare comma.
+  expect(items).toEqual(['Oeufs Babillard', 'Pain tranché'])
+  await shot(page, '5-action-add-texts')
 })

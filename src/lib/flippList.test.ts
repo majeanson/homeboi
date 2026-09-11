@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   FLIPP_BOOKMARKLET_BODY,
+  FLIPP_PASTE_PATH,
   flippBookmarklet,
-  flippBookmarkletBody,
   flippListPayload,
   mergeFlippList,
   parseFlippHash,
@@ -64,7 +64,10 @@ async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED
     opts.clipboard === undefined
       ? {}
       : { clipboard: { readText: () => (opts.clipboard === 'REFUSED' ? Promise.reject(new Error('denied')) : Promise.resolve(opts.clipboard)) } }
-  const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', flippBookmarkletBody(ORIGIN))
+  // The body is SERVED (public/flipp-paste.js) and reads the household's origin off
+  // its own <script src> — the fake document carries that, as flipp.com's page would.
+  const document = { currentScript: { src: ORIGIN + FLIPP_PASTE_PATH + '?v=1' } }
+  const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', 'document', FLIPP_BOOKMARKLET_BODY)
   fn(
     { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) },
     (msg: string) => {
@@ -75,6 +78,7 @@ async function run(opts: { stored?: string | null; clipboard?: string | 'REFUSED
     () => opts.confirm ?? true,
     location,
     navigator,
+    document,
   )
   // The clipboard path is a promise; let it settle.
   for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0))
@@ -272,19 +276,30 @@ describe('the way back — Flipp → Babillard', () => {
   })
 })
 
-describe('the bookmark string itself', () => {
-  it('is a javascript: URL with the household origin filled in and the body encoded once', () => {
+describe('the bookmark string itself — a LOADER, the body is served', () => {
+  it('is a short javascript: URL that adds a <script> from the household origin, cache-busted', () => {
     const url = flippBookmarklet(ORIGIN)
     expect(url.startsWith('javascript:')).toBe(true)
-    const body = decodeURIComponent(url.slice('javascript:'.length))
-    expect(body).toBe(FLIPP_BOOKMARKLET_BODY.replace('__BABILLARD__', ORIGIN))
-    expect(body).not.toContain('__BABILLARD__')
-    // ES5 on purpose: a bookmark runs in whatever browser the phone has.
+    const loader = decodeURIComponent(url.slice('javascript:'.length))
+    expect(loader).toContain(`s.src="${ORIGIN}${FLIPP_PASTE_PATH}?v="+Date.now()`)
+    expect(loader).toContain('document.body.appendChild(s)')
+    // Short on purpose: the full body as a bookmark ADDRESS stopped running on an
+    // iPhone past ~3 KB (Safari showed its Favorites page instead).
+    expect(url.length).toBeLessThan(400)
+    // ES5 on purpose, both halves: a bookmark runs in whatever browser the phone has.
+    expect(loader).not.toMatch(/=>|\bconst\b|\blet\b|`/)
     expect(FLIPP_BOOKMARKLET_BODY).not.toMatch(/=>|\bconst\b|\blet\b|`/)
   })
 
+  it('the body reads its origin off its own <script src>, and has none without one', async () => {
+    // A body run with no currentScript (a probe eval, an old-style paste) exports to
+    // a RELATIVE /liste — never to someone else's origin.
+    const r = await run({ stored: '{"listItems":[{"term":"x","checked":false}]}', prompt: '' })
+    expect(r.location.href.startsWith(ORIGIN + '/liste#flipp=')).toBe(true)
+  })
+
   it('refuses an origin that is not a plain origin (a quote would break the bookmark)', () => {
-    expect(() => flippBookmarkletBody('https://x.test/"+alert(1)+"')).toThrow()
-    expect(() => flippBookmarkletBody('http://localhost:5173')).not.toThrow()
+    expect(() => flippBookmarklet('https://x.test/"+alert(1)+"')).toThrow()
+    expect(() => flippBookmarklet('http://localhost:5173')).not.toThrow()
   })
 })

@@ -2515,7 +2515,7 @@ export const FR = {
     // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
     flippTitle: 'Ma liste Flipp',
     flippIntro:
-      'Flipp ne laisse rien remplir sa liste de l’extérieur — sauf un signet qui tourne sur flipp.com. Une fois installé : à la caisse, touche « Ma liste Flipp », puis sur Flipp lance le signet et colle — toute ta liste y passe, rabais choisis et articles.',
+      'Deux chemins. « Envoyer à Flipp », à la caisse : un tap, toute ta liste en mots arrive dans Flipp — et ouvre l’app Flipp si elle est installée. Le signet ci-dessous, une fois installé, fait le reste : tes rabais choisis avec leur photo, et le retour de Flipp vers Babillard.',
     // The walkthrough, in the words a household reads on the phone (Marc did the
     // whole loop on an iPhone on 2026-09-10 and the list landed in the Flipp app).
     flippOnceTitle: 'Une seule fois',
@@ -2524,7 +2524,7 @@ export const FR = {
     flippOnce3: 'Signets ▸ Modifier ▸ touche « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié (elle commence par javascript:). Terminé.',
     flippOnce4: 'Toujours sur flipp.com, connecte-toi (l’icône de personne, en haut à droite). C’est ce qui envoie la liste dans l’app Flipp.',
     flippEachTitle: 'À chaque épicerie',
-    flippEach1: 'Dans Babillard : La liste ▸ « Montrer à la caisse » ▸ « Copier pour Flipp ». Une ligne sous le bouton confirme.',
+    flippEach1: 'Dans Babillard : La liste ▸ « Montrer à la caisse » ▸ « Copier pour Flipp » (ou juste « Envoyer à Flipp », sans signet, pour la liste en mots). Une ligne sous le bouton confirme.',
     flippEach2: 'Dans Safari, sur flipp.com : Signets ▸ « Coller de Babillard » ▸ colle dans la boîte ▸ OK. La page se recharge avec ta liste.',
     flippEach3: 'Ouvre l’app Flipp ▸ Liste : tout y est.',
     flippWhat: 'Ce que Flipp reçoit : les rabais choisis avec leur photo, classés par magasin ; le reste de la liste en articles ; rien de ce qui est déjà coché.',
@@ -3305,6 +3305,9 @@ export const FR = {
     clipAgain: 'Reprendre du début',
     flippList: 'Ma liste Flipp',
     copyForFlipp: 'Copier pour Flipp',
+    // The one-tap door (2026-09-10): flipp.com/action adds the list's lines as typed
+    // items — and on a phone with the app, that link opens the app.
+    sendToFlipp: 'Envoyer à Flipp',
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.

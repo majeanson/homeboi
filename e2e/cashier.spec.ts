@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { BOARD, mockApi, seedState, flyerIso, type Theme, type Surface } from './mocks'
+import { boxOf } from './measure'
 
 // Dedicated capture + guards for « Montrer à la caisse » — a CORE, high-stress moment
 // (standing at the till with the cashier waiting). The mode is random-access: a GRID
@@ -288,13 +289,12 @@ test('the Flipp loop: one tap opens the next pick, and the step survives a reloa
   await expect(step).toHaveText(/1 de 3/) // four picks, one ended — it is not in the loop
   await expect(step).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
   await expect(step).toHaveAttribute('target', '_blank')
-  // The list door sits beside it, on Flipp's list page for this postal code — and
-  // it is the plain button while a step remains.
-  const list = page.locator('a.cashier__flipp-list')
-  // Bare route, no locale prefix: `/fr-ca/liste_dachats` is the marketing shell and
-  // renders the flyers home (shipped that way for an hour; the probe that found the
-  // real list view is the same one that proved a crafted list renders there).
-  await expect(list).toHaveAttribute('href', 'https://flipp.com/liste_dachats?postal_code=H2X%201Y4')
+  // « Envoyer à Flipp » beside it: ONE link that adds every unchecked line as a typed
+  // item through flipp.com/action (verified live 2026-09-10) — the till's five lines
+  // here, the ended « Couches » included, the checked « Beurre » not.
+  const send = page.locator('a.cashier__send')
+  await expect(send).toHaveAttribute('href', 'https://flipp.com/action?command=add_text_to_list&texts=Lait%2CPain%2CPommes%2CCouches%2COeufs&postal_code=H2X%201Y4')
+  await expect(send).toHaveAttribute('target', '_blank')
   await expectNoOverflow(page)
   const [popup] = await Promise.all([page.context().waitForEvent('page'), step.click()])
   await popup.close()
@@ -369,7 +369,7 @@ test('every deal ended: no loop, no restart — the list door alone, still carry
   await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(4)
   await expect(page.locator('a.cashier__clip')).toHaveCount(0)
   await expect(page.locator('.cashier__clip-reset')).toHaveCount(0)
-  await expect(page.locator('a.cashier__flipp-list')).toBeVisible()
+  await expect(page.locator('a.cashier__send')).toBeVisible()
   await page.locator('button.cashier__copy').click()
   const payload = JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as { clippings: unknown[]; items: { term: string }[] }
   expect(payload.clippings).toEqual([])
@@ -422,6 +422,6 @@ test('the « Comment ça marche » chip lands on the walkthrough card, even when
   await expect(card).toBeVisible({ timeout: 15_000 })
   // Give the late rows time to land and the settle loop time to answer them.
   await page.waitForTimeout(3_000)
-  const top = (await card.boundingBox())!.y
+  const top = (await boxOf(card)).y // boxOf, never the bare call — the documented trap
   expect(Math.abs(top), `card top edge should sit at the top of the view, was ${top}px`).toBeLessThanOrEqual(40)
 })

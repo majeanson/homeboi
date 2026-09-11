@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, BASE, MMID } from './mocks'
+import { boxOf } from './measure'
 
 // THE DOOR SWEEP — what a TAP (or a HOLD) does, per surface.
 //
@@ -47,8 +48,7 @@ const NOTE = {
 }
 
 const hold = async (page: Page, sel: ReturnType<Page['locator']>) => {
-  const b = await sel.boundingBox()
-  if (!b) throw new Error('hold target not measurable')
+  const b = await boxOf(sel) // never a bare boundingBox() (CLAUDE.md: it throws on a re-resolved node)
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
   await page.mouse.down()
   await page.waitForTimeout(HOLD_MS)
