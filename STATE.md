@@ -237,6 +237,18 @@ Babillard) moved off that confirm's Annuler to the empty paste box alone (copy a
 first if a Babillard list is still on the clipboard) — the how-to says so. Twins take a
 `replace` flag; tests pin the op order and the signed-out shape.
 
+**« This is some limitation of dialog or can it say the right words? »** — the latter.
+`confirm()` cannot relabel OK/Annuler, but the bookmark runs ON flipp.com and can draw
+its own sheet: a bottom card with real buttons — « Remplacer ma liste Flipp » ·
+« Ajouter à ma liste Flipp » · « Rapporter Flipp → Babillard » · « Annuler » when the
+clipboard holds a list; « Coller un texte… » · « Rapporter » · « Vider ma liste Flipp » ·
+« Annuler » when it does not; and « Vider » confirms with a two-button sheet that names
+what is lost. The way back is a visible button again. Where the page has no body (the
+unit tests' fake page) every sheet falls back to the native dialog it replaced — the
+fallback tests still run, and eight new ones drive the real sheet in happy-dom (a Proxy
+over `document` supplies the script src and the cookie). The live contract's runner taps
+the sheet's buttons like a thumb would.
+
 **The how-to now lists every convenience an iPhone offers** (Marc: « clear up all we can
 do for convenience »): a folded « Plus pratique » — « Ouvrir flipp.com » hands Safari the
 page; the bookmark in Safari Favorites is one tap from the address bar; typing its name

@@ -110,10 +110,14 @@ async function runBookmarklet(page: Page, payload: string) {
       // eslint-disable-next-line no-eval
       eval(body)
     },
-    // A headless context has no clipboard permission: readText rejects → the prompt.
-    // Evaluated inline (no <script src>), so the body has no origin — import only.
+    // A headless context has no clipboard permission: readText rejects → the menu
+    // sheet; « Coller un texte… » opens the (stubbed) paste box; the pasted list gets
+    // the four-button sheet, and « Remplacer » writes it. Evaluated inline (no
+    // <script src>), so the body has no origin — import only.
     [FLIPP_BOOKMARKLET_BODY, payload] as const,
   )
+  await page.locator('#bb-flipp [data-bb="paste"]').click({ timeout: 15_000 })
+  await page.locator('#bb-flipp [data-bb="replace"]').click({ timeout: 15_000 })
   await page.waitForURL(/\/liste_dachats/, { timeout: 60_000 })
   await page.waitForTimeout(2_500)
 }

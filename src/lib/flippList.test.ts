@@ -75,6 +75,8 @@ async function run(opts: {
   account?: { commit_version?: number; flyer_item_clippings?: unknown[]; list_items?: unknown[] } | null
   /** Force a status on one step: 'lists' | 'list' | 'put' | 'create'. */
   failAt?: { step: string; status: number }
+  /** A REAL page (happy-dom): the bookmark draws its sheet; the fake page (default) has no body → confirm/prompt fallbacks. */
+  dom?: boolean
 }) {
   const store = new Map<string, string>()
   if (opts.stored != null) store.set('shopping_list', opts.stored)
@@ -99,7 +101,20 @@ async function run(opts: {
       : { clipboard: { readText: () => (opts.clipboard === 'REFUSED' ? Promise.reject(new Error('denied')) : Promise.resolve(opts.clipboard)) } }
   // The body is SERVED (public/flipp-paste.js) and reads the household's origin off
   // its own <script src> — the fake document carries that, as flipp.com's page would.
-  const document = { currentScript: { src: ORIGIN + FLIPP_PASTE_PATH + '?v=1' }, cookie: opts.cookie ?? '' }
+  const fakeDoc = { currentScript: { src: ORIGIN + FLIPP_PASTE_PATH + '?v=1' }, cookie: opts.cookie ?? '' }
+  // The real document, with the two things flipp.com's page would carry: the script's
+  // src (the household origin) and the session cookie. Methods are bound so the Proxy
+  // can stand in for `document` inside the body.
+  const realDoc = new Proxy(globalThis.document, {
+    get(t, k) {
+      if (k === 'currentScript') return fakeDoc.currentScript
+      if (k === 'cookie') return fakeDoc.cookie
+      const v = Reflect.get(t, k, t)
+      return typeof v === 'function' ? v.bind(t) : v
+    },
+  })
+  const document = opts.dom ? realDoc : fakeDoc
+  if (opts.dom) globalThis.document.body.innerHTML = ''
   const fn = new Function('localStorage', 'prompt', 'alert', 'confirm', 'location', 'navigator', 'document', 'fetch', FLIPP_BOOKMARKLET_BODY)
   fn(
     { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) },
@@ -115,9 +130,26 @@ async function run(opts: {
     fetch,
   )
   // The clipboard path and the account calls are promises; let them settle.
-  for (let i = 0; i < 12; i++) await new Promise((r) => setTimeout(r, 0))
-  const raw = store.get('shopping_list') ?? null
-  return { stored: raw, list: raw ? (JSON.parse(raw) as StoredList) : null, alerts, prompts, location, calls }
+  const settle = async () => {
+    for (let i = 0; i < 12; i++) await new Promise((r) => setTimeout(r, 0))
+  }
+  await settle()
+  const snap = () => {
+    const raw = store.get('shopping_list') ?? null
+    return { stored: raw, list: raw ? (JSON.parse(raw) as StoredList) : null, alerts, prompts, location, calls }
+  }
+  /** The sheet's buttons, by key, in order — [] when no sheet is up. */
+  const sheet = () => [...globalThis.document.querySelectorAll('#bb-flipp [data-bb]')].map((b) => b.getAttribute('data-bb'))
+  const sheetTitle = () => globalThis.document.querySelector('#bb-flipp p')?.textContent ?? null
+  /** Tap a sheet button, let the consequences settle, and read the page again. */
+  const click = async (key: string) => {
+    const b = globalThis.document.querySelector<HTMLButtonElement>(`#bb-flipp [data-bb="${key}"]`)
+    if (!b) throw new Error(`no sheet button "${key}" — sheet has: ${sheet().join(', ')}`)
+    b.click()
+    await settle()
+    return snap()
+  }
+  return { ...snap(), sheet, sheetTitle, click }
 }
 
 describe('flippListPayload — every pick with a Flipp id as a clipping, every line as a typed item', () => {
@@ -433,6 +465,83 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
     const twin = mergeFlippList(existing, JSON.parse(payload) as FlippPayload, (k) => k, true)
     expect((twin.list.flyerItemClippings as { flyerItemId: number }[]).map((c) => c.flyerItemId)).toEqual([101, 102])
     expect(twin.added).toBe(4)
+  })
+})
+
+describe('the SHEET the bookmark draws on flipp.com — real buttons, the right words (2026-09-11)', () => {
+  const payload = flippListPayload([pick('a'), pick('b', { id: 102, name: 'Pain' })], ['Oeufs', 'Beurre'])
+  const theirs = JSON.stringify({ _delegate: false, flyerItemClippings: [{ id: 'item-clipping-777', flyerItemId: 777, name: 'vieux' }], listItems: [{ id: 'x', term: 'Vieux', checked: false }] })
+
+  it('a Babillard list on the clipboard → four named buttons, nothing done yet, no native dialog', async () => {
+    const r = await run({ dom: true, stored: theirs, clipboard: payload })
+    expect(r.prompts).toEqual([])
+    expect(r.sheet()).toEqual(['replace', 'add', 'back', 'cancel'])
+    expect(r.sheetTitle()).toBe('Liste Babillard : 2 rabais, 2 articles. Quoi faire ?')
+    expect(JSON.parse(r.stored!).flyerItemClippings).toHaveLength(1) // theirs, untouched so far
+    expect(r.location.href).toBe('https://flipp.com/fr-ca/item/101')
+  })
+
+  it('« Remplacer ma liste Flipp » → the list is the payload; the sheet is gone', async () => {
+    const r = await run({ dom: true, stored: theirs, clipboard: payload })
+    const after = await r.click('replace')
+    expect(after.list!.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
+    expect(after.list!.listItems.map((i) => i.term)).toEqual(['Oeufs', 'Beurre'])
+    expect(r.sheet()).toEqual([])
+    expect(after.location.href).toBe('/liste_dachats')
+  })
+
+  it('« Ajouter à ma liste Flipp » → theirs kept, ours added', async () => {
+    const r = await run({ dom: true, stored: theirs, clipboard: payload })
+    const after = await r.click('add')
+    expect(after.list!.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([777, 101, 102])
+    expect(after.list!.listItems.map((i) => i.term)).toEqual(['Vieux', 'Oeufs', 'Beurre'])
+  })
+
+  it('« Rapporter Flipp → Babillard » → the way back, from the same sheet', async () => {
+    const r = await run({ dom: true, stored: theirs, clipboard: payload })
+    const after = await r.click('back')
+    expect(after.location.href.startsWith(ORIGIN + '/liste#flipp=')).toBe(true)
+    expect(JSON.parse(after.stored!).flyerItemClippings).toHaveLength(1)
+  })
+
+  it('« Annuler » → nothing at all', async () => {
+    const r = await run({ dom: true, stored: theirs, clipboard: payload })
+    const after = await r.click('cancel')
+    expect(JSON.parse(after.stored!).flyerItemClippings).toHaveLength(1)
+    expect(after.location.href).toBe('https://flipp.com/fr-ca/item/101')
+    expect(r.sheet()).toEqual([])
+  })
+
+  it('signed in, « Remplacer » is the one PUT: deletes, then the payload', async () => {
+    const account = { commit_version: 4, flyer_item_clippings: [{ id: 'old1', commit_version: 2, flyer_item_id: 555 }], list_items: [] }
+    const r = await run({ dom: true, cookie: SIGNED_IN, clipboard: payload, account })
+    const after = await r.click('replace')
+    const put = after.calls[2].body as { _ops: { verb: string; object: Record<string, unknown> }[] }
+    expect(put._ops.map((o) => o.verb)).toEqual(['delete', 'post', 'post', 'post', 'post'])
+  })
+
+  it('nothing on the clipboard → the menu: paste, the way back, clear, cancel — and « Vider » asks again, naming what is lost', async () => {
+    const account = { commit_version: 5, flyer_item_clippings: [{ id: 'c1', commit_version: 2, flyer_item_id: 101 }], list_items: [{ id: 'i1', commit_version: 3, term: 'Oeufs' }] }
+    const r = await run({ dom: true, cookie: SIGNED_IN, clipboard: 'REFUSED', account })
+    expect(r.prompts).toEqual([]) // no native box popped
+    expect(r.sheet()).toEqual(['paste', 'back', 'clear', 'cancel'])
+    await r.click('clear')
+    expect(r.sheet()).toEqual(['clear', 'cancel'])
+    expect(r.sheetTitle()).toMatch(/^Vider ta liste Flipp \? Tout ce qui s’y trouve/)
+    const after = await r.click('clear')
+    const put = after.calls[2].body as { _ops: { verb: string }[] }
+    expect(put._ops.map((o) => o.verb)).toEqual(['delete', 'delete'])
+    expect(after.location.href).toBe('/liste_dachats')
+  })
+
+  it('« Coller un texte… » opens the paste box, and a pasted list gets the same four buttons', async () => {
+    const r = await run({ dom: true, clipboard: 'REFUSED', prompt: payload })
+    expect(r.prompts).toEqual([])
+    await r.click('paste')
+    expect(r.prompts).toHaveLength(1)
+    expect(r.sheet()).toEqual(['replace', 'add', 'back', 'cancel'])
+    const after = await r.click('add')
+    expect(after.list!.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
   })
 })
 
