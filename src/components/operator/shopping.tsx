@@ -716,7 +716,6 @@ export function FlippSection({ help }: { help?: HelpMode }) {
           <li>{t.operator.flippTip2}</li>
           <li>{t.operator.flippTip3}</li>
           <li>{t.operator.flippTip4}</li>
-          <li>{t.operator.flippTip5}</li>
         </ul>
       </Disclosure>
       {/* Folded: most households have one phone, and it is the one above. */}
