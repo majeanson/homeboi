@@ -683,7 +683,13 @@ export function FlippSection({ help }: { help?: HelpMode }) {
       {link?.linked ? (
         <>
           <StatusMessage tone="success">{t.operator.flippLinkedAs(link.email ?? null)}</StatusMessage>
-          {link.lastError && <StatusMessage tone="error">{t.operator.flippLinkError}</StatusMessage>}
+          {link.lastError && (
+            /^(put-|get-|create-|unauthorized|token-|unknown)/.test(link.lastError) ? (
+              <StatusMessage tone="error">{t.operator.flippLinkError}</StatusMessage>
+            ) : (
+              <p className="operator__hint mono" style={{ fontSize: '0.75rem', opacity: 0.7 }}>{link.lastError}</p>
+            )
+          )}
           <Cluster>
             <button type="button" className="btn btn--ghost" onClick={unlink}>
               <InlineIcon name="x-bold" /> {t.operator.flippUnlink}

@@ -32,12 +32,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const now = nowSec()
   if (result.ok) {
     // Remember the resolved list id (saves a round-trip next time) and clear the error.
-    await ctx.env.DB.prepare('UPDATE flipp_links SET list_id = ?, last_push_at = ?, last_error = NULL, updated_at = ? WHERE household_id = ?')
-      .bind(result.listId ?? row.list_id, now, now, actor.householdId)
+    await ctx.env.DB.prepare('UPDATE flipp_links SET list_id = ?, last_push_at = ?, last_error = ?, updated_at = ? WHERE household_id = ?')
+      .bind(result.listId ?? row.list_id, now, result.diag ?? null, now, actor.householdId)
       .run()
   } else {
     await ctx.env.DB.prepare('UPDATE flipp_links SET last_error = ?, updated_at = ? WHERE household_id = ?')
-      .bind(result.error ?? 'unknown', now, actor.householdId)
+      .bind((result.error ?? 'unknown') + (result.diag ? ' · ' + result.diag : ''), now, actor.householdId)
       .run()
   }
   return ok({ linked: true, ...result })

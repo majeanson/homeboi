@@ -125,6 +125,10 @@ export interface PushResult {
   /** Sent items already on the Flipp list (a re-send, not a failure). */
   skipped?: number
   error?: string
+  /** A compact trace of what Flipp actually did — surfaced while we learn their
+   *  private API's real behaviour (deals reported sent but not showing in the app,
+   *  2026-09-11). `lists:N list:ID had:H ops:O put:STATUS now:A`. */
+  diag?: string
 }
 
 /** Push clippings + typed items into the household's Flipp account list. Resolves
@@ -139,38 +143,44 @@ export async function pushToFlipp(
 ): Promise<PushResult> {
   const token = await open(link.access_token_enc, secret)
   if (!token) return { ok: false, added: 0, error: 'token-unreadable' }
+  const base = `/v1/users/${link.flipp_user_id}/shopping_lists`
+  const clipCount = (l: unknown) => (((l as ServerList)?.flyer_item_clippings ?? []).length)
 
-  // 1. The list: the stored one, or the account's first, or a fresh one.
-  let listId = link.list_id
+  // 1. ALL the account's lists — the count is part of the trace (a write to the wrong
+  //    one of several would look like a silent no-op). Choose the stored list, else the
+  //    first, else create one — the same `listIds[0]` their own web app uses.
+  const lists = await api(token, base)
+  if (lists.status === 401) return { ok: false, added: 0, error: 'unauthorized', diag: 'lists:401' }
+  const ids = (lists.json as { shopping_lists?: { id: string }[] })?.shopping_lists?.map((l) => l.id) ?? []
+  let listId: string | null = link.list_id ?? ids[0] ?? null
   if (!listId) {
-    const lists = await api(token, `/v1/users/${link.flipp_user_id}/shopping_lists`)
-    if (lists.status === 401) return { ok: false, added: 0, error: 'unauthorized' }
-    const ids = (lists.json as { shopping_lists?: { id: string }[] })?.shopping_lists?.map((l) => l.id) ?? []
-    if (ids.length) listId = ids[0]
-    else {
-      const made = await api(token, `/v1/users/${link.flipp_user_id}/shopping_lists`, { method: 'POST' })
-      if (made.status >= 400) return { ok: false, added: 0, error: `create-${made.status}` }
-      listId = (made.json as { id?: string })?.id ?? null
-    }
+    const made = await api(token, base, { method: 'POST' })
+    if (made.status >= 400) return { ok: false, added: 0, error: `create-${made.status}`, diag: `lists:0 create:${made.status}` }
+    listId = (made.json as { id?: string })?.id ?? null
   }
-  if (!listId) return { ok: false, added: 0, error: 'no-list' }
+  if (!listId) return { ok: false, added: 0, error: 'no-list', diag: `lists:${ids.length} no-id` }
 
-  // 2. The current list, for commit_version + de-dupe.
-  const cur = await api(token, `/v1/users/${link.flipp_user_id}/shopping_lists/${listId}`)
-  if (cur.status === 401) return { ok: false, added: 0, error: 'unauthorized' }
-  if (cur.status >= 400) return { ok: false, added: 0, error: `get-${cur.status}` }
+  // 2. The chosen list, for commit_version + de-dupe + the "before" count.
+  const cur = await api(token, `${base}/${listId}`)
+  if (cur.status === 401) return { ok: false, added: 0, error: 'unauthorized', diag: `lists:${ids.length} get:401` }
+  if (cur.status >= 400) return { ok: false, added: 0, error: `get-${cur.status}`, diag: `lists:${ids.length} get:${cur.status}` }
   const list = cur.json as ServerList
+  const had = clipCount(list)
 
   const { ops, skipped } = buildOps(clippings, items, list)
-  if (!ops.length) return { ok: true, listId, added: 0, skipped }
+  if (!ops.length) return { ok: true, listId, added: 0, skipped, diag: `lists:${ids.length} list:${listId} had:${had} ops:0` }
 
-  // 3. Apply.
-  const put = await api(token, `/v1/users/${link.flipp_user_id}/shopping_lists/${listId}`, {
+  // 3. Apply, then RE-READ to prove the server actually took the ops (now > had) —
+  //    the fact that tells "app didn't sync" from "PUT was a silent no-op".
+  const put = await api(token, `${base}/${listId}`, {
     method: 'PUT',
     body: JSON.stringify({ commit_version: list.commit_version ?? 0, _ops: ops }),
   })
-  if (put.status >= 400) return { ok: false, listId, added: 0, error: `put-${put.status}` }
-  return { ok: true, listId, added: ops.length, skipped }
+  const after = await api(token, `${base}/${listId}`)
+  const now = clipCount(after.json)
+  const diag = `lists:${ids.length} list:${listId} had:${had} ops:${ops.length} put:${put.status} now:${now}`
+  if (put.status >= 400) return { ok: false, listId, added: 0, error: `put-${put.status}`, diag }
+  return { ok: true, listId, added: ops.length, skipped, diag }
 }
 
 /** Verify a freshly-harvested token before we store it — one GET the token owns.

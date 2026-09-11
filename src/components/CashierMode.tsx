@@ -138,6 +138,7 @@ export function CashierMode({
   const [pushState, setPushState] = useState<'idle' | 'sending' | 'done' | 'failed' | 'empty'>('idle')
   const [pushAdded, setPushAdded] = useState(0)
   const [pushSkipped, setPushSkipped] = useState(0)
+  const [pushDiag, setPushDiag] = useState<string | null>(null)
   const pushTotal = pushClippings.length + sendTerms.length
   const pushToFlipp = async () => {
     if (pushState === 'sending') return
@@ -149,7 +150,7 @@ export function CashierMode({
     }
     setPushState('sending')
     try {
-      const r = await write<{ ok?: boolean; added?: number; skipped?: number; linked?: boolean; error?: string }>('flipp-push', {
+      const r = await write<{ ok?: boolean; added?: number; skipped?: number; linked?: boolean; error?: string; diag?: string }>('flipp-push', {
         method: 'POST',
         body: { clippings: pushClippings, items: sendTerms },
         affectedKeys: [FLIPP_LINK_KEY],
@@ -161,8 +162,9 @@ export function CashierMode({
       } else if (r.data?.ok) {
         setPushAdded(r.data.added ?? 0)
         setPushSkipped(r.data.skipped ?? 0)
+        setPushDiag(r.data.diag ?? null)
         setPushState('done')
-      } else setPushState('failed')
+      } else { setPushDiag(r.data?.diag ?? r.data?.error ?? null); setPushState('failed') }
     } catch {
       setPushState('failed')
     }
@@ -287,6 +289,9 @@ export function CashierMode({
               )}
               {pushState === 'empty' && <p className="cashier__flipp-hint mono">{t.shop.pushEmpty}</p>}
               {pushState === 'failed' && <p className="cashier__flipp-hint mono">{t.shop.pushFailed}</p>}
+              {pushDiag && (pushState === 'done' || pushState === 'failed') && (
+                <p className="cashier__flipp-hint mono" style={{ opacity: 0.6, fontSize: '0.7rem' }}>{pushDiag}</p>
+              )}
               {sent && (
                 <p className="cashier__flipp-hint mono cashier__sent">
                   {t.shop.sentToFlipp(sendTerms.length)} — {sendTerms.join(' · ')}
