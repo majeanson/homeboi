@@ -19,6 +19,10 @@ import { SectionIntro } from '../components/SectionIntro'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { NOTES_HELP } from '../lib/notesHelp'
 import { CercleNotes } from '../components/cercle/CercleNotes'
+import { VirementsSection } from '../components/virements/VirementsSection'
+import { SubTabs } from '../components/SubTabs'
+import { useTabParam } from '../lib/tabParam'
+import { isGuest } from '../lib/device'
 import { NotesKidView } from '../components/cercle/NotesKidView'
 import type { Contact, ContactLink, ContactGroupRaw, Member, Pet } from '../lib/cercle'
 
@@ -53,6 +57,11 @@ function NotesParent() {
   // the old « Notes & recommandations » section title — that title is gone from the
   // page, so announcing it here would name something the reader can't see.
   const help = useHelpMode(NOTES_HELP, (k) => (k === 'search' ? t.search.title : t.nav.notes))
+  // Which face of the tab. ?section= (not local state) so a deep link, a guide
+  // « Ouvrir » and the back button all land on the same one — the useTabParam
+  // convention every other hub tab follows. The default stores as NO param.
+  const [section, setSection] = useTabParam<'notes' | 'virements'>('section', 'notes', ['notes', 'virements'])
+  const ro = isGuest()
 
   // Doors in from elsewhere: ?item=<id> (a global-search hit, §892 — land on that
   // exact note) and ?add=1 (the ＋ FAB's "cnote" mode, FORM_ROUTES.cnote =
@@ -108,16 +117,42 @@ function NotesParent() {
           « notes » bubble under its OWN title, which is where that explanation belongs. */}
       {help.bubbleFor('search')}
 
-      {help.bubbleFor('face')}
-      {help.bubbleFor('note')}
+      {/* Two faces of « ce qui dure » : the notes board, and the money the household
+          sends to its shared account. Both are the durable, written-down record this
+          tab is for — an agenda entry expires, these do not. Hidden entirely from a
+          read-only guest link: the transfers endpoints are denied to a showcase guest
+          (guestScope.ts), so offering the tab would only lead to a failed read. */}
+      {!ro && (
+        <SubTabs
+          options={[
+            { key: 'notes', label: t.nav.notes, icon: 'file-text-bold' },
+            { key: 'virements', label: t.virements.tab, icon: 'receipt-bold' },
+          ]}
+          value={section}
+          onSelect={setSection}
+          ariaLabel={t.nav.notes}
+          pick={help.pick}
+          armed={help.active}
+        />
+      )}
+      {help.bubbleFor('virements')}
 
-      <CercleNotes
-        members={members}
-        focusId={focusItem}
-        onFocused={() => setFocusItem(null)}
-        composeNonce={composeNonce}
-        help={help}
-      />
+      {section === 'virements' ? (
+        <VirementsSection members={members} />
+      ) : (
+        <>
+          {help.bubbleFor('face')}
+          {help.bubbleFor('note')}
+
+          <CercleNotes
+            members={members}
+            focusId={focusItem}
+            onFocused={() => setFocusItem(null)}
+            composeNonce={composeNonce}
+            help={help}
+          />
+        </>
+      )}
     </main>
   )
 }

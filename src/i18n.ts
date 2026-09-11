@@ -3560,6 +3560,65 @@ export const FR = {
     typeOrPick: 'Écrire ou choisir…',
   },
   notFound: { title: 'Page introuvable', back: 'Retour à l’accueil' },
+  // « Les virements » — ce qu'on envoie au compte commun (migration 0126). Registre
+  // québécois : on « envoie un virement », on « renfloue » le compte, une entente a
+  // des « parts ». Jamais « solde » ni « dette » : ce sont des reçus, pas un compte
+  // à rebours entre deux personnes.
+  virements: {
+    tab: 'Virements',
+    title: 'Les virements',
+    add: 'Envoyer un virement',
+    edit: 'Modifier le virement',
+    emptyPlans: 'Décris d’abord ce que vous vous partagez — le loyer, l’hypothèque, la garderie. Après, chaque virement se prépare tout seul.',
+    emptyTransfers: 'Aucun virement noté pour l’instant.',
+    addPlan: 'Ajouter une entente',
+    editPlan: 'Modifier l’entente',
+    planTitle: 'Ce qu’on se partage',
+    planAmount: 'Montant complet',
+    planAmountHint: 'Ce que le compte doit payer au complet — ta part se met plus bas.',
+    planWhen: 'Première date',
+    planShares: 'Qui envoie quoi',
+    planShareOf: (name: string) => `Part de ${name}`,
+    every: 'Aux',
+    // The plan card's one-line summary: « 812,82 $ · aux 2 semaines »
+    planSummary: (amount: string, when: string) => `${amount} · ${when}`,
+    nextDates: 'Prochaines dates',
+    dueDates: 'Dates couvertes',
+    dueCovered: 'Déjà envoyé',
+    addOtherDate: 'Une autre date',
+    sender: 'Qui envoie',
+    sentOn: 'Envoyé le',
+    topup: 'Renflouement',
+    topupHint: 'Pour le quotidien — le même montant des deux bords.',
+    otherLines: 'Autres lignes',
+    otherLabel: 'Pour quoi',
+    amount: 'Montant',
+    addLine: 'Ajouter une ligne',
+    total: 'Total',
+    memo: 'Message du virement',
+    memoHint: 'C’est ce que la banque va afficher. Les accents sont enlevés exprès.',
+    regenerate: 'Refaire le message',
+    copyMemo: 'Copier le message',
+    copied: 'Copié !',
+    copyRefused: 'Le presse-papiers est bloqué — sélectionne le texte et copie-le à la main.',
+    reference: 'Numéro de référence',
+    referenceHint: 'Colle-le en revenant de la banque : c’est ce qui relie la note au relevé.',
+    note: 'Note',
+    // Le rattrapage. Phrases pleines, repliées par défaut, jamais un graphique.
+    math: 'La math',
+    mathAhead: (name: string, amount: string, when: string) => `${name} a payé ${amount} de plus, au ${when}.`,
+    mathExtra: (name: string, amount: string) => `${name} envoie ${amount} de plus par paiement.`,
+    mathSoFar: (payments: number, amount: string) =>
+      payments === 1 ? `1 paiement noté depuis : ${amount} de rattrapé.` : `${payments} paiements notés depuis : ${amount} de rattrapé.`,
+    mathLeft: (amount: string) => `Il reste ${amount} aujourd’hui.`,
+    mathAtEnd: (amount: string, when: string) => `À ce rythme, il en resterait ${amount} à la fin de l’entente (${when}).`,
+    mathDone: (when: string) => `À ce rythme, c’est réglé avant la fin de l’entente (${when}).`,
+    deleteConfirm: 'Supprimer ce virement ? Le montant, les dates couvertes et le numéro de référence s’en vont avec.',
+    deletePlanConfirm: 'Supprimer cette entente ? Les virements déjà notés restent, mais ils n’auront plus de dates à cocher.',
+    deleted: 'Virement supprimé',
+    // La carte « À régler » + le calendrier.
+    due: (title: string) => `${title} à envoyer`,
+  },
 }
 
 export const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({

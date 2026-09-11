@@ -29,6 +29,17 @@ export const NOTES_HELP = {
       en: 'Tap a note to open it: title, formatting, checklists — and the 📎 for a voice memo, a drawing or a photo.',
     },
   },
+  // The two faces of the tab. The word « virement » is the one thing here a reader
+  // may not expect to find under « Les notes » — so the armed help says what the
+  // second face is FOR, in place, rather than making them tap it to find out.
+  virements: {
+    card: 'notes',
+    point: 6,
+    body: {
+      fr: 'Deux choses qui durent : tes notes, et ce que tu envoies au compte commun. Décris une fois ce que vous vous partagez, et chaque virement se prépare tout seul — avec le message à coller dans ta banque.',
+      en: 'Two things that last: your notes, and what you send to the shared account. Describe once what you split, and every transfer fills itself in — with the message to paste into your bank.',
+    },
+  },
   // The header magnifier (A-9 soft icon label — armed help explains the loupe
   // in place instead of leaving the page). Same body/target as ROUTINES_HELP's
   // own `search` entry (the header magnifier is the SAME control everywhere).

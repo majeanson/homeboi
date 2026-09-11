@@ -937,6 +937,17 @@ export const GUIDE: GuideEntry[] = [
           en: 'In the kid view, notes read themselves aloud, and a clipped voice memo plays on tap.',
         },
       },
+      // APPENDED at index 6 (« Les virements », 2026-09-11). The ⚠ above is not
+      // decoration: notesHelp.ts and the alias map both index this list BY POSITION,
+      // so inserting anywhere above would silently re-point existing help bubbles.
+      {
+        label: { fr: 'Les virements', en: 'Transfers' },
+        detail: {
+          fr: 'Décris une fois ce que vous vous partagez — l’hypothèque, le loyer — avec la part de chacun. Après, un virement se prépare tout seul : coche les dates couvertes, copie le message pour ta banque, et colle le numéro de référence au retour.',
+          en: 'Describe once what you split — the mortgage, the rent — with each person’s share. After that a transfer fills itself in: tick the dates it covers, copy the message for your bank, and paste the reference number back in when you return.',
+        },
+        route: '/notes?section=virements',
+      },
     ],
   },
   {

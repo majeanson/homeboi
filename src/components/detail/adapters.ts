@@ -23,6 +23,9 @@ import type { IconName } from '../Icon'
 import { nameOf, colorOf, type Dict, type Member, type EventRow, type ChoreInstance } from '../board/types'
 import { eventMembers } from '../../lib/eventPeople'
 import type { DetailAction, DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
+import { formatMoneyExact } from '../../lib/money'
+import type { Transfer as TransferModel, TransferPlan as TransferPlanModel } from '../../lib/transfers'
+import type { Member as CercleMember } from '../../lib/cercle'
 
 // What every builder needs to resolve names/faces + locale + copy. `recipeFor`
 // (optional) resolves a planned meal → its saved recipe; pages set it from
@@ -838,3 +841,56 @@ export function buildMemberPerson(
   }
 }
 
+
+// — « Les virements » : one recorded transfer —
+//
+// The peek is what makes a row from eight months ago legible again: what the money
+// was FOR (its lines), the message the bank shows, and the reference number that
+// ties it to a statement. Its own ctx rather than DetailCtx: this surface holds
+// cercle `Member`s (camelCase, with the raw avatar ref DetailWho wants) and the
+// plans needed to name a line's due date — the /api/members shape the other builders
+// take is simply not what the Notes tab fetched.
+export function buildTransfer(
+  tr: TransferModel,
+  ctx: { t: Dict; lang: Lang; plans: TransferPlanModel[]; members: CercleMember[] },
+  opts?: { onEdit?: () => void; onDelete?: () => void; onCopy?: () => void },
+): DetailModel {
+  const { t, lang, plans, members } = ctx
+  const v = t.virements
+  const who = members.find((m) => m.id === tr.memberId)
+
+  // Each line as one bullet: what it paid for, then the amount. A 'plan' line names
+  // its agreement and the date it covers, which is the whole claim the row is making.
+  const items = tr.lines.map((l) => {
+    const amount = formatMoneyExact(l.amountCents, lang)
+    if (l.kind === 'plan') {
+      const title = plans.find((p) => p.id === l.planId)?.title ?? '?'
+      return `${title} · ${formatDayMaybeYear(l.dueAt, lang)} — ${amount}`
+    }
+    if (l.kind === 'topup') return `${v.topup} — ${amount}`
+    return `${l.label || v.amount} — ${amount}`
+  })
+
+  const blocks: DetailBlock[] = []
+  if (items.length) blocks.push({ kind: 'list', label: v.total, items })
+  // The memo is quoted, not paraphrased: it is the exact string on the statement.
+  if (tr.memo.trim()) blocks.push({ kind: 'text', label: v.memo, text: tr.memo.trim(), hand: true })
+  if (tr.reference?.trim()) blocks.push({ kind: 'chips', label: v.reference, chips: [tr.reference.trim()] })
+  if (tr.note?.trim()) blocks.push({ kind: 'text', text: tr.note.trim() })
+
+  const actions: DetailAction[] = []
+  if (opts?.onCopy) actions.push({ key: 'copy', label: v.copyMemo, icon: 'check-bold', primary: true, run: opts.onCopy })
+  if (opts?.onEdit) actions.push({ key: 'edit', label: v.edit, icon: 'pencil-simple-bold', run: opts.onEdit })
+  if (opts?.onDelete) actions.push({ key: 'delete', label: t.common.delete, icon: 'trash-bold', tone: 'danger', overflow: true, run: opts.onDelete })
+
+  return {
+    kind: 'transfer',
+    title: formatMoneyExact(tr.totalCents, lang),
+    icon: 'receipt-bold',
+    accent: who?.colour ?? CATS.cercle.color,
+    when: formatDayMaybeYear(tr.sentAt, lang),
+    who: who ? { role: v.sender, name: who.displayName, colour: who.colour, avatarKind: who.avatarKind, avatarRef: who.avatarRef } : null,
+    blocks,
+    actions,
+  }
+}

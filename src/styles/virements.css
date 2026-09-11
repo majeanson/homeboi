@@ -1,0 +1,110 @@
+/* « Les virements » — the second face of the Notes tab (?section=virements).
+   Uniquely-named `.virements*` classes, so cascade position is immaterial. B-11
+   (bmad/10): NOT in the eager shell — imported as a side effect by
+   components/virements/VirementsSection, its only consumer, so a household that
+   never opens the tab never pays for it. */
+
+.virements {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* The face row. A Cluster already wraps; this only spaces it from what follows. */
+.virements__bar {
+  align-items: center;
+}
+.virements__face {
+  min-width: 0;
+}
+
+.virements__plans {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* One standing agreement. The left spine carries the plan's own colour when it has
+   one (the card/surface family sets the rest). */
+.virements__plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-left: 3px solid var(--line);
+  min-width: 0;
+}
+.virements__plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.virements__plan-title {
+  min-width: 0;
+}
+.virements__plan-title h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  /* A long agreement name wraps instead of pushing the row wider — the ✏️ pair on
+     the right must never be shoved off a 390px screen. */
+  overflow-wrap: anywhere;
+}
+.virements__plan-title p {
+  margin: 0.15rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* Who sends what: a face, then their amount. Faces and numbers — never a ranking
+   and never a per-person running total (NFR-CALM-1, the chore-ledger rule). */
+.virements__shares {
+  align-items: center;
+}
+.virements__share {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.virements__share-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.virements__share-text .mono {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+/* The upcoming due dates ride a Rail, which already scrolls one line with a hidden
+   scrollbar and maps the mouse wheel (useHScroll). Nothing to add but breathing room. */
+.virements__dates {
+  gap: 0.4rem;
+}
+
+/* « La math » — folded by default, quiet when open. Plain sentences, deliberately no
+   chart, no percentage and no colour coding: it is a receipt, not a scoreboard. */
+.virements__math p {
+  margin: 0 0 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.virements__math p:last-child {
+  margin-bottom: 0;
+}
+
+.virements__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}

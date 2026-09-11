@@ -23,6 +23,7 @@ type DetailKind =
   | 'mot' // « Laisse un mot » — a member-to-member message (text / voice / drawing / photo)
   | 'habit' // « Mes habitudes » — a board-card habit row (today's reading + the edit door)
   | 'contact'
+  | 'transfer' // « Les virements » — one recorded transfer: its breakdown, memo and bank reference
 
 // One block of body content. The sheet renders these top-to-bottom.
 export type DetailBlock =
