@@ -199,8 +199,34 @@ shape now carries `cutout` (`clipping_image_url`, both sides, optional) and the 
 prefers it, to match them field for field. What is still unknown is how Flipp's SERVER
 stores and echoes a row it did not create — so the bookmark grew « diag »: typed in its
 paste box, signed in, it shows the account list's raw rows in a prompt to copy and paste
-into a session. Marc's next step: add one item in the Flipp app, run « diag », paste —
-their row beside ours is the diff that answers this.
+into a session.
+
+**Answered the same afternoon, in Marc's own signed-in Chrome** (launched with
+`--remote-debugging-port`, driven over CDP with Playwright — the session never left his
+machine; the pattern is worth keeping for anything behind a Google login). Three facts,
+each read from the live account, not inferred:
+
+1. **The six broken rows all have `left/right/top/bottom`, `price` and `merchant_id`
+   as null.** The web list lays clippings out by `right − left` / `top − bottom`
+   (`ItemLayout._layoutItems`), so one null row makes every height after it NaN — the
+   whole section piles up at one y, which is exactly the screenshot. Confirmed in the
+   DOM: the six rows and the rows after them share `y=504`/`y=559`; the good rows sit
+   at their own y.
+2. **Their own button, signed in, PUTs the same op we do** (`createOp('post')`, field
+   for field — captured on the wire) and the server echoes it whole. **So does ours:**
+   the served bookmark body, run in that window on a fresh deal, produced a row with
+   geometry, price and merchant id intact, and flipp.com drew it under « Costco » with
+   its price and fine print — indistinguishable from theirs. The server also fills
+   `sale_story` / `pre_price_text` / `post_price_text` itself, so those are not a
+   marker of who wrote a row.
+3. **Therefore the six were not written by the fixed bookmark.** They predate it (a
+   deal staged before 2026-09-10 has no `box`, and the old paths carried nulls through).
+   The cure is « Vider ma liste Flipp », then paste again.
+
+**The guard that keeps it from recurring:** the account path now posts a clipping
+WITHOUT its four box numbers as a TYPED ITEM (its short name), never as a clipping —
+twin `flippAccountOps` agrees, unit-tested. `diag` stays in the bookmark: it is the
+cheapest way to read the account when the phone is the only device at hand.
 
 Guards: `flippList.test.ts` runs the body against a fake page WITH a session and a
 recording fetch — the call sequence, the exact op object, uniqueness against the

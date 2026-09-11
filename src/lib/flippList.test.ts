@@ -355,6 +355,18 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
     expect(r.location.href).toBe('/liste_dachats')
   })
 
+  it('a clipping WITHOUT its box goes as a typed item (its short name), never as a clipping — one null-geometry row breaks their whole list layout', async () => {
+    const noBox = flippListPayload([pick('a', { box: null, name: 'MIEL BILLY BEE | BILLY BEE HONEY 500 g' }), pick('b', { id: 102, name: 'Pain' })], ['Oeufs'])
+    const r = await run({ cookie: SIGNED_IN, prompt: noBox })
+    const put = r.calls[2].body as { _ops: { object: Record<string, unknown> }[] }
+    expect(put._ops.map((o) => [o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
+      ['flyer_item_clipping', 102],
+      ['list_item', 'MIEL BILLY BEE'],
+      ['list_item', 'Oeufs'],
+    ])
+    expect(put._ops).toEqual(flippAccountOps({ commit_version: 7, flyer_item_clippings: [], list_items: [] }, JSON.parse(noBox) as FlippPayload))
+  })
+
   it('never re-posts a clipping or a term the account list already has (their own uniqueness)', async () => {
     const r = await run({ cookie: SIGNED_IN, prompt: payload, account: { commit_version: 3, flyer_item_clippings: [{ id: 9, flyer_item_id: 101 }], list_items: [{ id: 8, term: 'oeufs' }] } })
     const put = r.calls[2].body as { _ops: { object: Record<string, unknown> }[] }
