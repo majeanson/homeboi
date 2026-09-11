@@ -161,12 +161,31 @@ export const FLIPP_BOOKMARKLET_BODY =
  *  the ONE path the Flipp iOS app claims as a universal link, so on a phone with the
  *  app this link may open the app itself with the list (Android claims every path).
  *  Typed items only — a clipping with its photo still needs the bookmark. Their
- *  splitter is a bare comma, so a comma inside a line becomes a space. */
+ *  splitter is a bare comma, so a comma inside a line becomes a space — and their
+ *  handler decodes the value a SECOND time, so one « % » anywhere (« Lait 2% ») threw
+ *  and dropped the WHOLE batch on the web (probed 2026-09-10). A percent sign goes
+ *  as its fullwidth twin « ％ », which survives any decode and still reads as one.
+ *
+ *  A line staged from a flyer carries Flipp's own product name — « MIEL BILLY BEE |
+ *  BILLY BEE HONEY 500 g » — and those were exactly the lines that did NOT reach the
+ *  app on Marc's phone (the plain words did). The web takes them; the app's parser
+ *  is not ours to read. So every line goes SHORT: the part before a « | », at most
+ *  `MAX_TEXT` characters cut on a word — what a person would type into Flipp. */
+const MAX_TEXT = 40
+export function flippSendText(raw: string): string {
+  let t = raw.split('|')[0].replace(/,/g, ' ').replace(/%/g, '％').replace(/\s+/g, ' ').trim()
+  if (t.length > MAX_TEXT) {
+    const cut = t.slice(0, MAX_TEXT + 1)
+    const sp = cut.lastIndexOf(' ')
+    t = (sp > 12 ? cut.slice(0, sp) : cut.slice(0, MAX_TEXT)).trim()
+  }
+  return t
+}
 export function flippAddTextsUrl(terms: string[], postal?: string | null): string | null {
   const seen = new Set<string>()
   const texts: string[] = []
   for (const raw of terms) {
-    const t = raw.replace(/,/g, ' ').replace(/\s+/g, ' ').trim()
+    const t = flippSendText(raw)
     const k = t.toLowerCase()
     if (!t || seen.has(k)) continue
     seen.add(k)

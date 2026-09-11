@@ -2964,6 +2964,7 @@ export const EN: typeof FR = {
     flippList: 'My Flipp list',
     copyForFlipp: 'Copy for Flipp',
     sendToFlipp: 'Send to Flipp',
+    sentToFlipp: (n: number) => `Sent to Flipp · ${n} line${n > 1 ? 's' : ''}`,
     flippCopied: 'List copied ✓ — in Safari, on flipp.com, run the “Paste from Babillard” bookmark and paste.',
     flippHow: 'How it works',
     flippCopyRefused: 'The phone refused the copy — come back here and tap “My Flipp list” again.',

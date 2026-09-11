@@ -178,6 +178,19 @@ with the app very likely the app itself (Marc's to confirm); « Copier pour Flip
 door folded into it (the /action page IS the list). Card, guide point and ACTIONS
 say the two paths in that order.
 
+**From the phone, minutes later: « rest works, it opens in Flipp »** — the /action
+link opens the Flipp APP with the list (confirmed). **« some items don't get sent »**
+— the plain words arrived; the lines staged from a flyer did not. Those carry Flipp's
+own product names (« MIEL BILLY BEE | BILLY BEE HONEY 500 g »); the web takes them,
+the app's parser is not ours to read. Two things the web probe DID establish: one
+« % » anywhere (« Lait 2% ») made their handler's second decode throw and dropped
+the WHOLE batch; length (50 lines), « | », « # », « & », accents were all fine on the
+web. So every line now goes SHORT — before a « | », ≤ 40 chars cut on a word, « % »
+as « ％ » — the way a person would type it; and after the tap the till says exactly
+what left (« Envoyé à Flipp · 7 lignes — a · b · c ») so "not sent" and "not shown"
+can be told apart on the phone. Photos never travel this door; that is the
+bookmark's job.
+
 Guards: `flippList.test.ts` (loader shape + length, body origin from its src),
 `flippPaste.test.ts` (served file = body), cashier.spec (the send href, the focus
 landing under late data), live 5/5 exercisable (4 still waits for an account).

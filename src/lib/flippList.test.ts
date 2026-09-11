@@ -3,6 +3,8 @@ import {
   FLIPP_BOOKMARKLET_BODY,
   FLIPP_PASTE_PATH,
   flippBookmarklet,
+  flippAddTextsUrl,
+  flippSendText,
   flippListPayload,
   mergeFlippList,
   parseFlippHash,
@@ -216,6 +218,37 @@ describe('the bookmarklet, run against a fake flipp.com page — Babillard → F
     const strip = (l: StoredList) => ({ ...l, listItems: l.listItems.map(({ id, ...rest }) => ({ ...rest, idPrefix: id.split('-')[0] })) })
     expect(strip(real)).toEqual(strip(JSON.parse(JSON.stringify(twin.list)) as StoredList))
     expect(twin.added).toBe(3) // 102 + Oeufs + Beurre
+  })
+})
+
+describe('flippAddTextsUrl — « Envoyer à Flipp », their /action door', () => {
+  it('joins the lines on a bare comma, encoded once, with the postal', () => {
+    expect(flippAddTextsUrl(['Lait', 'Pain tranché'], 'H2X 1Y4')).toBe(
+      'https://flipp.com/action?command=add_text_to_list&texts=Lait%2CPain%20tranch%C3%A9&postal_code=H2X%201Y4',
+    )
+  })
+  it('a comma inside a line becomes a space (their splitter is bare), blanks and doubles drop', () => {
+    const u = flippAddTextsUrl([' Pain, tranché ', 'pain  tranché', '', 'Oeufs'])!
+    expect(decodeURIComponent(u.split('texts=')[1])).toBe('Pain tranché,Oeufs')
+  })
+  it('a percent sign travels as its fullwidth twin — one « % » dropped their whole batch', () => {
+    const u = flippAddTextsUrl(['Lait 2%', 'Yogourt 100% naturel'])!
+    const texts = decodeURIComponent(u.split('texts=')[1])
+    expect(texts).toBe('Lait 2％,Yogourt 100％ naturel')
+    expect(texts).not.toContain('%')
+    // …and what their handler does next (decodeURIComponent on the decoded value) no longer throws.
+    expect(() => decodeURIComponent(texts)).not.toThrow()
+  })
+  it('a Flipp product name goes short: before the « | », at most 40 characters, cut on a word', () => {
+    expect(flippSendText('MIEL BILLY BEE | BILLY BEE HONEY 500 g')).toBe('MIEL BILLY BEE')
+    expect(flippSendText('POITRINES DE POULET DÉSOSSÉES SANS PEAU FORMAT FAMILIAL 2 KG')).toBe('POITRINES DE POULET DÉSOSSÉES SANS PEAU')
+    expect(flippSendText('Lait')).toBe('Lait')
+    const u = flippAddTextsUrl(['MIEL BILLY BEE | BILLY BEE HONEY 500 g', 'Miel Billy Bee'])!
+    expect(decodeURIComponent(u.split('texts=')[1])).toBe('MIEL BILLY BEE') // and the two are one line
+  })
+  it('nothing to send → null (the caller falls back to the plain list door)', () => {
+    expect(flippAddTextsUrl([], 'H2X 1Y4')).toBeNull()
+    expect(flippAddTextsUrl([' ', ','])).toBeNull()
   })
 })
 

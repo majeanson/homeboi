@@ -5,7 +5,7 @@ import { useLang, useT } from '../i18n'
 import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { useFlippClipped, markFlippClipped, resetFlippClipped } from '../lib/flippClipped'
-import { flippListPayload, flippAddTextsUrl } from '../lib/flippList'
+import { flippListPayload, flippAddTextsUrl, flippSendText } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
@@ -107,7 +107,12 @@ export function CashierMode({
   // flipp.com's /action adds them as typed items (lib/flippList flippAddTextsUrl),
   // and on a phone with the app that path opens the app. The photos of the staged
   // deals do not travel this way — that is what « Copier pour Flipp » is for.
-  const sendUrl = flippAddTextsUrl(rows.filter((r) => !r.checked_at).map((r) => r.text), postal) ?? flippListUrl(postal)
+  const sendTerms = rows.filter((r) => !r.checked_at).map((r) => flippSendText(r.text)).filter(Boolean)
+  const sendUrl = flippAddTextsUrl(sendTerms, postal) ?? flippListUrl(postal)
+  // After the tap, the line under the row says exactly what went (count + words):
+  // Marc's phone showed fewer lines in Flipp than were sent, and the only way to
+  // tell "not sent" from "not shown" is to see the list that left.
+  const [sent, setSent] = useState(false)
   // The notice fires while the flipp.com window COVERS this page and is gone before
   // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
   // the paste had worked). So the word lives under the button, and stays.
@@ -189,7 +194,7 @@ export function CashierMode({
               <Cluster className="cashier__flipp-row">
                 {/* Order = reading order at 390px, where the row wraps: the bookmark
                     path (copy, then their list) first, the tap-by-tap loop under it. */}
-                <a className="btn btn--primary cashier__send" href={sendUrl!} target="_blank" rel="noopener noreferrer">
+                <a className="btn btn--primary cashier__send" href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
                   <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
                 </a>
                 <button type="button" className="btn cashier__copy" onClick={copyForFlipp}>
@@ -211,6 +216,11 @@ export function CashierMode({
                   </button>
                 ) : null /* nothing live to step through (every deal ended) — no loop, no restart; the list door alone */}
               </Cluster>
+              {sent && (
+                <p className="cashier__flipp-hint mono cashier__sent">
+                  {t.shop.sentToFlipp(sendTerms.length)} — {sendTerms.join(' · ')}
+                </p>
+              )}
               {copyState !== 'idle' && (
                 <p className="cashier__flipp-hint mono">
                   {copyState === 'copied' ? t.shop.flippCopied : t.shop.flippCopyRefused}{' '}
