@@ -37,6 +37,11 @@ export const TODO_TEMPLATES_KEY = ['todo-templates']
 // « À régler » — the cross-domain heads-up scan (functions/api/a-regler). Read by
 // the board card AND the « Cette semaine » block, so the key is shared.
 export const A_REGLER_KEY = ['a-regler']
+// « Les virements » (/api/transfers): ONE composed read model — the plans (with
+// their expanded due dates + the derived catch-up projection) AND the recorded
+// transfers, in a single payload. The tab, the composer and the peek all read it,
+// so there is no second cache that can disagree about the same rows.
+export const TRANSFERS_KEY = ['transfers']
 // Opt-in purchase-tracking predictions (/api/ghost — « souvent racheté »). Read by
 // La liste, the Quick-add page, and the AddSheet quick-add; written when an item is
 // added/bought. Shared so a list add refreshes the prediction strip everywhere.

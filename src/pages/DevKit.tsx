@@ -40,6 +40,7 @@ import { EditField } from '../components/EditField'
 import { useMemoAttach } from '../components/MemoAttach'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { SearchField } from '../components/SearchField'
+import { CopyButton } from '../components/CopyButton'
 import { ModeToggle } from '../components/ModeToggle'
 import { AislePicker } from '../components/AislePicker'
 import { ContactFields, EMPTY_CONTACT_CORE, type ContactCoreValue } from '../components/cercle/ContactFields'
@@ -1303,6 +1304,35 @@ export function DevKit() {
             Collapsible collapses again only when it loses focus EMPTY — a live query always keeps the
             field (and the reason the list below is narrowed) on screen. Escape clears + closes. The
             collapsed face is a real button, so it's tab + Enter reachable, never tap-only.
+          </p>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'CopyButton',
+      file: 'components/CopyButton.tsx',
+      kw: 'copy copier copie clipboard presse-papiers coller paste partager lien message virement',
+      render: () => (
+        <>
+          <Demo label="the default — the confirmation STAYS, because you left the page to paste">
+            <CopyButton text="Hypotheque 13 27 aout renflou 2000" label="Copier le message" copiedLabel="Copié !" />
+          </Demo>
+          <Demo label="ghost + an idle glyph, for a link beside other controls">
+            <CopyButton
+              text="https://babillard.example/partage/abc123"
+              label="Copier le lien"
+              copiedLabel="Copié !"
+              icon="link-bold"
+              variant="ghost"
+            />
+          </Demo>
+          <p className="mono devkit__hint">
+            No timer: the word stays until the TEXT changes. A toast fires while the bank app (or
+            flipp.com) covers this page and is gone before you look back — the reason CashierMode
+            already kept its own word under the button. If the clipboard is missing or refuses (iOS
+            outside a gesture, an insecure origin), the text appears in a read-only field that selects
+            itself on focus, so the copy is still possible by hand.
           </p>
         </>
       ),

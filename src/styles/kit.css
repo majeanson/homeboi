@@ -625,3 +625,35 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+/* CopyButton (components/CopyButton.tsx) — the shared copy-to-clipboard affordance.
+   A column, not a row: on refusal a manual-copy field appears UNDER the button, and
+   it must be allowed to take the full width rather than squeeze in beside it. */
+.copybtn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.copybtn > .btn {
+  /* The label swaps between « Copier » and « Copié ! », which are different widths.
+     Without this the button resizes under the thumb mid-tap. */
+  justify-content: center;
+}
+.copybtn__manual {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+.copybtn__hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+/* The manual field is the fallback path, never the main event: it must not grow the
+   surface horizontally on a 390px phone. */
+.copybtn__manual .input {
+  width: 100%;
+  min-width: 0;
+}
