@@ -382,6 +382,11 @@ const MATRIX: Entry[] = [
 
   { name: 'settings-board', route: '/settings?tab=board&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
   { name: 'settings-systeme', route: '/settings?tab=settings&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
+  // The « Ma liste Flipp » walkthrough card (2026-09-10): two numbered phases, the
+  // bookmark's address, a fold. Reached by ?focus= (scrolled to), so contentTopPx
+  // would measure the scroll, not chrome — read, not budgeted. Night too: a card
+  // this long is where a low-contrast token shows first.
+  { name: 'settings-flipp', route: '/settings?tab=liste&focus=flipp&lens=regler', content: '#op-flipp', noBudgetWhy: 'reached by ?focus= — the card is scrolled to, so contentTopPx measures the scroll, not chrome (2026-09-10)' },
 
   // — THE FORM SCENES. Four of these opened as a wall of fields before the lean
   //   pass; the budget is what keeps them from filling back up.
@@ -425,7 +430,7 @@ const MATRIX: Entry[] = [
   // the fixture holds — one — not how much chrome the surface spends. A budget read
   // off that number would guard the fixture. Screenshot + bleed + crash guards only,
   // until the shared list fixture stages more than a single deal.
-  { name: 'cashier', route: '/liste/cashier', content: '.cashier__tile, .bigcard', themes: ['day'], noBudgetWhy: 'the one tile is vertically CENTRED at thumb height, so contentTopPx measures how few deals the fixture stages, not chrome — a number here would invite "fixing" the one screen whose emptiness is the design (looked at again 2026-09-09: still true)' },
+  { name: 'cashier', route: '/liste/cashier', content: '.cashier__tile, .bigcard', noBudgetWhy: 'the one tile is vertically CENTRED at thumb height, so contentTopPx measures how few deals the fixture stages, not chrome — a number here would invite "fixing" the one screen whose emptiness is the design (looked at again 2026-09-09: still true)' },
   // …and the PEEK behind it, which is the screen actually held up to a cashier: the
   // grid is only how you pick which deal is being scanned. It had never been
   // photographed (2026-09-10) — so the proof card, the one surface whose whole job is
@@ -437,7 +442,8 @@ const MATRIX: Entry[] = [
       await page.locator('.cashier__tile').first().click()
       await expect(page.locator('.bigcard')).toBeVisible()
     },
-    themes: ['day'],
+    // Night too, since 2026-09-10: the till row (copy / list / loop / refresh) and
+    // the proof card were only ever seen in day.
   },
   // …and the FLYER that peek opens, with the item circled — the 2026-09-10 ask:
   // « when you click it goes to the flyer with a yellow circle ». The ring is the whole
@@ -630,6 +636,9 @@ const TEXT_STRESS = [
   'form-event', 'form-person', 'board-addsheet', 'board-composer-todo',
   // the two scenes whose headers carry a date AND controls
   'day-plan', 'voiture',
+  // the till row and the proof card (four doors + a dated line at 390px), and the
+  // Flipp walkthrough card — tonight's surfaces, seen only in day·FR·390 (2026-09-10)
+  'cashier', 'cashier-peek', 'settings-flipp',
 ]
 const BOARD_NARROW_ONLY = ['board']
 

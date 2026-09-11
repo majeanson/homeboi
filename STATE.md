@@ -144,6 +144,32 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Looked at under every lens, and a sweep for what a screenshot cannot see (2026-09-10, night — closing)
+
+**The new surfaces, seen in night, EN and 360px.** Tonight's till row (copy / list
+/ loop / refresh), the proof card and the « Ma liste Flipp » walkthrough card had
+only ever been seen in day·FR·390. `cashier` and `cashier-peek` now shoot night
+too; the three joined `TEXT_STRESS`, so each has an EN and a 360px twin; a
+`settings-flipp` state photographs the card (reached by `?focus=`, so read rather
+than budgeted — contentTopPx would measure the scroll). Thirteen states, all read:
+night keeps its contrast on the marigold copy button and the card's dated line; EN
+fits the row on one line (« Copy for Flipp » / « My Flipp list »); at 360px the
+card's two actions stack instead of squeezing, and the walkthrough wraps its
+numbered steps without cutting a word. Nothing to change. LEAN.md's live numbers
+moved with it — 91 entries → 106 states, 45 lens twins — asserted by `docCounts`.
+
+**The door sweep — `e2e/door-sweep.spec.ts`.** The structural gap this whole day
+kept finding: a screenshot cannot see what a TAP or a HOLD does, and the two phone
+bugs of the morning (a day-scene meal tap that renamed, a snack that would not
+drag) were exactly that. The sweep walks the doors ACTIONS.md lists as « ✅ tap /
+hold » on the surfaces a household uses most — a board event → its peek, a todo
+name → a field takes focus, a week-grid meal → its recipe, the day-scene meal → its
+recipe (the morning's bug, now pinned twice), a plain list row's picture → the item
+scene, the row centre → checked in place, a HELD row → its peek, a note row → the
+editor, a till tile → the proof card — and asserts only that the door OPENED
+(URL, sheet, scene, focus, state). One row per door; the feature specs own what is
+behind it. Nine doors tonight; the table is meant to grow one row at a time.
+
 ### Both ways, and a week later (2026-09-10, night — the last four)
 
 Marc: « what else could we do towards this » — and picked all four. Each shipped
