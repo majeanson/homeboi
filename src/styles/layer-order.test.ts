@@ -80,7 +80,7 @@ const ABOVE_SHEET = ['.tour', '.confirm-backdrop', '.kit-modal__backdrop', '.amb
 // Full-screen SCENES: a surface the user navigated into, which a sheet opened from
 // within it is expected to cover. Adding one here is the decision "a sheet may sit on
 // top of this"; if that is wrong for the new surface, it belongs in ABOVE_SHEET.
-const BELOW_SHEET = ['.flyer-overlay', '.cook', '.note-editor', '.drawpad']
+const BELOW_SHEET = ['.flyer-overlay', '.flipp-pager', '.cook', '.note-editor', '.drawpad']
 
 describe('fixed-overlay layer order', () => {
   it('found the stylesheets', () => {

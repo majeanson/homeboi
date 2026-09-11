@@ -369,3 +369,91 @@
   font-weight: 800;
   font-size: 1.1rem;
 }
+
+/* « MONTRER FLIPP » ONE AFTER THE OTHER (2026-09-11, components/FlippPager.tsx) —
+   Flipp's own item page FRAMED over the till, « Précédent / Suivant » under it. Same
+   layer as .flyer-overlay (70, above the till's 50; BELOW_SHEET in layer-order.test).
+   The frame owns the scroll; the bar and the nav never move. */
+.flipp-pager {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+}
+.flipp-pager__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px var(--gutter, 14px);
+  border-bottom: 1.5px solid var(--line);
+}
+.flipp-pager__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.flipp-pager__count {
+  font-size: 0.85rem;
+  color: var(--ink-soft, var(--muted));
+}
+.flipp-pager__for {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.flipp-pager__open {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* Below ~420px the bar cannot hold count + item + « Ouvrir dans Flipp » + ✕: the
+   external door keeps its icon only; its text stays in the DOM for the reader. */
+@media (max-width: 420px) {
+  .flipp-pager__open {
+    font-size: 0;
+    gap: 0;
+    padding: 10px;
+  }
+  .flipp-pager__open .icon {
+    font-size: 16px;
+  }
+}
+.flipp-pager__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  background: #fff;
+}
+.flipp-pager__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+.flipp-pager__veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+}
+.flipp-pager__nav {
+  flex: 0 0 auto;
+  padding: 10px var(--gutter, 14px) max(10px, env(safe-area-inset-bottom));
+  border-top: 1.5px solid var(--line);
+  justify-content: space-between;
+  background: var(--paper);
+}
+.flipp-pager__nav .btn {
+  flex: 1 1 auto;
+  min-height: 48px;
+  font-size: 1.05rem;
+}

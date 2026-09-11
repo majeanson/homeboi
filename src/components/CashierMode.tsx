@@ -10,6 +10,7 @@ import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
 import { FlyerViewer, prefetchFlyer } from './FlyerViewer'
+import { FlippPager } from './FlippPager'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { Cluster } from './Layout'
@@ -55,6 +56,18 @@ export function CashierMode({
   // closes), and carries NO count/score, so it stays calm (no streak/points).
   const [shown, setShown] = useState<Set<string>>(() => new Set())
   const [flyerOpen, setFlyerOpen] = useState(false)
+  // « MONTRER FLIPP » ONE AFTER THE OTHER (2026-09-11): the index into `clippable` the
+  // FlippPager frames, or null when it is closed. Every pick it lands on is marked
+  // shown (the tile's ✓), the same as tapping its tile — the pager IS showing.
+  const [pagerAt, setPagerAt] = useState<number | null>(null)
+  // The pager reads the list through a ref so `pageTo` stays stable across renders.
+  const clippableRef = useRef<Pick[]>([])
+  const pageTo = (i: number) => {
+    const p = clippableRef.current[i]
+    if (!p) return
+    setPagerAt(i)
+    setShown((s) => (s.has(p.itemId) ? s : new Set(s).add(p.itemId)))
+  }
   // THE FLIPP LOOP (2026-09-10). Marc: « any way to pre-create the list and then
   // show it from flipp? » No — probed in a real browser: flipp.com's « Ajouter à la
   // liste » writes that browser's own localStorage and makes no request, the list
@@ -78,6 +91,9 @@ export function CashierMode({
   const notice = useNotice()
   const isEnded = (p: Pick) => dealEnded(p.deal.validTo)
   const clippable = picks.filter((p) => p.deal.id != null && !isEnded(p))
+  clippableRef.current = clippable
+  // The grid door starts at the first pick not yet shown this trip (or the first).
+  const pagerStart = Math.max(0, clippable.findIndex((p) => !shown.has(p.itemId)))
   // REFRESH THE ENDED ONES (2026-09-10): a week after « Choisir les meilleurs » the
   // grid is all « Aubaine terminée » — Marc's list that night. One tap re-runs this
   // week's best price for exactly those lines (lib/picks refreshEndedDeals); a line
@@ -197,9 +213,15 @@ export function CashierMode({
           {postal && (clippable.length > 0 || terms.length > 0) && (
             <div className="cashier__flipp">
               <Cluster className="cashier__flipp-row">
-                {/* Order = reading order at 390px, where the row wraps: the bookmark
-                    path (copy, then their list) first, the tap-by-tap loop under it. */}
-                <a className="btn btn--primary cashier__send" href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
+                {/* Order = reading order at 390px, where the row wraps: SHOW first (what a
+                    till is for — Flipp's own page, framed, one pick after the other), then
+                    the words door, the bookmark copy, the tap-by-tap ADD loop under it. */}
+                {clippable.length > 0 && (
+                  <button type="button" className="btn btn--primary cashier__show-flipp" onClick={() => pageTo(pagerStart)}>
+                    <InlineIcon name="storefront-bold" /> {t.shop.showFlipp}
+                  </button>
+                )}
+                <a className={`btn${clippable.length ? '' : ' btn--primary'} cashier__send`} href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
                   <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
                 </a>
                 <button type="button" className="btn cashier__copy" onClick={copyForFlipp}>
@@ -273,6 +295,9 @@ export function CashierMode({
             })}
           </ul>
         </div>
+        {pagerAt != null && postal && clippable.length > 0 && (
+          <FlippPager picks={clippable} index={pagerAt} postal={postal} onIndex={pageTo} onClose={() => setPagerAt(null)} />
+        )}
       </div>
     )
   }
@@ -353,15 +378,14 @@ export function CashierMode({
                 postal code, on purpose. « Voir la circulaire » stays the fast in-app
                 path — it opens ON the item, circled. */}
             <Cluster className="bigcard__actions">
-              {!ended && flippItemUrl(d.id, postal) && (
-                <a
+              {!ended && postal && flippItemUrl(d.id, postal) && (
+                <button
+                  type="button"
                   className="btn btn--primary bigcard__flipp"
-                  href={flippItemUrl(d.id, postal)!}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => pageTo(Math.max(0, clippable.findIndex((p) => p.itemId === selected.itemId)))}
                 >
-                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.showFlipp}
-                </a>
+                  <InlineIcon name="storefront-bold" /> {t.shop.showFlipp}
+                </button>
               )}
               {d.flyerId != null && (
                 <button type="button" className="btn bigcard__flyer" onClick={() => setFlyerOpen(true)}>
@@ -406,6 +430,10 @@ export function CashierMode({
           </div>
         </div>
       </div>
+
+      {pagerAt != null && postal && clippable.length > 0 && (
+        <FlippPager picks={clippable} index={pagerAt} postal={postal} onIndex={pageTo} onClose={() => setPagerAt(null)} />
+      )}
 
       {flyerOpen && d.flyerId != null && (
         <FlyerViewer

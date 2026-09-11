@@ -239,22 +239,60 @@ for (const f of [
 //     worse than none at exactly the moment a cashier is waiting.
 // The fixture's deal id 101 is Flipp's flyer_item_id (deals.ts maps it to `deal.id`),
 // and the mock household's postal is 'H2X 1Y4'.
-test('« Montrer Flipp » opens Flipp\'s own item page — and only when a postal code exists', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/liste/cashier')
+// « MONTRER FLIPP », ONE AFTER THE OTHER (2026-09-11). The door FRAMES Flipp's own
+// item page over the till (flipp.com sends no X-Frame-Options / frame-ancestors —
+// probed that day) and « Suivant » swaps the frame to the next live pick: one tap per
+// item, no tab, no app switch. The URL is the DIRECT item page, not /action: /action
+// is the Flipp iOS app's universal-link path and the app opened on its empty list
+// instead of the item (lib/deals flippItemUrl). Every pick the pager lands on is
+// marked shown (the tile ✓), and the grid's own door resumes at the first not shown.
+test('« Montrer Flipp » frames Flipp\'s own item page and steps to the next pick — and only when a postal code exists', async ({ page }) => {
+  await stubFlipp(page)
+  await openGrid(page) // four picks, Flipp ids 101..104 — 104 ended, so three live
   await page.locator('.cashier__tile').first().click()
-  const door = page.locator('a.bigcard__flipp')
+  const door = page.locator('button.bigcard__flipp')
   await expect(door).toBeVisible()
   await expect(door).toHaveText(/Montrer Flipp/)
-  // The DIRECT item page, not /action: /action is the Flipp iOS app's universal-link
-  // path and the app opened on its empty list instead of the item (2026-09-11) —
-  // the direct page renders the item in any browser (lib/deals flippItemUrl).
-  await expect(door).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
-  await expect(door).toHaveAttribute('target', '_blank')
-  // The in-app path stays beside it — the door is an addition, not a replacement.
+  // The in-app flyer path stays beside it — the door is an addition, not a replacement.
   await expect(page.locator('.bigcard__flyer')).toBeVisible()
+  await door.click()
+  const pager = page.locator('.flipp-pager')
+  await expect(pager).toBeVisible()
+  const frame = pager.locator('iframe.flipp-pager__frame')
+  await expect(frame).toHaveAttribute('src', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
+  // The same page in a real tab — the escape if Flipp ever refuses frames.
+  const open = pager.locator('a.flipp-pager__open')
+  await expect(open).toHaveAttribute('href', 'https://flipp.com/fr-ca/item/101?postal_code=H2X%201Y4')
+  await expect(open).toHaveAttribute('target', '_blank')
+  await expect(pager.locator('.flipp-pager__count')).toHaveText('1 de 3')
+  await expect(pager.locator('.flipp-pager__prev')).toBeDisabled()
+  await expectNoOverflow(page)
+  await shot(page, 'flipp-pager')
+  // Suivant → the next live pick's page, in place.
+  await pager.locator('.flipp-pager__next').click()
+  await expect(frame).toHaveAttribute('src', 'https://flipp.com/fr-ca/item/102?postal_code=H2X%201Y4')
+  await expect(pager.locator('.flipp-pager__count')).toHaveText('2 de 3')
+  await expect(pager.locator('.flipp-pager__prev')).toBeEnabled()
+  // Keyboard mirror (the desktop rule): → steps too.
+  await pager.locator('.flipp-pager__next').focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(frame).toHaveAttribute('src', 'https://flipp.com/fr-ca/item/103?postal_code=H2X%201Y4')
+  await expect(pager.locator('.flipp-pager__count')).toHaveText('3 de 3')
+  // On the last one the primary reads « Terminé » and closes the pager.
+  await expect(pager.locator('.flipp-pager__next')).toHaveText(/Terminé/)
+  await pager.locator('.flipp-pager__next').click()
+  await expect(pager).toHaveCount(0)
+  // Back on the grid: every pick the pager showed wears the ✓, the ended one does not.
+  await page.getByRole('button', { name: /Retour/ }).click()
+  await expect(page.locator('.cashier__tile.is-shown')).toHaveCount(3)
+  // The grid door resumes at the first pick NOT yet shown — all shown → the first.
+  await page.locator('.cashier__reset').click()
+  await page.locator('.cashier__tile').nth(1).click()
+  await page.getByRole('button', { name: /Retour/ }).click()
+  await page.locator('button.cashier__show-flipp').click()
+  await expect(page.locator('.flipp-pager__count')).toHaveText('1 de 3')
+  await page.locator('.flipp-pager').getByRole('button', { name: /Fermer/ }).click()
+  await expect(page.locator('.flipp-pager')).toHaveCount(0)
 })
 
 test('without a postal code the Flipp door does not render at all', async ({ page }) => {
@@ -267,7 +305,7 @@ test('without a postal code the Flipp door does not render at all', async ({ pag
   await expect(page.locator('.cashier__flipp')).toHaveCount(0)
   await page.locator('.cashier__tile').first().click()
   await expect(page.locator('.bigcard__price')).toBeVisible()
-  await expect(page.locator('a.bigcard__flipp')).toHaveCount(0)
+  await expect(page.locator('.bigcard__flipp')).toHaveCount(0)
   // …and the rest of the proof is untouched: the card degrades by losing one door,
   // not by losing its evidence.
   await expect(page.locator('.bigcard__valid')).toBeVisible()
@@ -353,7 +391,7 @@ test('an ended deal: the tile says so, the card swaps the dates for the word, an
   await page.locator('.bigcard').waitFor({ state: 'visible' })
   await expect(page.locator('.bigcard__ended')).toContainText(/Aubaine terminée/)
   await expect(page.locator('.bigcard__valid')).toHaveCount(0)
-  await expect(page.locator('a.bigcard__flipp')).toHaveCount(0)
+  await expect(page.locator('.bigcard__flipp')).toHaveCount(0)
   // The rest of the proof stays: the price, the in-app flyer, the source.
   await expect(page.locator('.bigcard__price')).toContainText('24,97')
   await expect(page.locator('.bigcard__flyer')).toBeVisible()

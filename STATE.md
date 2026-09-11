@@ -144,6 +144,47 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### « Montrer Flipp » one after the other — Flipp's page, framed in the till (2026-09-11)
+
+Marc, after the /action revert landed: **« can Montrer flipp open in ios app? otherwise
+maybe a flow where it's easy to Montrer flipp one after the other without too many
+clicks? »** The first half: **not from here, not yet.** Everything public was read —
+their web bundle's `/action` router (`type=flyer_view` → `dispatchFlyerOpen`,
+`command=add_text_to_list`, `type=shopping_list|coupons|browse|search`), the
+`apple-app-site-association` (the iOS app claims `/action` and nothing else), the
+Android `assetlinks` (every URL), the item page's AppsFlyer banner (a generic
+« Obtenez Flipp » to a DEAD Branch link, `flipp.app.link/KYJFGWvFo1` → 404), and
+the web. The app's own parser is native code and reads none of the web grammar for an
+item; the one `/action` shape it is proven to honour is `add_text_to_list`. **The
+fastest way to learn its item grammar is from the app itself: « Share Deal » on any
+item in the Flipp app produces the canonical link — paste one here and the door can
+be tried against it.** Until then the door stays on the direct page.
+
+The second half shipped, and it is better than a tab: **flipp.com can be framed.**
+The item page sends no `X-Frame-Options` and no `frame-ancestors` (its CSP is a
+`<meta>`, which cannot carry that directive) and runs no frame-buster — probed in a
+real iPhone-sized Chromium: store, photo, name, price, their « Ajouter à la liste »,
+the dates, all inside an `<iframe>`. So **`FlippPager`** (`components/FlippPager.tsx`,
+same shape as `FlyerViewer`: a full-screen overlay over the till at z 70,
+`BELOW_SHEET` in `layer-order.test.ts`) frames Flipp's own page for a pick and
+« Suivant » swaps the frame to the next live one — one tap per item, no tab, no app
+switch, « Terminé » on the last. It opens from the card's « Montrer Flipp » AT that pick
+and from a new grid door that resumes at the first pick not yet shown; every pick it
+lands on wears the tile ✓ (the pager IS showing). Two limits designed around: a framed
+third-party page keeps PARTITIONED storage, so an add tapped inside the frame lands in
+a list Flipp's own tab and app never see — the pager SHOWS, adding stays with the
+« Ajouter à Flipp · n de N » loop (a real tab) and « Envoyer à Flipp »; and Flipp could
+refuse frames any day with no readable event, so the bar always carries « Ouvrir dans
+Flipp » (the same URL in a real tab) and the loading veil lifts on the frame's load
+event, which a refusal also fires. « Envoyer à Flipp » is primary only when no pick is
+live. Guard: `cashier.spec.ts` « frames Flipp's own item page and steps to the next
+pick » (frame src per step, the ← → keyboard mirror, the ✓ marks, the resume point).
+
+**The « Lier Flipp » card Marc still saw in Réglages is not in the build.** The deployed
+bundle was pulled and grepped: no « Lier Flipp », no `flipp-link`, no `/action?type=`;
+the SW's `controllerchange` reload swaps a controlled page on its own. An installed
+iOS PWA holds its old page until it is fully closed — quit it and reopen.
+
 ### Two phone findings, and the door that was there all along (2026-09-10, night — last)
 
 Marc, iPhone, with the re-copied v2 bookmark: **« now it doesn't get me to flipp

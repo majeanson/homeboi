@@ -3294,6 +3294,12 @@ export const FR = {
     dealSource: (store: string) => `Circulaire ${store} · via Flipp`,
     // The till card's PRIMARY action (2026-09-10): open Flipp's own page for this item.
     showFlipp: 'Montrer Flipp',
+    // The pager behind it (2026-09-11, FlippPager): Flipp's page FRAMED in the till,
+    // « Suivant » to the next pick. The count is a position, not a score (calm).
+    flippPagerOf: (n: number, total: number) => `${n} de ${total}`,
+    flippPagerPrev: 'Précédent',
+    flippPagerNext: 'Suivant',
+    flippOpenTab: 'Ouvrir dans Flipp',
     // The Flipp loop on the till grid (2026-09-10). Marc asked to pre-fill a Flipp list
     // from here; probed, there is no way in (no URL param, no API — Flipp's web list is
     // that browser's own localStorage). So the grid steps through the picks with
