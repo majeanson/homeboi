@@ -4,8 +4,7 @@ import { useConfirm } from '../../lib/confirm'
 import { useProfile } from '../../lib/profile'
 import { formatDay } from '../../lib/format'
 import { formatMoneyExact, parseMoney } from '../../lib/money'
-import { anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
-import { localDayStart } from '../../lib/localDay'
+import { inputFromLocalDay, localDayFromInput } from '../../lib/localDay'
 import {
   buildMemo,
   coveredDueDates,
@@ -71,7 +70,9 @@ export function TransferForm({
   // to agree, or the dates would be pre-ticked for one face and priced for another.
   const initialSender = value?.memberId ?? profileFace ?? firstPayer
   const [sender, setSender] = useState<string | null>(initialSender)
-  const [date, setDate] = useState(value ? anchorSecToDate(value.sentAt) : todayAnchorDate())
+  // The DAY it was sent, as a local day — never the appointment helper's UTC midnight,
+  // which stored « 14 août » as the 13th at 20:00 on Marc's own row (2026-09-12).
+  const [date, setDate] = useState(inputFromLocalDay(value ? value.sentAt : today))
 
   // Ticked due dates, per plan. Seeded from the transfer being edited, or — for a new
   // one — from what this face still owes: every past due date nothing has covered.
@@ -110,6 +111,17 @@ export function TransferForm({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
+  // What this face put in as a top-up LAST time — the newest recorded transfer of
+  // theirs that carried one. Only ever offered on a NEW transfer: while editing an
+  // existing one, its own amount is the truth and a proposal beside it would be noise.
+  const lastTopup = value
+    ? 0
+    : (transfers
+        .filter((x) => (x.memberId ?? null) === (sender ?? null))
+        .sort((a, b) => b.sentAt - a.sentAt)
+        .map((x) => x.lines.filter((l) => l.kind === 'topup').reduce((s, l) => s + l.amountCents, 0))
+        .find((c) => c > 0) ?? 0)
+
   const toggleDate = (planId: string, at: number) =>
     setTicked((cur) => {
       const list = cur[planId] ?? []
@@ -147,7 +159,7 @@ export function TransferForm({
       await save(
         {
           memberId: sender,
-          sentAt: dateToAnchorSec(date) ?? today,
+          sentAt: localDayFromInput(date) ?? today,
           lines,
           memo,
           reference: reference.trim() || null,
@@ -250,10 +262,8 @@ export function TransferForm({
                   // server expands them through _lib/recur). `dateToAnchorSec` is the
                   // EVENT-anchor helper and returns UTC midnight — four hours off, so
                   // the chip would have rendered the day before.
-                  const [y, mo, d] = e.target.value.split('-').map(Number)
-                  if (!y || !mo || !d) return
-                  const at = localDayStart(new Date(Date.UTC(y, mo - 1, d, 12)))
-                  if (!list.includes(at)) toggleDate(p.id, at)
+                  const at = localDayFromInput(e.target.value)
+                  if (at != null && !list.includes(at)) toggleDate(p.id, at)
                 }}
                 aria-label={`${p.title} — ${v.addOtherDate}`}
               />
@@ -266,6 +276,18 @@ export function TransferForm({
         <span>{v.topup}</span>
         <input className="input" inputMode="decimal" value={topup} onChange={(e) => setTopup(e.target.value)} />
       </label>
+      {/* THE PROPOSAL. The due dates tick themselves because they are DUE — that is a
+          fact, not a guess. A top-up is the one number this screen cannot know, and it
+          is also the one that repeats: it was 2 000 $ last time and it will be 2 000 $
+          again. So it is OFFERED, one tap, and never slid into the field: an amount
+          filled in that nobody noticed is money sent that nobody decided. */}
+      {lastTopup > 0 && !topup && (
+        <Cluster>
+          <Chip onClick={() => setTopup(String(lastTopup / 100))} icon="arrow-counter-clockwise-bold">
+            {v.topupLikeLast(formatMoneyExact(lastTopup, lang))}
+          </Chip>
+        </Cluster>
+      )}
       <p className="operator__seg-hint mono">{v.topupHint}</p>
 
       {/* Anything else riding on the same send. */}

@@ -112,3 +112,30 @@ export const todayLocalDay = (tz = HOUSEHOLD_TZ): number => localDayStart(new Da
 export function daysUntilLocal(unixSec: number, now: number = Date.now(), tz = HOUSEHOLD_TZ): number {
   return Math.round((localDayStart(new Date(unixSec * 1000), tz) - localDayStart(new Date(now), tz)) / 86400)
 }
+
+// ── A <input type="date"> value ↔ a LOCAL day ────────────────────────────────
+//
+// `recurLabel`'s `dateToAnchorSec` / `anchorSecToDate` are the APPOINTMENT pair: they
+// speak UTC midnight, because `functions/_lib/recur` anchors a series that way and an
+// event carries its own time of day anyway.
+//
+// Anything whose unit is a DAY — a transfer's date, an agreement's first date, the day
+// a gap was measured — must not use them. In America/Toronto a UTC midnight is 19:00 or
+// 20:00 the PREVIOUS evening, so « 2026-02-12 » came back out as 11 février, and an
+// agreement whose term ended on the 24th silently dropped the payment due that day
+// (read off Marc's live rows, 2026-09-12). These two are the day-shaped pair.
+export function localDayFromInput(value: string): number | null {
+  const [y, m, d] = (value || '').split('-').map(Number)
+  if (!y || !m || !d) return null
+  // Noon UTC of the wall date, snapped back to that day's local midnight — the same
+  // trick addLocalDays uses, and DST-safe for the same reason.
+  return localDayStart(new Date(Date.UTC(y, m - 1, d, 12)))
+}
+
+export function inputFromLocalDay(sec: number | null | undefined): string {
+  if (sec == null || !Number.isFinite(sec)) return ''
+  const { year, month, day } = localYMD(sec)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  // localYMD's `month` is 0-indexed (it mirrors Date's), so add one for the ISO shape.
+  return `${year}-${pad(month + 1)}-${pad(day)}`
+}

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
 import { parseMoney } from '../../lib/money'
-import { anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
+import { inputFromLocalDay, localDayFromInput, todayLocalDay } from '../../lib/localDay'
 import { useDeletePlan, useSavePlan, type TransferPlan } from '../../lib/transfers'
 import { Avatar } from '../Avatar'
 import { Chip } from '../Chip'
@@ -45,7 +45,7 @@ export function PlanForm({
 
   const [title, setTitle] = useState(value?.title ?? '')
   const [amount, setAmount] = useState(centsToField(value?.amountCents))
-  const [date, setDate] = useState(value ? anchorSecToDate(value.anchorAt) : todayAnchorDate())
+  const [date, setDate] = useState(value ? inputFromLocalDay(value.anchorAt) : inputFromLocalDay(todayLocalDay()))
   // The picker requires interval + weekdays; the wire shape has them optional.
   // Converting here (rather than loosening either type) is what keeps a stored rule
   // with no weekday list from reaching the picker as undefined.
@@ -62,8 +62,8 @@ export function PlanForm({
   // The catch-up agreement. Folded: most households split evenly and never open it.
   const [behind, setBehind] = useState<string | null>(value?.catchup?.behindMemberId ?? null)
   const [gap, setGap] = useState(centsToField(value?.catchup?.gapCents))
-  const [asOf, setAsOf] = useState(value?.catchup ? anchorSecToDate(value.catchup.asOf) : '')
-  const [termEnd, setTermEnd] = useState(value?.catchup ? anchorSecToDate(value.catchup.termEnd) : '')
+  const [asOf, setAsOf] = useState(value?.catchup ? inputFromLocalDay(value.catchup.asOf) : '')
+  const [termEnd, setTermEnd] = useState(value?.catchup ? inputFromLocalDay(value.catchup.termEnd) : '')
 
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
@@ -80,8 +80,8 @@ export function PlanForm({
       if (c != null && c > 0) cleanShares[id] = c
     }
     const gapCents = cents(gap)
-    const asOfSec = asOf ? dateToAnchorSec(asOf) : null
-    const termEndSec = termEnd ? dateToAnchorSec(termEnd) : null
+    const asOfSec = asOf ? localDayFromInput(asOf) : null
+    const termEndSec = termEnd ? localDayFromInput(termEnd) : null
     // A half-filled arrangement stores as « no arrangement » rather than as a shape
     // the reader would have to guard — the server applies the same rule.
     const catchup =
@@ -93,7 +93,7 @@ export function PlanForm({
           title: title.trim(),
           amountCents: cents(amount),
           recur: recur ? { freq: recur.freq, interval: recur.interval, weekdays: recur.weekdays } : null,
-          anchorAt: dateToAnchorSec(date) ?? dateToAnchorSec(todayAnchorDate())!,
+          anchorAt: localDayFromInput(date) ?? todayLocalDay(),
           shares: cleanShares,
           catchup,
           colour: null,

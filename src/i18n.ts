@@ -3627,6 +3627,11 @@ export const FR = {
     sentOn: 'Envoyé le',
     topup: 'Renflouement',
     topupHint: 'Pour le quotidien — le même montant des deux bords.',
+    // LA PROPOSITION (Marc, 2026-09-12 : « propose to me the next sensible thing i
+    // would do »). Offerte, jamais pré-remplie : les dates dues se cochent toutes
+    // seules parce qu'elles sont DUES, mais un montant glissé dans un champ sans
+    // qu'on le remarque, c'est de l'argent envoyé qu'on n'a pas décidé.
+    topupLikeLast: (amount: string) => `Comme la dernière fois : ${amount}`,
     otherLines: 'Autres lignes',
     otherLabel: 'Pour quoi',
     amount: 'Montant',

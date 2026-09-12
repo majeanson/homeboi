@@ -44,6 +44,17 @@ const PLAN = {
   },
 }
 
+const SENT_WITH_TOPUP = {
+  id: 't0',
+  memberId: 'm2',
+  sentAt: MMID - 30 * DAY,
+  lines: [{ kind: 'topup', amountCents: 200000 }],
+  totalCents: 200000,
+  memo: 'renflou 2000',
+  reference: null,
+  note: null,
+}
+
 const SENT = {
   id: 't1',
   memberId: 'm2',
@@ -395,4 +406,48 @@ test('« Une autre date » logs a transfer made before the entente was written d
   await expect(chip).toHaveAttribute('aria-pressed', 'true')
   await expect(form.locator('.virements__total')).toContainText('556,41')
   await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 8 mai')
+})
+
+// « propose to me the next sensible thing i would do » (Marc, 2026-09-12). The dates
+// tick themselves because they are DUE. The top-up is the one number the screen cannot
+// know and the one that repeats — so it is OFFERED, never slid into the field.
+test('a new transfer offers last time’s top-up, one tap, and does not fill it in', async ({ page }) => {
+  await openVirements(page, { transfers: [SENT_WITH_TOPUP] })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: 'Papa' }).click()
+
+  // NOT pre-filled: an amount nobody noticed is money nobody decided.
+  await expect(form.getByLabel('Renflouement')).toHaveValue('')
+  const offer = form.getByRole('button', { name: /Comme la dernière fois/ })
+  await expect(offer).toBeVisible()
+  await expect(offer).toContainText('2 000,00')
+
+  // One tap takes it, and the total and the message follow.
+  await offer.click()
+  await expect(form.getByLabel('Renflouement')).toHaveValue('2000')
+  // Two due dates already ticked + the offered top-up = Marc's real 14 août transfer,
+  // composed without typing a number: 2 × 556,41 + 2 000.
+  await expect(form.locator('.virements__total')).toContainText('3 112,82')
+  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 25 mai 8 juin renflou 2000')
+  // …and the offer retires once it has been taken.
+  await expect(form.getByRole('button', { name: /Comme la dernière fois/ })).toHaveCount(0)
+})
+
+test('the date a transfer was sent is stored as the day you picked', async ({ page }) => {
+  await openVirements(page, { transfers: [] })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: 'Papa' }).click()
+  await form.getByLabel('Renflouement').fill('2000')
+  await form.getByLabel('Envoyé le').fill('2025-08-14')
+  await form.getByRole('button', { name: 'Envoyer un virement' }).click()
+  await expect.poll(() => posted.length).toBeGreaterThan(0)
+  const body = posted.find((p) => p.path.endsWith('/transfers'))!.body as { sentAt: number }
+  // The 14th, at the household's LOCAL midnight — not the 13th at 20:00, which is what
+  // the appointment helper's UTC midnight produced on Marc's own row.
+  const shown = new Date(body.sentAt * 1000).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', timeZone: 'America/Toronto' })
+  expect(shown).toBe('14 août')
 })

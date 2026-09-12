@@ -3201,6 +3201,7 @@ export const EN: typeof FR = {
     sentOn: 'Sent on',
     topup: 'Top-up',
     topupHint: 'For day-to-day — the same amount from both of you.',
+    topupLikeLast: (amount: string) => `Same as last time: ${amount}`,
     otherLines: 'Other lines',
     otherLabel: 'What for',
     amount: 'Amount',
