@@ -5,6 +5,7 @@ import { useProfile } from '../../lib/profile'
 import { formatDay } from '../../lib/format'
 import { formatMoneyExact, parseMoney } from '../../lib/money'
 import { anchorSecToDate, dateToAnchorSec, todayAnchorDate } from '../../lib/recurLabel'
+import { localDayStart } from '../../lib/localDay'
 import {
   buildMemo,
   coveredDueDates,
@@ -205,8 +206,13 @@ export function TransferForm({
         const covered = coveredDueDates(transfers, p.id, sender, value?.id)
         // Everything still owed, plus the next few ahead — enough to pay early
         // without scrolling a year of dates.
-        const offer = p.due.filter((at) => at <= today || p.due.filter((x) => x > today).slice(0, 3).includes(at))
         const list = ticked[p.id] ?? []
+        // Everything still owed, plus the next few ahead — enough to pay early without
+        // scrolling a year of dates. A date added BY HAND (below) joins the row even
+        // though it is outside that window, or it would vanish the moment it was picked.
+        const offer = [
+          ...new Set([...p.due.filter((at) => at <= today || p.due.filter((x) => x > today).slice(0, 3).includes(at)), ...list]),
+        ].sort((a, b) => a - b)
         return (
           <fieldset key={p.id}>
             <legend className="mono">
@@ -228,6 +234,30 @@ export function TransferForm({
                 )
               })}
             </Cluster>
+            {/* ANY OTHER DATE. The offered row starts at the entente's first date, so a
+                payment made BEFORE the household wrote the entente down had no chip at
+                all and could not be logged (Marc, 2026-09-12: an entente anchored on
+                17 sept could not record the 14 août transfer). Promised in the plan for
+                this feature and missed on the first pass. */}
+            <label className="recur__row mono virements__otherdate">
+              <span>{v.addOtherDate}</span>
+              <input
+                className="input"
+                type="date"
+                value=""
+                onChange={(e) => {
+                  // A LOCAL midnight, the convention every due date here uses (the
+                  // server expands them through _lib/recur). `dateToAnchorSec` is the
+                  // EVENT-anchor helper and returns UTC midnight — four hours off, so
+                  // the chip would have rendered the day before.
+                  const [y, mo, d] = e.target.value.split('-').map(Number)
+                  if (!y || !mo || !d) return
+                  const at = localDayStart(new Date(Date.UTC(y, mo - 1, d, 12)))
+                  if (!list.includes(at)) toggleDate(p.id, at)
+                }}
+                aria-label={`${p.title} — ${v.addOtherDate}`}
+              />
+            </label>
           </fieldset>
         )
       })}
@@ -269,6 +299,18 @@ export function TransferForm({
       <p className="virements__total">
         <span className="mono">{v.total}</span> <strong>{formatMoneyExact(total, lang)}</strong>
       </p>
+
+      {/* AN EMPTY DRAFT HAS TO SAY SO. With nothing ticked the screen showed « Total
+          0,00 $ », an empty message and a Save that refused, and explained none of it —
+          it read as broken rather than as waiting (Marc, 2026-09-12). Two different
+          nothings, two different sentences: « you have not picked yet », versus « there
+          is nothing here to pick », which is what an entente whose first date is still
+          ahead looks like and which « Une autre date » is the way out of. */}
+      {lines.length === 0 && (
+        <StatusMessage tone="info">
+          {plans.some((p) => p.due.some((at) => at <= today)) ? v.emptyDraft : v.emptyNoDue}
+        </StatusMessage>
+      )}
 
       {/* The message for the bank. A labelled CTA takes its own line under a
           full-width field (the « généreux dedans » rule), which is what CopyButton

@@ -356,3 +356,43 @@ test('the plan form can say « tous les 2 semaines », and nothing is clipped at
   }, box.x + box.width)
   expect(spill, 'these run past the form edge at 360px').toEqual([])
 })
+
+// THE SCREEN MARC PHOTOGRAPHED (2026-09-12): an entente whose first date is still
+// ahead, so no chip is ticked, the total reads 0,00 $ and the message is empty — and
+// nothing said why. It read as broken rather than as waiting.
+test('an entente whose first date is still ahead says so, and offers the way out', async ({ page }) => {
+  const future = MMID + 5 * DAY // the first due date is next week
+  await openVirements(page, {
+    plans: [{ ...PLAN, anchorAt: future, due: [future, future + 14 * DAY], projection: null, catchup: null }],
+    transfers: [],
+  })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+
+  // Nothing ticked, and the screen SAYS which nothing this is.
+  await expect(form.locator('.virements__total')).toContainText('0,00')
+  await expect(form.getByText(/Aucune date à cocher/)).toBeVisible()
+  // The message is empty, so the copy button is INERT rather than silently doing nothing.
+  await expect(page.locator('.copybtn button')).toBeDisabled()
+})
+
+test('« Une autre date » logs a transfer made before the entente was written down', async ({ page }) => {
+  const future = MMID + 5 * DAY
+  await openVirements(page, {
+    plans: [{ ...PLAN, anchorAt: future, due: [future], projection: null, catchup: null }],
+    transfers: [],
+  })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: 'Papa' }).click()
+
+  // A date with no chip of its own — the August payment the entente cannot reach.
+  await form.locator('.virements__otherdate input[type="date"]').fill('2025-05-08')
+  // It joins the row, already ticked, and the total picks up this face's share.
+  const chip = form.getByRole('button', { name: /8 mai/ })
+  await expect(chip).toHaveAttribute('aria-pressed', 'true')
+  await expect(form.locator('.virements__total')).toContainText('556,41')
+  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 8 mai')
+})

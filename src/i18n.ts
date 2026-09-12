@@ -3619,6 +3619,10 @@ export const FR = {
     dueDates: 'Dates couvertes',
     dueCovered: 'Déjà envoyé',
     addOtherDate: 'Une autre date',
+    // L'écran vide ne se lisait pas : « Total 0,00 $ », un message vide, et rien qui
+    // dise qu'il faut cocher quelque chose (Marc, 2026-09-12, capture du compositeur).
+    emptyDraft: 'Coche une date couverte, ou entre un renflouement — le total et le message se composent tout seuls.',
+    emptyNoDue: 'Aucune date à cocher : la première date de l’entente est encore à venir. Utilise « Une autre date » pour noter un virement déjà fait.',
     sender: 'Qui envoie',
     sentOn: 'Envoyé le',
     topup: 'Renflouement',

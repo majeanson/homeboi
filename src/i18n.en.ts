@@ -3195,6 +3195,8 @@ export const EN: typeof FR = {
     dueDates: 'Dates covered',
     dueCovered: 'Already sent',
     addOtherDate: 'Another date',
+    emptyDraft: 'Tick a covered date, or enter a top-up — the total and the message write themselves.',
+    emptyNoDue: 'No date to tick: the agreement’s first date is still ahead. Use “Another date” to note a transfer already made.',
     sender: 'Who is sending',
     sentOn: 'Sent on',
     topup: 'Top-up',

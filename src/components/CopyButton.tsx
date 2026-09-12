@@ -77,13 +77,17 @@ export function CopyButton({
     }).catch(() => setState('refused'))
   }
 
+  // NOTHING TO COPY = an inert button, not a live one that silently does nothing.
+  // `copy()` already returned early on an empty string, so the tap looked accepted and
+  // changed nothing — the same class of lie as a disabled-looking control that works.
+  const empty = !resolved.trim()
   const classes = ['btn', size === 'sm' ? 'btn--sm' : '', variant === 'ghost' ? 'btn--ghost' : 'btn--primary']
     .filter(Boolean)
     .join(' ')
 
   return (
     <div className={'copybtn' + (className ? ` ${className}` : '')}>
-      <button type="button" className={classes} onClick={copy}>
+      <button type="button" className={classes} onClick={copy} disabled={empty}>
         {state === 'copied' ? <Icon name="check-bold" size={16} /> : icon ? <Icon name={icon} size={16} /> : null}
         {state === 'copied' ? (copiedLabel ?? label) : label}
       </button>
