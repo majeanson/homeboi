@@ -127,9 +127,56 @@ export function coveredDueDates(
   return out
 }
 
-// The due dates a face still owes: everything on or before today that nothing has
-// covered. This is what the composer pre-ticks — the question « which ones have I
-// not sent for yet » is the reason the screen exists.
+// THE TRACKING FLOOR: the oldest due date this household has ever recorded for an
+// agreement — the day they started keeping this particular book.
+//
+// An agreement's first date can be years before anyone opened the app. Marc's is
+// anchored in February; he started recording in August. Without a floor the
+// composer proposed every unpaid fortnight in its 120-day window — seven dates,
+// already ticked, six of which were payments made long before the app existed and
+// none of which he meant to send today. Nothing was wrong with the arithmetic; the
+// screen was simply answering a question nobody asked.
+//
+// Per AGREEMENT, not per person: the floor means « we started keeping track here »,
+// which is a fact about the household, not about who happened to send first. And it
+// only ever hides things from the OFFERED row — « Une autre date » still reaches
+// every date there has ever been, which is what makes back-filling possible at all.
+export function trackingStart(transfers: readonly Transfer[], planId: string): number | null {
+  let first: number | null = null
+  for (const t of transfers) {
+    for (const l of t.lines) {
+      if (l.kind !== 'plan' || l.planId !== planId) continue
+      const day = localDayStart(new Date(l.dueAt * 1000))
+      if (first == null || day < first) first = day
+    }
+  }
+  return first
+}
+
+// How many dates ahead the composer offers. Enough to pay early without scrolling a
+// year; the rest is « Une autre date ».
+export const UPCOMING_OFFERED = 3
+
+// Every due date the composer puts on screen for one agreement: what is still owed
+// since the household started tracking, plus the next few ahead, plus anything the
+// reader added by hand (which must survive even though it sits outside both).
+export function offeredDueDates(
+  plan: TransferPlan,
+  transfers: readonly Transfer[],
+  today: number,
+  alsoInclude: readonly number[] = [],
+): number[] {
+  const floor = trackingStart(transfers, plan.id)
+  const past = plan.due.filter((at) => at <= today && (floor == null || at >= floor))
+  const ahead = plan.due.filter((at) => at > today).slice(0, UPCOMING_OFFERED)
+  return [...new Set([...past, ...ahead, ...alsoInclude])].sort((a, b) => a - b)
+}
+
+// The due dates a face still owes: everything on or before today, back to the day
+// this household started tracking, that nothing has covered. This is what the
+// composer pre-ticks — the question « which ones have I not sent for yet » is the
+// reason the screen exists, and before the floor existed it answered with six
+// fortnights from before anyone was keeping the book.
 export function uncoveredDueDates(
   plan: TransferPlan,
   transfers: readonly Transfer[],
@@ -138,7 +185,8 @@ export function uncoveredDueDates(
   exceptTransferId?: string,
 ): number[] {
   const covered = coveredDueDates(transfers, plan.id, memberId, exceptTransferId)
-  return plan.due.filter((at) => at <= today && !covered.has(at))
+  const floor = trackingStart(transfers, plan.id)
+  return plan.due.filter((at) => at <= today && (floor == null || at >= floor) && !covered.has(at))
 }
 
 // ---- The bank message -------------------------------------------------------

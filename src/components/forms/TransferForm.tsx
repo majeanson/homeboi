@@ -8,7 +8,9 @@ import { inputFromLocalDay, localDayFromInput } from '../../lib/localDay'
 import {
   buildMemo,
   coveredDueDates,
+  offeredDueDates,
   transferTotal,
+  uncoveredDueDates,
   useDeleteTransfer,
   useSaveTransfer,
   type Transfer,
@@ -85,8 +87,9 @@ export function TransferForm({
     }
     const out: Record<string, number[]> = {}
     for (const p of plans) {
-      const covered = coveredDueDates(transfers, p.id, initialSender)
-      const owed = p.due.filter((at) => at <= today && !covered.has(at))
+      // The lib owns this rule now — it was spelled out twice here, and the second
+      // copy is exactly where the tracking floor would have been forgotten.
+      const owed = uncoveredDueDates(p, transfers, initialSender, today)
       if (owed.length) out[p.id] = owed
     }
     return out
@@ -225,12 +228,11 @@ export function TransferForm({
         // Everything still owed, plus the next few ahead — enough to pay early
         // without scrolling a year of dates.
         const list = ticked[p.id] ?? []
-        // Everything still owed, plus the next few ahead — enough to pay early without
-        // scrolling a year of dates. A date added BY HAND (below) joins the row even
-        // though it is outside that window, or it would vanish the moment it was picked.
-        const offer = [
-          ...new Set([...p.due.filter((at) => at <= today || p.due.filter((x) => x > today).slice(0, 3).includes(at)), ...list]),
-        ].sort((a, b) => a - b)
+        // Everything still owed since this household started tracking, plus the next
+        // few ahead — enough to pay early without scrolling a year of dates. A date
+        // added BY HAND joins the row even though it sits outside both, or it would
+        // vanish the moment it was picked.
+        const offer = offeredDueDates(p, transfers, today, list)
         return (
           <fieldset key={p.id}>
             <legend className="mono">

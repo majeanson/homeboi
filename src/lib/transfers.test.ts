@@ -3,8 +3,11 @@ import {
   buildMemo,
   catchupSeries,
   coveredDueDates,
+  offeredDueDates,
   summariseYear,
+  trackingStart,
   transferYears,
+  UPCOMING_OFFERED,
   yearOfDay,
   foldAscii,
   transferTotal,
@@ -366,5 +369,72 @@ describe('catchupSeries — the gap, drawn', () => {
 
   it('cannot close a gap when nobody is sending extra', () => {
     expect(catchupSeries(proj({ extraPerPayment: 0 }), d(2026, 8, 12))!.zeroAt).toBeNull()
+  })
+})
+
+// THE TRACKING FLOOR (Marc, 2026-09-12: « could we remove the proposed dates before
+// the starting date? they could always add one in Other dates »).
+//
+// His agreement is anchored in February and he started recording in August, so a new
+// virement arrived with seven dates already ticked — six of them fortnights from
+// before the app existed, none of which he meant to send. The floor is the oldest due
+// date the household has ever RECORDED for that agreement.
+describe('the tracking floor', () => {
+  // A long agreement: due every 2 weeks from 13 août, running well past today.
+  const long = plan({
+    due: [d(2026, 4, 21), d(2026, 5, 4), d(2026, 6, 2), d(2026, 7, 13), d(2026, 7, 27), d(2026, 8, 10), d(2026, 8, 24)],
+  })
+  const today = d(2026, 8, 12)
+  // The household's book opens on 13 août: that is the oldest date it ever recorded.
+  const recorded = transfer({ lines: [planLine(d(2026, 7, 13))] })
+
+  it('is the oldest recorded due date, and null before anything is recorded', () => {
+    expect(trackingStart([recorded], 'p1')).toBe(d(2026, 7, 13))
+    expect(trackingStart([], 'p1')).toBeNull()
+    expect(trackingStart([recorded], 'other')).toBeNull()
+  })
+
+  it('reads a line stored at 19 h 00 as its own day, like every other coverage check', () => {
+    const evening = transfer({ lines: [planLine(d(2026, 7, 13) + 19 * 3600)] })
+    expect(trackingStart([evening], 'p1')).toBe(d(2026, 7, 13))
+  })
+
+  // THE REGRESSION ITSELF: the three fortnights from before the book opened must stop
+  // arriving pre-ticked.
+  it('stops pre-ticking dates from before the household started tracking', () => {
+    expect(uncoveredDueDates(long, [recorded], 'marc', today)).toEqual([d(2026, 7, 27), d(2026, 8, 10)])
+  })
+
+  it('a household that has recorded nothing yet still gets its whole history offered', () => {
+    // Nothing to floor against — a brand-new agreement must not hide its own dates.
+    expect(uncoveredDueDates(long, [], 'marc', today)).toEqual([
+      d(2026, 4, 21),
+      d(2026, 5, 4),
+      d(2026, 6, 2),
+      d(2026, 7, 13),
+      d(2026, 7, 27),
+      d(2026, 8, 10),
+    ])
+  })
+
+  it('offers what is owed since the floor, plus the next three ahead', () => {
+    expect(offeredDueDates(long, [recorded], today)).toEqual([
+      d(2026, 7, 13),
+      d(2026, 7, 27),
+      d(2026, 8, 10),
+      d(2026, 8, 24),
+    ])
+  })
+
+  // « Une autre date » is the way back to everything the floor hides — so a date the
+  // reader picked by hand must survive, even from before the book opened.
+  it('keeps a date added by hand, however far back it is', () => {
+    const picked = d(2026, 4, 21)
+    expect(offeredDueDates(long, [recorded], today, [picked])).toContain(picked)
+  })
+
+  it('never offers more than three dates ahead', () => {
+    const far = plan({ due: [d(2026, 8, 24), d(2026, 9, 7), d(2026, 9, 21), d(2026, 10, 5), d(2026, 10, 19)] })
+    expect(offeredDueDates(far, [], today)).toHaveLength(UPCOMING_OFFERED)
   })
 })

@@ -1722,44 +1722,48 @@ Five things worth keeping:
   footnote 68). Finding a payment by its bank reference is the obvious want, but
   `/search` has no privacy lens and this is the tab a guest is not even offered.
 
+**Follow-up, 2026-09-12 — the section stops calling itself a mortgage feature.**
+Marc, after using it for a day: « what could go well with this feature? think out of
+the box », then « generalize, make sure anyone can understand and use both forms,
+maybe a little graph that goes to 0 too, add how-tos and examples in the guide ».
 
-### « Les virements » — SHIPPED 2026-09-11 (F36, migrations 0126)
+- **Six SHAPES, named** (`lib/planTemplates.ts`). The model is « a recurring shared
+  obligation with per-person shares » — rent, daycare, a car loan, a parent's care
+  split between siblings, a cottage shared four ways. All of it worked on day one;
+  the app just never said so, so a reader without a mortgage met a blank screen and
+  reasonably concluded it was not for them. A template fills a title and a rhythm and
+  **never an amount** — a suggested number is a guess about someone's money.
+- **The year in one block** (`summariseYear` + `YearSummary`), folded at the foot of
+  the history: everything sent that year, by agreement and by person, copyable as
+  plain text. It is the renewal / tax-time / January question, and answering it meant
+  scrolling the history and adding up by hand — the exact chore one level up. People
+  are ordered **by identity, never by amount**: sorting them by what they sent would
+  turn a receipt into a leaderboard (the chore-ledger rule).
+- **The gap, drawn** (`catchupSeries` + `CatchupGraph`). The only quantity in the app
+  that is *supposed* to disappear, so it is drawn disappearing. No percentage, no
+  colour that means good or bad, no axis but the zero line; measured half solid,
+  forecast half dashed. **If the arrangement does not close the gap, the line does not
+  reach the floor** — rounding the bad news away was the one lie available here.
+- **THE TRACKING FLOOR** (Marc: « could we remove the proposed dates before the
+  starting date? they could always add one in Other dates »). His agreement is
+  anchored in February and he started recording in August, so every new virement
+  arrived with **seven** dates pre-ticked — six of them fortnights from before the app
+  existed. The offered row now starts at the oldest due date the household has ever
+  RECORDED for that agreement (`trackingStart`); on his data that is seven → one.
+  Per agreement, not per person: it means « we started keeping track here ».
+  « Une autre date » still reaches every date there has ever been, which is what keeps
+  back-filling possible. `uncoveredDueDates` had been spelled out a second time inside
+  the composer — the copy is now gone, which is precisely where the floor would have
+  been forgotten.
+- **Both forms explain themselves.** A screen you opened on purpose may be generous
+  (LEAN.md): an intro sentence, a worked example, a hint per field, and « Rattrapage »
+  now says up front that it can be skipped instead of letting four unexplained fields
+  imply they are required.
+- **Guide points 7–10** on the notes card (write an agreement · record a transfer ·
+  catching up · the year block). The worked examples live in `why`, not `detail` —
+  `guideBudget.test.ts` caps a detail at two sentences and was right to refuse them.
 
-Les notes gained a second section (`?section=virements`): what the household sends to
-its shared account. It replaces a hand-written note whose arithmetic was redone from
-memory every two weeks — and which carried its own correction line, because the
-numbers were TYPED. Here an *entente* is written once (amount, cadence, each person's
-share, an optional catch-up agreement) and everything else is DERIVED: the due dates,
-which of them a face has already sent for, the total, the catch-up projection, and the
-bank memo (« Hypotheque 13 27 aout renflou 2000 » — the household's own phrasing).
-
-Where it lives besides the tab: due dates are derived onto `/api/month` (the
-birthdays / upkeep / habits pattern, never stored rows) so the calendar and the day
-page show them, and an uncovered one becomes an « À régler » signal rather than a new
-board card. **Neither surface carries an amount** — the board is a kitchen wall
-tablet; the number is one tap away, on a screen you opened on purpose. Same call that
-keeps `care_log` invoice totals out of a showcase link, which is also where both
-transfer endpoints are denied.
-
-Five things worth keeping:
-
-- **The recurrence is the SHARED `Recur` shape**, not a bespoke cadence column, so due
-  dates expand through the one DST-correct expander. A planted `+86400` stepper turns
-  two DST tests and the monthly test red — the guard was proven before it was trusted.
-- **`parseMoney` had a hundredfold bug in the app's first language.** Every comma was
-  read as a thousands separator, so « 812,82 » parsed as 81 282 $. Found by writing the
-  money tests, fixed with the rightmost-separator rule, grouping behaviour unchanged.
-- **`CopyButton` is a new shared primitive** (DevKit + COMPONENTS.md). It would have
-  been the NINTH hand-rolled copy of the same eight lines; PARITY's extraction rule
-  fires at three. The confirmation STAYS rather than toasting, because you left the
-  page for your bank.
-- **e2e found three defects before they shipped**: the composer seeded its ticks before
-  the plans loaded (so nothing was ticked and the memo lost its mortgage line), a null
-  sender priced every line at zero, and the 390px screenshot showed browser fieldset
-  chrome plus a total squeezed beside a chip. Looking beat reasoning again.
-- **One ➖ recorded, not hidden**: a transfer is NOT in `SEARCH_INDEX` (PARITY
-  footnote 68). Finding a payment by its bank reference is the obvious want, but
-  `/search` has no privacy lens and this is the tab a guest is not even offered.
+*This block existed TWICE in STATE.md, byte-identical, until it was noticed here.*
 
 
 ### Flipp: the till stopped carrying the list — 2026-09-12
