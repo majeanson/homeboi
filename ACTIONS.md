@@ -165,8 +165,8 @@ at all (❌).
 | Section · switch | ✅ `SubTabs` « Les notes / Virements » (`?section=`) | — | — | — | a guide « Ouvrir » lands on `?section=virements` | — | ✅ tablist roving-tabindex |
 | Virement · open | ✅ tap the row → `buildTransfer` peek (lines · memo · reference) | — | ✅ `buildTransfer` | — | `?section=virements` | — | ✅ |
 | Virement · create | — | — | — | ✅ ＋ `virement` (`FORM_ROUTES` → `/virement/new` scene) | — | — | ✅ |
-| Virement · edit | ✅ `RowActions` ✏️ → `/virement/:id/edit` | — | ✅ « Modifier » in the peek | — | — | — | ✅ |
-| Virement · delete | ✅ `RowActions` 🗑 (list) | — | — | — | — | **deferred** from the list · **confirm** inside the scene⁶⁷ | ✅ |
+| Virement · edit | ➖ the row is ONE button (it opens the peek), so it carries no ✏️ — `ListRow` DROPS `actions` when `onActivate` is set, which is how this shipped with no edit door at all (fixed 2026-09-12) | — | ✅ « Modifier » in the peek → `/virement/:id/edit` | — | — | — | ✅ |
+| Virement · delete | ➖ same reason as edit | — | ✅ « Supprimer » in the peek ⋯ (danger, overflow) | — | — | **deferred** from the peek · **confirm** inside the scene⁶⁷ | ✅ |
 | Virement · copy the bank message | — | — | ✅ « Copier le message » | ✅ `CopyButton` in the composer — the confirmation STAYS (you left for the bank app) | — | ➖ nothing is written | ✅ real `<button>` |
 | Entente (plan) · create / edit / delete | ✅ `RowActions` ✏️ on the plan card | — | — | ✅ the EmptyState's own « Ajouter une entente » when none exists | `/virement/plan/:id/edit` scene | confirm (scene)⁶⁷ | ✅ |
 | Rattrapage · read | ✅ `Disclosure` « La math », folded | — | — | — | — | ➖ read-only | ✅ |

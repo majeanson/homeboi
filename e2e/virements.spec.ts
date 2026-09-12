@@ -451,3 +451,34 @@ test('the date a transfer was sent is stored as the day you picked', async ({ pa
   const shown = new Date(body.sentAt * 1000).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', timeZone: 'America/Toronto' })
   expect(shown).toBe('14 août')
 })
+
+// « i cant redit the transfer » (Marc, 2026-09-12). He could not: `ListRow` has two
+// exclusive shapes, and passing `onActivate` makes the whole row one button while
+// silently DROPPING the `actions` passed beside it. The row had no ✏️ and no 🗑, and
+// the peek had none either because the adapter's options were never wired — so there
+// was no door to editing a recorded transfer anywhere on the surface.
+test('a recorded transfer can be opened, edited and deleted', async ({ page }) => {
+  await openVirements(page)
+  const row = page.locator('.virements__list .listrow')
+  await expect(row).toBeVisible()
+  await row.click()
+
+  const sheet = page.locator('.detail-sheet')
+  await expect(sheet).toBeVisible()
+  await expect(sheet).toContainText('Hypotheque 11 mai')
+
+  // The two doors the row itself cannot carry. Delete sits in the head ⋯ (the adapter
+  // marks it `overflow`), and ActionMenu PORTALS to <body> — so it is scoped to the
+  // page, never to the sheet.
+  await sheet.getByRole('button', { name: /Plus d’actions/ }).click()
+  await expect(page.getByRole('menuitem', { name: /Supprimer/ })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await sheet.getByRole('button', { name: /Modifier/ }).click()
+  await expect(page).toHaveURL(/\/virement\/t1\/edit/)
+
+  // …and the edit scene arrives carrying THAT transfer, not a blank one.
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 11 mai')
+  await expect(form.getByLabel('Numéro de référence')).toHaveValue('CArR4A3Q')
+})

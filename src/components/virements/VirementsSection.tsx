@@ -22,7 +22,6 @@ import { Cluster } from '../Layout'
 import { EmptyState } from '../EmptyState'
 import { LoadError } from '../LoadError'
 import { ListRow } from '../ListRow'
-import { RowActions } from '../RowActions'
 import { Skeleton } from '../Skeleton'
 import { PairPrompt } from '../Fallback'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
@@ -76,9 +75,23 @@ export function VirementsSection({ members }: { members: Member[] }) {
 
   const nameOf = (id: string | null) => (id ? (faces.find((f) => f.id === id)?.name ?? null) : null)
 
-  const openPeek = (tr: Transfer) => detail.open(buildTransfer(tr, { t, lang, plans, members }))
-
   const remove = (tr: Transfer) => removal.remove([tr.id], v.deleted, () => del(tr.id))
+
+  // THE ROW'S DOORS LIVE IN THE PEEK, because `ListRow` has exactly two shapes and they
+  // are exclusive: give it `onActivate` and the whole row becomes ONE button, and the
+  // `actions` you also passed are dropped on the floor. I passed both, so the transfer
+  // had no ✏️, no 🗑 — and the peek had none either, because `buildTransfer`'s options
+  // were never wired. There was no way to edit a transfer at all (Marc, 2026-09-12:
+  // « i cant redit the transfer »). One tap opens the peek; the peek carries the doors,
+  // which is the app's own convention for a compact row (ACTIONS.md, door #8).
+  const openPeek = (tr: Transfer) =>
+    detail.open(
+      buildTransfer(
+        tr,
+        { t, lang, plans, members },
+        ro ? undefined : { onEdit: () => nav(`/virement/${tr.id}/edit`), onDelete: () => remove(tr) },
+      ),
+    )
 
   return (
     <section className="virements">
@@ -131,15 +144,6 @@ export function VirementsSection({ members }: { members: Member[] }) {
                   subtitle={tr.memo || tr.reference || undefined}
                   onActivate={() => openPeek(tr)}
                   activateLabel={v.title}
-                  actions={
-                    <RowActions
-                      readOnly={ro}
-                      onEdit={() => nav(`/virement/${tr.id}/edit`)}
-                      editLabel={v.edit}
-                      onDelete={() => remove(tr)}
-                      deleteLabel={v.deleted}
-                    />
-                  }
                 />
               </li>
             )
