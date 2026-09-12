@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n'
 import { settingsHref } from '../lib/settingsNav'
-import { FLIPP_CLEAR_PAYLOAD, flippAddTextsUrl, flippBundle, flippListOpenUrl } from '../lib/flippList'
+import { FLIPP_CLEAR_PAYLOAD, flippAddTextsUrl, flippBundle, flippListOpenUrl, flippListPayload } from '../lib/flippList'
 import { flippListUrl, type Pick } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { Chip } from './Chip'
@@ -33,7 +33,9 @@ export function FlippSheet({
   onClose: () => void
   /** The whole list, checked rows included — the bundle decides what travels. */
   rows: ListItem[]
-  /** Staged deals still live at the till (till-hidden stores already removed). */
+  /** EVERY staged deal on the list — never the till-filtered set. « À la caisse : Non »
+   *  hides a store from its own register and says nothing about Flipp; passing the
+   *  till's picks here silently demoted a hidden store's deals to words (2026-09-12). */
   picks: Pick[]
   postal: string | null
 }) {
@@ -41,7 +43,7 @@ export function FlippSheet({
   // The confirmation must OUTLIVE the trip to flipp.com: every door here opens another
   // window that covers this page, so a toast would fire into a hidden tab and be gone
   // before anyone looked back (the CashierMode lesson, kept).
-  const [done, setDone] = useState<'idle' | 'sent' | 'words' | 'clear'>('idle')
+  const [done, setDone] = useState<'idle' | 'sent' | 'deals' | 'words' | 'clear'>('idle')
 
   const bundle = flippBundle(rows, picks)
   const total = bundle.clippable.length + bundle.terms.length
@@ -81,9 +83,14 @@ export function FlippSheet({
             </p>
           )}
 
+          {/* ONE VERB, THREE CARGOES. The doors differ by WHAT THEY CARRY, never by
+              their verb — the whole point of the 2026-09-12 vocabulary pass. The two
+              that ride the bookmark sit together; the no-bookmark one is below with
+              the line that says why it exists. */}
           <Cluster className="flippsheet__doors">
-            {/* ENVOYER — the whole list, deals with their photos. The list rides in the
-                address (flippListOpenUrl's #bb=), where the bookmark reads it first. */}
+            {/* Everything: the deals with their photos, plus the written lines. The
+                list rides in the address (flippListOpenUrl's #bb=), where the bookmark
+                reads it before anything else. */}
             <a
               className="btn btn--primary flippsheet__send"
               href={flippListOpenUrl(postal, undefined, bundle.payload)}
@@ -94,19 +101,37 @@ export function FlippSheet({
             >
               <InlineIcon name="arrow-up-right-bold" /> {t.shop.toFlipp}
             </a>
-            {/* ENVOYER SANS LES RABAIS — the same verb, a smaller cargo: words only,
-                through Flipp's own universal link, so a phone with no bookmark set up
-                still has a way in. */}
-            <a
-              className="btn btn--ghost flippsheet__words"
-              href={sendUrl!}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setDone('words')}
-            >
-              <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
-            </a>
+            {/* THE DEALS ALONE (Marc, 2026-09-12: « only copy deals and not all items »)
+                — put this week's finds in Flipp without emptying the whole grocery list
+                into it. Same payload minus its `items` half. Hidden when there is no
+                deal to send: a door whose cargo is empty is noise, not an option. */}
+            {bundle.clippable.length > 0 && (
+              <a
+                className="btn btn--ghost flippsheet__deals"
+                href={flippListOpenUrl(postal, undefined, flippListPayload(bundle.clippable))}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setDone('deals')}
+              >
+                <InlineIcon name="tag-bold" /> {t.shop.toFlippDeals}
+              </a>
+            )}
           </Cluster>
+          {bundle.clippable.length > 0 && (
+            <p className="flippsheet__why mono">{t.shop.flippWillSendDeals(bundle.clippable.length)}</p>
+          )}
+
+          {/* The words-only door, through Flipp's own universal link — the way in for a
+              phone with no bookmark set up. */}
+          <a
+            className="btn btn--ghost flippsheet__words"
+            href={sendUrl!}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setDone('words')}
+          >
+            <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
+          </a>
           <p className="flippsheet__why mono">{t.shop.sendToFlippWhy}</p>
 
           {/* VIDER — rare, and destructive on the other side, so it sits apart and
@@ -130,7 +155,7 @@ export function FlippSheet({
                   (a blocked popup, a phone that ignored the Safari scheme). */}
               <a
                 className="btn btn--ghost flippsheet__open"
-                href={flippListOpenUrl(postal, undefined, done === 'clear' ? FLIPP_CLEAR_PAYLOAD : bundle.payload)}
+                href={flippListOpenUrl(postal, undefined, done === 'clear' ? FLIPP_CLEAR_PAYLOAD : done === 'deals' ? flippListPayload(bundle.clippable) : bundle.payload)}
                 target="_blank"
                 rel="noopener noreferrer"
               >

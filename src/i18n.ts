@@ -2544,6 +2544,7 @@ export const FR = {
     flippEach4: 'C’est fait : tes rabais sont dans ton compte Flipp, avec leur photo, par magasin. L’app Flipp la montre — quitte-la et rouvre-la si elle tarde.',
     flippWhat: 'Ce qui part : ce qu’il te reste à acheter. Les lignes cochées restent ici. Les rabais voyagent avec leur photo, le reste en articles écrits.',
     flippWords: 'Pas de signet sous la main ? « Envoyer sans les rabais » envoie les mêmes lignes en texte, droit dans l’app Flipp — mais sans les photos.',
+    flippDealsOnly: '« Les rabais seulement » envoie les aubaines de la semaine sans y déverser le reste de l’épicerie.',
     // The way back, and the other phones.
     flippBackTitle: 'De Flipp vers Babillard',
     flippBack1: 'Sur flipp.com, lance le signet ▸ « Rapporter Flipp → Babillard » : Babillard s’ouvre et te montre ce qui changerait avant d’écrire.',
@@ -3341,6 +3342,10 @@ export const FR = {
     toFlipp: 'Envoyer ma liste',
     sendToFlipp: 'Envoyer sans les rabais',
     sendToFlippWhy: 'Les mots seulement, sans photo — aucun signet requis.',
+    // La TROISIÈME cargaison (Marc, 2026-09-12) : juste les rabais, sans les lignes
+    // écrites — pour poser les aubaines dans Flipp sans y déverser toute l'épicerie.
+    toFlippDeals: 'Les rabais seulement',
+    flippWillSendDeals: (deals: number) => deals + ' rabais avec sa photo — aucun article écrit',
     sentToFlipp: (n: number) => `Envoyé à Flipp · ${n} ligne${n > 1 ? 's' : ''}`,
     // The checked lines stay home on purpose (in the cart / bought) — said, not guessed.
     sentKeptChecked: (n: number) => `${n} cochée${n > 1 ? 's' : ''} reste${n > 1 ? 'nt' : ''} ici (décoche pour envoyer)`,

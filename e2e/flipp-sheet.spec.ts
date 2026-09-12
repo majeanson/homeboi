@@ -212,3 +212,40 @@ test('a store hidden AT THE TILL still sends its deals to Flipp, with their phot
   await expect(page.locator('.cashier__tile')).toHaveCount(3)
   await expect(page.locator('.cashier__grid')).not.toContainText('Super C')
 })
+
+// « only copy deals and not all items in list » (Marc, 2026-09-12). Same payload as
+// « Envoyer ma liste » minus its `items` half: the week's finds land in Flipp without
+// the whole grocery list landing with them.
+test('« Les rabais seulement » carries the deals and NO written items', async ({ page }) => {
+  await stubFlipp(page)
+  await openSheet(page)
+  const door = page.locator('a.flippsheet__deals')
+  await expect(door).toBeVisible()
+  const href = await door.getAttribute('href')
+  const payload = JSON.parse(
+    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!),
+  ) as { clippings: { flyerItemId: number }[]; items: unknown[] }
+  expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103])
+  expect(payload.items).toEqual([])
+
+  // The full door beside it still carries both halves — the two are a real choice.
+  const full = JSON.parse(
+    await page.evaluate(
+      (h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))),
+      (await page.locator('a.flippsheet__send').getAttribute('href'))!,
+    ),
+  ) as { items: { term: string }[] }
+  expect(full.items.map((i) => i.term)).toEqual(['Couches', 'Oeufs'])
+
+  // After the tap, the « Ouvrir flipp.com » repeat carries the SAME cargo — not the
+  // full list. A second door that silently re-sent everything would be worse than none.
+  const [popup] = await Promise.all([page.context().waitForEvent('page'), door.click()])
+  await popup.close()
+  expect(await page.locator('a.flippsheet__open').getAttribute('href')).toBe(href)
+})
+
+test('with no live deal there is no deals-only door — an empty cargo is not an option', async ({ page }) => {
+  await openSheet(page, { allEnded: true })
+  await expect(page.locator('a.flippsheet__deals')).toHaveCount(0)
+  await expect(page.locator('a.flippsheet__send')).toBeVisible()
+})

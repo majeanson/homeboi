@@ -709,6 +709,7 @@ export function FlippSection({ help }: { help?: HelpMode }) {
         <li>{t.operator.flippEach4}</li>
       </ol>
       <p className="operator__hint">{t.operator.flippWhat}</p>
+      <p className="operator__hint">{t.operator.flippDealsOnly}</p>
       <p className="operator__hint">{t.operator.flippWords}</p>
       <h4 className="flipp__phase">{t.operator.flippBackTitle}</h4>
       <p className="operator__hint">{t.operator.flippBack1}</p>
