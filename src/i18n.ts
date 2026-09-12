@@ -1190,7 +1190,7 @@ export const FR = {
       hydrate: 'Il fait chaud — bois de l’eau 💧',
     },
   },
-  recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', yearly: 'Chaque année', every: 'tous les', unit: { daily: 'jour(s)', weekly: 'semaine(s)', monthly: 'mois', yearly: 'an(s)' }, weekdayShort: ['D', 'L', 'Ma', 'Me', 'J', 'V', 'S'] },
+  recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', yearly: 'Chaque année', every: 'tous les', unit: { daily: 'jour', weekly: 'semaine', monthly: 'mois', yearly: 'an' }, unitPlural: { daily: 'jours', weekly: 'semaines', monthly: 'mois', yearly: 'ans' }, weekdayShort: ['D', 'L', 'Ma', 'Me', 'J', 'V', 'S'] },
   // « L'auto » — the single shared car + carpool + work-schedule surface (#28).
   auto: {
     title: 'L’auto',

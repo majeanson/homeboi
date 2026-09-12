@@ -31,7 +31,7 @@ export function recurLabel(json: string | null | undefined, t: typeof FR): strin
   // so the count ("how many weeks") is always spelled out, not just implied.
   const base =
     r.interval > 1
-      ? `${t.recur.every} ${r.interval} ${t.recur.unit[r.freq]}`
+      ? `${t.recur.every} ${r.interval} ${(r.interval > 1 ? t.recur.unitPlural : t.recur.unit)[r.freq]}`
       : r.freq === 'daily'
         ? t.recur.daily
         : r.freq === 'weekly'

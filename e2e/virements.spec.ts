@@ -316,3 +316,43 @@ test('capture the Rattrapage fold, open, at 390px', async ({ page }) => {
   await page.getByRole('button', { name: 'Rattrapage' }).click()
   await page.screenshot({ path: 'e2e/screenshots/virements-plan-catchup.png', fullPage: true })
 })
+
+// « i cant repeat every 2 weeks » (Marc, 2026-09-12). It COULD: pick « Chaque semaine »
+// and an interval row appears below. But all three of its parts are unshrinkable —
+// « tous les » + a 4.5rem number + the unit — so at 390px the unit ran past the form
+// edge and was CLIPPED by the scene's overflow. Clipped, not scrolled: invisible to a
+// scrollWidth check (the documented trap), and it reads as "the app can't do this".
+test('the plan form can say « tous les 2 semaines », and nothing is clipped at 360px', async ({ page }) => {
+  await openVirements(page, { viewport: { width: 360, height: 780 } })
+  await page.goto('/virement/plan/new')
+  const form = page.locator('.operator__inline-form')
+  await expect(form).toBeVisible()
+
+  await page.locator('.recur select').selectOption('weekly')
+  const interval = page.locator('input.recur__interval')
+  await expect(interval).toBeVisible()
+  await interval.fill('2')
+  await interval.blur()
+
+  // The unit agrees with the number: « semaines », not « semaine(s) » and not « semaine ».
+  await expect(page.locator('.recur__unit')).toHaveText('semaines')
+  await interval.fill('1')
+  await interval.blur()
+  await expect(page.locator('.recur__unit')).toHaveText('semaine')
+
+  // And the whole row fits: measured against the form's own right edge, which sees
+  // through the clip that hides the bug from the eye.
+  const box = await boxOf(form)
+  const spill = await page.evaluate((right) => {
+    const root = document.querySelector('.operator__inline-form')
+    if (!root) return ['no form']
+    return [...root.querySelectorAll<HTMLElement>('.recur *')]
+      .filter((el) => el.offsetParent !== null)
+      .filter((el) => {
+        const r = el.getBoundingClientRect()
+        return r.width > 0 && r.right > right + 1
+      })
+      .map((el) => `${el.tagName.toLowerCase()}.${el.className || '?'}`)
+  }, box.x + box.width)
+  expect(spill, 'these run past the form edge at 360px').toEqual([])
+})

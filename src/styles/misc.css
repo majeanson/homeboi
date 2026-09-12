@@ -179,6 +179,19 @@
   flex: 1 1 0;
   min-width: 0;
 }
+/* THE INTERVAL ROW IS THREE UNSHRINKABLE THINGS — « tous les » + a 4.5rem number +
+   « semaines » — so on a 390px phone it ran past the form edge and the unit was CLIPPED
+   by the scene's overflow:hidden. Clipped, not scrolled: invisible to a scrollWidth
+   check, which is the documented trap (CLAUDE.md « Horizontal overflow »), and it read
+   as « the app can't do every 2 weeks » (Marc, 2026-09-12). The unit may shrink, and
+   the row may wrap rather than bleed. */
+.recur__row {
+  flex-wrap: wrap;
+}
+.recur__row > span.recur__unit {
+  flex: 0 1 auto;
+  min-width: 0;
+}
 .recur__interval {
   flex: 0 0 4.5rem;
   width: 4.5rem;

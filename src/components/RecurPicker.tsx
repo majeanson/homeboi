@@ -73,7 +73,7 @@ export function RecurPicker({ value, onChange }: { value: RecurValue | null; onC
               onChange({ ...value, interval: n })
             }}
           />
-          <span>{t.recur.unit[value.freq]}</span>
+          <span className="recur__unit">{(value.interval > 1 ? t.recur.unitPlural : t.recur.unit)[value.freq]}</span>
         </label>
       )}
 

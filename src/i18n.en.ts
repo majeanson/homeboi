@@ -1018,7 +1018,7 @@ export const EN: typeof FR = {
       hydrate: 'Hot out — drink water 💧',
     },
   },
-  recur: { repeat: 'Repeat', none: 'Never', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly', every: 'every', unit: { daily: 'day(s)', weekly: 'week(s)', monthly: 'month(s)', yearly: 'year(s)' }, weekdayShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] },
+  recur: { repeat: 'Repeat', none: 'Never', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly', every: 'every', unit: { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' }, unitPlural: { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' }, weekdayShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] },
   auto: {
     title: 'The car',
     car: 'The car',
