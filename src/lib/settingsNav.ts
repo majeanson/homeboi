@@ -273,6 +273,9 @@ export const ROUTE_PREFIXES: readonly string[] = [
   '/home-project/new',
   '/routine',
   '/habitude',
+  // « Les virements » — the composer and the standing agreement, both full-screen
+  // scenes. The guide's « Essayer » points at them directly (notes card, points 7-8).
+  '/virement',
   '/cast',
   '/share',
   // The frozen /cercle/* scene paths — old family-share links out in the wild

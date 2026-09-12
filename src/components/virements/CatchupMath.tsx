@@ -2,7 +2,8 @@ import { useT, useLang } from '../../i18n'
 import { formatMoneyExact } from '../../lib/money'
 import { formatDayMaybeYear } from '../../lib/format'
 import { Disclosure } from '../Disclosure'
-import type { CatchupProjection } from '../../lib/transfers'
+import { CatchupGraph } from './CatchupGraph'
+import { catchupSeries, type CatchupProjection } from '../../lib/transfers'
 import type { Member } from '../../lib/cercle'
 
 // « La math » — the catch-up arrangement, in plain sentences.
@@ -17,10 +18,20 @@ import type { Member } from '../../lib/cercle'
 //
 // So it ships the way a receipt does, not the way a scoreboard does:
 //   * FOLDED by default — you open it when you want it, it never greets you;
-//   * full sentences, no chart, no percentage, no progress bar, no colour coding;
+//   * full sentences first, and the one drawing repeats them rather than adding to
+//     them (see CatchupGraph: no percentage, no progress bar, no colour coding);
 //   * read-only, and never on the board, the calendar or the toddler lens;
 //   * denied to a showcase guest link with the rest of the money (guestScope.ts).
-export function CatchupMath({ projection, members }: { projection: CatchupProjection; members: Member[] }) {
+export function CatchupMath({
+  projection,
+  members,
+  today,
+}: {
+  projection: CatchupProjection
+  members: Member[]
+  /** Local-day secs — where « aujourd'hui » sits on the drawn line. */
+  today: number
+}) {
   const t = useT()
   const { lang } = useLang()
   const v = t.virements
@@ -33,6 +44,7 @@ export function CatchupMath({ projection, members }: { projection: CatchupProjec
   // names resolve or the arrangement is not describable.
   const behind = nameOf(projection.behindMemberId)
   const ahead = nameOf(projection.aheadMemberId)
+  const series = catchupSeries(projection, today)
 
   return (
     <Disclosure label={v.math} className="virements__math">
@@ -48,6 +60,11 @@ export function CatchupMath({ projection, members }: { projection: CatchupProjec
           ? v.mathAtEnd(money(projection.projectedRemainingCents), day(projection.termEnd))
           : v.mathDone(day(projection.termEnd))}
       </p>
+      {/* The date the gap closes, when it does. « Réglé en novembre 2028 » is the same
+          fact as « il reste 51 900 $ », in the shape a person actually thinks in — and
+          it only appears when the arithmetic really gets there. */}
+      {series?.zeroAt != null && series.zeroAt > today && <p>{v.mathZeroOn(day(series.zeroAt))}</p>}
+      {series && <CatchupGraph series={series} />}
     </Disclosure>
   )
 }

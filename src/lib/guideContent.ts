@@ -948,6 +948,59 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/notes?section=virements',
       },
+      // APPENDED at 7–10 (2026-09-12). Same ⚠ as above: append only.
+      //
+      // Point 6 says WHAT the virements are. These four say HOW. The worked example
+      // lives in `why` rather than `detail` on purpose — guideBudget.test.ts caps a
+      // detail at two sentences, and an example is exactly the kind of thing that
+      // belongs in the half a reader opens when the two sentences were not enough.
+      {
+        label: { fr: 'Écrire une entente', en: 'Writing an agreement' },
+        detail: {
+          fr: 'Donne-lui un nom, le montant complet, une date où c’est dû, à quelle fréquence ça revient, puis la part de chaque personne. Laisse une part vide si quelqu’un ne paie pas celle-là.',
+          en: 'Give it a name, the full amount, a date it falls due, how often it comes back, then each person’s share. Leave a share blank if someone does not pay that one.',
+        },
+        why: {
+          fr: 'Exemple : « Hypothèque », 812,82 $ aux 2 semaines, 556,41 $ d’un bord et 256,41 $ de l’autre. Ce n’est pas juste pour une hypothèque — le loyer, la garderie, un prêt auto, les soins d’un parent séparés entre frères et sœurs : même forme, et l’écran propose ces modèles-là directement.',
+          en: 'Example: “Mortgage”, $812.82 every 2 weeks, $556.41 from one and $256.41 from the other. It is not just for a mortgage — rent, daycare, a car loan, a parent’s care split between siblings: same shape, and the screen offers those as templates.',
+        },
+        route: '/virement/plan/new',
+      },
+      {
+        label: { fr: 'Noter un virement', en: 'Recording a transfer' },
+        detail: {
+          fr: 'Ce que tu dois encore payer arrive déjà coché, et un ✓ veut dire « déjà envoyé ». Ajoute un renflouement ou une ligne libre, puis copie le message pour ta banque.',
+          en: 'What you still owe arrives already ticked, and a ✓ means “already sent”. Add a top-up or a free line, then copy the message for your bank.',
+        },
+        why: {
+          fr: 'Le numéro de référence que tu colles au retour, c’est ce qui relie la note au relevé — la preuve, des deux bords.',
+          en: 'The reference number you paste in on your way back is what ties the note to the statement — the proof, on both sides.',
+        },
+        route: '/virement/new',
+      },
+      {
+        label: { fr: 'Le rattrapage', en: 'Catching up' },
+        detail: {
+          fr: 'À remplir seulement si une personne a payé plus que l’autre au départ : l’écart, la date où vous l’avez compté, et la fin de l’arrangement. « La math » se replie au bas de la carte, avec un petit tracé de l’écart qui descend vers zéro.',
+          en: 'Only fill this in if one person paid more than the other up front: the gap, the day you counted it, and when the arrangement ends. “The math” folds away at the foot of the card, with a small line of the gap heading down to zero.',
+        },
+        why: {
+          fr: 'Exemple : elle a mis 72 000 $ de plus, il envoie 300 $ de plus par paiement. Le chiffre ne compte que les virements NOTÉS — s’il en manque, le rattrapage a l’air moins avancé qu’il l’est vraiment.',
+          en: 'Example: she put in $72,000 more, he sends $300 extra per payment. The figure counts only the transfers you RECORDED — if some are missing, the catch-up looks less far along than it really is.',
+        },
+      },
+      {
+        label: { fr: 'Le sommaire de l’année', en: 'The year in one block' },
+        detail: {
+          fr: 'Au bas de l’historique, replié : tout ce qui est parti dans l’année, par entente et par personne, avec le total. Un bouton le copie en texte ordinaire — ça se colle dans un courriel ou un message.',
+          en: 'At the foot of the history, folded away: everything sent that year, by agreement and by person, with the total. One button copies it as plain text — it pastes into an email or a message.',
+        },
+        why: {
+          fr: 'C’est la question du renouvellement d’hypothèque, des impôts, et de la conversation de janvier sur « est-ce que l’arrangement marche ».',
+          en: 'It is the question you get at a mortgage renewal, at tax time, and in the January conversation about whether the arrangement is working.',
+        },
+        route: '/notes?section=virements',
+      },
     ],
   },
   {

@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildMemo,
+  catchupSeries,
   coveredDueDates,
+  summariseYear,
+  transferYears,
+  yearOfDay,
   foldAscii,
   transferTotal,
   uncoveredDueDates,
   MEMO_CAP,
+  type CatchupProjection,
   type Transfer,
   type TransferLine,
   type TransferPlan,
@@ -200,5 +205,166 @@ describe('buildMemo', () => {
     expect(memo.length).toBeLessThanOrEqual(MEMO_CAP)
     // And it is still plain ASCII after the cut.
     expect(memo).toBe(foldAscii(memo))
+  })
+})
+
+describe('summariseYear', () => {
+  const hypo = plan()
+  const garderie = plan({ id: 'p2', title: 'Garderie', position: 1, due: [d(2026, 7, 20)] })
+
+  const marcAug = transfer({
+    id: 'a',
+    memberId: 'marc',
+    sentAt: d(2026, 7, 14),
+    lines: [planLine(d(2026, 7, 13)), planLine(d(2026, 7, 27)), { kind: 'topup', amountCents: 200000 }],
+  })
+  const camilleAug = transfer({
+    id: 'b',
+    memberId: 'camille',
+    sentAt: d(2026, 7, 14),
+    lines: [{ kind: 'plan', planId: 'p2', dueAt: d(2026, 7, 20), amountCents: 10000 }, { kind: 'topup', amountCents: 200000 }],
+  })
+  const marcLastYear = transfer({ id: 'c', memberId: 'marc', sentAt: d(2025, 7, 14), lines: [planLine(d(2025, 7, 13))] })
+
+  const all = [marcAug, camilleAug, marcLastYear]
+
+  it('keeps only the year asked for', () => {
+    expect(summariseYear(all, [hypo, garderie], 2026).transfers).toBe(2)
+    expect(summariseYear(all, [hypo, garderie], 2025).transfers).toBe(1)
+    expect(summariseYear(all, [hypo, garderie], 2024).transfers).toBe(0)
+  })
+
+  it('groups by agreement AND by person, counting the dates each one covered', () => {
+    const s = summariseYear(all, [hypo, garderie], 2026)
+    expect(s.plans.map((p) => p.title)).toEqual(['Hypothèque', 'Garderie'])
+    expect(s.plans[0].byMember).toEqual([{ memberId: 'marc', payments: 2, cents: 111282 }])
+    expect(s.plans[1].byMember).toEqual([{ memberId: 'camille', payments: 1, cents: 10000 }])
+  })
+
+  it('totals the top-ups per person and the whole year once', () => {
+    const s = summariseYear(all, [hypo, garderie], 2026)
+    expect(s.topups).toEqual([
+      { memberId: 'camille', payments: 0, cents: 200000 },
+      { memberId: 'marc', payments: 0, cents: 200000 },
+    ])
+    // 111 282 + 200 000 (Marc) + 10 000 + 200 000 (Camille)
+    expect(s.totalCents).toBe(521282)
+    expect(s.byMember).toEqual([
+      { memberId: 'camille', payments: 0, cents: 210000 },
+      { memberId: 'marc', payments: 0, cents: 311282 },
+    ])
+  })
+
+  // THE CALM CONSTRAINT, pinned. Sorting people by what they sent would make the
+  // block a leaderboard; it is a receipt. Camille sent less and still comes first,
+  // because the order is her id, not her amount.
+  it('orders people by identity, never by amount', () => {
+    const s = summariseYear(all, [hypo, garderie], 2026)
+    expect(s.byMember.map((x) => x.memberId)).toEqual(['camille', 'marc'])
+  })
+
+  it('folds free lines by label, ignoring case', () => {
+    const tr = transfer({
+      id: 'd',
+      sentAt: d(2026, 7, 14),
+      lines: [
+        { kind: 'other', label: 'Électricité', amountCents: 8750 },
+        { kind: 'other', label: 'électricité', amountCents: 1250 },
+      ],
+    })
+    expect(summariseYear([tr], [hypo], 2026).others).toEqual([{ label: 'Électricité', cents: 10000 }])
+  })
+
+  // Money that was genuinely sent must stay in the total even when the agreement it
+  // named has since been deleted — otherwise the year quietly under-reports itself.
+  it('keeps a line whose agreement is gone', () => {
+    const s = summariseYear([marcAug], [], 2026)
+    expect(s.totalCents).toBe(311282)
+    expect(s.plans).toHaveLength(1)
+    expect(s.plans[0].title).toBe('')
+  })
+
+  it('reports the span the year actually covers', () => {
+    const s = summariseYear(all, [hypo, garderie], 2026)
+    expect(s.firstSentAt).toBe(d(2026, 7, 14))
+    expect(s.lastSentAt).toBe(d(2026, 7, 14))
+    expect(summariseYear([], [], 2026).firstSentAt).toBeNull()
+  })
+
+  it('lists the years that hold something, newest first', () => {
+    expect(transferYears(all)).toEqual([2026, 2025])
+    expect(transferYears([])).toEqual([])
+  })
+
+  it('reads a local midnight into its own calendar year, not the one before', () => {
+    // 1er janvier at local midnight is 05:00 UTC the same day — the off-by-one that
+    // would file every New Year's Day transfer under the previous year.
+    expect(yearOfDay(d(2027, 0, 1))).toBe(2027)
+    expect(yearOfDay(d(2026, 11, 31))).toBe(2026)
+  })
+})
+
+describe('catchupSeries — the gap, drawn', () => {
+  const proj = (over: Partial<CatchupProjection> = {}): CatchupProjection => ({
+    behindMemberId: 'marc',
+    aheadMemberId: 'camille',
+    gapCents: 7200000,
+    asOf: d(2026, 1, 1),
+    termEnd: d(2028, 7, 24),
+    extraPerPayment: 30000,
+    paymentsSoFar: 2,
+    caughtUpCents: 60000,
+    remainingCents: 7140000,
+    paymentsLeft: 60,
+    // Internally consistent, and it is Marc's real shape: 60 payments x 300 $ closes
+    // 18 000 $ of a 71 400 $ remainder, so this arrangement does NOT finish the job.
+    projectedRemainingCents: 5340000,
+    ...over,
+  })
+
+  it('starts at the gap as counted and passes through today', () => {
+    const s = catchupSeries(proj(), d(2026, 8, 12))!
+    expect(s.past[0]).toEqual({ at: d(2026, 1, 1), cents: 7200000 })
+    expect(s.past[1]).toEqual({ at: d(2026, 8, 12), cents: 7140000 })
+    expect(s.maxCents).toBe(7200000)
+  })
+
+  it('reaches zero inside the term, and stays there', () => {
+    // A gap small enough for the rhythm to close: 58 payments of 300 $ against 17 400 $.
+    const s = catchupSeries(proj({ gapCents: 1800000, remainingCents: 1740000, projectedRemainingCents: 0 }), d(2026, 8, 12))!
+    expect(s.zeroAt).not.toBeNull()
+    expect(s.ahead[s.ahead.length - 1].cents).toBe(0)
+    expect(s.zeroAt!).toBeGreaterThan(d(2026, 8, 12))
+    expect(s.zeroAt!).toBeLessThanOrEqual(d(2028, 7, 24))
+  })
+
+  // THE HONEST ENDING. An arrangement that does not close the gap must not be drawn
+  // as if it did — the line simply stops short of the floor.
+  it('does not reach zero when the rhythm cannot close the gap', () => {
+    const s = catchupSeries(proj(), d(2026, 8, 12))!
+    expect(s.zeroAt).toBeNull()
+    expect(s.ahead[s.ahead.length - 1].cents).toBe(5340000)
+  })
+
+  it('an already-closed gap is at zero from today on', () => {
+    const s = catchupSeries(proj({ remainingCents: 0, projectedRemainingCents: 0 }), d(2026, 8, 12))!
+    expect(s.zeroAt).toBe(d(2026, 8, 12))
+    expect(s.ahead.every((p) => p.cents === 0)).toBe(true)
+  })
+
+  it('never draws outside its own box when today sits beyond the term', () => {
+    const s = catchupSeries(proj(), d(2030, 0, 1))!
+    expect(s.past[1].at).toBe(d(2028, 7, 24))
+    const s2 = catchupSeries(proj(), d(2020, 0, 1))!
+    expect(s2.past[1].at).toBe(d(2026, 1, 1))
+  })
+
+  it('is nothing to draw without a gap', () => {
+    expect(catchupSeries(proj({ gapCents: 0 }), d(2026, 8, 12))).toBeNull()
+    expect(catchupSeries(proj({ termEnd: d(2025, 0, 1) }), d(2026, 8, 12))).toBeNull()
+  })
+
+  it('cannot close a gap when nobody is sending extra', () => {
+    expect(catchupSeries(proj({ extraPerPayment: 0 }), d(2026, 8, 12))!.zeroAt).toBeNull()
   })
 })

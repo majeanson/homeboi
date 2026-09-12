@@ -797,6 +797,9 @@ export const FR = {
     cardEmpty: 'Rien pour l’instant.',
     // The same statement, in the space a compact tile has for one quiet line.
     cardEmptyMini: 'Rien',
+    // « À faire » in tuile, un jour où cette carte-là ne porte rien (le jour n'est pas
+    // « libre » pour autant — les repas et rendez-vous vivent ailleurs).
+    nothingTodo: 'Rien à faire',
     // Edit mode: hold a card to rearrange the board, like an app on a phone's home screen.
     editTitle: 'Réorganise ton babillard',
     editHint: 'Glisse une carte pour la déplacer, ✕ pour la retirer, le chiffre pour la redimensionner.',
@@ -3671,6 +3674,66 @@ export const FR = {
     deleted: 'Virement supprimé',
     // La carte « À régler » + le calendrier.
     due: (title: string) => `${title} à envoyer`,
+    // ---- Les formes que ça prend ------------------------------------------
+    // Ce n’est pas une patente à hypothèque : c’est « une dépense qui revient,
+    // partagée ». Le loyer, la garderie, un prêt, les soins d’un parent séparés
+    // entre frères et sœurs — tout ça marchait déjà le jour où c’est sorti. Il
+    // manquait juste que l’app le DISE. Un modèle remplit un titre et un rythme,
+    // jamais un montant : un chiffre suggéré, c’est une supposition sur l’argent
+    // de quelqu’un.
+    templatesLead: 'Des ententes qui se ressemblent :',
+    templates: {
+      mortgage: { label: 'Hypothèque', example: 'Un paiement aux 2 semaines, séparé pas forcément moitié-moitié.' },
+      rent: { label: 'Loyer', example: 'Un montant par mois, séparé entre les personnes qui habitent là.' },
+      daycare: { label: 'Garderie', example: 'La facture des enfants, chaque semaine.' },
+      loan: { label: 'Prêt auto', example: 'Un paiement par mois sur un véhicule à deux noms.' },
+      care: { label: 'Soins d’un proche', example: 'Ce que ça coûte de s’occuper d’un parent, séparé entre frères et sœurs.' },
+      shared: { label: 'Dépense partagée', example: 'Un abonnement, un chalet, une cagnotte de voyage — tout ce qui revient.' },
+    },
+
+    // ---- Ce que les deux formulaires expliquent d’eux-mêmes ----------------
+    // Un écran qu’on a ouvert exprès a le droit d’être généreux (LEAN.md, « généreux
+    // dedans »). Ces lignes-là existent pour que quelqu’un qui n’a jamais vu l’écran
+    // comprenne quoi mettre, sans aller lire le guide.
+    planIntro:
+      'Une entente, c’est une dépense qui revient et que vous vous partagez. Écris-la une fois : après, chaque virement se coche au lieu de se calculer.',
+    planExample: 'Exemple : Hypothèque · 812,82 $ aux 2 semaines · 556,41 $ d’un bord, 256,41 $ de l’autre.',
+    planTitleHint: 'Le nom que vous lui donnez entre vous — c’est aussi ce qui apparaît dans le message à la banque.',
+    planWhenHint: 'N’importe quelle date où c’est dû. La répétition en dessous s’occupe de toutes les suivantes.',
+    planSharesHint: 'Ce que chaque personne envoie à chaque fois. Laisse vide quelqu’un qui ne paie pas celle-là.',
+    catchupIntro:
+      'À remplir seulement si une personne a payé plus que l’autre au départ et que vous rattrapez l’écart. Sinon, laisse fermé — la plupart des maisonnées n’en ont pas.',
+    catchupExample: 'Exemple : elle a mis 72 000 $ de plus au départ, il envoie 300 $ de plus par paiement jusqu’en août 2028.',
+    transferIntro: 'Coche ce que ce virement couvre. Le total et le message pour la banque se composent tout seuls.',
+    dueDatesHint: 'Coche les dates que ce virement paie. Un ✓ veut dire que c’est déjà envoyé — pas besoin d’y retoucher.',
+
+    // ---- L’écart, dessiné --------------------------------------------------
+    // Une quantité qui est censée disparaître, dessinée en train de disparaître.
+    // Pas de pourcentage, pas de couleur, pas d’axe à part le zéro.
+    graphLabel: (from: string, to: string) => `L’écart à rattraper, de ${from} à ${to}`,
+    graphZero: 'Réglé',
+    graphToday: 'Aujourd’hui',
+    mathZeroOn: (when: string) => `À ce rythme, l’écart se ferme vers ${when}.`,
+
+    // ---- Le sommaire de l’année -------------------------------------------
+    // La question du renouvellement, des impôts, et de la conversation de janvier.
+    // Jusqu’ici la seule façon d’y répondre, c’était de scroller l’historique et
+    // d’additionner à la main — exactement la corvée que cette section efface.
+    yearFold: 'Le sommaire de l’année',
+    yearPick: 'Année',
+    yearTotal: 'Total envoyé',
+    yearTopups: 'Renflouements',
+    yearOthers: 'Autres lignes',
+    yearPayments: (payments: number, amount: string) =>
+      payments === 1 ? `1 paiement · ${amount}` : `${payments} paiements · ${amount}`,
+    yearSpan: (count: number, from: string, to: string) =>
+      count === 1 ? `1 virement noté, le ${from}.` : `${count} virements notés, du ${from} au ${to}.`,
+    yearEmpty: 'Rien de noté cette année-là.',
+    yearUnknownPlan: 'Entente supprimée',
+    yearNobody: 'Sans visage',
+    copyYear: 'Copier le sommaire',
+    copiedYear: 'Sommaire copié !',
+    yearHint: 'Du texte ordinaire : ça se colle dans un courriel, une note, ou un message à l’autre personne.',
   },
 }
 

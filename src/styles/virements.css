@@ -194,3 +194,111 @@
   color: var(--ink-soft);
   font-size: 0.85rem;
 }
+
+/* ---- Les formes qu'une entente peut prendre -------------------------------
+   The chips that name what this section models (rent, daycare, a loan, a parent's
+   care). On the empty state they are a Cluster that wraps; inside the plan form
+   they are a Rail that scrolls one line, because there the reader is already deep
+   in a tall form and a second wrapped row pushes the first field off-screen. */
+.virements__shapes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+.virements__shapes-rail {
+  margin-bottom: 0.25rem;
+}
+
+/* ---- L'écart, dessiné ------------------------------------------------------
+   One ink, no fill, no colour that means good or bad. The box is deliberately short:
+   this is a shape, not a chart to read values off — every number is in the sentences
+   directly above it. `preserveAspectRatio: none` lets it stretch to any width, which
+   is why every stroke carries vector-effect="non-scaling-stroke" in the markup. */
+.vgraph {
+  margin-top: 0.6rem;
+}
+.vgraph__svg {
+  display: block;
+  width: 100%;
+  height: 4.5rem;
+  overflow: visible;
+}
+.vgraph__floor {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.vgraph__past {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Dashed BECAUSE IT HAS NOT HAPPENED. A forecast drawn like a measurement is the one
+   way this drawing could lie, and the dash is the whole defence. */
+.vgraph__ahead {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.vgraph__now {
+  fill: var(--ink);
+}
+.vgraph__zero {
+  fill: none;
+  stroke: var(--ink-soft);
+  stroke-width: 1.5;
+}
+.vgraph__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+/* The middle label is « Réglé » sitting under the point where the line lands on the
+   floor. It centres rather than stretching, and it is allowed to be empty. */
+.vgraph__axis > span:nth-child(2) {
+  text-align: center;
+}
+
+/* ---- Le sommaire de l'année ------------------------------------------------ */
+.virements__year-group {
+  margin-top: 0.6rem;
+}
+.virements__year-group h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.virements__year-group ul {
+  margin: 0;
+  padding-left: 1rem;
+  list-style: none;
+}
+.virements__year-group li {
+  padding: 0.1rem 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+/* The one line of the block that carries the number someone came for. A rule above it
+   rather than a box around it — the section has enough boxes. */
+.virements__year-total {
+  margin-top: 0.8rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+.virements__year-total h4 {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+.virements__years {
+  margin-bottom: 0.4rem;
+}

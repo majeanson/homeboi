@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import '../styles/virements.css'
 import { FormScene } from '../components/FormScene'
 import { Loading } from '../components/Fallback'
@@ -6,6 +6,7 @@ import { TransferForm } from '../components/forms/TransferForm'
 import { PlanForm } from '../components/forms/PlanForm'
 import { useT } from '../i18n'
 import { useTransfers } from '../lib/transfers'
+import { planTemplate } from '../lib/planTemplates'
 
 // /virement/new · /virement/:id/edit — logging a transfer as a full-screen scene.
 //
@@ -61,8 +62,13 @@ export function TransferPlanFormPage() {
   const t = useT()
   const nav = useNavigate()
   const { id } = useParams()
+  const [sp] = useSearchParams()
   const { data } = useTransfers()
   const plan = id ? (data?.plans.find((x) => x.id === id) ?? null) : null
+  // ?modele=<key> — the shape the reader tapped on the empty state. It seeds a title
+  // and a rhythm and nothing else; a stale or bogus key resolves to null rather than
+  // throwing, because this URL ends up in bookmarks and shared links.
+  const template = id ? null : planTemplate(sp.get('modele'))
 
   return (
     <FormScene card="notes" title={id ? t.virements.editPlan : t.virements.addPlan} icon="receipt-bold" fallback={FALLBACK}>
@@ -73,6 +79,7 @@ export function TransferPlanFormPage() {
         <PlanForm
           key={plan?.id ?? 'new'}
           value={plan}
+          template={template}
           members={members}
           onSaved={close}
           onDeleted={() => nav(FALLBACK, { replace: true })}

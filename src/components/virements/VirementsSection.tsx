@@ -16,8 +16,10 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildTransfer } from '../detail/adapters'
 import { useTransfers, useDeleteTransfer, type Transfer } from '../../lib/transfers'
+import { PLAN_TEMPLATES } from '../../lib/planTemplates'
 import type { Member } from '../../lib/cercle'
 import { Avatar } from '../Avatar'
+import { Chip } from '../Chip'
 import { Cluster } from '../Layout'
 import { EmptyState } from '../EmptyState'
 import { LoadError } from '../LoadError'
@@ -27,6 +29,7 @@ import { PairPrompt } from '../Fallback'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { PlanCard } from './PlanCard'
+import { YearSummary } from './YearSummary'
 
 // « Les virements » — the second face of the Notes tab (?section=virements).
 //
@@ -108,9 +111,30 @@ export function VirementsSection({ members }: { members: Member[] }) {
       {plans.length === 0 ? (
         // The one door worth offering here: there is nothing to compose against until
         // an agreement exists, so the empty state IS the call to write one.
-        <EmptyState action={ro ? undefined : { to: '/virement/plan/new', label: v.addPlan, icon: 'plus-bold' }}>
-          {v.emptyPlans}
-        </EmptyState>
+        //
+        // And it NAMES THE SHAPES. What this section models is « a recurring shared
+        // obligation with per-person shares » — rent, daycare, a car loan, siblings
+        // splitting a parent's care — all of which worked from day one. A reader who
+        // saw only a blank screen and the word « entente » had no way to know that,
+        // and reasonably concluded it was a thing for people with a mortgage. Each
+        // chip is the same door as the CTA, arriving with a title and a rhythm.
+        <>
+          <EmptyState action={ro ? undefined : { to: '/virement/plan/new', label: v.addPlan, icon: 'plus-bold' }}>
+            {v.emptyPlans}
+          </EmptyState>
+          {!ro && (
+            <div className="virements__shapes">
+              <p className="operator__seg-hint mono">{v.templatesLead}</p>
+              <Cluster>
+                {PLAN_TEMPLATES.map((tpl) => (
+                  <Chip key={tpl.key} to={`/virement/plan/new?modele=${tpl.key}`} icon={tpl.icon}>
+                    {v.templates[tpl.key].label}
+                  </Chip>
+                ))}
+              </Cluster>
+            </div>
+          )}
+        </>
       ) : (
         <div className="virements__plans">
           {plans.map((p) => (
@@ -150,6 +174,12 @@ export function VirementsSection({ members }: { members: Member[] }) {
           })}
         </ul>
       )}
+
+      {/* The year, in one block — folded, at the FOOT of the history, because it is
+          the question you come looking for (a renewal, the accountant, January) and
+          never the one you are answering on the way past. It reads the same rows the
+          list above shows, the picked face included. */}
+      {visible.length > 0 && <YearSummary transfers={visible} plans={plans} members={members} />}
     </section>
   )
 }

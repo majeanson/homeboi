@@ -674,6 +674,7 @@ export const EN: typeof FR = {
     allClearTitle: 'All calm',
     cardEmpty: 'Nothing right now.',
     cardEmptyMini: 'Nothing',
+    nothingTodo: 'Nothing to do',
     editTitle: 'Rearrange your board',
     editHint: 'Drag a card to move it, ✕ to remove it, the number to resize it.',
     editDone: 'Done',
@@ -3235,5 +3236,47 @@ export const EN: typeof FR = {
     deletePlanConfirm: 'Delete this agreement? Transfers already noted stay, but they will have no dates left to tick.',
     deleted: 'Transfer deleted',
     due: (title: string) => `${title} to send`,
+    templatesLead: 'Agreements that look like this:',
+    templates: {
+      mortgage: { label: 'Mortgage', example: 'A payment every 2 weeks, not necessarily split down the middle.' },
+      rent: { label: 'Rent', example: 'An amount each month, split between whoever lives there.' },
+      daycare: { label: 'Daycare', example: 'The kids’ bill, every week.' },
+      loan: { label: 'Car loan', example: 'A payment each month on a vehicle in two names.' },
+      care: { label: 'Caring for a relative', example: 'What looking after a parent costs, split between siblings.' },
+      shared: { label: 'Shared expense', example: 'A subscription, a cottage, a travel pot — anything that comes back.' },
+    },
+
+    planIntro:
+      'An agreement is a recurring expense the two of you split. Write it once: after that, every transfer gets ticked instead of worked out.',
+    planExample: 'Example: Mortgage · $812.82 every 2 weeks · $556.41 from one, $256.41 from the other.',
+    planTitleHint: 'Whatever the two of you call it — it is also what shows up in the message to your bank.',
+    planWhenHint: 'Any date it falls due. The repeat below takes care of all the following ones.',
+    planSharesHint: 'What each person sends each time. Leave someone blank if they do not pay this one.',
+    catchupIntro:
+      'Only fill this in if one person paid more than the other up front and you are closing that gap. Otherwise leave it folded — most households have none.',
+    catchupExample: 'Example: she put in $72,000 more up front, he sends $300 extra per payment until August 2028.',
+    transferIntro: 'Tick what this transfer covers. The total and the message for your bank write themselves.',
+    dueDatesHint: 'Tick the dates this transfer pays. A ✓ means it is already sent — nothing to do there.',
+
+    graphLabel: (from: string, to: string) => `The gap being closed, from ${from} to ${to}`,
+    graphZero: 'Settled',
+    graphToday: 'Today',
+    mathZeroOn: (when: string) => `At this rhythm, the gap closes around ${when}.`,
+
+    yearFold: 'The year in one block',
+    yearPick: 'Year',
+    yearTotal: 'Total sent',
+    yearTopups: 'Top-ups',
+    yearOthers: 'Other lines',
+    yearPayments: (payments: number, amount: string) =>
+      payments === 1 ? `1 payment · ${amount}` : `${payments} payments · ${amount}`,
+    yearSpan: (count: number, from: string, to: string) =>
+      count === 1 ? `1 transfer recorded, on ${from}.` : `${count} transfers recorded, from ${from} to ${to}.`,
+    yearEmpty: 'Nothing recorded that year.',
+    yearUnknownPlan: 'Deleted agreement',
+    yearNobody: 'No face',
+    copyYear: 'Copy the summary',
+    copiedYear: 'Summary copied!',
+    yearHint: 'Plain text: it pastes into an email, a note, or a message to the other person.',
   },
 }

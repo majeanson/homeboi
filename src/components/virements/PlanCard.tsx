@@ -99,7 +99,7 @@ export function PlanCard({
         </Rail>
       )}
 
-      {plan.projection && <CatchupMath projection={plan.projection} members={members} />}
+      {plan.projection && <CatchupMath projection={plan.projection} members={members} today={today} />}
     </article>
   )
 }

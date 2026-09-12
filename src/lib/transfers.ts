@@ -230,6 +230,200 @@ export function buildMemo(
   return foldAscii(parts.join(' ')).slice(0, MEMO_CAP).trim()
 }
 
+// ---- The year, in one block -------------------------------------------------
+
+// « Combien on a envoyé cette année, et qui. » The question that gets asked at a
+// mortgage renewal, at tax time, and in the January conversation about whether the
+// arrangement is actually working — and until now the only way to answer it was to
+// scroll the history and add it up by hand, which is the exact chore this whole
+// section exists to delete.
+//
+// A STRUCTURE, not a string: the sentences are assembled where the translations
+// live (components/virements/YearSummary.tsx). That keeps this half pure and
+// testable, and keeps Intl out of it (intl-rule.test.ts).
+export interface YearMemberTotal {
+  memberId: string | null
+  /** Due dates covered. Only meaningful on a plan line; 0 elsewhere. */
+  payments: number
+  cents: number
+}
+
+export interface YearPlanTotal {
+  planId: string
+  title: string
+  byMember: YearMemberTotal[]
+  cents: number
+}
+
+export interface YearSummary {
+  year: number
+  transfers: number
+  firstSentAt: number | null
+  lastSentAt: number | null
+  plans: YearPlanTotal[]
+  topups: YearMemberTotal[]
+  others: { label: string; cents: number }[]
+  byMember: YearMemberTotal[]
+  totalCents: number
+}
+
+// The calendar year a local midnight belongs to. Read in UTC for the same reason
+// memoDates does: a local midnight in this household's zone is the same calendar
+// date in UTC, which is the assumption the server's own day keys already make.
+export const yearOfDay = (sec: number): number => new Date(sec * 1000).getUTCFullYear()
+
+/** Every year that holds at least one transfer, newest first. */
+export function transferYears(transfers: readonly Transfer[]): number[] {
+  return [...new Set(transfers.map((t) => yearOfDay(t.sentAt)))].sort((a, b) => b - a)
+}
+
+// ORDERING IS BY IDENTITY, NOT BY AMOUNT. Sorting people by what they sent would
+// turn a receipt into a leaderboard, which is the one thing this section refuses
+// (NFR-CALM-1, the chore-ledger rule). A stable id sort says nothing about anyone.
+const byIdentity = (a: { memberId: string | null }, b: { memberId: string | null }) => {
+  // A plain code-point compare, not localeCompare: these are opaque ids, never read
+  // by anyone, and a collator built per comparison is what intl-rule.test.ts exists
+  // to keep out of hot paths. Unattributed sends sort last.
+  const x = a.memberId ?? '\uffff'
+  const y = b.memberId ?? '\uffff'
+  return x < y ? -1 : x > y ? 1 : 0
+}
+
+function bump(into: YearMemberTotal[], memberId: string | null, cents: number, payments = 0): void {
+  const row = into.find((x) => x.memberId === memberId)
+  if (row) {
+    row.cents += cents
+    row.payments += payments
+  } else into.push({ memberId, payments, cents })
+}
+
+/** Everything sent in one calendar year, grouped by agreement and by person. */
+export function summariseYear(
+  transfers: readonly Transfer[],
+  plans: readonly TransferPlan[],
+  year: number,
+): YearSummary {
+  const mine = transfers.filter((t) => yearOfDay(t.sentAt) === year).sort((a, b) => a.sentAt - b.sentAt)
+
+  const planRows = new Map<string, YearPlanTotal>()
+  const topups: YearMemberTotal[] = []
+  const others = new Map<string, { label: string; cents: number }>()
+  const byMember: YearMemberTotal[] = []
+  let totalCents = 0
+
+  for (const t of mine) {
+    const who = t.memberId ?? null
+    for (const l of t.lines) {
+      totalCents += l.amountCents
+      bump(byMember, who, l.amountCents)
+      if (l.kind === 'plan') {
+        // A line whose agreement was deleted still SPENT money, so it keeps its own
+        // row under a blank title rather than vanishing out of the total.
+        const plan = plans.find((p) => p.id === l.planId)
+        const row = planRows.get(l.planId) ?? { planId: l.planId, title: plan?.title ?? '', byMember: [], cents: 0 }
+        bump(row.byMember, who, l.amountCents, 1)
+        row.cents += l.amountCents
+        planRows.set(l.planId, row)
+      } else if (l.kind === 'topup') {
+        bump(topups, who, l.amountCents)
+      } else {
+        // Free lines fold by their own label, case-insensitively, so « Électricité »
+        // typed twice reads as one line of the year rather than two.
+        const key = l.label.trim().toLocaleLowerCase()
+        const row = others.get(key) ?? { label: l.label.trim(), cents: 0 }
+        row.cents += l.amountCents
+        others.set(key, row)
+      }
+    }
+  }
+
+  // Agreements in THEIR order (the plan list's), so the block reads the same way the
+  // cards above it do; a deleted agreement's leftovers fall to the end.
+  const ordered = [
+    ...plans.map((p) => planRows.get(p.id)).filter((x): x is YearPlanTotal => !!x),
+    ...[...planRows.values()].filter((r) => !plans.some((p) => p.id === r.planId)),
+  ]
+  for (const r of ordered) r.byMember.sort(byIdentity)
+  topups.sort(byIdentity)
+  byMember.sort(byIdentity)
+
+  return {
+    year,
+    transfers: mine.length,
+    firstSentAt: mine[0]?.sentAt ?? null,
+    lastSentAt: mine[mine.length - 1]?.sentAt ?? null,
+    plans: ordered,
+    topups,
+    others: [...others.values()],
+    byMember,
+    totalCents,
+  }
+}
+
+// ---- The gap, drawn ----------------------------------------------------------
+
+// Three points and a floor at zero: what the gap WAS when it was counted, what it is
+// today, and where this rhythm lands it by the end of the agreement. Marc asked for
+// « a little graph that goes to 0 » and that is exactly the shape — a quantity that
+// is meant to disappear, drawn disappearing.
+//
+// It stays a receipt rather than a score: the sentences above it already carry every
+// number, there is no percentage, no colour coding, no axis but the zero line, and
+// the forecast half is drawn as a forecast. If the arrangement does NOT close the
+// gap, the line simply does not reach the floor — no rounding the bad news away.
+export interface CatchupPoint {
+  /** Local-day secs. */
+  at: number
+  cents: number
+}
+
+export interface CatchupSeries {
+  /** Measured: from the day the gap was counted, to today. */
+  past: CatchupPoint[]
+  /** Forecast: from today to the end of the agreement, at the current rhythm. */
+  ahead: CatchupPoint[]
+  /** The largest amount the drawing has to fit — always the gap as first counted. */
+  maxCents: number
+  /** When the gap reaches zero at this rhythm, or null if it does not inside the term. */
+  zeroAt: number | null
+}
+
+export function catchupSeries(p: CatchupProjection, today: number): CatchupSeries | null {
+  if (p.gapCents <= 0 || p.termEnd <= p.asOf) return null
+  // Today can sit outside the agreement in both directions — one written ahead of
+  // time, or one whose term has already run out. Clamping keeps the drawing inside
+  // its own box without pretending the date is something it is not.
+  const now = Math.min(Math.max(today, p.asOf), p.termEnd)
+
+  let zeroAt: number | null = null
+  if (p.remainingCents <= 0) zeroAt = now
+  else if (p.extraPerPayment > 0 && p.paymentsLeft > 0) {
+    const needed = Math.ceil(p.remainingCents / p.extraPerPayment)
+    // Only ever inside the term: past its end this rhythm is no longer agreed to, so
+    // a date beyond it would be a promise the arrangement does not make.
+    if (needed <= p.paymentsLeft) zeroAt = Math.round(now + ((p.termEnd - now) * needed) / p.paymentsLeft)
+  }
+
+  return {
+    past: [
+      { at: p.asOf, cents: p.gapCents },
+      { at: now, cents: p.remainingCents },
+    ],
+    ahead: zeroAt
+      ? [
+          { at: now, cents: p.remainingCents },
+          { at: zeroAt, cents: 0 },
+          { at: p.termEnd, cents: 0 },
+        ]
+      : [
+          { at: now, cents: p.remainingCents },
+          { at: p.termEnd, cents: p.projectedRemainingCents },
+        ],
+    maxCents: p.gapCents,
+    zeroAt,
+  }
+}
+
 // ---- Writes (every one through useWrite → the offline outbox) ---------------
 
 // A transfer touches three caches: its own read model, the calendar (due dates are

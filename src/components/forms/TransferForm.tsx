@@ -193,6 +193,12 @@ export function TransferForm({
 
   return (
     <form className="operator__inline-form virements__form" onSubmit={submit}>
+      {/* One sentence saying what the screen wants, on the screen that wants it. The
+          composer reads as a pile of fields until you know that ticking is the whole
+          job and the bottom half writes itself — and that is not guessable. Only on a
+          new one: while editing, the filled fields already say what they are. */}
+      {!value && <p className="operator__seg-hint">{v.transferIntro}</p>}
+
       {/* Who is sending. Faces, so the row reads at a glance on a wall tablet. */}
       <fieldset>
         <legend className="mono">{v.sender}</legend>
@@ -246,6 +252,7 @@ export function TransferForm({
                 )
               })}
             </Cluster>
+            <p className="operator__seg-hint mono">{v.dueDatesHint}</p>
             {/* ANY OTHER DATE. The offered row starts at the entente's first date, so a
                 payment made BEFORE the household wrote the entente down had no chip at
                 all and could not be logged (Marc, 2026-09-12: an entente anchored on

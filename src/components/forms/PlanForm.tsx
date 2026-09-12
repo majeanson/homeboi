@@ -4,9 +4,10 @@ import { useConfirm } from '../../lib/confirm'
 import { parseMoney } from '../../lib/money'
 import { inputFromLocalDay, localDayFromInput, todayLocalDay } from '../../lib/localDay'
 import { useDeletePlan, useSavePlan, type TransferPlan } from '../../lib/transfers'
+import { PLAN_TEMPLATES, type PlanTemplate, type PlanTemplateKey } from '../../lib/planTemplates'
 import { Avatar } from '../Avatar'
 import { Chip } from '../Chip'
-import { Cluster } from '../Layout'
+import { Cluster, Rail } from '../Layout'
 import { Disclosure } from '../Disclosure'
 import { EditField } from '../EditField'
 import { FormFooter } from '../FormFooter'
@@ -26,12 +27,15 @@ const centsToField = (c: number | null | undefined) => (c != null ? String(c / 1
 
 export function PlanForm({
   value,
+  template,
   members,
   onSaved,
   onDeleted,
   onCancel,
 }: {
   value?: TransferPlan | null
+  /** A shape tapped on the empty state (?modele=). Seeds a title and a rhythm only. */
+  template?: PlanTemplate | null
   members: FormMember[]
   onSaved: () => void
   onDeleted?: () => void
@@ -43,15 +47,19 @@ export function PlanForm({
   const save = useSavePlan()
   const del = useDeletePlan()
 
-  const [title, setTitle] = useState(value?.title ?? '')
+  // Which shape is showing its example. Seeded from the link, then whatever the
+  // reader taps here — the chips stay live so a wrong tap is one tap to correct.
+  const [shape, setShape] = useState<PlanTemplateKey | null>(template?.key ?? null)
+  const [title, setTitle] = useState(value?.title ?? (template ? v.templates[template.key].label : ''))
   const [amount, setAmount] = useState(centsToField(value?.amountCents))
   const [date, setDate] = useState(value ? inputFromLocalDay(value.anchorAt) : inputFromLocalDay(todayLocalDay()))
   // The picker requires interval + weekdays; the wire shape has them optional.
   // Converting here (rather than loosening either type) is what keeps a stored rule
   // with no weekday list from reaching the picker as undefined.
-  const [recur, setRecur] = useState<RecurValue | null>(
-    value?.recur ? { freq: value.recur.freq, interval: value.recur.interval ?? 1, weekdays: value.recur.weekdays ?? [] } : null,
-  )
+  const [recur, setRecur] = useState<RecurValue | null>(() => {
+    const r = value?.recur ?? template?.recur ?? null
+    return r ? { freq: r.freq, interval: r.interval ?? 1, weekdays: r.weekdays ?? [] } : null
+  })
   // Per-member share, as typed text so a half-entered amount never rounds itself.
   const [shares, setShares] = useState<Record<string, string>>(() => {
     const out: Record<string, string> = {}
@@ -127,6 +135,36 @@ export function PlanForm({
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
+      {/* A screen you opened on purpose may be generous (LEAN.md, « généreux dedans »).
+          Nobody arrives here knowing what the app means by « entente », and the whole
+          feature is worthless if the first screen is guessed at. Two sentences and a
+          worked example cost less than a wrong amount. */}
+      {!value && (
+        <>
+          <p className="operator__seg-hint">{v.planIntro}</p>
+          {/* THE SHAPES, again — the empty state names them, and so does this screen,
+              because the ＋ composer reaches here without passing through it. Tapping
+              one fills the title and the rhythm; every number stays typed by hand. */}
+          <Rail className="virements__shapes-rail" role="group" aria-label={v.templatesLead}>
+            {PLAN_TEMPLATES.map((tpl) => (
+              <Chip
+                key={tpl.key}
+                icon={tpl.icon}
+                selected={shape === tpl.key}
+                onClick={() => {
+                  setShape(tpl.key)
+                  setTitle(v.templates[tpl.key].label)
+                  setRecur({ freq: tpl.recur.freq, interval: tpl.recur.interval ?? 1, weekdays: tpl.recur.weekdays ?? [] })
+                }}
+              >
+                {v.templates[tpl.key].label}
+              </Chip>
+            ))}
+          </Rail>
+          <p className="operator__seg-hint mono">{shape ? v.templates[shape].example : v.planExample}</p>
+        </>
+      )}
+
       <EditField
         as="div"
         value={title}
@@ -136,6 +174,7 @@ export function PlanForm({
         placeholder={v.planTitle}
         ariaLabel={v.planTitle}
       />
+      <p className="operator__seg-hint mono">{v.planTitleHint}</p>
 
       <label className="recur__row mono">
         <span>{v.planAmount}</span>
@@ -147,6 +186,7 @@ export function PlanForm({
         <span>{v.planWhen}</span>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </label>
+      <p className="operator__seg-hint mono">{v.planWhenHint}</p>
       <RecurPicker value={recur} onChange={setRecur} />
 
       {/* Who sends what. One row per household face — a household where only one
@@ -169,6 +209,7 @@ export function PlanForm({
           </label>
         ))}
       </fieldset>
+      <p className="operator__seg-hint mono">{v.planSharesHint}</p>
 
       {/* « Rattrapage » — folded, because most households never have one.
           Every label here is its OWN string. They used to borrow `planAmount`,
@@ -177,6 +218,10 @@ export function PlanForm({
           the field under them, on the one screen where a mistyped number becomes a
           wrong number about money. Caught on a real phone before real amounts. */}
       <Disclosure label={v.catchupFold} defaultOpen={!!value?.catchup}>
+        {/* The one part of this screen a reader can safely skip, so it says so first
+            rather than letting four unexplained fields imply they are required. */}
+        <p className="operator__seg-hint">{v.catchupIntro}</p>
+        <p className="operator__seg-hint mono">{v.catchupExample}</p>
         <fieldset>
           <legend className="mono">{v.catchupWho}</legend>
           <Cluster>
