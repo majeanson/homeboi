@@ -10,7 +10,12 @@ import { useCardLens } from './CardLens'
 // it); the object form leads the row with a short fixed token — a time (« 9 h ») or a
 // day (« sam ») — so a chronological card SAYS when, not just what, in the same 142px.
 // The lead replaces the dot (the token already anchors the row) and is never a count.
-export type CompactRow = string | { lead?: string; label: string }
+// `dim` marks a row whose moment has PASSED (a struck meal/event). The grown card folds
+// those into « Déjà passé », which a 142px tile has no room to say — but a dimmed row
+// beats what the tile did before: on an evening whose every item had gone by, « Auj. »
+// rendered an empty body. Live rows always come first, so a dim row only ever takes the
+// room nothing else claimed.
+export type CompactRow = string | { lead?: string; label: string; dim?: boolean }
 
 // A small secondary action pinned to a mini tile's bottom-right corner — its own tap
 // target, a `<Link>` rendered OUTSIDE the tile's button (never nested-interactive). One
@@ -298,10 +303,16 @@ export function CardMini({
           {rows.map((row, i) => {
             const lead = typeof row === 'string' ? undefined : row.lead
             const text = typeof row === 'string' ? row : row.label
+            const dim = typeof row === 'string' ? false : !!row.dim
             return (
               // Every row stays MOUNTED — the ones past the fit are `hidden`, not
               // dropped, so the effect above can un-hide them and re-measure.
-              <li key={i} className="cardmini__row" data-mini-row="" hidden={i >= shown}>
+              <li
+                key={i}
+                className={'cardmini__row' + (dim ? ' cardmini__row--dim' : '')}
+                data-mini-row=""
+                hidden={i >= shown}
+              >
                 {lead ? (
                   <span className="cardmini__lead mono">{lead}</span>
                 ) : (

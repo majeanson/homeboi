@@ -1133,10 +1133,8 @@ export function Board() {
     // is both a contradiction and, on a collapsed card, a row inside a card that is
     // not supposed to be there at all. The pill this replaced carried the same gate;
     // dropping it broke three « empty card » guards.
-    if (dayClear) return null
-    const m = cook.meal
-    if (!m || m.is_leftover) return null
-    if (liveMeals.some((x) => x.id === m.id)) return null
+    const m = prepMeal
+    if (!m) return null
     return (
       <Act
         key="cook-next"
@@ -1166,11 +1164,28 @@ export function Board() {
   const pastMeals = otherMeals.filter((m) => m.past)
   const liveEvents = shownEvents.filter((e) => !evtPast(e))
   const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
+  // The meal `prepAct` leads the card with (« Préparer le repas · Macaroni chinois »).
+  // Computed ONCE here so the grown row and the mini row can't disagree about whether
+  // there is something to cook — the mini used not to name it at all, which is how an
+  // « Auj. » tile came out blank on an evening whose only live item was the supper.
+  // The gates are prepAct's own: a CLEAR day has nothing to cook (the two halves come
+  // from different endpoints — /api/board vs useNextMeal — so a card that reports itself
+  // empty must not draw a meal row), leftovers aren't cooked, and a meal already listed
+  // below is never printed twice.
+  const prepMeal = dayClear || !cook.meal || cook.meal.is_leftover || liveMeals.some((x) => x.id === cook.meal!.id) ? null : cook.meal
+  // Today's line-crossed things, for the MINI only (the grown card folds them into the
+  // « Déjà passé » Disclosure). Dimmed + struck, and always AFTER the live rows, so they
+  // fill leftover room rather than take it — see `CompactRow.dim`.
+  const pastItems: CompactRow[] = [
+    ...pastMeals.map((m) => ({ label: m.title, dim: true })),
+    ...shownEvents.filter(evtPast).map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title, dim: true })),
+  ]
   // What the compact lens shows — everything the card is about to list, by name, already
   // at hand from the arrays just above. Few enough and the tile names them; too many and
   // it shows the count instead (`CardMini`). Past items are deliberately absent: they're
   // folded into « Déjà passé » below, and a tile has no room to say "and these are done".
   const todayItems: CompactRow[] = [
+    ...(prepMeal ? [{ label: prepMeal.title }] : []),
     ...liveMeals.map((m) => ({ label: m.title })),
     // Timed events lead with their hour; meals/chores/home are untimed → a plain dot.
     // When the ribbon is active the mini names the same things it places (timed events
@@ -1189,6 +1204,9 @@ export function Board() {
     ...todayHome.map((c) => ({ label: c.title })),
   ]
   const todayCount = todayItems.length
+  // Everything the tile can say, live first: past rows only ever use the room the live
+  // ones left. `fitRows` still decides how many actually land.
+  const todayMiniItems: CompactRow[] = [...todayItems, ...pastItems]
   nodes.today = (
     <Section
       label={t.board.today}
@@ -1198,11 +1216,14 @@ export function Board() {
       help={help}
       helpKey="today"
       now={todayNow}
-      compactItems={todayItems}
+      compactItems={todayMiniItems}
       // A count when there's something to count; on a genuinely clear day a calm
       // « Journée libre » so the mini tile isn't an empty void under its header (the
       // corners still offer « Planifier » + « Avant de partir »).
-      compactHint={todayCount > 0 ? String(todayCount) : dayClear ? t.board.dayFree : undefined}
+      // The hint only ever shows when there is not a single row to name (see CardMini):
+      // « Journée libre » whether the day was planned empty or has simply gone by, which
+      // beats the blank body a non-`dayClear` day with no live item used to render.
+      compactHint={todayCount > 0 ? String(todayCount) : t.board.dayFree}
       // Two corner shortcuts on the halved day tile, each its own tap target: a pencil to
       // « Planifier aujourd'hui » (the day's plan page) and the key to « Avant de partir »
       // (the pre-departure checklist) — both reachable without growing the card first.
@@ -1353,23 +1374,40 @@ export function Board() {
   // job and gives the masonry a cleaner unit. Cool sky tint = "later" (shared
   // with « À venir »), set apart from the warm marigold "today" family above.
   // Self-hides entirely when tomorrow holds nothing (the hasTomorrow gate).
+  // Everything « Demain » holds, in the order the grown card says it — and the mini
+  // now says ALL of it, not just the plan: the school/congé qualifier, the prep note
+  // (« sortir le poulet »), and, when nothing else is on, the forecast as a row. The
+  // tile could otherwise be summoned by a forecast alone (`hasTomorrowWx` opens the
+  // card) and then render an empty body under its own temperature chip.
+  const tomorrowItems: CompactRow[] = [
+    ...(showTomorrowSupper && data.tomorrowMeal ? [{ label: data.tomorrowMeal.title }] : []),
+    ...otherTomorrowMeals.map((m) => ({ label: m.title })),
+    ...tomorrowEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+    ...(tomorrowTodosData?.todos ?? []).map((td) => ({ label: td.title })),
+    ...(model.tomorrowSchoolKind
+      ? [{ label: model.tomorrowSchoolKind === 'school' ? t.board.tomorrowSchool : t.board.tomorrowConge }]
+      : []),
+    ...(data.tomorrowNote?.text ? [{ label: data.tomorrowNote.text }] : []),
+  ]
+  // The forecast, spelled out, ONLY when it would otherwise be a tile of nothing: the
+  // header chip already carries the high, so this row is worth its line only as the last
+  // thing the card can say (and it adds the low the chip has no room for).
+  const tomorrowMiniItems: CompactRow[] =
+    tomorrowItems.length > 0
+      ? tomorrowItems
+      : tomorrowWx
+        ? [{ label: `${t.weather[tomorrowWx.bucket]} · ${tomorrowWx.highC}° / ${tomorrowWx.lowC}°` }]
+        : []
   nodes.tomorrow = hasTomorrow ? (
     <Section
       label={t.board.tomorrow}
       icon="sun-horizon-bold"
       tint="var(--sky)"
       // Compact: tomorrow's things by name — the supper first, since it's the headline
-      // the household actually looks for.
-      // Everything tomorrow holds, by name: the supper, other meals, events, AND the
-      // « À compléter » checklist (the night-before "boîte à lunch" items) — which used
-      // to be invisible on the mini, leaving a tile that read empty while the grown card
-      // clearly had rows (Marc's screenshot). The full body still renders them below.
-      compactItems={[
-        ...(showTomorrowSupper && data.tomorrowMeal ? [{ label: data.tomorrowMeal.title }] : []),
-        ...otherTomorrowMeals.map((m) => ({ label: m.title })),
-        ...tomorrowEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
-        ...(tomorrowTodosData?.todos ?? []).map((td) => ({ label: td.title })),
-      ]}
+      // the household actually looks for; then meals, events, the « À compléter »
+      // checklist, the school qualifier and the prep note (built just above). The full
+      // body still renders every one of them below.
+      compactItems={tomorrowMiniItems}
       // A name when there's one obvious headline (tomorrow's supper, like
       // "Spaghetti"); otherwise a quiet count of everything coming (meals + events + the
       // À compléter list), so the count never undersells a tile that has checklist rows.
@@ -1378,7 +1416,9 @@ export function Board() {
           ? data.tomorrowMeal.title
           : otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTodoCount > 0
             ? String(otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTodoCount)
-            : undefined
+            : // Nothing to count and nothing to name — say so plainly rather than leave the
+              // body blank (the hint only renders when there is no row at all).
+              t.board.tomorrowClear
       }
       // Tomorrow's forecast in the mini header: just the daytime HIGH, no glyph — the full
       // high/low "18°/11°" plus a weather icon pushed « Demain » to ellipsize to « De… » in

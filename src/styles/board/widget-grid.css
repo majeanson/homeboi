@@ -566,6 +566,15 @@
   word-break: normal;
   hyphens: none;
 }
+/* A row whose moment has already gone by (a past meal/event, listed only once the live
+   rows have taken their room). Struck + quieted, exactly as the grown card strikes it —
+   so the tile reads as a record, never as something still ahead. */
+.wg-slot .cardmini__row--dim {
+  opacity: 0.62;
+}
+.wg-slot .cardmini__row--dim .cardmini__rowlabel {
+  text-decoration: line-through;
+}
 /* The trailing "+N de plus" row (past `WG_MINI_MAX_ITEMS`) — quieter than an ordinary
    row (it's a count, not a thing) and always one line; never itself gets truncated. */
 .wg-slot .cardmini__row--more .cardmini__rowlabel {
