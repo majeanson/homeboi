@@ -88,6 +88,15 @@ describe('coverage (no date math — just the recorded lines)', () => {
     expect(uncoveredDueDates(plan(), [both], 'marc', d(2026, 7, 28))).toEqual([])
   })
 
+  // The client half of the server's « stored at 19 h 00 on its own day » regression
+  // (functions/_lib/transfers.test.ts). The composer pre-ticks off THIS set, so a
+  // miss here is what re-offers a payment already sent — the visible symptom.
+  it("a line stored later in the due date's own day still covers it", () => {
+    const evening = transfer({ lines: [planLine(d(2026, 7, 13) + 19 * 3600)] })
+    expect(coveredDueDates([evening], 'p1', 'marc').has(d(2026, 7, 13))).toBe(true)
+    expect(uncoveredDueDates(plan(), [evening], 'marc', d(2026, 7, 28))).toEqual([d(2026, 7, 27)])
+  })
+
   it('a face with nothing sent owes every past date', () => {
     expect(uncoveredDueDates(plan(), [], 'camille', d(2026, 7, 28))).toEqual([d(2026, 7, 13), d(2026, 7, 27)])
   })

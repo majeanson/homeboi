@@ -193,6 +193,27 @@ describe('coverage', () => {
     ])
   })
 
+  // THE REGRESSION. Marc's real rows, 2026-09-12: the two 'plan' lines were written
+  // by an earlier build that resolved the due date through a UTC-midnight helper, so
+  // they landed at 19 h 00 ON the due date instead of at its local midnight — same
+  // Thursday, 68 400 seconds apart. Keyed on the raw second nothing matched, and the
+  // app calmly re-offered two payments he had already sent 3 112,82 $ for.
+  it("a line stored later in the due date's own day still covers it", () => {
+    const evening = dueA + 19 * 3600 // 19 h 00 that evening, in this zone
+    const legacy = transfer({
+      lines_json: JSON.stringify([{ kind: 'plan', planId: 'p1', dueAt: evening, amountCents: 55641 }]),
+    })
+    expect(coveredSet([legacy]).has(coverKey('p1', dueA, 'marc'))).toBe(true)
+    expect(dueDatesFor(plan(), [legacy], 'marc', d(2026, 7, 1), d(2026, 7, 20))).toEqual([
+      { at: d(2026, 7, 13), covered: true },
+    ])
+  })
+
+  it('folding to the day does not merge two different due dates', () => {
+    const set = coveredSet([sent])
+    expect(set.has(coverKey('p1', d(2026, 7, 14), 'marc'))).toBe(false)
+  })
+
   it('an unattributed transfer covers only the unattributed side', () => {
     const anon = transfer({ member_id: null, lines_json: sent.lines_json })
     expect(coveredSet([anon]).has(coverKey('p1', dueA, null))).toBe(true)

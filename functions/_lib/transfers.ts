@@ -161,8 +161,22 @@ export function planOccurrences(plan: Pick<PlanRow, 'recur_json' | 'anchor_at'>,
 // Which due dates a set of transfers already claims to cover. A due date is
 // « covered » by whoever sent for it, so the key carries the sender too: two people
 // paying into the same date each cover their own side of it, independently.
+//
+// THE KEY IS THE LOCAL DAY, NOT THE STORED SECOND. A 'plan' line records the due
+// date it was ticked from, and that number is only as stable as whatever wrote it:
+// early rows were resolved through a UTC-midnight helper and landed at 19 h 00 on
+// the due date rather than at its local midnight, and re-anchoring a plan moves its
+// occurrences by hours either way. Keyed on the
+// raw second, every one of those rows silently stops matching — the composer
+// re-offers a date already sent for, the plan card shows it unpaid, and « À régler »
+// nags about it, with no error anywhere to say why. Keyed on the day, « I sent for
+// the 13th » stays true however the 13th happened to be spelled. Found in real data
+// (2026-09-12): two lines at 19 h 00 against occurrences at 00 h 00, same Thursday,
+// zero matches.
+const dayOf = (sec: number): number => localDayStart(new Date(sec * 1000))
+
 export const coverKey = (planId: string, dueAt: number, memberId: string | null): string =>
-  `${planId}:${dueAt}:${memberId ?? ''}`
+  `${planId}:${dayOf(dueAt)}:${memberId ?? ''}`
 
 export function coveredSet(transfers: readonly TransferRow[]): Set<string> {
   const out = new Set<string>()
@@ -240,7 +254,11 @@ export function catchupProjection(
     if (t.member_id !== catchup.behindMemberId) continue
     for (const l of parseLines(t.lines_json)) {
       if (l.kind !== 'plan' || l.planId !== plan.id) continue
-      if (l.dueAt < catchup.asOf || l.dueAt > catchup.termEnd) continue
+      // Same day-fold as coverKey, and for the same reason: a line stored at 19 h 00
+      // on the term's last day reads as AFTER a termEnd held at that day's midnight,
+      // so the final payment of an arrangement would quietly stop counting.
+      const day = dayOf(l.dueAt)
+      if (day < catchup.asOf || day > catchup.termEnd) continue
       paymentsSoFar += 1
       caughtUpCents += Math.max(0, l.amountCents - aheadShare)
     }

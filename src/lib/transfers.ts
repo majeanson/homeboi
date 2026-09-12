@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { live } from './query'
 import { useWrite } from './write'
+import { localDayStart } from './localDay'
 import { A_REGLER_KEY, MONTH_KEY, TRANSFERS_KEY } from './queryKeys'
 
 // « Les virements » — the client half. Read model, writes, and the two pure
@@ -116,7 +117,12 @@ export function coveredDueDates(
     // else and the ticks look wrong.
     if (exceptTransferId && t.id === exceptTransferId) continue
     if ((t.memberId ?? null) !== (memberId ?? null)) continue
-    for (const l of t.lines) if (l.kind === 'plan' && l.planId === planId) out.add(l.dueAt)
+    // Folded to the local day, matching the server's coverKey exactly. The stored
+    // second is not stable — early rows carry a UTC-midnight anchor (19 h 00 on the
+    // due date, here) and re-anchoring a plan shifts its occurrences — so a
+    // raw comparison against `plan.due` silently finds nothing and every date reads
+    // as unsent. See the long note on coverKey in functions/_lib/transfers.ts.
+    for (const l of t.lines) if (l.kind === 'plan' && l.planId === planId) out.add(localDayStart(new Date(l.dueAt * 1000)))
   }
   return out
 }
