@@ -3365,6 +3365,13 @@ export const FR = {
         ? `${items} article${items > 1 ? 's' : ''} · ${deals} rabais avec sa photo`
         : `${items} article${items > 1 ? 's' : ''}`,
     flippOnlyUnchecked: 'Seulement ce qui reste à acheter part.',
+    // UN RABAIS RÉTROGRADÉ EN MOTS, dit avant le tap. Rien n'est perdu — la ligne part
+    // quand même — mais sans sa photo ni son prix, et vu de Flipp ça ressemble
+    // exactement à « mon rabais n'a pas été ajouté » (Marc, 2026-09-12).
+    flippAsWords: (n: number) =>
+      n > 1 ? n + ' rabais partent en mots, sans leur photo :' : '1 rabais part en mots, sans sa photo :',
+    flippWhyEnded: 'l’aubaine est terminée',
+    flippWhyNoId: 'Flipp ne connaît pas cet article',
     flippNothingToSend: 'Rien à envoyer — tout est coché.',
     flippNeedPostal: 'Ajoute ton code postal pour envoyer ta liste à Flipp.',
     flippSetPostal: 'Ajouter mon code postal',

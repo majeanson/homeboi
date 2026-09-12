@@ -493,11 +493,22 @@ export interface FlippBundle {
   sendTerms: string[]
   /** Checked rows that deliberately stay home; shown so the count is never a mystery. */
   keptChecked: number
+  /** Staged deals that travel as WORDS instead of as a deal-with-photo, and why.
+   *  Nothing is lost — the row still goes — but a deal quietly demoted to a word is
+   *  exactly what « Flipp didn't add my Maxi deal » looks like from the other side
+   *  (Marc, 2026-09-12). Counted so the sheet can say it before the tap. */
+  demotedEnded: number
+  demotedNoId: number
   /** The `{v:1,clippings,items}` payload the bookmark reads. */
   payload: string
 }
 
 export function flippBundle(rows: readonly ListRowLike[], picks: readonly Pick[], now = Date.now()): FlippBundle {
+  // `picks` must be EVERY staged deal on the list — never the till-filtered set.
+  // « À la caisse : Non » means « don't show me this store's flyer at its own
+  // register »; it says nothing about what belongs in Flipp, where browsing BY store
+  // is the point. Passing the till's picks here silently demoted a hidden store's
+  // deals to typed words (Marc's Maxi produce deal, 2026-09-12).
   const clippable = picks.filter((p) => p.deal.id != null && !dealEnded(p.deal.validTo, now))
   const clipped = new Set(clippable.map((p) => p.itemId))
   const unchecked = rows.filter((r) => !r.checked_at)
@@ -508,6 +519,8 @@ export function flippBundle(rows: readonly ListRowLike[], picks: readonly Pick[]
     terms,
     sendTerms,
     keptChecked: rows.length - unchecked.length,
+    demotedEnded: picks.filter((p) => p.deal.id != null && dealEnded(p.deal.validTo, now)).length,
+    demotedNoId: picks.filter((p) => p.deal.id == null).length,
     payload: flippListPayload(clippable, terms),
   }
 }

@@ -18,11 +18,15 @@ const stubFlipp = (page: Page) =>
 
 const PHONE = { width: 390, height: 844 }
 
-async function openSheet(page: Page, opts: { allEnded?: boolean; postal?: string | null; open?: boolean } = {}) {
-  const { allEnded = false, postal = 'H2X 1Y4', open = true } = opts
+async function openSheet(
+  page: Page,
+  opts: { allEnded?: boolean; postal?: string | null; open?: boolean; tillHidden?: string[] } = {},
+) {
+  const { allEnded = false, postal = 'H2X 1Y4', open = true, tillHidden } = opts
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize(PHONE)
-  await mockApi(page, postal === null ? { overrides: { household: { name: 'Maison Tremblay', postal: null, includedStores: [], aiEnabled: true } } } : {})
+  const household = { name: 'Maison Tremblay', postal, includedStores: [], aiEnabled: true, cashierExcludedStores: tillHidden ?? [] }
+  await mockApi(page, postal === null || tillHidden ? { overrides: { household } } : {})
   // A deal on every line + two plain rows, one of them checked — the shape that makes
   // "what travels" answerable (shared fixture, e2e/dealFixture).
   await page.route(/\/api\/board(\?|$)/, (route) =>
@@ -179,4 +183,32 @@ test('capture the list, the sheet and the till at 390px', async ({ page }) => {
   await page.goto('/settings?tab=liste&focus=flipp')
   await page.locator('#op-flipp').waitFor({ state: 'visible', timeout: 15_000 })
   await page.locator('#op-flipp').screenshot({ path: 'e2e/screenshots/flipp-reglages.png' })
+})
+
+// MARC'S BUG, 2026-09-12: « flipp didnt add one of maxi flyer deals ».
+//
+// « À la caisse : Non » (Réglages ▸ Magasinage) means « don't show me this store's own
+// flyer at its own register » — the store you actually shop at. It says NOTHING about
+// what belongs in Flipp, where browsing by store is the whole point. But the sheet was
+// handed the TILL's picks, so a hidden store's deals were quietly demoted to typed
+// words: the line still arrived, without its photo or price, which from Flipp looks
+// exactly like « my deal wasn't added ».
+test('a store hidden AT THE TILL still sends its deals to Flipp, with their photo', async ({ page }) => {
+  await stubFlipp(page)
+  await openSheet(page, { tillHidden: ['super c'] })
+  const href = await page.locator('a.flippsheet__send').getAttribute('href')
+  const payload = JSON.parse(
+    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!),
+  ) as { clippings: { flyerItemId: number; merchantName: string }[]; items: { term: string }[] }
+  // Super C's deal (101) is STILL a clipping — with its photo, not demoted to a word.
+  expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103])
+  expect(payload.clippings.find((c) => c.merchantName === 'Super C')).toBeTruthy()
+  expect(payload.items.map((i) => i.term)).not.toContain('Lait')
+
+  // …and the till still honours the same setting: Super C's tile is not on the grid.
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
+  await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await expect(page.locator('.cashier__tile')).toHaveCount(3)
+  await expect(page.locator('.cashier__grid')).not.toContainText('Super C')
 })

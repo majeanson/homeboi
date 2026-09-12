@@ -2992,6 +2992,9 @@ export const EN: typeof FR = {
     flippWillSend: (items: number, deals: number) =>
       deals > 0 ? `${items} item${items > 1 ? 's' : ''} · ${deals} deal${deals > 1 ? 's' : ''} with its photo` : `${items} item${items > 1 ? 's' : ''}`,
     flippOnlyUnchecked: 'Only what is still to buy goes.',
+    flippAsWords: (n: number) => (n > 1 ? n + ' deals go as words, without their photo:' : '1 deal goes as words, without its photo:'),
+    flippWhyEnded: 'the deal has ended',
+    flippWhyNoId: 'Flipp does not know this item',
     flippNothingToSend: 'Nothing to send — everything is ticked.',
     flippNeedPostal: 'Add your postal code to send your list to Flipp.',
     flippSetPostal: 'Add my postal code',

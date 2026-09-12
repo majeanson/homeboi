@@ -30,7 +30,7 @@ import { useVoiceInput } from '../lib/useVoiceInput'
 import { isGuest } from '../lib/device'
 import { EditField } from '../components/EditField'
 import { money, dealDate, dealEnded, type Deal } from '../lib/deals'
-import { cashierPicksFrom, useTillHiddenStores, parseDeal, parseTerms, sameItemName } from '../lib/picks'
+import { cashierPicksFrom, pickListFrom, useTillHiddenStores, parseDeal, parseTerms, sameItemName } from '../lib/picks'
 import { useFlippImport } from '../lib/flippImport'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
@@ -988,7 +988,11 @@ export function Liste() {
       )}
       {help.bubbleFor('cashier')}
 
-      <FlippSheet open={flippOpen} onClose={() => setFlippOpen(false)} rows={list} picks={pickList} postal={postal} />
+      {/* EVERY staged deal, not the till's set: « À la caisse : Non » hides a store's
+          flyer from its OWN cashier and means nothing to Flipp, where browsing by store
+          is the point. Passing pickList here demoted a hidden store's deals to typed
+          words, silently (Marc's Maxi produce deal, 2026-09-12). */}
+      <FlippSheet open={flippOpen} onClose={() => setFlippOpen(false)} rows={list} picks={pickListFrom(list)} postal={postal} />
 
       {/* The floating drag label that trails the finger while reordering. */}
       <DragGhost ghost={dnd.ghost} />

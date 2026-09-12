@@ -342,3 +342,12 @@
 .hub[data-surface='mobile'] .list-actions--shop {
   padding-right: 84px;
 }
+
+/* The demotion line: a warning tone, because it is the difference between « my deal
+   went » and « my deal went as a word ». */
+.flippsheet__demoted {
+  margin: 0 0 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}

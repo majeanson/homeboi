@@ -68,6 +68,19 @@ export function FlippSheet({
             {bundle.keptChecked > 0 && <> {t.shop.sentKeptChecked(bundle.keptChecked)}</>}
           </p>
 
+          {/* A staged deal that cannot travel AS a deal still travels — as its words,
+              without the photo or the price. From Flipp that is indistinguishable from
+              « it wasn't added » (Marc's Maxi produce deal, 2026-09-12), so the sheet
+              says it here, with the reason, before the tap rather than never. */}
+          {bundle.demotedEnded + bundle.demotedNoId > 0 && (
+            <p className="flippsheet__demoted mono">
+              {t.shop.flippAsWords(bundle.demotedEnded + bundle.demotedNoId)}{' '}
+              {[bundle.demotedEnded > 0 ? t.shop.flippWhyEnded : null, bundle.demotedNoId > 0 ? t.shop.flippWhyNoId : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          )}
+
           <Cluster className="flippsheet__doors">
             {/* ENVOYER — the whole list, deals with their photos. The list rides in the
                 address (flippListOpenUrl's #bb=), where the bookmark reads it first. */}
