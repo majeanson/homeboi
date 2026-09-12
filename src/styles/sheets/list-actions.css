@@ -293,3 +293,52 @@
   box-shadow: inset 0 0 0 2px var(--sage, #88a36f);
 }
 
+
+/* « Ma liste Flipp » (2026-09-12) — the LIST-level Flipp doors, moved off the till.
+   Uniquely-named `.flippsheet*`, so cascade position is immaterial; it lives here
+   beside `.list-actions` because that is the row that opens it. */
+.flippsheet__what {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+/* The rule that used to be learned AFTER the fact: only what is still to buy goes. */
+.flippsheet__rule,
+.flippsheet__why {
+  margin: 0 0 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.flippsheet__doors {
+  margin-bottom: 0.25rem;
+}
+/* « Vider » is rare and destructive on the other side: it sits apart, and quiet. */
+.flippsheet__clear {
+  margin-top: 1rem;
+}
+.flippsheet__done {
+  margin: 0.75rem 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+/* A door with nothing to carry stays visible but reads as inert — hiding it would
+   make the screen change shape under a thumb already reaching for it. */
+.flippsheet [aria-disabled='true'] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* THE ＋ FAB'S COLUMN IS NOT FREE REAL ESTATE (2026-09-12).
+   `.hub__body` already pads its scroll END so the last row clears the floating ＋
+   (hub.css) — but that only helps a page long enough to scroll. On a short list
+   everything fits, the padding sits below as empty space, and the bottom action
+   lands squarely in the FAB's band: the right ~80px of « Montrer à la caisse »
+   tapped the ＋ instead. It was that way before « Ma liste Flipp » arrived beside
+   it; adding a second door is what made it measurable.
+   The fix is the one hub.css already names for a sticky pane: keep the row's own
+   inline end clear of the FAB (right 20px + 60px wide). */
+.hub[data-surface='mobile'] .list-actions--shop {
+  padding-right: 84px;
+}

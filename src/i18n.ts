@@ -2524,20 +2524,26 @@ export const FR = {
     storeFilter: 'Mes magasins',
     // Réglages ▸ La liste ▸ Magasinage ▸ « Ma liste Flipp » — the one-time bookmark.
     flippTitle: 'Ma liste Flipp',
-    flippIntro: 'Babillard garde ta liste ; Flipp la montre à la caisse. Pour que les deux disent la même chose : une mise en place, une seule fois, puis trois taps par épicerie.',
-    // The walkthrough, in the words a household reads on the phone (Marc did the
-    // whole loop on an iPhone on 2026-09-10 and the list landed in the Flipp app).
+    // LE MODE D'EMPLOI, réécrit le 2026-09-12 : un geste par étape, chaque bouton
+    // nommé avec les mots exacts qu'il porte à l'écran, et les quatre verbes tenus —
+    // MONTRER (à la caisse) · ENVOYER (vers Flipp) · RAPPORTER (vers Babillard) ·
+    // VIDER. Avant, la même idée se disait « Ma liste → Flipp », « Copier pour
+    // Flipp », « Coller ma liste Babillard » et « Envoyer à Flipp » selon l'écran,
+    // et l'étape 1 envoyait encore à la caisse, où ces portes ne sont plus.
+    flippIntro: 'Babillard garde ta liste ; Flipp montre les rabais en photo. Pour que les deux disent la même chose : une mise en place une fois, puis deux taps ici et deux dans Safari à chaque épicerie.',
     flippOnceTitle: 'Une seule fois',
-    flippOnce0: 'Juste au-dessus : la langue de ton app Flipp.',
-    flippOnce1: 'Touche « Copier le signet ».',
+    flippOnce0: 'Choisis la langue de ton app Flipp, juste au-dessus — sinon Flipp affiche tes rabais comme « non disponibles ».',
+    flippOnce1: 'Touche « Copier le signet », plus bas.',
     flippOnce2: 'Ouvre Safari, va sur flipp.com et connecte-toi (l’icône de personne, en haut à droite) — le même compte que ton app Flipp.',
-    flippOnce3: 'Toujours sur flipp.com : Partage ▸ « Ajouter un signet », nomme-le « Coller de Babillard ».',
+    flippOnce3: 'Toujours sur flipp.com : Partage ▸ « Ajouter un signet ». Nomme-le « Coller de Babillard ».',
     flippOnce4: 'Signets ▸ Modifier ▸ « Coller de Babillard » ▸ remplace l’adresse par ce que tu as copié. C’est fait pour toujours.',
     flippEachTitle: 'À chaque épicerie',
-    flippEach1: 'Dans Babillard : « Montrer à la caisse » ▸ « Ma liste → Flipp ». Safari s’ouvre sur flipp.com, ta liste dans l’adresse.',
-    flippEach2: 'Lance le signet « Coller de Babillard » ▸ « Remplacer ma liste Flipp ». Rien à coller : il trouve ta liste tout seul.',
-    flippEach3: 'C’est synchronisé : ta liste est dans ton compte Flipp, rabais avec photos par magasin. L’app Flipp la montre — quitte-la et rouvre-la si elle tarde.',
-    flippWhat: 'Pressé ? « Envoyer à Flipp » sur la caisse envoie ta liste en mots, sans signet — mais sans les rabais. Ce que Flipp reçoit avec le signet : tes rabais avec leur photo, par magasin, le reste en articles, rien de ce qui est coché.',
+    flippEach1: 'Dans La liste, touche « Ma liste Flipp ».',
+    flippEach2: 'Touche « Envoyer ma liste ». Safari s’ouvre sur flipp.com, ta liste voyage dans l’adresse.',
+    flippEach3: 'Lance le signet « Coller de Babillard », puis « Remplacer ma liste Flipp ». Rien à coller : il trouve ta liste tout seul.',
+    flippEach4: 'C’est fait : tes rabais sont dans ton compte Flipp, avec leur photo, par magasin. L’app Flipp la montre — quitte-la et rouvre-la si elle tarde.',
+    flippWhat: 'Ce qui part : ce qu’il te reste à acheter. Les lignes cochées restent ici. Les rabais voyagent avec leur photo, le reste en articles écrits.',
+    flippWords: 'Pas de signet sous la main ? « Envoyer sans les rabais » envoie les mêmes lignes en texte, droit dans l’app Flipp — mais sans les photos.',
     // The way back, and the other phones.
     flippBackTitle: 'De Flipp vers Babillard',
     flippBack1: 'Sur flipp.com, lance le signet ▸ « Rapporter Flipp → Babillard » : Babillard s’ouvre et te montre ce qui changerait avant d’écrire.',
@@ -3322,27 +3328,46 @@ export const FR = {
     // that browser's own localStorage). So the grid steps through the picks with
     // Flipp's OWN button: this opens the next pick's Flipp page. The label counts a
     // finite loop — where it stands — never a score.
-    // Short on purpose: both doors share one line above the grid at 390px, and the
-    // page this opens explains the next tap itself (its own « Ajouter à la liste »).
-    copyForFlipp: 'Copier pour Flipp',
-    // ONE tap (2026-09-11, evening): the list rides in the address the door opens.
-    toFlipp: 'Ma liste → Flipp',
-    // The one-tap door (2026-09-10): flipp.com/action adds the list's lines as typed
-    // items — and on a phone with the app, that link opens the app.
-    sendToFlipp: 'Envoyer à Flipp',
+    // QUATRE VERBES, un par idée (2026-09-12) — avant, sept mots disaient « mets ma
+    // liste dans Flipp » selon l'écran : « Ma liste → Flipp », « Copier pour Flipp »,
+    // « Coller ma liste Babillard », « Coller de Babillard », « Envoyer à Flipp ».
+    //   MONTRER  — un rabais à la caissière (la caisse, et seulement là)
+    //   ENVOYER  — ma liste s'en va dans Flipp
+    //   RAPPORTER — la liste de Flipp revient ici
+    //   VIDER    — la liste Flipp se vide
+    // « Copier pour Flipp » est retiré : plus personne ne copie, la liste voyage dans
+    // l'adresse. Les deux façons d'envoyer se distinguent par CE QUI PART, pas par le
+    // verbe : avec les rabais (et leurs photos), ou les mots seuls.
+    toFlipp: 'Envoyer ma liste',
+    sendToFlipp: 'Envoyer sans les rabais',
+    sendToFlippWhy: 'Les mots seulement, sans photo — aucun signet requis.',
     sentToFlipp: (n: number) => `Envoyé à Flipp · ${n} ligne${n > 1 ? 's' : ''}`,
     // The checked lines stay home on purpose (in the cart / bought) — said, not guessed.
     sentKeptChecked: (n: number) => `${n} cochée${n > 1 ? 's' : ''} reste${n > 1 ? 'nt' : ''} ici (décoche pour envoyer)`,
     // « Ma liste Flipp » also COPIES the picks (lib/flippList) for the bookmark set up
     // in Réglages ▸ La liste ▸ Magasinage — said once, in the notice bar, so a phone
     // with the bookmark knows the paste is ready and one without loses nothing.
-    flippCopied: 'Liste prête ✓ — dans Safari, lance « Coller de Babillard », puis « Remplacer ».',
+    flippCopied: 'Ta liste est partie avec le lien ✓ — sur flipp.com, lance le signet, puis « Remplacer ma liste Flipp ».',
     // « Vider ma liste Flipp » (2026-09-11): the till copies a CLEAR request; the
     // bookmark, on flipp.com, asks before emptying the list (account or local).
     flippClearList: 'Vider ma liste Flipp',
     flippClearCopied: 'Vidage prêt ✓ — dans Safari, lance « Coller de Babillard » : il demande avant de vider.',
     openFlipp: 'Ouvrir flipp.com',
     flippHow: 'Comment ça marche',
+    // LA FEUILLE « Ma liste Flipp » (2026-09-12) — les gestes de LISTE, sortis de la
+    // caisse. La caisse sert à montrer un rabais à la caissière ; envoyer sa liste se
+    // fait à la maison, avant de partir. Deux moments, deux écrans.
+    flippSheet: 'Ma liste Flipp',
+    // CE QUI PART, dit AVANT le tap — c'était la seule question sans réponse à
+    // l'écran : on l'apprenait après coup, dans la ligne de confirmation.
+    flippWillSend: (items: number, deals: number) =>
+      deals > 0
+        ? `${items} article${items > 1 ? 's' : ''} · ${deals} rabais avec sa photo`
+        : `${items} article${items > 1 ? 's' : ''}`,
+    flippOnlyUnchecked: 'Seulement ce qui reste à acheter part.',
+    flippNothingToSend: 'Rien à envoyer — tout est coché.',
+    flippNeedPostal: 'Ajoute ton code postal pour envoyer ta liste à Flipp.',
+    flippSetPostal: 'Ajouter mon code postal',
     flyerThisWeek: 'Cette semaine',
     flyerUpcoming: 'À venir',
     flyerTabOffers: 'Offres',

@@ -700,12 +700,16 @@ export function FlippSection({ help }: { help?: HelpMode }) {
         <li>{t.operator.flippOnce4}</li>
       </ol>
       <h4 className="flipp__phase">{t.operator.flippEachTitle}</h4>
+      {/* One GESTURE per step (2026-09-12). Step 2 used to carry two — open the till,
+          then tap the sync — which is how a numbered list stops being followable. */}
       <ol className="operator__steps">
         <li>{t.operator.flippEach1}</li>
         <li>{t.operator.flippEach2}</li>
         <li>{t.operator.flippEach3}</li>
+        <li>{t.operator.flippEach4}</li>
       </ol>
       <p className="operator__hint">{t.operator.flippWhat}</p>
+      <p className="operator__hint">{t.operator.flippWords}</p>
       <h4 className="flipp__phase">{t.operator.flippBackTitle}</h4>
       <p className="operator__hint">{t.operator.flippBack1}</p>
       {/* Folded: read once, then muscle memory (Marc, 2026-09-11: « clear up all we

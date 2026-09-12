@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test'
-import { BOARD, mockApi, seedState, flyerIso, type Theme, type Surface } from './mocks'
+import { mockApi, seedState, type Theme, type Surface } from './mocks'
 import { boxOf } from './measure'
+import { boardWithDeals } from './dealFixture'
 
 // Dedicated capture + guards for « Montrer à la caisse » — a CORE, high-stress moment
 // (standing at the till with the cashier waiting). The mode is random-access: a GRID
@@ -45,56 +46,9 @@ async function noOverflow(page: Page): Promise<string> {
 const expectNoOverflow = (page: Page) =>
   expect.poll(() => noOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
 
-// The unbreakable stress word the long-text fixture uses — reused here so the
-// cashier's own staged deals get genuinely long names in the long-text tests.
-const LONG = 'à la bolognaise maison avec béchamel gratinée Supercalifragilisticexpialidocieux'
-
-// A staged deal per list line, so the grid has SEVERAL distinct tiles (different
-// store / price / name) — the real high-stress shape. The mock board is static, so
-// the spec serves this via its own board route override rather than staging writes.
-const DEALS = [
-  { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', merchant: 'Super C' },
-  { id: 102, flyerId: 5002, name: 'Pain tranché blé entier', price: 2.49, unitPrice: 0.5, unitLabel: '/100g', merchant: 'IGA' },
-  { id: 103, flyerId: 5001, name: 'Pommes Gala 3 lb', price: 3.99, unitPrice: 1.32, unitLabel: '/lb', merchant: 'Metro' },
-  // ENDED on purpose (validTo two days back): the staged deal a household forgot
-  // on its list from last week's flyer — Marc's mini-concombres at Provigo.
-  { id: 104, flyerId: 5002, name: 'Couches Pampers méga', price: 24.97, unitPrice: null, unitLabel: null, merchant: 'Walmart', endedDaysAgo: 2 },
-]
-const stagedDeal = (d: (typeof DEALS)[number], long: boolean, allEnded = false) => ({
-  id: d.id,
-  flyerId: d.flyerId,
-  name: long ? `${d.name} ${LONG}` : d.name,
-  price: d.price,
-  wasPrice: null,
-  unitPrice: d.unitPrice,
-  unitLabel: d.unitLabel,
-  unitKind: null,
-  unitApprox: false,
-  merchant: long ? `${d.merchant} ${LONG}` : d.merchant,
-  logo: null,
-  premium: true,
-  // The mock serves /api/flyer-img as a tiny SVG, so the tile thumbnail + the peek's
-  // two-column picture|facts layout both render (and the wide layout fills the space).
-  image: `/api/flyer-img?d=${d.id}`,
-  // Live-clock dates (the fixture doctrine of 2026-09-10): a fixed June date reads
-  // as ENDED on every surface once the calendar passes it, silently.
-  validFrom: flyerIso(-2),
-  validTo: allEnded || ('endedDaysAgo' in d && d.endedDaysAgo) ? flyerIso(-(('endedDaysAgo' in d && d.endedDaysAgo) || 2)) : flyerIso(4),
-})
-const boardWithDeals = (long: boolean, allEnded = false) => ({
-  ...BOARD,
-  list: [
-    ...BOARD.list.map((item, i) => ({
-      ...item,
-      text: long ? `${item.text} ${LONG}` : item.text,
-      deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0], long, allEnded)),
-    })),
-    // Two plain lines — no deal — so « Ma liste Flipp » has typed items to carry;
-    // the checked one must NOT go (it is already bought).
-    { id: 'l5', text: 'Oeufs', source: 'manual' },
-    { id: 'l6', text: 'Beurre', source: 'manual', checked_at: 1_700_000_000 },
-  ],
-})
+// The staged-deal fixture moved to e2e/dealFixture.ts on 2026-09-12: « Ma liste Flipp »
+// left the till and reads the SAME board, and two copies is how two specs start
+// proving different things about one payload.
 
 // Open the till GRID with several picks. Both operator and guest just tap "Montrer à
 // la caisse" — the picks come from a board route override (above mockApi) that stages
@@ -289,12 +243,13 @@ test('« Montrer Flipp » frames Flipp\'s own item page and steps to the next pi
   // Back on the grid: every pick the pager showed wears the ✓, the ended one does not.
   await page.getByRole('button', { name: /Retour/ }).click()
   await expect(page.locator('.cashier__tile.is-shown')).toHaveCount(3)
-  // The grid door resumes at the first pick NOT yet shown — all shown → the first.
+  // The door is PER ITEM now (2026-09-12): the grid-wide « Montrer Flipp » went with
+  // the Flipp row, so the pager opens on the pick whose card you tapped — which is the
+  // one the cashier is holding. Tapping the second tile starts at the second pick.
   await page.locator('.cashier__reset').click()
   await page.locator('.cashier__tile').nth(1).click()
-  await page.getByRole('button', { name: /Retour/ }).click()
-  await page.locator('button.cashier__show-flipp').click()
-  await expect(page.locator('.flipp-pager__count')).toHaveText('1 de 3')
+  await page.locator('button.bigcard__flipp').click()
+  await expect(page.locator('.flipp-pager__count')).toHaveText('2 de 3')
   await page.locator('.flipp-pager').getByRole('button', { name: /Fermer/ }).click()
   await expect(page.locator('.flipp-pager')).toHaveCount(0)
 })
@@ -305,8 +260,6 @@ test('without a postal code the Flipp door does not render at all', async ({ pag
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/liste/cashier')
   await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
-  // The grid's Flipp loop needs the same postal code, so it is not built either.
-  await expect(page.locator('.cashier__flipp')).toHaveCount(0)
   await page.locator('.cashier__tile').first().click()
   await expect(page.locator('.bigcard__price')).toBeVisible()
   await expect(page.locator('.bigcard__flipp')).toHaveCount(0)
@@ -323,35 +276,6 @@ test('without a postal code the Flipp door does not render at all', async ({ pag
 // The doors open the real flipp.com in a popup: it is stubbed, the door is what's tested.
 const stubFlipp = (page: Page) =>
   page.context().route('https://flipp.com/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>flipp</title>' }))
-
-// « MA LISTE FLIPP » ALSO COPIES THE PICKS — for the bookmark (lib/flippList) that
-// pastes them into Flipp's own list on flipp.com. Read back from the clipboard: the
-// payload is Flipp's clipping shape, one per pick with a Flipp id, and the notice
-// says the copy happened. Chromium grants the clipboard to the test context.
-test('« Ma liste → Flipp » opens flipp.com with the list in the address (and copies it too), in Flipp\'s list shape', async ({ page }) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
-  await stubFlipp(page)
-  await openGrid(page)
-  // ONE tap: a link to flipp.com's list page carrying the list as #bb= — the bookmark
-  // reads it there, no copy step, no paste permission. The clipboard is the fallback.
-  const door = page.locator('a.cashier__copy')
-  const href = await door.getAttribute('href')
-  expect(href).toMatch(/^https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=[A-Za-z0-9_-]+$/)
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), door.click()])
-  await popup.close()
-  // Under the row and PERSISTENT — the toast is behind the flipp.com window by then.
-  await expect(page.locator('.cashier__flipp-hint')).toContainText(/Liste prête/)
-  // The address carries exactly what the clipboard got.
-  const text = await page.evaluate(() => navigator.clipboard.readText())
-  const fromHash = await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!)
-  expect(fromHash).toBe(text)
-  const payload = JSON.parse(text) as { v: number; clippings: { flyerItemId: number; name: string; price: string; merchantName: string }[] }
-  expect(payload.v).toBe(1)
-  expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103]) // the ended one is not pasted as a clipping…
-  // …it rides as a TYPED item instead, with the plain unchecked line; the checked line stays home.
-  expect((payload as unknown as { items: { term: string }[] }).items.map((i) => i.term)).toEqual(['Couches', 'Oeufs'])
-  expect(payload.clippings[0]).toMatchObject({ name: 'Lait 2% 4L', price: '4.99', merchantName: 'Super C' })
-})
 
 // AN ENDED DEAL AT THE TILL. Marc, from the iPhone (2026-09-10): a staged deal from
 // last week's Provigo flyer opened Flipp's « This item is expired » → « Circulaires
@@ -374,29 +298,6 @@ test('an ended deal: the tile says so, the card swaps the dates for the word, an
   await expect(page.locator('.bigcard__flyer')).toBeVisible()
   await shot(page, 'peek-ended')
   await expectNoOverflow(page)
-})
-
-// EVERY deal ended — Marc's list on 2026-09-10, a week after staging: « i only see
-// my liste flipp ». Right: nothing is live, so there is no loop — and therefore no
-// « Reprendre du début » either (it shipped showing one, a restart of nothing). The
-// list door stands alone, primary, and still carries the whole list as typed items.
-test('every deal ended: « Envoyer à Flipp » leads, and « Ma liste → Flipp » still carries the list as words', async ({ page }) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
-  await stubFlipp(page)
-  await openGrid(page, { allEnded: true })
-  await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(4)
-  // « Envoyer à Flipp » leads when nothing is live: ONE link that adds every unchecked
-  // line as a typed item through flipp.com/action (verified live 2026-09-10) — the
-  // till's five lines here, the ended « Couches » included, the checked « Beurre » not.
-  const send = page.locator('a.cashier__send')
-  await expect(send).toBeVisible()
-  await expect(send).toHaveClass(/btn--primary/)
-  await expect(send).toHaveAttribute('href', 'https://flipp.com/action?command=add_text_to_list&texts=Lait%2CPain%2CPommes%2CCouches%2COeufs&postal_code=H2X%201Y4')
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
-  await popup.close()
-  const payload = JSON.parse(await page.evaluate(() => navigator.clipboard.readText())) as { clippings: unknown[]; items: { term: string }[] }
-  expect(payload.clippings).toEqual([])
-  expect(payload.items.map((i) => i.term)).toEqual(['Lait', 'Pain', 'Pommes', 'Couches', 'Oeufs'])
 })
 
 // REFRESH THE ENDED DEALS. A week after « Choisir les meilleurs » the grid is all
@@ -422,57 +323,4 @@ test('a guest sees no refresh button (it writes)', async ({ page }) => {
   await openGrid(page, { guest: true })
   await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(1)
   await expect(page.locator('button.cashier__refresh')).toHaveCount(0)
-})
-
-// « COMMENT ÇA MARCHE » LANDS ON THE CARD — even when the cards above it fill in
-// late. Marc, iPhone (2026-09-10): « the link doesn't go to the right spot ». The
-// walkthrough card sits under « Mes magasins », which fetches the flyers; with
-// instant mocks the rows are there before the scroll, on a phone they arrive AFTER
-// it and push the card back down — and the lazy Réglages chunk can outlast a short
-// poll entirely. The flyers answer is delayed here so the card must be found late
-// and the scroll re-settled; the proof is the card's edge at the top of the view.
-test('the « Comment ça marche » chip lands on the walkthrough card, even when the cards above load late', async ({ page }) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
-  await openGrid(page)
-  // Registered after mockApi → wins: the store-filter card's data arrives 1.5 s late.
-  await page.route(/\/api\/flyers(\?|$)/, async (route) => {
-    await new Promise((r) => setTimeout(r, 1500))
-    await route.fallback()
-  })
-  await stubFlipp(page)
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
-  await popup.close()
-  await page.locator('.cashier__flipp-hint a[href^="/settings"]').click() // the chip, not the « Ouvrir flipp.com » link beside it
-  const card = page.locator('#op-flipp')
-  await expect(card).toBeVisible({ timeout: 15_000 })
-  // Give the late rows time to land and the settle loop time to answer them.
-  await page.waitForTimeout(3_000)
-  const top = (await boxOf(card)).y // boxOf, never the bare call — the documented trap
-  expect(Math.abs(top), `card top edge should sit at the top of the view, was ${top}px`).toBeLessThanOrEqual(40)
-})
-
-// AFTER A COPY, THE JUMP TO WHERE THE BOOKMARK RUNS. From Babillard installed as an
-// app, a plain link opens an in-app window without bookmarks; on iOS the link hands
-// the page to Safari itself (x-safari-https, experimental). Elsewhere, the plain page.
-test('after « Ma liste → Flipp », the « Ouvrir flipp.com » link repeats the door, list included — the plain page on a desktop UA', async ({ page }) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
-  await stubFlipp(page)
-  await openGrid(page)
-  await expect(page.locator('a.cashier__open-flipp')).toHaveCount(0)
-  const [popup] = await Promise.all([page.context().waitForEvent('page'), page.locator('a.cashier__copy').click()])
-  await popup.close()
-  const again = await page.locator('a.cashier__open-flipp').getAttribute('href')
-  expect(again).toMatch(/^https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=[A-Za-z0-9_-]+$/)
-  expect(again).toBe(await page.locator('a.cashier__copy').getAttribute('href'))
-})
-
-test.describe('on an iPhone', () => {
-  test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' })
-  test('the door hands flipp.com to Safari itself, list included', async ({ page }) => {
-    await openGrid(page)
-    const href = await page.locator('a.cashier__copy').getAttribute('href')
-    expect(href).toMatch(/^x-safari-https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=[A-Za-z0-9_-]+$/)
-    const clear = await page.locator('a.cashier__clear-flipp').getAttribute('href')
-    expect(clear).toMatch(/^x-safari-https:\/\/flipp\.com\/liste_dachats\?postal_code=H2X%201Y4#bb=/)
-  })
 })

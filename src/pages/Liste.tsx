@@ -10,6 +10,7 @@ import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT, useLang } from '../i18n'
 import { Cluster } from '../components/Layout'
+import { FlippSheet } from '../components/FlippSheet'
 import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu'
 import { useAisleOrder, useAisleOverrides, useAisleTagsShown, setAisleTagsShown } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
@@ -34,7 +35,7 @@ import { useFlippImport } from '../lib/flippImport'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
-import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { LISTE_HELP } from '../lib/listeHelp'
 import { RowActions } from '../components/RowActions'
@@ -491,6 +492,15 @@ export function Liste() {
   // Stores hidden at the till — read here (before the early returns) so the
   // « Montrer à la caisse » count matches what the stepper will actually show.
   const tillHidden = useTillHiddenStores()
+  // « Ma liste Flipp » needs the household postal (Flipp keys its catalogue on it).
+  // Off the SHARED HOUSEHOLD_KEY cache, like CashierPage — usually already warm.
+  const { data: household } = useQuery({
+    queryKey: HOUSEHOLD_KEY,
+    queryFn: () => api<{ postal?: string | null }>('household'),
+    staleTime: 5 * 60_000,
+  })
+  const postal = household?.postal ?? null
+  const [flippOpen, setFlippOpen] = useState(false)
 
   // Add a line to the list. `terms` (optional) carries flyer synonyms — the
   // quick-add panel passes them so a re-added item keeps its deal search.
@@ -952,21 +962,33 @@ export function Liste() {
       )}
       {help.bubbleFor('clear')}
 
-      {/* The one prominent shopping action: take the staged deals to the cashier.
-          Browsing flyers and restocking past items live in the ＋ Add sheet now,
-          so the page stays the list. */}
-      {pickList.length > 0 && (
-        <div className="list-actions">
-          <button
-            type="button"
-            className="btn btn--primary help-pick"
-            onClick={help.pick('cashier', () => nav('/liste/cashier'))}
-          >
-            <InlineIcon name="receipt-bold" /> {t.shop.present} ({pickList.length})
-          </button>
-        </div>
+      {/* The two shopping doors, side by side because they are the two things you do
+          with a finished list — and they belong to DIFFERENT moments, which is why
+          they are two buttons and not one screen (2026-09-12):
+            « Montrer à la caisse » — at the register, with a cashier waiting.
+            « Ma liste Flipp »      — at home, before leaving.
+          Browsing flyers and restocking live in the ＋ sheet, so the page stays the list. */}
+      {(pickList.length > 0 || list.length > 0) && (
+        <Cluster className="list-actions list-actions--shop">
+          {pickList.length > 0 && (
+            <button
+              type="button"
+              className="btn btn--primary help-pick"
+              onClick={help.pick('cashier', () => nav('/liste/cashier'))}
+            >
+              <InlineIcon name="receipt-bold" /> {t.shop.present} ({pickList.length})
+            </button>
+          )}
+          {list.length > 0 && (
+            <button type="button" className="btn list-actions__flipp" onClick={() => setFlippOpen(true)}>
+              <InlineIcon name="storefront-bold" /> {t.shop.flippSheet}
+            </button>
+          )}
+        </Cluster>
       )}
       {help.bubbleFor('cashier')}
+
+      <FlippSheet open={flippOpen} onClose={() => setFlippOpen(false)} rows={list} picks={pickList} postal={postal} />
 
       {/* The floating drag label that trails the finger while reordering. */}
       <DragGhost ghost={dnd.ghost} />

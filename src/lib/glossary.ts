@@ -327,6 +327,41 @@ const ENTITIES: GlossaryTerm[] = [
     card: 'share-access',
   },
   {
+    id: 'envoyer-flipp',
+    scope: 'verb',
+    fr: 'Envoyer',
+    en: 'Send',
+    def: {
+      fr: 'Mettre ta liste dans Flipp. Seul ce qu’il te reste à acheter part.',
+      en: 'Put your list into Flipp. Only what is still to buy goes.',
+    },
+    card: 'liste',
+    // THE COLLISION THIS ROW EXISTS FOR (2026-09-12). One idea — « get my Babillard
+    // list into Flipp » — wore five names depending on the screen: « Ma liste →
+    // Flipp » (the till), « Copier pour Flipp » (a dead key still quoted in two live
+    // bookmarklet strings), « Coller ma liste Babillard » and « Coller de Babillard »
+    // (the bookmark's own menu and name), « Envoyer à Flipp » (the words-only door).
+    // The app side now says ENVOYER, once; the two doors differ by their CARGO, not
+    // their verb (« Envoyer ma liste » vs « Envoyer sans les rabais »).
+    rivals: { fr: ['Copier pour Flipp'], en: ['Copy for Flipp'] },
+    why:
+      'The bookmarklet’s own sheet keeps « Remplacer » / « Ajouter »: those name two genuinely ' +
+      'different landings (replace the Flipp list, or append to it), they are chosen ON flipp.com, ' +
+      'and their strings live in a generated file with its own byte-for-byte guard (flippPaste.test.ts). ' +
+      'They are not rivals of « Envoyer » — they are what happens after it.',
+  },
+  {
+    id: 'rapporter-flipp',
+    scope: 'verb',
+    fr: 'Rapporter',
+    en: 'Bring back',
+    def: {
+      fr: 'Le chemin inverse : ta liste Flipp revient dans Babillard. Rien n’est retiré.',
+      en: 'The way back: your Flipp list returns to Babillard. Nothing is removed.',
+    },
+    card: 'liste',
+  },
+  {
     id: 'virement',
     scope: 'entity',
     fr: 'Virement',

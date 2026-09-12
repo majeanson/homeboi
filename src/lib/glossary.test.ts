@@ -125,6 +125,13 @@ const RIVAL_CEILING: Record<string, number> = {
   // « Tout le monde (lien ouvert)… » (an intake link that really is for anyone);
   // EN keeps the same two. A sentence may say "everyone"; a face picker may not.
   'fr:Tout le monde': 2,
+  // « Copier pour Flipp » went with the door it named (2026-09-12): nobody copies any
+  // more, the list travels in the address. Pinned at 0 the day it was swept, which is
+  // where the code already was — a ceiling may only start where the count is.
+  // NOTE the residue this does NOT see: the bookmarklet's own hardcoded strings, which
+  // live in flippList.ts's generated body and are scanned by flippPaste.test.ts, not here.
+  'fr:Copier pour Flipp': 0,
+  'en:Copy for Flipp': 0,
   'en:Everyone': 2,
 }
 
@@ -442,8 +449,11 @@ describe('glossary — the ratchets (they only go down)', () => {
 // The exemptions are the two honest kinds: FIXTURE data the specs invent, and labels
 // COMPOSED at runtime from a fixture name plus a dictionary word.
 const E2E_LABEL_ALLOWED: Record<string, string> = {
-  'Pain tranché blé entier': 'cashier fixture item',
-  'Couches Pampers méga': 'cashier fixture item',
+  // (« Pain tranché blé entier » / « Couches Pampers méga » were here while the staged-deal
+  //  fixture lived inside cashier.spec.ts. It moved to e2e/dealFixture.ts on 2026-09-12 when
+  //  « Ma liste Flipp » started reading the same board, and this scan only walks *.spec.ts —
+  //  so the exemptions stopped exempting anything. Dropped rather than left as noise, which
+  //  is what this very test asks for.)
   'Clinique Vétérinaire du Coin': 'search fixture business',
   'Clinique Vétérinaire Animalia': 'share-business fixture',
   'Clinique vétérinaire Papineau': 'state-matrix fixture',

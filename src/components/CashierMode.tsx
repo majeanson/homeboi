@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl, flippListUrl } from '../lib/deals'
+import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
-import { flippListPayload, flippAddTextsUrl, flippSendText, flippListOpenUrl, FLIPP_CLEAR_PAYLOAD } from '../lib/flippList'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
 import { useNotice } from '../lib/toast'
@@ -13,7 +12,6 @@ import { FlippPager } from './FlippPager'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { Cluster } from './Layout'
-import { Chip } from './Chip'
 import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
 
@@ -77,8 +75,6 @@ export function CashierMode({
   const isEnded = (p: Pick) => dealEnded(p.deal.validTo)
   const clippable = picks.filter((p) => p.deal.id != null && !isEnded(p))
   clippableRef.current = clippable
-  // The grid door starts at the first pick not yet shown this trip (or the first).
-  const pagerStart = Math.max(0, clippable.findIndex((p) => !shown.has(p.itemId)))
   // REFRESH THE ENDED ONES (2026-09-10): a week after « Choisir les meilleurs » the
   // grid is all « Aubaine terminée » — Marc's list that night. One tap re-runs this
   // week's best price for exactly those lines (lib/picks refreshEndedDeals); a line
@@ -92,56 +88,6 @@ export function CashierMode({
     const { found, dropped } = await refreshEndedDeals(qc, endedRows)
     setRefreshing(false)
     notice(t.shop.refreshed(found, dropped))
-  }
-  // « Copier pour Flipp » copies the list in Flipp's own shape, for the bookmark set
-  // up in Réglages (lib/flippList): on flipp.com the bookmark pastes it straight
-  // into « Ma liste ». Its own button — it was the list door's side effect for an
-  // hour, and a side effect nobody sees is one nobody trusts.
-  // THE WHOLE LIST goes (Marc: « my full list exported in my flipp app »): a row
-  // with a live clipping goes as that clipping; every other unchecked row — plain,
-  // or its deal ended, or its store hidden at the till — as a typed item.
-  const clippedRows = new Set(clippable.map((p) => p.itemId))
-  const terms = rows.filter((r) => !r.checked_at && !clippedRows.has(r.id)).map((r) => r.text)
-  // « ENVOYER À FLIPP » — every unchecked line as text, in ONE link, no bookmark:
-  // flipp.com's /action adds them as typed items (lib/flippList flippAddTextsUrl),
-  // and on a phone with the app that path opens the app. The photos of the staged
-  // deals do not travel this way — that is what « Copier pour Flipp » is for.
-  const sendTerms = rows.filter((r) => !r.checked_at).map((r) => flippSendText(r.text)).filter(Boolean)
-  // A CHECKED line is "in the cart / bought" and stays home — by design, and the
-  // reason Marc's deal lines "didn't get sent" (2026-09-10): the till still shows
-  // their tiles, so the sent line says how many stayed, instead of leaving a phone
-  // to guess. Unchecking a line is the way to send it.
-  const keptChecked = rows.filter((r) => !!r.checked_at).length
-  const sendUrl = flippAddTextsUrl(sendTerms, postal) ?? flippListUrl(postal)
-  // After the tap, the line under the row says exactly what went (count + words):
-  // Marc's phone showed fewer lines in Flipp than were sent, and the only way to
-  // tell "not sent" from "not shown" is to see the list that left.
-  const [sent, setSent] = useState(false)
-  // The notice fires while the flipp.com window COVERS this page and is gone before
-  // the household comes back (Marc, iPhone, 2026-09-10: « i dont see the notice »;
-  // the paste had worked). So the word lives under the button, and stays.
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'clear'>('idle')
-  // « MA LISTE → FLIPP » (2026-09-11, evening): ONE tap. The button is a LINK that
-  // opens flipp.com's list page (Safari itself on iOS — flippListOpenUrl) with the
-  // whole list in the URL hash, where the bookmark reads it first: no copy step, no
-  // clipboard permission bubble. The clipboard still gets the list as a side effect
-  // (best effort — it is the fallback the bookmark's menu offers), and the line under
-  // the row says what to do next, because the notice fires under the Safari window.
-  const flippPayload = flippListPayload(clippable, terms)
-  const copyForFlipp = () => {
-    setCopyState('copied')
-    navigator.clipboard?.writeText(flippPayload).catch(() => {})
-  }
-  // « VIDER MA LISTE FLIPP » (2026-09-11). Marc: « keep the delete all list ». It was
-  // the linked account's button; the link is gone, and the one place code can still
-  // act on his Flipp list is the bookmark, on flipp.com. So this copies a CLEAR
-  // request the same way « Copier pour Flipp » copies the list; the bookmark reads it
-  // and asks, there, naming what is lost, before it empties the list (the account's
-  // when signed in, the local one otherwise — lib/flippList). Nothing of the
-  // household's is written here, so a guest may use it too.
-  const copyClear = () => {
-    setCopyState('clear')
-    navigator.clipboard?.writeText(FLIPP_CLEAR_PAYLOAD).catch(() => {})
   }
 
   // Opened at home on wifi → warm each pick's flyer + clipping images so the
@@ -206,52 +152,14 @@ export function CashierMode({
               </button>
             </Cluster>
           )}
-          {postal && (clippable.length > 0 || terms.length > 0) && (
-            <div className="cashier__flipp">
-              <Cluster className="cashier__flipp-row">
-                {/* THE FLIPP ROW, settled 2026-09-11 (evening): four doors, in reading order
-                    at 390px where the row wraps. « Montrer Flipp » — what a till is for.
-                    « Ma liste → Flipp » — the ONE sync door (the list rides in the address;
-                    the bookmark does the rest). « Envoyer à Flipp » — the words-only
-                    shortcut, no bookmark needed, ghost unless nothing is live. « Vider ma
-                    liste Flipp » — rare, ghost. The tap-by-tap « Ajouter à Flipp · n de N »
-                    loop of 2026-09-10 retired here: « Ma liste → Flipp » puts every deal with
-                    its photo in the account in one go, so a per-item loop had no job left. */}
-                {clippable.length > 0 && (
-                  <button type="button" className="btn btn--primary cashier__show-flipp" onClick={() => pageTo(pagerStart)}>
-                    <InlineIcon name="storefront-bold" /> {t.shop.showFlipp}
-                  </button>
-                )}
-                <a className="btn cashier__copy" href={flippListOpenUrl(postal, undefined, flippPayload)} target="_blank" rel="noopener noreferrer" onClick={copyForFlipp}>
-                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.toFlipp}
-                </a>
-                <a className={`btn ${clippable.length ? 'btn--ghost' : 'btn--primary'} cashier__send`} href={sendUrl!} target="_blank" rel="noopener noreferrer" onClick={() => setSent(true)}>
-                  <InlineIcon name="arrow-up-right-bold" /> {t.shop.sendToFlipp}
-                </a>
-                <a className="btn btn--ghost cashier__clear-flipp" href={flippListOpenUrl(postal, undefined, FLIPP_CLEAR_PAYLOAD)} target="_blank" rel="noopener noreferrer" onClick={copyClear}>
-                  <InlineIcon name="trash-bold" /> {t.shop.flippClearList}
-                </a>
-              </Cluster>
-              {sent && (
-                <p className="cashier__flipp-hint mono cashier__sent">
-                  {t.shop.sentToFlipp(sendTerms.length)} — {sendTerms.join(' · ')}
-                  {keptChecked > 0 && <> · {t.shop.sentKeptChecked(keptChecked)}</>}
-                </p>
-              )}
-              {copyState !== 'idle' && (
-                <p className="cashier__flipp-hint mono">
-                  {copyState === 'clear' ? t.shop.flippClearCopied : t.shop.flippCopied}{' '}
-                  {/* The same door again, list included, for a window that did not open
-                      (a blocked popup, a phone that ignored the Safari scheme). */}
-                  <a className="btn btn--ghost cashier__open-flipp" href={flippListOpenUrl(postal, undefined, copyState === 'clear' ? FLIPP_CLEAR_PAYLOAD : flippPayload)} target="_blank" rel="noopener noreferrer">
-                    <InlineIcon name="arrow-up-right-bold" /> {t.shop.openFlipp}
-                  </a>{' '}
-                  {/* The whole walkthrough is one Réglages card away (DISCOVERY: ?focus= names the card). */}
-                  <Chip to="/settings?tab=liste&focus=flipp">{t.shop.flippHow}</Chip>
-                </p>
-              )}
-            </div>
-          )}
+          {/* THE FLIPP ROW IS GONE (2026-09-12). It held four doors, and only one of
+              them belonged here: « Montrer Flipp » — showing a deal to the cashier who
+              is scanning it. That one now lives on the item's own card below, where it
+              is contextual. The other three (send my list · send the words · empty the
+              Flipp list) are LIST acts done at home before leaving, not at a register
+              with someone waiting, and they moved to « Ma liste Flipp » on La liste
+              (components/FlippSheet). Marc: « discern montrer à la caisse and flipp
+              actions ». The till is a grid you tap to show a price again. */}
           <ul className="cashier__grid">
             {picks.map((p) => {
               const isShown = shown.has(p.itemId)

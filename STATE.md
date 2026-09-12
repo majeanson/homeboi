@@ -1348,7 +1348,7 @@ errors, 0 bleed, and its own ratchet reported « nothing new to look at » — s
 Seven days, eight commits, closed in [`UNIFY.md`](./UNIFY.md) (read Part 5 for the table
 and Part 4 for what was deliberately *not* done). The short version:
 
-- **Vocabulary is now data.** `src/lib/glossary.ts` holds **28** terms; `glossary.test.ts`
+- **Vocabulary is now data.** `src/lib/glossary.ts` holds **30** terms; `glossary.test.ts`
   ratchets every rival synonym so a second word for an existing idea cannot come back.
   The delete family went from six verbs — with one key spelled two ways — to five, each
   with an assigned meaning (`effacer` erases a **mark you made**, never a thing).
@@ -1760,6 +1760,47 @@ Five things worth keeping:
 - **One ➖ recorded, not hidden**: a transfer is NOT in `SEARCH_INDEX` (PARITY
   footnote 68). Finding a payment by its bank reference is the obvious want, but
   `/search` has no privacy lens and this is the tab a guest is not even offered.
+
+
+### Flipp: the till stopped carrying the list — 2026-09-12
+
+Marc: « we should discern montrer à la caisse and flipp actions … keep montrer à la
+caisse for what it was ». The till's Flipp row held four doors, and only one of them
+belonged at a register: showing the cashier the deal she is scanning. The other three
+— send my list, send the words, empty the Flipp list — are things you do at home
+before leaving. They shared a row because they shared a WORD, not a moment, and the
+one surface with somebody waiting on you carried the clutter.
+
+- **The till keeps the per-item proof.** « Montrer Flipp » lives on the item's own
+  card, where it is contextual; the grid-wide row is gone, and so is "resume at the
+  first not-yet-shown" (the pager now opens on the pick you tapped, which is the one
+  in the cashier's hand).
+- **La liste gained « Ma liste Flipp »**, beside « Montrer à la caisse » —
+  `components/FlippSheet`. It **says what will travel before the tap**: « 5 articles ·
+  3 rabais avec sa photo », « seulement ce qui reste à acheter part », and how many
+  ticked lines stay home. That was the unanswered question of the old row: you learned
+  what went only from the confirmation afterwards.
+- **What travels is ONE derivation** now — `flippBundle` (lib/flippList), read by the
+  sheet and available to anything else that sends. It was inline in CashierMode while
+  the till was the only door; two copies of "which rows go" is how two surfaces start
+  disagreeing about one payload.
+- **Four verbs, one per idea.** « Mets ma liste dans Flipp » wore five names across
+  screens — « Ma liste → Flipp », « Copier pour Flipp », « Coller ma liste Babillard »,
+  « Coller de Babillard », « Envoyer à Flipp ». The app now says **Montrer** (at the
+  till) · **Envoyer** (→ Flipp) · **Rapporter** (← Flipp) · **Vider**; the two send
+  doors differ by their CARGO, not their verb (« Envoyer ma liste » vs « Envoyer sans
+  les rabais »). `glossary.ts` carries the two new verb rows and the ratchet holds
+  « Copier pour Flipp » at 0 — including the two bookmarklet fallbacks that still told
+  a household to look for a button that no longer existed.
+- **The walkthrough is numbered and one gesture per step.** Its step 2 used to carry
+  two acts (open the till, then tap the sync), which is how a numbered list stops
+  being followable — and it pointed at the till, where those doors no longer are.
+- **A pre-existing reachability bug surfaced and was fixed**: the ＋ FAB floats over
+  the page, and on a short list the bottom action lands in its band, so the right
+  ~80px of « Montrer à la caisse » tapped the ＋ instead. `.hub__body` pads its scroll
+  END, which only helps a page long enough to scroll. The shopping row now keeps its
+  own inline end clear of the FAB — the fix `hub.css` already names for a sticky pane.
+  Guard: the FAB-overlap case in `e2e/flipp-sheet.spec.ts`, proven red first.
 
 ## 4. What still needs improvement — consolidated and ranked
 
