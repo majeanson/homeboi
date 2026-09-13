@@ -33,8 +33,7 @@ export function formatMoney(cents: number | null | undefined, lang: Lang): strin
 // transfer you are about to send: « 812,82 $ » shown as « 813 $ » would be a number
 // the household could not match against a bank statement.
 const exactMoneyFmtCache = new Map<Lang, Intl.NumberFormat>()
-export function formatMoneyExact(cents: number | null | undefined, lang: Lang): string {
-  if (cents == null || !Number.isFinite(cents)) return ''
+function exactFmt(lang: Lang): Intl.NumberFormat {
   let f = exactMoneyFmtCache.get(lang)
   if (!f) {
     f = new Intl.NumberFormat(lang === 'en' ? 'en-CA' : 'fr-CA', {
@@ -45,7 +44,27 @@ export function formatMoneyExact(cents: number | null | undefined, lang: Lang): 
     })
     exactMoneyFmtCache.set(lang, f)
   }
-  return f.format(cents / 100)
+  return f
+}
+export function formatMoneyExact(cents: number | null | undefined, lang: Lang): string {
+  if (cents == null || !Number.isFinite(cents)) return ''
+  return exactFmt(lang).format(cents / 100)
+}
+
+// The same shape fed DOLLARS — flyer deals carry `4.99`, not `499`, because that is
+// what the source hands us. One formatter for both so a price cannot print two ways
+// in one app.
+//
+// This exists because `lib/deals.ts` had its own: `n.toFixed(2)` with the dot swapped
+// for a comma and « $ » stuck on the end — FR-CA hard-coded, whatever the UI language.
+// The whole shopping stack (list row, till tile, till card, price-match, flyer viewer,
+// item editor) therefore said « 4,99 $ » to an English household. Its own neighbour
+// `dealDate` had taken `lang` since the day it was written, and the note above THAT
+// one records unifying FlyerViewer's local money helper into the shared one — into the
+// French-only one. Found 2026-09-13 by reading `liste-en-day.png`.
+export function formatPrice(amount: number | null | undefined, lang: Lang): string {
+  if (amount == null || !Number.isFinite(amount)) return ''
+  return exactFmt(lang).format(amount)
 }
 
 // A free-typed dollar amount → integer cents for storage. Tolerates spaces (plain

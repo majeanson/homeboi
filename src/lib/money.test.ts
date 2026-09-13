@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatMoney, formatMoneyExact, parseMoney } from './money'
+import { formatMoney, formatMoneyExact, formatPrice, parseMoney } from './money'
 
 describe('formatMoney', () => {
   it('renders whole-dollar CAD with no cents', () => {
@@ -33,6 +33,30 @@ describe('formatMoneyExact', () => {
     expect(formatMoneyExact(null, 'fr')).toBe('')
     expect(formatMoneyExact(undefined, 'fr')).toBe('')
     expect(formatMoneyExact(Number.NaN, 'fr')).toBe('')
+  })
+})
+
+// `formatPrice` is the same formatter fed DOLLARS, because a flyer deal carries 4.99
+// rather than 499. The language case is the whole reason it exists: `lib/deals.ts`
+// used to format a price by hand — `toFixed(2)`, dot swapped for a comma, « $ » stuck
+// on the end — so every price in the shopping stack read FR-CA to an English
+// household. A test rather than a note, because the note was already there: the
+// helper right beside it took `lang` and this one did not.
+describe('formatPrice', () => {
+  it('follows the READER, not the file — the bug that made this exist', () => {
+    expect(formatPrice(4.99, 'fr')).toMatch(/4,99/)
+    expect(formatPrice(4.99, 'fr')).toContain('$')
+    expect(formatPrice(4.99, 'en')).toMatch(/\$\s?4\.99/)
+    // …and the two languages must not agree, or the test proves nothing.
+    expect(formatPrice(4.99, 'fr')).not.toBe(formatPrice(4.99, 'en'))
+  })
+  it('keeps both decimals on a round price', () => {
+    expect(formatPrice(5, 'fr')).toMatch(/5,00/)
+  })
+  it('returns empty for null/undefined/NaN — a deal with no price prints nothing', () => {
+    expect(formatPrice(null, 'fr')).toBe('')
+    expect(formatPrice(undefined, 'fr')).toBe('')
+    expect(formatPrice(Number.NaN, 'fr')).toBe('')
   })
 })
 

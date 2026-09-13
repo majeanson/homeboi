@@ -102,9 +102,9 @@ function DealZoomCaption({ itemText, deal }: { itemText: string; deal: Deal }) {
   const ended = dealEnded(deal.validTo)
   const until = deal.validTo ? `${t.shop.until} ${dealDate(deal.validTo, lang)}` : ''
   const priceBits = [
-    deal.price != null ? money(deal.price) : null,
-    deal.wasPrice != null && deal.wasPrice > (deal.price ?? 0) ? `${t.shop.was} ${money(deal.wasPrice)}` : null,
-    deal.unitPrice != null ? `${money(deal.unitPrice)}${deal.unitLabel ?? ''}` : null,
+    deal.price != null ? money(deal.price, lang) : null,
+    deal.wasPrice != null && deal.wasPrice > (deal.price ?? 0) ? `${t.shop.was} ${money(deal.wasPrice, lang)}` : null,
+    deal.unitPrice != null ? `${money(deal.unitPrice, lang)}${deal.unitLabel ?? ''}` : null,
   ].filter((x): x is string => !!x)
   const head = [itemText, deal.merchant?.trim() || null].filter((x): x is string => !!x).join(' · ')
   // The product name is only worth a second line when it SAYS something the head
@@ -654,7 +654,7 @@ export function Liste() {
           picto: pictoFor(item.text),
           aisle: ai ? `${ai.emoji} ${ai.label[lang]}` : undefined,
           dealMerchant: staged?.merchant ?? null,
-          dealPrice: staged?.price != null ? money(staged.price) : null,
+          dealPrice: staged?.price != null ? money(staged.price, lang) : null,
           dealName: staged?.name ?? null,
           dealUntil: staged?.validTo ? `${t.shop.until} ${dealDate(staged.validTo, lang)}` : null,
           dealEnded: staged ? dealEnded(staged.validTo) : false,
@@ -903,7 +903,7 @@ export function Liste() {
                   // ones, and join; no part at all → no chip.
                   dealLabel={(() => {
                     if (!staged) return null
-                    const bits = [staged.merchant?.trim() || null, staged.price != null ? money(staged.price) : null].filter(
+                    const bits = [staged.merchant?.trim() || null, staged.price != null ? money(staged.price, lang) : null].filter(
                       (x): x is string => !!x,
                     )
                     // The validTo day is past → the deal likely no longer applies.

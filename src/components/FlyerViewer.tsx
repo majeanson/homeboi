@@ -470,7 +470,7 @@ export function FlyerViewer({
                   className={`flyer-grid__cell${selectedIdx === idx ? ' is-hit' : ''}`}
                   style={ratio ? { aspectRatio: ratio } : undefined}
                   onClick={() => setSelectedIdx(idx)}
-                  aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
+                  aria-label={it.price != null ? `${it.name} — ${money(it.price, lang)}` : it.name}
                 >
                   <FlyerImg src={it.image} alt={it.name} />
                 </button>
@@ -519,7 +519,7 @@ export function FlyerViewer({
                         className={`flyer-item${isHit ? ' is-hit' : ''}`}
                         style={style}
                         onClick={() => setSelectedIdx(idx)}
-                        aria-label={it.price != null ? `${it.name} — ${money(it.price)}` : it.name}
+                        aria-label={it.price != null ? `${it.name} — ${money(it.price, lang)}` : it.name}
                       >
                         {it.image && <FlyerImg src={it.image} alt={it.name} />}
                         {isHit && (
@@ -548,12 +548,12 @@ export function FlyerViewer({
               <span className="flyer-detail__name">{selected.name || '—'}</span>
               <span className="flyer-detail__meta mono">
                 {selected.unitPrice != null
-                  ? `${money(selected.unitPrice)}${selected.unitLabel}`
+                  ? `${money(selected.unitPrice, lang)}${selected.unitLabel}`
                   : t.shop.noUnit}
                 {selected.validTo ? ` · ${t.shop.until} ${fmtDate(selected.validTo)}` : ''}
               </span>
             </div>
-            <span className="flyer-detail__price">{money(selected.price)}</span>
+            <span className="flyer-detail__price">{money(selected.price, lang)}</span>
           </div>
           <div className="flyer-detail__actions">
             {data && data.items.length > 1 && (

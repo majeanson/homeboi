@@ -58,4 +58,15 @@ describe('recurLabel', () => {
     expect(label).toContain('3')
     expect(label).toContain(EN.recur.unit.yearly)
   })
+
+  // French makes « tous » agree with the unit. This read « tous les 2 semaines » on
+  // every bi-weekly rule in the app — the chore, the pay, the « Hypothèque » on the
+  // virements plan card — because `every` was ONE fixed masculine string. Found
+  // 2026-09-13 in the first screenshot ever taken of that card.
+  it('agrees with the unit in French — « toutes les 2 semaines », not « tous les »', () => {
+    expect(recurLabel('{"freq":"weekly","interval":2,"weekdays":[]}', FR)).toBe('toutes les 2 semaines')
+    expect(recurLabel('{"freq":"daily","interval":2,"weekdays":[]}', FR)).toBe('tous les 2 jours')
+    expect(recurLabel('{"freq":"monthly","interval":2,"weekdays":[]}', FR)).toBe('tous les 2 mois')
+    expect(recurLabel('{"freq":"yearly","interval":2,"weekdays":[]}', FR)).toBe('tous les 2 ans')
+  })
 })

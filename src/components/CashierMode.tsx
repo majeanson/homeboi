@@ -15,7 +15,8 @@ import { Cluster } from './Layout'
 import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
 
-// "Show the cashier" mode. The user holds the phone (the cashier never does) and
+// « Montrer à la caisse » / "Show at the till" mode. The user holds the phone (the
+// cashier never does) and
 // items hit the belt in an unpredictable order — so this is RANDOM-ACCESS, not a
 // sequential stepper:
 //   grid — every picked deal as a tile; tap the one being scanned right now.
@@ -176,7 +177,7 @@ export function CashierMode({
                     )}
                     <span className="cashier__tile-for">{p.itemText}</span>
                     <span className="cashier__tile-name mono">{p.deal.name}</span>
-                    <span className="cashier__tile-price">{money(p.deal.price)}</span>
+                    <span className="cashier__tile-price">{money(p.deal.price, lang)}</span>
                     <span className="cashier__tile-store mono">{p.deal.merchant}</span>
                     {ended && <span className="cashier__tile-ended mono">{t.shop.dealEnded}</span>}
                     {isShown && (
@@ -242,7 +243,7 @@ export function CashierMode({
           </div>
           <div className="bigcard__info">
             <span className="bigcard__name">{d.name}</span>
-            <span className="bigcard__price">{money(d.price)}</span>
+            <span className="bigcard__price">{money(d.price, lang)}</span>
             {/* Below the price, as the page does: what the ad also states. The unit
                 price is what a match actually turns on (sizes rarely agree); an
                 AI-INFERRED size wears ≈ — at a till, a guess must never present itself
@@ -256,13 +257,13 @@ export function CashierMode({
                       <InlineIcon name="approximate-equals-bold" size={14} />{' '}
                     </>
                   )}
-                  {money(d.unitPrice)}
+                  {money(d.unitPrice, lang)}
                   {d.unitLabel}
                 </span>
               )}
               {d.wasPrice != null && d.wasPrice > (d.price ?? 0) && (
                 <span className="bigcard__was">
-                  {t.shop.was} {money(d.wasPrice)}
+                  {t.shop.was} {money(d.wasPrice, lang)}
                 </span>
               )}
             </span>

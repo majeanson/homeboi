@@ -130,6 +130,9 @@ export function CercleCarnetPage() {
   const lifeDate = carnet.installedAt && carnet.lifespanMonths ? replacementDate(carnet.installedAt, carnet.lifespanMonths) : null
   const warrantyUntil = carnet.facts?.warrantyUntil as number | undefined
   const model = carnet.facts?.model as string | undefined
+  // Does the Identité block have anything to show? (The « Voir l'horaire » button on an
+  // auto carnet is a DOOR, not a fact — a section that holds only a door is still empty.)
+  const hasFacts = !!(carnet.installedAt || model || warrantyUntil || lifeDate)
 
   function removeLog(e: CareLog) {
     logRemoval.remove([e.id], c.logDeleted, () =>
@@ -313,13 +316,26 @@ export function CercleCarnetPage() {
                 <b>{c.identity}</b>
                 <span className="ln" />
               </div>
-              <dl className="carnet-facts mono">
-                {carnet.installedAt && (<><dt>{c.installed}</dt><dd>{formatDay(carnet.installedAt, lang)}</dd></>)}
-                {model && (<><dt>{c.model}</dt><dd>{model}</dd></>)}
-                {warrantyUntil && (<><dt>{c.warranty}</dt><dd>{formatDay(warrantyUntil, lang)}</dd></>)}
-                {lifeDate && (<><dt>{c.longJeu}</dt><dd>{c.replaceAround(lifeDate.getFullYear())}</dd></>)}
-              </dl>
-              {carnet.notes && <p className="carnet-notes">{carnet.notes}</p>}
+              {/* A brand-new carnet has none of these, and this section — alone among
+                  the five — drew its header over nothing at all: no facts, no line, no
+                  ＋ (identity is edited from the carnet's own « Modifier » at the top,
+                  see the note above). Every sibling says what belongs in it when empty,
+                  so this one does too, and it names the door rather than growing a
+                  second one. Found 2026-09-13 in the first screenshot of an empty
+                  carnet; same shape as the compact board tile fixed in c99b12fb. */}
+              {!hasFacts && !carnet.notes ? (
+                <EmptyState>{c.noIdentity}</EmptyState>
+              ) : (
+                <>
+                  <dl className="carnet-facts mono">
+                    {carnet.installedAt && (<><dt>{c.installed}</dt><dd>{formatDay(carnet.installedAt, lang)}</dd></>)}
+                    {model && (<><dt>{c.model}</dt><dd>{model}</dd></>)}
+                    {warrantyUntil && (<><dt>{c.warranty}</dt><dd>{formatDay(warrantyUntil, lang)}</dd></>)}
+                    {lifeDate && (<><dt>{c.longJeu}</dt><dd>{c.replaceAround(lifeDate.getFullYear())}</dd></>)}
+                  </dl>
+                  {carnet.notes && <p className="carnet-notes">{carnet.notes}</p>}
+                </>
+              )}
               {carnet.kind === 'auto' && (
                 <button type="button" className="btn btn--ghost" onClick={() => nav('/voiture')}>
                   <InlineIcon name="car-bold" size={16} /> {c.viewSchedule}

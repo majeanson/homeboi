@@ -27,11 +27,18 @@ export function recurOf(json?: string | null): RecurValue | null {
 export function recurLabel(json: string | null | undefined, t: typeof FR): string {
   const r = recurOf(json)
   if (!r) return ''
-  // Base cadence: "Chaque semaine" at interval 1, "tous les N semaine(s)" beyond —
+  // Base cadence: « Chaque semaine » at interval 1, « toutes les N semaines » beyond —
   // so the count ("how many weeks") is always spelled out, not just implied.
+  //
+  // `every` is keyed by FREQ because French makes it agree: « tous les 2 jours / mois /
+  // ans » but « TOUTES les 2 semaines ». It was one fixed masculine string, so three of
+  // the four units read correctly and the one a household uses most — the bi-weekly pay,
+  // the bi-weekly chore, the « Hypothèque · tous les 2 semaines » on the virements plan
+  // card — did not. English keeps « every » four times over; the shape is what the
+  // agreement needs, not the words.
   const base =
     r.interval > 1
-      ? `${t.recur.every} ${r.interval} ${(r.interval > 1 ? t.recur.unitPlural : t.recur.unit)[r.freq]}`
+      ? `${t.recur.every[r.freq]} ${r.interval} ${(r.interval > 1 ? t.recur.unitPlural : t.recur.unit)[r.freq]}`
       : r.freq === 'daily'
         ? t.recur.daily
         : r.freq === 'weekly'

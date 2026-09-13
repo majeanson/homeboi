@@ -1,3 +1,4 @@
+import { formatPrice } from './money'
 // Shared shapes for flyer deals, used by the proof sheet, the list, and the
 // cashier stepper. Mirrors the /api/deals `Deal` shape on the server.
 export interface Deal {
@@ -76,7 +77,13 @@ export function dealEnded(validTo: string | null | undefined, now = Date.now()):
   return now >= endOfDay.getTime()
 }
 
-export const money = (n: number | null): string => (n == null ? '' : `${n.toFixed(2).replace('.', ',')} $`)
+// A flyer price, in the reader's language. `lang` is NOT optional on purpose: the old
+// signature took none, was hard-coded FR-CA, and printed « 4,99 $ » across the whole
+// shopping stack under an English UI. A default would have let a call site keep doing
+// that silently — having the compiler name all nineteen was the point. The formatter
+// itself lives in lib/money.ts (a cached Intl home, per intl-rule.test.ts); the rest of
+// the story is the comment on `formatPrice` there.
+export const money = (n: number | null | undefined, lang: 'fr' | 'en'): string => formatPrice(n, lang)
 
 // The validity SPAN a cashier checks — "11 juin au 17 juin", or "jusqu'au 17 juin"
 // when the ad only states an end. One implementation for every surface that holds a

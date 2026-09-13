@@ -1122,6 +1122,7 @@ export const FR = {
     entretien: 'Entretien',
     recent: 'Dernières entrées',
     identity: 'Identité',
+    noIdentity: 'Rien de noté encore. « Modifier », plus haut, prend la date d’installation, le modèle, la garantie.',
     sesChoses: 'Ses choses',
     noChoses: 'Aucune chose ajoutée. Un objet dont on prend soin : le BBQ, le vélo, la fournaise…',
     addChild: 'Ajouter une chose',
@@ -1192,7 +1193,7 @@ export const FR = {
       hydrate: 'Il fait chaud — bois de l’eau 💧',
     },
   },
-  recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', yearly: 'Chaque année', every: 'tous les', unit: { daily: 'jour', weekly: 'semaine', monthly: 'mois', yearly: 'an' }, unitPlural: { daily: 'jours', weekly: 'semaines', monthly: 'mois', yearly: 'ans' }, weekdayShort: ['D', 'L', 'Ma', 'Me', 'J', 'V', 'S'] },
+  recur: { repeat: 'Répéter', none: 'Jamais', daily: 'Chaque jour', weekly: 'Chaque semaine', monthly: 'Chaque mois', yearly: 'Chaque année', every: { daily: 'tous les', weekly: 'toutes les', monthly: 'tous les', yearly: 'tous les' }, unit: { daily: 'jour', weekly: 'semaine', monthly: 'mois', yearly: 'an' }, unitPlural: { daily: 'jours', weekly: 'semaines', monthly: 'mois', yearly: 'ans' }, weekdayShort: ['D', 'L', 'Ma', 'Me', 'J', 'V', 'S'] },
   // « L'auto » — the single shared car + carpool + work-schedule surface (#28).
   auto: {
     title: 'L’auto',

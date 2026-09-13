@@ -951,6 +951,7 @@ export const EN: typeof FR = {
     entretien: 'Upkeep',
     recent: 'Latest entries',
     identity: 'Identity',
+    noIdentity: 'Nothing noted yet. “Edit”, above, takes the install date, the model and the warranty.',
     sesChoses: 'Its things',
     noChoses: 'No things added. Anything you take care of: the BBQ, a bike, the furnace…',
     addChild: 'Add a thing',
@@ -1018,7 +1019,7 @@ export const EN: typeof FR = {
       hydrate: 'Hot out — drink water 💧',
     },
   },
-  recur: { repeat: 'Repeat', none: 'Never', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly', every: 'every', unit: { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' }, unitPlural: { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' }, weekdayShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] },
+  recur: { repeat: 'Repeat', none: 'Never', daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly', every: { daily: 'every', weekly: 'every', monthly: 'every', yearly: 'every' }, unit: { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' }, unitPlural: { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' }, weekdayShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'] },
   auto: {
     title: 'The car',
     car: 'The car',
@@ -2295,7 +2296,7 @@ export const EN: typeof FR = {
     storeCashierOn: 'Yes',
     storeCashierOff: 'No',
     storeCashierHint:
-      'Hides this store’s deals in “Show the cashier” — handy for the store where you do your own shopping.',
+      'Hides this store’s deals in “Show at the till” — handy for the store where you do your own shopping.',
     history: 'Items bought before',
     historyHint:
       'What “Quick add” suggests. Rename a specific item to its generic name (e.g. “White eggs selection” → “Eggs”) to fold it in, or remove it.',
@@ -3023,7 +3024,7 @@ export const EN: typeof FR = {
     position: { top: 'top', middle: 'middle', bottom: 'bottom', left: 'left', center: 'center', right: 'right', col: 'column' },
     choose: 'Use this price',
     chosen: 'Chosen ✓',
-    present: 'Show the cashier',
+    present: 'Show at the till',
     auto: 'Pick the best',
     autoWorking: 'Finding the best prices…',
     cashierTitle: 'At the till',

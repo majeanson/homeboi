@@ -6,8 +6,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { isGuest } from '../lib/device'
-import { useAuth } from '../lib/auth'
-import { EntityShareModal } from '../components/EntityShareModal'
 import { useLang, useT } from '../i18n'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
@@ -478,9 +476,6 @@ export function DayPlanPage() {
   // section's row-taps open edit forms and the ＋ buttons add — hide all of that, so
   // the events/chores read as plain Act cards.
   const ro = isGuest()
-  // « Partager » a single event as a public /partage link (operator-only — a server write).
-  const { signedIn } = useAuth()
-  const [sharingEvent, setSharingEvent] = useState<{ id: string; title: string } | null>(null)
   const suppers = mealsFor(date, heroSlot)
   const dayNote = noteFor(date)
   const title = capitalize(formatDayLong(date, lang))
@@ -722,25 +717,16 @@ export function DayPlanPage() {
             {!filShown && dayEvents.length === 0 && !eventForm ? (
               <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
             ) : (
-              bucketEvents.map((e) => (
-                <div key={e.id} className="day-plan__act-row">
-                  {eventActNode(e)}
-                  {/* « Partager » one event → a public /partage link (real page, not a text
-                      paste). Operator-only + real events only (not a derived birthday or a
-                      work/car row). */}
-                  {!e.work && !e.birthday && signedIn && (
-                    <button
-                      type="button"
-                      className="btn btn--ghost mono day-plan__act-share"
-                      onClick={() => setSharingEvent({ id: e.id, title: e.title })}
-                      aria-label={t.shareLink.action}
-                      title={t.shareLink.action}
-                    >
-                      <Icon name="arrow-up-right-bold" size={16} />
-                    </button>
-                  )}
-                </div>
-              ))
+              // « Partager » lives in the event PEEK (`EventPeekActions`), which every
+              // row here opens — ACTIONS.md:102 records it as a peek action and nothing
+              // else. This list used to hang a second, inline ↗ beside each row, and the
+              // cost only became visible once the sweep shot below the fold: the ribbon
+              // (`Fil`) takes the TIMED rows on any day with two or more of them, so the
+              // inline button survived on the all-day leftovers alone — one unexplained
+              // arrow floating in the gutter beside a row narrowed to make space for it,
+              // on the busiest days, which are the ones you open this page for. A door
+              // that appears on some rows and not others is worse than one door.
+              bucketEvents.map((e) => <div key={e.id}>{eventActNode(e)}</div>)
             )}
             {!ro && eventForm && (
               <EventForm
@@ -884,14 +870,6 @@ export function DayPlanPage() {
           </section>
         )}
 
-        {sharingEvent && (
-          <EntityShareModal
-            open
-            onClose={() => setSharingEvent(null)}
-            title={`${t.shareLink.action} · ${sharingEvent.title}`}
-            body={{ kind: 'event', eventId: sharingEvent.id }}
-          />
-        )}
       </div>
     </div>
   )

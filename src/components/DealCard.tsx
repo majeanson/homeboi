@@ -109,7 +109,7 @@ export function DealCard({
                       label: t.shop.share,
                       onSelect: () => {
                         const lines = [
-                          `${deal.name} — ${money(deal.price)}`,
+                          `${deal.name} — ${money(deal.price, lang)}`,
                           deal.merchant,
                           deal.validTo ? `${t.shop.until} ${fmtDate(deal.validTo)}` : '',
                         ].filter(Boolean)
@@ -123,7 +123,7 @@ export function DealCard({
         </span>
       </div>
       <div className="deal__price">
-        <span className="deal__now">{money(deal.price)}</span>
+        <span className="deal__now">{money(deal.price, lang)}</span>
         {deal.unitPrice != null ? (
           <span className={`deal__unit mono${deal.unitApprox ? ' deal__unit--approx' : ''}`}>
             {deal.unitApprox && (
@@ -131,7 +131,7 @@ export function DealCard({
                 <InlineIcon name="approximate-equals-bold" size={11} />{' '}
               </>
             )}
-            {money(deal.unitPrice)}
+            {money(deal.unitPrice, lang)}
             {deal.unitLabel}
           </span>
         ) : (
@@ -139,7 +139,7 @@ export function DealCard({
         )}
         {deal.wasPrice != null && deal.wasPrice > (deal.price ?? 0) && (
           <span className="deal__was mono">
-            {t.shop.was} {money(deal.wasPrice)}
+            {t.shop.was} {money(deal.wasPrice, lang)}
           </span>
         )}
       </div>

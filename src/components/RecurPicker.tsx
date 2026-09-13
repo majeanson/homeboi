@@ -51,7 +51,7 @@ export function RecurPicker({ value, onChange }: { value: RecurValue | null; onC
 
       {value && (
         <label className="recur__row mono">
-          <span>{t.recur.every}</span>
+          <span>{t.recur.every[value.freq]}</span>
           <input
             className="input recur__interval"
             type="text"

@@ -100,10 +100,12 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **9** — all nine written by §4-H on 2026-09-13, the
-> pass that ran the state matrix and looked at what it had never been able to show (the
-> sweep was pruning nothing, shooting only the viewport, and rebasing two fixtures out
-> of ten). Every one of the nine is a defect a frame made visible, not a ledger entry.
+> a number you can trust. It reads **3** — what is left of the nine §4-H wrote on
+> 2026-09-13, the pass that ran the state matrix and looked at what it had never been
+> able to show (the sweep was pruning nothing, shooting only the viewport, and rebasing
+> two fixtures out of ten). Six were fixed the same day; the three that remain each
+> touch a deliberate design decision, so they wait on Marc rather than on code. Every
+> one of the nine is a defect a frame made visible, not a ledger entry.
 > It read **0** before that — the last box, the till card, closed when it names and
 > links its source, which was the honest answer to « don't let a cashier refuse it »;
 > what remains there are two ❓ (terms, licensing), not tasks.
@@ -2953,19 +2955,19 @@ fixture again; the quickadd pale pips are a designed state; the template editor'
 first « move up » IS disabled — `upDisabled={idx === 0}`, the pixels just do not say so
 loudly).
 
-- [ ] **`money()` ignores the language** (`src/lib/deals.ts:79`). It is hard-coded
+- [x] **`money()` ignores the language** (`src/lib/deals.ts:79`). It is hard-coded
       FR-CA — `n.toFixed(2)` with the dot swapped for a comma and « $ » appended — so the
       whole shopping stack (list row, till tile, till card, price-match, flyer viewer,
       item editor) prints « 4,99 $ » under an English UI. Its own neighbour `dealDate`
       takes `lang`, and `lib/money.ts` has two lang-aware cached formatters. §4-G records
       unifying FlyerViewer's local money INTO this one — into the FR-only one.
-- [ ] **« tous les 2 semaines »** — `recur.every` is one fixed masculine string
+- [x] **« tous les 2 semaines »** — `recur.every` is one fixed masculine string
       (`i18n.ts:1195`) composed with `unitPlural`, so three of the four units read
       correctly and the most common one in a household does not. Visible on the
       virements plan card and in `RecurPicker`; one source (`lib/recurLabel.ts:34`).
-- [ ] **EN « Show the cashier »** (`i18n.en.ts:3026`) reads as *display the cashier*.
+- [x] **EN « Show the cashier »** (`i18n.en.ts:3026`) reads as *display the cashier*.
       The scene it opens is titled « At the till ».
-- [ ] **A second « Partager » door on the day page** (`DayPlanPage.tsx:731`). The inline
+- [x] **A second « Partager » door on the day page** (`DayPlanPage.tsx:731`). The inline
       ↗ is rendered beside *bucket* rows only, so once a day holds ≥2 timed things and
       « Le fil » takes the timed rows, the lone all-day event keeps an unexplained icon
       floating in the gutter (clearest at 1280px, where the row shrinks to make room for
@@ -2983,16 +2985,28 @@ loudly).
       composer**, above their own empty state — LEAN.md's first smell, on a surface below
       the fold that the lean passes had therefore never photographed. `SectionAdd` is the
       primitive.
-- [ ] **The carnet's « Identité » draws a header over nothing** — every sibling section
+- [x] **The carnet's « Identité » draws a header over nothing** — every sibling section
       carries an empty-state line; that one has neither body nor line. Same shape as
       `c99b12fb`.
 - [ ] **A cercle row's relation is the first thing truncated**: « Conjointe de P… » at
       390px, « Conjointe … » at 360, while the row beside it says « Conjoint de Maman »
       in full — the contact ☎/✉ icons win the line, and the relation is the only thing
       the row is FOR.
-- [ ] **The toddler kitchen says « dimanche » for tonight's supper** while the toddler
+- [x] **The toddler kitchen says « dimanche » for tonight's supper** while the toddler
       board says « CE SOIR » for the same meal. One pre-reader, two surfaces, two ways of
       naming today.
+
+**Six of the nine shipped the same day** (one commit, each with the grep that found
+it and, where the fix is a rule rather than a pixel, a test proven red against the
+exact old value first: the money formatter against `toFixed(2)` + comma, the
+recurrence label against `every: 'tous les'`). The three still open are the ones that
+argue with a decision somebody already made — the agenda's duplicated « Avant de
+partir » reminder is deliberate (its comment says so; what the comment could not know
+is that the card sits directly under it on a phone), the garde-manger's two open
+composers are a LEAN call on a surface no screenshot had reached, and the cercle row's
+truncation is a width trade between the relation and the ☎/✉ icons. Each is a question
+for Marc, not a defect to go fix.
+
 - [~] **« Meilleur prix » badges the more expensive number** — ★ on Super C 4,99 $
       (1,25 $/L) above IGA 2,99 $ (1,50 $/L). The ranking is right (`sortBestFirst` groups
       by unit kind and sorts by unit price; `PriceMatchPage.tsx:125` badges the first with

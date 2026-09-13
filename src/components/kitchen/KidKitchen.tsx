@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
-import { formatWeekday } from '../../lib/format'
+import { formatRelativeWeekday } from '../../lib/format'
 import { pictoFor } from '../../lib/picto'
 import { type Recipe, recipeImg } from '../../lib/recipes'
 import { isGuest } from '../../lib/device'
@@ -51,6 +51,14 @@ export function KidKitchen({
   // is the "Les collections" door worth showing (NFR-CALM: no empty affordances).
   const hasCollections = useMemo(() => buildCollections(recipes).length > 0, [recipes])
 
+  // A day, named the way a pre-reader can place it: « Aujourd'hui » / « Demain » for
+  // the two that matter, the weekday after that. It read « dimanche » for tonight's
+  // supper while the toddler BOARD said « CE SOIR » about the very same meal — one
+  // child, two surfaces, two ways of saying today, and the one who cannot read
+  // weekday names got the weekday name. `formatRelativeWeekday` is the parent ＋
+  // sheet's day-picker helper; nothing new needed, it simply was not reached for.
+  const dayName = (at: number) => formatRelativeWeekday(at, lang, t.board.today, t.board.tomorrow)
+
   // The toddler lens is just "this week": the next 7 days, one of each weekday.
   // (The parent grid runs a longer window — « Jours affichés », 7–14 — but two
   // "Mardi" tiles would confuse a pre-reader picking a day by sight, and by
@@ -70,8 +78,8 @@ export function KidKitchen({
         key: String(d.date),
         icon: pictoFor(d.meal!.title, '🍽'),
         label: d.meal!.title,
-        sub: formatWeekday(d.date, lang),
-        narration: `${formatWeekday(d.date, lang)}: ${d.meal!.title}`,
+        sub: dayName(d.date),
+        narration: `${dayName(d.date)}: ${d.meal!.title}`,
         confirmHint: recipe ? t.kid.tapToCook : undefined,
         onTap: recipe ? () => onStartRecipe(recipe) : undefined,
       }
@@ -115,14 +123,14 @@ export function KidKitchen({
     ? days7.map(({ date, meal }) => ({
         key: String(date),
         icon: meal ? pictoFor(meal.title, '🍽') : '📅',
-        label: formatWeekday(date, lang),
+        label: dayName(date),
         sub: meal?.title,
         // A planned day is "taken" — greyed and read-only (tapping just reads the
         // meal that's already there). Only empty days accept the suggestion.
         done: !!meal,
         narration: meal
-          ? `${formatWeekday(date, lang)}: ${meal.title}`
-          : `${formatWeekday(date, lang)}: ${kidRecipe.title}`,
+          ? `${dayName(date)}: ${meal.title}`
+          : `${dayName(date)}: ${kidRecipe.title}`,
         onTap: meal
           ? undefined
           : () => {

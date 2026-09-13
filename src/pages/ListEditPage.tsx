@@ -7,7 +7,7 @@ import { StatusMessage } from '../components/StatusMessage'
 import { useConfirm } from '../lib/confirm'
 import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
-import { useT } from '../i18n'
+import { useT, useLang } from '../i18n'
 import { Loading } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
@@ -25,6 +25,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 // ['board'] cache by id, so there are no props to thread and it's deep-linkable.
 export function ListEditPage() {
   const t = useT()
+  const { lang } = useLang()
   const qc = useQueryClient()
   const write = useWrite()
   const confirm = useConfirm()
@@ -192,7 +193,7 @@ export function ListEditPage() {
             )}
             {deal && (
               <p className="li-edit__row mono">
-                <InlineIcon name="tag-bold" /> {deal.merchant} {money(deal.price)}
+                <InlineIcon name="tag-bold" /> {deal.merchant} {money(deal.price, lang)}
               </p>
             )}
           </div>
@@ -271,7 +272,7 @@ export function ListEditPage() {
 
           {deal && (
             <button type="button" className="btn btn--ghost li-edit__row" onClick={unlink} disabled={busy}>
-              <InlineIcon name="tag-bold" /> {t.list.unlinkDeal} · {deal.merchant} {money(deal.price)}
+              <InlineIcon name="tag-bold" /> {t.list.unlinkDeal} · {deal.merchant} {money(deal.price, lang)}
             </button>
           )}
 

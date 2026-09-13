@@ -418,13 +418,6 @@
 .day-plan__doors .day-plan__add {
   margin: 0;
 }
-.day-plan__act-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.day-plan__act-row > .act { flex: 1; min-width: 0; }
-.day-plan__act-share { flex-shrink: 0; padding: 4px 6px; }
 /* « Voyage » day: the trip card + its dated itinerary entries for the day. The
    entries indent under the trip so they read as "the plans for this trip's day",
    not loose agenda rows. */
