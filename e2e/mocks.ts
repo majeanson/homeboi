@@ -545,6 +545,74 @@ const AUTH_ME = {
   household: { id: 'h1', name: 'Maison Tremblay', tier: 'free' },
 }
 
+// « Les virements » read model (`/api/transfers`, mig 0126) — ONE composed shape:
+// the standing agreements with their derived `due` midnights + catch-up projection,
+// and the transfers already sent. Every date is an MMID-relative LOCAL midnight, so
+// the fixture reads the same in any timezone and the state matrix can rebase it onto
+// its own clock.
+//
+// One plan, deliberately mid-flight: a payment two weeks back that nobody has logged
+// (the composer's whole reason to exist — it arrives with that date ticked), today's,
+// and the next one. Two sent transfers: an ordinary share and a « renflou » top-up,
+// so the history shows both line kinds rather than one repeated.
+const TRANSFER_PLAN = {
+  id: 'p1',
+  title: 'Hypothèque',
+  amountCents: 81282,
+  recur: { freq: 'weekly', interval: 2 },
+  anchorAt: MMID - 14 * DAY,
+  shares: { m1: 25641, m2: 55641 },
+  catchup: { behindMemberId: 'm2', gapCents: 7_200_000, asOf: MMID - 14 * DAY, termEnd: MMID + 365 * DAY },
+  colour: null,
+  position: 0,
+  due: [MMID - 14 * DAY, MMID, MMID + 14 * DAY],
+  projection: {
+    behindMemberId: 'm2',
+    aheadMemberId: 'm1',
+    gapCents: 7_200_000,
+    asOf: MMID - 14 * DAY,
+    termEnd: MMID + 365 * DAY,
+    extraPerPayment: 30_000,
+    paymentsSoFar: 1,
+    caughtUpCents: 200_000,
+    remainingCents: 7_000_000,
+    paymentsLeft: 25,
+    projectedRemainingCents: 6_250_000,
+  },
+}
+const TRANSFERS = {
+  today: MMID,
+  plans: [TRANSFER_PLAN],
+  transfers: [
+    {
+      id: 't1',
+      memberId: 'm2',
+      sentAt: MMID - 28 * DAY,
+      lines: [{ kind: 'plan', planId: 'p1', dueAt: MMID - 28 * DAY, amountCents: 55641 }],
+      totalCents: 55641,
+      // A memo with NO date in it, deliberately. A real one reads « Hypotheque 11 mai »
+      // — the composer writes the covered dates into the string — but a memo is stored
+      // TEXT: the state matrix can rebase `sentAt` onto today and cannot rebase the
+      // sentence beside it, so a dated memo would print a month its own row contradicts
+      // and read as an app bug on sight. virements.spec.ts supplies its own fixture and
+      // still pins the dated form, which is where that assertion belongs.
+      memo: 'Hypotheque',
+      reference: 'CArR4A3Q',
+      note: null,
+    },
+    {
+      id: 't2',
+      memberId: 'm2',
+      sentAt: MMID - 30 * DAY,
+      lines: [{ kind: 'topup', amountCents: 200000 }],
+      totalCents: 200000,
+      memo: 'renflouement',
+      reference: null,
+      note: null,
+    },
+  ],
+}
+
 // Map of route suffix (after /api/) -> JSON body. Matched by pathname start so
 // query strings (?view=manage, ?id=…) still hit. GET only; writes get a generic ok.
 // Exported so a spec can build a VARIANT of a fixture (spread + tweak one field)
@@ -685,6 +753,14 @@ export const ROUTES: Record<string, unknown> = {
   // « Les notes » (its own hub tab since the nav restructure — CercleNotes + global
   // search). Empty is the normal calm state; an absent `notes` must never crash it.
   'family-notes': { notes: [] },
+  // « Les virements » — the money face of Les notes (`?section=virements`, mig 0126).
+  // ONE composed read model: the standing agreements (with their derived `due` dates
+  // and catch-up projection) and what has actually been sent. Anchored on MMID like
+  // every other dated fixture, so a spec that freezes the clock there reads a plan
+  // with one payment behind and one coming — the shape the composer exists for.
+  // e2e/virements.spec.ts still routes `**/api/transfer**` itself (a later route
+  // wins) to drive its own cases; this default is what every OTHER surface sees.
+  transfers: TRANSFERS,
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },
   // « À régler » cross-domain scan — empty by default (the card hides; calm). Set a
   // [{kind,key,label,sub?,at?,href}] to exercise the heads-up.

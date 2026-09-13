@@ -179,7 +179,11 @@ npm run e2e:sw         # SW offline-shell e2e ONLY (own harness: vite build + pr
 npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts, own harness):
                        #   route × opened state × theme × lens × fake keyboard → screenshots +
                        #   structural assertions + screenshots/matrix/manifest.json, built for a
-                       #   Claude review pass (read the manifest, open flagged PNGs). Never runs
+                       #   Claude review pass (read the manifest, open flagged PNGs). A state is
+                       #   SEVERAL frames — `<name>.png` then `<name>--2.png`… down the real inner
+                       #   scroller, since the document itself never scrolls (`fullPage` is a
+                       #   no-op here); `manifest.frames` is the number to review against, and a
+                       #   whole run PRUNES the PNGs of states that no longer exist. Never runs
                        #   per-push; CI twin = Actions ▸ "State matrix" (dispatch + WEEKLY,
                        #   Mondays — the contentTopPx ratchet needs something to pull it).
 npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (e2e/flipp-live.spec.ts, own

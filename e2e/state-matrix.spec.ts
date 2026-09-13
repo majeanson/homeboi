@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
-import { mockApi, seedState, MEALS, CAR, MMID, type Audience, type Lang, type Surface, type Theme } from './mocks'
+import { mockApi, seedState, ROUTES, BASE, MMID, type Audience, type Lang, type Surface, type Theme } from './mocks'
 import { installVvStub, openKeyboard } from './kb'
 import { localDayStart } from '../src/lib/localDay'
 import { worstRightBleed } from './overflow'
@@ -186,17 +186,32 @@ const CLOCK_AT = TODAY_MIDNIGHT + 13 * 3600 + 20 * 60
 //
 // Neither is an app bug. Both mean a reviewer cannot judge the one thing those
 // screens are FOR, which makes the screenshot worse than useless. So the matrix —
-// and ONLY the matrix — shifts those two fixtures onto its own clock. `MMID` and
+// and ONLY the matrix — shifts those fixtures onto its own clock. `MMID` and
 // `TODAY_MIDNIGHT` are both LOCAL midnights, so the delta is a whole number of days
 // and every weekday label lands where the app would really put it.
+//
+// It began as two fixtures (meals + car) and that was the wrong size, found by the
+// 2026-09-13 review pass: the SHARED fixtures print dates too, and every one of them
+// was still a year back while the clock said today. The board's mots read « il y a
+// 462 j », Réglages ▸ Agenda listed « dim. 8 juin » under a September header, the
+// kitchen history said « Juin 2025 » over a September plan, and the drawings wall was
+// dated 2025. Each is the same defect as the car week, and each was photographed and
+// reviewed as if it were the app's doing. A rebase that covers two fixtures out of
+// ten is not a rebase; it is a smaller lie.
 const REBASE = TODAY_MIDNIGHT - MMID
-// Shift anything that looks like a second-precision epoch in the fixture's era. The
-// bound matters: ids, positions, colours and prices are numbers too, and a blanket
-// "+ REBASE on every number" would quietly corrupt them.
-const EPOCH_LO = 1_600_000_000
-const EPOCH_HI = 1_800_000_000
+// Shift anything that looks like a second-precision epoch IN THE FIXTURE'S OWN ERA.
+// Two bounds matter, for opposite reasons:
+//   · the outer one, because ids, positions, colours and prices are numbers too, and
+//     a blanket "+ REBASE on every number" would quietly corrupt them;
+//   · the ±400-day window around BASE, because some fixtures are ALREADY anchored on
+//     today (TODOS builds its days off `localDayStart(new Date())`). Shifting those
+//     would move them a year INTO THE FUTURE — the rebase would create the very bug
+//     it exists to remove. The window keeps it to the fixtures that need it, which is
+//     what makes it safe to point at the whole table instead of two entries.
+const ERA_LO = BASE - 400 * 86_400
+const ERA_HI = BASE + 400 * 86_400
 function rebased<T>(v: T): T {
-  if (typeof v === 'number') return (v > EPOCH_LO && v < EPOCH_HI ? v + REBASE : v) as unknown as T
+  if (typeof v === 'number') return (v > ERA_LO && v < ERA_HI ? v + REBASE : v) as unknown as T
   if (Array.isArray(v)) return v.map(rebased) as unknown as T
   if (v && typeof v === 'object') {
     const out: Record<string, unknown> = {}
@@ -205,7 +220,30 @@ function rebased<T>(v: T): T {
   }
   return v
 }
-const REBASED_FIXTURES = { meals: rebased(MEALS), car: rebased(CAR) }
+// Every shared fixture that PRINTS a date or an age, rebased as one. Listed by route
+// key rather than derived from ROUTES wholesale: a fixture that carries no date needs
+// no shift, and naming them keeps the list reviewable.
+const REBASED_FIXTURES = Object.fromEntries(
+  (
+    [
+      'meals',
+      'car',
+      'board',
+      'month',
+      'meal-history',
+      'meal-ideas',
+      'day-notes',
+      'drawings',
+      'today-changes',
+      'use-soon',
+      'pantry',
+      'habits',
+      'transfers',
+    ] as const
+  )
+    .filter((k) => ROUTES[k] !== undefined)
+    .map((k) => [k, rebased(ROUTES[k])]),
+)
 
 const DAY_FIXTURE = {
   month: {
@@ -496,6 +534,16 @@ const MATRIX: Entry[] = [
   // since the table was written — the one entry where that was an oversight rather than
   // a decision, and the surface LEAN.md spends its longest paragraph on.
   { name: 'voyage', route: '/voyage/tp1', content: '.voyage-note, .voyage__day, .sec-label', budgetPx: 233, themes: ['day'], api: TRIP_FIXTURE },
+  // « Les virements » — the money face of Les notes, and the composer behind it.
+  // Added 2026-09-13: the feature shipped on 2026-09-11 and by the sweep two days
+  // later it had no state here at all, so the review pass that found it also found
+  // that it could not have found anything IN it. A new surface joins this table in
+  // the commit that ships it; that is what the roster rule means for screenshots.
+  { name: 'virements', route: '/notes?section=virements', content: '.virements__plans, .virements__list', budgetPx: 220, themes: ['day'] },
+  { name: 'form-virement', route: '/virement/new', content: '.virements__form fieldset, .input', budgetPx: 115, themes: ['day'] },
+  // The « liste à compléter » template editor, which moved OUT of a Réglages panel
+  // onto its own scene on 2026-09-12 (e18747a0) — never photographed either.
+  { name: 'todo-template', route: '/liste-modele/tpl1', content: '.edit-field__input, .input, .listrow', budgetPx: 18, themes: ['day'] },
   { name: 'price-match', route: '/liste/deals/l1', content: '.pm__deal, .bigcard, .scene__body > *', budgetPx: 32, themes: ['day'] },
   { name: 'multicook', route: '/kitchen/cook/multi?r=rc1,rc2', content: '.mcook__step, .cook__full-ings li, .scene__body > *', budgetPx: 178, themes: ['day'] },
   { name: 'person-edit', route: '/cercle/person/c1', content: '.cf__input', budgetPx: 156, themes: ['day'] },
@@ -570,7 +618,11 @@ const MATRIX: Entry[] = [
   { name: 'help-board', route: '/board', setup: armHelp(), themes: ['day'] },
   { name: 'help-kitchen', route: '/kitchen', setup: armHelp(), themes: ['day'] },
   { name: 'help-liste', route: '/liste', setup: armHelp(), themes: ['day'] },
-  { name: 'help-notes', route: '/notes', setup: armHelp(), themes: ['day'] },
+  // …with the notes fixture, like every other Notes entry. Without it this one shot
+  // « Aucune note » — the help bar is the subject here, but a bar photographed over an
+  // empty page cannot show what it does to a page that has rows under it, which is the
+  // whole question (2026-09-13).
+  { name: 'help-notes', route: '/notes', setup: armHelp(), themes: ['day'], api: NOTES_FIXTURE },
   { name: 'help-maison-routines', route: '/maison?section=routines', setup: armHelp(), themes: ['day'] },
   { name: 'help-maison-cercle', route: '/maison?section=family', setup: armHelp(), themes: ['day'] },
   { name: 'help-settings', route: '/settings?tab=board&lens=regler', setup: armHelp('.operator__lensrow .help-toggle'), themes: ['day'] },
@@ -667,6 +719,62 @@ const lensVariants = (): Entry[] => {
 }
 
 const ALL: Entry[] = [...MATRIX, ...lensVariants()]
+
+// How many states a COMPLETE run writes. Carried in every fragment so the teardown
+// can tell a whole sweep from a `-g`-filtered one before it prunes the gallery —
+// learned immediately and the hard way: the first version pruned on "did this run
+// produce anything at all?", and a two-test `-g` run deleted all 154 other PNGs.
+// The images are cheap to regenerate; a reviewer opening a folder that quietly lost
+// the state they were looking for is not.
+const EXPECTED_STATES = ALL.reduce((n, e) => n + (e.themes ?? ['day', 'night']).length, 0)
+
+// — BELOW THE FOLD. Every shot was a VIEWPORT shot, which means this sweep had never
+// once seen the bottom of a surface: the board's lower cards, the stacked Réglages
+// section cards under a pill, the end of a long form. Two days of commits in
+// September 2026 fixed the « Auj. » / « Demain » board tiles, and not one screenshot
+// in the 151 contained them. The word for that is the one already written above about
+// one language and one width — a blind spot with a screenshot in front of it.
+//
+// `fullPage: true` would NOT have fixed it, and that is the trap worth recording: the
+// document itself never scrolls here. The shell is 100dvh and the scrolling happens
+// INSIDE `.hub__body` / `.scene__body` / `.sheet__body`, so a full-page capture
+// returns the same viewport image and reads as proof that there was nothing below.
+// So: find the real scroller, page it down, and shoot each frame.
+//
+// Extra frames are capped (a recipe could page forever) and skipped for keyboard
+// states, whose whole subject is what sits above a keyboard.
+async function scrollFrames(page: Page, id: string, max: number): Promise<string[]> {
+  const extra: string[] = []
+  for (let i = 0; i < max; i++) {
+    const moved = await page.evaluate(() => {
+      // The deepest, tallest real scroller — not `documentElement`, which in this app
+      // is pinned to the viewport and would report nothing to scroll.
+      let best: Element | null = null
+      let bestOver = 0
+      for (const el of Array.from(document.querySelectorAll('*'))) {
+        const over = el.scrollHeight - el.clientHeight
+        if (over <= 8) continue
+        const oy = getComputedStyle(el).overflowY
+        if (oy !== 'auto' && oy !== 'scroll') continue
+        if (over > bestOver) (bestOver = over), (best = el)
+      }
+      const el = best ?? document.scrollingElement
+      if (!el) return false
+      const before = el.scrollTop
+      // Overlap by 48px so a row split across two frames is whole in one of them.
+      el.scrollTop = before + Math.max(el.clientHeight - 48, 120)
+      return el.scrollTop > before + 8
+    })
+    if (!moved) break
+    // Let the scroll settle (sticky headers re-pin, lazy images decode) without
+    // racing a fixed timeout: one animation frame plus the network going quiet.
+    await page.waitForTimeout(120)
+    const file = `${id}--${i + 2}.png`
+    await page.screenshot({ path: join(OUT, file) })
+    extra.push(file)
+  }
+  return extra
+}
 
 for (const entry of ALL) {
   for (const theme of entry.themes ?? (['day', 'night'] as Theme[])) {
@@ -789,11 +897,14 @@ for (const entry of ALL) {
       const visible = vp.h - (entry.keyboard ?? 0)
       const kbOk = !entry.keyboard || (focusedBottom !== null && focusedBottom <= visible + 1)
       await page.screenshot({ path: join(OUT, `${id}.png`) })
+      const frames = [`${id}.png`, ...(await scrollFrames(page, id, entry.keyboard ? 0 : 2))]
       writeFileSync(
         join(OUT, `.frag-${id}.json`),
         JSON.stringify({
           name: id,
           file: `${id}.png`,
+          frames,
+          expectedStates: EXPECTED_STATES,
           route: entry.route,
           levers: {
             theme,

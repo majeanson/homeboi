@@ -38,6 +38,10 @@ const LOW_CONTENT_EXPECTED: { match: RegExp; why: string }[] = [
   { match: /^price-match/, why: '« Preuve de prix » is two deal cards — a store, a size and a price each; that IS the proof' },
   { match: /^person-edit/, why: 'a form is fields, not prose (and this one opens its « Coordonnées » fold because the phone is filled)' },
   { match: /^(welcome|family-window)/, why: 'GUEST-link scenes: an operator fixture lands them on their empty state, so neither carries a budget' },
+  // Opened 2026-09-13, the run that added it: the « liste à compléter » editor is a
+  // title field and three rows of two-to-four words each — a checklist IS short text,
+  // and its rows carry reorder/edit/delete furniture rather than prose.
+  { match: /^todo-template/, why: 'a checklist editor: a title field and rows of two-to-four words — the content is short by nature' },
   // The EN lens twins (added 2026-09-10). English is simply SHORTER above the fold —
   // « Meals · Pantry · Recipes · History » against « Repas · Garde-manger · Recettes ·
   // Historique », « The list » against « La liste ». Opened all three: same surface,
@@ -50,6 +54,9 @@ const explain = (name: string) => LOW_CONTENT_EXPECTED.find((r) => r.match.test(
 type State = {
   name: string
   pass: boolean
+  frames?: string[]
+  /** How many states a complete run writes — the prune's "was this a whole sweep?" */
+  expectedStates?: number
   assertions: {
     contentTopPx?: number | null
     contentBudgetPx?: number
@@ -98,13 +105,43 @@ export default function mergeManifest() {
       .slice(0, 10),
   }
 
+  // — PRUNE THE ORPHANS. A PNG whose state no longer exists stays on disk forever,
+  // and a review pass cannot tell it from a live one: on 2026-09-13 the folder held
+  // 158 images against 151 states, and `stickers-day.png` — a page retired in the
+  // Maison merge — was opened and reviewed as current before the count gave it away.
+  // A stale screenshot is a verdict from a moment, same as a ledger cell, and this
+  // one wears a filename that says nothing about its age. So the run OWNS the folder:
+  // anything not written by these states goes.
+  //
+  // Guarded on a COMPLETE run: each fragment carries the number of states the table
+  // declares, so a `-g`-filtered run (or a crashed one) is refused. Written after the
+  // first version, which only asked "did this run produce anything at all?" and then
+  // watched a two-test `-g` run delete all 154 other PNGs.
+  const orphans: string[] = []
+  const whole = states.length > 0 && states.length === states[0].expectedStates
+  if (whole) {
+    const live = new Set(states.flatMap((s) => s.frames ?? [`${s.name}.png`]))
+    for (const f of readdirSync(dir).filter((f) => f.endsWith('.png'))) {
+      if (live.has(f)) continue
+      rmSync(join(dir, f))
+      orphans.push(f)
+    }
+  }
+
   writeFileSync(
     join(dir, 'manifest.json'),
     JSON.stringify(
       {
         generatedAt: new Date().toISOString(),
         total: states.length,
+        // Frames, not states: a surface that scrolls is several PNGs now, and the
+        // review pass reads THIS number when it decides it has looked at everything.
+        frames: states.reduce((n, s) => n + (s.frames?.length ?? 1), 0),
         failing: states.filter((s) => !s.pass).length,
+        // A filtered run leaves the gallery alone — and says so, because a manifest
+        // listing 2 states beside 156 PNGs is otherwise unreadable.
+        partialRun: !whole || undefined,
+        prunedOrphans: orphans,
         review,
         states,
       },
@@ -125,5 +162,8 @@ export default function mergeManifest() {
     )
   } else if (review.lowContent.length) {
     console.log(`[matrix] ${review.lowContent.length} sparse screen(s), all previously reviewed — nothing new to look at.`)
+  }
+  if (orphans.length) {
+    console.log(`[matrix] pruned ${orphans.length} orphan PNG(s) from retired states: ${orphans.join(', ')}`)
   }
 }

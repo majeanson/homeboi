@@ -28,7 +28,9 @@
 
 ### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
 
-- `npm run typecheck` · `npm test` (2062 in 163 files, 2026-09-09) · `npm run build` · `npm run knip` — green.
+- `npm run typecheck` · `npm test` (2241 in 171 files, 2026-09-13) · `npm run build` · `npm run knip` — green.
+- `npm run e2e:matrix` — 154 states, **261 frames**, 0 failing (2026-09-13; it shoots
+  below the fold now, and prunes the PNGs of retired states — §4-H).
 - `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
@@ -98,9 +100,13 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **0** — again, as of the same evening: the last box,
-> the till card, closed when it names and links its source now, which was the honest answer to
-> « don't let a cashier refuse it ». What remains there are two ❓ (terms, licensing), not tasks.
+> a number you can trust. It reads **9** — all nine written by §4-H on 2026-09-13, the
+> pass that ran the state matrix and looked at what it had never been able to show (the
+> sweep was pruning nothing, shooting only the viewport, and rebasing two fixtures out
+> of ten). Every one of the nine is a defect a frame made visible, not a ledger entry.
+> It read **0** before that — the last box, the till card, closed when it names and
+> links its source, which was the honest answer to « don't let a cashier refuse it »;
+> what remains there are two ❓ (terms, licensing), not tasks.
 > §4-G wrote nine on 2026-09-10 — the pass that opened all 100 state-matrix screenshots
 > instead of sampling them — and all nine are settled: seven fixed, two dissolved once
 > the code was actually read (the wall was never wasting width; the « ragged » grids
@@ -2884,6 +2890,115 @@ window starts today" and the app honours it. Neither is an app bug; both mean a
 reviewer cannot judge the one thing those screens are FOR. The fix is a matrix-local
 fixture override (rebase `MEALS`/the car week onto the sweep's clock), not a change to
 the shared mocks 126 other specs freeze at `BASE`.
+
+### H. The sweep could not see three things — fixed 2026-09-13, and what it then showed
+
+The session opened on « next steps ? » with an empty written backlog (0 boxes, §4-G
+settled), so the answer was §4-G's own method: run the matrix and LOOK. What the
+looking found first was the **matrix**, in three ways, each of which had been quietly
+making the review pass weaker than it read:
+
+- [x] **Seven orphan PNGs.** 158 images against 151 states — `stickers-day.png`,
+      `cercle-*`, `routines-*`, `first-cercle`, `first-routines`: snapshots of routes
+      retired in the Maison merge, sitting in the review folder wearing filenames that
+      say nothing about their age. I opened `stickers-day` and reviewed it as current
+      before the count gave it away. A stale screenshot is a verdict from a moment, the
+      same as a ledger cell. **The run owns the folder now** (`sm.teardown.ts`): anything
+      not written by this run's states is deleted, and the manifest reports what went.
+      The guard's own first draft pruned on « did this run produce anything at all? »,
+      and a two-test `-g` run promptly deleted all 154 other PNGs — so each fragment
+      carries the table's `expectedStates` and a filtered run is refused and says
+      `partialRun`. Proven in both directions: watched it wipe the gallery, then watched
+      it refuse.
+- [x] **Every shot was viewport-only.** `page.screenshot()` with no `fullPage`, so in
+      151 states the sweep had never once seen the bottom of a surface. Two days of
+      commits had just fixed the board's « Auj. » / « Demain » tiles and **not one
+      screenshot contained them.** `fullPage: true` would NOT have fixed it, and that is
+      the part worth keeping: the document never scrolls here — the shell is 100dvh and
+      the scrolling happens inside `.hub__body` / `.scene__body`, so a full-page capture
+      returns the same viewport image and reads as proof there was nothing below. The
+      sweep now finds the real scroller, pages it down (capped at two extra frames,
+      48px overlap, skipped for keyboard states) and shoots each frame: **261 frames
+      across 154 states, 110 of them images nobody had ever seen.**
+- [x] **The rebase covered two fixtures out of ten.** §4-G left « rebase MEALS/the car
+      week onto the sweep's clock » as the fix and it shipped — for `meals` and `car`.
+      Every OTHER shared fixture still printed a year-old date under a clock pinned to
+      today: the board's mots read « il y a 462 j », Réglages ▸ Agenda listed « dim. 8
+      juin » under a September header, the kitchen history said « Juin 2025 » over a
+      September plan, the drawings wall was dated 2025, and « Mes habitudes » was showing
+      two due habits because the other two had their `due_days` a year off. A rebase that
+      covers two fixtures out of ten is not a rebase; it is a smaller lie. It is now the
+      whole dated table, with the safety that makes it safe to point broadly: the shift
+      only applies inside **±400 days of BASE**, so fixtures already anchored on today
+      (TODOS builds its days off `localDayStart(new Date())`) are left alone — without
+      that window the rebase would have thrown them a year into the future and created
+      the very bug it exists to remove.
+- [x] **The two newest features had no state at all.** « Les virements » shipped
+      2026-09-11 and the « liste à compléter » scene 2026-09-12; the sweep two days later
+      could not have found anything in either, because neither was in the table. Both are
+      in it now (`virements`, `form-virement`, `todo-template`), with a shared `transfers`
+      fixture in `e2e/mocks.ts` (its memos carry NO date on purpose: a memo is stored
+      TEXT, the matrix can rebase `sentAt` and cannot rebase the sentence beside it, so a
+      dated memo would print a month its own row contradicts). `help-notes` got the notes
+      fixture too — it had been photographing the help bar over « Aucune note », which
+      cannot show what the bar does to a page that has rows under it.
+      **Both new budgets were measured, not guessed:** the first guess (60px) failed at
+      172px, and the honest reading only arrived after fixing the content selector — the
+      form's first content is its sender face row, not the date input below it.
+
+**Then the frames showed things.** Ranked by user harm; each grepped against code
+before it was written down, and four candidates died there (the till tile's "tiny
+picture" is the mock's placeholder image; the wall routines grid is §4-G's parked
+fixture again; the quickadd pale pips are a designed state; the template editor's
+first « move up » IS disabled — `upDisabled={idx === 0}`, the pixels just do not say so
+loudly).
+
+- [ ] **`money()` ignores the language** (`src/lib/deals.ts:79`). It is hard-coded
+      FR-CA — `n.toFixed(2)` with the dot swapped for a comma and « $ » appended — so the
+      whole shopping stack (list row, till tile, till card, price-match, flyer viewer,
+      item editor) prints « 4,99 $ » under an English UI. Its own neighbour `dealDate`
+      takes `lang`, and `lib/money.ts` has two lang-aware cached formatters. §4-G records
+      unifying FlyerViewer's local money INTO this one — into the FR-only one.
+- [ ] **« tous les 2 semaines »** — `recur.every` is one fixed masculine string
+      (`i18n.ts:1195`) composed with `unitPlural`, so three of the four units read
+      correctly and the most common one in a household does not. Visible on the
+      virements plan card and in `RecurPicker`; one source (`lib/recurLabel.ts:34`).
+- [ ] **EN « Show the cashier »** (`i18n.en.ts:3026`) reads as *display the cashier*.
+      The scene it opens is titled « At the till ».
+- [ ] **A second « Partager » door on the day page** (`DayPlanPage.tsx:731`). The inline
+      ↗ is rendered beside *bucket* rows only, so once a day holds ≥2 timed things and
+      « Le fil » takes the timed rows, the lone all-day event keeps an unexplained icon
+      floating in the gutter (clearest at 1280px, where the row shrinks to make room for
+      it). `ACTIONS.md:102` records event-share as **peek-only**, and the peek does have
+      it (`EventPeekActions.tsx:61`) — so this is an undocumented second door, not a
+      missing one. Dropping the inline button restores the matrix and the row width.
+- [ ] **« Avant de partir » four times in one screen.** The agenda card's foot repeats
+      the day's departure checklists (`Board.tsx:1361`, deliberate: « a reminder at the
+      foot of the agenda ») and the « Avant de partir » card sits immediately under it —
+      on a phone, always, since both are grid size 1 in one column. Two card headers and
+      two identical collapsed « AVANT DE PARTIR 2 » pills inside ~400px. The reminder is
+      right when the card is far away and noise when it is adjacent; it already knows how
+      to hide (`hideWhenEmpty`).
+- [ ] **The garde-manger's « Restants » and « Idées de repas » lead with an always-open
+      composer**, above their own empty state — LEAN.md's first smell, on a surface below
+      the fold that the lean passes had therefore never photographed. `SectionAdd` is the
+      primitive.
+- [ ] **The carnet's « Identité » draws a header over nothing** — every sibling section
+      carries an empty-state line; that one has neither body nor line. Same shape as
+      `c99b12fb`.
+- [ ] **A cercle row's relation is the first thing truncated**: « Conjointe de P… » at
+      390px, « Conjointe … » at 360, while the row beside it says « Conjoint de Maman »
+      in full — the contact ☎/✉ icons win the line, and the relation is the only thing
+      the row is FOR.
+- [ ] **The toddler kitchen says « dimanche » for tonight's supper** while the toddler
+      board says « CE SOIR » for the same meal. One pre-reader, two surfaces, two ways of
+      naming today.
+- [~] **« Meilleur prix » badges the more expensive number** — ★ on Super C 4,99 $
+      (1,25 $/L) above IGA 2,99 $ (1,50 $/L). The ranking is right (`sortBestFirst` groups
+      by unit kind and sorts by unit price; `PriceMatchPage.tsx:125` badges the first with
+      one), the WORD is what is ambiguous. **Asked and answered by Marc 2026-09-13: keep
+      « Meilleur prix ».** Declined, not deferred — the $/L line sits directly under the
+      badge. Don't re-propose without a new observation.
 
 ### F. Not a backlog — do not mine these for work
 
