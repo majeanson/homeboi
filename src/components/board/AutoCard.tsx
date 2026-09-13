@@ -126,6 +126,17 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
       ariaLabel={t.auto.title}
       icon="car-bold"
       label={carLabel}
+      // WHO HAS THE CAR AND WHEN, by name — the rides the grown card lists, each led by
+      // its hour. The status sentence stays as the hint underneath (it shows only when
+      // there are no rides to name), so a busy day names the outings instead of summing
+      // them into one line.
+      // A BUSY car leads the list with its own status line (« Avec Papa · 8 h–17 h ») —
+      // who holds the car outranks any single ride. A free car doesn't: « Libre toute la
+      // journée » above rides that plainly take the car would read as a contradiction.
+      compactItems={[
+        ...(busy ? [{ label: status }] : []),
+        ...rides.map((r) => ({ lead: r.allDay ? undefined : hhmm(r.at), label: r.title })),
+      ]}
       compactHint={status}
       // Nothing planned (free, no rides): the mini's status line IS all the grown card
       // would show, so tap straight through to « L'auto » (add a ride / set the schedule)

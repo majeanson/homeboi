@@ -1096,7 +1096,7 @@ export function Board() {
   // all-day events pooled under « À tout moment ». On a quieter day it's the plain
   // agenda list. Either way it's ONE card — no more "which of these two is which".
   // One meal row (déjeuner/dîner/collation — souper is the « Ce soir » hero above),
-  // extracted so a past-slot meal can fold into « Déjà passé » with the same anatomy.
+  // extracted so a past-slot meal reads with the same anatomy as a live one (struck).
   const mealAct = (m: (typeof otherMeals)[number]) => (
     <Act
       key={m.id}
@@ -1150,14 +1150,13 @@ export function Board() {
       />
     )
   }
-  // Today's line-crossed items fold into a calm « Déjà passé aujourd'hui »
-  // Disclosure so the card stays on now + next (the lifecycle keeps them as a quiet
-  // record until midnight — see lib/itemLife). Only TIMED things fold: past-slot
-  // meals + timed events whose moment has gone. Chores/todos/home + all-day events
-  // are untimed → they never strike, so they always stay in the live list.
-  // When the ribbon is active it carries EVERY timed event (past ones dimmed in
-  // place, not folded), so the flat list + « Déjà passé » disclosure only run on a
-  // quiet day. `shownEvents` is therefore empty while `filActive`.
+  // Today's line-crossed items sink to the FOOT of the list (the lifecycle keeps them
+  // as a quiet record until midnight — see lib/itemLife). Only TIMED things strike:
+  // past-slot meals + timed events whose moment has gone. Chores/todos/home + all-day
+  // events are untimed → they never strike, so they keep their place in the live list.
+  // When the ribbon is active it carries EVERY timed event (past ones dimmed in place),
+  // so the flat list + the trailing past rows only run on a quiet day. `shownEvents` is
+  // therefore empty while `filActive`.
   const shownEvents = !filActive ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
   const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
   const liveMeals = otherMeals.filter((m) => !m.past)
@@ -1173,8 +1172,8 @@ export function Board() {
   // empty must not draw a meal row), leftovers aren't cooked, and a meal already listed
   // below is never printed twice.
   const prepMeal = dayClear || !cook.meal || cook.meal.is_leftover || liveMeals.some((x) => x.id === cook.meal!.id) ? null : cook.meal
-  // Today's line-crossed things, for the MINI only (the grown card folds them into the
-  // « Déjà passé » Disclosure). Dimmed + struck, and always AFTER the live rows, so they
+  // Today's line-crossed things, for the MINI (the grown card trails the same rows,
+  // struck, at the foot of its list). Dimmed + struck, and always AFTER the live ones, so they
   // fill leftover room rather than take it — see `CompactRow.dim`.
   const pastItems: CompactRow[] = [
     ...pastMeals.map((m) => ({ label: m.title, dim: true })),
@@ -1182,8 +1181,8 @@ export function Board() {
   ]
   // What the compact lens shows — everything the card is about to list, by name, already
   // at hand from the arrays just above. Few enough and the tile names them; too many and
-  // it shows the count instead (`CardMini`). Past items are deliberately absent: they're
-  // folded into « Déjà passé » below, and a tile has no room to say "and these are done".
+  // it shows the count instead (`CardMini`). Past items are not here: they trail the LIVE
+  // ones on the mini too (`todayMiniItems` below), so they can never push out a live row.
   const todayItems: CompactRow[] = [
     ...(prepMeal ? [{ label: prepMeal.title }] : []),
     ...liveMeals.map((m) => ({ label: m.title })),
@@ -1293,7 +1292,7 @@ export function Board() {
         never printed twice (which is what the old « Préparer le repas » pill did). */}
     {prepAct()}
     {/* Today's still-to-come meals (déjeuner/dîner/collation) — supper is the
-        "Ce soir" hero above. A past-slot meal folds into « Déjà passé » below.
+        "Ce soir" hero above. A past-slot meal sinks, struck, to the foot of the list.
         Each carries its slot food icon so the slots read apart, like La cuisine. */}
     {liveMeals.map(mealAct)}
     {filActive && (
@@ -1335,9 +1334,14 @@ export function Board() {
         </>
       )
     })()}
-    {/* The day's line-crossed record, collapsed (reuses the « Déjà vus » pattern).
-        Empty while the ribbon is active — it dims past timed items in place. */}
-    {pastEls.length > 0 && <Disclosure label={t.board.pastToday}>{pastEls}</Disclosure>}
+    {/* The day's line-crossed record, IN PLACE at the foot of the list. It used to sit
+        behind a « Déjà passé aujourd'hui » Disclosure, which charged a pill + a tap for
+        something the rows already say themselves: struck through and faded (`act--past`)
+        reads as "gone" at a glance. The fold was chrome explaining a state that was
+        already legible — and it hid, on an evening like Marc's, the only rows the card
+        had. The ribbon path still dims its past items in place, so `pastEls` is empty
+        there and nothing doubles up. */}
+    {pastEls}
   </>
 )}
 {/* Today's « Avant de partir » checklists, at the foot of the agenda — each group
@@ -1575,10 +1579,13 @@ export function Board() {
       // the open loose « À compléter » todos. Checklist-instance rows belong to the
       // « Avant de partir » card's mini, not this one.
       compactItems={[...overdueHome.map((c) => c.title), ...todayTodos.map((c) => c.title), ...openLoose.map((td) => td.title)]}
+      // A day that isn't `dayClear` can still hold nothing THIS card owns (its things
+      // are elsewhere — meals, events). Say « Rien à faire » rather than leave the tile
+      // blank; the hint only renders when there is not one row to name.
       compactHint={
         overdueHome.length + todayTodos.length + openLoose.length > 0
           ? String(overdueHome.length + todayTodos.length + openLoose.length)
-          : undefined
+          : t.board.nothingTodo
       }
       // The add box lives behind the header ＋, exactly like the « Notes » card: a
       // glance card shouldn't carry a permanently-open text field — it's the one thing

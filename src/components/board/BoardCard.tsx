@@ -10,11 +10,11 @@ import { useCardLens } from './CardLens'
 // it); the object form leads the row with a short fixed token — a time (« 9 h ») or a
 // day (« sam ») — so a chronological card SAYS when, not just what, in the same 142px.
 // The lead replaces the dot (the token already anchors the row) and is never a count.
-// `dim` marks a row whose moment has PASSED (a struck meal/event). The grown card folds
-// those into « Déjà passé », which a 142px tile has no room to say — but a dimmed row
-// beats what the tile did before: on an evening whose every item had gone by, « Auj. »
-// rendered an empty body. Live rows always come first, so a dim row only ever takes the
-// room nothing else claimed.
+// `dim` marks a row whose moment has PASSED (a struck meal/event) — the same reading the
+// grown card gives it, struck and faded at the foot of its list. The mini used to drop
+// those rows outright, so on an evening whose every item had gone by « Auj. » rendered an
+// empty body. Live rows always come first, so a dim row only ever takes the room nothing
+// else claimed.
 export type CompactRow = string | { lead?: string; label: string; dim?: boolean }
 
 // A small secondary action pinned to a mini tile's bottom-right corner — its own tap
@@ -155,7 +155,8 @@ export function SecLabel({
 //  3. The GLANCE — the shared header (so an empty card's icon still sits top-left, never a
 //     lonely centred badge) over at most one quiet line (`hint`: a count like '3' or a name
 //     like 'Spaghetti' — never a score, never per-person). What a card falls back to when
-//     it has no `items` to list at all.
+//     it has no `items` to list at all, and when it has no hint either it still says
+//     « Rien » rather than nothing — see THE FLOOR below.
 //
 // A card that can list passes BOTH `items` and a counting `hint`; the hint only shows when
 // `items` is empty (naming what's there always beats a bare count).
@@ -329,8 +330,17 @@ export function CardMini({
             </li>
           )}
         </ul>
+      ) : hint != null && hint !== '' ? (
+        <span className="cardmini__hint">{hint}</span>
       ) : (
-        hint != null && hint !== '' && <span className="cardmini__hint">{hint}</span>
+        // THE FLOOR: a mini never draws its header over a void. A card reaching its
+        // compact face with nothing to list AND no hint used to render a tile that was
+        // pure chrome — « Auj. » and « Demain » both did, and neither call site knew it
+        // (each thought its `undefined` hint meant "the rows will cover it"). Falling
+        // back to the same « Rien » the empty-slot placeholder uses (CardSlot) makes the
+        // blank tile unreachable from any call site rather than one bug at a time; a card
+        // with something better to say still says it, by passing a hint.
+        <span className="cardmini__hint cardmini__hint--none">{t.board.cardEmptyMini}</span>
       )}
     </>
   )

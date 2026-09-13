@@ -61,7 +61,10 @@ export function DepartureCard({ help }: { help?: HelpMode }) {
       // the mini taps straight through to the departure scene (the door IS the card).
       compactLabel={t.departure.titleShort}
       compactItems={openInstances.map((td) => td.title)}
-      compactHint={openInstances.length ? String(openInstances.length) : undefined}
+      // Nothing left to tick: the tile says the one thing the grown card would — the
+      // dressing tip (« Prends un parapluie »). That line IS this card's content on a day
+      // with no checklist, and the mini used to drop it and render an empty body.
+      compactHint={openInstances.length ? String(openInstances.length) : weather && tip ? t.weather.tip[tip] : undefined}
       compactTo={openInstances.length === 0 ? '/board/departure' : undefined}
       // The door must survive the mini: with items, tapping the tile grows it, so the
       // key rides the corner (its own tap target — the « Aujourd'hui » tile precedent).
