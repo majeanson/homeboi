@@ -11,8 +11,13 @@ export function useSingleOpen<T extends string = string>() {
   const [openId, setOpenId] = useState<T | null>(null)
   const isOpen = useCallback((id: T) => openId === id, [openId])
   const toggle = useCallback((id: T) => setOpenId((cur) => (cur === id ? null : id)), [])
+  // Open one unconditionally — for the caller that just CREATED the row it is
+  // opening (a blank school-year relâche): `toggle` would close it if that id
+  // somehow already were the open one, and "open the thing I just made" must not
+  // depend on what was open before.
+  const open = useCallback((id: T) => setOpenId(id), [])
   const close = useCallback(() => setOpenId(null), [])
-  return { openId, isOpen, toggle, close }
+  return { openId, isOpen, toggle, open, close }
 }
 
 // A calm, collapsed-by-default expand/toggle. A single summary row (caret + label

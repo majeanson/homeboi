@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
@@ -8,33 +9,29 @@ import { live } from '../../lib/query'
 import { useRecordUndo } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
 import { TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
-import {
-  type TemplatesData,
-  type TodoTemplate,
-  type TemplateItem,
-  toStored,
-  expandTemplate,
-  expandSectioned,
-  wouldCycle,
-  TODO_TITLE_MAX,
-  TODO_TEMPLATE_TITLE_MAX,
-} from '../../lib/todos'
+import { type TemplatesData, type TodoTemplate, toStored, expandSectioned, TODO_TEMPLATE_TITLE_MAX } from '../../lib/todos'
 import { EditField } from '../EditField'
+import { ListRow } from '../ListRow'
 import { RowActions } from '../RowActions'
-import { Icon } from '../Icon'
-import { Reorder } from '../Reorder'
 import { EmptyState } from '../EmptyState'
-import { Modal } from '../Modal'
 import { OperatorSection } from './OperatorSection'
 
-// Réglages ▸ Maison ▸ Tâches de la maison ▸ À compléter. Reusable check-off checklists ("Avant de partir", "Chez
-// grand-papa"): a title + an ordered list of items. An item is a plain label OR a
-// reference to ANOTHER list (compose lists from lists). Instantiating a composed
-// list flattens to one todo list grouped BY SECTION — each included list becomes a
-// section (see src/lib/todos.ts expandSectioned). Each edit PATCHes the whole items
-// array (small, operator-driven); deletes go behind the app-wide compensating undo.
+// Réglages ▸ Maison ▸ Tâches de la maison ▸ À compléter. Reusable check-off checklists
+// ("Avant de partir", "Chez grand-papa"): a title + an ordered list of items. An item
+// is a plain label OR a reference to ANOTHER list (compose lists from lists).
+// Instantiating a composed list flattens to one todo list grouped BY SECTION — each
+// included list becomes a section (see src/lib/todos.ts expandSectioned).
+//
+// This section is a SHORT ROW PER LIST, not the editors themselves: name + how many
+// items it lands, with the ✏ that opens the one editor as a scene (/liste-modele/:id).
+// It used to render every list's full editor open at once — name field, every item
+// with its ↑↓/✏/🗑, two adders and a preview button, stacked — so four lists made a
+// wall of fields you scrolled past to reach the one you came for, and nothing on the
+// panel told you at a glance what lists you even had. Deletes stay here (a row's 🗑,
+// behind the app-wide undo); everything that EDITS a list lives on its scene.
 export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const nav = useNavigate()
   const write = useWrite()
   const recordUndo = useRecordUndo()
   const ro = isGuest()
@@ -47,35 +44,24 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   const templates = data?.templates ?? []
 
   const [newName, setNewName] = useState('')
-  const [newItem, setNewItem] = useState<Record<string, string>>({})
-  // Inline item edit: which (template, index) is open + its draft text.
-  const [editItem, setEditItem] = useState<{ id: string; idx: number } | null>(null)
-  const [editText, setEditText] = useState('')
-  // "Voir la liste finale" — which template's read-only preview modal is open.
-  const [previewId, setPreviewId] = useState<string | null>(null)
 
-  const saveItems = (tpl: TodoTemplate, items: TemplateItem[]) =>
-    void write('todo-templates', {
-      method: 'PATCH',
-      body: { id: tpl.id, items: toStored(items) },
-      affectedKeys: [TODO_TEMPLATES_KEY],
-    }).catch(() => {})
+  const open = (tpl: TodoTemplate) => nav(`/liste-modele/${tpl.id}`)
 
+  // A brand-new list is empty by definition, so creating one and staying here would
+  // leave you looking at a row with nothing in it: the create hands straight over to
+  // the editor scene. Offline the server id isn't known yet (the write is queued), so
+  // the row simply appears in the list and waits for its ✏.
   async function addTemplate() {
     const name = newName.trim()
     if (!name) return
     setNewName('')
-    await write('todo-templates', { method: 'POST', body: { title: name, items: [] }, affectedKeys: [TODO_TEMPLATES_KEY] }).catch(
-      () => {},
-    )
-  }
-
-  function renameTemplate(tpl: TodoTemplate, title: string) {
-    const v = title.trim()
-    if (!v || v === tpl.title) return
-    void write('todo-templates', { method: 'PATCH', body: { id: tpl.id, title: v }, affectedKeys: [TODO_TEMPLATES_KEY] }).catch(
-      () => {},
-    )
+    const res = await write<{ id?: string }>('todo-templates', {
+      method: 'POST',
+      body: { title: name, items: [] },
+      affectedKeys: [TODO_TEMPLATES_KEY],
+    }).catch(() => null)
+    const id = res && !res.queued ? res.data?.id : undefined
+    if (id) nav(`/liste-modele/${id}`)
   }
 
   // Delete now, with a COMPENSATING undo that re-creates the template (a new id,
@@ -95,33 +81,6 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
     })
   }
 
-  function addItem(tpl: TodoTemplate) {
-    const label = (newItem[tpl.id] ?? '').trim()
-    if (!label) return
-    setNewItem((m) => ({ ...m, [tpl.id]: '' }))
-    saveItems(tpl, [...tpl.items, { kind: 'item', label }])
-  }
-  function includeList(tpl: TodoTemplate, refId: string) {
-    if (!refId) return
-    saveItems(tpl, [...tpl.items, { kind: 'ref', refId }])
-  }
-  function removeItem(tpl: TodoTemplate, idx: number) {
-    saveItems(tpl, tpl.items.filter((_, i) => i !== idx))
-  }
-  function renameItem(tpl: TodoTemplate, idx: number, label: string) {
-    const v = label.trim()
-    setEditItem(null)
-    if (!v) return
-    saveItems(tpl, tpl.items.map((x, i) => (i === idx ? { kind: 'item', label: v } : x)))
-  }
-  function moveItem(tpl: TodoTemplate, idx: number, dir: 'up' | 'down') {
-    const j = dir === 'up' ? idx - 1 : idx + 1
-    if (j < 0 || j >= tpl.items.length) return
-    const next = [...tpl.items]
-    ;[next[idx], next[j]] = [next[j], next[idx]]
-    saveItems(tpl, next)
-  }
-
   if (ro) return null
 
   return (
@@ -129,141 +88,29 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
       {templates.length === 0 ? (
         <EmptyState guide={{ card: 'todos' }}>{t.todos.noTemplates}</EmptyState>
       ) : (
-        <ul className="operator__list">
-          {templates.map((tpl) => {
-            // Lists this one may include without looping (self + cyclic deps filtered).
-            const candidates = templates.filter((c) => !wouldCycle(templates, tpl.id, c.id))
-            // The real instantiated size (flattened + sectioned), so "≈ N" is honest.
-            const total = expandSectioned(templates, tpl.id).length
-            return (
-              <li key={tpl.id} className="todo-tpl">
-                <div className="todo-tpl__head">
-                  <input
-                    className="input todo-tpl__name"
-                    defaultValue={tpl.title}
-                    onBlur={(e) => renameTemplate(tpl, e.target.value)}
-                    aria-label={t.todos.templateName}
-                    maxLength={TODO_TEMPLATE_TITLE_MAX}
-                  />
-                  <span className="todo-tpl__count mono">{t.todos.templateItemsCount(total)}</span>
-                  <RowActions onDelete={() => removeTemplate(tpl)} deleteLabel={`${t.common.delete} — ${tpl.title}`} />
-                </div>
-
-                <ul className="todo-tpl__items">
-                  {tpl.items.map((it, idx) => {
-                    const reorder = (
-                      <Reorder
-                        onUp={() => moveItem(tpl, idx, 'up')}
-                        onDown={() => moveItem(tpl, idx, 'down')}
-                        upDisabled={idx === 0}
-                        downDisabled={idx === tpl.items.length - 1}
-                        upLabel={t.operator.moveUp}
-                        downLabel={t.operator.moveDown}
-                      />
-                    )
-                    // A reference to another list — a chip with its name + expanded count.
-                    if (it.kind === 'ref') {
-                      const ref = templates.find((x) => x.id === it.refId)
-                      return (
-                        <li key={idx} className="todo-tpl__item todo-tpl__item--ref">
-                          <span className="todo-tpl__ref">
-                            <Icon name="link-bold" size={15} />
-                            {ref ? ref.title : t.todos.listDeleted}
-                            {ref && (
-                              <em className="mono">{t.todos.templateItemsCount(expandTemplate(templates, ref.id).length)}</em>
-                            )}
-                          </span>
-                          {reorder}
-                          <RowActions onDelete={() => removeItem(tpl, idx)} deleteLabel={`${t.common.delete} — ${ref?.title ?? ''}`} />
-                        </li>
-                      )
-                    }
-                    // A plain item — tap to edit inline.
-                    return editItem && editItem.id === tpl.id && editItem.idx === idx ? (
-                      <li key={idx}>
-                        <EditField
-                          value={editText}
-                          onChange={setEditText}
-                          onSubmit={(v) => renameItem(tpl, idx, v)}
-                          onCancel={() => setEditItem(null)}
-                          autoFocus
-                          ariaLabel={t.todos.templateItems}
-                          // An item label BECOMES a todo title on instantiation,
-                          // so it carries the todos cap, warned about up front.
-                          limit={TODO_TITLE_MAX}
-                        />
-                      </li>
-                    ) : (
-                      <li key={idx} className="todo-tpl__item">
-                        <button
-                          type="button"
-                          className="todo-tpl__item-name"
-                          onClick={() => {
-                            setEditItem({ id: tpl.id, idx })
-                            setEditText(it.label)
-                          }}
-                          aria-label={`${t.common.edit} — ${it.label}`}
-                        >
-                          {it.label}
-                        </button>
-                        {reorder}
-                        <RowActions
-                          onEdit={() => {
-                            setEditItem({ id: tpl.id, idx })
-                            setEditText(it.label)
-                          }}
-                          onDelete={() => removeItem(tpl, idx)}
-                          editLabel={`${t.common.edit} — ${it.label}`}
-                          deleteLabel={`${t.common.delete} — ${it.label}`}
-                        />
-                      </li>
-                    )
-                  })}
-                </ul>
-
-                <div className="todo-tpl__adders">
-                  <EditField
-                    value={newItem[tpl.id] ?? ''}
-                    onChange={(v) => setNewItem((m) => ({ ...m, [tpl.id]: v }))}
-                    onSubmit={() => addItem(tpl)}
-                    submitIcon="plus-bold"
-                    placeholder={t.todos.addItem}
-                    ariaLabel={t.todos.addItem}
-                    limit={TODO_TITLE_MAX}
-                  />
-                  {/* Include another list as a section (cyclic choices filtered out). */}
-                  {candidates.length > 0 && (
-                    <select
-                      className="input todo-tpl__include"
-                      value=""
-                      onChange={(e) => {
-                        includeList(tpl, e.target.value)
-                        e.currentTarget.value = ''
-                      }}
-                      aria-label={t.todos.includeList}
-                    >
-                      <option value="">{t.todos.includeList}</option>
-                      {candidates.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* "Voir la liste finale" — a read-only preview of the flattened,
-                    sectioned result (how it lands when added), mirroring the
-                    « Avant de partir » departure view. Only worth showing once the
-                    list has content. */}
-                {tpl.items.length > 0 && (
-                  <button type="button" className="btn btn--sm todo-tpl__preview" onClick={() => setPreviewId(tpl.id)}>
-                    <Icon name="check-square-bold" size={16} /> {t.todos.previewFinal}
+        <ul className="operator__list todo-tpl-rows">
+          {templates.map((tpl) => (
+            <li key={tpl.id}>
+              <ListRow
+                // The real instantiated size (flattened + sectioned), so the count
+                // on the row is what you actually get when you add the list.
+                title={
+                  <button type="button" className="todo-tpl-row__name" onClick={() => open(tpl)}>
+                    {tpl.title}
                   </button>
-                )}
-              </li>
-            )
-          })}
+                }
+                subtitle={t.todos.templateItemsCount(expandSectioned(templates, tpl.id).length)}
+                actions={
+                  <RowActions
+                    onEdit={() => open(tpl)}
+                    onDelete={() => removeTemplate(tpl)}
+                    editLabel={`${t.common.edit} — ${tpl.title}`}
+                    deleteLabel={`${t.common.delete} — ${tpl.title}`}
+                  />
+                }
+              />
+            </li>
+          ))}
         </ul>
       )}
 
@@ -271,7 +118,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
         <EditField
           value={newName}
           onChange={setNewName}
-          onSubmit={() => addTemplate()}
+          onSubmit={() => void addTemplate()}
           submitLabel={t.todos.addTemplate}
           submitLeadingIcon="plus-bold"
           placeholder={t.todos.templateNamePlaceholder}
@@ -279,52 +126,6 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
           limit={TODO_TEMPLATE_TITLE_MAX}
         />
       </div>
-
-      {previewId && (
-        <TemplatePreview templates={templates} id={previewId} onClose={() => setPreviewId(null)} />
-      )}
     </OperatorSection>
   )
 }
-
-// Read-only "how it will look once added" preview — the flattened, sectioned result
-// (expandSectioned mirrors the server's instantiation) rendered like the real « À
-// compléter » list: hollow check discs + section headers. A composed list shows its
-// one section header; a plain list is a headless run.
-function TemplatePreview({ templates, id, onClose }: { templates: TodoTemplate[]; id: string; onClose: () => void }) {
-  const t = useT()
-  const tpl = templates.find((x) => x.id === id)
-  const rows = tpl ? expandSectioned(templates, id) : []
-  // Collapse consecutive same-section rows into groups so each header prints once.
-  const groups: { section: string | null; labels: string[] }[] = []
-  for (const r of rows) {
-    const last = groups[groups.length - 1]
-    if (last && last.section === r.section) last.labels.push(r.label)
-    else groups.push({ section: r.section, labels: [r.label] })
-  }
-  return (
-    <Modal open onClose={onClose} title={tpl?.title} className="todo-preview-modal">
-      <p className="todo-preview__hint">{t.todos.previewHint}</p>
-      {rows.length === 0 ? (
-        <EmptyState tone="calm">{t.todos.empty}</EmptyState>
-      ) : (
-        <div className="todo-preview">
-          {groups.map((g, gi) => (
-            <div key={gi} className="todo-preview__group">
-              {g.section && <div className="todo-preview__section mono">{g.section}</div>}
-              {g.labels.map((label, i) => (
-                <div key={i} className="todo-preview__row">
-                  <span className="todo-preview__check" aria-hidden="true" />
-                  <span className="todo-preview__label">{label}</span>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </Modal>
-  )
-}
-
-// Small ↑/↓ reorder pair (the shared EditField already has one, but the static
-// item row isn't an EditField). Mirrors the EditField reorder buttons + classes.

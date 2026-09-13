@@ -666,7 +666,6 @@ export const EN: typeof FR = {
     todayClear: 'Nothing planned. All calm.',
     // The collapsed group that folds today's line-crossed (past) items so the board
     // stays on now + next; the day's record stays a tap away until midnight.
-    pastToday: 'Already done today',
     moreN: (n: number) => `+${n} more`,
     editDiscover: 'Hold a card to rearrange the board.',
     editEnter: 'Arrange the board',
@@ -2451,6 +2450,8 @@ export const EN: typeof FR = {
     schoolYearBreakTo: 'to',
     schoolYearBreakLabel: 'Name (optional, e.g. "March break")',
     schoolYearAddBreak: 'Add a break',
+    schoolYearBreakUnnamed: 'Break',
+    schoolYearBreakBlank: 'Dates to fill in',
     schoolYearRemoveBreak: 'Remove this break',
     schoolYearClear: 'Clear the school year',
     schoolYearClearConfirm: 'Clear the first day, last day, and every typed break? This can’t be undone.',
@@ -3103,6 +3104,7 @@ export const EN: typeof FR = {
     templateItems: 'Items',
     addItem: 'Add an item',
     noTemplates: 'No lists yet.',
+    noItems: 'This list is empty. Add what you don’t want to forget.',
     templateItemsCount: (n: number) => `${n} item${n > 1 ? 's' : ''}`,
     previewFinal: 'Preview final list',
     previewHint: 'Here’s how the list will look once it’s added.',

@@ -101,6 +101,9 @@ const ChoreFormPage = lazy(() => import('./pages/ChoreFormPage').then((m) => ({ 
 // Projets / Entretien (home_projects) add-form — the board ＋ « Corvées » sub-choice.
 const HomeProjectFormPage = lazy(() => import('./pages/HomeProjectFormPage').then((m) => ({ default: m.HomeProjectFormPage })))
 const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
+// ONE « liste à compléter » (todo template) edited on its own scene — Réglages ▸
+// Maison lists them as short rows and its ✏ opens this.
+const TodoTemplatePage = lazy(() => import('./pages/TodoTemplatePage').then((m) => ({ default: m.TodoTemplatePage })))
 // Run a routine on any surface (parent phone, kiosk) — the shared player as a scene.
 const RoutineRunPage = lazy(() => import('./pages/RoutineRunPage').then((m) => ({ default: m.RoutineRunPage })))
 // « Le mur d'autocollants » — the opt-in sticker collection (calm-mode-off only).
@@ -219,6 +222,8 @@ export function AppRoutes() {
         {/* The opt-in sticker wall (static path — declared before /routine/:id). */}
         <Route path="/routine/stickers" element={<StickerWallPage />} />
         <Route path="/routine/:id" element={<RoutineFormPage />} />
+        {/* One « liste à compléter » (todo template) editor — the ✏ on its Réglages row. */}
+        <Route path="/liste-modele/:id" element={<TodoTemplatePage />} />
         {/* Run a routine standalone (the ▶ on the Routines tab / the peek action). */}
         <Route path="/routine/:id/run" element={<RoutineRunPage />} />
         {/* The drawing collection / gallery — "Mes dessins" (#14). */}

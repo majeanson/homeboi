@@ -107,6 +107,7 @@ at all (❌).
 | Chore · edit | ❌ no door on board³ | — | ➖³ peek = Fait/Reporter only | — | ✅ maison▸chores | — | ✅ |
 | Chore · postpone | — | — | ✅ Reporter ×2 (peek only) | — | — | — | ✅ |
 | Todo « À compléter » · check / rename / delete | ✅ disc; tap name → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` + ＋ `todo` | maison▸todos (templates) | deferred | ✅ |
+| Liste à compléter (modèle) · rename / add-item / reorder / include | — | — | — | — | ✅ maison▸routines▸todoTemplates: a row per list (name + count), ✏ → the `/liste-modele/:id` scene (the only editor) | — | ✅ |
 | Projets & Entretien · check / postpone | ✅ disc | — | ✅ Fait + Reporter (semaine/cycle) | ＋ `chores-pick` | ✅ maison▸chores | deferred | ✅ |
 | Projets & Entretien · edit | ❌³ | — | ➖³ | — | ✅ only door | — | ✅ |
 | Meal (Ce soir / Demain) · open | ✅ tap → **always the peek** (`useOpenMeal`) | — | ✅ `buildMeal` — « Voir la journée » + « Ouvrir la recette » + primary « Cuisiner »; restants/retirer fold into ⋯¹⁰ | ＋ `meal` | kitchen▸meals | — | ✅ |

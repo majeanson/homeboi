@@ -16,6 +16,7 @@ import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { ListRow } from '../ListRow'
+import { useSingleOpen } from '../Disclosure'
 import { StatusMessage } from '../StatusMessage'
 import { Cluster } from '../Layout'
 import { MONTH_KEY, EVENTS_KEY, BOARD_KEY, CAR_KEY } from '../../lib/queryKeys'
@@ -191,6 +192,9 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
   const [breaks, setBreaks] = useState<BreakDraft[]>([])
   const [seeded, setSeeded] = useState(false)
   const [status, setStatus] = useState<'idle' | 'saved' | 'bad'>('idle')
+  // Which relâche has its three date/name fields open — one at a time, so the
+  // section reads as a list of holidays rather than a stack of forms.
+  const { isOpen: openBreak, toggle: toggleBreak, open: openOnly } = useSingleOpen()
 
   // Seed once from the server value — never re-clobber a mid-edit form on a
   // background refetch (same "seed once" rule as household.tsx's name field).
@@ -205,7 +209,6 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
     setSeeded(true)
   }, [data, seeded])
 
-  const addBreak = () => setBreaks((bs) => [...bs, { key: newBreakKey(), from: '', to: '', label: '' }])
   const removeBreak = (key: string) => setBreaks((bs) => bs.filter((b) => b.key !== key))
   const updateBreak = (key: string, patch: Partial<BreakDraft>) =>
     setBreaks((bs) => bs.map((b) => (b.key === key ? { ...b, ...patch } : b)))
@@ -281,28 +284,67 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
         <input className="input" type="date" value={lastDay} onChange={(e) => setLastDay(e.target.value)} />
       </label>
       <h3 className="operator__field-label">{t.operator.schoolYearBreaksTitle}</h3>
-      {breaks.map((b) => (
-        <Cluster key={b.key} className="operator__schoolbreak">
-          <label className="recur__row mono">
-            <span>{t.operator.schoolYearBreakFrom}</span>
-            <input className="input" type="date" value={b.from} onChange={(e) => updateBreak(b.key, { from: e.target.value })} />
-          </label>
-          <label className="recur__row mono">
-            <span>{t.operator.schoolYearBreakTo}</span>
-            <input className="input" type="date" value={b.to} onChange={(e) => updateBreak(b.key, { to: e.target.value })} />
-          </label>
-          <input
-            className="input"
-            value={b.label}
-            onChange={(e) => updateBreak(b.key, { label: e.target.value })}
-            placeholder={t.operator.schoolYearBreakLabel}
-            aria-label={t.operator.schoolYearBreakLabel}
+      {/* One relâche = one ROW, not three open date fields. Four breaks in a school
+          year used to put twelve controls on the panel at once, so reading "when are
+          the holidays" meant parsing a form; the row says it in words (name + range)
+          and the ✏ opens its three fields, one break at a time. A freshly added one
+          opens itself — it has nothing to read yet. Same drafts, same Save. */}
+      {breaks.map((b) => {
+        const from = dateStrToSec(b.from)
+        const to = dateStrToSec(b.to)
+        const name = b.label.trim() || t.operator.schoolYearBreakUnnamed
+        const when =
+          from != null && to != null ? `${formatDay(from, lang)} → ${formatDay(to, lang)}` : t.operator.schoolYearBreakBlank
+        return openBreak(b.key) ? (
+          <Cluster key={b.key} className="operator__schoolbreak">
+            <label className="recur__row mono">
+              <span>{t.operator.schoolYearBreakFrom}</span>
+              <input className="input" type="date" value={b.from} onChange={(e) => updateBreak(b.key, { from: e.target.value })} />
+            </label>
+            <label className="recur__row mono">
+              <span>{t.operator.schoolYearBreakTo}</span>
+              <input className="input" type="date" value={b.to} onChange={(e) => updateBreak(b.key, { to: e.target.value })} />
+            </label>
+            <input
+              className="input"
+              value={b.label}
+              onChange={(e) => updateBreak(b.key, { label: e.target.value })}
+              placeholder={t.operator.schoolYearBreakLabel}
+              aria-label={t.operator.schoolYearBreakLabel}
+            />
+            <RowActions
+              onEdit={() => toggleBreak(b.key)}
+              editLabel={t.common.done}
+              onDelete={() => removeBreak(b.key)}
+              deleteLabel={t.operator.schoolYearRemoveBreak}
+            />
+          </Cluster>
+        ) : (
+          <ListRow
+            key={b.key}
+            title={name}
+            subtitle={when}
+            actions={
+              <RowActions
+                onEdit={() => toggleBreak(b.key)}
+                editLabel={`${t.common.edit} — ${name}`}
+                onDelete={() => removeBreak(b.key)}
+                deleteLabel={t.operator.schoolYearRemoveBreak}
+              />
+            }
           />
-          <RowActions onDelete={() => removeBreak(b.key)} deleteLabel={t.operator.schoolYearRemoveBreak} />
-        </Cluster>
-      ))}
+        )
+      })}
       <Cluster>
-        <button type="button" className="btn btn--ghost" onClick={addBreak}>
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={() => {
+            const key = newBreakKey()
+            setBreaks((bs) => [...bs, { key, from: '', to: '', label: '' }])
+            openOnly(key)
+          }}
+        >
           <InlineIcon name="plus-bold" /> {t.operator.schoolYearAddBreak}
         </button>
         <button type="button" className="btn btn--primary" onClick={save} disabled={!firstDay || !lastDay}>

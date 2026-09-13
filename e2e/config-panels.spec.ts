@@ -239,6 +239,10 @@ test('« Remettre l’ordre de départ » patches household with the full aisle 
 // Réglages: create / rename / delete / reorder / duplicate all POST or PATCH
 // /api/todo-templates, and every one of them is fire-and-forget (`void write(...)`
 // with a swallowed .catch), so nothing on screen changes if the write is lost.
+//
+// The panel is now a ROW PER LIST (name + item count + ✏/🗑); everything that edits
+// one list lives on its own scene, /liste-modele/:id — so the create test stays here
+// and the rename test goes there.
 
 test('adding a todo template posts it', async ({ page }) => {
   await page.goto('/settings?tab=maison&sub=routines&focus=routines&focus=todoTemplates')
@@ -257,10 +261,24 @@ test('adding a todo template posts it', async ({ page }) => {
   expect(body.items).toEqual([])
 })
 
-test('renaming a todo template patches it by id', async ({ page }) => {
+test('a list row opens its editor scene', async ({ page }) => {
   await page.goto('/settings?tab=maison&sub=routines&focus=routines&focus=todoTemplates')
   const section = page.locator('#operator-panel')
-  // Row 0 is « Avant de partir » (tpl1) in the fixture; its title is an inline
+  // The row says what the list IS without opening anything: its name, and the count
+  // it actually lands (tpl1 is 2 plain items + a ref to tpl2's 2 = 4).
+  const row = section.getByRole('button', { name: 'Avant de partir', exact: true })
+  await expect(row).toBeVisible()
+  await expect(section.getByText('4 éléments')).toBeVisible()
+  // The ✏ is the door (the name is its mouse-convenience twin) — same scene.
+  await section.getByRole('button', { name: 'Modifier — Avant de partir' }).click()
+  await expect(page).toHaveURL(/\/liste-modele\/tpl1/)
+  await expect(page.getByLabel('Ajouter un élément')).toBeVisible()
+})
+
+test('renaming a todo template patches it by id', async ({ page }) => {
+  await page.goto('/liste-modele/tpl1')
+  const section = page.locator('.scene')
+  // tpl1 is « Avant de partir » in the fixture; the scene's title is an inline
   // editable field. The id must ride along or the rename lands on the wrong list.
   const name = section.getByLabel('Nom de la liste').first()
   await expect(name).toHaveValue('Avant de partir')

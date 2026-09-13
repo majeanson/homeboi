@@ -780,7 +780,6 @@ export const FR = {
     todayClear: 'Rien de prévu. Tout est calme.',
     // The collapsed group that folds today's line-crossed (past) items so the board
     // stays on now + next; the day's record stays a tap away until midnight.
-    pastToday: 'Déjà passé aujourd’hui',
     // The grown « Aujourd'hui » card clamps a very full day past ~8 rows; the
     // tail folds behind this quiet disclosure instead of stretching the wall.
     moreN: (n: number) => `+${n} de plus`,
@@ -2744,6 +2743,10 @@ export const FR = {
     schoolYearBreakTo: 'au',
     schoolYearBreakLabel: 'Nom (optionnel, ex. « Relâche »)',
     schoolYearAddBreak: 'Ajouter une relâche',
+    // Chaque relâche est REPLIÉE sur une ligne (nom + dates) ; le ✏ ouvre ses trois
+    // champs. Sans nom tapé, la ligne se nomme elle-même ; sans dates, elle le dit.
+    schoolYearBreakUnnamed: 'Relâche',
+    schoolYearBreakBlank: 'Dates à remplir',
     schoolYearRemoveBreak: 'Retirer cette relâche',
     schoolYearClear: 'Effacer l’année scolaire',
     schoolYearClearConfirm: 'Effacer la rentrée, le dernier jour et toutes les relâches tapées ? Rien ne se récupère.',
@@ -3509,6 +3512,8 @@ export const FR = {
     templateItems: 'Éléments',
     addItem: 'Ajouter un élément',
     noTemplates: 'Aucune liste pour l’instant.',
+    // La scène d’une liste encore vide — le champ d’ajout est juste en dessous.
+    noItems: 'Cette liste est vide. Ajoute ce qu’il ne faut pas oublier.',
     templateItemsCount: (n: number) => `${n} élément${n > 1 ? 's' : ''}`,
     // Aperçu lecture seule de la liste une fois instanciée (« comme Avant de partir »).
     previewFinal: 'Voir la liste finale',

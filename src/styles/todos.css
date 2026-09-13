@@ -128,36 +128,44 @@
   margin-top: 0.5rem;
 }
 
-/* Réglages ▸ À compléter — the template editor. */
-.todo-tpl {
-  border: 1px solid var(--line);
-  border-radius: var(--radius, 12px);
-  padding: 0.6rem 0.7rem;
-  margin-bottom: 0.7rem;
-  background: var(--surface);
-}
-/* This card is an <li> inside `.operator__list`, whose generic rule turns every li
-   into a horizontal `flex-wrap:wrap` row — which spread the head to the left and
-   floated the items list off to the right (the awkward "everything scattered" look).
-   Force the card back to a full-width vertical stack: head, items, adders, preview
-   each on their own line. (Specificity `.operator__list li.todo-tpl` beats the
-   generic `.operator__list li`.) */
-.operator__list li.todo-tpl {
+/* Réglages ▸ À compléter — the LIST of lists. One row per « liste à compléter »:
+   name + how many items it lands + ✏/🗑. The full editor is a scene of its own
+   (/liste-modele/:id), so this panel stays scannable however many lists exist. The
+   generic `.operator__list li` turns every li into a wrapping flex row, which would
+   float the ListRow off to one side — each li here is just the row's full-width
+   carrier. */
+.operator__list.todo-tpl-rows > li {
   display: block;
 }
-.todo-tpl__head {
+.todo-tpl-rows {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+/* The row's own name is the tap target (the ✏ is the second door to the same
+   scene) — a text button with no chrome, so the row reads as a row. */
+.todo-tpl-row__name {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+/* The one-list editor scene (TemplateEditor). */
+.todo-tpl-edit {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
+/* The rename field at the top of the scene — its own full-width line. */
 .todo-tpl__name {
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
-}
-.todo-tpl__count {
-  flex: none;
-  color: var(--ink-faint);
-  font-size: 0.8rem;
 }
 .todo-tpl__items {
   list-style: none;
@@ -167,10 +175,11 @@
   flex-direction: column;
   gap: 0.35rem;
 }
-/* Scoped under `.operator__list` so it out-specifies the generic `.operator__list
-   li` (these item rows are nested <li> inside the card, so that rule reaches them
-   too — it sets gap:0.6rem + flex-wrap:wrap, which we don't want here). */
-.operator__list li.todo-tpl__item {
+/* Scoped on the items list itself, not on `.operator__list`: the editor moved out of
+   Réglages onto its own scene, where that ancestor no longer exists. Two class
+   selectors still out-specify the generic `.operator__list li` (gap + flex-wrap)
+   anywhere these rows render back inside a settings panel. */
+.todo-tpl__items li.todo-tpl__item {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -201,7 +210,7 @@
 
 /* A reference to another list, shown as a chip in the editor item list. The blue
    chip is its own surface, so drop the row's border/background (no box-in-a-box). */
-.operator__list li.todo-tpl__item--ref {
+.todo-tpl__items li.todo-tpl__item--ref {
   align-items: center;
   border: none;
   background: none;
