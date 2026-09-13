@@ -1191,8 +1191,12 @@ export function Board() {
     // + work windows, then chores + all-day); otherwise it lists the flat agenda.
     ...(filActive
       ? [
-          ...filTimed.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
-          ...filWork.map((w) => ({ lead: formatTime(w.at, lang), label: w.label || t.board.atWork })),
+          // The ribbon path lists the day WHOLE (past items dimmed in place rather than
+          // sunk to the foot), so the mini marks them the same way the ribbon does —
+          // otherwise a busy evening's tile reads as if every one of them were still
+          // ahead.
+          ...filTimed.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title, dim: evtPast(e) })),
+          ...filWork.map((w) => ({ lead: formatTime(w.at, lang), label: w.label || t.board.atWork, dim: isPastSec(w.endAt ?? w.at, nowMs) })),
           ...todayChores.map((c) => ({ label: c.title })),
           ...filUntimed.map((e) => ({ label: e.title })),
         ]
