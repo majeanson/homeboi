@@ -723,7 +723,7 @@ export interface GroupToggle {
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onDelete?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onDelete?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string; onReach?: () => void },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#2A8F85'
@@ -754,8 +754,8 @@ export function buildContact(
   if (c.tags.length) blocks.push({ kind: 'chips', chips: c.tags })
 
   const actions: DetailAction[] = []
-  if (c.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { window.location.href = `tel:${c.phone}` } })
-  if (c.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { window.location.href = `mailto:${c.email}` } })
+  if (c.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { opts?.onReach?.(); window.location.href = `tel:${c.phone}` } })
+  if (c.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { opts?.onReach?.(); window.location.href = `mailto:${c.email}` } })
   // Everything past "reach this person" (call/write) folds into the sheet's head ⋯:
   // a contact card could otherwise stack EIGHT same-weight buttons under the notes.
   // External Maps link — open in a new tab (the sheet feeds href to the SPA router,
@@ -797,7 +797,7 @@ export function buildContact(
 export function buildMemberPerson(
   p: Person,
   ctx: DetailCtx,
-  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; onSchedule?: () => void; buildFamilyHref?: string },
+  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; onSchedule?: () => void; buildFamilyHref?: string; onReach?: () => void },
 ): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#2A8F85'
@@ -806,6 +806,15 @@ export function buildMemberPerson(
   if (opts?.groupToggle?.options.length)
     blocks.push({ kind: 'togglechips', label: t.cercle.groups, options: opts.groupToggle.options, onToggle: opts.groupToggle.onToggle })
   const actions: DetailAction[] = []
+  // « Appeler » / « Écrire », exactly as `buildContact` carries them — a member has a
+  // phone and an email like anyone else, and this peek simply never offered them. It
+  // did not show while the cercle ROW carried its own ☎/✉ shortcuts; those moved in
+  // here on 2026-09-13 (the row was spending the width its relation line needed on
+  // furniture, so « Conjointe de P… » was the half that got cut), and moving a door
+  // onto a surface that does not have it is deleting it. One person, one set of
+  // actions, member or contact.
+  if (p.phone) actions.push({ key: 'call', label: t.cercle.call, icon: 'phone-bold', run: () => { opts?.onReach?.(); window.location.href = `tel:${p.phone}` } })
+  if (p.email) actions.push({ key: 'mail', label: t.cercle.write, icon: 'envelope-bold', run: () => { opts?.onReach?.(); window.location.href = `mailto:${p.email}` } })
   // `arrow-up-right-bold`, not `users-three-bold`: this button doesn't represent
   // "a person" (that reading is already taken, app-wide, by `users-three-bold` —
   // used both for a member/contact ROW ICON and for "connect" below in this same

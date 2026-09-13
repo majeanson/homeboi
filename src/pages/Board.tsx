@@ -1352,16 +1352,27 @@ export function Board() {
     under its own collapsed Disclosure (foldSections) so the agenda keeps the room.
     CHECKLISTS ONLY: the loose « À compléter » todos stay on their own « À faire »
     card, so this agenda reminder is purely the day's departure lists. Ticking here
-    syncs everywhere; adds live on the « Avant de partir » card (picker none). */}
-<TodoSection
-  title={t.departure.title}
-  members={data.members}
-  bento={false}
-  hideWhenEmpty
-  show="checklists"
-  foldSections
-  picker="none"
-/>
+    syncs everywhere; adds live on the « Avant de partir » card (picker none).
+
+    …but ONLY when that card isn't on the board. The reminder's whole premise is
+    "the lists live somewhere else, here is a nudge" — and `departure` is a mode
+    `always` card sitting in the same one-column grid, so on a phone it was always
+    the very next thing under this: two « Avant de partir » headers and two
+    identical folds inside ~400px, the second pair with the composer that actually
+    adds. Invisible from above the fold, which is where this sweep used to stop
+    (2026-09-13). Hide it from the board and the card owns the subject; hide the
+    CARD from your layout and the agenda picks the reminder back up. */}
+{!isCardVisible(boardCards, 'departure') && (
+  <TodoSection
+    title={t.departure.title}
+    members={data.members}
+    bento={false}
+    hideWhenEmpty
+    show="checklists"
+    foldSections
+    picker="none"
+  />
+)}
 
     </Section>
   )

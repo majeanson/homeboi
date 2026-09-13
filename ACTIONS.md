@@ -185,7 +185,7 @@ at all (❌).
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Routine · run / edit / create | ✅ card tap runs; ✎ on card | — | ➖ no peek (deliberate⁹) | ＋ `routine-pick` (in-sheet picker) | maison▸routines | — | ✅ |
-| Person (contact) · open / call / write | ✅ row tap → peek; `tel:`/`mailto:` icons on row AND in peek | — | ✅ `buildContact` (+ ⋯: itinéraire, relier, rdv, vCard) | ＋ `person` | — | — | ✅ |
+| Person (contact OR member) · open / call / write | ✅ row tap → peek (the row carries NO `tel:`/`mailto:` icons since 2026-09-13 — they were cutting the relation line; see the note under this table) | — | ✅ `buildContact` / `buildMemberPerson` — « Appeler » · « Écrire » (+ ⋯: itinéraire, relier, rdv, vCard) | ＋ `person` | — | — | ✅ |
 | Person · edit / delete | — | — | ✅ ✏️ → scene; ✅ delete in peek ⋯ (confirm — same door as a pet's)¹⁶ | — | member → Réglages▸Membres | confirm | ✅ |
 | Person · group membership | 🔶 drag ⠿ onto a group section | ✅ drag | ✅ `togglechips` in peek (the mirror) | ＋ `group` / `connect` | maison▸cercle | — | ✅ |
 | Pet · open / edit / delete | ✅ row tap | — | ✅ `buildPet` (delete in ⋯, confirm) | ＋ `pet` | — | confirm | ✅ |
@@ -194,6 +194,21 @@ at all (❌).
 | Carnet · open / add / restore | ✅ row tap → scene (no peek➖) | — | — | ✅ ＋ `carnet` only➖ | — | ✅ reversible archive (`Disclosure` Restaurer) | ✅ |
 | Directory · search | ✅ collapsible `SearchField` over the whole directory — a live query flattens the groups into matching rows¹⁸ | | | | | | |
 | Joindre rail · quick-dial | ✅ foot of Famille/Socialᴹ | — | — | — | — | — | ✅ |
+
+> **The person row gave its ☎/✉ back to the peek (2026-09-13).** They were a real
+> second door and they were being paid for out of the row's only content: `.cercle-row__sub`
+> is nowrap-with-ellipsis (deliberately — a long NAME used to widen the card on a landscape
+> tablet), so the RELATION is what got cut. « Conjointe de P… » at 390px, « Conjointe … » at
+> 360, beside a sibling with no icons reading « Conjoint de Maman » in full. The compact-rows
+> rule settles it: a row drops its furniture, the actions live behind the door. Two doors took
+> them — the peek and the « Joindre » rail (which the row's tap was feeding via `bumpFrequent`;
+> the peek's actions carry that `onReach` now, so the ranking still learns). **The half that
+> mattered: `buildMemberPerson` had never offered « Appeler »/« Écrire » at all** — only
+> `buildContact` did — so moving the door without adding it there would have deleted a
+> MEMBER's only one-tap reach. Moving a door only counts if it lands. Guard:
+> `e2e/cercle-visual.spec.ts` « a person row keeps its relation whole ». Business rows KEEP
+> their quick icons: a plumber's phone is what that row is for, and its subtitle is a
+> category, not a relation.
 
 **Footnotes ¹–¹⁸** are carried by the Part 4 backlog items citing the same number
 (each verdict lives beside its fix, not in a second list). Two that no fix carries:

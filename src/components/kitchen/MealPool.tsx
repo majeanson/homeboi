@@ -15,6 +15,7 @@ import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { useInlineEdit } from '../../lib/useInlineEdit'
 import { RowActions } from '../RowActions'
+import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { ModeToggle } from '../ModeToggle'
 import { useMealPoolAdvanced, setMealPoolAdvanced } from '../../lib/surfaceMode'
 import { CATS } from '../../lib/cats'
@@ -112,13 +113,19 @@ export function MealPool<T extends { id: string; title: string }, O>({
   // its chip and the tap-to-plan; Avancé restores ✏️/🗑 per row. Read HERE so both
   // pools (Idées / Restants) and every host (kitchen page, drawer) can't drift.
   const advanced = useMealPoolAdvanced()
+  // The add box, folded behind the section’s ＋ (see the head row below). The drawer
+  // (hideHeading) never consults it — its field is always open.
+  const composer = useSectionAdd()
 
   function add(rawTitle: string, picked: ComboOption<O> | null) {
     const v = rawTitle.trim()
     if (!v || busy) return
     setBusy(true)
     write(endpoint, { method: 'POST', body: buildAddBody(v, picked), affectedKeys: [queryKey] })
-      .then(() => setText(''))
+      .then(() => {
+        setText('')
+        composer.close()
+      })
       .catch(() => {
         /* keep the typed text so it can be retried */
       })
@@ -159,19 +166,31 @@ export function MealPool<T extends { id: string; title: string }, O>({
           line — it is the only door back to the ✏️/🗑, so it can't be host-optional. */}
       <div className={'kitchen__head' + (hideHeading ? ' kitchen__head--end' : '')}>
         {!hideHeading && <HelpTitle help={help} k={helpKey}>{labels.heading}</HelpTitle>}
-        {/* Not gated on the guest: a device-local presentation pref renders for
-            everyone (ModeToggle's own rule) — the rows' RowActions hide themselves. */}
-        <ModeToggle
-          advanced={advanced}
-          onToggle={() => setMealPoolAdvanced(!advanced)}
-          toSimple={t.mode.toSimple}
-          toAdvanced={t.mode.toAdvanced}
-          tint={CATS.meal.deep}
-        />
+        <span className="kitchen__head-actions">
+          {/* The composer waits behind its ＋, the garde-manger's three lists' shape
+              (PantryTab). « Restants » and « Idées de repas » each led with a
+              permanently-open combobox sitting ABOVE its own empty state — heading,
+              empty field, « Pas de restants. Tant mieux ! » — LEAN's first smell, on
+              the one part of the kitchen tab no screenshot had ever reached (it lives
+              below the fold; the sweep only learned to scroll on 2026-09-13).
+              NOT in the drawer: `hideHeading` is the IdeasDrawer, a surface you
+              deliberately opened to write in, where the field IS the page and folding
+              it would be the opposite mistake. Lean to scan, generous once inside. */}
+          {!hideHeading && <SectionAdd open={composer.open} onToggle={composer.toggle} label={labels.addAria} />}
+          {/* Not gated on the guest: a device-local presentation pref renders for
+              everyone (ModeToggle's own rule) — the rows' RowActions hide themselves. */}
+          <ModeToggle
+            advanced={advanced}
+            onToggle={() => setMealPoolAdvanced(!advanced)}
+            toSimple={t.mode.toSimple}
+            toAdvanced={t.mode.toAdvanced}
+            tint={CATS.meal.deep}
+          />
+        </span>
       </div>
       {help?.bubbleFor(helpKey)}
 
-      {!ro && (
+      {!ro && (hideHeading || composer.open) && (
         // Type a free-text candidate OR pick an existing entity (a recipe / a recent
         // meal) from the same box — the dropdown filters as you type.
         <EntityCombobox
@@ -187,6 +206,9 @@ export function MealPool<T extends { id: string; title: string }, O>({
           frequentsKey="meal"
           busy={busy}
           className="kitchen__ideas-combo"
+          // The ＋ that opened it lands the caret too — an expand that costs a second
+          // tap is worse than the always-open box it replaced (useSectionAdd’s note).
+          autoFocus={composer.autoFocus}
         />
       )}
 

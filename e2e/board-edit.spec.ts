@@ -518,6 +518,36 @@ test.describe('the departure card owns the checklists', () => {
     await expect(todos.locator('.todo-fold')).toHaveCount(0)
   })
 
+  // The agenda card's foot carries the same checklists as a REMINDER — and the whole
+  // premise of a reminder is that the thing it points at is somewhere else. On a phone
+  // (one column, both cards size 1, `departure` mode `always`) it was always the very
+  // next card down: two « Avant de partir » headers and two identical folds inside
+  // ~400px, the second pair being the one that can actually add. Nothing above the fold
+  // showed it, which is why it took the sweep learning to scroll (2026-09-13). Both
+  // directions are pinned here: a reminder that never fires is as wrong as one that
+  // fires twice.
+  test('the agenda does not repeat the checklists while the departure card is on the board', async ({ page }) => {
+    await open(page)
+    const today = page.locator('.wg-slot[data-card="today"]')
+    await today.scrollIntoViewIfNeeded()
+    await expect(today.locator('.todo-fold')).toHaveCount(0)
+    // …and the card that owns them still has them.
+    await expect(page.locator('.wg-slot[data-card="departure"] .todo-fold')).toHaveCount(1)
+  })
+
+  test('…and picks them back up when that card is hidden from the layout', async ({ page }) => {
+    await mockApi(page)
+    await seedState(page, { cardPrefs: { mode: { departure: 'never' } } })
+    await page.goto('/board')
+    await page.waitForSelector('.board-grid .wg-slot')
+
+    await expect(page.locator('.wg-slot[data-card="departure"]')).toHaveCount(0)
+    const today = page.locator('.wg-slot[data-card="today"]')
+    await today.scrollIntoViewIfNeeded()
+    const fold = today.locator('.todo-fold .disclosure__summary', { hasText: 'Avant de partir' })
+    await expect(fold).toBeVisible()
+  })
+
   test('picking a template on the departure card POSTs the instantiation', async ({ page }) => {
     await open(page)
     const dep = page.locator('.wg-slot[data-card="departure"]')

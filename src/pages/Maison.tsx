@@ -620,9 +620,9 @@ function MaisonParent() {
       const c = contactsById.get(p.id)
       if (!c) return
       const nextRdv = nextRdvFor(events, (e) => e.contact_id === c.id)
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: CERCLE_ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onDelete: ro ? undefined : () => void deleteContact(c.id, p.name), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: CERCLE_ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onDelete: ro ? undefined : () => void deleteContact(c.id, p.name), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref, onReach: () => bumpFrequent(JOINDRE_SCOPE, p.key) }))
     } else {
-      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, onSchedule, buildFamilyHref }))
+      detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, onSchedule, buildFamilyHref, onReach: () => bumpFrequent(JOINDRE_SCOPE, p.key) }))
     }
   }
 
@@ -701,31 +701,18 @@ function MaisonParent() {
             {sub && <span className="cercle-row__sub mono">{sub}</span>}
           </span>
         </button>
-        {/* Quick reach — call / write without opening the peek (only when known).
-            Bumps the « Joindre » (A-6) frequents so a real reach-out here feeds the
-            rail's ranking before the rail itself is ever used. */}
-        {p.phone && (
-          <a
-            className="cercle-row__quick"
-            href={`tel:${p.phone}`}
-            aria-label={t.cercle.call}
-            title={t.cercle.call}
-            onClick={() => bumpFrequent(JOINDRE_SCOPE, p.key)}
-          >
-            <InlineIcon name="phone-bold" size={16} />
-          </a>
-        )}
-        {p.email && (
-          <a
-            className="cercle-row__quick"
-            href={`mailto:${p.email}`}
-            aria-label={t.cercle.write}
-            title={t.cercle.write}
-            onClick={() => bumpFrequent(JOINDRE_SCOPE, p.key)}
-          >
-            <InlineIcon name="envelope-bold" size={16} />
-          </a>
-        )}
+        {/* Call / write used to sit HERE as two ☎/✉ shortcuts, and they were winning
+            the row's width from the one thing the row is for. `.cercle-row__sub` is
+            nowrap-with-ellipsis (deliberately — a long NAME used to widen the whole
+            card on a landscape tablet), so the relation is what gets cut: « Conjointe
+            de P… » at 390px, « Conjointe … » at 360, beside a sibling with no icons
+            reading « Conjoint de Maman » in full. The relation IS the row's content;
+            the icons were furniture, and this is the « compact rows » precedent — a
+            row drops its furniture, the actions live behind the door.
+            The two doors that took them: the peek (« Appeler » / « Écrire », which
+            `buildMemberPerson` grew in the same commit — a member's peek had never
+            offered them) and the « Joindre » rail at the foot of the tab, which is the
+            ranked fast path and is what `bumpFrequent` was feeding from here. */}
         {p.kind === 'member' && !hideBadge && <span className="cercle-row__badge mono">{t.cercle.memberBadge}</span>}
         {p.kind === 'pet' && <span className="cercle-row__badge mono">{t.cercle.pet.title}</span>}
       </div>

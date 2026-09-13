@@ -103,3 +103,43 @@ test('a day’s meal row opens its recipe directly; an unlinked meal falls back 
   await page.locator('.kitchen__day').first().locator('.kitchen__day-meal', { hasText: 'Salade César' }).click()
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+\?vue=repas/)
 })
+
+// « Restants » and « Idées de repas » both render through the shared MealPool, and
+// both led with a permanently-open combobox sitting ABOVE their own empty state:
+// heading, empty field, « Pas de restants. Tant mieux ! ». LEAN's first smell, and it
+// survived every lean pass for one reason — those sections live BELOW THE FOLD on the
+// kitchen tab, and the state matrix only shot the viewport until 2026-09-13.
+//
+// The exception is the other half of the same rule: the IdeasDrawer is a surface you
+// deliberately OPENED to write in, so its field stays open. Lean to scan, generous
+// once inside — both directions are pinned here, because a fold applied everywhere
+// would be the mirror-image mistake.
+test('the meal pools lead with their content; the composer waits behind its ＋', async ({ page }) => {
+  await boot(page)
+  await page.goto('/kitchen')
+  await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
+
+  const pools = page.locator('.kitchen__ideas')
+  await expect(pools.first()).toBeVisible()
+  // No pool shows a composer at rest…
+  await expect(page.locator('.kitchen__ideas .kitchen__ideas-combo')).toHaveCount(0)
+  // …and every one of them offers the ＋ that reveals it.
+  const plus = pools.first().locator('.sec-label__actbtn')
+  await expect(plus).toHaveAttribute('aria-expanded', 'false')
+  await plus.click()
+  await expect(pools.first().locator('.kitchen__ideas-combo')).toBeVisible()
+  await expect(plus).toHaveAttribute('aria-expanded', 'true')
+})
+
+test('…but the ideas DRAWER keeps its field open — you opened it to write', async ({ page }) => {
+  await boot(page)
+  await page.goto('/kitchen')
+  await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
+
+  await page.locator('.kitchen__ideas-opener .btn--primary').click()
+  const drawer = page.locator('.ideas-drawer .scene__body')
+  await expect(drawer).toBeVisible()
+  await expect(drawer.locator('.kitchen__ideas-combo').first()).toBeVisible()
+  // …and it carries no ＋ to fold it away, because there is nothing to fold.
+  await expect(drawer.locator('.kitchen__ideas .sec-label__actbtn')).toHaveCount(0)
+})

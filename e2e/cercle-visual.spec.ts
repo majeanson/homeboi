@@ -205,3 +205,44 @@ for (const theme of THEMES) {
     await page.screenshot({ path: `e2e/screenshots/${label}.png`, fullPage: true })
   })
 }
+
+// The row spends its width on the RELATION, not on furniture. « Conjointe de P… » was
+// being cut at 390px (and « Conjointe … » at 360) because the row's ☎/✉ shortcuts took
+// the line, while the sibling beside it — same layout, no icons — read « Conjoint de
+// Maman » in full. `.cercle-row__sub` is nowrap-with-ellipsis on purpose (a long NAME
+// used to widen the whole card on a landscape tablet), so the relation is what loses.
+// The icons moved into the peek on 2026-09-13 — the compact-rows precedent.
+//
+// The second half is the half that matters: MOVING a door only counts if it lands.
+// `buildMemberPerson` had never offered « Appeler »/« Écrire » (only `buildContact`
+// did), so stripping the row without that would have deleted a member's only one-tap
+// reach rather than relocating it.
+test('a person row keeps its relation whole — the reach moved into the peek', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
+  await page.goto('/maison?section=family')
+  await settle(page, '.cercle-group')
+
+  // No row furniture competing for the line…
+  await expect(page.locator('.cercle-row .cercle-row__quick')).toHaveCount(0)
+  // …so the relation prints in full rather than ellipsing.
+  const maman = page
+    .locator('.cercle-row')
+    .filter({ has: page.locator('.cercle-row__name', { hasText: /^Maman$/ }) })
+    .first()
+  await expect(maman.locator('.cercle-row__sub')).toHaveText('Conjointe de Papa')
+  // …and NOT ONE row in the directory ellipses its relation at this width. The single
+  // row is the reported case; the sweep is what stops the next control from moving in.
+  const cut = await page
+    .locator('.cercle-row__sub')
+    .evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth + 1).length)
+  expect(cut, 'no relation may be truncated at 390px').toBe(0)
+
+  // …and the peek carries the two doors the row gave up (a MEMBER's peek, which is
+  // the one that never had them).
+  await maman.locator('.cercle-row__open').click()
+  const sheet = page.locator('.detail-sheet, .sheet.show').first()
+  await expect(sheet).toBeVisible()
+  await expect(sheet.getByRole('button', { name: /Appeler/ })).toBeVisible()
+})

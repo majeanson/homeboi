@@ -100,13 +100,13 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **3** — what is left of the nine §4-H wrote on
-> 2026-09-13, the pass that ran the state matrix and looked at what it had never been
-> able to show (the sweep was pruning nothing, shooting only the viewport, and rebasing
-> two fixtures out of ten). Six were fixed the same day; the three that remain each
-> touch a deliberate design decision, so they wait on Marc rather than on code. Every
-> one of the nine is a defect a frame made visible, not a ledger entry.
-> It read **0** before that — the last box, the till card, closed when it names and
+> a number you can trust. It reads **0** — again, and this time §4-H is why. It wrote
+> nine on 2026-09-13 — the pass that ran the state matrix and looked at what it had never been able to show (the sweep
+> was pruning nothing, shooting only the viewport, and rebasing two fixtures out of ten)
+> — and all nine are closed: six the same day, three the next turn once Marc had answered
+> the design question each of them argued with. Every one was a defect a frame made
+> visible, not a ledger entry, and every rule among them is now held by a test.
+> It had read 0 before that too — the last box, the till card, closed when it names and
 > links its source, which was the honest answer to « don't let a cashier refuse it »;
 > what remains there are two ❓ (terms, licensing), not tasks.
 > §4-G wrote nine on 2026-09-10 — the pass that opened all 100 state-matrix screenshots
@@ -2974,21 +2974,21 @@ loudly).
       it). `ACTIONS.md:102` records event-share as **peek-only**, and the peek does have
       it (`EventPeekActions.tsx:61`) — so this is an undocumented second door, not a
       missing one. Dropping the inline button restores the matrix and the row width.
-- [ ] **« Avant de partir » four times in one screen.** The agenda card's foot repeats
+- [x] **« Avant de partir » four times in one screen.** The agenda card's foot repeats
       the day's departure checklists (`Board.tsx:1361`, deliberate: « a reminder at the
       foot of the agenda ») and the « Avant de partir » card sits immediately under it —
       on a phone, always, since both are grid size 1 in one column. Two card headers and
       two identical collapsed « AVANT DE PARTIR 2 » pills inside ~400px. The reminder is
       right when the card is far away and noise when it is adjacent; it already knows how
       to hide (`hideWhenEmpty`).
-- [ ] **The garde-manger's « Restants » and « Idées de repas » lead with an always-open
+- [x] **The garde-manger's « Restants » and « Idées de repas » lead with an always-open
       composer**, above their own empty state — LEAN.md's first smell, on a surface below
       the fold that the lean passes had therefore never photographed. `SectionAdd` is the
       primitive.
 - [x] **The carnet's « Identité » draws a header over nothing** — every sibling section
       carries an empty-state line; that one has neither body nor line. Same shape as
       `c99b12fb`.
-- [ ] **A cercle row's relation is the first thing truncated**: « Conjointe de P… » at
+- [x] **A cercle row's relation is the first thing truncated**: « Conjointe de P… » at
       390px, « Conjointe … » at 360, while the row beside it says « Conjoint de Maman »
       in full — the contact ☎/✉ icons win the line, and the relation is the only thing
       the row is FOR.
@@ -2996,16 +2996,29 @@ loudly).
       board says « CE SOIR » for the same meal. One pre-reader, two surfaces, two ways of
       naming today.
 
-**Six of the nine shipped the same day** (one commit, each with the grep that found
+**All nine shipped.** Six the same day; the last three the next turn, each after Marc’s
+own call on a question the code could not settle — the agenda hides its duplicate
+reminder while the card that owns the subject is on the board (and picks it back up when
+that card is hidden); the two meal pools fold their composer behind ＋, while the ideas
+DRAWER keeps its field open because you opened it to write; and the person row hands its
+☎/✉ to the peek — which meant giving `buildMemberPerson` those actions first, since a
+member's peek had never had them and moving a door only counts if it lands. Every one of
+the six rules is pinned by a test proven red against the exact old behaviour.
+
+**The original six shipped the same day** (one commit, each with the grep that found
 it and, where the fix is a rule rather than a pixel, a test proven red against the
 exact old value first: the money formatter against `toFixed(2)` + comma, the
-recurrence label against `every: 'tous les'`). The three still open are the ones that
-argue with a decision somebody already made — the agenda's duplicated « Avant de
-partir » reminder is deliberate (its comment says so; what the comment could not know
-is that the card sits directly under it on a phone), the garde-manger's two open
-composers are a LEAN call on a surface no screenshot had reached, and the cercle row's
-truncation is a width trade between the relation and the ☎/✉ icons. Each is a question
-for Marc, not a defect to go fix.
+recurrence label against `every: 'tous les'`). The other three each argued with a
+decision somebody had already made, so they went to Marc as three questions rather than
+three commits: the agenda's duplicated « Avant de partir » reminder was deliberate (its
+comment says so; what the comment could not know is that the card sits directly under it
+on a phone), the garde-manger's two open composers were a LEAN call on a surface no
+screenshot had reached, and the cercle row's truncation was a width trade between the
+relation and the ☎/✉ icons. **All three answered and shipped the next turn** — and each
+answer carried a second half the question did not contain: hiding the reminder needs the
+reverse case (hide the CARD and the agenda takes it back), folding the composers needs
+the drawer exempted (you opened it to write), and moving the ☎/✉ needs a member's peek to
+have had them in the first place. It did not.
 
 - [~] **« Meilleur prix » badges the more expensive number** — ★ on Super C 4,99 $
       (1,25 $/L) above IGA 2,99 $ (1,50 $/L). The ranking is right (`sortBestFirst` groups
