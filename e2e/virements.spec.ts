@@ -126,7 +126,13 @@ test('the agreement shows WHO sends WHAT — faces and amounts, never a ranking'
   await expect(card).not.toContainText('%')
 })
 
-test('« La math » is FOLDED by default and opens to plain sentences — no chart', async ({ page }) => {
+// This test used to assert « no chart », full stop, and it went red the day the gap
+// got drawn (Marc, 2026-09-12: « maybe a little graph that goes to 0 too »). That was
+// a DECISION changing, not a regression — so the guard is rewritten rather than
+// deleted, and what it keeps is everything that would turn a receipt into a
+// scoreboard: no progress bar, no percentage, sentences first, and a forecast that
+// cannot pass for a measurement.
+test('« La math » is FOLDED by default and opens to sentences first, then one honest drawing', async ({ page }) => {
   await openVirements(page)
   const math = page.locator('.virements__math')
   await expect(math).toBeVisible()
@@ -137,13 +143,33 @@ test('« La math » is FOLDED by default and opens to plain sentences — no cha
   await expect(math.locator('p').first()).toBeVisible()
   await expect(math).toContainText('300,00')
   await expect(math).toContainText('72 000,00')
-  // Sentences, not a visualisation. Scoped to the BODY: the disclosure's own caret is
-  // an <svg> and a control affordance, not a chart — asserting over the whole block
-  // would be measuring the wrong thing and would go red for the wrong reason.
+
+  // Scoped to the BODY: the disclosure's own caret is an <svg> and a control
+  // affordance, so asserting over the whole block would measure the wrong thing.
   const body = math.locator('.disclosure__body')
-  await expect(body.locator('svg, canvas, progress, meter')).toHaveCount(0)
-  // …and the sentences are sentences: every line is a paragraph of words.
+  // The SENTENCES carry every number, and they come first. The drawing repeats them;
+  // it never replaces them.
   await expect(body.locator('p').first()).toContainText(' ')
+
+  // Exactly ONE drawing — the gap heading for zero, not a panel of charts.
+  await expect(body.locator('svg')).toHaveCount(1)
+  // The two shapes that score a person stay banned.
+  await expect(body.locator('progress, meter')).toHaveCount(0)
+  await expect(body).not.toContainText('%')
+
+  // The forecast half is DASHED. That is the whole defence against a guess wearing
+  // the clothes of a measurement, so it is pinned here rather than left to CSS review.
+  const ahead = body.locator('.vgraph__ahead')
+  await expect(ahead).toHaveCount(1)
+  await expect(ahead).toHaveCSS('stroke-dasharray', /\d/)
+
+  // THE HONEST ENDING. This fixture's arrangement does NOT close the gap (26 payments
+  // of 300 $ against 72 000 $), so the line must not reach the floor and « Réglé »
+  // must not appear. Rounding the bad news away is the one lie this drawing could tell.
+  await expect(body).not.toContainText('Réglé')
+
+  // An <svg role="img"> with no name is invisible to a screen reader.
+  await expect(body.getByRole('img')).toHaveAttribute('aria-label', /.+/)
 })
 
 test('the history row reads as money + day, with the bank message under it', async ({ page }) => {
