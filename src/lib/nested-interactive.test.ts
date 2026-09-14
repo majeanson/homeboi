@@ -39,9 +39,21 @@ function sourceFiles(dir: string): string[] {
 // necessarily quotes the thing it removed — can neither satisfy nor trip the grep.
 // Same treatment calm-tenets.test.ts gives migrations.
 function code(text: string): string {
-  return text
+  // …and the line-prefix test alone did NOT do that, which this guard found out the
+  // hard way for the fourth time (2026-09-14). It blanked a line starting with `//`,
+  // `*` or `/*` — but a JSX comment starts with `{`, so every `{/* … */}` block, the
+  // dominant comment style inside JSX in this codebase, was scanned as code. The
+  // moment a fix was documented in the file it fixed — « never `role="button"` +
+  // tabIndex » — the prose tripped the grep and the walk blamed the enclosing <li>.
+  // A guard that fires because you wrote down why you fixed it is a guard that
+  // teaches people to stop writing things down.
+  //
+  // Blank whole /* … */ regions (the `{/*` form included) while PRESERVING newlines,
+  // so the line numbers the walk reports still point at the real source line.
+  const blanked = text.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+  return blanked
     .split('\n')
-    .map((l) => (/^\s*(\/\/|\*|\/\*)/.test(l) ? '' : l))
+    .map((l) => (/^\s*(\/\/|\*)/.test(l) ? '' : l))
     .join('\n')
 }
 
