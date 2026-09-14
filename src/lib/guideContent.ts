@@ -969,12 +969,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Noter un virement', en: 'Recording a transfer' },
         detail: {
-          fr: 'Ce que tu dois encore payer arrive déjà coché, et un ✓ veut dire « déjà envoyé ». Ajoute un renflouement ou une ligne libre, puis copie le message pour ta banque.',
-          en: 'What you still owe arrives already ticked, and a ✓ means “already sent”. Add a top-up or a free line, then copy the message for your bank.',
+          fr: 'Ce que tu dois encore payer arrive déjà coché, et un ✓ veut dire « déjà envoyé ». Nomme ce qui s’ajoute — « Renflouement », « Frais de maman » — puis copie le message pour ta banque.',
+          en: 'What you still owe arrives already ticked, and a ✓ means “already sent”. Name whatever rides along — “Top-up”, “Mum’s fee” — then copy the message for your bank.',
         },
         why: {
-          fr: 'Le numéro de référence que tu colles au retour, c’est ce qui relie la note au relevé — la preuve, des deux bords.',
-          en: 'The reference number you paste in on your way back is what ties the note to the statement — the proof, on both sides.',
+          fr: 'Un montant nommé une fois te sera reproposé au virement suivant, avec ce que tu avais envoyé la dernière fois : un tap, jamais pré-rempli. Rien à déclarer nulle part — il existe parce que tu l’as envoyé. Et le numéro de référence que tu colles au retour relie la note au relevé, la preuve des deux bords.',
+          en: 'An amount you name once comes back on the next transfer, carrying what you sent last time: one tap, never pre-filled. Nothing to declare anywhere — it exists because you sent it. And the reference number you paste in on your way back ties the note to the statement, the proof on both sides.',
         },
         route: '/virement/new',
       },

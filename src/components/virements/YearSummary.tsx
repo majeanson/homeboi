@@ -42,8 +42,10 @@ export function YearSummary({
   const shown = year != null && years.includes(year) ? year : (years[0] ?? null)
 
   const summary = useMemo(
-    () => (shown == null ? null : summariseYear(transfers, plans, shown)),
-    [transfers, plans, shown],
+    // `v.topup` is what a legacy UNNAMED top-up line is filed under, so it lands in
+    // the same group as the « Renflouement » a later transfer named out loud.
+    () => (shown == null ? null : summariseYear(transfers, plans, shown, v.topup)),
+    [transfers, plans, shown, v.topup],
   )
 
   if (!summary) return null
@@ -62,13 +64,12 @@ export function YearSummary({
       out.push(p.title || v.yearUnknownPlan)
       for (const row of p.byMember) out.push(`  ${who(row)}`)
     }
-    if (summary.topups.length) {
-      out.push(v.yearTopups)
-      for (const row of summary.topups) out.push(`  ${nameOf(row.memberId)} — ${money(row.cents)}`)
-    }
-    if (summary.others.length) {
-      out.push(v.yearOthers)
-      for (const o of summary.others) out.push(`  ${o.label} — ${money(o.cents)}`)
+    // Each named extra reads exactly like an agreement above it — a name, then the
+    // faces under it. That is the generalisation showing up in the receipt: « Frais
+    // de maman » is a line of this household's year, not a footnote to one.
+    for (const x of summary.extras) {
+      out.push(x.label || v.yearUnnamed)
+      for (const row of x.byMember) out.push(`  ${nameOf(row.memberId)} — ${money(row.cents)}`)
     }
     out.push('', `${v.yearTotal} : ${money(summary.totalCents)}`)
     for (const row of summary.byMember) out.push(`  ${nameOf(row.memberId)} — ${money(row.cents)}`)
@@ -116,31 +117,18 @@ export function YearSummary({
             </div>
           ))}
 
-          {summary.topups.length > 0 && (
-            <div className="virements__year-group">
-              <h4>{v.yearTopups}</h4>
+          {summary.extras.map((x) => (
+            <div className="virements__year-group" key={x.label}>
+              <h4>{x.label || v.yearUnnamed}</h4>
               <ul>
-                {summary.topups.map((row) => (
+                {x.byMember.map((row) => (
                   <li className="mono" key={row.memberId ?? ''}>
                     {nameOf(row.memberId)} — {money(row.cents)}
                   </li>
                 ))}
               </ul>
             </div>
-          )}
-
-          {summary.others.length > 0 && (
-            <div className="virements__year-group">
-              <h4>{v.yearOthers}</h4>
-              <ul>
-                {summary.others.map((o) => (
-                  <li className="mono" key={o.label}>
-                    {o.label} — {money(o.cents)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          ))}
 
           <div className="virements__year-group virements__year-total">
             <h4>

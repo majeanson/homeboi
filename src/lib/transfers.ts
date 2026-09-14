@@ -101,6 +101,105 @@ export function useTransfers() {
 export const transferTotal = (lines: readonly TransferLine[]): number =>
   lines.reduce((sum, l) => sum + l.amountCents, 0)
 
+// ---- Extras: everything that is not a payment into an agreement --------------
+//
+// A transfer carries two kinds of money: the agreements it pays into (a 'plan' line
+// per due date, priced from the shares) and everything else riding on the same send.
+// That second half used to be TWO mechanisms that were never really different:
+//
+//   * `topup` — one hardcoded, UNNAMED amount with its own field, its own « comme la
+//     dernière fois » proposal, its own word in the memo and its own bucket in the
+//     year summary. It exists because this household writes « renflou 2000 » in its
+//     bank memo. That is a NAME, not a feature: the next household's is « frais de
+//     maman », and the app had no way to hold one.
+//   * `other` — an anonymous labelled line, retyped from scratch every single send,
+//     proposed by nothing, and folded into the year without even the face that sent it.
+//
+// So there is one mechanism now — a NAMED amount — and « Renflouement » is simply the
+// default name of the legacy unnamed line. What made the top-up feel special (it is
+// remembered, and offered back one tap at a time) is the general behaviour; what made
+// it special in the CODE is gone.
+//
+// The names are not declared anywhere and there is no table for them: an extra exists
+// because the household sent it, exactly like the tracking floor and the catch-up
+// arithmetic are read off recorded rows rather than stored. Type it once, it comes
+// back.
+
+/** A non-plan line, named. `label` may be empty — an amount somebody never named. */
+export interface TransferExtra {
+  label: string
+  amountCents: number
+}
+
+// Two spellings of one name are one name. Accent- and case-insensitive, so
+// « Électricité » typed today and « electricite » typed in a hurry next month are the
+// same line of the year — the fold `summariseYear` already did for free lines, lifted
+// out so the composer's proposals and the summary agree on what "the same" means.
+export function extraKey(label: string): string {
+  return foldAscii(label).toLocaleLowerCase() || label.trim().toLocaleLowerCase()
+}
+
+/**
+ * Every non-plan line of a transfer, as a named amount, merged by name.
+ *
+ * A legacy unnamed `topup` takes `topupLabel` (the app's own word for it), which is
+ * what the composer shows in the row and what the year summary files it under — so a
+ * transfer recorded before names existed reads identically to one recorded after.
+ * Merging reproduces what the old single top-up field did by construction: two
+ * top-ups on one transfer were always one number on screen.
+ */
+export function extrasOf(lines: readonly TransferLine[], topupLabel: string): TransferExtra[] {
+  const by = new Map<string, TransferExtra>()
+  for (const l of lines) {
+    if (l.kind === 'plan') continue
+    const label = l.kind === 'topup' ? topupLabel : l.label.trim()
+    const key = extraKey(label)
+    const row = by.get(key)
+    if (row) row.amountCents += l.amountCents
+    else by.set(key, { label, amountCents: l.amountCents })
+  }
+  return [...by.values()]
+}
+
+/** How many remembered extras the composer offers at once. */
+export const REMEMBERED_EXTRAS = 4
+
+/**
+ * What this face has added to a transfer before: the most recent amount per name,
+ * newest first. The generalisation of « comme la dernière fois » — which only ever
+ * worked for the one unnamed top-up.
+ *
+ * Per SENDER, like the top-up proposal was: this is « what YOU put in last time », and
+ * a fee the other person sends is not a suggestion for you. Newest amount wins, so a
+ * renflouement that moved from 2 000 $ to 2 500 $ offers the number you actually sent.
+ */
+export function rememberedExtras(
+  transfers: readonly Transfer[],
+  memberId: string | null,
+  topupLabel: string,
+  opts: { exclude?: readonly string[]; limit?: number } = {},
+): TransferExtra[] {
+  const skip = new Set((opts.exclude ?? []).map(extraKey))
+  const limit = opts.limit ?? REMEMBERED_EXTRAS
+  const seen = new Set<string>()
+  const out: TransferExtra[] = []
+  const mine = transfers
+    .filter((t) => (t.memberId ?? null) === (memberId ?? null))
+    .sort((a, b) => b.sentAt - a.sentAt)
+  for (const t of mine) {
+    for (const x of extrasOf(t.lines, topupLabel)) {
+      const key = extraKey(x.label)
+      // An unnamed amount is nothing to offer back — « 50 $ » says nothing about what
+      // it was for, which is the whole reason a name is worth typing once.
+      if (!key || !x.amountCents || seen.has(key) || skip.has(key)) continue
+      seen.add(key)
+      out.push(x)
+      if (out.length >= limit) return out
+    }
+  }
+  return out
+}
+
 // Which of a plan's due dates this face has already sent for. A due date belongs to
 // the person who owes it, so Marc paying his side never marks Camille's as done —
 // the same rule the server uses to build its cover keys.
@@ -249,9 +348,9 @@ export const TOPUP_WORD = { fr: 'renflou', en: 'topup' } as const
 // Build the message that goes in the Interac memo, e.g.
 //   « Hypotheque 13 27 aout renflou 2000 »
 // which is exactly the shape this household was already typing by hand. Plan lines
-// group under their plan's name; the top-up and any other line follow with their
-// amount. Capped, because a bank memo field is short and silently truncating in the
-// bank's own form is how a reference loses its meaning.
+// group under their plan's name; every extra follows under its own name. Capped,
+// because a bank memo field is short and silently truncating in the bank's own form
+// is how a reference loses its meaning.
 export function buildMemo(
   lines: readonly TransferLine[],
   plans: readonly TransferPlan[],
@@ -266,13 +365,13 @@ export function buildMemo(
     parts.push(`${foldAscii(plan.title)} ${memoDates(dueAts, lang)}`)
   }
 
-  const topup = lines.filter((l) => l.kind === 'topup').reduce((s, l) => s + l.amountCents, 0)
-  if (topup > 0) parts.push(`${TOPUP_WORD[lang]} ${memoAmount(topup)}`)
-
-  for (const l of lines) {
-    if (l.kind !== 'other') continue
-    const label = foldAscii(l.label)
-    parts.push(label ? `${label} ${memoAmount(l.amountCents)}` : memoAmount(l.amountCents))
+  // The extras, in the order the composer's rows carry them — so the message reads
+  // top-to-bottom the way the screen that built it does. A legacy unnamed top-up
+  // keeps the short word this household types into its bank field (« renflou »)
+  // rather than the longer on-screen name; a named extra goes in under its own name.
+  for (const x of extrasOf(lines, TOPUP_WORD[lang])) {
+    const label = foldAscii(x.label)
+    parts.push(label ? `${label} ${memoAmount(x.amountCents)}` : memoAmount(x.amountCents))
   }
 
   return foldAscii(parts.join(' ')).slice(0, MEMO_CAP).trim()
@@ -303,14 +402,24 @@ export interface YearPlanTotal {
   cents: number
 }
 
+// One named extra's year — and it carries the FACES, which is what the old split
+// could not do. « Renflouements » were listed per person; free lines were listed as a
+// bare label and a number, with no way to tell who had sent the « frais de maman ».
+// One shape now, and it is the richer of the two.
+export interface YearExtraTotal {
+  label: string
+  byMember: YearMemberTotal[]
+  cents: number
+}
+
 export interface YearSummary {
   year: number
   transfers: number
   firstSentAt: number | null
   lastSentAt: number | null
   plans: YearPlanTotal[]
-  topups: YearMemberTotal[]
-  others: { label: string; cents: number }[]
+  /** Every named extra, in the order the household first used it that year. */
+  extras: YearExtraTotal[]
   byMember: YearMemberTotal[]
   totalCents: number
 }
@@ -345,17 +454,17 @@ function bump(into: YearMemberTotal[], memberId: string | null, cents: number, p
   } else into.push({ memberId, payments, cents })
 }
 
-/** Everything sent in one calendar year, grouped by agreement and by person. */
+/** Everything sent in one calendar year, grouped by agreement, by extra, and by person. */
 export function summariseYear(
   transfers: readonly Transfer[],
   plans: readonly TransferPlan[],
   year: number,
+  topupLabel: string,
 ): YearSummary {
   const mine = transfers.filter((t) => yearOfDay(t.sentAt) === year).sort((a, b) => a.sentAt - b.sentAt)
 
   const planRows = new Map<string, YearPlanTotal>()
-  const topups: YearMemberTotal[] = []
-  const others = new Map<string, { label: string; cents: number }>()
+  const extraRows = new Map<string, YearExtraTotal>()
   const byMember: YearMemberTotal[] = []
   let totalCents = 0
 
@@ -372,15 +481,17 @@ export function summariseYear(
         bump(row.byMember, who, l.amountCents, 1)
         row.cents += l.amountCents
         planRows.set(l.planId, row)
-      } else if (l.kind === 'topup') {
-        bump(topups, who, l.amountCents)
       } else {
-        // Free lines fold by their own label, case-insensitively, so « Électricité »
-        // typed twice reads as one line of the year rather than two.
-        const key = l.label.trim().toLocaleLowerCase()
-        const row = others.get(key) ?? { label: l.label.trim(), cents: 0 }
+        // Extras fold by NAME, accent- and case-insensitively, so « Électricité »
+        // typed twice reads as one line of the year rather than two — and a legacy
+        // unnamed top-up folds under the app's own word for it, landing in the same
+        // group as the « Renflouement » a later transfer named out loud.
+        const label = l.kind === 'topup' ? topupLabel : l.label.trim()
+        const key = extraKey(label)
+        const row = extraRows.get(key) ?? { label, byMember: [], cents: 0 }
+        bump(row.byMember, who, l.amountCents)
         row.cents += l.amountCents
-        others.set(key, row)
+        extraRows.set(key, row)
       }
     }
   }
@@ -392,7 +503,8 @@ export function summariseYear(
     ...[...planRows.values()].filter((r) => !plans.some((p) => p.id === r.planId)),
   ]
   for (const r of ordered) r.byMember.sort(byIdentity)
-  topups.sort(byIdentity)
+  const extras = [...extraRows.values()]
+  for (const r of extras) r.byMember.sort(byIdentity)
   byMember.sort(byIdentity)
 
   return {
@@ -401,8 +513,7 @@ export function summariseYear(
     firstSentAt: mine[0]?.sentAt ?? null,
     lastSentAt: mine[mine.length - 1]?.sentAt ?? null,
     plans: ordered,
-    topups,
-    others: [...others.values()],
+    extras,
     byMember,
     totalCents,
   }

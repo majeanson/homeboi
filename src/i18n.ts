@@ -1578,7 +1578,6 @@ export const FR = {
     batch: 'Quantité',
     gathered: 'Pris ✓',
     toGather: 'À prendre',
-    hearLine: 'Écouter l’ingrédient',
     // « Il en manque » — signaler un manque SANS quitter la recette (palier 2 nº10).
     // On découvre qu'on est à court les mains dans le bol; jusqu'ici les seules
     // portes étaient le garde-manger et la feuille ＋, deux façons d'abandonner la
@@ -3630,19 +3629,28 @@ export const FR = {
     addOtherDate: 'Une autre date',
     // L'écran vide ne se lisait pas : « Total 0,00 $ », un message vide, et rien qui
     // dise qu'il faut cocher quelque chose (Marc, 2026-09-12, capture du compositeur).
-    emptyDraft: 'Coche une date couverte, ou entre un renflouement — le total et le message se composent tout seuls.',
+    emptyDraft: 'Coche une date couverte, ou ajoute un montant — le total et le message se composent tout seuls.',
     emptyNoDue: 'Aucune date à cocher : la première date de l’entente est encore à venir. Utilise « Une autre date » pour noter un virement déjà fait.',
     sender: 'Qui envoie',
     sentOn: 'Envoyé le',
+    // LES MONTANTS QUI S'AJOUTENT. Tout ce qui monte dans le même virement sans être
+    // un paiement d'entente. Il y en avait DEUX sortes : un « Renflouement » codé en
+    // dur avec son champ à lui, et des lignes libres anonymes à retaper chaque fois.
+    // La seule chose qui rendait le renflouement spécial, c'est que cette maisonnée
+    // avait un mot pour lui. Maintenant chaque montant peut en avoir un.
+    //
+    // « Renflouement » reste : c'est le NOM par défaut de l'ancienne ligne sans nom
+    // (et le mot du glossaire), plus un mécanisme à part.
     topup: 'Renflouement',
-    topupHint: 'Pour le quotidien — le même montant des deux bords.',
+    extras: 'Montants qui s’ajoutent',
+    extraLabel: 'Pour quoi',
     // LA PROPOSITION (Marc, 2026-09-12 : « propose to me the next sensible thing i
     // would do »). Offerte, jamais pré-remplie : les dates dues se cochent toutes
     // seules parce qu'elles sont DUES, mais un montant glissé dans un champ sans
-    // qu'on le remarque, c'est de l'argent envoyé qu'on n'a pas décidé.
-    topupLikeLast: (amount: string) => `Comme la dernière fois : ${amount}`,
-    otherLines: 'Autres lignes',
-    otherLabel: 'Pour quoi',
+    // qu'on le remarque, c'est de l'argent envoyé qu'on n'a pas décidé. Ça marchait
+    // pour le renflouement seulement ; ça marche pour n'importe quel nom maintenant.
+    extrasRecent: 'Déjà envoyés — un tap pour remettre :',
+    extraLikeLast: (label: string, amount: string) => `${label} — ${amount}`,
     amount: 'Montant',
     addLine: 'Ajouter une ligne',
     total: 'Total',
@@ -3728,8 +3736,9 @@ export const FR = {
     yearFold: 'Le sommaire de l’année',
     yearPick: 'Année',
     yearTotal: 'Total envoyé',
-    yearTopups: 'Renflouements',
-    yearOthers: 'Autres lignes',
+    // Un montant qu'on n'a jamais nommé. Il compte dans le total pareil — c'est de
+    // l'argent qui est parti — mais il n'a rien à dire sur ce qu'il payait.
+    yearUnnamed: 'Sans nom',
     yearPayments: (payments: number, amount: string) =>
       payments === 1 ? `1 paiement · ${amount}` : `${payments} paiements · ${amount}`,
     yearSpan: (count: number, from: string, to: string) =>

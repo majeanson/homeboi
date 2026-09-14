@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
 import { useProfile } from '../../lib/profile'
@@ -8,7 +8,10 @@ import { inputFromLocalDay, localDayFromInput } from '../../lib/localDay'
 import {
   buildMemo,
   coveredDueDates,
+  extraKey,
+  extrasOf,
   offeredDueDates,
+  rememberedExtras,
   transferTotal,
   uncoveredDueDates,
   useDeleteTransfer,
@@ -95,15 +98,22 @@ export function TransferForm({
     return out
   })
 
-  const [topup, setTopup] = useState(() => {
-    const c = value?.lines.filter((l) => l.kind === 'topup').reduce((s, l) => s + l.amountCents, 0) ?? 0
-    return c ? String(c / 100) : ''
-  })
-  const [others, setOthers] = useState<{ label: string; amount: string }[]>(() =>
-    (value?.lines.filter((l) => l.kind === 'other') as Extract<TransferLine, { kind: 'other' }>[] | undefined)?.map((l) => ({
-      label: l.label,
-      amount: String(l.amountCents / 100),
-    })) ?? [],
+  // THE EXTRAS: every amount riding on this send that is not a payment into an
+  // agreement. One list, each row NAMED — « Renflouement », « Frais de maman »,
+  // « Électricité ». There used to be a dedicated top-up field above a pile of
+  // anonymous free lines; the only thing that made the top-up special was that this
+  // household had a word for it, and now every extra can have one.
+  //
+  // Seeded from the transfer being edited. A legacy unnamed `topup` line arrives
+  // carrying the app's own word for it, visible in the row before anything is saved —
+  // so re-saving an old transfer names it rather than silently rewriting it. (`v.topup`
+  // is read once here, as every `useState` initializer is: an EN reader who opens an
+  // edit scene in the first frames after boot, before the EN dictionary resolves, would
+  // name a legacy line in French. FR-first app, legacy-only path, visible in the field.)
+  const rowId = useRef(0)
+  const newRow = (label = '', amount = '') => ({ key: `x${rowId.current++}`, label, amount })
+  const [extras, setExtras] = useState<{ key: string; label: string; amount: string }[]>(() =>
+    value ? extrasOf(value.lines, v.topup).map((x) => newRow(x.label, String(x.amountCents / 100))) : [],
   )
   const [reference, setReference] = useState(value?.reference ?? '')
   // The memo regenerates as the draft changes UNTIL it is edited by hand; after that
@@ -114,16 +124,20 @@ export function TransferForm({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
-  // What this face put in as a top-up LAST time — the newest recorded transfer of
-  // theirs that carried one. Only ever offered on a NEW transfer: while editing an
-  // existing one, its own amount is the truth and a proposal beside it would be noise.
-  const lastTopup = value
-    ? 0
-    : (transfers
-        .filter((x) => (x.memberId ?? null) === (sender ?? null))
-        .sort((a, b) => b.sentAt - a.sentAt)
-        .map((x) => x.lines.filter((l) => l.kind === 'topup').reduce((s, l) => s + l.amountCents, 0))
-        .find((c) => c > 0) ?? 0)
+  // WHAT THIS FACE HAS SENT BEFORE. The due dates tick themselves because they are
+  // DUE — that is a fact. An extra is the money the screen cannot know, and it is also
+  // the money that repeats: it was a 2 000 $ renflouement last time and 200 $ to maman
+  // the time before. So each one is OFFERED, one tap, and never slid into a field —
+  // an amount filled in that nobody noticed is money sent that nobody decided.
+  //
+  // Offered while EDITING too, unlike the single top-up field this replaces: back then
+  // the field's own value was the truth and a proposal beside it was noise, but a row
+  // you forgot to add is a row you can still add, and anything already in the draft is
+  // excluded by name anyway.
+  const remembered = useMemo(
+    () => rememberedExtras(transfers, sender, v.topup, { exclude: extras.map((x) => x.label) }),
+    [transfers, sender, v.topup, extras],
+  )
 
   const toggleDate = (planId: string, at: number) =>
     setTicked((cur) => {
@@ -140,14 +154,15 @@ export function TransferForm({
       for (const at of (ticked[p.id] ?? []).slice().sort((a, b) => a - b))
         out.push({ kind: 'plan', planId: p.id, dueAt: at, amountCents: share })
     }
-    const tc = parseMoney(topup)
-    if (tc) out.push({ kind: 'topup', amountCents: tc })
-    for (const o of others) {
-      const c = parseMoney(o.amount)
-      if (c) out.push({ kind: 'other', label: o.label.trim(), amountCents: c })
+    // Every extra is a named line. The `topup` kind is never written again — it is
+    // read (old rows), displayed and totalled, and a transfer that carried one leaves
+    // this screen with the name the reader could see in the row.
+    for (const x of extras) {
+      const c = parseMoney(x.amount)
+      if (c) out.push({ kind: 'other', label: x.label.trim(), amountCents: c })
     }
     return out
-  }, [plans, ticked, sender, topup, others])
+  }, [plans, ticked, sender, extras])
 
   const total = transferTotal(lines)
   const generated = useMemo(() => buildMemo(lines, plans, lang), [lines, plans, lang])
@@ -281,50 +296,58 @@ export function TransferForm({
         )
       })}
 
-      <label className="recur__row mono">
-        <span>{v.topup}</span>
-        <input className="input" inputMode="decimal" value={topup} onChange={(e) => setTopup(e.target.value)} />
-      </label>
-      {/* THE PROPOSAL. The due dates tick themselves because they are DUE — that is a
-          fact, not a guess. A top-up is the one number this screen cannot know, and it
-          is also the one that repeats: it was 2 000 $ last time and it will be 2 000 $
-          again. So it is OFFERED, one tap, and never slid into the field: an amount
-          filled in that nobody noticed is money sent that nobody decided. */}
-      {lastTopup > 0 && !topup && (
+      {/* EVERYTHING ELSE RIDING ON THE SAME SEND, each line named. One mechanism for
+          what used to be two: a hardcoded « Renflouement » field, and anonymous free
+          lines retyped every single time. A name typed once comes back as a chip
+          below — which is the whole reason it is worth typing. */}
+      <fieldset>
+        <legend className="mono">{v.extras}</legend>
+        {extras.map((x, i) => (
+          <div className="virements__extra" key={x.key}>
+            <input
+              className="input"
+              value={x.label}
+              placeholder={v.extraLabel}
+              aria-label={v.extraLabel}
+              onChange={(e) => setExtras((cur) => cur.map((y, j) => (j === i ? { ...y, label: e.target.value } : y)))}
+            />
+            <input
+              className="input virements__extra-amount"
+              inputMode="decimal"
+              value={x.amount}
+              placeholder={v.amount}
+              // Named after its OWN row once the row has a name: several amount fields
+              // all announcing « Montant » is a screen read in the dark.
+              aria-label={x.label.trim() ? `${x.label.trim()} — ${v.amount}` : v.amount}
+              onChange={(e) => setExtras((cur) => cur.map((y, j) => (j === i ? { ...y, amount: e.target.value } : y)))}
+            />
+            <RowActions onDelete={() => setExtras((cur) => cur.filter((_, j) => j !== i))} deleteLabel={t.common.delete} />
+          </div>
+        ))}
+
+        {remembered.length > 0 && (
+          <>
+            <p className="operator__seg-hint mono">{v.extrasRecent}</p>
+            <Cluster role="group" aria-label={v.extrasRecent}>
+              {remembered.map((x) => (
+                <Chip
+                  key={extraKey(x.label)}
+                  icon="arrow-counter-clockwise-bold"
+                  onClick={() => setExtras((cur) => [...cur, newRow(x.label, String(x.amountCents / 100))])}
+                >
+                  {v.extraLikeLast(x.label, formatMoneyExact(x.amountCents, lang))}
+                </Chip>
+              ))}
+            </Cluster>
+          </>
+        )}
+
         <Cluster>
-          <Chip onClick={() => setTopup(String(lastTopup / 100))} icon="arrow-counter-clockwise-bold">
-            {v.topupLikeLast(formatMoneyExact(lastTopup, lang))}
+          <Chip onClick={() => setExtras((cur) => [...cur, newRow()])} icon="plus-bold">
+            {v.addLine}
           </Chip>
         </Cluster>
-      )}
-      <p className="operator__seg-hint mono">{v.topupHint}</p>
-
-      {/* Anything else riding on the same send. */}
-      {others.map((o, i) => (
-        <div className="virements__other" key={i}>
-          <input
-            className="input"
-            value={o.label}
-            placeholder={v.otherLabel}
-            aria-label={v.otherLabel}
-            onChange={(e) => setOthers((cur) => cur.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
-          />
-          <input
-            className="input virements__other-amount"
-            inputMode="decimal"
-            value={o.amount}
-            placeholder={v.amount}
-            aria-label={v.amount}
-            onChange={(e) => setOthers((cur) => cur.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))}
-          />
-          <RowActions onDelete={() => setOthers((cur) => cur.filter((_, j) => j !== i))} deleteLabel={t.common.delete} />
-        </div>
-      ))}
-      <Cluster>
-        <Chip onClick={() => setOthers((cur) => [...cur, { label: '', amount: '' }])} icon="plus-bold">
-          {v.addLine}
-        </Chip>
-      </Cluster>
+      </fieldset>
 
       {/* The total is READ, never typed — one number, derived from the lines above. */}
       <p className="virements__total">

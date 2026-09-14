@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { MMID, mockApi, seedState } from './mocks'
 import { boxOf } from './measure'
 
@@ -44,6 +44,9 @@ const PLAN = {
   },
 }
 
+// A transfer recorded BEFORE extras had names: one bare `topup` line. Everything the
+// composer does with it now has to work identically to a line somebody named, because
+// that is the whole claim of the generalisation.
 const SENT_WITH_TOPUP = {
   id: 't0',
   memberId: 'm2',
@@ -51,6 +54,19 @@ const SENT_WITH_TOPUP = {
   lines: [{ kind: 'topup', amountCents: 200000 }],
   totalCents: 200000,
   memo: 'renflou 2000',
+  reference: null,
+  note: null,
+}
+
+// …and one recorded AFTER: the household named its own fee. « Renflou », « frais de
+// maman » — the app hardcodes neither.
+const SENT_WITH_NAMED = {
+  id: 't2',
+  memberId: 'm2',
+  sentAt: MMID - 16 * DAY,
+  lines: [{ kind: 'other', label: 'Frais de maman', amountCents: 20000 }],
+  totalCents: 20000,
+  memo: 'Frais de maman 200',
   reference: null,
   note: null,
 }
@@ -99,6 +115,19 @@ async function openVirements(page: Page, opts: Opts = {}) {
   })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/notes?section=virements')
+}
+
+// THE EXTRAS LIST: every amount riding on the send that is not a payment into an
+// agreement, each one NAMED. There is no « Renflouement » field any more — that was a
+// hardcoded name with a field of its own, and the whole point is that the name is the
+// household's to choose. A blank row, then what it is for, then how much.
+async function addExtra(form: Locator, label: string, amount: string) {
+  await form.getByRole('button', { name: 'Ajouter une ligne' }).click()
+  const row = form.locator('.virements__extra').last()
+  await row.getByLabel('Pour quoi').fill(label)
+  // The amount field is named after its own row once the row has a name — several
+  // fields all announcing « Montant » is a screen read in the dark.
+  await row.getByLabel(/Montant/).fill(amount)
 }
 
 test('the Notes tab has two faces, and the money one is the second', async ({ page }) => {
@@ -200,14 +229,15 @@ test('the composer arrives with the unpaid dates ALREADY ticked, and writes the 
   // Two shares of 556,41 = 1 112,82 — derived, never typed.
   await expect(form.locator('.virements__total')).toContainText('1 112,82')
 
-  // A top-up joins the same send, and the total follows.
-  await form.getByLabel('Renflouement').fill('2000')
+  // A named amount joins the same send, and the total follows.
+  await addExtra(form, 'Renflouement', '2000')
   await expect(form.locator('.virements__total')).toContainText('3 112,82')
 
-  // THE message: the plan's name, the day numbers grouped by month, then the top-up —
-  // exactly the shape this household was typing by hand.
+  // THE message: the plan's name, the day numbers grouped by month, then the extra
+  // under ITS OWN NAME — the shape this household types by hand, and the shape the
+  // next household gets for « Frais de maman » without the app knowing the word.
   const memo = form.locator('textarea').first()
-  await expect(memo).toHaveValue('Hypotheque 25 mai 8 juin renflou 2000')
+  await expect(memo).toHaveValue('Hypotheque 25 mai 8 juin Renflouement 2000')
 })
 
 test('copying the message leaves the word « Copié ! » standing — a toast would be gone', async ({ page, context }) => {
@@ -233,7 +263,7 @@ test('saving posts the lines, the memo and the reference', async ({ page }) => {
   const form = page.locator('.virements__form')
   await expect(form).toBeVisible()
   await form.getByRole('button', { name: 'Papa' }).click()
-  await form.getByLabel('Renflouement').fill('2000')
+  await addExtra(form, 'Renflouement', '2000')
   await form.getByLabel('Numéro de référence').fill('CArR4A3Q')
 
   await form.getByRole('button', { name: 'Envoyer un virement' }).click()
@@ -241,15 +271,23 @@ test('saving posts the lines, the memo and the reference', async ({ page }) => {
 
   const write = posted.find((p) => p.path.endsWith('/transfers'))!
   expect(write.method).toBe('POST')
-  const body = write.body as { lines: { kind: string; amountCents: number }[]; memo: string; reference: string; memberId: string }
+  const body = write.body as {
+    lines: { kind: string; label?: string; amountCents: number }[]
+    memo: string
+    reference: string
+    memberId: string
+  }
   expect(body.memberId).toBe('m2')
   expect(body.reference).toBe('CArR4A3Q')
-  expect(body.memo).toBe('Hypotheque 25 mai 8 juin renflou 2000')
-  // Two plan lines at Papa's share + the top-up. The TOTAL is not sent: it is summed
+  expect(body.memo).toBe('Hypotheque 25 mai 8 juin Renflouement 2000')
+  // Two plan lines at Papa's share + the extra. The TOTAL is not sent: it is summed
   // from these, so there is no second number that can disagree.
   expect(body.lines.filter((l) => l.kind === 'plan')).toHaveLength(2)
   expect(body.lines.filter((l) => l.kind === 'plan').every((l) => l.amountCents === 55641)).toBe(true)
-  expect(body.lines.find((l) => l.kind === 'topup')?.amountCents).toBe(200_000)
+  // A NAMED line. The `topup` kind is read forever (old rows) and written never again:
+  // one mechanism, so « renflou » and « frais de maman » cannot drift apart.
+  expect(body.lines.filter((l) => l.kind === 'topup')).toHaveLength(0)
+  expect(body.lines.find((l) => l.kind === 'other')).toMatchObject({ label: 'Renflouement', amountCents: 200_000 })
 })
 
 test('with no agreement yet, the empty state IS the door to writing one', async ({ page }) => {
@@ -321,6 +359,21 @@ test('capture the two screens at 390px for review', async ({ page }) => {
   await page.goto('/virement/plan/new')
   await expect(page.locator('.operator__inline-form')).toBeVisible()
   await page.screenshot({ path: 'e2e/screenshots/virements-plan.png', fullPage: true })
+})
+
+// The extras half, in the state that actually shows it: two names this face has used
+// before, offered as chips, and one of them taken as a row. The default fixture has
+// no extras at all, so the section above would photograph as a legend and a ＋ — which
+// is exactly the kind of screen that reads fine in assertions and badly to an eye.
+test('capture the extras, offered and taken, at 390px', async ({ page }) => {
+  await openVirements(page, { transfers: [SENT_WITH_TOPUP, SENT_WITH_NAMED] })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: 'Papa' }).click()
+  await page.screenshot({ path: 'e2e/screenshots/virements-extras-offered.png', fullPage: true })
+  await form.getByRole('button', { name: /Frais de maman/ }).click()
+  await page.screenshot({ path: 'e2e/screenshots/virements-extras-taken.png', fullPage: true })
 })
 
 // The ＋ answers to the SECTION, and each face of Les notes has exactly one add — so
@@ -435,30 +488,97 @@ test('« Une autre date » logs a transfer made before the entente was written d
 })
 
 // « propose to me the next sensible thing i would do » (Marc, 2026-09-12). The dates
-// tick themselves because they are DUE. The top-up is the one number the screen cannot
-// know and the one that repeats — so it is OFFERED, never slid into the field.
-test('a new transfer offers last time’s top-up, one tap, and does not fill it in', async ({ page }) => {
+// tick themselves because they are DUE. An extra is the one number the screen cannot
+// know and the one that repeats — so it is OFFERED, never slid into a field.
+//
+// This used to work for exactly ONE amount, the hardcoded top-up. Now it works for any
+// name the household types, and a LEGACY unnamed line comes back under the app's own
+// word for it — which is the proof that old rows and named rows are the same thing.
+test('a new transfer offers what this face added last time — by name, one tap, never pre-filled', async ({ page }) => {
   await openVirements(page, { transfers: [SENT_WITH_TOPUP] })
   await page.goto('/virement/new')
   const form = page.locator('.virements__form')
   await expect(form).toBeVisible()
   await form.getByRole('button', { name: 'Papa' }).click()
 
-  // NOT pre-filled: an amount nobody noticed is money nobody decided.
-  await expect(form.getByLabel('Renflouement')).toHaveValue('')
-  const offer = form.getByRole('button', { name: /Comme la dernière fois/ })
+  // NOT pre-filled — an amount nobody noticed is money nobody decided. There is no
+  // row at all until somebody asks for one.
+  await expect(form.locator('.virements__extra')).toHaveCount(0)
+  const offer = form.getByRole('button', { name: /Renflouement/ })
   await expect(offer).toBeVisible()
   await expect(offer).toContainText('2 000,00')
 
-  // One tap takes it, and the total and the message follow.
+  // One tap takes it, as a named row, and the total and the message follow.
   await offer.click()
-  await expect(form.getByLabel('Renflouement')).toHaveValue('2000')
-  // Two due dates already ticked + the offered top-up = Marc's real 14 août transfer,
+  const row = form.locator('.virements__extra')
+  await expect(row).toHaveCount(1)
+  await expect(row.getByLabel('Pour quoi')).toHaveValue('Renflouement')
+  await expect(row.getByLabel(/Montant/)).toHaveValue('2000')
+  // Two due dates already ticked + the offered extra = Marc's real 14 août transfer,
   // composed without typing a number: 2 × 556,41 + 2 000.
   await expect(form.locator('.virements__total')).toContainText('3 112,82')
-  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 25 mai 8 juin renflou 2000')
+  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 25 mai 8 juin Renflouement 2000')
   // …and the offer retires once it has been taken.
-  await expect(form.getByRole('button', { name: /Comme la dernière fois/ })).toHaveCount(0)
+  await expect(form.getByRole('button', { name: /Renflouement — / })).toHaveCount(0)
+})
+
+// THE GENERALISATION, end to end. « Renflou or mom or whatever are just user defined
+// things » (Marc, 2026-09-14). Nothing is declared anywhere and there is no settings
+// screen: a name exists because the household sent it once, and every name it ever
+// sent comes back the same way — newest first, each carrying what was actually sent.
+test('any name you have used before comes back — « Frais de maman » exactly like « Renflouement »', async ({ page }) => {
+  await openVirements(page, { transfers: [SENT_WITH_TOPUP, SENT_WITH_NAMED] })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await form.getByRole('button', { name: 'Papa' }).click()
+
+  // Offers are CHIPS, not fields: nothing is in the draft until somebody taps.
+  await expect(form.locator('.virements__extra')).toHaveCount(0)
+  // Both are offered — « Frais de maman » (23 mai) ahead of the legacy top-up (9 mai),
+  // newest name first.
+  const maman = form.getByRole('button', { name: /Frais de maman/ })
+  await expect(maman).toBeVisible()
+  await expect(maman).toContainText('200,00')
+  await expect(form.getByRole('button', { name: /Renflouement/ })).toBeVisible()
+
+  // Taking one leaves the other standing: they are independent lines, not one slot.
+  await maman.click()
+  await expect(form.locator('.virements__extra')).toHaveCount(1)
+  await expect(form.getByRole('button', { name: /Frais de maman — / })).toHaveCount(0)
+  await expect(form.getByRole('button', { name: /Renflouement/ })).toBeVisible()
+
+  // …and both ride the same send, each under its own name, in row order.
+  await form.getByRole('button', { name: /Renflouement/ }).click()
+  await expect(form.locator('.virements__extra')).toHaveCount(2)
+  await expect(form.locator('textarea').first()).toHaveValue(
+    'Hypotheque 25 mai 8 juin Frais de maman 200 Renflouement 2000',
+  )
+})
+
+// A new row is two text fields and a 🗑 on a 360px phone — the exact shape that has
+// bled off the right edge here before (a hand-rolled flex row with a fixed basis).
+test('the extras rows do not bleed off the right edge at 360px', async ({ page }) => {
+  await openVirements(page, { viewport: { width: 360, height: 780 }, transfers: [] })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+  await addExtra(form, 'Frais de maman pour la maison', '200')
+  await addExtra(form, 'Renflouement', '2000')
+
+  const box = await boxOf(form)
+  const spill = await page.evaluate((right) => {
+    const root = document.querySelector('.virements__form')
+    if (!root) return ['no form']
+    return [...root.querySelectorAll<HTMLElement>('.virements__extra, .virements__extra *')]
+      .filter((el) => el.offsetParent !== null)
+      .filter((el) => {
+        const r = el.getBoundingClientRect()
+        return r.width > 0 && r.right > right + 1
+      })
+      .map((el) => `${el.tagName.toLowerCase()}.${el.className || '?'}`)
+  }, box.x + box.width)
+  expect(spill, 'these run past the form edge at 360px').toEqual([])
 })
 
 test('the date a transfer was sent is stored as the day you picked', async ({ page }) => {
@@ -467,7 +587,7 @@ test('the date a transfer was sent is stored as the day you picked', async ({ pa
   const form = page.locator('.virements__form')
   await expect(form).toBeVisible()
   await form.getByRole('button', { name: 'Papa' }).click()
-  await form.getByLabel('Renflouement').fill('2000')
+  await addExtra(form, 'Renflouement', '2000')
   await form.getByLabel('Envoyé le').fill('2025-08-14')
   await form.getByRole('button', { name: 'Envoyer un virement' }).click()
   await expect.poll(() => posted.length).toBeGreaterThan(0)

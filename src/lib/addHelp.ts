@@ -212,8 +212,8 @@ export const ADD_HELP = {
     card: 'notes',
     point: 6,
     body: {
-      fr: 'Note ce que tu viens d’envoyer au compte commun : coche les dates que le paiement couvre, ajoute un renflouement, et copie le message pour ta banque.',
-      en: 'Note what you just sent to the shared account: tick the dates the payment covers, add a top-up, and copy the message for your bank.',
+      fr: 'Note ce que tu viens d’envoyer au compte commun : coche les dates que le paiement couvre, nomme ce qui s’ajoute, et copie le message pour ta banque.',
+      en: 'Note what you just sent to the shared account: tick the dates the payment covers, name whatever rides along, and copy the message for your bank.',
     },
   },
   cnote: {

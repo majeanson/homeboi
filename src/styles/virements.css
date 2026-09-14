@@ -148,21 +148,37 @@
   font-size: 1.35rem;
 }
 
-/* A free line: what it was for, how much, and a way to drop it. Wraps on a narrow
-   phone rather than crushing the label field to nothing. */
-.virements__other {
+/* An extra: what it was for, how much, and a way to drop it. Wraps on a narrow
+   phone rather than crushing the name field to nothing. */
+.virements__extra {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   min-width: 0;
+  /* The size container the rule below queries — the ROW itself, whose width always
+     comes from its parent (it stretches in the form's flex column), so inline-size
+     containment can never change what it measures. Same mechanism and the same
+     reason as `.edit-field` in pages/fields.css. */
+  container: virements-extra / inline-size;
 }
-.virements__other .input {
+.virements__extra .input {
   flex: 1 1 auto; /* auto basis — a fixed rem basis is the documented no-wrap trap */
   min-width: 0;
 }
-.virements__other-amount {
+.virements__extra-amount {
   max-width: 7rem;
+}
+/* NAME · AMOUNT · 🗑 fit one line on a form-width host and cannot on a phone: the
+   three want ~408px inside a 358px row at 390px. Flexbox wraps on the BASIS and only
+   grows afterwards, so what dropped to the second line was the 🗑 — a delete stranded
+   alone under a full row of fields, with the name grown to fill the gap it left.
+   Under a narrow container the NAME takes the whole first line instead (« généreux
+   dedans »: it is the thing you type), and the amount keeps its 🗑 for company. */
+@container virements-extra (max-width: 26rem) {
+  .virements__extra > .input:first-child {
+    flex-basis: 100%;
+  }
 }
 
 /* A share row's face + name, so the avatar and the name read as one label. A floor on

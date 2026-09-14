@@ -1778,6 +1778,49 @@ maybe a little graph that goes to 0 too, add how-tos and examples in the guide �
 
 *This block existed TWICE in STATE.md, byte-identical, until it was noticed here.*
 
+**Follow-up, 2026-09-14 — « renflou or mom or whatever are just user defined things ».**
+Marc, asking for one more turn of the generalisation: a recurring fee like « Frais de
+maman », « same concept as renflou but with something specific ». The answer was not a
+new feature — it was noticing that the app had TWO mechanisms for the same thing and
+that one of them was a hardcoded French word.
+
+- **A transfer's non-plan lines are now ONE thing: a named amount** (`extrasOf` /
+  `extraKey` / `rememberedExtras` in `lib/transfers.ts`). Before, `topup` was a
+  hardcoded, unnamed line with its own field, its own « comme la dernière fois »
+  proposal, its own word in the bank memo and its own bucket in the year summary,
+  while `other` lines were anonymous, retyped from scratch every send, proposed by
+  nothing, and folded into the year **without even the face that sent them**. The
+  distinction was never real: « renflou » is simply the word *this* household writes
+  in its bank field. « Renflouement » is now the DEFAULT NAME of the old unnamed line,
+  and nothing else.
+- **Nothing is declared anywhere, and there is no table for it.** A name exists because
+  the household sent it — the same stance as the tracking floor and the catch-up
+  arithmetic, which are read off recorded rows rather than stored. Type « Frais de
+  maman » once; the next composer offers it back as a chip carrying the amount you
+  actually sent, newest name first, per sender, capped at four. **Offered, never
+  pre-filled** — the rule the top-up proposal already followed, now general. Zero
+  migration; the server did not change a line (`other` always carried a label, capped
+  at 60 chars by `LABEL_CAP`).
+- **`topup` is read forever and written never again.** Old rows parse, display, total
+  and summarise exactly as before; a transfer carrying one leaves the edit scene as a
+  named line, under a name the reader could see in the field before saving. Nothing is
+  rewritten behind anyone's back.
+- **The year summary got RICHER, not just merged**: `summariseYear` returns one
+  `extras` list, each entry a name with the faces under it — which the old « Autres
+  lignes » bucket could not carry at all. A named extra now reads exactly like an
+  agreement above it.
+- **The row layout was fixed by LOOKING** (LEAN.md's method, again). The screenshot at
+  390px showed name · amount · 🗑 wrapping so that the **delete stranded alone on a
+  second line** with the name grown to fill the gap it left. Flexbox wraps on the BASIS
+  and only grows afterwards. A container query on the row — the same mechanism and the
+  same reason as `.edit-field` in `pages/fields.css` — gives the name its own line
+  under 26rem and keeps the amount with its 🗑.
+- **The new overflow guard was proven red before it was trusted**, and the first plant
+  did not work: a fixed `flex-basis` + `nowrap` still passed, because `min-width: 0`
+  lets the fields shrink. It took `min-width: 14rem` to make the row genuinely bleed —
+  which is the honest reading (the test measures overflow, not the presence of a
+  declaration), and worth knowing about every guard of this shape.
+
 
 ### Flipp: the till stopped carrying the list — 2026-09-12
 

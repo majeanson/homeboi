@@ -3,10 +3,14 @@ import {
   buildMemo,
   catchupSeries,
   coveredDueDates,
+  extraKey,
+  extrasOf,
   offeredDueDates,
+  rememberedExtras,
   summariseYear,
   trackingStart,
   transferYears,
+  REMEMBERED_EXTRAS,
   UPCOMING_OFFERED,
   yearOfDay,
   foldAscii,
@@ -58,6 +62,11 @@ const planLine = (dueAt: number, amountCents = 55641): TransferLine => ({
   dueAt,
   amountCents,
 })
+
+// What the app calls the old UNNAMED top-up line. The dictionary supplies it in the
+// app; here it is a constant, because the point of every assertion below is that a
+// legacy line and a line somebody named behave identically from there on.
+const RENFLOU = 'Renflouement'
 
 describe('transferTotal', () => {
   it('sums the lines', () => {
@@ -172,6 +181,18 @@ describe('buildMemo', () => {
     expect(buildMemo(lines, [plan()])).toBe('Electricite 87.50')
   })
 
+  // The generalisation reaching the bank field: a name the household typed once goes
+  // to the bank under that name, beside the agreements, in the order of the rows that
+  // built it — so the message reads the way the screen that wrote it does.
+  it('carries a named extra to the bank under its own name', () => {
+    const lines: TransferLine[] = [
+      planLine(d(2026, 7, 13)),
+      { kind: 'other', label: 'Renflouement', amountCents: 200000 },
+      { kind: 'other', label: 'Frais de maman', amountCents: 20000 },
+    ]
+    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 aout Renflouement 2000 Frais de maman 200')
+  })
+
   it('falls back to the bare amount when a free line has no label', () => {
     expect(buildMemo([{ kind: 'other', label: '', amountCents: 5000 }], [plan()])).toBe('50')
   })
@@ -211,6 +232,100 @@ describe('buildMemo', () => {
   })
 })
 
+// THE EXTRAS. « Renflouement » was a hardcoded field with its own proposal, its own
+// word in the memo and its own bucket in the year; free lines were anonymous and
+// retyped every send. One mechanism now — a NAMED amount — and « Renflouement » is
+// just the default name of the old unnamed line. What these assertions defend is that
+// a legacy row and a row somebody named are indistinguishable from here on.
+describe('extras — one named mechanism, not a special top-up', () => {
+  it('names a legacy unnamed top-up with the app’s own word for it', () => {
+    expect(extrasOf([{ kind: 'topup', amountCents: 200000 }], RENFLOU)).toEqual([
+      { label: RENFLOU, amountCents: 200000 },
+    ])
+  })
+
+  it('leaves a named line its own name, and ignores the agreements', () => {
+    expect(
+      extrasOf([planLine(d(2026, 7, 13)), { kind: 'other', label: 'Frais de maman', amountCents: 20000 }], RENFLOU),
+    ).toEqual([{ label: 'Frais de maman', amountCents: 20000 }])
+  })
+
+  // Two top-ups on one transfer were always ONE number in the old single field. The
+  // merge reproduces that by construction rather than by a summing special case.
+  it('merges same-named amounts, however they were spelled', () => {
+    expect(
+      extrasOf(
+        [
+          { kind: 'topup', amountCents: 150000 },
+          { kind: 'other', label: 'renflouement', amountCents: 50000 },
+        ],
+        RENFLOU,
+      ),
+    ).toEqual([{ label: RENFLOU, amountCents: 200000 }])
+  })
+
+  it('folds a name to one key across case and accents', () => {
+    expect(extraKey(' Frais de MAMAN ')).toBe(extraKey('frais de maman'))
+    expect(extraKey('Électricité')).toBe(extraKey('electricite'))
+    expect(extraKey('')).toBe('')
+    // A name with nothing ASCII left in it still keeps an identity of its own rather
+    // than collapsing into the unnamed bucket with everything else.
+    expect(extraKey('Ремонт')).toBe('ремонт')
+  })
+})
+
+describe('rememberedExtras — « comme la dernière fois », for any name', () => {
+  const sent = (id: string, sentAt: number, lines: TransferLine[], memberId: string | null = 'marc') =>
+    transfer({ id, memberId, sentAt, lines })
+
+  const older = sent('a', d(2026, 6, 14), [
+    { kind: 'topup', amountCents: 150000 },
+    { kind: 'other', label: 'Frais de maman', amountCents: 20000 },
+  ])
+  const newer = sent('b', d(2026, 7, 14), [{ kind: 'topup', amountCents: 200000 }])
+
+  it('offers the NEWEST amount per name, newest name first', () => {
+    expect(rememberedExtras([older, newer], 'marc', RENFLOU)).toEqual([
+      { label: RENFLOU, amountCents: 200000 },
+      { label: 'Frais de maman', amountCents: 20000 },
+    ])
+  })
+
+  // Per SENDER, exactly as the top-up proposal was: a fee the other person sends is
+  // not a suggestion for you.
+  it('never offers what somebody else sent', () => {
+    expect(rememberedExtras([older, newer], 'camille', RENFLOU)).toEqual([])
+    expect(rememberedExtras([sent('c', d(2026, 7, 14), [{ kind: 'topup', amountCents: 999 }], null)], null, RENFLOU))
+      .toHaveLength(1)
+  })
+
+  it('drops anything already in the draft, by name rather than by spelling', () => {
+    expect(rememberedExtras([older, newer], 'marc', RENFLOU, { exclude: ['  frais de MAMAN '] })).toEqual([
+      { label: RENFLOU, amountCents: 200000 },
+    ])
+  })
+
+  // An unnamed amount says nothing about what it was for, so there is nothing to
+  // offer back — which is the whole reason a name is worth typing once.
+  it('has nothing to offer for an amount nobody named, or an amount of zero', () => {
+    const anon = sent('d', d(2026, 7, 14), [
+      { kind: 'other', label: '', amountCents: 5000 },
+      { kind: 'other', label: 'Rien', amountCents: 0 },
+    ])
+    expect(rememberedExtras([anon], 'marc', RENFLOU)).toEqual([])
+  })
+
+  it('stays a short row — a composer is not a history', () => {
+    const many = sent(
+      'e',
+      d(2026, 7, 14),
+      Array.from({ length: 9 }, (_, i) => ({ kind: 'other' as const, label: `Ligne ${i}`, amountCents: 100 + i })),
+    )
+    expect(rememberedExtras([many], 'marc', RENFLOU)).toHaveLength(REMEMBERED_EXTRAS)
+    expect(rememberedExtras([many], 'marc', RENFLOU, { limit: 2 })).toHaveLength(2)
+  })
+})
+
 describe('summariseYear', () => {
   const hypo = plan()
   const garderie = plan({ id: 'p2', title: 'Garderie', position: 1, due: [d(2026, 7, 20)] })
@@ -232,23 +347,31 @@ describe('summariseYear', () => {
   const all = [marcAug, camilleAug, marcLastYear]
 
   it('keeps only the year asked for', () => {
-    expect(summariseYear(all, [hypo, garderie], 2026).transfers).toBe(2)
-    expect(summariseYear(all, [hypo, garderie], 2025).transfers).toBe(1)
-    expect(summariseYear(all, [hypo, garderie], 2024).transfers).toBe(0)
+    expect(summariseYear(all, [hypo, garderie], 2026, RENFLOU).transfers).toBe(2)
+    expect(summariseYear(all, [hypo, garderie], 2025, RENFLOU).transfers).toBe(1)
+    expect(summariseYear(all, [hypo, garderie], 2024, RENFLOU).transfers).toBe(0)
   })
 
   it('groups by agreement AND by person, counting the dates each one covered', () => {
-    const s = summariseYear(all, [hypo, garderie], 2026)
+    const s = summariseYear(all, [hypo, garderie], 2026, RENFLOU)
     expect(s.plans.map((p) => p.title)).toEqual(['Hypothèque', 'Garderie'])
     expect(s.plans[0].byMember).toEqual([{ memberId: 'marc', payments: 2, cents: 111282 }])
     expect(s.plans[1].byMember).toEqual([{ memberId: 'camille', payments: 1, cents: 10000 }])
   })
 
-  it('totals the top-ups per person and the whole year once', () => {
-    const s = summariseYear(all, [hypo, garderie], 2026)
-    expect(s.topups).toEqual([
-      { memberId: 'camille', payments: 0, cents: 200000 },
-      { memberId: 'marc', payments: 0, cents: 200000 },
+  it('totals each named extra per person, and the whole year once', () => {
+    const s = summariseYear(all, [hypo, garderie], 2026, RENFLOU)
+    // The legacy unnamed top-ups land under the app's own word for them, with the
+    // faces that sent them — which the old « Autres lignes » bucket could not carry.
+    expect(s.extras).toEqual([
+      {
+        label: RENFLOU,
+        cents: 400000,
+        byMember: [
+          { memberId: 'camille', payments: 0, cents: 200000 },
+          { memberId: 'marc', payments: 0, cents: 200000 },
+        ],
+      },
     ])
     // 111 282 + 200 000 (Marc) + 10 000 + 200 000 (Camille)
     expect(s.totalCents).toBe(521282)
@@ -262,36 +385,68 @@ describe('summariseYear', () => {
   // block a leaderboard; it is a receipt. Camille sent less and still comes first,
   // because the order is her id, not her amount.
   it('orders people by identity, never by amount', () => {
-    const s = summariseYear(all, [hypo, garderie], 2026)
+    const s = summariseYear(all, [hypo, garderie], 2026, RENFLOU)
     expect(s.byMember.map((x) => x.memberId)).toEqual(['camille', 'marc'])
   })
 
-  it('folds free lines by label, ignoring case', () => {
+  it('folds extras by name, ignoring case AND accents', () => {
     const tr = transfer({
       id: 'd',
       sentAt: d(2026, 7, 14),
       lines: [
         { kind: 'other', label: 'Électricité', amountCents: 8750 },
         { kind: 'other', label: 'électricité', amountCents: 1250 },
+        // Typed in a hurry, without the accents. One line of the year, not three.
+        { kind: 'other', label: 'Electricite', amountCents: 1000 },
       ],
     })
-    expect(summariseYear([tr], [hypo], 2026).others).toEqual([{ label: 'Électricité', cents: 10000 }])
+    const s = summariseYear([tr], [hypo], 2026, RENFLOU)
+    expect(s.extras).toHaveLength(1)
+    expect(s.extras[0]).toMatchObject({ label: 'Électricité', cents: 11000 })
+  })
+
+  // THE GENERALISATION, pinned. A household that names « Frais de maman » once gets a
+  // line of its year that reads exactly like an agreement's — a name and the faces
+  // under it — rather than an anonymous number in an « Autres lignes » footnote.
+  it('gives a named extra its own group, beside the legacy unnamed one', () => {
+    const named = transfer({
+      id: 'e',
+      memberId: 'marc',
+      sentAt: d(2026, 8, 14),
+      lines: [
+        { kind: 'other', label: 'Frais de maman', amountCents: 20000 },
+        { kind: 'topup', amountCents: 200000 },
+      ],
+    })
+    const s = summariseYear([marcAug, named], [hypo], 2026, RENFLOU)
+    expect(s.extras.map((x) => x.label)).toEqual([RENFLOU, 'Frais de maman'])
+    // The legacy line from marcAug and the one from `named` are the SAME group.
+    expect(s.extras[0].cents).toBe(400000)
+    expect(s.extras[1].byMember).toEqual([{ memberId: 'marc', payments: 0, cents: 20000 }])
+  })
+
+  it('keeps an amount nobody ever named in the total, under its own empty group', () => {
+    const tr = transfer({ id: 'f', sentAt: d(2026, 7, 14), lines: [{ kind: 'other', label: '', amountCents: 5000 }] })
+    const s = summariseYear([tr], [hypo], 2026, RENFLOU)
+    expect(s.extras).toHaveLength(1)
+    expect(s.extras[0].label).toBe('')
+    expect(s.totalCents).toBe(5000)
   })
 
   // Money that was genuinely sent must stay in the total even when the agreement it
   // named has since been deleted — otherwise the year quietly under-reports itself.
   it('keeps a line whose agreement is gone', () => {
-    const s = summariseYear([marcAug], [], 2026)
+    const s = summariseYear([marcAug], [], 2026, RENFLOU)
     expect(s.totalCents).toBe(311282)
     expect(s.plans).toHaveLength(1)
     expect(s.plans[0].title).toBe('')
   })
 
   it('reports the span the year actually covers', () => {
-    const s = summariseYear(all, [hypo, garderie], 2026)
+    const s = summariseYear(all, [hypo, garderie], 2026, RENFLOU)
     expect(s.firstSentAt).toBe(d(2026, 7, 14))
     expect(s.lastSentAt).toBe(d(2026, 7, 14))
-    expect(summariseYear([], [], 2026).firstSentAt).toBeNull()
+    expect(summariseYear([], [], 2026, RENFLOU).firstSentAt).toBeNull()
   })
 
   it('lists the years that hold something, newest first', () => {

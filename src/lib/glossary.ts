@@ -402,11 +402,16 @@ const ENTITIES: GlossaryTerm[] = [
     fr: 'Renflouement',
     en: 'Top-up',
     def: {
-      fr: 'L’argent qu’on remet dans le compte commun pour le quotidien, en plus des ententes — le même montant des deux bords.',
-      en: 'Money put back into the shared account for day-to-day spending, on top of the agreements — the same amount from each of you.',
+      fr: 'L’argent qu’on remet dans le compte commun pour le quotidien, en plus des ententes. C’est un NOM de montant comme un autre — la maisonnée d’à côté appellera le sien « Frais de maman ».',
+      en: 'Money put back into the shared account for day-to-day spending, on top of the agreements. It is one NAME for an amount among others — the household next door will call theirs “Mum’s fee”.',
     },
     card: 'notes',
-    why: 'The word the household already used in its bank memos (« renflou 2000 »), kept verbatim.',
+    why:
+      'The word the household already used in its bank memos (« renflou 2000 »), kept verbatim. It was a ' +
+      'hardcoded field with its own proposal and its own bucket in the year summary until 2026-09-14; now it ' +
+      'is the DEFAULT NAME of the old unnamed line, and every extra can carry a name of its own. Kept in the ' +
+      'glossary because the app still shows this word — for a legacy line, and as the name most households ' +
+      'here will type first.',
   },
 ]
 
