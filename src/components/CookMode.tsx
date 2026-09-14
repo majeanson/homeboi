@@ -422,19 +422,12 @@ export function CookMode({
                   {got && <Icon name="check-bold" size={14} />}
                 </span>
               </button>
-              <span
-                className="cook__ing-text"
-                role="button"
-                tabIndex={0}
-                aria-label={t.recipes.hearLine}
-                onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    say(spokenIngredient(ing, recipe.lang ?? lang))
-                  }
-                }}
-              >
+              {/* Tap-to-hear stays; the ROLE goes. See the note at the second copy of
+                  this row (the « full » view) for the whole reasoning — briefly: this
+                  span holds real <button>s (the measure pills, from IngredientLine), so
+                  `role="button"` + tabIndex made a control inside a control, which is
+                  the case CLAUDE.md's table sends to a plain onClick container. */}
+              <span className="cook__ing-text" onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}>
                 <IngredientLine line={ing} size={size} kid scoops />
               </span>
             </li>
@@ -627,19 +620,32 @@ export function CookMode({
                     <ul className="cook__full-ings">
                       {g.items.map(({ text: ing, idx }) => (
                         <li key={idx}>
-                          <span
-                            className="cook__ing-text"
-                            role="button"
-                            tabIndex={0}
-                            aria-label={t.recipes.hearLine}
-                            onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                say(spokenIngredient(ing, recipe.lang ?? lang))
-                              }
-                            }}
-                          >
+                          {/* A CONTAINER THAT ALREADY HOLDS BUTTONS gets a plain onClick,
+                              never `role="button"` + tabIndex — CLAUDE.md's table, and this
+                              row was the violation it describes. `IngredientLine` renders the
+                              measure pills as real <button>s, so wrapping it in a role=button
+                              produced "a button whose contents are buttons"; the pills' own
+                              `stopPropagation` then fixed the MOUSE while hiding the
+                              semantics, which is the exact band-aid that note warns about.
+
+                              Note what the file already got right two lines down: « Il en
+                              manque » is deliberately a SIBLING, "never nested inside it".
+                              The nesting here came in from a CHILD COMPONENT instead of
+                              being written inline — which is also why
+                              `nested-interactive.test.ts` reports this file green: it walks
+                              JSX one file at a time and cannot follow <IngredientLine> into
+                              its implementation. Axe reads the rendered DOM and saw it at
+                              once (2026-09-14, the first a11y census).
+
+                              Losing the role costs a keyboard "hear this line" and IMPROVES
+                              the screen-reader case, which is the part worth saying out loud:
+                              the `aria-label` was replacing the line's own text, so an AT
+                              user heard « Écouter l'ingrédient » instead of « 400 g de
+                              pâtes ». They never needed a read-aloud button — their reader
+                              reads. Tap-to-hear is for a pre-reader and for hands covered in
+                              flour, and touch keeps it. The pills stay real buttons, so the
+                              measures remain reachable by keyboard. */}
+                          <span className="cook__ing-text" onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}>
                             <IngredientLine line={ing} size="sm" />
                           </span>
                           {/* « Il en manque » — a SIBLING of the read-aloud control,
