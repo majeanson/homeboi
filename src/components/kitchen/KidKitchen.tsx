@@ -184,8 +184,17 @@ export function KidKitchen({
           </section>
         ) : (
           <section className="kid-pick">
+            {/* 👉, not 📖: this heading used to wear the SAME book as the « Mon livre »
+                door directly beneath it — the same glyph in the same white disc, about
+                150px apart, one decorative and one a control. To a pre-reader picking
+                by sight that is two of the same thing meaning two different things,
+                which is the rule the toddler notes tab earned in the 2026-09-10 pass:
+                rendering a picture is not the same as being able to tell them apart.
+                A pointing hand is the GESTURE (choose one), so it cannot collide with
+                any door or food picto below it. Found 2026-09-14, second frame of the
+                toddler kitchen. */}
             <div className="kid-head">
-              <span className="kid-head__emoji" aria-hidden="true">📖</span>
+              <span className="kid-head__emoji" aria-hidden="true">👉</span>
               <Sayable className="kid-head__title" text={t.kid.pickMeal} />
             </div>
             <BigTiles tiles={recipeTiles} />

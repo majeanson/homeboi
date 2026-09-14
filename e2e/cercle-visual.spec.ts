@@ -232,12 +232,20 @@ test('a person row keeps its relation whole — the reach moved into the peek', 
     .filter({ has: page.locator('.cercle-row__name', { hasText: /^Maman$/ }) })
     .first()
   await expect(maman.locator('.cercle-row__sub')).toHaveText('Conjointe de Papa')
-  // …and NOT ONE row in the directory ellipses its relation at this width. The single
-  // row is the reported case; the sweep is what stops the next control from moving in.
-  const cut = await page
-    .locator('.cercle-row__sub')
-    .evaluateAll((els) => els.filter((el) => el.scrollWidth > el.clientWidth + 1).length)
-  expect(cut, 'no relation may be truncated at 390px').toBe(0)
+
+  // What this does NOT assert, deliberately: that no relation anywhere ellipses. The
+  // first draft did, and it was a guard claiming more than the app promises — it passed
+  // only because this section's relations are short. One frame further into the same
+  // sweep, Social shows « Conjointe d'Étienne Gagn… » on a row with no furniture on it
+  // at all: the words are simply longer than the line. That is the ACCEPTED state —
+  // `.cercle-row__sub` stays nowrap-with-ellipsis (Marc, 2026-09-13, choosing to move
+  // the icons rather than to let the line wrap), so a test forbidding every ellipsis
+  // would be re-litigating a decision and would go red on a household with long names.
+  // The invariant that was actually won is the one above: nothing but the relation is
+  // spending that line. Measured at 390 and 360 (`maison-family-narrow`).
+  //
+  // The rule of thumb this cost: a guard written the day a bug is fixed tends to assert
+  // the SYMPTOM it just watched disappear. Assert the decision instead.
 
   // …and the peek carries the two doors the row gave up (a MEMBER's peek, which is
   // the one that never had them).

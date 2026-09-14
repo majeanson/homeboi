@@ -29,8 +29,9 @@
 ### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
 
 - `npm run typecheck` · `npm test` (2241 in 171 files, 2026-09-13) · `npm run build` · `npm run knip` — green.
-- `npm run e2e:matrix` — 154 states, **261 frames**, 0 failing (2026-09-13; it shoots
-  below the fold now, and prunes the PNGs of retired states — §4-H).
+- `npm run e2e:matrix` — 154 states, **232 frames**, 0 failing (2026-09-14; it shoots
+  below the fold, prunes the PNGs of retired states, and no longer keeps a frame that
+  shows what the one before it already showed — §4-H, §4-I).
 - `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
@@ -3026,6 +3027,76 @@ have had them in the first place. It did not.
       one), the WORD is what is ambiguous. **Asked and answered by Marc 2026-09-13: keep
       « Meilleur prix ».** Declined, not deferred — the $/L line sits directly under the
       badge. Don't re-propose without a new observation.
+
+### I. Looking at the frames — 2026-09-14, including at the sweep's own
+
+§4-H built the ability to see below the fold and then looked at seven frames out of a
+hundred and five, because the seven produced enough to fix and the session went to
+fixing. This is the rest of that job. It also re-audited the mechanism, since the
+frames are only worth what the capture is worth — and a quarter of them turned out not
+to be worth anything.
+
+**The sweep was shooting frames that said nothing.**
+
+- [x] **Four frames were byte-identical to the one before them, and several more were
+      near-copies.** `scrollFrames` asked « did the scroller move at all? » (> 8px) and
+      shot whatever came back, so a page with fifty pixels of travel produced a second
+      frame 94% the same as the first. Worse than no frame: a reviewer who opens `--3`
+      and sees the same picture concludes they have reached the bottom, which is the
+      exact belief this whole mechanism exists to remove. Three fixes, each after the
+      previous one was proven insufficient by re-hashing every pair: a frame is only
+      taken when a SCREENFUL (160px) remains; the scroll is `behavior: 'instant'`
+      (a smooth scroll returns the TARGET from `scrollTop` the moment it is set while
+      the pixels are still where they were — that is what produced the byte-identical
+      pairs, and reading the setter back was not proof of anything); and the position is
+      re-read AFTER the settle, with a final byte-comparison that deletes a frame which
+      came out the same anyway. **232 frames now, from 259** — the removed quarter was
+      noise, and « 110 new frames to review » was really ~78.
+- [~] **Seven states failed once with « Target page has been closed »**, all seven the
+      last by index, on the fourth full sweep of the session. A re-run passed 155/155.
+      Environmental (a machine running sweeps back to back), not the change — but read
+      before it was dismissed, because which tests flaked IS the signal here.
+
+**Then the frames themselves.** Two real defects, and two candidates that died on
+inspection — the « L'auto » board card has no help-mode heading (BOARD_HELP has 9 keys
+against ~20 cards; a card without one is the normal state, not a gap), and the virements
+due-date chips are cut at the right edge inside a `Rail`, which wires `useHScroll` and is
+therefore reachable by wheel and swipe exactly as intended.
+
+- [x] **A long label starves a native date field** (Réglages ▸ Agenda ▸ Année scolaire).
+      `.recur__row` lets its field shrink to nothing on purpose, so a long `<option>` in
+      a SELECT truncates instead of bleeding out of the form. A date input is not a
+      select: « yyyy-mm-dd » and the picker button are browser chrome, an INTRINSIC
+      minimum it cannot render under — it clips. « Rentrée (premier jour) » left its
+      field **100px** against the **164px** the control wants (70px at 360), while
+      « Dernier jour » one line below got 178px and read fine. Two identical fields, and
+      the difference was the length of the words in front of them. `flex-basis: 0` is
+      also why the row's own `flex-wrap` never saved it — a basis under the content
+      under-reports the width, the trap CLAUDE.md names, in CSS this time.
+      Fixed with basis `auto` + the control's floor. The guard CLONES the control and
+      asks the browser how wide it wants to be, rather than pinning a number that rots
+      (`e2e/composer-fit.spec.ts`); proven red at both widths. Worth recording: the
+      field's `scrollWidth` read **98** against a 98px client box — blind to the whole
+      defect, which is precisely why CLAUDE.md says a scroll check cannot see a clip.
+- [x] **The toddler kitchen's « Choisis un repas » heading wore the same 📖 as the
+      « Mon livre » door right under it** — same glyph, same white disc, ~150px apart,
+      one decorative and one a control. To a pre-reader picking by sight that is two of
+      the same thing meaning two different things: the rule the notes tab earned on
+      2026-09-10 (rendering a picture is not the same as being able to tell them apart).
+      A pointing hand now, which is the gesture rather than a subject and so cannot
+      collide with any door or food picto. The guard asserts the RULE — no heading may
+      share its glyph with any tile beneath it — not the emoji.
+
+**And a correction to §4-H's own work.** The cercle guard written yesterday asserted
+« no relation may be truncated at 390px » across the whole directory. One frame further
+into this sweep, Social shows « Conjointe d'Étienne Gagn… » on a row carrying no
+furniture at all: the words are simply longer than the line, which is the ACCEPTED state
+— Marc chose to move the icons, not to let the line wrap, and `.cercle-row__sub` stays
+nowrap-with-ellipsis. The guard passed only because the family fixture's relations are
+short, and it would have gone red on a household with long names for a reason nobody
+agreed to. It asserts the decision now (nothing but the relation spends that line)
+rather than the symptom. **A guard written the day a bug is fixed tends to assert the
+symptom it just watched disappear** — this file's fourth variation on the same lesson.
 
 ### F. Not a backlog — do not mine these for work
 

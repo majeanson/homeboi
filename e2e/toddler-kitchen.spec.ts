@@ -120,3 +120,19 @@ test('a read-only guest still hears the week, but is offered no pick', async ({ 
   // …and the shelf that commits a suggestion is not there at all.
   await expect(page.locator('.bigtile', { hasText: 'Tacos au poulet' })).toHaveCount(0)
 })
+
+// A pre-reader picks by sight, so two things that mean different things may not wear
+// the same picture. The « Choisis un repas » heading used to carry 📖 — the same glyph,
+// in the same white disc, ~150px above the « Mon livre » door that also carries 📖.
+// Same rule the notes tab earned in the 2026-09-10 pass: rendering a picture is not the
+// same as being able to tell them apart. Asserted as the RULE, not as one emoji: no
+// section heading may share its glyph with any tile beneath it.
+test('no heading wears the same picture as a door under it', async ({ page }) => {
+  await kidKitchen(page)
+
+  const heads = await page.locator('.kid-head__emoji').allInnerTexts()
+  const tiles = await page.locator('.bigtile__icon').allInnerTexts()
+  expect(heads.length, 'no kid heading found — the selector moved').toBeGreaterThan(0)
+  const clash = heads.map((h) => h.trim()).filter((h) => h && tiles.map((x) => x.trim()).includes(h))
+  expect(clash, `a heading and a tile share a picture: ${clash.join(', ')}`).toEqual([])
+})

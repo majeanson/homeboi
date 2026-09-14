@@ -181,3 +181,56 @@ for (const width of [360, 390]) {
     })
   }
 }
+
+// — NATIVE DATE FIELDS, which neither block above can measure: a `<input type="date">`
+// has no `placeholder` attribute. The « yyyy-mm-dd » an empty one shows is browser
+// chrome, and so is the picker button beside it — together an INTRINSIC minimum the
+// control cannot render under. It clips instead.
+//
+// The bug that earned this (2026-09-14 matrix pass, first sight of Réglages ▸ Agenda
+// below the fold): `.recur__row` lets its field shrink to nothing on purpose, so a long
+// <option> in a SELECT truncates rather than bleeding out of the form. A date input is
+// not a select. « Rentrée (premier jour) » — a long label — left its field 100px wide
+// against the 164px the control needs, while « Dernier jour » one line below got 178px
+// and rendered fine. Two identical fields, one readable, and the difference was the
+// length of the words in front of them.
+//
+// No magic floor: the control is CLONED unconstrained and asked how wide it wants to
+// be, so the number comes from the browser rather than from a guess that rots. Note
+// `scrollWidth` is NOT the measurement — it read 98 against a 98px client box on the
+// clipped field, blind to the whole defect, which is the trap CLAUDE.md names under
+// « Horizontal overflow »: a clip is invisible to a scroll check.
+const DATE_ROWS: { name: string; route: string; ready: string }[] = [
+  { name: 'settings school year', route: '/settings?tab=board&lens=regler&focus=schoolYear', ready: '.operator__section' },
+]
+
+for (const width of [360, 390]) {
+  for (const d of DATE_ROWS) {
+    test(`a date field is never narrower than the control needs — ${d.name} @${width}`, async ({ page }) => {
+      await boot(page, width)
+      await page.goto(d.route)
+      await expect(page.locator(d.ready).first()).toBeVisible({ timeout: 15_000 })
+
+      const fields = await page.locator('.recur__row .input[type="date"]').evaluateAll((els) =>
+        els.map((el) => {
+          const i = el as HTMLInputElement
+          const probe = i.cloneNode(true) as HTMLInputElement
+          probe.style.cssText = 'position:absolute;left:-9999px;width:auto;min-width:0;flex:none'
+          document.body.appendChild(probe)
+          const natural = probe.getBoundingClientRect().width
+          probe.remove()
+          const label = (i.closest('.recur__row')?.querySelector('span')?.textContent ?? '').trim()
+          return { label, width: Math.round(i.getBoundingClientRect().width), natural: Math.round(natural) }
+        }),
+      )
+      expect(fields.length, `${d.name}: no date row found`).toBeGreaterThan(0)
+      for (const f of fields) {
+        console.log(`[date-fit] ${d.name} @${width}: "${f.label}" field ${f.width}px, control wants ${f.natural}px`)
+        expect(
+          f.width,
+          `${d.name} @${width}: the date field after "${f.label}" is ${f.width}px but the control needs ${f.natural}px — it renders clipped.`,
+        ).toBeGreaterThanOrEqual(f.natural - 3)
+      }
+    })
+  }
+}

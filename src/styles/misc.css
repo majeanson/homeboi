@@ -179,6 +179,27 @@
   flex: 1 1 0;
   min-width: 0;
 }
+/* …EXCEPT a native date input, which is not a select. The rule above lets a field
+   shrink to nothing so a long <option> truncates instead of bleeding out of the form —
+   right for a select, wrong for `type="date"`: the « yyyy-mm-dd » an empty one shows
+   and the picker button beside it are browser chrome, an INTRINSIC minimum the control
+   cannot render under. It clips.
+   `flex-basis: 0` is also what stopped the wrap below from saving it — a basis smaller
+   than the content under-reports the width, so the row never learns it doesn't fit.
+   That is the trap CLAUDE.md names (« A fixed flex-basis is the trap »), here in CSS
+   rather than in JSX. At 390px « Rentrée (premier jour) » left its field 100px against
+   the 164px the control wants — 70px at 360 — while « Dernier jour » one line below got
+   178px and read fine: two identical fields, and the difference was the length of the
+   words in front of them. Basis `auto` + the control's own floor lets the field report
+   its real width and take its own line instead of shrinking under it — the birthday
+   year's fix one layer down (cercle.css `cf-bday`), same defect, same answer.
+   Measured 2026-09-14; guarded by e2e/composer-fit.spec.ts « a date field is never
+   narrower than the control needs », which clones the control to ask the BROWSER how
+   wide it wants to be rather than pinning a number that rots. */
+.recur__row .input[type='date'] {
+  flex: 1 1 auto;
+  min-width: 10.5rem;
+}
 /* THE INTERVAL ROW IS THREE UNSHRINKABLE THINGS — « tous les » + a 4.5rem number +
    « semaines » — so on a 390px phone it ran past the form edge and the unit was CLIPPED
    by the scene's overflow:hidden. Clipped, not scrolled: invisible to a scrollWidth

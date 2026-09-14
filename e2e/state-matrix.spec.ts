@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 import { mockApi, seedState, ROUTES, BASE, MMID, type Audience, type Lang, type Surface, type Theme } from './mocks'
@@ -743,10 +743,19 @@ const EXPECTED_STATES = ALL.reduce((n, e) => n + (e.themes ?? ['day', 'night']).
 //
 // Extra frames are capped (a recipe could page forever) and skipped for keyboard
 // states, whose whole subject is what sits above a keyboard.
+//
+// A frame is only worth taking if there is a SCREENFUL left to see. The first version
+// asked "did the scroller move at all?" (> 8px) and shot whatever came back — so a page
+// with 50px of travel produced a second frame 94% identical to the first, and four
+// states produced a `--3` that was byte-for-byte its own `--2`. Both are worse than no
+// frame: a reviewer who opens `--3` and finds the same picture concludes they have seen
+// the bottom, which is the exact failure this whole mechanism exists to remove. Found
+// 2026-09-14 by hashing consecutive frames — the sweep reviewing its own output.
+const FRAME_WORTH_PX = 160
 async function scrollFrames(page: Page, id: string, max: number): Promise<string[]> {
   const extra: string[] = []
   for (let i = 0; i < max; i++) {
-    const moved = await page.evaluate(() => {
+    const moved = await page.evaluate((worth) => {
       // The deepest, tallest real scroller — not `documentElement`, which in this app
       // is pinned to the viewport and would report nothing to scroll.
       let best: Element | null = null
@@ -761,16 +770,47 @@ async function scrollFrames(page: Page, id: string, max: number): Promise<string
       const el = best ?? document.scrollingElement
       if (!el) return false
       const before = el.scrollTop
+      // Is there enough left below to be worth a picture? Asked BEFORE scrolling, so a
+      // page with a sliver of travel yields no frame at all rather than a near-copy.
+      if (el.scrollHeight - el.clientHeight - before < worth) return false
       // Overlap by 48px so a row split across two frames is whole in one of them.
-      el.scrollTop = before + Math.max(el.clientHeight - 48, 120)
-      return el.scrollTop > before + 8
-    })
-    if (!moved) break
-    // Let the scroll settle (sticky headers re-pin, lazy images decode) without
-    // racing a fixed timeout: one animation frame plus the network going quiet.
+      // `behavior: 'instant'` explicitly: a smooth scroll returns the TARGET from
+      // `scrollTop` the moment it is set while the pixels are still at the old
+      // position, so the check below passes and the screenshot catches the page
+      // where it was. Two states shipped a `--2` byte-identical to their `--1`
+      // that way (2026-09-14).
+      el.scrollTo({ top: before + Math.max(el.clientHeight - 48, 120), behavior: 'instant' })
+      return before
+    }, FRAME_WORTH_PX)
+    if (moved === false) break
+    // Let the scroll settle (sticky headers re-pin, lazy images decode), then read the
+    // position BACK. Trusting the setter is what produced the identical frames: the
+    // only proof a frame is worth keeping is that the pixels actually moved.
     await page.waitForTimeout(120)
+    const after = await page.evaluate(() => {
+      let best: Element | null = null
+      let bestOver = 0
+      for (const el of Array.from(document.querySelectorAll('*'))) {
+        const over = el.scrollHeight - el.clientHeight
+        if (over <= 8) continue
+        const oy = getComputedStyle(el).overflowY
+        if (oy !== 'auto' && oy !== 'scroll') continue
+        if (over > bestOver) (bestOver = over), (best = el)
+      }
+      return (best ?? document.scrollingElement)?.scrollTop ?? 0
+    })
+    if (after - moved < FRAME_WORTH_PX / 2) break
     const file = `${id}--${i + 2}.png`
     await page.screenshot({ path: join(OUT, file) })
+    // Last defence, and the only exact one: if the pixels came out the same anyway,
+    // the frame says nothing and a reviewer opening it learns only that they have
+    // reached the end — which the ABSENCE of the frame says better. Compare the bytes,
+    // because every proxy for 'did this move' has now been wrong once.
+    const prev = join(OUT, extra.length ? extra[extra.length - 1] : `${id}.png`)
+    if (readFileSync(prev).equals(readFileSync(join(OUT, file)))) {
+      rmSync(join(OUT, file))
+      break
+    }
     extra.push(file)
   }
   return extra
