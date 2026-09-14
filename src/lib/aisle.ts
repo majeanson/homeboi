@@ -86,8 +86,12 @@ const EMOJI_AISLE: Record<string, AisleId> = {
   '🍦': 'frozen',
   // drinks
   '☕': 'drinks', '🍵': 'drinks', '🧃': 'drinks', '🥤': 'drinks', '💧': 'drinks',
-  // household / cleaning
-  '🧹': 'household', '🧺': 'household',
+  // household / cleaning — and the personal-care half, added with the picto entries
+  // that made them classifiable (2026-09-14). The note at the top of this file promises
+  // that a grocery word added to picto.ts lands in an aisle « automatically »; that is
+  // only true for an emoji this table knows, so a 👶 / 🧻 / 🧼 left out here would have
+  // drawn the right picture and then walked to « Autres ».
+  '🧹': 'household', '🧺': 'household', '👶': 'household', '🧻': 'household', '🧼': 'household',
 }
 
 // Classify one free-text list item into an aisle. A per-item override (if any) wins;

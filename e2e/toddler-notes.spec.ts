@@ -91,3 +91,29 @@ test('every note tile carries a picture, from the best source it has', async ({ 
   )
   expect(new Set(pics).size, `four tiles must not share one picture — got ${pics.join(', ')}`).toBe(pics.length)
 })
+
+// The same promise, one tab over. « Couches » is an ordinary grocery line and the picto
+// map had no household half at all — so it fell through to La liste's fallback, 🛒,
+// which is the SAME cart the page wears in its own header. A pre-reader was shown the
+// picture for "shopping" and nothing about diapers, and two tiles that share a picture
+// are one picture (2026-09-14, second frame of liste-toddler).
+//
+// Asserted as the RULE, not the emoji: no heading may wear the same picture as a tile
+// beneath it, and no two tiles may share one. Its twin lives in toddler-kitchen.spec.ts
+// — that surface had the same defect between its heading and its first door.
+test('the toddler list gives every line its own picture, and none of them the header’s', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true })
+  await page.goto('/liste')
+  await page.locator('.bigtiles').first().waitFor({ state: 'visible', timeout: 15_000 })
+
+  const heads = (await page.locator('.kid-head__emoji').allInnerTexts()).map((s) => s.trim()).filter(Boolean)
+  const tiles = (await page.locator('.bigtile__icon').allInnerTexts()).map((s) => s.trim()).filter(Boolean)
+  expect(tiles.length, 'no list tiles found — the selector moved').toBeGreaterThan(2)
+
+  const clash = heads.filter((h) => tiles.includes(h))
+  expect(clash, `the header picture is also a tile's: ${clash.join(', ')}`).toEqual([])
+  expect(new Set(tiles).size, `two lines share one picture: ${tiles.join(' ')}`).toBe(tiles.length)
+})

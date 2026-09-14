@@ -90,7 +90,7 @@ const MAP: [string, string[]][] = [
   // ── kid activities (board events) ─────────────────────────────────────────
   ['🏫', ['école', 'ecole', 'school', 'classe', 'garderie', 'daycare']],
   ['🏊', ['piscine', 'natation', 'swim', 'baignade']],
-  ['🩺', ['docteur', 'médecin', 'medecin', 'doctor', 'clinique', 'rendez-vous']],
+  ['🩺', ['docteur', 'médecin', 'medecin', 'doctor', 'clinique']],
   ['🦷', ['dentiste', 'dentist']],
   ['🛝', ['parc', 'park', 'jeux', 'playground']],
   ['🎂', ['anniversaire', 'birthday', 'fête', 'fete', 'party']],
@@ -101,7 +101,7 @@ const MAP: [string, string[]][] = [
   ['🎨', ['dessin', 'peinture', 'art', 'bricolage']],
   ['📚', ['bibliothèque', 'bibliotheque', 'library', 'lecture', 'devoir', 'homework']],
   ['🛁', ['bain', 'bath']],
-  ['🪥', ['brosser', 'dents', 'brush', 'teeth']],
+  ['🪥', ['brosser', 'dents', 'brush', 'teeth', 'dentifrice', 'toothpaste']],
   ['😴', ['dodo', 'sieste', 'nap', 'sleep', 'coucher', 'bedtime']],
   ['🧸', ['jouer', 'jeu', 'play', 'jouet']],
   ['🎬', ['film', 'cinéma', 'cinema', 'movie']],
@@ -115,6 +115,25 @@ const MAP: [string, string[]][] = [
   ['🏖️', ['plage', 'beach']],
   ['⛷️', ['ski', 'neige', 'snow']],
   ['🌱', ['jardin', 'garden', 'planter']],
+  // ── household / hygiene ───────────────────────────────────────────────────
+  // The list is not only food, and this map behaved as if it were: couches, papier
+  // hygiénique and savon are among the most ordinary lines a household writes, and
+  // every one fell through to the caller's fallback. In the toddler lens that fallback
+  // is 🛒 — the SAME cart the page wears in its own header — so « Couches » showed a
+  // pre-reader the picture for "shopping" and nothing about diapers (found 2026-09-14,
+  // second frame of liste-toddler). Pictures a child can tell apart is the whole
+  // contract of that lens.
+  ['👶', ['couche', 'bébé', 'bebe', 'baby', 'diaper', 'lingette']],
+  ['🧻', ['papier hygiénique', 'papier hygienique', 'papier de toilette', 'toilet paper', 'mouchoir', 'kleenex', 'tissue']],
+  ['🧼', ['savon', 'soap', 'shampooing', 'shampoing', 'shampoo', 'déodorant', 'deodorant']],
+  // ── LAST, and only because it is the vaguest word here ────────────────────
+  // « rendez-vous » sat on 🩺 up in the medical block, which is to say ABOVE
+  // « dentiste », « coiffeur » and « docteur » itself — so « Rendez-vous dentiste »
+  // drew a stethoscope, and a pre-reader was told the tooth appointment is a check-up.
+  // Exactly the shape of the « maïs / maison » bug the note below records: a generic
+  // key placed before the specific ones it swallows. This file's own rule — « more
+  // specific entries come first » — puts it here instead.
+  ['🩺', ['rendez-vous']],
 ]
 
 // A key matches a WHOLE WORD (a trailing plural « s » allowed), never a fragment.

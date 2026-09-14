@@ -57,3 +57,20 @@ describe('aisleRanks — saved order → sortable ranks', () => {
     expect(ranks[DEFAULT_AISLE_ORDER[0]]).toBe(0)
   })
 })
+
+// The household half of a list walks to « Maison & ménage », not to « Autres ». This is
+// the other end of the picto entries added 2026-09-14: this file's header promises that
+// a grocery word added to picto.ts is classified here « automatically », and that is
+// only true for an emoji EMOJI_AISLE knows. Diapers drawing the right picture and then
+// sorting into the catch-all is the half-done version of the same fix.
+describe('aisleFor — the household half', () => {
+  it('sends diapers, paper and soap down the household aisle', () => {
+    expect(aisleFor('Couches')).toBe('household')
+    expect(aisleFor('Papier hygiénique')).toBe('household')
+    expect(aisleFor('Savon à mains')).toBe('household')
+    expect(aisleFor('Shampooing')).toBe('household')
+  })
+  it('still sends an unplaceable line to the catch-all', () => {
+    expect(aisleFor('Zzzxyq')).toBe('autres')
+  })
+})

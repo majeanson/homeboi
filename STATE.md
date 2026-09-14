@@ -3098,6 +3098,36 @@ agreed to. It asserts the decision now (nothing but the relation spends that lin
 rather than the symptom. **A guard written the day a bug is fixed tends to assert the
 symptom it just watched disappear** — this file's fourth variation on the same lesson.
 
+**Second pass through the frames, same day.** The toddler lens gave up two more, and
+the second one was hiding in a file the first one made me open.
+
+- [x] **« Couches » drew a shopping cart — the same cart the page wears in its header.**
+      `pictoFor(i.text, '🛒')` on the toddler list, two lines below
+      `<span className="kid-head__emoji">🛒</span>`. The cause was not the fallback: the
+      picto map has **no household half at all**. Couches, papier hygiénique, savon,
+      mouchoirs, shampooing, dentifrice — some of the most ordinary lines a household
+      writes — every one fell through to whatever the caller passed. A pre-reader was
+      shown the picture for "shopping" and told nothing about diapers, and two tiles
+      that share a picture are one picture. 👶 / 🧻 / 🧼 now, with `dentifrice` landing
+      on the toothbrush that already existed. The guard is the same RULE as the
+      kitchen's twin, one tab over (`toddler-notes.spec.ts`): no heading may wear a
+      tile's picture, and no two tiles may share one.
+- [x] **…and the aisle walk had the matching hole.** `aisle.ts` maps emoji → aisle and
+      its header promises that a grocery word added to `picto.ts` is classified there
+      « automatically » — true only for an emoji `EMOJI_AISLE` knows. There IS a
+      « Maison & ménage » aisle, and the three new pictos were not in it, so diapers
+      would have drawn the right picture and then walked to « Autres ». Half a fix is
+      how a promise in a header comment stops being true.
+- [x] **« Rendez-vous dentiste » drew a stethoscope**, found while in that file. The key
+      `rendez-vous` sat on 🩺 in the medical block — which is to say ABOVE « dentiste »,
+      « coiffeur » and « docteur » itself — so the vaguest word in the map swallowed the
+      specific ones. Precisely the shape of the « maïs / maison » bug whose own note sits
+      forty lines below it, and against this file's stated rule that more specific
+      entries come first. Moved to the end; a bare « Rendez-vous » still finds 🩺.
+
+Both picto findings were proven red against the exact prior map, and the aisle one
+against the exact prior table.
+
 ### F. Not a backlog — do not mine these for work
 
 `bmad/05` (21 never-built ideas), `bmad/06` (lifestyle ideas),
