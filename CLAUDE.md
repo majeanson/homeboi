@@ -183,7 +183,10 @@ npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts,
                        #   SEVERAL frames — `<name>.png` then `<name>--2.png`… down the real inner
                        #   scroller, since the document itself never scrolls (`fullPage` is a
                        #   no-op here); `manifest.frames` is the number to review against, and a
-                       #   whole run PRUNES the PNGs of states that no longer exist. Never runs
+                       #   whole run PRUNES the PNGs of states that no longer exist. It also runs
+                       #   an AXE pass per state (WCAG A/AA, report-only) and aggregates the
+                       #   violations PER RULE into manifest.review.a11y with example targets —
+                       #   the dimension a screenshot cannot show. Never runs
                        #   per-push; CI twin = Actions ▸ "State matrix" (dispatch + WEEKLY,
                        #   Mondays — the contentTopPx ratchet needs something to pull it).
 npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (e2e/flipp-live.spec.ts, own

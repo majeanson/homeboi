@@ -188,9 +188,18 @@ export function LinkComposer({
                   >
                     <Icon name="check-bold" size={13} /> {t.cercle.acceptSuggestion}
                   </button>
+                  {/* Icon-only, so it needs its name said out loud: the ✕ carried no text,
+                      no aria-label and no title, and `Icon` is aria-hidden — a screen
+                      reader announced « bouton » and nothing else, beside a labelled
+                      « Ajouter », for the action that THROWS THE SUGGESTION AWAY. The
+                      string already existed and had simply never been wired to the
+                      control that needed it. Found 2026-09-14 by the first axe pass over
+                      the state matrix; the only `critical` in the whole sweep. */}
                   <button
                     type="button"
                     className="btn btn--ghost btn--sm"
+                    aria-label={t.cercle.dismissSuggestion}
+                    title={t.cercle.dismissSuggestion}
                     onClick={() => dismissSuggestion(s)}
                   >
                     <Icon name="x-bold" size={13} />

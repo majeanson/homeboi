@@ -6,6 +6,7 @@ import { mockApi, seedState, ROUTES, BASE, MMID, type Audience, type Lang, type 
 import { installVvStub, openKeyboard } from './kb'
 import { localDayStart } from '../src/lib/localDay'
 import { worstRightBleed } from './overflow'
+import AxeBuilder from '@axe-core/playwright'
 
 // The STATE MATRIX — a declarative sweep of "the app in a state": a route, an
 // optional interaction that opens something (sheet / scene / editor), a lens
@@ -751,6 +752,31 @@ const EXPECTED_STATES = ALL.reduce((n, e) => n + (e.themes ?? ['day', 'night']).
 // frame: a reviewer who opens `--3` and finds the same picture concludes they have seen
 // the bottom, which is the exact failure this whole mechanism exists to remove. Found
 // 2026-09-14 by hashing consecutive frames — the sweep reviewing its own output.
+// One axe pass over the state as it stands. WCAG A + AA only on this first run: the
+// `best-practice` tag catches real things too, but mixing advisory rules into a first
+// census is how a number nobody trusts gets ignored (`aboveFoldChars` sat unread in
+// this very manifest for a week). Returns a compact per-rule summary — the same rule
+// firing on forty states is ONE thing to fix, and the aggregate is what a reviewer
+// should read.
+async function axeOf(page: Page): Promise<{ rule: string; impact: string; nodes: number; targets: string[] }[]> {
+  try {
+    const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+    // Three targets is enough to FIND it; the count says how big it is. A full node
+    // dump would make the manifest unreadable, which is the same mistake as a per-state
+    // a11y list.
+    return res.violations.map((v) => ({
+      rule: v.id,
+      impact: v.impact ?? 'unknown',
+      nodes: v.nodes.length,
+      targets: v.nodes.slice(0, 3).map((n) => String(n.target[0] ?? '')),
+    }))
+  } catch {
+    // A scan that cannot run must never cost a screenshot or a structural assertion —
+    // this whole block is additive. The absent field is the signal.
+    return []
+  }
+}
+
 const FRAME_WORTH_PX = 160
 async function scrollFrames(page: Page, id: string, max: number): Promise<string[]> {
   const extra: string[] = []
@@ -937,6 +963,20 @@ for (const entry of ALL) {
       const visible = vp.h - (entry.keyboard ?? 0)
       const kbOk = !entry.keyboard || (focusedBottom !== null && focusedBottom <= visible + 1)
       await page.screenshot({ path: join(OUT, `${id}.png`) })
+      // — ACCESSIBILITY, the dimension a screenshot cannot show. Run AFTER the shot so a
+      //   scan failure can never cost the picture.
+      //
+      //   Added 2026-09-14 because the repo had none: no axe, no a11y spec, only
+      //   hand-rolled proxies (nested-interactive, the contrast TOKENS). The proxies are
+      //   good and they are not an audit — and the session that added this had just
+      //   proved the point by eyeballing a contrast ratio, calling it worse, and
+      //   measuring it better. A machine reads contrast; a person guesses.
+      //
+      //   This sweep already drives 154 real states in a real browser, so the scan is
+      //   nearly free and it inherits every lens: night, toddler, EN, 360px, the wall.
+      //   REPORT-ONLY for now, aggregated per RULE in the manifest — a guard that goes
+      //   red on 154 states at once teaches nobody anything. Triage first, ratchet after.
+      const a11y = await axeOf(page)
       const frames = [`${id}.png`, ...(await scrollFrames(page, id, entry.keyboard ? 0 : 2))]
       writeFileSync(
         join(OUT, `.frag-${id}.json`),
@@ -962,6 +1002,7 @@ for (const entry of ALL) {
             bleedCulprit: bleed > 1 ? culprit : undefined,
             focusedAboveKeyboard: entry.keyboard ? kbOk : undefined,
             paintedChars: textLen,
+            a11y,
             crashed: crashed > 0 || undefined,
             contentTopPx,
             contentBudgetPx: entry.budgetPx,

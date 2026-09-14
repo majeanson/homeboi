@@ -58,6 +58,7 @@ type State = {
   /** How many states a complete run writes — the prune's "was this a whole sweep?" */
   expectedStates?: number
   assertions: {
+    a11y?: { rule: string; impact: string; nodes: number; targets?: string[] }[]
     contentTopPx?: number | null
     contentBudgetPx?: number
     contentEmptyVia?: string
@@ -97,6 +98,27 @@ export default function mergeManifest() {
     budgetedOnEmptyState: states
       .filter((s) => s.assertions.contentBudgetPx != null && s.assertions.contentEmptyVia)
       .map((s) => ({ name: s.name, via: s.assertions.contentEmptyVia })),
+    // ACCESSIBILITY, aggregated per RULE rather than per state: the same violation on
+    // forty lenses of the same surface is ONE thing to fix, and a per-state list would
+    // bury that. `states` is how many states trip it (the blast radius), `nodes` the
+    // worst single-state element count. Report-only for now — see the note in
+    // state-matrix.spec.ts: triage first, ratchet after.
+    a11y: (() => {
+      const byRule = new Map<string, { rule: string; impact: string; states: number; nodes: number; where: string[]; targets: string[] }>()
+      for (const s of states)
+        for (const v of s.assertions.a11y ?? []) {
+          const cur = byRule.get(v.rule)
+          if (cur) {
+            cur.states += 1
+            cur.nodes = Math.max(cur.nodes, v.nodes)
+            if (cur.where.length < 4) cur.where.push(s.name)
+            for (const t of v.targets ?? []) if (cur.targets.length < 4 && !cur.targets.includes(t)) cur.targets.push(t)
+          } else
+            byRule.set(v.rule, { rule: v.rule, impact: v.impact, states: 1, nodes: v.nodes, where: [s.name], targets: (v.targets ?? []).slice(0, 4) })
+        }
+      const order = { critical: 0, serious: 1, moderate: 2, minor: 3, unknown: 4 } as Record<string, number>
+      return [...byRule.values()].sort((a, b) => (order[a.impact] ?? 9) - (order[b.impact] ?? 9) || b.states - a.states)
+    })(),
     // The fattest surfaces: most chrome before the content. The standing worklist.
     mostChrome: states
       .filter((s) => typeof s.assertions.contentTopPx === 'number')
@@ -162,6 +184,14 @@ export default function mergeManifest() {
     )
   } else if (review.lowContent.length) {
     console.log(`[matrix] ${review.lowContent.length} sparse screen(s), all previously reviewed — nothing new to look at.`)
+  }
+  // The a11y census on the console too: a number that lives only in a JSON file is a
+  // number nobody reads (this manifest has taught that lesson twice).
+  if (review.a11y.length) {
+    const top = review.a11y.slice(0, 6).map((r) => r.rule + ' ' + r.impact + ' x' + r.states).join(', ')
+    console.log('[matrix] a11y: ' + review.a11y.length + ' rule(s) violated across the sweep — ' + top)
+  } else {
+    console.log('[matrix] a11y: no WCAG A/AA violations in any state.')
   }
   if (orphans.length) {
     console.log(`[matrix] pruned ${orphans.length} orphan PNG(s) from retired states: ${orphans.join(', ')}`)

@@ -101,7 +101,11 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **0** — again, and this time §4-H is why. It wrote
+> a number you can trust. It reads **3** — the a11y census §4-J opened on 2026-09-14:
+> a control inside a control in cook mode that this repo’s OWN grep guard calls green, a
+> rail no keyboard can reach, and an aria-label ARIA throws away. All three were found by
+> a machine reading the DOM rather than by a person reading a screenshot, which is the
+> whole reason that pass exists. It had read 0 after §4-H, which wrote
 > nine on 2026-09-13 — the pass that ran the state matrix and looked at what it had never been able to show (the sweep
 > was pruning nothing, shooting only the viewport, and rebasing two fixtures out of ten)
 > — and all nine are closed: six the same day, three the next turn once Marc had answered
@@ -3171,6 +3175,91 @@ which is what "done" looks like.
   is lettuce on the list and a salad on the plan. So this is not a bug with a correct
   reordering: it is one shared map serving two surfaces, and the honest fix is a
   caller-side "prefer dishes" for meal/recipe titles. A helper change, so it waits.
+
+### J. Fresh eyes — what two sessions of polishing had not touched (2026-09-14)
+
+Asked for a fresh look rather than another lap, the honest answer was that the lens had
+become the work. Three things had never been looked at at all; two of them were real.
+
+**1. The live app was UNOBSERVED — fixed.** Every 500 already calls `console.error` with
+the method, the path and the error (`functions/_lib/route.ts:125`, `worker/index.ts:340`),
+and `wrangler.toml` carried no `[observability]` block, so Cloudflare retained none of it.
+This Worker predates the setting being on by default. A real household on
+`babillard.marcportal.com`: if something broke for them on a Tuesday, there was no way to
+find out — ever. Workers Logs keeps 7 days, queryable in the dashboard.
+
+`invocation_logs` stays ON deliberately: it is the noisy half (one line per request, and
+this app polls at 10 s active / 300 s idle) but it is also the half carrying **CPU and
+wall time per invocation** — the one signal that would have caught `/api/year` burning
+1.8 s of a ~10 ms budget, which was found by reading code instead. And NOT sampled,
+because head sampling drops whole invocations, custom logs included: sampling the poll
+noise would drop the same share of the `console.error` lines, and errors here are rare and
+are the entire point. One household is a few thousand requests a day; there is nothing to
+save. `head_sampling_rate` is the lever if that ever changes — knowing what it costs.
+
+Verified rather than assumed, and the first attempt at verifying was wrong: `wrangler
+deploy --dry-run` says nothing about the block, and I nearly took silence as proof. A
+bogus key planted beside it produced no warning either (it landed in a duplicate table
+header); planted properly, wrangler names the unknown field. THEN the silence meant
+something. Then a bounded `wrangler tail` against production while curling it: 200 and
+404 came back, and the invocation arrived carrying `cpuTime: 2`, `wallTime: 3` and the
+version id of the deploy that had just shipped.
+
+**2. There was NO accessibility coverage — now there is a census.** No axe, no a11y spec,
+only hand-rolled proxies (`nested-interactive.test.ts`, the contrast TOKENS). The proxies
+are good and they are not an audit. The session that added this had just proved the point
+by eyeballing a contrast ratio, declaring night worse, measuring it, and finding it
+better: a machine reads contrast, a person guesses.
+
+The matrix already drives 154 real states in a real browser, so one axe pass per state is
+nearly free and inherits every lens — night, toddler, EN, 360px, the wall. Report-only,
+aggregated **per rule** (the same violation on forty lenses of one surface is ONE thing to
+fix), with up to four example targets so the manifest is enough to act on. WCAG A + AA
+only on the first pass: mixing advisory rules into a first census is how a number nobody
+trusts gets ignored — this very manifest has taught that twice.
+
+**The first census, and it earns its keep immediately:**
+
+| rule | impact | states | where |
+| --- | --- | --- | --- |
+| `button-name` | critical | 1 | person-edit — **fixed in this commit** |
+| `color-contrast` | serious | 78 | measure pills, kitchen day labels |
+| `aria-prohibited-attr` | serious | 11 | the kitchen week's day `<span>`s |
+| `nested-interactive` | serious | 2 | cook-day, multicook-day |
+| `scrollable-region-focusable` | serious | 1 | `.rail` (virements) |
+| `meta-viewport` | moderate | 154 | every state — zoom is disabled app-wide |
+
+- [x] **`button-name`, the only CRITICAL in the sweep.** The « Liens suggérés » dismiss ✕
+      in `LinkComposer` had no text, no `aria-label`, no `title`, and `Icon` is
+      aria-hidden — a screen reader announced « bouton » and nothing else, beside a
+      labelled « Ajouter », for the action that THROWS THE SUGGESTION AWAY. The string
+      `cercle.dismissSuggestion` (« Ignorer » / « Dismiss ») already existed and had
+      simply never been wired to the control that needed it. Re-scanned: that state is
+      clean now.
+- [ ] **`nested-interactive` — and the repo's own guard calls this file GREEN.** Axe
+      finds `.cook__ing-text[role="button"]` containing the measure pills, which are real
+      `<button>`s: a control inside a control, in COOK MODE, the surface a parent is
+      using with their hands full. `nested-interactive.test.ts` exists FOR this defect
+      class and CLAUDE.md records at length how it once reported green over exactly it.
+      This is the third instance — and the first one found by an audit instead of a grep,
+      which is the argument for having both.
+- [ ] **`scrollable-region-focusable` on `.rail`.** A hidden-scrollbar side-scrolling row
+      a keyboard cannot reach. This repo has a standing rule for precisely this (« A
+      scrolling row must be reachable with a mouse, not just a thumb ») and solved the
+      MOUSE half with `useHScroll`; keyboard is the third path and it was never closed.
+      `Rail` is the shared primitive, so one fix covers every rail in the app.
+- [ ] **`aria-prohibited-attr` on the kitchen week.** `aria-label` on a bare `<span>`
+      with no role: ARIA ignores it, so the friendly date (« mer. 16 sept. ») is not
+      announced at all and the raw contents are read instead. The label was written to
+      help and does nothing.
+- ❓ **`color-contrast`, 78 states.** Needs triage, not a blanket fix: the measure pills
+      are colour-coded ON PURPOSE (`measureColors.ts` — colour IS the information), so
+      some of these are a real trade-off, while the kitchen day labels look like a plain
+      miss. Worth a pass of its own.
+- ❓ **`meta-viewport`, all 154 states.** The app disables pinch-zoom. Defensible for a
+      wall kiosk, a WCAG 1.4.4 failure for the phone, and it is one line either way —
+      Marc's call, since it is a deliberate kiosk decision meeting a real accessibility
+      floor.
 
 ### F. Not a backlog — do not mine these for work
 
