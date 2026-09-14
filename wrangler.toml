@@ -101,3 +101,30 @@ class_name = "RealtimeHub"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["RealtimeHub"]
+
+# --- Observability: keep the logs the code already writes ----------------------
+# Every 500 already calls `console.error` with the method, the path and the error
+# (`functions/_lib/route.ts` and `worker/index.ts`), and until 2026-09-14 NOTHING
+# retained any of it: this Worker predates the default-on setting, so a live
+# household hit an error and nobody could ever find out. Workers Logs keeps 7 days
+# of them, queryable in the dashboard (Observability ▸ Query Builder).
+#
+# `invocation_logs` stays ON deliberately. It is the noisy half — one line per
+# request, and this app POLLS (10 s while someone is using it, 300 s idle behind
+# the realtime socket) — but it is also the half that carries CPU and wall time per
+# invocation, which is the one signal that would have caught `/api/year` burning
+# 1.8 s of a ~10 ms budget. That was found by reading code; it should not have to be.
+#
+# And NOT sampled, for a reason worth writing down: head sampling drops whole
+# INVOCATIONS, custom logs included. Sampling to cut the poll noise would throw away
+# the same fraction of the `console.error` lines — and errors here are rare and are
+# the entire point. One household on a wall tablet and a phone is a few thousand
+# requests a day; there is nothing to save. If this ever serves many households,
+# `head_sampling_rate` below 1 is the lever — knowing it costs errors too.
+[observability]
+enabled = true
+
+  [observability.logs]
+  enabled = true
+  invocation_logs = true
+  head_sampling_rate = 1
