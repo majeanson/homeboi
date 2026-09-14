@@ -59,6 +59,85 @@ function code(text: string): string {
 
 const files = sourceFiles(SRC).map((f) => ({ path: relative(SRC, f), text: code(readFileSync(f, 'utf8')) }))
 
+type Src = { path: string; text: string }
+
+// — THE HOLE THIS GUARD COULD NOT SEE, closed 2026-09-14.
+//
+// The body test below matches a LITERAL `<button` / `<a href` / `<Link`. A child
+// COMPONENT that renders one is invisible, and that is precisely how cook mode kept a
+// control inside a control through three green runs: `<IngredientLine>` renders the
+// measure pills as real buttons, one file away. The first a11y census (axe over the
+// state matrix) found it in minutes because axe reads the rendered DOM; a grep that
+// walks one file at a time never can.
+//
+// So: know which COMPONENTS render a control, and treat one appearing inside a
+// `role="button"` container as the same offence.
+//
+// Deliberately DEPTH ONE — "this component's own file renders a control" — and not a
+// transitive closure. Both catch the cook-mode pair; the transitive version marked 318
+// of 358 exported components interactive against 259, and a detector that suspects
+// everything is the one that gets muted. The precision that matters was measured, not
+// hoped for: `Icon`, `InlineIcon`, `Avatar`, `Skeleton` and `StatusMessage` all come
+// out INERT, so the ordinary decorative child of a tappable container does not fire.
+// `Chip`, `IngredientLine` and `MeasureScoops` come out interactive, correctly.
+//
+// File granularity is the known coarseness: `Sayable` reads as interactive only because
+// it shares BigTiles.tsx with real buttons. Nothing puts it inside a role="button"
+// today; if that ever fires, the fix is to split the file, not to widen the filter.
+const RENDERS_CONTROL = /<button\b|<a\s+href|<Link\b|role="button"|<input\b|<select\b|<textarea\b|tabIndex=\{0\}/
+
+function interactiveComponents(srcs: Src[]): Set<string> {
+  const out = new Set<string>()
+  for (const f of srcs) {
+    if (!RENDERS_CONTROL.test(f.text)) continue
+    for (const m of f.text.matchAll(/export\s+(?:default\s+)?function\s+([A-Z]\w*)/g)) out.add(m[1])
+    for (const m of f.text.matchAll(/export\s+const\s+([A-Z]\w*)\s*[:=]/g)) out.add(m[1])
+  }
+  return out
+}
+
+/** Every `role="button"` container, with the slice of source it encloses. */
+function roleButtonContainers(srcs: Src[]): { path: string; line: number; tag: string; body: string }[] {
+  const found: { path: string; line: number; tag: string; body: string }[] = []
+  for (const f of srcs) {
+    const lines = f.text.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+      if (!/\brole="button"/.test(lines[i])) continue
+      let start = i
+      while (start > 0 && !/^\s*<[A-Za-z]/.test(lines[start])) start--
+      const tag = /^\s*<([A-Za-z][\w.]*)/.exec(lines[start])?.[1]
+      if (!tag) continue
+      let depth = 0
+      let end = -1
+      for (let j = start; j < lines.length; j++) {
+        const opens = (lines[j].match(new RegExp(`<${tag}\\b`, 'g')) ?? []).length
+        const closes = (lines[j].match(new RegExp(`</${tag}>`, 'g')) ?? []).length
+        const selfClosed = opens > 0 && /^\s*<[A-Za-z][^>]*\/>\s*$/.test(lines[j]) ? 1 : 0
+        depth += opens - closes - selfClosed
+        if (j > start && depth <= 0) {
+          end = j
+          break
+        }
+      }
+      if (end < 0) continue
+      found.push({ path: f.path, line: start + 1, tag, body: lines.slice(start, end + 1).join('\n') })
+    }
+  }
+  return found
+}
+
+function nestedComponentOffenders(srcs: Src[]): string[] {
+  const interactive = interactiveComponents(srcs)
+  const out: string[] = []
+  for (const c of roleButtonContainers(srcs)) {
+    // The literal case is the `it` below; this one is about the child COMPONENT.
+    if (/<button\b/.test(c.body) || /<a\s+href/.test(c.body) || /<Link\b/.test(c.body)) continue
+    const kids = [...new Set([...c.body.matchAll(/<([A-Z]\w*)/g)].map((m) => m[1]))].filter((k) => interactive.has(k))
+    if (kids.length) out.push(`${c.path}:${c.line} — role="button" <${c.tag}> contains <${kids.join('>, <')}>, which renders a control`)
+  }
+  return out
+}
+
 describe('nested interactives', () => {
   it('found the sources', () => {
     // A canary: a broken walker must fail loudly rather than pass vacuously.
@@ -111,6 +190,36 @@ describe('nested interactives', () => {
       offenders,
       'A control inside a control: make the container a plain div whose onClick is mouse-only, and let the inner buttons carry the keyboard and the a11y tree.',
     ).toEqual([])
+  })
+
+  // The same offence one component away — the shape that survived three green runs.
+  it('no element carrying role="button" contains a COMPONENT that renders a control', () => {
+    expect(
+      nestedComponentOffenders(files),
+      'A control inside a control, arriving from a child component: the container is either THE control (and holds no others) or it is a plain div whose onClick is mouse-only. Cook mode is the worked example — see CookMode.tsx.',
+    ).toEqual([])
+  })
+
+  // …and the detector pinned against its own near-misses, the way chip-rule.test.ts
+  // pins its own. A guard this broad is only worth having if it stays quiet on the
+  // ordinary case: a tappable container wrapping an ICON is the commonest markup in
+  // this app, and it must never fire.
+  it('the component detector fires on a real control and stays quiet on an icon', () => {
+    const iconFile = { path: 'Icon.tsx', text: 'export function Icon() {\n  return <svg><path /></svg>\n}\n' }
+    const pillFile = { path: 'Pill.tsx', text: 'export function Pill() {\n  return <button type="button">x</button>\n}\n' }
+    const container = (child: string) => ({
+      path: 'Host.tsx',
+      text: ['export function Host() {', '  return (', '    <span', '      role="button"', '      tabIndex={0}', '    >', `      <${child} />`, '    </span>', '  )', '}'].join('\n'),
+    })
+
+    // The ordinary, correct markup: quiet.
+    expect(nestedComponentOffenders([iconFile, pillFile, container('Icon')])).toEqual([])
+    // The cook-mode shape: named, with the component that gives it away.
+    const hit = nestedComponentOffenders([iconFile, pillFile, container('Pill')])
+    expect(hit).toHaveLength(1)
+    expect(hit[0]).toContain('<Pill>')
+    // And a plain container holding the same component is fine — the role is the defect.
+    expect(nestedComponentOffenders([iconFile, pillFile, { path: 'Ok.tsx', text: '<span onClick={x}>\n  <Pill />\n</span>' }])).toEqual([])
   })
 
   it('no interactive <svg> declares role="img"', () => {
