@@ -76,9 +76,20 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
   if (isToday) {
     if (!model.status.free) {
       busy = true
-      const hName = nameOf(model.status.span?.holderId) ?? model.status.span?.label ?? ''
+      // « Avec » takes a PERSON. The label is the reason the car is gone — « Travail »,
+      // « Soccer de Léa » — so falling back to it INSIDE `withWho` produced « Avec
+      // Travail », which is not a sentence about anybody. Reachable two ways, neither
+      // exotic: a brand-new household that has a schedule before it has members (the
+      // `fresh` lens, where this was seen on 2026-09-14), and any household that
+      // deletes a member afterwards — `holder_id` is a soft ref with no FK precisely so
+      // that deleting a person never cascades, which means `nameOf` returning null is a
+      // designed state, not a corrupt one. A name gets « Avec X »; a label stands on its
+      // own, because it already says why.
+      const hName = nameOf(model.status.span?.holderId)
+      const label = model.status.span?.label?.trim() || ''
+      const who = hName ? t.auto.withWho(hName) : label
       const back = model.status.until ? t.auto.backAround(hhmm(model.status.until)) : ''
-      status = hName ? `${t.auto.withWho(hName)}${back ? ` · ${back}` : ''}` : t.auto.taken + (back ? ` · ${back}` : '')
+      status = who ? `${who}${back ? ` · ${back}` : ''}` : t.auto.taken + (back ? ` · ${back}` : '')
     } else if (model.status.until) {
       status = t.auto.freeUntil(hhmm(model.status.until))
     } else if (model.status.committed) {
@@ -98,8 +109,11 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
       const hId = spans.find((s) => s.holderId)?.holderId ?? null
       holder = memberOf(hId)
       const windows = spans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')
-      const who = nameOf(hId) ?? spans.find((s) => s.label)?.label ?? ''
-      status = who ? `${t.auto.withWho(who)} · ${windows}` : windows
+      // Same rule as the today branch above: a name gets « Avec X », a label stands alone.
+      const hName = nameOf(hId)
+      const label = spans.find((s) => s.label)?.label?.trim() || ''
+      const who = hName ? t.auto.withWho(hName) : label
+      status = who ? `${who} · ${windows}` : windows
     } else {
       status = t.auto.freeAllDay
     }

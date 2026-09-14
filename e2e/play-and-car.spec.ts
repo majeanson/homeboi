@@ -79,3 +79,43 @@ test('L’auto: a day held only by a rendez-vous is not « Libre toute la journ�
   // The window it shows is the rendez-vous' own (14 h → 14 h + the 2 h default).
   await expect(day.locator('.voiture__day-window')).toContainText('14')
 })
+
+// « Avec » takes a PERSON, and the fallback handed it an ACTIVITY. The status line read
+// « Avec Travail · revient ~13 h 00 » — not a sentence about anybody. Two ordinary ways
+// in: a household that has a schedule before it has members (seen in the `fresh` lens of
+// the state matrix, 2026-09-14), and any household that DELETES a member afterwards —
+// `holder_id` is a soft ref with no FK exactly so a deletion never cascades, which makes
+// « no name for this holder » a designed state rather than a corrupt one.
+//
+// A name gets « Avec X »; a label stands on its own, because it already says why the car
+// is gone. Both branches of AutoCard had the bug, so both are pinned: today's live status
+// and another day's window summary.
+test('L’auto: an activity holding the car is not « Avec » anybody', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  // A car model whose holder is not a member the app knows (deleted, or never added).
+  await mockApi(page, {
+    overrides: {
+      car: {
+        cars: [{ id: 'car1', name: 'La familiale', color: '#5891AC' }],
+        primaryCarId: 'car1',
+        hasSchedule: true,
+        now: 0,
+        today: 0,
+        status: { free: false, until: null, span: { start: 0, end: 0, label: 'Travail', holderId: 'ghost-member' }, committed: true },
+        membersOut: [],
+        days: [],
+      },
+    },
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/board')
+  await page.waitForSelector('.board-grid .wg-slot')
+
+  const auto = page.locator('.wg-slot[data-card="autoCard"]')
+  await auto.scrollIntoViewIfNeeded()
+  await expect(auto).toBeVisible()
+  // The reason is named…
+  await expect(auto).toContainText('Travail')
+  // …and never as a companion.
+  await expect(auto).not.toContainText('Avec Travail')
+})

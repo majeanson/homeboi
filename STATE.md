@@ -3140,6 +3140,38 @@ against the exact prior table.
       languages at both widths. Proven red on EN alone, with FR still green: a guard that
       fails everything proves nothing about the thing it was written for.
 
+**The sweep finished** — all 78 below-the-fold frames opened. The last stretch yielded
+one defect and two judgement calls, and the tail ran several frames with nothing at all,
+which is what "done" looks like.
+
+- [x] **« Avec Travail · revient ~13 h 00 »** — the board's L'auto card, in the `fresh`
+      lens. `withWho` takes a PERSON and the fallback handed it the span's LABEL, which
+      names the reason the car is gone (« Travail », « Soccer de Léa »), so the card said
+      "With Work". Two ordinary ways in, neither exotic: a household that has a schedule
+      before it has members, and **any household that deletes a member afterwards** —
+      `holder_id` is a soft ref with no FK exactly so a deletion never cascades, which
+      makes « no name for this holder » a designed state rather than a corrupt one. Both
+      branches of the card had it (today's live status and another day's window summary).
+      A name gets « Avec X »; a label stands on its own, because it already says why.
+      Guard in `play-and-car.spec.ts`, proven red printing « Avec Travail ».
+
+**Two left for Marc, because both argue with something deliberate:**
+
+- ❓ **An empty day draws « Aujourd'hui » twice.** The all-clear hero (`Board.tsx:1041`)
+  uses `t.board.today` as its kicker over « Tout est calme », and the `today` agenda card
+  — mode `always`, so it renders empty — sits right under it saying « Rien pour
+  l'instant. » Same word, same fact, ~250px apart: the shape Marc already ruled on for
+  « Avant de partir » (hide the summary while the card that owns the subject is on the
+  board). Not applied unilaterally, because the precedent is his to extend and this one
+  only fires on an empty day.
+- ❓ **« Tacos au poulet » draws a chicken leg, not a taco.** `pictoFor` walks the map in
+  order and the *proteins* block precedes *dishes*, so an ingredient named inside a meal
+  title wins over the dish. It is the right order for a grocery line (« poulet » IS
+  chicken) and the wrong one for a meal title, and the same word can be both — « salade »
+  is lettuce on the list and a salad on the plan. So this is not a bug with a correct
+  reordering: it is one shared map serving two surfaces, and the honest fix is a
+  caller-side "prefer dishes" for meal/recipe titles. A helper change, so it waits.
+
 ### F. Not a backlog — do not mine these for work
 
 `bmad/05` (21 never-built ideas), `bmad/06` (lifestyle ideas),
