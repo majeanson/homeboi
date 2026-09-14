@@ -156,11 +156,22 @@ const primitiveRows = () => {
   return { rows, specimens }
 }
 
+// PARITY.md Part 1 is a roster of feature ROWS (`| F36 | Les virements | …`), and its
+// opening line states how many. It read « ~33 » against 35 rows, then against 36 — a
+// tilde is how a number stops being checkable. The count is the rows themselves now.
+function parityRoster(): number {
+  const lines = read('PARITY.md').split('\n')
+  const a = lines.findIndex((l) => l.startsWith('## Part 1'))
+  const b = lines.findIndex((l) => l.startsWith('## Part 2'))
+  return lines.slice(a, b).filter((l) => /^\| F\d+ /.test(l)).length
+}
+
 describe('the docs quote the real counts', () => {
   // Each claim: the file, a regex whose FIRST capture group is the number as written,
   // and the live value it must equal. Keep the regex tight enough that it only matches
   // the sentence it is meant to check.
   const claims: { file: string; what: string; re: RegExp; actual: () => number }[] = [
+    { file: 'PARITY.md', what: 'Part 1 roster size', re: /\*\*(\d+)\*\* user-facing features/, actual: parityRoster },
     { file: 'PARITY.md', what: 'help registries (D7 method)', re: /coverage by one of the \*\*(\d+)\*\* help registries/, actual: registries },
     { file: 'PARITY.md', what: 'tours (D7 method)', re: /`lib\/tourContent\.ts`, \*\*(\d+)\*\* tours/, actual: tours },
     { file: 'PARITY.md', what: 'guide cards (Appendix A)', re: /`src\/lib\/guideContent\.ts` \(\*\*(\d+)\*\* GUIDE cards\)/, actual: guideCards },

@@ -94,7 +94,8 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-~33 user-facing features. Anchors are the feature's _reach_: tables (migration
+**36** user-facing features — the row count of this table, not an estimate.
+Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
 se (Recherche has no table) — the anchors just tell the auditor where to look.
@@ -163,6 +164,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F32 | L'auto                                                                  | schedule_blocks (0069), car_day (0070), household cars, events.car_id (0068) + end_at (0118)   | car, car-day, schedule, events                                    | VoiturePage, AutoCard, operator/schedule, EventForm (« Prend l'auto »)                    | CAR, SCHEDULE, MONTH                |
 | F33 | Partager & invités (guest links, intake, postbox, partage public, demo + claim) | guests (0098+), intake*\* (0075/0076), postbox*\* (0085), shares (0102), family_shares (0100) | guest\*, intake, postbox, share, share-public, family-share, demo, demo/claim | ShareModal, IntakeForm, Postbox, PartagePage, FamilyWindowPage, operator/guest + reviews, SampleBanner (claim face), ClaimPage | SHARES, guestWindowKey              |
 | F34 | Réglages, appareils & veille                                            | devices, pairing_codes, household(+preferences 0106)                                          | pair/_, members, household, takeout, health, ai-_                 | Operator, Pair, Setup, operator/\* (~28 sections), lib/ambient                           | DEVICES, MEMBERS, HOUSEHOLD, HEALTH |
+| F36 | Les virements (ententes + versements)                                   | transfer_plans, transfers (0126)                                                              | transfers, transfer-plans                                         | Notes (?section=virements), virements/VirementsSection + PlanCard/CatchupMath/CatchupGraph/YearSummary, TransferFormPage (+ TransferPlanFormPage), forms/TransferForm | TRANSFERS                           |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
