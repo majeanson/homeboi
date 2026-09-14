@@ -3077,7 +3077,13 @@ export const EN: typeof FR = {
   todos: {
     title: 'To complete',
     empty: 'Nothing to complete. The little things to remember — a form, a phone call — land here.',
-    addPlaceholder: 'Add something to complete…',
+    // Shorter than it reads in French on purpose, which is the reverse of the usual
+    // problem: at 390px this box is 213px wide inside and « Add something to complete… »
+    // measured 218px, so the ELLIPSIS was cut to two dots — a placeholder that ends in
+    // « complete.. » looks like a typo rather than an invitation. « Ajouter à compléter… »
+    // needs 160px and never had the issue; the EN lens twin is what caught it
+    // (2026-09-14), exactly as it caught the truncated greeting four days earlier.
+    addPlaceholder: 'Add a to-do…',
     addToday: 'For today',
     addTodayShort: 'Today',
     check: 'Check',

@@ -234,3 +234,49 @@ for (const width of [360, 390]) {
     })
   }
 }
+
+// — BOARD-CARD COMPOSERS, the third host, and the one where the field's width is
+// fixed by the card rather than by the page. Same rule as the two blocks above: a
+// field's own placeholder must fit in the field.
+//
+// AND IN BOTH LANGUAGES, which is the point of this block. « Ajouter à compléter… »
+// needs 160px and always fit; « Add something to complete… » needed 218px in the same
+// 213px box, so the ELLIPSIS was cut and the placeholder read « complete.. » — which
+// looks like a typo rather than an invitation. English is usually the SHORTER lens
+// here (see the note in state-matrix.spec.ts); this is the case where it is not, and
+// only an EN shot could show it — the same way the EN twin caught the truncated
+// greeting four days earlier (2026-09-14).
+const CARD_FIELDS: { name: string; card: string; field: string }[] = [
+  { name: 'departure card add', card: 'departure', field: '.edit-field__input, .combo__input, input[type="text"]' },
+]
+
+for (const width of [360, 390]) {
+  for (const lang of ['fr', 'en'] as const) {
+    for (const f of CARD_FIELDS) {
+      test(`a board composer keeps its placeholder readable — ${f.name} ${lang} @${width}`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 })
+        await mockApi(page)
+        await seedState(page, { theme: 'day', audience: 'parent', lang, surface: 'mobile' })
+        await page.goto('/board')
+        await page.waitForSelector('.board-grid .wg-slot')
+        const card = page.locator(`.wg-slot[data-card="${f.card}"]`)
+        await card.scrollIntoViewIfNeeded()
+
+        const m = await card.locator(f.field).first().evaluate((el) => {
+          const i = el as HTMLInputElement
+          const cs = getComputedStyle(i)
+          const inner = i.clientWidth - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0')
+          const ctx = document.createElement('canvas').getContext('2d')!
+          ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
+          return { width: Math.round(inner), placeholder: i.placeholder || '', placeholderPx: Math.round(ctx.measureText(i.placeholder || '').width) }
+        })
+        expect(m.placeholder.length, `${f.name} ${lang}: the field has no placeholder to measure`).toBeGreaterThan(0)
+        console.log(`[card-fit] ${f.name} ${lang} @${width}: ${m.width}px wide, « ${m.placeholder} » needs ${m.placeholderPx}px`)
+        expect(
+          m.width,
+          `${f.name} ${lang} @${width}: « ${m.placeholder} » needs ${m.placeholderPx}px but the field is ${m.width}px — it renders clipped.`,
+        ).toBeGreaterThanOrEqual(m.placeholderPx - 3)
+      })
+    }
+  }
+}

@@ -3128,6 +3128,18 @@ the second one was hiding in a file the first one made me open.
 Both picto findings were proven red against the exact prior map, and the aisle one
 against the exact prior table.
 
+- [x] **The EN placeholder « Add something to complete.. » ended in two dots** on the
+      board’s departure card — not a typo in the string (it carries a real « … ») but the
+      field CLIPPING it: 218px of text in a 213px box, so the ellipsis lost a dot and the
+      invitation read like a mistake. « Ajouter à compléter… » needs 160px and never had
+      the problem, which is the whole reason only an EN shot could show it — English is
+      usually the SHORTER lens here, and this is the case where it is not. Same family as
+      the truncated greeting the EN twin caught four days earlier. The copy is « Add a
+      to-do… » now (100px), and `composer-fit.spec.ts` grew its THIRD host — board-card
+      composers, whose width comes from the card rather than the page — measured in both
+      languages at both widths. Proven red on EN alone, with FR still green: a guard that
+      fails everything proves nothing about the thing it was written for.
+
 ### F. Not a backlog — do not mine these for work
 
 `bmad/05` (21 never-built ideas), `bmad/06` (lifestyle ideas),
