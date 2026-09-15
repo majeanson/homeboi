@@ -189,7 +189,17 @@ export function DayHeroes({
         // same tap-the-hero idiom as the supper rows beside it.
         <div
           className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}${onOpenSky ? ' now-card--tap' : ''}`}
-          style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: CATS.event.wash, color: CATS.event.deep }}
+          // THE SAME COLOUR RECIPE AS THE SUPPER CARD BESIDE IT (2026-09-15). This used
+          // to be `CATS.event.wash` + `CATS.event.deep` — a raw mid-tone sky on a pale
+          // sky — while the supper hero two lines up used `wash()` + `tintInk()`, the
+          // helper that exists precisely to keep a coloured label readable. Two recipes,
+          // side by side, and only one of them had been checked: measured on a real
+          // board, « Dégagé » came out at 2.22:1 and the temperature itself at 2.8:1,
+          // against a 4.5 minimum, on the card a wall tablet shows all day. The supper
+          // card, same `opacity: 0.8` label, read 11.8:1. `tintInk` also ramps with the
+          // colour's luminance, so this stays honest if the tint is ever re-picked.
+          // Guarded by e2e/board-contrast.spec.ts.
+          style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: wash(CATS.event.color), color: tintInk(CATS.event.color) }}
           {...(onOpenSky
             ? {
                 role: 'button' as const,
