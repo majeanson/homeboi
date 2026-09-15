@@ -9,7 +9,20 @@ import type { IconName } from '../components/Icon'
 // returns STRUCTURED signals; the localized sentence + icon are composed here so all
 // copy stays in i18n. Shared by the board card (ARegler) and the « Cette semaine »
 // block, so neither re-derives the rendering.
-export type FrictionKind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday' | 'transfer-due'
+export type FrictionKind =
+  | 'ride'
+  | 'car-clash'
+  | 'meal-empty'
+  | 'meal-low'
+  | 'birthday'
+  | 'transfer-due'
+  // Something a relative sent is sitting in quarantine. Two kinds rather than one
+  // « du courrier » because the two land in different places and mean different
+  // things to do: a postbox message becomes a note on the board, an intake form
+  // becomes a person in Le cercle. One sentence for both would be a sentence that
+  // tells you neither.
+  | 'mail-postbox'
+  | 'mail-intake'
 
 export interface Friction {
   kind: FrictionKind
@@ -67,5 +80,14 @@ export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: strin
       // The plan's name and nothing else. No amount on the board — see the scan's own
       // comment: this line rides a kitchen wall tablet, the number does not.
       return { icon: 'receipt-bold', text: t.aRegler.transferDue(f.label) }
+    case 'mail-postbox':
+      // No `label` and no count, on purpose. The scan sends existence, not a tally
+      // (NFR-CALM-1) — and naming the sender here would put « Mamie » on a wall
+      // tablet before the household has chosen to accept what she sent.
+      return { icon: 'envelope-bold', text: t.aRegler.mailPostbox }
+    case 'mail-intake':
+      // `user-bold`, not an envelope: intake is a PERSON arriving in Le cercle, and
+      // giving both mail kinds the same glyph would undo the reason they are two.
+      return { icon: 'user-bold', text: t.aRegler.mailIntake }
   }
 }

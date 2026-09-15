@@ -209,6 +209,8 @@ export const EN: typeof FR = {
     mealLow: (meal: string, item: string) => `${meal}: out of ${item}`,
     birthday: (who: string) => `${who} — birthday soon, no gift idea`,
     transferDue: (what: string) => `${what} — a transfer to send`,
+    mailPostbox: 'A message is waiting to be filed',
+    mailIntake: 'Someone’s details are waiting to be added',
     snooze: 'Later',
     snoozed: 'Put off until tomorrow',
   },

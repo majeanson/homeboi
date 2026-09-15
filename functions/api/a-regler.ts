@@ -26,7 +26,7 @@ import { coveredSet, coverKey, parseShares, planOccurrences, type PlanRow, type 
 // We return STRUCTURED signals (kind + the entity data + a fix href); the frontend
 // (lib/aRegler) composes + localizes the sentence, so all copy stays in i18n.
 
-type Kind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday' | 'transfer-due'
+type Kind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday' | 'transfer-due' | 'mail-postbox' | 'mail-intake'
 interface Friction {
   kind: Kind
   key: string // stable id (React key / dedupe)
@@ -37,6 +37,13 @@ interface Friction {
 }
 
 const CAP = 6
+
+// Where waiting mail is filed: Réglages ▸ Système ▸ Appareils & accès, scrolled to the
+// guest-links card that IntakeReview + PostboxReview render beneath. Spelled out rather
+// than built with lib/settingsNav's `settingsHref` — that is client code, and a Worker
+// importing from src/ is the kind of shortcut that turns into a bundling problem later.
+// `sub` is what subOfFocus('settings', 'guestLinks') derives; keep them in step.
+const MAIL_HREF = '/settings?tab=settings&lens=regler&sub=tablets&focus=guestLinks'
 const dayOf = (at: number) => localDayStart(new Date(at * 1000))
 const norm = (s: string) => s.trim().toLowerCase()
 
@@ -64,7 +71,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealLayout = await householdMealLayout(ctx.env, hh)
   const heroSlot = mealLayout.hero
 
-  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople, carOcc] = await Promise.all([
+  // Only an operator can act on waiting mail (see the two selects below), so only an
+  // operator pays for the lookup.
+  const wantsMail = actor.scope === 'operator'
+
+  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople, carOcc, pendingPostbox, pendingIntake] = await Promise.all([
     // Driverless rides (a car-taking trip with nobody driving — no member, no carpool
     // contact) in the next week. One-offs by date…
     ctx.env.DB.prepare(
@@ -103,6 +114,37 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // /api/car computed the clash for the L'auto card, but the mental-load surface
     // scanned only for a driverless ride and never asked.
     fetchCarOccupancy(ctx.env, hh, today, weekEnd),
+    // — MAIL WAITING TO BE FILED (2026-09-15). A relative records a voice note in the
+    //   boîte aux lettres, or fills an intake form; the row lands `status='pending'`
+    //   and the ONLY place it ever appears is a card inside Réglages ▸ Système ▸
+    //   Appareils (operator/PostboxReview + IntakeReview, both hidden when empty). So
+    //   the whole promise of those two features — grandma can reach the fridge —
+    //   depended on somebody thinking to go and look. Nothing ever said.
+    //
+    //   Exactly the shape this scan exists for: a fact one tab holds, that needs
+    //   sorting, with a one-tap fix. EXISTENCE only (`LIMIT 1`), never a count —
+    //   « deux messages attendent » is a badge with extra steps (NFR-CALM-1), and the
+    //   review card itself says how many once you are there.
+    //
+    //   Operator-only, and that is reachability rather than privacy: both review cards
+    //   carry `access: 'operator'` in SETTINGS_TREE, so a kiosk following this href
+    //   would land on a page that does not render the card it was sent to. A signal
+    //   whose fix is invisible is worse than no signal (ACTIONS.md).
+    //
+    //   `.catch(() => null)` each: these tables are old, but a scan that 500s because
+    //   one select tripped would cost the household every OTHER friction on the board.
+    wantsMail
+      ? ctx.env.DB.prepare("SELECT 1 AS n FROM postbox_submissions WHERE household_id = ? AND status = 'pending' LIMIT 1")
+          .bind(hh)
+          .first<{ n: number }>()
+          .catch(() => null)
+      : Promise.resolve(null),
+    wantsMail
+      ? ctx.env.DB.prepare("SELECT 1 AS n FROM intake_submissions WHERE household_id = ? AND status = 'pending' LIMIT 1")
+          .bind(hh)
+          .first<{ n: number }>()
+          .catch(() => null)
+      : Promise.resolve(null),
   ])
 
   const signals: Friction[] = []
@@ -221,6 +263,24 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (!o.giftIdeas || !o.giftIdeas.trim()) {
       signals.push({ kind: 'birthday', key: o.id, label: o.name, at: o.at, href: '/maison?section=family' })
     }
+  }
+
+  // — Mail waiting to be filed (see the two selects above) —
+  //
+  // Deliberately NO `at`. The sort below is soonest-first and `at` is "when is this
+  // relevant"; the honest answer for a waiting message is "whenever you have a
+  // minute", which is not a time. Giving it the row's created_at would have sorted
+  // OLD mail ABOVE a driverless ride tomorrow — the friction with nothing else to
+  // catch it — because older means smaller means first. Undated sorts to the end
+  // (`?? Infinity`), which is exactly the priority these deserve.
+  //
+  // The two keys are stable and constant, so « Plus tard » works on them like any
+  // other signal: quiet the mail for a day without touching what is waiting.
+  if (pendingPostbox) {
+    signals.push({ kind: 'mail-postbox', key: 'mail:postbox', label: '', href: MAIL_HREF })
+  }
+  if (pendingIntake) {
+    signals.push({ kind: 'mail-intake', key: 'mail:intake', label: '', href: MAIL_HREF })
   }
 
   // « Plus tard »: drop the signals this household has acknowledged and whose quiet

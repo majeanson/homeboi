@@ -251,6 +251,10 @@ export const FR = {
     mealLow: (meal: string, item: string) => `${meal} : il manque ${item}`,
     birthday: (who: string) => `${who} — fête bientôt, aucune idée de cadeau`,
     transferDue: (what: string) => `${what} — un virement à envoyer`,
+    // Pas de nombre, pas de nom d'expéditeur : le scan n'envoie que l'existence
+    // (NFR-CALM-1), et la carte de révision dit le reste une fois qu'on y est.
+    mailPostbox: 'Un message reçu attend d’être classé',
+    mailIntake: 'Des infos reçues attendent d’être ajoutées',
     // « Plus tard » — un signal qu'on a VU mais qu'on ne peut pas régler tout de
     // suite (un covoiturage encore à décider, une fête pour laquelle on a choisi de
     // ne rien acheter). Sans ça, la seule surface faite pour ALLÉGER la charge
