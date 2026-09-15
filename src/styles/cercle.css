@@ -781,7 +781,11 @@
 .cercle-group__kind {
   font-size: 0.72rem;
   font-weight: 400;
-  opacity: 0.65;
+  /* Quieter by MIXING toward --ink, not by fading. Opacity walks an ink toward its
+     ground, which is the one direction that costs legibility; this measured 2.68:1 on
+     cream and 3.03:1 on the household pill (axe, 2026-09-15). The mix keeps the same
+     "secondary" read and works in both themes, since --ink flips with them. */
+  color: color-mix(in srgb, currentColor 55%, var(--ink));
   margin-left: 0.1rem;
   /* A one-word badge must never break mid-word — « Maisonnée » wrapped to
      « Maisonné / e » in the pill (UX review 2026-07-14). */
@@ -834,7 +838,9 @@
   padding: 0.1rem 0.45rem;
   border-radius: var(--radius-pill);
   background: var(--berry-wash);
-  color: var(--berry-deep, var(--ink-soft));
+  /* -ink on its own wash, the pairing the -ink tier is audited for. -deep here
+     measured 4.26:1 by day and 3.03:1 at night (axe, 2026-09-15). */
+  color: var(--berry-ink, var(--ink-soft));
 }
 .cercle-group__delete {
   margin-left: auto;
@@ -1108,7 +1114,11 @@
   border: 1px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 35%, var(--line));
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--teal-deep, #2a8f85) 9%, transparent);
-  color: var(--teal-deep, #2a8f85);
+  /* -ink, not -deep: this button is TEXT, and core.css states the rule in the palette
+     itself. It measured 3.2:1 on the wall lens (axe, 2026-09-15) — found only once the
+     contrast guard grew a KIOSK pass, since a phone hides this label entirely. The
+     border and fill above stay -deep: they are non-text, held to 3:1, which they clear. */
+  color: var(--teal-ink, #22736a);
   font: inherit;
   font-weight: 600;
   font-size: 0.92rem;

@@ -263,7 +263,9 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  color: var(--marigold-deep, var(--ink));
+  /* -ink, not -deep: this is TEXT (the palette in core.css states the rule). It
+     measured 3.03:1 on the Decouvrir card (axe, 2026-09-15). */
+  color: var(--marigold-ink, var(--ink));
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;

@@ -270,5 +270,8 @@
   display: block;
   margin-top: 0.15rem;
   font-size: 0.7rem;
-  opacity: 0.55;
+  /* Mixed toward --ink rather than faded: at 0.55 opacity this sat at 3.24:1 on the
+     note tints (axe, 2026-09-15). Fading walks an ink toward its ground; mixing keeps
+     it secondary while moving away from it. */
+  color: color-mix(in srgb, currentColor 45%, var(--ink));
 }

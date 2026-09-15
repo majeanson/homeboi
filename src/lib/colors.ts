@@ -53,27 +53,73 @@ export const edge = (hex: string) => hex + '55' //  ~33% — tinted border
 // hue (~32% ink), but a BRIGHT one (a pale yellow/butter member colour) — which would land
 // well under WCAG AA on cream as a flat 68/32 mix — is pulled harder toward ink by its
 // relative luminance, so a coloured title stays legible whatever face/slot colour it wears.
+// The ramp, re-tuned 2026-09-15 against the WHOLE palette rather than by eye. The old
+// 32 / 60 / 62 left the brighter tints short of AA as small text — a marigold list-row
+// title measured 4.02:1 on cream, and butter 3.98 — because the floor and slope were
+// picked before anything measured them. 38 / 95 / 72 puts the worst palette colour at
+// 4.71:1, i.e. the bar plus a little room, without visibly muddying the hue.
+// `tintInkFloor` in colors.test.ts recomputes this over PALETTE, so re-tuning is a
+// measurement rather than a guess.
+const INK_FLOOR_PCT = 38
+const INK_SLOPE = 95
+const INK_CAP_PCT = 72
+
 export function tintInk(hex: string): string {
   const c = hex.replace('#', '')
-  let inkPct = 32
+  let inkPct = INK_FLOOR_PCT
   if (c.length >= 6) {
-    const ch = (i: number) => parseInt(c.slice(i, i + 2), 16) / 255
-    const lin = (x: number) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)
-    const L = 0.2126 * lin(ch(0)) + 0.7152 * lin(ch(2)) + 0.0722 * lin(ch(4))
-    // Dark/mid colours (L ≤ 0.35) keep ~32% ink; brighter ones ramp up to a 62% cap.
-    inkPct = Math.min(62, Math.round(32 + Math.max(0, L - 0.35) * 60))
+    const L = relLuminance(hex)
+    // Dark/mid colours (L ≤ 0.35) keep the floor; brighter ones ramp up to the cap.
+    inkPct = Math.min(INK_CAP_PCT, Math.round(INK_FLOOR_PCT + Math.max(0, L - 0.35) * INK_SLOPE))
   }
   return `color-mix(in srgb, ${hex} ${100 - inkPct}%, var(--ink) ${inkPct}%)`
+}
+
+/**
+ * The ink share `tintInk` would use for `hex` — exported ONLY so its test can
+ * recompute the resulting colour and check the contrast. The function itself returns a
+ * `color-mix()` string on purpose (so `var(--ink)` follows the theme), which means the
+ * result cannot be measured in JS without this.
+ */
+export function tintInkPct(hex: string): number {
+  const c = hex.replace('#', '')
+  if (c.length < 6) return INK_FLOOR_PCT
+  return Math.min(INK_CAP_PCT, Math.round(INK_FLOOR_PCT + Math.max(0, relLuminance(hex) - 0.35) * INK_SLOPE))
 }
 
 // Dark or light ink for text sitting ON a solid colour (e.g. a tinted pill).
 // Picks whichever contrasts more, via relative luminance (WCAG). Reads our own
 // warm ink/cream tokens so it sits in the palette rather than pure #000/#fff.
-export function readableInk(hex: string): string {
+//
+// IT NOW DOES WHAT THAT SENTENCE SAYS (2026-09-15). It used to threshold luminance at
+// 0.5 and return the CREAM below it — but 0.5 is not the crossover between these two
+// inks. For our warm ink (#2c2722) against cream (#fffcf5) it sits near 0.18, and
+// everything in between is a mid-tone where the dark ink wins comfortably and the
+// light one was handed back anyway. ELEVEN of the palette's colours were getting the
+// worse ink: marigold at 2.08:1 where dark gives 6.95:1, sky at 2.30 where dark gives
+// 6.26. Nothing detected it because the only checkable claim lived in this comment.
+//
+// So: compute both ratios and return the winner. No threshold to get wrong, and it
+// stays correct if either token is ever re-picked. Held by a property test over the
+// WHOLE palette (colors.test.ts), not a table of blessed answers.
+const DARK_INK = '#2c2722'
+const CREAM_INK = '#fffcf5'
+
+function relLuminance(hex: string): number {
   const c = hex.replace('#', '')
-  if (c.length < 6) return '#2c2722'
   const ch = (i: number) => parseInt(c.slice(i, i + 2), 16) / 255
   const lin = (x: number) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)
-  const L = 0.2126 * lin(ch(0)) + 0.7152 * lin(ch(2)) + 0.0722 * lin(ch(4))
-  return L > 0.5 ? '#2c2722' : '#fffcf5'
+  return 0.2126 * lin(ch(0)) + 0.7152 * lin(ch(2)) + 0.0722 * lin(ch(4))
+}
+
+/** WCAG contrast between two #rrggbb colours. 1 = identical, 21 = black on white. */
+export function contrastRatio(a: string, b: string): number {
+  const [x, y] = [relLuminance(a), relLuminance(b)]
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
+}
+
+export function readableInk(hex: string): string {
+  const c = hex.replace('#', '')
+  if (c.length < 6) return DARK_INK
+  return contrastRatio(DARK_INK, hex) >= contrastRatio(CREAM_INK, hex) ? DARK_INK : CREAM_INK
 }

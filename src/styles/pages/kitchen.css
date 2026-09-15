@@ -98,7 +98,12 @@
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--terracotta-deep);
+  /* The -ink tier, not -deep. core.css says it in the palette itself — "Text NEVER
+     uses a -deep on a wash: that's what the -ink tier below is for (4.5:1)" — and this
+     line broke that rule for months: 3.37:1 on today's wash, 4.37 on a plain card
+     (axe, 2026-09-15). The -ink tokens are already audited against every wash and flip
+     with the theme. */
+  color: var(--terracotta-ink);
 }
 .kitchen__day-dow {
   font-size: 0.78rem;
@@ -115,7 +120,13 @@
   color: var(--terracotta-deep);
 }
 .kitchen__day.is-weekend .kitchen__day-dow {
-  color: var(--sky-deep);
+  /* Same rule as .kitchen__day-rel above: -ink for text, never -deep. Measured 2.85:1
+     on today's wash. */
+  /* Pulled a little further toward --ink than the bare token, for the one CROSS-TINT
+     pairing in the palette: a weekend day that is ALSO today puts sky-ink on the
+     TERRACOTTA wash, which the -ink audit (each ink against its OWN wash) never
+     covered — bare sky-ink landed at 4.23:1 there. */
+  color: color-mix(in srgb, var(--sky-ink) 85%, var(--ink));
 }
 /* The header's door cluster (the empty-day ＋ switch + the pencil) — grouped so
    `.kitchen__day-head`'s space-between puts them together on the right while the

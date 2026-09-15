@@ -1,3 +1,4 @@
+import { readableInk } from '../../lib/colors'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
@@ -107,7 +108,13 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
       <div
         key={r.id}
         className="routine-card routine-card--tap"
-        style={{ '--tint': tint } as React.CSSProperties}
+        // `--tint-ink` rides alongside the tint so the card's « Faire » pill can put
+        // READABLE text on it. The pill hard-coded white, which on a mid-tone like
+        // marigold measured 2.03:1 — a primary action nobody could read (axe, 2026-09-15).
+        // `readableInk` exists for exactly this and now genuinely picks the
+        // higher-contrast ink; passing it as a var keeps the choice in the one helper
+        // rather than guessing in CSS, where the tint is unknowable.
+        style={{ '--tint': tint, '--tint-ink': readableInk(tint) } as React.CSSProperties}
         onClick={onCard}
       >
         <span className="routine-card__spine" style={{ background: tint }} aria-hidden="true" />

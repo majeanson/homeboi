@@ -371,8 +371,17 @@
   font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
-  color: #fff;
-  background: color-mix(in srgb, var(--tint) 78%, #000 4%);
+  /* Not #fff: on a mid-tone tint that measured 2.03:1 — a primary action nobody
+     could read. The component hands us `--tint-ink` from `readableInk()`, which picks
+     whichever of our warm ink or cream contrasts more with THIS card’s colour. Guessing
+     in CSS is not possible here: the tint is only known at render. */
+  color: var(--tint-ink, #2c2722);
+  /* EXACTLY `--tint`, not a darkened mix of it. The ink above was chosen by
+     `readableInk(tint)` for THAT colour; darkening the ground afterwards breaks the
+     pairing, and it did — in the night theme the mixed ground drifted far enough that
+     the chosen ink measured 3.75:1. The ink and its ground have to be the same colour
+     the helper was asked about. */
+  background: var(--tint);
   box-shadow: var(--shadow-sm);
   transition: transform var(--dur-fast) var(--ease-soft);
 }
