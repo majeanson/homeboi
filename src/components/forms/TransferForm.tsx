@@ -24,6 +24,7 @@ import { Avatar } from '../Avatar'
 import { Chip } from '../Chip'
 import { Cluster } from '../Layout'
 import { CopyButton } from '../CopyButton'
+import { Disclosure } from '../Disclosure'
 import { EditField } from '../EditField'
 import { FormFooter } from '../FormFooter'
 import { RowActions } from '../RowActions'
@@ -116,6 +117,12 @@ export function TransferForm({
     value ? extrasOf(value.lines, v.topup).map((x) => newRow(x.label, String(x.amountCents / 100))) : [],
   )
   const [reference, setReference] = useState(value?.reference ?? '')
+  // The household's own words about this send. The column has existed since migration
+  // 0126 and `buildTransfer` has always rendered it in the peek — this form just never
+  // wrote it (`note: null`, hard-coded), so the block was unreachable and the field
+  // imaginary. It is the one place to record what the memo cannot say: the bank message
+  // is accent-folded, capped and read by a stranger; this is read by the two of you.
+  const [note, setNote] = useState(value?.note ?? '')
   // The memo regenerates as the draft changes UNTIL it is edited by hand; after that
   // the typed words are the ones that go to the bank. « Refaire le message » returns
   // control to the generator.
@@ -181,7 +188,7 @@ export function TransferForm({
           lines,
           memo,
           reference: reference.trim() || null,
-          note: null,
+          note: note.trim() || null,
         },
         value?.id,
       )
@@ -404,6 +411,25 @@ export function TransferForm({
         <input className="input" value={reference} onChange={(e) => setReference(e.target.value)} />
       </label>
       <p className="operator__seg-hint mono">{v.referenceHint}</p>
+
+      {/* THE NOTE — folded, because it is the rarest field on a tall screen, and open
+          on arrival whenever there is something in it: a fold must never hide a filled
+          field (LEAN.md), which is also why editing a transfer that carries one shows
+          it without a tap. Same `Disclosure` + `defaultOpen` pattern as the plan form's
+          « Rattrapage ». */}
+      <Disclosure label={v.note} defaultOpen={!!value?.note}>
+        <EditField
+          as="div"
+          multiline
+          value={note}
+          onChange={setNote}
+          submitIcon={null}
+          allowEmpty
+          placeholder={v.note}
+          ariaLabel={v.note}
+        />
+        <p className="operator__seg-hint mono">{v.noteHint}</p>
+      </Disclosure>
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter

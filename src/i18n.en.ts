@@ -3227,6 +3227,7 @@ export const EN: typeof FR = {
     reference: 'Reference number',
     referenceHint: 'Paste it in when you come back from the bank: it ties this note to the statement.',
     note: 'Note',
+    noteHint: 'For the two of you, not for the bank: why this one, what was said.',
     math: 'The math',
     catchupFold: 'Catching up',
     catchupWho: 'Who is catching up',

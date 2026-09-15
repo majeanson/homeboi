@@ -290,6 +290,39 @@ test('saving posts the lines, the memo and the reference', async ({ page }) => {
   expect(body.lines.find((l) => l.kind === 'other')).toMatchObject({ label: 'Renflouement', amountCents: 200_000 })
 })
 
+// LA NOTE. The column shipped with migration 0126 and `buildTransfer` has always
+// rendered it in the peek — the composer just never wrote it (`note: null`, hard-coded),
+// so the field was imaginary and the peek block unreachable (Marc, 2026-09-14).
+test('a transfer carries the household’s own words, and they come back in the peek', async ({ page }) => {
+  await openVirements(page, { transfers: [] })
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form).toBeVisible()
+
+  // Folded on a new one: the rarest field on a tall screen does not greet anyone.
+  const fold = form.locator('.disclosure', { hasText: 'Note' }).last()
+  await expect(form.getByLabel('Note')).toHaveCount(0)
+  await fold.getByRole('button', { name: 'Note' }).click()
+  await form.getByLabel('Note').fill('Payé de mon compte perso, à rembourser')
+
+  await form.getByRole('button', { name: 'Envoyer un virement' }).click()
+  await expect.poll(() => posted.length).toBeGreaterThan(0)
+  const write = posted.find((p) => p.path.endsWith('/transfers'))!
+  expect((write.body as { note: string }).note).toBe('Payé de mon compte perso, à rembourser')
+})
+
+test('…and editing a transfer that has one shows it WITHOUT a tap — a fold never hides a filled field', async ({ page }) => {
+  const WITH_NOTE = { ...SENT, id: 't9', note: 'Deux semaines payées d’avance' }
+  await openVirements(page, { transfers: [WITH_NOTE] })
+
+  // The peek reads it back first.
+  await page.locator('.virements__list .listrow').first().click()
+  await expect(page.locator('.detail-sheet')).toContainText('Deux semaines payées d’avance')
+
+  await page.goto('/virement/t9/edit')
+  const form = page.locator('.virements__form')
+  await expect(form.getByLabel('Note')).toHaveValue('Deux semaines payées d’avance')
+})
 // MORE THAN ONE ENTENTE. Everything below the plan cards handled N agreements from
 // day one — the composer groups its ticked dates per plan, the memo names each one,
 // the year folds by entente — but the only door that ever CREATED one was the empty

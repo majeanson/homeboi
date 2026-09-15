@@ -3662,7 +3662,12 @@ export const FR = {
     copyRefused: 'Le presse-papiers est bloqué — sélectionne le texte et copie-le à la main.',
     reference: 'Numéro de référence',
     referenceHint: 'Colle-le en revenant de la banque : c’est ce qui relie la note au relevé.',
+    // LA NOTE. La colonne existait depuis la migration 0126 et le coup d'œil l'affichait
+    // déjà — seul le compositeur ne l'écrivait jamais (`note: null` en dur). Repliée :
+    // c'est le champ le plus rare de l'écran, et le pli s'ouvre tout seul quand il y a
+    // quelque chose dedans (un pli ne cache jamais un champ rempli, LEAN.md).
     note: 'Note',
+    noteHint: 'Pour vous autres, pas pour la banque : pourquoi ce virement-là, ce qui s’est dit.',
     // Le rattrapage. Phrases pleines, repliées par défaut, jamais un graphique.
     math: 'La math',
     catchupFold: 'Rattrapage',
