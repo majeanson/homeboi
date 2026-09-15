@@ -1,5 +1,6 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
+import { CAP_SQL, capped } from '../_lib/listCap'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteR2Blob } from '../_lib/r2'
@@ -43,11 +44,15 @@ const TITLE_CAP = 120
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, member_id, author_member_id, title, text, media_kind, media_key, scene_key, position, created_at, updated_at FROM family_notes WHERE household_id = ? AND deleted_at IS NULL ORDER BY position, created_at DESC',
+    // Capped: a durable note is never removed, so this grows for the life of the
+    // household — and it carries every note's full 2 KB body, on a query the Notes tab
+    // re-polls. Ordered newest-first WITHIN each position so the cap sheds the oldest.
+    `SELECT id, member_id, author_member_id, title, text, media_kind, media_key, scene_key, position, created_at, updated_at FROM family_notes WHERE household_id = ? AND deleted_at IS NULL ORDER BY position, created_at DESC ${CAP_SQL}`,
   )
     .bind(actor.householdId)
     .all<FamilyNoteRow>()
-  return ok({ notes: rows.results })
+  const { rows: notes, more } = capped(rows.results)
+  return ok({ notes, more })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

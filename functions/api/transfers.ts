@@ -1,5 +1,6 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
+import { CAP_SQL, capped } from '../_lib/listCap'
 import { newId, nowSec } from '../_lib/ids'
 import {
   catchupProjection,
@@ -115,7 +116,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(actor.householdId)
       .all<PlanRow>(),
     ctx.env.DB.prepare(
-      `SELECT ${TRANSFER_COLS} FROM transfers WHERE household_id = ? AND deleted_at IS NULL ORDER BY sent_at DESC, created_at DESC`,
+      // Capped: a receipt for money that moved is never deleted, so this grows for the
+      // life of the household (~26 rows a year per fortnightly entente). Newest first,
+      // so the cap sheds the oldest — and 400 is roughly fifteen years of them.
+      `SELECT ${TRANSFER_COLS} FROM transfers WHERE household_id = ? AND deleted_at IS NULL ORDER BY sent_at DESC, created_at DESC ${CAP_SQL}`,
     )
       .bind(actor.householdId)
       .all<TransferRow>(),
@@ -123,10 +127,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const today = todayLocal()
   const { from, to } = dueWindow(today)
-  const rows = transfersRes.results
+  // The cap is applied here, once, so every derivation below (the coverage marks, the
+  // catch-up projection, the year summary) reads the SAME set the client is sent — a
+  // projection computed over rows the reader cannot see would be unexplainable.
+  const { rows, more } = capped(transfersRes.results)
 
   return ok({
     today,
+    // True when the household has more recorded transfers than the read cap — nothing
+    // renders it yet, but the surface has the fact rather than a silent gap.
+    more,
     plans: plansRes.results.map((p) => ({
       id: p.id,
       title: p.title,

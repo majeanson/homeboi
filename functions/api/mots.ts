@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { transcribeMot } from '../_lib/motTranscript'
 import { authed } from '../_lib/route'
+import { CAP_SQL, capped } from '../_lib/listCap'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteR2Blob } from '../_lib/r2'
@@ -45,11 +46,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Returns ALL live mots (incl. not-yet-surfaced scheduled ones); the client gates display
   // by surface_at (one chokepoint in lib/mots, leaving room for a future sender outbox).
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, member_id, author_member_id, text, transcript, media_kind, media_key, scene_key, created_at, updated_at, opened_at, saved_at, surface_at, reply_to FROM mots WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC',
+    // Capped: a kept mot is never removed, and each carries its text AND its
+    // transcript. Newest first, so the cap sheds the oldest.
+    `SELECT id, member_id, author_member_id, text, transcript, media_kind, media_key, scene_key, created_at, updated_at, opened_at, saved_at, surface_at, reply_to FROM mots WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at DESC ${CAP_SQL}`,
   )
     .bind(actor.householdId)
     .all<MotRow>()
-  return ok({ mots: rows.results })
+  const { rows: mots, more } = capped(rows.results)
+  return ok({ mots, more })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

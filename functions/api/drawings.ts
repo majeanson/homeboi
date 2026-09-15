@@ -1,5 +1,6 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
+import { CAP_SQL, capped } from '../_lib/listCap'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteR2Blob } from '../_lib/r2'
@@ -27,11 +28,14 @@ interface DrawingRow {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, member_id, media_key, scene_key, created_at FROM drawings WHERE household_id = ? ORDER BY created_at DESC',
+    // Capped: kids keep drawing and nothing prunes the gallery. Newest first, so the
+    // cap sheds the oldest.
+    `SELECT id, member_id, media_key, scene_key, created_at FROM drawings WHERE household_id = ? ORDER BY created_at DESC ${CAP_SQL}`,
   )
     .bind(actor.householdId)
     .all<DrawingRow>()
-  return ok({ drawings: rows.results })
+  const { rows: drawings, more } = capped(rows.results)
+  return ok({ drawings, more })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
