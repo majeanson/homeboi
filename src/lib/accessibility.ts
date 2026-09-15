@@ -7,30 +7,32 @@
 // and a kiosk reboots into the chosen profile (theme-bootstrap.js applies both
 // before first paint). localStorage for now, same as theme/calm.
 export type Contrast = 'normal' | 'high'
-// STILL TWO STEPS, and that is now a measured decision rather than an untested default.
+// THREE steps — 100% / 115% / 130% — and the third is load-bearing rather than a
+// nicety. This app turns OFF browser pinch-zoom app-wide (index.html: maximum-scale=1
+// + user-scalable=no, because zoom made the fixed full-screen overlays shimmer and
+// re-anchor mid-gesture), so axe reports `meta-viewport` on every state and THIS
+// control is the only remedy a reader has left. 115% alone was a thin thing to offer
+// in exchange for a browser affordance we removed, and the next rung up
+// (`[data-lens='simple']`, 140%) is a different presentation entirely, not a text size.
 //
-// The case for a third is real: this app turns OFF browser pinch-zoom app-wide
-// (index.html — maximum-scale=1 + user-scalable=no, because zoom made the fixed
-// full-screen overlays shimmer and re-anchor mid-gesture), so axe reports
-// `meta-viewport` on every state and THIS control is the only remedy a reader has
-// left. 115% is a thin thing to offer in exchange for a browser affordance we removed,
-// and the next rung up (`[data-lens='simple']`, 140%) is a different presentation
-// entirely, not a text size.
+// IT WAS HELD FOR HALF A DAY, and how it came unstuck is the lesson. Shot at 360px the
+// board greeting clipped to « Bon après- », so the step was pulled and the blocker
+// written down. Re-opened, the cause was NOT the ramp and not `.greet`'s three rounds
+// of sizing history: it was ONE uncompensated child of the header's fixed button
+// cluster. Measured across the ramp, that cluster went 197 → 202 → 208px while every
+// other child held — 11px, all of it taken from the container the greeting sizes
+// itself against. With `.help-toggle` on `--chrome-scale` the cluster is 197px at
+// every scale and nothing is cut at 390 or 360.
 //
-// So a third step was built and shot at 360px (2026-09-15), and it clipped « Bon
-// après-midi » to « Bon après- » at 130%, 122% and every value between. `.greet` sizes
-// itself off the container left over beside the header's fixed button cluster, and the
-// ramp takes that container away faster than the compensator below gives it back. The
-// two chrome offenders THAT pass found are fixed and shipped (see --chrome-scale in
-// core.css — one of them, « Réglages » cut to « Réglag… » in the tab bar, was already
-// shipping at the 115% step nobody had ever photographed). The greeting is not: it
-// carries three rounds of sizing history in today.css and deserves its own pass, not a
-// fourth constant tacked onto this enum.
+// The moral is the measurement, not the fix: « the greeting needs its own pass » was a
+// plausible, expensive, WRONG diagnosis reached by looking at a screenshot. Four
+// numbers found the real one in ten minutes.
 //
-// Ship the third step when `.greet` reads whole at 130% on `board-large`/`liste-large`.
-// Nothing else is in the way.
-export type TextScale = 'normal' | 'large'
-export const TEXT_SCALES: readonly TextScale[] = ['normal', 'large'] as const
+// Honest about the ceiling: 130% is not WCAG 1.4.4's 200%. It is the largest step the
+// rem tree takes without the px-sized chrome breaking, and the real fix for that gap
+// is to unwind the px, not to widen this enum again.
+export type TextScale = 'normal' | 'large' | 'x-large'
+export const TEXT_SCALES: readonly TextScale[] = ['normal', 'large', 'x-large'] as const
 
 export function getContrast(): Contrast {
   return document.documentElement.getAttribute('data-contrast') === 'high' ? 'high' : 'normal'

@@ -4,12 +4,15 @@ import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
-import { CALENDAR_FEEDS_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { CALENDAR_FEEDS_KEY, MEMBERS_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { useConfirm } from '../../lib/confirm'
 import { useOnline } from '../../lib/online'
 import { isGuest, isPaired } from '../../lib/device'
 import { formatDay } from '../../lib/format'
+import { type Member } from '../../lib/members'
 import { EditField } from '../EditField'
+import { ColorPicker } from '../ColorPicker'
+import { Chip } from '../Chip'
 import { RowActions } from '../RowActions'
 import { Toggle } from '../Toggle'
 import { Cluster } from '../Layout'
@@ -50,6 +53,9 @@ export function CalendarFeedsSection({ help }: { help?: HelpMode }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // Which row has its colour/face pickers open. One at a time (useSingleOpen’s shape,
+  // inline here because a feed row has no other expandable part).
+  const [editing, setEditing] = useState<string | null>(null)
 
   const feedsQ = useQuery({
     queryKey: CALENDAR_FEEDS_KEY,
@@ -120,6 +126,8 @@ export function CalendarFeedsSection({ help }: { help?: HelpMode }) {
   }
 
   const feeds = feedsQ.data?.feeds ?? []
+  // The faces a feed can belong to. Same warm MEMBERS_KEY every other card reads.
+  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: !isGuest() && !isPaired() }).data?.members ?? []
 
   return (
     <OperatorSection title={t.feeds.title} hint={t.feeds.hint} help={help} helpKey="feeds">
@@ -159,10 +167,14 @@ export function CalendarFeedsSection({ help }: { help?: HelpMode }) {
                   onClick={() => void patch(f.id, { enabled: !f.enabled })}
                   disabled={busy || !online}
                 />
-                {/* « Rafraîchir » rides the EXTRA slot, not the edit one: there is
-                    nothing here to edit — the feed is somebody else’s calendar — and
-                    a ✏️ that refetched would promise otherwise. */}
+                {/* ✏️ opens the colour + face pickers; « Rafraîchir » rides the EXTRA
+                    slot. That split is the point: what you can edit here is how the
+                    subscription is SHOWN — never its contents, which are somebody
+                    else's calendar. A ✏️ that refetched would have promised otherwise,
+                    which is why refresh never took that slot. */}
                 <RowActions
+                  onEdit={() => setEditing(editing === f.id ? null : f.id)}
+                  editLabel={t.feeds.edit}
                   onExtra={() => void patch(f.id, { refresh: true })}
                   extraIcon="arrow-clockwise-bold"
                   extraLabel={t.feeds.refresh}
@@ -170,6 +182,41 @@ export function CalendarFeedsSection({ help }: { help?: HelpMode }) {
                   deleteLabel={t.common.delete}
                 />
               </Cluster>
+              {/* COLOUR AND FACE — the schema carried both from day one (0129), the
+                  month read tints by them, and nothing let you SET either: every
+                  subscribed calendar drew in the same default. A household with the
+                  school AND the hockey schedule could not tell them apart on the wall,
+                  which is most of what makes more than one feed usable.
+                  Folded behind ✏️ rather than always open: it is set once and never
+                  again, and three rows of pickers under every feed is the shape LEAN
+                  keeps warning about. */}
+              {editing === f.id && (
+                <div className="operator__row-edit">
+                  <ColorPicker
+                    value={f.colour ?? ''}
+                    onChange={(c) => void patch(f.id, { colour: c })}
+                    label={t.feeds.colour}
+                  />
+                  <span className="operator__seg-label mono">{t.feeds.whose}</span>
+                  <Cluster>
+                    {/* « Maisonnée » first: a collection calendar or a school holiday
+                        belongs to the household, not to one person — and that is the
+                        default the column already holds (NULL). */}
+                    <Chip selected={!f.memberId} onClick={() => void patch(f.id, { memberId: null })}>
+                      {t.feeds.everyone}
+                    </Chip>
+                    {members.map((m) => (
+                      <Chip
+                        key={m.id}
+                        selected={f.memberId === m.id}
+                        onClick={() => void patch(f.id, { memberId: f.memberId === m.id ? null : m.id })}
+                      >
+                        {m.display_name}
+                      </Chip>
+                    ))}
+                  </Cluster>
+                </div>
+              )}
             </li>
           ))}
         </ul>

@@ -22,15 +22,15 @@
 
          What we owe in exchange is a real substitute, because we took the
          browser's away. That is Réglages ▸ Affichage ▸ Texte
-         (lib/accessibility TextScale) — and as of 2026-09-15 it is still only
-         100% / 115%, which is thin. A 130% step was built and held: it clipped
-         the board greeting at 360px, and shipping a cut « Bon après- » to buy a
-         bigger body font is not a trade worth making. The blocker is named and
-         testable (lib/accessibility.ts), and the pass DID fix two chrome bugs
-         found on the way, one of them live at the 115% step — see --chrome-scale
-         in core.css.
-         Until that third step lands, this tag is costing real readers something
-         we have not paid back. Weigh that before defending it again. -->
+         (lib/accessibility TextScale): 100% / 115% / 130% as of 2026-09-15.
+         The third step was held for half a day on a greeting that clipped at
+         360px, and the cause turned out to be ONE uncompensated child of this
+         header's own button cluster rather than the ramp — see --chrome-scale in
+         core.css, and lib/accessibility.ts for why the measurement mattered more
+         than the fix.
+         130% is still short of WCAG 1.4.4's 200%, and what stands in the way is
+         the px-sized chrome, not this tag. If that ever goes rem, re-open this
+         decision rather than adding a fourth step. -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"

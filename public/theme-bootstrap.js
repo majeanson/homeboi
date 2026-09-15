@@ -71,11 +71,10 @@
       document.documentElement.setAttribute('data-contrast', 'high')
     }
     // Matched against the known set (lib/accessibility TEXT_SCALES) rather than tested
-    // for one value: a stale key — an 'x-large' left behind by the third step that was
-    // trialled and held on 2026-09-15 — must fall back to the base size, never paint at
-    // a size no CSS rule defines.
+    // for one value: an unrecognised or stale key must fall back to the base size,
+    // never paint at a size no CSS rule defines.
     var ts = localStorage.getItem('babillard-text-scale')
-    if (ts === 'large') {
+    if (ts === 'large' || ts === 'x-large') {
       document.documentElement.setAttribute('data-text-scale', ts)
     }
   } catch (e) {

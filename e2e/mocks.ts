@@ -1324,11 +1324,11 @@ export interface AppState {
   // can never show it: the sweep would have photographed the open steps forever and
   // called the lean pass reviewed (2026-09-15).
   flippSetup?: boolean
-  // Réglages ▸ Affichage ▸ Texte: 'normal' (100%) | 'large' (115%).
+  // Réglages ▸ Affichage ▸ Texte: 'normal' (100%) | 'large' (115%) | 'x-large' (130%).
   // Worth a lever because the ramp scales the whole rem tree while ~20% of declarations
   // are px — precisely the shape that produces horizontal overflow — and nothing
   // photographed the enlarged app until the third step landed (2026-09-15).
-  textScale?: 'normal' | 'large'
+  textScale?: 'normal' | 'large' | 'x-large'
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks

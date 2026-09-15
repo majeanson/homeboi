@@ -115,8 +115,15 @@
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 2.2rem;
-  height: 2.2rem;
+  /* --chrome-scale (core.css): the "?" sits in the board header's fixed button
+     cluster, beside the two discs that already hold their size — and it was the one
+     child that did not. Measured at 390px: the cluster went 197 → 202 → 208px across
+     the text ramp while every other child stayed put, and those 11px come off the
+     container the greeting sizes itself against. At 130% on a 360px phone that was
+     the whole difference between 69px (under the nowrap threshold, « Bon après… »)
+     and 80px (wraps whole). One uncompensated child was holding the third text step. */
+  width: calc(2.2rem * var(--chrome-scale, 1));
+  height: calc(2.2rem * var(--chrome-scale, 1));
   border: 1.5px solid var(--line);
   border-radius: 50%;
   background: var(--card);

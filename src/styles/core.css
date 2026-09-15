@@ -469,12 +469,21 @@
   font-size: 115%;
   --chrome-scale: 0.87; /* 1 / 1.15 */
 }
-/* A THIRD step (130%) was built here on 2026-09-15 and is NOT shipped. It clipped the
-   board greeting to « Bon après- » at 360px — at 130%, at 122%, and between — because
-   `.greet` sizes off the container left beside the header's fixed button cluster and
-   the ramp shrinks that container faster than --chrome-scale restores it. The rest of
-   the pass survived (the two fixes below); the greeting needs today.css's own pass.
-   See lib/accessibility.ts TextScale for the full reasoning and the ship condition. */
+/* THE THIRD STEP, shipped 2026-09-15 after the one thing blocking it was measured
+   rather than eyeballed. It exists because this app removed the browser's own zoom
+   (index.html), which makes this knob the only way left to make text bigger.
+   It was HELD for half a day: the board greeting clipped to « Bon après- » at 360px.
+   The cause was not the ramp — it was ONE uncompensated child of the header's fixed
+   button cluster (`.help-toggle`, styles/sheets/help.css). Compensated, the cluster
+   holds 197px at every scale and the greeting reads whole at 390 AND 360. Measured:
+   the container it sizes against went 69px → 79px, back over the nowrap threshold.
+   130%, not more: past roughly here the px-sized chrome stops keeping pace. The
+   `simple` lens below goes to 140%, but that is a different PRESENTATION (giant
+   tiles, fewer words), not the same screen at a bigger size. */
+:root[data-text-scale='x-large'] {
+  font-size: 130%;
+  --chrome-scale: 0.77; /* 1 / 1.30 */
+}
 
 /* « Simple » post-reader lens (bmad/08 A-1): the whole rem tree scales ~1.4× from
    this one root knob (same mechanism as data-text-scale), so the giant-tile board,

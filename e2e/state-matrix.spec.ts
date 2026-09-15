@@ -49,8 +49,8 @@ type Entry = {
   flippSetup?: boolean
   /** Which board view this device opens on (lib/boardview). */
   boardView?: 'bento' | 'semaine' | 'month' | 'annee'
-  /** Réglages ▸ Affichage ▸ Texte. `'large'` boots the app at 115%. */
-  textScale?: 'normal' | 'large'
+  /** Réglages ▸ Affichage ▸ Texte. `'large'` = 115%, `'x-large'` = 130%. */
+  textScale?: 'normal' | 'large' | 'x-large'
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
   keyboard?: number
   /** Fixture overrides for this entry (see mockApi `overrides`). Use it when the
@@ -686,6 +686,12 @@ const MATRIX: Entry[] = [
   //   one view whose whole point is that it has room for WORDS: if a title ellipsizes
   //   here the view has no reason to exist, and only a screenshot says so.
   { name: 'board-semaine', route: '/board', boardView: 'semaine', content: '.weekv__day', themes: ['day'], api: WEEK_FIXTURE, noBudgetWhy: 'contentTopPx here is the board greeting + the view toggle, which board and board-kiosk already budget; this entry exists for the rows (2026-09-15)' },
+  // …and the SAME three at 130%, the step that was held for half a day on a greeting
+  //   that clipped at exactly this width. `board-xl` is the one that was red: it is
+  //   here so the next person who touches the header cluster finds out the same day.
+  { name: 'board-xl', route: '/board', textScale: 'x-large', viewport: NARROW, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'contentTopPx scales with the type ramp, so a ceiling here would encode the font size, not the chrome (2026-09-15)' },
+  { name: 'liste-xl', route: '/liste', textScale: 'x-large', viewport: NARROW, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'same as board-xl (2026-09-15)' },
+  { name: 'settings-xl', route: '/settings?tab=settings&lens=regler', textScale: 'x-large', viewport: NARROW, content: '.operator__section', themes: ['day'], noBudgetWhy: 'same as board-xl; label-beside-control rows at 130% (2026-09-15)' },
   { name: 'board-large', route: '/board', textScale: 'large', viewport: NARROW, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'contentTopPx scales with the type ramp, so a ceiling here would encode the font size, not the chrome — these states exist for the bleed assertion and the shot (2026-09-15)' },
   { name: 'liste-large', route: '/liste', textScale: 'large', viewport: NARROW, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'same as board-large: the number tracks the ramp, the bleed check is the point (2026-09-15)' },
   { name: 'settings-large', route: '/settings?tab=settings&lens=regler', textScale: 'large', viewport: NARROW, content: '.operator__section', themes: ['day'], noBudgetWhy: 'same as board-large; this one is here for label-beside-control rows under the ramp (2026-09-15)' },

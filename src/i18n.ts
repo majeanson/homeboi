@@ -914,6 +914,10 @@ export const FR = {
     add: 'Ajouter',
     show: 'Afficher',
     refresh: 'Rafraîchir',
+    edit: 'Couleur et visage',
+    colour: 'Couleur',
+    whose: 'À qui ça appartient',
+    everyone: 'Maisonnée',
     where: 'L’adresse se trouve dans ton calendrier en ligne, sous « S’abonner », « Exporter » ou « ICS ».',
     added: (n: number) => (n === 0 ? 'Ajouté, mais rien à afficher pour l’instant.' : n === 1 ? 'Ajouté — 1 rendez-vous.' : `Ajouté — ${n} rendez-vous.`),
     ok: (n: number, when: string) => (n === 1 ? `1 rendez-vous · lu le ${when}` : `${n} rendez-vous · lu le ${when}`),
@@ -2551,7 +2555,7 @@ export const FR = {
     textScaleLabel: 'Texte',
     // Clés par VALEUR (lib/accessibility TextScale), pour que le contrôle se mappe
     // sur TEXT_SCALES au lieu de nommer chaque option à la main.
-    textScale: { normal: 'Normal', large: 'Plus gros' },
+    textScale: { normal: 'Normal', large: 'Plus gros', 'x-large': 'Très gros' },
     langLabel: 'Langue',
     viewLabel: 'Vue',
     voiceTitle: 'Voix de lecture',
