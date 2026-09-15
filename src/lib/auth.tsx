@@ -24,6 +24,10 @@ interface AuthState {
   signedIn: boolean
   email: string | null
   household: Household | null
+  /** Which household FACE this account is (migration 0130), or null when unlinked.
+   *  Attribution stays the DEVICE’s pick (lib/profile); this only seeds it on a
+   *  device that has not chosen yet — see the ProfileProvider in main.tsx. */
+  memberId: string | null
   refresh: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -56,6 +60,7 @@ const AuthContext = createContext<AuthState>({
   signedIn: false,
   email: null,
   household: null,
+  memberId: null,
   refresh: async () => {},
   signOut: async () => {},
 })
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [signedIn, setSignedIn] = useState(false)
   const [email, setEmail] = useState<string | null>(null)
   const [household, setHousehold] = useState<Household | null>(null)
+  const [memberId, setMemberId] = useState<string | null>(null)
   // Two calls can overlap (the mount effect's refresh AND an onAuthLost-triggered
   // one, if a 401 fires while the first is still in flight on a slow connection —
   // now up to api.ts's own timeout). Without a sequence guard the SLOWER one could
@@ -75,11 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refresh() {
     const seq = ++seqRef.current
     try {
-      const me = await api<{ signedIn: boolean; email?: string; household?: Household | null }>('auth/me')
+      const me = await api<{ signedIn: boolean; email?: string; household?: Household | null; memberId?: string | null }>('auth/me')
       if (seq !== seqRef.current) return // a newer refresh already superseded this one
       setSignedIn(me.signedIn)
       setEmail(me.email ?? null)
       setHousehold(me.household ?? null)
+      setMemberId(me.memberId ?? null)
       // A real, server-confirmed answer — trustworthy either way. Never persisted
       // for a demo sandbox visitor (see the store's own comment above).
       wasSignedInStore.set(me.signedIn && !isSandboxEmail(me.email))
@@ -121,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ loading, signedIn, email, household, refresh, signOut }}>
+    <AuthContext.Provider value={{ loading, signedIn, email, household, memberId, refresh, signOut }}>
       {children}
     </AuthContext.Provider>
   )

@@ -2279,6 +2279,12 @@ export const FR = {
     copy: 'Copier le lien',
     copied: 'Copié !',
     expires: (when: string) => `Le lien expire le ${when}.`,
+    myFace: 'Mon visage',
+    myFaceHint:
+      'Ce que ce compte ajoute portera ce visage-là sur un appareil qui n’en a pas encore choisi un. La tablette partagée ne change pas : c’est toujours la personne devant qui touche le sien.',
+    remove: 'Retirer l’accès',
+    removeConfirm: (email: string) =>
+      `Retirer l’accès de ${email} ? Cette personne ne pourra plus ouvrir la maisonnée. Tout ce qu’elle a ajouté reste — les repas, les notes, les virements : rien ne se perd.`,
     rotate: 'Réinitialiser',
     rotateHint: 'Réinitialiser coupe tous les liens déjà envoyés. Les personnes qui ont déjà rejoint gardent leur accès.',
     rotateConfirm:

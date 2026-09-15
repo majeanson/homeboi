@@ -2017,6 +2017,12 @@ export const EN: typeof FR = {
     copy: 'Copy the link',
     copied: 'Copied!',
     expires: (when: string) => `The link expires on ${when}.`,
+    myFace: 'My face',
+    myFaceHint:
+      'What this account adds will carry that face on a device that has not picked one yet. The shared tablet does not change: it is still whoever is standing there who taps their own.',
+    remove: 'Remove access',
+    removeConfirm: (email: string) =>
+      `Remove ${email}’s access? They will no longer be able to open the household. Everything they added stays — the meals, the notes, the transfers: nothing is erased.`,
     rotate: 'Reset',
     rotateHint: 'Resetting kills every link already sent. People who have already joined keep their access.',
     rotateConfirm:

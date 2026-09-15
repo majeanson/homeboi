@@ -1,0 +1,25 @@
+-- An operator account can name WHICH FACE it is.
+--
+-- Attribution in this app is `X-Profile`: a member id the DEVICE picks and remembers
+-- in localStorage (_lib/profile.ts). That is exactly right for a shared wall tablet —
+-- whoever is standing there taps their face — and it is the wrong shape for a personal
+-- phone, where the answer never changes and yet has to be re-chosen on every new
+-- device, every cleared browser, every new install.
+--
+-- It was tolerable while a household had ONE account. Migration 0128 made a second
+-- adult possible, and the moment two people each sign in on their own phone, "who
+-- added the milk" has an answer the app already knows and still asks for.
+--
+-- NULL = unlinked, which stays the default and is a real state, not a missing value:
+-- the founding operator may not correspond to any single member (a shared household
+-- address), and a kiosk has no operator at all. The device pick REMAINS the source of
+-- truth for attribution — this only seeds it on a device that has not chosen yet, so
+-- a phone signed in as Marc starts as Marc instead of as « Maisonnée », and any
+-- household member can still be picked over it.
+--
+-- Soft ref, no FK (DB-5): deleting a member must never cascade into an account, and a
+-- stale id simply stops resolving to a face — the same posture every other member ref
+-- here takes.
+--
+-- Forward-only.
+ALTER TABLE operators ADD COLUMN member_id TEXT;

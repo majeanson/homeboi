@@ -128,3 +128,54 @@ test('the already-a-member 409 offers the sign-in door instead', async ({ page }
   await expect(page.locator('.status-msg')).toContainText('a déjà accès')
   await expect(page.locator('.status-msg a[href="/login"]')).toBeVisible()
 })
+
+test('a co-operator can be removed — and never yourself from that row', async ({ page }) => {
+  // The PARITY D1 gap: minting and rotating shipped, and once someone had REDEEMED a
+  // link there was no way out. « Réinitialiser » kills the outstanding links, not the
+  // access already granted — which is exactly the case that matters when an invite
+  // goes to the wrong address.
+  await mockApi(page)
+  const deleted: unknown[] = []
+  await page.route('**/api/operator-invite**', async (route) => {
+    const req = route.request()
+    if (req.method() === 'DELETE') {
+      deleted.push(req.postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    }
+    if (req.method() === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          operators: [
+            { email: 'a@x.com', createdAt: 1, isSelf: true },
+            { email: 'b@x.com', createdAt: 2, isSelf: false },
+          ],
+        }),
+      })
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+  await seedState(page, { theme: 'day', lang: 'fr', surface: 'mobile' })
+  await page.goto('/settings?tab=settings&focus=coop&lens=regler')
+
+  const card = page.locator('#op-coop')
+  await expect(card).toBeVisible()
+  const rows = card.locator('.operator__list-row')
+  await expect(rows).toHaveCount(2)
+
+  // Your OWN row offers no delete: removing it logs you out of a household you may be
+  // the only operator of, from a button whose label says nothing about that.
+  await expect(rows.nth(0).locator('.row-actions')).toHaveCount(0)
+  await expect(rows.nth(1).locator('.row-actions')).toHaveCount(1)
+
+  await rows.nth(1).locator('.row-actions button').last().click()
+  // The confirm names what is lost AND what is not — nothing they wrote goes with
+  // them, because attribution is a soft member ref and never an operator FK.
+  const dialog = page.locator('.confirm')
+  await expect(dialog).toContainText('rien ne se perd')
+  await dialog.getByRole('button', { name: 'Retirer l’accès' }).click()
+
+  await expect.poll(() => deleted.length).toBe(1)
+  expect(deleted[0]).toMatchObject({ email: 'b@x.com' })
+})

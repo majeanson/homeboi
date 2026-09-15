@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode, useEffect, useRef, useState } from 'react'
 // createRoot, not hydrateRoot — there's no prerender to match in the prototype,
 // and even with one we'd render fresh over it (portal convention).
 import { createRoot } from 'react-dom/client'
@@ -6,12 +6,12 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { AppRoutes } from './router'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { AuthProvider } from './lib/auth'
+import { AuthProvider, useAuth } from './lib/auth'
 import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
 import { AudienceContext, type Audience } from './lib/audience'
 import { SurfaceContext, type Surface } from './lib/surface'
-import { ProfileContext } from './lib/profile'
+import { ProfileContext, useProfile } from './lib/profile'
 import { CalmContext } from './lib/calm'
 import { HelpContext } from './lib/help'
 import { ToastProvider } from './lib/toast'
@@ -89,6 +89,45 @@ try {
   }
 } catch {
   /* noop — display boot is best-effort */
+}
+
+
+// Seeds the device FACE from the signed-in account, once (migration 0130).
+//
+// The device pick stays the source of truth — that is what makes a shared wall tablet
+// work, and nothing here overrides a choice. What it fixes is the personal phone: with
+// two adults each signed in as themselves (0128), "who added the milk" has an answer
+// the app already knows, and it was still asking on every new device, every cleared
+// browser, every reinstall.
+//
+// It reads localStorage rather than `memberId == null`, because « Maisonnée » is a
+// DELIBERATE pick that reads as null — re-seeding over it on every auth refresh would
+// make it impossible to be nobody on your own phone.
+//
+// Renders nothing. It lives inside AuthProvider because the profile STATE is declared
+// ABOVE it in Root, so only a descendant can see who is signed in; ProfileContext is
+// an ancestor, so this one component sees both.
+function ProfileSeed() {
+  const auth = useAuth()
+  const { memberId, setMemberId } = useProfile()
+  const seeded = useRef(false)
+  useEffect(() => {
+    if (seeded.current || !auth.memberId) return
+    let stored: string | null = null
+    try {
+      stored = localStorage.getItem('babillard-profile')
+    } catch {
+      // Storage blocked (private window): treat as "never chosen" and seed. The pick
+      // will not persist, but the session at least starts as the right person.
+    }
+    if (stored !== null) {
+      seeded.current = true
+      return
+    }
+    seeded.current = true
+    if (memberId === null) setMemberId(auth.memberId)
+  }, [auth.memberId, memberId, setMemberId])
+  return null
 }
 
 function Root() {
@@ -325,6 +364,11 @@ function Root() {
               <ConfirmProvider>
               <AiErrorProvider>
                 <AuthProvider>
+                  {/* Seeds the device face from the signed-in account (migration 0130).
+                      Here rather than in Root: the profile STATE lives above
+                      AuthProvider, so only a child of it can read who is signed in —
+                      and ProfileContext is an ancestor, so this sees both. */}
+                  <ProfileSeed />
                   <BrowserRouter>
                     {/* TourProvider needs the router (it navigates) + auth/audience
                         contexts; TourOverlay is rendered once here so a tour can

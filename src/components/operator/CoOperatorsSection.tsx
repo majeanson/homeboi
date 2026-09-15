@@ -4,12 +4,15 @@ import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
-import { OPERATORS_KEY } from '../../lib/queryKeys'
+import { MEMBERS_KEY, OPERATORS_KEY } from '../../lib/queryKeys'
 import { useConfirm } from '../../lib/confirm'
 import { useOnline } from '../../lib/online'
+import { useAuth } from '../../lib/auth'
+import { type Member } from '../../lib/members'
 import { isGuest, isPaired } from '../../lib/device'
 import { formatDay } from '../../lib/format'
 import { CopyButton } from '../CopyButton'
+import { RowActions } from '../RowActions'
 import { Chip } from '../Chip'
 import { Cluster } from '../Layout'
 import { StatusMessage } from '../StatusMessage'
@@ -33,6 +36,7 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
   const qc = useQueryClient()
   const confirm = useConfirm()
   const online = useOnline()
+  const auth = useAuth()
   const [link, setLink] = useState<string | null>(null)
   const [expiresAt, setExpiresAt] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -77,6 +81,44 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
     }
   }
 
+  async function removeOperator(email: string) {
+    // The confirm names WHAT IS LOST — and, just as load-bearing here, what is NOT:
+    // nothing they wrote goes with them. Attribution in this app is a soft member
+    // ref, never an operator FK, precisely so an account can be removed without
+    // erasing a household's history. Saying so is what makes the tap answerable.
+    if (!(await confirm({ message: t.coop.removeConfirm(email), confirmLabel: t.coop.remove, tone: 'danger' }))) return
+    setBusy(true)
+    setErr(null)
+    try {
+      await api('operator-invite', { method: 'DELETE', body: { email } })
+      await qc.invalidateQueries({ queryKey: OPERATORS_KEY })
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // The household faces this account can BE. Read here rather than passed down: this
+  // card is the only place that asks, and MEMBERS_KEY is already warm everywhere else.
+  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: !isGuest() && !isPaired() }).data?.members ?? []
+  const myFace = auth.memberId
+
+  async function setMyFace(id: string | null) {
+    setBusy(true)
+    setErr(null)
+    try {
+      await api('operator-invite', { method: 'PATCH', body: { memberId: id } })
+      // refresh() re-reads /api/auth/me, which is what carries memberId — without it
+      // the chip would look picked while every write still attributed to the old face.
+      await auth.refresh()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const operators = listQ.data?.operators ?? []
 
   return (
@@ -93,10 +135,44 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
             <li key={o.email} className="operator__list-row">
               <InlineIcon name="user-bold" />
               <span className="mono">{o.email}</span>
-              {o.isSelf && <Chip>{t.coop.you}</Chip>}
+              {o.isSelf ? (
+                <Chip>{t.coop.you}</Chip>
+              ) : (
+                // Handing out a capability you can never take back is a one-way door
+                // — the case that matters is an invite sent to the wrong address.
+                // Not offered on your OWN row: removing that logs you out of a
+                // household you may be the only operator of, from a button whose
+                // label says nothing about it. « Se déconnecter » is that door.
+                <RowActions onDelete={() => void removeOperator(o.email)} deleteLabel={t.coop.remove} />
+              )}
             </li>
           ))}
         </ul>
+      )}
+
+      {/* « Mon visage » — which household face THIS account is (migration 0130).
+          Your own row only: deciding what face somebody else's phone attributes to is
+          putting words in their mouth, and the device pick they already control is the
+          honest place for it.
+          It SEEDS the device pick on a device that has never chosen; it never
+          overrides one. On a shared wall tablet nothing changes — whoever is standing
+          there taps their own face, as always. */}
+      {members.length > 0 && (
+        <div className="operator__seg">
+          <span className="operator__seg-label mono">{t.coop.myFace}</span>
+          <Cluster>
+            {members.map((m) => (
+              <Chip
+                key={m.id}
+                selected={myFace === m.id}
+                onClick={() => void setMyFace(myFace === m.id ? null : m.id)}
+              >
+                {m.display_name}
+              </Chip>
+            ))}
+          </Cluster>
+          <p className="operator__hint">{t.coop.myFaceHint}</p>
+        </div>
       )}
 
       {link ? (
