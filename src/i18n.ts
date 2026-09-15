@@ -41,6 +41,7 @@ export const FR = {
     todos: 'À compléter',
     pantry: 'Garde-manger & réserve',
     events: 'Rendez-vous',
+    feedEvents: 'Calendriers abonnés',
     listItems: 'La liste',
     notes: 'Notes & recommandations',
     boardNotes: 'Notes du babillard',

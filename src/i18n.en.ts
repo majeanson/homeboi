@@ -33,6 +33,7 @@ export const EN: typeof FR = {
     todos: 'To-dos',
     pantry: 'Pantry & reserve',
     events: 'Appointments',
+    feedEvents: 'Subscribed calendars',
     listItems: 'The list',
     notes: 'Notes & recommendations',
     boardNotes: 'Board notes',

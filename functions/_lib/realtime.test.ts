@@ -168,9 +168,23 @@ describe('keysForPath', () => {
       'routine-card-photo',
       'guest/intake-media',
       'guest/postbox-media',
+      // « L'autre parent » (0128): the invite URL is returned inline and the operators
+      // list is read on demand in Réglages, never polled — so there is no stale frame
+      // on another device to correct. Redeeming it happens with no socket at all.
+      'operator-invite',
+      'operator-join',
     ]) {
       expect(keysForPath(p)).toEqual([])
     }
+  })
+
+  it('maps « Les calendriers » to the calendar, NOT to the bare board default', () => {
+    // The one surface a subscribed feed does not reach is the bento board: it has no
+    // feed card. So the [[board]] fallthrough — which is what this endpoint got until
+    // the PARITY scoring caught it — invalidated the only thing that could not change
+    // and left the month and the week showing the old subscription.
+    expect(keysForPath('calendar-feeds')).toEqual([['calendar-feeds'], ['month']])
+    expect(keysForPath('calendar-feeds')).not.toEqual([['board']])
   })
 
   it('maps the guest drops + their review surfaces to their own keys, not the board default', () => {

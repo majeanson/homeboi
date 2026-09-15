@@ -9,7 +9,7 @@ import { fold } from '../lib/normalize'
 import { SEARCH_INDEX, drawingFields, type SearchFields, type PantryRow } from '../lib/searchIndex'
 import { CATS } from '../lib/cats'
 import { colourFor } from '../lib/things'
-import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, CARE_LOG_KEY, HOME_PINS_KEY, DRAWINGS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
+import { CALENDAR_FEEDS_KEY, CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, CARE_LOG_KEY, HOME_PINS_KEY, DRAWINGS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import { type Carnet, type CareLog, type HomePin, PIN_EMOJI } from '../lib/carnets'
 import { type GalleryDrawing } from '../lib/drawingGallery'
 import { type Member } from '../lib/members'
@@ -31,6 +31,7 @@ import { GUIDE } from '../lib/guideContent'
 import { stripTokens, highlight } from '../lib/richText'
 import { pictoFor } from '../lib/picto'
 import { localDayStart } from '../lib/localDay'
+import { formatDay } from '../lib/format'
 import { type EventRow } from '../components/board/types'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
@@ -63,6 +64,9 @@ const CAP = 8
 // A Guide / help hit: the card's own icon + title, a subtitle (the card's
 // one-liner, or the matched sub-point's label), and a deep-link into the Guide.
 type GuideHit = { id: string; icon: IconName; title: string; sub: string; to: string }
+
+// One occurrence from a subscribed calendar (« Les calendriers », migration 0129).
+type FeedEventHit = { id: string; title: string; location: string | null; at: number; allDay: number; feedLabel: string }
 
 export function SearchPage() {
   const t = useT()
@@ -178,6 +182,20 @@ export function SearchPage() {
   const mealIdeas = (useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas') }).data?.ideas ?? []).filter((i: MealIdea) => !i.recipe_id)
   // Voyage (privé) — the trip notebooks; a hit jumps to /voyage/:id.
   const trips = useTrips().data?.trips ?? []
+  // « Les calendriers » (0129) — the subscribed feeds' expanded occurrences. Its own
+  // read rather than the board buckets the `event` kind uses: those carry the
+  // household's OWN rendez-vous over a few days, and a school calendar's whole value
+  // is answering « c'est quand ? » for something months out. `feed_events` is already
+  // expanded, so this is a plain indexed select — see the endpoint on why it does not
+  // ride /api/month (which caps at 45 days because it EXPANDS recurrence).
+  const feedEvents =
+    useQuery({
+      queryKey: [...CALENDAR_FEEDS_KEY, 'events'],
+      queryFn: () => api<{ events: FeedEventHit[] }>('calendar-feeds?events=1'),
+      // A household with no subscription pays nothing but one empty response, and it
+      // is cached for the scene's life like every other read here.
+      staleTime: 5 * 60 * 1000,
+    }).data?.events ?? []
   // Name lookups for the row subtitles / drawing-author match.
   const carnetName = useMemo(() => new Map(carnets.map((c) => [c.id, c.name])), [carnets])
   const memberName = useMemo(() => new Map(members.map((m) => [m.id, m.display_name])), [members])
@@ -229,6 +247,7 @@ export function SearchPage() {
       return true
     })
     const events = pick(allEvents, SEARCH_INDEX.event)
+    const feedHits = pick(feedEvents, SEARCH_INDEX.feedEvent)
     const listItems = pick(board?.list ?? [], SEARCH_INDEX.listItem)
     const notes = pick(familyNotes, SEARCH_INDEX.familyNote)
     const petHits = pick(pets, SEARCH_INDEX.pet)
@@ -295,7 +314,7 @@ export function SearchPage() {
     }
     guideAll.sort((a, b) => a.r - b.r)
     const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll.length ? guideAll[0].r : 99 }
-    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, fridgeNotes, guide }
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, feedHits, listItems, notes, fridgeNotes, guide }
   }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, boardNotes, lang])
 
   const total = res
@@ -319,6 +338,7 @@ export function SearchPage() {
       res.groups.items.length +
       res.trips.items.length +
       res.events.items.length +
+      res.feedHits.items.length +
       res.listItems.items.length +
       res.notes.items.length +
       res.fridgeNotes.items.length +
@@ -710,6 +730,34 @@ export function SearchPage() {
                     <span className="search__main">
                       <span className="search__title">{hl(e.title)}</span>
                       <span className="search__sub mono">{new Date(e.start_at * 1000).toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-CA', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.feedHits.best,
+                node: res!.feedHits.items.length > 0 && (
+              // « Les calendriers » — its OWN section, not folded into « Rendez-vous ».
+              // The two answer different questions: one is what this household
+              // arranged, the other is what a school published. A hit lands on the day
+              // page like every other dated thing (the ONE day door), and the feed's
+              // name is the subtitle — « 14 h » means nothing without knowing whose
+              // calendar said so.
+              <Section key="feedEvents" label={t.search.feedEvents}>
+                {res!.feedHits.items.map((f) => (
+                  <Link key={f.id} to={`/kitchen/day/${localDayStart(new Date(f.at * 1000))}`} className="search__row">
+                    <span className="search__pic" aria-hidden="true">
+                      <InlineIcon name="scroll-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(f.title)}</span>
+                      <span className="search__sub mono">
+                        {formatDay(f.at, lang)} · {f.feedLabel}
+                      </span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

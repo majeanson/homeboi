@@ -35,6 +35,35 @@ function badUrl(raw: string): string | null {
 const normalizeUrl = (raw: string) => (raw.trim().startsWith('webcal://') ? 'https://' + raw.trim().slice('webcal://'.length) : raw.trim())
 
 export const onRequestGet = authed(async (ctx, actor) => {
+  // `?events=1` — the expanded occurrences, for Recherche.
+  //
+  // Its own read rather than widening /api/month, which caps at 45 days on purpose
+  // (it EXPANDS recurrence, and that cost is what the cap bounds). `feed_events` is
+  // already expanded — a plain indexed select over the whole stored window costs
+  // nothing comparable, so search gets the full ±5 months instead of a calendar page.
+  //
+  // Household-wide and NOT joined to `calendar_feeds.enabled`: a household that hid
+  // the hockey schedule from the wall still wants « quand est le tournoi ? » to
+  // answer. Hiding is about the CALENDAR's noise, not about forgetting.
+  if (new URL(ctx.request.url).searchParams.get('events') === '1') {
+    const rows = await ctx.env.DB.prepare(
+      'SELECT fe.id, fe.title, fe.location, fe.start_at, fe.all_day, f.label AS feed_label FROM feed_events fe JOIN calendar_feeds f ON f.id = fe.feed_id WHERE fe.household_id = ? AND f.deleted_at IS NULL ORDER BY fe.start_at LIMIT 1000',
+    )
+      .bind(actor.householdId)
+      .all<{ id: string; title: string; location: string | null; start_at: number; all_day: number; feed_label: string }>()
+      .catch(() => ({ results: [] as never[] }))
+    return ok({
+      events: rows.results.map((r) => ({
+        id: r.id,
+        title: r.title,
+        location: r.location,
+        at: r.start_at,
+        allDay: r.all_day,
+        feedLabel: r.feed_label,
+      })),
+    })
+  }
+
   // Bounded like every other list read (listCap's ratchet): a household subscribes to
   // a handful of calendars, and a limit nobody reaches keeps that number honest.
   const rows = await ctx.env.DB.prepare(

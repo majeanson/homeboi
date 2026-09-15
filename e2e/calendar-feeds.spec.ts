@@ -131,3 +131,33 @@ test('a feed appointment shows on the calendar, marked apart from the household�
   )
   expect(new Set(glyphs).size).toBeGreaterThan(1)
 })
+
+test('a subscribed calendar is findable in Recherche', async ({ page }) => {
+  // « C’est quand, la journée pédagogique ? » is the question a school calendar
+  // exists to answer. Before this the answer was "scroll to the right month" — the
+  // feed rows rode /api/month only, which the search scene never reads (and which
+  // caps at 45 days anyway, because it EXPANDS recurrence; feed_events is already
+  // expanded, so it gets its own cheap read).
+  await mockApi(page)
+  await page.route('**/api/calendar-feeds?events=1**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        events: [
+          { id: 'fe1', title: 'Journée pédagogique', location: null, at: 1_790_000_000, allDay: 1, feedLabel: 'École de Léa' },
+        ],
+      }),
+    }),
+  )
+  await seedState(page, { theme: 'day', lang: 'fr', surface: 'mobile' })
+  await page.goto('/search?q=pédagogique')
+
+  const row = page.locator('.search__row', { hasText: 'Journée pédagogique' })
+  await expect(row).toBeVisible()
+  // The feed's NAME is the subtitle: a date with no calendar behind it does not say
+  // whose day it is.
+  await expect(row).toContainText('École de Léa')
+  // …and it lands on the ONE day door, like every other dated hit.
+  await expect(row).toHaveAttribute('href', /\/kitchen\/day\/\d+/)
+})
