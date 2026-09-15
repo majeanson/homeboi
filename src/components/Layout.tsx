@@ -61,9 +61,27 @@ export function Cluster({
 // horizontal scroll — otherwise a desktop mouse has no way at all to reach whatever
 // sits past the right edge (no bar to drag, no swipe). Adds no DOM and no layout.
 export function Rail({ children, className, as: As = 'div', ...rest }: RowProps) {
-  const { ref } = useHScroll<HTMLDivElement>()
+  const { ref, overflowing } = useHScroll<HTMLDivElement>()
   return (
-    <As ref={ref} className={'rail' + (className ? ' ' + className : '')} {...rest}>
+    <As
+      ref={ref}
+      className={'rail' + (className ? ' ' + className : '')}
+      // …AND THE KEYBOARD HALF, which was missing (2026-09-15). The wheel mapping above
+      // gave a mouse a way in; a keyboard had none, because a scroll container that
+      // cannot take focus cannot be driven by the arrow keys either — so anything past
+      // the right edge was reachable by thumb or wheel only, against this repo's
+      // standing desktop-reachability rule. Found by the axe pass in
+      // `npm run e2e:matrix` (`scrollable-region-focusable`) on the virements plan
+      // card's row of due dates.
+      //
+      // CONDITIONAL on purpose: a rail becomes a tab stop only while it actually has
+      // somewhere to scroll. Making every rail focusable would hand a keyboard user a
+      // pile of stops that do nothing — its own accessibility problem — and useHScroll
+      // already measures this, so nothing new is computed. Before `{...rest}` so a
+      // caller that knows better can still override it.
+      tabIndex={overflowing ? 0 : undefined}
+      {...rest}
+    >
       {children}
     </As>
   )
