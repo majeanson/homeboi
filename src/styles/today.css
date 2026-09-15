@@ -542,13 +542,22 @@
   position: relative;
   overflow: hidden;
 }
+/* THE SECONDARY LINES ON A HERO CARD, DARKENED RATHER THAN FADED.
+   These carried `opacity` to read as secondary — and opacity on a tinted ink over a
+   pale wash walks it TOWARD the ground, which is the one direction that costs
+   legibility. Measured by axe on a real board (2026-09-15): « Ce soir » 3.02:1,
+   « Papa aux fourneaux » 3.23:1, « Dégagé » 2.65:1, the hour strip 2.44:1 — all under
+   the 4.5 minimum, on the surface this whole product exists to be read from across a
+   room. Mixing toward --ink instead keeps the hue and the hierarchy (still quieter
+   than `.what`) while moving AWAY from the ground; it also works in both themes,
+   since --ink flips with them. Held by e2e/board-contrast.spec.ts. */
 .now-card .label {
   font-family: var(--sans);
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.8;
+  color: color-mix(in srgb, currentColor 55%, var(--ink));
 }
 .now-card .what {
   font-family: var(--display);
@@ -559,7 +568,7 @@
 }
 .now-card .who {
   font-size: 14px;
-  opacity: 0.85;
+  color: color-mix(in srgb, currentColor 55%, var(--ink));
   margin-top: 2px;
 }
 .now-card .blob {
@@ -797,9 +806,14 @@
   font-size: var(--text-xs);
   background: rgb(0 0 0 / 0.06);
 }
+/* The whole hour chip, so its « 15h » and its temperature darken together — the bold
+   temperature had no opacity at all and still measured 3.06:1, so fading was never the
+   only problem here. */
+.now-card__hour {
+  color: color-mix(in srgb, currentColor 55%, var(--ink));
+}
 .now-card__hour-when {
   font-size: 0.66rem;
-  opacity: 0.8;
 }
 .now-card--wx-photo .now-card__hour {
   background: rgb(0 0 0 / 0.32);
