@@ -598,8 +598,15 @@
 /* A just-passed item is LINE-CROSSED — struck-through + receded — the same canonical
    "past" treatment as `.act--past` (today.css), so a passed rendez-vous, meal or work
    window reads identically on the timeline and in the Aujourd'hui list (one past look). */
-.fil__row--past {
-  opacity: 0.7;
+/* A PAST ROW READS AS PAST BY BEING STRUCK THROUGH AND QUIETER — not by fading.
+   `opacity: 0.7` walked every ink in the row toward the paper at once (the time, the
+   title, the face), which put all three under 4.5:1 in four of the matrix sweep's
+   states. The line-through below already says « done with »; the mix says « quiet »
+   without spending the contrast, and it leaves the row's own colours legible.
+   Mixing rather than fading is the same move the board's hero labels, the fridge-note
+   age stamp and the cercle kind badge took on 2026-09-15. */
+.fil__row--past .act__text > * {
+  color: color-mix(in srgb, currentColor 65%, var(--ink));
 }
 .fil__row--past .title {
   text-decoration: line-through;

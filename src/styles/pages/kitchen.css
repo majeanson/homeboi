@@ -111,6 +111,21 @@
   text-transform: uppercase;
   color: var(--ink-faint);
 }
+/* TODAY'S CARD IS A STRONGER GROUND THAN ANY WASH, and `--ink-faint` was never audited
+   against it. That token is measured (core.css) on the daypart papers and on the -wash
+   tints, worst case 4.6:1 — but the highlighted day is a deeper tint still (#f6dace by
+   day), where the same ink lands at 4.38:1. That is every weekday's header on the day
+   you are actually looking at: ten of the matrix sweep's states.
+   Mixed 15% toward --ink — 5.04:1 by day, 5.69:1 at night — and still visibly the quiet
+   tier beside the date it sits next to.
+   FOR WHOEVER MEASURES NEXT: a local `npm run e2e` cannot see this. The shared fixture's
+   today is a SUNDAY (see `MMID` in e2e/mocks.ts), so it only ever renders the
+   `.is-weekend` branch below, and pinning the browser clock does not help — the week is
+   built from the fixture, not from `Date.now()`. Only `npm run e2e:matrix`, which
+   rebases the fixtures onto the real clock, reaches an ordinary weekday. */
+.kitchen__day.is-today .kitchen__day-dow {
+  color: color-mix(in srgb, var(--ink-faint) 85%, var(--ink));
+}
 .kitchen__day-num {
   font-size: 1.4rem;
   font-weight: 700;
