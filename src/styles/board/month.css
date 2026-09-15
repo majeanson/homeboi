@@ -639,7 +639,15 @@
   font-size: 0.72rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--sky-deep);
+  /* « MAINTENANT » — the Fil's now-marker, and the same `-deep`-as-TEXT bug this
+     sweep has now found five times: the -deep tier is sized for GLYPHS (the 3:1
+     bar), and axe measured this one at 3.43:1 (#548aa4 on #fbf3e4) at 0.72rem.
+     The dot below keeps the raw token — a 9px disc IS a glyph, and 3.06:1 is the
+     tier doing its job.
+     60%, not the 80% that merely clears day: checked against every paper tier the
+     palette defines, including both dusk drifts (lib/daypartDrift), where 70% lands
+     exactly on 4.50 with nothing left. 60% → worst case 4.97, on dusk-1. */
+  color: color-mix(in srgb, var(--sky-deep) 60%, var(--ink));
 }
 .fil__now-label::before {
   content: '';

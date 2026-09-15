@@ -43,6 +43,14 @@ export function nextFreeColour(used: string[]): string {
 // read as design, not magic hex. ONLY valid on a concrete #rrggbb — for a value
 // that might be a CSS var, set `--tint` and use color-mix in CSS instead.
 export const wash = (hex: string) => hex + '22' //  ~13% — tinted tile fill
+// ALPHA FILLS COMPOSITE OVER THEIR CONTAINER, and `tintInk` below does not know that.
+// An 8% fill on `--surface` is what the ink ramp was measured against; the same fill on a
+// tinted column is a darker background the ink was never sized for. That is not
+// hypothetical: the history meal chip passed on six days and failed on TODAY at 4.4:1,
+// same code, because `.kitchen__day.is-today` paints `--terracotta-wash` behind it
+// (axe, 2026-09-15). If you pair `faint()` with `tintInk()` on a surface whose background
+// you do not control, use `color-mix(in srgb, <c> 8%, var(--surface))` instead — opaque,
+// theme-aware, identical wherever `faint()` was already correct.
 export const faint = (hex: string) => hex + '14' //  ~8%  — barely-there fill
 export const hairline = (hex: string) => hex + '40' // ~25% — quiet border
 export const edge = (hex: string) => hex + '55' //  ~33% — tinted border

@@ -779,9 +779,22 @@ const EXPECTED_STATES = ALL.reduce((n, e) => n + (e.themes ?? ['day', 'night']).
 // this very manifest for a week). Returns a compact per-rule summary — the same rule
 // firing on forty states is ONE thing to fix, and the aggregate is what a reviewer
 // should read.
-async function axeOf(page: Page): Promise<{ rule: string; impact: string; nodes: number; targets: string[] }[]> {
+async function axeOf(page: Page): Promise<{ rule: string; impact: string; nodes: number; targets: string[]; measured?: string[] }[]> {
   try {
-    const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
+    const res = await new AxeBuilder({ page })
+      // THE ONE EXCLUSION, and it is NOT this file's decision — it belongs to
+      // `e2e/contrast.spec.ts`, which measured the whole palette and wrote up why
+      // `.avatar__initial` (one letter on a member's own colour) cannot reach 4.5:1
+      // with either of our inks. Read that comment before touching this line.
+      //
+      // It is repeated here because two instruments that disagree are worse than one:
+      // the accepted gap was landing in EVERY sweep's aggregate as a fresh finding, so
+      // a reviewer either re-investigates a closed question (I did, 2026-09-15) or
+      // learns to skim the a11y block — and the next REAL contrast bug arrives into a
+      // report nobody reads. Delete it here when it is deleted there; never grow it.
+      .exclude('.avatar__initial')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze()
     // Three targets is enough to FIND it; the count says how big it is. A full node
     // dump would make the manifest unreadable, which is the same mistake as a per-state
     // a11y list.
@@ -790,6 +803,19 @@ async function axeOf(page: Page): Promise<{ rule: string; impact: string; nodes:
       impact: v.impact ?? 'unknown',
       nodes: v.nodes.length,
       targets: v.nodes.slice(0, 3).map((n) => String(n.target[0] ?? '')),
+      // …and for CONTRAST, the numbers axe already computed. Without them a reviewer
+      // has a selector and nothing else: I had to re-derive « which colour, against
+      // what, how far short » by reading CSS and compositing alpha by hand before I
+      // could fix two of these. axe knew all three the whole time and we threw them
+      // away (2026-09-15). Contrast only — no other rule carries a comparable datum.
+      ...(v.id === 'color-contrast'
+        ? {
+            measured: v.nodes.slice(0, 3).map((n) => {
+              const d = (n.any[0]?.data ?? {}) as { fgColor?: string; bgColor?: string; contrastRatio?: number }
+              return `${d.contrastRatio ?? '?'}:1 ${d.fgColor ?? '?'} on ${d.bgColor ?? '?'}`
+            }),
+          }
+        : {}),
     }))
   } catch {
     // A scan that cannot run must never cost a screenshot or a structural assertion —

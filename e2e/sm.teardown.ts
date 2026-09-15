@@ -58,7 +58,7 @@ type State = {
   /** How many states a complete run writes — the prune's "was this a whole sweep?" */
   expectedStates?: number
   assertions: {
-    a11y?: { rule: string; impact: string; nodes: number; targets?: string[] }[]
+    a11y?: { rule: string; impact: string; nodes: number; targets?: string[]; measured?: string[] }[]
     contentTopPx?: number | null
     contentBudgetPx?: number
     contentEmptyVia?: string
@@ -104,7 +104,7 @@ export default function mergeManifest() {
     // worst single-state element count. Report-only for now — see the note in
     // state-matrix.spec.ts: triage first, ratchet after.
     a11y: (() => {
-      const byRule = new Map<string, { rule: string; impact: string; states: number; nodes: number; where: string[]; targets: string[] }>()
+      const byRule = new Map<string, { rule: string; impact: string; states: number; nodes: number; where: string[]; targets: string[]; measured: string[] }>()
       for (const s of states)
         for (const v of s.assertions.a11y ?? []) {
           const cur = byRule.get(v.rule)
@@ -113,8 +113,13 @@ export default function mergeManifest() {
             cur.nodes = Math.max(cur.nodes, v.nodes)
             if (cur.where.length < 4) cur.where.push(s.name)
             for (const t of v.targets ?? []) if (cur.targets.length < 4 && !cur.targets.includes(t)) cur.targets.push(t)
+            // The colours axe measured, deduped alongside the selectors. A contrast
+            // finding without its ratio sends the next reader back to the CSS to
+            // composite alpha by hand — which is exactly what it cost me before this
+            // field existed (2026-09-15).
+            for (const m of v.measured ?? []) if (cur.measured.length < 4 && !cur.measured.includes(m)) cur.measured.push(m)
           } else
-            byRule.set(v.rule, { rule: v.rule, impact: v.impact, states: 1, nodes: v.nodes, where: [s.name], targets: (v.targets ?? []).slice(0, 4) })
+            byRule.set(v.rule, { rule: v.rule, impact: v.impact, states: 1, nodes: v.nodes, where: [s.name], targets: (v.targets ?? []).slice(0, 4), measured: (v.measured ?? []).slice(0, 4) })
         }
       const order = { critical: 0, serious: 1, moderate: 2, minor: 3, unknown: 4 } as Record<string, number>
       return [...byRule.values()].sort((a, b) => (order[a.impact] ?? 9) - (order[b.impact] ?? 9) || b.states - a.states)

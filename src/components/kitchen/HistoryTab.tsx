@@ -7,7 +7,7 @@ import { isGuest } from '../../lib/device'
 import { formatDay, formatMonthYear, weekdayShort, dayNum } from '../../lib/format'
 import { todayLocalDay } from '../../lib/localDay'
 import { useMealPrefs } from '../../lib/mealPrefs'
-import { tintInk, faint, hairline } from '../../lib/colors'
+import { tintInk, hairline } from '../../lib/colors'
 import { SLOT_ICON_NAME, type MealSlot } from '../../lib/mealSlots'
 import { Icon, InlineIcon } from '../Icon'
 import { SectionHeader } from '../SectionHeader'
@@ -204,7 +204,19 @@ export function HistoryTab({
                               ) : null}
                             </>
                           )
-                          const tint = { color: tintInk(c), background: faint(c), borderColor: hairline(c) }
+                          // The fill is OPAQUE, not `faint(c)`'s 8% alpha — and that is a
+                          // contrast fix, not a style preference. `tintInk()` sizes its ink
+                          // ramp against `--surface`; an alpha fill doesn't sit on --surface,
+                          // it sits on whatever the CONTAINER paints. Today's column paints
+                          // `--terracotta-wash` (kitchen.css .kitchen__day.is-today), which
+                          // pushed the composite dark enough to drop this chip to 4.4:1
+                          // (#8f503a on #f4d2c4 — axe, 2026-09-15). Every other day's chip
+                          // passed; only today's failed, from the same code.
+                          // color-mix against --surface makes the chip's own background what
+                          // the ink was measured against, whatever it is laid on — so the
+                          // chip stops depending on its container to stay readable. Same 8%
+                          // as faint(), so the look is unchanged everywhere it already passed.
+                          const tint = { color: tintInk(c), background: `color-mix(in srgb, ${c} 8%, var(--surface))`, borderColor: hairline(c) }
                           // « Encore ? » — the chip reveals the plan picker; a
                           // read-only guest keeps the plain display chip.
                           return ro ? (
