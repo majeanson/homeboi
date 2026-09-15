@@ -106,6 +106,22 @@ const ALLOWED = new Set<string>([
   //     replay of "become an operator" later is not a thing that can mean anything.
   'components/operator/CoOperatorsSection.tsx → operator-invite',
   'pages/JoinHouseholdPage.tsx → operator-join',
+  // « Les calendriers » (migration 0129). The whole card is ONLINE-ONLY by
+  // construction, which is why none of its writes queue:
+  //   · POST   — adds the subscription AND fetches it once, server-side. The point is
+  //              the answer that comes back (« Ajouté — 14 rendez-vous » vs « ça ne
+  //              ressemble pas à un calendrier »), because that is the only thing that
+  //              tells a household a typo from a slow schedule. Queued, it returns
+  //              nothing and the card shows an empty subscription with no verdict.
+  //   · PATCH  — carries `refresh`, a deliberate refetch of a remote URL. Replaying a
+  //              « rafraîchir maintenant » hours later answers a question nobody is
+  //              still asking. (Its field edits ride the same call: splitting one form
+  //              across two write paths to queue half of an online-only card would buy
+  //              nothing and cost the reader.)
+  //   · DELETE — drops the expanded rows with the subscription, so an offline replay
+  //              would have to re-decide what to delete against a window that has
+  //              since been refetched.
+  'components/operator/CalendarFeedsSection.tsx → calendar-feeds',
   // The two guest forms have no outbox by construction (a guest session is not
   // an operator's device and useWrite refuses a guest write outright), but they
   // DO carry an Idempotency-Key of their own now — one per composed submission,

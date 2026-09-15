@@ -87,6 +87,13 @@ const LENS_OF: Record<DotKind, LensKey | null> = {
   // No lens: « Virements » is not one of the six reading categories under the grid,
   // and adding a seventh for it would put money in the legend of a wall calendar.
   transfer: null,
+  // Nor « Les calendriers ». It is tempting to light these under « Rendez-vous » —
+  // they ARE appointments — but `lensCount` counts `b.events`, so the cell would
+  // light while the roll-up under it listed nothing, which is exactly the "lights up
+  // and then has nothing under its date" failure this map's own comment warns about.
+  // Making the count agree would mean the roll-up offering household actions on rows
+  // nothing can act on. No lens is the honest answer; the glyph still says what it is.
+  feed: null,
 }
 
 // How many things of ONE lit kind a day holds — the same slices the panel prints, so a

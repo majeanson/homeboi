@@ -55,6 +55,16 @@ export function DayMark({ dot, size = 12, className = '' }: { dot: Dot; size?: n
       </span>
     )
   }
+  if (dot.kind === 'feed') {
+    // A subscribed calendar's occurrence. `scroll-bold` — something PUBLISHED,
+    // arriving from outside — rather than a filled dot: the whole point is that it
+    // does not read as a household rendez-vous someone here arranged and can change.
+    return (
+      <span className={'monthv__dot-icon' + className}>
+        <Icon name="scroll-bold" size={size} color={dot.color} />
+      </span>
+    )
+  }
   return (
     <span
       className={`monthv__dot monthv__dot--${dot.kind}` + className}

@@ -157,3 +157,6 @@ export const operatorJoinKey = (token: string) => ['operator-join', token]
 // Who can act as this household (operator-invite GET). Used by the Réglages section
 // that mints the link, so the list refreshes the moment someone joins.
 export const OPERATORS_KEY = ['operators']
+// « Les calendriers » — the ICS subscriptions themselves (not their expanded events,
+// which ride MONTH_KEY with the rest of the calendar payload).
+export const CALENDAR_FEEDS_KEY = ['calendar-feeds']

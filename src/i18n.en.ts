@@ -756,6 +756,29 @@ export const EN: typeof FR = {
     stop: 'Stop this countdown',
     dodosN: (n: number) => (n === 0 ? 'It’s today! 🎉' : n === 1 ? 'in 1 sleep' : `in ${n} sleeps`),
   },
+  feeds: {
+    title: 'Calendars',
+    hint: 'Subscribe to the school’s calendar, the team’s, the collection schedule. It fills itself, every night — and nothing in it can be edited here: it is someone else’s calendar.',
+    empty: 'No calendars yet.',
+    labelPlaceholder: 'Name (e.g. Léa’s school)',
+    urlPlaceholder: 'Calendar address (https:// or webcal://)',
+    add: 'Add',
+    show: 'Show',
+    refresh: 'Refresh',
+    where: 'The address lives in your online calendar, under “Subscribe”, “Export” or “ICS”.',
+    added: (n: number) => (n === 0 ? 'Added, but nothing to show yet.' : n === 1 ? 'Added — 1 appointment.' : `Added — ${n} appointments.`),
+    ok: (n: number, when: string) => (n === 1 ? `1 appointment · read ${when}` : `${n} appointments · read ${when}`),
+    partial: (n: number) =>
+      n === 1 ? '1 repeating appointment is not fully shown' : `${n} repeating appointments are not fully shown`,
+    errors: {
+      http: 'The address answers badly — check it.',
+      'too-big': 'That calendar is too large.',
+      'not-ics': 'That does not look like a calendar (a sign-in page?).',
+      network: 'Could not reach the address.',
+    },
+    removeConfirm: (name: string) =>
+      `Remove the “${name}” subscription? Its appointments disappear from the calendar. Nothing of the household’s is touched — it was someone else’s calendar.`,
+  },
   week: {
     prev: 'Last week',
     next: 'Next week',

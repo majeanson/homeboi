@@ -42,6 +42,11 @@ export interface MHabit { id: string; habit_id: string; title: string; icon: str
 /** « Les virements » — a plan's due date, DERIVED on /api/month. No amount rides
  *  along on purpose: the calendar is a kitchen wall surface. */
 export interface MTransfer { id: string; planId: string; title: string; colour: string | null; day: number }
+/** « Les calendriers » — one occurrence from a subscribed ICS feed (migration 0129).
+ *  NOT an MEvent, deliberately: nothing can edit it, the next refresh replaces it
+ *  wholesale, and giving it the household-event shape would hand it affordances it
+ *  cannot honour. */
+export interface MFeedEvent { id: string; title: string; location: string | null; at: number; end_at: number | null; all_day: number; day: number; feedId: string; feedLabel: string; colour: string | null; member_id: string | null }
 
 export interface MonthData {
   events: MEvent[]
@@ -54,6 +59,7 @@ export interface MonthData {
   tripPlans?: MTripPlan[]
   habits?: MHabit[]
   transfers?: MTransfer[]
+  feedEvents?: MFeedEvent[]
 }
 
 export interface DayBucket {
@@ -65,6 +71,7 @@ export interface DayBucket {
   home: MHome[]
   habits: MHabit[]
   transfers: MTransfer[]
+  feed: MFeedEvent[]
 }
 
 /** One day's slice of a trip band: the trip + whether this cell is its first/last
@@ -75,7 +82,7 @@ export interface TripSpan { id: string; title: string; colour: string; isStart: 
 // instead of drawing a wall of identical circles. Events/chores/notes are shape-coded
 // dots (circle · diamond · ring); a MEAL shows its slot ICON tinted with the slot
 // colour — far more glanceable, and it carries WHICH meal.
-export type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work' | 'habit' | 'transfer'
+export type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work' | 'habit' | 'transfer' | 'feed'
 export interface Dot {
   color: string
   kind: DotKind
@@ -102,7 +109,7 @@ export function bucketByDay(data: MonthData | undefined, face: string | null): M
   const at = (d: number) => {
     let b = m.get(d)
     if (!b) {
-      b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [], transfers: [] }
+      b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [], transfers: [], feed: [] }
       m.set(d, b)
     }
     return b
@@ -114,6 +121,7 @@ export function bucketByDay(data: MonthData | undefined, face: string | null): M
   for (const h of data?.homeProjects ?? []) at(h.day).home.push(h)
   for (const h of data?.habits ?? []) if (h.member_id === null || h.member_id === face) at(h.day).habits.push(h)
   for (const tr of data?.transfers ?? []) at(tr.day).transfers.push(tr)
+  for (const f of data?.feedEvents ?? []) at(f.day).feed.push(f)
   for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
   return m
 }
@@ -196,6 +204,18 @@ export function linesFor(
   // A due date reads as its own marker — the plan's NAME and nothing else. What it
   // costs is one tap away, not on the wall.
   for (const tr of b.transfers) out.push({ color: tr.colour ?? CATS.cercle.color, kind: 'transfer', label: tr.title })
+  // « Les calendriers » — a subscribed feed's occurrence. Its own kind and its own
+  // glyph so it never reads as a household rendez-vous someone here arranged: it is
+  // information arriving from outside, it cannot be edited, and the next refresh
+  // replaces it. The feed's colour when it has one, so a household can tell the
+  // school's calendar from the hockey team's at a glance.
+  for (const f of b.feed)
+    out.push({
+      color: f.colour ?? CATS.event.color,
+      kind: 'feed',
+      time: f.all_day ? undefined : formatTime(f.at, lang),
+      label: f.title,
+    })
   for (const n of b.notes) out.push({ color: CATS.list.color, kind: 'note', label: n.text })
   return out
 }

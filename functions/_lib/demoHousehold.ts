@@ -137,6 +137,13 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   // sandbox deliberately seeds NO rows here: money is what a showcase link is denied.
   'transfers',
   'transfer_plans',
+  // « Les calendriers » (0129). Child before parent: feed_events carries its own
+  // household_id (denormalized so the calendar read never joins to delete), so both
+  // are ordinary household tables here. A sandbox seeds NO subscription — a throwaway
+  // household has no school — but a visitor CAN add one, and a 24-hour sandbox must
+  // not leave a standing outbound fetch behind on the nightly cron.
+  'feed_events',
+  'calendar_feeds',
   // most-referenced content parents last
   'recipes',
   'members',
