@@ -323,6 +323,17 @@
   /* Chips are `nowrap` (below), so a wide one would otherwise paint out of the
      name column and slide under the ✏️ / check disc. Clip to the column. */
   overflow: hidden;
+  /* …and the clip only helps while this BOX is inside the column. It was not.
+     Measured at 130% on a 360px phone: the name column shrank to 129px and this
+     flex container still laid out at 184px — so `overflow: hidden` dutifully
+     clipped its children to a box that was itself 55px past the column, and
+     « Super C · 4,99 $ » painted straight under the check disc. `min-width: 0`
+     lets it shrink; nothing was stopping it GROWING.
+     Present since the deal chip shipped and reachable at the SHIPPED 115% step
+     (360px: 7px of clearance became 18px of overlap) — found by measuring the
+     boxes, 2026-09-15, after a screenshot showed the symptom and could not say
+     which box was wrong. Guarded by e2e/list-row-fit.spec.ts. */
+  max-width: 100%;
 }
 .list-row__meta:empty {
   display: none;
