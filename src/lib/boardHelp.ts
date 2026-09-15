@@ -1,6 +1,6 @@
 import { type HelpEntry } from './helpMode'
 
-// Help-mode copy for the board's view toggle (the two glance views: Grille ⟷ Mois).
+// Help-mode copy for the board's view toggle (Grille ⟷ La semaine ⟷ Mois ⟷ L'année).
 // Each points at the "Changer la vue" point of the board GUIDE card (index 7) so the
 // "→ Voir le guide" link lands on the exact line. The per-person lens (face picker)
 // has its own help entry elsewhere. See lib/helpMode + the board wiring in Board.tsx.
@@ -9,6 +9,14 @@ export const BOARD_HELP = {
     card: 'board',
     point: 7,
     body: { fr: 'La grille : toute la journée d’un coup d’œil.', en: 'The grid: the whole day at a glance.' },
+  },
+  'view-semaine': {
+    card: 'board',
+    point: 7,
+    body: {
+      fr: 'La semaine : sept jours à partir d’aujourd’hui, écrits au long. Touche une journée pour l’ouvrir.',
+      en: 'The week: seven days from today, spelled out. Tap a day to open it.',
+    },
   },
   'view-month': {
     card: 'board',

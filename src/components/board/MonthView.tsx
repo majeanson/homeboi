@@ -12,11 +12,10 @@ import { useAuth } from '../../lib/auth'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { healOnError } from '../../lib/query'
 import { type CarModel } from '../../lib/car'
-import { CATS } from '../../lib/cats'
 import { formatTime, formatMonthYear, formatDay, formatDayLong, weekdayShort, dayNum, capitalize as cap } from '../../lib/format'
 import { monthGrid, inMonth, stepMonthDay } from '../../lib/monthgrid'
-import { localYMD, addLocalDays, localDayStart } from '../../lib/localDay'
-import { SLOT_ICON_NAME, isMealSlot, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
+import { localYMD, localDayStart } from '../../lib/localDay'
+import { SLOT_ICON_NAME, slotLabel as slotLabelFor, type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { type Lang } from '../../i18n'
@@ -24,6 +23,7 @@ import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { ActionMenu, type ActionMenuItem } from '../ActionMenu'
 import { Act } from './Act'
+import { DayMark } from './DayMark'
 import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
 import { DayNote } from './DayNote'
@@ -33,67 +33,31 @@ import { eventMembers, memberFaces } from '../../lib/eventPeople'
 import { useOpenMeal } from '../detail/useOpenMeal'
 import { useEventPeekActions } from '../detail/EventPeekActions'
 import { colorOf, nameOf, type Dict, type Member } from './types'
+// THE shared day builder (extracted from this file, 2026-09-15). MonthView draws its
+// lines as grid cells; WeekView draws the same lines as rows.
+import {
+  bucketByDay,
+  linesFor,
+  tripSpansByDay,
+  type DayBucket,
+  type DotKind,
+  type MEvent,
+  type MTodo,
+  type MonthData,
+} from './dayLines'
+export type { MonthData } from './dayLines'
 
 const DAY = 86400
 
 // The /api/month payload: every dated thing, already bucketed onto a UTC `day`
 // key by the server. Mirrors the families on the bento board so the calendar is a
 // faithful "is it all here?" inventory — events, meals, recurring chores, notes.
-interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; contact_address?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; business_address?: string | null; end_at?: number | null; car_id?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
-interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
-interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
-interface MNote { id: string; text: string; member_id: string | null; day: number }
-interface MTodo { id: string; title: string; member_id: string | null; day: number; section: string | null }
-// "Projets & Entretien" (home_projects) dated occurrence — chore-like on the calendar.
-interface MHome { id: string; kind: string; title: string; color: string | null; day: number }
-// « Voyage » — a multi-day trip; drawn as a BAND across its days (not a per-day dot).
-// `shared` = a « Voyage partagé » the household is a member of (promoted/joined): same
-// band, but the tap deep-links to /voyage/partage/:id instead of /voyage/:id.
-interface MTrip { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: boolean }
-// A dated itinerary entry inside a trip — the plans the operator wrote for the day,
-// shown under the trip card on that exact day (not just the global trip band).
-interface MTripPlan { id: string; trip_id: string; category: string; label: string | null; text: string; media_kind: string | null; colour: string; day: number }
-// « Mes habitudes » — a DERIVED occurrence, never a stored row (the birthdays
-// pattern). A scheduled habit emits every due day; a week-quota one only the days it
-// was actually done (no fictional scheduling). `done` = the intention was met, and it
-// is the ONE thing the calendar reads: the grid keeps habits out of its dots entirely
-// (linesFor's filter below) and the tapped-day panel names only the done ones. Marking,
-// backfilling and editing all live in « Le point du jour », one tap away — which is why
-// this view no longer touches the real habits (useHabits/useMarkHabit) at all.
-interface MHabit { id: string; habit_id: string; title: string; icon: string; colour: string | null; kind: string; member_id: string | null; day: number; done: boolean }
-// « Les virements » — a plan's due date, DERIVED on /api/month (never a stored row).
-// No amount rides along on purpose: the calendar is a kitchen wall surface.
-interface MTransfer { id: string; planId: string; title: string; colour: string | null; day: number }
-export interface MonthData { events: MEvent[]; meals: MMeal[]; chores: MChore[]; dayNotes: MNote[]; todos: MTodo[]; homeProjects?: MHome[]; trips?: MTrip[]; tripPlans?: MTripPlan[]; habits?: MHabit[]; transfers?: MTransfer[] }
+// The payload types, the day bucketing and the marker walk now live in dayLines.ts
+// (extracted 2026-09-15 so « La semaine » is the fourth FACE of the same builder
+// rather than a fourth opinion about what a day holds). Re-exported below for the
+// modules that already import MonthData from here.
 
-interface DayBucket { events: MEvent[]; meals: MMeal[]; chores: MChore[]; notes: MNote[]; todos: MTodo[]; home: MHome[]; habits: MHabit[]; transfers: MTransfer[] }
-// One day's slice of a trip band: the trip + whether this cell is its first/last
-// visible day (rounded ends + the title shows on the start).
-interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number; shared?: boolean }
-
-// Intl gives a lowercase French month/weekday ("juin", "lun") — calendars want it
-// capitalized.
-
-// A calendar marker: a colour AND a category, so the cell can tell each kind
-// apart instead of a wall of identical circles. Events/chores/notes are shape-coded
-// dots (circle · diamond · ring); a MEAL shows its slot ICON (egg/fork/cookie/bowl,
-// reusing Réglages ▸ Repas) tinted with the slot colour — far more glanceable than
-// a square and it carries which meal. Colour still carries who (events) / slot
-// (meals) / chore tint.
-type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' | 'work' | 'habit' | 'transfer'
-interface Dot {
-  color: string
-  kind: DotKind
-  slot?: MealSlot // set for meals → which slot icon to draw
-  done?: boolean // habits: the day's intention was met (a filled ring, else hollow)
-}
-// The same marker, plus what it SAYS once the cell has room for words — which is when
-// it is the tapped day (see the grid below). `time` is the clock face for a timed event
-// and nothing for anything all-day; `label` is the title as the day panel prints it.
-interface Line extends Dot {
-  time?: string
-  label: string
-}
+// The marker/bucket types are dayLines.ts now — see the note above.
 
 // ── The legend, which is ALSO a highlight lens ──────────────────────────────────────
 // The shape key under the grid used to be pure decoration (aria-hidden, unclickable).
@@ -147,67 +111,7 @@ function lensCount(b: DayBucket | undefined, k: LensKey, meals: MealPrefs, pendi
   }
 }
 
-// EVERY dated thing on a day, in the order the detail panel lists them (events first,
-// by member colour, then meals, chores, home projects, todos, habits, notes).
-//
-// This is the ONE builder behind all three faces of a day — the cell's dots, the cell's
-// named lines, and the count under the panel header — so a thing can never show as a dot
-// but go missing from the words, or vice versa. The compact density simply ignores
-// `time`/`label` and draws the shape; keep it that way rather than forking a second walk.
-function linesFor(
-  b: DayBucket | undefined,
-  members: Member[],
-  meals: MealPrefs,
-  t: Dict,
-  lang: Lang,
-): Line[] {
-  if (!b) return []
-  const out: Line[] = []
-  for (const e of b.events)
-    out.push(
-      e.birthday
-        ? { color: CATS.birthday.color, kind: 'birthday', label: e.title }
-        : e.work
-          ? {
-              color: e.color ?? colorOf(members, e.member_id) ?? CATS.work.color,
-              kind: 'work',
-              time: formatTime(e.at, lang),
-              label: e.title || t.auto.work,
-            }
-          : {
-              color: e.business_colour ?? colorOf(members, e.member_id) ?? CATS.event.color,
-              kind: 'event',
-              // All-day rows carry no clock — the label alone, as on the panel.
-              time: e.all_day ? undefined : formatTime(e.at, lang),
-              label: e.title,
-            },
-    )
-  // Each shown meal gets its slot colour + icon (Réglages ▸ Repas); hidden slots = no marker.
-  for (const m of b.meals)
-    if (meals.isVisible(m.slot))
-      out.push({
-        color: meals.color(m.slot) ?? CATS.meal.color,
-        kind: 'meal',
-        slot: isMealSlot(m.slot) ? m.slot : undefined,
-        label: m.title,
-      })
-  for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore', label: c.title })
-  // Projets & Entretien read as chore-shaped dots; the row's own colour sets them apart.
-  for (const h of b.home) out.push({ color: h.color ?? CATS.chore.color, kind: 'chore', label: h.title })
-  // À compléter todos → a check icon tinted with the member colour (drawn like the
-  // meal slot icons), so they read apart from the filled chore/event dots.
-  for (const td of b.todos)
-    out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo', label: td.title })
-  // « Mes habitudes » — a ring, hollow until the day's intention was met. Its own
-  // shape so a habit never reads as a chore you owe someone.
-  for (const h of b.habits)
-    out.push({ color: h.colour ?? CATS.routine.color, kind: 'habit', done: h.done, label: h.title })
-  // A due date reads as its own marker — the plan's NAME and nothing else. What it
-  // costs is one tap away, not on the wall.
-  for (const tr of b.transfers) out.push({ color: tr.colour ?? CATS.cercle.color, kind: 'transfer', label: tr.title })
-  for (const n of b.notes) out.push({ color: CATS.list.color, kind: 'note', label: n.text })
-  return out
-}
+//  moved to dayLines.ts (imported above) — it is shared with WeekView now.
 
 // "Mois" — the fourth board take (after bento · next · lanes): a calm six-week
 // calendar of EVERYTHING dated, so a glance answers "what's the month look like?"
@@ -366,48 +270,16 @@ export function MonthView({
 
   // One pass to bucket everything by day. The cell dots and the detail panel both
   // read this map, so a thing can never show as a dot but go missing in the list.
-  const byDay = useMemo(() => {
-    const m = new Map<number, DayBucket>()
-    const at = (d: number) => {
-      let b = m.get(d)
-      if (!b) {
-        b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [], transfers: [] }
-        m.set(d, b)
-      }
-      return b
-    }
-    for (const e of data?.events ?? []) at(e.day).events.push(e)
-    for (const x of data?.meals ?? []) at(x.day).meals.push(x)
-    for (const c of data?.chores ?? []) at(c.day).chores.push(c)
-    for (const td of data?.todos ?? []) at(td.day).todos.push(td)
-    for (const h of data?.homeProjects ?? []) at(h.day).home.push(h)
-    // Private-ish, exactly as « Le point du jour » filters: the picked face sees the
-    // household's habits plus their own; « Maisonnée » sees only the household's. A
-    // member's habits never surface on the calendar for whoever is standing there.
-    for (const h of data?.habits ?? [])
-      if (h.member_id === null || h.member_id === face) at(h.day).habits.push(h)
-    for (const tr of data?.transfers ?? []) at(tr.day).transfers.push(tr)
-    for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
-    return m
-  }, [data, face])
+  // One pass to bucket everything by day (dayLines.bucketByDay). The cell dots, the
+  // detail panel and « La semaine » all read this same map, so a thing can never show
+  // as a dot on one surface and go missing on another.
+  const byDay = useMemo(() => bucketByDay(data, face), [data, face])
 
   // Trip bands by day: each trip paints a strip across every visible day it covers,
   // rounded on its first/last day. Clamped to [from, to) so a trip running past the
   // grid edge still bands the days that ARE shown. A day can carry several bands
   // (overlapping trips) — they stack.
-  const tripsByDay = useMemo(() => {
-    const m = new Map<number, TripSpan[]>()
-    for (const tr of data?.trips ?? []) {
-      const first = Math.max(tr.start_at, from)
-      const last = Math.min(tr.end_at, to - DAY)
-      for (let d = first; d <= last; d = addLocalDays(d, 1)) {
-        const arr = m.get(d) ?? []
-        arr.push({ id: tr.id, title: tr.title, colour: tr.colour, isStart: d === tr.start_at, isEnd: d === tr.end_at, start_at: tr.start_at, shared: tr.shared })
-        m.set(d, arr)
-      }
-    }
-    return m
-  }, [data, from, to])
+  const tripsByDay = useMemo(() => tripSpansByDay(data?.trips, from, to), [data, from, to])
 
   const mealPrefs = useMealPrefs()
   const slotLabel = (slot: string) => slotLabelFor(slot, t)
@@ -854,43 +726,11 @@ export function MonthView({
               <span className="monthv__num">{localYMD(d).day}</span>
               {shown.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
-                  {shown.slice(0, 4).map((dot, i) =>
-                    dot.kind === 'meal' && dot.slot ? (
-                      // Meal → its slot icon, tinted with the slot colour (Réglages ▸ Repas).
-                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
-                        <Icon name={SLOT_ICON_NAME[dot.slot]} size={12} color={dot.color} />
-                      </span>
-                    ) : dot.kind === 'todo' ? (
-                      // À compléter → a check icon tinted with the member colour.
-                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
-                        <Icon name="check-bold" size={12} color={dot.color} />
-                      </span>
-                    ) : dot.kind === 'birthday' ? (
-                      // A derived birthday → a cake, tinted with the cercle rose.
-                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
-                        <Icon name="cake-bold" size={12} color={dot.color} />
-                      </span>
-                    ) : dot.kind === 'work' ? (
-                      // A derived « L'auto » work window → a clock, tinted by the member.
-                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
-                        <Icon name="clock-bold" size={12} color={dot.color} />
-                      </span>
-                    ) : dot.kind === 'transfer' ? (
-                      // A derived « virement » due date → the same receipt glyph the tab
-                      // and the ＋ tile wear, so the day says WHICH kind of thing is due
-                      // rather than adding one more anonymous coloured dot.
-                      <span key={i} className={'monthv__dot-icon' + mk(dot.kind)}>
-                        <Icon name="receipt-bold" size={12} color={dot.color} />
-                      </span>
-                    ) : (
-                      <span
-                        key={i}
-                        className={`monthv__dot monthv__dot--${dot.kind}` + mk(dot.kind)}
-                        // A ring (note) is drawn from `color`; filled shapes from `background`.
-                        style={dot.kind === 'note' ? { color: dot.color } : { background: dot.color }}
-                      />
-                    ),
-                  )}
+                  {/* One marker each, via the shared <DayMark> — the same glyph
+                      vocabulary « La semaine » draws (see DayMark.tsx). */}
+                  {shown.slice(0, 4).map((dot, i) => (
+                    <DayMark key={i} dot={dot} className={mk(dot.kind)} />
+                  ))}
                   {shown.length > 4 && <span className="monthv__more">+{shown.length - 4}</span>}
                 </span>
               )}

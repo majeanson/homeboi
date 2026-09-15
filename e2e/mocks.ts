@@ -1277,7 +1277,7 @@ export interface AppState {
   surface?: Surface
   // The parent board layout (bento = Grille | month = Mois | annee = L'année).
   // Defaults to bento.
-  boardView?: 'bento' | 'month' | 'annee'
+  boardView?: 'bento' | 'semaine' | 'month' | 'annee'
   // Per-device board card layout (« Disposition du babillard », lib/boardCards). Lets a
   // spec exercise a custom layout without hand-injecting the localStorage key.
   // Unset → the canonical zones/order, everything at its default size and mode.

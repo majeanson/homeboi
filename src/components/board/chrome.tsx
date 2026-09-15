@@ -24,12 +24,13 @@ export function BoardViewToggle({
   // instead of switching to it. Returns the onClick to use. Omit for normal use. The
   // key param is the two BOARD_HELP keys this toggle owns (a subset of the board's
   // help keys), so the surface's narrowed `help.pick` stays contravariantly assignable.
-  pick?: (key: 'view-bento' | 'view-month' | 'view-annee', run: () => void) => () => void
+  pick?: (key: 'view-bento' | 'view-semaine' | 'view-month' | 'view-annee', run: () => void) => () => void
   // When help mode is armed, highlight the options as "tap me to learn".
   armed?: boolean
 }) {
-  const opts: { v: BoardView; k: 'view-bento' | 'view-month' | 'view-annee'; icon: IconName; label: string }[] = [
+  const opts: { v: BoardView; k: 'view-bento' | 'view-semaine' | 'view-month' | 'view-annee'; icon: IconName; label: string }[] = [
     { v: 'bento', k: 'view-bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
+    { v: 'semaine', k: 'view-semaine', icon: 'stack-bold', label: t.boardView.semaine },
     { v: 'month', k: 'view-month', icon: 'calendar-dots-bold', label: t.boardView.month },
     { v: 'annee', k: 'view-annee', icon: 'sun-horizon-bold', label: t.boardView.annee },
   ]

@@ -756,9 +756,16 @@ export const EN: typeof FR = {
     stop: 'Stop this countdown',
     dodosN: (n: number) => (n === 0 ? 'It’s today! 🎉' : n === 1 ? 'in 1 sleep' : `in ${n} sleeps`),
   },
+  week: {
+    prev: 'Last week',
+    next: 'Next week',
+    thisWeek: 'This week',
+    free: 'nothing planned',
+  },
   boardView: {
     label: 'Board view',
     bento: 'Grid',
+    semaine: 'The week',
     month: 'Month',
     annee: 'The year',
     nextUp: 'Up next',

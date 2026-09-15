@@ -61,6 +61,7 @@ import { BoardViewToggle, TodayFaceRow } from '../components/board/chrome'
 // grid, so neither calendar is on the first-paint path, and together they were ~65 KB
 // of the eager entry chunk. Lazy, with the same Skeleton the board already shows while
 // its own data lands, so the swap reads as loading rather than as a blank frame.
+const WeekView = lazy(() => import('../components/board/WeekView').then((m) => ({ default: m.WeekView })))
 const MonthView = lazy(() => import('../components/board/MonthView').then((m) => ({ default: m.MonthView })))
 const YearView = lazy(() => import('../components/board/YearView').then((m) => ({ default: m.YearView })))
 
@@ -78,6 +79,7 @@ function warmCalendars() {
   if (warmed) return
   warmed = true
   const go = () => {
+    void import('../components/board/WeekView')
     void import('../components/board/MonthView')
     void import('../components/board/YearView')
   }
@@ -223,7 +225,7 @@ export function Board() {
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
   const help = useHelpMode(BOARD_HELP, (k) => {
-    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'month' | 'annee']
+    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'semaine' | 'month' | 'annee']
     const titles: Record<string, string> = {
       todos: t.board.todos,
       today: t.board.today,
@@ -1849,6 +1851,10 @@ export function Board() {
               known-shape surface gets the same treatment without a second copy. */}
           <Skeleton variant="card" count={6} />
         </>
+      ) : view === 'semaine' ? (
+        <Suspense fallback={<Skeleton variant="card" count={6} />}>
+          <WeekView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        </Suspense>
       ) : view === 'month' ? (
         <Suspense fallback={<Skeleton variant="card" count={6} />}>
           <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />

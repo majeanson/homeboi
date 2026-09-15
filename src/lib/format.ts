@@ -141,3 +141,14 @@ export function weekdayShort(unixSec: number, lang: Lang): string {
 export function dayNum(unixSec: number, lang: Lang): string {
   return fmt('dayNum', lang, { day: 'numeric' }).format(unixSec * 1000)
 }
+
+// "21 sept." / "Sep 21" — a date with NO weekday. `formatDay` is the usual choice and
+// includes one; this exists for the places where two dates sit side by side and the
+// weekdays are what push the pair past its box. « La semaine »'s range header is the
+// first: « mar. 15 sept. – lun. 21 sept. » ellipsized to « mar. 15 sept.… » at 390px,
+// which is a header that no longer says the one thing it is for (2026-09-15).
+// Cached like every other helper here — a new SHAPE gets a new cached formatter, never
+// an inline `new Intl.*` (intl-rule.test.ts).
+export function formatDayShort(unixSec: number, lang: Lang): string {
+  return fmt('dayShort', lang, { day: 'numeric', month: 'short' }).format(unixSec * 1000)
+}

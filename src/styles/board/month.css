@@ -1044,3 +1044,136 @@
 .monthv__rollup-rows > .act + .act {
   border-top: 1px solid var(--line);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   « La semaine » (WeekView, 2026-09-15) — the third calendar face.
+
+   It lives at the END of month.css, appended, because the two views share a
+   vocabulary rather than a layout: the markers are the same `.monthv__dot` /
+   `.monthv__dot-icon` classes above, drawn by the same <DayMark>. Splitting them
+   into a fourth file would put one half of that vocabulary behind an @import order
+   that is the cascade (see styles.css) — and these rules are additive, so append.
+
+   Seven ROWS, not a grid. The month can only afford dots per cell; a week has room
+   for the words, which is the entire reason this view exists.
+   ──────────────────────────────────────────────────────────────────────────── */
+.weekv {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.weekv__days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.weekv__day {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+/* Today gets the same warm inset rail the kitchen's today column wears, so the two
+   surfaces mark "now" the same way. */
+.weekv__day.is-today {
+  box-shadow: var(--shadow-sm), inset 3px 0 0 var(--marigold-deep);
+}
+.weekv__day-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  text-decoration: none;
+  color: inherit;
+  /* The row is a <Link>, so the UA's own link chrome has to be reset here or it
+     shows through — the link-button-rule lesson: a class worn by both a button and a
+     link must neutralise the chrome it did not ask for. */
+  -webkit-tap-highlight-color: transparent;
+}
+.weekv__day-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+/* The date badge: a fixed, narrow column so seven rows align down the left edge and
+   the eye can run the week without re-finding the dates. */
+.weekv__date {
+  flex: none;
+  width: 2.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+.weekv__dow {
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+}
+.weekv__num {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 1.25rem;
+}
+/* The day's contents. `min-width: 0` lets a long title ellipsize instead of pushing
+   the caret off the row — the recurring horizontal-overflow trap in CLAUDE.md. */
+.weekv__lines {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding-top: 0.15rem;
+}
+.weekv__line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.weekv__time {
+  flex: none;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+.weekv__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+}
+/* A free day. Quiet on purpose: empty space on a calm calendar is breathing room,
+   not a hole to fill (NFR-CALM-1).
+   NO `opacity` — the first version had 0.75 on top of --ink-soft and the sweep's axe
+   pass measured it at 3.37:1 (#90897f on #fffcf5) the first time it was ever
+   photographed. That is the whole trap: --ink-soft is a token SIZED to pass
+   (5.83 day / 6.00 night / 5.20 dusk on --card), and an opacity silently spends that
+   margin without changing the token you think you are using. Quiet is the token's
+   job; if something needs to be quieter than --ink-soft, it needs a token, not a
+   multiplier. */
+.weekv__free {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.weekv__go {
+  flex: none;
+  align-self: center;
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+/* « Voyage » bands — pinned to the row's bottom edge like the month cell's, so a trip
+   reads as spanning rather than as one more line inside a single day. */
+.weekv__bands {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  pointer-events: none;
+}
+.weekv__band {
+  height: 3px;
+}

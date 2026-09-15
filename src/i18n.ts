@@ -903,9 +903,17 @@ export const FR = {
     stop: 'Arrêter ce décompte',
     dodosN: (n: number) => (n === 0 ? 'C’est aujourd’hui ! 🎉' : n === 1 ? 'dans 1 dodo' : `dans ${n} dodos`),
   },
+  // « La semaine » — la troisième face du calendrier (2026-09-15).
+  week: {
+    prev: 'Semaine d’avant',
+    next: 'Semaine d’après',
+    thisWeek: 'Cette semaine',
+    free: 'rien de prévu',
+  },
   boardView: {
     label: 'Vue du babillard',
     bento: 'Grille',
+    semaine: 'La semaine',
     month: 'Mois',
     annee: 'L’année',
     // « Prochainement » — the next still-to-come timed thing today, surfaced as a calm

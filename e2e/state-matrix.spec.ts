@@ -47,6 +47,8 @@ type Entry = {
    *  setup folds. See AppState.flippSetup — a fresh browser can only ever show the
    *  first-timer, so the returning face needs a state of its own or it is never seen. */
   flippSetup?: boolean
+  /** Which board view this device opens on (lib/boardview). */
+  boardView?: 'bento' | 'semaine' | 'month' | 'annee'
   /** Réglages ▸ Affichage ▸ Texte. `'large'` boots the app at 115%. */
   textScale?: 'normal' | 'large'
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
@@ -227,6 +229,42 @@ function rebased<T>(v: T): T {
   }
   return v
 }
+// A REAL week for « La semaine ». The shared `month` fixture is habits-only, so the
+// first shot of this view came back with five « rien de prévu » rows — i.e. a picture
+// of the one thing the view exists to disprove. It exists because a week has room for
+// the WORDS that a month cell cannot afford; a fixture with no words in it cannot say
+// whether that room was delivered. (The same lesson `notes` learned: a budget measured
+// against an empty state guards the wrong screen.)
+//
+// Anchored on TODAY_MIDNIGHT — this overrides REBASED_FIXTURES rather than passing
+// through it, so it has to be on the sweep's own clock already. One of each kind the
+// row can draw, deliberately: a timed event, an all-day one, a derived birthday, three
+// meals, a chore, a todo, a day note, and a trip that BANDS across three days.
+const WEEK_DAY = 86_400
+const WEEK_FIXTURE = {
+  month: {
+    events: [
+      { id: 'we1', title: 'Rendez-vous dentiste', at: TODAY_MIDNIGHT + 9 * 3600, all_day: 0, member_id: 'm3', day: TODAY_MIDNIGHT },
+      { id: 'we2', title: 'Soccer de Léa', at: TODAY_MIDNIGHT + WEEK_DAY + 17 * 3600 + 1800, all_day: 0, member_id: 'm3', day: TODAY_MIDNIGHT + WEEK_DAY },
+      { id: 'we3', title: 'Souper chez Mamie', at: TODAY_MIDNIGHT + 3 * WEEK_DAY, all_day: 1, member_id: null, day: TODAY_MIDNIGHT + 3 * WEEK_DAY },
+      { id: 'we4', title: 'Anniversaire de Noah', at: TODAY_MIDNIGHT + 5 * WEEK_DAY, all_day: 1, member_id: null, day: TODAY_MIDNIGHT + 5 * WEEK_DAY, birthday: true, age: 7 },
+    ],
+    meals: [
+      { id: 'wm1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm1', day: TODAY_MIDNIGHT },
+      { id: 'wm2', slot: 'supper', title: 'Pâté chinois', cook_member_id: 'm2', day: TODAY_MIDNIGHT + WEEK_DAY },
+      { id: 'wm3', slot: 'supper', title: 'Restes du pâté chinois', cook_member_id: null, day: TODAY_MIDNIGHT + 2 * WEEK_DAY },
+    ],
+    chores: [{ id: 'wc1', title: 'Sortir les poubelles', color: '#88A36F', who: 'm2', day: TODAY_MIDNIGHT + 2 * WEEK_DAY }],
+    todos: [{ id: 'wt1', title: 'Signer le formulaire de l’école', member_id: 'm1', day: TODAY_MIDNIGHT + WEEK_DAY, section: null }],
+    dayNotes: [{ id: 'wn1', text: 'Sans gluten ce soir', member_id: null, day: TODAY_MIDNIGHT }],
+    homeProjects: [],
+    tripPlans: [],
+    habits: [],
+    transfers: [],
+    trips: [{ id: 'wtr1', title: 'Camping', colour: '#5891AC', start_at: TODAY_MIDNIGHT + 4 * WEEK_DAY, end_at: TODAY_MIDNIGHT + 6 * WEEK_DAY }],
+  },
+}
+
 // Every shared fixture that PRINTS a date or an age, rebased as one. Listed by route
 // key rather than derived from ROUTES wholesale: a fixture that carries no date needs
 // no shift, and naming them keeps the list reviewable.
@@ -640,6 +678,10 @@ const MATRIX: Entry[] = [
   //   furniture, Réglages is label-beside-control — LEAN.md's labelled-CTA trap.
   //   (These are also the states that hold the door for the 130% step: it is held on
   //   `.greet` clipping here — see lib/accessibility.ts.)
+  // « La semaine » — the third calendar face (2026-09-15). Shot because it is the
+  //   one view whose whole point is that it has room for WORDS: if a title ellipsizes
+  //   here the view has no reason to exist, and only a screenshot says so.
+  { name: 'board-semaine', route: '/board', boardView: 'semaine', content: '.weekv__day', themes: ['day'], api: WEEK_FIXTURE, noBudgetWhy: 'contentTopPx here is the board greeting + the view toggle, which board and board-kiosk already budget; this entry exists for the rows (2026-09-15)' },
   { name: 'board-large', route: '/board', textScale: 'large', viewport: NARROW, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'contentTopPx scales with the type ramp, so a ceiling here would encode the font size, not the chrome — these states exist for the bleed assertion and the shot (2026-09-15)' },
   { name: 'liste-large', route: '/liste', textScale: 'large', viewport: NARROW, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'same as board-large: the number tracks the ramp, the bleed check is the point (2026-09-15)' },
   { name: 'settings-large', route: '/settings?tab=settings&lens=regler', textScale: 'large', viewport: NARROW, content: '.operator__section', themes: ['day'], noBudgetWhy: 'same as board-large; this one is here for label-beside-control rows under the ramp (2026-09-15)' },
@@ -951,6 +993,7 @@ for (const entry of ALL) {
         surface: entry.signedOut ? undefined : (entry.surface ?? 'mobile'),
         flippSetup: entry.flippSetup,
         textScale: entry.textScale,
+        boardView: entry.boardView,
       })
       await page.goto(entry.route)
       await page
