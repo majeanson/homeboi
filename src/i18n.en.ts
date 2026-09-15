@@ -2252,6 +2252,7 @@ export const EN: typeof FR = {
     flippTitle: 'My Flipp list',
     flippIntro: 'Babillard keeps your list; Flipp shows the deals with their photos. To keep the two saying the same thing: a one-time setup, then two taps here and two in Safari per trip.',
     flippOnceTitle: 'Once',
+    flippRedoTitle: 'Set it up again',
     flippOnce0: 'Pick your Flipp app’s language, just above — otherwise Flipp shows your deals as “unavailable”.',
     flippOnce1: 'Tap “Copy the bookmark”, below.',
     flippOnce2: 'Open Safari, go to flipp.com and sign in (the person icon, top right) — the same account as your Flipp app.',

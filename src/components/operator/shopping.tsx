@@ -657,9 +657,37 @@ function GhostRow({
 // this phone's browser and nothing here writes to the household, so a link guest may
 // set it up too. React refuses `javascript:` hrefs (rightly), so the bookmark is
 // offered as text to copy, never as a link to tap.
+//
+// LEAN (2026-09-15). This card was the single most chrome-heavy screen in the app —
+// `npm run e2e:matrix` measured contentTopPx **1907** at 360px against a next-worst
+// of 424, and it carried no budget, so nothing was watching it grow. The cause is
+// structural, not wordy: « Une seule fois » is by definition read ONCE, and it was
+// rendered open forever. It now folds.
+//
+// What the fold CANNOT do is claim the setup worked: the bookmark lives in the
+// phone's browser and nothing about it is observable from here. So the flag below
+// records only what we actually witnessed — that this device tapped « Copier le
+// signet » — and the folded label says « Refaire la mise en place », never « fait ».
+// Same honesty rule as SectionIntro's seen-set: a flag is a statement about a
+// MOMENT, so it stays revocable (re-open the fold, the steps are all still there).
+const FLIPP_SETUP_KEY = 'babillard-flipp-setup'
+
+function readFlippSetupDone(): boolean {
+  try {
+    return localStorage.getItem(FLIPP_SETUP_KEY) === '1'
+  } catch {
+    // Private window / blocked site data: fall back to "never set up here", which
+    // shows the steps. Erring open is right — a first-timer must not have to hunt.
+    return false
+  }
+}
+
 export function FlippSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const [copied, setCopied] = useState(false)
+  // Read ONCE at mount: <Disclosure defaultOpen> is an initial-state prop, and a
+  // fold that snapped shut under the tap that just copied would be hostile.
+  const [setupDone] = useState(readFlippSetupDone)
   // THIS household's Babillard: the way back lands here (lib/flippList's one hole).
   const bookmarklet = flippBookmarklet(window.location.origin)
   async function copy() {
@@ -667,6 +695,12 @@ export function FlippSection({ help }: { help?: HelpMode }) {
       await navigator.clipboard.writeText(bookmarklet)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+      // The one observable moment in the whole flow. Next visit, the steps fold.
+      try {
+        localStorage.setItem(FLIPP_SETUP_KEY, '1')
+      } catch {
+        /* storage blocked — the steps simply stay open, which is the safe side */
+      }
     } catch {
       /* clipboard blocked — the address is shown in the field for manual copy */
     }
@@ -677,28 +711,35 @@ export function FlippSection({ help }: { help?: HelpMode }) {
       {/* Two phases, in the order a household lives them: the one-time setup (the
           copy button sits right at its first step), then every trip. Marc walked
           exactly this on an iPhone on 2026-09-10 and the list landed in the Flipp app. */}
-      <h4 className="flipp__phase">{t.operator.flippOnceTitle}</h4>
-      <ol className="operator__steps">
-        <li>{t.operator.flippOnce0}</li>
-        <li>
-          {t.operator.flippOnce1}
-          <Cluster>
-            <button type="button" className="btn btn--primary flipp__copy" onClick={copy}>
-              {copied ? <InlineIcon name="check-bold" /> : null} {copied ? t.operator.flippBookmarkletCopied : t.operator.flippCopyBookmarklet}
-            </button>
-          </Cluster>
-          <input
-            className="input mono flipp__bookmarklet"
-            readOnly
-            value={bookmarklet}
-            onFocus={(e) => e.target.select()}
-            aria-label={t.operator.flippBookmarkletLabel}
-          />
-        </li>
-        <li>{t.operator.flippOnce2}</li>
-        <li>{t.operator.flippOnce3}</li>
-        <li>{t.operator.flippOnce4}</li>
-      </ol>
+      {/* Folded once this device has copied the signet — see FLIPP_SETUP_KEY above.
+          A first-timer still lands on it open, which is the whole point of the flag
+          being about THIS device rather than about the household. */}
+      <Disclosure
+        label={setupDone ? t.operator.flippRedoTitle : t.operator.flippOnceTitle}
+        defaultOpen={!setupDone}
+      >
+        <ol className="operator__steps">
+          <li>{t.operator.flippOnce0}</li>
+          <li>
+            {t.operator.flippOnce1}
+            <Cluster>
+              <button type="button" className="btn btn--primary flipp__copy" onClick={copy}>
+                {copied ? <InlineIcon name="check-bold" /> : null} {copied ? t.operator.flippBookmarkletCopied : t.operator.flippCopyBookmarklet}
+              </button>
+            </Cluster>
+            <input
+              className="input mono flipp__bookmarklet"
+              readOnly
+              value={bookmarklet}
+              onFocus={(e) => e.target.select()}
+              aria-label={t.operator.flippBookmarkletLabel}
+            />
+          </li>
+          <li>{t.operator.flippOnce2}</li>
+          <li>{t.operator.flippOnce3}</li>
+          <li>{t.operator.flippOnce4}</li>
+        </ol>
+      </Disclosure>
       <h4 className="flipp__phase">{t.operator.flippEachTitle}</h4>
       {/* One GESTURE per step (2026-09-12). Step 2 used to carry two — open the till,
           then tap the sync — which is how a numbered list stops being followable. */}

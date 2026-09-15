@@ -2534,6 +2534,9 @@ export const FR = {
     // et l'étape 1 envoyait encore à la caisse, où ces portes ne sont plus.
     flippIntro: 'Babillard garde ta liste ; Flipp montre les rabais en photo. Pour que les deux disent la même chose : une mise en place une fois, puis deux taps ici et deux dans Safari à chaque épicerie.',
     flippOnceTitle: 'Une seule fois',
+    // Le même bloc, une fois que CET appareil a copié le signet. « Refaire » et non
+    // « fait » : on a vu le tap sur Copier, jamais le signet posé dans Safari.
+    flippRedoTitle: 'Refaire la mise en place',
     flippOnce0: 'Choisis la langue de ton app Flipp, juste au-dessus — sinon Flipp affiche tes rabais comme « non disponibles ».',
     flippOnce1: 'Touche « Copier le signet », plus bas.',
     flippOnce2: 'Ouvre Safari, va sur flipp.com et connecte-toi (l’icône de personne, en haut à droite) — le même compte que ton app Flipp.',

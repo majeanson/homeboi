@@ -43,6 +43,10 @@ type Entry = {
   signedOut?: boolean
   /** The demo sandbox session (the claim banner, the try-this card). */
   sandbox?: boolean
+  /** « Ma liste Flipp »: this device has already copied the signet, so the one-time
+   *  setup folds. See AppState.flippSetup — a fresh browser can only ever show the
+   *  first-timer, so the returning face needs a state of its own or it is never seen. */
+  flippSetup?: boolean
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
   keyboard?: number
   /** Fixture overrides for this entry (see mockApi `overrides`). Use it when the
@@ -422,10 +426,27 @@ const MATRIX: Entry[] = [
   { name: 'settings-board', route: '/settings?tab=board&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
   { name: 'settings-systeme', route: '/settings?tab=settings&lens=regler', content: '.operator__section', budgetPx: 308, themes: ['day'] },
   // The « Ma liste Flipp » walkthrough card (2026-09-10): two numbered phases, the
-  // bookmark's address, a fold. Reached by ?focus= (scrolled to), so contentTopPx
-  // would measure the scroll, not chrome — read, not budgeted. Night too: a card
-  // this long is where a low-contrast token shows first.
-  { name: 'settings-flipp', route: '/settings?tab=liste&focus=flipp&lens=regler', content: '#op-flipp', noBudgetWhy: 'reached by ?focus= — the card is scrolled to, so contentTopPx measures the scroll, not chrome (2026-09-10)' },
+  // bookmark's address, a fold. Night too: a card this long is where a low-contrast
+  // token shows first.
+  //
+  // THE REASON WRITTEN HERE WAS WRONG (corrected 2026-09-15). It said contentTopPx
+  // "measures the scroll, not chrome" because ?focus= scrolls the card into view —
+  // and on that sentence the entry's 1907px sat unexamined as a measurement artefact.
+  // It is not one: the probe subtracts `scroller.scrollTop` precisely so the number
+  // is scroll-INDEPENDENT (see the `probe` evaluate below). 1907 is real, and it is
+  // the honest height of the three section cards stacked ABOVE this one in
+  // `liste ▸ shop` (shop · aisleOrder · storeFilter — lib/settingsNav SETTINGS_TREE).
+  //
+  // Which is the true reason not to budget it HERE: the number this entry measures
+  // belongs to its neighbours, so a ceiling on `settings-flipp` would fail the day
+  // someone legitimately grows « Ordre des allées ». The card's OWN size is what the
+  // -done variant below watches, and the frame count is what shows it.
+  { name: 'settings-flipp', route: '/settings?tab=liste&focus=flipp&lens=regler', content: '#op-flipp', noBudgetWhy: 'contentTopPx here is the height of the three cards stacked above it in liste ▸ shop, not this card\'s own chrome — budgeting it would hold this entry to a neighbour (2026-09-15)' },
+  // The RETURNING face: this device has copied the signet, so « Une seule fois »
+  // folds and the card is what a household actually lives with. Without this entry
+  // the fold is invisible to the sweep — every other state boots a fresh browser,
+  // which is by definition a first-timer (2026-09-15).
+  { name: 'settings-flipp-done', route: '/settings?tab=liste&focus=flipp&lens=regler', content: '#op-flipp', flippSetup: true, themes: ['day'], noBudgetWhy: 'same neighbour-height measurement as settings-flipp above; this entry exists for the folded SHOT, and its frame count is the real signal (2026-09-15)' },
 
   // — THE FORM SCENES. Four of these opened as a wall of fields before the lean
   //   pass; the budget is what keeps them from filling back up.
@@ -871,6 +892,7 @@ for (const entry of ALL) {
         // /board the moment one is stored (router Entry: `chosen || isPaired()`), so
         // seeding it would have photographed the board and called it the front door.
         surface: entry.signedOut ? undefined : (entry.surface ?? 'mobile'),
+        flippSetup: entry.flippSetup,
       })
       await page.goto(entry.route)
       await page

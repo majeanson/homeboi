@@ -1315,6 +1315,15 @@ export interface AppState {
   // /board. Answered-for-today by default — same idea as pre-seeding the tour as
   // "seen". Pass `habitCheckin: true` to leave it armed and exercise the trigger.
   habitCheckin?: boolean
+  // « Ma liste Flipp » (operator/shopping FlippSection): has THIS device already
+  // copied the signet? Unset/false = a first-timer, so the five-step one-time setup
+  // renders open — which is what every other state photographs. Pass `true` for the
+  // returning face, where those steps fold behind « Refaire la mise en place ».
+  //
+  // It needs a lever because the fold is the POINT of the change and a fresh browser
+  // can never show it: the sweep would have photographed the open steps forever and
+  // called the lean pass reviewed (2026-09-15).
+  flippSetup?: boolean
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -1360,6 +1369,9 @@ export async function seedState(page: Page, s: AppState) {
           JSON.stringify({ autoOpen: false, reminders: false, lastShownDay: 0, fired: { day: 0, minutes: [] } }),
         )
       }
+      // Opt-IN (unlike the three above): the default is the first-timer, because that
+      // is the face a stranger meets and the one worth defending by default.
+      if (state.flippSetup) localStorage.setItem('babillard-flipp-setup', '1')
     } catch {
       /* noop */
     }
