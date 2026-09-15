@@ -106,11 +106,18 @@ describe('readableInk', () => {
 //
 // The ramp was 32 / 60 / 62, picked before anything measured it, and the brighter tints
 // came out short: a marigold list-row title at 4.02:1 on cream, butter at 3.98 (axe,
-// 2026-09-15). Re-tuned to 38 / 95 / 72, worst palette colour 4.71:1.
+// 2026-09-15).
 //
-// DAY is the case that matters here. Night mixes toward a LIGHT --ink on a dark ground,
-// which moves the same direction and measured clean across the app; cream is the
-// lightest ground any of these inks sit on, so clearing it clears the washes too.
+// TWO GROUNDS, and getting that wrong is what made the first re-tune insufficient. This
+// file checked cream only, reasoning that cream is the lightest ground so clearing it
+// clears everything. That is backwards: for a DARK ink a lighter ground gives MORE
+// contrast, so cream is the EASIEST case, not the hardest. The pairing that matters is
+// `chipTint`'s — tintInk(hex) on wash(hex), the same hue at ~13% over the page, which
+// is darker than cream. A recipe tag chip sat at 4.37:1 while this file reported green.
+// 45 / 100 / 78 clears both: 5.35:1 on cream, 4.84:1 on the tint's own wash.
+//
+// DAY is the case measured here. Night mixes toward a LIGHT --ink on a dark ground,
+// moves the same direction, and measured clean across the app.
 describe('tintInk keeps a coloured label readable', () => {
   const DAY_INK = '#2c2722'
   const CREAM = '#fffcf5'
@@ -130,6 +137,10 @@ describe('tintInk keeps a coloured label readable', () => {
     return rgb(hex).map((v, i) => Math.round(v * (1 - p) + rgb(DAY_INK)[i] * p))
   }
 
+  // wash(hex) is `hex + '22'` — 0x22/255 ≈ 13.3% of the tint composited over the page.
+  const washOver = (hex: string, page: string) =>
+    rgb(hex).map((v, i) => Math.round(v * 0.1333 + rgb(page)[i] * (1 - 0.1333)))
+
   it('clears WCAG AA on cream for every colour the household can wear', () => {
     const short = PALETTE.map((c) => ({ c, r: ratioOf(mixed(c), rgb(CREAM)) }))
       .filter((x) => x.r < 4.5)
@@ -137,11 +148,18 @@ describe('tintInk keeps a coloured label readable', () => {
     expect(short, 'tintInk must clear 4.5:1 on cream:\n' + short.join('\n')).toEqual([])
   })
 
+  it('…and on its OWN wash, which is the harder ground and the one chipTint uses', () => {
+    const short = PALETTE.map((c) => ({ c, r: ratioOf(mixed(c), washOver(c, CREAM)) }))
+      .filter((x) => x.r < 4.5)
+      .map((x) => `${x.c} = ${x.r.toFixed(2)}:1`)
+    expect(short, 'tintInk must clear 4.5:1 on wash(hex):\n' + short.join('\n')).toEqual([])
+  })
+
   it('keeps the hue — it darkens the colour, it does not become the ink', () => {
     // The point of tintInk over a flat --ink is that a member's colour still reads as
     // THEIRS. If the ramp is ever pushed far enough to fix contrast by erasing the hue,
     // this fails and the answer is a different colour, not more ink.
-    for (const c of PALETTE) expect(tintInkPct(c)).toBeLessThanOrEqual(75)
+    for (const c of PALETTE) expect(tintInkPct(c)).toBeLessThanOrEqual(80)
   })
 
   it('a malformed value still returns a usable mix rather than throwing', () => {

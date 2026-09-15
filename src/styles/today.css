@@ -292,8 +292,15 @@
   padding: 0.4rem 0.85rem;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--marigold-deep, var(--accent));
-  color: #fffcf5;
+  /* The ground goes to the TEXT tier so the cream on it clears 4.5:1 — it measured
+     3.58:1 on -deep, which is the glyph tier (a 3:1 bar) and not meant to carry a
+     word. Same fix shape as .empty-state__guide above it. */
+  background: var(--marigold-ink, var(--accent));
+  /* --paper, not a literal cream: the -ink tier FLIPS with the theme (dark on a pale
+     day ground, light on a dark night one), so a fixed cream ink works by day and
+     lands at 2.07:1 at night. --paper flips the same way and needs no new token — the
+     same pairing lib/colors’ tintScope() uses for a themed pill. */
+  color: var(--paper);
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;

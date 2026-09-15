@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
+import { tintScope } from '../../lib/colors'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { GUIDE, GUIDE_CARD_ALIAS, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, cardHomeTab, type SectionKey } from '../../lib/guideContent'
@@ -71,7 +72,9 @@ function GuideCard({
       ref={cardRef}
       className={`guide__card${isTarget ? ' is-target' : ''}`}
       open={open}
-      style={tint ? ({ '--accent': tint } as CSSProperties) : undefined}
+      // Both vars, from the one helper: re-pointing --accent alone left --accent-ink
+      // ("warm-dark text on marigold") sitting on a -ink tier colour. See lib/colors.
+      style={tintScope(tint) as CSSProperties | undefined}
     >
       <summary className="guide__summary">
         <span className="guide__icon">

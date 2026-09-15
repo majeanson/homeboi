@@ -56,13 +56,18 @@ export const edge = (hex: string) => hex + '55' //  ~33% — tinted border
 // The ramp, re-tuned 2026-09-15 against the WHOLE palette rather than by eye. The old
 // 32 / 60 / 62 left the brighter tints short of AA as small text — a marigold list-row
 // title measured 4.02:1 on cream, and butter 3.98 — because the floor and slope were
-// picked before anything measured them. 38 / 95 / 72 puts the worst palette colour at
-// 4.71:1, i.e. the bar plus a little room, without visibly muddying the hue.
-// `tintInkFloor` in colors.test.ts recomputes this over PALETTE, so re-tuning is a
+// picked before anything measured them.
+//
+// Tuned TWICE, and the second time is the lesson: 38 / 95 / 72 cleared 4.5:1 on cream,
+// and cream is NOT the worst ground. `chipTint` (and every tinted pill like it) pairs
+// tintInk(hex) with wash(hex) — the same hue at ~13% over the page — which is DARKER
+// than cream, so a dark ink contrasts LESS there, not more. A recipe tag chip came back
+// at 4.37:1. 45 / 100 / 78 clears the tint-on-its-own-wash pairing at 4.84:1.
+// colors.test.ts recomputes both pairings over PALETTE, so re-tuning stays a
 // measurement rather than a guess.
-const INK_FLOOR_PCT = 38
-const INK_SLOPE = 95
-const INK_CAP_PCT = 72
+const INK_FLOOR_PCT = 45
+const INK_SLOPE = 100
+const INK_CAP_PCT = 78
 
 export function tintInk(hex: string): string {
   const c = hex.replace('#', '')
@@ -122,4 +127,25 @@ export function readableInk(hex: string): string {
   const c = hex.replace('#', '')
   if (c.length < 6) return DARK_INK
   return contrastRatio(DARK_INK, hex) >= contrastRatio(CREAM_INK, hex) ? DARK_INK : CREAM_INK
+}
+
+/**
+ * The inline style for scoping a surface to a SECTION TINT (`SECTION_TINT[...].ink`).
+ *
+ * Three components re-pointed `--accent` to a themed tint and stopped there — and
+ * `--accent-ink` is not a neutral: core.css defines it as "warm-dark text on marigold".
+ * Marigold is pale, so a warm-dark ink is right for it; a `-ink` tier colour is not
+ * pale, and Réglages' active tab pill ended up painting #3a2a12 on #a24830 — 2.3:1, on
+ * the control that says which tab you are in (axe, 2026-09-15).
+ *
+ * `--paper` is the answer that needs no new token and no branching: it is cream by day
+ * and near-black at night, which is exactly the flip this needs, because the `-ink`
+ * tier itself flips the other way (dark on a pale day ground, light on a dark night
+ * one). Held by e2e/contrast.spec.ts in both themes.
+ *
+ * Returns undefined for an absent tint so a call site can spread it straight into
+ * `style` and keep the untinted default.
+ */
+export function tintScope(tint: string | undefined): Record<string, string> | undefined {
+  return tint ? { '--accent': tint, '--accent-ink': 'var(--paper)' } : undefined
 }

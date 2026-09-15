@@ -23,7 +23,10 @@
   display: block;
   width: fit-content;
   margin-top: 0.45rem;
-  color: var(--accent);
+  /* -ink, not the raw accent. Marigold on cream measured 1.92:1 — small text at less
+     than half the bar, on the one screen a household sees before it has any content
+     (axe via the `fresh` fixture, 2026-09-15). The -ink tier is the TEXT tier. */
+  color: var(--marigold-ink, var(--accent));
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;

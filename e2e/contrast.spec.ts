@@ -52,6 +52,23 @@ const SURFACES = [
   { name: 'maison', route: '/maison' },
   { name: 'famille', route: '/maison?section=family' },
   { name: 'settings', route: '/settings' },
+  // The day planner, a route of its own rather than a tab — and the one the matrix
+  // sweep kept reporting while this file said zero.
+  { name: 'day-plan', route: '/kitchen/day/2025-06-08' },
+  // Réglages' themed tabs each carry their own sub-pill row; the top-level route only
+  // ever paints ONE of them, and the active pill was failing on the others.
+  { name: 'settings-kitchen', route: '/settings?tab=kitchen' },
+  { name: 'settings-systeme', route: '/settings?tab=systeme' },
+] as const
+
+// THE EMPTY HOUSEHOLD IS A REAL STATE, AND IT WAS THE BLIND SPOT.
+//
+// Nine of the sweep's remaining hits were `.empty-state__guide` — a colour that only
+// exists when there is nothing to show, which a seeded fixture never renders. A
+// household's FIRST five minutes is exactly when it can least afford unreadable text.
+const FIXTURES = [
+  { name: 'seeded', fresh: false },
+  { name: 'fresh', fresh: true },
 ] as const
 
 // BOTH ROLES, because a kiosk is not a wide phone: it renders different components
@@ -62,29 +79,31 @@ const SURFACES = [
 // two guards claim one job.
 for (const theme of ['day', 'night'] as const) {
   for (const surface of ['mobile', 'kiosk'] as const) {
-    test(`no WCAG AA contrast failures across the app @${surface}-${theme}`, async ({ page }) => {
-      await page.setViewportSize(surface === 'kiosk' ? { width: 1280, height: 800 } : { width: 390, height: 844 })
-      await mockApi(page)
-      await seedState(page, { theme, audience: 'parent', lang: 'fr', surface })
+    for (const fixture of FIXTURES) {
+      test(`no WCAG AA contrast failures across the app @${surface}-${theme}-${fixture.name}`, async ({ page }) => {
+        await page.setViewportSize(surface === 'kiosk' ? { width: 1280, height: 800 } : { width: 390, height: 844 })
+        await mockApi(page, { fresh: fixture.fresh })
+        await seedState(page, { theme, audience: 'parent', lang: 'fr', surface })
 
-      const failures: string[] = []
-      for (const s of SURFACES) {
-        await page.goto(s.route)
-        // These surfaces paint from a warm cache; give the real content a beat to land,
-        // so this measures the page a household sees rather than its skeleton.
-        await page.waitForTimeout(700)
-        // A false green is the failure mode here: an empty page reports no violations.
-        expect(await page.locator('main, .hub__body, .scene').count(), `${s.name} rendered something`).toBeGreaterThan(0)
+        const failures: string[] = []
+        for (const s of SURFACES) {
+          await page.goto(s.route)
+          // These surfaces paint from a warm cache; give the real content a beat to
+          // land, so this measures the page a household sees, not its skeleton.
+          await page.waitForTimeout(700)
+          // A false green is the failure mode here: an empty page reports no violations.
+          expect(await page.locator('main, .hub__body, .scene').count(), `${s.name} rendered something`).toBeGreaterThan(0)
 
-        const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
-        for (const v of res.violations.filter((x) => x.id === 'color-contrast')) {
-          for (const n of v.nodes) {
-            const d = (n.any[0]?.data ?? {}) as { fgColor?: string; bgColor?: string; contrastRatio?: number }
-            failures.push(`  ${s.name}: ${d.contrastRatio}:1  ${d.fgColor} on ${d.bgColor}  — ${n.target.join(' ')}`)
+          const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
+          for (const v of res.violations.filter((x) => x.id === 'color-contrast')) {
+            for (const n of v.nodes) {
+              const d = (n.any[0]?.data ?? {}) as { fgColor?: string; bgColor?: string; contrastRatio?: number }
+              failures.push(`  ${s.name}: ${d.contrastRatio}:1  ${d.fgColor} on ${d.bgColor}  — ${n.target.join(' ')}`)
+            }
           }
         }
-      }
-      expect(failures, 'text below WCAG AA, with the colours axe measured:\n' + failures.join('\n')).toEqual([])
-    })
+        expect(failures, 'text below WCAG AA, with the colours axe measured:\n' + failures.join('\n')).toEqual([])
+      })
+    }
   }
 }

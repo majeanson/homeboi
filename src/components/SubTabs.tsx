@@ -1,4 +1,5 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { tintScope } from '../lib/colors'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { useHScroll } from '../lib/hscroll'
 import { useT } from '../i18n'
@@ -151,7 +152,9 @@ export function SubTabs<K extends string>({
   return (
     <div
       className={'subtabs-row' + (armed ? ' help-armed' : '')}
-      style={tint ? ({ '--accent': tint } as CSSProperties) : undefined}
+      // Both vars, from the one helper: re-pointing --accent alone left --accent-ink
+      // ("warm-dark text on marigold") sitting on a -ink tier colour. See lib/colors.
+      style={tintScope(tint) as CSSProperties | undefined}
     >
       {arrow(-1)}
       <div

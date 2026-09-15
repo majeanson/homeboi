@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react'
+import { tintScope } from '../../lib/colors'
 import { Link } from 'react-router-dom'
 import { useQueries } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
@@ -144,7 +145,9 @@ export function DidYouKnowCard() {
     <aside
       className="section-intro"
       aria-label={t.discover.didYouKnow}
-      style={tint ? ({ '--accent': tint } as CSSProperties) : undefined}
+      // Both vars, from the one helper: re-pointing --accent alone left --accent-ink
+      // ("warm-dark text on marigold") sitting on a -ink tier colour. See lib/colors.
+      style={tintScope(tint) as CSSProperties | undefined}
     >
       <div className="section-intro__head">
         <span className="section-intro__icon">
