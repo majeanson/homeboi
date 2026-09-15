@@ -64,6 +64,19 @@
 .virements__shares {
   align-items: center;
 }
+
+/* The agreement in the household's own words (migration 0127). Quieter than the
+   numbers above it — it explains them, it is not one of them — and `pre-wrap` so a
+   note written as three lines stays three lines. `overflow-wrap` because the one
+   thing people paste here is an account number with no spaces in it. */
+.virements__plan-note {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
 .virements__share {
   display: flex;
   align-items: center;

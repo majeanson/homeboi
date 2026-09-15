@@ -73,6 +73,12 @@ export function PlanForm({
   const [asOf, setAsOf] = useState(value?.catchup ? inputFromLocalDay(value.catchup.asOf) : '')
   const [termEnd, setTermEnd] = useState(value?.catchup ? inputFromLocalDay(value.catchup.termEnd) : '')
 
+  // THE AGREEMENT IN WORDS (migration 0127). Everything else on this screen is a
+  // number or a date; this is the half that makes them mean something a year later —
+  // which account it leaves from, when the term is up, why one share is that size,
+  // what the two of you actually said. Free text, never parsed, only ever shown back.
+  const [note, setNote] = useState(value?.note ?? '')
+
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
 
@@ -105,6 +111,7 @@ export function PlanForm({
           shares: cleanShares,
           catchup,
           colour: null,
+          note: note.trim() || null,
         },
         value?.id,
       )
@@ -210,6 +217,25 @@ export function PlanForm({
         ))}
       </fieldset>
       <p className="operator__seg-hint mono">{v.planSharesHint}</p>
+
+      {/* Folded, and open on arrival when there is already something in it — a fold
+          never hides a filled field (LEAN.md). It sits ABOVE « Rattrapage » because
+          it is about the whole agreement, while the fold under it is one optional
+          arrangement inside that agreement. */}
+      <Disclosure label={v.planNote} defaultOpen={!!value?.note}>
+        <EditField
+          as="div"
+          multiline
+          rows={4}
+          value={note}
+          onChange={setNote}
+          submitIcon={null}
+          allowEmpty
+          placeholder={v.planNote}
+          ariaLabel={v.planNote}
+        />
+        <p className="operator__seg-hint mono">{v.planNoteHint}</p>
+      </Disclosure>
 
       {/* « Rattrapage » — folded, because most households never have one.
           Every label here is its OWN string. They used to borrow `planAmount`,

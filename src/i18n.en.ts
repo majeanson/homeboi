@@ -3263,6 +3263,8 @@ export const EN: typeof FR = {
     planTitleHint: 'Whatever the two of you call it — it is also what shows up in the message to your bank.',
     planWhenHint: 'Any date it falls due. The repeat below takes care of all the following ones.',
     planSharesHint: 'What each person sends each time. Leave someone blank if they do not pay this one.',
+    planNote: 'Note',
+    planNoteHint: 'Whatever an amount cannot say: which account it leaves from, until when, what the two of you agreed.',
     catchupIntro:
       'Only fill this in if one person paid more than the other up front and you are closing that gap. Otherwise leave it folded — most households have none.',
     catchupExample: 'Example: she put in $72,000 more up front, he sends $300 extra per payment until August 2028.',

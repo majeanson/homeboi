@@ -8,7 +8,7 @@ import { parseCatchup, parseShares, type Catchup, type Shares } from '../_lib/tr
 // The standing agreement behind « Les virements » (migration 0126): what the
 // household splits, how often it comes due, and who sends what.
 //
-//   POST   /api/transfer-plans -> create { title, amountCents, recur, anchorAt, shares, catchup, colour }
+//   POST   /api/transfer-plans -> create { title, amountCents, recur, anchorAt, shares, catchup, colour, note }
 //   PATCH  /api/transfer-plans -> edit one { id, ...fields }
 //   DELETE /api/transfer-plans -> { id } soft delete (recorded transfers keep their lines)
 //
@@ -21,6 +21,10 @@ import { parseCatchup, parseShares, type Catchup, type Shares } from '../_lib/tr
 // exactly as they were — which is the entire point of keeping receipts.
 
 const TITLE_CAP = 120
+// The agreement in the household’s own words (migration 0127) — free text, never
+// parsed, same ceiling as a transfer’s note so the two halves of this feature agree
+// on how much anybody can write.
+const NOTE_CAP = 2000
 const MAX_SHARES = 12
 const MAX_CENTS = 100_000_000
 
@@ -87,6 +91,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     shares?: unknown
     catchup?: unknown
     colour?: unknown
+    note?: string | null
   }>(ctx.request)
 
   const title = str(body?.title, TITLE_CAP)
@@ -105,8 +110,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO transfer_plans
-       (id, household_id, title, amount_cents, recur_json, anchor_at, shares_json, catchup_json, colour, position, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, household_id, title, amount_cents, recur_json, anchor_at, shares_json, catchup_json, colour, position, note, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       id,
@@ -119,6 +124,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       catchupJson(body?.catchup),
       body?.colour == null ? null : hexColor(body.colour, '#7A8B99'),
       position,
+      str(body?.note, NOTE_CAP),
       ts,
       ts,
     )
@@ -137,6 +143,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     catchup?: unknown
     colour?: unknown
     position?: unknown
+    note?: string | null
   }>(ctx.request)
   const id = str(body?.id, 64)
   if (!id) return badRequest('id requis.')
@@ -174,6 +181,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (body?.shares !== undefined) setIf(true, 'shares_json', sharesJson(body.shares))
   if (body?.catchup !== undefined) setIf(true, 'catchup_json', catchupJson(body.catchup))
   setIf(!!body && 'colour' in body, 'colour', body?.colour == null ? null : hexColor(body.colour, '#7A8B99'))
+  // Key presence, not truthiness: clearing the note back to nothing has to reach the
+  // column, exactly like `recur: null`.
+  setIf(!!body && 'note' in body, 'note', str(body?.note, NOTE_CAP))
   if (body?.position !== undefined) {
     const n = Number(body.position)
     if (Number.isFinite(n)) setIf(true, 'position', Math.max(0, Math.floor(n)))

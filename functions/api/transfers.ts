@@ -104,7 +104,7 @@ async function householdPlanIds(env: { DB: D1Database }, householdId: string): P
 }
 
 const PLAN_COLS =
-  'id, household_id, title, amount_cents, recur_json, anchor_at, shares_json, catchup_json, colour, position'
+  'id, household_id, title, amount_cents, recur_json, anchor_at, shares_json, catchup_json, colour, position, note'
 const TRANSFER_COLS = 'id, member_id, sent_at, lines_json, memo, reference, note, created_at'
 
 export const onRequestGet = authed(async (ctx, actor) => {
@@ -137,6 +137,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       catchup: parseCatchup(p.catchup_json),
       colour: p.colour,
       position: p.position,
+      note: p.note,
       // Expanded here because only this side can: ascending local midnights across
       // a bounded window, DST-correct via _lib/recur.
       due: planOccurrences(p, from, to),

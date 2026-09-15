@@ -50,6 +50,7 @@ export interface PlanRow {
   catchup_json: string
   colour: string | null
   position: number
+  note: string | null
 }
 
 export interface TransferRow {

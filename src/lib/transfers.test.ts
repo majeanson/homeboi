@@ -38,6 +38,7 @@ const plan = (over: Partial<TransferPlan> = {}): TransferPlan => ({
   shares: { marc: 55641, camille: 25641 },
   catchup: null,
   colour: null,
+  note: null,
   position: 0,
   due: [d(2026, 7, 13), d(2026, 7, 27), d(2026, 8, 10)],
   projection: null,

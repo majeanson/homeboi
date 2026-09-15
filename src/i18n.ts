@@ -3720,6 +3720,10 @@ export const FR = {
     planTitleHint: 'Le nom que vous lui donnez entre vous — c’est aussi ce qui apparaît dans le message à la banque.',
     planWhenHint: 'N’importe quelle date où c’est dû. La répétition en dessous s’occupe de toutes les suivantes.',
     planSharesHint: 'Ce que chaque personne envoie à chaque fois. Laisse vide quelqu’un qui ne paie pas celle-là.',
+    // LA NOTE DE L’ENTENTE (migration 0127). Tout le reste de cet écran est un
+    // chiffre ou une date ; ça, c’est la moitié qui leur donne un sens dans un an.
+    planNote: 'Note',
+    planNoteHint: 'Ce qui ne rentre pas dans un montant : de quel compte ça part, jusqu’à quand, ce que vous vous êtes dit.',
     catchupIntro:
       'À remplir seulement si une personne a payé plus que l’autre au départ et que vous rattrapez l’écart. Sinon, laisse fermé — la plupart des maisonnées n’en ont pas.',
     catchupExample: 'Exemple : elle a mis 72 000 $ de plus au départ, il envoie 300 $ de plus par paiement jusqu’en août 2028.',

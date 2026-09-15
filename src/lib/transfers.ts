@@ -64,6 +64,8 @@ export interface TransferPlan {
   catchup: Catchup | null
   colour: string | null
   position: number
+  /** The household's own words about the arrangement. Free text, never parsed. */
+  note: string | null
   /** Due dates in the server's window, ascending local midnights. */
   due: number[]
   projection: CatchupProjection | null
@@ -628,6 +630,7 @@ export interface PlanDraft {
   shares: Record<string, number>
   catchup: Catchup | null
   colour: string | null
+  note: string | null
 }
 
 export function useSavePlan() {

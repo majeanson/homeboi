@@ -1,0 +1,16 @@
+-- « Les ententes » gain a note (Marc, 2026-09-14: « notes on ententes not virements »).
+--
+-- The agreement is the durable half of this feature — written once and read for
+-- years — and everything on it until now was a NUMBER or a DATE. The words that make
+-- those numbers make sense had nowhere to live: which account it leaves from, what
+-- the renewal date is, why one share is the size it is, what the two of you actually
+-- said. That is the note.
+--
+-- Deliberately NOT a second `catchup`: no parsing, no shape, no derivation. Free text
+-- the household writes and the app only ever shows back. `transfers.note` (0126) is
+-- the same idea one level down — this one is about the ARRANGEMENT, that one about a
+-- single send.
+--
+-- Nullable, no default: an entente without a note is the ordinary case, and a NULL
+-- says « nobody wrote one » where an empty string would say « somebody wrote nothing ».
+ALTER TABLE transfer_plans ADD COLUMN note TEXT;

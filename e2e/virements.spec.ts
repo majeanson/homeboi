@@ -477,6 +477,42 @@ test('capture the Rattrapage fold, open, at 390px', async ({ page }) => {
 // « tous les » + a 4.5rem number + the unit — so at 390px the unit ran past the form
 // edge and was CLIPPED by the scene's overflow. Clipped, not scrolled: invisible to a
 // scrollWidth check (the documented trap), and it reads as "the app can't do this".
+// LA NOTE DE L’ENTENTE (migration 0127). Everything else on an entente is a number
+// or a date. This is the half that still means something in a year — which account it
+// leaves from, when the term is up, why one share is that size (Marc, 2026-09-14:
+// « notes on ententes not virements »).
+test('an entente carries the words behind its numbers, and the card shows them', async ({ page }) => {
+  await openVirements(page)
+  await page.goto('/virement/plan/new')
+  const form = page.locator('.operator__inline-form')
+  await expect(form).toBeVisible()
+
+  // Folded on a new entente — most of them never get one.
+  await expect(form.getByLabel('Note')).toHaveCount(0)
+  await form.getByRole('button', { name: 'Note' }).click()
+  await form.getByLabel('Note').fill('Part du compte conjoint.\nRenouvellement en mars 2027.')
+  await form.getByLabel(/Ce qu.on se partage/).fill('Hypothèque')
+  await form.getByRole('button', { name: 'Ajouter une entente' }).click()
+  await expect.poll(() => posted.length).toBeGreaterThan(0)
+  const write = posted.find((x) => x.path.endsWith('/transfer-plans'))!
+  expect(write.method).toBe('POST')
+  expect((write.body as { note: string }).note).toBe('Part du compte conjoint.\nRenouvellement en mars 2027.')
+})
+
+test('…and it is READ on the card, line breaks and all — never behind another tap', async ({ page }) => {
+  const WITH_NOTE = { ...PLAN, note: 'Part du compte conjoint.\nRenouvellement en mars 2027.' }
+  await openVirements(page, { plans: [WITH_NOTE] })
+  const note = page.locator('.virements__plan-note')
+  await expect(note).toBeVisible()
+  await expect(note).toContainText('Renouvellement en mars 2027')
+  // The household wrote two lines; the card keeps two lines.
+  expect(await note.evaluate((el) => getComputedStyle(el).whiteSpace)).toBe('pre-wrap')
+
+  // …and it comes back in the edit form WITHOUT opening the fold: a fold never hides
+  // a filled field.
+  await page.goto('/virement/plan/p1/edit')
+  await expect(page.locator('.operator__inline-form').getByLabel('Note')).toHaveValue(/Renouvellement en mars 2027/)
+})
 test('the plan form can say « tous les 2 semaines », and nothing is clipped at 360px', async ({ page }) => {
   await openVirements(page, { viewport: { width: 360, height: 780 } })
   await page.goto('/virement/plan/new')

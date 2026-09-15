@@ -28,6 +28,7 @@ const plan = (over: Partial<PlanRow> = {}): PlanRow => ({
   amount_cents: 81282,
   recur_json: BIWEEKLY,
   anchor_at: d(2026, 7, 13), // 13 août 2026
+  note: null,
   shares_json: '{}',
   catchup_json: '{}',
   colour: null,

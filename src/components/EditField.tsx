@@ -78,6 +78,14 @@ export interface EditFieldProps {
   limit?: number
   /** Render a textarea instead of an input. Enter then inserts a newline (no submit). */
   multiline?: boolean
+  /**
+   * Starting height of a `multiline` field, in lines. The CSS floor is 3rem and a
+   * textarea does not grow with its content, so a field meant to hold PROSE (an
+   * agreement note, a paste box) shows two lines and scrolls the rest under itself —
+   * the « généreux dedans » smell on a screen you opened on purpose (LEAN.md).
+   * Ignored without `multiline`.
+   */
+  rows?: number
   /** Left of the field: an icon/emoji picker button or a drag handle. */
   leading?: ReactNode
   /** Standard ↑/↓ reorder pair after the field (row use). */
@@ -128,6 +136,7 @@ export function EditField({
   maxLength,
   limit,
   multiline,
+  rows,
   leading,
   reorder,
   onDelete,
@@ -230,6 +239,7 @@ export function EditField({
             <textarea
               ref={inputRef as React.Ref<HTMLTextAreaElement>}
               className="input edit-field__input"
+              rows={rows}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               onBlur={handleBlur}

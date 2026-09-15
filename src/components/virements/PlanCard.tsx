@@ -87,6 +87,12 @@ export function PlanCard({
         </Cluster>
       )}
 
+      {/* THE AGREEMENT IN WORDS. Shown, not folded: a note nobody can read without a
+          tap is half a feature, and this is the line that answers « why is his share
+          bigger » in a year. `pre-wrap` keeps the household's own line breaks — they
+          wrote a list, we don't flatten it into a paragraph. */}
+      {plan.note?.trim() && <p className="virements__plan-note">{plan.note.trim()}</p>}
+
       {/* The dates coming up. A Rail (never a hand-rolled flex row) so a long series
           scrolls on one line on a phone instead of bleeding off the right edge. */}
       {upcoming.length > 0 && (
