@@ -312,3 +312,78 @@ test('a transient failure on a critical entry is retried, not swallowed', async 
 
   await page.context().setOffline(false)
 })
+
+// ── The launch the reboot case above does NOT make ────────────────────────────
+//
+// That one reloads the SAME url the page was already on. An installed PWA launches
+// at the manifest's `start_url` ('/'), in a brand-new document, and the ONE thing
+// standing between it and a blank screen is the navigation handler's fallback to
+// the cached shell. Marc, 2026-09-14: « opening the app while offline it was all
+// black last time i tried ».
+test('a cold launch at start_url boots offline, in a page that has never been open', async ({ context, page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
+  await page.goto('/board')
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 20_000 })
+
+  await context.setOffline(true)
+  const fresh = await context.newPage()
+  await mockApi(fresh)
+  await fresh.goto('/')
+  await expect(fresh.locator('.hub')).toBeVisible({ timeout: 30_000 })
+  await fresh.close()
+  await context.setOffline(false)
+})
+
+// THE BLACK SCREEN, reproduced. The stale-asset refusal (SW_POLICY v2, the
+// grey-screen fix) DELETES the cached '/' on purpose, so the next navigation has to
+// go to the network for fresh HTML. That is right online — and offline it is the
+// whole shell gone: `caches.match('/')` resolves UNDEFINED, `respondWith(undefined)`
+// is a failed navigation, and an installed PWA with no browser chrome renders that
+// as nothing at all. It happens on an ordinary day here: every deploy retires the
+// previous build's chunks, a still-open tab asks for one, and the shell is dropped.
+test('the shell entry, once dropped, does not leave an offline launch blank', async ({ context, page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
+  await page.goto('/board')
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 20_000 })
+
+  // Exactly what the « Stale asset » branch does.
+  const dropped = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((k) => k.startsWith('babillard-') && k !== 'babillard-share')
+    if (!name) return false
+    return (await caches.open(name)).delete('/')
+  })
+  expect(dropped, 'the cached shell entry was there to drop').toBe(true)
+
+  // Online, the very next navigation must put it back — the network-first path has
+  // the fresh HTML in its hands and used to throw it away.
+  await page.goto('/board')
+  await expect(page.locator('.hub')).toBeVisible({ timeout: 20_000 })
+  const healed = await page.evaluate(async () => {
+    const name = (await caches.keys()).find((k) => k.startsWith('babillard-') && k !== 'babillard-share')
+    if (!name) return false
+    return !!(await (await caches.open(name)).match('/', { ignoreVary: true }))
+  })
+  expect(healed, 'a successful navigation re-caches the shell').toBe(true)
+
+  // And with it dropped AGAIN and no network at all, the launch is still a page
+  // somebody can read — never a blank screen with no way out.
+  await page.evaluate(async () => {
+    const name = (await caches.keys()).find((k) => k.startsWith('babillard-') && k !== 'babillard-share')
+    if (name) await (await caches.open(name)).delete('/')
+  })
+  await context.setOffline(true)
+  const fresh = await context.newPage()
+  const res = await fresh.goto('/')
+  expect(res?.status(), 'the navigation answers with a page, not a failure').toBe(200)
+  // It SAYS what happened and what to do about it, in both languages, and carries
+  // the one control that can help. A black rectangle said nothing.
+  await expect(fresh.locator('body')).toContainText('Pas de réseau')
+  await expect(fresh.locator('body')).toContainText(/No network/i)
+  await expect(fresh.getByRole('button', { name: 'Réessayer' })).toBeVisible()
+  await fresh.close()
+  await context.setOffline(false)
+})

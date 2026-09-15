@@ -48,7 +48,11 @@ const ONLINE_ONLY_CHUNKS = [/^assets\/heic2any-/, /^assets\/DevKit-/]
 //   v2 — never cache/serve the SPA-fallback HTML under a subresource URL.
 //   v3 — install() separates critical (the shell + this build's bundles: retried,
 //        all-or-nothing) from optional (public/ files: still best-effort).
-const SW_POLICY = 'v3-critical-precache-retry'
+//   v4 — a navigation RE-CACHES the shell it just fetched (so the stale-asset
+//        branch's delete heals), never answers respondWith with undefined (that is
+//        a failed navigation, which an installed PWA paints black), and gives the
+//        network-first fetch a 4s leash before taking the cache.
+const SW_POLICY = 'v4-shell-refresh-and-offline-page'
 
 // Build-time service worker: emit /sw.js with the REAL hashed asset list baked
 // in, so a freshly-installed kiosk precaches the whole shell and reboots fine
@@ -174,6 +178,68 @@ self.addEventListener('activate', (e) => {
   )
 })
 
+// THE LAST PAGE BEFORE NOTHING. Served only when a navigation has no network AND no
+// cached shell to fall back on — the state an installed PWA used to render as a black
+// rectangle. Deliberately one file, no assets, no fonts: it must work when nothing
+// else does. FR first with the English under it, since the SW cannot know the locale
+// the app was set to.
+const OFFLINE_HTML = \`<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Babillard</title><style>
+:root{color-scheme:light dark}
+body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:2rem;
+background:#FBF3E4;color:#3c3730;text-align:center;
+font:1rem/1.55 "Hanken Grotesk",system-ui,-apple-system,sans-serif}
+main{max-width:22rem}h1{font-size:1.35rem;margin:0 0 .6rem}p{margin:0 0 .8rem}
+.en{opacity:.6;font-size:.9rem}
+button{margin-top:.6rem;font:inherit;padding:.6rem 1.2rem;border:0;border-radius:999px;
+background:#E8A33D;color:#2b2620;cursor:pointer}
+@media (prefers-color-scheme:dark){body{background:#1b1712;color:#e8e0d4}
+button{background:#E8A33D;color:#2b2620}}
+</style></head><body><main>
+<h1>Babillard</h1>
+<p>Pas de réseau, et le babillard n'est pas encore gardé sur cet appareil.</p>
+<p>Rouvre-le une fois connecté&nbsp;: après ça, il s'ouvre même sans réseau.</p>
+<p class="en">No network yet, and this device has not kept a copy. Open it once while connected.</p>
+<button onclick="location.reload()">Réessayer</button>
+</main></body></html>\`
+
+// A navigation fallback is ALWAYS a Response. \`caches.match\` resolving undefined and
+// being handed to respondWith() is a failed navigation, which an installed PWA paints
+// as nothing at all.
+function shellFallback() {
+  return caches.match('/', { ignoreVary: true }).then(function (hit) {
+    return hit || new Response(OFFLINE_HTML, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } })
+  })
+}
+
+// Network-first, but on a leash, and it KEEPS what it gets.
+//
+// The SPA answers every route with the same index.html, so any HTML navigation
+// response IS the shell — re-caching it under '/' keeps the offline entry fresh
+// after a deploy and heals the one the stale-asset branch deletes. The exception is
+// /partage/*, where the Worker injects per-share OG tags: that HTML is about one
+// recipe, not about the app, and must not become everybody's shell.
+function navigateWithShell(req, url) {
+  var settled = false
+  var live = fetch(req).then(function (res) {
+    var type = res.headers.get('content-type') || ''
+    if (res.ok && type.indexOf('text/html') !== -1 && url.pathname.indexOf('/partage/') !== 0) {
+      var copy = res.clone()
+      caches.open(CACHE).then(function (c) { return c.put('/', copy) }).catch(function () {})
+    }
+    settled = true
+    return res
+  })
+  // A wifi that is connected but dead (captive portal, a dead spot in the kitchen)
+  // makes fetch hang rather than fail, and network-first with no deadline means the
+  // launch stares at nothing until the OS gives up. Four seconds, then the cache.
+  var patience = new Promise(function (resolve) {
+    setTimeout(function () { resolve(settled ? live : shellFallback()) }, 4000)
+  })
+  return Promise.race([live, patience]).catch(function () { return shellFallback() })
+}
+
 // EVERY cache lookup below passes { ignoreVary: true }. This SW stores exactly ONE
 // variant per URL and never content-negotiates, so a Vary check on a lookup can only
 // ever produce a FALSE miss — turning "the entry is right there" into "not found",
@@ -271,8 +337,36 @@ self.addEventListener('fetch', (e) => {
 
   // App navigations: try the network (fresh HTML after a deploy), fall back to
   // the cached shell so an offline reboot still boots the board.
+  //
+  // THE BLACK SCREEN (Marc, 2026-09-14: « opening the app while offline it was all
+  // black »). This line used to be exactly:
+  //
+  //     e.respondWith(fetch(req).catch(() => caches.match('/', { ignoreVary: true })))
+  //
+  // and it had two holes, both of which only ever show on the launch nobody tests —
+  // a cold start with no network:
+  //
+  //  1. IT THREW THE FRESH SHELL AWAY. A successful navigation is the app's own
+  //     HTML, in hand, and nothing put it back in the cache. So the '/' entry only
+  //     ever came from install() — and the « Stale asset » branch below DELETES it
+  //     on purpose (right, online: the next navigation must fetch fresh HTML). On a
+  //     repo that deploys on every push, a still-open tab asking for a retired chunk
+  //     is an ordinary Tuesday, so the shell gets dropped and stays dropped until
+  //     the next build installs. Between those two moments every offline launch has
+  //     no shell at all. Now: a navigation that comes back as HTML re-caches '/', so
+  //     the drop heals on the very next online navigation (the preloadError reload
+  //     in main.tsx is usually that navigation, within the same beat).
+  //  2. WITH '/' GONE, caches.match RESOLVED UNDEFINED — and respondWith(undefined)
+  //     is a FAILED navigation. In a browser tab that is the dinosaur page; in an
+  //     installed PWA with no chrome it is a black rectangle with no way out, which
+  //     is precisely what was reported. A fallback must always be a Response.
+  //
+  // …and a third, which is not a hole but a hang: network-FIRST has no deadline, so
+  // a wifi that is connected-but-dead (a captive portal, the kitchen dead spot) left
+  // the launch staring at nothing for as long as the OS took to give up. Race the
+  // fetch against a short timer and take the cache when it wins.
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(() => caches.match('/', { ignoreVary: true })))
+    e.respondWith(navigateWithShell(req, url))
     return
   }
 

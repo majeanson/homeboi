@@ -48,6 +48,51 @@ Rules that keep it fixed:
   *(This bullet used to describe the old `allSettled` + `cache.add` behaviour for BOTH
   tiers — that is exactly the tolerance that was removed.)*
 
+## The navigation fallback must always be a Response (SW_POLICY v4)
+
+The **second** black screen, reported 2026-09-14 (« opening the app while offline it
+was all black last time i tried ») and a different bug from the IndexedDB hang above.
+The whole navigation handler used to be one line:
+
+```js
+e.respondWith(fetch(req).catch(() => caches.match('/', { ignoreVary: true })))
+```
+
+Two holes, both invisible until a cold launch with no network:
+
+- **It threw the fresh shell away.** A successful navigation IS the app's HTML, and
+  nothing put it back in the cache — so the `'/'` entry could only ever come from
+  `install()`. Meanwhile the « Stale asset » branch **deletes** `'/'` on purpose
+  (correct online: the next navigation must fetch fresh HTML). On a repo that deploys
+  on every push, a still-open tab asking for a retired chunk is an ordinary Tuesday.
+  The shell gets dropped and **stays dropped until the next build installs** — and
+  every offline launch in between has no shell at all.
+- **`caches.match` resolves `undefined`**, and `respondWith(undefined)` is a *failed
+  navigation*. In a tab that is the browser's error page; in an installed PWA with no
+  chrome it is a black rectangle with no way out.
+
+v4, in `vite.config.ts` `swSource`:
+
+- a navigation that comes back as HTML **re-caches `'/'`** (skipping `/partage/*`,
+  whose HTML carries per-share OG tags injected by the Worker), so the stale-asset
+  delete heals on the next online navigation — usually the `vite:preloadError`
+  reload, in the same beat;
+- the fallback chain ends in a real Response: the cached shell, else a one-file
+  **`OFFLINE_HTML`** page (no assets, no fonts — it must work when nothing else does)
+  that says what happened in FR + EN and carries « Réessayer »;
+- network-first gets a **4 s leash**, because a wifi that is connected-but-dead
+  (captive portal, a dead spot) makes `fetch` hang rather than fail, and a launch
+  with no deadline stares at nothing until the OS gives up.
+
+A device already in the broken state heals on the next deploy: `SW_POLICY` is folded
+into the cache name, so v4 installs under a new name and `activate()` purges the old.
+
+Covered by two cases in `e2e/sw.spec.ts` — a cold launch at the manifest's `start_url`
+in a page that has never been open (the reboot case above only ever reloads the URL
+the page was already on), and the shell-dropped case, which asserts both halves: an
+online navigation puts `'/'` back, and offline with it gone you get a readable page
+rather than a blank one.
+
 Covered by `e2e/offline-boot.spec.ts` (hung open + unavailable open → app still mounts)
 and `e2e/sw.spec.ts` (shell reboots offline).
 
