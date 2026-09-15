@@ -961,8 +961,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'Give it a name, the full amount, a date it falls due, how often it comes back, then each person’s share. Leave a share blank if someone does not pay that one.',
         },
         why: {
-          fr: 'Exemple : « Hypothèque », 812,82 $ aux 2 semaines, 556,41 $ d’un bord et 256,41 $ de l’autre. Ce n’est pas juste pour une hypothèque — le loyer, la garderie, un prêt auto, les soins d’un parent séparés entre frères et sœurs : même forme, et l’écran propose ces modèles-là directement.',
-          en: 'Example: “Mortgage”, $812.82 every 2 weeks, $556.41 from one and $256.41 from the other. It is not just for a mortgage — rent, daycare, a car loan, a parent’s care split between siblings: same shape, and the screen offers those as templates.',
+          fr: 'Exemple : « Hypothèque », 812,82 $ aux 2 semaines, 556,41 $ d’un bord et 256,41 $ de l’autre. Ce n’est pas juste pour une hypothèque — le loyer, la garderie, un prêt auto, les soins d’un parent séparés entre frères et sœurs : même forme, et l’écran propose ces modèles-là directement. Tu peux en avoir plusieurs : « Ajouter une entente » reste au bas des cartes, et un seul virement peut couvrir les dates des deux.',
+          en: 'Example: “Mortgage”, $812.82 every 2 weeks, $556.41 from one and $256.41 from the other. It is not just for a mortgage — rent, daycare, a car loan, a parent’s care split between siblings: same shape, and the screen offers those as templates. You can keep more than one: “Add an agreement” stays at the foot of the cards, and a single transfer can cover dates from both.',
         },
         route: '/virement/plan/new',
       },

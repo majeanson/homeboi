@@ -140,6 +140,23 @@ export function VirementsSection({ members }: { members: Member[] }) {
           {plans.map((p) => (
             <PlanCard key={p.id} plan={p} transfers={allTransfers} members={members} face={face} today={data.today} readOnly={ro} />
           ))}
+          {/* A SECOND ENTENTE, and a third. Everything below this line already worked
+              for any number of them — the composer groups its ticked dates per plan,
+              the memo names each one, the year folds by entente — but the ONLY door
+              that ever created one was the empty state's, which stops existing the
+              moment the first one is written. So a household with a mortgage could
+              never add the daycare beside it (Marc, 2026-09-14).
+              A chip at the FOOT of the cards, not a second ＋ tile: the ＋ here is the
+              one-tap « j'ai envoyé un virement », the thing you do every two weeks, and
+              turning it into a chooser would tax that to pay for this, which you do
+              once a year. */}
+          {!ro && (
+            <Cluster>
+              <Chip to="/virement/plan/new" icon="plus-bold">
+                {v.addPlan}
+              </Chip>
+            </Cluster>
+          )}
         </div>
       )}
 

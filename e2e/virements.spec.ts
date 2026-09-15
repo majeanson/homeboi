@@ -290,6 +290,38 @@ test('saving posts the lines, the memo and the reference', async ({ page }) => {
   expect(body.lines.find((l) => l.kind === 'other')).toMatchObject({ label: 'Renflouement', amountCents: 200_000 })
 })
 
+// MORE THAN ONE ENTENTE. Everything below the plan cards handled N agreements from
+// day one — the composer groups its ticked dates per plan, the memo names each one,
+// the year folds by entente — but the only door that ever CREATED one was the empty
+// state's, which stops existing the moment the first agreement is written. A household
+// with a mortgage had no way to add the daycare beside it (Marc, 2026-09-14).
+test('a second entente: the door outlives the empty state, and the composer prices both', async ({ page }) => {
+  const GARDERIE = {
+    ...PLAN,
+    id: 'p2',
+    title: 'Garderie',
+    amountCents: 40000,
+    shares: { m1: 20000, m2: 20000 },
+    catchup: null,
+    projection: null,
+    position: 1,
+  }
+  await openVirements(page, { plans: [PLAN, GARDERIE] })
+
+  // Two agreements, two cards — and the door to a third still on screen.
+  await expect(page.locator('.virements__plan')).toHaveCount(2)
+  await page.locator('.virements__plans').getByRole('link', { name: 'Ajouter une entente' }).click()
+  await expect(page).toHaveURL(/\/virement\/plan\/new/)
+  await expect(page.locator('.scene')).toBeVisible()
+
+  // …and the composer asks about each one under its own title, so a single send can
+  // cover the mortgage and the daycare without either becoming an anonymous amount.
+  await page.goto('/virement/new')
+  const form = page.locator('.virements__form')
+  await expect(form.locator('fieldset', { hasText: 'Hypothèque' })).toHaveCount(1)
+  await expect(form.locator('fieldset', { hasText: 'Garderie' })).toHaveCount(1)
+})
+
 test('with no agreement yet, the empty state IS the door to writing one', async ({ page }) => {
   await openVirements(page, { plans: [], transfers: [] })
   const empty = page.locator('.empty-state')
