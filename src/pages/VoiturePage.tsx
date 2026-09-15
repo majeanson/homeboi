@@ -359,7 +359,7 @@ function DayRow({
                   </span>
                 )}
                 {r.conflict && (
-                  <span className="voiture__conflict" title={t.auto.conflict} aria-label={t.auto.conflict}>
+                  <span className="voiture__conflict" role="img" title={t.auto.conflict} aria-label={t.auto.conflict}>
                     <Icon name="warning-bold" size={17} />
                   </span>
                 )}

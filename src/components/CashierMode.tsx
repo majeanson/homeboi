@@ -181,7 +181,7 @@ export function CashierMode({
                     <span className="cashier__tile-store mono">{p.deal.merchant}</span>
                     {ended && <span className="cashier__tile-ended mono">{t.shop.dealEnded}</span>}
                     {isShown && (
-                      <span className="cashier__tile-check" aria-label={t.shop.shown}>
+                      <span className="cashier__tile-check" role="img" aria-label={t.shop.shown}>
                         <Icon name="check-bold" size={14} />
                       </span>
                     )}

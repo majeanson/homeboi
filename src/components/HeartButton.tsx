@@ -59,7 +59,7 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
   if (!memberId) {
     if (!loved) return null
     return (
-      <span className="hearts hearts--ro" aria-label={lovedLabel}>
+      <span className="hearts hearts--ro" role="img" aria-label={lovedLabel}>
         <Icon name="heart-fill" size={16} color={TERRA} />
         {dots}
       </span>

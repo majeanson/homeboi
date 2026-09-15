@@ -581,7 +581,16 @@ export function Kitchen() {
                     Today/tomorrow get a relative tag; today's whole card lights up
                     so "you are here" reads at a glance in the countdown. */}
                 <div className="kitchen__day-head">
-                  <span className="kitchen__day-date" aria-label={formatDay(date, lang)}>
+                  {/* THE DATE, SPOKEN IN FULL — as a `.sr-only` child, not as an
+                      `aria-label` on this span. ARIA prohibits a label on a role-less
+                      element (its role is `generic`), so the browser dropped it — and
+                      since both visible parts below are `aria-hidden`, every day header
+                      in the week announced as NOTHING. Found by the axe pass in
+                      `npm run e2e:matrix` (aria-prohibited-attr, 2026-09-15). The
+                      abbreviations stay hidden on purpose: « jeu. » and a bare « 17 »
+                      read as noise, and the sr-only line says the whole date once. */}
+                  <span className="kitchen__day-date">
+                    <span className="sr-only">{formatDay(date, lang)}</span>
                     {rel && <span className="kitchen__day-rel mono">{rel}</span>}
                     <span className="kitchen__day-dow mono" aria-hidden="true">{weekdayShort(date, lang)}</span>
                     <span className="kitchen__day-num" aria-hidden="true">{dayNum(date, lang)}</span>

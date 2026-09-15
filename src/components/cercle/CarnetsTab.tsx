@@ -81,7 +81,7 @@ export function CarnetsTab() {
                   <span className="cercle-row__name">{x.name}</span>
                   <span className="cercle-row__sub mono">{sub}</span>
                 </span>
-                {needsLook(x) && <span className="cercle-carnets__flag" title={c.toWatch} aria-label={c.toWatch} />}
+                {needsLook(x) && <span className="cercle-carnets__flag" role="img" title={c.toWatch} aria-label={c.toWatch} />}
               </button>
             </div>
           )

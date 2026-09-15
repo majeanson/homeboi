@@ -681,7 +681,7 @@ export function MonthView({
                 // month grid band — the band colour + title carry it there (calm).
                 badge={
                   tr.shared ? (
-                    <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                    <span className="act__sharedmark" role="img" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
                       <Icon name="users-three-bold" size={13} />
                     </span>
                   ) : undefined
@@ -1033,7 +1033,7 @@ export function MonthView({
                 color={tr.colour}
                 badge={
                   tr.shared ? (
-                    <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                    <span className="act__sharedmark" role="img" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
                       <Icon name="users-three-bold" size={13} />
                     </span>
                   ) : undefined

@@ -546,8 +546,11 @@ export function DayPlanPage() {
             glance of "what's it like out" while planning this day's meals/events. */}
         {(todayWx || tomoWx) && (
           <div className="day-plan__wx">
+            {/* No aria-label on the two spans below: it only restated the visible text,
+                and ARIA drops a label on a role-less span anyway (its role is `generic`),
+                so it was never read. The icons are aria-hidden; the words speak. */}
             {todayWx && (
-              <span className="tomorrow-wx mono" aria-label={`${t.weather[todayWx.bucket]} ${todayWx.tempC}°`}>
+              <span className="tomorrow-wx mono">
                 <span aria-hidden="true" style={{ display: 'inline-flex' }}>
                   <Icon name={weatherIcon(todayWx)} size={17} color={weatherTint(todayWx)} />
                 </span>{' '}
@@ -556,7 +559,7 @@ export function DayPlanPage() {
               </span>
             )}
             {tomoWx && (
-              <span className="tomorrow-wx mono" aria-label={`${t.weather[tomoWx.bucket]} ${tomoWx.highC}° / ${tomoWx.lowC}°`}>
+              <span className="tomorrow-wx mono">
                 <span aria-hidden="true" style={{ display: 'inline-flex' }}>
                   <Icon
                     name={weatherIcon({ bucket: tomoWx.bucket, isDay: true, tempC: tomoWx.highC })}
@@ -645,7 +648,7 @@ export function DayPlanPage() {
                 // « Partagé » — a quiet icon marker (no loud pill), calm + subtle.
                 badge={
                   tr.shared ? (
-                    <span className="act__sharedmark" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
+                    <span className="act__sharedmark" role="img" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
                       <Icon name="users-three-bold" size={13} />
                     </span>
                   ) : undefined
