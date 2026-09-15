@@ -1,5 +1,6 @@
 import { imgUrl } from '../lib/image'
 import { initialsFor } from '../lib/initials'
+import { readableInk } from '../lib/colors'
 
 // One place that knows how to draw a person: their photo if they have one, else
 // a coloured disc with their initial(s). Used wherever a member's face appears so
@@ -27,8 +28,14 @@ export function Avatar({
   // Two letters need a smaller glyph so "FC" doesn't crowd the disc's edges.
   const fontScale = initials.length > 1 ? 0.34 : 0.42
   return (
+    // The initial takes whichever ink contrasts MORE with this member's colour — the
+    // CSS default is a flat white, which on a mid-tone (sky, sage, marigold) measured
+    // 3.46:1. This is the face primitive: every row, every card, every peek.
     <span className="avatar avatar--disc" style={{ ...dims, background: colour ?? 'var(--ink-faint)' }}>
-      <span className="avatar__initial" style={{ fontSize: Math.round(size * fontScale) }}>
+      <span
+        className="avatar__initial"
+        style={{ fontSize: Math.round(size * fontScale), color: colour ? readableInk(colour) : undefined }}
+      >
         {initials}
       </span>
     </span>

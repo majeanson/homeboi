@@ -765,7 +765,15 @@
 }
 .chip.is-on {
   border-color: var(--accent);
-  color: var(--accent);
+  /* A selected chip said its own name in the RAW accent — marigold on cream, 2.07:1, on
+     the control whose entire job is to say "this one is chosen" (axe, 2026-09-15).
+     Mixed toward --ink, NOT set to --accent-ink: that token means "text on a marigold
+     FILL", and this chip's fill is --surface. Using it turned night into #1b1712 on a
+     dark surface — 1.1:1, worse than the bug. The mix is theme-correct by construction
+     (--ink flips) and survives tintScope() re-pointing --accent on a themed tab.
+     50%: sized against EVERY accent this chip can wear (raw marigold plus the six
+     SECTION_TINT inks), worst case 5.08:1 — 30% left marigold at 3.44. */
+  color: color-mix(in srgb, var(--accent) 50%, var(--ink));
   background: var(--surface);
 }
 .kitchen__staples-actions {

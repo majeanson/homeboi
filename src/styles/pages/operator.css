@@ -527,7 +527,9 @@ a.ledger__chore--link {
   margin-left: auto; /* Cancel + Save to the right; Delete keeps the left edge */
 }
 .form-footer__del {
-  color: var(--warn);
+  /* --warn resolves to the -deep (glyph, 3:1) tier; this is a button LABEL. 4.06:1 by
+     day, 3.97 at night. Same palette rule as everywhere else: text takes -ink. */
+  color: var(--terracotta-ink, var(--warn));
 }
 .operator__inline-form .input {
   width: auto;

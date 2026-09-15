@@ -970,7 +970,9 @@
 }
 .recipe-view__tag {
   background: var(--berry-wash, #efe6ee);
-  color: var(--berry-deep, #7a3f6a);
+  /* -ink on its own wash — the pairing that tier is audited for. -deep measured 4.26:1
+     by day and 3.03:1 at night. */
+  color: var(--berry-ink, #7a3f6a);
 }
 
 /* --- Section markers ("## Glaçage") inside Cook mode ----------------------- */

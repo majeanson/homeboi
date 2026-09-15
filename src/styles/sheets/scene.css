@@ -158,7 +158,8 @@
 .deal__unit {
   font-size: 12px;
   font-weight: 700;
-  color: var(--sage-deep, var(--ink));
+  /* -ink for text (3.8:1 as -deep). */
+  color: var(--sage-ink, var(--ink));
 }
 .deal__unit--none {
   font-weight: 500;

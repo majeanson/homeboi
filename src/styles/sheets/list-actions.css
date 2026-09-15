@@ -281,7 +281,10 @@
   border: 0;
   border-radius: 99px;
   background: var(--sage, #88a36f);
-  color: #fff;
+  /* Not #fff: 2.79:1 on the sage fill. --accent-ink is our warm-dark button ink and
+     sage is a mid-tone, so the dark side wins here exactly as readableInk() computes
+     it for the routine card’s « Faire » pill. */
+  color: var(--accent-ink, #2c2722);
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
