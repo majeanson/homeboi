@@ -6,11 +6,28 @@ import { emitAiError } from './aiErrorBus'
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  /**
+   * An optional machine-readable discriminator from the response body's `code`.
+   *
+   * Exists because a status alone is sometimes not enough to choose a SENTENCE: the
+   * operator-join endpoint has two different 409s — "this address is already on this
+   * household" (reassuring, link to sign in) and "this address already runs a
+   * DIFFERENT household" (a dead end that needs another address). Both are genuinely
+   * conflicts, so splitting them across HTTP statuses would be lying about one of
+   * them, and the alternative the client reached for first was matching French
+   * substrings of `message` — which breaks the moment the copy is edited, or read in
+   * English. Undefined for every endpoint that does not send one.
+   */
+  code?: string
+  constructor(status: number, message: string, code?: string) {
     super(message)
     this.status = status
+    this.code = code
   }
 }
+
+/** The body `code` an error carried, when it carried one. See ApiError.code. */
+export const errorCode = (e: unknown): string | undefined => (e instanceof ApiError ? e.code : undefined)
 
 // Status predicates so callers don't re-spell `e instanceof ApiError && ...`.
 // `isUnauthorized` (401) means "no household yet" → send them to pair/login;
@@ -206,8 +223,9 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   }
 
   if (!res.ok) {
-    const message = (data as { error?: string })?.error ?? `Erreur ${res.status}`
-    throw new ApiError(res.status, message)
+    const err = data as { error?: string; code?: string }
+    const message = err?.error ?? `Erreur ${res.status}`
+    throw new ApiError(res.status, message, typeof err?.code === 'string' ? err.code : undefined)
   }
   return data as T
 }

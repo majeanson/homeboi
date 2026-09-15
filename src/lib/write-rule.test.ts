@@ -93,6 +93,19 @@ const ALLOWED = new Set<string>([
   'components/cercle/FamilyShareModal.tsx → family-share',
   'components/voyage/VoyageShareModal.tsx → shared-trip-invite',
   'pages/SharedVoyageJoinPage.tsx → shared-trip-join',
+  // « L'autre parent » (migration 0128). All three are cases where the outbox would
+  // be actively wrong, each for a different reason worth naming:
+  //   · POST operator-invite — the whole POINT is the URL that comes back. A queued
+  //     mint hands the operator an empty card and a promise, and the link it finally
+  //     produces belongs to a conversation that ended hours ago.
+  //   · DELETE operator-invite — this is « Réinitialiser »: a REVOCATION. Queuing it
+  //     tells someone their outstanding links are dead while they are still live.
+  //     That is the one failure mode a security control must not have.
+  //   · POST operator-join — it issues the session cookie. There is no household to
+  //     queue against yet (useWrite's outbox is per-device-with-a-household), and a
+  //     replay of "become an operator" later is not a thing that can mean anything.
+  'components/operator/CoOperatorsSection.tsx → operator-invite',
+  'pages/JoinHouseholdPage.tsx → operator-join',
   // The two guest forms have no outbox by construction (a guest session is not
   // an operator's device and useWrite refuses a guest write outright), but they
   // DO carry an Idempotency-Key of their own now — one per composed submission,

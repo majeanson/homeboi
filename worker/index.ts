@@ -37,7 +37,12 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // yet (pairing) or issue it (login), so they're exempt from the CSRF gate.
 // 'demo' mints the public read-only showcase token for « Essaie sans peur »
 // (bmad/08 A-8) — a first-time visitor has no cookie yet, exactly like signup.
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'pair/start', 'pair/poll', 'demo'])
+// 'operator-join' redeems an invite link (migration 0128): the person tapping it is
+// signed into nothing yet, so there is no cookie to double-submit. The capability
+// token in the body IS the credential, and it is checked against the household's live
+// `invite_nonce` — a narrower gate than CSRF, not a missing one. (The MINT side,
+// 'operator-invite', is NOT exempt: that one runs on a real operator session.)
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'pair/start', 'pair/poll', 'demo', 'operator-join'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',

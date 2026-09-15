@@ -346,3 +346,50 @@ export async function verifySharedTripInvite(
   if ('g' in payload || 'd' in payload || 'e' in payload) return null
   return { sharedTripId: payload.st, nonce: payload.n }
 }
+
+// ---- Operator invite token (« Inviter l'autre parent ») ---------------------
+//
+// The SAME stateless-capability shape as the shared-trip invite above, for the same
+// reason: no invite row, the household's `invite_nonce` (migration 0128) is the
+// revocation handle, and rotating it kills every outstanding link at once.
+//
+// Payload tag `o`, distinct from `st` / `g` / `d` / `e` so the five token kinds can
+// never cross-verify. This one is the most powerful token the app mints — redeeming
+// it makes you a full operator of somebody's household — so it gets the SHORTEST
+// life of the family (7 days, half the trip invite's) and, like the trip invite, it
+// is never a transport credential: it is handed to operator-join and verified there,
+// never to resolveActor.
+//
+// The seven days are a real trade, not a default copied across. A household invite
+// gets texted to one person who acts on it the same evening; a link that still works
+// a fortnight later is a link sitting in a message thread long after anyone
+// remembers sending it.
+export const OPERATOR_INVITE_TTL = 60 * 60 * 24 * 7 // 7 days
+
+export async function issueOperatorInvite(
+  env: Env,
+  householdId: string,
+  nonce: string,
+  ttlSeconds: number = OPERATOR_INVITE_TTL,
+): Promise<string> {
+  return signToken(env, { o: householdId, n: nonce, x: nowSec() + ttlSeconds })
+}
+
+// Verify a RAW operator-invite string (HMAC + expiry). NOT a membership check: the
+// caller compares the returned `nonce` against the household's LIVE `invite_nonce`,
+// so a rotated link is dead even while its signature is still good. Same tag-guard
+// discipline as verifySharedTripInvite — an `o`-typed payload carrying any other
+// credential tag is refused in both directions.
+export async function verifyOperatorInvite(
+  env: Env,
+  token: string | null,
+): Promise<{ householdId: string; nonce: string } | null> {
+  const payload = await verifyToken<{ o?: string; n?: string; st?: string; g?: string; d?: string; e?: string }>(
+    env,
+    token,
+  )
+  if (!payload) return null
+  if (typeof payload.o !== 'string' || typeof payload.n !== 'string') return null
+  if ('st' in payload || 'g' in payload || 'd' in payload || 'e' in payload) return null
+  return { householdId: payload.o, nonce: payload.n }
+}

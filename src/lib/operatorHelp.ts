@@ -230,6 +230,16 @@ export const OPERATOR_HELP = {
       en: `The maintenance log: what broke and when. Clear it once read — not a counter, just a maintenance log.`,
     },
   },
+  coop: {
+    // Same guide card as the guest links below — both answer "who else can see or
+    // touch this household", and DISCOVERY.md's rule is to merge into an existing
+    // card before minting a 33rd.
+    card: 'share-access',
+    body: {
+      fr: `Le deuxième adulte de la maisonnée a son PROPRE compte, pas ton mot de passe : même accès complet que toi, sa propre adresse, et son nom sur ce qu'il ajoute. C'est différent d'un lien invité (lecture seule, temporaire) et d'une tablette jumelée (le babillard, sans les réglages). Le lien d'invitation expire après une semaine, et « Réinitialiser » coupe d'un coup tous ceux déjà envoyés.`,
+      en: `The household's second adult gets their OWN account, not your password: the same full access as you, their own address, and their name on what they add. Different from a guest link (read-only, temporary) and from a paired tablet (the board, without the settings). The invite link expires after a week, and “Reset” kills every one already sent at once.`,
+    },
+  },
   guest: {
     // Was 'set-guest' — never a GUIDE id; 'share-access' is the guest-links card.
     card: 'share-access',

@@ -84,6 +84,12 @@ export const SETTINGS_TREE = {
     tablets: [
       s('claimTablet', 'operator'),
       s('devices', 'operator'),
+      // « L'autre parent » — a SECOND operator account for this household
+      // (migration 0128). It sits here rather than in maison ▸ members because that
+      // sub is about the FACES on the board (who the household is), and this is
+      // about ACCESS (who may act as it) — the same distinction that already puts
+      // devices and guest links on this tab. C-15: an existing sub, not a new pill.
+      s('coop', 'operator'),
       s('guestLinks', 'operator'),
       s('health', 'household'),
       s('buildInfo', 'household'),

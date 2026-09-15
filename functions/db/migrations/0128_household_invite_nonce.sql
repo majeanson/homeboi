@@ -1,0 +1,28 @@
+-- « Inviter l'autre parent » — a SECOND operator for a household.
+--
+-- The schema already allowed this and nothing else did. `operators` is keyed on
+-- `email` with a plain `household_id` beside it, so N operators → 1 household has
+-- always been legal; there was simply no way to create the second row. Worse, the
+-- one path that looked like it should — the partner signing up with their own
+-- address — runs `ensureHouseholdForEmail`, which makes them a BRAND NEW household
+-- and seeds it with the sample family. They do not see an empty app they would
+-- report as broken; they see a plausible board with somebody else's fake kids on it.
+--
+-- The workaround was to pair their phone as a kiosk device, which quietly costs them
+-- every `authed(…, 'operator')` endpoint — 56 call sites across 29 files. Including,
+-- exactly: `transfers.ts`. « Les virements » exists because TWO people each send
+-- their share (see 0126's header), and only one of them could record one.
+--
+-- NO NEW TABLE. The invite is a stateless HMAC capability, the same shape
+-- `shared_trips` uses for « Voyage partagé » (_lib/auth issueSharedTripInvite): the
+-- token carries the household id plus this nonce, and the nonce IS the revocation
+-- handle. « Réinitialiser le lien » rotates it and every outstanding invite dies at
+-- once, with nothing to sweep and no row that can outlive the thing it points at.
+--
+-- NULL = never minted. `operator-invite.ts` fills it on first mint rather than a
+-- backfill here: a nonce written for every household that will never invite anyone
+-- is a secret with no purpose, and rotating one that was never used reads as a
+-- revocation that never happened.
+--
+-- Forward-only, per the migration rules.
+ALTER TABLE households ADD COLUMN invite_nonce TEXT;

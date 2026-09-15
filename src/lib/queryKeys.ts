@@ -149,3 +149,11 @@ export function guestWindowKey(preview: string | null | undefined, sub?: string)
 // but it belongs here with the rest: an inline `['cercle','photos',id]` literal at the
 // call site is exactly how one key becomes two spellings and then two caches.
 export const cerclePhotosKey = (contactId: string) => ['cercle', 'photos', contactId]
+
+// The « Rejoindre une maisonnée » preview (operator-join?j=…). Keyed on the TOKEN so
+// two different invites opened on the same device can never read each other's cached
+// household name — the one thing that page shows before someone types a password.
+export const operatorJoinKey = (token: string) => ['operator-join', token]
+// Who can act as this household (operator-invite GET). Used by the Réglages section
+// that mints the link, so the list refreshes the moment someone joins.
+export const OPERATORS_KEY = ['operators']

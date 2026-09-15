@@ -67,6 +67,8 @@ import * as members from '../functions/api/members'
 import * as membersAvatar from '../functions/api/members/avatar'
 import * as notes from '../functions/api/notes'
 import * as noteMedia from '../functions/api/note-media'
+import * as operatorInvite from '../functions/api/operator-invite'
+import * as operatorJoin from '../functions/api/operator-join'
 import * as pantry from '../functions/api/pantry'
 import * as photos from '../functions/api/photos'
 import * as placeImport from '../functions/api/place-import'
@@ -202,6 +204,11 @@ const TABLE: Record<string, RouteMod> = {
   'members/avatar': membersAvatar,
   notes,
   'note-media': noteMedia,
+  // « Inviter l'autre parent » (migration 0128) — mint/rotate on a real operator
+  // session; redeem with the capability token alone (CSRF-exempt in worker/index.ts,
+  // for the same reason signup is).
+  'operator-invite': operatorInvite,
+  'operator-join': operatorJoin,
   pantry,
   pets,
   photos,

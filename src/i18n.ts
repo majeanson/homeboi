@@ -2215,6 +2215,39 @@ export const FR = {
     gotoLogin: 'Connexion',
     nextStep: 'Tu atterriras sur le babillard, avec une courte liste pour bien partir.',
   },
+  // « Rejoindre une maisonnée » — la deuxième porte d'entrée (migration 0128).
+  // Le mot d'ordre : on ne CRÉE rien ici, on rejoint. Le titre nomme la maisonnée
+  // pour que la page ne puisse pas se confondre avec l'inscription.
+  join: {
+    title: 'Rejoindre une maisonnée',
+    titleFor: (name: string) => `Rejoindre ${name}`,
+    lead: 'Choisis-toi un courriel pis un mot de passe. Tu auras le même accès que la personne qui t’a invité — pas de rôle, pas de rang.',
+    emailHint: 'Le tien, pas celui de l’autre parent : chaque personne a son propre accès.',
+    submit: 'Rejoindre',
+    nextStep: 'Tu atterriras sur le babillard de la maisonnée — tout est déjà là.',
+    noToken: 'Il manque le lien d’invitation. Demande à la personne qui gère la maisonnée de t’en envoyer un.',
+    badLink: 'Ce lien est invalide, expiré ou réinitialisé. Demandes-en un nouveau.',
+    exists: 'Ce courriel a déjà accès à cette maisonnée.',
+    elsewhere: 'Ce courriel gère déjà une autre maisonnée. Prends une autre adresse pour rejoindre celle-ci — un compte, une maisonnée.',
+    error: 'Ça n’a pas marché. Réessaie.',
+  },
+  // Réglages ▸ Système ▸ Appareils & accès — « L'autre parent ».
+  coop: {
+    title: 'L’autre parent',
+    hint: 'Donne un accès complet à quelqu’un d’autre de la maisonnée. Même chose que toi : la liste, les repas, les virements, les réglages.',
+    you: 'toi',
+    mint: 'Créer un lien d’invitation',
+    mintAgain: 'Créer un autre lien',
+    linkReady: 'Envoie ce lien à la personne. Il vaut pour une seule maisonnée : la tienne.',
+    linkLabel: 'Lien d’invitation',
+    copy: 'Copier le lien',
+    copied: 'Copié !',
+    expires: (when: string) => `Le lien expire le ${when}.`,
+    rotate: 'Réinitialiser',
+    rotateHint: 'Réinitialiser coupe tous les liens déjà envoyés. Les personnes qui ont déjà rejoint gardent leur accès.',
+    rotateConfirm:
+      'Réinitialiser le lien d’invitation ? Tous les liens déjà envoyés cesseront de fonctionner. Les accès déjà accordés restent.',
+  },
   pair: {
     title: 'Jumeler cette tablette',
     lead: 'Sur la tablette : demande un code, pis approuve-le depuis ton téléphone.',

@@ -26,7 +26,13 @@ export const badRequest = (message: string) => body({ error: message }, 400)
 export const unauthorized = (message = 'Not signed in.') => body({ error: message }, 401)
 export const forbidden = (message = 'Forbidden.') => body({ error: message }, 403)
 export const notFound = (message = 'Not found.') => body({ error: message }, 404)
-export const conflict = (message: string) => body({ error: message }, 409)
+// `code` is optional and machine-readable: use it only when ONE status carries two
+// outcomes that need different words on screen, and the alternative would be the
+// client matching substrings of `message` (which breaks on an edit, and in the other
+// language). operator-join's two 409s are the reason it exists — both are honestly
+// conflicts, so splitting them across statuses would misreport one. src/lib/api.ts
+// surfaces it as ApiError.code / errorCode().
+export const conflict = (message: string, code?: string) => body(code ? { error: message, code } : { error: message }, 409)
 export const tooManyRequests = (message: string) => body({ error: message }, 429)
 export const serviceUnavailable = (message: string) => body({ error: message }, 503)
 export const serverError = (message = 'Something broke.') => body({ error: message }, 500)

@@ -19,6 +19,11 @@ const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Sig
 // « Garder ma maisonnée » — a demo-sandbox session converts itself into a real
 // account (the board claim banner links here). Sandbox-only; others bounce home.
 const ClaimPage = lazy(() => import('./pages/ClaimPage').then((m) => ({ default: m.ClaimPage })))
+// « Rejoindre une maisonnée » — where an operator-invite link lands (migration 0128).
+// Standalone like /signup: the person opening it has no session and no household yet.
+const JoinHouseholdPage = lazy(() =>
+  import('./pages/JoinHouseholdPage').then((m) => ({ default: m.JoinHouseholdPage })),
+)
 const Operator = lazy(() => import('./pages/Operator').then((m) => ({ default: m.Operator })))
 const Kitchen = lazy(() => import('./pages/Kitchen').then((m) => ({ default: m.Kitchen })))
 // « Maison » — the merged household tab (Routines · Famille · Social · Business ·
@@ -274,6 +279,10 @@ export function AppRoutes() {
         <Route path="/signup" element={<Signup />} />
         {/* « Garder ma maisonnée » — claim the demo sandbox into a real account. */}
         <Route path="/garder" element={<ClaimPage />} />
+        {/* « Rejoindre » — redeem an operator invite (?j=<token>). A household's
+            second adult arrives here, NOT at /signup, which would have made them a
+            brand-new household of their own (migration 0128). */}
+        <Route path="/rejoindre" element={<JoinHouseholdPage />} />
 
         {/* Dev-only component gallery — unlinked, standalone (no hub chrome). */}
         <Route path="/dev/kit" element={<DevKit />} />
