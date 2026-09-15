@@ -669,6 +669,21 @@ export const ROUTES: Record<string, unknown> = {
   // AI-failure journal (Réglages). Empty is the normal, healthy state.
   'ai-errors': { errors: [] },
   recipes: RECIPES,
+  // ONE recipe’s as-imported snapshot, fetched only when the sheet’s « Original »
+  // toggle is tapped. It is deliberately NOT part of `recipes` above: that payload is
+  // read by nine surfaces, re-polled live and restored from IndexedDB before first
+  // paint, and the snapshot is a second copy of the whole recipe (functions/_lib/
+  // recipeWire.ts). A fixture with a snapshot that DIFFERS from the live card, so a
+  // spec can tell the two views apart.
+  'recipe-original': {
+    original: {
+      title: 'Crêpes (carte de grand-maman)',
+      ingredients: ['2 tasses de farine', '3 oeufs', '500 ml de lait'],
+      steps: ['Melanger le tout.', 'Cuire dans un poelon beurre.'],
+      servings: 4,
+      importedAt: BASE - 30 * 86400,
+    },
+  },
   'recipe-tags': {
     presets: [],
     used: [

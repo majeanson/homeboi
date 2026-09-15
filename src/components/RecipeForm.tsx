@@ -106,8 +106,15 @@ export function RecipeForm({
   const [tagInput, setTagInput] = useState('')
   const [source, setSource] = useState<string | null>(value?.source ?? null)
   const [image, setImage] = useState<string | null>(value?.image ?? null)
-  // The as-imported snapshot, kept verbatim across edits; a fresh import
-  // replaces it. Saved alongside the card so the sheet can show "the original".
+  // The as-imported snapshot, kept verbatim across edits; a fresh import replaces it.
+  //
+  // For an EXISTING recipe this stays null, and that is correct: the list read stopped
+  // carrying the snapshot (it is a second copy of the whole recipe — see lib/recipes),
+  // so `value.original` is undefined here. The form does not need it. It holds one
+  // only for a fresh import made DURING this edit, and the server's PATCH already
+  // reads « an edit that doesn't carry one never wipes it » — `cleanOriginal(body
+  // .original) ?? prev.original_json`. So sending null preserves what is stored.
+  // Do NOT "fix" this by putting the snapshot back in the list payload.
   const [original, setOriginal] = useState<RecipeOriginal | null>(value?.original ?? null)
 
   // Dirty guard: this is the one form in a scrim modal, so a stray tap on the

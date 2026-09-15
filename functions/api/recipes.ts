@@ -1,9 +1,12 @@
-import { badRequest, ok, created, notFound, readJson, parseJsonArray } from '../_lib/json'
+import { badRequest, ok, created, notFound, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
 import { isValidR2Key } from '../_lib/validate'
-import { MAX_STEP_LEN, healTruncatedSteps } from '../_lib/recipeImport'
+import { MAX_STEP_LEN } from '../_lib/recipeImport'
+// THE row -> wire mapping for the list read lives in one place, with the reason the
+// as-imported snapshot is not in it. Its test is the guard.
+import { recipeListItem, parseOriginal, type RecipeRow, type RecipeOriginal } from '../_lib/recipeWire'
 // The step-image lockstep rule lives in ONE server home (its client twin is
 // src/lib/parallelArray.ts) — see functions/_lib/recipeStepImages.ts.
 import { normalizeStepImages, stepImageKeys } from '../_lib/recipeStepImages'
@@ -15,26 +18,6 @@ import { normalizeStepImages, stepImageKeys } from '../_lib/recipeStepImages'
 // Companion endpoints keep their own files (the per-concern convention):
 //   recipe-draft  — AI drafts ingredients/steps from a title (503 degrade)
 //   recipe-to-list — push a recipe's ingredients onto the shared list
-
-interface RecipeRow {
-  id: string
-  title: string
-  ingredients_json: string
-  steps_json: string
-  servings: number | null
-  servings_unit: string | null
-  prep_min: number | null
-  cook_min: number | null
-  total_min: number | null
-  notes: string | null
-  source: string | null
-  image: string | null
-  tags_json: string
-  original_json: string | null
-  steps_images_json: string | null
-  lang: string | null
-  updated_at: number
-}
 
 interface RecipeBody {
   id?: string
@@ -55,21 +38,6 @@ interface RecipeBody {
   stepImages?: unknown
   // The recipe's reading language for read-aloud ('fr' | 'en', null = follow UI).
   lang?: string | null
-}
-
-// The as-imported snapshot (migration 0020): what the import (URL / paste /
-// photo) produced, untouched, so the sheet can always show "the original".
-interface RecipeOriginal {
-  title: string | null
-  ingredients: string[]
-  steps: string[]
-  servings?: number | null
-  source?: string | null
-  importedAt?: number
-  // R2 key of the photo this recipe was read from (photo-import path), so the
-  // sheet's "Original" view can show the source card. An R2 key only — never a
-  // remote URL — and freed with the row on delete.
-  sourceImage?: string | null
 }
 
 // An image value is either an R2 key (a single path segment we own) or a remote
@@ -140,17 +108,6 @@ function cleanOriginal(v: unknown): string | null {
   })
 }
 
-// Parse the stored snapshot back out (defensive — a bad row reads as null).
-function parseOriginal(json: string | null): RecipeOriginal | null {
-  if (!json) return null
-  try {
-    const o = JSON.parse(json) as RecipeOriginal
-    return o && typeof o === 'object' && !Array.isArray(o) ? o : null
-  } catch {
-    return null
-  }
-}
-
 // Tags: short, deduped (case-insensitively), few. A tighter cleanList.
 function cleanTags(v: unknown): string[] {
   if (!Array.isArray(v)) return []
@@ -174,36 +131,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId)
     .all<RecipeRow>()
-  const recipes = (results ?? []).map((r) => {
-    const original = parseOriginal(r.original_json)
-    // Self-heal: a step chopped by the OLD 200-char save cap is restored from the
-    // full text preserved in the `original` snapshot (see healTruncatedSteps). This
-    // fixes every legacy recipe on load — no destructive backfill — and once the
-    // cook re-saves, the full step persists. Step count is unchanged, so the
-    // parallel stepImages array below still lines up.
-    const steps = healTruncatedSteps(parseJsonArray<string>(r.steps_json, isStr), original?.steps)
-    return {
-      id: r.id,
-      title: r.title,
-      ingredients: parseJsonArray<string>(r.ingredients_json, isStr),
-      steps,
-      servings: r.servings,
-      servingsUnit: r.servings_unit,
-      prepMin: r.prep_min,
-      cookMin: r.cook_min,
-      totalMin: r.total_min,
-      notes: r.notes,
-      source: r.source,
-      image: r.image,
-      tags: parseJsonArray<string>(r.tags_json, isStr),
-      original,
-      // Parallel per-step photo keys, '' = none (feature #17 B).
-      stepImages: normalizeStepImages(r.steps_images_json, steps.length),
-      // Reading language for read-aloud (#TTS): 'fr' | 'en' | null = follow UI.
-      lang: cleanLang(r.lang),
-      updatedAt: r.updated_at,
-    }
-  })
+  // ONE mapper (_lib/recipeWire), whose header says why the as-imported snapshot
+  // is not in this payload and whose test holds it there. original_json is still
+  // SELECTed: healTruncatedSteps reads it to restore steps the old 200-char cap
+  // chopped — it is read, not sent.
+  const recipes = (results ?? []).map(recipeListItem)
   return ok({ recipes })
 })
 

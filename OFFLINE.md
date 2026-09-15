@@ -113,6 +113,31 @@ reopened on a Board and a Liste that were empty shells while La cuisine was fine
   *erased* the open tab from the snapshot within seconds. `dehydrate` only
   serializes the data frame, so data-bearing errored queries are safe to keep.
 
+### …and what it should never have kept (2026-09-15)
+
+The snapshot is only as cheap as the payloads it holds, and one of them was paying
+twice. `/api/recipes` is the app's most shared read — nine `useRecipes()` call sites
+(Kitchen, the book, cook mode, multicook, the day plan, ideas, search, even the
+board's DrawPad), it rides `...live`, and it is restored **before first paint**. It
+also carried `original`, the as-imported snapshot, whose `ingredients` + `steps` are
+a full **second copy of every recipe's text** — for two surfaces: the sheet's
+« Original » toggle and the edit form's pass-through.
+
+So: the list read no longer sends it (`functions/_lib/recipeWire.ts` is the one
+row→wire mapping, and its header says why), and `GET /api/recipe-original?id=` serves
+it per recipe when the toggle is tapped. Two things to know before touching this:
+
+- **The column is still SELECTed.** `healTruncatedSteps` reads the snapshot to restore
+  steps chopped by the old 200-char save cap. Dropping it from the query would have
+  shrunk the payload *and* silently un-healed every legacy recipe.
+- **The edit form does not need it.** The PATCH already reads « an edit that doesn't
+  carry one never wipes it » (`cleanOriginal(body.original) ?? prev.original_json`),
+  so the form sending `null` preserves what is stored.
+
+Guards: `functions/_lib/recipeWire.test.ts` (the payload has no `original`, and the
+heal still fires) and `e2e/recipe-original-lazy.spec.ts` (opening a recipe fetches
+nothing; the toggle fetches, and renders the snapshot rather than the live card).
+
 ## The write path (outbox)
 
 `useWrite()` (`src/lib/write.ts`) is the offline-aware replacement for the old

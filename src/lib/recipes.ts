@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { api } from './api'
 import { imgUrl } from './image'
 
 // Shared recipe types + helpers for the recipe-book UI. Mirrors the shape the
@@ -36,6 +38,15 @@ export interface Recipe {
   source: string | null
   image: string | null // an R2 key (uploaded) OR an https URL (imported)
   tags: string[]
+  /**
+   * NOT IN THE LIST PAYLOAD (2026-09-15). The snapshot holds a second copy of the
+   * recipe’s whole text, and `/api/recipes` is the app’s most shared read — nine
+   * `useRecipes()` call sites, `...live`, restored from IndexedDB before first paint.
+   * Carrying it there taxed every surface and every cold boot to serve one toggle.
+   * `useRecipeOriginal()` fetches it per recipe when the sheet asks. Still typed here
+   * because the EDIT FORM holds one in flight for a fresh import (the server keeps the
+   * stored snapshot when an edit does not carry one, so the form never has to load it).
+   */
   original?: RecipeOriginal | null
   // Per-step photo R2 keys (feature #17 B), PARALLEL to steps: stepImages[i] is
   // the key for steps[i], or '' when that step has no photo. Optional: older
@@ -58,6 +69,27 @@ export function recipeTotalMin(r: Pick<Recipe, 'prepMin' | 'cookMin' | 'totalMin
 }
 
 export const RECIPES_KEY = ['recipes']
+
+/** The per-recipe snapshot key. Recipe-scoped, so two sheets never share a frame. */
+export const recipeOriginalKey = (id: string) => ['recipe-original', id]
+
+/**
+ * ONE recipe’s as-imported snapshot, fetched only when something asks to SEE it.
+ *
+ * `enabled` is the whole point: the sheet passes its « Original » toggle, so a cook
+ * who never opens it never pays for it — which is the trade that took the snapshot
+ * out of the list read in the first place (see the `original` field above).
+ */
+export function useRecipeOriginal(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: recipeOriginalKey(id),
+    queryFn: () => api<{ original: RecipeOriginal | null }>('recipe-original?id=' + encodeURIComponent(id)),
+    enabled,
+    // It changes only when the cook re-imports during an edit — rare, deliberate, and
+    // followed by a fresh mount. No polling: this is a read you asked for by tapping.
+    staleTime: 5 * 60_000,
+  })
+}
 
 // /api/recipe-tags — the household tag layer: saved preset pills + every tag
 // currently in use (with counts). Shared by the recipe form (pill offer) and

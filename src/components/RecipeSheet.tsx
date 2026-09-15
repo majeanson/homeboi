@@ -4,7 +4,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
-import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor } from '../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor, useRecipeOriginal } from '../lib/recipes'
 import { isGuest } from '../lib/device'
 import { useAudience } from '../lib/audience'
 import { wash, tintInk, edge } from '../lib/colors'
@@ -16,6 +16,7 @@ import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/reci
 import { groupSections } from '../lib/recipeSections'
 import { type MealSlot } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
+import { Loading } from './Fallback'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { IngredientLine } from './IngredientLine'
@@ -107,7 +108,16 @@ export function RecipeSheet({
   // An imported recipe shows its as-imported snapshot; a hand-typed one shows
   // the card as written. Plain title, plain list, plain numbered steps.
   const [showOriginal, setShowOriginal] = useState(false)
-  const orig = recipe.original ?? null
+  // FETCHED ON THE TAP, not carried by the list. The as-imported snapshot is a second
+  // copy of the whole recipe, and `/api/recipes` is read by nine surfaces, re-polled
+  // every ~10 s and restored from IndexedDB before first paint — so it lived there at
+  // the cost of every cold boot, to serve this one toggle (see lib/recipes).
+  const origQ = useRecipeOriginal(recipe.id, showOriginal)
+  // `data !== undefined`, never `status === 'success'`: a failed refetch flips the
+  // status to 'error' while the last good frame stays cached, and gating on status
+  // would throw away a snapshot we are holding.
+  const origLoading = showOriginal && origQ.data === undefined
+  const orig = origQ.data?.original ?? null
   const origView = {
     title: orig?.title || recipe.title,
     ingredients: orig?.ingredients?.length ? orig.ingredients : recipe.ingredients,
@@ -268,7 +278,16 @@ export function RecipeSheet({
           }
         />
 
-        {showOriginal ? (
+        {showOriginal && origLoading ? (
+          // ONE record on its way, on a surface you just asked for — `Loading`, not a
+          // Skeleton: a skeleton promises a shape, and until the snapshot lands we do
+          // not know whether this recipe has one. Without this the fallback below
+          // would paint the EDITED text under the words « telle qu'importée » — a
+          // wrong claim, briefly, which is worse than a wait.
+          <div className="recipe-modal__body recipe-original">
+            <Loading />
+          </div>
+        ) : showOriginal ? (
           <div className="recipe-modal__body recipe-original">
             <p className="recipe-original__tag mono">
               {orig ? t.recipes.originalImported : t.recipes.originalAsWritten}
