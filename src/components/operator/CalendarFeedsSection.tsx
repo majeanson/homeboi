@@ -30,6 +30,8 @@ interface Feed {
   lastFetchAt: number | null
   lastError: string | null
   partialCount: number
+  partialTitles?: string[]
+  errorSince?: number | null
   eventCount: number
 }
 
@@ -151,8 +153,18 @@ export function CalendarFeedsSection({ help }: { help?: HelpMode }) {
                     : t.feeds.ok(f.eventCount, f.lastFetchAt ? formatDay(f.lastFetchAt, lang) : '—')}
                   {/* Honesty over silence: an RRULE we do not implement contributes
                       its first day only, and saying so beats a calendar that LOOKS
-                      complete (the OCR « Rapport » precedent). */}
-                  {f.partialCount > 0 && <> · {t.feeds.partial(f.partialCount)}</>}
+                      complete (the OCR « Rapport » precedent).
+                      NAMED, not counted (migration 0131): « 2 » is true and
+                      unactionable — it cannot tell a household which dates to go and
+                      check themselves. The titles can. */}
+                  {f.partialCount > 0 && (
+                    <>
+                      {' · '}
+                      {f.partialTitles && f.partialTitles.length > 0
+                        ? t.feeds.partialNamed(f.partialTitles.join(', '))
+                        : t.feeds.partial(f.partialCount)}
+                    </>
+                  )}
                 </span>
               </span>
               <Cluster>

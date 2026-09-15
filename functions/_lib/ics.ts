@@ -26,6 +26,10 @@ export interface IcsResult {
   occurrences: IcsOccurrence[]
   /** VEVENTs whose recurrence rule we did not fully implement (see the header). */
   partial: number
+  /** …and WHICH ones, by title. A count is true and unactionable — « 2 » does not
+   *  tell a household which dates to go and check themselves. Capped: this is a
+   *  hint on a settings card, not a report. */
+  partialTitles: string[]
 }
 
 // A guard, not a preference: this runs inside a Worker on a shared cron, and an
@@ -74,22 +78,98 @@ function unescapeText(v: string): string {
 }
 
 /**
+ * The UTC offset, in seconds, that `zone` was at the given instant.
+ *
+ * NO TZDATA TABLE. `Intl.DateTimeFormat` already carries the whole IANA database in
+ * every JS runtime, including a Worker — it just does not expose offsets directly.
+ * So: format the instant AS that zone, read the wall clock back, and the difference
+ * between that and the same instant's UTC wall clock IS the offset. It handles DST by
+ * construction, because it asks about one specific instant rather than about a zone.
+ *
+ * Returns null for a TZID the runtime does not know (a Windows-style « Eastern
+ * Standard Time », an X- extension, a typo), which the caller treats as "no zone
+ * information" rather than guessing.
+ */
+// One formatter per ZONE, built once. Not a micro-optimisation: this is called for
+// every DTSTART, every DTEND and every EXDATE in the feed — a school calendar is
+// hundreds of those — and `new Intl.DateTimeFormat` costs ~100µs each inside a Worker
+// whose whole budget is measured in milliseconds. That is exactly how /api/year once
+// burned 1.8s, which is why `intl-rule.test.ts` refuses an uncached construction and
+// why this file carries an ALLOWED entry naming this cache.
+// Unbounded only in theory: the key space is the set of TZIDs one household's feeds
+// mention, which is one or two.
+const zoneFmtCache = new Map<string, Intl.DateTimeFormat | null>()
+
+function zoneFmt(zone: string): Intl.DateTimeFormat | null {
+  const hit = zoneFmtCache.get(zone)
+  if (hit !== undefined) return hit
+  let made: Intl.DateTimeFormat | null = null
+  try {
+    made = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+  } catch {
+    // An unknown timeZone makes the constructor throw — that is the detection, and
+    // caching the null means a malformed feed does not re-throw once per line.
+    made = null
+  }
+  zoneFmtCache.set(zone, made)
+  return made
+}
+
+function zoneOffsetSec(zone: string, atMs: number): number | null {
+  try {
+    const dtf = zoneFmt(zone)
+    if (!dtf) return null
+    const p: Record<string, string> = {}
+    for (const { type, value } of dtf.formatToParts(new Date(atMs))) p[type] = value
+    // `hour` can come back as "24" at midnight in some engines' hourCycle handling.
+    const asUtc = Date.UTC(
+      Number(p.year),
+      Number(p.month) - 1,
+      Number(p.day),
+      Number(p.hour) % 24,
+      Number(p.minute),
+      Number(p.second),
+    )
+    return Math.round((asUtc - atMs) / 1000)
+  } catch {
+    // Belt and braces: `zoneFmt` already caught the unknown-zone throw, but a
+    // formatToParts on an out-of-range date can still fail, and a malformed feed must
+    // never take the whole nightly refresh down.
+    return null
+  }
+}
+
+/**
  * A date-time value → unix seconds, plus whether it was a whole-day value.
  *
- * THE TIMEZONE LIMIT, stated rather than hidden. Three forms appear in the wild:
- *   · `20260915T130000Z` — UTC. Exact, and we parse it exactly.
- *   · `20260915`          — a DATE. All-day; interpreted in the SERVER's local zone,
- *                           which is the same convention every other all-day row in
- *                           this app uses (localDayStart).
- *   · `20260915T130000` with a TZID — a local time in a named zone. We treat it as
- *                           the server's local zone. That is CORRECT for the case
- *                           this feature is for (a school in the household's own
- *                           city) and wrong for a feed from another timezone, which
- *                           would land off by the offset difference.
- * Supporting arbitrary TZIDs properly means shipping a tzdata table into a Worker;
- * the honest move is to be wrong in a documented, predictable way rather than to
- * pretend. If cross-zone feeds ever matter, `Intl.DateTimeFormat` with `timeZone` can
- * resolve an offset without a table — start there.
+ * Three forms appear in the wild:
+ *   · `20260915T130000Z` — UTC. Exact.
+ *   · `20260915`          — a DATE. All-day, anchored at the SERVER's local midnight,
+ *                           the same convention every other all-day row here uses
+ *                           (localDayStart). A whole day has no zone: the school's
+ *                           « journée pédagogique » is that DATE wherever you read it.
+ *   · `20260915T130000` with a TZID — a wall clock in a named zone. Resolved through
+ *                           `zoneOffsetSec` above, so a feed published in another
+ *                           timezone lands at the right INSTANT rather than at the
+ *                           right number of hours.
+ *
+ * With no TZID and no Z, the wall clock is read as the server's own — which is what
+ * RFC 5545 calls "floating", and what the generators that omit the zone almost always
+ * mean (a local calendar, published locally).
+ *
+ * Two passes for a TZID, deliberately: the offset depends on the instant, and the
+ * instant is what we are computing. Guess with the zone's offset at the naive instant,
+ * then re-ask at the corrected one. That second pass is what makes the hour around a
+ * DST change land correctly instead of an hour out.
  */
 function parseDateValue(value: string, params: Record<string, string>): { at: number; allDay: boolean } | null {
   const v = value.trim()
@@ -104,8 +184,23 @@ function parseDateValue(value: string, params: Record<string, string>): { at: nu
   const dt = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/.exec(v)
   if (!dt) return null
   const [, y, mo, da, h, mi, s, z] = dt
-  if (z) {
-    return { at: Math.floor(Date.UTC(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(s)) / 1000), allDay: false }
+  const naiveUtc = Date.UTC(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(s))
+  if (z) return { at: Math.floor(naiveUtc / 1000), allDay: false }
+
+  const tzid = params.TZID
+  if (tzid) {
+    // Two passes — see the header. The first offset is looked up at the naive
+    // instant, which is off by at most the offset itself; the second is looked up at
+    // the corrected instant, which is right even inside a DST transition hour.
+    const guess = zoneOffsetSec(tzid, naiveUtc)
+    if (guess !== null) {
+      const firstPass = naiveUtc - guess * 1000
+      const refined = zoneOffsetSec(tzid, firstPass) ?? guess
+      return { at: Math.floor((naiveUtc - refined * 1000) / 1000), allDay: false }
+    }
+    // Unknown TZID: fall through to floating, which is the same answer we gave
+    // before zones were understood at all — never worse, and never a guess dressed
+    // up as a lookup.
   }
   const d = new Date(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(s))
   return { at: Math.floor(d.getTime() / 1000), allDay: false }
@@ -240,6 +335,7 @@ export function parseIcs(text: string, from: number, to: number): IcsResult {
   const lines = unfold(text)
   const occurrences: IcsOccurrence[] = []
   let partial = 0
+  const partialTitles: string[] = []
 
   // Which (uid, recurrence-id) pairs the feed has OVERRIDDEN or cancelled. A VEVENT
   // carrying RECURRENCE-ID replaces exactly one occurrence of its series; one with
@@ -321,7 +417,10 @@ export function parseIcs(text: string, from: number, to: number): IcsResult {
     }
 
     const rule = ev.RRULE ? parseRrule(ev.RRULE.value) : null
-    if (ev.RRULE && (!rule || rule.unsupported)) partial++
+    if (ev.RRULE && (!rule || rule.unsupported)) {
+      partial++
+      if (partialTitles.length < 8 && !partialTitles.includes(title)) partialTitles.push(title)
+    }
 
     // An override VEVENT (RECURRENCE-ID) is a single replacement occurrence; it must
     // not be re-expanded by its own series' rule.
@@ -348,5 +447,5 @@ export function parseIcs(text: string, from: number, to: number): IcsResult {
   }
 
   occurrences.sort((a, b) => a.startAt - b.startAt)
-  return { occurrences, partial }
+  return { occurrences, partial, partialTitles }
 }

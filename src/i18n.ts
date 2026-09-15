@@ -256,6 +256,7 @@ export const FR = {
     // (NFR-CALM-1), et la carte de révision dit le reste une fois qu'on y est.
     mailPostbox: 'Un message reçu attend d’être classé',
     mailIntake: 'Des infos reçues attendent d’être ajoutées',
+    feedStale: (name: string) => `${name} ne répond plus — vérifie l’adresse`,
     // « Plus tard » — un signal qu'on a VU mais qu'on ne peut pas régler tout de
     // suite (un covoiturage encore à décider, une fête pour laquelle on a choisi de
     // ne rien acheter). Sans ça, la seule surface faite pour ALLÉGER la charge
@@ -926,6 +927,9 @@ export const FR = {
     // fois, le jour où il commence.
     partial: (n: number) =>
       n === 1 ? '1 rendez-vous récurrent n’est pas tout affiché' : `${n} rendez-vous récurrents ne sont pas tout affichés`,
+    // Nommés plutôt que comptés : « 2 » est vrai et inutilisable — ça ne dit pas
+    // QUELLES dates aller vérifier soi-même.
+    partialNamed: (names: string) => `pas tout affiché : ${names}`,
     errors: {
       http: 'L’adresse répond mal — vérifie-la.',
       'too-big': 'Ce calendrier est trop gros.',

@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { refreshFeed, type FeedRow } from '../_lib/calendarFeeds'
@@ -67,7 +67,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bounded like every other list read (listCap's ratchet): a household subscribes to
   // a handful of calendars, and a limit nobody reaches keeps that number honest.
   const rows = await ctx.env.DB.prepare(
-    'SELECT id, url, label, colour, member_id, enabled, last_fetch_at, last_error, partial_count FROM calendar_feeds WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 50',
+    'SELECT id, url, label, colour, member_id, enabled, last_fetch_at, last_error, error_since, partial_count, partial_titles FROM calendar_feeds WHERE household_id = ? AND deleted_at IS NULL ORDER BY created_at LIMIT 50',
   )
     .bind(actor.householdId)
     .all<{
@@ -79,7 +79,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
       enabled: number
       last_fetch_at: number | null
       last_error: string | null
+      error_since: number | null
       partial_count: number
+      partial_titles: string
     }>()
   // How many expanded rows each feed currently holds — the only honest answer to "is
   // this working?", and cheaper to ask here once than to make the UI guess from dates.
@@ -105,6 +107,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       lastFetchAt: r.last_fetch_at,
       lastError: r.last_error,
       partialCount: r.partial_count,
+      // The TITLES, not just the count: « 2 » is true and unactionable — it cannot
+      // tell a household which dates to go and check themselves (migration 0131).
+      partialTitles: parseJsonArray<string>(r.partial_titles, (v): v is string => typeof v === 'string'),
+      errorSince: r.error_since,
       eventCount: byFeed.get(r.id) ?? 0,
     })),
   })

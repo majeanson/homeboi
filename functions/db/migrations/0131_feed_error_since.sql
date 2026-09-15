@@ -1,0 +1,24 @@
+-- « Les calendriers » — two things 0129 could report as a NUMBER and not as an ANSWER.
+--
+-- 1. HOW LONG a feed has been failing.
+--    `last_error` says a fetch failed; `last_fetch_at` updates on every attempt,
+--    failures included, so it can never say whether this is tonight's blip or a URL
+--    that died in August. Without the difference there are only two bad options: nag
+--    on every transient outage, or never mention it and let a household read a
+--    calendar that quietly stopped updating three weeks ago.
+--    Set on the FIRST failure after a success, cleared on the next success. « À régler »
+--    reads it so a genuinely dead feed becomes a friction with a one-tap fix, and a
+--    one-night outage stays invisible.
+--
+-- 2. WHICH recurring events are not fully expanded.
+--    `partial_count` says « 2 » — true, and useless: the household cannot act on a
+--    number. The titles let the card name them, which turns "something is missing"
+--    into "check the conseil d'établissement dates yourself". Same call the OCR
+--    « Rapport » tab made: when the machine cannot finish the job, say what it could
+--    not do rather than how much.
+--    JSON array, NOT NULL with a '[]' default, per the schema conventions — never a
+--    bare NULL a reader has to guard.
+--
+-- Forward-only.
+ALTER TABLE calendar_feeds ADD COLUMN error_since INTEGER;
+ALTER TABLE calendar_feeds ADD COLUMN partial_titles TEXT NOT NULL DEFAULT '[]';

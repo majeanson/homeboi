@@ -74,8 +74,8 @@ test('a subscribed calendar states its health, and its partial rules, on its row
   await mockApi(page)
   await routeFeeds(page, {
     list: [
-      { id: 'f1', url: 'https://a/x.ics', label: 'École de Léa', colour: null, memberId: null, enabled: true, lastFetchAt: 1_760_000_000, lastError: null, partialCount: 2, eventCount: 31 },
-      { id: 'f2', url: 'https://b/y.ics', label: 'Hockey', colour: null, memberId: null, enabled: false, lastFetchAt: 1_760_000_000, lastError: 'http', partialCount: 0, eventCount: 0 },
+      { id: 'f1', url: 'https://a/x.ics', label: 'École de Léa', colour: null, memberId: null, enabled: true, lastFetchAt: 1_760_000_000, lastError: null, partialCount: 2, partialTitles: ['Conseil d’établissement'], errorSince: null, eventCount: 31 },
+      { id: 'f2', url: 'https://b/y.ics', label: 'Hockey', colour: null, memberId: null, enabled: false, lastFetchAt: 1_760_000_000, lastError: 'http', partialCount: 0, partialTitles: [], errorSince: 1_759_000_000, eventCount: 0 },
     ],
   })
   await goToCard(page)
@@ -83,8 +83,9 @@ test('a subscribed calendar states its health, and its partial rules, on its row
   const card = page.locator('#op-feeds')
   // A healthy feed says how much it holds…
   await expect(card).toContainText('31')
-  // …and names what it could NOT expand, rather than looking complete.
-  await expect(card).toContainText('récurrents')
+  // …and NAMES what it could not expand, rather than printing a count nobody can act
+  // on (« 2 » cannot say which dates to go and check yourself).
+  await expect(card).toContainText('Conseil d’établissement')
   // A broken one names the failure. Silence here is the bug.
   await expect(card).toContainText('vérifie-la')
 })
@@ -160,4 +161,36 @@ test('a subscribed calendar is findable in Recherche', async ({ page }) => {
   await expect(row).toContainText('École de Léa')
   // …and it lands on the ONE day door, like every other dated hit.
   await expect(row).toHaveAttribute('href', /\/kitchen\/day\/\d+/)
+})
+
+test('a feed that has been dead for days reaches « À régler »', async ({ page }) => {
+  // The failure mode a self-filling feature HAS: a dead URL is silent. The calendar
+  // simply stops gaining dates and nothing says why, so a household reads a school
+  // term that ended in August with no reason to suspect anything.
+  // Three days, not one: `error_since` (0131) is what makes that distinction possible
+  // at all — `last_error` is true after one bad night, and `last_fetch_at` moves on
+  // every attempt including the failed ones.
+  await mockApi(page, {
+    overrides: {
+      'a-regler': {
+        signals: [
+          {
+            kind: 'feed-stale',
+            key: 'feed:stale',
+            label: 'École de Léa',
+            href: '/settings?tab=maison&lens=regler&sub=cars&focus=feeds',
+          },
+        ],
+      },
+    },
+  })
+  await seedState(page, { theme: 'day', lang: 'fr', surface: 'mobile' })
+  await page.goto('/settings?tab=board&sub=events&focus=thisWeek')
+
+  const row = page.locator('.tweek__regler .a-regler__row').first()
+  // NAMED. A household may have several subscriptions, and the fix is to go and check
+  // THAT address — « un calendrier ne répond plus » would send them hunting.
+  await expect(row).toContainText('École de Léa')
+  const href = await row.locator('.a-regler__row-link').getAttribute('href')
+  expect(href).toContain('focus=feeds')
 })

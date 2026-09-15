@@ -165,3 +165,54 @@ describe('honesty about what it cannot do', () => {
     expect(r.occurrences.length).toBeLessThanOrEqual(400)
   })
 })
+
+describe('timezones', () => {
+  it('a TZID lands at the right INSTANT, not the right number of hours', () => {
+    // 09:00 in Vancouver is 12:00 in Toronto. Before zones were resolved this was
+    // read as the server's own wall clock — a feed from another province landed three
+    // hours out, silently, on every row.
+    const r = run(
+      'BEGIN:VEVENT\r\nUID:tz1@x\r\nSUMMARY:Appel\r\nDTSTART;TZID=America/Vancouver:20260915T090000\r\nEND:VEVENT',
+    )
+    expect(r.occurrences).toHaveLength(1)
+    // 2026-09-15 is PDT (UTC−7), so 09:00 local is 16:00Z.
+    expect(r.occurrences[0].startAt).toBe(Math.floor(Date.UTC(2026, 8, 15, 16, 0, 0) / 1000))
+  })
+
+  it('the offset is resolved AT THE INSTANT, so both sides of a DST change are right', () => {
+    // Toronto: 2026-11-01 is the fall-back. A fixed offset would put one of these an
+    // hour out — which is the whole reason the lookup asks about an instant rather
+    // than about a zone.
+    const before = parseIcs(
+      'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:a@x\r\nSUMMARY:A\r\nDTSTART;TZID=America/Toronto:20261030T120000\r\nEND:VEVENT\r\nEND:VCALENDAR',
+      Math.floor(Date.UTC(2026, 9, 1) / 1000),
+      Math.floor(Date.UTC(2026, 11, 1) / 1000),
+    )
+    const after = parseIcs(
+      'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:b@x\r\nSUMMARY:B\r\nDTSTART;TZID=America/Toronto:20261103T120000\r\nEND:VEVENT\r\nEND:VCALENDAR',
+      Math.floor(Date.UTC(2026, 9, 1) / 1000),
+      Math.floor(Date.UTC(2026, 11, 1) / 1000),
+    )
+    // EDT (UTC−4) then EST (UTC−5): noon local is 16:00Z then 17:00Z.
+    expect(before.occurrences[0].startAt).toBe(Math.floor(Date.UTC(2026, 9, 30, 16, 0, 0) / 1000))
+    expect(after.occurrences[0].startAt).toBe(Math.floor(Date.UTC(2026, 10, 3, 17, 0, 0) / 1000))
+  })
+
+  it('an unknown TZID falls back to floating rather than guessing', () => {
+    // Windows-style zone names and X- extensions are both real in the wild. The
+    // constructor throws on them, which IS the detection — and the answer we give is
+    // the one we gave before zones were understood at all: never worse.
+    const r = run(
+      'BEGIN:VEVENT\r\nUID:tz3@x\r\nSUMMARY:Réunion\r\nDTSTART;TZID=Eastern Standard Time:20260915T090000\r\nEND:VEVENT',
+    )
+    expect(r.occurrences).toHaveLength(1)
+    expect(r.occurrences[0].startAt).toBe(localAt(2026, 9, 15, 9))
+  })
+
+  it('an all-day DATE ignores any TZID — a whole day has no zone', () => {
+    // « Journée pédagogique » is that DATE wherever you read it. Resolving it through
+    // a zone is how an all-day event shows up on the wrong square.
+    const r = run('BEGIN:VEVENT\r\nUID:tz4@x\r\nSUMMARY:Pédago\r\nDTSTART;VALUE=DATE;TZID=Asia/Tokyo:20260918\r\nEND:VEVENT')
+    expect(r.occurrences[0]).toMatchObject({ startAt: localDay(2026, 9, 18), allDay: true })
+  })
+})

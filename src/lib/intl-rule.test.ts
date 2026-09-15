@@ -37,6 +37,11 @@ const ALLOWED = new Map<string, string>([
   ['src/lib/localDay.ts', 'wallFmtCache/weekdayFmtCache — one per tz'],
   ['functions/_lib/ids.ts', 'wallFmtCache/weekdayFmtCache — one per tz'],
   ['functions/_lib/askContext.ts', 'askFmtCache — one per (lang, shape)'],
+  // The ICS parser resolves a TZID by asking Intl what wall clock a zone shows at an
+  // instant — the only way to get an offset without shipping tzdata into a Worker.
+  // It runs per DTSTART/DTEND/EXDATE (hundreds per school calendar), which is exactly
+  // the shape this rule exists for.
+  ['functions/_lib/ics.ts', 'zoneFmtCache — one per TZID'],
 ])
 
 interface Site {

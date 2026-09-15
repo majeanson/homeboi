@@ -62,7 +62,7 @@ export async function refreshFeed(env: Env, feed: FeedRow, now: number = nowSec(
   }
 
   if (res.status === 304) {
-    await env.DB.prepare('UPDATE calendar_feeds SET last_fetch_at = ?, last_error = NULL, updated_at = ? WHERE id = ?')
+    await env.DB.prepare('UPDATE calendar_feeds SET last_fetch_at = ?, last_error = NULL, error_since = NULL, updated_at = ? WHERE id = ?')
       .bind(now, now, feed.id)
       .run()
     return { changed: false, error: null, count: 0, partial: 0 }
@@ -92,7 +92,7 @@ export async function refreshFeed(env: Env, feed: FeedRow, now: number = nowSec(
     return { changed: false, error: 'not-ics', count: 0, partial: 0 }
   }
 
-  const { occurrences, partial } = parseIcs(text, from, to)
+  const { occurrences, partial, partialTitles } = parseIcs(text, from, to)
 
   // Replace the window in one batch: the delete and the inserts must not be separable,
   // or a failure between them leaves the household with an empty calendar.
@@ -109,9 +109,17 @@ export async function refreshFeed(env: Env, feed: FeedRow, now: number = nowSec(
   stmts.push(
     env.DB
       .prepare(
-        'UPDATE calendar_feeds SET etag = ?, last_modified = ?, last_fetch_at = ?, last_error = NULL, partial_count = ?, updated_at = ? WHERE id = ?',
+        'UPDATE calendar_feeds SET etag = ?, last_modified = ?, last_fetch_at = ?, last_error = NULL, error_since = NULL, partial_count = ?, partial_titles = ?, updated_at = ? WHERE id = ?',
       )
-      .bind(res.headers.get('etag'), res.headers.get('last-modified'), now, partial, now, feed.id),
+      .bind(
+        res.headers.get('etag'),
+        res.headers.get('last-modified'),
+        now,
+        partial,
+        JSON.stringify(partialTitles),
+        now,
+        feed.id,
+      ),
   )
   await env.DB.batch(stmts)
   return { changed: true, error: null, count: occurrences.length, partial }
@@ -121,8 +129,16 @@ async function markError(env: Env, feedId: string, error: FeedError, now: number
   // The rows already fetched STAY. A feed whose server is down for a night should show
   // last night's calendar, not an empty one — the same "keep the last good frame"
   // posture the board takes on a failed poll.
-  await env.DB.prepare('UPDATE calendar_feeds SET last_fetch_at = ?, last_error = ?, updated_at = ? WHERE id = ?')
-    .bind(now, error, now, feedId)
+  //
+  // `error_since` is set only on the FIRST failure after a success (COALESCE keeps any
+  // existing one), because `last_fetch_at` moves on EVERY attempt and therefore can
+  // never answer « how long has this been broken? ». Without that difference there are
+  // only two bad options: nag on every transient outage, or stay silent while a feed
+  // quietly stops updating for three weeks. « À régler » reads it (migration 0131).
+  await env.DB.prepare(
+    'UPDATE calendar_feeds SET last_fetch_at = ?, last_error = ?, error_since = COALESCE(error_since, ?), updated_at = ? WHERE id = ?',
+  )
+    .bind(now, error, now, now, feedId)
     .run()
 }
 

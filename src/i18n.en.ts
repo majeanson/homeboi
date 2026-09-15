@@ -212,6 +212,7 @@ export const EN: typeof FR = {
     transferDue: (what: string) => `${what} — a transfer to send`,
     mailPostbox: 'A message is waiting to be filed',
     mailIntake: 'Someone’s details are waiting to be added',
+    feedStale: (name: string) => `${name} has stopped answering — check the address`,
     snooze: 'Later',
     snoozed: 'Put off until tomorrow',
   },
@@ -775,6 +776,7 @@ export const EN: typeof FR = {
     ok: (n: number, when: string) => (n === 1 ? `1 appointment · read ${when}` : `${n} appointments · read ${when}`),
     partial: (n: number) =>
       n === 1 ? '1 repeating appointment is not fully shown' : `${n} repeating appointments are not fully shown`,
+    partialNamed: (names: string) => `not fully shown: ${names}`,
     errors: {
       http: 'The address answers badly — check it.',
       'too-big': 'That calendar is too large.',
