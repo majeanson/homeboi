@@ -219,6 +219,46 @@ display/veille/photos/IA/voix/calme/diagnostics (settings▸\*, mostly guest-all
 device-local). Verdict: these surfaces are **always-managing by design** — no ⚙
 face, `RowActions` unconditional, recorded ➖.
 
+**Two of them earned their own rows (2026-09-15)** — not because they are less
+admin, but because each carries a destructive door whose tier had to be decided,
+and because the scoring pass that added them found a gap in the first one.
+
+| Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Co-operator · invite | — | — | — | — | ✅ settings▸coop « Créer un lien » | — | ✅ |
+| Co-operator · rotate the link | — | — | — | — | ✅ settings▸coop « Réinitialiser » | confirm¹⁹ | ✅ |
+| Co-operator · **remove access** | ✅ `RowActions` 🗑 | — | ➖²⁰ | — | ✅ settings▸coop | confirm²¹ | ✅ |
+| Co-operator · set MY face | — | — | — | — | ✅ settings▸coop chips²² | — | ✅ |
+| Calendar feed · subscribe | — | — | — | — | ✅ maison▸cars `EditField` | — | ✅ |
+| Calendar feed · show / hide | ✅ `Toggle` | — | ➖²³ | — | ✅ maison▸cars | — ²⁴ | ✅ |
+| Calendar feed · colour + face | ✅ `RowActions` ✏️ → inline | — | ➖²³ | — | ✅ maison▸cars | — | ✅ |
+| Calendar feed · refresh now | ✅ `RowActions` extra ↻ | — | ➖²³ | — | ✅ maison▸cars | ➖²⁵ | ✅ |
+| Calendar feed · unsubscribe | ✅ `RowActions` 🗑 | — | ➖²³ | — | ✅ maison▸cars | confirm²⁶ | ✅ |
+| Feed occurrence · open | ❌²⁷ non-tappable `Act` (month day panel) / plain line (La semaine) | — | ➖²⁷ | — | — | — | ✅ |
+
+19. Confirm, and it names what is lost: the link texted last night stops working.
+    Access already granted is NOT affected — which is a different row, on purpose.
+20. ➖ — an operator account is not an entity met as a row anywhere else; the card
+    shows it in full. Nothing to peek into.
+21. Confirm, not deferred: the person is signed out of a household and an undo toast
+    cannot put a session back. The copy names what is NOT lost too — nothing they
+    wrote goes with them, true by construction (soft member ref, never an operator
+    FK). Never offered on your OWN row: that door is « Se déconnecter ».
+22. YOUR row only. Deciding what face someone else's phone attributes to is putting
+    words in their mouth; their device pick already answers it.
+23. ➖ — the feed IS the settings card. There is no other surface it appears on as a
+    row, so a peek would duplicate the card.
+24. No undo needed: hiding is reversible in one tap and keeps the URL, the etag and
+    the expanded rows. The month read JOINs on `enabled`, so it takes effect at once.
+25. ➖ — a refetch is not destructive and has nothing to reverse.
+26. Confirm, naming that the occurrences go and that nothing of the household's does:
+    they were never theirs.
+27. ➖ and load-bearing, not an oversight. A feed occurrence carries NO open door on
+    any surface: nothing can edit it, and the next nightly refresh replaces the row
+    wholesale. Its glyph (`scroll-bold`) says it arrived from outside, which is the
+    affordance — and giving it the household-rendez-vous tap would be a promise the
+    app cannot keep.
+
 ---
 
 ## Part 3 — Same action, different door (the drift table)
