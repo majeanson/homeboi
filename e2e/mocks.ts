@@ -1324,6 +1324,11 @@ export interface AppState {
   // can never show it: the sweep would have photographed the open steps forever and
   // called the lean pass reviewed (2026-09-15).
   flippSetup?: boolean
+  // Réglages ▸ Affichage ▸ Texte: 'normal' (100%) | 'large' (115%).
+  // Worth a lever because the ramp scales the whole rem tree while ~20% of declarations
+  // are px — precisely the shape that produces horizontal overflow — and nothing
+  // photographed the enlarged app until the third step landed (2026-09-15).
+  textScale?: 'normal' | 'large'
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks
@@ -1372,6 +1377,14 @@ export async function seedState(page: Page, s: AppState) {
       // Opt-IN (unlike the three above): the default is the first-timer, because that
       // is the face a stranger meets and the one worth defending by default.
       if (state.flippSetup) localStorage.setItem('babillard-flipp-setup', '1')
+      // The accessibility text ramp (lib/accessibility TextScale). Seeded as the
+      // KEY rather than the attribute on purpose: theme-bootstrap.js reads this
+      // before first paint, so this exercises the real boot path — a scale that
+      // only took effect after hydration would photograph the same layout and
+      // prove nothing about how the app actually starts.
+      if (state.textScale && state.textScale !== 'normal') {
+        localStorage.setItem('babillard-text-scale', state.textScale)
+      }
     } catch {
       /* noop */
     }

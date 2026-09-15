@@ -2470,8 +2470,9 @@ export const FR = {
     contrastNormal: 'Normal',
     contrastHigh: 'Renforcé',
     textScaleLabel: 'Texte',
-    textScaleNormal: 'Normal',
-    textScaleLarge: 'Plus gros',
+    // Clés par VALEUR (lib/accessibility TextScale), pour que le contrôle se mappe
+    // sur TEXT_SCALES au lieu de nommer chaque option à la main.
+    textScale: { normal: 'Normal', large: 'Plus gros' },
     langLabel: 'Langue',
     viewLabel: 'Vue',
     voiceTitle: 'Voix de lecture',

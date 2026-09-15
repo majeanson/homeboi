@@ -11,7 +11,26 @@
          full-screen overlays (cashier, cook, sheets) shimmer and re-anchor mid-
          gesture. Reinforced by touch-action in core.css + a gesturestart guard
          in viewportVars.ts (iOS Safari ignores user-scalable=no in a browser
-         tab, honours it once installed standalone). -->
+         tab, honours it once installed standalone).
+
+         THIS LINE IS WHY axe REPORTS `meta-viewport` ON EVERY STATE (154/154 in
+         the sweep — see e2e/state-matrix.spec.ts). It is a decided trade, not an
+         oversight, and it is left REPORTED rather than excluded: unlike
+         `.avatar__initial` — a gap the palette genuinely cannot close — this one
+         is a choice we could revisit, and a choice should keep costing a line in
+         the report that a reviewer reads.
+
+         What we owe in exchange is a real substitute, because we took the
+         browser's away. That is Réglages ▸ Affichage ▸ Texte
+         (lib/accessibility TextScale) — and as of 2026-09-15 it is still only
+         100% / 115%, which is thin. A 130% step was built and held: it clipped
+         the board greeting at 360px, and shipping a cut « Bon après- » to buy a
+         bigger body font is not a trade worth making. The blocker is named and
+         testable (lib/accessibility.ts), and the pass DID fix two chrome bugs
+         found on the way, one of them live at the 115% step — see --chrome-scale
+         in core.css.
+         Until that third step lands, this tag is costing real readers something
+         we have not paid back. Weigh that before defending it again. -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content"

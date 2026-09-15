@@ -278,8 +278,16 @@
   border-radius: 14px;
   /* Six tabs share a phone's width (~57px each). The bar carries t.navShort, whose
      names are cut to fit whole (« Auj. », « Cuisine », « Cercle ») — a hair of
-     fluid scaling absorbs the narrowest phones without ever ellipsizing again. */
-  font-size: clamp(0.66rem, 3.1vw, 0.72rem);
+     fluid scaling absorbs the narrowest phones without ever ellipsizing again.
+     …EXCEPT under the text ramp, which is how « ever » stopped being true. The vw
+     term is fixed, but both rem BOUNDS ride the root font-size, so at 115% the
+     floor (0.66rem → 12.1px) overtook the 3.1vw the clamp was tuned around
+     (11.2px at 360) and won — and « Réglages » shipped as « Réglag… » at the
+     enlarged setting nobody had ever photographed (2026-09-15).
+     --chrome-scale (core.css) holds the bounds still so the vw term keeps deciding,
+     exactly as it does at 100%. This bar does not scale: it is six fixed columns
+     with nowhere to grow, and the icon above each word carries the meaning. */
+  font-size: clamp(calc(0.66rem * var(--chrome-scale, 1)), 3.1vw, calc(0.72rem * var(--chrome-scale, 1)));
   background: transparent;
   box-shadow: none;
   text-align: center;

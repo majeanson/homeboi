@@ -29,6 +29,7 @@ import {
   setContrast,
   getTextScale,
   setTextScale,
+  TEXT_SCALES,
   type Contrast,
   type TextScale,
 } from '../../lib/accessibility'
@@ -263,23 +264,21 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
         </div>
         <div className="operator__seg">
           <span className="operator__seg-label mono">{t.operator.textScaleLabel}</span>
+          {/* Mapped rather than hand-written, now that there are three: the third
+              copy of a nine-line button block is where one of them quietly stops
+              matching its siblings. TEXT_SCALES is the order. */}
           <div className="audience-switch mono" role="group" aria-label={t.operator.textScaleLabel}>
-            <button
-              type="button"
-              className={`audience-switch__opt${textScale === 'normal' ? ' is-active' : ''}`}
-              onClick={() => pickTextScale('normal')}
-              aria-pressed={textScale === 'normal'}
-            >
-              <InlineIcon name="magnifying-glass-bold" /> {t.operator.textScaleNormal}
-            </button>
-            <button
-              type="button"
-              className={`audience-switch__opt${textScale === 'large' ? ' is-active' : ''}`}
-              onClick={() => pickTextScale('large')}
-              aria-pressed={textScale === 'large'}
-            >
-              <InlineIcon name="magnifying-glass-bold" /> {t.operator.textScaleLarge}
-            </button>
+            {TEXT_SCALES.map((s) => (
+              <button
+                key={s}
+                type="button"
+                className={`audience-switch__opt${textScale === s ? ' is-active' : ''}`}
+                onClick={() => pickTextScale(s)}
+                aria-pressed={textScale === s}
+              >
+                <InlineIcon name="magnifying-glass-bold" /> {t.operator.textScale[s]}
+              </button>
+            ))}
           </div>
         </div>
         <div className="operator__seg">

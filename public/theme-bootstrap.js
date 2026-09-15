@@ -70,8 +70,13 @@
     if (localStorage.getItem('babillard-contrast') === 'high') {
       document.documentElement.setAttribute('data-contrast', 'high')
     }
-    if (localStorage.getItem('babillard-text-scale') === 'large') {
-      document.documentElement.setAttribute('data-text-scale', 'large')
+    // Matched against the known set (lib/accessibility TEXT_SCALES) rather than tested
+    // for one value: a stale key — an 'x-large' left behind by the third step that was
+    // trialled and held on 2026-09-15 — must fall back to the base size, never paint at
+    // a size no CSS rule defines.
+    var ts = localStorage.getItem('babillard-text-scale')
+    if (ts === 'large') {
+      document.documentElement.setAttribute('data-text-scale', ts)
     }
   } catch (e) {
     /* no a11y profile — base presentation shows */

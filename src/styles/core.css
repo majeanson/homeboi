@@ -447,9 +447,34 @@
    the type — which is sized in rem — scales together from one knob. Px-sized
    bits (~20% of declarations) stay put, which keeps tight chrome from
    overflowing while the readable body/labels grow. */
+/* THE CHROME COMPENSATOR. The ramp works by growing the root font-size, so EVERYTHING
+   sized in rem grows — including fixed-count chrome that has no room to grow into: the
+   six-up mobile nav, and the header's round button cluster that the greeting sizes
+   itself against. Those don't get more space at 130%, they get the same space with
+   bigger contents, so they clip.
+   That is not theory. Shot at 360px (2026-09-15, the first time anyone photographed the
+   enlarged app): at the SHIPPED 115% step « Réglages » was already cut to « Réglag… »,
+   and at 130% the page title went to « La l… » because the button cluster had eaten the
+   container the greeting measures.
+   So: content scales, NAVIGATION CHROME DOES NOT. `--chrome-scale` is the exact inverse
+   of each step, and the handful of chrome rules that must hold their size multiply by
+   it — staying in rem and in the token, rather than getting hard-coded px that would
+   then be wrong for everyone. Use it ONLY where a fixed-count row has no room; it is a
+   brake on the accessibility feature, and every use is a place a low-vision reader does
+   not get bigger text. */
+:root {
+  --chrome-scale: 1;
+}
 :root[data-text-scale='large'] {
   font-size: 115%;
+  --chrome-scale: 0.87; /* 1 / 1.15 */
 }
+/* A THIRD step (130%) was built here on 2026-09-15 and is NOT shipped. It clipped the
+   board greeting to « Bon après- » at 360px — at 130%, at 122%, and between — because
+   `.greet` sizes off the container left beside the header's fixed button cluster and
+   the ramp shrinks that container faster than --chrome-scale restores it. The rest of
+   the pass survived (the two fixes below); the greeting needs today.css's own pass.
+   See lib/accessibility.ts TextScale for the full reasoning and the ship condition. */
 
 /* « Simple » post-reader lens (bmad/08 A-1): the whole rem tree scales ~1.4× from
    this one root knob (same mechanism as data-text-scale), so the giant-tile board,

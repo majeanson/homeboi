@@ -47,6 +47,8 @@ type Entry = {
    *  setup folds. See AppState.flippSetup — a fresh browser can only ever show the
    *  first-timer, so the returning face needs a state of its own or it is never seen. */
   flippSetup?: boolean
+  /** Réglages ▸ Affichage ▸ Texte. `'large'` boots the app at 115%. */
+  textScale?: 'normal' | 'large'
   /** Fake-keyboard height (px) to slide in after setup. Requires setup to focus a field. */
   keyboard?: number
   /** Fixture overrides for this entry (see mockApi `overrides`). Use it when the
@@ -301,6 +303,11 @@ const TRIP_FIXTURE = {
 
 const PHONE = { w: 390, h: 844 }
 const WALL = { w: 1280, h: 800 }
+// The narrowest width we support. It lives up here beside its siblings rather than
+// down by the lens-twin block that used to own it, because MATRIX entries reference
+// it directly now (the -xl states) and a `const` declared after the table is a TDZ
+// error at module load, not a lint warning.
+const NARROW = { w: 360, h: 844 }
 const KB = 336
 
 const openAddSheet = async (page: Page) => {
@@ -611,6 +618,31 @@ const MATRIX: Entry[] = [
   { name: 'notes-wall', route: '/notes', surface: 'kiosk', viewport: WALL, content: '.cnote', budgetPx: 277, themes: ['day'], api: NOTES_FIXTURE },
   { name: 'maison-wall', route: '/maison', surface: 'kiosk', viewport: WALL, content: '.routine-card, .cercle-row', budgetPx: 291, themes: ['day'] },
   { name: 'settings-wall', route: '/settings', surface: 'kiosk', viewport: WALL, content: '.operator__section, .operator__tabs', budgetPx: 78, themes: ['day'] },
+
+  // — THE ENLARGED APP (2026-09-15). Réglages ▸ Affichage ▸ Texte has shipped a 115%
+  //   step for months and NOTHING HAD EVER PHOTOGRAPHED IT. The first shot found
+  //   « Réglages » cut to « Réglag… » in the tab bar at 360px — a bug in the shipped
+  //   accessibility setting, live, invisible, because every state in this table boots
+  //   at 100%.
+  //
+  //   The shape to watch is a ratio, not a size: the ramp scales the rem tree while
+  //   ~20% of declarations stay px, so fixed-count chrome (a six-up nav, a header's
+  //   button cluster) keeps its box and grows its contents. Shot at 360 — the
+  //   narrowest width we support, where that has the least room to absorb.
+  //
+  //   Deliberately NO budgetPx: contentTopPx scales WITH the type here, so a ceiling
+  //   would encode the font size rather than the chrome and would fail the moment
+  //   someone legitimately tunes the ramp. Bleed is what these states assert; the
+  //   screenshot is what a reviewer reads.
+  //
+  //   Three surfaces, picked for what they break differently: the board is dense cards
+  //   with a greeting sized off its leftover room, the liste is rows with trailing
+  //   furniture, Réglages is label-beside-control — LEAN.md's labelled-CTA trap.
+  //   (These are also the states that hold the door for the 130% step: it is held on
+  //   `.greet` clipping here — see lib/accessibility.ts.)
+  { name: 'board-large', route: '/board', textScale: 'large', viewport: NARROW, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'contentTopPx scales with the type ramp, so a ceiling here would encode the font size, not the chrome — these states exist for the bleed assertion and the shot (2026-09-15)' },
+  { name: 'liste-large', route: '/liste', textScale: 'large', viewport: NARROW, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'same as board-large: the number tracks the ramp, the bleed check is the point (2026-09-15)' },
+  { name: 'settings-large', route: '/settings?tab=settings&lens=regler', textScale: 'large', viewport: NARROW, content: '.operator__section', themes: ['day'], noBudgetWhy: 'same as board-large; this one is here for label-beside-control rows under the ramp (2026-09-15)' },
   { name: 'board-en', route: '/board', lang: 'en', themes: ['day'] },
   // — data extremes —
   { name: 'liste-longtext', route: '/liste', longText: true },
@@ -697,7 +729,6 @@ test('every measured entry is either budgeted or says why not', () => {
 // state in EN at 390, and in FR at 360. Not every state — a recipe's ingredient list
 // says nothing new in English — but every surface whose chrome is built out of
 // words: headers, sub-tab rows, button rows, empty states, forms and the ＋ sheet.
-const NARROW = { w: 360, h: 844 }
 const TEXT_STRESS = [
   // the six tabs' own chrome (board already has `board-en`, so it takes the narrow
   // shot only — see BOARD_NARROW_ONLY below)
@@ -919,6 +950,7 @@ for (const entry of ALL) {
         // seeding it would have photographed the board and called it the front door.
         surface: entry.signedOut ? undefined : (entry.surface ?? 'mobile'),
         flippSetup: entry.flippSetup,
+        textScale: entry.textScale,
       })
       await page.goto(entry.route)
       await page

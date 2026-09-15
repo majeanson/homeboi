@@ -20,7 +20,13 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  /* Compensated like the buttons below (--chrome-scale, core.css). This gap sits
+     BETWEEN the title column and the fixed button cluster, so under the text ramp it
+     takes room from the very container `.app-head__main` publishes to `.greet` —
+     shrinking the title's box while the title is trying to get bigger. Holding the
+     button discs still was not enough on its own: the gaps were still eating ~6px,
+     and the greeting stayed under the 76px nowrap threshold. */
+  gap: calc(1rem * var(--chrome-scale, 1));
   margin-bottom: 18px;
 }
 /* The greeting column takes the slack and is allowed to shrink past its content
@@ -106,15 +112,22 @@
 .app-head__actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  /* Three gaps between four discs — the rest of the same fixed cluster, held still
+     for the same reason (see .app-head gap above). */
+  gap: calc(0.6rem * var(--chrome-scale, 1));
   flex: none;
 }
 .app-head__search {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.6rem;
-  height: 2.6rem;
+  /* --chrome-scale (core.css): this cluster is `flex: none` and the greeting sizes
+     itself off whatever container width is LEFT, so every pixel these four discs gain
+     from the text ramp is a pixel taken from the title. At 130% that pushed the
+     container under the 76px threshold below and « La liste » became « La l… ».
+     They hold their size across the ramp; the words beside them grow. */
+  width: calc(2.6rem * var(--chrome-scale, 1));
+  height: calc(2.6rem * var(--chrome-scale, 1));
   border-radius: 50%;
   border: 0;
   /* Pop like the ＋ quick-add FAB — same marigold disc, on every page header. */
