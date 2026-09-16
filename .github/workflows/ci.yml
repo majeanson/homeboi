@@ -39,6 +39,12 @@ jobs:
       # every lazy route), EXCEPT the online-only allowlist (the HEIC upload
       # decoder), which must NOT be. See scripts/check-bundle.mjs.
       - run: npm run check:bundle
+      # The real-runtime suite (STATE.md §4-L L3): the Worker in workerd against a real
+      # D1 with every migration applied — the tenant-isolation sweep, the account flows,
+      # the demo sandbox + its sweep. After build because wrangler.toml's [assets] block
+      # points at dist/. It found the sweep that had deleted nothing since 0102 on its
+      # first run; keep it here, not decoupled.
+      - run: npm run test:d1
       # Dead-code gate. It was in package.json and in the project's own notes as "the
       # gate" for months while being wired into NOTHING — so it gated nothing, and by
       # 2026-08-27 it no longer even ran on a dev machine (oxc-parser reserves a >4 GiB

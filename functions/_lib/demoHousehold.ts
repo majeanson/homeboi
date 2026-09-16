@@ -160,6 +160,24 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'operators',
 ] as const
 
+// The column that scopes a table to a household. `household_id` for all but three —
+// and those three are why NO sandbox was ever swept between migration 0102 and
+// 2026-09-16: `DELETE FROM shared_trips WHERE household_id = ?` is « no such column »,
+// D1 runs the batch as ONE transaction, so the whole delete rolled back on every mint,
+// the sweep's catch swallowed it, and the cap filled with day-old sandboxes until every
+// visitor got the read-only fallback. Found by the real-runtime harness
+// (worker/demo.d1.test.ts) thirty seconds after it first ran; the pure guard
+// (demoHousehold.test.ts) checks that tables EXIST, and could not know their columns.
+// worker/demo.d1.test.ts now asks the live schema for every scope column here.
+export const SCOPE_COLUMN: Readonly<Record<string, string>> = {
+  shares: 'source_household_id',
+  shared_trips: 'owner_household_id',
+  // Notes THIS household left on any shared trip (its own or a friend's). Rows OTHER
+  // households left on a sandbox-owned trip are swept by trip id below.
+  shared_trip_notes: 'author_household_id',
+}
+export const scopeColumn = (table: string): string => SCOPE_COLUMN[table] ?? 'household_id'
+
 // Tables the sweep deliberately does NOT touch, with the why — the test requires
 // every LIVE table (created, not since dropped or renamed away) to appear in exactly
 // one of the three sets, and an exemption to name a table that still exists.
@@ -189,6 +207,10 @@ const MEDIA_SCALAR_COLUMNS: ReadonlyArray<readonly [table: string, columns: read
   ['home_pins', ['media_key']],
   ['trips', ['media_key']],
   ['staged_media', ['media_key']],
+  // Scoped by their own columns (SCOPE_COLUMN): a sandbox-owned shared trip's cover and
+  // the notes it authored anywhere.
+  ['shared_trips', ['media_key']],
+  ['shared_trip_notes', ['media_key', 'scene_key']],
 ]
 // JSON arrays of keys (the DB-1 parallel-array shapes) — entries may be null/''.
 const MEDIA_JSON_COLUMNS: ReadonlyArray<readonly [table: string, column: string]> = [
@@ -202,7 +224,7 @@ async function collectMediaKeys(env: Env, householdId: string): Promise<string[]
   const keys = new Set<string>()
   for (const [table, columns] of MEDIA_SCALAR_COLUMNS) {
     const cols = columns.join(', ')
-    const { results } = await env.DB.prepare(`SELECT ${cols} FROM ${table} WHERE household_id = ?`)
+    const { results } = await env.DB.prepare(`SELECT ${cols} FROM ${table} WHERE ${scopeColumn(table)} = ?`)
       .bind(householdId)
       .all<Record<string, string | null>>()
     for (const row of results) for (const c of columns) if (row[c]) keys.add(row[c] as string)
@@ -274,11 +296,11 @@ export async function deleteDemoHousehold(env: Env, householdId: string): Promis
     // rows OTHER households left on a sandbox-owned shared trip (their FK would
     // block deleting the shared_trips row) — swept by trip id, not household.
     ...['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing'].map((table) =>
-      P(`DELETE FROM ${table} WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE household_id = ?)`).bind(
+      P(`DELETE FROM ${table} WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?)`).bind(
         householdId,
       ),
     ),
-    ...HOUSEHOLD_TABLES.map((table) => P(`DELETE FROM ${table} WHERE household_id = ?`).bind(householdId)),
+    ...HOUSEHOLD_TABLES.map((table) => P(`DELETE FROM ${table} WHERE ${scopeColumn(table)} = ?`).bind(householdId)),
     P('DELETE FROM households WHERE id = ?').bind(householdId),
   ])
 }

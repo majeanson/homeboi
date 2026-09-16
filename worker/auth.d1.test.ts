@@ -1,0 +1,74 @@
+import { describe, it, expect } from 'vitest'
+import { anon, household, login } from '../functions/test/d1'
+
+// The account flows end to end, through the real Worker and a real D1 (STATE.md §4-L
+// L1 + L2, proven here rather than against a one-row stub).
+describe('account', () => {
+  it('signs up, refuses a wrong password, accepts the right one', async () => {
+    const a = await household('acct')
+    expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: 'wrong wrong wrong' } })).status).toBe(401)
+    const again = await login(a.email, a.password)
+    expect(again.householdId).toBe(a.householdId)
+  })
+
+  it('« Se déconnecter partout ailleurs » ends the other device’s session and keeps this one', async () => {
+    const phone = await household('revoke')
+    const laptop = await login(phone.email, phone.password)
+    // Both devices work.
+    expect((await phone.fetch('/api/board')).status).toBe(200)
+    expect((await laptop.fetch('/api/board')).status).toBe(200)
+
+    // Wrong password: refused, nothing changes.
+    expect((await laptop.fetch('/api/auth/sessions/revoke', { method: 'POST', body: { password: 'nope nope nope' } })).status).toBe(403)
+    expect((await phone.fetch('/api/board')).status).toBe(200)
+
+    // Right password from the laptop: the phone is out, the laptop's OLD cookie is out
+    // too, and the laptop's re-issued cookie works.
+    const res = await laptop.fetch('/api/auth/sessions/revoke', { method: 'POST', body: { password: phone.password } })
+    expect(res.status).toBe(200)
+    expect((await phone.fetch('/api/board')).status).toBe(401)
+    expect(((await (await phone.fetch('/api/auth/me')).json()) as { signedIn: boolean }).signedIn).toBe(false)
+    expect((await laptop.fetch('/api/board')).status).toBe(401)
+    const fresh = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c: string) => c.split(';')[0])
+    const cookie = fresh.join('; ')
+    const csrf = fresh.find((c: string) => c.startsWith('bb_csrf='))!.slice('bb_csrf='.length)
+    expect((await anon('/api/board', { headers: { Cookie: cookie, 'X-CSRF-Token': csrf } })).status).toBe(200)
+  })
+
+  it('« Changer mon mot de passe » replaces it, signs the other devices out, and needs the current one', async () => {
+    const a = await household('pw')
+    const other = await login(a.email, a.password)
+    expect((await a.fetch('/api/auth/password', { method: 'POST', body: { current: 'wrong wrong wrong', next: 'new password here' } })).status).toBe(403)
+    expect((await a.fetch('/api/auth/password', { method: 'POST', body: { current: a.password, next: 'short' } })).status).toBe(400)
+    expect((await a.fetch('/api/auth/password', { method: 'POST', body: { current: a.password, next: 'new password here' } })).status).toBe(200)
+    expect((await other.fetch('/api/board')).status).toBe(401)
+    expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: a.password } })).status).toBe(401)
+    expect((await login(a.email, 'new password here')).householdId).toBe(a.householdId)
+  })
+
+  it('the password doors are operator-only and CSRF-gated', async () => {
+    const a = await household('csrf')
+    // No CSRF echo → the Worker's gate refuses before any handler.
+    const res = await anon('/api/auth/sessions/revoke', { method: 'POST', body: { password: a.password }, headers: { Cookie: a.cookie } })
+    expect(res.status).toBe(403)
+    expect((await a.fetch('/api/board')).status).toBe(200)
+  })
+
+  it('« Mot de passe oublié » answers 503 while mail is not wired, never a hint about the address', async () => {
+    const a = await household('forgot')
+    expect((await anon('/api/auth/forgot', { method: 'POST', body: { email: a.email } })).status).toBe(503)
+    expect((await anon('/api/auth/forgot', { method: 'POST', body: { email: 'nobody@d1.test' } })).status).toBe(503)
+  })
+
+  it('the rate limit refuses the seventh guess at one email inside a minute (LIMIT_KEY 6/60s)', async () => {
+    const a = await household('limit')
+    const statuses: number[] = []
+    for (let i = 0; i < 8; i++) {
+      statuses.push((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: `guess ${i} guess` } })).status)
+    }
+    expect(statuses.slice(0, 6)).toEqual([401, 401, 401, 401, 401, 401])
+    expect(statuses[7], `statuses: ${statuses.join(',')}`).toBe(429)
+    // …and the right password is refused too while the bucket is full: a bound, not a hint.
+    expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: a.password } })).status).toBe(429)
+  })
+})

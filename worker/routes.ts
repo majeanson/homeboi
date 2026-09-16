@@ -278,6 +278,26 @@ const TABLE: Record<string, RouteMod> = {
   'pair/start': pairStart,
 }
 
+// Every exact route with the HTTP methods its module handles — for the real-runtime
+// sweep (worker/isolation.d1.test.ts), which walks ALL of them as another household.
+// Derived from the table, never listed by hand, so a new route joins the sweep the
+// moment it is routable. The one dynamic route (img/<key>) is a blob keyed by an
+// opaque R2 key and unauthenticated BY DESIGN (see functions/api/img/[key].ts).
+const METHOD_OF_EXPORT: Record<string, string> = {
+  onRequestGet: 'GET',
+  onRequestPost: 'POST',
+  onRequestPut: 'PUT',
+  onRequestPatch: 'PATCH',
+  onRequestDelete: 'DELETE',
+}
+
+export const ROUTES: ReadonlyArray<{ path: string; methods: string[] }> = Object.entries(TABLE).map(([path, mod]) => ({
+  path,
+  methods: Object.entries(METHOD_OF_EXPORT)
+    .filter(([exp]) => typeof mod[exp] === 'function' || (exp === 'onRequest' && typeof mod.onRequest === 'function'))
+    .map(([, m]) => m),
+}))
+
 export interface Matched {
   mod: RouteMod
   params: Record<string, string>

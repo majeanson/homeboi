@@ -2,7 +2,10 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "scripts/*.mjs",
-    "functions/api/**/*.ts"
+    "functions/api/**/*.ts",
+    "vitest.d1.config.ts",
+    "functions/test/*.ts",
+    "{functions,worker}/**/*.d1.test.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

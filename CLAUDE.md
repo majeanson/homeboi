@@ -170,7 +170,13 @@ npm run dev            # Vite frontend-only, HMR on :5173, /api proxied to :8787
 npm run cf:dev         # full stack: wrangler dev on :8787 (SPA + Worker + local D1)
 npm run build          # tsc -b (typechecks SPA + Worker + Functions) then vite build → dist/
 npm run typecheck      # tsc -b --noEmit
-npm test               # vitest run (pure-logic unit tests)
+npm test               # vitest run (pure-logic unit tests; *.d1.test.ts excluded)
+npm run test:d1        # the REAL-RUNTIME suite (vitest.d1.config.ts): the Worker in workerd
+                       #   against a real D1 with every migration applied + R2 + the DO. The
+                       #   tenant-isolation sweep (worker/isolation.d1.test.ts: household B walks
+                       #   every route naming A's ids), the account flows, the demo sandbox +
+                       #   its sweep. Needs dist/ (wrangler.toml [assets]) → run after a build.
+                       #   CI runs it after check:bundle. Helpers in functions/test/d1.ts.
 npm run test:watch     # vitest watch
 npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
 npm run e2e:sw         # SW offline-shell e2e ONLY (own harness: vite build + preview the PROD

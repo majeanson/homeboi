@@ -16,6 +16,7 @@
     "knip": "knip",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:d1": "vitest run -c vitest.d1.config.ts",
     "e2e": "playwright test",
     "e2e:sw": "playwright test -c e2e/sw.config.ts",
     "e2e:matrix": "playwright test -c e2e/sm.config.ts",
@@ -45,6 +46,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@cloudflare/vitest-plugin": "^1.1.11",
     "@cloudflare/workers-types": "^4.20260606.1",
     "@playwright/test": "^1.60.0",
     "@types/node": "^24.13.1",

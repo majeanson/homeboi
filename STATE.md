@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **33** — nine of them the public-readiness plan §4-K and twenty-four the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **29** — nine of them the public-readiness plan §4-K and twenty the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -165,6 +165,21 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### The real-runtime harness, and what it found in thirty seconds — 2026-09-16 (evening)
+
+STATE §4-L L1–L3 landed in three commits. The third is the one to remember: the Worker
+now runs in workerd against a real D1 with every migration applied (`npm run test:d1`,
+in CI after the bundle check), and its first customers were the tenant-isolation sweep
+(household B walking every route with A's ids — green, and red the moment one
+`AND household_id = ?` was removed), the account flows, and the demo sandbox. The demo
+case failed on its first run: **no sandbox had ever been swept.** Three tables in the
+sweep's inventory have no `household_id` column, D1 runs the delete as one transaction,
+and the sweep's own catch hid the rollback on every mint — Wave 1 had already recorded
+« unable to delete ANY sandbox since 0102 » and believed it fixed. The pure inventory
+guard checks that a table EXISTS; only the live schema knows its columns, and now a
+case asks it. Section 5's « a guard that has never been red proves nothing » has a
+sibling: **a test that cannot reach the database cannot see what the database refuses.**
 
 ### The day this file missed — 2026-09-14 → 09-16, written after the fact
 
@@ -3819,10 +3834,10 @@ holds it. This is the one bug a public app cannot survive.
   the demo mint + the TTL sweep (the bug nobody noticed for weeks because nobody minted),
   and the nightly `scheduled()` (L7).
 
-- [ ] Plugin + config + setup + `npm run test:d1` green on one smoke case; CI step after build
-- [ ] `functions/test/d1.ts` helpers
-- [ ] Isolation sweep, proven red on a deleted household predicate
-- [ ] Auth + demo-sweep + L1/L2 cases
+- [x] `@cloudflare/vitest-plugin` 1.1.11 + `vitest.d1.config.ts` (reads the REAL `wrangler.toml` — `[assets]`, `[ai]`, the DO and the two rate limiters all resolved without a test-only twin; `AI` cannot be unbound, so the sweep switches the household's AI OFF and asserts `health.ai === false` first) + `functions/test/apply-migrations.ts`; `npm run test:d1`, ~30 s for 13 cases; CI runs it after `check:bundle`
+- [x] `functions/test/d1.ts` (`household()` through the real signup, `login()`, `dump()`, `idsOf()`) — every request goes through `exports.default.fetch`, i.e. the CSRF gate, the guest scope and `authed()`
+- [x] `worker/isolation.d1.test.ts` — B walks every route × method (from `ROUTES`, now exported by `worker/routes.ts`) naming one of A's ids per table in every id-shaped field (`functions/test/idFields.ts`, kept complete by a node-side grep guard); asserts no A id or marker in any response, `dump(A)` unchanged, no 500 outside the outbound routes. **Green on the real code**; proven red by dropping `AND household_id = ?` from the events read-by-id: « GET events → 200 » with two of A's ids in the body
+- [x] `worker/auth.d1.test.ts` (six: wrong/right password, revoke-everywhere keeps this device and ends the other, change-password, CSRF, forgot 503, the **real 429 on the seventh guess** — miniflare's limiter counts) and `worker/demo.d1.test.ts` — **which found, on its first run, that the sandbox sweep STILL deleted nothing**: `shares`, `shared_trips` and `shared_trip_notes` sat in `HOUSEHOLD_TABLES` with no `household_id` column (`source_/owner_/author_household_id`), one « no such column » rolled back the whole batch, the sweep's catch swallowed it. `SCOPE_COLUMN` + `scopeColumn()` fix the delete AND the trip-id sub-sweep AND the R2 inventory (the shared-trip blobs were never freed either); a live-schema case now asks `pragma_table_info` for every scope column — the pure guard could only know a table exists
 
 #### L4. The door's eager graph (already boxed in Wave 2 — sized there; executed here)
 
