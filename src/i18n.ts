@@ -395,6 +395,16 @@ export const FR = {
   },
   // « Garder ma maisonnée » — claim the demo sandbox into a real account
   // (the board claim banner + /garder, functions/api/demo/claim.ts).
+  // « Sur l'écran d'accueil » — the one-time install hint (lib/install, InstallHint).
+  install: {
+    title: 'Babillard sur ton téléphone',
+    body: 'Mets-le sur l’écran d’accueil : il s’ouvre comme une app, plein écran, même sans réseau.',
+    ios: 'Dans Safari : le bouton Partager, puis « Sur l’écran d’accueil ».',
+    cta: 'Installer',
+    later: 'Plus tard',
+    settingsTitle: 'Sur l’écran d’accueil',
+    installed: 'Déjà installé sur cet appareil.',
+  },
   claim: {
     bannerTitle: 'C’est ta maisonnée d’essai',
     bannerHint: 'Tout ce que tu essaies ici s’efface après 24 heures. Garde-la, pis tout reste en place — pour vrai.',

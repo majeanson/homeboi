@@ -8,6 +8,7 @@ import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
 import { HEALTH_KEY } from '../lib/queryKeys'
 import { useAuth } from '../lib/auth'
+import { requestInstallNudge } from '../lib/install'
 import { useSurface } from '../lib/surface'
 
 // Self-serve household creation — the front door for a brand-new family. One
@@ -57,7 +58,10 @@ export function Signup() {
       // « Des exemples pour explorer » banner greets the newcomer first (explore →
       // « Vider et commencer »); the setup checklist (WelcomeCard) takes over once the
       // demo is cleared. The essentials tour also auto-runs here. Friendlier than
-      // dropping straight into a settings tab.
+      // dropping straight into a settings tab. And ONE quiet offer to put the app on
+      // the home screen, on the board, once (lib/install) — an account was just made
+      // on this device, which is the moment it becomes worth installing.
+      requestInstallNudge()
       nav('/board')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')

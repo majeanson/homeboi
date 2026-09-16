@@ -392,6 +392,22 @@ const armHelp = (toggle = '.help-toggle') => async (page: Page) => {
   await expect(page.locator('.help-hint')).toBeVisible()
 }
 
+// « Sur l'écran d'accueil » (lib/install): the one-time board card after an account is
+// created. The nudge flag is device storage the entry cannot seed, and Chromium's
+// install prompt never fires in a harness — so setup plants both: the flag through the
+// store's cross-tab bridge (a StorageEvent, which createDeviceStore listens to), and a
+// fake beforeinstallprompt event so the card shows its « Installer » face.
+const plantInstallNudge = async (page: Page) => {
+  await page.evaluate(() => {
+    localStorage.setItem('babillard-install', JSON.stringify({ nudge: 'pending' }))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'babillard-install', newValue: localStorage.getItem('babillard-install') }))
+    const ev = new Event('beforeinstallprompt', { cancelable: true }) as Event & { prompt: () => Promise<void> }
+    ev.prompt = async () => {}
+    window.dispatchEvent(ev)
+  })
+  await expect(page.locator('.install-hint')).toBeVisible()
+}
+
 const openNoteEditor = async (page: Page) => {
   // ?add=1 is the canonical door — the same one the ＋ FAB's tap navigates to.
   await page.goto('/notes?add=1')
@@ -755,6 +771,7 @@ const MATRIX: Entry[] = [
   //   transient state, not a surface you scroll, so a chrome ratchet would be measuring
   //   the wrong thing. What these are FOR is the look — three chips and a mono line
   //   landing on six differently-shaped headers.
+  { name: 'board-install', route: '/board', setup: plantInstallNudge, content: '.install-hint', themes: ['day'], noBudgetWhy: 'the card sits under the welcome card, whose height the board states already budget; this entry exists for the card itself (2026-09-16)' },
   { name: 'help-board', route: '/board', setup: armHelp(), themes: ['day'] },
   { name: 'help-kitchen', route: '/kitchen', setup: armHelp(), themes: ['day'] },
   { name: 'help-liste', route: '/liste', setup: armHelp(), themes: ['day'] },

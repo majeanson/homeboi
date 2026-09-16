@@ -334,6 +334,15 @@ export const EN: typeof FR = {
     resetting: 'Resetting…',
   },
   // « Garder ma maisonnée » — claim the demo sandbox into a real account.
+  install: {
+    title: 'Babillard on your phone',
+    body: 'Put it on your home screen: it opens like an app, full screen, even without a signal.',
+    ios: 'In Safari: the Share button, then “Add to Home Screen”.',
+    cta: 'Install',
+    later: 'Later',
+    settingsTitle: 'On the home screen',
+    installed: 'Already installed on this device.',
+  },
   claim: {
     bannerTitle: 'This is your trial household',
     bannerHint: 'Everything you try here is wiped after 24 hours. Keep it, and it all stays in place — for real.',

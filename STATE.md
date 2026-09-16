@@ -3506,7 +3506,10 @@ and time the path from landing to the first useful thing. Log every hesitation a
         one shipped is the first it meets); same spec, with a control for a device that
         dismissed an older line;
       · the ❓ below.
-- ❓ **The first-ever undo toast hides the row you just added.** On the phone, the first
+- [~] **The first-ever undo toast hides the row you just added — ACCEPTED by Marc,
+      2026-09-16: « they can close the toast ».** Once per device, the ✕ is right there,
+      and the hint is worth its three lines the one time it shows. Declined, not deferred.
+      Original note: on the phone, the first
       write's toast carries the once-per-device hint (« Tout se défait ici — tes derniers
       gestes restent dans « Récents » ») — three lines plus « Annuler », sitting over the
       top of the list, which is where the new row went. Once per device, by design, and
@@ -3553,7 +3556,8 @@ against a SEEDED household on wifi.
       modulepreloads the entry's whole static graph, 69 chunks, and the door pays for the
       board, the write/outbox layer, both i18n halves' shell, the QR code… A stranger at a
       school gate on a bad signal waits eleven seconds for a headline.
-- [ ] **The door's eager graph — the structural fix, sized, not started.** The cheap
+- [ ] **The door's eager graph — the structural fix, sized, not started (Marc, 2026-09-16:
+      « good » — do it in its own session, as sized below).** The cheap
       lever was tried and reverted the same hour: making `DrawPad` lazy changed nothing,
       because the chunk NAMED `drawpad` (49 KB gz, in the door's preload list) is
       Rolldown's shared-commons chunk wearing the group's name — 100+ exports,
@@ -3567,7 +3571,18 @@ against a SEEDED household on wifi.
       cost of one more round trip on a wall tablet's warm boot. Needs its own session:
       the gate's eager set re-based, the `drawpad` group renamed to what it is, and the
       cold-start table above re-run after.
-- ❓ **Install prompt — there is none, anywhere.** No `beforeinstallprompt` handling, no
+- [x] **Install prompt — built, two doors, Marc's shape** (« maybe after account creation
+      too »). `lib/install` keeps Chromium's `beforeinstallprompt` (preventDefault, so the
+      browser's own mini-bar does not double the offer) and knows iOS Safari has none;
+      `InstallHint` is ONE quiet line in two faces: the standing door stacked into
+      Réglages ▸ Affichage & veille (words + « Installer » where a prompt exists, the
+      share-sheet words on iOS, « déjà installé » once standalone, nothing where there is
+      nothing to offer), and a one-time `.section-intro` card on the board that signup
+      and `/garder` flag on THAT device — « Plus tard » is forever, an accepted install
+      spends it too. Five e2e cases (`install-hint.spec.ts`: the button calls the
+      browser's prompt, dismissal survives a reload, no flag → no card, the settings door,
+      the iPhone face) and a matrix state (`board-install`). Original finding: none
+      anywhere — no `beforeinstallprompt` handling, no
       iOS « Ajouter à l'écran d'accueil » hint (grep: zero hits in `src/`). Android shows
       its own mini-bar for a PWA that meets the criteria; iOS never does — a household on
       an iPhone will use the app in Safari with the address bar forever unless told. The

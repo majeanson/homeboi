@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { useLang, useT, type Lang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
+import { InstallHint } from '../InstallHint'
 import { RecentsPanel } from '../RecentsPanel'
 import { useAudience } from '../../lib/audience'
 import { useApodEnabled, setApodEnabled } from '../../lib/apod'
@@ -362,6 +363,10 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           <RecentsPanel />
         </div>
       </div>
+      {/* « Sur l'écran d'accueil » — the standing install door (the board's one-time
+          nudge is the other; lib/install). Renders nothing where there is nothing to
+          offer, one line where the app is already installed. */}
+      <InstallHint />
       {/* Dev-only: the live component catalogue. Searchable, collapsed — handy to
           keep open alongside while building. Settings is operator-only already. */}
       <p className="operator__hint mono">

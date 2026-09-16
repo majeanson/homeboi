@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { PairPrompt } from '../components/Fallback'
 import { HubHead } from '../components/HubHead'
 import { WelcomeCard } from '../components/WelcomeCard'
+import { InstallHint } from '../components/InstallHint'
 import { SampleBanner } from '../components/SampleBanner'
 import { AutoCard } from '../components/board/AutoCard'
 import { CarnetsCard } from '../components/board/CarnetsCard'
@@ -1818,6 +1819,10 @@ export function Board() {
           newcomer has a clear next step AND can see everything the app does. It
           auto-hides once the steps are done (or dismissed). */}
       {data && <WelcomeCard members={data.members} />}
+      {/* Once, after an account was created on THIS device (signup / claim set the
+          nudge): put the app on the home screen. Quiet card, dismiss is forever;
+          nothing when the device cannot install or already did (lib/install). */}
+      <InstallHint nudge />
 
       {/* Fridge notes (text / voice / photo) ride above the day in both parent views.
           DRAWINGS are split out to the Grille view only (below) — they deserve room and

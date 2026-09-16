@@ -9,6 +9,7 @@ import { api, isStatus } from '../lib/api'
 import { HEALTH_KEY } from '../lib/queryKeys'
 import { useAuth } from '../lib/auth'
 import { isSandboxEmail } from '../lib/demo'
+import { requestInstallNudge } from '../lib/install'
 import { useOnline } from '../lib/online'
 
 // « Garder ma maisonnée » — the sandbox claim form (POST /api/demo/claim). The
@@ -68,6 +69,8 @@ export function ClaimPage() {
       // The response re-issued the session cookies for the new email; re-ask
       // auth/me so the SPA (and this page's sandbox gate) see the real account.
       await refresh()
+      // Same one-time home-screen offer as signup: the sandbox just became theirs.
+      requestInstallNudge()
       nav('/board')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')
