@@ -26,7 +26,9 @@ function readSeen(): string[] {
     return []
   }
 }
-function hasTourSeen(id: string): boolean {
+/** Exported for « Le point du jour »: its morning open yields to a device that has not
+ *  met the welcome yet (lib/habitCheckin). */
+export function hasTourSeen(id: string): boolean {
   return readSeen().includes(id)
 }
 function markTourSeen(id: string): void {

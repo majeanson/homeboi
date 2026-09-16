@@ -7,6 +7,7 @@ import { useAuth } from './auth'
 import { isGuest, isPaired } from './device'
 import { useProfile } from './profile'
 import { useHabits, dueToday, reminderDue, habitToday, nowMinute } from './habits'
+import { hasTourSeen } from './tour'
 
 // « Le point du jour » — when the check-in scene opens by itself.
 //
@@ -83,17 +84,32 @@ export function useHabitCheckinTrigger(saverShowing: boolean): void {
 
   useEffect(() => {
     if (firing.current) return
-    if (!data) return
     // Same guards as the tour's auto-launch: a parent lens on a signed-in operator
     // or a paired wall kiosk. Never a guest, never the TV board, never a toddler /
     // simple lens (they have no business being handed someone's cigarette count).
     if (audience !== 'parent') return
     if (!signedIn && !isPaired()) return
     if (isGuest() || pathname.startsWith('/cast')) return
-    // Never interrupt the scene with itself, nor a routine run / form / other scene.
-    if (pathname === SCENE) return
 
     const today = habitToday()
+    // THE FIRST DAY BELONGS TO THE WELCOME. A device that has never met the essentials
+    // tour is a brand-new one — a fresh signup, a demo sandbox, a phone that just
+    // installed — and the seed puts habits on today, so this used to fire on the very
+    // first paint: the stranger's first screen was the habits scene with the welcome
+    // dialog drawn over it (the demo walk, 2026-09-16). Stamp today and stand down, so
+    // it does not pop the moment the tour is skipped either; tomorrow is soon enough.
+    //
+    // BEFORE the data gate, on purpose. The stamp must not wait for /api/habits: a
+    // parent who skips the welcome in the 300 ms before the payload lands would have
+    // met the tour by the time this ran, and the scene popped right behind it — which
+    // is exactly what the first version of this rule did in the spec.
+    if (!hasTourSeen('essentials')) {
+      if (settings.lastShownDay < today) setHabitCheckin({ lastShownDay: today })
+      return
+    }
+    if (!data) return
+    // Never interrupt the scene with itself, nor a routine run / form / other scene.
+    if (pathname === SCENE) return
     const due = dueToday(data.habits, data.days, face, today)
 
     // 1) The morning open — once per local day, per device, and only when the day
