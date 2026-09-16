@@ -10,3 +10,4 @@ forward fix.
 | File            | What it adds                                                                                                                                                                                                        |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `0001_init.sql` | Everything: households/domains/operators/members, device pairing (devices + pairing_codes), captures, events/tasks/list_items, meals/pantry_low, routines/routine_runs. Deliberately no streaks/points/push tables. |
+| `0134_operator_session_version.sql` | `operators.session_version` — the counter the session cookie's `v` is checked against; bumped by a reset, a password change or « Se déconnecter partout ailleurs » (STATE.md §4-L L1). |

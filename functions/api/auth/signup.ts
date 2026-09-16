@@ -1,6 +1,6 @@
 import type { Env } from '../../_lib/env'
 import { badRequest, conflict, forbidden, readJson, serverError } from '../../_lib/json'
-import { issueSession, sessionCookies } from '../../_lib/auth'
+import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { newId, nowSec } from '../../_lib/ids'
 import { seedSampleData } from '../../_lib/sampleData'
@@ -58,7 +58,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   }
 
   try {
-    const { session, csrf } = await issueSession(ctx.env, email)
+    const { session, csrf } = await signInAs(ctx.env, email)
     const headers = new Headers({ 'content-type': 'application/json; charset=utf-8' })
     for (const c of sessionCookies(session, csrf)) headers.append('Set-Cookie', c)
     return new Response(JSON.stringify({ ok: true, email }), { status: 201, headers })

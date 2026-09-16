@@ -1,6 +1,6 @@
 import { authed } from '../../_lib/route'
 import { badRequest, conflict, forbidden, readJson, serverError, unauthorized } from '../../_lib/json'
-import { issueSession, sessionCookies } from '../../_lib/auth'
+import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { nowSec } from '../../_lib/ids'
 import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
@@ -19,7 +19,7 @@ import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
 // signup in disguise — it must not be a way around a gated deployment), same
 // one-household-per-email conflict answer.
 //
-// The session cookie encodes the OLD email (issueSession), so after the UPDATE the
+// The session cookie encodes the OLD email (signInAs), so after the UPDATE the
 // current cookie would resolve to nothing and 401 the very next request. The
 // response therefore re-issues session cookies for the new email — the visitor
 // keeps their session, their household, and everything they tried.
@@ -85,7 +85,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   // Re-issue the session for the NEW email so the current device stays signed in.
   try {
-    const { session, csrf } = await issueSession(ctx.env, email)
+    const { session, csrf } = await signInAs(ctx.env, email)
     const headers = new Headers({ 'content-type': 'application/json; charset=utf-8' })
     for (const c of sessionCookies(session, csrf)) headers.append('Set-Cookie', c)
     return new Response(JSON.stringify({ ok: true, email }), { status: 200, headers })

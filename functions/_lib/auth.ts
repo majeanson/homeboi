@@ -2,7 +2,13 @@
 //
 //   1. Operator session cookie (`bb_session`) — the logged-in human who owns
 //      the household. Format base64url(payload).base64url(sig), HMAC-SHA-256,
-//      payload { e: email, x: expSeconds }. Same shape as the portal.
+//      payload { e: email, v: sessionVersion, x: expSeconds }. Same shape as the
+//      portal, plus `v` (migration 0134): the operator row's session_version at
+//      mint time. currentOperator() rejects a cookie whose `v` no longer matches
+//      the row, which is how a password reset / « Se déconnecter partout » ends
+//      every OTHER device's session without a sessions table. A cookie minted
+//      before 0134 has no `v` and reads as 1 — the column's default — so the
+//      deploy itself signed nobody out.
 //   2. Device token — a paired wall tablet. Format identical, payload
 //      { d: deviceId, h: householdId, x: expSeconds }. The tablet stores it in
 //      localStorage and sends it as `X-Device-Token` (kiosk, no cookie login).
@@ -114,12 +120,44 @@ function readCookie(request: Request, name: string): string | null {
 
 // ---- Operator session ------------------------------------------------------
 
-export async function issueSession(env: Env, email: string): Promise<{ session: string; csrf: string }> {
-  const session = await signToken(env, { e: email, x: nowSec() + SESSION_TTL })
+// Mint a session for an operator at an EXPLICIT version. Handlers never call this:
+// they call signInAs(), which reads the live version off the row — a guard
+// (src/lib/session-issue-rule.test.ts) fails the build on any other call site, so a
+// version-less (= revocable-by-nobody) cookie cannot be minted by habit. Exported
+// for tests only.
+export async function issueSession(env: Env, email: string, version = 1): Promise<{ session: string; csrf: string }> {
+  const session = await signToken(env, { e: email, v: version, x: nowSec() + SESSION_TTL })
   // CSRF token is just a random value; security comes from "header must equal
   // cookie", which a cross-site attacker can't read.
   const csrf = b64urlEncode(crypto.getRandomValues(new Uint8Array(18)))
   return { session, csrf }
+}
+
+// THE door for signing an operator in: reads the row's current session_version and
+// mints a cookie carrying it. A row that does not exist yet (login's legacy
+// first-login path calls ensureHouseholdForEmail first, so this is defensive)
+// mints at version 1, the column's default.
+export async function signInAs(env: Env, email: string): Promise<{ session: string; csrf: string }> {
+  const row = await env.DB.prepare('SELECT session_version FROM operators WHERE email = ?')
+    .bind(email)
+    .first<{ session_version: number | null }>()
+  return issueSession(env, email, row?.session_version ?? 1)
+}
+
+// Bump the operator's session_version: every cookie minted before this call is a 401
+// from the next request on. The caller re-issues the CURRENT device's cookie with
+// signInAs() when the person pressing the button should stay signed in (a password
+// change, « Se déconnecter partout ailleurs »); a reset does the same because it
+// signs the person in on the spot.
+export async function revokeAllSessions(env: Env, email: string): Promise<void> {
+  await revokeAllSessionsStatement(env, email).run()
+}
+
+// The bump as a bindable statement, for callers that must bump INSIDE a batch with
+// the write that motivates it (auth/reset: the hash and the version change together
+// or not at all).
+export function revokeAllSessionsStatement(env: Env, email: string): D1PreparedStatement {
+  return env.DB.prepare('UPDATE operators SET session_version = session_version + 1 WHERE email = ?').bind(email)
 }
 
 export function sessionCookies(session: string, csrf: string): string[] {
@@ -139,9 +177,30 @@ export function clearSessionCookies(): string[] {
   ]
 }
 
-export async function currentEmail(env: Env, request: Request): Promise<string | null> {
-  const payload = await verifyToken<{ e: string }>(env, readCookie(request, SESSION_COOKIE))
-  return payload?.e ?? null
+export interface CurrentOperator {
+  email: string
+  householdId: string
+}
+
+// Who is the signed-in operator, if the cookie is valid AND still current? One read
+// of the operator row answers both "which household" and "has this session been
+// revoked" (session_version, 0134). Null for no cookie, a bad signature, an expired
+// token, an email with no row, or a version the row has moved past. resolveActor()
+// and auth/me both go through here — auth/me MUST, or the shell would say « signed
+// in » while every other call 401s (the stranded-kiosk shape STATE.md §C-quater
+// records). The stub-tolerant `?? 1` matches the column default: a row read before
+// 0134 ran, or a unit-test stub without the column, is version 1.
+export async function currentOperator(env: Env, request: Request): Promise<CurrentOperator | null> {
+  const payload = await verifyToken<{ e?: string; v?: number }>(env, readCookie(request, SESSION_COOKIE))
+  if (!payload || typeof payload.e !== 'string') return null
+  const row = await env.DB.prepare('SELECT household_id, session_version FROM operators WHERE email = ?')
+    .bind(payload.e)
+    .first<{ household_id: string; session_version: number | null }>()
+  if (!row) return null
+  const live = row.session_version ?? 1
+  const minted = typeof payload.v === 'number' ? payload.v : 1
+  if (minted !== live) return null
+  return { email: payload.e, householdId: row.household_id }
 }
 
 export function verifyCsrf(request: Request): boolean {

@@ -11,6 +11,8 @@ import * as authReset from '../functions/api/auth/reset'
 import * as authLogout from '../functions/api/auth/logout'
 import * as authMe from '../functions/api/auth/me'
 import * as authSignup from '../functions/api/auth/signup'
+import * as authSessions from '../functions/api/auth/sessions'
+import * as authPassword from '../functions/api/auth/password'
 import * as aRegler from '../functions/api/a-regler'
 import * as aiErrors from '../functions/api/ai-errors'
 import * as aiTest from '../functions/api/ai-test'
@@ -150,6 +152,10 @@ const TABLE: Record<string, RouteMod> = {
   'auth/logout': authLogout,
   'auth/me': authMe,
   'auth/signup': authSignup,
+  // Session versioning (0134): end every other device's session / change the password
+  // while signed in. Both operator-only, password-gated (_lib/sudo.ts), NOT CSRF-exempt.
+  'auth/sessions/revoke': authSessions,
+  'auth/password': authPassword,
   'a-regler': aRegler,
   'ai-errors': aiErrors,
   'ai-test': aiTest,

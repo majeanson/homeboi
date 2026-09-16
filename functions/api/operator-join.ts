@@ -1,6 +1,6 @@
 import type { Env } from '../_lib/env'
 import { badRequest, conflict, forbidden, notFound, ok, readJson, serverError } from '../_lib/json'
-import { issueSession, sessionCookies, verifyOperatorInvite } from '../_lib/auth'
+import { signInAs, sessionCookies, verifyOperatorInvite } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { nowSec } from '../_lib/ids'
 
@@ -113,7 +113,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   // this household already has a real one, and dropping fake kids into it would be
   // the exact confusion this whole feature exists to remove.
   try {
-    const { session, csrf } = await issueSession(ctx.env, email)
+    const { session, csrf } = await signInAs(ctx.env, email)
     const headers = new Headers({ 'content-type': 'application/json; charset=utf-8' })
     for (const c of sessionCookies(session, csrf)) headers.append('Set-Cookie', c)
     return new Response(JSON.stringify({ ok: true, email, householdName: checked.name }), { status: 201, headers })

@@ -1,0 +1,16 @@
+-- Session versioning (STATE.md §4-L, item L1, 2026-09-16).
+--
+-- The operator session cookie is a stateless HMAC token: { e: email, x: expiry }. Nothing
+-- server-side could END one before its 30 days ran out — so a password reset left every
+-- other signed-in device signed in, and a lost phone stayed an operator for a month
+-- after its owner had done the one thing they could think of.
+--
+-- One integer on the operator row fixes that without a sessions table: the cookie now
+-- carries `v`, resolveActor compares it to this column, and a mismatch is a 401. Bumping
+-- the column IS the revocation — a reset, a password change, or « Se déconnecter
+-- partout ailleurs » each add one. A cookie minted before this migration has no `v` and
+-- reads as version 1, which is what every row starts at: the deploy signs nobody out.
+--
+-- A counter, not a secret: the value is not what proves identity (the HMAC does); it only
+-- has to differ from every value a stale cookie could carry.
+ALTER TABLE operators ADD COLUMN session_version INTEGER NOT NULL DEFAULT 1;

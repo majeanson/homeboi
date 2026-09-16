@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **40** — nine of them the public-readiness plan §4-K and thirty-one the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **36** — nine of them the public-readiness plan §4-K and twenty-seven the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3736,10 +3736,10 @@ by planting `v: 1` against a row at 2); a legacy token without `v` still resolve
 harness case (L3): reset on device A → device B's next call is 401, A's new cookie works.
 e2e `password-reset.spec.ts` stays as is. PARITY F40 footnote updated.
 
-- [ ] Migration 0134 + `signInAs` + `currentOperator` + the version check in `resolveActor` and `auth/me`
-- [ ] `session-issue-rule.test.ts` proven red on a planted `issueSession(` outside auth.ts
-- [ ] `POST /api/auth/sessions/revoke` (password, bumps, re-issues) + `POST /api/auth/password`
-- [ ] `reset.ts` bumps; unit cases red-then-green; STATE + PARITY F40
+- [x] Migration 0134 + `signInAs` + `currentOperator` + the version check in `resolveActor` and `auth/me` — `functions/_lib/auth.ts`, `household.ts`, `api/auth/me.ts`
+- [x] `session-issue-rule.test.ts` proven red on a planted `issueSession(` in login.ts (reported `login.ts:39`); the stale-version case in `route.test.ts` proven red by disabling the comparison (two cases fell, the legacy-cookie one among them)
+- [x] `POST /api/auth/sessions/revoke` (password, bumps, re-issues) + `POST /api/auth/password` — `api/auth/sessions.ts`, `api/auth/password.ts`, `_lib/sudo.ts` (+ `sudo.test.ts`, five cases); UI in L12
+- [x] `reset.ts` bumps in the same batch as the hash; PARITY note 87 extended
 
 #### L2. Login, signup, forgot, reset, demo mint and pairing get a rate limit
 

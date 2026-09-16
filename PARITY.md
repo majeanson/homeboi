@@ -742,7 +742,13 @@ Footnotes (verdicts recorded so far):
     of the emailed token against an UNUSED, UNEXPIRED row, the operator's hash replaced
     and the row marked used in ONE D1 batch, then signed in like signup). No read, no
     edit, no delete: a reset is a one-shot, and the rows are 30-minute litter capped at
-    three open per email.
+    three open per email. **Since 0134 (2026-09-16, STATE §4-L L1) the redeem batch also
+    bumps `operators.session_version`, so every OTHER device's cookie is a 401 from its next
+    request** — before that a reset left a lost phone signed in for its full 30 days. The
+    same bump sits behind `POST auth/password` (« Changer mon mot de passe », the first way
+    to change a password without the email loop) and `POST auth/sessions/revoke` (« Se
+    déconnecter partout ailleurs »), both password-gated through `_lib/sudo.ts`; their
+    Réglages card is L12.
 88. **➖ peek / search / empty / who (F40)** — there is no entity anyone meets: the row
     exists for thirty minutes, in the database only, keyed by the hash of a secret that
     lives in one email. Nothing to open, find, list or attribute.

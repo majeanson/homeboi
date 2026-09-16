@@ -11,7 +11,7 @@
 // Guests are strictly narrower than a kiosk: route.ts blocks every non-GET.
 
 import type { Env } from './env'
-import { currentEmail, currentDevice, currentGuest, type GuestKind } from './auth'
+import { currentOperator, currentDevice, currentGuest, type GuestKind } from './auth'
 import { forbidden, unauthorized } from './json'
 import { nowSec } from './ids'
 
@@ -52,14 +52,12 @@ export function guestRowAcceptable(standing: boolean, row: { revoked_at: number 
 // Exported so the realtime WS upgrade (worker/index.ts → /api/live) can resolve
 // the actor BEFORE hijacking the request, without routing through authed().
 export async function resolveActor(env: Env, request: Request): Promise<Actor | null> {
-  // Operator first — a logged-in human outranks a device.
-  const email = await currentEmail(env, request)
-  if (email) {
-    const row = await env.DB.prepare('SELECT household_id FROM operators WHERE email = ?')
-      .bind(email)
-      .first<{ household_id: string }>()
-    if (row) return { householdId: row.household_id, scope: 'operator', email }
-  }
+  // Operator first — a logged-in human outranks a device. currentOperator already
+  // checked the cookie's session_version against the row (0134): a revoked session
+  // resolves to nothing here and falls through to the device/guest paths, exactly
+  // like an expired one.
+  const op = await currentOperator(env, request)
+  if (op) return { householdId: op.householdId, scope: 'operator', email: op.email }
 
   const device = await currentDevice(env, request)
   if (device) {

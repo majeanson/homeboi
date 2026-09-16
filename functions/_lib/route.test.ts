@@ -35,6 +35,20 @@ const reqWith = (headers: Record<string, string>, method = 'POST'): Request =>
 
 const ctxFor = (env: Env, request: Request): Ctx => ({ env, request }) as unknown as Ctx
 
+// A token in auth.ts's exact wire format but WITHOUT the 0134 `v` field — what every
+// cookie minted before the migration looks like.
+async function signLegacy(payload: object): Promise<string> {
+  const b64url = (bytes: Uint8Array) =>
+    btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+  const body = b64url(new TextEncoder().encode(JSON.stringify(payload)))
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)))
+  return `${body}.${b64url(sig)}`
+}
+
 describe('authed', () => {
   it('rejects an unauthenticated request with 401 and never runs the handler', async () => {
     let ran = false
@@ -101,6 +115,42 @@ describe('authed', () => {
     expect(res.status).toBe(200)
     expect(seen!.scope).toBe('guest')
     expect(seen!.householdId).toBe('hh1')
+  })
+
+  // Session versioning (0134). The stub answers every .first() with the same row, so
+  // the operator row carries the version the cookie is compared against.
+  it('rejects a session whose version the row has moved past (a reset ended it)', async () => {
+    let ran = false
+    const handler = authed(async () => {
+      ran = true
+      return new Response('ok')
+    })
+    const env = envWith({ household_id: 'hh1', session_version: 2 })
+    const { session } = await issueSession(env, 'a@b.com', 1)
+    const res = await handler(ctxFor(env, reqWith({ Cookie: `bb_session=${session}` })))
+    expect(res.status).toBe(401)
+    expect(ran).toBe(false)
+  })
+
+  it('accepts a session minted at the row’s current version', async () => {
+    const env = envWith({ household_id: 'hh1', session_version: 2 })
+    const { session } = await issueSession(env, 'a@b.com', 2)
+    const res = await authed(async () => new Response('ok'))(ctxFor(env, reqWith({ Cookie: `bb_session=${session}` })))
+    expect(res.status).toBe(200)
+  })
+
+  it('still accepts a cookie minted before 0134 (no v) against a version-1 row — the deploy signs nobody out', async () => {
+    // The pre-0134 wire shape, built by hand: { e, x } signed the same way. Pinning the
+    // format here is deliberate — if auth.ts ever changes the encoding, this is the
+    // test that says every existing cookie just died.
+    const env = envWith({ household_id: 'hh1', session_version: 1 })
+    const legacy = await signLegacy({ e: 'a@b.com', x: Math.floor(Date.now() / 1000) + 3600 })
+    const res = await authed(async () => new Response('ok'))(ctxFor(env, reqWith({ Cookie: `bb_session=${legacy}` })))
+    expect(res.status).toBe(200)
+    // …and once the row is bumped, the same legacy cookie is out like any other.
+    const bumped = envWith({ household_id: 'hh1', session_version: 2 })
+    const res2 = await authed(async () => new Response('ok'))(ctxFor(bumped, reqWith({ Cookie: `bb_session=${legacy}` })))
+    expect(res2.status).toBe(401)
   })
 
   it('turns a thrown error into a clean 500 instead of leaking it', async () => {

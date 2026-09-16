@@ -45,6 +45,8 @@ const SILENT_PATHS = new Set<string>([
   'auth/login',
   'auth/logout',
   'auth/signup',
+  'auth/sessions/revoke', // bumps session_version only — nothing polled changes
+  'auth/password', // same: the credential changes, no cache does
   'auth/me',
   'ai-errors',
   'ai-test',
