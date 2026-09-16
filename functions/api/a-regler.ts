@@ -26,17 +26,7 @@ import { coveredSet, coverKey, parseShares, planOccurrences, type PlanRow, type 
 // We return STRUCTURED signals (kind + the entity data + a fix href); the frontend
 // (lib/aRegler) composes + localizes the sentence, so all copy stays in i18n.
 
-type Kind =
-  | 'ride'
-  | 'car-clash'
-  | 'meal-empty'
-  | 'meal-low'
-  | 'birthday'
-  | 'transfer-due'
-  | 'mail-postbox'
-  | 'mail-intake'
-  // A subscribed calendar has been failing long enough to matter (migration 0131).
-  | 'feed-stale'
+type Kind = 'ride' | 'car-clash' | 'meal-empty' | 'meal-low' | 'birthday' | 'transfer-due' | 'mail-postbox' | 'mail-intake'
 interface Friction {
   kind: Kind
   key: string // stable id (React key / dedupe)
@@ -54,11 +44,6 @@ const CAP = 6
 // importing from src/ is the kind of shortcut that turns into a bundling problem later.
 // `sub` is what subOfFocus('settings', 'guestLinks') derives; keep them in step.
 const MAIL_HREF = '/settings?tab=settings&lens=regler&sub=tablets&focus=guestLinks'
-// « Les calendriers » lives under maison ▸ cars (lib/settingsNav SETTINGS_TREE).
-const FEEDS_HREF = '/settings?tab=maison&lens=regler&sub=cars&focus=feeds'
-// How long a subscribed calendar must have been failing before it is worth a word.
-// Three days: one bad night is weather, three is a URL that changed.
-const FEED_STALE_AFTER_SEC = 3 * 86400
 const dayOf = (at: number) => localDayStart(new Date(at * 1000))
 const norm = (s: string) => s.trim().toLowerCase()
 
@@ -90,7 +75,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // operator pays for the lookup.
   const wantsMail = actor.scope === 'operator'
 
-  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople, carOcc, pendingPostbox, pendingIntake, staleFeed] = await Promise.all([
+  const [oneOffRides, recurRides, supperDays, supperMeals, lowRows, birthdayPeople, carOcc, pendingPostbox, pendingIntake] = await Promise.all([
     // Driverless rides (a car-taking trip with nobody driving — no member, no carpool
     // contact) in the next week. One-offs by date…
     ctx.env.DB.prepare(
@@ -158,28 +143,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
       ? ctx.env.DB.prepare("SELECT 1 AS n FROM intake_submissions WHERE household_id = ? AND status = 'pending' LIMIT 1")
           .bind(hh)
           .first<{ n: number }>()
-          .catch(() => null)
-      : Promise.resolve(null),
-    // — A SUBSCRIBED CALENDAR THAT STOPPED WORKING (0129 + 0131) —
-    //
-    // The failure mode a subscription HAS. A feed fills itself silently, which is the
-    // whole point — and means a dead URL is silent too: the calendar simply stops
-    // gaining new dates, and the household reads a school term that ended in August
-    // with no reason to suspect anything.
-    //
-    // `error_since`, not `last_error`: the latter is true after one bad night, and
-    // nagging about a server that will be back by morning is exactly the noise this
-    // scan exists to not make. Three days is long enough that it is not weather.
-    //
-    // Operator-only (the same `wantsMail` gate): the fix is retyping a URL on a
-    // settings card that carries `access: 'operator'`, so a kiosk following this
-    // would land where the card is not rendered (ACTIONS.md).
-    wantsMail
-      ? ctx.env.DB.prepare(
-          'SELECT label FROM calendar_feeds WHERE household_id = ? AND deleted_at IS NULL AND enabled = 1 AND error_since IS NOT NULL AND error_since < ? ORDER BY error_since LIMIT 1',
-        )
-          .bind(hh, now - FEED_STALE_AFTER_SEC)
-          .first<{ label: string }>()
           .catch(() => null)
       : Promise.resolve(null),
   ])
@@ -318,12 +281,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   if (pendingIntake) {
     signals.push({ kind: 'mail-intake', key: 'mail:intake', label: '', href: MAIL_HREF })
-  }
-  // A subscribed calendar that stopped working. NAMED — « École de Léa » — because the
-  // fix is to go and check THAT address and a household may have several. No `at`,
-  // like the mail signals: "whenever you have a minute" is not a time.
-  if (staleFeed) {
-    signals.push({ kind: 'feed-stale', key: 'feed:stale', label: staleFeed.label, href: FEEDS_HREF })
   }
 
   // « Plus tard »: drop the signals this household has acknowledged and whose quiet

@@ -99,16 +99,6 @@ export const SEARCH_INDEX = {
   // the card without outranking anything actually NAMED that (same rule as a fridge
   // memo's body).
   event: entry<EventRow>({ primary: (e) => e.title, secondary: (e) => e.notes ?? '' }),
-  // « Les calendriers » (0129) — an occurrence from a subscribed feed. Searchable for
-  // the obvious reason: « c'est quand, la journée pédagogique ? » is the question a
-  // school calendar exists to answer, and a calendar you can only find by scrolling to
-  // the right month is half a feature. The FEED's name is a secondary hit alongside
-  // the location, so « école » finds everything the school published without
-  // outranking the thing actually called that.
-  feedEvent: entry<{ title: string; location: string | null; feedLabel: string }>({
-    primary: (f) => f.title,
-    secondary: (f) => [f.location, f.feedLabel].filter(Boolean).join(' '),
-  }),
   listItem: entry<ListRowLite>({ primary: (li) => li.text }),
   // Cercle family notes: rich-text body folded to its plain words.
   familyNote: entry<FamilyNote>({

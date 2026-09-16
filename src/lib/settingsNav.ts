@@ -74,12 +74,8 @@ export const SETTINGS_TREE = {
     routines: [s('routines', 'household'), s('chores', 'household'), s('todoTemplates', 'household')],
     // La maisonnée: who lives here, and the cercle's groups.
     members: [s('members', 'operator'), s('cercleGroups', 'operator')],
-    // L'auto & horaires: the vehicles, the per-member work hours that drive them —
-    // and « Les calendriers » (0129), the ICS subscriptions. All three are the
-    // household's SCHEDULE arriving from ELSEWHERE (a work roster, a school term)
-    // rather than something typed here, which is what makes them one pill.
-    // C-15: an existing sub, never a new one.
-    cars: [s('cars', 'household'), s('schedule', 'household'), s('feeds', 'operator')],
+    // L'auto & horaires: the vehicles, and the per-member work hours that drive them.
+    cars: [s('cars', 'household'), s('schedule', 'household')],
     annee: [s('houseDiary', 'household')],
   },
   settings: {

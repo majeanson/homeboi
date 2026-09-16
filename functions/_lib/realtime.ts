@@ -103,14 +103,6 @@ const PATH_KEYS: Record<string, string[][]> = {
   carnets: [['carnets'], ['board']],
   'care-log': [['carnets'], ['care-log'], ['board']],
   'home-pins': [['home-pins']],
-  // « Les calendriers » (0129). Adding, toggling, refreshing or removing a
-  // subscription changes what the CALENDAR shows — /api/month carries `feedEvents`,
-  // and « La semaine » reads the same key. Without this it fell through to the bare
-  // [['board']] default, which is the one surface a feed does NOT reach: the bento
-  // board has no feed card, so the month and the week would have kept showing the old
-  // subscription until their own staleTime expired. Its own key too, so the Réglages
-  // list refreshes on another device.
-  'calendar-feeds': [['calendar-feeds'], ['month']],
   // « Plus tard » on a friction: the scan is household-wide, so the kitchen tablet
   // must stop showing what the phone just quieted.
   'a-regler': [['a-regler'], ['board']],

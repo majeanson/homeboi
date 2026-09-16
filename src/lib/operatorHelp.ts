@@ -230,16 +230,6 @@ export const OPERATOR_HELP = {
       en: `The maintenance log: what broke and when. Clear it once read — not a counter, just a maintenance log.`,
     },
   },
-  feeds: {
-    // The agenda card: a subscribed calendar is more rendez-vous arriving in the same
-    // place, so it explains itself where the agenda already does rather than asking
-    // for a 33rd guide card (DISCOVERY.md's merge-first ceiling).
-    card: 'set-agenda',
-    body: {
-      fr: `Abonne-toi au calendrier de l’école, de l’équipe ou de la collecte : son adresse se trouve sous « S’abonner » ou « ICS ». Il se relit tout seul chaque nuit et remplit le calendrier sans que personne tape quoi que ce soit. Rien là-dedans ne se modifie ici — c’est le calendrier de quelqu’un d’autre, et il est marqué autrement pour ça. Si une adresse arrête de répondre, la ligne sous son nom le dit.`,
-      en: `Subscribe to the school’s, the team’s or the collection calendar: its address lives under “Subscribe” or “ICS”. It re-reads itself every night and fills the calendar with nobody typing anything. Nothing in it can be edited here — it is someone else’s calendar, and it is marked differently for that. If an address stops answering, the line under its name says so.`,
-    },
-  },
   coop: {
     // Same guide card as the guest links below — both answer "who else can see or
     // touch this household", and DISCOVERY.md's rule is to merge into an existing

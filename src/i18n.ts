@@ -41,7 +41,6 @@ export const FR = {
     todos: 'À compléter',
     pantry: 'Garde-manger & réserve',
     events: 'Rendez-vous',
-    feedEvents: 'Calendriers abonnés',
     listItems: 'La liste',
     notes: 'Notes & recommandations',
     boardNotes: 'Notes du babillard',
@@ -256,7 +255,6 @@ export const FR = {
     // (NFR-CALM-1), et la carte de révision dit le reste une fois qu'on y est.
     mailPostbox: 'Un message reçu attend d’être classé',
     mailIntake: 'Des infos reçues attendent d’être ajoutées',
-    feedStale: (name: string) => `${name} ne répond plus — vérifie l’adresse`,
     // « Plus tard » — un signal qu'on a VU mais qu'on ne peut pas régler tout de
     // suite (un covoiturage encore à décider, une fête pour laquelle on a choisi de
     // ne rien acheter). Sans ça, la seule surface faite pour ALLÉGER la charge
@@ -904,40 +902,6 @@ export const FR = {
     skip: 'Passer',
     stop: 'Arrêter ce décompte',
     dodosN: (n: number) => (n === 0 ? 'C’est aujourd’hui ! 🎉' : n === 1 ? 'dans 1 dodo' : `dans ${n} dodos`),
-  },
-  // « Les calendriers » — les abonnements ICS en lecture seule (migration 0129).
-  feeds: {
-    title: 'Les calendriers',
-    hint: 'Abonne-toi au calendrier de l’école, de l’équipe, de la collecte. Il se remplit tout seul, chaque nuit — et rien là-dedans ne se modifie ici : c’est le calendrier de quelqu’un d’autre.',
-    empty: 'Aucun calendrier pour l’instant.',
-    labelPlaceholder: 'Nom (ex. : École de Léa)',
-    urlPlaceholder: 'Adresse du calendrier (https:// ou webcal://)',
-    add: 'Ajouter',
-    show: 'Afficher',
-    refresh: 'Rafraîchir',
-    edit: 'Couleur et visage',
-    colour: 'Couleur',
-    whose: 'À qui ça appartient',
-    everyone: 'Maisonnée',
-    where: 'L’adresse se trouve dans ton calendrier en ligne, sous « S’abonner », « Exporter » ou « ICS ».',
-    added: (n: number) => (n === 0 ? 'Ajouté, mais rien à afficher pour l’instant.' : n === 1 ? 'Ajouté — 1 rendez-vous.' : `Ajouté — ${n} rendez-vous.`),
-    ok: (n: number, when: string) => (n === 1 ? `1 rendez-vous · lu le ${when}` : `${n} rendez-vous · lu le ${when}`),
-    // On NOMME ce qu'on n'a pas su lire, au lieu de laisser croire que le calendrier
-    // est complet. Un événement dont la règle nous dépasse apparaît quand même — une
-    // fois, le jour où il commence.
-    partial: (n: number) =>
-      n === 1 ? '1 rendez-vous récurrent n’est pas tout affiché' : `${n} rendez-vous récurrents ne sont pas tout affichés`,
-    // Nommés plutôt que comptés : « 2 » est vrai et inutilisable — ça ne dit pas
-    // QUELLES dates aller vérifier soi-même.
-    partialNamed: (names: string) => `pas tout affiché : ${names}`,
-    errors: {
-      http: 'L’adresse répond mal — vérifie-la.',
-      'too-big': 'Ce calendrier est trop gros.',
-      'not-ics': 'Ça ne ressemble pas à un calendrier (une page de connexion ?).',
-      network: 'Impossible de joindre l’adresse.',
-    },
-    removeConfirm: (name: string) =>
-      `Supprimer l’abonnement « ${name} » ? Ses rendez-vous disparaissent du calendrier. Rien de la maisonnée n’est touché — c’était le calendrier de quelqu’un d’autre.`,
   },
   // « La semaine » — la troisième face du calendrier (2026-09-15).
   week: {

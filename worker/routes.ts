@@ -16,7 +16,6 @@ import * as board from '../functions/api/board'
 import * as ask from '../functions/api/ask'
 import * as businesses from '../functions/api/businesses'
 import * as capture from '../functions/api/capture'
-import * as calendarFeeds from '../functions/api/calendar-feeds'
 import * as carnets from '../functions/api/carnets'
 import * as careLog from '../functions/api/care-log'
 import * as cercle from '../functions/api/cercle'
@@ -152,9 +151,6 @@ const TABLE: Record<string, RouteMod> = {
   board,
   businesses,
   capture,
-  // « Les calendriers » — read-only ICS subscriptions (migration 0129). The nightly
-  // refresh rides the existing cron in worker/index.ts; this is the CRUD + « rafraîchir ».
-  'calendar-feeds': calendarFeeds,
   carnets,
   'care-log': careLog,
   cercle,

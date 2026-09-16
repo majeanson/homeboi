@@ -137,24 +137,19 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   // sandbox deliberately seeds NO rows here: money is what a showcase link is denied.
   'transfers',
   'transfer_plans',
-  // « Les calendriers » (0129). Child before parent: feed_events carries its own
-  // household_id (denormalized so the calendar read never joins to delete), so both
-  // are ordinary household tables here. A sandbox seeds NO subscription — a throwaway
-  // household has no school — but a visitor CAN add one, and a 24-hour sandbox must
-  // not leave a standing outbound fetch behind on the nightly cron.
-  'feed_events',
-  'calendar_feeds',
   // most-referenced content parents last
   'recipes',
   'members',
   // guest/share plumbing
+  // (intake_media / postbox_media were folded into staged_media by 0091, and
+  // family_shares into shares by 0102 — all three DROPPED. They sat in this list for
+  // months afterwards, and `DELETE FROM` a missing table fails the WHOLE batch below:
+  // D1 runs it as one transaction. The guard now walks the migrations in order, so a
+  // dropped table can no longer stay listed.)
   'staged_media',
-  'intake_media',
-  'postbox_media',
   'intake_submissions',
   'postbox_submissions',
   'shares',
-  'family_shares',
   'guests',
   // device/account plumbing (pairing_codes references devices → before it)
   'pairing_codes',
@@ -166,11 +161,10 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
 ] as const
 
 // Tables the sweep deliberately does NOT touch, with the why — the test requires
-// every migration table to appear in exactly one of the three sets.
+// every LIVE table (created, not since dropped or renamed away) to appear in exactly
+// one of the three sets, and an exemption to name a table that still exists.
 export const EXEMPT_TABLES: Readonly<Record<string, string>> = {
   households: 'deleted explicitly by id as the final statement',
-  contact_links_new: 'transient 0050 rebuild table, renamed away in the same migration',
-  flipp_links: 'created 0124, dropped 0125 — the « Lier Flipp » account link was rolled back (Flipp cannot render externally-injected clippings)',
 }
 
 // ---- R2 blob inventory ------------------------------------------------------
@@ -185,7 +179,6 @@ const MEDIA_SCALAR_COLUMNS: ReadonlyArray<readonly [table: string, columns: read
   ['mots', ['media_key', 'scene_key']],
   ['drawings', ['media_key', 'scene_key']],
   ['trip_notes', ['media_key', 'scene_key']],
-  ['postbox_media', ['media_key', 'scene_key']],
   ['photos', ['media_key']],
   ['contacts', ['media_key']],
   ['contact_photos', ['media_key']],
@@ -194,7 +187,6 @@ const MEDIA_SCALAR_COLUMNS: ReadonlyArray<readonly [table: string, columns: read
   ['carnets', ['media_key']],
   ['home_pins', ['media_key']],
   ['trips', ['media_key']],
-  ['intake_media', ['media_key']],
   ['staged_media', ['media_key']],
 ]
 // JSON arrays of keys (the DB-1 parallel-array shapes) — entries may be null/''.

@@ -443,48 +443,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  // « Les calendriers » — the subscribed ICS feeds' expanded window (migration 0129).
-  //
-  // Its OWN array, not merged into `events`, and that is the load-bearing decision.
-  // These rows are not ours: nothing can edit them, the detail peek must not offer to,
-  // and the next refresh replaces them wholesale. Folded into `events` they would
-  // inherit every affordance a household event has and lie about all of them.
-  //
-  // A JOIN, so a disabled or deleted feed's rows vanish from the calendar the moment
-  // the toggle flips — without a sweep, and without the read having to know that
-  // `feed_events` outlives its feed's `enabled` flag.
-  const feedRows = await ctx.env.DB.prepare(
-    'SELECT fe.id, fe.title, fe.location, fe.start_at, fe.end_at, fe.all_day, f.id AS feed_id, f.label AS feed_label, f.colour, f.member_id FROM feed_events fe JOIN calendar_feeds f ON f.id = fe.feed_id WHERE fe.household_id = ? AND f.deleted_at IS NULL AND f.enabled = 1 AND fe.start_at >= ? AND fe.start_at < ? ORDER BY fe.start_at LIMIT 500',
-  )
-    .bind(hh, from, to)
-    .all<{
-      id: string
-      title: string
-      location: string | null
-      start_at: number
-      end_at: number | null
-      all_day: number
-      feed_id: string
-      feed_label: string
-      colour: string | null
-      member_id: string | null
-    }>()
-    // Younger than some deployed DBs: a missing table must read as "no subscriptions",
-    // never as a broken calendar (the a_regler_snoozes precedent).
-    .catch(() => ({ results: [] as never[] }))
-  const feedEvents = feedRows.results.map((r) => ({
-    id: r.id,
-    title: r.title,
-    location: r.location,
-    at: r.start_at,
-    end_at: r.end_at,
-    all_day: r.all_day,
-    day: dayOf(r.start_at),
-    feedId: r.feed_id,
-    feedLabel: r.feed_label,
-    colour: r.colour,
-    member_id: r.member_id,
-  }))
-
-  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits, transfers, feedEvents })
+  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits, transfers })
 })

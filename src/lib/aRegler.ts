@@ -23,10 +23,6 @@ export type FrictionKind =
   // tells you neither.
   | 'mail-postbox'
   | 'mail-intake'
-  // A subscribed calendar that has been failing for days (migration 0131). The one
-  // failure mode a feature that fills ITSELF has: a dead URL is silent, so the
-  // calendar simply stops gaining dates and nothing says why.
-  | 'feed-stale'
 
 export interface Friction {
   kind: FrictionKind
@@ -93,9 +89,5 @@ export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: strin
       // `user-bold`, not an envelope: intake is a PERSON arriving in Le cercle, and
       // giving both mail kinds the same glyph would undo the reason they are two.
       return { icon: 'user-bold', text: t.aRegler.mailIntake }
-    case 'feed-stale':
-      // NAMED: the fix is to go and check THAT address, and a household may have
-      // several subscriptions.
-      return { icon: 'scroll-bold', text: t.aRegler.feedStale(f.label) }
   }
 }

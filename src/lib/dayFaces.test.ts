@@ -9,9 +9,10 @@ import { bucketByDay, type MonthData } from '../components/board/dayLines'
 // and « La semaine »'s row both draw it. MonthView's day PANEL is a second walk over
 // the same bucket, because it renders real `<Act>` rows with peeks and actions rather
 // than glyphs. Two walks over one bucket is the drift this whole module was extracted
-// to prevent, and it drifted within a day: « Les calendriers » was added to `linesFor`
-// and not to the panel, so a day holding only a feed occurrence drew a dot in the grid
-// and said « rien ce jour-là » underneath.
+// to prevent, and it drifted within a day: « Les calendriers » (since retired, 0132)
+// was added to `linesFor` and not to the panel, so a day holding only a feed
+// occurrence drew a dot in the grid and said « rien ce jour-là » underneath — and the
+// guard then found « Les virements » had had the same hole since 0126.
 //
 // The panel cannot be unified with `linesFor` — a marker is a colour and a shape, a
 // panel row is a component with a peek — so instead this pins the one thing that must
@@ -34,7 +35,6 @@ function fieldsLinesForReads(): string[] {
     homeProjects: one({ id: 'h', kind: 'upkeep', title: 'H', color: null, day }),
     habits: one({ id: 'hb', habit_id: 'hb', title: 'HB', icon: '', colour: null, kind: 'do', member_id: null, day, done: true }),
     transfers: one({ id: 'tr', planId: 'p', title: 'TR', colour: null, day }),
-    feedEvents: one({ id: 'f', title: 'F', location: null, at: day, end_at: null, all_day: 1, day, feedId: 'fd', feedLabel: 'FD', colour: null, member_id: null }),
   } as unknown as MonthData
   const bucket = bucketByDay(data, null)
   const b = bucket.get(day)
@@ -49,9 +49,9 @@ describe('the day panel and the day markers read the same bucket', () => {
   it('linesFor emits a line for every kind the bucket can hold', () => {
     const day = 1_760_000_000
     const fields = fieldsLinesForReads()
-    // Nine kinds seeded, nine lists filled — if a future payload key stops bucketing,
+    // Eight kinds seeded, eight lists filled — if a future payload key stops bucketing,
     // this is where it shows.
-    expect(fields.sort()).toEqual(['chores', 'events', 'feed', 'habits', 'home', 'meals', 'notes', 'todos', 'transfers'])
+    expect(fields.sort()).toEqual(['chores', 'events', 'habits', 'home', 'meals', 'notes', 'todos', 'transfers'])
     expect(day).toBeGreaterThan(0)
   })
 

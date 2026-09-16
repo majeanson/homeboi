@@ -486,10 +486,6 @@ const MATRIX: Entry[] = [
   // belongs to its neighbours, so a ceiling on `settings-flipp` would fail the day
   // someone legitimately grows « Ordre des allées ». The card's OWN size is what the
   // -done variant below watches, and the frame count is what shows it.
-  // « Les calendriers » (0129) — the ICS subscription card. Shot because its whole
-  //   job is a STATUS LINE: a feed that quietly stopped updating is the failure mode a
-  //   subscription has, and only a picture says whether that line is legible.
-  { name: 'settings-feeds', route: '/settings?tab=maison&focus=feeds&lens=regler', content: '#op-feeds', themes: ['day'], noBudgetWhy: 'same neighbour-height measurement as settings-flipp: contentTopPx is the cards stacked above it in maison ▸ cars, not this card (2026-09-15)' },
   { name: 'settings-flipp', route: '/settings?tab=liste&focus=flipp&lens=regler', content: '#op-flipp', noBudgetWhy: 'contentTopPx here is the height of the three cards stacked above it in liste ▸ shop, not this card\'s own chrome — budgeting it would hold this entry to a neighbour (2026-09-15)' },
   // The RETURNING face: this device has copied the signet, so « Une seule fois »
   // folds and the card is what a household actually lives with. Without this entry

@@ -21,7 +21,6 @@ import { readLiveShare } from '../functions/_lib/shareStore'
 import { shareOgMeta } from '../functions/_lib/shareOg'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
 import { dumpHousehold } from '../functions/_lib/takeout'
-import { refreshAllFeeds } from '../functions/_lib/calendarFeeds'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
 // must be exported from the entry module named in wrangler.toml). SCAFFOLD (#20).
@@ -355,22 +354,6 @@ export default {
   // the newest 14. R2 unset → a no-op (the binding is optional everywhere).
   // JSON only: the media blobs already live in this same bucket.
   async scheduled(_controller, env, ctx): Promise<void> {
-    // « Les calendriers » (migration 0129) rides this same nightly trigger rather than
-    // asking for a schedule of its own — the app's one cron, doing its second job.
-    // FIRST and unconditionally: it does not need R2, and the backup below returns
-    // early when the bucket is unset, which would otherwise silently skip the refresh
-    // on any deployment without R2.
-    ctx.waitUntil(
-      refreshAllFeeds(env)
-        .then((r) => {
-          if (r.ok || r.failed) console.log(`[feeds] refreshed ${r.ok}, failed ${r.failed}`)
-        })
-        .catch((err) => {
-          // A refresh failure must never take the backup down with it.
-          console.error('[feeds]', err)
-        }),
-    )
-
     const bucket = env.PHOTOS
     if (!bucket) return
     const KEEP = 14

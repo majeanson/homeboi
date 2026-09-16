@@ -94,7 +94,7 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-**39** user-facing features — the row count of this table, not an estimate.
+**38** user-facing features — the row count of this table, not an estimate.
 Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
@@ -168,7 +168,6 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 
 | F37 | L'autre parent (2e compte opérateur)                                    | operators (0128 invite_nonce, 0130 member_id)                                                  | operator-invite, operator-join                                    | operator/CoOperatorsSection, JoinHouseholdPage (`/rejoindre`), main ProfileSeed                       | OPERATORS                           |
 | F38 | La semaine (3e vue du calendrier)                                       | — (dérivée : /api/month sur 7 jours)                                                           | month                                                             | board/WeekView, board/dayLines, board/DayMark, lib/boardview                                          | MONTH                               |
-| F39 | Les calendriers (abonnements ICS)                                       | calendar_feeds, feed_events (0129/0131)                                                        | calendar-feeds                                                    | operator/CalendarFeedsSection, \_lib/ics, \_lib/calendarFeeds, month (`feedEvents`)                    | CALENDAR_FEEDS, MONTH               |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -181,6 +180,9 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 > said « rien ce jour-là » (which turned out to have been true of « Les virements »
 > since 0126 shipped). Every one of them is the kind a green build cannot see. Score
 > the row BEFORE shipping; that is the whole point of the column being there.
+> *(« Les calendriers » itself was retired the next day, 2026-09-16 — migration 0132
+> drops its tables; Marc judged the feature not needed. Its footnotes 87–92 went with
+> it; the lessons above stand.)*
 
 ---
 
@@ -343,7 +345,6 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F36 Virements            | ✅      | ✅      | ✅⁶⁷    | ✅         | ✅    | ➖⁶⁸      | ✅       | ➖⁶⁹       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁷⁰       | ➖¹       | ✅       | ✅      |
 | F37 L'autre parent       | ✅⁷¹    | ➖⁷²    | ✅⁷³    | ➖⁷⁴       | ➖⁷⁵  | ➖⁷⁶      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁷⁷      | ✅⁷⁸    | ✅⁷⁹       | ➖¹       | ✅       | ✅      |
 | F38 La semaine           | ➖⁸⁰    | ➖⁸¹    | ➖⁸⁰    | ➖⁸⁰       | ✅⁸²  | ➖⁸³      | ✅       | ➖⁸⁴       | ✅           | ➖⁴⁷      | ✅⁸⁵      | ✅⁸⁶    | ➖⁸⁰       | ➖¹       | ✅       | ✅      |
-| F39 Les calendriers      | ✅      | ➖⁸⁷    | ✅⁸⁸    | ➖⁷⁴       | ✅⁸⁹  | ✅⁹⁰      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ✅⁹¹    | ✅⁹²       | ➖¹       | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
 
@@ -689,11 +690,9 @@ Footnotes (verdicts recorded so far):
     confirm names what is lost AND what is not — nothing they wrote goes with them,
     which is true by construction (attribution is a soft member ref, never an operator
     FK) and is the half that makes the tap answerable.
-74. **➖ offline (F37/F39)** — both cards are ONLINE-ONLY by construction and their
-    writes are in `write-rule.test.ts`'s ALLOWED with the reason. Minting returns a URL
-    the card must show; redeeming issues the session cookie; a feed POST performs a
-    server-side fetch whose ANSWER is the point; « Rafraîchir » replayed hours later
-    answers a question nobody is still asking. A queued mint hands the operator an
+74. **➖ offline (F37)** — the card is ONLINE-ONLY by construction and its writes are
+    in `write-rule.test.ts`'s ALLOWED with the reason. Minting returns a URL the card
+    must show; redeeming issues the session cookie. A queued mint hands the operator an
     empty card and a promise.
 75. **➖ realtime (F37)** — in `SILENT_PATHS`. The invite URL is returned inline, the
     operators list is read on demand rather than polled, and the person redeeming has
@@ -735,42 +734,6 @@ Footnotes (verdicts recorded so far):
     and todos, the cook on a meal, and the same private-ish habit filter the month and
     « Le point du jour » apply (a member's own habit never surfaces for whoever is
     standing at the wall).
-87. **➖ peek (F39)** — a feed occurrence has NO `onOpen`, deliberately. There is
-    nothing to edit and nothing more to show: it is somebody else's calendar and the
-    next refresh replaces the row wholesale. A peek would be an affordance the app
-    cannot honour.
-88. **Undo tier (F39)** — `useConfirm` for the subscription (its expanded rows go with
-    it), and the confirm names what is NOT lost: nothing of the household's, because
-    none of it was ever theirs. Hiding is separate and needs no confirm at all — the
-    toggle keeps the URL and its validators, so a seasonal calendar comes back in one
-    tap.
-89. **Realtime (F39)** — `[['calendar-feeds'], ['month']]`. It shipped unmapped and
-    fell through to the bare `[['board']]` default, which is the WORST possible
-    invalidation here: the bento board has no feed card, so the one surface that cannot
-    change was the only one being refreshed while Mois and La semaine kept the old
-    subscription. Found by this scoring pass; the test now also asserts it is not the
-    default.
-90. **Search (F39)** — `SEARCH_INDEX.feedEvent`, over its OWN read
-    (`calendar-feeds?events=1`) rather than `/api/month`, which caps at 45 days because
-    it EXPANDS recurrence. `feed_events` is already expanded, so search gets the whole
-    ±5-month window for the cost of an indexed select. Deliberately NOT joined to
-    `enabled`: a household that hid the hockey schedule from the wall still wants
-    « quand est le tournoi ? » to answer.
-91. **Attribution (F39)** — `calendar_feeds.member_id`, a soft ref (DB-5 pattern 1)
-    naming whose life these dates belong to; NULL = the Maisonnée, which is the right
-    default for a collection calendar or a school holiday. The feed's own `colour`
-    tints its occurrences so a household can tell the school's from the team's at a
-    glance. Both were dead schema at ship — the column existed, the month read tinted
-    by it, and nothing let you SET either; the pickers came with this pass.
-92. **Schema 0129/0131 (F39)** — `colour` (one spelling), `position` n/a, `deleted_at`
-    soft delete on the subscription, hard delete on its expanded rows (they cost
-    nothing to refetch and leaving them would show a calendar the household just
-    unsubscribed from), soft refs commented, `partial_titles` JSON `NOT NULL DEFAULT
-    '[]'`. It is also the FIRST deliberate exception to `_lib/upkeep`'s « no
-    materialized occurrence rows, no cron » — argued in the migration header rather
-    than slipped in: for household-owned recurrence the `Recur` JSON IS the truth and
-    a second copy can drift, whereas a subscribed feed's truth is a remote URL, so
-    these rows are a cache of a fetch, not a second opinion.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

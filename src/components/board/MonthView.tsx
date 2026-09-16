@@ -87,13 +87,6 @@ const LENS_OF: Record<DotKind, LensKey | null> = {
   // No lens: « Virements » is not one of the six reading categories under the grid,
   // and adding a seventh for it would put money in the legend of a wall calendar.
   transfer: null,
-  // Nor « Les calendriers ». It is tempting to light these under « Rendez-vous » —
-  // they ARE appointments — but `lensCount` counts `b.events`, so the cell would
-  // light while the roll-up under it listed nothing, which is exactly the "lights up
-  // and then has nothing under its date" failure this map's own comment warns about.
-  // Making the count agree would mean the roll-up offering household actions on rows
-  // nothing can act on. No lens is the honest answer; the glyph still says what it is.
-  feed: null,
 }
 
 // How many things of ONE lit kind a day holds — the same slices the panel prints, so a
@@ -349,7 +342,7 @@ export function MonthView({
   const selHabitsDone = (sel?.habits ?? []).filter((h) => h.done)
   // What the panel will actually PRINT. It gates the « rien ce jour-là » empty state,
   // so every kind `dayRows` renders has to be counted here or a day reads as empty
-  // while listing things. `sel.feed` was the one that got away (PARITY D2, 2026-09-15).
+  // while listing things. `sel.transfers` was the one that got away (PARITY D2, 2026-09-15).
   const selCount =
     (sel
       ? sel.events.length +
@@ -358,7 +351,6 @@ export function MonthView({
         selTodos.length +
         sel.home.length +
         sel.notes.length +
-        sel.feed.length +
         sel.transfers.length
       : 0) +
     selHabitsDone.length +
@@ -421,20 +413,13 @@ export function MonthView({
     // cell markers either) — so only the day face lists them.
     const habits = only === null ? (b?.habits ?? []).filter((h) => h.done) : []
     const notes = show('note') ? b?.notes ?? [] : []
-    // « Les calendriers » — like habits, NOT one of the legend's six kinds (LENS_OF
-    // maps it to null), so only the day face lists them and a lit lens never claims
-    // them. They ARE cell markers, though, which is why they must appear here: a day
-    // holding nothing but a feed occurrence would otherwise draw a dot in the grid and
-    // read as empty in the panel underneath — the precise failure `linesFor`'s header
-    // exists to prevent, introduced by me when the feed kind was added to the walk and
-    // not to this list (caught by the PARITY D2 scoring, 2026-09-15).
-    const feed = only === null ? (b?.feed ?? []) : []
-    // « Les virements » — same story as `feed`, and it has been broken since 0126
-    // shipped: the due date draws a receipt glyph in the cell (linesFor emits it) and
-    // the panel never listed or counted it, so a day whose only dated thing was a
-    // payment read « rien ce jour-là » under its own marker. Found by dayFaces.test.ts
-    // on its first run, 2026-09-15 — the guard written for the feed kind caught the
-    // one that came before it.
+    // « Les virements » — like habits, NOT one of the legend's six kinds (LENS_OF maps
+    // it to null), so only the day face lists them and a lit lens never claims them.
+    // They ARE cell markers, though, which is why they must appear here — and this
+    // had been broken since 0126 shipped: the due date draws a receipt glyph in the
+    // cell (linesFor emits it) and the panel never listed or counted it, so a day
+    // whose only dated thing was a payment read « rien ce jour-là » under its own
+    // marker. Found by dayFaces.test.ts on its first run, 2026-09-15.
     const transfers = only === null ? (b?.transfers ?? []) : []
     return (
       <>
@@ -549,22 +534,6 @@ export function MonthView({
             done
             color={h.colour ?? undefined}
             onOpen={() => nav('/board/habitudes')}
-          />
-        ))}
-        {/* A subscribed calendar's occurrence. NO `onOpen`: there is nothing to peek
-            at and nothing to edit — the feed is somebody else's calendar and the next
-            refresh replaces this row wholesale. `Act` renders a plain, non-tappable
-            line without one, which is exactly the affordance this deserves. The feed's
-            NAME is the `who`: « 14 h » says nothing without knowing whose calendar
-            said so. */}
-        {feed.map((f) => (
-          <Act
-            key={f.id}
-            cat="event"
-            icon="scroll-bold"
-            title={f.all_day ? f.title : `${formatTime(f.at, lang)} · ${f.title}`}
-            who={f.feedLabel}
-            color={f.colour ?? undefined}
           />
         ))}
         {/* A due date, by NAME only — no amount, per 0126's own rule: this line rides
