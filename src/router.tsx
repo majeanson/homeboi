@@ -16,6 +16,8 @@ import { Board } from './pages/Board'
 
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Signup })))
+const ForgotPage = lazy(() => import('./pages/ForgotPage').then((m) => ({ default: m.ForgotPage })))
+const ResetPage = lazy(() => import('./pages/ResetPage').then((m) => ({ default: m.ResetPage })))
 // « Garder ma maisonnée » — a demo-sandbox session converts itself into a real
 // account (the board claim banner links here). Sandbox-only; others bounce home.
 const ClaimPage = lazy(() => import('./pages/ClaimPage').then((m) => ({ default: m.ClaimPage })))
@@ -277,6 +279,9 @@ export function AppRoutes() {
         <Route path="/pair" element={<Pair />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        {/* « Mot de passe oublié » — the link in the email lands on /reinitialiser?t= */}
+        <Route path="/oubli" element={<ForgotPage />} />
+        <Route path="/reinitialiser" element={<ResetPage />} />
         {/* « Garder ma maisonnée » — claim the demo sandbox into a real account. */}
         <Route path="/garder" element={<ClaimPage />} />
         {/* « Rejoindre » — redeem an operator invite (?j=<token>). A household's

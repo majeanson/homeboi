@@ -94,7 +94,7 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-**38** user-facing features — the row count of this table, not an estimate.
+**39** user-facing features — the row count of this table, not an estimate.
 Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
@@ -168,6 +168,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 
 | F37 | L'autre parent (2e compte opérateur)                                    | operators (0128 invite_nonce, 0130 member_id)                                                  | operator-invite, operator-join                                    | operator/CoOperatorsSection, JoinHouseholdPage (`/rejoindre`), main ProfileSeed                       | OPERATORS                           |
 | F38 | La semaine (3e vue du calendrier)                                       | — (dérivée : /api/month sur 7 jours)                                                           | month                                                             | board/WeekView, board/dayLines, board/DayMark, lib/boardview                                          | MONTH                               |
+| F40 | Mot de passe oublié (compte)                                              | password_resets (0133)                                                                        | auth/forgot, auth/reset                                          | ForgotPage, ResetPage, Login (la porte), \_lib/mail                                                     | —                                   |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -345,6 +346,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F36 Virements            | ✅      | ✅      | ✅⁶⁷    | ✅         | ✅    | ➖⁶⁸      | ✅       | ➖⁶⁹       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁷⁰       | ➖¹       | ✅       | ✅      |
 | F37 L'autre parent       | ✅⁷¹    | ➖⁷²    | ✅⁷³    | ➖⁷⁴       | ➖⁷⁵  | ➖⁷⁶      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁷⁷      | ✅⁷⁸    | ✅⁷⁹       | ➖¹       | ✅       | ✅      |
 | F38 La semaine           | ➖⁸⁰    | ➖⁸¹    | ➖⁸⁰    | ➖⁸⁰       | ✅⁸²  | ➖⁸³      | ✅       | ➖⁸⁴       | ✅           | ➖⁴⁷      | ✅⁸⁵      | ✅⁸⁶    | ➖⁸⁰       | ➖¹       | ✅       | ✅      |
+| F40 Mot de passe oublié  | ✅⁸⁷    | ➖⁸⁸    | ➖⁸⁹    | ➖⁹⁰       | ➖⁹¹  | ➖⁸⁸      | ✅⁹²     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁸⁸      | ➖⁸⁸    | ✅⁹²       | ➖¹       | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
 
@@ -734,6 +736,31 @@ Footnotes (verdicts recorded so far):
     and todos, the cook on a meal, and the same private-ish habit filter the month and
     « Le point du jour » apply (a member's own habit never surfaces for whoever is
     standing at the wall).
+
+87. **CRUD (F40)** — request (POST auth/forgot, ALWAYS 200 once the email parses: an
+    account's existence is never in the answer) and redeem (POST auth/reset: the hash
+    of the emailed token against an UNUSED, UNEXPIRED row, the operator's hash replaced
+    and the row marked used in ONE D1 batch, then signed in like signup). No read, no
+    edit, no delete: a reset is a one-shot, and the rows are 30-minute litter capped at
+    three open per email.
+88. **➖ peek / search / empty / who (F40)** — there is no entity anyone meets: the row
+    exists for thirty minutes, in the database only, keyed by the hash of a secret that
+    lives in one email. Nothing to open, find, list or attribute.
+89. **➖ undo (F40)** — a password change is not undone, it is redone: the door is
+    « Mot de passe oublié » again. The spent link says so in one sentence and offers it.
+90. **➖ offline (F40)** — both writes are ONLINE by nature and in `write-rule.test.ts`'s
+    ALLOWED with the reason: « send me a link » replayed from an outbox hours later
+    answers a question nobody is still asking, and the redeem is a one-shot that signs
+    the person in NOW.
+91. **➖ realtime (F40)** — `SILENT_PATHS`: no session, no household, nothing cached on
+    any device changes.
+92. **Guide / schema (F40)** — explained where it is met: the door on /login (shown only
+    when `health.mail` says the deployment can send — a door that leads nowhere is worse
+    than none), the sentence on /oubli, the sentence on a spent link. No guide card: a
+    person who forgot their password is not reading the manual. Schema 0133: `token_hash`
+    (SHA-256, UNIQUE), `email` a soft ref commented, `expires_at` / `used_at` /
+    `created_at` per the timestamp convention; EXEMPT from the sandbox sweep (no
+    household_id, and the guard now requires an exemption to name a live table).
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

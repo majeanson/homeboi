@@ -173,6 +173,9 @@ describe('keysForPath', () => {
       // on another device to correct. Redeeming it happens with no socket at all.
       'operator-invite',
       'operator-join',
+      // « Mot de passe oublié »: no session yet, no household surface to refresh.
+      'auth/forgot',
+      'auth/reset',
     ]) {
       expect(keysForPath(p)).toEqual([])
     }

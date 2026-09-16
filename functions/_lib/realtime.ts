@@ -81,6 +81,9 @@ const SILENT_PATHS = new Set<string>([
   // (they are not signed in when they post), and no household surface changes: the
   // board they are about to see is the board that was already there.
   'operator-join',
+  // « Mot de passe oublié »: no session, no household, nothing cached anywhere changes.
+  'auth/forgot',
+  'auth/reset',
   'routine-audio',
   'weather',
   'photos',

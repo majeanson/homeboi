@@ -3,7 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { StatusMessage } from '../components/StatusMessage'
 import { useT } from '../i18n'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { HEALTH_KEY } from '../lib/queryKeys'
 import { useAuth } from '../lib/auth'
 import { useSurface } from '../lib/surface'
 
@@ -17,6 +19,11 @@ export function Login() {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
+  // « Mot de passe oublié ? » only where it leads somewhere: a deployment with no mail
+  // wired (health.mail) would send the person to a form that can only apologise.
+  // Unknown (still loading) reads as yes — the door is a Link, not a promise.
+  const health = useQuery({ queryKey: HEALTH_KEY, queryFn: () => api<{ mail?: boolean }>('health') })
+  const canReset = health.data?.mail !== false
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -74,6 +81,11 @@ export function Login() {
           </button>
           {!error && <p className="auth__hint mono">{t.login.nextStep}</p>}
         </form>
+        {canReset && (
+          <p className="auth__alt mono">
+            <Link to="/oubli">{t.forgot.link}</Link>
+          </p>
+        )}
         <p className="auth__alt mono">
           {t.login.noAccount} <Link to="/signup">{t.login.gotoSignup}</Link>
         </p>

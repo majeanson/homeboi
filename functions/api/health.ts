@@ -1,3 +1,4 @@
+import { mailEnabled } from '../_lib/mail'
 import type { Env } from '../_lib/env'
 import { ok } from '../_lib/json'
 import { resolveActor } from '../_lib/household'
@@ -41,6 +42,8 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     // off the Functions Env type on purpose (see _lib/realtime.ts) — feature-
     // detected structurally here for the same reason.
     photos: !!ctx.env.PHOTOS,
+    // « Mot de passe oublié » shows its door on /login only when this is true.
+    mail: mailEnabled(ctx.env),
     realtime: !!(ctx.env as { REALTIME_HUB?: unknown }).REALTIME_HUB,
   })
 }

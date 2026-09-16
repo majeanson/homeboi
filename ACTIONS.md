@@ -229,6 +229,8 @@ and because the scoring pass that added them found a gap in the first one.
 | Co-operator · rotate the link | — | — | — | — | ✅ settings▸coop « Réinitialiser » | confirm¹⁹ | ✅ |
 | Co-operator · **remove access** | ✅ `RowActions` 🗑 | — | ➖²⁰ | — | ✅ settings▸coop | confirm²¹ | ✅ |
 | Co-operator · set MY face | — | — | — | — | ✅ settings▸coop chips²² | — | ✅ |
+| Account · forgot password | — | — | — | — | ✅ /login « Mot de passe oublié ? » → /oubli²³ | ➖²⁴ | ✅ |
+| Account · reset password | — | — | — | — | ✅ the email's link → /reinitialiser?t= | ➖²⁴ | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
     Access already granted is NOT affected — which is a different row, on purpose.
@@ -240,6 +242,12 @@ and because the scoring pass that added them found a gap in the first one.
     FK). Never offered on your OWN row: that door is « Se déconnecter ».
 22. YOUR row only. Deciding what face someone else's phone attributes to is putting
     words in their mouth; their device pick already answers it.
+23. The door shows only when `health.mail` says this deployment can send (lib/mail):
+    a link to a form that can only apologise is worse than no link. /oubli answers the
+    SAME sentence whatever the address — nothing to enumerate.
+24. ➖ — nothing to undo: a request sends a link (or, unknown to the visitor, nothing),
+    a redeem is a one-shot that signs the person in. The way back from a mistake is the
+    same door again.
 
 ---
 

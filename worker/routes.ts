@@ -5,7 +5,9 @@
 // Functions — index.ts adapts a Worker request into the EventContext they
 // expect. One dynamic route (img/<key>) is matched specially.
 
+import * as authForgot from '../functions/api/auth/forgot'
 import * as authLogin from '../functions/api/auth/login'
+import * as authReset from '../functions/api/auth/reset'
 import * as authLogout from '../functions/api/auth/logout'
 import * as authMe from '../functions/api/auth/me'
 import * as authSignup from '../functions/api/auth/signup'
@@ -140,7 +142,11 @@ export type RouteMod = Record<string, PagesFunction<Env, any, any> | undefined>
 // this table — it isn't a Pages-Function handler. index.ts intercepts it before
 // matchRoute() and hijacks the request into the RealtimeHub Durable Object stub.
 const TABLE: Record<string, RouteMod> = {
+  // « Mot de passe oublié » (0133): request a link, redeem it. Both CSRF-exempt
+  // (worker/index.ts) — there is no session yet.
+  'auth/forgot': authForgot,
   'auth/login': authLogin,
+  'auth/reset': authReset,
   'auth/logout': authLogout,
   'auth/me': authMe,
   'auth/signup': authSignup,

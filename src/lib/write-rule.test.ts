@@ -70,6 +70,11 @@ const ALLOWED = new Set<string>([
   // 1. Session and device identity. There is no household to write to yet, or the
   //    credential itself is what's changing — a queued login is a contradiction.
   'pages/Login.tsx → auth/login',
+  // « Mot de passe oublié » (0133). No session, no household, and both are ONLINE by
+  // nature: « send me a link » replayed from an outbox hours later answers a question
+  // nobody is still asking, and a redeem is a one-shot that signs the person in NOW.
+  'pages/ForgotPage.tsx → auth/forgot',
+  'pages/ResetPage.tsx → auth/reset',
   'pages/Signup.tsx → auth/signup',
   'lib/auth.tsx → auth/logout',
   'pages/Pair.tsx → pair/start',

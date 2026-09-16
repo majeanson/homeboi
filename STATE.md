@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **14** — all of them the public-readiness plan §4-K,
+> a number you can trust. It reads **9** — all of them the public-readiness plan §4-K,
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3600,29 +3600,47 @@ who forgets their password is locked out forever.
       it). Free tier: 3 000/month, 100/day — plenty. Without a verified domain Resend only
       delivers to the account owner's own address, which is enough for local proof and
       nothing else. Then `wrangler secret put RESEND_API_KEY` + `MAIL_FROM` var.
-- [ ] **`functions/_lib/mail.ts` — ONE `sendMail({to, subject, text, html})` seam** over
+- [x] **`functions/_lib/mail.ts` — built (2026-09-16).** `mailEnabled` needs BOTH settings;
+      `sendMail` is one fetch to Resend, its failure named for the log. Four unit cases
+      (`mail.test.ts`: off → no fetch, the exact request shape, a 403 surfaces). Original
+      note: ONE `sendMail({to, subject, text, html})` seam over
       Resend's REST API (`POST https://api.resend.com/emails`, bearer key). An OPTIONAL
       binding like `AI`/`PHOTOS`/`REALTIME_HUB` (`_lib/env.ts`): key unset → the reset
       door HIDES on `/login` and the endpoints 503 — never a half-flow. Log the provider
       id on success, the body on failure (observability is on since §4-J).
-- [ ] **Migration 0133 `password_resets`**: `token_hash` (SHA-256 of a random 32-byte
+- [x] **Migration 0133 `password_resets` — built, applied locally, EXEMPT in the sweep with
+      its reason.** Original note: `token_hash` (SHA-256 of a random 32-byte
       token — the plaintext exists only in the email), `operator_email`, `expires_at`
       (30 min), `used_at`, `created_at`. A row, not a bare HMAC token, because
       SINGLE-USE needs a mark. No `household_id` → `EXEMPT_TABLES` with the reason (it is
       keyed by email; the sweep never meets it). Cap outstanding rows per email (3).
-- [ ] **Endpoints** `POST /api/auth/forgot` (CSRF-exempt like login; ALWAYS 200 whether
+- [x] **Endpoints — built and PROBED on the local Worker with a real D1** (health says
+      `mail:false`; forgot → 503 while mail is unset; reset with a bad token → the one 400
+      sentence, with NO CSRF header, while a plain write without CSRF still gets 403 — the
+      exemption is exact). `auth/forgot` and `auth/reset` in the TABLE, `CSRF_EXEMPT`,
+      `SILENT_PATHS`, `write-rule` ALLOWED with the reason. Original note: `POST
+      /api/auth/forgot` (CSRF-exempt like login; ALWAYS 200 whether
       the email exists or not — enumeration; rate-limited per email + per IP the way
       `demo.ts` bounds mints) and `POST /api/auth/reset` (token + new password,
       signup-grade validation from `auth/signup.ts`, marks `used_at`, rotates the session
       secret material for that operator if the scheme allows, signs the user in). Both
       in `worker/routes.ts`' TABLE, `SILENT_PATHS` in `_lib/realtime.ts`, `write-rule`
       ALLOWED with the reason (no outbox: replaying « send me a reset » offline is wrong).
-- [ ] **UI**: « Mot de passe oublié ? » on `/login` → `/oubli` (an `EditField` for the
+- [x] **UI — built.** `/login` shows the door only when `health.mail` says the deployment
+      can send (a door to a form that can only apologise is worse than none); `/oubli`
+      answers the SAME sentence whatever the address; `/reinitialiser?t=` is password +
+      confirm and lands on the board signed in; a missing, spent or expired link is one
+      sentence and the way back. Both scenes wear /login's shell. Original note: « Mot de
+      passe oublié ? » on `/login` → `/oubli` (an `EditField` for the
       email, one line of copy, the SAME success screen for any input) → the email's link
       lands on `/reinitialiser?t=` (password + confirm, then straight to `/board`). FR-CA
       first, EN parity, `.scene`/`FormScene` like `/signup`. Expired or used token: one
       calm sentence and the door back to `/oubli`.
-- [ ] **Guards + e2e**: `e2e/password-reset.spec.ts` stubs `/api/auth/*`; a unit test
+- [x] **Guards + e2e — eight cases green** (`password-reset.spec.ts`: the door shown/hidden
+      by `health.mail`, the constant sentence, the 503 face, no token, a spent link,
+      mismatched passwords never leave the page, a good link lands on the board signed in).
+      PARITY row F40 + footnotes 87–92, two ACTIONS doors + notes 23–24, roster 38 → 39.
+      Original note: `e2e/password-reset.spec.ts` stubs `/api/auth/*`; a unit test
       pins hash-only storage, expiry, single use and the constant 200. PARITY row (F40,
       «Compte : mot de passe oublié»), ACTIONS doors (two, non-touch ✅).
 

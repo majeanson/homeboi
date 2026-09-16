@@ -26,6 +26,14 @@ export interface Env {
   // single shared secret for a household-owned deployment, not a SaaS.
   LOGIN_PASSWORD?: string
 
+  // OPTIONAL outbound email (functions/_lib/mail.ts — Resend's REST API). Both unset
+  // → no email is ever sent: « Mot de passe oublié » hides its door on /login
+  // (health.mail) and /api/auth/forgot answers 503. Set both to switch it on:
+  // `wrangler secret put RESEND_API_KEY` and a `MAIL_FROM` var like
+  // « Babillard <babillard@marcportal.com> » on a domain verified in Resend.
+  RESEND_API_KEY?: string
+  MAIL_FROM?: string
+
   // OPTIONAL NASA api.nasa.gov key for the board's "Photo du jour" daily-wonder
   // band — it powers all three sources the band rotates through (APOD, EPIC's
   // daily Earth photo, and the Mars rover). Unset falls back to DEMO_KEY (fine

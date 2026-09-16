@@ -165,6 +165,7 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
 // one of the three sets, and an exemption to name a table that still exists.
 export const EXEMPT_TABLES: Readonly<Record<string, string>> = {
   households: 'deleted explicitly by id as the final statement',
+  password_resets: 'keyed by operator EMAIL, no household_id (0133): a reset row lives 30 minutes and the sweep never meets it',
 }
 
 // ---- R2 blob inventory ------------------------------------------------------

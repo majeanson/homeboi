@@ -42,7 +42,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // token in the body IS the credential, and it is checked against the household's live
 // `invite_nonce` — a narrower gate than CSRF, not a missing one. (The MINT side,
 // 'operator-invite', is NOT exempt: that one runs on a real operator session.)
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'pair/start', 'pair/poll', 'demo', 'operator-join'])
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'pair/poll', 'demo', 'operator-join'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',
