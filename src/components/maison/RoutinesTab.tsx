@@ -244,7 +244,7 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
 
       {/* The tour anchor wraps BOTH branches so the routines spotlight resolves
           even for a brand-new household with no routines yet (#32). */}
-      <div data-tour="routines-grid">
+      <div className="routines-moments" data-tour="routines-grid">
       {routines.length === 0 ? (
         <div className="routines-empty">
           <EmptyState

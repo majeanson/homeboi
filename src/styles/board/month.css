@@ -1062,6 +1062,17 @@
   flex-direction: column;
   gap: 0.6rem;
 }
+/* WIDE: a row of words with a chevron 1300px to its right is not "using the space",
+   it is stretching a list. The month grid stays full-bleed (six weeks of cells earn
+   the width); the week is a reading list and takes the same column the list and the
+   notes already read in. Wave 0, 2026-09-16. */
+@media (min-width: 1100px) {
+  .weekv {
+    width: 100%;
+    max-width: 52rem;
+    margin-inline: auto;
+  }
+}
 .weekv__days {
   list-style: none;
   margin: 0;

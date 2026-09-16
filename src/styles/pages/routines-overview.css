@@ -22,6 +22,23 @@
 .routines-moment:first-of-type {
   margin-top: 0.5rem;
 }
+/* WIDE: the moments (matin · après-midi · soir · n'importe quand) sit side by side
+   instead of stacking one 260px card over 1100px of nothing — the first 1440px frame
+   (wide pass, 2026-09-16). auto-fit, so two moments split the width and four share it;
+   the card grid INSIDE each moment is unchanged. The empty-state branch renders one
+   child and a one-cell grid is just a block. */
+@media (min-width: 1100px) {
+  .routines-moments {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .routines-moments .routines-moment,
+  .routines-moments .routines-moment:first-of-type {
+    margin-block: 0.5rem 0;
+  }
+}
 .routines-moment .section-header {
   margin-bottom: 0.75rem;
   padding-left: 0.1rem;
@@ -127,8 +144,13 @@
   padding: 0.4rem 0.85rem;
   font-size: var(--text-sm);
   font-weight: 700;
-  color: #fff;
-  background: color-mix(in srgb, var(--tint) 78%, #000 4%);
+  /* Not #fff: 2.03:1 on a marigold member's tint (axe, the first wide-screen frame,
+     2026-09-16). The component hands us `--tint-ink` (lib/routineTod tintInk) — and
+     the ground is EXACTLY `--tint`, not a darkened mix: the ink was chosen for THAT
+     colour, and .routine-card__run learned the hard way that mixing the ground
+     afterwards breaks the pairing at night. */
+  color: var(--tint-ink, #2c2722);
+  background: var(--tint);
   box-shadow: var(--shadow-sm);
 }
 

@@ -36,6 +36,30 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 0.55rem;
 }
+/* WIDE — a laptop operator or the wall. The week reads as a WEEK: seven columns, one
+   per day, which is the unit a household plans in. Below this the single column
+   stays: a phone cannot hold seven, and 2–3 columns of ellipsized meal titles read
+   worse than one honest column. The pools under the week (Restants, Idées — the
+   shared `.kitchen__ideas` MealPool) are ROW LISTS and keep a reading column instead
+   of stretching a four-item list across 1370px. Wave 0 of the public-app plan
+   (STATE.md §4-K): the first 1440px frame ever shot showed a date and two buttons per
+   full-width strip. Hybrid by decision — width where the shape earns it, a column
+   where it does not. */
+@media (min-width: 1100px) {
+  .kitchen__week {
+    /* auto-fill with a FLOOR, not repeat(7): the wall kiosk is 1280px minus a 224px
+       sidebar, and seven fixed columns there were ~140px — the + and ✎ doors drew over
+       the date (the very first re-shoot showed it). 11.5rem is the narrowest a day
+       head (« AUJ. MER 16 » + two doors) stays whole; the count follows the room:
+       seven on a 1440 laptop, five on the wall. */
+    grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+    gap: 0.6rem;
+  }
+  .kitchen .kitchen__ideas,
+  .kitchen .kitchen__ideas-opener {
+    max-width: 52rem;
+  }
+}
 .kitchen__day {
   /* Positioning context for the drag insertion line (.dnd-drop, absolute). */
   position: relative;

@@ -268,6 +268,16 @@
   background: var(--paper-deep);
   overflow-x: auto;
 }
+/* WIDE: six thumb-sized tabs spread 240px apart across a 1440px laptop is a phone
+   pattern with nobody's thumb to serve. Gather them in the same 52rem column the
+   pages read in; the bar's background still runs edge to edge so nothing floats.
+   One padding rule — every selector, tour anchor and spec sees the same buttons.
+   (Marc's call, wave 0, 2026-09-16: centre, not a sidebar.) */
+@media (min-width: 1100px) {
+  .hub[data-surface='mobile'] .hubnav {
+    padding-inline: max(8px, calc((100% - 52rem) / 2));
+  }
+}
 .hub[data-surface='mobile'] .hubnav__btn {
   flex: 1 1 0;
   flex-direction: column;

@@ -29,8 +29,8 @@
 ### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-16)
 
 - `npm run typecheck` · `npm test` (2289 in 175 files, 2026-09-16) · `npm run build` · `npm run knip` — green.
-- `npm run e2e:matrix` — 162 states, **253 frames**, 0 failing (2026-09-16, after the
-  feeds state was retired; the axe census reports ONE rule left, `meta-viewport` on all 162 — the accepted no-zoom decision, §D; `color-contrast` is at 0) — previously 154 states / 232 frames on 2026-09-14 (it shoots
+- `npm run e2e:matrix` — 179 states, **279 frames**, 0 failing (2026-09-16 evening, with
+  the 17 wide/tablet states of §4-K wave 0; that morning 162 / 253 after the feeds state was retired; the axe census reports ONE rule left, `meta-viewport` on all 162 — the accepted no-zoom decision, §D; `color-contrast` is at 0) — previously 154 states / 232 frames on 2026-09-14 (it shoots
   below the fold, prunes the PNGs of retired states, and no longer keeps a frame that
   shows what the one before it already showed — §4-H, §4-I).
 - `npm run check:bundle` — **4031 KB** of JS across `dist/assets`, **653 KB eager** (2026-09-16;
@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **24** — all of them the public-readiness plan §4-K,
+> a number you can trust. It reads **19** — all of them the public-readiness plan §4-K,
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3437,26 +3437,39 @@ the whole stylesheet has four `min-width` rules above 720px, and the shell caps 
 — a laptop most likely gets the phone layout stretched across 1440px. That is the first
 thing a public visitor with a laptop will see after the marketing page.
 
-- [ ] **Add `TABLET = {w: 820, h: 1180}` and `DESKTOP = {w: 1440, h: 900}`** to
-      `e2e/state-matrix.spec.ts` beside `PHONE`/`NARROW`/`WALL`. DESKTOP states use
-      `surface: 'mobile'` (an operator on a laptop is NOT a kiosk — that is the point).
-- [ ] **Add the states**: the six hub tabs + `/` (Home, signed out) + `/settings` Régler
-      face + recipe view + day plan + month + search at DESKTOP; the six hub tabs at
-      TABLET. `noBudgetWhy` on every one — budgets are pinned at 390px FR (the lens-twin
-      rule at line ~807). `themes: ['day']` — the palette was already swept.
-- [ ] **Run `npm run e2e:matrix`, open EVERY new frame** (the §G rule: all of them, not a
-      sample) and write one box per defect under this wave. Look for: content stretched
-      edge-to-edge, rows whose text runs 1200px wide, cards that should sit side by side
-      and stack instead, the ＋ FAB and tab bar floating in a phone-shaped world, a hero
-      that fills a laptop screen with one supper.
-- [ ] **Decide the desktop SHAPE with Marc before fixing the first frame** — a
-      judgement call, not a CSS one: (a) a centred reading column (~720–900px, the
-      cheapest, honest for a household app), or (b) the board's `WidgetGrid` given more
-      columns + the hub tabs' secondary panels beside their primary (Kitchen: week +
-      recipe; Maison: list + person). Whichever it is, it is ONE rule in `core.css`, not
-      per-page pixels — and `useSurface()` stays a ROLE, never a width branch.
-- [ ] **Home at 1440px** is its own item: it is the marketing page, and it is the one
-      surface a stranger sees before deciding to try the demo.
+- [x] **`TABLET` (820×1180) and `DESKTOP` (1440×900) added** to `e2e/state-matrix.spec.ts`;
+      DESKTOP states run `surface: 'mobile'` — a laptop operator, not the wall.
+- [x] **17 states added** (`wide-*` ×11: Home signed-out, the six tabs, La semaine, day
+      plan, recipe view, search; `tablet-*` ×6: the six tabs), all `noBudgetWhy`, day theme.
+      Matrix 102 → 119 entries, 117 → 134 states (LEAN.md, asserted by docCounts).
+- [x] **Every frame opened — and the expectation was WRONG in the good direction.** Six
+      surfaces already sat in a centred column or a sidebar layout (liste, notes, search,
+      day plan, recipe, Réglages); the board grid already went four-up; Home already
+      centred at 56rem. Three tabs stretched edge to edge: the kitchen week (a date and
+      two doors per 1370px strip), Maison (one 260px card beside 1100px of nothing), La
+      semaine's rows (a chevron 1300px from its words). And the bottom tab bar spread six
+      thumb targets 240px apart. Plus one thing no frame at 390px could show: the board's
+      « Prochaine routine » « Faire » pill — white on a marigold member, **2.03:1** — only
+      reaches the first screen at four columns, and axe caught it on the first wide state.
+- [x] **Shape decided by Marc — HYBRID, and centre the tab bar** (not a sidebar): width
+      where the shape earns it, a reading column where it does not. Applied as four
+      `@media (min-width: 1100px)` rules, surface-agnostic so the wall benefits too:
+      kitchen week → `repeat(auto-fill, minmax(11.5rem, 1fr))` (seven columns on the
+      laptop, FIVE on the 1280px wall behind its sidebar — the first cut said `repeat(7)`
+      and the wall's doors drew over the dates, caught on the re-shoot); Restants/Idées
+      (the shared `.kitchen__ideas` pool) capped at 52rem; Maison's moments side by side
+      (`.routines-moments` auto-fit); `.weekv` in the 52rem column; the mobile
+      `.hubnav` gathers its six tabs in the same column via one `padding-inline` rule.
+      The contrast bug got the Maison card's own answer: `tintInk()` in `lib/routineTod`
+      (measured for a member hex, looked up for a moment var — the vars `readableInk`
+      could never measure, which was the latent half of the Maison fix too).
+- [x] **Home at 1440px** — already a 56rem column with a three-up feature grid; nothing
+      to fix. Shot from now on (`wide-home`).
+- [~] **Not fixed, seen, and parked with the why:** the ＋ FAB overlaps the fourth grid
+      column's card text on the wide board exactly as it overlaps the last card on a
+      phone — a pre-existing pattern, not a width defect; and Maison's moments at 1440
+      still leave the lower two-thirds empty with two routines, which is the FIXTURE's
+      size, not a layout hole.
 
 **Wave 1 — the stranger's demo walk.** The demo is the product for months. Mint a sandbox
 on production the way a stranger would — phone AND laptop, private window, no account —

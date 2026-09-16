@@ -4,6 +4,7 @@
 // nothing hides (NFR-CALM — no nagging, no locks).
 import type { IconName } from '../components/Icon'
 import { timeOfDay, type TimeOfDay } from './timeofday'
+import { readableInk } from './colors'
 
 export type RoutineTod = 'morning' | 'afternoon' | 'evening'
 export const ROUTINE_TODS: RoutineTod[] = ['morning', 'afternoon', 'evening']
@@ -27,6 +28,27 @@ export const TOD_TINT: Record<RoutineTod, string> = {
 
 export const isRoutineTod = (v: unknown): v is RoutineTod =>
   v === 'morning' || v === 'afternoon' || v === 'evening'
+
+// The ink that READS on each moment tint. `readableInk` measures a hex; these are
+// theme VARS, unknowable at render — so the answer is written beside the colour it
+// answers for: the two -deep tints are dark grounds (cream ink), plain marigold is
+// the pale accent (the warm-dark ink, exactly what `--accent-ink` is for). Same
+// constants readableInk picks between, so a pill looks the same whichever path chose.
+export const TOD_TINT_INK: Record<RoutineTod, string> = {
+  morning: '#fffcf5',
+  afternoon: '#2c2722',
+  evening: '#fffcf5',
+}
+
+/** The ink for a « Faire » pill painted on `tint`: measured when the tint is a member
+ *  hex, looked up when it is a moment var. The board's « Prochaine routine » pill
+ *  hard-coded white and measured 2.03:1 on a marigold member (axe, wide pass
+ *  2026-09-16) — the Maison card had already learned this (`routine-card__run`), but
+ *  only for hexes; this is the one helper both read now. */
+export function tintInk(tint: string, tod: string | null | undefined): string {
+  if (tint.startsWith('#')) return readableInk(tint)
+  return isRoutineTod(tod) ? TOD_TINT_INK[tod] : '#fffcf5'
+}
 
 // Kid-view ordering for the CURRENT moment: the matching bucket first, then
 // "anytime", then the rest in day order wrapping forward (afternoon evenings

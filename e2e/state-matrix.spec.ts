@@ -346,6 +346,14 @@ const WALL = { w: 1280, h: 800 }
 // it directly now (the -xl states) and a `const` declared after the table is a TDZ
 // error at module load, not a lint warning.
 const NARROW = { w: 360, h: 844 }
+// Wave 0 of the public-app plan (STATE.md §4-K, 2026-09-16). Two widths the sweep had
+// NEVER shot: a tablet held in portrait, and a LAPTOP OPERATOR — surface 'mobile' at
+// 1440, which is not the WALL kiosk: it is a parent at the kitchen table on a browser,
+// signed in with full rights, and the first thing a public visitor with a laptop sees
+// after the marketing page. Marc's rule is « no zoom, use the space on every media
+// type », so these frames are where that rule is either true or not.
+const TABLET = { w: 820, h: 1180 }
+const DESKTOP = { w: 1440, h: 900 }
 const KB = 336
 
 const openAddSheet = async (page: Page) => {
@@ -682,6 +690,28 @@ const MATRIX: Entry[] = [
   //   one view whose whole point is that it has room for WORDS: if a title ellipsizes
   //   here the view has no reason to exist, and only a screenshot says so.
   { name: 'board-semaine', route: '/board', boardView: 'semaine', content: '.weekv__day', themes: ['day'], api: WEEK_FIXTURE, noBudgetWhy: 'contentTopPx here is the board greeting + the view toggle, which board and board-kiosk already budget; this entry exists for the rows (2026-09-15)' },
+  // — WIDE. The laptop operator (DESKTOP, surface mobile) and the portrait tablet
+  //   (TABLET). No budgets: budgets are pinned at 390px FR (the lens-twin rule), and
+  //   these exist for the frames — the whole stylesheet has four min-width rules above
+  //   720px and the shell caps no width, so the question each frame answers is « what
+  //   does this tab do with 1440px? ». Day theme only: the palette was already swept.
+  { name: 'wide-home', route: '/', signedOut: true, viewport: DESKTOP, themes: ['day'], noBudgetWhy: 'wide-screen pass — the marketing door at laptop width; budgets are pinned at 390px FR (2026-09-16)' },
+  { name: 'wide-board', route: '/board', surface: 'mobile', viewport: DESKTOP, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'wide-screen pass — budgets are pinned at 390px FR (2026-09-16)' },
+  { name: 'wide-board-semaine', route: '/board', surface: 'mobile', viewport: DESKTOP, boardView: 'semaine', content: '.weekv__day', themes: ['day'], api: WEEK_FIXTURE, noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-kitchen', route: '/kitchen', surface: 'mobile', viewport: DESKTOP, content: '.kitchen__meal-list, .kitchen__week', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-liste', route: '/liste', surface: 'mobile', viewport: DESKTOP, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-notes', route: '/notes', surface: 'mobile', viewport: DESKTOP, content: '.cnote', themes: ['day'], api: NOTES_FIXTURE, noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-maison', route: '/maison', surface: 'mobile', viewport: DESKTOP, content: '.routine-card, .cercle-row', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-settings', route: '/settings?tab=settings&lens=regler', surface: 'mobile', viewport: DESKTOP, content: '.operator__section', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'mobile', viewport: DESKTOP, content: '.day-plan__sec .act', themes: ['day'], api: DAY_FIXTURE, noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-recipe-view', route: '/kitchen/recipe/rc1', surface: 'mobile', viewport: DESKTOP, content: '.recipe-view__img, .recipe-view__ings li', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'wide-search', route: '/search?q=spag', surface: 'mobile', viewport: DESKTOP, content: '.search__row', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'tablet-board', route: '/board', surface: 'mobile', viewport: TABLET, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
+  { name: 'tablet-kitchen', route: '/kitchen', surface: 'mobile', viewport: TABLET, content: '.kitchen__meal-list, .kitchen__week', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
+  { name: 'tablet-liste', route: '/liste', surface: 'mobile', viewport: TABLET, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
+  { name: 'tablet-notes', route: '/notes', surface: 'mobile', viewport: TABLET, content: '.cnote', themes: ['day'], api: NOTES_FIXTURE, noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
+  { name: 'tablet-maison', route: '/maison', surface: 'mobile', viewport: TABLET, content: '.routine-card, .cercle-row', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
+  { name: 'tablet-settings', route: '/settings?tab=settings&lens=regler', surface: 'mobile', viewport: TABLET, content: '.operator__section', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
   // …and the SAME three at 130%, the step that was held for half a day on a greeting
   //   that clipped at exactly this width. `board-xl` is the one that was red: it is
   //   here so the next person who touches the header cluster finds out the same day.

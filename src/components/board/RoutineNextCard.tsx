@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { ROUTINES_KEY } from '../../lib/queryKeys'
-import { pickMomentRoutine, TOD_ICON, TOD_TINT, isRoutineTod } from '../../lib/routineTod'
+import { pickMomentRoutine, TOD_ICON, TOD_TINT, isRoutineTod, tintInk } from '../../lib/routineTod'
 import { Avatar } from '../Avatar'
 import { RoutineRing } from '../RoutineRing'
 import { InlineIcon } from '../Icon'
@@ -51,7 +51,10 @@ export function RoutineNextCard() {
   return (
     <BoardCard
       className="routine-next-card"
-      style={{ '--tint': tint } as CSSProperties}
+      // `--tint-ink` rides with the tint so the « Faire » pill is readable on it — the
+      // same contract as the Maison routine card (routine-card__run). White on a
+      // marigold member measured 2.03:1 here (axe, 2026-09-16).
+      style={{ '--tint': tint, '--tint-ink': tintInk(tint, routine.timeOfDay) } as CSSProperties}
       icon={icon}
       label={t.boardCard.routineNext}
       // Who + which routine (« Léa · Matin ») — the mini says whose turn it is, not just
