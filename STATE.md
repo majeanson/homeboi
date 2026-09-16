@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **9** — all of them the public-readiness plan §4-K,
+> a number you can trust. It reads **40** — nine of them the public-readiness plan §4-K and thirty-one the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -1945,7 +1945,7 @@ one surface with somebody waiting on you carried the clutter.
 
 ## 4. What still needs improvement — consolidated and ranked
 
-> **Asked « what should we work on? » on or after 2026-09-16 — go to [§K](#k-towards-a-public-app--the-plan-written-2026-09-16-start-here).**
+> **Asked « what should we work on? » on or after 2026-09-16 — go to [§K](#k-towards-a-public-app--the-plan-written-2026-09-16-start-here) for the product waves and [§L](#l-the-public-app-hardening-pass--planned-2026-09-16-thirteen-items-in-priority-order) for the hardening pass being worked through one item at a time.**
 > It is the plan toward a public app, in six ordered waves, and Wave 0 is the wide-screen
 > pass. Everything above §K in this section is settled history.
 
@@ -3679,6 +3679,346 @@ happens. See the 2026-09-16 conversation; re-raise after Wave 1's walk.
 **Capacity, for the record:** ~100 households on the free tier with realtime on, then
 Workers AI neurons are the ceiling, then Workers Paid at $5/month buys hundreds. Not a
 blocker at any wave above.
+
+### L. The public-app hardening pass — planned 2026-09-16, thirteen items in priority order
+
+**Where this came from.** Asked « what improvements, overlooked things, cut corners or
+brand new ideas do you have », then « dress a priority list », then « plan each of those
+thoroughly, no cut corners, then work through each 1 by 1 ». Every item below was found
+by reading code, not documents, on 2026-09-16 — and each one records WHAT was verified
+so the next session can re-grep the claim instead of trusting it. Ranked by user harm,
+then by cost. §K's waves stay the product plan; this section is the hardening that a
+stranger's account needs before the gate opens, and most of it lands inside §K's waves.
+
+**Implementation order differs from the priority order where one item needs another:**
+1 → 2 → 3 → 5 → 12 → 6 → 7 → 8 → 9 → 4 → 11 → 13, with 10 recorded as a `[~]` (its
+honest answer depends on Wave 5). Item 3 (the real-D1 harness) moves up because every
+later item gets its proof from it. Each item ends with the standing gates (typecheck ·
+test · build · the guard proven RED on the defect it was written for · STATE.md in the
+same commit) and its own commit.
+
+#### L1. A password reset ends every other session — and « Se déconnecter partout »
+
+**Verified:** the session cookie is `{ e: email, x: expiry }` signed with the global
+secret (`functions/_lib/auth.ts` `issueSession`); `functions/api/auth/reset.ts` rewrites
+`password_hash` only. A session on a lost phone stays valid for its full 30 days after the
+owner resets. There is no change-password endpoint at all (`grep -rn password functions/api`
+finds signup, login, reset, claim) — a signed-in operator cannot change their password
+without the email loop.
+
+**Design.**
+- Migration `0134_operator_session_version.sql`: `ALTER TABLE operators ADD COLUMN
+  session_version INTEGER NOT NULL DEFAULT 1;` — a counter, not a secret: bumping it is the
+  revocation. Sandboxes inherit the default; the sweep is unaffected (same table).
+- The session payload gains `v`. A token without `v` (every cookie minted before this)
+  reads as `v = 1`, so nobody is signed out by the deploy — only by a bump.
+- `auth.ts` grows ONE door for minting: `signInAs(env, email)` reads the row's version and
+  returns the cookies; `issueSession` becomes module-private. A grep guard
+  (`session-issue-rule.test.ts`) fails the build if `issueSession(` is called outside
+  `auth.ts`, so a handler cannot mint a version-less cookie by habit. Six call sites move:
+  login, signup, reset, demo, demo/claim, operator-join.
+- `currentEmail` (used by `resolveActor` and `auth/me`) is replaced by `currentOperator(env,
+  request)` which reads `household_id, session_version` in the one query it already made and
+  returns null on a version mismatch. `auth/me` MUST use it too — otherwise the shell says
+  « signed in » while every other call 401s, which is the stranded-kiosk shape this file
+  already records under C-quater.
+- Bumps: `auth/reset` (always — that is the whole point), the new `POST /api/auth/password`
+  `{ current, next }` (L12), and the new `POST /api/auth/sessions/revoke` `{ password }` —
+  « Se déconnecter partout » — which bumps the version and re-issues THIS device's cookie
+  in the same response, so the person pressing the button stays signed in. Both need the
+  password (L5's `requirePassword`), because a stolen unlocked phone must not be able to
+  lock the owner out.
+- Client: `api()` already routes a 401 to `onAuthLost` → the persisted cache and outbox are
+  wiped (OFFLINE.md). Nothing to add; the e2e pins that a 401 after a bump lands on /login.
+
+**Guards + tests.** `route.test.ts` gains: a token with a stale `v` is rejected (RED first
+by planting `v: 1` against a row at 2); a legacy token without `v` still resolves. A D1
+harness case (L3): reset on device A → device B's next call is 401, A's new cookie works.
+e2e `password-reset.spec.ts` stays as is. PARITY F40 footnote updated.
+
+- [ ] Migration 0134 + `signInAs` + `currentOperator` + the version check in `resolveActor` and `auth/me`
+- [ ] `session-issue-rule.test.ts` proven red on a planted `issueSession(` outside auth.ts
+- [ ] `POST /api/auth/sessions/revoke` (password, bumps, re-issues) + `POST /api/auth/password`
+- [ ] `reset.ts` bumps; unit cases red-then-green; STATE + PARITY F40
+
+#### L2. Login, signup, forgot, reset, demo mint and pairing get a rate limit
+
+**Verified:** `grep -rn "rate\|429" functions/api/auth` — nothing. `guestRate.ts` caps only
+the writable guest kinds, by a `use_count` column. PBKDF2 at 100 000 iterations
+(`_lib/password.ts`) is fine only if attempts are bounded. `demo.ts` mints a whole seeded
+household per POST with no per-IP bound beyond the global cap.
+
+**Design.** Cloudflare's Workers **rate-limiting binding** — no table, no sweep, no CPU:
+```toml
+[[ratelimits]]
+name = "LIMIT_IP"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+[[ratelimits]]
+name = "LIMIT_KEY"
+namespace_id = "1002"
+simple = { limit = 6, period = 60 }
+```
+- `_lib/rateLimit.ts`: `overLimit(env, 'ip' | 'key', key)` → boolean. The bindings are
+  OPTIONAL in `Env` (like `AI`) — unset means allow — but `health.rateLimit` reports it and a
+  unit test pins that `wrangler.toml` declares both, so prod cannot silently lose them. The
+  API is documented as permissive and per-colo; that is a bound on brute force, not an
+  accounting system, and it is the right tool for exactly that.
+- Keys: login `ip:<CF-Connecting-IP>` (30/min) AND `login:<email>` (6/min); signup `ip`;
+  forgot `ip` + `forgot:<email>`; reset `ip`; demo `demo:<ip>` (6/min — a sandbox mint
+  costs a seed); pair/start `ip`; operator-join `ip`; demo/claim `ip`; L5's
+  `requirePassword` charges `sudo:<email>` so the password doors are not an oracle.
+- Over the limit → `429` with `Retry-After: 60` and « Trop d’essais. Réessaie dans une
+  minute. » (`json.ts` `tooMany()`); the login/signup/forgot pages already surface the
+  error body's sentence.
+
+**Guards + tests.** `rateLimit.test.ts` (fake binding: under → allow, over → refuse, unset →
+allow + health false); login/signup handler cases with the limiter exhausted → 429 (RED by
+running them without the check); `wrangler.toml` declares both bindings. The D1 harness
+(L3) gets a case: seven bad passwords in a row, the seventh is 429 even with the right
+password.
+
+- [ ] `[[ratelimits]]` ×2 in wrangler.toml, `Env` types, `_lib/rateLimit.ts`, `tooMany()`, health flag
+- [ ] Wired into login · signup · forgot · reset · demo · demo/claim · pair/start · operator-join
+- [ ] Tests red-then-green; the login page shows the 429 sentence (i18n both languages)
+
+#### L3. Handlers run against a REAL D1 in a test — and the tenant-isolation sweep is its first customer
+
+**Verified:** `route.test.ts` stubs D1 with one row answering every `.first()`; all 153
+Playwright specs stub every `/api/*` (77 of them via `route()`); `grep -rl "vitest-pool-workers\|miniflare"` finds nothing. 132 migrations and 519 SQL statements against
+tenant tables (scanned 2026-09-16) are validated only by hand probes on the local Worker
+and by production. My scan found 37 statements with no household predicate; the three
+spot-checked (routine runs, habit marks, chore participants) are guarded by an ownership
+read upstream and the shared-trip ones by the capability model — no defect, and NOTHING
+holds it. This is the one bug a public app cannot survive.
+
+**Design.**
+- `@cloudflare/vitest-plugin` 1.1.11 (peer `vitest ^4.1.0` — we are on 4.1.8) running the
+  real `worker/index.ts` in workerd with a real D1 + R2 + the DO. A SECOND vitest config
+  (`vitest.d1.config.ts`) so the 2 289 pure tests keep their happy-dom pool untouched:
+  `include: ['{functions,worker}/**/*.d1.test.ts']`, `cloudflareTest({ wrangler: { configPath:
+  './wrangler.toml' }, miniflare: { bindings: { SESSION_SECRET, TEST_MIGRATIONS:
+  readD1Migrations('functions/db/migrations') } } })`, `setupFiles: applyD1Migrations`.
+  `npm run test:d1`; CI runs it after `build` (the `[assets]` block points at `dist/`).
+  Known risk to resolve in-session: `[assets]` and `[ai]` in the real wrangler.toml — if the
+  plugin refuses either, the fallback is a `wrangler.test.toml` that is asserted by a test to
+  declare the SAME bindings as the real one (never a hand-copied drift).
+- `functions/test/d1.ts` helpers: `household(name)` → signup through the real endpoint
+  (seeds sample data, returns a `fetch` that carries cookie + CSRF); `dump(hh)` → the
+  takeout JSON through `dumpHousehold`.
+- **The isolation sweep** (`worker/isolation.d1.test.ts`): households A and B. B walks
+  EVERY route in `worker/routes.ts`'s table: each GET with A's ids in the path/query, each
+  POST/PATCH/DELETE with a body carrying A's ids under every id-shaped field name the
+  handlers read (`id`, `memberId`, `routineId`, `taskId`, `recipeId`, `noteId`, `eventId`,
+  `contactId`, `groupId`, `habitId`, `listId`, `itemId`, `carnetId`, `petId`, …, harvested
+  from the handler sources by grep so a new field name joins automatically). Three
+  assertions: no response body of B's contains any id or title from A's dump; `dump(A)`
+  before and after are identical; no request returned 500. RED first by deleting one
+  `AND household_id = ?` from a handler.
+- First customers besides the sweep: auth (signup → login → reset → stale version → 429),
+  the demo mint + the TTL sweep (the bug nobody noticed for weeks because nobody minted),
+  and the nightly `scheduled()` (L7).
+
+- [ ] Plugin + config + setup + `npm run test:d1` green on one smoke case; CI step after build
+- [ ] `functions/test/d1.ts` helpers
+- [ ] Isolation sweep, proven red on a deleted household predicate
+- [ ] Auth + demo-sweep + L1/L2 cases
+
+#### L4. The door's eager graph (already boxed in Wave 2 — sized there; executed here)
+
+**Verified:** `router.tsx` imports `HubLayout` and `Board` statically (94 imports under
+Board alone); `main.tsx` pulls the outbox, persist, realtime and tour. The marketing door
+pays for the whole hub: 487 KB gz / 78 requests, 11 s on Slow 4G (Wave 2's table).
+
+**Design.** `HubLayout` and `Board` become `lazy()` like every other page. The kiosk's
+offline reboot is safe because `check-bundle.mjs` already forces every lazy chunk into the
+SW precache — the cost is one more round trip on a warm boot, which `npm run e2e:sw`
+(the prod-bundle SW harness) proves still works. Then: walk the entry's static closure from
+`dist/.vite/manifest.json` (turn `build.manifest` on) and assert in `check-bundle.mjs` that
+neither `pages/Board.tsx` nor `components/HubLayout.tsx` is in it — a ratchet, so the door
+cannot quietly re-grow the hub. Re-base `EAGER_TOTAL_BUDGET` to the new number. Look at the
+`drawpad` group with the manifest in hand: if it is Rolldown's commons wearing the group's
+name, rename the group to what it is. Re-run `coldstart.mjs` (kept in this session's
+scratchpad, copied into `e2e/` by L9) against production after the deploy and replace Wave
+2's table.
+
+- [ ] `HubLayout` + `Board` lazy; `e2e:sw` green; matrix unchanged
+- [ ] Manifest-walk assertion in `check-bundle.mjs`, proven red on a static re-import; budgets re-based
+- [ ] Cold-start table re-measured on production, Wave 2's table replaced
+
+#### L5. The irreversible doors ask for the password
+
+**Verified:** STATE.md's own idle row says « a wall tablet is often signed in as the
+operator » (surface `mobile`), and the Wave 4 delete plan confirms by household NAME. A
+name is not a lock on a tablet anyone in the house can reach. Doors that exist or are
+about to: revoke a co-operator (`DELETE /api/operator-invite`), sign out everywhere (L1),
+change password (L12), restore a backup (L8 — it wipes the current content), delete the
+household (Wave 4, not built here).
+
+**Design.** `_lib/sudo.ts` `requirePassword(env, actor, password)` → null or a 403
+« Mot de passe requis » / « Mot de passe invalide », verifying against the operator row's
+hash (or `LOGIN_PASSWORD` for a legacy row, exactly as login does), charged against L2's
+`sudo:<email>` key. Client: EXTEND `useConfirm` with an optional `input: { kind:
+'password', label }` — the dialog gains one field and resolves to the typed value — rather
+than a second dialog; the specimen in `/dev/kit` shows both shapes; `confirmCopy.test.ts`
+keeps the copy honest. A sandbox operator has no password anyone knows → these doors hide
+under `useSandbox()` (they have nothing to revoke anyway).
+
+- [ ] `requirePassword` + unit cases (right, wrong, legacy row, missing)
+- [ ] `useConfirm` password input + DevKit specimen + COMPONENTS.md
+- [ ] Co-operator revoke asks for it (server + client + its e2e updated)
+
+#### L6. Security headers — enforce the safe four now, CSP report-only with a report door
+
+**Verified:** `grep -rn "Content-Security-Policy\|Strict-Transport\|X-Frame\|Referrer-Policy\|Permissions-Policy" worker functions` — nothing. Same-origin frames exist
+(`CarnetDocs` frames `/api/img/<key>` PDFs), one cross-origin frame (FlippPager frames
+flipp.com — their policy, not ours), Google Fonts, flyer/NASA/recipe images from any https
+host, Tesseract's worker, `blob:` media.
+
+**Design.** One `secure(res)` in `worker/index.ts` applied to every response (assets and
+API): `Strict-Transport-Security: max-age=31536000; includeSubDomains`,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+`Permissions-Policy: camera=(self), microphone=(self), geolocation=()`, and
+`Content-Security-Policy: frame-ancestors 'self'` (enforced — nothing legitimate frames us
+from another origin; `/cast` is opened directly). Plus the FULL policy in
+`Content-Security-Policy-Report-Only` with `report-uri /api/csp-report` — a CSRF-exempt,
+rate-limited (L2) POST that logs the violation (observability keeps it) and answers 204.
+The policy starts from what the code actually loads (self, fonts.googleapis/gstatic, https:
+images, blob:/data: media and workers, wss: self, frame-src self + flipp.com) and gets
+tightened to enforced only after a week of reports, in a later commit — enforcing blind
+would be the cut corner.
+
+- [ ] `secure()` + unit test on an HTML and a JSON response; the SW harness green
+- [ ] `/api/csp-report` + route + exemptions + the report-only policy
+
+#### L7. The nightly cron sweeps sandboxes and TELLS someone when it fails
+
+**Verified:** `worker/index.ts` `scheduled()` backs up every household and logs failures to
+a console nobody opens; the sandbox sweep runs only on a mint (`demo.ts`), which is exactly
+how it stayed broken from 0102 to 2026-09-16. `functions/_lib/mail.ts` exists since Wave 3.
+
+**Design.** Extract `_lib/nightly.ts` `runNightly(env, now)` → a report `{ households,
+backed, failed: [...], sandboxesSwept, sandboxesStale }`; the cron also runs
+`sweepExpiredDemoSandboxes(env, now, 50)` and counts sandboxes older than the TTL that
+SURVIVED it (`stale` > 0 is the sweep-is-broken signal). Then ONE email through `sendMail`
+to `ALERT_EMAIL` (new optional var, set in the dashboard, never in the repo) when anything
+failed or `stale > 0` — and every Monday a one-paragraph « Babillard va bien » digest, so
+the alert channel is itself exercised weekly (an alert path never fired is the sweep bug in
+a new coat). Unset `ALERT_EMAIL` → log only, and `health.alerts: false`.
+
+- [ ] `nightly.ts` + unit cases (failure → mail; quiet weekday → none; Monday → digest; no bucket → still sweeps)
+- [ ] A D1 harness case that calls `scheduled()` end to end
+
+#### L8. Takeout import — the one restore door
+
+**Verified:** `takeout.ts` dumps; the cron keeps 14 dated JSONs per household under
+`backup/<hh>/` in R2; NOTHING reads a backup back (`grep -rn "backup/" functions worker src`
+→ only the writer). `DEPLOY.md` has no restore procedure. A backup never restored is a
+hope.
+
+**Design.** `_lib/restore.ts` `restoreHousehold(env, householdId, takeout)`:
+1. Validate (`format: 1`, `tables` of arrays of objects, body ≤ 20 MB).
+2. Wipe the CONTENT tables — the household's tables minus takeout's own `EXCLUDE` set
+   (operators, devices, guests, shares, pairing, idempotency, ai_errors, domains stay), the
+   same statements `deleteDemoHousehold` uses, factored into `contentDeleteStatements()`
+   so the two cannot drift.
+3. Ids: after the wipe, if any id in the dump collides with a row anywhere in the DB
+   (another household's — the dump came from elsewhere), remap EVERY id to a fresh one and
+   rewrite every soft reference by token: ids are 12 chars of a 56-letter alphabet, so a
+   token-equal scan of every string cell (JSON columns included — `rotation_json` holds
+   member ids) is exact. No collision → ids kept, so a same-household restore keeps device
+   preferences that remember a face.
+4. Insert with the INTERSECTION of the dump's keys and the live table's columns (a backup
+   from before a migration gets defaults; a dropped column is ignored); `household_id`
+   rewritten; the `households` row's preference columns updated (id, tier, status,
+   created_at, invite_nonce kept). Chunked `batch()` calls; a failure mid-way is recovered
+   by re-running the same restore — documented, and the nightly copy is untouched.
+5. R2 keys are not remapped: the blobs are still there for a same-household restore, and a
+   cross-household one keeps working while the source lives.
+- Endpoints: `GET /api/takeout/backups` (dates), `POST /api/takeout/restore` `{ password,
+  source: 'backup', date } | { password, source: 'file', takeout }` — operator-only,
+  `requirePassword` (L5), `write-rule` ALLOWED (an outbox replay of a restore is exactly
+  wrong), realtime → every key. Client invalidates everything on success.
+- UI in the existing takeout card: « Restaurer une copie » — the nightly dates as rows,
+  and « Depuis un fichier ». The confirm says what is lost: « Remplacer tout le contenu de
+  la maisonnée par la copie du 12 septembre ? Ce qui a été ajouté depuis disparaît. Les
+  appareils et les comptes restent. » DEPLOY.md gets the procedure.
+
+- [ ] `restore.ts` pure parts + unit tests (validation, remap, intersection)
+- [ ] Endpoints + route + guards; the D1 round-trip: dump → add rows → restore → dump equal
+- [ ] UI + e2e (`takeout-restore.spec.ts`) + DEPLOY.md « Restaurer »
+
+#### L9. The stranger's walk and the cold-start clock run weekly against production
+
+**Verified:** `walk.mjs` and `coldstart.mjs` live in a session scratchpad
+(`…/0b9070c3…/scratchpad/`) — copied into this session's — and nowhere in the repo. The
+walk found four defects in one day.
+
+**Design.** `e2e/stranger-live.spec.ts` under `e2e/stranger.config.ts` (the Flipp
+contract's shape: no Vite, no stubs, production URL) — the walk's steps as assertions
+(every step's content within 10 s, zero 4xx/5xx from our API, zero console errors, the one
+list write lands, `/garder` renders) on both profiles, plus the cold-start table written
+to the report as JSON. `.github/workflows/stranger-walk.yml`: Mondays 07:30 UTC +
+dispatch; a red run emails the repo owner the way every scheduled workflow does. Each run
+mints a sandbox that L7's nightly sweep removes.
+
+- [ ] Spec + config + `npm run e2e:stranger`, green against production once locally
+- [ ] Workflow file; CLAUDE.md's commands block lists it
+
+#### L10. Signup stops revealing which emails exist — with Wave 5, not before
+
+**Verified:** `signup.ts:32` answers 409 « Un compte existe déjà ». Forgot was carefully
+made constant; signup was not.
+
+- [~] **A constant signup answer is impossible while signup signs you in.** A new address
+  gets a `Set-Cookie`; an existing one cannot — the difference is the leak, whatever the
+  body says. The honest fix is Wave 5's email verification: signup then answers « Regarde
+  ta boîte courriel » for EVERY address, a new one gets the verify link and an existing one
+  gets « tu as déjà un compte, connecte-toi ou réinitialise ». Until then the enumeration is
+  bounded by L2's per-IP limit on signup (6 tries a minute is not a harvest). Recorded here
+  so it is built INTO the verification flow rather than bolted on after.
+
+#### L11. The household's timezone is a column, not a constant
+
+**Verified:** `HOUSEHOLD_TZ = 'America/Toronto'` (`_lib/ids.ts:56`) is the default of every
+day helper, reached from board, chores-ledger, events, routines, askContext, recur,
+whenparse, upkeep, sampleData; the client's `lib/localDay.ts` uses the browser's zone. A
+household in Moncton gets the wrong « aujourd'hui » at 23:30 and the wrong « Bientôt »
+hour.
+
+**Design.** Migration `0135_household_tz.sql`: `households.tz TEXT NOT NULL DEFAULT
+'America/Toronto'`. `resolveActor` reads it in the queries it already makes (`Actor.tz`),
+and every server call of a day helper passes `actor.tz` — a grep guard ratchets
+`HOUSEHOLD_TZ` to its definition + tests, so a new handler cannot fall back to Toronto by
+omission. `PATCH /api/household { tz }` validated with the cached `wallFmt(tz)` (throws on
+an unknown zone); the household card in Réglages gains a select (Canada's zones first,
+then `Intl.supportedValuesOf('timeZone')`). Client: `auth/me` and `/api/household` carry
+`tz`; `lib/localDay.ts` reads a `setHouseholdTz()` fed from there, defaulting to the
+browser's — the ONE formatter home already caches per zone. D1 case: a household at
+`America/Vancouver` asked for the board at 06:30 UTC gets yesterday's date.
+
+- [ ] Migration + `Actor.tz` + every server helper call threaded; the ratchet guard red on one un-threaded call
+- [ ] PATCH + Réglages select + client `setHouseholdTz`; D1 case; PARITY footnote
+
+#### L12. « Mes connexions » — sign out everywhere, change my password
+
+**Design.** One new card in Réglages ▸ Système ▸ Appareils & accès (`access: 'operator'`,
+stacked under the devices/co-operators cards — C-15, never a new pill): a sentence, then
+« Changer mon mot de passe » (current + new + confirm → `POST /api/auth/password`, bumps
+the version, re-issues this cookie) and « Déconnecter partout ailleurs » (`useConfirm`
+with the password input → `POST /api/auth/sessions/revoke`). Hidden for a sandbox, a
+kiosk and a guest. `[~]` A LIST of sessions with device names is not built: sessions are
+stateless by design (no row to list) and the revoke-all door is the whole case; a list
+would need a sessions table that nothing else wants.
+
+- [ ] Card + i18n + e2e (`sessions.spec.ts`: operator sees it, kiosk/guest/sandbox don't, both doors post) + PARITY row + ACTIONS doors + guide point
+
+#### L13. Dependabot and the compatibility date
+
+**Verified:** no `.github/dependabot.yml`; `compatibility_date = "2024-12-30"`.
+
+- [ ] `.github/dependabot.yml`: npm weekly, minor+patch grouped into one PR, github-actions monthly
+- [ ] `compatibility_date` → 2026-09-01 (last complete month): D1 harness green, `cf:dev` smoke, deploy checked
 
 ### F. Not a backlog — do not mine these for work
 
