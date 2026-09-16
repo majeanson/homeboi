@@ -13,7 +13,7 @@ import { Icon } from '../Icon'
 import { Loading } from '../Fallback'
 import { LoadError } from '../LoadError'
 import { DayMark } from './DayMark'
-import { bucketByDay, linesFor, tripSpansByDay, type MonthData } from './dayLines'
+import { bucketByDay, markersFor, tripSpansByDay, type MonthData } from './dayLines'
 import { type Dict, type Member } from './types'
 
 
@@ -121,7 +121,9 @@ export function WeekView({
 
       <ol className="weekv__days">
         {days.map((d) => {
-          const lines = linesFor(byDay.get(d), members, mealPrefs, t, lang)
+          // The MARKER walk, not the raw one: a week row is a glance like a month cell,
+          // and a daily habit on all seven rows is the noise it must not carry.
+          const lines = markersFor(byDay.get(d), members, mealPrefs, t, lang)
           const bands = tripsByDay.get(d) ?? []
           const isToday = d === todayDay
           return (

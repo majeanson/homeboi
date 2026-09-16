@@ -37,7 +37,7 @@ import { colorOf, nameOf, type Dict, type Member } from './types'
 // lines as grid cells; WeekView draws the same lines as rows.
 import {
   bucketByDay,
-  linesFor,
+  markersFor,
   tripSpansByDay,
   type DayBucket,
   type DotKind,
@@ -719,12 +719,10 @@ export function MonthView({
         ))}
         {grid.days.map((d) => {
           const b = byDay.get(d)
-          // Habits are deliberately NOT cell markers. A daily intention (« boire assez
-          // d'eau ») paints a glyph on EVERY square, which is exactly the noise a month
-          // glance must not have: the eye is looking for the days that DIFFER. They keep
-          // their place in the day panel, where they're actionable — and the legend
-          // never listed them here in the first place.
-          const marks = linesFor(b, members, mealPrefs, t, lang).filter((l) => l.kind !== 'habit')
+          // The marker walk: habits are deliberately NOT cell markers (why: `markersFor`
+          // in dayLines — the same rule « La semaine » reads, so the two glances agree).
+          // The legend never listed them here in the first place.
+          const marks = markersFor(b, members, mealPrefs, t, lang)
           // EVERY cell keeps the grid's shape. The tapped day used to grow and float a
           // wide tile over its neighbours, spelling its items out — which meant the
           // calendar changed shape under the finger, the tile covered the days around

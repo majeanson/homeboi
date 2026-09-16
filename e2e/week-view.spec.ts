@@ -24,7 +24,19 @@ const monthWindow = (day0: number) => ({
   homeProjects: [],
   trips: [],
   tripPlans: [],
-  habits: [],
+  // A daily habit on EVERY day of the window. It must not appear on any row: a habit is
+  // not a marker (dayLines `markersFor`) — the week shipped listing it seven times.
+  habits: Array.from({ length: 7 }, (_, i) => ({
+    id: `hb${i}`,
+    habit_id: 'h1',
+    title: 'Boire assez d’eau',
+    icon: '💧',
+    colour: null,
+    kind: 'do',
+    member_id: null,
+    day: day0 + i * DAY,
+    done: i % 2 === 0,
+  })),
   transfers: [],
 })
 
@@ -52,8 +64,12 @@ test('the week spells its days out, and each row is a link into that day', async
   await expect(rows.nth(2).locator('.weekv__time')).toHaveCount(0)
   await expect(rows.nth(2)).toContainText('Souper chez Mamie')
 
-  // A free day says so, once and quietly.
+  // A free day says so, once and quietly — and it IS free, even though the fixture puts
+  // a daily habit on it: habits are not markers on a glance surface. The bug this pins
+  // (2026-09-16) listed « Boire assez d’eau » on all seven rows.
   await expect(rows.nth(1).locator('.weekv__free')).toBeVisible()
+  await expect(page.locator('.weekv__day')).not.toContainText(['Boire assez d’eau'])
+  await expect(page.locator('.weekv__line', { hasText: 'Boire assez d’eau' })).toHaveCount(0)
 
   // Every row is a real LINK to the ONE day door — not a div with an onClick. It has
   // to survive a middle-click and a keyboard, and be announced as a link (ACTIONS.md).

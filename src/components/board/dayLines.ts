@@ -199,3 +199,19 @@ export function linesFor(
   for (const n of b.notes) out.push({ color: CATS.list.color, kind: 'note', label: n.text })
   return out
 }
+
+/**
+ * The MARKER walk — `linesFor` minus the kinds a glance surface must not paint.
+ *
+ * Habits are deliberately NOT markers. A daily intention (« boire assez d'eau ») paints
+ * a glyph on EVERY day, which is exactly the noise a calendar glance must not have: the
+ * eye is looking for the days that DIFFER. They keep their place in the day panel and
+ * on « Le point du jour », where they are actionable. The month grid had this filter at
+ * its call site; « La semaine » shipped reading `linesFor` raw and listed every habit
+ * on all seven rows (reported 2026-09-16). One helper now, so the next glance surface
+ * cannot forget it the same way.
+ */
+export const GLANCE_HIDDEN: ReadonlySet<DotKind> = new Set<DotKind>(['habit'])
+export function markersFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs, t: Dict, lang: Lang): Line[] {
+  return linesFor(b, members, meals, t, lang).filter((l) => !GLANCE_HIDDEN.has(l.kind))
+}
