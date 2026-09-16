@@ -5,6 +5,9 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { api } from './api'
 import { onAuthLost } from './authEvents'
 import { createDeviceStore } from './createDeviceStore'
+import { useQueryClient } from '@tanstack/react-query'
+import { isPaired } from './device'
+import { connectRealtime, disconnectRealtime, REALTIME_ENABLED } from './realtime'
 
 // A demo SANDBOX visitor (functions/api/demo.ts) is an ordinary signed-in operator
 // whose email is the only tell — lib/demo.ts's `isSandboxEmail` can't be imported
@@ -66,6 +69,7 @@ const AuthContext = createContext<AuthState>({
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(true)
   const [signedIn, setSignedIn] = useState(false)
   const [email, setEmail] = useState<string | null>(null)
@@ -90,6 +94,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A real, server-confirmed answer — trustworthy either way. Never persisted
       // for a demo sandbox visitor (see the store's own comment above).
       wasSignedInStore.set(me.signedIn && !isSandboxEmail(me.email))
+      // The socket follows the SESSION, not the boot: a confirmed operator (a sandbox
+      // included — it is a real session) joins the household fan-out now; a confirmed
+      // signed-out answer tears it down so this tab stops retrying against a 401.
+      // Idempotent: connectRealtime returns early on an open/connecting socket.
+      if (REALTIME_ENABLED) {
+        if (me.signedIn) connectRealtime(queryClient)
+        else if (!isPaired()) disconnectRealtime()
+      }
     } catch {
       if (seq !== seqRef.current) return
       // The server didn't actually answer (most commonly: offline, or api.ts's own

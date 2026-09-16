@@ -25,17 +25,16 @@ import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
-import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview, setDeviceToken, setDisplay } from './lib/device'
-import { connectRealtime } from './lib/realtime'
+import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview, setDeviceToken, setDisplay, isPaired } from './lib/device'
+import { connectRealtime, REALTIME_ENABLED } from './lib/realtime'
 import './styles.css'
 
-// Realtime push (#20) is ENABLED: the RealtimeHub Durable Object is deployed, so an
-// open board refreshes the moment another device writes (lib/realtime + the route.ts
-// broadcast hook). Polling stays the fallback — if the DO is unbound or the socket
-// drops, /api/live 503s and Query's polling still owns correctness. Flip to false to
-// force the poll-only path (connectRealtime is then never called); it's fail-safe
-// either way, so this is the single switch.
-const REALTIME_ENABLED = true
+// Realtime push (#20): the switch is `REALTIME_ENABLED` in lib/realtime. Who opens the
+// socket depends on which credential exists — a PAIRED tablet carries a device token
+// from boot, so it connects here; an OPERATOR session is only known once /auth/me
+// answers, so AuthProvider connects then. Before this split the boot connected
+// unconditionally, and a stranger reading the marketing page got a 401 handshake every
+// 2→30 s forever, with the error in their console (the demo walk, 2026-09-16).
 
 // `?guest=<token>` boots a babysitter / guest session: stash the read-only token
 // in localStorage so lib/api sends it (on the X-Device-Token header) from the very
@@ -500,9 +499,10 @@ void (async () => {
   try {
     startPersistingCache(queryClient)
     startOutbox(queryClient)
-    // Realtime: only when the DO is deployed + the flag is on (see above). Fail-safe
-    // either way — polling owns freshness regardless of whether the socket opens.
-    if (REALTIME_ENABLED) connectRealtime(queryClient)
+    // Realtime at boot: only a paired tablet, whose device token is already on disk.
+    // An operator session connects from AuthProvider once /auth/me confirms it; a
+    // visitor with no credential never opens a socket the server would only 401.
+    if (REALTIME_ENABLED && isPaired()) connectRealtime(queryClient)
   } catch {
     /* the app is already mounted; background wiring is best-effort */
   }

@@ -57,7 +57,18 @@ const tintFor = (cardId: string): string | undefined => {
 export function WhatsNewLine() {
   const t = useT()
   const { lang } = useLang()
-  const [seen, setSeen] = useState<string[]>(() => readSeen(WHATSNEW_KEY))
+  const [seen, setSeen] = useState<string[]>(() => {
+    const s = readSeen(WHATSNEW_KEY)
+    if (s.length > 0) return s
+    // A device that has never dismissed a line has no BEFORE: « Business s'appelle
+    // maintenant Commerces » means nothing to someone who never saw « Business ». The
+    // demo walk (2026-09-16) opened Réglages on a fresh sandbox and the first card was
+    // exactly that rename. Start such a device with everything current marked seen;
+    // the next entry shipped after today is the first one it meets — which is the
+    // only kind of "new" a newcomer can have.
+    for (const w of WHATS_NEW) markSeen(WHATSNEW_KEY, w.id)
+    return readSeen(WHATSNEW_KEY)
+  })
   const entry = WHATS_NEW.find((w) => !seen.includes(w.id))
   if (!entry) return null
   const dismiss = () => {

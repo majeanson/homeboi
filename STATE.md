@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **19** — all of them the public-readiness plan §4-K,
+> a number you can trust. It reads **17** — all of them the public-readiness plan §4-K,
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3475,13 +3475,52 @@ thing a public visitor with a laptop will see after the marketing page.
 on production the way a stranger would — phone AND laptop, private window, no account —
 and time the path from landing to the first useful thing. Log every hesitation as a box.
 
-- [ ] **Walk it and write the friction list** (phone, then laptop). Note the clock: landing
-      → sandbox ready → first tab that made sense → first write → « Garder ma maisonnée ».
-- [ ] **Close the sweep loop the guard cannot**: mint one sandbox, wait past the 24 h TTL,
-      mint again, and confirm in D1 that the first one is gone (`demoHousehold` sweep —
-      it had been unable to delete ANY sandbox since 0102 until 2026-09-16, and nobody
-      noticed because nobody minted one).
-- [ ] **Fix the friction list**, one commit per finding, each with its matrix state.
+- [x] **Walked, twice, on production — by Playwright, as a stranger** (a scripted walk in
+      the session scratchpad: landing → « Essayer pour vrai » → the six tabs → one list
+      write → the ＋ sheet → `/garder`, on a 1440 laptop and an iPhone 13 profile, with a
+      frame, a timer, the console and every failed request per step). The clock is not
+      the problem: landing 0.4–0.8 s, mint → board 0.8–1.2 s, every tab under a second,
+      the first write settled in 70 ms, on both profiles.
+- [x] **The first walk could not get past the first screen.** After the mint, the stranger
+      landed on `/board/habitudes` — « Le point du jour » — with the welcome dialog drawn
+      over it, on both profiles, and no tab could be reached (the tour re-launched on
+      every load and pulled the router back). Two shell automations both fire on a
+      brand-new device: the tour auto-launch and the habit check-in's morning open (the
+      seed puts habits on today; the habits payload lands after the tour has started, so
+      its navigation wins). **Fixed `b2bc7ee6`**: the first day belongs to the welcome —
+      a device that has not met the tour stamps the day and stands down, BEFORE the data
+      gate. `first-run-quiet.spec.ts` replays production's shape (habits delayed 700 ms;
+      an instant stub let the OLD code pass) plus a control that the morning open still
+      opens once the tour is seen. In production for a month; nobody had minted a demo.
+- [x] **Second walk, three more findings, two fixed the same day:**
+      · the marketing page opened the household realtime socket with NO credential — a
+        401 handshake every 2→30 s forever, the error in the visitor's console. The
+        socket now follows the SESSION: `AuthProvider` connects on a confirmed sign-in
+        (a sandbox included) and tears down on a confirmed sign-out; `main.tsx` connects
+        at boot only for a paired tablet. `stranger-quiet.spec.ts` counts `/api/live`
+        sockets on the signed-out door (0) with a signed-in control (≥1), proven red on
+        the old unconditional boot line;
+      · Réglages ▸ Découvrir greeted the fresh sandbox with « Quoi de neuf » about the
+        Business → Commerces RENAME — news only to someone who knew the old name. A
+        device with no history now starts with every current line marked seen (the next
+        one shipped is the first it meets); same spec, with a control for a device that
+        dismissed an older line;
+      · the ❓ below.
+- ❓ **The first-ever undo toast hides the row you just added.** On the phone, the first
+      write's toast carries the once-per-device hint (« Tout se défait ici — tes derniers
+      gestes restent dans « Récents » ») — three lines plus « Annuler », sitting over the
+      top of the list, which is where the new row went. Once per device, by design, and
+      the hint is worth having; the question is its PLACE, not its existence: fold the
+      hint under the toast's expander, or shorten it to one line, or accept it. Marc's
+      call — a design question, not a defect a test could hold.
+- [ ] **Close the sweep loop the guard cannot**: the walks minted sandboxes on 2026-09-16
+      (13:30–14:00 ET). On or after 2026-09-17 14:00 ET, mint once more and confirm in D1
+      that the day-old ones are gone (`demoHousehold` sweep — unable to delete ANY
+      sandbox since 0102 until 2026-09-16, and nobody noticed because nobody minted one).
+- [~] **What the walk did NOT find, for the record:** the ＋ sheet, the claim form and
+      Réglages all render and read well on the phone; the tab bar, the day-one tour and
+      the sample banner's five « try this » doors all worked once the first screen was
+      the board. No 4xx from the API on either profile.
 
 **Wave 2 — a fresh household, a small phone, a slow connection.** Everything was tuned
 against a SEEDED household on wifi.

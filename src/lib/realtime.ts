@@ -218,6 +218,11 @@ function openSocket(queryClient: QueryClient): void {
 // Open the realtime channel. Idempotent: a second call while a socket is live is a
 // no-op. Returns a disconnect function. Safe to call unconditionally — see the
 // fail-safe note at the top of the file.
+// The single switch (was main.tsx's): the RealtimeHub DO is deployed, so an open board
+// refreshes the moment another device writes. Fail-safe either way — polling owns
+// correctness whether or not the socket opens.
+export const REALTIME_ENABLED = true
+
 export function connectRealtime(queryClient: QueryClient): () => void {
   if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return () => {}
   // A guest (curated share link) — or the operator's guest-scene PREVIEW — must not join
@@ -231,11 +236,12 @@ export function connectRealtime(queryClient: QueryClient): () => void {
   return () => disconnectRealtime()
 }
 
-// Internal — the disconnect closure returned by connectRealtime calls this. Tears
+// Also called by AuthProvider on a server-confirmed sign-out, so a tab that just signed
+// out does not spin the reconnect backoff against a 401 forever. Tears
 // the socket down and suppresses reconnects; the poll falls back to its fast gear
 // (connected=false). Not exported yet (no external caller); promote to an export
 // when a screen needs to tear the socket down explicitly.
-function disconnectRealtime(): void {
+export function disconnectRealtime(): void {
   wantConnection = false
   clearReconnect()
   reconnectDelay = 0
