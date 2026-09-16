@@ -20,6 +20,7 @@ interface Health {
   photos: boolean
   realtime: boolean
   rateLimit: boolean
+  alerts: boolean
 }
 
 export function HealthSection() {
@@ -60,6 +61,14 @@ export function HealthSection() {
       on: h.rateLimit,
       state: h.rateLimit ? t.operator.healthOn : t.operator.healthOff,
       when: t.operator.healthRateLimitWhen,
+    },
+    {
+      // The nightly cron's alert channel (functions/_lib/nightly.ts): off means a failed
+      // backup or a broken sandbox sweep only reaches a log nobody opens.
+      name: t.operator.healthAlerts,
+      on: h.alerts,
+      state: h.alerts ? t.operator.healthOn : t.operator.healthOff,
+      when: t.operator.healthAlertsWhen,
     },
   ]
   return (

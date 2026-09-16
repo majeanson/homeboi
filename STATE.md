@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **23** — nine of them the public-readiness plan §4-K and fourteen the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **21** — nine of them the public-readiness plan §4-K and twelve the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3936,8 +3936,8 @@ failed or `stale > 0` — and every Monday a one-paragraph « Babillard va bien 
 the alert channel is itself exercised weekly (an alert path never fired is the sweep bug in
 a new coat). Unset `ALERT_EMAIL` → log only, and `health.alerts: false`.
 
-- [ ] `nightly.ts` + unit cases (failure → mail; quiet weekday → none; Monday → digest; no bucket → still sweeps)
-- [ ] A D1 harness case that calls `scheduled()` end to end
+- [x] `functions/_lib/nightly.ts` — `runNightly()` (every side effect behind a seam: list, backup, sweep up to 50, count alive + STALE) + `alertFor()` (pure: a failure, a stale survivor or no bucket → an alert any night; a quiet Monday → « Babillard va bien »; else nothing) + `nightly()` (send to `ALERT_EMAIL` through the mail seam, else log + warn). The cron handler is one line. `sweepExpiredDemoSandboxes` returns its count and LOGS a failed delete; `countStaleDemoSandboxes` is the sweep-is-broken number. `health.alerts` + a health-card row; `ALERT_EMAIL` documented in DEPLOY.md + CLAUDE.md. Ten unit cases
+- [x] `worker/nightly.d1.test.ts` — `runNightly(env)` against the real D1 + R2: a real household's backup lands in the bucket as the takeout dump, an aged sandbox is swept, zero stale survivors, the swept sandbox got no backup
 
 #### L8. Takeout import — the one restore door
 

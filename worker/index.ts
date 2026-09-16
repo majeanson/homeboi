@@ -20,7 +20,7 @@ import { resolveTvCode } from '../functions/_lib/tvLink'
 import { readLiveShare } from '../functions/_lib/shareStore'
 import { shareOgMeta } from '../functions/_lib/shareOg'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
-import { dumpHousehold } from '../functions/_lib/takeout'
+import { nightly } from '../functions/_lib/nightly'
 import { withSecurityHeaders } from '../functions/_lib/securityHeaders'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
@@ -350,34 +350,14 @@ const app = {
     }
   },
 
-  // Nightly backup (bmad/08 E-36): the cheap insurance against the scariest
-  // failure mode — a migration bug eating the only real household. The cron
-  // (wrangler.toml [triggers]) dumps every household to R2 as one JSON
-  // (`backup/<householdId>/<date>.json`, same dump as /api/takeout) and keeps
-  // the newest 14. R2 unset → a no-op (the binding is optional everywhere).
-  // JSON only: the media blobs already live in this same bucket.
+  // The nightly cron (wrangler.toml [triggers]) — functions/_lib/nightly.ts: the
+  // backup of every household to R2 (bmad/08 E-36: the cheap insurance against a
+  // migration bug eating the only real household — `backup/<id>/<date>.json`, the
+  // takeout dump, newest 14 kept), the sandbox sweep, and ONE email through the mail
+  // seam when anything failed or a stale sandbox survived (STATE §4-L L7) — plus a
+  // Monday « Babillard va bien » so the alert channel is itself exercised.
   async scheduled(_controller, env, ctx): Promise<void> {
-    const bucket = env.PHOTOS
-    if (!bucket) return
-    const KEEP = 14
-    const run = async () => {
-      const hh = await env.DB.prepare('SELECT id FROM households').all<{ id: string }>()
-      const date = new Date().toISOString().slice(0, 10)
-      for (const { id } of hh.results ?? []) {
-        try {
-          const dump = await dumpHousehold(env, id)
-          await bucket.put(`backup/${id}/${date}.json`, JSON.stringify(dump))
-          // Prune beyond the newest KEEP (keys are date-named → lexicographic = chronological).
-          const listed = await bucket.list({ prefix: `backup/${id}/` })
-          const keys = listed.objects.map((o) => o.key).sort()
-          for (const k of keys.slice(0, Math.max(0, keys.length - KEEP))) await bucket.delete(k)
-        } catch (err) {
-          // One household's failure must not skip the others' backups.
-          console.error(`[backup ${id}]`, err)
-        }
-      }
-    }
-    ctx.waitUntil(run())
+    ctx.waitUntil(nightly(env))
   },
 } satisfies ExportedHandler<WorkerEnv>
 

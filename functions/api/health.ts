@@ -1,5 +1,6 @@
 import { mailEnabled } from '../_lib/mail'
 import { rateLimitEnabled } from '../_lib/rateLimit'
+import { alertsEnabled } from '../_lib/nightly'
 import type { Env } from '../_lib/env'
 import { ok } from '../_lib/json'
 import { resolveActor } from '../_lib/household'
@@ -48,6 +49,8 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     // Both rate-limit bindings wired (_lib/rateLimit.ts). Unset means the login doors
     // are unbounded — visible on the health card rather than silent.
     rateLimit: rateLimitEnabled(ctx.env),
+    // The nightly cron can reach a human (ALERT_EMAIL + mail wired, _lib/nightly.ts).
+    alerts: alertsEnabled(ctx.env),
     realtime: !!(ctx.env as { REALTIME_HUB?: unknown }).REALTIME_HUB,
   })
 }

@@ -44,6 +44,10 @@ npx wrangler r2 bucket create babillard-photos
 npx wrangler secret put SESSION_SECRET     # paste ≥32 random chars
 npx wrangler secret put LOGIN_PASSWORD     # optional shared login password
 npx wrangler secret put MISTRAL_API_KEY    # optional: high-accuracy cloud recipe OCR
+npx wrangler secret put ALERT_EMAIL        # optional: where the nightly cron mails when a backup
+                                           #   fails or a stale sandbox survives the sweep (+ a
+                                           #   Monday « Babillard va bien »); needs RESEND_API_KEY
+                                           #   + MAIL_FROM too. Réglages ▸ État des services shows it.
 #   Get a free key at https://console.mistral.ai (free "Experiment" tier, no card).
 #   Then in the app: Réglages ▸ Affichage ▸ « Lecture des photos de recette » → Haute précision.
 

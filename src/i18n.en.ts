@@ -2608,6 +2608,8 @@ export const EN: typeof FR = {
     healthCloudOcrWhen: 'Without it: recipe-photo reading happens on the device, a little less accurately.',
     healthRateLimit: 'Try limit',
     healthRateLimitWhen: 'Without it: nothing slows someone trying passwords in a loop on the sign-in page.',
+    healthAlerts: 'Night alerts',
+    healthAlertsWhen: 'Without them: a failed backup or a broken sweep only shows in a log nobody opens.',
     weekTabTitle: 'This week',
     sysTabTitle: 'Version & diagnostics',
     subAgendaWeek: 'Agenda & week',

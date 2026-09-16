@@ -33,6 +33,11 @@ export interface Env {
   // « Babillard <babillard@marcportal.com> » on a domain verified in Resend.
   RESEND_API_KEY?: string
   MAIL_FROM?: string
+  // OPTIONAL: where the nightly cron's alert goes (functions/_lib/nightly.ts) — a
+  // failed backup, a stale sandbox the sweep could not delete, and a Monday digest.
+  // Needs mail wired too. Set in the dashboard / `wrangler secret put ALERT_EMAIL`,
+  // never in the repo. Unset → log only, and /api/health says `alerts: false`.
+  ALERT_EMAIL?: string
 
   // OPTIONAL rate-limit bindings (wrangler.toml [[ratelimits]], _lib/rateLimit.ts):
   // the brute-force bound on login/signup/forgot/reset/demo/pairing/join and the

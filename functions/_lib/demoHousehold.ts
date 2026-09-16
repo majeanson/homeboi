@@ -316,18 +316,36 @@ export async function countDemoSandboxes(env: Env): Promise<number> {
 /** Opportunistic bounded sweep (the todos sweepStale stance): delete up to `limit`
  * expired sandboxes per mint, so cleanup amortizes over traffic and one request
  * never pays for a backlog. Best-effort — a sweep failure never blocks the mint. */
-export async function sweepExpiredDemoSandboxes(env: Env, now: number, limit = 2): Promise<void> {
+export async function sweepExpiredDemoSandboxes(env: Env, now: number, limit = 2): Promise<number> {
   const { results } = await env.DB.prepare(
     `SELECT h.id FROM households h JOIN operators o ON o.household_id = h.id
      WHERE o.email LIKE ? AND h.created_at < ? ORDER BY h.created_at LIMIT ?`,
   )
     .bind(SANDBOX_EMAIL_LIKE, now - DEMO_SANDBOX_TTL, limit)
     .all<{ id: string }>()
+  let swept = 0
   for (const row of results) {
     try {
       await deleteDemoHousehold(env, row.id)
-    } catch {
-      /* leave it for the next mint's sweep */
+      swept++
+    } catch (err) {
+      // Left for the next sweep — but SAID, this time. A delete that failed silently on
+      // every mint from 0102 to 2026-09-16 is why the nightly report counts the
+      // survivors (countStaleDemoSandboxes) and mails when there are any.
+      console.error('[demo sweep]', row.id, err)
     }
   }
+  return swept
+}
+
+/** Sandboxes older than the TTL that are STILL here — after a sweep, this should be
+ *  zero; anything else means the delete is failing (the nightly alert's signal). */
+export async function countStaleDemoSandboxes(env: Env, now: number): Promise<number> {
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM households h JOIN operators o ON o.household_id = h.id
+     WHERE o.email LIKE ? AND h.created_at < ?`,
+  )
+    .bind(SANDBOX_EMAIL_LIKE, now - DEMO_SANDBOX_TTL)
+    .first<{ n: number }>()
+  return row?.n ?? 0
 }

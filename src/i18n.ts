@@ -2920,6 +2920,8 @@ export const FR = {
     healthCloudOcrWhen: 'Sans elle : la lecture de photos de recettes se fait sur l’appareil, un peu moins précise.',
     healthRateLimit: 'Limite d’essais',
     healthRateLimitWhen: 'Sans elle : rien ne freine quelqu’un qui essaie des mots de passe en boucle sur la page de connexion.',
+    healthAlerts: 'Alertes de nuit',
+    healthAlertsWhen: 'Sans elles : une sauvegarde ratée ou un balayage cassé ne se voit que dans un journal que personne n’ouvre.',
     // Sub-tab labels that GROUP several sections under one pill (IA & système).
     weekTabTitle: 'La semaine',
     sysTabTitle: 'Version & diagnostics',

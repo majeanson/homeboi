@@ -358,7 +358,8 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
 ### Optional bindings degrade gracefully (`functions/_lib/env.ts`)
 
 `DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2), `REALTIME_HUB` (the
-Durable Object), and `LOGIN_PASSWORD` are optional** and guarded at entry. AI-unset
+Durable Object), `LOGIN_PASSWORD`, the mail pair (`RESEND_API_KEY` + `MAIL_FROM`) and
+`ALERT_EMAIL` (the nightly cron's alert address, `_lib/nightly.ts`) are optional** and guarded at entry. AI-unset
 → capture falls back to a manual type-picker, recap/suggestions hide. R2-unset →
 photo / routine-voice-clip / recipe-step-photo features hide. DO-unset → `/api/live`
 503s and clients poll. Never assume an optional binding is present. Locally without
