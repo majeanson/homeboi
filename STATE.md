@@ -20,25 +20,29 @@
 | | |
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
-| **Code** | ~148k lines across 853 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 126 forward-only migrations |
-| **Tests** | 2209 unit tests in 170 files · 142 Playwright spec files |
+| **Code** | ~163k lines across 913 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) — 2026-09-16 |
+| **Schema** | 132 forward-only migrations (0132 is the first that only DROPS — « Les calendriers », retired) |
+| **Tests** | 2289 unit tests in 175 files · 149 Playwright spec files — 2026-09-16 |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
-### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-08)
+### Health signals, all green as of 2026-08-27 (numbers re-run 2026-09-16)
 
-- `npm run typecheck` · `npm test` (2241 in 171 files, 2026-09-13) · `npm run build` · `npm run knip` — green.
-- `npm run e2e:matrix` — 154 states, **232 frames**, 0 failing (2026-09-14; it shoots
+- `npm run typecheck` · `npm test` (2289 in 175 files, 2026-09-16) · `npm run build` · `npm run knip` — green.
+- `npm run e2e:matrix` — 162 states, **253 frames**, 0 failing (2026-09-16, after the
+  feeds state was retired; the axe census reports ONE rule left, `meta-viewport` on all 162 — the accepted no-zoom decision, §D; `color-contrast` is at 0) — previously 154 states / 232 frames on 2026-09-14 (it shoots
   below the fold, prunes the PNGs of retired states, and no longer keeps a frame that
   shows what the one before it already showed — §4-H, §4-I).
-- `npm run check:bundle` — **3874 KB** of JS across `dist/assets`, **749 KB eager**; every
+- `npm run check:bundle` — **4031 KB** of JS across `dist/assets`, **653 KB eager** (2026-09-16;
+  was 3874 / 749 on 2026-09-08 — the eager half fell when `/api/recipes` stopped shipping
+  `original` and the Operator chunk took the new settings cards); every
   chunk within budget; the SW precache covers all offline-needed chunks and correctly
   skips the online-only ones.
 - Full local Playwright suite — **1128 passed, 13 skipped** *(that figure is still the
   2026-08-27 whole-suite run; since then only targeted subsets have been run locally —
   CI's E2E job is the standing whole-suite signal)*.
-- Last four pushes: CI green, deployed. Working tree clean, nothing untracked.
+- Last pushes: `89fe2bfe` was RED (half-staged — §3, first entry), `2390bc3b` green and
+  deployed right behind it. Working tree clean, nothing untracked.
 - **Seventeen build-gating invariants** (this is the codebase's best feature — see §5):
   `calm-tenets.test.ts` (no streak/points/badge/push table, no inventory column),
   `field-fit.test.ts` + `keyboard-fit.test.ts` (CSS invariants), **`write-rule.test.ts`
@@ -101,11 +105,14 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **3** — the a11y census §4-J opened on 2026-09-14:
-> a control inside a control in cook mode that this repo’s OWN grep guard calls green, a
-> rail no keyboard can reach, and an aria-label ARIA throws away. All three were found by
-> a machine reading the DOM rather than by a person reading a screenshot, which is the
-> whole reason that pass exists. It had read 0 after §4-H, which wrote
+> a number you can trust. It reads **0** — again, as of 2026-09-16. It had read 3 for two
+> days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
+> mode that this repo’s OWN grep guard calls green, a rail no keyboard can reach, and an
+> aria-label ARIA throws away — all three found by a machine reading the DOM rather than
+> by a person reading a screenshot, which is the whole reason that pass exists), and all
+> three closed by `14d25b93`, `76c31251` and `83dd7dea` on 2026-09-14/15 — but the boxes
+> stayed open in this file for a day, because a 25-commit day never touched it (§3, first
+> entry). It had read 0 after §4-H, which wrote
 > nine on 2026-09-13 — the pass that ran the state matrix and looked at what it had never been able to show (the sweep
 > was pruning nothing, shooting only the viewport, and rebasing two fixtures out of ten)
 > — and all nine are closed: six the same day, three the next turn once Marc had answered
@@ -156,6 +163,78 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### The day this file missed — 2026-09-14 → 09-16, written after the fact
+
+**This entry is late, and that is its first finding.** Twenty-five commits landed on
+2026-09-15 alone and none touched STATE.md, though CLAUDE.md's own rule is « update
+STATE.md in the same commit as the work it describes ». The next session opened on a
+front door that pointed at finished work (three §4-J boxes long since closed) and said
+nothing about four migrations. Written 2026-09-16 from `git log`, not from memory.
+
+**Shipped, and kept:**
+
+- **Two adults per household** (F37, `c00318ab`, migration 0128 + `a0721b5d`, 0130). The
+  schema had always allowed N operators → 1 household; nothing could create the second
+  row, and the path that LOOKED right (the spouse signs up) minted them a fresh seeded
+  household instead. Invite link with nonce → redeem → rotate → and, once the PARITY D1
+  scoring asked, **revoke** (never your own row: that door is « Se déconnecter »).
+  **« Mon visage »** seeds the device profile from the operator account once, so a
+  personal phone stops re-asking who you are; the device pick stays the truth.
+- **« La semaine »** (F38, `f8cd1f68`) — the third calendar face, seven rows over the
+  existing `/api/month` on a 7-day window. No endpoint; the month builder was EXTRACTED
+  (`dayLines`) rather than copied, and `dayFaces.test.ts` pins that the grid markers and
+  the day panel read the same bucket — which is how it found « Les virements » had been
+  drawing a receipt glyph over « rien ce jour-là » since 0126 (`14ea504f`).
+- **The third text tier, 130%** (`7d028d1b`) — held for half a day on a greeting that
+  clipped, then found by four measurements in ten minutes: the « ? » toggle never received
+  `--chrome-scale`. And the 115% tier had been broken for MONTHS (`40cffce4`) with no
+  matrix state ever starting anywhere but 100%; three `-xl` states guard it now.
+- **« À régler » surfaces the sleeping mail** (`3d8573ad`) — postbox + intake rows at
+  `pending` were visible only on a settings card hidden when empty.
+- **The a11y census closed** — `color-contrast` 78 states → 37 → 22 → 7 → **0** across
+  five root causes (`cc28ae3e` … `59e01034`: opacity-as-secondary, a `-deep` token used
+  as text — five times in one week —, hard-coded `#fff` on a wash, alpha over a tinted
+  container, the fresh-household empty state nobody's fixture painted). One ACCEPTED gap:
+  the `Avatar` initials disc, where neither ink reaches 4.5:1 on a mid-tone member colour.
+  The three §4-J boxes closed the same days. `meta-viewport` stays — see §D.
+- **Perf** — four ever-growing reads capped (`98ff4191`); `/api/recipes` stopped shipping
+  the `original` snapshot twice per 10 s poll (`5db7e1f1`). **Ops** — Workers observability
+  on (§4-J). **Fixes** — the offline black screen (`17470072`, the SW threw away the fresh
+  shell), the discount pill under the check disc (`1f386c4b`, a clip that clipped nothing).
+- **PARITY rows** for F37/F38 (`e925d5af`) — scored AFTER shipping, against the rule, and
+  the scoring found four real defects, all fixed the same day.
+
+**Shipped, then retired — « Les calendriers » (ICS subscriptions, 0129/0131 → 0132):**
+
+`14ab8ac8` + `20664258` built read-only ICS feeds — nightly refresh on the existing cron,
+a TZID resolver through cached `Intl`, unparseable RRULEs NAMED rather than counted, a dead
+URL flagged after three failed nights. It was also the first sanctioned exception to
+`_lib/upkeep`'s « no materialized occurrence rows, no cron ». Marc, on 2026-09-16: **not
+needed** — the household's calendar is what the household types. Removed entirely
+(`89fe2bfe` + `2390bc3b`: handler, parser, cron job, settings card, search section, À
+régler signal, the `feed` day kind, i18n, realtime key, two guards' ALLOWED entries, the
+matrix state, F39 + six footnotes, six ACTIONS doors); 0132 drops the tables. The
+exception is gone and the rule is whole again.
+
+**And retiring it found a bug older than it.** `demoHousehold.test.ts` only collected
+`CREATE TABLE` names, so to drop two tables from the sweep inventory it had to learn
+`DROP`. Replaying the migrations in order, it went red FIRST on `intake_media`,
+`postbox_media` and `family_shares` — dropped by 0091 and 0102, still listed in
+`HOUSEHOLD_TABLES` (two also in the media-key columns). `deleteDemoHousehold` sends
+everything in ONE `DB.batch`, which D1 runs as a transaction: a missing table does not
+skip a statement, it rolls back the whole sandbox delete. Proven on the local D1 (« no
+such table », and an INSERT before the bad DELETE never lands). Production held zero
+sandboxes and zero orphan households, so there was nothing to clean — the demo simply
+had not been minted since the tables went. The guard now also refuses an exemption for a
+table that no longer exists (`contact_links_new`, `flipp_links` left the list).
+
+**A process finding of the same day:** the removal commit went out HALF-STAGED (`89fe2bfe`
+held only the deletions + the migration; CI red on typecheck; fixed forward in
+`2390bc3b`). Cause: an explicit `git add` list containing a path `git rm` had already
+staged → « pathspec did not match » → the add staged NOTHING, and a `;` before
+`git commit` let the commit run anyway. Stage the rest with `git add -u` after a
+`git rm`, and chain add → commit → push with `&&` only.
 
 ### The bookmark writes the ACCOUNT list when signed in — and « Vider ma liste Flipp » is back, as a bookmark action (2026-09-11)
 
@@ -2704,6 +2783,16 @@ real-photo corpora to tune against — not guessed at.
 
 ### D. Judgement calls waiting on Marc, not on code
 
+- ~~**Pinch-zoom (`user-scalable=no`, axe `meta-viewport` on every state).**~~ ✅
+  **answered 2026-09-16: keep it off, everywhere.** « I want an app where you don't need
+  to zoom, where we use the space accordingly on all media types. » The consequence is a
+  standing obligation, not a one-line change: when something is hard to read at some
+  width, fix the layout or the type ramp (`Cluster`/`Rail`, `--chrome-scale`, the
+  100/115/130 text tiers), never the viewport tag. Declined, not deferred.
+- ~~**« Les calendriers » (ICS subscriptions, 0129/0131).**~~ ✅ **answered 2026-09-16:
+  remove entirely** — retired by `89fe2bfe`/`2390bc3b`, tables dropped by 0132. Don't
+  re-propose an external-calendar import without a new observation.
+
 - ~~**A done state for a planned meal** (the supper hero headlines tonight's supper all
   evening; « Marquer mangé » exists only on a leftover peek).~~ ✅ **answered
   2026-09-08: leave it — the hero is a plan, not a tracker.** Declined, not deferred;
@@ -3279,30 +3368,47 @@ trusts gets ignored — this very manifest has taught that twice.
       `cercle.dismissSuggestion` (« Ignorer » / « Dismiss ») already existed and had
       simply never been wired to the control that needed it. Re-scanned: that state is
       clean now.
-- [ ] **`nested-interactive` — and the repo's own guard calls this file GREEN.** Axe
+- [x] **`nested-interactive` — and the repo's own guard calls this file GREEN.** ✅
+      **fixed `14d25b93` (2026-09-14)** — `.cook__ing-text` lost `role="button"`; the
+      pills stay real buttons, so measures stay keyboard-reachable, and a screen reader
+      now hears « 400 g de pâtes » instead of « Écouter l'ingrédient ». Re-scanned clean. Axe
       finds `.cook__ing-text[role="button"]` containing the measure pills, which are real
       `<button>`s: a control inside a control, in COOK MODE, the surface a parent is
       using with their hands full. `nested-interactive.test.ts` exists FOR this defect
       class and CLAUDE.md records at length how it once reported green over exactly it.
       This is the third instance — and the first one found by an audit instead of a grep,
       which is the argument for having both.
-- [ ] **`scrollable-region-focusable` on `.rail`.** A hidden-scrollbar side-scrolling row
+- [x] **`scrollable-region-focusable` on `.rail`.** ✅ **fixed `76c31251` (2026-09-15)** —
+      `Rail` becomes a Tab stop ONLY while `useHScroll` reports it overflowing (a stack of
+      focusable rails that scroll nothing would be the next a11y bug); one fix in the shared
+      primitive covers every rail. A hidden-scrollbar side-scrolling row
       a keyboard cannot reach. This repo has a standing rule for precisely this (« A
       scrolling row must be reachable with a mouse, not just a thumb ») and solved the
       MOUSE half with `useHScroll`; keyboard is the third path and it was never closed.
       `Rail` is the shared primitive, so one fix covers every rail in the app.
-- [ ] **`aria-prohibited-attr` on the kitchen week.** `aria-label` on a bare `<span>`
+- [x] **`aria-prohibited-attr` on the kitchen week.** ✅ **fixed `83dd7dea` (2026-09-15)** —
+      ten spans: six icon-only pills take `role="img"`, the day header moves its full
+      date into an `.sr-only` child, two weather spans DROP a label that only repeated the
+      visible text. `aria-label` on a bare `<span>`
       with no role: ARIA ignores it, so the friendly date (« mer. 16 sept. ») is not
       announced at all and the raw contents are read instead. The label was written to
       help and does nothing.
-- ❓ **`color-contrast`, 78 states.** Needs triage, not a blanket fix: the measure pills
+- ~~❓ **`color-contrast`, 78 states.**~~ ✅ **closed at 0 states, 2026-09-15** (`cc28ae3e`
+  → `a6849743` → `a6bcbcf5` → `59e01034`; §3's first entry has the five causes). The
+  measure pills kept their colour AND pass: the fix was the ink tier, not the palette. One
+  accepted gap remains and is documented at the primitive: the `Avatar` initials disc.
+  Original triage note, kept for the reasoning: needs triage, not a blanket fix: the measure pills
       are colour-coded ON PURPOSE (`measureColors.ts` — colour IS the information), so
       some of these are a real trade-off, while the kitchen day labels look like a plain
       miss. Worth a pass of its own.
-- ❓ **`meta-viewport`, all 154 states.** The app disables pinch-zoom. Defensible for a
-      wall kiosk, a WCAG 1.4.4 failure for the phone, and it is one line either way —
-      Marc's call, since it is a deliberate kiosk decision meeting a real accessibility
-      floor.
+- ~~❓ **`meta-viewport`, all 154 states.**~~ ✅ **answered 2026-09-16 by Marc: keep
+  no-zoom.** « I want an app where you don't need to zoom, where we use the space
+  accordingly on all media types. » The rule is now stated in §D: readability is a
+  LAYOUT and TYPE-RAMP obligation on every surface (the three text tiers are the
+  recourse), never a `maximum-scale` change. The axe rule stays in the census as a
+  known, accepted finding. Declined, not deferred — don't re-propose without a new
+  observation. Original note: the app disables pinch-zoom. Defensible for a wall kiosk,
+  a WCAG 1.4.4 failure for the phone, and it is one line either way.
 
 ### F. Not a backlog — do not mine these for work
 
