@@ -166,6 +166,21 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### « Delete from where you see it » on the calendar — 2026-09-16 (evening, asked mid-session)
+
+Marc: « make sure we can remove/delete easily from detail popups and such for
+rendez-vous and others on calendar ». Checked against the code: the event peek had a
+delete, but behind the ⋯ then a confirm (three taps); the Mois day panel's corvée and
+entretien peeks had **no** edit and **no** delete while the board's identical rows had
+both; a planned meal tapped on the calendar could not be taken off the plan; and the day
+page, which edits a rendez-vous inline instead of peeking, could not delete one **at
+all**. One shared hook now (`components/detail/EntityRemovals`), used by the board (which
+lost its three private closures), the month panel and the day page; « Supprimer » is a
+visible danger button on the event peek; the day page's inline forms carry the delete
+under them, and its entretien rows open the peek (the page carries its own
+`DetailProvider` for that one row kind). ACTIONS.md rows updated with note ¹²;
+`e2e/calendar-delete.spec.ts` (eight cases) + the event-peek spec re-pinned.
+
 ### The real-runtime harness, and what it found in thirty seconds — 2026-09-16 (evening)
 
 STATE §4-L L1–L3 landed in three commits. The third is the one to remember: the Worker

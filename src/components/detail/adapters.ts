@@ -117,10 +117,12 @@ export function buildEvent(
     // is where you read one before walking out the door.
     blocks: e.notes?.trim() ? [{ kind: 'text', text: e.notes.trim(), hand: true }] : undefined,
     // Basic peek actions: see the day, Modify (the primary — opens the event form),
-    // Share, Delete (danger). Modify/Delete/Share are opt-gated at the call site so a
-    // guest/toddler peek stays read-only. Exactly one primary (edit when present).
-    // The long tail (`overflow`) rides the sheet's head ⋯ so the visible row stays
-    // two buttons: the day door + Modifier.
+    // Delete (danger, VISIBLE), Share. Modify/Delete/Share are opt-gated at the call
+    // site so a guest/toddler peek stays read-only. Exactly one primary (edit when
+    // present). The long tail (`overflow`) rides the sheet's head ⋯; « Supprimer »
+    // left it on 2026-09-16 (Marc: « make sure we can remove/delete easily from detail
+    // popups ») — a delete behind a ⋯ then a confirm is three taps to do the one thing
+    // a wrong entry needs, and the confirm already keeps the danger deliberate.
     actions: [
       { key: 'day', label: t.detail.openDay, icon: 'calendar-blank-bold', href: `/kitchen/day/${day}` },
       // « L'auto » — only when this rendez-vous actually takes the car. It is the
@@ -141,7 +143,7 @@ export function buildEvent(
       // « Partager » — a public link with just the title + when + who-label (no member ids leak).
       ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, overflow: true, run: opts.onShare }] : []),
       ...(opts?.onDelete
-        ? [{ key: 'delete', label: t.common.delete, icon: 'trash-bold' as const, tone: 'danger' as const, overflow: true, run: opts.onDelete }]
+        ? [{ key: 'delete', label: t.common.delete, icon: 'trash-bold' as const, tone: 'danger' as const, run: opts.onDelete }]
         : []),
     ],
   }

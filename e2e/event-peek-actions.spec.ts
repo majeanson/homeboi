@@ -7,9 +7,11 @@ import { boxOf } from './measure'
 // assert the buttons render and that Delete confirms then fires DELETE /api/events, and
 // that Modify opens the pre-filled event form. (Matches BOARD's 'Rendez-vous dentiste' = e2.)
 //
-// Since the ⋯ fold, the peek splits its actions: « Voir la journée » + Modifier stay
-// visible in `.detail-sheet__actions`; Itinéraire / Partager / Supprimer live behind the
-// head's `.action-menu__btn` as `menuitem`s (same pattern as the recipe view).
+// Since the ⋯ fold, the peek splits its actions: « Voir la journée » + Modifier + Supprimer
+// stay visible in `.detail-sheet__actions` (Supprimer came OUT of the ⋯ on 2026-09-16 —
+// Marc: « make sure we can remove/delete easily from detail popups »; the confirm keeps
+// it deliberate); Itinéraire / Partager live behind the head's `.action-menu__btn` as
+// `menuitem`s (same pattern as the recipe view).
 
 const json = (b: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
 
@@ -58,17 +60,19 @@ test('the event peek offers Modify / Delete / Share; Delete confirms → DELETE 
   const actions = page.locator('.detail-sheet__actions')
   await expect(actions.getByText('Voir la journée', { exact: true })).toBeVisible()
   await expect(actions.getByText('Modifier', { exact: true })).toBeVisible()
-  // Partager + Supprimer moved behind the ⋯ — the visible row no longer carries them.
+  // Supprimer is a VISIBLE danger button; Partager stays behind the ⋯.
+  await expect(actions.getByRole('button', { name: 'Supprimer', exact: true })).toBeVisible()
   await expect(actions.getByText('Partager', { exact: true })).toHaveCount(0)
   await openPeekMenu(page)
   await expect(page.getByRole('menuitem', { name: 'Partager' })).toBeVisible()
-  await expect(page.getByRole('menuitem', { name: 'Supprimer' })).toBeVisible()
+  await expect(page.getByRole('menuitem', { name: 'Supprimer' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
 
   // Delete → the sheet closes, the danger confirm opens → confirm fires DELETE {id}.
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.method() === 'DELETE' && new URL(r.url()).pathname === '/api/events', { timeout: 20_000 }),
     (async () => {
-      await page.getByRole('menuitem', { name: 'Supprimer' }).click()
+      await actions.getByRole('button', { name: 'Supprimer', exact: true }).click()
       await page.locator('.confirm__actions').getByRole('button', { name: 'Supprimer' }).click()
     })(),
   ])

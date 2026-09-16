@@ -100,17 +100,17 @@ at all (❌).
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Event · open | ✅ tap | — | ✅ `buildEvent` | — | `?item` via search | — | ✅ |
 | Event · edit / share | — | — | ✅ Modifier primaryᴳ / Partagerᴼ | — | board▸events (settings) | — | ✅ |
-| Event · delete | — | — | ✅ peek ⋯ dangerᴳ | — | — | confirm¹ | ✅ |
+| Event · delete | — | — | ✅ peek **visible danger button**ᴳ (out of the ⋯ since 2026-09-16¹²); also under the day page's inline edit form (« Supprimer le rendez-vous ») | — | — | confirm¹ | ✅ |
 | Event · create | — | — | — | ✅ ＋ `event`; day-page `SectionAdd` | — | — | ✅ |
 | Fête / announce · open | ❌ static `Act`, no `onOpen` (Board.tsx:591) | — | ❌² | — | — | — | ✅ |
-| Chore · check / **edit** / **delete** | ✅ disc | — | ✅ « Fait » + **« Modifier » → Réglages ▸ Corvées (mirror)** + **🗑 (⋯)** | — | ✅ Réglages row | deferred | ✅ |
+| Chore · check / **edit** / **delete** | ✅ disc | — | ✅ « Fait » + **« Modifier » → Réglages ▸ Corvées (mirror)** + **🗑 (⋯)** — the SAME peek from the board, the Mois day panel and the day page's entretien rows (`useChoreRemovals`, 2026-09-16¹²); the day page's inline chore form carries « Supprimer la corvée » too | — | ✅ Réglages row | deferred | ✅ |
 | Chore · edit | ❌ no door on board³ | — | ➖³ peek = Fait/Reporter only | — | ✅ maison▸chores | — | ✅ |
 | Chore · postpone | — | — | ✅ Reporter ×2 (peek only) | — | — | — | ✅ |
 | Todo « À compléter » · check / rename / delete | ✅ disc; tap name → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` + ＋ `todo` | maison▸todos (templates) | deferred | ✅ |
 | Liste à compléter (modèle) · rename / add-item / reorder / include | — | — | — | — | ✅ maison▸routines▸todoTemplates: a row per list (name + count), ✏ → the `/liste-modele/:id` scene (the only editor) | — | ✅ |
 | Projets & Entretien · check / postpone | ✅ disc | — | ✅ Fait + Reporter (semaine/cycle) | ＋ `chores-pick` | ✅ maison▸chores | deferred | ✅ |
-| Projets & Entretien · edit | ❌³ | — | ➖³ | — | ✅ only door | — | ✅ |
-| Meal (Ce soir / Demain) · open | ✅ tap → **always the peek** (`useOpenMeal`) | — | ✅ `buildMeal` — « Voir la journée » + « Ouvrir la recette » + primary « Cuisiner »; restants/retirer fold into ⋯¹⁰ | ＋ `meal` | kitchen▸meals | — | ✅ |
+| Projets & Entretien · edit / **delete** | ❌³ | — | ✅ peek « Modifier » (→ Réglages) + 🗑 (⋯) — board, Mois day panel AND the day page row (2026-09-16¹²) | — | ✅ only editor | deferred | ✅ |
+| Meal (Ce soir / Demain) · open | ✅ tap → **always the peek** (`useOpenMeal`) | — | ✅ `buildMeal` — « Voir la journée » + « Ouvrir la recette » + primary « Cuisiner »; restants/retirer fold into ⋯¹⁰ — « Retirer du plan » now offered from the Mois day panel too (`useRemoveMealFromPlan`, 2026-09-16¹²) | ＋ `meal` | kitchen▸meals | — | ✅ |
 | Leftover · done / plan tonight | ✅ disc (Fini) | — | ✅ Ce soir (peek only) | ＋ `leftovers` | — | deferred | ✅ |
 | Fridge note · dismiss one | ✅ tap (text) / ✕ (media) | — | ➖ no peek⁴ | strip ＋ → `?plus=note` | — | ❌ none⁵ (media: confirmᴿ) | ✅ |
 | Fridge notes · clear all | ✅ broom in strip head | — | — | — | — | deferred | ✅ |
@@ -322,6 +322,7 @@ What Part 2 shows when read column-wise. **Bold** = the convergence target.
 - [x] ¹⁶ **fixed**: contact delete now one peek ⋯ away (confirm-then-DELETE, same heavy tier and same door as a pet's — `buildContact.onDelete`, `Maison.deleteContact`).
 - [x] ¹⁷ ➖ group delete keeps confirm-no-undo: the membership cascade makes it the heavy tier.
 - [x] ¹ ➖ event delete: confirm-no-undo is correct (series delete = heavy tier).
+- [x] ¹² **Delete from where you see it, on the calendar (Marc, 2026-09-16: « make sure we can remove/delete easily from detail popups and such for rendez-vous and others on calendar »).** Before: the Mois day panel's corvée / entretien peeks had NO edit and NO delete (the board's had both), a planned meal tapped there could not be taken off the plan, and the day page — which edits a rendez-vous inline instead of peeking — could not delete one at all. Now ONE hook (`components/detail/EntityRemovals`: `useChoreRemovals`, `useRemoveMealFromPlan`) hands the same doors to the board, the month panel and the day page; the event peek's « Supprimer » is a visible danger button (a delete behind a ⋯ then a confirm was three taps for the one thing a wrong entry needs — the confirm keeps it deliberate); the day page's inline forms carry « Supprimer le rendez-vous » / « Supprimer la corvée », and its entretien rows open the peek (the page grew its own `DetailProvider` for that one row kind). Guard: `e2e/calendar-delete.spec.ts` (eight cases incl. the read-only guest) + `event-peek-actions.spec.ts`.
 
 ---
 

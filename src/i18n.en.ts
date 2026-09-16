@@ -3240,6 +3240,8 @@ export const EN: typeof FR = {
   detail: {
     aria: 'Details',
     markDone: 'Mark done',
+    deleteEventLabel: 'Delete this appointment',
+    deleteChoreLabel: 'Delete this chore',
     postponeWeek: 'Postpone a week',
     postponeCycle: 'Until the next cycle',
     markEaten: 'Mark eaten',

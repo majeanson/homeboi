@@ -103,7 +103,7 @@ import { useAnnounceLeftover, usePlanLeftover } from '../components/kitchen/Left
 // The board writes meals too (« ce soir »): the same keys the kitchen's own
 // mutations refresh, so the week grid and « Historique » don't keep a row the
 // board just deleted (and « Déjà mangé » rides the meal-history prefix).
-import { MEALS_KEY, MEAL_HISTORY_KEY, LEFTOVERS_KEY } from '../components/kitchen/types'
+import { LEFTOVERS_KEY } from '../components/kitchen/types'
 import { useBoardData } from '../lib/queryHooks'
 import { useHolidaysEnabled, useSchoolYear } from '../lib/year'
 import { useChoreAnnounceEnabled } from '../lib/choreAnnounce'
@@ -136,10 +136,10 @@ import { useEscapeKey } from '../lib/sceneNav'
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
 import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY } from '../lib/queryKeys'
-import { useDeferredRemoval } from '../lib/useDeferredRemoval'
+import { useChoreRemovals, useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
-import { useUndoToast, useRecordUndo } from '../lib/toast'
+import { useUndoToast } from '../lib/toast'
 import { isGuest, isDisplay } from '../lib/device'
 import { Cluster } from '../components/Layout'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -190,7 +190,6 @@ function BoardClock() {
 export function Board() {
   const t = useT()
   const undo = useUndoToast()
-  const recordUndo = useRecordUndo()
   const write = useWrite()
   const qc = useQueryClient()
   const ro = isGuest()
@@ -454,24 +453,21 @@ export function Board() {
   // below reads them the same way it always did — the derivations themselves
   // now live in ONE place (lib/boardModel), not re-implemented per lens.
   const todayEvents = model.today.events
-  // Same for a projet maison / entretien — its own scope, so the board card, Réglages
-  // and the month grid all hide the row together while the undo is open.
-  const homeRemoval = useDeferredRemoval(HOME_PROJECTS_KEY)
-
-  // Removing a corvée rides the ONE held-delete mechanism, scoped to the chores key so
-  // the row also disappears from Réglages and the day page while the undo is open.
-  // Declared here, above the derivations that filter through it.
-  const choreRemoval = useDeferredRemoval(CHORES_KEY)
+  // Removing a corvée / a projet maison rides the ONE held-delete mechanism, scoped to
+  // its resource key so the row also disappears from Réglages, the month panel and the
+  // day page while the undo is open. The doors themselves live in ONE hook
+  // (components/detail/EntityRemovals) that the month panel and the day page share.
+  const removals = useChoreRemovals()
   // Rows whose removal is still settling drop out here (and on every other surface in
-  // the chores scope) until a fresh frame proves the DELETE landed.
-  const todayChores = choreRemoval.visible(model.today.chores)
+  // the scope) until a fresh frame proves the DELETE landed.
+  const todayChores = removals.visibleChores(model.today.chores)
   const todayTodos = model.today.todos
-  const todayHome = homeRemoval.visible(model.today.home)
-  const overdueHome = homeRemoval.visible(model.today.homeOverdue)
+  const todayHome = removals.visibleHome(model.today.home)
+  const overdueHome = removals.visibleHome(model.today.homeOverdue)
   const tomorrowEvents = model.tomorrow.events
   const upcomingEvents = model.upcoming.events
-  const upcomingChores = choreRemoval.visible(model.upcoming.chores)
-  const upcomingHome = homeRemoval.visible(model.upcoming.home)
+  const upcomingChores = removals.visibleChores(model.upcoming.chores)
+  const upcomingHome = removals.visibleHome(model.upcoming.home)
   const leftovers = model.leftovers
   const otherMeals = model.meals.otherToday
   const otherTomorrowMeals = model.meals.otherTomorrow
@@ -720,16 +716,10 @@ export function Board() {
     memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
 
   // ── Detail-sheet contextual actions for meals + leftovers ──────────────────
-  // Remove a planned meal (compensating undo: re-add it at same day+slot).
-  const removeMealFromPlan = async (id: string, title: string, slot: string, date: number) => {
-    const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
-    await write('meals', { method: 'DELETE', body: { id }, affectedKeys: keys }).catch(() => {})
-    recordUndo({
-      message: t.undo.mealRemoved(title),
-      onUndo: () =>
-        write('meals', { method: 'POST', body: { date, slot, title }, affectedKeys: keys }).catch(() => {}),
-    })
-  }
+  // Remove a planned meal (compensating undo: re-add it at same day+slot) — the shared
+  // door (components/detail/EntityRemovals), so the month panel offers the same one.
+  const removeMeal = useRemoveMealFromPlan()
+  const removeMealFromPlan = (id: string, title: string, slot: string, day: number) => removeMeal({ id, title, slot, day })
   // Plan a pool leftover as tonight's supper — see `planLeftover` above the early
   // return (it is a hook; this closure is not).
   const planLeftoverTonight = (l: { id: string; title: string; recipe_id?: string | null; source_meal_id?: string | null }) =>
@@ -815,7 +805,7 @@ export function Board() {
             onDone: withDay || ro ? undefined : () => markChoreDone(c),
             // A corvée is edited inline in Réglages ▸ Corvées & routines — this names
             // that place rather than leaving someone to hunt for it (door #11).
-            editHref: ro ? undefined : settingsHref({ tab: 'maison', focus: 'chores' }),
+            editHref: ro ? undefined : removals.choreEditHref,
             onDelete: ro ? undefined : () => removeChore(c),
           }),
         )
@@ -823,29 +813,10 @@ export function Board() {
     />
   )
 
-  // Removing a corvée from where you SEE it. Deferred, matching the tier its own
-  // check uses on this surface: the row goes at once, the DELETE waits behind the undo
-  // toast, and a poll can't bring it back mid-window (useDeferredRemoval's fresh-frame
-  // fence). Réglages keeps the same delete on its own row — same endpoint, same tier.
-  const removeChore = (c: ChoreInstance) => {
-    choreRemoval.remove([c.id], t.undo.cleared(c.title), () =>
-      write('chores', {
-        method: 'DELETE',
-        body: { id: c.id },
-        affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
-      }),
-    )
-  }
-
-  const removeHomeProject = (c: ChoreInstance) => {
-    homeRemoval.remove([c.id], t.undo.cleared(c.title), () =>
-      write('home-projects', {
-        method: 'DELETE',
-        body: { id: c.id },
-        affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-      }),
-    )
-  }
+  // Removing a corvée / a projet from where you SEE it. Deferred, matching the tier
+  // its own check uses on this surface — the shared doors (EntityRemovals).
+  const removeChore = (c: ChoreInstance) => removals.removeChore(c)
+  const removeHomeProject = (c: ChoreInstance) => removals.removeHome(c)
 
   // A one-off to-do (non-recurring task). Checking it marks it done server-side
   // (same /chores PATCH — sets last_done_at), so it drops off the next board read.
@@ -984,7 +955,7 @@ export function Board() {
             onPostponeCycle: withDay || ro || !c.recurring ? undefined : () => postponeHome(c, 'cycle'),
             // Same two doors the corvée just gained: a projet/entretien is edited in
             // Réglages ▸ Corvées & routines, and removable from where it is seen.
-            editHref: ro ? undefined : settingsHref({ tab: 'maison', focus: 'homeProjects' }),
+            editHref: ro ? undefined : removals.homeEditHref,
             onDelete: ro ? undefined : () => removeHomeProject(c),
           }),
         )

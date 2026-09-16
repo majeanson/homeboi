@@ -32,6 +32,10 @@ import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage
 import { TodoSection } from '../components/todos/TodoSection'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
+import { useEventPeekActions } from '../components/detail/EventPeekActions'
+import { useChoreRemovals } from '../components/detail/EntityRemovals'
+import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
+import { buildChore, type DetailCtx } from '../components/detail/adapters'
 import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY } from '../lib/recipes'
 import { DEFAULT_PILLS } from '../lib/recipePills'
 import { useLoves } from '../lib/loves'
@@ -98,10 +102,22 @@ interface DayItemsData {
 // they are context for the agenda, not for the meal planner, and above the picker
 // they pushed the face choice down the screen (Marc, on review).
 //
-// No DetailProvider: nothing on this page peeks any more. A meal that carries a recipe
-// navigates straight to that recipe's view, and MealRows already owns the per-row
-// remove / move / rename / restants actions.
+// This page edits INLINE rather than peeking: a meal that carries a recipe navigates
+// straight to that recipe's view, MealRows owns the per-row remove / move / rename /
+// restants actions, and a rendez-vous / corvée row expands its own form. ONE row kind
+// has no inline form — a projet / entretien, edited only in Réglages — so since
+// 2026-09-16 that row opens the same peek the board and the month panel use (« Modifier »
+// → Réglages + « Supprimer »), which is why the page carries its own DetailProvider:
+// it is a standalone scene, outside the hub's.
 export function DayPlanPage() {
+  return (
+    <DetailProvider>
+      <DayPlanScene />
+    </DetailProvider>
+  )
+}
+
+function DayPlanScene() {
   const t = useT()
   const { lang } = useLang()
   // The day's hero meal (Réglages ▸ Repas) — it owns the grocery-staples step.
@@ -188,8 +204,15 @@ export function DayPlanPage() {
     ...live,
   })
   const dayEvents = dayItemsQ.data?.events ?? []
-  const dayChores = dayItemsQ.data?.chores ?? []
-  const dayHome = dayItemsQ.data?.homeProjects ?? []
+  // The delete doors, shared with the board and the month panel (EntityRemovals):
+  // a corvée / entretien whose removal is settling hides here too.
+  const removals = useChoreRemovals()
+  const dayChores = removals.visibleChores(dayItemsQ.data?.chores ?? [])
+  const dayHome = removals.visibleHome(dayItemsQ.data?.homeProjects ?? [])
+  // A rendez-vous edited inline can be deleted from the same place: the ONE event
+  // delete (confirm → DELETE) lives in EventPeekActions; its modals render below.
+  const eventActions = useEventPeekActions()
+  const detail = useEntityDetail()
   const dayTrips = dayItemsQ.data?.trips ?? []
   const dayTripPlans = dayItemsQ.data?.tripPlans ?? []
   // Which day of the trip this is (1-based). Both dates are local-midnight; round
@@ -266,6 +289,8 @@ export function DayPlanPage() {
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const recipeForMeal = useRecipeForMeal(recipes)
+  // For the entretien peek (buildChore) — same shape the board and the month panel pass.
+  const detailCtx: DetailCtx = { t, lang, members: formMembers, recipeFor: recipeForMeal }
   const memberName = (id: string | null | undefined) =>
     (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
   // « Qui » faces for an event row — only when SEVERAL people share it (solo keeps its
@@ -732,15 +757,32 @@ export function DayPlanPage() {
               bucketEvents.map((e) => <div key={e.id}>{eventActNode(e)}</div>)
             )}
             {!ro && eventForm && (
-              <EventForm
-                key={eventForm.value?.id ?? 'new-event'}
-                members={formMembers}
-                value={eventForm.value}
-                initialDate={eventForm.value ? undefined : date}
-                onSaved={afterEventSave}
-                onCancel={() => setEventForm(null)}
-              />
+              <>
+                <EventForm
+                  key={eventForm.value?.id ?? 'new-event'}
+                  members={formMembers}
+                  value={eventForm.value}
+                  initialDate={eventForm.value ? undefined : date}
+                  onSaved={afterEventSave}
+                  onCancel={() => setEventForm(null)}
+                />
+                {/* Editing an existing rendez-vous: « Supprimer » right under the form
+                    (2026-09-16) — the day page edits inline instead of opening the peek,
+                    so it needs the peek's delete door here. Same confirm, same DELETE. */}
+                {eventForm.value?.id && (
+                  <FormDelete
+                    label={t.detail.deleteEventLabel}
+                    onDelete={() => {
+                      const del = eventActions.optsFor({ id: eventForm.value!.id!, title: eventForm.value!.title ?? '' })?.onDelete
+                      if (!del) return
+                      setEventForm(null)
+                      del()
+                    }}
+                  />
+                )}
+              </>
             )}
+            {eventActions.node}
           </section>
 
           {/* Corvées — whose turn it is on this day. */}
@@ -774,25 +816,54 @@ export function DayPlanPage() {
               ))
             )}
             {!ro && choreForm && (
-              <ChoreForm
-                key={choreForm.value?.id ?? 'new-chore'}
-                members={formMembers}
-                value={choreForm.value}
-                initialStart={choreForm.value ? undefined : date}
-                onSaved={afterChoreSave}
-                onCancel={() => setChoreForm(null)}
-              />
+              <>
+                <ChoreForm
+                  key={choreForm.value?.id ?? 'new-chore'}
+                  members={formMembers}
+                  value={choreForm.value}
+                  initialStart={choreForm.value ? undefined : date}
+                  onSaved={afterChoreSave}
+                  onCancel={() => setChoreForm(null)}
+                />
+                {/* Same door as the rendez-vous form: an existing corvée being edited
+                    can be removed here — deferred behind the undo toast, like the board. */}
+                {choreForm.value?.id && (
+                  <FormDelete
+                    label={t.detail.deleteChoreLabel}
+                    onDelete={() => {
+                      const c = choreForm.value!
+                      setChoreForm(null)
+                      removals.removeChore({ id: c.id!, title: c.title ?? '' })
+                    }}
+                  />
+                )}
+              </>
             )}
           </section>
 
-          {/* Projets & Entretien landing on this day — read-only (managed in
-              Réglages ▸ Corvées); shown only when there's something, to keep the
-              day page calm. No ＋: this is a mirror, not a home. */}
+          {/* Projets & Entretien landing on this day — managed in Réglages ▸ Corvées, and
+              since 2026-09-16 each row opens the same peek the board and the month panel
+              use: « Modifier » (→ Réglages, the only editor) + « Supprimer » (deferred).
+              Shown only when there's something, to keep the day page calm. No ＋: this is
+              a mirror, not a home. */}
           {dayHome.length > 0 && (
             <section className="day-plan__sec" style={{ '--sec-tint': CATS.chore.color } as React.CSSProperties}>
               <SecLabel label={t.operator.home.subEntretien} icon="gear-six-bold" count={dayHome.length} />
               {dayHome.map((h) => (
-                <Act key={h.id} cat="chore" title={h.title} color={h.color || undefined} />
+                <Act
+                  key={h.id}
+                  cat="chore"
+                  title={h.title}
+                  color={h.color || undefined}
+                  onOpen={() =>
+                    detail.open(
+                      buildChore({ id: h.id, title: h.title, color: h.color, at: date, who: null, who_id: null }, detailCtx, {
+                        editHref: ro ? undefined : removals.homeEditHref,
+                        onDelete: ro ? undefined : () => removals.removeHome(h),
+                      }),
+                    )
+                  }
+                />
               ))}
             </section>
           )}
@@ -874,6 +945,19 @@ export function DayPlanPage() {
         )}
 
       </div>
+    </div>
+  )
+}
+
+// « Supprimer » under an inline edit form (a rendez-vous, a corvée). One danger button,
+// full width like the form's own buttons, so the door to remove a wrong entry sits where
+// the entry is being looked at — the peek offers the same one elsewhere.
+function FormDelete({ label, onDelete }: { label: string; onDelete: () => void }) {
+  return (
+    <div className="day-plan__form-delete">
+      <button type="button" className="btn btn--danger" onClick={onDelete}>
+        <InlineIcon name="trash-bold" /> {label}
+      </button>
     </div>
   )
 }

@@ -3670,6 +3670,10 @@ export const FR = {
   detail: {
     aria: 'Détails',
     markDone: 'Marquer fait',
+    // The day page's inline forms carry the delete door too (2026-09-16): the label
+    // names what goes, the confirm (deleteEvent) says what it costs.
+    deleteEventLabel: 'Supprimer le rendez-vous',
+    deleteChoreLabel: 'Supprimer la corvée',
     // « Reporter » (entretien) — postpone without checking: quiet, then it returns.
     postponeWeek: 'Reporter d’une semaine',
     postponeCycle: 'Au prochain cycle',

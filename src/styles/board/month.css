@@ -398,6 +398,16 @@
    ＋ opened — so the stack must space itself identically whether the section is this
    wrapper or the shared `.todo-sec`. `--sec-tint` set inline is what colours the
    header glyph and the rule. */
+/* « Supprimer » under an inline edit form on the day page (2026-09-16). */
+.day-plan__form-delete {
+  display: flex;
+  margin-top: 8px;
+}
+.day-plan__form-delete .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
 .day-plan__sec {
   display: flex;
   flex-direction: column;

@@ -32,6 +32,7 @@ import { buildEvent, buildChore, type DetailCtx } from '../detail/adapters'
 import { eventMembers, memberFaces } from '../../lib/eventPeople'
 import { useOpenMeal } from '../detail/useOpenMeal'
 import { useEventPeekActions } from '../detail/EventPeekActions'
+import { useChoreRemovals, useRemoveMealFromPlan } from '../detail/EntityRemovals'
 import { colorOf, nameOf, type Dict, type Member } from './types'
 // THE shared day builder (extracted from this file, 2026-09-15). MonthView draws its
 // lines as grid cells; WeekView draws the same lines as rows.
@@ -143,6 +144,10 @@ export function MonthView({
   const openMeal = useOpenMeal(detailCtx)
   // Modify / Delete / Share on an event peek (gating + modals owned by the hook).
   const eventActions = useEventPeekActions()
+  // « Modifier » (→ Réglages) + « Supprimer » (deferred) on a corvée / entretien peek, and
+  // « Retirer du plan » on a meal — the SAME doors the board offers (2026-09-16).
+  const removals = useChoreRemovals()
+  const removeMeal = useRemoveMealFromPlan()
   // — chore `who` is a NAME on the month payload; recover its id for the face. —
   const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
   // ── Where you are in the calendar lives in the URL (`?date=<local-midnight secs>`) ──
@@ -406,8 +411,9 @@ export function MonthView({
     const show = (k: LensKey) => only === null || only === k
     const meals = show('meal') ? (b?.meals ?? []).filter((m) => mealPrefs.isVisible(m.slot)) : []
     const events = show('event') ? b?.events ?? [] : []
-    const chores = show('chore') ? b?.chores ?? [] : []
-    const home = show('chore') ? b?.home ?? [] : []
+    // Rows whose removal is still settling (the undo toast) drop out here too.
+    const chores = show('chore') ? removals.visibleChores(b?.chores ?? []) : []
+    const home = show('chore') ? removals.visibleHome(b?.home ?? []) : []
     const todos = show('todo') ? (b?.todos ?? []).filter((td) => !pendingTodo.has(td.id)) : []
     // Habits are a RECORD of the day, not one of the legend's six kinds (they are not
     // cell markers either) — so only the day face lists them.
@@ -434,7 +440,14 @@ export function MonthView({
             title={`${slotLabel(m.slot)} · ${m.title}`}
             who={cookLine(m.cook_member_id)}
             color={mealPrefs.color(m.slot)}
-            onOpen={() => openMeal(m, { color: mealPrefs.color(m.slot), slotLabel: slotLabel(m.slot), daySec: day })}
+            onOpen={() =>
+              openMeal(m, {
+                color: mealPrefs.color(m.slot),
+                slotLabel: slotLabel(m.slot),
+                daySec: day,
+                onRemove: ro ? undefined : () => void removeMeal({ id: m.id, title: m.title, slot: m.slot, day }),
+              })
+            }
           />
         ))}
         {events.map((e) =>
@@ -483,19 +496,32 @@ export function MonthView({
             who={c.who ?? undefined}
             color={c.color ?? undefined}
             onOpen={() =>
-              detail.open(buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx))
+              detail.open(
+                buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx, {
+                  editHref: ro ? undefined : removals.choreEditHref,
+                  onDelete: ro ? undefined : () => removals.removeChore(c),
+                }),
+              )
             }
           />
         ))}
-        {/* Projets & Entretien landing on this day — read-only peek (managed in
-            Réglages); tap opens the same chore-style detail. */}
+        {/* Projets & Entretien landing on this day — the same chore-style peek, with
+            the two doors the board's own row wears: « Modifier » (→ Réglages, the only
+            editor) and « Supprimer » (deferred). */}
         {home.map((h) => (
           <Act
             key={h.id}
             cat="chore"
             title={h.title}
             color={h.color ?? undefined}
-            onOpen={() => detail.open(buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx))}
+            onOpen={() =>
+              detail.open(
+                buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx, {
+                  editHref: ro ? undefined : removals.homeEditHref,
+                  onDelete: ro ? undefined : () => removals.removeHome(h),
+                }),
+              )
+            }
           />
         ))}
         {/* À compléter todos pinned to this day — check them off right here (the
