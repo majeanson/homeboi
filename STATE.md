@@ -105,7 +105,9 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **0** — again, as of 2026-09-16. It had read 3 for two
+> a number you can trust. It reads **24** — all of them the public-readiness plan §4-K,
+> written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
+> a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
 > mode that this repo’s OWN grep guard calls green, a rail no keyboard can reach, and an
 > aria-label ARIA throws away — all three found by a machine reading the DOM rather than
@@ -1943,6 +1945,10 @@ one surface with somebody waiting on you carried the clutter.
 
 ## 4. What still needs improvement — consolidated and ranked
 
+> **Asked « what should we work on? » on or after 2026-09-16 — go to [§K](#k-towards-a-public-app--the-plan-written-2026-09-16-start-here).**
+> It is the plan toward a public app, in six ordered waves, and Wave 0 is the wide-screen
+> pass. Everything above §K in this section is settled history.
+
 **« Le ? ne sert qu'au babillard » — reported 2026-09-09, and it was true.** Arming
 the « ? » meant HINTS ONLY. A section's guided tour existed for six sections but was
 reachable from two places you had to already know: Réglages ▸ Découvrir, and the
@@ -3409,6 +3415,148 @@ trusts gets ignored — this very manifest has taught that twice.
   known, accepted finding. Declined, not deferred — don't re-propose without a new
   observation. Original note: the app disables pinch-zoom. Defensible for a wall kiosk,
   a WCAG 1.4.4 failure for the phone, and it is one line either way.
+
+### K. Towards a public app — the plan, written 2026-09-16 (start here)
+
+**Marc: « a way towards being a public app soon ish (months away prob) ».** Decisions
+taken the same day, which shape everything below: **no zoom, ever** — the layout must use
+the space on every media type (§D); **signup stays invite-gated** until the last wave;
+**email goes through Resend**, which Marc's portal project (`anthropicJoffre`, its
+`backend/src/utils/emailService.ts`) already uses — an account exists, a Worker calls the
+REST API with plain `fetch`, no SDK.
+
+Six waves, in order. Each wave ends with the standing gates (typecheck · test · build ·
+the matrix run · a PARITY row or a footnoted ➖ · STATE.md updated in the same commit).
+The boxes below are OPEN WORK and count in §2's number; flip them with the commit that
+settles them. A wave's findings get their own boxes under it when the wave starts.
+
+**Wave 0 — the wide-screen pass (TODAY).** The matrix shoots 390 (phone), 360 (narrow)
+and 1280 (the WALL kiosk). Nothing has ever been photographed as a **laptop operator**
+(surface `mobile`, 1440 wide) or a **tablet held in portrait** (820). Expect the worst:
+the whole stylesheet has four `min-width` rules above 720px, and the shell caps no width
+— a laptop most likely gets the phone layout stretched across 1440px. That is the first
+thing a public visitor with a laptop will see after the marketing page.
+
+- [ ] **Add `TABLET = {w: 820, h: 1180}` and `DESKTOP = {w: 1440, h: 900}`** to
+      `e2e/state-matrix.spec.ts` beside `PHONE`/`NARROW`/`WALL`. DESKTOP states use
+      `surface: 'mobile'` (an operator on a laptop is NOT a kiosk — that is the point).
+- [ ] **Add the states**: the six hub tabs + `/` (Home, signed out) + `/settings` Régler
+      face + recipe view + day plan + month + search at DESKTOP; the six hub tabs at
+      TABLET. `noBudgetWhy` on every one — budgets are pinned at 390px FR (the lens-twin
+      rule at line ~807). `themes: ['day']` — the palette was already swept.
+- [ ] **Run `npm run e2e:matrix`, open EVERY new frame** (the §G rule: all of them, not a
+      sample) and write one box per defect under this wave. Look for: content stretched
+      edge-to-edge, rows whose text runs 1200px wide, cards that should sit side by side
+      and stack instead, the ＋ FAB and tab bar floating in a phone-shaped world, a hero
+      that fills a laptop screen with one supper.
+- [ ] **Decide the desktop SHAPE with Marc before fixing the first frame** — a
+      judgement call, not a CSS one: (a) a centred reading column (~720–900px, the
+      cheapest, honest for a household app), or (b) the board's `WidgetGrid` given more
+      columns + the hub tabs' secondary panels beside their primary (Kitchen: week +
+      recipe; Maison: list + person). Whichever it is, it is ONE rule in `core.css`, not
+      per-page pixels — and `useSurface()` stays a ROLE, never a width branch.
+- [ ] **Home at 1440px** is its own item: it is the marketing page, and it is the one
+      surface a stranger sees before deciding to try the demo.
+
+**Wave 1 — the stranger's demo walk.** The demo is the product for months. Mint a sandbox
+on production the way a stranger would — phone AND laptop, private window, no account —
+and time the path from landing to the first useful thing. Log every hesitation as a box.
+
+- [ ] **Walk it and write the friction list** (phone, then laptop). Note the clock: landing
+      → sandbox ready → first tab that made sense → first write → « Garder ma maisonnée ».
+- [ ] **Close the sweep loop the guard cannot**: mint one sandbox, wait past the 24 h TTL,
+      mint again, and confirm in D1 that the first one is gone (`demoHousehold` sweep —
+      it had been unable to delete ANY sandbox since 0102 until 2026-09-16, and nobody
+      noticed because nobody minted one).
+- [ ] **Fix the friction list**, one commit per finding, each with its matrix state.
+
+**Wave 2 — a fresh household, a small phone, a slow connection.** Everything was tuned
+against a SEEDED household on wifi.
+
+- [ ] **Every tab after « Vider et commencer »**: the empty state TEACHES (the guide colour
+      on `.empty-state__guide` was the worst contrast in the app precisely because no
+      fixture ever painted it). Add a `fresh` matrix axis or a `-fresh` twin for the six
+      hub tabs so the empty household is photographed from now on.
+- [ ] **320px** — under the no-zoom rule the board greeting truncating at every text tier
+      is a defect (three CSS comments record it: `board/month.css:25`, `:207`,
+      `core.css:1711`). Fix or write the floor down explicitly in §D — not both left open.
+- [ ] **Cold start on a throttled phone** — measure once (Chrome « Slow 4G », cache
+      cleared). 653 KB eager is fine on wifi; if first paint is past ~3 s at the school
+      gate, the TipTap and Operator chunks are the first to defer.
+- [ ] **Install prompt** — does a first-time phone visitor ever learn the app installs?
+      Check `beforeinstallprompt` handling / an iOS « Ajouter à l'écran d'accueil » hint.
+
+**Wave 3 — password reset (the longest pole; start it the day Wave 0's fixes land).**
+There is NO forgot-password flow and the app has never sent an email. The first stranger
+who forgets their password is locked out forever.
+
+- [ ] **Resend prerequisites (Marc, outside the repo)**: verify a sending domain in the
+      Resend account (`babillard.marcportal.com` or `marcportal.com` — DKIM + SPF records
+      on the Cloudflare zone; the portal project's `docs/deployment/EMAIL_SETUP.md` walks
+      it). Free tier: 3 000/month, 100/day — plenty. Without a verified domain Resend only
+      delivers to the account owner's own address, which is enough for local proof and
+      nothing else. Then `wrangler secret put RESEND_API_KEY` + `MAIL_FROM` var.
+- [ ] **`functions/_lib/mail.ts` — ONE `sendMail({to, subject, text, html})` seam** over
+      Resend's REST API (`POST https://api.resend.com/emails`, bearer key). An OPTIONAL
+      binding like `AI`/`PHOTOS`/`REALTIME_HUB` (`_lib/env.ts`): key unset → the reset
+      door HIDES on `/login` and the endpoints 503 — never a half-flow. Log the provider
+      id on success, the body on failure (observability is on since §4-J).
+- [ ] **Migration 0133 `password_resets`**: `token_hash` (SHA-256 of a random 32-byte
+      token — the plaintext exists only in the email), `operator_email`, `expires_at`
+      (30 min), `used_at`, `created_at`. A row, not a bare HMAC token, because
+      SINGLE-USE needs a mark. No `household_id` → `EXEMPT_TABLES` with the reason (it is
+      keyed by email; the sweep never meets it). Cap outstanding rows per email (3).
+- [ ] **Endpoints** `POST /api/auth/forgot` (CSRF-exempt like login; ALWAYS 200 whether
+      the email exists or not — enumeration; rate-limited per email + per IP the way
+      `demo.ts` bounds mints) and `POST /api/auth/reset` (token + new password,
+      signup-grade validation from `auth/signup.ts`, marks `used_at`, rotates the session
+      secret material for that operator if the scheme allows, signs the user in). Both
+      in `worker/routes.ts`' TABLE, `SILENT_PATHS` in `_lib/realtime.ts`, `write-rule`
+      ALLOWED with the reason (no outbox: replaying « send me a reset » offline is wrong).
+- [ ] **UI**: « Mot de passe oublié ? » on `/login` → `/oubli` (an `EditField` for the
+      email, one line of copy, the SAME success screen for any input) → the email's link
+      lands on `/reinitialiser?t=` (password + confirm, then straight to `/board`). FR-CA
+      first, EN parity, `.scene`/`FormScene` like `/signup`. Expired or used token: one
+      calm sentence and the door back to `/oubli`.
+- [ ] **Guards + e2e**: `e2e/password-reset.spec.ts` stubs `/api/auth/*`; a unit test
+      pins hash-only storage, expiry, single use and the constant 200. PARITY row (F40,
+      «Compte : mot de passe oublié»), ACTIONS doors (two, non-touch ✅).
+
+**Wave 4 — a household can leave, and knows the terms.**
+
+- [ ] **Self-serve deletion**: `DELETE /api/household` (operator-only, confirm by retyping
+      the household name, `useConfirm` copy naming what is lost — everything, including
+      the photos). It REUSES `deleteDemoHousehold` (`_lib/demoHousehold.ts`) — that
+      function IS the whole-schema, R2-freeing delete, and it is correct again as of
+      2026-09-16. Offer « Exporter d'abord » (takeout exists) on the same card.
+- [ ] **Privacy policy + terms** — two real pages (`/confidentialite`, `/conditions`), FR
+      and EN, linked from Home's footer and from Réglages ▸ Système. Say what is stored
+      (D1 in Cloudflare's network, R2 photos, no third-party analytics), what the AI
+      endpoints send to Workers AI, retention (sandbox 24 h; a deleted household is gone),
+      and the deletion + export doors above. Québec Law 25 is the bar to write to.
+- [ ] **Contact door** — one address (support@ on the sending domain) on both pages and
+      in Réglages, so a stranger can reach a human.
+
+**Wave 5 — bounds, then the gate opens.**
+
+- [ ] **Per-sandbox limits**: a daily cap on Workers AI calls and on R2 upload bytes per
+      sandbox household (today only the TTL + the mint cap bound them — fine for one
+      household, not for a demo link posted anywhere).
+- [ ] **Email verification on signup** through the same `sendMail` seam (a verified flag
+      on `operators`; unverified accounts can use the app but cannot mint guest links or
+      invite a co-operator — the two doors that reach OUTSIDE the household).
+- [ ] **Open signup**: drop the invite code (`LOGIN_PASSWORD` doubling as invite in
+      `auth/signup.ts`) — LAST, once Waves 3 and 4 are green in production. Announce
+      nowhere yet; let the marketing page carry it.
+
+**Parked, Marc's call, not code:** whether « L'autre parent » (F37) stays — it only
+earns its keep if a second phone actually wants full rights; a partner who only touches
+the wall is a member face. Retire it the way the calendars went if the second phone never
+happens. See the 2026-09-16 conversation; re-raise after Wave 1's walk.
+
+**Capacity, for the record:** ~100 households on the free tier with realtime on, then
+Workers AI neurons are the ceiling, then Workers Paid at $5/month buys hundreds. Not a
+blocker at any wave above.
 
 ### F. Not a backlog — do not mine these for work
 
