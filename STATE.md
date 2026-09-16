@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **36** — nine of them the public-readiness plan §4-K and twenty-seven the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **33** — nine of them the public-readiness plan §4-K and twenty-four the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3778,9 +3778,9 @@ running them without the check); `wrangler.toml` declares both bindings. The D1 
 (L3) gets a case: seven bad passwords in a row, the seventh is 429 even with the right
 password.
 
-- [ ] `[[ratelimits]]` ×2 in wrangler.toml, `Env` types, `_lib/rateLimit.ts`, `tooMany()`, health flag
-- [ ] Wired into login · signup · forgot · reset · demo · demo/claim · pair/start · operator-join
-- [ ] Tests red-then-green; the login page shows the 429 sentence (i18n both languages)
+- [x] `[[ratelimits]]` ×2 in wrangler.toml (accepted by `wrangler deploy --dry-run`: « env.LIMIT_IP (30 requests/60s) »), `Env` types, `_lib/rateLimit.ts`, `tooManyRequests()` now carries `Retry-After: 60`, `health.rateLimit` + a row on the health card
+- [x] Wired into login (ip, then `login:<email>`) · signup · forgot (ip, then `forgot:<email>`) · reset · demo · demo/claim · pair/start · operator-join · and `requirePassword` charges `sudo:<email>`
+- [x] `rateLimit.test.ts` (six cases incl. the wrangler.toml declaration) + `auth/login.test.ts` (the limiter answers before the DB is touched — the stub THROWS on any use; proven red by deleting the two checks: three cases fell). Login, signup, forgot, reset, join and claim show « Trop d’essais. Réessaie dans une minute. » on a 429, both languages
 
 #### L3. Handlers run against a REAL D1 in a test — and the tenant-isolation sweep is its first customer
 

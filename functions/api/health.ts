@@ -1,4 +1,5 @@
 import { mailEnabled } from '../_lib/mail'
+import { rateLimitEnabled } from '../_lib/rateLimit'
 import type { Env } from '../_lib/env'
 import { ok } from '../_lib/json'
 import { resolveActor } from '../_lib/household'
@@ -44,6 +45,9 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     photos: !!ctx.env.PHOTOS,
     // « Mot de passe oublié » shows its door on /login only when this is true.
     mail: mailEnabled(ctx.env),
+    // Both rate-limit bindings wired (_lib/rateLimit.ts). Unset means the login doors
+    // are unbounded — visible on the health card rather than silent.
+    rateLimit: rateLimitEnabled(ctx.env),
     realtime: !!(ctx.env as { REALTIME_HUB?: unknown }).REALTIME_HUB,
   })
 }

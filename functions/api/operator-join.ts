@@ -1,5 +1,6 @@
 import type { Env } from '../_lib/env'
-import { badRequest, conflict, forbidden, notFound, ok, readJson, serverError } from '../_lib/json'
+import { badRequest, conflict, forbidden, notFound, ok, readJson, serverError, tooManyRequests } from '../_lib/json'
+import { overAuthLimit } from '../_lib/rateLimit'
 import { signInAs, sessionCookies, verifyOperatorInvite } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { nowSec } from '../_lib/ids'
@@ -60,6 +61,7 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
 }
 
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const body = await readJson<{ token?: string; email?: string; password?: string }>(ctx.request)
   const checked = await checkInvite(ctx.env, body?.token ?? null)
   if (checked instanceof Response) return checked

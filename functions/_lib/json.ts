@@ -33,7 +33,10 @@ export const notFound = (message = 'Not found.') => body({ error: message }, 404
 // conflicts, so splitting them across statuses would misreport one. src/lib/api.ts
 // surfaces it as ApiError.code / errorCode().
 export const conflict = (message: string, code?: string) => body(code ? { error: message, code } : { error: message }, 409)
-export const tooManyRequests = (message: string) => body({ error: message }, 429)
+// 429 carries Retry-After (the limiter's period, _lib/rateLimit.ts) so a well-behaved
+// client — and the person reading the sentence — knows how long a minute is.
+export const tooManyRequests = (message = 'Trop d’essais. Réessaie dans une minute.') =>
+  new Response(JSON.stringify({ error: message }), { status: 429, headers: { ...JSON_HEADERS, 'retry-after': '60' } })
 export const serviceUnavailable = (message: string) => body({ error: message }, 503)
 export const serverError = (message = 'Something broke.') => body({ error: message }, 500)
 

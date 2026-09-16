@@ -15,7 +15,8 @@
 // SILENT in realtime, and the client's write-rule ALLOWED entry says why no outbox
 // (replaying « send me a link » hours later is exactly wrong).
 import type { Env } from '../../_lib/env'
-import { badRequest, ok, readJson, serviceUnavailable } from '../../_lib/json'
+import { badRequest, ok, readJson, serviceUnavailable, tooManyRequests } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { mailEnabled, sendMail } from '../../_lib/mail'
 import { newId, nowSec, sha256Hex } from '../../_lib/ids'
 
@@ -34,9 +35,13 @@ function resetMail(link: string): { subject: string; text: string; html: string 
 
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   if (!mailEnabled(ctx.env)) return serviceUnavailable('L’envoi de courriels n’est pas branché sur ce Babillard.')
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const body = await readJson<{ email?: string }>(ctx.request)
   const email = body?.email?.trim().toLowerCase()
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return badRequest('Courriel invalide.')
+  // Per-email too: RESET_MAX_OPEN bounds the TABLE; this bounds the INBOX and the
+  // lookup (the 200 is constant, but the query behind it is not free).
+  if (await overAuthLimit(ctx.env, ctx.request, `forgot:${email}`)) return tooManyRequests()
 
   const now = nowSec()
   const op = await ctx.env.DB.prepare('SELECT email FROM operators WHERE email = ?').bind(email).first()

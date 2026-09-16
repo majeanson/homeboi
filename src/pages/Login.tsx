@@ -4,7 +4,7 @@ import { TopBar } from '../components/TopBar'
 import { StatusMessage } from '../components/StatusMessage'
 import { useT } from '../i18n'
 import { useQuery } from '@tanstack/react-query'
-import { api } from '../lib/api'
+import { api, isStatus } from '../lib/api'
 import { HEALTH_KEY } from '../lib/queryKeys'
 import { useAuth } from '../lib/auth'
 import { useSurface } from '../lib/surface'
@@ -18,7 +18,7 @@ export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<'error' | 'tooMany' | null>(null)
   // « Mot de passe oublié ? » only where it leads somewhere: a deployment with no mail
   // wired (health.mail) would send the person to a form that can only apologise.
   // Unknown (still loading) reads as yes — the door is a Link, not a promise.
@@ -28,7 +28,7 @@ export function Login() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
-    setError(false)
+    setError(null)
     try {
       await api('auth/login', { method: 'POST', body: { email: email.trim().toLowerCase(), password } })
       await refresh()
@@ -40,8 +40,10 @@ export function Login() {
       // so the redirect can't be turned into an open-redirect off-site.
       const next = params.get('next')
       nav(next && next.startsWith('/') && !next.startsWith('//') ? next : '/board')
-    } catch {
-      setError(true)
+    } catch (err) {
+      // 429 (the brute-force bound, _lib/rateLimit.ts) is not « wrong password » —
+      // the person may have the right one and needs to know to wait, not retype.
+      setError(isStatus(err, 429) ? 'tooMany' : 'error')
     } finally {
       setBusy(false)
     }
@@ -75,7 +77,7 @@ export function Login() {
               autoComplete="current-password"
             />
           </label>
-          {error && <StatusMessage tone="error">{t.login.error}</StatusMessage>}
+          {error && <StatusMessage tone="error">{error === 'tooMany' ? t.common.tooMany : t.login.error}</StatusMessage>}
           <button type="submit" className="btn btn--primary" disabled={busy || !email.trim()}>
             {t.login.submit}
           </button>

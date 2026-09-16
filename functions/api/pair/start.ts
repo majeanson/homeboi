@@ -1,5 +1,6 @@
 import type { Env } from '../../_lib/env'
-import { ok, serverError } from '../../_lib/json'
+import { ok, serverError, tooManyRequests } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { newId, newPairingCode, nowSec } from '../../_lib/ids'
 
 // Step 1 of device pairing, called by the tablet with NO auth (it has none
@@ -12,6 +13,8 @@ import { newId, newPairingCode, nowSec } from '../../_lib/ids'
 const PAIRING_TTL = 60 * 10
 
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  // Codes are useless unclaimed, but each one is a row: bound the mint per address.
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const ts = nowSec()
   const id = newId()
   const code = newPairingCode()

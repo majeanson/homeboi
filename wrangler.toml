@@ -128,3 +128,18 @@ enabled = true
   enabled = true
   invocation_logs = true
   head_sampling_rate = 1
+
+# The brute-force bound on the unauthenticated doors (functions/_lib/rateLimit.ts,
+# STATE.md §4-L L2). LIMIT_IP is the flood bound per caller address; LIMIT_KEY the
+# per-target bound (an email being guessed at, a password door). Permissive and
+# per-colo by design — a bound, not an accounting system. rateLimit.test.ts pins
+# that both are declared here; health reports `rateLimit` so an unset one is visible.
+[[ratelimits]]
+name = "LIMIT_IP"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
+[[ratelimits]]
+name = "LIMIT_KEY"
+namespace_id = "1002"
+simple = { limit = 6, period = 60 }

@@ -19,6 +19,7 @@ interface Health {
   cloudOcr: boolean
   photos: boolean
   realtime: boolean
+  rateLimit: boolean
 }
 
 export function HealthSection() {
@@ -51,6 +52,14 @@ export function HealthSection() {
       on: h.cloudOcr,
       state: h.cloudOcr ? t.operator.healthOn : t.operator.healthOff,
       when: t.operator.healthCloudOcrWhen,
+    },
+    {
+      // The brute-force bound on the sign-in doors (functions/_lib/rateLimit.ts). Off
+      // means the two bindings are not wired on this deployment — a hole, not a mood.
+      name: t.operator.healthRateLimit,
+      on: h.rateLimit,
+      state: h.rateLimit ? t.operator.healthOn : t.operator.healthOff,
+      when: t.operator.healthRateLimitWhen,
     },
   ]
   return (

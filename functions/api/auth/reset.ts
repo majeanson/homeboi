@@ -10,12 +10,14 @@
 // A bad, spent or expired token is ONE answer (400): saying which would let someone
 // probe. CSRF-exempt like signup (no session yet).
 import type { Env } from '../../_lib/env'
-import { badRequest, readJson, serverError } from '../../_lib/json'
+import { badRequest, readJson, serverError, tooManyRequests } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { revokeAllSessionsStatement, sessionCookies, signInAs } from '../../_lib/auth'
 import { hashPassword } from '../../_lib/password'
 import { nowSec, sha256Hex } from '../../_lib/ids'
 
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const body = await readJson<{ token?: string; password?: string }>(ctx.request)
   const token = body?.token?.trim() ?? ''
   const password = body?.password ?? ''

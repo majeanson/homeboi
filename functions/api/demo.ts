@@ -1,5 +1,6 @@
 import type { Env } from '../_lib/env'
-import { ok, serverError } from '../_lib/json'
+import { ok, serverError, tooManyRequests } from '../_lib/json'
+import { overAuthLimit } from '../_lib/rateLimit'
 import { issueGuestToken, signInAs, sessionCookies } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { newId, nowSec } from '../_lib/ids'
@@ -48,6 +49,9 @@ const DEMO_TTL = 4 * 3600 // read-only fallback: one afternoon of poking
 const DEMO_MAX_AGE = 24 * 3600
 
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  // A mint seeds a whole household: the per-address bound (_lib/rateLimit.ts) keeps a
+  // posted demo link from filling the cap in one burst. The global cap still holds.
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const now = nowSec()
 
   // Amortized cleanup first — expired sandboxes die on the next visitor's mint.

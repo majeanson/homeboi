@@ -1,5 +1,6 @@
 import type { Env } from '../../_lib/env'
-import { badRequest, readJson, serverError, unauthorized } from '../../_lib/json'
+import { badRequest, readJson, serverError, tooManyRequests, unauthorized } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
 import { ensureHouseholdForEmail } from '../../_lib/household'
 import { safeEqual, verifyPassword } from '../../_lib/password'
@@ -12,11 +13,16 @@ import { safeEqual, verifyPassword } from '../../_lib/password'
 //      gated by LOGIN_PASSWORD when set. Kept so a handed-out shared code keeps
 //      working; new families are pointed at /signup by the UI.
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  // The address bound first (a flood is refused before the body is even read); the
+  // per-email bound once there is an email to guess at. Both before any lookup or
+  // hashing (_lib/rateLimit.ts).
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const body = await readJson<{ email?: string; password?: string }>(ctx.request)
   const email = body?.email?.trim().toLowerCase()
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return badRequest('Courriel invalide.')
   }
+  if (await overAuthLimit(ctx.env, ctx.request, `login:${email}`)) return tooManyRequests()
   const password = body?.password ?? ''
 
   const row = await ctx.env.DB.prepare('SELECT password_hash FROM operators WHERE email = ?')

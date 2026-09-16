@@ -722,7 +722,7 @@ export const ROUTES: Record<string, unknown> = {
   chores: CHORES,
   events: EVENTS,
   year: YEAR,
-  health: { ai: true, aiAvailable: true },
+  health: { ai: true, aiAvailable: true, rateLimit: true },
   household: { name: 'Maison Tremblay', postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
   // « Le cercle » people graph (members + contacts + links + coloured groups).
   cercle: CERCLE,

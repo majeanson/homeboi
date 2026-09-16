@@ -26,7 +26,7 @@ export function Signup() {
   const [password, setPassword] = useState('')
   const [invite, setInvite] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<'exists' | 'badInvite' | 'error' | null>(null)
+  const [error, setError] = useState<'exists' | 'badInvite' | 'tooMany' | 'error' | null>(null)
 
   // Public liveness read — `invite: true` means this installation wants the code.
   const { data: health } = useQuery({ queryKey: HEALTH_KEY, queryFn: () => api<{ invite?: boolean }>('health') })
@@ -64,7 +64,7 @@ export function Signup() {
       requestInstallNudge()
       nav('/board')
     } catch (err) {
-      setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : 'error')
+      setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : isStatus(err, 429) ? 'tooMany' : 'error')
     } finally {
       setBusy(false)
     }

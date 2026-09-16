@@ -34,7 +34,7 @@ export function JoinHouseholdPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<'exists' | 'elsewhere' | 'badLink' | 'error' | null>(null)
+  const [error, setError] = useState<'exists' | 'elsewhere' | 'badLink' | 'tooMany' | 'error' | null>(null)
 
   // The preview. Whose household is this? Asked BEFORE the form is worth filling —
   // a dead link should say so now, not after someone has chosen a password.
@@ -78,7 +78,9 @@ export function JoinHouseholdPage() {
             : 'exists'
           : isStatus(err, 403) || isStatus(err, 404)
             ? 'badLink'
-            : 'error',
+            : isStatus(err, 429)
+              ? 'tooMany'
+              : 'error',
       )
     } finally {
       setBusy(false)

@@ -14,7 +14,7 @@ export function ForgotPage() {
   const t = useT()
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
-  const [state, setState] = useState<'idle' | 'sent' | 'unavailable' | 'error'>('idle')
+  const [state, setState] = useState<'idle' | 'sent' | 'unavailable' | 'tooMany' | 'error'>('idle')
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -24,7 +24,7 @@ export function ForgotPage() {
       await api('auth/forgot', { method: 'POST', body: { email: email.trim().toLowerCase() } })
       setState('sent')
     } catch (err) {
-      setState(isStatus(err, 503) ? 'unavailable' : 'error')
+      setState(isStatus(err, 503) ? 'unavailable' : isStatus(err, 429) ? 'tooMany' : 'error')
     } finally {
       setBusy(false)
     }
@@ -57,6 +57,7 @@ export function ForgotPage() {
               />
             </label>
             {state === 'unavailable' && <StatusMessage tone="info">{t.forgot.unavailable}</StatusMessage>}
+            {state === 'tooMany' && <StatusMessage tone="error">{t.common.tooMany}</StatusMessage>}
             {state === 'error' && <StatusMessage tone="error">{t.forgot.error}</StatusMessage>}
             <button type="submit" className="btn btn--primary" disabled={busy || !email.trim()}>
               {t.forgot.submit}

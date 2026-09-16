@@ -1,5 +1,6 @@
 import { authed } from '../../_lib/route'
-import { badRequest, conflict, forbidden, readJson, serverError, unauthorized } from '../../_lib/json'
+import { badRequest, conflict, forbidden, readJson, serverError, tooManyRequests, unauthorized } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { nowSec } from '../../_lib/ids'
@@ -24,6 +25,7 @@ import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
 // response therefore re-issues session cookies for the new email — the visitor
 // keeps their session, their household, and everything they tried.
 export const onRequestPost = authed(async (ctx, actor) => {
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   // Only a sandbox operator may claim — a real account has nothing to convert.
   if (!actor.email || !isSandboxEmail(actor.email)) {
     return forbidden('Cette action est réservée à une maisonnée d’essai.')

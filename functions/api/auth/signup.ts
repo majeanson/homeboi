@@ -1,5 +1,6 @@
 import type { Env } from '../../_lib/env'
-import { badRequest, conflict, forbidden, readJson, serverError } from '../../_lib/json'
+import { badRequest, conflict, forbidden, readJson, serverError, tooManyRequests } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { newId, nowSec } from '../../_lib/ids'
@@ -13,6 +14,10 @@ import { seedSampleData } from '../../_lib/sampleData'
 // require it), so adding signup changes nothing about who can get in. Unset =
 // open signup (local dev / LAN / a deliberately public deployment).
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  // Per-address bound (_lib/rateLimit.ts): a signup seeds a whole household, and the
+  // 409 below is the one answer that says an address exists — six a minute is a
+  // stranger's typo budget, not a harvest (STATE.md §4-L L10 has the rest).
+  if (await overAuthLimit(ctx.env, ctx.request)) return tooManyRequests()
   const body = await readJson<{ email?: string; password?: string; householdName?: string; invite?: string }>(
     ctx.request,
   )

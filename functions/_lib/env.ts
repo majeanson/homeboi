@@ -34,6 +34,12 @@ export interface Env {
   RESEND_API_KEY?: string
   MAIL_FROM?: string
 
+  // OPTIONAL rate-limit bindings (wrangler.toml [[ratelimits]], _lib/rateLimit.ts):
+  // the brute-force bound on login/signup/forgot/reset/demo/pairing/join and the
+  // password doors. Unset → allow (dev, unit tests); health reports `rateLimit`.
+  LIMIT_IP?: RateLimit
+  LIMIT_KEY?: RateLimit
+
   // OPTIONAL NASA api.nasa.gov key for the board's "Photo du jour" daily-wonder
   // band — it powers all three sources the band rotates through (APOD, EPIC's
   // daily Earth photo, and the Mars rover). Unset falls back to DEMO_KEY (fine

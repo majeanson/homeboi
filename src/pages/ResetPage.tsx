@@ -22,7 +22,7 @@ export function ResetPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<'mismatch' | 'expired' | 'error' | null>(null)
+  const [error, setError] = useState<'mismatch' | 'expired' | 'tooMany' | 'error' | null>(null)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,7 +38,7 @@ export function ResetPage() {
       setSurface('mobile')
       nav('/board')
     } catch (err) {
-      setError(isStatus(err, 400) ? 'expired' : 'error')
+      setError(isStatus(err, 400) ? 'expired' : isStatus(err, 429) ? 'tooMany' : 'error')
     } finally {
       setBusy(false)
     }
@@ -89,6 +89,7 @@ export function ResetPage() {
                 {t.reset.expired} <Link to="/oubli">{t.reset.again}</Link>
               </StatusMessage>
             )}
+            {error === 'tooMany' && <StatusMessage tone="error">{t.common.tooMany}</StatusMessage>}
             {error === 'error' && <StatusMessage tone="error">{t.login.error}</StatusMessage>}
             <button type="submit" className="btn btn--primary" disabled={busy || password.length < 8}>
               {t.reset.submit}
