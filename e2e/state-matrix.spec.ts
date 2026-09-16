@@ -346,6 +346,10 @@ const WALL = { w: 1280, h: 800 }
 // it directly now (the -xl states) and a `const` declared after the table is a TDZ
 // error at module load, not a lint warning.
 const NARROW = { w: 360, h: 844 }
+// The smallest phone still in pockets (iPhone SE 1st gen / small Androids): 320. Under
+// the no-zoom rule (STATE.md §D, 2026-09-16) a cut greeting here is a defect, not an
+// edge — so it is photographed. Wave 2 of the public-app plan.
+const TINY = { w: 320, h: 568 }
 // Wave 0 of the public-app plan (STATE.md §4-K, 2026-09-16). Two widths the sweep had
 // NEVER shot: a tablet held in portrait, and a LAPTOP OPERATOR — surface 'mobile' at
 // 1440, which is not the WALL kiosk: it is a parent at the kitchen table on a browser,
@@ -706,6 +710,10 @@ const MATRIX: Entry[] = [
   { name: 'wide-day-plan', route: `/kitchen/day/${TODAY_MIDNIGHT}`, surface: 'mobile', viewport: DESKTOP, content: '.day-plan__sec .act', themes: ['day'], api: DAY_FIXTURE, noBudgetWhy: 'wide-screen pass (2026-09-16)' },
   { name: 'wide-recipe-view', route: '/kitchen/recipe/rc1', surface: 'mobile', viewport: DESKTOP, content: '.recipe-view__img, .recipe-view__ings li', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
   { name: 'wide-search', route: '/search?q=spag', surface: 'mobile', viewport: DESKTOP, content: '.search__row', themes: ['day'], noBudgetWhy: 'wide-screen pass (2026-09-16)' },
+  { name: 'tiny-board', route: '/board', viewport: TINY, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'wave 2 — the 320px floor; budgets are pinned at 390px FR (2026-09-16)' },
+  { name: 'tiny-liste', route: '/liste', viewport: TINY, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'wave 2 — the 320px floor (2026-09-16)' },
+  { name: 'tiny-kitchen', route: '/kitchen', viewport: TINY, content: '.kitchen__week', themes: ['day'], noBudgetWhy: 'wave 2 — the 320px floor (2026-09-16)' },
+  { name: 'tiny-settings', route: '/settings?tab=settings&lens=regler', viewport: TINY, content: '.operator__section', themes: ['day'], noBudgetWhy: 'wave 2 — the 320px floor (2026-09-16)' },
   { name: 'tablet-board', route: '/board', surface: 'mobile', viewport: TABLET, content: '.wg-slot', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
   { name: 'tablet-kitchen', route: '/kitchen', surface: 'mobile', viewport: TABLET, content: '.kitchen__meal-list, .kitchen__week', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },
   { name: 'tablet-liste', route: '/liste', surface: 'mobile', viewport: TABLET, content: '.list-rows > *', themes: ['day'], noBudgetWhy: 'wide-screen pass — portrait tablet (2026-09-16)' },

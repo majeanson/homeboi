@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **17** — all of them the public-readiness plan §4-K,
+> a number you can trust. It reads **14** — all of them the public-readiness plan §4-K,
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3525,18 +3525,55 @@ and time the path from landing to the first useful thing. Log every hesitation a
 **Wave 2 — a fresh household, a small phone, a slow connection.** Everything was tuned
 against a SEEDED household on wifi.
 
-- [ ] **Every tab after « Vider et commencer »**: the empty state TEACHES (the guide colour
-      on `.empty-state__guide` was the worst contrast in the app precisely because no
-      fixture ever painted it). Add a `fresh` matrix axis or a `-fresh` twin for the six
-      hub tabs so the empty household is photographed from now on.
-- [ ] **320px** — under the no-zoom rule the board greeting truncating at every text tier
-      is a defect (three CSS comments record it: `board/month.css:25`, `:207`,
-      `core.css:1711`). Fix or write the floor down explicitly in §D — not both left open.
-- [ ] **Cold start on a throttled phone** — measure once (Chrome « Slow 4G », cache
-      cleared). 653 KB eager is fine on wifi; if first paint is past ~3 s at the school
-      gate, the TipTap and Operator chunks are the first to defer.
-- [ ] **Install prompt** — does a first-time phone visitor ever learn the app installs?
-      Check `beforeinstallprompt` handling / an iOS « Ajouter à l'écran d'accueil » hint.
+- [x] **The fresh household was already photographed** — `board-fresh` and the five
+      `first-*` states existed; what had not happened was LOOKING at them with the
+      question. Looked (2026-09-16): the board's three-step welcome, the list's one line +
+      « Voir le guide », the notes' dashed instruction, Maison's two doors and Découvrir
+      all teach. The kitchen's fresh week is a column of empty day cards with no words —
+      but its `SectionIntro` (pre-dismissed by the matrix, shown to a real first visit)
+      carries the explanation, and the + on each day IS the affordance. Noted, not fixed.
+- [x] **320px — fixed, and it was never the greeting's font.** The first 320px frames the
+      matrix ever shot (`tiny-board/liste/kitchen/settings`, four new states) showed
+      EVERY tab's title cut: « Bon apr », « La li… », « La c… ». The four-disc header
+      cluster is a fixed 197px, leaving ~83px for the title. One rule in `today.css`:
+      below 340px the section avatar — the last disc, decorative on every tab (the bar
+      underneath names the section) and, in help mode, a door the « ? » bar's « Le guide »
+      mirrors — is hidden. Mic, loupe and « ? » stay. « Bon après-midi » and « La liste »
+      read whole at 320; at 360 nothing moves (the disc stays, the greeting takes two
+      lines, which was already its rule).
+- [x] **Cold start measured — and it hurts on a slow link.** Production, iPhone profile,
+      cache cleared, CDP throttling:
+
+      | link | door `/` first paint | door content | board first paint |
+      | --- | --- | --- | --- |
+      | Fast 4G (150 ms / 4 Mb/s) | 1.4 s | 1.7 s | 1.4 s |
+      | Slow 4G (400 ms / 400 kb/s) | **11.2 s** | 13.2 s | 11.1 s |
+
+      The marketing door downloads **487 KB gzipped in 78 requests** — index.html
+      modulepreloads the entry's whole static graph, 69 chunks, and the door pays for the
+      board, the write/outbox layer, both i18n halves' shell, the QR code… A stranger at a
+      school gate on a bad signal waits eleven seconds for a headline.
+- [ ] **The door's eager graph — the structural fix, sized, not started.** The cheap
+      lever was tried and reverted the same hour: making `DrawPad` lazy changed nothing,
+      because the chunk NAMED `drawpad` (49 KB gz, in the door's preload list) is
+      Rolldown's shared-commons chunk wearing the group's name — 100+ exports,
+      `useSyncExternalStore`, `createContext`, statically imported by nearly every other
+      chunk. The bundle gate's « eager » total (index + react-vendor + i18n = 654 KB)
+      therefore UNDERCOUNTS what the door actually loads. The real fix is structural:
+      `HubLayout` + `Board` are static imports in `router.tsx` (the kiosk's offline boot
+      is the reason), so `/` carries the whole hub. Making them lazy would leave the door
+      with shell + Home (~200 KB gz, ~4 s on Slow 4G, ~1 s on Fast 4G); the SW precache
+      already covers every lazy chunk, so the kiosk's offline reboot survives it, at the
+      cost of one more round trip on a wall tablet's warm boot. Needs its own session:
+      the gate's eager set re-based, the `drawpad` group renamed to what it is, and the
+      cold-start table above re-run after.
+- ❓ **Install prompt — there is none, anywhere.** No `beforeinstallprompt` handling, no
+      iOS « Ajouter à l'écran d'accueil » hint (grep: zero hits in `src/`). Android shows
+      its own mini-bar for a PWA that meets the criteria; iOS never does — a household on
+      an iPhone will use the app in Safari with the address bar forever unless told. The
+      calm answer is ONE quiet line, once, on the device that could install — in Réglages ▸
+      Affichage & veille beside the screensaver (the sub that owns "what this device
+      does"), not a banner on the board. Marc's call on whether it is worth a card.
 
 **Wave 3 — password reset (the longest pole; start it the day Wave 0's fixes land).**
 There is NO forgot-password flow and the app has never sent an email. The first stranger
