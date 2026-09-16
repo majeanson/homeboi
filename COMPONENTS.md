@@ -51,7 +51,7 @@ this table fails the build, which is how « Champs & saisie » quietly grew besi
 > marker `*(no specimen: <reason>)*` at the end of its Purpose cell. `src/lib/devkitParity.test.ts`
 > fails the build on a row that has neither, in either direction.
 >
-> **Today it holds 145 rows, of which 118 have a live specimen** — both numbers are
+> **Today it holds 146 rows, of which 119 have a live specimen** — both numbers are
 > asserted from the code by `src/lib/docCounts.test.ts`, so neither can drift.
 >
 > The section used to be titled « gallery-suitable » and it was not true of its own
@@ -206,6 +206,7 @@ this table fails the build, which is how « Champs & saisie » quietly grew besi
 ### Feedback / chrome
 | Component | File | Purpose |
 | --- | --- | --- |
+| **useConfirm** (+ `ConfirmProvider`) | `lib/confirm.tsx` | THE confirm dialog for the few HEAVY deletes that warrant a deliberate yes/no rather than the undo toast (a recipe, a member, a tag across every recipe); light deletes stay on **useDeferredRemoval**. Promise-based (`if (!(await confirm({ message, tone: 'danger' }))) return`); one provider at the app root; Esc = no. Its copy must say WHAT IS LOST (`confirmCopy.test.ts`: every `…Confirm` string ≥ 6 words with a consequence). **The password shape (2026-09-16, STATE §4-L L5):** `input: { kind: 'password', label }` adds one masked field and resolves to the typed string or `null` on cancel — the irreversible doors use it (revoking the other parent, « Déconnecter partout ailleurs », a change of password, restoring a backup), because a session cookie on a wall tablet proves "someone in the house", not "the account's owner"; the endpoint verifies through `functions/_lib/sudo.ts` (rate-limited, mirrors login's three account shapes). In DevKit under Overlays & chrome. *(no specimen: the parity guard keys on a components/ file, and this one lives in lib/ — the gallery entry is there all the same)* |
 | **useAiWake** | `components/kitchen/useAiWake.ts` | ONE truth about Workers AI session health for every AI-backed kitchen flow (the staples step, the supper suggestions, Vide-frigo): `aiWaking` after ~3.5 s says the model is COLD-STARTING (10–30 s) so a wait reads as warming rather than frozen, and `aiUnavailable` (a 503 = no AI binding) is sticky for the session so flows FALL BACK instead of hiding (NFR-DEGRADE-1). A new AI-backed surface reuses this rather than inventing a second spinner vocabulary. *(no specimen: a seam, not a component)* |
 | **Loading / PairPrompt** | `components/Fallback.tsx` | Shared page states (PairPrompt is surface-aware). 15+ call sites. **It used to export a `LoadError` too** — a second component of that name, same job as `components/LoadError.tsx` above, told apart only by which module a page imported. The two had drifted: this one kept the error TONE while the device was merely offline and offered no « Réessayer », the exact two behaviours the other was written (2026-08-27/28, from Marc’s phone) to refuse — and six call sites were still on the wrong one (Maison, Notes, Notre monde, l’historique et le tiroir d’idées de la cuisine, « Cette semaine »). Merged 2026-09-09; `devkitParity.test.ts` fails the build if a component name is declared in two files again. |
 | **HelpDot** | `components/HelpDot.tsx` | "?" → Guide; gated by tutorial mode + parent audience. |

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
-import { api } from '../../lib/api'
+import { api, isStatus } from '../../lib/api'
 import { MEMBERS_KEY, OPERATORS_KEY } from '../../lib/queryKeys'
 import { useConfirm } from '../../lib/confirm'
 import { useOnline } from '../../lib/online'
@@ -86,14 +86,23 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
     // nothing they wrote goes with them. Attribution in this app is a soft member
     // ref, never an operator FK, precisely so an account can be removed without
     // erasing a household's history. Saying so is what makes the tap answerable.
-    if (!(await confirm({ message: t.coop.removeConfirm(email), confirmLabel: t.coop.remove, tone: 'danger' }))) return
+    // …and asks for YOUR password (2026-09-16, STATE §4-L L5): the session cookie
+    // proves someone in the house, not the account's owner, and this door throws a
+    // person out of the household.
+    const password = await confirm({
+      message: t.coop.removeConfirm(email),
+      confirmLabel: t.coop.remove,
+      tone: 'danger',
+      input: { kind: 'password', label: t.sessions.passwordLabel },
+    })
+    if (password === null) return
     setBusy(true)
     setErr(null)
     try {
-      await api('operator-invite', { method: 'DELETE', body: { email } })
+      await api('operator-invite', { method: 'DELETE', body: { email, password } })
       await qc.invalidateQueries({ queryKey: OPERATORS_KEY })
     } catch (e) {
-      setErr((e as Error).message)
+      setErr(isStatus(e, 403) ? t.sessions.wrong : isStatus(e, 429) ? t.common.tooMany : (e as Error).message)
     } finally {
       setBusy(false)
     }

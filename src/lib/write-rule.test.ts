@@ -110,6 +110,11 @@ const ALLOWED = new Set<string>([
   //     queue against yet (useWrite's outbox is per-device-with-a-household), and a
   //     replay of "become an operator" later is not a thing that can mean anything.
   'components/operator/CoOperatorsSection.tsx → operator-invite',
+  // « Mes connexions » (0134): a password change replayed from an outbox hours later
+  // would replace whatever was set since; « sign me out everywhere » is now-or-never.
+  // Both re-issue THIS device's cookie in the response, which only a live call can use.
+  'components/operator/SessionsSection.tsx → auth/password',
+  'components/operator/SessionsSection.tsx → auth/sessions/revoke',
   'pages/JoinHouseholdPage.tsx → operator-join',
   // The two guest forms have no outbox by construction (a guest session is not
   // an operator's device and useWrite refuses a guest write outright), but they

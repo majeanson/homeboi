@@ -2,6 +2,7 @@ import { forbidden, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { issueOperatorInvite, OPERATOR_INVITE_TTL } from '../_lib/auth'
+import { requirePassword } from '../_lib/sudo'
 
 // « Inviter l'autre parent » — the link that makes a second person a full operator
 // of THIS household (migration 0128 for why the household had only ever had one).
@@ -88,7 +89,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 }, 'operator')
 
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ email?: string }>(ctx.request)
+  const body = await readJson<{ email?: string; password?: string }>(ctx.request)
   const email = body?.email?.trim().toLowerCase()
 
   // — REMOVE A CO-OPERATOR (with `email`) —
@@ -105,6 +106,10 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     // « Se déconnecter » is the door for leaving; this one is for removing someone
     // else.
     if (email === actor.email) return forbidden('Tu ne peux pas retirer ton propre accès ici.')
+    // The password, not just the cookie (STATE.md §4-L L5): a wall tablet signed in as
+    // the operator must not be able to throw the other parent out of the household.
+    const denied = await requirePassword(ctx.env, actor, body?.password)
+    if (denied) return denied
     const row = await ctx.env.DB.prepare('SELECT email FROM operators WHERE email = ? AND household_id = ?')
       .bind(email, actor.householdId)
       .first<{ email: string }>()

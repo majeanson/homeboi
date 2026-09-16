@@ -2298,6 +2298,25 @@ export const FR = {
     rotateConfirm:
       'Réinitialiser le lien d’invitation ? Tous les liens déjà envoyés cesseront de fonctionner. Les accès déjà accordés restent.',
   },
+  // « Mes connexions » — Réglages ▸ Système ▸ Appareils & accès (0134).
+  sessions: {
+    title: 'Mes connexions',
+    hint: 'Ton compte, sur tous tes appareils. Les deux portes demandent ton mot de passe actuel.',
+    changeTitle: 'Changer mon mot de passe',
+    current: 'Mot de passe actuel',
+    next: 'Nouveau mot de passe (8 caractères minimum)',
+    again: 'Encore une fois',
+    change: 'Changer le mot de passe',
+    changed: 'Mot de passe changé. Les autres appareils devront se reconnecter.',
+    mismatch: 'Les deux nouveaux mots de passe ne sont pas pareils.',
+    tooShort: 'Mot de passe trop court (8 caractères minimum).',
+    wrong: 'Mot de passe invalide.',
+    passwordLabel: 'Ton mot de passe',
+    revokeHint: 'Un téléphone perdu, un mot de passe partagé ? Ferme la session partout sauf ici.',
+    revoke: 'Déconnecter partout ailleurs',
+    revokeConfirm: 'Déconnecter tous les autres appareils ? Chacun devra se reconnecter avec le mot de passe. Celui-ci reste ouvert.',
+    revoked: 'C’est fait : les autres appareils sont déconnectés.',
+  },
   pair: {
     title: 'Jumeler cette tablette',
     lead: 'Sur la tablette : demande un code, pis approuve-le depuis ton téléphone.',

@@ -128,6 +128,7 @@ import { HubHead } from '../components/HubHead'
 import { SceneHead } from '../components/SceneHead'
 import { ListRow } from '../components/ListRow'
 import { Modal } from '../components/Modal'
+import { useConfirm } from '../lib/confirm'
 import { DrawEditChoice, type DrawEditMode } from '../components/DrawEditChoice'
 import { RecipeReadReview } from '../components/RecipeReadReview'
 import { RecentsPanel } from '../components/RecentsPanel'
@@ -995,6 +996,8 @@ export function DevKit() {
   const [emoji, setEmoji] = useState('⭐')
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
+  const confirmDialog = useConfirm()
+  const [confirmSaid, setConfirmSaid] = useState('')
   const [familyShareOpen, setFamilyShareOpen] = useState(false)
   const [voyageShareOpen, setVoyageShareOpen] = useState(false)
   const [shareModalOpen, setShareModalOpen] = useState(false)
@@ -3275,6 +3278,42 @@ export function DevKit() {
       render: () => (
         <Demo label="session log (#38) — what just happened, with a late undo">
           <RecentsPanel />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'useConfirm',
+      file: 'lib/confirm.tsx',
+      kw: 'confirm dialogue supprimer mot de passe password sudo danger',
+      render: () => (
+        <Demo label="the ONE confirm dialog — a heavy delete (danger), and the password shape the irreversible doors use (lib/confirm.tsx `input`; the endpoint verifies through _lib/sudo.ts)">
+          <Cluster>
+            <button
+              className="btn btn--danger"
+              onClick={() =>
+                void confirmDialog({ message: 'Supprimer cette recette ? Ses photos d’étapes partent avec elle.', tone: 'danger' }).then((ok) =>
+                  setConfirmSaid(ok ? 'confirmé' : 'annulé'),
+                )
+              }
+            >
+              Supprimer (danger)
+            </button>
+            <button
+              className="btn"
+              onClick={() =>
+                void confirmDialog({
+                  message: 'Déconnecter tous les autres appareils ? Chacun devra se reconnecter avec le mot de passe.',
+                  confirmLabel: 'Déconnecter',
+                  tone: 'default',
+                  input: { kind: 'password', label: 'Ton mot de passe' },
+                }).then((pw) => setConfirmSaid(pw === null ? 'annulé' : `tapé ${pw.length} caractères`))
+              }
+            >
+              Avec mot de passe
+            </button>
+            {confirmSaid && <span className="mono">{confirmSaid}</span>}
+          </Cluster>
         </Demo>
       ),
     },

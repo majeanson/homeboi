@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **29** — nine of them the public-readiness plan §4-K and twenty the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **25** — nine of them the public-readiness plan §4-K and sixteen the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3894,9 +3894,9 @@ than a second dialog; the specimen in `/dev/kit` shows both shapes; `confirmCopy
 keeps the copy honest. A sandbox operator has no password anyone knows → these doors hide
 under `useSandbox()` (they have nothing to revoke anyway).
 
-- [ ] `requirePassword` + unit cases (right, wrong, legacy row, missing)
-- [ ] `useConfirm` password input + DevKit specimen + COMPONENTS.md
-- [ ] Co-operator revoke asks for it (server + client + its e2e updated)
+- [x] `requirePassword` + unit cases (right, wrong, legacy row, missing, kiosk/guest refused, row gone) — `_lib/sudo.ts` + `sudo.test.ts` (landed with L1; charges L2's `sudo:<email>` bucket)
+- [x] `useConfirm` grew `input: { kind: 'password', label }` (resolves to the string or null; Enter submits; empty disables) — `lib/confirm.tsx`, `.confirm__input`, a DevKit specimen under Overlays & chrome, a COMPONENTS.md row
+- [x] Co-operator revoke asks for it: `operator-invite` DELETE-with-email runs `requirePassword`; `CoOperatorsSection` types it into the confirm and reads 403/429 as one sentence; `operator-join.spec.ts` pins the disabled-until-typed button and the `{ email, password }` body; ACTIONS note ²⁵, PARITY note 71
 
 #### L6. Security headers — enforce the safe four now, CSP report-only with a report door
 
@@ -4041,7 +4041,7 @@ kiosk and a guest. `[~]` A LIST of sessions with device names is not built: sess
 stateless by design (no row to list) and the revoke-all door is the whole case; a list
 would need a sessions table that nothing else wants.
 
-- [ ] Card + i18n + e2e (`sessions.spec.ts`: operator sees it, kiosk/guest/sandbox don't, both doors post) + PARITY row + ACTIONS doors + guide point
+- [x] `SessionsSection` (« Mes connexions », `settings ▸ tablets` after « L'autre parent », `access: 'operator'`, hidden for a sandbox): « Changer mon mot de passe » (a `Disclosure` form → `POST auth/password`, re-issues this cookie, `auth.refresh()`) + « Déconnecter partout ailleurs » (the password confirm → `POST auth/sessions/revoke`); `operatorHelp.sessions` on the share-access card; i18n `t.sessions` both languages; `write-rule` ALLOWED ×2 with the reason; `e2e/sessions.spec.ts` (five cases: the card, mismatch stays on the page then posts, the password confirm posts, a 403 is one sentence, kiosk + guest never see it); ACTIONS rows « Account · change my password / sign out everywhere else » + note ²⁵. `[~]` no sessions LIST (stateless by design)
 
 #### L13. Dependabot and the compatibility date
 

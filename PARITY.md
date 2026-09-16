@@ -683,6 +683,9 @@ Footnotes (verdicts recorded so far):
     no way out. « Réinitialiser » kills the outstanding links, not the access already
     granted — a capability you can hand out and never take back is a one-way door.
     Added by this scoring pass. Never on your OWN row: that is « Se déconnecter ».
+    **Since 2026-09-16 the removal asks for YOUR password** (`_lib/sudo.ts`, the
+    `useConfirm` password shape — STATE §4-L L5): a wall tablet signed in as the
+    operator must not be able to throw the other parent out. ACTIONS note ²⁵.
 72. **➖ peek (F37)** — an operator account is not an entity anyone meets as a row
     elsewhere in the app; it exists only on its settings card. Same verdict shape as
     recipes/routines: there is nothing to peek INTO that the card is not already

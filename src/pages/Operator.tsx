@@ -16,6 +16,7 @@ import { ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { GuestSection } from '../components/operator/guest'
 import { CoOperatorsSection } from '../components/operator/CoOperatorsSection'
+import { SessionsSection } from '../components/operator/SessionsSection'
 import { EventsSection, SchoolYearSection } from '../components/operator/agenda'
 import { RoutinesSection } from '../components/operator/chores'
 import { ChoresTabPanel } from '../components/operator/homeProjects'
@@ -362,6 +363,7 @@ export function Operator() {
     claimTablet: <ClaimTablet onClaimed={load} />,
     devices: <DevicesSection devices={devices} onChange={load} help={operatorHelp} />,
     coop: <CoOperatorsSection help={operatorHelp} />,
+    sessions: <SessionsSection help={operatorHelp} />,
     guestLinks: <GuestSection help={operatorHelp} />,
     health: <HealthSection />,
     buildInfo: <BuildInfoSection />,

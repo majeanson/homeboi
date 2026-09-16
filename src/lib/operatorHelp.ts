@@ -240,6 +240,14 @@ export const OPERATOR_HELP = {
       en: `The household's second adult gets their OWN account, not your password: the same full access as you, their own address, and their name on what they add. Different from a guest link (read-only, temporary) and from a paired tablet (the board, without the settings). The invite link expires after a week, and “Reset” kills every one already sent at once.`,
     },
   },
+  sessions: {
+    // The account's own doors sit with the other access cards (same guide card).
+    card: 'share-access',
+    body: {
+      fr: `Ton compte, sur tous tes appareils. Changer le mot de passe ou « Déconnecter partout ailleurs » ferme la session sur chaque autre téléphone, tablette ou ordinateur — celui-ci reste ouvert. Les deux demandent ton mot de passe actuel : une tablette laissée ouverte sur le comptoir ne doit pas pouvoir te mettre dehors.`,
+      en: `Your account, on all your devices. Changing the password or “Sign out everywhere else” ends the session on every other phone, tablet or computer — this one stays open. Both ask for your current password: a tablet left open on the counter must not be able to lock you out.`,
+    },
+  },
   guest: {
     // Was 'set-guest' — never a GUIDE id; 'share-access' is the guest-links card.
     card: 'share-access',

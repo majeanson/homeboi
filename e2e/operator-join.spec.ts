@@ -174,8 +174,13 @@ test('a co-operator can be removed — and never yourself from that row', async 
   // them, because attribution is a soft member ref and never an operator FK.
   const dialog = page.locator('.confirm')
   await expect(dialog).toContainText('rien ne se perd')
-  await dialog.getByRole('button', { name: 'Retirer l’accès' }).click()
+  // …and it asks for YOUR password (2026-09-16, STATE §4-L L5): the cookie proves
+  // someone in the house, not the account's owner. Empty → the button waits.
+  const go = dialog.getByRole('button', { name: 'Retirer l’accès' })
+  await expect(go).toBeDisabled()
+  await dialog.locator('input[type=password]').fill('correct horse')
+  await go.click()
 
   await expect.poll(() => deleted.length).toBe(1)
-  expect(deleted[0]).toMatchObject({ email: 'b@x.com' })
+  expect(deleted[0]).toMatchObject({ email: 'b@x.com', password: 'correct horse' })
 })

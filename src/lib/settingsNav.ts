@@ -90,6 +90,9 @@ export const SETTINGS_TREE = {
       // about ACCESS (who may act as it) — the same distinction that already puts
       // devices and guest links on this tab. C-15: an existing sub, not a new pill.
       s('coop', 'operator'),
+      // « Mes connexions » — the account's own doors (change password, sign out
+      // everywhere; 0134). Access, not faces — this sub, beside the other adult.
+      s('sessions', 'operator'),
       s('guestLinks', 'operator'),
       s('health', 'household'),
       s('buildInfo', 'household'),

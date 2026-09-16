@@ -483,6 +483,17 @@ a.ledger__chore--link {
   margin: 0 0 1.2rem;
   line-height: 1.45;
 }
+/* The password shape (lib/confirm.tsx `input`): one masked field between the message
+   and the buttons. Full width — the whole dialog exists to receive it. */
+.confirm__input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0 0 1rem;
+}
+.confirm__input .input {
+  width: 100%;
+}
 .confirm__actions {
   display: flex;
   justify-content: flex-end;

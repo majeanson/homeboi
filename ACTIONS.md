@@ -227,10 +227,12 @@ and because the scoring pass that added them found a gap in the first one.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Co-operator · invite | — | — | — | — | ✅ settings▸coop « Créer un lien » | — | ✅ |
 | Co-operator · rotate the link | — | — | — | — | ✅ settings▸coop « Réinitialiser » | confirm¹⁹ | ✅ |
-| Co-operator · **remove access** | ✅ `RowActions` 🗑 | — | ➖²⁰ | — | ✅ settings▸coop | confirm²¹ | ✅ |
+| Co-operator · **remove access** | ✅ `RowActions` 🗑 | — | ➖²⁰ | — | ✅ settings▸coop | confirm²¹ **+ your password**²⁵ | ✅ |
 | Co-operator · set MY face | — | — | — | — | ✅ settings▸coop chips²² | — | ✅ |
 | Account · forgot password | — | — | — | — | ✅ /login « Mot de passe oublié ? » → /oubli²³ | ➖²⁴ | ✅ |
 | Account · reset password | — | — | — | — | ✅ the email's link → /reinitialiser?t= | ➖²⁴ | ✅ |
+| Account · **change my password** | — | — | — | — | ✅ settings▸tablets « Mes connexions » (2026-09-16, 0134) | ➖²⁴ · current password²⁵ | ✅ |
+| Account · **sign out everywhere else** | — | — | — | — | ✅ settings▸tablets « Mes connexions » | confirm + password²⁵ | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
     Access already granted is NOT affected — which is a different row, on purpose.
@@ -240,6 +242,14 @@ and because the scoring pass that added them found a gap in the first one.
     cannot put a session back. The copy names what is NOT lost too — nothing they
     wrote goes with them, true by construction (soft member ref, never an operator
     FK). Never offered on your OWN row: that door is « Se déconnecter ».
+25. **The password, not just the cookie** (STATE §4-L L5, 2026-09-16). A wall tablet is
+    often signed in as the operator and a phone is left on a counter: a session
+    proves "someone in this house", not "the account's owner". The irreversible doors —
+    revoking the other parent, ending every other session, changing the password, and
+    (L8) restoring a backup over the live content — ask for it through ONE dialog shape
+    (`useConfirm` with `input: { kind: 'password' }`) and ONE server check
+    (`_lib/sudo.ts`, rate-limited per email, login's three account shapes). A sandbox
+    operator has a password nobody knows, so those doors hide there.
 22. YOUR row only. Deciding what face someone else's phone attributes to is putting
     words in their mouth; their device pick already answers it.
 23. The door shows only when `health.mail` says this deployment can send (lib/mail):
