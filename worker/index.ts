@@ -21,6 +21,7 @@ import { readLiveShare } from '../functions/_lib/shareStore'
 import { shareOgMeta } from '../functions/_lib/shareOg'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
 import { dumpHousehold } from '../functions/_lib/takeout'
+import { withSecurityHeaders } from '../functions/_lib/securityHeaders'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
 // must be exported from the entry module named in wrangler.toml). SCAFFOLD (#20).
@@ -42,7 +43,9 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // token in the body IS the credential, and it is checked against the household's live
 // `invite_nonce` — a narrower gate than CSRF, not a missing one. (The MINT side,
 // 'operator-invite', is NOT exempt: that one runs on a real operator session.)
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'pair/poll', 'demo', 'operator-join'])
+// 'csp-report' is the browser's own POST (Content-Security-Policy-Report-Only,
+// _lib/securityHeaders.ts): it carries no header of ours and answers 204 whatever it gets.
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'pair/poll', 'demo', 'operator-join', 'csp-report'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',
@@ -122,7 +125,7 @@ async function injectShareOg(
   }
 }
 
-export default {
+const app = {
   // Param types come from `satisfies ExportedHandler<WorkerEnv>` below — the
   // incoming request carries Cf properties, so we don't annotate it as a plain
   // Request (which would mismatch EventContext's request type).
@@ -376,4 +379,14 @@ export default {
     }
     ctx.waitUntil(run())
   },
+} satisfies ExportedHandler<WorkerEnv>
+
+// The deploy target. Every response — the SPA shell, a hashed asset, a JSON answer, a
+// redirect — leaves through withSecurityHeaders (STATE.md §4-L L6); the one exception
+// is the 101 of a WebSocket upgrade, which the helper returns untouched.
+export default {
+  async fetch(request, env, ctx): Promise<Response> {
+    return withSecurityHeaders(await app.fetch(request, env, ctx))
+  },
+  scheduled: app.scheduled,
 } satisfies ExportedHandler<WorkerEnv>

@@ -46,6 +46,7 @@ const SILENT_PATHS = new Set<string>([
   'auth/logout',
   'auth/signup',
   'auth/sessions/revoke', // bumps session_version only — nothing polled changes
+  'csp-report', // the browser's own CSP violation report — log-only, no household write
   'auth/password', // same: the credential changes, no cache does
   'auth/me',
   'ai-errors',
