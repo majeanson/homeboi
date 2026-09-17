@@ -12,6 +12,12 @@ import { mockApi, seedState } from './mocks'
 //   2. Réglages ▸ Découvrir greeted a brand-new device with « Quoi de neuf » about a
 //      RENAME — something that is only news to someone who knew the old name. A device
 //      with no history starts with every current line marked seen.
+//
+// …and a third, added 2026-09-17 after the LIVE walk caught the same shape returning:
+// the household-timezone sync asked /api/household on the marketing door and took a 401
+// on every load. The general rule is what this now pins: a visitor with no credential
+// makes NO authenticated request at all. That is cheaper to hold here, on every push,
+// than to rediscover weekly against production.
 
 const socketsOpened = (page: Page) => {
   let n = 0
@@ -31,6 +37,29 @@ test('the marketing page, signed out, never opens the realtime socket', async ({
   // Long enough for the boot path AND the first reconnect tick (2 s) to have fired.
   await page.waitForTimeout(2600)
   expect(count(), 'a visitor with no session must not knock on /api/live').toBe(0)
+})
+
+// The door's whole legitimate appetite: who am I, and what can this deployment do. Both
+// answer 200 signed-out; everything else under /api/ needs a credential a stranger has
+// not got, and asking anyway is a 401 in their console on every load.
+const DOOR_MAY_ASK = new Set(['/api/auth/me', '/api/health'])
+
+test('the marketing page, signed out, asks the API for nothing it cannot have', async ({ page }) => {
+  // Asserted on the REQUESTS, not on 4xx responses — and that distinction is the test.
+  // The first version of this case watched for 401s and passed with the defect present,
+  // because `mockApi` answers /api/household with a 200 fixture: a stubbed harness can
+  // never show you a status the real server would have sent. What it CAN show, exactly,
+  // is which doors were knocked on.
+  const asked: string[] = []
+  await mockApi(page, { signedIn: false })
+  page.on('request', (r) => {
+    const { pathname } = new URL(r.url())
+    if (pathname.startsWith('/api/') && !DOOR_MAY_ASK.has(pathname)) asked.push(`${r.method()} ${pathname}`)
+  })
+  await page.goto('/')
+  await expect(page.locator('.home__cta-demo')).toBeVisible()
+  await page.waitForTimeout(2600)
+  expect([...new Set(asked)], 'the signed-out door asked for something only a household can have').toEqual([])
 })
 
 test('control: a confirmed operator session opens the socket', async ({ page }) => {

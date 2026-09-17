@@ -4011,6 +4011,23 @@ kiosk's offline install would have 404ed on a must-succeed entry — the NFR-OFF
 failure that list exists to prevent. `npm run e2e:sw` could not have caught it: `vite
 preview` serves `dist/` verbatim, `_headers` included. Only production tells the truth.
 
+**Verified on production after the deploy**: `/`, `/index.html`,
+`/manifest.webmanifest`, `/theme-bootstrap.js`, `/board` and `/api/health` all answer
+with six, and `/_headers` itself is still not served. The first check was premature —
+`gh run watch` had latched onto the PREVIOUS run, so « still zero » was measured against
+a deploy that did not contain the file. Watch the run whose `headSha` you pushed.
+
+**And the walk immediately caught a regression from L11**: the household-timezone sync
+asked `/api/household` on the marketing door, where a stranger has no credential — a 401
+in their console on every load, the same shape as the socket the walk found the first
+time. Gated on having a credential (signed-in · paired kiosk · link guest).
+
+The per-push guard for that class now exists, and its FIRST version was useless: it
+watched for 401s, and passed with the defect present, because `mockApi` answers
+`/api/household` with a 200 fixture — **a stubbed harness can never show a status the
+real server would have sent.** Rewritten to assert on the REQUESTS made (the door may
+ask `auth/me` and `health`, nothing else), it goes red naming `GET /api/household`.
+
 - [x] `_headers` generated from `ENFORCED`; both build metadata files excluded from the
       precache; two new checks in `check-bundle.mjs` (the file exists and carries the
       headers; neither is precached) **both proven red** on their own defect; a unit case
