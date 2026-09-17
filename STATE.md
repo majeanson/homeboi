@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **16** — nine of them the public-readiness plan §4-K and seven the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **14** — nine of them the public-readiness plan §4-K and five the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3913,8 +3913,8 @@ name, rename the group to what it is. Re-run `coldstart.mjs` (kept in this sessi
 scratchpad, copied into `e2e/` by L9) against production after the deploy and replace Wave
 2's table.
 
-- [ ] `HubLayout` + `Board` lazy; `e2e:sw` green; matrix unchanged
-- [ ] Manifest-walk assertion in `check-bundle.mjs`, proven red on a static re-import; budgets re-based
+- [x] `HubLayout` + `Board` lazy in `router.tsx` (the whole route tree was already inside ONE `<Suspense>`, so nothing else moved). The door's static closure, walked from Vite's own manifest: **70 chunks / 1131 KB → 7 chunks / 726 KB** — 63 round trips a stranger no longer pays for before the first headline. `npm run e2e:sw` green (all five, incl. the cold offline launch), the full local suite green
+- [x] `build.manifest` on + the closure walk in `check-bundle.mjs`: a chunk-count ratchet (≤10), a size budget (800 KB) and the two files BY NAME (each must own a chunk — a static import has no manifest key — and must not be reachable statically from the entry). **Proven red** by restoring the static imports: four messages, `70 chunks > 10`, `1131 KB > 800 KB`, and both files named. `EAGER_TOTAL_BUDGET` ratcheted 700 → 620 KB
 - [ ] Cold-start table re-measured on production, Wave 2's table replaced
 
 #### L5. The irreversible doors ask for the password

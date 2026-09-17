@@ -52,7 +52,11 @@ const EAGER_CHUNKS = [
   { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
   { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' }, // today ~101 KB
 ]
-const EAGER_TOTAL_BUDGET = 700 * KB // combined index + react-vendor + i18n (today ~677 KB, ratcheted 760 → 700 by the Mois/Année lazy pass, 2026-09-09)
+// Ratcheted 700 → 620 by the door-closure pass (STATE §4-L L4, 2026-09-16): making
+// HubLayout + Board lazy took the entry chunk 227 KB → the combined three to ~582 KB.
+// The rule is unchanged — reach for lazy() before you reach for a bigger number — and
+// the closure check below is now the one that actually measures the door.
+const EAGER_TOTAL_BUDGET = 620 * KB // combined index + react-vendor + i18n (today ~582 KB)
 // fix(ci): re-based a SECOND time, for the same reason as the first — the number
 // moved because the accounting boundary moved, not because boot got heavier.
 // Retiring « Moments » deleted three lazy routes (MomentScene/MomentsView/MomentPeek),
@@ -156,6 +160,57 @@ for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
 
 if (eagerTotal > EAGER_TOTAL_BUDGET)
   failures.push(`combined eager JS (index + react-vendor + i18n) is ${Math.round(eagerTotal / KB)} KB > ${Math.round(EAGER_TOTAL_BUDGET / KB)} KB budget`)
+
+// 2-bis. THE DOOR'S STATIC CLOSURE — every chunk the browser must fetch before it can
+// run one line of the marketing page (STATE §4-L L4). The three-chunk "eager" total
+// above is an accounting convention and it UNDERCOUNTS: Rolldown's shared-commons chunk
+// (emitted under the `drawpad` group's name) rides the entry too, and until 2026-09-16
+// so did the whole hub — HubLayout and Board were static imports in router.tsx "for the
+// kiosk's offline boot", so a stranger downloaded a household planner to read one
+// headline: **70 chunks, 1131 KB raw**, which a 400 ms link turns into eleven seconds.
+// Making the two lazy took it to **7 chunks, 726 KB** — 63 round trips the door no
+// longer pays for. The SW precaches every lazy chunk (check 2 above is what makes that
+// true), so the kiosk's offline reboot is unaffected; `npm run e2e:sw` proves it.
+//
+// Walked from Vite's own manifest, so it cannot drift from what ships. Both numbers are
+// RATCHETS: they may fall, never rise. A new static import in router.tsx is the exact
+// mistake this catches, and it catches it as a number rather than a code review.
+const CLOSURE_CHUNK_CAP = 10 // today 7
+const CLOSURE_BUDGET = 800 * KB // today ~726 KB
+const LAZY_BY_NAME = ['src/components/HubLayout.tsx', 'src/pages/Board.tsx']
+const manifestPath = join(DIST, '.vite', 'manifest.json')
+if (!existsSync(manifestPath)) {
+  failures.push('dist/.vite/manifest.json is missing — set build.manifest in vite.config.ts (the door-closure check reads it)')
+} else {
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const entryKey = Object.keys(manifest).find((k) => manifest[k].isEntry)
+  const closure = new Set()
+  const walk = (k) => {
+    if (!k || closure.has(k)) return
+    closure.add(k)
+    for (const dep of manifest[k]?.imports ?? []) walk(dep)
+  }
+  walk(entryKey)
+  let closureBytes = 0
+  for (const k of closure) {
+    const f = manifest[k]?.file
+    if (f && existsSync(join(DIST, f))) closureBytes += statSync(join(DIST, f)).size
+  }
+  if (closure.size > CLOSURE_CHUNK_CAP)
+    failures.push(
+      `the door's static closure is ${closure.size} chunks > ${CLOSURE_CHUNK_CAP} — something became a STATIC import of the entry; make it lazy() (see router.tsx)`,
+    )
+  if (closureBytes > CLOSURE_BUDGET)
+    failures.push(`the door's static closure is ${Math.round(closureBytes / KB)} KB > ${Math.round(CLOSURE_BUDGET / KB)} KB — see above`)
+  // …and the two that were the whole problem, by name: each must be its OWN chunk (a
+  // dynamic-import boundary gets a manifest key; a static import is folded into the
+  // entry and has none) and must not be reachable statically from the door.
+  for (const name of LAZY_BY_NAME) {
+    if (!manifest[name]) failures.push(`${name} has no chunk of its own — it is a STATIC import again, and the door pays for it`)
+    else if (closure.has(name)) failures.push(`${name} is in the door's static closure — it must be reached by lazy() only`)
+  }
+  console.log(`door: ${closure.size} chunks / ${Math.round(closureBytes / KB)} KB in the entry's static closure.`)
+}
 
 // 3. NO PHANTOMS — the mirror of check 2, and the half that was missing. Above we
 // walk the files and demand each is precached; nothing walked the precache and

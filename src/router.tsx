@@ -7,12 +7,24 @@ import { useAuth, wasSignedIn } from './lib/auth'
 import { isPaired } from './lib/device'
 import { remeasureViewport } from './lib/viewportVars'
 
-// Hot paths eager (Home, Board — the kiosk surfaces a tablet hits on boot).
-// Everything else is lazy. The six themed tabs (board/kitchen/liste/notes/maison/
-// settings) render inside HubLayout, which owns the chrome + tab bar + the
-// Parent/Toddler audience switch.
-import { HubLayout } from './components/HubLayout'
-import { Board } from './pages/Board'
+// Home is the only EAGER page: it is the door a stranger lands on, and `/` decides
+// between it and the board before either can be fetched.
+//
+// HubLayout + Board were eager too until 2026-09-16 (STATE §4-L L4) « for the kiosk's
+// offline boot ». They are the whole hub — 94 imports under Board alone — so the
+// MARKETING page was paying for the board, the write/outbox layer and every card on it:
+// 487 KB gzipped over 78 requests, ELEVEN SECONDS to a headline on a slow 4G link
+// (§4-K wave 2 measured it). A stranger at a school gate was downloading a household
+// planner to read one sentence.
+//
+// The kiosk's offline boot does not need them eager: `scripts/check-bundle.mjs` forces
+// every lazy chunk into the service worker's precache (that check is load-bearing and
+// gates CI), so a tablet that has been online once holds them already. The cost is one
+// more round trip on a warm boot, and `npm run e2e:sw` proves the offline reboot against
+// the real PROD bundle. The whole route tree already sits in ONE <Suspense> below, so
+// nothing else changes.
+const HubLayout = lazy(() => import('./components/HubLayout').then((m) => ({ default: m.HubLayout })))
+const Board = lazy(() => import('./pages/Board').then((m) => ({ default: m.Board })))
 
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Signup })))

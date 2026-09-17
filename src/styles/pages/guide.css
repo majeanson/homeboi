@@ -330,10 +330,18 @@ details[open] > summary > .guide__group-caret {
   align-self: flex-start;
   margin-top: 0.7rem;
   padding: 0.5rem 0.85rem;
-  border: 1.5px solid var(--line-strong);
+  /* The TINT rides the border, the LABEL stays readable ink — `.home__cta-demo`'s
+     pattern (`--accent-ink-on-paper` is referenced and never defined on purpose, so it
+     always falls back to `--ink`). It used to paint the label in the raw section accent
+     on cream, which on the settings surface is marigold #f2a03d on #fbf3e4 — 1.92:1,
+     well under WCAG AA. Found 2026-09-16 by running the whole e2e suite locally: the
+     E2E workflow had been SKIPPED for days (it chains off CI, and CI was red), so a
+     real contrast regression sat on main unseen. Same shape as the five `-deep`-token
+     misuses the a11y census caught in one week (STATE §4-J). */
+  border: 1.5px solid var(--accent, var(--line-strong));
   border-radius: var(--radius);
   background: var(--paper);
-  color: var(--accent, var(--ink));
+  color: var(--accent-ink-on-paper, var(--ink));
   font-weight: 600;
   font-size: 0.88rem;
   text-decoration: none;

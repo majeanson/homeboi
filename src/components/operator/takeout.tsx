@@ -56,6 +56,11 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
   })
   if (hidden) return null
   const o = t.operator
+  // Defensive: a payload without `backups` (an older Worker, a stubbed harness) must
+  // render an empty list, not throw `reading 'length'` into the ErrorBoundary and take
+  // the whole settings tab with it — which is what it did, caught by e2e the same
+  // evening (2026-09-16).
+  const copies = Array.isArray(backups.data?.backups) ? backups.data.backups : []
 
   // The one restore call. `label` is what the confirm names; `body` is the source.
   async function restore(label: string, body: Record<string, unknown>) {
@@ -112,9 +117,9 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
       {online && (
         <Disclosure label={o.restoreTitle}>
           <p className="operator__hint">{o.restoreHint}</p>
-          {backups.data && backups.data.backups.length > 0 && (
+          {copies.length > 0 && (
             <ul className="operator__list">
-              {backups.data.backups.map((b) => {
+              {copies.map((b) => {
                 const when = formatDayMaybeYear(Date.parse(`${b.date}T12:00:00Z`) / 1000, lang)
                 return (
                   <li key={b.date}>
@@ -133,7 +138,7 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
               })}
             </ul>
           )}
-          {backups.data && backups.data.backups.length === 0 && <p className="operator__hint mono">{o.restoreNoCopies}</p>}
+          {backups.data && copies.length === 0 && <p className="operator__hint mono">{o.restoreNoCopies}</p>}
           <Cluster>
             <button type="button" className="btn" disabled={busy} onClick={() => fileRef.current?.click()}>
               <InlineIcon name="file-text-bold" /> {o.restoreFromFile}

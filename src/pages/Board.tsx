@@ -613,6 +613,13 @@ export function Board() {
   // 401 render did not: React threw « Rendered fewer hooks than expected » and the
   // ErrorBoundary ate the whole board instead of showing the re-pair door.
   const planLeftover = usePlanLeftover()
+  // Take a planned meal off the plan — the shared door (components/detail/EntityRemovals),
+  // so the month panel offers the same one. A HOOK, and it sits here for the reason the
+  // paragraph above records: it replaced a plain closure that lived BELOW the early
+  // return, and leaving it there made the 401 render run fewer hooks than the authed one
+  // (« Rendered more hooks than during the previous render », the ErrorBoundary eating
+  // the board). The e2e suite caught it the same evening, 2026-09-16.
+  const removeMeal = useRemoveMealFromPlan()
 
   if (unauth) return <PairPrompt />
 
@@ -716,9 +723,8 @@ export function Board() {
     memberName(m.cook_member_id) ? `${memberName(m.cook_member_id)} ${t.board.cooks}` : undefined
 
   // ── Detail-sheet contextual actions for meals + leftovers ──────────────────
-  // Remove a planned meal (compensating undo: re-add it at same day+slot) — the shared
-  // door (components/detail/EntityRemovals), so the month panel offers the same one.
-  const removeMeal = useRemoveMealFromPlan()
+  // Remove a planned meal (compensating undo: re-add it at same day+slot). A plain
+  // closure over the hook declared above the early return — see there for why.
   const removeMealFromPlan = (id: string, title: string, slot: string, day: number) => removeMeal({ id, title, slot, day })
   // Plan a pool leftover as tonight's supper — see `planLeftover` above the early
   // return (it is a hook; this closure is not).

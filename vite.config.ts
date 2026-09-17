@@ -414,6 +414,12 @@ export default defineConfig({
   },
   plugins: [react(), serviceWorker()],
   build: {
+    // The build manifest is what lets scripts/check-bundle.mjs walk the ENTRY'S STATIC
+    // CLOSURE — every chunk the browser fetches before it can run a line of the door —
+    // rather than guess at it from three chunk names. That guess is how « eager » came
+    // to undercount the real cost by hundreds of KB (STATE §4-K wave 2), and how the
+    // hub sat in the marketing page's download for months.
+    manifest: true,
     rollupOptions: {
       output: {
         // B-11 (bmad/10) — pull the framework + i18n out of the eager entry into

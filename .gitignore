@@ -18,6 +18,8 @@ dist/
 # playwright e2e — keep specs/config, ignore generated artifacts
 e2e/screenshots/
 e2e/report/
+e2e/test-results-stranger/
+e2e/test-results-flipp/
 e2e/test-results/
 e2e/test-results-realdata/
 e2e/test-results-sw/
