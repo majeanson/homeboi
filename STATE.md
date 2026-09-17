@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **14** — nine of them the public-readiness plan §4-K and five the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **13** — nine of them the public-readiness plan §4-K and four the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3623,6 +3623,20 @@ against a SEEDED household on wifi.
       | Fast 4G (150 ms / 4 Mb/s) | 1.4 s | 1.7 s | 1.4 s |
       | Slow 4G (400 ms / 400 kb/s) | **11.2 s** | 13.2 s | 11.1 s |
 
+      **Re-measured 2026-09-17, after §4-L L4 made the hub lazy** (same profile, same
+      throttling, production):
+
+      | link | door `/` first paint | door content | door requests |
+      | --- | --- | --- | --- |
+      | Fast 4G | 1.0 s | 1.3 s | 16 |
+      | Slow 4G | **7.1 s** | 8.6 s | 17 |
+
+      Seventy-eight requests became seventeen and the slow-link headline came four
+      seconds sooner. The BOARD pays for it — 16.2 s to content on Slow 4G, because it
+      now fetches the hub after the shell — and that is the trade taken with eyes open:
+      the board sits behind a sign-in or a demo mint, and a kiosk has every chunk
+      precached before it ever reboots. The door is the surface a stranger meets cold.
+
       The marketing door downloads **487 KB gzipped in 78 requests** — index.html
       modulepreloads the entry's whole static graph, 69 chunks, and the door pays for the
       board, the write/outbox layer, both i18n halves' shell, the QR code… A stranger at a
@@ -3915,7 +3929,7 @@ scratchpad, copied into `e2e/` by L9) against production after the deploy and re
 
 - [x] `HubLayout` + `Board` lazy in `router.tsx` (the whole route tree was already inside ONE `<Suspense>`, so nothing else moved). The door's static closure, walked from Vite's own manifest: **70 chunks / 1131 KB → 7 chunks / 726 KB** — 63 round trips a stranger no longer pays for before the first headline. `npm run e2e:sw` green (all five, incl. the cold offline launch), the full local suite green
 - [x] `build.manifest` on + the closure walk in `check-bundle.mjs`: a chunk-count ratchet (≤10), a size budget (800 KB) and the two files BY NAME (each must own a chunk — a static import has no manifest key — and must not be reachable statically from the entry). **Proven red** by restoring the static imports: four messages, `70 chunks > 10`, `1131 KB > 800 KB`, and both files named. `EAGER_TOTAL_BUDGET` ratcheted 700 → 620 KB
-- [ ] Cold-start table re-measured on production, Wave 2's table replaced
+- [x] Cold start re-measured on production and Wave 2's table extended with the after (78 → 17 requests on the door; Slow 4G first paint 11.2 s → **7.1 s**)
 
 #### L5. The irreversible doors ask for the password
 
