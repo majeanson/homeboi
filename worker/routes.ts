@@ -102,6 +102,8 @@ import * as suggestMeal from '../functions/api/suggest-meal'
 import * as thisWeek from '../functions/api/this-week'
 import * as todayChanges from '../functions/api/today-changes'
 import * as takeout from '../functions/api/takeout'
+import * as takeoutBackups from '../functions/api/takeout/backups'
+import * as takeoutRestore from '../functions/api/takeout/restore'
 import * as todos from '../functions/api/todos'
 import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
@@ -255,6 +257,9 @@ const TABLE: Record<string, RouteMod> = {
   'this-week': thisWeek,
   'today-changes': todayChanges,
   takeout,
+  // The restore door (STATE §4-L L8): list the nightly copies, and put one back.
+  'takeout/backups': takeoutBackups,
+  'takeout/restore': takeoutRestore,
   todos,
   'todo-templates': todoTemplates,
   transcribe,

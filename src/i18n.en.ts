@@ -2641,6 +2641,15 @@ export const EN: typeof FR = {
     takeoutTitle: 'Take my data',
     takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',
     takeoutBtn: 'Download my data (JSON)',
+    restoreTitle: 'Restore a copy',
+    restoreHint: 'A nightly copy, or the file above. The household’s content is replaced; paired devices and accounts stay.',
+    restoreGo: 'Restore',
+    restoreFromFile: 'From a file…',
+    restoreNoCopies: 'No nightly copy yet — the first one lands tonight.',
+    restoreBadFile: 'That file is not a Babillard copy.',
+    restoreConfirm: (when: string) =>
+      `Replace the household’s whole content with the copy from ${when}? Anything added since is gone. Paired devices and accounts stay.`,
+    restoreDone: (n: number) => `Put back: ${n} rows restored.`,
     ambientPreview: 'Preview now',
     // F-47 — the hourly breath (the anti-notification).
     ambientBreath: 'The hourly breath',

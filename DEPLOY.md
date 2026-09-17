@@ -123,6 +123,33 @@ Affichage ▸ « Diffuser au salon »**. Two ways it reaches the TV:
    the button stays hidden and Stage 1 (cast-tab) is the path. No CSP blocks the Cast
    SDKs (loaded from `gstatic.com`); the service worker passes them through.
 
+## Restaurer une copie (backup → household)
+
+The nightly cron (`functions/_lib/nightly.ts`, the `[triggers]` cron in
+`wrangler.toml`) writes one JSON per household to R2 — `backup/<householdId>/<date>.json`,
+the same dump `/api/takeout` hands out — and keeps the newest 14. Putting one back:
+
+- **In the app** (the normal way): Réglages ▸ Système ▸ Appareils & accès ▸ « Emporter
+  mes données » ▸ **« Restaurer une copie »**. Pick a nightly date, or « Depuis un
+  fichier… » for a JSON the household exported itself. It asks for the operator
+  password, and the confirm names what is lost.
+- **What it replaces**: the household's CONTENT. Paired devices, guest links, shares,
+  pairing codes and the operator accounts are NOT touched — a restore puts back what the
+  household holds, never who may open it (`functions/_lib/restore.ts`, `CONTENT_TABLES`
+  = the sandbox sweep's tables minus takeout's own exclusions, so the two cannot drift).
+- **Ids** are kept when nothing collides (a same-household restore keeps the device
+  preferences that remember a face) and ALL remapped, soft references included, when the
+  dump came from a household that still exists.
+- **If it fails mid-way** the household can be half-restored: run the same restore again
+  (it wipes first). The R2 copy is never modified by a restore.
+- **R2 media** (photos, drawings, voice memos) is referenced by key, not copied: a
+  same-household restore finds its blobs where they were.
+
+**The rehearsal runs on every push** — `worker/restore.d1.test.ts` (in `npm run test:d1`,
+CI) restores a real household from its own dump against a real D1 + R2 and asserts the
+result is byte-for-byte what it was, restores one household's dump into another and
+checks every id was remapped, and restores from an actual nightly copy the cron wrote.
+
 ## Notes
 
 - **Migrations are forward-only and filename-locked** (`functions/db/migrations/`).

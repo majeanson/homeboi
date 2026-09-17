@@ -233,6 +233,8 @@ and because the scoring pass that added them found a gap in the first one.
 | Account · reset password | — | — | — | — | ✅ the email's link → /reinitialiser?t= | ➖²⁴ | ✅ |
 | Account · **change my password** | — | — | — | — | ✅ settings▸tablets « Mes connexions » (2026-09-16, 0134) | ➖²⁴ · current password²⁵ | ✅ |
 | Account · **sign out everywhere else** | — | — | — | — | ✅ settings▸tablets « Mes connexions » | confirm + password²⁵ | ✅ |
+| Household data · export | — | — | — | — | ✅ settings▸tablets « Emporter mes données » | — | ✅ |
+| Household data · **restore a copy** | ✅ a row per nightly copy (`ListRow` + « Restaurer ») | — | — | — | ✅ settings▸tablets, folded under the export²⁶ | confirm + password²⁵ | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
     Access already granted is NOT affected — which is a different row, on purpose.
@@ -242,6 +244,14 @@ and because the scoring pass that added them found a gap in the first one.
     cannot put a session back. The copy names what is NOT lost too — nothing they
     wrote goes with them, true by construction (soft member ref, never an operator
     FK). Never offered on your OWN row: that door is « Se déconnecter ».
+26. **« Restaurer une copie »** (STATE §4-L L8, 2026-09-16) — the nightly copies had
+    been written to R2 for months with nothing able to read one back. Two doors, folded
+    under the export in a `Disclosure` (it is the rarer half of the same question): a
+    row per nightly date, and « Depuis un fichier… » for a JSON the household exported
+    itself. Hidden for a sandbox (its password is nobody's). It replaces the household's
+    CONTENT only — devices, guest links and accounts stay. Guards:
+    `e2e/takeout-restore.spec.ts` (six) + `worker/restore.d1.test.ts` (the real
+    round-trip, byte-for-byte).
 25. **The password, not just the cookie** (STATE §4-L L5, 2026-09-16). A wall tablet is
     often signed in as the operator and a phone is left on a counter: a session
     proves "someone in this house", not "the account's owner". The irreversible doors —

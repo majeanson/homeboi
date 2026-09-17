@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **21** — nine of them the public-readiness plan §4-K and twelve the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **18** — nine of them the public-readiness plan §4-K and nine the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3974,9 +3974,9 @@ hope.
   la maisonnée par la copie du 12 septembre ? Ce qui a été ajouté depuis disparaît. Les
   appareils et les comptes restent. » DEPLOY.md gets the procedure.
 
-- [ ] `restore.ts` pure parts + unit tests (validation, remap, intersection)
-- [ ] Endpoints + route + guards; the D1 round-trip: dump → add rows → restore → dump equal
-- [ ] UI + e2e (`takeout-restore.spec.ts`) + DEPLOY.md « Restaurer »
+- [x] `functions/_lib/restore.ts` — validate → wipe the CONTENT tables (the sweep's own statements, `HOUSEHOLD_TABLES` minus `TAKEOUT_EXCLUDE`, both now exported so the two cannot drift: devices, guest links, shares and the operator accounts are never touched) → ids kept unless one collides, else ALL remapped by token (JSON columns included) → insert with the live-column intersection, parents first, self-refs in a second pass → the household row's preferences, never its identity. Ten unit cases
+- [x] `GET takeout/backups` (the R2 copy list) + `POST takeout/restore` (`{source:'backup',date}` | `{source:'file',takeout}`), operator-only + `requirePassword`; routes, `write-rule` ALLOWED with the reason, realtime keys (a restore nudges every other device) — and `worker/restore.d1.test.ts` against a real D1 + R2: **a household restored from its own dump is byte-for-byte what it was** (which is what made the forced `updated_at` stamp wrong, and it went), a dump restored into ANOTHER household gets fresh ids with the soft refs followed while the source is untouched, a real nightly copy restores, a bad copy is 400 and a missing one 404
+- [x] « Restaurer une copie » folded under the export (a `Disclosure`: it is the rarer half of the same question) — a row per nightly date + « Depuis un fichier… », the password confirm naming what is lost AND what is not; hidden for a sandbox. `e2e/takeout-restore.spec.ts` (six cases — the list, the confirm + POST, cancel posts nothing, a 403 is one sentence, no copies says so, a kiosk sees no card); DEPLOY.md « Restaurer une copie »; ACTIONS rows + note ²⁶. The spec caught a real a11y slip on its first run: the hidden file input carried the same accessible name as its button, so there were TWO controls — the repo's `hidden` convention (ContactPhotos, NoteEditor) fixes it
 
 #### L9. The stranger's walk and the cold-start clock run weekly against production
 

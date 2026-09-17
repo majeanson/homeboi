@@ -60,7 +60,9 @@ export const DEMO_SANDBOX_CAP = 10
 // FKs per row, so a parent row deleted before its child row in the SAME statement
 // still violates. (clearSampleData dodges this by seeding only flat carnets; a
 // visitor can nest one.)
-const SELF_REFS: ReadonlyArray<readonly [table: string, column: string]> = [
+// Exported: the restore (functions/_lib/restore.ts) wipes with the same statements, so
+// the two cannot drift.
+export const SELF_REFS: ReadonlyArray<readonly [table: string, column: string]> = [
   ['carnets', 'parent_id'],
   ['mots', 'reply_to'],
 ]

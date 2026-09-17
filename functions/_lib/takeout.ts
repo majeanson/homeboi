@@ -20,7 +20,11 @@ import type { Env } from './env'
 // is fetchable via /api/img/<key> while the household exists. The nightly
 // backup likewise stores JSON only: the blobs already live in the same R2.
 
-const EXCLUDE = new Set([
+// Exported: functions/_lib/restore.ts subtracts these from the sweep's table list to get
+// the CONTENT tables — the ones a restore replaces. A restore must never touch who may
+// OPEN the household (operators/devices/guests/shares/pairing), which is exactly the set
+// a takeout refuses to export, so the two questions have one answer.
+export const TAKEOUT_EXCLUDE = new Set([
   'd1_migrations',
   'households', // handled separately (single row)
   'operators',
@@ -92,7 +96,7 @@ export async function dumpHousehold(env: Env, householdId: string): Promise<Take
   for (const { name } of (master.results ?? []).sort((a, b) => a.name.localeCompare(b.name))) {
     // Table names come from sqlite_master (our own migrations), but never
     // interpolate anything that isn't a plain identifier.
-    if (!/^[A-Za-z0-9_]+$/.test(name) || EXCLUDE.has(name)) continue
+    if (!/^[A-Za-z0-9_]+$/.test(name) || TAKEOUT_EXCLUDE.has(name)) continue
     try {
       let rows: Row[]
       if (CUSTOM[name]) {

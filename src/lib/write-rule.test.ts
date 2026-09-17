@@ -113,6 +113,10 @@ const ALLOWED = new Set<string>([
   // « Mes connexions » (0134): a password change replayed from an outbox hours later
   // would replace whatever was set since; « sign me out everywhere » is now-or-never.
   // Both re-issue THIS device's cookie in the response, which only a live call can use.
+  // The restore (STATE §4-L L8) REPLACES the household's content: replayed from an
+  // outbox hours later it would overwrite whatever was added since, and it is gated on
+  // a password typed in the moment. Online-only by construction.
+  'components/operator/takeout.tsx → takeout/restore',
   'components/operator/SessionsSection.tsx → auth/password',
   'components/operator/SessionsSection.tsx → auth/sessions/revoke',
   'pages/JoinHouseholdPage.tsx → operator-join',

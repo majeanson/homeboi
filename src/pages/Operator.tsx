@@ -367,7 +367,7 @@ export function Operator() {
     guestLinks: <GuestSection help={operatorHelp} />,
     health: <HealthSection />,
     buildInfo: <BuildInfoSection />,
-    takeout: <TakeoutSection />,
+    takeout: <TakeoutSection help={operatorHelp} />,
     micTest: <MicSelfTest help={operatorHelp} />,
     kbDebug: <KbDebugSection help={operatorHelp} />,
     // The error log only exists while AI is on; the tree still lists it (the anchor

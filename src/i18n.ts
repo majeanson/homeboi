@@ -2958,6 +2958,17 @@ export const FR = {
     takeoutTitle: 'Emporter mes données',
     takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',
     takeoutBtn: 'Télécharger mes données (JSON)',
+    // « Restaurer une copie » (STATE §4-L L8) — la sauvegarde de nuit avait tourné
+    // pendant des mois sans que rien ne puisse la relire.
+    restoreTitle: 'Restaurer une copie',
+    restoreHint: 'Une copie de nuit, ou le fichier ci-dessus. Le contenu de la maisonnée est remplacé ; les appareils jumelés et les comptes restent.',
+    restoreGo: 'Restaurer',
+    restoreFromFile: 'Depuis un fichier…',
+    restoreNoCopies: 'Aucune copie de nuit pour l’instant — la première arrive cette nuit.',
+    restoreBadFile: 'Ce fichier n’est pas une copie Babillard.',
+    restoreConfirm: (when: string) =>
+      `Remplacer tout le contenu de la maisonnée par la copie du ${when} ? Ce qui a été ajouté depuis disparaît. Les appareils jumelés et les comptes restent.`,
+    restoreDone: (n: number) => `C’est remis : ${n} lignes restaurées.`,
     ambientPreview: 'Aperçu maintenant',
     // F-47 — le souffle de l'heure (l'anti-notification).
     ambientBreath: 'Le souffle de l’heure',

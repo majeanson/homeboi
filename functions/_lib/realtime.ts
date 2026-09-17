@@ -47,6 +47,7 @@ const SILENT_PATHS = new Set<string>([
   'auth/signup',
   'auth/sessions/revoke', // bumps session_version only — nothing polled changes
   'csp-report', // the browser's own CSP violation report — log-only, no household write
+  'takeout/backups', // a read of the R2 copy list — nothing polled changes
   'auth/password', // same: the credential changes, no cache does
   'auth/me',
   'ai-errors',
@@ -96,6 +97,9 @@ const SILENT_PATHS = new Set<string>([
 // Exact path → affected query keys. Listed against the SPA `affectedKeys` used
 // at each write site so the push and the local invalidate agree.
 const PATH_KEYS: Record<string, string[][]> = {
+  // A restore replaces the whole household: every open surface must refetch. The
+  // client invalidates everything itself too — this is for the OTHER devices.
+  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['chores'], ['todos'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['notes'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
   // The shared list — drives the board glance, ghost strip, and list history.
   list: [['board'], ['ghosts'], ['list-history']],
   // Chores + the rotation ledger feed the board, the chores tab, and the month.
