@@ -13,7 +13,9 @@ export default defineConfig({
   // `npm run e2e:matrix`) — kept out of the per-push run by design.
   // flipp-live.spec.ts drives the REAL flipp.com (e2e/flipp.config.ts, `npm run
   // e2e:flipp`, weekly) — network-bound, no Vite, never per-push.
-  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts'],
+  // stranger-live.spec.ts walks the DEPLOYED app as a first-time visitor
+  // (e2e/stranger.config.ts, `npm run e2e:stranger`, weekly) — same reason.
+  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts', '**/stranger-live.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // CI runs serially (workers:1 below) and is the authoritative, strict run.

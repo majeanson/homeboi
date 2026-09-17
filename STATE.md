@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **18** — nine of them the public-readiness plan §4-K and nine the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **16** — nine of them the public-readiness plan §4-K and seven the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -180,6 +180,38 @@ visible danger button on the event peek; the day page's inline forms carry the d
 under them, and its entretien rows open the peek (the page carries its own
 `DetailProvider` for that one row kind). ACTIONS.md rows updated with note ¹²;
 `e2e/calendar-delete.spec.ts` (eight cases) + the event-peek spec re-pinned.
+
+### The stranger's walk is a weekly job now — and CI had been red for three commits — 2026-09-16 (night)
+
+Three things, in the order they were found, because the order is the lesson.
+
+**CI had been failing since the real-runtime harness landed, and three commits never
+deployed.** `knip` reads `cloudflare:test` / `cloudflare:workers` — VIRTUAL modules the
+workers runtime provides — as unlisted npm dependencies. knip does not run on this
+machine (the documented oxc-parser crash; CLAUDE.md already says the CI run is the one
+that counts), and four more pushes went out without anyone opening the run page. So the
+security headers, the nightly alert and the restore door sat on `main`, green locally,
+undeployed. Fixed by naming the virtual module in `knip.json`; CI green, all four
+deployed, migration 0134 applied to production, and the headers verified live with curl.
+**A gate you cannot run locally has to be READ after the push** — the same shape as §5's
+lesson about guards, one level up.
+
+**The walk found a real defect on its first live run.** « Voyage » is operator-only on
+the server (`authed(…, 'operator')` on every method of `/api/trips` and
+`/api/shared-trip`), and the board card asked for both unconditionally — so the public
+demo, once it falls back to a read-only link, took two guaranteed 403s on every board
+load. Exactly the shape of the credential-less socket the scripted walk found in the
+afternoon. `enabled: !isGuest()` at the two hooks, so every caller inherits it.
+
+**And the guard's first draft was wrong about its own subject.** It failed when the demo
+handed out the read-only fallback, calling that a broken sweep — but the cap fills
+legitimately whenever enough people try the demo inside 24 hours, and this walk mints one
+per profile per attempt, so it was failing against its own footprint. Whether the sweep
+is healthy is a different question with a different instrument: the nightly report counts
+sandboxes that outlived the TTL and mails when any survived (§4-L L7), and it has the
+database to prove it. The walk records which mode it got and walks that one all the way —
+on the fallback it checks the fallback's own promise (it SAYS it is read-only; it grows
+no ＋ it cannot honour).
 
 ### The real-runtime harness, and what it found in thirty seconds — 2026-09-16 (evening)
 
@@ -3992,8 +4024,8 @@ to the report as JSON. `.github/workflows/stranger-walk.yml`: Mondays 07:30 UTC 
 dispatch; a red run emails the repo owner the way every scheduled workflow does. Each run
 mints a sandbox that L7's nightly sweep removes.
 
-- [ ] Spec + config + `npm run e2e:stranger`, green against production once locally
-- [ ] Workflow file; CLAUDE.md's commands block lists it
+- [x] `e2e/stranger-live.spec.ts` + `e2e/stranger.config.ts` (laptop 1440 + iPhone 13, no Vite, no stubs, `BABILLARD_URL` else production) + `npm run e2e:stranger`. **Run against production, and it earned its keep on the first evening** (below)
+- [x] `.github/workflows/stranger-walk.yml` (dispatch + Mondays 07:30 UTC, after the matrix and the Flipp contract), `playwright.config.ts` testIgnore, CLAUDE.md's commands block
 
 #### L10. Signup stops revealing which emails exist — with Wave 5, not before
 

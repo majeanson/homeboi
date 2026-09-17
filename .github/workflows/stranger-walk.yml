@@ -1,0 +1,56 @@
+name: Stranger walk
+
+# The weekly walk through the DEPLOYED app as a first-time visitor
+# (e2e/stranger-live.spec.ts under e2e/stranger.config.ts). No Vite, no stubs, no
+# account: it opens the marketing door, mints a demo sandbox, walks every tab, writes
+# once, and reaches the claim form — on a laptop and on an iPhone profile.
+#
+# Deliberately NOT chained to pushes: it drives production, and a network-bound run has
+# no place gating a deploy. The scripted version of this walk found four defects in one
+# afternoon (STATE §4-K wave 1) and lived in a session scratchpad, which is where
+# findings go to be lost.
+#
+# A red run is never "fix the test": it means a stranger's first five minutes broke.
+# Read WHICH step failed — the step names are the whole signal — and the attached
+# timings + screenshot.
+#
+# Each run mints one 24 h sandbox; the nightly cron sweeps it (functions/_lib/nightly.ts).
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Deployment to walk (default: production)'
+        required: false
+        type: string
+  schedule:
+    # Mondays 07:30 UTC — after the State matrix (07:00) and the Flipp contract, same
+    # review morning.
+    - cron: '30 7 * * 1'
+
+concurrency:
+  group: stranger-walk-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  walk:
+    name: The stranger's walk (Playwright, live)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:stranger
+        env:
+          BABILLARD_URL: ${{ inputs.url }}
+      - name: Upload what the stranger saw
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: stranger-walk
+          path: e2e/test-results-stranger
+          retention-days: 14

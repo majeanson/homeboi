@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { api } from '../../lib/api'
+import { isGuest } from '../../lib/device'
 import { live } from '../../lib/query'
 import { isSharedTripRealtimeConnected } from '../../lib/realtime'
 import {
@@ -111,8 +112,16 @@ export function useVoyageApi(): VoyageApi {
   return useContext(VoyageApiContext)
 }
 
+// « Voyage » is operator-only on the server (`authed(…, 'operator')` on every method of
+// /api/trips and /api/shared-trip), so a read-only LINK GUEST — which is what the public
+// demo becomes once DEMO_SANDBOX_CAP is reached — can only ever be refused. Asking
+// anyway cost the demo two guaranteed 403s on every board load, found by the live
+// stranger walk on 2026-09-16 (e2e/stranger-live.spec.ts; the same shape as the
+// credential-less socket that walk found the first time). Don't ask when the answer is
+// known: `enabled` here covers every caller — the board card, the search page, the
+// voyage scene — rather than each of them remembering.
 export function useTrips() {
-  return useQuery({ queryKey: TRIPS_KEY, queryFn: () => api<{ trips: Trip[] }>('trips'), ...live })
+  return useQuery({ queryKey: TRIPS_KEY, queryFn: () => api<{ trips: Trip[] }>('trips'), enabled: !isGuest(), ...live })
 }
 
 export function useTripNotes(tripId: string | undefined) {
@@ -225,6 +234,8 @@ export function useSharedTrips() {
   return useQuery({
     queryKey: SHARED_TRIPS_KEY,
     queryFn: () => api<{ trips: SharedTrip[] }>('shared-trip'),
+    // Operator-only on the server, like useTrips above — see its note.
+    enabled: !isGuest(),
     ...live,
   })
 }
