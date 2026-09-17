@@ -99,6 +99,7 @@ export function MembersSection({ members, onChange, help }: { members: Member[];
     <OperatorSection title={t.operator.members} help={help} helpKey="members">
       {/* The household's own name (set at signup) — renamable here. Operator-only. */}
       {!isGuest() && <HouseholdNameField />}
+      {!isGuest() && <HouseholdTzField />}
 
       {/* A brand-new household (fresh signup) lands here with nobody in it yet —
           three calm steps instead of a bare empty list. Disappears with the
@@ -224,6 +225,55 @@ function HouseholdPets() {
       </button>
       <p className="operator__field-hint mono">{p.householdHint}</p>
     </div>
+  )
+}
+
+// The household's TIME ZONE (migration 0135) — where its day starts. Every dated thing
+// is bucketed at local midnight in this zone, on the server and on every device, so it
+// is a household fact and not a device preference: a phone in another zone still reads
+// the household's day. A short list of the Canadian zones first (this app's households),
+// then whatever else Intl knows, so nobody has to type « America/Argentina/Ushuaia ».
+function HouseholdTzField() {
+  const t = useT()
+  const qc = useQueryClient()
+  const write = useWrite()
+  const { data } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ tz?: string }>('household') })
+  const current = data?.tz ?? 'America/Toronto'
+  const zones = useMemo(() => {
+    const canada = [
+      'America/St_Johns',
+      'America/Halifax',
+      'America/Toronto',
+      'America/Winnipeg',
+      'America/Regina',
+      'America/Edmonton',
+      'America/Vancouver',
+    ]
+    const all = typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : []
+    return [...canada, ...all.filter((z) => !canada.includes(z))]
+  }, [])
+  // The stored zone may not be in the list (an older pick, a zone Intl dropped) — keep
+  // it selectable rather than silently showing someone else's.
+  const options = zones.includes(current) ? zones : [current, ...zones]
+
+  async function save(tz: string) {
+    if (tz === current) return
+    await write('household', { method: 'PATCH', body: { tz }, affectedKeys: [HOUSEHOLD_KEY] }).catch(() => {})
+    qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
+  }
+
+  return (
+    <label className="operator__field">
+      <span className="operator__field-label">{t.operator.householdTz}</span>
+      <select className="input" value={current} onChange={(e) => void save(e.target.value)} aria-label={t.operator.householdTz}>
+        {options.map((z) => (
+          <option key={z} value={z}>
+            {z.replace(/_/g, ' ')}
+          </option>
+        ))}
+      </select>
+      <span className="operator__field-hint mono">{t.operator.householdTzHint}</span>
+    </label>
   )
 }
 

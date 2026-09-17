@@ -3,9 +3,23 @@
 // month grid) at LOCAL midnight in the household timezone, DST-aware — so the
 // client must STEP and SNAP days the same way. Plain `+ i*86400` arithmetic drifts
 // across a DST boundary (a local day is 23 h or 25 h), landing days a cell early or
-// late twice a year. Rendering assumes the browser's zone is the household zone
-// (the kiosk lives in the house), matching how the Kitchen grid already formats.
-const HOUSEHOLD_TZ = 'America/Toronto'
+// late twice a year.
+//
+// WHOSE zone? The HOUSEHOLD's, not the device's (migration 0135). A kiosk lives in the
+// house, so the two agree there — but a phone carried into another zone must still read
+// the household's own day, or « ce soir » would name a different supper than the wall
+// tablet across the room. `setHouseholdTz()` is fed from /api/household (src/lib/
+// householdTz.ts); until that answer lands, and on a deployment that predates 0135, it
+// is America/Toronto — the pre-0135 behaviour.
+let HOUSEHOLD_TZ = 'America/Toronto'
+
+/** Point every helper below at the household's zone. Idempotent; ignores nonsense. */
+export function setHouseholdTz(tz: string | null | undefined): void {
+  if (typeof tz === 'string' && tz && tz !== HOUSEHOLD_TZ) HOUSEHOLD_TZ = tz
+}
+
+/** The zone these helpers are using — for a caller that must format with it. */
+export const householdTz = (): string => HOUSEHOLD_TZ
 
 // Constructing an Intl.DateTimeFormat costs ~100 µs — 1000× a formatToParts
 // call — and the year/month grids walk these helpers hundreds of days at a time

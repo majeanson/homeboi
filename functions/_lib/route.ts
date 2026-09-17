@@ -16,6 +16,7 @@ import { type Actor, requireActor } from './household'
 import { aiUsable } from './aiPref'
 import { forbidden, serverError, serviceUnavailable } from './json'
 import { withIdempotency } from './idempotency'
+import { runWithTz } from './tz'
 import { broadcastInvalidate, keysForPath } from './realtime'
 
 // A handler that has already cleared auth: it receives the resolved actor
@@ -83,11 +84,17 @@ export function authed(
       // the SAME key, so a lost-response double-tap or an outbox replay never
       // double-applies regardless of which leg lands. GET/HEAD are never queued
       // and carry no key. See idempotency.ts.
+      // THE HOUSEHOLD'S ZONE, for everything below (migration 0135, _lib/tz.ts). Every
+      // day helper in ids.ts defaults to this ambient, so a handler — and the pure
+      // modules under it — get the right day boundary without threading a parameter
+      // through ~190 call sites. AsyncLocalStorage, so two concurrent requests from two
+      // households can never read each other's.
       const idemKey = ctx.request.headers.get('Idempotency-Key')
-      const res =
+      const res = await runWithTz(actor.tz, async () =>
         idemKey && method !== 'GET' && method !== 'HEAD'
           ? await withIdempotency(ctx.env, actor.householdId, idemKey, () => handler(ctx, actor))
-          : await handler(ctx, actor)
+          : await handler(ctx, actor),
+      )
 
       // Realtime broadcast HOOK (#20). After a SUCCESSFUL write, nudge the
       // household's RealtimeHub so awake clients refetch at once instead of

@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **11** — nine of them the public-readiness plan §4-K and two the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **9** — all of them the public-readiness plan §4-K (§4-L's thirteen items are closed, 2026-09-17), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -4082,8 +4082,8 @@ then `Intl.supportedValuesOf('timeZone')`). Client: `auth/me` and `/api/househol
 browser's — the ONE formatter home already caches per zone. D1 case: a household at
 `America/Vancouver` asked for the board at 06:30 UTC gets yesterday's date.
 
-- [ ] Migration + `Actor.tz` + every server helper call threaded; the ratchet guard red on one un-threaded call
-- [ ] PATCH + Réglages select + client `setHouseholdTz`; D1 case; PARITY footnote
+- [x] Migration 0135 (`households.tz`, defaulting to America/Toronto so nothing moves for anyone) + `Actor.tz` + **the zone as per-request AMBIENT, not a threaded parameter** — the plan said thread `actor.tz` through every server call of a day helper, and measuring first said no: ~190 call sites across 40 files, most of them deep inside pure modules (recur, upkeep, whenparse, transfers) whose own callers would each have needed a new parameter. `functions/_lib/tz.ts` establishes it once in `authed()` (AsyncLocalStorage — proven in workerd before it was written, and NOT a module variable: one isolate serves many households concurrently) and the four helpers in `ids.ts` read it as their default, so every existing call site became correct with no edit and a new one cannot forget what it never has to pass
+- [x] `PATCH /api/household { tz }` validated against Intl (an unknown zone makes every date helper throw — it would take the household down, not one setting; `intl-rule` ALLOWED with the reason: a one-shot probe on write, deliberately uncached) · the Réglages select beside the household's name (Canadian zones first, then everything Intl knows) · the client mirrors it (`setHouseholdTz` ← `/api/household`, so a phone carried elsewhere still reads the household's day) · `worker/tz.d1.test.ts` — five cases through the real runtime, including **two households answering concurrently without their zones crossing**, which is the whole reason it is AsyncLocalStorage. Its own first assertion divided by 86400 and expected 1: two midnights three zones apart are **21 hours** apart, the fixed-86400 trap CLAUDE.md warns about, caught by the test written for it
 
 #### L12. « Mes connexions » — sign out everywhere, change my password
 

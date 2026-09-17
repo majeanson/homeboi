@@ -727,7 +727,7 @@ export const ROUTES: Record<string, unknown> = {
   // shared fixture is a household, not a backup history; takeout-restore.spec.ts
   // registers its own route when it wants rows.
   'takeout/backups': { backups: [] },
-  household: { name: 'Maison Tremblay', postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
+  household: { name: 'Maison Tremblay', tz: 'America/Toronto', postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
   // « Le cercle » people graph (members + contacts + links + coloured groups).
   cercle: CERCLE,
   // Business sub-tab — isolated services directory. Empty is the calm default.

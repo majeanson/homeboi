@@ -37,6 +37,12 @@ const ALLOWED = new Map<string, string>([
   ['src/lib/localDay.ts', 'wallFmtCache/weekdayFmtCache — one per tz'],
   ['functions/_lib/ids.ts', 'wallFmtCache/weekdayFmtCache — one per tz'],
   ['functions/_lib/askContext.ts', 'askFmtCache — one per (lang, shape)'],
+  // NOT a formatter home: isValidTz() constructs one to ask Intl « do you know this
+  // zone? » and throws it away. It runs once per PATCH /api/household, never in a loop,
+  // and the answer is a boolean — there is nothing to cache. An unvalidated zone would
+  // make every date helper throw for that household, so the probe has to be a real
+  // construction rather than a regex over zone names.
+  ['functions/_lib/tz.ts', 'isValidTz — a one-shot probe on write, deliberately uncached'],
 ])
 
 interface Site {

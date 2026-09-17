@@ -18,6 +18,10 @@ import { nowSec } from './ids'
 export interface Actor {
   householdId: string
   scope: 'operator' | 'kiosk' | 'guest'
+  // The household's wall-clock zone (migration 0135). `authed()` puts it into the
+  // per-request async context (_lib/tz.ts) so every day helper picks it up; a handler
+  // never has to pass it. Absent → America/Toronto, the pre-0135 behaviour.
+  tz?: string
   email?: string
   deviceId?: string
   // Only set when scope === 'kiosk'. A 'display' device (a living-room TV showing
@@ -57,7 +61,7 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
   // resolves to nothing here and falls through to the device/guest paths, exactly
   // like an expired one.
   const op = await currentOperator(env, request)
-  if (op) return { householdId: op.householdId, scope: 'operator', email: op.email }
+  if (op) return { householdId: op.householdId, scope: 'operator', email: op.email, tz: await householdTz(env, op.householdId) }
 
   const device = await currentDevice(env, request)
   if (device) {
@@ -82,6 +86,7 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
         scope: 'kiosk',
         deviceId: device.deviceId,
         deviceKind: row.kind === 'display' ? 'display' : 'kiosk',
+        tz: await householdTz(env, device.householdId),
       }
     }
   }
@@ -95,15 +100,16 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
   const guest = await currentGuest(env, request)
   if (guest) {
     const row = await env.DB.prepare(
-      'SELECT h.id AS hid, g.id AS gid, g.revoked_at AS revoked FROM households h LEFT JOIN guests g ON g.id = ? WHERE h.id = ?',
+      'SELECT h.id AS hid, h.tz AS tz, g.id AS gid, g.revoked_at AS revoked FROM households h LEFT JOIN guests g ON g.id = ? WHERE h.id = ?',
     )
       .bind(guest.guestId, guest.householdId)
-      .first<{ hid: string; gid: string | null; revoked: number | null }>()
+      .first<{ hid: string; tz: string | null; gid: string | null; revoked: number | null }>()
     const guestRow = row && row.gid != null ? { revoked_at: row.revoked } : null
     if (row && guestRowAcceptable(guest.standing, guestRow))
       return {
         householdId: guest.householdId,
         scope: 'guest',
+        tz: row.tz ?? undefined,
         guestId: guest.guestId,
         guestKind: guest.kind,
         guestTargetKey: guest.targetKey,
@@ -112,6 +118,17 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
   }
 
   return null
+}
+
+// The household's zone (migration 0135), read on the actor path so `authed()` can put
+// it in scope for the whole request. One tiny indexed read per request; a household that
+// predates the column, or a row that vanished mid-request, answers undefined and the
+// helpers fall back to America/Toronto.
+async function householdTz(env: Env, householdId: string): Promise<string | undefined> {
+  const row = await env.DB.prepare('SELECT tz FROM households WHERE id = ?')
+    .bind(householdId)
+    .first<{ tz: string | null }>()
+  return row?.tz ?? undefined
 }
 
 // Guard-or-return-early. `requireScope: 'operator'` rejects kiosk actors.

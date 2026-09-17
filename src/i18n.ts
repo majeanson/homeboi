@@ -2957,6 +2957,8 @@ export const FR = {
     // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Appareils & accès).
     takeoutTitle: 'Emporter mes données',
     takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',
+    householdTz: 'Fuseau horaire',
+    householdTzHint: 'Où commence la journée de la maisonnée. Tout ce qui a une date s’y range — sur le babillard, sur les téléphones, partout. Un téléphone en voyage garde la journée de la maison.',
     takeoutBtn: 'Télécharger mes données (JSON)',
     // « Restaurer une copie » (STATE §4-L L8) — la sauvegarde de nuit avait tourné
     // pendant des mois sans que rien ne puisse la relire.

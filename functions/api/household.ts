@@ -17,6 +17,7 @@ import {
 import { householdAiEnabled } from '../_lib/aiPref'
 import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
+import { isValidTz } from '../_lib/tz'
 import { householdSchoolYear, setHouseholdSchoolYear, clearHouseholdSchoolYear, cleanSchoolYear } from '../_lib/schoolYear'
 
 // Household-level settings that aren't members/devices/chores: the postal code
@@ -40,6 +41,9 @@ async function householdName(env: { DB: D1Database }, householdId: string): Prom
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const name = await householdName(ctx.env, actor.householdId)
+  // The household's zone (0135) — the SPA needs it too: a phone travelling through
+  // another zone must still read the household's OWN day (src/lib/localDay.ts).
+  const tz = actor.tz ?? 'America/Toronto'
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const cashierExcludedStores = await householdCashierExcludedStores(ctx.env, actor.householdId)
@@ -54,6 +58,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const schoolYear = await householdSchoolYear(ctx.env, actor.householdId)
   return ok({
     name,
+    tz,
     postal,
     flippLang: await householdFlippLang(ctx.env, actor.householdId),
     includedStores,
@@ -97,6 +102,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     wifiPassword?: string | null
     houseRules?: string | null
     binDay?: string | null
+    tz?: string // the household's wall-clock zone (0135) — an IANA name Intl knows
     schoolYear?: unknown // { firstDay, lastDay, breaks: [{from,to,label?}] } | null (null clears)
     flippLang?: unknown // 'fr' | 'en' — the Flipp APP's language (its flyer ids); null clears
   }>(ctx.request)
@@ -108,6 +114,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (!name) return badRequest('Nom de la maisonnée requis.')
     await ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ? WHERE id = ?')
       .bind(name, nowSec(), actor.householdId)
+      .run()
+  }
+
+  // The household's time zone (0135). Validated against Intl, never trusted from the
+  // body: an unknown zone makes every date helper throw, which would take the whole
+  // household down rather than one setting.
+  if (body && 'tz' in body) {
+    if (!isValidTz(body.tz)) return badRequest('Fuseau horaire inconnu.')
+    await ctx.env.DB.prepare('UPDATE households SET tz = ?, updated_at = ? WHERE id = ?')
+      .bind(body.tz, nowSec(), actor.householdId)
       .run()
   }
 
@@ -300,6 +316,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
 
   const name = await householdName(ctx.env, actor.householdId)
+  // The household's zone (0135) — the SPA needs it too: a phone travelling through
+  // another zone must still read the household's OWN day (src/lib/localDay.ts).
+  const tz = actor.tz ?? 'America/Toronto'
   const postal = await householdPostal(ctx.env, actor.householdId)
   const includedStores = await householdIncludedStores(ctx.env, actor.householdId)
   const cashierExcludedStores = await householdCashierExcludedStores(ctx.env, actor.householdId)
@@ -314,6 +333,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const schoolYear = await householdSchoolYear(ctx.env, actor.householdId)
   return ok({
     name,
+    tz,
     postal,
     flippLang: await householdFlippLang(ctx.env, actor.householdId),
     includedStores,

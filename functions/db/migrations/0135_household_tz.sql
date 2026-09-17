@@ -1,0 +1,15 @@
+-- The household's own time zone (STATE.md §4-L, item L11, 2026-09-17).
+--
+-- Every day boundary in this app was America/Toronto, hard-coded as the default argument
+-- of the day helpers (functions/_lib/ids.ts `HOUSEHOLD_TZ`) and reached from ~190 call
+-- sites that never pass one. Correct for the household the app was built for; wrong for
+-- anyone else the moment it goes public — a household in Vancouver would see tomorrow's
+-- board from 21:00, and « Bientôt » would fire three hours early.
+--
+-- A column, not a preference blob: it is read on EVERY request (resolveActor puts it in
+-- the async context the helpers read, functions/_lib/tz.ts), so it belongs on the row
+-- that request already fetches.
+--
+-- The default keeps every existing household exactly where it is: this migration changes
+-- no behaviour for anyone until someone picks a different zone in Réglages.
+ALTER TABLE households ADD COLUMN tz TEXT NOT NULL DEFAULT 'America/Toronto';

@@ -25,6 +25,7 @@ import { startDaypartDrift } from './lib/daypartDrift'
 import { restorePersistedCache, startPersistingCache, clearPersistedCache } from './lib/persist'
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
+import { useHouseholdTzSync } from './lib/householdTz'
 import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview, setDeviceToken, setDisplay, isPaired } from './lib/device'
 import { connectRealtime, REALTIME_ENABLED } from './lib/realtime'
 import './styles.css'
@@ -108,6 +109,10 @@ try {
 // an ancestor, so this one component sees both.
 function ProfileSeed() {
   const auth = useAuth()
+  // Point the day helpers at the HOUSEHOLD's zone (migration 0135). Here because this
+  // component already renders nothing and already sits inside AuthProvider — the query
+  // it shares needs a session, and a signed-out visitor must not be asked.
+  useHouseholdTzSync()
   const { memberId, setMemberId } = useProfile()
   const seeded = useRef(false)
   useEffect(() => {

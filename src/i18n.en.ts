@@ -2640,6 +2640,8 @@ export const EN: typeof FR = {
     // E-35 — "Take my data" (Settings ▸ System ▸ Devices & access).
     takeoutTitle: 'Take my data',
     takeoutHint: 'Everything Babillard keeps for your household, in one JSON file — yours. A backup copy is also made automatically every night.',
+    householdTz: 'Time zone',
+    householdTzHint: 'Where the household’s day starts. Everything with a date is bucketed there — on the board, on every phone. A phone away from home keeps the household’s day.',
     takeoutBtn: 'Download my data (JSON)',
     restoreTitle: 'Restore a copy',
     restoreHint: 'A nightly copy, or the file above. The household’s content is replaced; paired devices and accounts stay.',

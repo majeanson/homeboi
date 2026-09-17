@@ -1,3 +1,4 @@
+import { currentTz } from './tz'
 // Opaque id + token generation. crypto.getRandomValues is available in the
 // Workers runtime.
 
@@ -50,10 +51,19 @@ export function dayStart(d: Date): number {
   return Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000)
 }
 
-// The household's wall-clock timezone. The meal week rolls over at LOCAL
-// midnight, not the 20:00 (8 PM Eastern) you get when the day is bucketed in
-// UTC. Single Québec household, so a fixed zone is fine; Intl handles DST.
-export const HOUSEHOLD_TZ = 'America/Toronto'
+// The household's wall-clock timezone. The meal week rolls over at LOCAL midnight, not
+// the 20:00 (8 PM Eastern) you get when the day is bucketed in UTC; Intl handles DST.
+//
+// It used to be the literal 'America/Toronto' — right for the household this was built
+// for, wrong for every other one the moment the app goes public (migration 0135). It is
+// now the PER-REQUEST household zone (functions/_lib/tz.ts): `authed()` establishes it
+// once from the actor, and these helpers read it as their default, so all ~190 call
+// sites that never passed a tz became correct without an edit. Outside a request (the
+// cron, a unit test) it answers America/Toronto, which is what those callers meant.
+//
+// Still a function-shaped default, evaluated per call — NOT a module constant captured
+// once, which would freeze the first request's zone for the isolate's whole life.
+export const HOUSEHOLD_TZ = currentTz()
 
 // Constructing an Intl.DateTimeFormat costs ~100 µs (ICU locale + pattern
 // resolution) — 1000× a formatToParts call. The calendar expanders walk these
@@ -101,7 +111,7 @@ function wallParts(d: Date, tz: string) {
 // double-offset pass keeps it correct across a DST boundary. Use this for the
 // meal-week window so "today" advances at midnight, not 8 PM.
 const dayStartCache = new Map<string, number>()
-export function localDayStart(d: Date, tz = HOUSEHOLD_TZ): number {
+export function localDayStart(d: Date, tz = currentTz()): number {
   const key = `${tz}:${d.getTime()}`
   const hit = dayStartCache.get(key)
   if (hit !== undefined) return hit
@@ -122,7 +132,7 @@ export function localDayStart(d: Date, tz = HOUSEHOLD_TZ): number {
 // noon-of-that-day back to its local midnight — so a 23 h/25 h DST day doesn't
 // drift the window an hour off (a plain `+ 86400` would). Mirrors the client
 // addLocalDays in src/lib/localDay.ts so server windows match client grid keys.
-export function addLocalDays(daySec: number, n: number, tz = HOUSEHOLD_TZ): number {
+export function addLocalDays(daySec: number, n: number, tz = currentTz()): number {
   const w = wallParts(new Date(daySec * 1000), tz)
   const noon = new Date(Date.UTC(w.y, w.mo - 1, w.d + n, 12))
   return localDayStart(noon, tz)
@@ -136,7 +146,7 @@ export function addLocalDays(daySec: number, n: number, tz = HOUSEHOLD_TZ): numb
 // occurrence keeps the anchor's WALL time-of-day across a DST change, not drift an
 // hour twice a year. (The non-existent 02:00–03:00 spring-forward gap is inherently
 // ambiguous; nobody schedules it, so the snap landing on either side is fine.)
-export function localTimeOnDay(daySec: number, secsOfDay: number, tz = HOUSEHOLD_TZ): number {
+export function localTimeOnDay(daySec: number, secsOfDay: number, tz = currentTz()): number {
   const w = wallParts(new Date(daySec * 1000), tz)
   const wallTarget = Date.UTC(w.y, w.mo - 1, w.d) + secsOfDay * 1000 // desired wall clock as pseudo-UTC ms
   const dayOffset = Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s) - daySec * 1000
@@ -152,7 +162,7 @@ export function localTimeOnDay(daySec: number, secsOfDay: number, tz = HOUSEHOLD
 // to anchor its block on a Tuesday through here; it rolls from today now.)
 const weekdayFmtCache = new Map<string, Intl.DateTimeFormat>()
 const weekdayCache = new Map<string, number>()
-export function localDayOfWeek(d: Date, tz = HOUSEHOLD_TZ): number {
+export function localDayOfWeek(d: Date, tz = currentTz()): number {
   const key = `${tz}:${d.getTime()}`
   const hit = weekdayCache.get(key)
   if (hit !== undefined) return hit
