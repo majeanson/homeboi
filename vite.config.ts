@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { headersFileSource } from './functions/_lib/securityHeaders'
 
 // SPA build. The app is a Cloudflare Worker with static assets: worker/index.ts
 // serves dist/ and routes /api/* to the handlers in functions/. Local full-stack
@@ -59,6 +60,22 @@ const SW_POLICY = 'v4-shell-refresh-and-offline-page'
 // offline (NFR-OFFLINE-1). Hand-rolled and dependency-free on purpose — the
 // caching policy is a dozen lines (see swSource) and the asset list is the only
 // thing a build truly knows better than runtime.
+// The security headers for the responses the WORKER NEVER SEES. Cloudflare's assets
+// router answers a request matching a real file straight from the edge, without invoking
+// the Worker — so the marketing door shipped without a single security header while
+// every other route had all six (measured on production, 2026-09-17). A `_headers` file
+// in the assets directory is the layer that covers them. Generated, never hand-written:
+// the source is the same ENFORCED list the Worker's wrapper uses.
+function securityHeadersFile(): Plugin {
+  return {
+    name: 'babillard-headers',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: '_headers', source: headersFileSource() })
+    },
+  }
+}
+
 function serviceWorker(): Plugin {
   return {
     name: 'babillard-sw',
@@ -78,6 +95,16 @@ function serviceWorker(): Plugin {
       handler(_opts, bundle) {
       const assets = Object.keys(bundle)
         .filter((f) => !f.endsWith('.map') && f !== 'index.html')
+        // BUILD METADATA, not app assets — and precaching either is a real hazard, not
+        // clutter. `_headers` is CONSUMED by Cloudflare and never served, so install()
+        // would 404 on a CRITICAL entry and the kiosk could not boot offline (the
+        // NFR-OFFLINE-1 failure this whole list exists to prevent); `.vite/manifest.json`
+        // is the door-closure check's input (scripts/check-bundle.mjs), read at build
+        // time from disk and never by the app. Both arrived with 2026-09-17's work and
+        // both are excluded here, at the source, rather than filtered downstream.
+        // NOTE the sw harness cannot catch this one: `vite preview` serves dist/
+        // verbatim, `_headers` included, so only production tells the truth.
+        .filter((f) => f !== '_headers' && !f.startsWith('.vite/'))
         .filter((f) => !ONLINE_ONLY_CHUNKS.some((re) => re.test(f)))
         .map((f) => '/' + f)
       // Two tiers, decided HERE because only the build knows which is which.
@@ -412,7 +439,7 @@ export default defineConfig({
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
-  plugins: [react(), serviceWorker()],
+  plugins: [react(), serviceWorker(), securityHeadersFile()],
   build: {
     // The build manifest is what lets scripts/check-bundle.mjs walk the ENTRY'S STATIC
     // CLOSURE — every chunk the browser fetches before it can run a line of the door —

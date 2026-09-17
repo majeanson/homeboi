@@ -212,6 +212,29 @@ if (!existsSync(manifestPath)) {
   console.log(`door: ${closure.size} chunks / ${Math.round(closureBytes / KB)} KB in the entry's static closure.`)
 }
 
+// 2-ter. THE _headers FILE — the security headers for everything the Worker never sees.
+// Cloudflare's assets router serves a request that MATCHES A REAL FILE (`/` → index.html,
+// `/manifest.webmanifest`) straight from the edge without invoking the Worker, so
+// `withSecurityHeaders` cannot reach them: production answered `/` with ZERO security
+// headers while /board and /api/health had all six (2026-09-17). vite.config.ts emits
+// this file from the same ENFORCED list; if the plugin is ever dropped, the door goes
+// bare again and nothing else would say so.
+const headersFile = join(DIST, '_headers')
+if (!existsSync(headersFile)) {
+  failures.push('dist/_headers is missing — the securityHeadersFile() plugin in vite.config.ts is what covers the static-asset responses the Worker never sees')
+} else {
+  const src = readFileSync(headersFile, 'utf8')
+  for (const name of ['Strict-Transport-Security', 'X-Content-Type-Options', 'Referrer-Policy', 'Permissions-Policy', 'Content-Security-Policy']) {
+    if (!src.includes(name + ':')) failures.push(`dist/_headers does not set ${name} — see functions/_lib/securityHeaders.ts`)
+  }
+  // …and it must NOT be precached: Cloudflare consumes _headers and never serves it, so
+  // a CRITICAL precache entry for it 404s and the kiosk cannot boot offline. Same for
+  // .vite/manifest.json, which is this script's own input and never the app's.
+  for (const u of ['/_headers', '/.vite/manifest.json']) {
+    if (sw.includes(`"${u}"`)) failures.push(`${u} is in the sw.js precache — it is build metadata, not an app asset (Cloudflare does not even serve _headers, so install() would 404 on it)`)
+  }
+}
+
 // 3. NO PHANTOMS — the mirror of check 2, and the half that was missing. Above we
 // walk the files and demand each is precached; nothing walked the precache and
 // demanded each entry is a real file. Four were not: a module whose only job is

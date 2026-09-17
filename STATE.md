@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **10** — nine of them the public-readiness plan §4-K, and ONE from the hardening pass §4-L, whose thirteen items are otherwise closed (2026-09-17): a cached copy of the marketing door at Cloudflare's edge still answers without the security headers, which is a purge and not a commit. The §4-K ones
+> a number you can trust. It reads **9** — all of them the public-readiness plan §4-K; the hardening pass §4-L is closed (2026-09-17). The §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -3976,26 +3976,46 @@ would be the cut corner.
 - [x] `withSecurityHeaders()` (`functions/_lib/securityHeaders.ts`) wraps EVERY response at the Worker's default export (`app.fetch` → the wrapper; a 101 upgrade passes untouched): HSTS · nosniff · Referrer-Policy · Permissions-Policy (camera/mic self, no geolocation — the app never asks) · `Content-Security-Policy: frame-ancestors 'self'` enforced. Unit cases (JSON, redirect, 101) + `worker/headers.d1.test.ts` through the real entry (an API answer, the SPA shell, a client route, a 401). The SW harness is Vite preview, not the Worker — it cannot see headers; the D1 case is the guard
 - [x] `Content-Security-Policy-Report-Only` written from what the code actually loads (Google Fonts, tesseract.js's worker + core + trained data on cdn.jsdelivr.net, https: images, blob: media, flipp.com frames, the same-origin socket) with `report-uri /api/csp-report` — a CSRF-exempt, guest-allowed, per-IP-limited, log-only 204 (`functions/api/csp-report.ts`, both wire shapes). **Enforce it only after a week of reports** — the next box, not this one
 
-#### L6-bis. The edge is still serving the door without the headers — Marc's call
+#### L6-bis. The door had no security headers — and it was never a stale cache
 
-Verified on production 2026-09-17, after the deploy: **every uncached response carries
-all six headers** — `/api/health`, and `/board?cb=…` answers with six — but the
-marketing door `/` comes back `cf-cache-status: HIT` with **none of them**, and it
-stays a HIT even with a cache-busting query string. Cloudflare's edge is holding a copy
-of that one HTML page from before the headers shipped, and it is the page that wants
-`frame-ancestors` and HSTS most.
+Verified on production 2026-09-17 after the deploy, and the first reading was WRONG in a
+way worth keeping. `/` answered `cf-cache-status: HIT` with **none** of the six headers
+while `/api/health` and `/board` had all six, so it read as a stale CDN copy and the box
+said « purge it ». A purge would have changed nothing.
 
-Nothing in the repo is wrong: `worker/headers.d1.test.ts` proves the Worker emits them
-for the shell, and it does. This is a CDN cache entry, and the fix is a **purge** (the
-Cloudflare dashboard, or `wrangler`), not a code change — which is why it is a box and
-not a commit. The tempting code fix (make the shell `no-store`) would give up the edge
-cache on the very page §4-L L4 just spent its effort making fast, so it should not be
-done reflexively.
+The real mechanism, measured path by path before touching anything:
 
-- [ ] **Purge the cached `/` at the edge**, then re-check with
-      `curl -sS -D - -o /dev/null https://babillard.marcportal.com/` — six headers and
-      `cf-cache-status: MISS`/`EXPIRED`. If it comes back stale again on the NEXT
-      deploy, the cache rule for HTML is the thing to change, not the Worker.
+| path | matches a real file in `dist/`? | headers |
+| --- | --- | --- |
+| `/` → index.html · `/index.html` · `/manifest.webmanifest` | yes | **0** |
+| `/board` · `/zzz-nope` (SPA fallback) · `/api/health` | no | 6 |
+
+Cloudflare's assets router **serves a request that matches a real file without invoking
+the Worker at all** — « Cloudflare will first attempt to serve static assets if one
+matches the incoming request » — so `withSecurityHeaders` never ran for the marketing
+door. Purging would have re-served the same header-less file on the next request.
+
+`worker/headers.d1.test.ts` passed the whole time, and that is its lesson: it calls
+`exports.default.fetch()` directly, so it proved the WORKER emits the headers and never
+that the DEPLOYMENT does. A test that bypasses the router cannot see the router.
+
+**The fix is the other half of the same guarantee**: a `_headers` file in the assets
+directory, which Cloudflare applies to exactly the responses the Worker never generates
+(and, it documents, to no others — so the two halves cannot double-set). Generated by
+`vite.config.ts` from the SAME `ENFORCED` list the wrapper uses, like `sw.js`.
+
+And it surfaced a live hazard: `_headers` and `.vite/manifest.json` (the door-closure
+check's own input, added earlier the same day) had both entered the service worker's
+**CRITICAL** precache list. Cloudflare consumes `_headers` and never serves it, so the
+kiosk's offline install would have 404ed on a must-succeed entry — the NFR-OFFLINE-1
+failure that list exists to prevent. `npm run e2e:sw` could not have caught it: `vite
+preview` serves `dist/` verbatim, `_headers` included. Only production tells the truth.
+
+- [x] `_headers` generated from `ENFORCED`; both build metadata files excluded from the
+      precache; two new checks in `check-bundle.mjs` (the file exists and carries the
+      headers; neither is precached) **both proven red** on their own defect; a unit case
+      pins the generated source against `ENFORCED` and Cloudflare's 2 000-character line
+      limit; `e2e:sw` green.
 
 #### L7. The nightly cron sweeps sandboxes and TELLS someone when it fails
 

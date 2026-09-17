@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CSP_REPORT_ONLY, ENFORCED, withSecurityHeaders } from './securityHeaders'
+import { CSP_REPORT_ONLY, ENFORCED, headersFileSource, withSecurityHeaders } from './securityHeaders'
 
 describe('security headers', () => {
   it('sets every enforced header on a JSON response and keeps the body + status', async () => {
@@ -20,6 +20,18 @@ describe('security headers', () => {
   it('leaves a WebSocket upgrade (101) untouched — it cannot be re-wrapped', () => {
     const upgrade = { status: 101, headers: new Headers() } as unknown as Response
     expect(withSecurityHeaders(upgrade)).toBe(upgrade)
+  })
+
+  it('the _headers file covers the responses the Worker never sees, from the same list', () => {
+    // Cloudflare's assets router answers a request matching a real file WITHOUT invoking
+    // the Worker, so `/` shipped with none of these while /board had all six (measured
+    // on production 2026-09-17). This file is that half — generated, never hand-written.
+    const src = headersFileSource()
+    const lines = src.split(/\r?\n/)
+    expect(lines[1]).toBe('/*')
+    for (const [name, value] of ENFORCED) expect(src, name).toContain(`  ${name}: ${value}`)
+    // Cloudflare's limits: 100 rules, 2000 characters a line.
+    for (const line of lines) expect(line.length, line.slice(0, 40)).toBeLessThan(2000)
   })
 
   it('the report-only policy names the report door and every host the code loads from', () => {
