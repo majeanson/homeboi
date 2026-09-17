@@ -177,13 +177,13 @@ describe('the docs quote the real counts', () => {
     { file: 'PARITY.md', what: 'guide cards (Appendix A)', re: /`src\/lib\/guideContent\.ts` \(\*\*(\d+)\*\* GUIDE cards\)/, actual: guideCards },
     { file: 'PARITY.md', what: 'tours (Appendix A)', re: /\(\*\*(\d+)\*\* tours: essentials/, actual: tours },
     { file: 'CLAUDE.md', what: 'guide cards (jargon table)', re: /\*\*(\d+)\*\* guide cards today against/, actual: guideCards },
-    { file: 'UNIFY.md', what: 'glossary terms (census)', re: /glossary \*\*(\d+)\*\* terms/, actual: glossaryTerms },
-    { file: 'STATE.md', what: 'glossary terms (§3 week summary)', re: /`src\/lib\/glossary\.ts` holds \*\*(\d+)\*\* terms/, actual: glossaryTerms },
+    { file: 'bmad/history/UNIFY.md', what: 'glossary terms (census)', re: /glossary \*\*(\d+)\*\* terms/, actual: glossaryTerms },
+    { file: 'bmad/history/SHIPPED.md', what: 'glossary terms (the UNIFY week entry)', re: /`src\/lib\/glossary\.ts` holds \*\*(\d+)\*\* terms/, actual: glossaryTerms },
     { file: 'DISCOVERY.md', what: 'guide cards (add-a-feature step 1)', re: /there\s+are \*\*(\d+)\*\* today/, actual: guideCards },
     // A ledger's own banner, against its own boxes (UNIFY.md day 7). This one had said
     // « 15 » for twelve days after the boxes fell to 1 — and STATE.md had it right the
     // whole time. The headline is the part everyone reads and nobody re-derives.
-    { file: 'REVIEW-PASS.md', what: 'its own open findings', re: /\*\*(\d+) findings? still open here\*\*/, actual: () => openBoxes('REVIEW-PASS.md') },
+    { file: 'bmad/history/REVIEW-PASS.md', what: 'its own open findings', re: /\*\*(\d+) findings? still open here\*\*/, actual: () => openBoxes('bmad/history/REVIEW-PASS.md') },
     // LEAN.md keeps the FIRST sweep's numbers as dated history; these are the live ones.
     { file: 'LEAN.md', what: 'matrix entries (current size)', re: /today the sweep is (\d+) entries/, actual: () => matrixEntries().entries },
     { file: 'LEAN.md', what: 'matrix states (current size)', re: /entries → (\d+)\s*\n?states/, actual: () => matrixEntries().states },
@@ -238,7 +238,49 @@ describe('the docs quote the real counts', () => {
     // canary red for being right. A counter must not require the thing it counts to
     // exist. What actually proves the scanner works is that it still finds boxes at all,
     // so it counts the DONE ones instead: those only ever accumulate.
-    const done = (read('REVIEW-PASS.md').match(/^\s*- \[x\] /gm) ?? []).length
+    const done = (read('bmad/history/REVIEW-PASS.md').match(/^\s*- \[x\] /gm) ?? []).length
     expect(done, 'the box scanner found no [x] either — the regex is broken, not the ledger').toBeGreaterThan(10)
+  })
+})
+
+// THE FRONT DOOR STAYS A FRONT DOOR (2026-09-17).
+//
+// STATE.md exists to answer « what should I do next? ». It had grown to 4 289 lines, of
+// which the only OPEN work started at line 3 490 — so the answer sat behind 81 % of the
+// file, and the front door had become the chronicle it was written to replace. Its
+// history moved to bmad/history/ (SHIPPED.md, FINDINGS.md); nothing was deleted.
+//
+// Two RATCHETS hold it there. Both may FALL and must never RISE, exactly like
+// check-bundle's chunk budgets: a file like this regrows one honest paragraph at a time,
+// and a number that only goes down is the only thing that has ever stopped that here.
+// Raising either is a decision to argue for in the commit message, not a convenience —
+// and the escape hatch is always the same one: move the finished part to the archive.
+// The numbers are a CEILING for what this file should be — a snapshot, the document
+// map, ONE session's entries, the open plan, the process review — not a snapshot of what
+// it happens to be today (653 / 254). A session writes its §3 entry and moves the
+// previous one to bmad/history/SHIPPED.md, which is net-neutral; the headroom is for the
+// moment between those two edits, not a licence to accumulate.
+const STATE_MAX_LINES = 700 // today 653
+const STATE_FIRST_OPEN_BOX_BY = 300 // today 254
+
+describe('STATE.md stays a front door', () => {
+  const state = read('STATE.md').split(/\r?\n/)
+
+  it(`is at most ${STATE_MAX_LINES} lines — a ratchet: lower it when you prune`, () => {
+    expect(
+      state.length,
+      'STATE.md grew. Move the finished part to bmad/history/ (SHIPPED.md for what shipped, FINDINGS.md for closed findings) and LOWER this number — do not raise it',
+    ).toBeLessThanOrEqual(STATE_MAX_LINES)
+  })
+
+  // The length is a proxy; THIS is the property it stands for. A file whose open work
+  // sits on line 3 490 is not a front door, whatever its length.
+  it(`puts the first open box within the first ${STATE_FIRST_OPEN_BOX_BY} lines`, () => {
+    const first = state.findIndex((l) => /^- \[ \] /.test(l))
+    expect(first, 'no open box at all — if that is true, say so in §4 rather than leaving the section empty').toBeGreaterThanOrEqual(0)
+    expect(
+      first + 1,
+      'the open work moved down the file. Whatever grew above it is history: move it to bmad/history/',
+    ).toBeLessThanOrEqual(STATE_FIRST_OPEN_BOX_BY)
   })
 })

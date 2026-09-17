@@ -245,7 +245,7 @@ test('« Remettre l’ordre de départ » patches household with the full aisle 
 // and the rename test goes there.
 
 test('adding a todo template posts it', async ({ page }) => {
-  await page.goto('/settings?tab=maison&sub=routines&focus=routines&focus=todoTemplates')
+  await page.goto('/settings?tab=maison&focus=todoTemplates')
   const section = page.locator('#operator-panel')
   const add = section.getByLabel('Nom de la liste').last()
   await expect(add).toBeVisible()
@@ -262,7 +262,7 @@ test('adding a todo template posts it', async ({ page }) => {
 })
 
 test('a list row opens its editor scene', async ({ page }) => {
-  await page.goto('/settings?tab=maison&sub=routines&focus=routines&focus=todoTemplates')
+  await page.goto('/settings?tab=maison&focus=todoTemplates')
   const section = page.locator('#operator-panel')
   // The row says what the list IS without opening anything: its name, and the count
   // it actually lands (tpl1 is 2 plain items + a ref to tpl2's 2 = 4).
