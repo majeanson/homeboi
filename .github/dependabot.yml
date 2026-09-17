@@ -1,0 +1,46 @@
+# Dependency updates (STATE.md §4-L, item L13).
+#
+# Nothing watched this repo's dependencies before 2026-09-17: a security advisory on
+# anything under node_modules would have arrived by nobody telling anyone. That is a
+# thin answer for an app about to accept strangers' accounts.
+#
+# Deliberately QUIET. The point is a weekly nudge, not a pull-request firehose:
+#   · minor + patch bumps are GROUPED into ONE pull request a week, because reviewing
+#     fifteen one-line bumps separately is how a repo learns to rubber-stamp them;
+#   · MAJORS come one at a time — those are the ones that need reading (React, Vite,
+#     Playwright and wrangler have each moved this app before);
+#   · at most 5 open at once, so the tab never becomes wallpaper.
+#
+# CI is the gate, as always: typecheck · test · build · check:bundle · test:d1 · knip
+# all run on a Dependabot branch exactly as on a push, and a red one is not merged.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: America/Toronto
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: 'chore(deps)'
+    labels:
+      - dependencies
+
+  # The Actions themselves — checkout, setup-node, upload-artifact. Monthly: they move
+  # slowly, and a stale one fails loudly rather than silently.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      timezone: America/Toronto
+    commit-message:
+      prefix: 'chore(ci)'
+    labels:
+      - dependencies

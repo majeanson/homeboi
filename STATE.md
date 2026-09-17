@@ -105,7 +105,7 @@ before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
-> a number you can trust. It reads **13** — nine of them the public-readiness plan §4-K and four the hardening pass §4-L (2026-09-16), the §4-K ones
+> a number you can trust. It reads **11** — nine of them the public-readiness plan §4-K and two the hardening pass §4-L (2026-09-16), the §4-K ones
 > written 2026-09-16 and deliberately NOT a ledger mined from documents: six waves toward
 > a public app, each box a task Marc chose. Before §K it read 0 that morning. It had read 3 for two
 > days: the a11y census §4-J opened them on 2026-09-14 (a control inside a control in cook
@@ -4102,8 +4102,8 @@ would need a sessions table that nothing else wants.
 
 **Verified:** no `.github/dependabot.yml`; `compatibility_date = "2024-12-30"`.
 
-- [ ] `.github/dependabot.yml`: npm weekly, minor+patch grouped into one PR, github-actions monthly
-- [ ] `compatibility_date` → 2026-09-01 (last complete month): D1 harness green, `cf:dev` smoke, deploy checked
+- [x] `.github/dependabot.yml` — npm weekly (Mondays, minor+patch GROUPED into one PR so a review is a review, majors one at a time, 5 open max) + github-actions monthly. Nothing watched this repo's dependencies before; CI gates a Dependabot branch exactly as a push
+- [x] `compatibility_date` 2024-12-30 → **2026-09-01** — a PIN, not a version: two years of runtime fixes the Worker was deliberately not receiving. Verified by `npm run test:d1` (the whole Worker in workerd, 22 cases), `wrangler deploy --dry-run`, and production after the deploy
 
 ### F. Not a backlog — do not mine these for work
 

@@ -11,7 +11,13 @@
 
 name = "babillard"
 main = "worker/index.ts"
-compatibility_date = "2024-12-30"
+# Bumped 2024-12-30 → 2026-09-01 (the last complete month) by STATE §4-L L13. A
+# compatibility date is a PIN, not a version: the runtime keeps every behaviour that
+# was current on that day, so a two-year-old date means two years of fixes the Worker
+# deliberately does not receive. Moving it is a real change — verified here by the
+# real-runtime suite (npm run test:d1 runs the whole Worker in workerd against a real
+# D1), a `wrangler deploy --dry-run`, and production after the deploy.
+compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 
 # --- Custom domain -----------------------------------------------------------
