@@ -37,16 +37,22 @@ function watch(page: Page): Trouble {
   page.on('console', (m: ConsoleMessage) => {
     if (m.type() !== 'error') return
     const text = m.text()
-    // Google Fonts / favicon noise from a cold cache is not the app's.
-    if (/favicon|fonts\.(googleapis|gstatic)/.test(text)) return
+    // Not the app's to answer for: a cold cache's font/favicon chatter, and Chromium
+    // telling us it does not know the `interactive-widget` viewport key — a real key on
+    // newer Chrome, set deliberately (index.html says why). Everything else IS ours:
+    // this filter caught two real CSP mistakes on its first live night, and widening it
+    // past "not ours" is how a walk stops finding things.
+    if (/favicon|fonts\.(googleapis|gstatic)|interactive-widget/.test(text)) return
     t.consoleErrors.push(`${page.url()} :: ${text.slice(0, 200)}`)
   })
   page.on('requestfailed', (r: Request) => {
-    // ERR_ABORTED is the HARNESS, not the app: this walk navigates between tabs while
-    // the previous page's polls are still in flight, and the browser cancels them. A
-    // real network failure carries any other errorText.
+    // A CANCELLED request is the HARNESS, not the app: this walk navigates between tabs
+    // while the previous page's polls are still in flight, and the browser drops them.
+    // Two wordings for one condition — `net::ERR_ABORTED` on the desktop profile and
+    // « Load request cancelled » on the mobile one — which is why the first filter
+    // caught only half of it. A real network failure carries any other errorText.
     const err = r.failure()?.errorText ?? ''
-    if (ours(r.url()) && !/ERR_ABORTED/.test(err)) t.badRequests.push(`FAILED ${r.url().slice(0, 120)} :: ${err}`)
+    if (ours(r.url()) && !/ERR_ABORTED|cancell?ed/i.test(err)) t.badRequests.push(`FAILED ${r.url().slice(0, 120)} :: ${err}`)
   })
   page.on('response', (r) => {
     if (r.status() >= 400 && ours(r.url())) t.badRequests.push(`${r.status()} ${r.request().method()} ${new URL(r.url()).pathname}`)

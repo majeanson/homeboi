@@ -24,12 +24,17 @@ describe('security headers', () => {
 
   it('the report-only policy names the report door and every host the code loads from', () => {
     expect(CSP_REPORT_ONLY).toContain('report-uri /api/csp-report')
-    for (const host of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net', 'https://flipp.com']) {
+    for (const host of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net', 'https://flipp.com', 'https://static.cloudflareinsights.com']) {
       expect(CSP_REPORT_ONLY, host).toContain(host)
     }
-    expect(CSP_REPORT_ONLY).toContain("frame-ancestors 'self'")
-    // The ENFORCED CSP is frame-ancestors ONLY — the rest stays report-only until a
-    // week of reports says the policy above matches the app.
+    // `frame-ancestors` is IGNORED in a report-only policy — the browser warns about it
+    // in every console, which the live walk read on night one. It belongs to the
+    // ENFORCED header only, where it is the whole enforced policy for now (the rest
+    // stays report-only until a week of reports says it matches the app).
+    expect(CSP_REPORT_ONLY).not.toContain('frame-ancestors')
     expect(ENFORCED.find(([n]) => n === 'Content-Security-Policy')?.[1]).toBe("frame-ancestors 'self'")
+    // The edge injects Cloudflare's RUM beacon into our HTML; a policy written from our
+    // own source alone would have blocked it the day it was enforced.
+    expect(CSP_REPORT_ONLY).toContain('https://static.cloudflareinsights.com')
   })
 })

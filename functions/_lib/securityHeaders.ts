@@ -21,9 +21,16 @@
 // and /tv/<code> are opened directly). A 101 (the WebSocket upgrade) is returned
 // untouched: an upgrade Response cannot be re-wrapped.
 
+// Two corrections the LIVE report-only policy earned on its first night (the stranger
+// walk read the visitor's console, 2026-09-16):
+//   · `frame-ancestors` is IGNORED in a report-only policy and the browser says so in
+//     every console — it belongs only to the enforced header below, where it already is;
+//   · Cloudflare's RUM beacon (static.cloudflareinsights.com/beacon.min.js) is injected
+//     by the EDGE, not by our HTML, so a policy written from our source alone would have
+//     blocked analytics the moment it was enforced. Exactly what report-only is for.
 export const CSP_REPORT_ONLY = [
   "default-src 'self'",
-  "script-src 'self' https://cdn.jsdelivr.net",
+  "script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
@@ -31,7 +38,6 @@ export const CSP_REPORT_ONLY = [
   "connect-src 'self' https://cdn.jsdelivr.net wss:",
   "worker-src 'self' blob: https://cdn.jsdelivr.net",
   "frame-src 'self' https://flipp.com https://*.flipp.com",
-  "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
