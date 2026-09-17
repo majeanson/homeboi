@@ -4017,6 +4017,16 @@ with six, and `/_headers` itself is still not served. The first check was premat
 `gh run watch` had latched onto the PREVIOUS run, so « still zero » was measured against
 a deploy that did not contain the file. Watch the run whose `headSha` you pushed.
 
+**What the report-only policy sees now that it reaches the door** — and it is the whole
+reason not to enforce yet: on one run the door reported two blocked INLINE scripts.
+Neither is ours (`index.html` has no inline script; both its tags are `src=`) — the
+edge injects them, and they did not appear on the next run, so they are intermittent.
+Enforcing `script-src` today would therefore break the marketing page some of the time
+and pass every local test. The walk now COLLECTS report-only violations and attaches
+them instead of failing on them: report-only blocks nothing, so a violation is a finding
+about the policy, and a weekly walk that fails on findings is a walk nobody reads. Those
+attachments (and /api/csp-report's logs) are the input to the enforce decision.
+
 **And the walk immediately caught a regression from L11**: the household-timezone sync
 asked `/api/household` on the marketing door, where a stranger has no credential — a 401
 in their console on every load, the same shape as the socket the walk found the first
