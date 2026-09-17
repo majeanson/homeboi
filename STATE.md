@@ -7,9 +7,9 @@
 >
 > **It is kept SHORT on purpose** (2026-09-17). It had grown to 4 289 lines, of which the
 > only open work started at line 3 490 — so the question it exists to answer was behind
-> 81 % of the file. What shipped, and every closed finding, moved to `bmad/history/`;
-> nothing was deleted. A line budget is enforced by `src/lib/docCounts.test.ts`, and it
-> is a ratchet: it may fall, never rise.
+> 81 % of the file. What shipped, and every closed finding, went to git — where the
+> `bmad/` planning folder followed it on the same day. A line budget is enforced by
+> `src/lib/docCounts.test.ts`, and it is a ratchet: it may fall, never rise.
 >
 > **Written 2026-08-27**, after a four-wave sweep (commits `8e526e3`, `e76bfe1`,
 > `375856c`, `31598dd`). Everything below was verified against code or a command run
@@ -18,8 +18,8 @@
 >
 > **Keep it living.** When a wave lands, update §1's numbers and §4's ranking here, in
 > the same commit. If this file goes stale it becomes the fourteenth problem. And when
-> the NEXT session's first §3 entry lands, move the current ones to
-> [`bmad/history/SHIPPED.md`](./bmad/history/SHIPPED.md) — that is what keeps it short.
+> the NEXT session's first §3 entry lands, CUT the current ones — git keeps them, and
+> that is what keeps this file short.
 
 ---
 
@@ -74,7 +74,7 @@ interchangeable. Read this table before opening any of them.
 > Templates (`PARITY.md` Parts 5–6, `ACTIONS.md` Part 5) and idea pools carry **no
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
-> least one session on the wrong work. `grep -rc -- "- [ ] " *.md bmad/*.md` is now
+> least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
 > a number you can trust. It reads **10** — nine in the public-readiness plan §4-K, and
 > one left from the closed hardening pass (enforce the CSP, waiting on a week of reports,
 > not on work). **That number is asserted from the boxes themselves** by
@@ -89,10 +89,8 @@ interchangeable. Read this table before opening any of them.
 > work, not a park. Four were flipped back from `[~]` to `[ ]` on the day the convention
 > shipped, for exactly that reason.
 >
-> *(How the count moved between 2026-08-27 and 2026-09-16 — 75 → 17 → 0 → 9, and what
-> each wave found — is in [`bmad/history/SHIPPED.md`](./bmad/history/SHIPPED.md) and
-> [`FINDINGS.md`](./bmad/history/FINDINGS.md). It is history, and it is not needed to
-> pick up work.)*
+> *(How the count moved between 2026-08-27 and 2026-09-16 — 75 → 17 → 0 → 9 — is in git
+> and is not needed to pick up work.)*
 
 | File | Kind | Status |
 | --- | --- | --- |
@@ -102,9 +100,7 @@ interchangeable. Read this table before opening any of them.
 | `ACTIONS.md` | **Playbook** | The action × door matrix (action × entry point × undo tier × non-touch). No open items — Part 5 is a template. |
 | `LEAN.md` · `DISCOVERY.md` · `COMPONENTS.md` · `OFFLINE.md` · `DEPLOY.md` | Reference | Consult when touching their concern. |
 | `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed-but-unbuilt features (A5–D2), never started. Not a backlog. |
-| `bmad/01`–`10` | History | Brief, PRD, architecture, shipped feature lines. Requirement tags (`NFR-*`, `PRD *`, `OD-*`) resolve here. |
-| `bmad/05` + `bmad/06` + `bmad/11` | ⚪ Idea pools / closed ledger | Brainstorms, and the friction audit (closed 2026-08-28). Not a backlog. |
-| `bmad/history/` | **Archive** | Finished ledgers and this file's own past: `SHIPPED.md` (what shipped), `FINDINGS.md` (§4's closed sections), `REVIEW-PASS.md`, `UNIFY.md`, `UNIFORMIZING.md`, `AUJOURDHUI.md`, `12-ui-polish-queue.md`. Verdicts and arguments, no work. **Do not mine.** Tags still resolve by name under `bmad/`. |
+| ~~`bmad/`~~ | **Deleted 2026-09-17** | The planning folder and the archive: brief, PRD, architecture, the idea pools, every finished ledger, and this file's own past. ~10 000 lines of documents about an app that is built. **In git, not in the tree** — `git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it. Code comments still cite its tags (`NFR-CALM-1`, `PRD C5`, `bmad/08 E-36`); they are labels now, not pointers (see CLAUDE.md ▸ Requirement tags). |
 
 **The trap this table used to exist to stop is now fixed at the source.** `PARITY.md` +
 `ACTIONS.md` contributed 40 unticked boxes that were templates; they are plain bullets
@@ -125,15 +121,15 @@ replace.
 Four moves and a ratchet:
 
 - **Two closed ledgers left the root.** `REVIEW-PASS.md` (1 467 lines, « 0 open ») and
-  `UNIFY.md` (486, closed) joined `bmad/history/`, which exists for exactly that and
-  already held three.
-- **§3 keeps the current session and nothing else**; everything older is
-  [`bmad/history/SHIPPED.md`](./bmad/history/SHIPPED.md). When the next session's first
-  entry lands, these move there too.
-- **§4's closed sections (A–J, L) collapsed to one line each** with their verdict, the
-  argument moving to [`bmad/history/FINDINGS.md`](./bmad/history/FINDINGS.md). Only §K
-  is open. One thread was rescued on the way out — enforcing the CSP — and is a box now
-  rather than a paragraph nobody would have found.
+  `UNIFY.md` (486, closed) joined the archive — and then, asked the same day, **the
+  whole `bmad/` folder went too**: ~10 000 lines of planning documents and finished
+  ledgers for an app that is built. Git keeps every word (`git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it.), and CLAUDE.md
+  now says so where it used to say « grep `bmad/` ».
+- **§3 keeps the current session and nothing else**; everything older is in git. When
+  the next session's first entry lands, these go the same way.
+- **§4's closed sections (A–J, L) collapsed to one line each** with their verdict; the
+  argument is in git. Only §K is open. One thread was rescued on the way out —
+  enforcing the CSP — and is a box now rather than a paragraph nobody would have found.
 - **The one cross-spec flake is fixed at its cause.** `config-panels` « a list row opens
   its editor scene » passed alone and failed after other specs; its URL carried `focus=`
   twice, so the app read the first one and focused the wrong card. The sub is derived
@@ -143,11 +139,12 @@ Four moves and a ratchet:
   the first open box within the first 260. The second is the real property — length is
   only its proxy.
 
-**Nothing was deleted.** What left the front door is the CHRONOLOGY — the same decision
-told once when planned, once when shipped, once when reviewed. Every `why`, and every
-finding that turned out to be wrong, is in the archive and still greppable.
+What left is the CHRONOLOGY — the same decision told once when planned, once when
+shipped, once when reviewed — and the planning documents for work that is done. The
+`why` that mattered was already written into the code comments, which is why they are
+long; the rest is one `git show` away.
 
-4 289 → 617 lines.
+STATE.md 4 289 → ~640 lines. Root markdown 10 905 → ~5 300. `bmad/` 10 164 → 0.
 
 
 ### « Delete from where you see it » on the calendar — 2026-09-16 (evening, asked mid-session)
@@ -221,11 +218,10 @@ guard checks that a table EXISTS; only the live schema knows its columns, and no
 case asks it. Section 5's « a guard that has never been red proves nothing » has a
 sibling: **a test that cannot reach the database cannot see what the database refuses.**
 
-> **Older entries live in [`bmad/history/SHIPPED.md`](./bmad/history/SHIPPED.md).** This
-> section holds the CURRENT session's work and nothing else: when the next session's
-> first entry lands, these move there. That rule is what keeps this file a front door
-> instead of a chronicle — it had reached 4 289 lines, with the only open work at line
-> 3 490.
+> **Older entries are in git, not here.** This section holds the CURRENT session's work
+> and nothing else: when the next session's first entry lands, these are cut. That rule
+> is what keeps this file a front door instead of a chronicle — it had reached 4 289
+> lines, with the only open work at line 3 490.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -233,15 +229,14 @@ sibling: **a test that cannot reach the database cannot see what the database re
 > It is the plan toward a public app, in six ordered waves, and Wave 0 is the wide-screen
 > pass. Everything above §K in this section is settled history.
 
-> **Everything except §K is closed, and lives in
-> [`bmad/history/FINDINGS.md`](./bmad/history/FINDINGS.md)** — the argument, the
-> measurements, and the several findings that turned out to be wrong. One line each
-> here, with the verdict:
+> **Everything except §K is closed.** The argument, the measurements and the several
+> findings that turned out to be wrong are in git (`git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it.). One line each here,
+> with the verdict:
 
 | § | What it was | Verdict |
 | --- | --- | --- |
 | **A** | Verified correctness — the `useWrite` sweep, `/share`'s lost writes | ✅ done 2026-08-27 |
-| **B** | The friction pool (`bmad/11`), tiers 1–3 | ✅ closed 2026-08-28; four of five tier-3 items were already stale |
+| **B** | The friction pool (the friction audit), tiers 1–3 | ✅ closed 2026-08-28; four of five tier-3 items were already stale |
 | **C** | Section debt (`REVIEW-PASS.md`), swept four times | ✅ closed 2026-09-09, 31 → 0 |
 | **C-bis … C-undecies** | Eleven rounds reported from the device, 2026-08-28 → 09-03 — list items resurrecting, dead calendars, the day scene's shape, the photo→recipe read | ✅ all closed; the durable ones became guards (`tmpIds`, `healOnError`, `repairImperialFromMetric`) |
 | **D** | Judgement calls waiting on Marc | ✅ all answered — pinch-zoom off, calendars retired, the supper hero left alone. **Declined, not deferred: do not re-propose without a new observation** |
@@ -539,7 +534,8 @@ blocker at any wave above.
 
 ### F. Not a backlog — do not mine these for work
 
-`bmad/05` (21 never-built ideas), `bmad/06` (lifestyle ideas),
+The `bmad/` idea pools are gone with the folder (21 never-built ideas, plus the
+lifestyle brainstorms — in git if ever wanted). What is left:
 `PLAN-mots-and-lifecycle-followups.md` (12 designed features, A5/A6 recommended first).
 All explicitly uncommitted. They are inspiration for a *deliberate* feature decision.
 
@@ -609,9 +605,9 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
    banner instead, and the convention is stated canonically in §2 with a copy at the top
    of each live ledger. `- [ ]` now means exactly one thing, repo-wide.
 
-4. **Audits are produced faster than they are acted on.** bmad/11 generated 33 verified
+4. **Audits are produced faster than they are acted on.** The friction audit generated 33 verified
    seams; none were approved; the document has stood as a permanent unfixed inventory for
-   six weeks. bmad/05, bmad/06 and PLAN-mots add ~45 more designed-but-unbuilt
+   six weeks. The idea pools and PLAN-mots added ~45 more designed-but-unbuilt
    items. **Writing another audit right now would be the wrong move** — the constraint is
    decisions, not information.
 
@@ -634,12 +630,12 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
 7. **Effort went where the documents pointed, not where the harm is.** Waves 2–4 were
    valuable but low-stakes (class renames, doc reconciliation, test coverage, a11y).
    Meanwhile five tier-1 friction seams that block real household rituals sat untouched
-   in bmad/11 — because they were parked in a file the "next steps?" survey treated as
+   in the friction audit — because they were parked in a file the "next steps?" survey treated as
    settled. The ranking in §4 is the correction.
 
 ### The four changes worth making
 
-1. ~~**Decide bmad/11 tier-1.**~~ ✅ **done** — all five closed (2026-08-27/28), and tier 2
+1. ~~**Decide the friction audit's tier-1.**~~ ✅ **done** — all five closed (2026-08-27/28), and tier 2
    with them. The decision never needed to be a five-seam grouping: taken one at a time,
    verified in code first, five of the fourteen turned out to be already fixed.
 2. **Turn the `useWrite` rule into a test** (`write-rule.test.ts` + allowlist), and fix
@@ -649,5 +645,5 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
    idea pools, and the canonical statement in §2.
 4. **Maintain this file, and freeze new audit docs** until the existing pools are decided
    or deleted. ✅ **Partly done 2026-08-28**: the three *finished* ledgers moved to
-   `bmad/history/` (with a README saying why they're kept and not to mine them), so the
+   the archive (with a README saying why they're kept and not to mine them), so the
    root now holds ten files instead of thirteen and none of them is closed.

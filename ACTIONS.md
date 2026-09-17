@@ -8,7 +8,8 @@
 
 > Companion to `PARITY.md` (cross-cutting **uniformity** — its **D17** points here),
 > `DISCOVERY.md` (**comprehension** ↔ action), `LEAN.md` (**chrome** before content)
-> and `bmad/11-friction-audit.md` (**flow** friction). This doc audits **doors**:
+> and the friction audit (`bmad/11`, closed 2026-08-28, now in git history only —
+> **flow** friction). This doc audits **doors**:
 > which user actions exist on each surface, which entry points reach each one, and
 > whether every action honours the two standing rules — *nothing reachable only by a
 > touch gesture* (CLAUDE.md § desktop-reachability) and *every destructive tap has a

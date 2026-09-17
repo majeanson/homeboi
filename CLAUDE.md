@@ -6,9 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 > This file governs **Babillard** (the `PlannerOrSomething/` project) specifically.
 
 > **Asked "what should we work on?" — read [`STATE.md`](./STATE.md) first, not the
-> ledgers.** It is the one front door: current health numbers, which of the ten root
-> markdown files still hold work and which are reference (the finished ones were moved
-> to `bmad/history/` on 2026-08-28), and the whole remaining backlog
+> ledgers.** It is the one front door: current health numbers, which of the root
+> markdown files still hold work and which are reference, and the whole remaining backlog
 > consolidated and ranked by user harm rather than by which document it lives in. It also
 > records the counting trap that burned a session: a ledger entry is a verdict from a
 > moment — **grep the claim in code before building on it** (a third of the items picked
@@ -37,8 +36,11 @@ no points, no push notifications, finite lists that empty and stay empty.
 Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 +
 Workers AI + R2. UI copy is **bilingual, FR-CA (Québécois) first**.
 
-The product thinking lives in [`bmad/`](./bmad/): brief, PRD, architecture. Many
-code comments cite requirement tags from there (`NFR-CALM-1`, `PRD C5`, `OD-1`, …).
+The product thinking — brief, PRD, architecture — lived in `bmad/`, **deleted
+2026-09-17**. It was ~10 000 lines of planning documents for an app that is built, and
+the root had become more prose than anyone reads. Git keeps every word:
+`git log --diff-filter=D -- bmad/` finds the commit, `git show <sha>^:bmad/03-architecture.md`
+reads a file out of it.
 
 ---
 
@@ -306,7 +308,7 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
 
 > Canonical naming rules for new tables/columns, so the schema stops accumulating
 > drift. These are **forward rules**: adopt them for all new migrations. (Existing
-> outliers are tracked in `bmad/history/UNIFORMIZING.md` Part I §5 / Part II §D, converged only
+> outliers were tracked in `UNIFORMIZING.md` (in git, see above) Part I §5 / Part II §D, converged only
 > during the one-household migration window — don't retro-churn a working table just
 > to match a name.) The calm-tenet test (`calm-tenets.test.ts`) still overrides
 > everything: no `streak`/`points`/`badge`/`push_subscription` table, no inventory
@@ -497,10 +499,10 @@ known limitations.**
 > spine", "surface", "audience"); the glossary decides which WORD a household reads, in
 > both languages, and `src/lib/glossary.test.ts` holds the losing spellings to a ratchet
 > that only goes down. Naming something a user will read? Start there. See
-> [`bmad/history/UNIFY.md`](./bmad/history/UNIFY.md) (closed; the census and the verb table).
+> `UNIFY.md` — closed, and in git (see « What this is »); its data, `src/lib/glossary.ts`, is live.
 
 Use these names in conversation and code so we mean the same thing. Many already
-appear as code identifiers, route names, or `bmad/` requirement tags.
+appear as code identifiers, route names, or requirement tags.
 
 ### Surfaces & audiences
 
@@ -556,9 +558,23 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 
 ### Requirement tags
 
-Comments cite `bmad/` tags: **`NFR-*`** (non-functional, e.g. `NFR-CALM-1`,
-`NFR-OFFLINE-1`), **`PRD <id>`** (product requirement, e.g. `PRD C5`), **`OD-*`**
-(open decision). Grep `bmad/` for the tag to find the rationale.
+About 160 code comments cite tags from the deleted `bmad/` planning docs: **`NFR-*`**
+(non-functional, e.g. `NFR-CALM-1`, `NFR-OFFLINE-1`), **`PRD <id>`** (product
+requirement, e.g. `PRD C5`), **`OD-*`** (open decision), and bare folder references like
+`(bmad/08 E-36)`.
+
+**They are LABELS now, not pointers.** Do not go looking for the folder — it was deleted
+2026-09-17 and grepping for a tag will find only the citations, not the rationale. Each
+one still does its real job in place: it says *this line exists because of a rule*, and
+the surrounding comment says which rule. Where the rationale genuinely matters it has
+been written into the code beside the tag, which is why the comments in this repo are
+long. If you need the original: `git log --diff-filter=D -- bmad/`, then
+`git show <sha>^:bmad/<file>`.
+
+They were deliberately NOT stripped from the comments. Rewriting ~160 source files to
+delete a word is a far larger and riskier edit than deleting a folder, and it would
+throw away the one thing the tag still carries — that a deliberate decision, findable in
+git, sits behind that line.
 
 ---
 

@@ -23,11 +23,11 @@ to `main`.
 documents still hold work, and the remaining backlog consolidated and ranked — is
 [`STATE.md`](./STATE.md). Start there.
 
-The planning that drove it lives in [`bmad/`](./bmad/): the
-[brief](./bmad/01-brief.md), [PRD](./bmad/02-prd.md), and
-[architecture](./bmad/03-architecture.md). Day-to-day contributor guidance —
-architecture, conventions, and the "build by reuse" rules — is in
-[`CLAUDE.md`](./CLAUDE.md); deploy steps are in [`DEPLOY.md`](./DEPLOY.md).
+The planning that drove it — brief, PRD, architecture — lived in `bmad/` and was
+deleted on 2026-09-17: ~10 000 lines of documents about an app that is now built. Git
+keeps it (`git log --diff-filter=D -- bmad/`, then `git show <sha>^:bmad/02-prd.md`).
+Day-to-day contributor guidance — architecture, conventions, and the "build by reuse"
+rules — is in [`CLAUDE.md`](./CLAUDE.md); deploy steps are in [`DEPLOY.md`](./DEPLOY.md).
 
 ## The five hub tabs
 
