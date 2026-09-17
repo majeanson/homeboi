@@ -18,9 +18,6 @@ export function setHouseholdTz(tz: string | null | undefined): void {
   if (typeof tz === 'string' && tz && tz !== HOUSEHOLD_TZ) HOUSEHOLD_TZ = tz
 }
 
-/** The zone these helpers are using — for a caller that must format with it. */
-export const householdTz = (): string => HOUSEHOLD_TZ
-
 // Constructing an Intl.DateTimeFormat costs ~100 µs — 1000× a formatToParts
 // call — and the year/month grids walk these helpers hundreds of days at a time
 // (the server twin burned whole SECONDS on /api/year before caching). One cached
