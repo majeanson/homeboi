@@ -203,6 +203,15 @@ demo, once it falls back to a read-only link, took two guaranteed 403s on every 
 load. Exactly the shape of the credential-less socket the scripted walk found in the
 afternoon. `enabled: !isGuest()` at the two hooks, so every caller inherits it.
 
+**The report-only CSP corrected itself the same night — which is the whole point of
+shipping it report-only.** Reading a real visitor's console on production turned up two
+mistakes in the policy written hours earlier: `frame-ancestors` is IGNORED in a
+report-only policy (the browser says so in every console, and a directive that only
+prints a warning trains people to skim), and Cloudflare's RUM beacon is injected by the
+EDGE, not by our HTML — so a policy written from our own source alone would have blocked
+analytics the day it was enforced. Both fixed and pinned. The walk then ran green on both
+profiles against production.
+
 **And the guard's first draft was wrong about its own subject.** It failed when the demo
 handed out the read-only fallback, calling that a broken sweep — but the cap fills
 legitimately whenever enough people try the demo inside 24 hours, and this walk mints one
