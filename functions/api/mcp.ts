@@ -499,5 +499,9 @@ function httpRpc(status: number, payload: unknown): Response {
 // standalone SSE stream or a session teardown. The transport says answer 405; the
 // route table would answer 405 anyway for a missing export, but saying it here makes
 // the intent readable and survives someone adding an onRequestGet by habit.
-export const onRequestGet = () => new Response(null, { status: 405, headers: { allow: 'POST' } })
-export const onRequestDelete = onRequestGet
+// (Two separate bindings rather than `onRequestDelete = onRequestGet`: the route
+// table reads these as distinct method handlers, and an alias reads as a duplicate
+// export to knip — which is the gate that caught it.)
+const mcpMethodNotAllowed = () => new Response(null, { status: 405, headers: { allow: 'POST' } })
+export const onRequestGet = () => mcpMethodNotAllowed()
+export const onRequestDelete = () => mcpMethodNotAllowed()
