@@ -45,7 +45,15 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // 'operator-invite', is NOT exempt: that one runs on a real operator session.)
 // 'csp-report' is the browser's own POST (Content-Security-Policy-Report-Only,
 // _lib/securityHeaders.ts): it carries no header of ours and answers 204 whatever it gets.
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'pair/poll', 'demo', 'operator-join', 'csp-report'])
+// 'mcp' is exempt because an MCP client is not a browser: it has no cookie, no CSRF
+// pair to echo, and (per a known Claude Code bug, anthropics/claude-code#29562) may
+// not even get its custom headers sent on the first call — so the token has to be
+// allowed as `?t=`, the same concession /api/live already makes for a WebSocket
+// handshake that cannot set headers. The exemption is only safe because mcp.ts
+// REFUSES a session cookie outright (it demands scope 'kiosk' + kind 'agent', which
+// only a token produces) and validates Origin. Relax either of those and this line
+// becomes a cross-site hole.
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'pair/poll', 'demo', 'operator-join', 'csp-report', 'mcp'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',
@@ -326,10 +334,30 @@ const app = {
     const handler = pickHandler(matched.mod, request.method)
     if (!handler) return methodNotAllowed()
 
+    // The MCP endpoint's `?t=` carrier — the same concession /api/live makes above,
+    // for the same reason and with the same trust: the token is folded onto a CLONED
+    // request's X-Device-Token header and goes through the SAME resolveActor (HMAC
+    // verify + revocation + household checks). Nothing is weakened; only the carrier
+    // differs. It exists because an MCP client cannot always set a custom header
+    // (anthropics/claude-code#29562), exactly as a browser WebSocket cannot.
+    //
+    // Scoped to 'mcp' ON PURPOSE. Promoting `?t=` for every route would turn every
+    // endpoint into one reachable by a URL alone — pasteable into a chat, logged by
+    // every proxy, and sitting in browser history. One route opts in.
+    let apiRequest = request
+    if (apiPath === 'mcp') {
+      const t = url.searchParams.get('t')
+      if (t && !request.headers.get('X-Device-Token')) {
+        const headers = new Headers(request.headers)
+        headers.set('X-Device-Token', t)
+        apiRequest = new Request(request.url, { headers, method: request.method, body: request.body })
+      }
+    }
+
     // Adapt the Worker request into the EventContext the Pages handler expects.
     // Handlers use only request / env / params; the rest is provided for shape.
     const context: EventContext<Env, string, { householdId?: string }> = {
-      request,
+      request: apiRequest,
       env,
       params: matched.params,
       waitUntil: ctx.waitUntil.bind(ctx),

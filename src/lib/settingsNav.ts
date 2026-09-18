@@ -84,6 +84,11 @@ export const SETTINGS_TREE = {
     tablets: [
       s('claimTablet', 'operator'),
       s('devices', 'operator'),
+      // « Agent IA (MCP) » — mints the read-only agent credential (functions/api/mcp.ts).
+      // It stacks HERE, under the same pill, because the row it creates is a device in
+      // the list right above it and is revoked from there: a separate pill would put
+      // the mint and the revoke on two different screens. C-15 — an existing sub.
+      s('mcpAgent', 'operator'),
       // « L'autre parent » — a SECOND operator account for this household
       // (migration 0128). It sits here rather than in maison ▸ members because that
       // sub is about the FACES on the board (who the household is), and this is
@@ -159,6 +164,7 @@ export const LEGACY_TAB: Readonly<
   guide: { tab: 'decouvrir' },
   household: { tab: 'maison', sub: 'members' },
   devices: { tab: 'settings', sub: 'tablets' },
+  mcpAgent: { tab: 'settings', sub: 'tablets' },
   agenda: {
     tab: 'board',
     sub: 'events',

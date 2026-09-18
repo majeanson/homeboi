@@ -24,10 +24,16 @@ export interface Actor {
   tz?: string
   email?: string
   deviceId?: string
-  // Only set when scope === 'kiosk'. A 'display' device (a living-room TV showing
-  // /cast) is read-only — route.ts blocks its non-GET methods, like a guest. A normal
-  // wall tablet is 'kiosk'. Older device rows default to 'kiosk' (migration 0083).
-  deviceKind?: 'kiosk' | 'display'
+  // Only set when scope === 'kiosk'. A normal wall tablet is 'kiosk'; older device
+  // rows default to it (migration 0083). The other two are READ-ONLY — route.ts
+  // blocks their non-GET methods, like a guest:
+  //   'display' — a living-room TV showing /cast.
+  //   'agent'   — an MCP client (functions/api/mcp.ts). Read-only is the whole
+  //               promise of that server, and it has to hold on EVERY endpoint, not
+  //               just the one: a leaked agent token must not be able to POST to
+  //               /api/list either. The single exception is the MCP endpoint itself,
+  //               whose POST performs no write — authed({ readOnlyPost: true }).
+  deviceKind?: 'kiosk' | 'display' | 'agent'
   guestId?: string
   // Only set when scope === 'guest'. Selects the share-mode lens; the per-kind
   // read allowlist lives in worker/index.ts (see auth.ts GuestKind).
@@ -79,13 +85,15 @@ export async function resolveActor(env: Env, request: Request): Promise<Actor | 
         .bind(nowSec(), device.deviceId)
         .run()
         .catch(() => {})
-      // The row's kind is authoritative (revocable, server-owned) — read-only display
-      // vs full kiosk. route.ts gates a 'display' to GET/HEAD only.
+      // The row's kind is authoritative (revocable, server-owned) — the read-only
+      // kinds vs a full kiosk. route.ts gates both read-only kinds to GET/HEAD.
+      // Anything unrecognized reads as 'kiosk', which is the pre-0083 behaviour and
+      // the only safe default for the rows that predate the column.
       return {
         householdId: device.householdId,
         scope: 'kiosk',
         deviceId: device.deviceId,
-        deviceKind: row.kind === 'display' ? 'display' : 'kiosk',
+        deviceKind: row.kind === 'display' ? 'display' : row.kind === 'agent' ? 'agent' : 'kiosk',
         tz: await householdTz(env, device.householdId),
       }
     }

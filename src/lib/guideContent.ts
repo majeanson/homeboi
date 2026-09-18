@@ -2505,6 +2505,19 @@ export const GUIDE: GuideEntry[] = [
           en: 'The TV appears in Settings ▸ System ▸ Devices & access: one button revokes it, and its short link stops working at once.',
         },
       },
+      // Appended (index 9): « Agent IA (MCP) ». Append-only — the aliases above
+      // index by position.
+      {
+        label: { fr: 'Un agent IA (MCP)', en: 'An AI agent (MCP)' },
+        detail: {
+          fr: 'Crée un jeton dans Réglages ▸ Système ▸ Appareils & accès, colle la commande dans ton terminal, et Claude peut lire la maisonnée : les repas, la liste, le calendrier, les recettes. Le jeton est montré une seule fois.',
+          en: 'Create a token in Settings ▸ System ▸ Devices & access, paste the command in your terminal, and Claude can read the household: meals, the list, the calendar, recipes. The token is shown once.',
+        },
+        why: {
+          fr: 'En LECTURE SEULE : un agent ne peut rien changer, rien effacer, rien ajouter. Il apparaît dans la liste des appareils et se révoque du même bouton.',
+          en: 'READ-ONLY: an agent cannot change, delete or add anything. It shows up in the device list and is revoked with the same button.',
+        },
+      },
     ],
   },
   {

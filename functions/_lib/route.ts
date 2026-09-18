@@ -45,10 +45,16 @@ const SAFE_METHODS = new Set(['GET', 'HEAD'])
 // gate is structural, like the auth guard: an AI endpoint can't forget the off
 // switch. Soft-degrade endpoints (capture/ask/recipe-import/deals) DON'T set this —
 // they call aiUsable() inline and fall back instead of erroring.
+// READ-ONLY POST (`{ readOnlyPost: true }`): for the one handler whose POST performs
+// no write — the MCP server (functions/api/mcp.ts), which is a JSON-RPC endpoint and
+// so must be POSTed to even though every tool behind it is a GET. Without this, the
+// read-only device kinds below would be blocked from reaching the very server that
+// exists to serve them. It relaxes ONLY the device-kind gate: the guest block still
+// applies, and nothing here grants a write — the handler has no write path to reach.
 export function authed(
   handler: ActorHandler,
   scope?: 'operator',
-  opts?: { requiresAi?: boolean },
+  opts?: { requiresAi?: boolean; readOnlyPost?: boolean },
 ): PagesFunction<Env> {
   return async (ctx) => {
     try {
@@ -69,10 +75,17 @@ export function authed(
       ) {
         return forbidden('Guest access is read-only.')
       }
-      // A 'display' device (a living-room TV showing /cast forever) is a read-only
-      // kiosk — same stance as a guest, enforced centrally so no write path leaks.
-      // Its only privilege over a guest is permanence + revocability (a devices row).
-      if (actor.scope === 'kiosk' && actor.deviceKind === 'display' && !SAFE_METHODS.has(method)) {
+      // The read-only device kinds — a 'display' (a living-room TV showing /cast
+      // forever) and an 'agent' (an MCP client) — are read-only kiosks: same stance
+      // as a guest, enforced centrally so no write path leaks. Their only privilege
+      // over a guest is permanence + revocability (a devices row). `readOnlyPost`
+      // exempts the MCP endpoint itself, whose POST is a read (see above).
+      if (
+        actor.scope === 'kiosk' &&
+        (actor.deviceKind === 'display' || actor.deviceKind === 'agent') &&
+        !SAFE_METHODS.has(method) &&
+        !opts?.readOnlyPost
+      ) {
         return forbidden('Display access is read-only.')
       }
       // AI off (binding unset or household-disabled) → 503 before the handler runs.

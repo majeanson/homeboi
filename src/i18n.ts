@@ -2357,6 +2357,18 @@ export const FR = {
     devices: 'Tablettes jumelées',
     revoke: 'Révoquer',
     noDevices: 'Aucune tablette jumelée.',
+    // « La maison, adressable » — le serveur MCP (functions/api/mcp.ts).
+    agentTitle: 'Agent IA (MCP)',
+    agentLead:
+      'Donne à Claude — ou à un autre agent — une fenêtre en LECTURE SEULE sur la maisonnée : les repas, la liste, le calendrier, les recettes. Rien ne peut être modifié d’ici.',
+    agentMint: 'Créer un jeton',
+    agentLabel: 'Agent MCP',
+    agentOnce:
+      'Le jeton n’est montré qu’une fois. Copie la commande, colle-la dans ton terminal. Tu peux le révoquer en tout temps dans la liste ci-dessus.',
+    agentCopy: 'Copier la commande',
+    agentCopied: 'Copié',
+    agentKindAgent: 'agent',
+    agentKindDisplay: 'écran',
     chores: 'Corvées',
     addChore: 'Ajouter une corvée',
     schedule: 'Céduler',

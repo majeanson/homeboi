@@ -346,6 +346,14 @@ export const OPERATOR_HELP = {
       en: `The screens paired to your household — the wall tablet, an old tablet in the kitchen. Rename them so you can tell them apart; revoke one you no longer want and it will ask for a code again next time it starts.`,
     },
   },
+  mcpAgent: {
+    card: 'set-devices',
+    point: 9,
+    body: {
+      fr: `Un jeton pour Claude (ou un autre agent) : il pourra LIRE la maisonnée — les repas, la liste, le calendrier, les recettes — et rien d'autre. Aucun ajout, aucune modification, aucune suppression. Le jeton s'affiche une seule fois ; il apparaît ensuite dans la liste des appareils ci-dessus et se révoque du même bouton.`,
+      en: `A token for Claude (or any other agent): it will be able to READ the household — meals, the list, the calendar, recipes — and nothing else. No adding, no editing, no deleting. The token is shown once; it then appears in the device list above and is revoked with the same button.`,
+    },
+  },
   chores: {
     card: 'set-chores',
     point: 1,

@@ -30,7 +30,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 135 forward-only migrations (0135 = the household's own time zone) |
-| **Tests** | 2 336 unit tests in 184 files · 27 real-runtime cases in 8 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
+| **Tests** | 2 365 unit tests in 185 files · 48 real-runtime cases in 9 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -110,113 +110,65 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### The front door was the noise — 2026-09-17
+### « La maison, adressable » — an MCP server over the household — 2026-09-18
 
-Asked what to do about noise, and the answer was not the code: the Worker logs eleven
-`console` calls, almost all errors. It was the documentation. **This file was 4 289
-lines and the only OPEN work started at line 3 490** — 81 % of the front door read before
-reaching the thing it exists to answer. It had become the chronicle it was written to
-replace.
+Asked how to take the app to the next level, and the answer that survived the filters was
+not a feature: **the app knows more about this household than any other software, and it
+has exactly one interface — its own UI.** `/api/mcp` is the second one. Claude (or
+anything that speaks MCP) can now read the board, the meal plan, the list, the calendar,
+the recipe book and the directory.
 
-Four moves and a ratchet:
+**READ-ONLY, by construction rather than by flag.** There is no write path in
+`functions/api/mcp.ts`: the eight tools each proxy a **GET** handler that already exists,
+the registry holds no POST entry, and `tools/call` can only reach a registry name. An
+agent connected here cannot change the household even if it decides it should. Writes
+stay a separate decision — the capture spine, the undo toast and the outbox all live in
+the UI, and an agent writing past them writes past every calm guarantee.
 
-- **Two closed ledgers left the root.** `REVIEW-PASS.md` (1 467 lines, « 0 open ») and
-  `UNIFY.md` (486, closed) joined the archive — and then, asked the same day, **the
-  whole `bmad/` folder went too**: ~10 000 lines of planning documents and finished
-  ledgers for an app that is built. Git keeps every word (`git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it.), and CLAUDE.md
-  now says so where it used to say « grep `bmad/` ».
-- **§3 keeps the current session and nothing else**; everything older is in git. When
-  the next session's first entry lands, these go the same way.
-- **§4's closed sections (A–J, L) collapsed to one line each** with their verdict; the
-  argument is in git. Only §K is open. One thread was rescued on the way out —
-  enforcing the CSP — and is a box now rather than a paragraph nobody would have found.
-- **The one cross-spec flake is fixed at its cause.** `config-panels` « a list row opens
-  its editor scene » passed alone and failed after other specs; its URL carried `focus=`
-  twice, so the app read the first one and focused the wrong card. The sub is derived
-  from `focus`, so naming the card alone is both correct and the documented way to link.
-  217/217 now pass in the order that used to fail.
-- **Two ratchets hold it** (`docCounts.test.ts`, both proven red): at most 660 lines, and
-  the first open box within the first 260. The second is the real property — length is
-  only its proxy.
+**No Durable Object, no `agents` package, no SSE.** Spec revision **2026-07-28** removed
+transport sessions *and* the `initialize` handshake: each request is self-contained, so
+the whole server is one POST handler returning one JSON object — the shape every other
+endpoint here already has. The `initialize` era (2025-03-26 … 2025-11-25) is answered too,
+because that is what shipped clients still speak. `_lib/mcp.ts` is the wire (pure, 30 unit
+cases); `functions/api/mcp.ts` is the household.
 
-What left is the CHRONOLOGY — the same decision told once when planned, once when
-shipped, once when reviewed — and the planning documents for work that is done. The
-`why` that mattered was already written into the code comments, which is why they are
-long; the rest is one `git show` away.
+**Reuse, not a second read of the household.** Every tool calls the handler that owns its
+data, so the caps, the recurrence expansion, the meal-slot order and the household time
+zone are decided in one place and inherited here — including changes made after this
+shipped. The one exception, `household_snapshot`, drove the extraction of
+`_lib/askSnapshot.ts` out of `api/ask.ts`: two callers of "what the household is right
+now" would have drifted inside a month. `ask.ts` is 139 → 43 lines.
 
-STATE.md 4 289 → ~640 lines. Root markdown 10 905 → ~5 300. `bmad/` 10 164 → 0.
+**The credential is a device, and the security work was the real work.** A `devices` row
+with `kind='agent'` (no migration — `kind` has been free TEXT since 0083's `'display'`),
+minted from Réglages ▸ Système ▸ Appareils & accès, listed and revoked beside the wall
+tablets. Three things the tests caught rather than the design:
 
+- an `agent` row resolved as a plain **kiosk**, so the token was a full write credential
+  everywhere else — `/api/list` POST would have worked. `resolveActor` now maps the kind
+  through, `route.ts` gates `'agent'` read-only like `'display'`, and the MCP endpoint
+  itself is the single declared exception (`authed(…, { readOnlyPost: true })`);
+- `/api/mcp` is **CSRF-exempt** (an MCP client cannot double-submit, and per
+  anthropics/claude-code#29562 may not get custom headers sent at all, so `?t=` has to
+  work — the concession `/api/live` already makes). A CSRF-exempt POST that accepted the
+  operator **cookie** would be a real cross-site hole, so it refuses one: scope must be
+  `'kiosk'` + kind `'agent'`, which only a token produces. Plus the `Origin` check the
+  transport mandates. A d1 case asserts the cookie gets 403;
+- `?t=` never reached `resolveActor` at all (it only reads the header) — found by the
+  real-runtime test, fixed the way `/api/live` does it, scoped to this one route.
 
-### « Delete from where you see it » on the calendar — 2026-09-16 (evening, asked mid-session)
+`'mcp'` joined `SILENT_PATHS`: unmapped POSTs default to invalidating the board, so every
+read-only tool call would have nudged every open device in the house.
 
-Marc: « make sure we can remove/delete easily from detail popups and such for
-rendez-vous and others on calendar ». Checked against the code: the event peek had a
-delete, but behind the ⋯ then a confirm (three taps); the Mois day panel's corvée and
-entretien peeks had **no** edit and **no** delete while the board's identical rows had
-both; a planned meal tapped on the calendar could not be taken off the plan; and the day
-page, which edits a rendez-vous inline instead of peeking, could not delete one **at
-all**. One shared hook now (`components/detail/EntityRemovals`), used by the board (which
-lost its three private closures), the month panel and the day page; « Supprimer » is a
-visible danger button on the event peek; the day page's inline forms carry the delete
-under them, and its entretien rows open the peek (the page carries its own
-`DetailProvider` for that one row kind). ACTIONS.md rows updated with note ¹²;
-`e2e/calendar-delete.spec.ts` (eight cases) + the event-peek spec re-pinned.
+**Gates:** typecheck · 2 365 unit (30 new, **both key guards proven red** by planting the
+latin1 decode and the `id: null` notification) · **48 real-runtime, 21 new**
+(`worker/mcp.d1.test.ts` — minting, revocation, the cookie refusal, the kiosk refusal,
+cross-household isolation, the legacy handshake, `-32020`, 405, Origin, and the tools
+actually returning this household's list) · build · bundle budget unchanged (door still
+7 chunks / 728 KB — the server is Worker-side, the SPA gained one settings section).
+knip does not run on this machine (the documented oxc-parser crash) — **read the CI run.**
 
-### The stranger's walk is a weekly job now — and CI had been red for three commits — 2026-09-16 (night)
-
-Three things, in the order they were found, because the order is the lesson.
-
-**CI had been failing since the real-runtime harness landed, and three commits never
-deployed.** `knip` reads `cloudflare:test` / `cloudflare:workers` — VIRTUAL modules the
-workers runtime provides — as unlisted npm dependencies. knip does not run on this
-machine (the documented oxc-parser crash; CLAUDE.md already says the CI run is the one
-that counts), and four more pushes went out without anyone opening the run page. So the
-security headers, the nightly alert and the restore door sat on `main`, green locally,
-undeployed. Fixed by naming the virtual module in `knip.json`; CI green, all four
-deployed, migration 0134 applied to production, and the headers verified live with curl.
-**A gate you cannot run locally has to be READ after the push** — the same shape as §5's
-lesson about guards, one level up.
-
-**The walk found a real defect on its first live run.** « Voyage » is operator-only on
-the server (`authed(…, 'operator')` on every method of `/api/trips` and
-`/api/shared-trip`), and the board card asked for both unconditionally — so the public
-demo, once it falls back to a read-only link, took two guaranteed 403s on every board
-load. Exactly the shape of the credential-less socket the scripted walk found in the
-afternoon. `enabled: !isGuest()` at the two hooks, so every caller inherits it.
-
-**The report-only CSP corrected itself the same night — which is the whole point of
-shipping it report-only.** Reading a real visitor's console on production turned up two
-mistakes in the policy written hours earlier: `frame-ancestors` is IGNORED in a
-report-only policy (the browser says so in every console, and a directive that only
-prints a warning trains people to skim), and Cloudflare's RUM beacon is injected by the
-EDGE, not by our HTML — so a policy written from our own source alone would have blocked
-analytics the day it was enforced. Both fixed and pinned. The walk then ran green on both
-profiles against production.
-
-**And the guard's first draft was wrong about its own subject.** It failed when the demo
-handed out the read-only fallback, calling that a broken sweep — but the cap fills
-legitimately whenever enough people try the demo inside 24 hours, and this walk mints one
-per profile per attempt, so it was failing against its own footprint. Whether the sweep
-is healthy is a different question with a different instrument: the nightly report counts
-sandboxes that outlived the TTL and mails when any survived (§4-L L7), and it has the
-database to prove it. The walk records which mode it got and walks that one all the way —
-on the fallback it checks the fallback's own promise (it SAYS it is read-only; it grows
-no ＋ it cannot honour).
-
-### The real-runtime harness, and what it found in thirty seconds — 2026-09-16 (evening)
-
-STATE §4-L L1–L3 landed in three commits. The third is the one to remember: the Worker
-now runs in workerd against a real D1 with every migration applied (`npm run test:d1`,
-in CI after the bundle check), and its first customers were the tenant-isolation sweep
-(household B walking every route with A's ids — green, and red the moment one
-`AND household_id = ?` was removed), the account flows, and the demo sandbox. The demo
-case failed on its first run: **no sandbox had ever been swept.** Three tables in the
-sweep's inventory have no `household_id` column, D1 runs the delete as one transaction,
-and the sweep's own catch hid the rollback on every mint — Wave 1 had already recorded
-« unable to delete ANY sandbox since 0102 » and believed it fixed. The pure inventory
-guard checks that a table EXISTS; only the live schema knows its columns, and now a
-case asks it. Section 5's « a guard that has never been red proves nothing » has a
-sibling: **a test that cannot reach the database cannot see what the database refuses.**
+Guide: `set-devices` point 9 (append-only) + an `OPERATOR_HELP` entry, so the « ? » works.
 
 > **Older entries are in git, not here.** This section holds the CURRENT session's work
 > and nothing else: when the next session's first entry lands, these are cut. That rule

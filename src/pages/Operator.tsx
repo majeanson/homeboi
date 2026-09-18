@@ -12,7 +12,7 @@ import { AmbientSettingsSection, HabitCheckinSection } from '../components/opera
 import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, FlippSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { AisleOrderSection } from '../components/operator/aisles'
-import { ClaimTablet, DevicesSection } from '../components/operator/devices'
+import { AgentSection, ClaimTablet, DevicesSection } from '../components/operator/devices'
 import { MembersSection } from '../components/operator/household'
 import { GuestSection } from '../components/operator/guest'
 import { CoOperatorsSection } from '../components/operator/CoOperatorsSection'
@@ -362,6 +362,7 @@ export function Operator() {
     // settings (Système)
     claimTablet: <ClaimTablet onClaimed={load} />,
     devices: <DevicesSection devices={devices} onChange={load} help={operatorHelp} />,
+    mcpAgent: <AgentSection onChange={load} help={operatorHelp} />,
     coop: <CoOperatorsSection help={operatorHelp} />,
     sessions: <SessionsSection help={operatorHelp} />,
     guestLinks: <GuestSection help={operatorHelp} />,

@@ -94,7 +94,7 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-**39** user-facing features — the row count of this table, not an estimate.
+**40** user-facing features — the row count of this table, not an estimate.
 Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
@@ -169,6 +169,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F37 | L'autre parent (2e compte opérateur)                                    | operators (0128 invite_nonce, 0130 member_id)                                                  | operator-invite, operator-join                                    | operator/CoOperatorsSection, JoinHouseholdPage (`/rejoindre`), main ProfileSeed                       | OPERATORS                           |
 | F38 | La semaine (3e vue du calendrier)                                       | — (dérivée : /api/month sur 7 jours)                                                           | month                                                             | board/WeekView, board/dayLines, board/DayMark, lib/boardview                                          | MONTH                               |
 | F40 | Mot de passe oublié (compte)                                              | password_resets (0133)                                                                        | auth/forgot, auth/reset                                          | ForgotPage, ResetPage, Login (la porte), \_lib/mail                                                     | —                                   |
+| F41 | Agent IA (serveur MCP, lecture seule)                                     | devices.kind='agent' (0083, aucune migration)                                                  | mcp, pair/devices (mintAgent)                                    | operator/devices `AgentSection`, \_lib/mcp (le fil), \_lib/askSnapshot                                   | DEVICES                             |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -347,6 +348,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F37 L'autre parent       | ✅⁷¹    | ➖⁷²    | ✅⁷³    | ➖⁷⁴       | ➖⁷⁵  | ➖⁷⁶      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁷⁷      | ✅⁷⁸    | ✅⁷⁹       | ➖¹       | ✅       | ✅      |
 | F38 La semaine           | ➖⁸⁰    | ➖⁸¹    | ➖⁸⁰    | ➖⁸⁰       | ✅⁸²  | ➖⁸³      | ✅       | ➖⁸⁴       | ✅           | ➖⁴⁷      | ✅⁸⁵      | ✅⁸⁶    | ➖⁸⁰       | ➖¹       | ✅       | ✅      |
 | F40 Mot de passe oublié  | ✅⁸⁷    | ➖⁸⁸    | ➖⁸⁹    | ➖⁹⁰       | ➖⁹¹  | ➖⁸⁸      | ✅⁹²     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁸⁸      | ➖⁸⁸    | ✅⁹²       | ➖¹       | ✅       | ✅      |
+| F41 Agent IA (MCP)       | ✅⁹³    | ➖⁹⁴    | ✅⁹⁵    | ➖⁹⁶       | ➖⁹⁷  | ➖⁹⁴      | ✅⁹⁸     | ➖⁴⁸       | ✅⁹⁹         | ➖⁴⁷      | ✅¹⁰⁰     | ➖⁹⁴    | ✅¹⁰¹      | ➖¹       | ✅       | ✅¹⁰²   |
 
 Footnotes (verdicts recorded so far):
 
@@ -770,6 +772,49 @@ Footnotes (verdicts recorded so far):
     (SHA-256, UNIQUE), `email` a soft ref commented, `expires_at` / `used_at` /
     `created_at` per the timestamp convention; EXEMPT from the sandbox sweep (no
     household_id, and the guard now requires an exemption to name a live table).
+
+93. **CRUD (F41)** — the entity a household manages here is the **credential**, not the
+    server: create (Réglages ▸ Système ▸ Appareils & accès → « Créer un jeton »,
+    `pair/devices` `mintAgent`), read (it appears in the devices list, with its own
+    `sparkle` glyph and last-seen), rename (the same inline edit every device has), and
+    delete = revoke (the same trash button). No reorder — a device list has no order.
+94. **➖ peek / search / who / empty-of-content (F41)** — there is no household entity to
+    meet: an agent token is access, like a guest link (F33's stance), not a thing on the
+    board. It is deliberately absent from search and carries no member face — attributing
+    a read to a person would be a fiction, since the tools read the whole household.
+95. **Undo (F41)** — revoking rides `useDeferredRemoval` + the undo toast with every other
+    device row (`DevicesSection.revoke`), so a mis-tap is recoverable for the toast's life
+    and the write is held until it expires.
+96. **➖ offline (F41)** — minting is ONLINE by nature: the token is generated server-side
+    and shown once, so an outbox replay would mint a second credential the household never
+    saw. Revoking is a security action that must not be queued. Both are `api()` at a site
+    `write-rule.test.ts` already covers via `components/operator/devices.tsx`.
+97. **➖ realtime (F41)** — `'mcp'` is in `SILENT_PATHS` (`_lib/realtime.ts`): every tool is
+    a READ, so there is nothing to invalidate. Without the entry the unmapped-POST default
+    would have nudged the board on every tool call — caught before it shipped. The mint
+    itself invalidates `DEVICES` through the ordinary `pair/devices` mapping.
+98. **Guide (F41)** — `set-devices` point 9 (appended; the card's aliases index by
+    position, so append-only) + an `OPERATOR_HELP` entry keyed `mcpAgent`, so arming the
+    « ? » on the section opens a real bubble. `operatorHelpCoverage.test.ts` refused the
+    section until the entry existed.
+99. **Kiosk/mobile (F41)** — the section is one button and one `<pre>`; the command wraps,
+    and the surface is `operator`-access so a kiosk never renders it. A link guest is
+    refused by `isGuest()` at the top of the component (minting is a write).
+100. **Empty (F41)** — the pre-mint state IS the empty state: the lead sentence says what
+     an agent will and will not be able to do, then a single button. Nothing is listed
+     until something exists.
+101. **Schema (F41)** — **no migration.** `devices.kind` has been free `TEXT NOT NULL
+     DEFAULT 'kiosk'` since 0083 added `'display'`, so `'agent'` is a third value, not a
+     column. The read-only stance lives where `'display'`'s does (`route.ts`), which is
+     what makes it hold on every endpoint rather than only on `/api/mcp`.
+102. **e2e (F41)** — covered by the **real-runtime** suite instead of Playwright, which is
+     the right instrument: there is no browser flow to walk, and the claims worth holding
+     are the wire and the guards. `worker/mcp.d1.test.ts` (21 cases) runs the actual Worker
+     against a real D1 — the mint, the revoke, the operator-cookie refusal, the kiosk-token
+     refusal, the read-only-everywhere check (`POST /api/list` → 403 with an agent token),
+     cross-household isolation, the legacy `initialize` handshake, `-32020`, 405, Origin,
+     and the tools returning this household's own rows. The wire itself has 30 pure cases
+     (`functions/_lib/mcp.test.ts`), two of them proven red by planting the defect.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

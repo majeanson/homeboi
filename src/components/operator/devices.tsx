@@ -10,6 +10,7 @@ import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { type HelpMode } from '../../lib/helpMode'
 import { ListRow } from '../ListRow'
+import { Cluster } from '../Layout'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
@@ -164,10 +165,16 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
       </li>
     )
 
+  // The glyph says WHAT this row is: an agent token is not a tablet, and a list where
+  // both wear the same phone icon is a list nobody dares revoke from. (A 'display' TV
+  // keeps the device glyph — the icon registry has no television, and adding one to
+  // pipIcons for this row would be scope this change has not earned.)
+  const icon = device.kind === 'agent' ? 'sparkle-bold' : 'device-mobile-bold'
+
   return (
     <li>
       <ListRow
-        leading={<InlineIcon name="device-mobile-bold" />}
+        leading={<InlineIcon name={icon} />}
         title={device.label}
         actions={
           <RowActions
@@ -179,5 +186,78 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
         }
       />
     </li>
+  )
+}
+
+// « La maison, adressable » — mint the READ-ONLY credential the MCP server wants
+// (functions/api/mcp.ts). One button, one token shown once, and the exact command to
+// paste; the row it creates lands in DevicesSection above and is revoked from there.
+//
+// Why the command and not just the token: the token alone is a riddle — the reader
+// still has to know the transport, the URL and the header name. The line below is the
+// whole answer, and it is the only place in the app that knows the client's syntax.
+export function AgentSection({ onChange, help }: { onChange: () => void; help?: HelpMode }) {
+  const t = useT()
+  const [token, setToken] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  // Minting is a write: a read-only link guest never sees this door.
+  if (isGuest()) return null
+
+  const command = token
+    ? `claude mcp add --transport http babillard ${window.location.origin}/api/mcp --header "X-Device-Token: ${token}"`
+    : null
+
+  async function mint() {
+    if (busy) return
+    setBusy(true)
+    setErr(null)
+    setCopied(false)
+    try {
+      const res = await api<{ token: string }>('pair/devices', {
+        method: 'POST',
+        body: { mintAgent: true, label: t.operator.agentLabel },
+      })
+      setToken(res.token)
+      onChange()
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copy() {
+    if (!command) return
+    try {
+      await navigator.clipboard.writeText(command)
+      setCopied(true)
+    } catch {
+      // Clipboard denied (an insecure origin, a locked-down tablet) — the command is
+      // on screen and selectable, so this is a convenience that failed, not the door.
+      setErr(null)
+    }
+  }
+
+  return (
+    <OperatorSection title={t.operator.agentTitle} hint={t.operator.agentLead} helpKey="mcpAgent" help={help}>
+      {!token ? (
+        <button type="button" className="btn btn--primary" onClick={mint} disabled={busy}>
+          {t.operator.agentMint}
+        </button>
+      ) : (
+        <>
+          <pre className="operator__token">{command}</pre>
+          <Cluster>
+            <button type="button" className="btn" onClick={copy}>
+              {copied ? t.operator.agentCopied : t.operator.agentCopy}
+            </button>
+          </Cluster>
+          <StatusMessage tone="info">{t.operator.agentOnce}</StatusMessage>
+        </>
+      )}
+      {err && <StatusMessage tone="error">{err}</StatusMessage>}
+    </OperatorSection>
   )
 }

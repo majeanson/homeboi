@@ -8,6 +8,9 @@ export type Member = OperatorMember
 export interface Device {
   id: string
   label: string
+  // 'kiosk' (a wall tablet) | 'display' (a read-only TV) | 'agent' (an MCP client).
+  // Absent on rows read before the column was surfaced — treat as 'kiosk'.
+  kind?: string
   created_at: number
   last_seen_at: number | null
   revoked_at: number | null

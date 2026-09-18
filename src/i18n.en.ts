@@ -2095,6 +2095,17 @@ export const EN: typeof FR = {
     memberNotes: 'Notes',
     devices: 'Paired tablets',
     revoke: 'Revoke',
+    agentTitle: 'AI agent (MCP)',
+    agentLead:
+      'Give Claude — or any other agent — a READ-ONLY window onto the household: meals, the list, the calendar, recipes. Nothing can be changed from here.',
+    agentMint: 'Create a token',
+    agentLabel: 'MCP agent',
+    agentOnce:
+      'The token is shown once. Copy the command and paste it into your terminal. You can revoke it any time from the list above.',
+    agentCopy: 'Copy the command',
+    agentCopied: 'Copied',
+    agentKindAgent: 'agent',
+    agentKindDisplay: 'display',
     noDevices: 'No tablets paired.',
     chores: 'Chores',
     addChore: 'Add a chore',

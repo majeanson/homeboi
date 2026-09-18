@@ -59,6 +59,7 @@ const SILENT_PATHS = new Set<string>([
   'guest/intake-media', // guest blob stage; the intake-submit write carries the path
   'guest/postbox-media', // guest blob stage; the postbox-submit write carries the path
   'health',
+  'mcp', // the MCP server: a JSON-RPC POST that only ever READS — nothing to invalidate
   'note-media', // fridge-note blob (audio/drawing/photo); the notes write carries the path
   'pair/start',
   'pair/poll',
