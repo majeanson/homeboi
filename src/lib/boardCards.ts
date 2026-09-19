@@ -50,6 +50,7 @@ export type BoardCardId =
   | 'seasonUpkeep'
   | 'drawings'
   | 'photos'
+  | 'remarks'
 
 /** The two ordered grids. `band` is the pinned glance strip; `grid` is the masonry. */
 export type CardZone = 'band' | 'grid'
@@ -186,6 +187,12 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // (just the current photo; PhotoFrame.tsx).
   { id: 'drawings', icon: 'paint-brush-bold', tint: 'var(--berry)', zone: 'grid', size: 'full', mode: 'always', halvable: false },
   { id: 'photos', icon: 'image-square-bold', tint: 'var(--sky)', zone: 'grid', size: 'full', mode: 'auto' },
+  // « Les remarques » (0136) — LAST on purpose, and 'auto'. It is the only card about the
+  // APP rather than the household, so it sits at the foot of the masonry and disappears
+  // the moment nothing is waiting. No : an empty remarks card is the good state,
+  // and inviting a tap into « file a bug » from a calm board would be the opposite of the
+  // rule that an empty card OFFERS the add — here there is nothing to offer.
+  { id: 'remarks', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'grid', size: 1, mode: 'auto' },
 ]
 
 const META = new Map<BoardCardId, BoardCardMeta>(BOARD_CARDS.map((c) => [c.id, c]))

@@ -23,9 +23,10 @@ import { type Remark, KIND_LABEL, STATUS_LABEL, remarkSubtitle } from '../../lib
 // The deliberate door — the one you walk through when nothing crashed and you simply
 // want to say something. It is also where you read what came back.
 //
-// The OTHER door today is the crash screen, which opens the SAME composer with the
-// error prefilled (see takeCrashSeed below). One composer, two seeds: three copies of a
-// form is how three surfaces slowly stop agreeing about what a remark is.
+// Two other doors open the SAME composer with a seed (see takeSeed below): the « ? »
+// bubble on any surface, which knows WHICH section you were asking about, and the crash
+// screen, which knows what threw. One composer, three seeds — three copies of a form is
+// how three surfaces slowly stop agreeing about what a remark is.
 //
 // It stacks under the existing pill next to the AI error journal rather than growing a
 // fifteenth pill (C-15): both are « what the app has to say about itself », and a
@@ -36,22 +37,32 @@ import { type Remark, KIND_LABEL, STATUS_LABEL, remarkSubtitle } from '../../lib
 // per-row action to copy.
 
 /**
- * The hand-off from the crash screen.
+ * The hand-off. ONE mechanism, two callers.
  *
- * ErrorBoundary cannot open the composer itself — it is deliberately hook-free so it
- * cannot throw while rendering the fallback — so it stashes the message and navigates
- * here with `?report=1`. Read ONCE and cleared, so a reload does not reopen it.
+ * `?report=1` means « open the composer », and what rides with it says where from:
+ *  · the « ? » bubble on any surface adds `&hk=<help key>` — a SEMANTIC locator
+ *    (`kitchen.recipes`), which beats a URL path for finding the code later;
+ *  · the crash screen adds the error message through `sessionStorage`, because
+ *    ErrorBoundary is deliberately hook-free (it must not be able to throw while
+ *    rendering the fallback) and a query string is all it can safely write.
+ *
+ * Read ONCE and cleared, so a reload does not reopen it.
  */
-function takeCrashSeed(): RemarkSeed | null {
+function takeSeed(): RemarkSeed | null {
   try {
-    if (!new URLSearchParams(location.search).has('report')) return null
+    const params = new URLSearchParams(location.search)
+    if (!params.has('report')) return null
     const raw = sessionStorage.getItem('bb-remark-seed')
     sessionStorage.removeItem('bb-remark-seed')
-    const seed = raw ? (JSON.parse(raw) as { text?: string }) : {}
-    return { kind: 'bug', helpKey: 'crash', text: seed.text ?? '' }
+    const stashed = raw ? (JSON.parse(raw) as { text?: string }) : {}
+    return {
+      kind: 'bug',
+      helpKey: params.get('hk') ?? (stashed.text ? 'crash' : ''),
+      text: stashed.text ?? '',
+    }
   } catch {
-    // Blocked storage, or a URL we cannot parse. The door still opened; the person can
-    // type. Losing the prefill is not worth losing the report.
+    // Blocked storage, or a URL we cannot parse. The door still opened and the person
+    // can type. Losing the prefill is never worth losing the report.
     return null
   }
 }
@@ -61,7 +72,7 @@ export function RemarksSection({ help }: { help?: HelpMode }) {
   const write = useWrite()
   const confirm = useConfirm()
   const ro = isGuest()
-  const [seed] = useState<RemarkSeed | null>(takeCrashSeed)
+  const [seed] = useState<RemarkSeed | null>(takeSeed)
   const [composing, setComposing] = useState(() => seed !== null)
   const [busy, setBusy] = useState<string | null>(null)
 

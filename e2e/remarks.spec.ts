@@ -120,3 +120,26 @@ test('a shipped remark shows the commit and the explanation, and only then offer
   const body = (await (await patch).postDataJSON()) as { id: string; action: string }
   expect(body).toMatchObject({ id: 'rmShipped11', action: 'confirm' })
 })
+
+test('the « ? » door lands with the SECTION it was asking about, not just a URL', async ({ page }) => {
+  // The hand-off, at the seam that matters: `?report=1` opens the composer and `hk=`
+  // rides into the POST as `help_key`. A help key is semantic (`kitchen.recipes`) where
+  // a path is only where someone happened to be standing — and it is what makes a
+  // report point at code.
+  await page.goto(`${REMARKS_URL}&report=1&hk=kitchen.recipes`)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+
+  const post = page.waitForRequest(isApi('POST', 'remarks'))
+  await dialog.getByRole('textbox').fill('Les collections se mélangent')
+  await dialog.getByRole('button', { name: 'Envoyer' }).click()
+  const body = (await (await post).postDataJSON()) as Record<string, unknown>
+  expect(body.help_key).toBe('kitchen.recipes')
+})
+
+test('landing WITHOUT ?report does not ambush anyone with a composer', async ({ page }) => {
+  // The other half: the section is a place you visit to read what came back, and an
+  // ordinary visit must not open a form over it.
+  await page.goto(REMARKS_URL)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})

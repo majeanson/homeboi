@@ -71,6 +71,9 @@ export function useHelpMode<K extends string>(
         body={entry.body[lang]}
         card={entry.card}
         point={entry.point}
+        // The « ? » door: every registry gets one for free, carrying the key it was
+        // asking about (HelpBubble's header says why it lives there).
+        reportKey={String(k)}
         onClose={() => setKey(null)}
       />
     ) : null

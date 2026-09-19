@@ -971,6 +971,7 @@ export const FR = {
     seasonUpkeep: 'Cette saison',
     drawings: 'Dessins',
     photos: 'Photo du jour',
+    remarks: 'Remarques',
   },
   // Les compagnons de routine (Phase B) — des noms de créatures pour l’aria/titre du
   // choix. Présence, jamais une récompense.

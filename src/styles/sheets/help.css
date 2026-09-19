@@ -195,7 +195,13 @@
   color: var(--ink);
   line-height: 1.45;
 }
-.help-bubble__guide {
+/* The two ways OUT of a bubble share a look and NOT a class. « Voir le guide » goes to
+   the manual; « Signaler » opens « Les remarques » about this very section. Giving the
+   second its own hook is not cosmetic: three e2e specs locate the guide link by class,
+   and a shared one made every existing `.help-bubble__guide` selector ambiguous the
+   moment the second link shipped. */
+.help-bubble__guide,
+.help-bubble__report {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -205,8 +211,16 @@
   text-decoration: none;
 }
 .help-bubble__guide:hover,
-.help-bubble__guide:focus-visible {
+.help-bubble__guide:focus-visible,
+.help-bubble__report:hover,
+.help-bubble__report:focus-visible {
   text-decoration: underline;
+}
+/* Quieter than the guide link: reporting is the rarer act, and it must not compete
+   with the answer the bubble just gave. */
+.help-bubble__report {
+  color: var(--ink-soft, #6b6b6b);
+  font-weight: 600;
 }
 /* While help mode is ARMED, gently ring the controls a tap will EXPLAIN (not run),
    so the "tap a button to learn what it does" hint is visually grounded. Targets the

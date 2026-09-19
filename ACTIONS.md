@@ -236,8 +236,8 @@ and because the scoring pass that added them found a gap in the first one.
 | Account · **sign out everywhere else** | — | — | — | — | ✅ settings▸tablets « Mes connexions » | confirm + password²⁵ | ✅ |
 | Household data · export | — | — | — | — | ✅ settings▸tablets « Emporter mes données » | — | ✅ |
 | Household data · **restore a copy** | ✅ a row per nightly copy (`ListRow` + « Restaurer ») | — | — | — | ✅ settings▸tablets, folded under the export²⁶ | confirm + password²⁵ | ✅ |
-| Remarque · **file one** | — | — | — | ✅ « Signaler » in the section head, **and the crash screen's own « Signaler »**²⁷ | ✅ settings▸tablets « Les remarques » | — (a create) | ✅ |
-| Remarque · open its journal | ✅ `Disclosure` expands in place | — | ➖ no peek, by design (PARITY ¹⁰³) | — | — | — | ✅ |
+| Remarque · **file one** | — | — | — | ✅ three doors, ONE composer²⁷: « Signaler » in the section head · the **« ? » bubble on any surface** (all eight registries, carrying the help key) · the **crash screen's** « Signaler » | ✅ settings▸tablets « Les remarques » | — (a create) | ✅ |
+| Remarque · open its journal | ✅ `Disclosure` expands in place | — | ➖ no peek, by design (PARITY ¹⁰³) | — | ✅ settings▸tablets, **and a board card** (`remarks`, zone `grid`, mode `auto`)³⁰ | — | ✅ |
 | Remarque · **confirm / re-open** | — | — | — | — | ✅ two `Chip`s, offered only once a deploy has claimed it²⁸ | — (each append reverses the other) | ✅ |
 | Remarque · delete | ✅ `RowActions` 🗑 | — | — | — | — | confirm **+** deferred²⁹ | ✅ |
 
@@ -257,6 +257,16 @@ and because the scoring pass that added them found a gap in the first one.
     CONTENT only — devices, guest links and accounts stay. Guards:
     `e2e/takeout-restore.spec.ts` (six) + `worker/restore.d1.test.ts` (the real
     round-trip, byte-for-byte).
+30. **The board card shows `open` + `shipped`, never `confirmed`** — otherwise it would
+    never empty, and a list that never empties is the opposite of what this app promises.
+    It carries **no count**: `BoardCard` takes one and most cards use it, but « 3 » here
+    would be a score for how broken the app is, on a kitchen wall. It uses `ListRow` and
+    not `Act`, because `Act`'s `cat` is a closed union of HOUSEHOLD categories and a
+    remark is not one of them. Two things to know about it: `lib/boardCards` has no
+    audience or surface gating, so every device that opens the board sees it (mode
+    `auto` is what keeps it out of the way); and it hides from a guest — the MotsCard /
+    home-pins privacy hide, since an operator can mint a showcase link to their own
+    household.
 29. **Two tiers on one delete**, which is the rule at door 14: the tier follows the
     SURFACE. `useConfirm` because it is heavy — the journal and every attachment go —
     and `useDeferredRemoval` because the list is polled, where optimistic-then-defer
@@ -265,14 +275,21 @@ and because the scoring pass that added them found a gap in the first one.
     remark: there is nothing to confirm before something was shipped, and offering it
     anyway invites closing a remark nobody has acted on. Held by `e2e/remarks.spec.ts`,
     which asserts the button is absent on an open row and present on a shipped one.
-27. **The crash screen is a real door, and it hands off rather than opening the
-    composer.** `ErrorBoundary.tsx` is deliberately hook-free, i18n-free and router-free
-    so it cannot itself throw while rendering the fallback — and the composer needs
-    Query, the write hook, the toast and i18n, any of which may be exactly what broke.
-    So it does the two things it can safely do: stash the message in `sessionStorage`
-    and navigate to `?focus=remarks&report=1`. `RemarksSection` reads the seed once,
-    clears it, and opens the composer prefilled — on the other side, where the app is
-    healthy by definition because it rendered.
+27. **Three doors, one composer, one hand-off.** `?report=1` means « open it », and what
+    rides along says where from — so a new door adds a SEED, never a second form.
+    · **The « ? » bubble** carries `&hk=<help key>`. It lives in `HelpBubble` itself
+    rather than in each surface, so all eight help registries got the door at once and
+    none of them knows it exists. A help key is *semantic* (`kitchen.recipes`) where a
+    URL path is only where someone happened to be standing.
+    · **The crash screen** stashes the error in `sessionStorage` and navigates. It
+    cannot open the composer itself: `ErrorBoundary.tsx` is deliberately hook-free,
+    i18n-free and router-free so it cannot throw while rendering the fallback, and the
+    composer needs Query, the write hook, the toast and i18n — any of which may be
+    exactly what just broke. It does the two things it can do safely; `RemarksSection`
+    reads the seed once, clears it, and opens the composer on the other side, where the
+    app is healthy by definition because it rendered.
+    Guards: `e2e/remarks.spec.ts` — the `hk` reaching `help_key` in the POST, and a
+    plain visit NOT opening a composer over the reading surface.
 25. **The password, not just the cookie** (STATE §4-L L5, 2026-09-16). A wall tablet is
     often signed in as the operator and a phone is left on a counter: a session
     proves "someone in this house", not "the account's owner". The irreversible doors —

@@ -821,6 +821,7 @@ export const EN: typeof FR = {
     seasonUpkeep: 'This season',
     drawings: 'Drawings',
     photos: 'Photo of the day',
+    remarks: 'Remarks',
   },
   // Routine companions (Phase B) — creature names for the picker's aria/title.
   // Presence, never a reward.

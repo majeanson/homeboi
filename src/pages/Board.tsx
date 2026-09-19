@@ -52,6 +52,7 @@ import { type CompactRow } from '../components/board/BoardCard'
 import { Disclosure } from '../components/Disclosure'
 import { Fil } from '../components/board/Fil'
 import { PhotoFrame } from '../components/board/PhotoFrame'
+import { RemarksCard } from '../components/board/RemarksCard'
 import { BoardCanvas } from '../components/board/BoardCanvas'
 import { WonderBand, useWonder } from '../components/board/ApodFrame'
 import { Notes } from '../components/board/Notes'
@@ -1668,6 +1669,9 @@ export function Board() {
   nodes.drawings = <Notes notes={data.notes ?? []} members={data.members} variant="drawings" action={galleryLink} />
   // « Photo du jour » band (the wonder photo also backs the weather hero).
   nodes.photos = <PhotoFrame />
+  // « Les remarques » (0136) — the only card about the APP rather than the household.
+  // Self-hides the moment nothing is waiting; see RemarksCard for why it carries no count.
+  nodes.remarks = <RemarksCard />
 
   }
   return (
