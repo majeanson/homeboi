@@ -29,8 +29,8 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 135 forward-only migrations (0135 = the household's own time zone) |
-| **Tests** | 2 365 unit tests in 185 files · 48 real-runtime cases in 9 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
+| **Schema** | 136 forward-only migrations (0136 = « Les remarques ») |
+| **Tests** | 2 392 unit tests in 189 files · 85 real-runtime cases in 12 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
@@ -48,12 +48,22 @@ quoting them — `src/lib/docCounts.test.ts` holds the ones that CAN be derived 
 - `npm run check:bundle` — the door's static closure is **7 chunks / 727 KB** (was 70 /
   1 131 before the hub went lazy); every chunk within budget; the SW precache covers all
   offline-needed chunks and skips build metadata.
-- **Twenty-two build-gating invariants.** This is the codebase's best feature (§5), and
-  the list is long enough that it belongs where it is enforced rather than here: every
-  one lives in `src/lib/*.test.ts`, `functions/_lib/*.test.ts` or
-  `scripts/check-bundle.mjs`, each with a header saying what it caught. The rule that
-  matters is §5's: **a guard that has never been red proves nothing** — plant the defect,
-  watch it fail, restore.
+- **The build-gating invariants** are the codebase's best feature (§5), and the list is
+  long enough that it belongs where it is enforced rather than here: every one lives in
+  `src/lib/*.test.ts`, `functions/_lib/*.test.ts`, `scripts/*.test.mjs` or
+  `scripts/check-bundle.mjs`, each with a header saying what it caught. *(This line used
+  to open with a count spelled in letters — which is a number nobody re-derives, and the
+  very thing `docCounts` exists to prevent. It cannot derive "how many guards" honestly,
+  so the count is gone rather than wrong.)* Three joined on 2026-09-19: `csrfExempt`
+  (a ratchet on the CSRF-exempt set — it found `pair/poll` sitting there answering GET
+  only), `ci-untrusted` (no `${{ github.event… }}` may reach a `run:` block — it found an
+  existing one in `sw-repro.yml`), and `deployHook` (the polarity of the only inbound
+  shared-secret gate). The rule that matters is §5's: **a guard that has never been red
+  proves nothing** — plant the defect, watch it fail, restore.
+- **`data_invariants` is a new TIER of guard**, not another entry on that list: every
+  test above reads source, and this one reads ROWS (`functions/_lib/invariants.ts`, via
+  the MCP tool or `worker/invariants.d1.test.ts`). It is read-only and per-household, and
+  it distinguishes « not checked » from « fine » on purpose.
 
 ## 2. The document map
 
@@ -109,6 +119,56 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### « Les remarques » — the household reports, the pipeline answers — 2026-09-19
+
+The MCP server made the app readable. This makes it **fixable from the inside**, and the
+shape of the loop is the whole point:
+
+```
+Toi        →  une remarque (bogue · souhait · amélioration)
+Claude     →  remarks_open() / remark_get()      LECTURE SEULE
+Claude     →  git commit …  Regle-remarque: <id>
+CI         →  typecheck · test · build · d1 · knip → deploy ✓
+CI         →  POST /api/remarks/shipped          (secret CI, pas l'agent)
+Toi        →  « C'est réglé » … ou « Pas réglé »
+```
+
+**The agent never writes to the household** — `functions/api/mcp.ts` still has no write
+path, and the twelve tools are all reads. « Expédiée » is written by the DEPLOY, so it
+means *the fix is in production*, never *an agent claims it is*. And only a human writes
+« réglée »: the callback 409s on a remark somebody already confirmed.
+
+Three doors, one composer, one hand-off (`?report=1` + a seed): the Réglages section, the
+**« ? » bubble on any surface** (all eight help registries at once, carrying the semantic
+help key), and the **crash screen** — which stashes the error and navigates rather than
+mounting the composer, because `ErrorBoundary` is deliberately hook-free and the composer
+needs exactly the machinery that may have just broken. Every report carries the route and
+**the commit the reporter was running**, so « ça marche chez moi » is answered before it
+is asked.
+
+Also shipped with it, and useful on their own:
+
+- **`data_invariants`** — the laws `CLAUDE.md` states (`media_key` iff `media_kind`, JSON
+  columns, member refs resolving *inside* this household) checked against real ROWS. The
+  twenty-odd build guards all read source; not one read a row. It DISCOVERS the schema
+  rather than restating it, and says « non vérifié » instead of folding that into « ok ».
+- **`app_health`** — and on its first real run it found that **`mail` and `alerts` are
+  off in production**: the nightly cron's « the sweep is broken again » signal has nowhere
+  to go, and the forgot-password flow (0133) cannot send.
+- **`csrfExempt.test.ts`** — a ratchet on the shortest list with the largest blast radius.
+  It found `pair/poll` sitting there while answering GET only; removed.
+- **`ci-untrusted.test.mjs`** — no `${{ github.event… }}` may reach a `run:` block. It
+  found an existing one in `sw-repro.yml`; fixed.
+
+**⚠️ The loop is inert until two secrets exist** (`wrangler secret put
+DEPLOY_NOTIFY_SECRET` + the same-named Actions secret). Unset fails CLOSED on both sides;
+`/api/health` reports `deployHook`.
+
+**⚠️ The eager FR dictionary is AT its cap** — 16 bytes under 130 KB. The next string
+added to `src/i18n.ts` fails `check:bundle`, whatever it is. The honest fix is written in
+`scripts/check-bundle.mjs`: lazy-load part of the FR dictionary the way `i18n.en` already
+is. Do that before the next feature that needs copy.
 
 ### « La maison, adressable » — an MCP server over the household — 2026-09-18
 
