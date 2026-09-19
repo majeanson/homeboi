@@ -49,8 +49,16 @@ jobs:
       # only registers in a prod build) — one webServer for the whole run, so the
       # iterations share a single build. retries:0 there, so every failure is real
       # and each one prints its own cache probe.
-      - name: Run the offline reboot case ${{ inputs.iterations || '20' }} times
-        run: npm run e2e:sw -- --repeat-each=${{ inputs.iterations || '20' }} -g "reboots offline"
+      # ITERATIONS rides in `env:`, not in the `run:` line. A dispatch input is text
+      # someone typed, and `${{ … }}` inside `run:` is substituted BEFORE bash parses the
+      # line — so a value like `1; curl …` would be shell, not an argument, on a runner
+      # holding the deploy token. Through `env:` it is inert data. The shell default
+      # (`:-20`) replaces the expression-level `|| '20'`.
+      # (scripts/ci-untrusted.test.mjs holds this for every workflow.)
+      - name: Run the offline reboot case N times
+        env:
+          ITERATIONS: ${{ inputs.iterations }}
+        run: npm run e2e:sw -- "--repeat-each=${ITERATIONS:-20}" -g "reboots offline"
       # The harness writes here (outputDir + trace on failure). Uploaded whatever the
       # outcome: a reproduction is the entire point of the run.
       - name: Upload traces + screenshots

@@ -53,7 +53,39 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // REFUSES a session cookie outright (it demands scope 'kiosk' + kind 'agent', which
 // only a token produces) and validates Origin. Relax either of those and this line
 // becomes a cross-site hole.
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'pair/poll', 'demo', 'operator-join', 'csp-report', 'mcp'])
+//
+// 'remarks/shipped' is the DEPLOY PIPELINE's callback (« Règle-remarque », 0136), not a
+// browser's. GitHub Actions POSTs it after a SUCCESSFUL deploy of main to mark a remark
+// « expédiée » with the commit that fixed it. There is no cookie to double-submit — no
+// browser, no session, no same-site anything — so CSRF has nothing here to protect.
+//
+// THE NARROWER GATE is DEPLOY_NOTIFY_SECRET: a ≥32-char shared secret presented in
+// X-Deploy-Secret and compared CONSTANT-TIME (_lib/deployHook.ts). Its polarity is the
+// INVERSE of LOGIN_PASSWORD's — an unset, empty or short secret CLOSES this door (503)
+// rather than opening it. Copying the login.ts shape here deletes the lock.
+//
+// NOT X-Device-Token, deliberately: that header already skips CSRF for EVERY route
+// (below) and resolves through resolveActor into an Actor with a household. A deploy is
+// not an actor and must never become one — reusing it would mean minting a household
+// credential for a pipeline.
+//
+// WHAT A LEAKED SECRET BUYS: flipping an EXISTING remark from 'open' to 'shipped' and
+// appending one ≤2000-char journal entry, for an id the holder can already name. It
+// cannot create a row, delete one, read one, list them, reach another table, obtain a
+// session, or write 'confirmed' — a human's tap is the only thing that confirms, and
+// « Pas réglé » undoes it. The id is ~70 bits behind the secret, so there is nothing to
+// enumerate. And the framing that matters: anyone who can leak this secret can already
+// push arbitrary code to main, which deploys unreviewed. The secret is strictly LESS
+// powerful than the access needed to steal it. Rotation: `wrangler secret put` first,
+// then the repo secret — deleting the Worker's copy first fails closed. /api/health
+// reports `deployHook` so an unwired hook is visible instead of silent.
+//
+// 'pair/poll' USED TO BE HERE and was removed when csrfExempt.test.ts first ran: it
+// answers GET only, and the gate below never looks at a safe method — so the entry had
+// been doing nothing at all. Harmless, but dead weight in the one list that has to stay
+// readable, and an entry that looks like a live hole is worse than no entry. If it ever
+// grows a POST it starts out gated, which is the right default.
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'demo', 'operator-join', 'csp-report', 'mcp', 'remarks/shipped'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',

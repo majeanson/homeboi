@@ -88,3 +88,46 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # « Regle-remarque » — close the loop on « Les remarques » (0136), and only after
+      # the deploy that carries the fix is actually live. Claude Code commits a fix with a
+      # `Regle-remarque: <id>` trailer (several allowed in one commit) plus an
+      # « Explication: » paragraph; this POSTs that to the running app, which marks each
+      # remark « expédiée » with the commit sha. The household's own tap is what CONFIRMS
+      # it — CI can only ever set 'shipped' (functions/api/remarks/shipped.ts).
+      #
+      # Step ordering IS the "after a successful deploy" condition: if `npm run deploy`
+      # fails, this never runs. No `if:` to get wrong.
+      #
+      # continue-on-error ON PURPOSE, and the decisive reason is not the obvious one. The
+      # obvious one: the deploy has already succeeded, so a red X here would claim main is
+      # broken when main is live. The decisive one: a failed step flips this workflow's
+      # CONCLUSION to `failure`, and e2e.yml chains on `workflow_run` + conclusion ==
+      # 'success' — so a missed remark notification would silently cancel the entire
+      # Playwright suite for that commit. The step is loud on its own instead, via
+      # ::warning:: annotations, which show on the run summary even under
+      # continue-on-error.
+      - name: Notify the remark journal (Regle-remarque)
+        continue-on-error: true
+        env:
+          REMARKS_ENDPOINT: https://babillard.marcportal.com/api/remarks/shipped
+          # ≥32 chars, the SAME value as `wrangler secret put DEPLOY_NOTIFY_SECRET`.
+          # Unset here → the script skips and says so; unset on the WORKER → 503 and the
+          # door stays shut. Both directions fail closed.
+          DEPLOY_NOTIFY_SECRET: ${{ secrets.DEPLOY_NOTIFY_SECRET }}
+          # ── UNTRUSTED INPUT, PASSED AS DATA ──────────────────────────────────────
+          # A commit message is text authored outside review. `${{ … }}` inside a `run:`
+          # is substituted BEFORE bash parses the line, so a backtick or a `$(…)` in a
+          # commit message would be shell executing on a runner that holds
+          # CLOUDFLARE_API_TOKEN. In `env:` it is inert, and node reads it with
+          # process.env without ever shelling out. scripts/ci-untrusted.test.mjs fails
+          # the build if this ever moves into the `run:` line.
+          #
+          # `github.event.commits` and not just `head_commit`: a push of three commits
+          # where the MIDDLE one carries the trailer would otherwise be lost for good,
+          # with no signal anywhere. Each trailer is attributed to the sha of the commit
+          # that carried it, not to whatever landed on top.
+          PUSH_COMMITS: ${{ toJSON(github.event.commits) }}
+          HEAD_SHA: ${{ github.sha }}
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: node scripts/notify-remarks.mjs

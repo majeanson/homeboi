@@ -37,6 +37,13 @@ export default defineConfig(async () => {
             RESEND_API_KEY: '',
             NASA_APOD_KEY: '',
             LOGIN_PASSWORD: '',
+            // The deploy callback's secret (0136). ≥32 chars, because deployHook.ts
+            // treats anything shorter as unconfigured. Bound here so the d1 suite
+            // exercises the CONFIGURED path end to end; the unconfigured one — the half
+            // that must fail CLOSED — is held purely in _lib/deployHook.test.ts, which
+            // is why that gate is a separate pure module: a binding cannot be unset
+            // per-test from here.
+            DEPLOY_NOTIFY_SECRET: 'd1-deploy-secret-d1-deploy-secret-32',
           },
         },
       }),

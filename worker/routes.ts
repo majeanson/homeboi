@@ -92,6 +92,7 @@ import * as recipeTags from '../functions/api/recipe-tags'
 import * as recipeToList from '../functions/api/recipe-to-list'
 import * as remarkMedia from '../functions/api/remark-media'
 import * as remarks from '../functions/api/remarks'
+import * as remarksShipped from '../functions/api/remarks/shipped'
 import * as reserve from '../functions/api/reserve'
 import * as routineAudio from '../functions/api/routine-audio'
 import * as routineCardPhoto from '../functions/api/routine-card-photo'
@@ -255,6 +256,9 @@ const TABLE: Record<string, RouteMod> = {
   // a separate endpoint; an agent reading the queue over MCP writes nothing at all.
   remarks,
   'remark-media': remarkMedia,
+  // The DEPLOY pipeline's callback: unauthenticated, CSRF-exempt, gated by
+  // DEPLOY_NOTIFY_SECRET. worker/index.ts's CSRF_EXEMPT comment carries the argument.
+  'remarks/shipped': remarksShipped,
   reserve,
   'routine-audio': routineAudio,
   'routine-card-photo': routineCardPhoto,

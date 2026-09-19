@@ -22,3 +22,13 @@ SESSION_SECRET=replace-with-at-least-32-random-characters-xx
 # Free "Experiment" tier (no card) at https://console.mistral.ai. Unset = on-device
 # Tesseract OCR only (free, private). The image is sent to Mistral when enabled.
 # MISTRAL_API_KEY=your-mistral-api-key
+
+# OPTIONAL deploy-callback secret for POST /api/remarks/shipped — how CI tells the live
+# app that a deploy shipped the fix for a remark (« Les remarques », 0136). MUST be ≥32
+# characters, and MUST match the repo's DEPLOY_NOTIFY_SECRET Actions secret.
+#
+# UNSET CLOSES THE DOOR (503), unlike LOGIN_PASSWORD above — an unset gate on an
+# unauthenticated write endpoint is a hole, not a convenience. Leave it unset locally
+# unless you are testing the callback; the rest of the feature works without it.
+# Production: `wrangler secret put DEPLOY_NOTIFY_SECRET`. /api/health reports `deployHook`.
+# DEPLOY_NOTIFY_SECRET=at-least-thirty-two-characters-long

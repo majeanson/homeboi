@@ -8,7 +8,10 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
-    include: ['{src,functions,worker}/**/*.test.ts'],
+    //  so the CI-facing scripts are held too — the trailer parser
+    // reads commit messages, which is untrusted text on a runner with deploy credentials.
+    // .mjs keeps them out of  entirely, and knip's  entry covers them.
+    include: ['{src,functions,worker}/**/*.test.ts', 'scripts/**/*.test.mjs'],
     // The real-runtime suite (*.d1.test.ts) imports `cloudflare:test` and runs under
     // vitest.d1.config.ts only — see that file.
     exclude: ['**/node_modules/**', '**/*.d1.test.ts'],

@@ -1,6 +1,7 @@
 import { mailEnabled } from '../_lib/mail'
 import { rateLimitEnabled } from '../_lib/rateLimit'
 import { alertsEnabled } from '../_lib/nightly'
+import { deployHookEnabled } from '../_lib/deployHook'
 import type { Env } from '../_lib/env'
 import { ok } from '../_lib/json'
 import { resolveActor } from '../_lib/household'
@@ -51,6 +52,10 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     rateLimit: rateLimitEnabled(ctx.env),
     // The nightly cron can reach a human (ALERT_EMAIL + mail wired, _lib/nightly.ts).
     alerts: alertsEnabled(ctx.env),
+    // The deploy callback that closes the « Les remarques » loop. Unset means
+    // « expédiée » silently never appears — the same "an unset binding must not be
+    // invisible" argument rateLimit and alerts make, and this one fails CLOSED.
+    deployHook: deployHookEnabled(ctx.env),
     realtime: !!(ctx.env as { REALTIME_HUB?: unknown }).REALTIME_HUB,
   })
 }

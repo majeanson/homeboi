@@ -39,6 +39,19 @@ export interface Env {
   // never in the repo. Unset → log only, and /api/health says `alerts: false`.
   ALERT_EMAIL?: string
 
+  // OPTIONAL deploy-callback secret for POST /api/remarks/shipped (_lib/deployHook.ts):
+  // the shared secret GitHub Actions presents after a successful deploy of main, to mark
+  // a remark « expédiée » with the commit that fixed it. ≥32 chars.
+  //
+  // UNLIKE LOGIN_PASSWORD, UNSET CLOSES THE DOOR (503). An unset gate on an
+  // unauthenticated write is a hole, not a convenience — do not copy the login shape.
+  //
+  // `wrangler secret put DEPLOY_NOTIFY_SECRET`, and the SAME value as the repo's
+  // DEPLOY_NOTIFY_SECRET Actions secret. Never in the repo. Unset on either side fails
+  // closed: the Worker 503s, and the notify script skips with a ::warning::.
+  // /api/health reports it as `deployHook`.
+  DEPLOY_NOTIFY_SECRET?: string
+
   // OPTIONAL rate-limit bindings (wrangler.toml [[ratelimits]], _lib/rateLimit.ts):
   // the brute-force bound on login/signup/forgot/reset/demo/pairing/join and the
   // password doors. Unset → allow (dev, unit tests); health reports `rateLimit`.
