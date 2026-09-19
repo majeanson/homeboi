@@ -5,8 +5,11 @@ import type { FR } from '../i18n'
 // card, and the composer — and a fourth spelling of « expédiée » is exactly what
 // glossary.ts exists to prevent.
 
-export type RemarkKind = 'bug' | 'wish' | 'polish'
-export type RemarkStatus = 'open' | 'shipped' | 'confirmed'
+// The `kind` and `status` unions live where they are USED — RemarkComposer owns
+// RemarkKind, and the rows come back as plain strings because they come from D1. Two
+// speculative type aliases were exported from here in the first draft, for a board card
+// that does not exist yet, and knip failed the build on them. It was right: an export
+// with no reader is a promise nobody is keeping.
 
 export interface RemarkEvent {
   id: string
@@ -58,8 +61,3 @@ export function remarkSubtitle(t: T, r: Remark): string {
   if (r.seen_build) bits.push(`${t.remarks.seenBuild} ${r.seen_build}`)
   return bits.join(' · ')
 }
-
-/** Only the ones still waiting on someone. The board card shows these and nothing else:
- *  a card that keeps showing what is already settled never empties, and a list that never
- *  empties is the opposite of what this app promises. */
-export const openRemarks = (rows: Remark[]): Remark[] => rows.filter((r) => r.status !== 'confirmed')
