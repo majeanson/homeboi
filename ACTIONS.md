@@ -236,6 +236,10 @@ and because the scoring pass that added them found a gap in the first one.
 | Account · **sign out everywhere else** | — | — | — | — | ✅ settings▸tablets « Mes connexions » | confirm + password²⁵ | ✅ |
 | Household data · export | — | — | — | — | ✅ settings▸tablets « Emporter mes données » | — | ✅ |
 | Household data · **restore a copy** | ✅ a row per nightly copy (`ListRow` + « Restaurer ») | — | — | — | ✅ settings▸tablets, folded under the export²⁶ | confirm + password²⁵ | ✅ |
+| Remarque · **file one** | — | — | — | ✅ « Signaler » in the section head, **and the crash screen's own « Signaler »**²⁷ | ✅ settings▸tablets « Les remarques » | — (a create) | ✅ |
+| Remarque · open its journal | ✅ `Disclosure` expands in place | — | ➖ no peek, by design (PARITY ¹⁰³) | — | — | — | ✅ |
+| Remarque · **confirm / re-open** | — | — | — | — | ✅ two `Chip`s, offered only once a deploy has claimed it²⁸ | — (each append reverses the other) | ✅ |
+| Remarque · delete | ✅ `RowActions` 🗑 | — | — | — | — | confirm **+** deferred²⁹ | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
     Access already granted is NOT affected — which is a different row, on purpose.
@@ -253,6 +257,22 @@ and because the scoring pass that added them found a gap in the first one.
     CONTENT only — devices, guest links and accounts stay. Guards:
     `e2e/takeout-restore.spec.ts` (six) + `worker/restore.d1.test.ts` (the real
     round-trip, byte-for-byte).
+29. **Two tiers on one delete**, which is the rule at door 14: the tier follows the
+    SURFACE. `useConfirm` because it is heavy — the journal and every attachment go —
+    and `useDeferredRemoval` because the list is polled, where optimistic-then-defer
+    lets the next poll resurrect the row mid-undo.
+28. **Only once a deploy has claimed it.** The verdict chips do not exist on an `open`
+    remark: there is nothing to confirm before something was shipped, and offering it
+    anyway invites closing a remark nobody has acted on. Held by `e2e/remarks.spec.ts`,
+    which asserts the button is absent on an open row and present on a shipped one.
+27. **The crash screen is a real door, and it hands off rather than opening the
+    composer.** `ErrorBoundary.tsx` is deliberately hook-free, i18n-free and router-free
+    so it cannot itself throw while rendering the fallback — and the composer needs
+    Query, the write hook, the toast and i18n, any of which may be exactly what broke.
+    So it does the two things it can safely do: stash the message in `sessionStorage`
+    and navigate to `?focus=remarks&report=1`. `RemarksSection` reads the seed once,
+    clears it, and opens the composer prefilled — on the other side, where the app is
+    healthy by definition because it rendered.
 25. **The password, not just the cookie** (STATE §4-L L5, 2026-09-16). A wall tablet is
     often signed in as the operator and a phone is left on a counter: a session
     proves "someone in this house", not "the account's owner". The irreversible doors —

@@ -15,10 +15,10 @@ import { REMARKS_KEY } from '../lib/queryKeys'
 
 // « Les remarques » — ONE composer, mounted by all three doors.
 //
-// The doors are the « ? » help chip (which knows WHICH section you are looking at),
-// the crash screen (which knows what threw), and Réglages. They differ only in the
-// context they hand in — so they hand it in, and share everything else. Three copies
-// of a form is how the three slowly stop agreeing about what a remark is.
+// Today: Réglages (nothing in particular is wrong) and the crash screen (something very
+// particular is). They differ ONLY in the seed they hand in — so they hand it in, and
+// share everything else. Two copies of a form is how two surfaces slowly stop agreeing
+// about what a remark is; a third door adds a seed, not a file.
 //
 // ONE FIELD, NOT TWO. The first line becomes the title and the rest becomes the body.
 // A title box plus a body box is more correct and less likely to be used: this opens

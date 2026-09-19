@@ -2518,6 +2518,21 @@ export const GUIDE: GuideEntry[] = [
           en: 'READ-ONLY: an agent cannot change, delete or add anything. It shows up in the device list and is revoked with the same button.',
         },
       },
+      // Appended (index 10): « Les remarques » (0136). MERGED here rather than given a
+      // 33rd card — the guide is at its ceiling, and this belongs with pairing, the TV
+      // and the agent: it is what the app has to say about itself. Append-only, because
+      // the alias table above indexes by POSITION.
+      {
+        label: { fr: 'Signaler ce qui cloche', en: 'Report what is off' },
+        detail: {
+          fr: 'Réglages ▸ Système ▸ Appareils & accès ▸ « Les remarques » — un bogue, un souhait, une amélioration, avec une capture d’écran si ça aide. Quand ça plante, l’écran d’erreur offre « Signaler » et remplit déjà le message.',
+          en: 'Settings ▸ System ▸ Devices & access ▸ “Remarks” — a bug, a wish, a polish, with a screenshot if it helps. When something crashes, the error screen offers “Report” with the message already filled in.',
+        },
+        why: {
+          fr: 'La page et la version partent avec, alors « ça marche chez moi » est déjà répondu. Quand un correctif est déployé, la remarque passe à « expédiée » — et c’est TOI qui dis si c’est vraiment réglé.',
+          en: 'The page and the build travel along, so “works on my machine” is already answered. When a fix ships, the remark turns “shipped” — and YOU say whether it is really fixed.',
+        },
+      },
     ],
   },
   {

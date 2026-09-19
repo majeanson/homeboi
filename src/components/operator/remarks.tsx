@@ -15,15 +15,17 @@ import { Chip, ChipGroup } from '../Chip'
 import { Disclosure } from '../Disclosure'
 import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
-import { RemarkComposer } from '../RemarkComposer'
+import { RemarkComposer, type RemarkSeed } from '../RemarkComposer'
 import { type Remark, KIND_LABEL, STATUS_LABEL, remarkSubtitle } from '../../lib/remarks'
 
-// Réglages ▸ Système ▸ Appareils & diagnostics ▸ « Les remarques ».
+// Réglages ▸ Système ▸ Appareils & accès ▸ « Les remarques ».
 //
 // The deliberate door — the one you walk through when nothing crashed and you simply
-// want to say something. The two other doors (the « ? » chip on any section, the crash
-// screen) open the SAME composer with more context prefilled; this one is also where
-// you read what came back.
+// want to say something. It is also where you read what came back.
+//
+// The OTHER door today is the crash screen, which opens the SAME composer with the
+// error prefilled (see takeCrashSeed below). One composer, two seeds: three copies of a
+// form is how three surfaces slowly stop agreeing about what a remark is.
 //
 // It stacks under the existing pill next to the AI error journal rather than growing a
 // fifteenth pill (C-15): both are « what the app has to say about itself », and a
@@ -32,12 +34,35 @@ import { type Remark, KIND_LABEL, STATUS_LABEL, remarkSubtitle } from '../../lib
 // Modelled on todos.tsx, NOT on aiErrors.tsx — that file is the documented exception to
 // the write rule (its clear-all deliberately bypasses the outbox) and it has no
 // per-row action to copy.
+
+/**
+ * The hand-off from the crash screen.
+ *
+ * ErrorBoundary cannot open the composer itself — it is deliberately hook-free so it
+ * cannot throw while rendering the fallback — so it stashes the message and navigates
+ * here with `?report=1`. Read ONCE and cleared, so a reload does not reopen it.
+ */
+function takeCrashSeed(): RemarkSeed | null {
+  try {
+    if (!new URLSearchParams(location.search).has('report')) return null
+    const raw = sessionStorage.getItem('bb-remark-seed')
+    sessionStorage.removeItem('bb-remark-seed')
+    const seed = raw ? (JSON.parse(raw) as { text?: string }) : {}
+    return { kind: 'bug', helpKey: 'crash', text: seed.text ?? '' }
+  } catch {
+    // Blocked storage, or a URL we cannot parse. The door still opened; the person can
+    // type. Losing the prefill is not worth losing the report.
+    return null
+  }
+}
+
 export function RemarksSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
   const confirm = useConfirm()
   const ro = isGuest()
-  const [composing, setComposing] = useState(false)
+  const [seed] = useState<RemarkSeed | null>(takeCrashSeed)
+  const [composing, setComposing] = useState(() => seed !== null)
   const [busy, setBusy] = useState<string | null>(null)
 
   const state = useQuery({
@@ -139,7 +164,7 @@ export function RemarksSection({ help }: { help?: HelpMode }) {
         </ul>
       )}
 
-      <RemarkComposer open={composing} onClose={() => setComposing(false)} />
+      <RemarkComposer open={composing} onClose={() => setComposing(false)} seed={seed ?? undefined} />
     </OperatorSection>
   )
 }

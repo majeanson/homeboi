@@ -668,6 +668,9 @@ export const ROUTES: Record<string, unknown> = {
   'day-notes': { notes: [{ id: 'dn1', date: BASE, text: 'Sans gluten ce soir', member_id: 'm1' }] },
   // AI-failure journal (Réglages). Empty is the normal, healthy state.
   'ai-errors': { errors: [] },
+  // « Les remarques » (0136). Empty by default: the section's own spec seeds what it
+  // needs, and every OTHER spec that lands on Réglages must see the calm empty state.
+  remarks: { remarks: [] },
   recipes: RECIPES,
   // ONE recipe’s as-imported snapshot, fetched only when the sheet’s « Original »
   // toggle is tapped. It is deliberately NOT part of `recipes` above: that payload is

@@ -94,7 +94,7 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-**40** user-facing features — the row count of this table, not an estimate.
+**41** user-facing features — the row count of this table, not an estimate.
 Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
@@ -170,6 +170,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F38 | La semaine (3e vue du calendrier)                                       | — (dérivée : /api/month sur 7 jours)                                                           | month                                                             | board/WeekView, board/dayLines, board/DayMark, lib/boardview                                          | MONTH                               |
 | F40 | Mot de passe oublié (compte)                                              | password_resets (0133)                                                                        | auth/forgot, auth/reset                                          | ForgotPage, ResetPage, Login (la porte), \_lib/mail                                                     | —                                   |
 | F41 | Agent IA (serveur MCP, lecture seule)                                     | devices.kind='agent' (0083, aucune migration)                                                  | mcp, pair/devices (mintAgent)                                    | operator/devices `AgentSection`, \_lib/mcp (le fil), \_lib/askSnapshot                                   | DEVICES                             |
+| F42 | Les remarques (bogue/souhait/amélioration + la boucle de déploiement)     | remarks, remark_events (0136)                                                                  | remarks, remark-media, remarks/shipped (rappel CI)               | operator/remarks, RemarkComposer, ErrorBoundary (la porte « Signaler »), \_lib/deployHook, \_lib/invariants | REMARKS                             |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -349,6 +350,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F38 La semaine           | ➖⁸⁰    | ➖⁸¹    | ➖⁸⁰    | ➖⁸⁰       | ✅⁸²  | ➖⁸³      | ✅       | ➖⁸⁴       | ✅           | ➖⁴⁷      | ✅⁸⁵      | ✅⁸⁶    | ➖⁸⁰       | ➖¹       | ✅       | ✅      |
 | F40 Mot de passe oublié  | ✅⁸⁷    | ➖⁸⁸    | ➖⁸⁹    | ➖⁹⁰       | ➖⁹¹  | ➖⁸⁸      | ✅⁹²     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁸⁸      | ➖⁸⁸    | ✅⁹²       | ➖¹       | ✅       | ✅      |
 | F41 Agent IA (MCP)       | ✅⁹³    | ➖⁹⁴    | ✅⁹⁵    | ➖⁹⁶       | ➖⁹⁷  | ➖⁹⁴      | ✅⁹⁸     | ➖⁴⁸       | ✅⁹⁹         | ➖⁴⁷      | ✅¹⁰⁰     | ➖⁹⁴    | ✅¹⁰¹      | ➖¹       | ✅       | ✅¹⁰²   |
+| F42 Les remarques        | ✅      | ➖¹⁰³   | ✅¹⁰⁴   | ✅         | ✅¹⁰⁵ | ➖¹⁰⁶     | ✅¹⁰⁷    | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅¹⁰⁸   | ✅         | ✅       | ✅       | ✅      |
 
 Footnotes (verdicts recorded so far):
 
@@ -815,6 +817,33 @@ Footnotes (verdicts recorded so far):
      cross-household isolation, the legacy `initialize` handshake, `-32020`, 405, Origin,
      and the tools returning this household's own rows. The wire itself has 30 pure cases
      (`functions/_lib/mcp.test.ts`), two of them proven red by planting the defect.
+103. **Peek (F42)** — deliberate no-peek, the `adapters.ts` verdict at ⁴: a remark row
+     EXPANDS in place (`Disclosure`) because what you want next is its journal, which is
+     a list of short lines, not a record with fields. A sheet would add a layer over
+     something already fully visible one tap down.
+104. **Undo (F42)** — two tiers on purpose, which is the rule (`ACTIONS.md` 14: the tier
+     is decided by the SURFACE). The delete is a `useConfirm` (heavy: the journal and
+     every attachment go with it, and the copy says so) AND a `useDeferredRemoval`,
+     because the list is polled — optimistic-then-defer lets the next poll resurrect the
+     row mid-undo. « C'est réglé » / « Pas réglé » carry no undo and need none: each is
+     an append that the other reverses, and the journal keeps both.
+105. **Realtime (F42)** — a real `PATH_KEYS` entry, not `SILENT_PATHS`, because the point
+     of the loop is that « expédiée » appears on an open tab without a reload. Both write
+     paths map to the same key: `/api/remarks` through `authed()`'s hook, and
+     `/api/remarks/shipped` — which is NOT wrapped in `authed()` and therefore gets no
+     hook — by calling `keysForPath` itself. `realtime.test.ts` pins both.
+106. **Search (F42)** — no `SEARCH_INDEX` entry, deliberately. Search is for household
+     CONTENT (a recipe, a person, a note); a remark is a message about the app, lives in
+     one Réglages section, and surfacing it beside « pain » in the household search would
+     be a category error.
+107. **Guide (F42)** — MERGED as a point on `set-devices` (index 10) rather than a 33rd
+     card: the guide is at its ceiling, and this belongs with pairing, the TV and the
+     agent — all four are « what the app has to say about itself ». Plus an
+     `operatorHelp` entry for the « ? ».
+108. **Who (F42)** — `reported_by` is a soft member ref, and the interesting half is the
+     other one: `author_member_id` is **always NULL on a 'shipped' event**, by schema and
+     by endpoint. A deploy is not a person, and a journal that let a machine borrow a
+     face would be lying in the calmest possible way.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 
